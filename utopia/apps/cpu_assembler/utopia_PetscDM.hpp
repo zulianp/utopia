@@ -95,10 +95,13 @@ namespace utopia {
     };
 
     template<int Dim>
+    class DMDAMirror;
+
+    template<int Dim>
     class PetscDMElements;
 
     template<int Dim>
-    class PetscDMNodes;
+    class DMDANodes;
 
     template<class Space>
     class DirichletBoundaryCondition {};
@@ -106,12 +109,12 @@ namespace utopia {
     template<int Dim>
     class PetscNode {
     public:
-        PetscNode(const PetscDMNodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
+        PetscNode(const DMDANodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
         SizeType idx() const { return idx_; }
         bool is_ghost() const;
 
     private:
-        const PetscDMNodes<Dim> &nodes_;
+        const DMDANodes<Dim> &nodes_;
         SizeType idx_;
     };
 
@@ -126,6 +129,8 @@ namespace utopia {
         using Node      = utopia::PetscNode<Dim>;
         using Device    = utopia::Device<PETSC>;
         using NodeIndex = typename Elem::NodeIndex;
+        using IntArray  = utopia::ArrayView<SizeType, UDim>;
+        using ScalarArray = utopia::ArrayView<Scalar, UDim>;
 
         using SideSets = utopia::SideSets<Dim>;
 
@@ -162,7 +167,7 @@ namespace utopia {
         void cell_size(const SizeType &idx, Point &cell_size);
 
         bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
-        bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
+        // bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
         void node(const SizeType &idx, Point &node) const;
         void elem(const SizeType &idx, Elem &e) const;
         void nodes(const SizeType &idx, NodeIndex &nodes) const;
@@ -178,79 +183,48 @@ namespace utopia {
 
         void describe() const;
 
-        void each_element(const std::function<void(const Elem &)> &f);
-        void each_node(const std::function<void(const Node &)> &f);
-        void each_node_with_ghosts(const std::function<void(const Node &)> &f);
+        // void each_element(const std::function<void(const Elem &)> &f);
+        // void each_node(const std::function<void(const Node &)> &f);
+        // void each_node_with_ghosts(const std::function<void(const Node &)> &f);
 
         inline static constexpr SizeType dim() { return Dim; }
         Range local_node_range() const;
         SizeType n_local_nodes_with_ghosts() const;
 
         // void dims(SizeType *arr) const;
-        void box(Scalar *min, Scalar *max) const;
+        // void box(Scalar *min, Scalar *max) const;
 
         Scalar min_spacing() const;
 
-        void local_node_ranges(SizeType *begin, SizeType *end) const;
+        // void local_node_ranges(SizeType *begin, SizeType *end) const;
 
         Range local_element_range() const;
 
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
-        void local_element_ranges(SizeType *begin, SizeType *end) const;
+// #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
+//         void local_element_ranges(SizeType *begin, SizeType *end) const;
 
-        template<class Array>
-        void local_element_ranges(Array &begin, Array &end) const
-        {
-            SizeType temp_begin[3], temp_end[3];
-            local_element_ranges(temp_begin, temp_end);
+//         template<class Array>
+//         void local_element_ranges(Array &begin, Array &end) const
+//         {
+//             SizeType temp_begin[3], temp_end[3];
+//             local_element_ranges(temp_begin, temp_end);
 
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                begin[i] = temp_begin[i];
-                end[i] = temp_end[i];
-            }
-        }
+//             SizeType d = dim();
+//             for(SizeType i = 0; i < d; ++i) {
+//                 begin[i] = temp_begin[i];
+//                 end[i] = temp_end[i];
+//             }
+//         }
 
-#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+// #endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+        const DMDAMirror<Dim> &mirror() const;
 
-        template<class Array>
-        void local_node_ranges(Array &begin, Array &end) const
-        {
-            SizeType temp_begin[3], temp_end[3];
-            local_node_ranges(temp_begin, temp_end);
+        const IntArray &local_nodes_begin() const;
+        const IntArray &local_nodes_end() const;
 
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                begin[i] = temp_begin[i];
-                end[i] = temp_end[i];
-            }
-        }
-
-        template<class Array>
-        void dims(Array &arr) const
-        {
-            std::array<SizeType, UDim> temp;
-            dims(temp);
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                arr[i] = temp[i];
-            }
-        }
-
-        void dims(std::array<SizeType, UDim> &arr) const;
-
-        template<class Array>
-        void box(Array &min, Array &max) const
-        {
-            Scalar temp_min[3], temp_max[3];
-            box(temp_min, temp_max);
-
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                min[i] = temp_min[i];
-                max[i] = temp_max[i];
-            }
-        }
+        const IntArray &dims() const;
+        const ScalarArray &box_min() const;
+        const ScalarArray &box_max() const;
 
         inline Impl &impl()
         {
@@ -270,7 +244,7 @@ namespace utopia {
 
         bool is_ghost(const SizeType &global_node_idx) const;
         bool is_boundary(const SizeType &global_node_idx) const;
-        SideSet::BoundaryIdType boundary_id(const SizeType &global_node_idx) const;
+        // SideSet::BoundaryIdType boundary_id(const SizeType &global_node_idx) const;
 
         void set_field_name(const SizeType &nf, const std::string &name);
 

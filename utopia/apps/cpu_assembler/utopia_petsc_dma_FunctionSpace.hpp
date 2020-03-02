@@ -383,15 +383,15 @@ namespace utopia {
         void elem(const SizeType &idx, Elem &e) const;
 
 
-        bool is_boundary_dof(const SizeType &idx) const
-        {
-            return mesh_->is_boundary(idx);
-        }
+        // bool is_boundary_dof(const SizeType &idx) const
+        // {
+        //     return mesh_->is_boundary(idx);
+        // }
 
-        SideSet::BoundaryIdType boundary_id(const SizeType &idx) const
-        {
-            return mesh_->boundary_id(idx);
-        }
+        // SideSet::BoundaryIdType boundary_id(const SizeType &idx) const
+        // {
+        //     return mesh_->boundary_id(idx);
+        // }
 
         inline SizeType component(const SizeType &idx) const
         {
