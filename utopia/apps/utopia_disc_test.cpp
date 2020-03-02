@@ -121,6 +121,8 @@ namespace utopia {
 
         // Factorization<PetscMatrix, PetscVector> solver;
         KSPSolver<PetscMatrix, PetscVector> solver;
+        solver.max_it(g.size());
+        solver.read(in);
         solver.solve(H, g, x);
 
         stats.stop_and_collect("solve");
