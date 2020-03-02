@@ -112,8 +112,6 @@ namespace utopia {
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using FunValue  = Scalar;
 
-        using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
-
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefQuad4::fun(i, p))
         {
@@ -200,21 +198,6 @@ namespace utopia {
             h_[1] = h[1];
         }
 
-        UTOPIA_INLINE_FUNCTION NodeIndexView &nodes()
-        {
-            return nodes_;
-        }
-
-        UTOPIA_INLINE_FUNCTION const NodeIndexView &nodes() const
-        {
-            return nodes_;
-        }
-
-        UTOPIA_INLINE_FUNCTION const std::size_t &node(const std::size_t &i) const
-        {
-            return nodes_[i];
-        }
-
         UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()
         {
             return NNodes;
@@ -228,7 +211,6 @@ namespace utopia {
     private:
         Scalar h_[2];
         StaticVector2<Scalar> translation_;
-        NodeIndexView nodes_;
     };
 
 }

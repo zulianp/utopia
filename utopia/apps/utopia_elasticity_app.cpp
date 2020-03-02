@@ -99,7 +99,7 @@ namespace utopia {
         space.apply_constraints(rhs);
 
         stats.stop_collect_and_restart("setup");
-    
+
         LinearElasticityFE<FunctionSpace> lin_elast(space);
         lin_elast.read(in);
 
@@ -123,14 +123,14 @@ namespace utopia {
             //////////////////////////////////////////////////////////////////
 
             UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("before-create-matrix");
-           
+
             Matrix mat;
             space.create_matrix(mat);
             stats.stop_collect_and_restart("create_matrix");
 
             UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-create-matrix");
             //////////////////////////////////////////////////////////////////
-            
+
             lin_elast.hessian(x, mat);
 
             UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after assemblies");
@@ -141,14 +141,14 @@ namespace utopia {
             UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after boundary conditions");
             stats.stop_collect_and_restart("boundary conditions ");
             comm.root_print("Solving...");
-            
+
             if(use_direct_solver) {
                 Factorization<Matrix, Vector> solver;
                 solver.solve(mat, rhs, x);
             } else if(x.size() > 1e6) {
                 KSPSolver<Matrix, Vector> solver;
                 solver.verbose(true);
-                
+
                 solver.max_it(n_iter);
                 solver.rtol(1e-6);
                 solver.atol(1e-6);
@@ -198,7 +198,7 @@ namespace utopia {
         space.read(in);
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
-        
+
         linear_elasticity(space, in);
     }
 
@@ -277,7 +277,7 @@ namespace utopia {
         space_y.sample(x, UTOPIA_LAMBDA(const Point &x) {
             return  x[1]*x[1] * 100;
         });
-        
+
         space.apply_constraints(x);
 
         lin_elast.apply(x, y);
@@ -303,7 +303,7 @@ namespace utopia {
         space_y.sample(x, UTOPIA_LAMBDA(const Point &x) {
             return  x[1]*x[1] * 200;
         });
-        
+
         lin_elast.apply(x, y);
 
         y_mat = H * x;
@@ -335,9 +335,6 @@ namespace utopia {
         using Quadrature     = utopia::Quadrature<Elem, 2>;
         using Dev            = FunctionSpace::Device;
         using VectorD        = utopia::StaticVector<Scalar, Dim>;
-        // using MatrixDxD        = utopia::StaticMatrix<Scalar, Dim, Dim>;
-
-
 
         PetscCommunicator world;
 

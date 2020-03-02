@@ -135,7 +135,6 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
-        // using DiscretizationType = FE;
         static const int Dim = 3;
         static const int NNodes = 8;
         static const int NFunctions = NNodes;
@@ -143,8 +142,6 @@ namespace utopia {
         using Point = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using FunValue  = Scalar;
-
-        using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefHex8::fun(i, p))
@@ -237,21 +234,6 @@ namespace utopia {
             h_[2] = h[2];
         }
 
-        UTOPIA_INLINE_FUNCTION NodeIndexView &nodes()
-        {
-            return nodes_;
-        }
-
-        UTOPIA_INLINE_FUNCTION const NodeIndexView &nodes() const
-        {
-            return nodes_;
-        }
-
-        UTOPIA_INLINE_FUNCTION const std::size_t &node(const std::size_t &i) const
-        {
-            return nodes_[i];
-        }
-
         UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()
         {
             return NNodes;
@@ -265,7 +247,6 @@ namespace utopia {
     private:
         Scalar h_[3];
         Point translation_;
-        NodeIndexView nodes_;
     };
 
 }

@@ -18,7 +18,7 @@ namespace utopia {
 
         using UnivGrad      = utopia::StaticVector<Scalar, Dim>;
         using GradValue     = utopia::StaticMatrix<Scalar, NVariables, Dim>;
-        using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
+        using NodeIndex     = typename Elem::NodeIndex;
         using FunValue      = utopia::StaticVector<Scalar, Dim>;
         using Point         = typename Elem::Point;
 
@@ -103,12 +103,12 @@ namespace utopia {
            univar_elem_.set(translation, h);
         }
 
-        UTOPIA_INLINE_FUNCTION NodeIndexView nodes()
+        UTOPIA_INLINE_FUNCTION NodeIndex nodes()
         {
             return univar_elem_.nodes();
         }
 
-        UTOPIA_INLINE_FUNCTION NodeIndexView nodes() const
+        UTOPIA_INLINE_FUNCTION NodeIndex nodes() const
         {
             return univar_elem_.nodes();
         }

@@ -37,6 +37,14 @@ namespace utopia {
             tensor_.c_add(idx, value);
         }
 
+        //FIXME is not atomic
+        template<class Index, class Values>
+        inline void atomic_add_vector(const Index &I,  const Values &V) const
+        {
+            tensor_.add_vector(I, V);
+        }
+
+
         inline void atomic_set(const SizeType &idx, const Scalar &value) const
         {
             //FIXME

@@ -712,11 +712,16 @@ namespace utopia {
         }
 
 
+        // inline void add_vector(
+        //     const std::vector<SizeType> &indices,
+        //     const std::vector<Scalar> &values)
+
+        template<class Index, class Values>
         inline void add_vector(
-            const std::vector<SizeType> &indices,
-            const std::vector<Scalar> &values)
+            const Index &indices,
+            const Values &values)
         {
-            assert(indices.size() == values.size());
+            //assert(indices.size() == values.size());
             check_error( VecSetValues(implementation(), indices.size(), &indices[0], &values[0], ADD_VALUES) );
         }
 
