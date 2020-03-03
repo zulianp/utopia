@@ -17,6 +17,10 @@ target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})
 target_include_directories(utopia_exec PRIVATE .)
 target_include_directories(utopia_exec PRIVATE ${APPS_MODULES})
 
+if(Gperftools_FOUND)
+    target_link_libraries(utopia_exec gperftools::profiler)
+endif()
+
 if(TRY_WITH_EIGEN_3)
     find_package(Eigen3)
     if(EIGEN3_FOUND)

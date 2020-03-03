@@ -64,6 +64,7 @@ option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)"
 option(INSTALL_TRILINOS "Install trilinos directly" ON)
 option(INSTALL_PETSC "Install petsc directly" ON)
 option(INSTALL_PETSC_DEBUG "Install petsc directly" ON)
+option(USE_GPERFTOOLS "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)" OFF)
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 
@@ -98,6 +99,16 @@ endif()
 
 if(LINUX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
+if(USE_GPERFTOOLS)
+    find_package(Gperftools)
+
+    if(Gperftools_FOUND)
+        link_libraries(gperftools::profiler)
+    else()
+        message(WARNING "GPERFTOOLS NOT FOUND")
+    endif()
 endif()
 
 
