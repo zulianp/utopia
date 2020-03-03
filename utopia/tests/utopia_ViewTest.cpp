@@ -467,8 +467,12 @@ namespace utopia {
             m2.identity();
             m3.identity();
 
+            //or Tensor4th<Scalar, 3, 3, 3, 3>
             Tensor3x3x3x3<Scalar> t;
             t.identity();
+
+            //get/set
+            t(0, 1, 2, 0) = 120;
 
             t = t + 0.5 * t;
             t = t - 1.5 * t;
