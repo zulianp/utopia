@@ -48,29 +48,19 @@ namespace utopia {
             temperature
         );
 
-        space.emplace_dirichlet_condition(
-            SideSet::top(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            temperature
-        );
+        for(auto s : space.mesh().sides()) {
+            if(s != SideSet::bottom()) {
 
-        space.emplace_dirichlet_condition(
-            SideSet::left(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            temperature
-        );
+                space.emplace_dirichlet_condition(
+                    s,
+                    UTOPIA_LAMBDA(const Point &) -> Scalar {
+                        return 0.0;
+                    },
+                    temperature
+                );
 
-        space.emplace_dirichlet_condition(
-            SideSet::right(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            temperature
-        );
+            }
+        }
     }
 
 
@@ -84,7 +74,6 @@ namespace utopia {
     {
         using Point  = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
-
 
         for(int i = disp_begin; i < disp_end; ++i) {
             space.emplace_dirichlet_condition(
@@ -169,8 +158,8 @@ namespace utopia {
         model.hessian(x, H);
         // model.gradient(x, g);
 
-        rename("h", H);
-        write("H.m", H);
+        // rename("h", H);
+        // write("H.m", H);
 
 
         if(!apply_BC) return;
@@ -197,6 +186,7 @@ namespace utopia {
 
         stats.stop_and_collect("output");
 
+        space.comm().root_print( "n_dofs: " + std::to_string(space.n_dofs()) );
         stats.describe(std::cout);
     }
 
@@ -220,6 +210,27 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(thermo_elast_2);
+
+    static void thermo_elast_3(Input &in)
+    {
+        static const int Dim = 3;
+        static const int NVars = Dim + 1;
+
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformHex8;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType       = FunctionSpace::SizeType;
+
+        FunctionSpace space;
+        space.read(in);
+
+        therom_elast(
+            space,
+            in
+        );
+    }
+
+    UTOPIA_REGISTER_APP(thermo_elast_3);
 
 }
 
