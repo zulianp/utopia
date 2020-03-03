@@ -12,6 +12,20 @@ namespace utopia {
     class LinearElasticityKernel {
     public:
 
+        template<class Strain>
+        UTOPIA_INLINE_FUNCTION static Scalar strain_apply(
+            const Scalar &mu,
+            const Scalar &lambda,
+            const Strain &e_i,
+            const Strain &e_j,
+            const Scalar &dx)
+        {
+            return (
+                (2. * mu) * inner(e_i, e_j) +
+                (lambda) * inner(trace(e_i), trace(e_j))
+            ) * dx;
+        }
+
         template<class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar apply(
             const Scalar &mu,
@@ -22,11 +36,7 @@ namespace utopia {
         {
             auto e_i = 0.5 * (transpose(g_i) + g_i);
             auto e_j = 0.5 * (transpose(g_j) + g_j);
-
-            return (
-                (2. * mu) * inner(e_i, e_j) +
-                (lambda) * inner(trace(g_i), trace(g_j))
-            ) * dx;
+            return strain_apply(mu, lambda, e_i, e_j, dx);
         }
 
         template<class Grad>

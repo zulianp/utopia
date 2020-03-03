@@ -62,6 +62,16 @@ namespace utopia {
             // UTOPIA_DEVICE_ASSERT(left.size() == right.size());
         }
 
+        UTOPIA_INLINE_FUNCTION Scalar operator()(
+            const SizeType &i,
+            const SizeType &j,
+            const SizeType &k,
+            const SizeType &l) const
+
+        {
+            return DeviceOp<Scalar, Op>::apply(left_(i, j, k, l), right_(i, j, k, l));
+        }
+
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const
         {
             return DeviceOp<Scalar, Op>::apply(left_(i, j), right_(i, j));
@@ -116,6 +126,16 @@ namespace utopia {
         using Scalar   = decltype(typename Traits<Right>::Scalar(0) + Left(0));
 
         UTOPIA_INLINE_FUNCTION DeviceBinary(const DeviceNumber<Left> &left, const Right &right) : left_(left), right_(right) {}
+
+        UTOPIA_INLINE_FUNCTION Scalar operator()(
+            const SizeType &i,
+            const SizeType &j,
+            const SizeType &k,
+            const SizeType &l) const
+
+        {
+            return DeviceOp<Scalar, Op>::apply(left_, right_(i, j, k, l));
+        }
 
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const
         {
