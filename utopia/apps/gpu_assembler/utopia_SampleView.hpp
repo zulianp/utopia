@@ -4,6 +4,7 @@
 
 #include "utopia_AssemblyView.hpp"
 #include "utopia_LaplacianView.hpp"
+#include "utopia_FunctionSpace.hpp"
 
 namespace utopia {
 
