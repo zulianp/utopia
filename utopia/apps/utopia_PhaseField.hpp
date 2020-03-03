@@ -8,6 +8,9 @@
 #include "utopia_Views.hpp"
 #include "utopia_PrincipalShapeStressView.hpp"
 #include "utopia_DiffController.hpp"
+#include "utopia_TensorView4.hpp"
+#include "utopia_DeviceTensorProduct.hpp"
+#include "utopia_DeviceTensorContraction.hpp"
 
 namespace utopia {
 
@@ -313,7 +316,8 @@ namespace utopia {
             }
 
 
-            space_.apply_zero_constraints(g);
+            // space_.apply_zero_constraints(g);
+            std::cout<<"----- BC not applied --------- \n"; 
             // static int iter = 0;
             // write("g" + std::to_string(iter++) + ".m", g);
             return true;
@@ -434,17 +438,35 @@ namespace utopia {
                                 }
                             }
 
+                            // for(SizeType l = 0; l < u_grad_shape_el.n_functions(); ++l) {
+                            //     for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
+                            //         el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
+                            //             params_,
+                            //             c[qp],
+                            //             p_stress_view.negative(j, qp),
+                            //             p_stress_view.positive(j, qp),
+                            //             u_grad_shape_el(l, qp)
+                            //             ) * dx(qp);
+                            //     }
+                            // }
+
+
                             for(SizeType l = 0; l < u_grad_shape_el.n_functions(); ++l) {
                                 for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
-                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
+                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu_new(
                                         params_,
                                         c[qp],
-                                        p_stress_view.negative(j, qp),
-                                        p_stress_view.positive(j, qp),
+                                        el_strain.vectors[qp],
+                                        el_strain.values[qp],
+                                        u_grad_shape_el(j, qp), 
                                         u_grad_shape_el(l, qp)
                                         ) * dx(qp);
                                 }
                             }
+
+
+
+                            //////////////////////////////////////////////////////////////////////////////////////////////////////
 
                             StaticMatrix<Scalar, Dim, Dim> stress_positive_mat; 
                             stress_positive(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
@@ -465,6 +487,9 @@ namespace utopia {
                                     el_mat(C_NDofs + u_i, c_i) += val;
                                 }
                             }
+
+
+
                         }
 
                         space_view.add_matrix(e, el_mat, H_view);
@@ -477,7 +502,8 @@ namespace utopia {
                 diff_ctrl_.check_hessian(*this, x_const, H);
             }
 
-            space_.apply_constraints(H);
+            // space_.apply_constraints(H);
+            std::cout<<"----- BC not applied --------- \n"; 
 
             // static int iter = 0;
             // write("H" + std::to_string(iter++) + ".m", H);
@@ -546,6 +572,103 @@ namespace utopia {
             const Scalar alpha = quadratic_degradation(params, phase_field_value);
             return alpha * positive_part - negative_part;
         }
+
+
+        template<class EigenVectors, class Eigenvalues, class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu_new(
+            const Parameters &params,
+            const Scalar &phase_field_value,
+            const EigenVectors &eigen_vectors,
+            const Eigenvalues &eigen_values,
+            const Grad &g_trial, 
+            const Grad &g_test
+            )
+        {
+            StaticVector<Scalar, Dim> epos; 
+            StaticVector<Scalar, Dim> dd; 
+
+            Scalar tr = sum(eigen_values); 
+
+            for (unsigned int d = 0; d < Dim; ++d)
+            {
+                epos[d] = split_p(eigen_values[d]);
+                dd[d] = eigen_values[d] > 0.0 ? 1.0 : 0.0;
+            }
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_pos;
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Gab, Gba;
+            StaticMatrix<Scalar, Dim, Dim> Ma, Mb;
+
+            proj_pos.set(0.0);
+
+            for (unsigned int a = 0; a < Dim; ++a)
+            {
+                StaticVector<Scalar, Dim> v;
+                eigen_vectors.col(a, v);
+                Ma = outer(v, v);
+
+                // outer 
+                proj_pos = proj_pos + (dd[a] * tensor_product<0, 1, 2, 3>(Ma, Ma));
+            }                            
+
+            for (unsigned int a = 0; a < Dim; ++a){
+                for (unsigned int b = 0; b < a; ++b){
+
+                    StaticVector<Scalar, Dim> v_a, v_b;
+                    eigen_vectors.col(a, v_a);
+                    eigen_vectors.col(b, v_b);
+
+                    Ma = outer(v_a, v_a);
+                    Mb = outer(v_b, v_b);                                    
+
+                    Gab = tensor_product<0, 2, 1, 3>(Ma, Mb)  + tensor_product<0, 3, 1, 2>(Ma, Mb);
+                    Gba = tensor_product<0, 2, 1, 3>(Mb, Ma)  + tensor_product<0, 3, 1, 2>(Mb, Ma);
+
+
+                    Scalar theta_ab=0; 
+                    if(eigen_values[a] != eigen_values[b]){
+                        theta_ab = 0.5 * (epos[a] - epos[b])/(eigen_values[a] - eigen_values[b]); 
+                    }
+                    else
+                    {
+                        theta_ab = 0.25 * (dd[a] + dd[b]); 
+                    }
+
+                    proj_pos = proj_pos + (theta_ab*(Gab + Gba)); 
+                }
+            }
+
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_neg, I4sym;
+            I4sym.identity_sym(); 
+            proj_neg = I4sym - proj_pos;
+
+            StaticMatrix<Scalar, Dim, Dim> I; 
+            I.identity(); 
+                                                            //   outer 
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> dtraceAdA = tensor_product<0, 1, 2, 3>(I, I);
+
+            const Scalar gc = quadratic_degradation(params, phase_field_value);
+
+            const Scalar tr_p = tr < 0.0 ? 0.0 : 1.0;
+            const Scalar tr_n = (-1.0*tr) < 0.0 ? 0.0 : 1.0;
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * (params.lambda * dtraceAdA * tr_p + 2.0* params.mu * proj_pos); 
+            Jacobian_mult = Jacobian_mult + (params.lambda * dtraceAdA * tr_n + 2.0* params.mu * proj_neg); 
+
+
+            auto C_test  = 0.5 * (g_test  + transpose(g_test));
+            auto C_trial  = 0.5 * (g_trial  + transpose(g_trial));
+
+            Scalar val = inner(C_trial, contraction(Jacobian_mult, C_test));
+
+
+            return val; 
+        }        
+
+
+
+
 
         template<class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar diffusion_c(

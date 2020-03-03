@@ -324,6 +324,21 @@ namespace utopia {
             }
         }
 
+        inline void identity_sym()
+        {
+            set(0.0);
+            for(SizeType i = 0; i < extent(*this, 0); ++i) {
+                for(SizeType j = 0; j < extent(*this, 1); ++j) {
+                    for(SizeType k = 0; k < extent(*this, 2); ++k) {
+                        for(SizeType l = 0; l < extent(*this, 3); ++l) {
+                            const Scalar val = 0.5 * ((i == k) && (j == l)) + 0.5 * ((i == l) && (j == k));
+                            set(i, j, k, l, val);
+                        }
+                    }
+                }
+            }
+        }        
+
     private:
         ArrayView4D view_;
 

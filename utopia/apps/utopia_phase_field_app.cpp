@@ -161,14 +161,29 @@ namespace utopia {
         Newton<PetscMatrix, PetscVector> solver(linear_solver);
         in.get("solver", solver);
 
-        //FIXME
+        // FIXME
         // solver.solve(pp, x);
+ 
+        // REMOVE ME
+        x.set(1.0);
+        // x.set(0.0);
+        {
+            Write<utopia::PetscVector> bla(x); 
+            x.set(1, 0.1); 
+        }
 
-        //REMOVE ME
         pp.hessian(x, H);
         pp.gradient(x, g);
-        space.apply_constraints(g);
-        linear_solver->solve(H, g, x);
+
+        utopia::disp(x, "x"); 
+        utopia::disp(g, "g"); 
+        utopia::disp(H, "H"); 
+
+        exit(0); 
+
+
+        // space.apply_constraints(g);
+        // linear_solver->solve(H, g, x);
         //
 
 
