@@ -24,6 +24,7 @@
 #include "utopia_SampleView.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_StrainView.hpp"
 
 
 namespace utopia {
@@ -84,7 +85,7 @@ namespace utopia {
 		inline Comm &comm() override { return space_.comm(); }
 		inline const Comm &comm() const override { return space_.comm(); }
 
-		bool apply(const Vector &x, Vector &y) const override {			
+		bool apply(const Vector &x, Vector &y) const override {
 			const Comm &comm = space_.comm();
 
 			if(y.empty()) {
@@ -98,12 +99,13 @@ namespace utopia {
 
 			x_coeff_->update(x);
 
-			LinearElasticity<FunctionSpace, Quadrature> elast(space_, quadrature, mu_, lambda_);
+			// LinearElasticity<FunctionSpace, Quadrature> elast(space_, quadrature, mu_, lambda_);
+			Strain<FunctionSpace, Quadrature> strain(space_, quadrature);
 
 			{
-				auto x_view    = x_coeff_->view_device();	
+				auto x_view    = x_coeff_->view_device();
 				auto y_view    = space_.assembly_view_device(y);
-				auto grad_view = grad_.view_device();
+				auto strain_view = strain.view_device();
 				auto dx_view   = differential_.view_device();
 
 				Dev::parallel_for(
@@ -117,58 +119,38 @@ namespace utopia {
 						space_view.elem(i, e);
 						x_view.get(e, coeff);
 
-						auto grad = grad_view.make(e);
-						auto dx   = dx_view.make(e);
-						
-						const SizeType n_qp  = grad.n_points();
-						const SizeType n_fun = grad.n_functions();
+						auto &&strain = strain_view.make(e);
+						auto dx       = dx_view.make(e);
 
-						// for(SizeType qp = 0; qp < n_qp; ++qp) {
-						//     for(SizeType j = 0; j < n_fun; ++j) {
-						//     	const auto g_test  = grad(j, qp);
-
-						//         for(SizeType l = 0; l < n_fun; ++l) {
-						//         	const auto g_trial = grad(l, qp);
-						        	
-						//             el_vec(j) += LEKernel::apply(
-						//             	mu_,
-						//             	lambda_,
-						//             	coeff(l),
-						//             	g_trial,
-						//             	g_test,
-						//             	dx(qp)
-						//             );
-						//         }
-						//     }
-						// }
+						const SizeType n_qp  = strain.n_points();
+						const SizeType n_fun = strain.n_functions();
 
 						//taking advantage of symmetry
 						for(SizeType qp = 0; qp < n_qp; ++qp) {
 							const auto dx_qp = dx(qp);
 
 						    for(SizeType j = 0; j < n_fun; ++j) {
-						    	const auto g_test  = grad(j, qp);
+						    	auto &&strain_test  = strain(j, qp);
 
-						    	el_vec(j) += LEKernel::apply(
+						    	el_vec(j) += LEKernel::strain_apply(
 						    		mu_,
 						    		lambda_,
-						    		coeff(j),
-						    		g_test,
-						    		g_test,
+						    		strain_test,
+						    		strain_test,
 						    		dx_qp
-						    	);
+						    	) * coeff(j);
 
 						        for(SizeType l = j + 1; l < n_fun; ++l) {
-						        	const auto g_trial = grad(l, qp);
-						        	
-						        	const auto v = LEKernel::apply(
+						        	auto &&strain_trial = strain(l, qp);
+
+						        	const auto v = LEKernel::strain_apply(
 						            	mu_,
 						            	lambda_,
-						            	g_trial,
-						            	g_test,
+						            	strain_trial,
+						            	strain_test,
 						            	dx_qp
 						            );
-						        	
+
 						            el_vec(l) += v * coeff(j);
 						            el_vec(j) += v * coeff(l);
 						        }
@@ -201,7 +183,7 @@ namespace utopia {
 			return norm_diff < 1e-10;
 		}
 
-		bool hessian(const Vector &, Matrix &H) const 
+		bool hessian(const Vector &, Matrix &H) const
 		{
 			LinearElasticity<FunctionSpace, Quadrature> elast(space_, quadrature_, mu_, lambda_);
 			MassMatrix<FunctionSpace, Quadrature> mass_matrix(space_, quadrature_);

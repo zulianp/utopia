@@ -130,7 +130,6 @@ namespace utopia {
             for(SizeType i = 0; i < n_nodes; ++i) {
                 dofs[j++] = nodes[i] * n_components + var;
             }
-
         }
 
         template<class Elem, class ElementMatrix, class MatView>
@@ -146,23 +145,14 @@ namespace utopia {
                 assert(NComponents == 1);
 
                 const SizeType n_dofs = e.nodes().size();
-                const auto &dofs = e.nodes();
+                const NodeIndex &dofs = e.nodes();
 
-                for(SizeType i = 0; i < n_dofs; ++i) {
-                    for(SizeType j = 0; j < n_dofs; ++j) {
-                        mat.atomic_add(dofs[i], dofs[j], el_mat(i, j));
-                    }
-                }
+                //Potentially breaks
+                mat.atomic_add_matrix(dofs, dofs, &el_mat(0, 0));
+
             } else {
                 DofIndexNonConst indices;
                 dofs(mesh, var_offset, e.idx(), indices);
-
-                // const SizeType n_dofs = indices.size();
-                // for(SizeType i = 0; i < n_dofs; ++i) {
-                //     for(SizeType j = 0; j < n_dofs; ++j) {
-                //         mat.atomic_add(indices[i], indices[j], el_mat(i, j));
-                //     }
-                // }
 
                 //Potentially breaks
                 mat.atomic_add_matrix(indices, indices, &el_mat(0, 0));
@@ -184,21 +174,15 @@ namespace utopia {
                 const SizeType n_dofs = e.nodes().size();
                 const auto &dofs = e.nodes();
 
-                for(SizeType i = 0; i < n_dofs; ++i) {
-                    vec.atomic_add(dofs[i], el_vec(i));
-                }
+                vec.atomic_add_vector(dofs, &el_vec(0));
 
             } else {
                 DofIndexNonConst indices;
                 dofs(mesh, var_offset, e.idx(), indices);
 
-                const SizeType n_dofs = indices.size();
-                for(SizeType i = 0; i < n_dofs; ++i) {
-                    vec.atomic_add(indices[i], el_vec(i));
-                }
+                vec.atomic_add_vector(indices, &el_vec(0));
             }
         }
-
 
         template<class Elem, class ElementVector, class VecView>
         static void set_vector(
@@ -383,15 +367,15 @@ namespace utopia {
         void elem(const SizeType &idx, Elem &e) const;
 
 
-        bool is_boundary_dof(const SizeType &idx) const
-        {
-            return mesh_->is_boundary(idx);
-        }
+        // bool is_boundary_dof(const SizeType &idx) const
+        // {
+        //     return mesh_->is_boundary(idx);
+        // }
 
-        SideSet::BoundaryIdType boundary_id(const SizeType &idx) const
-        {
-            return mesh_->boundary_id(idx);
-        }
+        // SideSet::BoundaryIdType boundary_id(const SizeType &idx) const
+        // {
+        //     return mesh_->boundary_id(idx);
+        // }
 
         inline SizeType component(const SizeType &idx) const
         {
