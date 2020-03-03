@@ -481,7 +481,8 @@ namespace utopia {
             t = tensor_product<0, 1, 2, 3>(m1, m1);
             disp(t);
 
-            // t_{ijkl} = m_{ik} * m_{jl}
+            // t_{ijkl} = m_{ik} * m_{jl} ==
+            // t_{ikjl} = m_{ij} * m_{kl}
             t = tensor_product<0, 2, 1, 3>(m1, m1);
 
             // m2_{ij} = t_{ijkl} * m_{kl}

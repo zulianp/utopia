@@ -210,6 +210,22 @@ namespace utopia {
             }
         }
 
+        template<class Block>
+        UTOPIA_INLINE_FUNCTION void set_matrix(const SizeType &i_offset, const SizeType &j_offset, const Block &block)
+        {
+            const SizeType r = block.rows();
+            const SizeType c = block.cols();
+
+            UTOPIA_DEVICE_ASSERT(i_offset + r <= rows());
+            UTOPIA_DEVICE_ASSERT(j_offset + c <= cols());
+
+            for(SizeType i = 0; i < r; ++i) {
+                for(SizeType j = 0; j < c; ++j) {
+                    set(i_offset + i, j_offset + j, block(i, j));
+                }
+            }
+        }
+
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha)
         {
             device::scale(alpha, view_);
