@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
+#include "utopia_Algorithms.hpp"
 #include <string>
 
 namespace utopia {
@@ -240,6 +241,24 @@ namespace utopia {
                 data_[i++] = *it;
             }
         }
+
+        ArrayView(const ArrayView &other)
+        {
+            device::copy(other.data_, data_);
+        }
+
+        ArrayView &operator=(const ArrayView &other)
+        {
+            if(this == &other) return *this;
+            device::copy(other.data_, data_);
+            return *this;
+        }
+
+        ArrayView(ArrayView &&other)
+        : data_(std::move(other.data_))
+        {}
+
+        ArrayView() {}
 
     private:
         ArrayView<T, Size> data_;
