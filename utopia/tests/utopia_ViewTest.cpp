@@ -2,6 +2,9 @@
 #include "utopia_Testing.hpp"
 #include "utopia_Views.hpp"
 #include "utopia_DeviceReduce.hpp"
+#include "utopia_TensorView4.hpp"
+#include "utopia_DeviceTensorProduct.hpp"
+#include "utopia_DeviceTensorContraction.hpp"
 
 #include <utility>
 
@@ -39,6 +42,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(inner_test);
             UTOPIA_RUN_TEST(eigen_test);
             UTOPIA_RUN_TEST(composite_expr_test);
+            UTOPIA_RUN_TEST(tensor4_test);
         }
 
         void array_view_test()
@@ -454,6 +458,34 @@ namespace utopia {
 
             const Scalar SdotE = inner(S, 0.5 * (F + transpose(F)));
             utopia_test_assert(approxeq(-2.8000, SdotE, 1e-8));
+        }
+
+        void tensor4_test()
+        {
+            StaticMatrix3x3<Scalar> m1, m2, m3;
+            m1.identity();
+            m2.identity();
+            m3.identity();
+
+            Tensor3x3x3x3<Scalar> t;
+            t.identity();
+
+            t = t + 0.5 * t;
+            t = t - 1.5 * t;
+
+            //t_{ijkl} = m_{ij} * m_{kl}
+            t = tensor_product<0, 1, 2, 3>(m1, m1);
+            disp(t);
+
+            // t_{ijkl} = m_{ik} * m_{jl}
+            t = tensor_product<0, 2, 1, 3>(m1, m1);
+
+            // m2_{ij} = t_{ijkl} * m_{kl}
+            m2 = contraction(t, m1);
+            disp(m2);
+
+            Scalar val = inner(m1, contraction(tensor_product<0, 2, 1, 3>(m1, m1), m1));
+            disp(val);
         }
     };
 

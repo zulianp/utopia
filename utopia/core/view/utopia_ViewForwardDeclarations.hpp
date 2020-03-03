@@ -121,6 +121,12 @@ namespace utopia {
     template<typename T>
     using StaticMatrix4x4 = utopia::StaticMatrix<T, 4, 4>;
 
+    template<typename T, Size_t N0, Size_t N1, Size_t N2, Size_t N3>
+    using Tensor4th = utopia::TensorView<ArrayView<T, N0, N1, N2, N3>, 4>;
+
+    template<typename T>
+    using Tensor3x3x3x3 = utopia::Tensor4th<T, 3, 3, 3, 3>;
+
 }
 
 #endif
