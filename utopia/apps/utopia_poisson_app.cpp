@@ -23,10 +23,108 @@
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_IPTransfer.hpp"
 
 #include <cmath>
 
 namespace utopia {
+
+    template<class Model, class FunctionSpace>
+    static void geometric_multigrid(
+        FunctionSpace &coarse_space,
+        Input &in)
+    {
+        using Matrix = typename FunctionSpace::Matrix;
+        using Vector = typename FunctionSpace::Vector;
+
+        int n_levels = 2;
+        in.get("n_levels", n_levels);
+
+        std::vector<std::shared_ptr<FunctionSpace>> spaces(n_levels);
+        std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers(n_levels - 1);
+
+        spaces[0] = utopia::make_ref(coarse_space);
+
+        for(int i = 1; i < n_levels; ++i) {
+            // spaces[i-1]->dmda_set_interpolation_type_Q0();
+            spaces[i-1]->dmda_set_interpolation_type_Q1();
+            spaces[i] = spaces[i-1]->uniform_refine();
+
+            auto I = std::make_shared<Matrix>();
+            spaces[i-1]->create_interpolation(*spaces[i], *I);
+            assert(!empty(*I));
+            disp(*I);
+            transfers[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(I);
+        }
+
+        auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
+        auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+
+        Multigrid<Matrix, Vector> mg(smoother, coarse_solver);
+        mg.verbose(true);
+        mg.read(in);
+        mg.set_transfer_operators(transfers);
+
+        Vector x, b;
+        Matrix A;
+
+        auto &space = *spaces.back();
+
+        space.create_vector(x);
+        space.create_vector(b);
+        space.create_matrix(A);
+
+        Model model(space);
+        model.read(in);
+
+        model.hessian(x, A);
+        // model.gradient(x, b);
+
+        space.apply_constraints(b);
+        mg.solve(A, b, x);
+
+        rename("x", x);
+        space.write("MG.vtr", x);
+    }
+
+    static void gmg(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Point            = FunctionSpace::Point;
+        using Scalar           = FunctionSpace::Scalar;
+
+        FunctionSpace space;
+        space.read(in);
+
+
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return p[1];
+                },
+                c
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return -p[1];
+                },
+                c
+            );
+        }
+
+        geometric_multigrid<PoissonFE<FunctionSpace>>(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(gmg);
+
 
     template<class FunctionSpace>
     static void poisson_problem(FunctionSpace &space, Input &in)

@@ -19,6 +19,10 @@ namespace utopia {
 
         static const int Dim = Subspace::Dim;
 
+        DirichletBoundaryCondition(const FunctionSpace &space)
+        : space_(space), side_set_(0), component_(0)
+        {}
+
         DirichletBoundaryCondition(
             const FunctionSpace &space,
             SideSet::BoundaryIdType side_set,
@@ -43,7 +47,7 @@ namespace utopia {
         void apply(PetscVector &v) const
         {
             //FIXME should just use the dofmap not the nodes
-            
+
             auto r = v.range();
 
             auto subspace = space_.subspace(component_);
@@ -126,6 +130,14 @@ namespace utopia {
                 e.node(i/Components, p);
                 vec[i] = fun_(p);
             }
+        }
+
+        void init_from(const DirichletBoundaryCondition &other)
+        {
+            side_set_  = other.side_set_;
+            fun_       = other.fun_;
+            component_ = other.component_;
+            init_constraints_marker();
         }
 
     private:

@@ -219,6 +219,15 @@ namespace utopia {
 
         void set_field_name(const SizeType &nf, const std::string &name);
 
+        std::unique_ptr<PetscDM> uniform_refine() const;
+
+        void dmda_set_interpolation_type_Q0();
+        void dmda_set_interpolation_type_Q1();
+        void create_interpolation(const PetscDM &target, PetscMatrix &I) const;
+
+        void update_mirror();
+
+
     private:
         std::unique_ptr<Impl> impl_;
     };
