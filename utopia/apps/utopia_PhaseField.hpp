@@ -600,13 +600,15 @@ namespace utopia {
             const Scalar tr_p = tr < 0.0 ? 0.0 : 1.0;
             const Scalar tr_n = (-1.0*tr) < 0.0 ? 0.0 : 1.0;
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * (params.lambda * dtraceAdA * tr_p + 2.0* params.mu * proj_pos); 
-            Jacobian_mult = Jacobian_mult + (params.lambda * dtraceAdA * tr_n + 2.0* params.mu * proj_neg); 
+            // std::cout<<" gc: "<< gc << "  \n"; 
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * ((params.lambda * dtraceAdA * tr_p) + (2.0* params.mu * proj_pos)); 
+            Jacobian_mult = Jacobian_mult + ((params.lambda * dtraceAdA * tr_n) + (2.0* params.mu * proj_neg)); 
 
             auto C_test  = 0.5 * (g_test  + transpose(g_test));
             auto C_trial  = 0.5 * (g_trial  + transpose(g_trial));
 
-            Scalar val = inner(C_test, contraction(Jacobian_mult, C_trial));
+            Scalar val = inner(C_trial, contraction(Jacobian_mult, C_test));
 
             return val; 
         }        
@@ -659,11 +661,12 @@ namespace utopia {
 
                     Scalar theta_ab=0; 
                     // add tol
-                    if(eigen_values[a] != eigen_values[b]){
+                    // if(eigen_values[a] != eigen_values[b]){
+                    Scalar tol = 1e-14; 
+                    if(device::abs(eigen_values[a] - eigen_values[b]) > tol){
                         theta_ab = 0.5 * (epos[a] - epos[b])/(eigen_values[a] - eigen_values[b]); 
                     }
-                    else
-                    {
+                    else{
                         theta_ab = 0.25 * (dd[a] + dd[b]); 
                     }
 
