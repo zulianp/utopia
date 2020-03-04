@@ -6,6 +6,9 @@
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_split_matrix.hpp"
 #include "utopia_DeviceIdentity.hpp"
+#include "utopia_TensorView4.hpp"
+#include "utopia_DeviceTensorProduct.hpp"
+#include "utopia_DeviceTensorContraction.hpp"
 
 namespace utopia {
 
@@ -33,6 +36,7 @@ namespace utopia {
         class ViewDevice {
         public:
             ArrayView<GradValue, NFunctions, Quadrature::NPoints> stress;
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> C; 
             ViewDevice(){}
 
             ViewDevice(const ViewDevice &other)
@@ -42,6 +46,8 @@ namespace utopia {
                         stress(j, i).copy(other.stress(j, i));
                     }
                 }
+
+                C.copy(other.C); 
             }
         };
 
@@ -89,10 +95,33 @@ namespace utopia {
             }
         }
 
+        bool kroneckerDelta(const SizeType & i, const SizeType & j){
+            return (i==j) ? 1.0 : 0.0; 
+        }        
+
+        void fill_in_isotropic_elast_tensor(const Scalar & mu, const Scalar & lambda){
+            for(SizeType i = 0; i < Dim; ++i) {
+                for(SizeType j = 0; j < Dim; ++j) {
+                    for(SizeType k = 0; k < Dim; ++k) {
+                        for(SizeType l = 0; l < Dim; ++l) {
+                            Scalar val = lambda * kroneckerDelta(i,j)* kroneckerDelta(k,l); 
+                            val += mu * (kroneckerDelta(i,k)* kroneckerDelta(j,l)); 
+                            val += mu * (kroneckerDelta(i,l)* kroneckerDelta(j,k));
+                            view_device_.C.set(i, j, k, l, val);
+                        }
+                    }
+                }
+            }            
+        }        
+
+
         void init(const FunctionSpace &space, const Quadrature &q, const Scalar &mu, const Scalar &lambda)
         {
             compute_aggregate_stress(space, q, mu, lambda);
+            fill_in_isotropic_elast_tensor(mu, lambda); 
         }
+
+
 
     };
 

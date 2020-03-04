@@ -25,10 +25,133 @@
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_MPRGP.hpp"
+#include "utopia_TrustRegionVariableBound.hpp"
 
+#include <random>
 #include <cmath>
 
 namespace utopia {
+
+    template<class FunctionSpace>
+    static void init_phase_field(FunctionSpace &space, PetscVector &x)
+    {
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh           = typename FunctionSpace::Mesh;
+        using Elem           = typename FunctionSpace::Shape;
+        using ElemView       = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType       = typename FunctionSpace::SizeType;
+        using Scalar         = typename FunctionSpace::Scalar;
+        using Dev            = typename FunctionSpace::Device;
+        using Point          = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        // un-hard-code
+        auto C = space.subspace(0);
+
+        auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) -> Scalar {
+            // const Scalar dist_x = 0.5 - x[0];
+            Scalar f = 0.0;
+            // for(int i = 1; i < Dim; ++i) {
+                // auto dist_i = x[1];
+                //f += device::exp(-500.0 * x[i] * x[i]);
+                if(  x[0] > (0.5-space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing())  && x[1]  < 0.5 ){
+                    // f = 1.0; 
+                    f = 0.0; 
+                }
+                else{
+                    f = 0.0; 
+                }
+            // }
+
+            return f;
+        });
+
+        {
+            auto C_view       = C.view_device();
+            auto sampler_view = sampler.view_device();
+            auto x_view       = space.assembly_view_device(x);
+
+            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                ElemViewScalar e;
+                C_view.elem(i, e);
+
+                StaticVector<Scalar, NNodes> s;
+                sampler_view.assemble(e, s);
+                C_view.set_vector(e, s, x_view);
+            });
+        }
+    }
+
+
+    template<class FunctionSpace>
+    static void enforce_BC_time_dependent(FunctionSpace &space, const typename FunctionSpace::Scalar & disp,  const typename FunctionSpace::Scalar & t){
+
+        static const int Dim   = FunctionSpace::Dim;
+
+        using Point          = typename FunctionSpace::Point;
+        using Scalar         = typename FunctionSpace::Scalar;
+
+        space.emplace_dirichlet_condition(
+            SideSet::left(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return 0.0;
+            },
+            1
+            );
+
+        space.emplace_dirichlet_condition(
+            SideSet::right(),
+            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return t*disp;
+            },
+            1
+            );
+
+        for(int d = 2; d < Dim + 1; ++d) {
+            space.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return 0.0;
+                },
+                d
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 0.0;
+                },
+                d
+                );
+            }
+    }
+
+    
+    template<class FunctionSpace>
+    static void build_irreversility_constraint(const PetscVector &x_old, PetscVector &x_new, const typename FunctionSpace::SizeType & comp)
+    {   
+        static const int Dim   = FunctionSpace::Dim;
+        using Scalar         = typename FunctionSpace::Scalar;
+        using SizeType       = typename FunctionSpace::SizeType;
+
+        {
+            auto d_x_old = const_device_view(x_old);
+
+            parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+            {
+                if(i%(Dim+1)==comp)
+                    return d_x_old.get(i); 
+                else
+                    return 1e-15; 
+                    
+            });
+        }
+
+    }    
+
+
 
     template<class FunctionSpace>
     static void phase_field_fracture_sim(
@@ -70,102 +193,69 @@ namespace utopia {
 
         stats.start();
 
-        if(with_BC) {
-            space.emplace_dirichlet_condition(
-                SideSet::left(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return -disp;
-                },
-                1
-                );
 
-            space.emplace_dirichlet_condition(
-                SideSet::right(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return disp;
-                },
-                1
-                );
-
-            for(int d = 2; d < Dim + 1; ++d) {
-
-                space.emplace_dirichlet_condition(
-                    SideSet::left(),
-                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                        return 0.0;
-                    },
-                    d
-                    );
-
-                space.emplace_dirichlet_condition(
-                    SideSet::right(),
-                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                        return 0.0;
-                    },
-                    d
-                    );
-            }
-        }
 
         stats.stop_collect_and_restart("BC");
 
         PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
         pp.read(in);
 
-        PetscMatrix H;
-        PetscVector x, g;
-        Scalar f;
-
+        
+        PetscVector x;
         space.create_vector(x);
-
         x.set(0.0);
 
-        auto C = space.subspace(0);
-
         if(with_damage) {
-
-            auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) -> Scalar {
-                const Scalar dist_x = 0.5 - x[0];
-                Scalar f = device::exp(-500.0 * dist_x * dist_x);
-                for(int i = 1; i < Dim; ++i) {
-                    auto dist_i = x[1];
-                    // f += device::exp(-500.0 * x[i] * x[i]);
-                    f = 1.0; 
-                }
-
-                return f;
-            });
-
-            {
-                auto C_view       = C.view_device();
-                auto sampler_view = sampler.view_device();
-                auto x_view       = space.assembly_view_device(x);
-
-                Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
-
-                    StaticVector<Scalar, NNodes> s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
-            }
+            init_phase_field(space, x); 
         }
-
-        space.apply_constraints(x);
-
+        
         stats.stop_collect_and_restart("phase-field-init");
 
     // TrustRegion<PetscMatrix, PetscVector> solver;
 
-        auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-        Newton<PetscMatrix, PetscVector> solver(linear_solver);
-        in.get("solver", solver);
+        Scalar dt = 1e-6; 
+        Scalar time_=dt; 
+        Scalar num_ts = 1; 
+        std::string output_path = "phase_field";
+        // print IG 
+        rename("X", x);
 
-        // utopia::disp(x, "x"); 
+        PetscVector irreversibility_constraint = x; 
 
-        // FIXME
-        // solver.solve(pp, x);
+
+        space.write(output_path+"_"+std::to_string(0.0)+".vtk", x);        
+        for (auto t=0; t < num_ts; t++)
+        {
+            std::cout<<"Time-step: "<< t << "  \n"; 
+     
+            if(with_BC) {
+                // Scalar t = 1e-4; 
+                space.reset_bc(); 
+                enforce_BC_time_dependent(space, disp, time_); 
+            }
+
+            space.apply_constraints(x);        
+                                                                                        // PF component 
+            build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
+
+
+            auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+            Newton<PetscMatrix, PetscVector> solver(linear_solver);
+            in.get("solver", solver);
+
+            // auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+            // TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
+            // auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));
+            // solver.set_box_constraints(box);
+            // in.get("solver", solver);
+            solver.solve(pp, x);
+
+            rename("X", x);
+            space.write(output_path+"_"+std::to_string(time_)+".vtk", x);       
+
+            // increment time step 
+            time_+=dt;
+        }
  
         // // REMOVE ME
         // x.set(1.0);
@@ -174,16 +264,17 @@ namespace utopia {
         //     Write<utopia::PetscVector> bla(x); 
         //     x.set(1, 0.1); 
         // }
+        
 
-        x.set(1.0); 
-        pp.hessian(x, H);
-        pp.gradient(x, g);
+        // // x.set(1.0); 
+        // pp.hessian(x, H);
+        // pp.gradient(x, g);
 
-        utopia::disp(x, "x"); 
-        utopia::disp(g, "g"); 
-        utopia::disp(H, "H"); 
+        // utopia::disp(x, "x"); 
+        // utopia::disp(g, "g"); 
+        // utopia::disp(H, "H"); 
 
-        exit(0); 
+        // exit(0); 
 
 
         // space.apply_constraints(g);
@@ -194,12 +285,16 @@ namespace utopia {
         stats.stop_collect_and_restart("solve+assemble");
 
 
-        std::string output_path = "phase_field.vtk";
+        // std::string output_path = "phase_field.vtk";
 
-        in.get("output-path", output_path);
+        // in.get("output-path", output_path);
 
-        rename("X", x);
-        C.write(output_path, x);
+        // rename("X", x);
+        // space.write("phase_field_1.vtk", x);
+        // space.write("phase_field_2.vtk", x);
+        // space.write("phase_field_3.vtk", x);
+
+        exit(0); 
 
         stats.stop_and_collect("output");
         stats.describe(std::cout);

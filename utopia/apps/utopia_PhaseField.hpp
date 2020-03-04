@@ -77,6 +77,7 @@ namespace utopia {
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
         {
             params_.length_scale = 2.0 * space.mesh().min_spacing();
+            std::cout<<"params_.length_scale: "<< params_.length_scale << "  \n"; 
             params_.fracture_toughness = 0.001;
 
             params_.mu = 80.0;
@@ -169,7 +170,6 @@ namespace utopia {
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             Scalar sum_eigs = sum(el_strain.values[qp]);
                             strain_view.split(el_strain, qp, strain_n, strain_p);
-
                             el_energy += energy(params_, c[qp], c_grad_el[qp], sum_eigs, strain_n, strain_p) * dx(qp);
 
                         }
@@ -311,9 +311,9 @@ namespace utopia {
             }
 
             //check before boundary conditions
-            if(check_derivatives_) {
-                diff_ctrl_.check_grad(*this, x_const, g);
-            }
+            // if(check_derivatives_) {
+            //     diff_ctrl_.check_grad(*this, x_const, g);
+            // }
 
 
             space_.apply_zero_constraints(g);
@@ -446,6 +446,7 @@ namespace utopia {
                                         el_strain.vectors[qp],
                                         el_strain.values[qp],
                                         p_stress_view.stress(j, qp), 
+                                        p_stress_view.C, 
                                         u_grad_shape_el(j, qp), 
                                         u_grad_shape_el(l, qp)
                                         ) * dx(qp);
@@ -485,13 +486,12 @@ namespace utopia {
             }
 
             //check before boundary conditions
-            if(check_derivatives_) {
-                diff_ctrl_.check_hessian(*this, x_const, H);
-            }
+            // if(check_derivatives_) {
+            //     diff_ctrl_.check_hessian(*this, x_const, H);
+            // }
 
-            // space_.apply_constraints(H);
+            space_.apply_constraints(H);
 
-            std::cout<<"BC not applied ----- \n"; 
 
             // static int iter = 0;
             // write("H" + std::to_string(iter++) + ".m", H);
@@ -544,24 +544,6 @@ namespace utopia {
 
 
 
-        // template<class Strain, class Grad>
-        // UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
-        //     const Parameters &params,
-        //     const Scalar &phase_field_value,
-        //     const Strain &stress_negative,
-        //     const Strain &stress_positive,
-        //     const Grad &g_test
-        //     )
-        // {
-        //     auto C_test  = 0.5 * (g_test  + transpose(g_test));
-
-        //     const Scalar positive_part =  inner(stress_positive, C_test);
-        //     const Scalar negative_part =  inner(stress_negative, C_test);
-        //     const Scalar alpha = quadratic_degradation(params, phase_field_value);
-        //     return alpha * positive_part - negative_part;
-        // }
-
-
         template<class EigenVectors, class Eigenvalues, class StressShape, class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
             const Parameters &params,
@@ -569,6 +551,7 @@ namespace utopia {
             const EigenVectors &eigen_vectors,
             const Eigenvalues &eigen_values,
             const StressShape &stress,
+            const Tensor4th<Scalar, Dim, Dim, Dim, Dim> & C, 
             const Grad &g_trial, 
             const Grad &g_test
             )
@@ -589,61 +572,15 @@ namespace utopia {
 
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_neg, I4sym;
             I4sym.identity_sym(); 
-            // proj_neg = I4sym - proj_pos;
 
-            // StaticMatrix<Scalar, Dim, Dim> I; 
-            // I.identity(); 
-            //                                                 //   outer 
-            // Tensor4th<Scalar, Dim, Dim, Dim, Dim> dtraceAdA = tensor_product<0, 1, 2, 3>(I, I);
-
-            // Scalar tr = sum(eigen_values); 
-
-            // Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * ((params.lambda * dtraceAdA * heavyside(tr)) + (2.0* params.mu * proj_pos)); 
-            // Jacobian_mult = Jacobian_mult + ((params.lambda * dtraceAdA * heavyside(-tr)) + (2.0* params.mu * proj_neg)); 
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = (I4sym - (1.0 - gc) * proj_pos) * C; 
 
             auto C_test  = 0.5 * (g_test  + transpose(g_test));
             auto C_trial  = 0.5 * (g_trial  + transpose(g_trial));
-
-
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult; 
-            fill_in_isotropic_elast_tensor(params, Jacobian_mult); 
-
-            exit(0);
-
-            // Jacobian_mult = (I4sym - (1.0 - gc) * proj_pos) * Jacobian_mult; 
-
             Scalar val = inner(C_trial, contraction(Jacobian_mult, C_test));
 
             return val; 
         }        
-
-
-
-        UTOPIA_INLINE_FUNCTION static void fill_in_isotropic_elast_tensor(
-            const Parameters &params, 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> & C)
-        {
-            for(SizeType i = 0; i < Dim; ++i) {
-                for(SizeType j = 0; j < Dim; ++j) {
-                    for(SizeType k = 0; k < Dim; ++k) {
-                        for(SizeType l = 0; l < Dim; ++l) {
-                            Scalar val = params.lambda * kroneckerDelta(i,j)* kroneckerDelta(k,l); 
-                            val += params.mu * (kroneckerDelta(i,k)* kroneckerDelta(j,l)); 
-                            val += params.mu * (kroneckerDelta(i,l)* kroneckerDelta(j,k));
-                            C.set(i, j, k, l, val);
-                        }
-                    }
-                }
-            }            
-        }
-
-
-
-        UTOPIA_INLINE_FUNCTION static bool kroneckerDelta(const SizeType & i, const SizeType & j)
-        {
-            return (i==j) ? 1.0 : 0.0; 
-        }
-
 
 
         template<class EigenVectors, class Eigenvalues>
@@ -671,7 +608,6 @@ namespace utopia {
                 StaticVector<Scalar, Dim> v;
                 eigen_vectors.col(a, v);
                 Ma = outer(v, v);
-
                                                 //   outer 
                 proj_pos = proj_pos + (dd[a] * tensor_product<0, 1, 2, 3>(Ma, Ma));
             }                            
