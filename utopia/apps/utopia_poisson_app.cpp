@@ -11,7 +11,6 @@
 #include "utopia_ConjugateGradient.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
 #include "utopia_BratuFE.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_MassMatrixView.hpp"
@@ -23,65 +22,13 @@
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
-#include "utopia_GeometricMultigrid.hpp"
+#include "utopia_app_utils.hpp"
 
 #include <cmath>
 
 namespace utopia {
 
-    template<class Model, class FunctionSpace>
-    static void geometric_multigrid(
-        FunctionSpace &coarse_space,
-        Input &in)
-    {
-        using Matrix = typename FunctionSpace::Matrix;
-        using Vector = typename FunctionSpace::Vector;
-
-        auto &comm = coarse_space.comm();
-        MPITimeStatistics stats(comm); stats.start();
-
-        int n_levels = 2;
-        in.get("n_levels", n_levels);
-
-        auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-        auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
-
-        GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
-        mg.init(coarse_space, n_levels);
-
-        stats.stop_collect_and_restart("mg-setup");
-
-        Vector x, b;
-        Matrix A;
-
-        auto &space = mg.fine_space();
-
-        space.create_vector(x);
-        space.create_vector(b);
-        space.create_matrix(A);
-
-        Model model(space);
-        model.read(in);
-
-        model.hessian(x, A);
-        // model.gradient(x, b);
-        stats.stop_collect_and_restart("tensor-creation+assembly");
-
-        space.apply_constraints(b);
-        mg.solve(A, b, x);
-
-        stats.stop_collect_and_restart("solve");
-
-        rename("x", x);
-        space.write("MG.vtr", x);
-
-        stats.stop_collect_and_restart("output");
-
-        comm.root_print("n_dofs: " + std::to_string(space.n_dofs()));
-        stats.describe(std::cout);
-    }
-
-    static void gmg(Input &in)
+    static void poisson_mg(Input &in)
     {
         static const int Dim = 2;
         static const int NVars = 1;
@@ -117,7 +64,7 @@ namespace utopia {
         geometric_multigrid<PoissonFE<FunctionSpace>>(space, in);
     }
 
-    UTOPIA_REGISTER_APP(gmg);
+    UTOPIA_REGISTER_APP(poisson_mg);
 
 
     template<class FunctionSpace>

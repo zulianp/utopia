@@ -26,10 +26,87 @@
 
 #include "utopia_LinearElasticityFE.hpp"
 
+#include "utopia_app_utils.hpp"
+
 #include <cmath>
 
 
 namespace utopia {
+
+    static void elast_mg_2(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Point            = FunctionSpace::Point;
+        using Scalar           = FunctionSpace::Scalar;
+
+        FunctionSpace space;
+        space.read(in);
+
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::top(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return 0.1 * Scalar(c==1);
+                },
+                c
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return -0.1*Scalar(c==1);
+                },
+                c
+            );
+        }
+
+        geometric_multigrid<LinearElasticityFE<FunctionSpace>>(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(elast_mg_2);
+
+    static void elast_mg_3(Input &in)
+    {
+        static const int Dim = 3;
+        static const int NVars = Dim;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Point            = FunctionSpace::Point;
+        using Scalar           = FunctionSpace::Scalar;
+
+        FunctionSpace space;
+        space.read(in);
+
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::top(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return 0.1 * Scalar(c==1);
+                },
+                c
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return -0.1*Scalar(c==1);
+                },
+                c
+            );
+        }
+
+        geometric_multigrid<LinearElasticityFE<FunctionSpace>>(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(elast_mg_3);
+
 
     template<class FunctionSpace>
     static void linear_elasticity(FunctionSpace &space, Input &in)

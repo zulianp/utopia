@@ -98,6 +98,30 @@ namespace utopia {
             return true;
         }
 
+        bool init(const std::vector<std::shared_ptr<FunctionSpace>> &spaces)
+        {
+            const SizeType n_levels = spaces.size();
+
+            if(n_levels < 2) {
+                std::cerr << "n_levels must be at least 2" << std::endl;
+                return false;
+            }
+
+            spaces_ = spaces;
+
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers(n_levels - 1);
+
+            for(SizeType i = 1; i < n_levels; ++i) {
+                auto I = std::make_shared<Matrix>();
+                spaces_[i-1]->create_interpolation(*spaces_[i], *I);
+                assert(!empty(*I));
+                transfers[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(I);
+            }
+
+            algebraic_mg_->set_transfer_operators(transfers);
+            return true;
+        }
+
         FunctionSpace &fine_space()
         {
             return *spaces_.back();
