@@ -57,8 +57,8 @@ namespace utopia {
                 // auto dist_i = x[1];
                 //f += device::exp(-500.0 * x[i] * x[i]);
                 if(  x[0] > (0.5-space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing())  && x[1]  < 0.5 ){
-                    // f = 1.0; 
-                    f = 0.0; 
+                    f = 1.0; 
+                    // f = 0.0; 
                 }
                 else{
                     f = 0.0; 
@@ -144,7 +144,7 @@ namespace utopia {
                 if(i%(Dim+1)==comp)
                     return d_x_old.get(i); 
                 else
-                    return 1e-15; 
+                    return -9e15; 
                     
             });
         }
@@ -197,8 +197,8 @@ namespace utopia {
 
         stats.stop_collect_and_restart("BC");
 
-        PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
-        pp.read(in);
+        // PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+        // pp.read(in);
 
         
         PetscVector x;
@@ -213,9 +213,9 @@ namespace utopia {
 
     // TrustRegion<PetscMatrix, PetscVector> solver;
 
-        Scalar dt = 1e-6; 
+        Scalar dt = 1e-4; 
         Scalar time_=dt; 
-        Scalar num_ts = 1; 
+        Scalar num_ts = 100; 
         std::string output_path = "phase_field";
         // print IG 
         rename("X", x);
@@ -231,23 +231,27 @@ namespace utopia {
             if(with_BC) {
                 // Scalar t = 1e-4; 
                 space.reset_bc(); 
-                enforce_BC_time_dependent(space, disp, time_); 
+                enforce_BC_time_dependent(space, disp, time_);              
             }
 
-            space.apply_constraints(x);        
+            space.apply_constraints(x);    
+
+            // as space gets copied, we need to instantiate PF problem every time BC changes ... 
+            PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+            pp.read(in);                
                                                                                         // PF component 
             build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
 
-
             auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-            Newton<PetscMatrix, PetscVector> solver(linear_solver);
-            in.get("solver", solver);
+            // Newton<PetscMatrix, PetscVector> solver(linear_solver);
+            // in.get("solver", solver);
 
             // auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
-            // TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
-            // auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));
-            // solver.set_box_constraints(box);
-            // in.get("solver", solver);
+            auto qp_solver =  std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
+            TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
+            auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));
+            solver.set_box_constraints(box);
+            in.get("solver", solver);
             solver.solve(pp, x);
 
             rename("X", x);
