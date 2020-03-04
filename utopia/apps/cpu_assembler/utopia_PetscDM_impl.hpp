@@ -365,6 +365,10 @@ namespace utopia {
             DMDASetElementType(dm, elem_type);
             DMSetUp(dm);
             DMDASetUniformCoordinates(dm, min_x, max_x, min_y, max_y, min_z, max_z);
+
+            if(elem_type == DMDA_ELEMENT_Q1) {
+                DMDASetInterpolationType(dm, DMDA_Q1);
+            }
         }
 
         void destroy()

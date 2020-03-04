@@ -23,7 +23,7 @@
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
-#include "utopia_IPTransfer.hpp"
+#include "utopia_GeometricMultigrid.hpp"
 
 #include <cmath>
 
@@ -37,46 +37,24 @@ namespace utopia {
         using Matrix = typename FunctionSpace::Matrix;
         using Vector = typename FunctionSpace::Vector;
 
-
         auto &comm = coarse_space.comm();
         MPITimeStatistics stats(comm); stats.start();
 
         int n_levels = 2;
         in.get("n_levels", n_levels);
 
-        std::vector<std::shared_ptr<FunctionSpace>> spaces(n_levels);
-        std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers(n_levels - 1);
-
-        spaces[0] = utopia::make_ref(coarse_space);
-
-        for(int i = 1; i < n_levels; ++i) {
-            // spaces[i-1]->dmda_set_interpolation_type_Q0();
-            spaces[i-1]->dmda_set_interpolation_type_Q1();
-            spaces[i] = spaces[i-1]->uniform_refine();
-
-            auto I = std::make_shared<Matrix>();
-            spaces[i-1]->create_interpolation(*spaces[i], *I);
-            assert(!empty(*I));
-            transfers[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(I);
-        }
-
         auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
         auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
-
-
-
-        Multigrid<Matrix, Vector> mg(smoother, coarse_solver);
-        mg.verbose(true);
-        mg.read(in);
-        mg.set_transfer_operators(transfers);
+        GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
+        mg.init(coarse_space, n_levels);
 
         stats.stop_collect_and_restart("mg-setup");
 
         Vector x, b;
         Matrix A;
 
-        auto &space = *spaces.back();
+        auto &space = mg.fine_space();
 
         space.create_vector(x);
         space.create_vector(b);
