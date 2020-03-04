@@ -65,6 +65,8 @@ namespace utopia {
             );
         }
 
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after init");
+
         geometric_multigrid<LinearElasticityFE<FunctionSpace>>(space, in);
     }
 
@@ -101,6 +103,8 @@ namespace utopia {
                 c
             );
         }
+
+        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after init");
 
         geometric_multigrid<LinearElasticityFE<FunctionSpace>>(space, in);
     }
