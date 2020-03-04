@@ -37,6 +37,10 @@ namespace utopia {
         using Matrix = typename FunctionSpace::Matrix;
         using Vector = typename FunctionSpace::Vector;
 
+
+        auto &comm = coarse_space.comm();
+        MPITimeStatistics stats(comm); stats.start();
+
         int n_levels = 2;
         in.get("n_levels", n_levels);
 
@@ -53,17 +57,21 @@ namespace utopia {
             auto I = std::make_shared<Matrix>();
             spaces[i-1]->create_interpolation(*spaces[i], *I);
             assert(!empty(*I));
-            disp(*I);
             transfers[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(I);
         }
 
         auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
         auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
+
+
+
         Multigrid<Matrix, Vector> mg(smoother, coarse_solver);
         mg.verbose(true);
         mg.read(in);
         mg.set_transfer_operators(transfers);
+
+        stats.stop_collect_and_restart("mg-setup");
 
         Vector x, b;
         Matrix A;
@@ -79,12 +87,20 @@ namespace utopia {
 
         model.hessian(x, A);
         // model.gradient(x, b);
+        stats.stop_collect_and_restart("tensor-creation+assembly");
 
         space.apply_constraints(b);
         mg.solve(A, b, x);
 
+        stats.stop_collect_and_restart("solve");
+
         rename("x", x);
         space.write("MG.vtr", x);
+
+        stats.stop_collect_and_restart("output");
+
+        comm.root_print("n_dofs: " + std::to_string(space.n_dofs()));
+        stats.describe(std::cout);
     }
 
     static void gmg(Input &in)
