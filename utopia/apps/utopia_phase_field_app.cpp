@@ -129,7 +129,8 @@ namespace utopia {
                 Scalar f = device::exp(-500.0 * dist_x * dist_x);
                 for(int i = 1; i < Dim; ++i) {
                     auto dist_i = x[1];
-                    f += device::exp(-500.0 * x[i] * x[i]);
+                    // f += device::exp(-500.0 * x[i] * x[i]);
+                    f = 1.0; 
                 }
 
                 return f;
@@ -161,17 +162,20 @@ namespace utopia {
         Newton<PetscMatrix, PetscVector> solver(linear_solver);
         in.get("solver", solver);
 
+        // utopia::disp(x, "x"); 
+
         // FIXME
         // solver.solve(pp, x);
  
-        // REMOVE ME
-        x.set(1.0);
-        // x.set(0.0);
-        {
-            Write<utopia::PetscVector> bla(x); 
-            x.set(1, 0.1); 
-        }
+        // // REMOVE ME
+        // x.set(1.0);
+        // // x.set(0.0);
+        // {
+        //     Write<utopia::PetscVector> bla(x); 
+        //     x.set(1, 0.1); 
+        // }
 
+        x.set(1.0); 
         pp.hessian(x, H);
         pp.gradient(x, g);
 
@@ -190,7 +194,7 @@ namespace utopia {
         stats.stop_collect_and_restart("solve+assemble");
 
 
-        std::string output_path = "phase_field.vtr";
+        std::string output_path = "phase_field.vtk";
 
         in.get("output-path", output_path);
 
@@ -198,7 +202,6 @@ namespace utopia {
         C.write(output_path, x);
 
         stats.stop_and_collect("output");
-
         stats.describe(std::cout);
 
     // rename("X", r);
