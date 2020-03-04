@@ -49,8 +49,8 @@ namespace utopia {
     template<class Left, class Right>
     class DeviceDot<Left, Right, 2> {
     public:
-        using Scalar   = typename Traits<Right>::Scalar;
-        using SizeType = typename Traits<Right>::SizeType;
+        using Scalar   = typename Traits<Left>::Scalar;
+        using SizeType = typename Traits<Left>::SizeType;
 
         UTOPIA_INLINE_FUNCTION static Scalar apply(
             const Left &left,

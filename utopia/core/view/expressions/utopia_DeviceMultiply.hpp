@@ -35,6 +35,33 @@ namespace utopia {
             return ret;
         }
 
+        UTOPIA_INLINE_FUNCTION Scalar operator()(
+            const SizeType &i,
+            const SizeType &j,
+            const SizeType &k,
+            const SizeType &l) const
+        {
+            //http://www.mate.tue.nl/~peters/4K400/VectTensColMat.pdf
+            assert(extent(left_, 0) == extent(left_, 1));
+            assert(extent(left_, 0) == extent(left_, 2));
+            assert(extent(left_, 0) == extent(left_, 3));
+            assert(extent(left_, 0) == extent(right_, 0));
+            assert(extent(left_, 1) == extent(right_, 1));
+            assert(extent(left_, 2) == extent(right_, 2));
+            assert(extent(left_, 3) == extent(right_, 3));
+
+            const SizeType N = extent(left_, 0);
+
+            Scalar sum = 0.0;
+            for(SizeType m = 0; m < N; ++m) {
+                for(SizeType n = 0; n < N; ++n) {
+                    sum += left_(i, j, m, n) * right_(n, m, k, l);
+                }
+            }
+
+            return sum;
+        }
+
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i) const
         {
             const SizeType cols = left_.cols();

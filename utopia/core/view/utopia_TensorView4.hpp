@@ -312,15 +312,22 @@ namespace utopia {
 
         inline void identity(const Scalar &diag_val = 1.0)
         {
-
-            const SizeType n = device::min(
-                device::min(extent(*this, 0), extent(*this, 1)),
-                device::min(extent(*this, 2), extent(*this, 3))
-            );
-
+            //https://www.sciencedirect.com/topics/engineering/identity-tensor
             set(0.0);
-            for(SizeType i = 0; i < n; ++i) {
-                set(i, i, i, i, diag_val);
+
+            const SizeType N0 = extent(*this, 0);
+            const SizeType N1 = extent(*this, 1);
+            const SizeType N2 = extent(*this, 2);
+            const SizeType N3 = extent(*this, 3);
+
+            for(SizeType i = 0; i < N0; ++i) {
+                for(SizeType j = 0; j < N1; ++j) {
+                    for(SizeType k = 0; k < N2; ++k) {
+                        for(SizeType l = 0; l < N3; ++l) {
+                            set(i, j, k, l, (i == l) * (j == k));
+                        }
+                    }
+                }
             }
         }
 
