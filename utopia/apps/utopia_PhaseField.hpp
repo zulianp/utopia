@@ -597,13 +597,13 @@ namespace utopia {
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> dtraceAdA = tensor_product<0, 1, 2, 3>(I, I);
 
             Scalar tr = sum(eigen_values); 
-            const Scalar tr_p = tr < 0.0 ? 0.0 : 1.0;
-            const Scalar tr_n = (-1.0*tr) < 0.0 ? 0.0 : 1.0;
+            // const Scalar tr_p = tr < 0.0 ? 0.0 : 1.0;
+            // const Scalar tr_n = (-1.0*tr) < 0.0 ? 0.0 : 1.0;
 
             // std::cout<<" gc: "<< gc << "  \n"; 
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * ((params.lambda * dtraceAdA * tr_p) + (2.0* params.mu * proj_pos)); 
-            Jacobian_mult = Jacobian_mult + ((params.lambda * dtraceAdA * tr_n) + (2.0* params.mu * proj_neg)); 
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * ((params.lambda * dtraceAdA * heavyside(tr)) + (2.0* params.mu * proj_pos)); 
+            Jacobian_mult = Jacobian_mult + ((params.lambda * dtraceAdA * heavyside(-tr)) + (2.0* params.mu * proj_neg)); 
 
             auto C_test  = 0.5 * (g_test  + transpose(g_test));
             auto C_trial  = 0.5 * (g_trial  + transpose(g_trial));
@@ -673,6 +673,13 @@ namespace utopia {
                     proj_pos = proj_pos + (theta_ab*(Gab + Gba)); 
                 }
             }
+        }
+
+
+        template <typename T>
+        UTOPIA_INLINE_FUNCTION static T heavyside(T x)
+        {
+          return x < 0.0 ? 0.0 : 1.0;
         }
 
 
