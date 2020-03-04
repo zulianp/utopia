@@ -589,29 +589,60 @@ namespace utopia {
 
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_neg, I4sym;
             I4sym.identity_sym(); 
-            proj_neg = I4sym - proj_pos;
+            // proj_neg = I4sym - proj_pos;
 
-            StaticMatrix<Scalar, Dim, Dim> I; 
-            I.identity(); 
-                                                            //   outer 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> dtraceAdA = tensor_product<0, 1, 2, 3>(I, I);
+            // StaticMatrix<Scalar, Dim, Dim> I; 
+            // I.identity(); 
+            //                                                 //   outer 
+            // Tensor4th<Scalar, Dim, Dim, Dim, Dim> dtraceAdA = tensor_product<0, 1, 2, 3>(I, I);
 
-            Scalar tr = sum(eigen_values); 
-            // const Scalar tr_p = tr < 0.0 ? 0.0 : 1.0;
-            // const Scalar tr_n = (-1.0*tr) < 0.0 ? 0.0 : 1.0;
+            // Scalar tr = sum(eigen_values); 
 
-            // std::cout<<" gc: "<< gc << "  \n"; 
-
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * ((params.lambda * dtraceAdA * heavyside(tr)) + (2.0* params.mu * proj_pos)); 
-            Jacobian_mult = Jacobian_mult + ((params.lambda * dtraceAdA * heavyside(-tr)) + (2.0* params.mu * proj_neg)); 
+            // Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = gc * ((params.lambda * dtraceAdA * heavyside(tr)) + (2.0* params.mu * proj_pos)); 
+            // Jacobian_mult = Jacobian_mult + ((params.lambda * dtraceAdA * heavyside(-tr)) + (2.0* params.mu * proj_neg)); 
 
             auto C_test  = 0.5 * (g_test  + transpose(g_test));
             auto C_trial  = 0.5 * (g_trial  + transpose(g_trial));
+
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult; 
+            fill_in_isotropic_elast_tensor(params, Jacobian_mult); 
+
+            exit(0);
+
+            // Jacobian_mult = (I4sym - (1.0 - gc) * proj_pos) * Jacobian_mult; 
 
             Scalar val = inner(C_trial, contraction(Jacobian_mult, C_test));
 
             return val; 
         }        
+
+
+
+        UTOPIA_INLINE_FUNCTION static void fill_in_isotropic_elast_tensor(
+            const Parameters &params, 
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> & C)
+        {
+            for(SizeType i = 0; i < Dim; ++i) {
+                for(SizeType j = 0; j < Dim; ++j) {
+                    for(SizeType k = 0; k < Dim; ++k) {
+                        for(SizeType l = 0; l < Dim; ++l) {
+                            Scalar val = params.lambda * kroneckerDelta(i,j)* kroneckerDelta(k,l); 
+                            val += params.mu * (kroneckerDelta(i,k)* kroneckerDelta(j,l)); 
+                            val += params.mu * (kroneckerDelta(i,l)* kroneckerDelta(j,k));
+                            C.set(i, j, k, l, val);
+                        }
+                    }
+                }
+            }            
+        }
+
+
+
+        UTOPIA_INLINE_FUNCTION static bool kroneckerDelta(const SizeType & i, const SizeType & j)
+        {
+            return (i==j) ? 1.0 : 0.0; 
+        }
 
 
 
