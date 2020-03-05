@@ -57,6 +57,19 @@ namespace utopia {
         using Quadrature     = utopia::Quadrature<Elem, 2>;
         using Model          = utopia::STHeatEquation<FunctionSpace>;
 
+        ////Check input
+
+        SizeType nx = 10;
+        SizeType ny = 10;
+
+        in.get("nx", nx);
+        in.get("ny", ny);
+
+        if(ny < 2.0 * (nx-1)*(nx-1)) {
+            space.comm().root_print("[Warning] for avoiding oscillations discretization has to satisfy ny < 2.0 * (nx-1)*(nx-1), "
+                                    "respectively dt < h^2/2");
+        }
+
 
         MPITimeStatistics stats(space.comm());
 
@@ -69,7 +82,6 @@ namespace utopia {
         using Scalar = typename FunctionSpace::Scalar;
 
         ///example from: Space-time Finite Element Methods for Parabolic Initial-Boundary Problems with Variable Coefficients (Andreas Schafelner)
-
         bool write_mat = false;
         in.get("write_mat", write_mat);
 
@@ -108,21 +120,14 @@ namespace utopia {
             }
         );
 
-
-        // bool apply_BC = true;
-        // in.get("apply_BC", apply_BC);
-
-        // if(apply_BC) {
-            // temperature_BC(space, temperature, in);
-            // displacement_BC(space, disp_begin, disp_end, in);
-        // }
-
         stats.stop_collect_and_restart("BC");
 
         ////////////////////////////////////////////////////////////////
-        bool use_direct_solver = true;
+        bool use_mg = false;
 
-        if(use_direct_solver) {
+        if(use_mg)  {
+            geometric_multigrid<Model>(space, in);
+        } else {
 
             Model model(space);
 
@@ -141,15 +146,19 @@ namespace utopia {
                 g
             );
 
-
             space.apply_constraints(g);
-
             stats.stop_collect_and_restart("model-init");
 
             model.hessian(x, H);
             stats.stop_collect_and_restart("assemble");
-            Factorization<PetscMatrix, PetscVector> linear_solver;
+
+            KSPSolver<PetscMatrix, PetscVector> linear_solver;
+            linear_solver.max_it(nx*ny);
+            linear_solver.read(in);
+            // Factorization<PetscMatrix, PetscVector> linear_solver;
             linear_solver.solve(H, g, x);
+
+
             stats.stop_collect_and_restart("solve");
 
             std::string output_path = "space_time.vtr";
@@ -168,8 +177,6 @@ namespace utopia {
             space.comm().root_print( "n_dofs: " + std::to_string(space.n_dofs()) );
             stats.describe(std::cout);
 
-        } else {
-            geometric_multigrid<Model>(space, in);
         }
 
 
