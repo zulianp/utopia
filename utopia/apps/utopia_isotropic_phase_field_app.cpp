@@ -240,16 +240,16 @@ namespace utopia {
             pp.read(in);                
                                                                                         // PF component 
             build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
-
             // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-            auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-            // linear_solver->max_it(200); 
-            linear_solver->pc_type("asm");
+            // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+            // // linear_solver->max_it(200); 
+            // linear_solver->pc_type("jacobi");
             // Newton<PetscMatrix, PetscVector> solver(linear_solver);
             // in.get("solver", solver);
 
-            // auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
-            auto qp_solver =  std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
+            auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+            qp_solver->max_it(1000); 
+            // auto qp_solver =  std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
             TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
             auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));
             solver.set_box_constraints(box);
