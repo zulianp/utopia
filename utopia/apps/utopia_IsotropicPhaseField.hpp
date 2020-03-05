@@ -265,7 +265,7 @@ namespace utopia {
                         ////////////////////////////////////////////
 
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            compute_stress(params_, c[qp], trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
+                            compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
                             stress = quadratic_degradation(params_, c[qp]) * stress; 
 
                             for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
@@ -354,7 +354,7 @@ namespace utopia {
             PrincipalStrains<USpace, Quadrature> strain(U, q);
             strain.update(x);
 
-            StaticMatrix<Scalar, Dim, Dim> stress; 
+            
             PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, params_.mu, params_.lambda);
 
             {
@@ -384,6 +384,7 @@ namespace utopia {
                     {
                         StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
                         StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
+                        StaticMatrix<Scalar, Dim, Dim> stress; 
 
                         MixedElem e;
                         space_view.elem(i, e);
@@ -403,9 +404,9 @@ namespace utopia {
                         StaticVector<Scalar, NQuadPoints> c;
                         c_view.get(c_e, c);
 
-                        auto dx        = differential_view.make(c_e);
-                        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-                        auto c_shape_fun_el  = c_shape_view.make(c_e);
+                        auto dx                 = differential_view.make(c_e);
+                        auto c_grad_shape_el    = c_grad_shape_view.make(c_e);
+                        auto c_shape_fun_el     = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
@@ -441,12 +442,7 @@ namespace utopia {
 
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                            // StaticMatrix<Scalar, Dim, Dim> stress_positive_mat; 
-                            // stress_positive(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
-
-                            compute_stress(params_, c[qp], trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
-                            // stress = quadratic_degradation(params_, c[qp]) * stress; 
+                            compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
 
                             for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
                                 for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
@@ -458,6 +454,7 @@ namespace utopia {
                                              0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))),
                                             c_shape_fun_el(c_i, qp)
                                         ) * dx(qp);
+
 
                                     el_mat(c_i, C_NDofs + u_i) += val;
                                     el_mat(C_NDofs + u_i, c_i) += val;
@@ -604,7 +601,6 @@ namespace utopia {
         template<class Strain, class Stress>
         UTOPIA_INLINE_FUNCTION static void compute_stress(
             const Parameters &params,
-            const Scalar &phase_field_value,
             const Scalar &tr,
             const Strain &strain,
             Stress &stress)

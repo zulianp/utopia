@@ -56,13 +56,13 @@ namespace utopia {
             // for(int i = 1; i < Dim; ++i) {
                 // auto dist_i = x[1];
                 //f += device::exp(-500.0 * x[i] * x[i]);
-                // if(  x[0] > (0.5-space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing())  && x[1]  < 0.5 ){
+                if(  x[0] > (0.5-space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing())  && x[1]  < 0.5 ){
                     f = 1.0; 
                     // f = 0.0; 
-                // }
-                // else{
-                //     f = 0.0; 
-                // }
+                }
+                else{
+                    f = 0.0; 
+                }
             // }
 
             return f;
@@ -214,7 +214,7 @@ namespace utopia {
 
         Scalar dt = 1e-4; 
         Scalar time_=dt; 
-        Scalar num_ts = 1; 
+        Scalar num_ts = 100; 
         std::string output_path = "isotropic_phase_field";
         // print IG 
         rename("X", x);
@@ -241,8 +241,10 @@ namespace utopia {
                                                                                         // PF component 
             build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
 
-            //auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+            // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
             auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+            // linear_solver->max_it(200); 
+            linear_solver->pc_type("asm");
             // Newton<PetscMatrix, PetscVector> solver(linear_solver);
             // in.get("solver", solver);
 
