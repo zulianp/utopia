@@ -225,9 +225,9 @@ namespace utopia {
                                     "respectively dt < h^2/2");
         }
 
-        //front == before / back == after
+        //back == before / front == after
         space.emplace_dirichlet_condition(
-            SideSet::front(),
+            SideSet::back(),
             UTOPIA_LAMBDA(const Point &) -> Scalar {
                 return 10.0;
             }
