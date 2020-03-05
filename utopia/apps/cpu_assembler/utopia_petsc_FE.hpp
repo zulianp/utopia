@@ -12,276 +12,8 @@
 
 namespace utopia {
 
-    template<int Dim_>
-    class PetscElem {
-    public:
-        static const int Dim = Dim_;
-        using SizeType = PetscInt;
-        using Scalar   = PetscScalar;
-        using Point    = utopia::StaticVector<Scalar, Dim>;
-        using Grad     = utopia::StaticVector<Scalar, Dim>;
-        using NodeIndex = utopia::ArrayView<const SizeType>;
-
-        virtual ~PetscElem() {}
-        PetscElem()
-        {}
-
-        inline void set(const NodeIndex &nodes)
-        {
-            nodes_ = nodes;
-        }
-
-        inline const NodeIndex &nodes() const
-        {
-            return nodes_;
-        }
-
-        inline NodeIndex &nodes()
-        {
-            return nodes_;
-        }
-
-        inline SizeType node_id(const SizeType k) const
-        {
-            return nodes_[k];
-        }
-
-        inline const SizeType &node(const SizeType &i) const
-        {
-            return nodes_[i];
-        }
-
-        inline SizeType n_nodes() const
-        {
-            return nodes_.size();
-        }
-
-        inline constexpr static SizeType dim() { return Dim; }
-        virtual Scalar fun(const SizeType &i, const Point &p) const = 0;
-
-        inline void idx(const SizeType &idx)
-        {
-            idx_ = idx;
-        }
-
-        inline SizeType idx() const
-        {
-            assert(idx_ >= 0);
-            return idx_;
-        }
-
-        virtual void describe(std::ostream &os) const
-        {
-            os << "elem: " << idx_ << " [ ";
-            for(auto n : nodes_) {
-                os << n << " ";
-            }
-
-            os << "]\n";
-        }
-
-        bool is_valid() const
-        {
-            if(nodes_.is_null() || nodes_.size() == 0) {
-                return false;
-            }
-
-            const SizeType n0 = nodes_[0];
-
-            for(SizeType i = 1; i < nodes_.size(); ++i) {
-                if(n0 == nodes_[i]) {
-                    return false;
-                }
-            }
-
-
-            return true;
-        }
-
-    private:
-        NodeIndex nodes_;
-        SizeType idx_;
-    };
-
-    class PetscUniformQuad4 : public PetscElem<2> {
-    public:
-        using Super     = utopia::PetscElem<2>;
-        using SizeType  = Super::SizeType;
-        using Scalar    = Super::Scalar;
-        using Point     = Super::Point;
-        using GradValue = UniformQuad4<Scalar>::GradValue;
-        using FunValue  = UniformQuad4<Scalar>::FunValue;
-
-        using STGradX = UniformQuad4<Scalar>::STGradX;
-
-        using MemType   = Uniform<>;
-        static const int Dim = 2;
-        static const int NNodes = 4;
-
-        using Super::node;
-
-        virtual ~PetscUniformQuad4() {}
-
-        inline Scalar fun(const SizeType &i, const Point &p) const
-        {
-            return impl_.fun(i, p);
-        }
-
-        inline void node(const SizeType &i, Point &p) const
-        {
-            return impl_.node(i, p);
-        }
-
-        inline void point(const Point &in, Point &out) const
-        {
-            impl_.point(in, out);
-        }
-
-        inline void centroid(Point &out) const
-        {
-            impl_.centroid(out);
-        }
-
-        inline void grad(const int i, const Point &p, Grad &g) const
-        {
-           impl_.grad(i, p, g);
-        }
-
-        inline Scalar partial_t(const int i, const Point &p)
-        {
-            return impl_.partial_t(i, p);
-        }
-
-        //space-time spatial gradient
-
-        inline void grad_x(const int i, const Point &p, STGradX &dst)
-        {
-            impl_.grad_x(i, p, dst);
-        }
-
-        ///space-time mixed derivative \nabla_x \partial_t \phi(x, t)
-
-        inline void grad_x_partial_t(const int i, const Point &p, STGradX &dst)
-        {
-            impl_.grad_x_partial_t(i, p, dst);
-        }
-
-        inline constexpr static bool is_affine()
-        {
-            return UniformQuad4<Scalar>::is_affine();
-        }
-
-        inline constexpr static Scalar reference_measure()
-        {
-            return UniformQuad4<Scalar>::reference_measure();
-        }
-
-        inline Scalar measure() const
-        {
-            return impl_.measure();
-        }
-
-        inline constexpr static int n_nodes()
-        {
-            return UniformQuad4<Scalar>::n_nodes();
-        }
-
-        inline void set(
-            const StaticVector2<Scalar> &translation,
-            const StaticVector2<Scalar> &h)
-        {
-            impl_.set(translation, h);
-        }
-
-        void describe(std::ostream &os = std::cout) const override
-        {
-            Super::describe(os);
-            auto &t = impl_.translation();
-            os << t(0) << " " << t(1) << "\n";
-        }
-
-    private:
-        UniformQuad4<Scalar> impl_;
-    };
-
-    class PetscUniformHex8 : public PetscElem<3> {
-    public:
-        using Super     = utopia::PetscElem<3>;
-        using SizeType  = Super::SizeType;
-        using Scalar    = Super::Scalar;
-        using Point     = Super::Point;
-        using GradValue = UniformHex8<Scalar>::GradValue;
-        using FunValue  = UniformHex8<Scalar>::FunValue;
-        using MemType   = Uniform<>;
-
-        using Super::node;
-
-        static const int Dim = 3;
-        static const int NNodes = 8;
-
-        virtual ~PetscUniformHex8() {}
-
-        inline Scalar fun(const SizeType &i, const Point &p) const
-        {
-            return impl_.fun(i, p);
-        }
-
-        inline void node(const SizeType &i, Point &p) const
-        {
-            return impl_.node(i, p);
-        }
-
-        inline void point(const Point &in, Point &out) const
-        {
-            impl_.point(in, out);
-        }
-
-        inline void centroid(Point &out) const
-        {
-            impl_.centroid(out);
-        }
-
-        inline void grad(const int i, const Point &p, Grad &g) const
-        {
-           impl_.grad(i, p, g);
-        }
-
-        inline constexpr static bool is_affine()
-        {
-            return UniformHex8<Scalar>::is_affine();
-        }
-
-        inline constexpr static Scalar reference_measure()
-        {
-            return UniformHex8<Scalar>::reference_measure();
-        }
-
-        inline Scalar measure() const
-        {
-            return impl_.measure();
-        }
-
-        inline constexpr static int n_nodes()
-        {
-            return UniformHex8<Scalar>::n_nodes();
-        }
-
-        inline void set(
-            const StaticVector3<Scalar> &translation,
-            const StaticVector3<Scalar> &h)
-        {
-            impl_.set(translation, h);
-        }
-
-        void describe(std::ostream &os = std::cout) const
-        {
-            auto &t = impl_.translation();
-            os << t(0) << " " << t(1) << " " << t(2) << "\n";
-        }
-
-    private:
-        UniformHex8<Scalar> impl_;
-    };
+    class PetscUniformQuad4 : public UniformQuad4<PetscScalar> {};
+    class PetscUniformHex8  : public UniformHex8<PetscScalar>  {};
 
     template<typename View, std::size_t N>
     class Accessor<std::array<VectorView<View>, N>> {
@@ -300,11 +32,14 @@ namespace utopia {
         }
     };
 
+
+    //FIXME these quadrature defs are redundant
+
     template<>
     class Quadrature<PetscUniformQuad4, 2, 2> {
     public:
         using Scalar   = PetscUniformQuad4::Scalar;
-        using SizeType = PetscUniformQuad4::SizeType;
+        // using SizeType = PetscUniformQuad4::SizeType;
         using Point    = PetscUniformQuad4::Point;
         using ViewDevice = Quadrature;
         using ViewHost   = Quadrature;
@@ -380,7 +115,7 @@ namespace utopia {
     class Quadrature<PetscUniformHex8, 2, 3> {
     public:
         using Scalar   = PetscUniformHex8::Scalar;
-        using SizeType = PetscUniformHex8::SizeType;
+        // using SizeType = PetscUniformHex8::SizeType;
         using Point    = PetscUniformHex8::Point;
         using ViewDevice = Quadrature;
         using ViewHost   = Quadrature;
@@ -410,6 +145,13 @@ namespace utopia {
             p[0] = points_[qp_idx][0];
             p[1] = points_[qp_idx][1];
             p[2] = points_[qp_idx][2];
+        }
+
+        inline Point point(const int qp_idx) const
+        {
+            Point p;
+            point(qp_idx, p);
+            return p;
         }
 
         inline const Scalar &weight(const int qp_idx) const

@@ -5,6 +5,7 @@
 #include "utopia_Views.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
+#include "utopia_Elem.hpp"
 
 namespace utopia {
 
@@ -334,7 +335,7 @@ namespace utopia {
     };
 
     template<typename Scalar_>
-    class UniformHex8 {
+    class UniformHex8 : public Elem {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
@@ -342,7 +343,7 @@ namespace utopia {
         static const int NNodes = 8;
         static const int NFunctions = NNodes;
 
-        using Point = utopia::StaticVector<Scalar, Dim>;
+        using Point     = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
@@ -390,14 +391,14 @@ namespace utopia {
         template<typename Point>
         UTOPIA_INLINE_FUNCTION auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
         {
-            return RefQuad4::partial_t(i, p) / h_[2];
+            return RefHex8::partial_t(i, p) / h_[2];
         }
 
         //space-time spatial gradient
         template<typename Point, typename Deriv>
         UTOPIA_INLINE_FUNCTION void grad_x(const int i, const Point &p, Deriv &dst)
         {
-            RefQuad4::grad_x(i, p, dst);
+            RefHex8::grad_x(i, p, dst);
             dst[0] /= h_[0];
             dst[1] /= h_[1];
         }
@@ -406,7 +407,7 @@ namespace utopia {
         template<typename Point, typename Deriv>
         UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
         {
-            RefQuad4::grad_x_partial_t(i, p, dst);
+            RefHex8::grad_x_partial_t(i, p, dst);
             dst[0] /= (h_[0]*h_[2]);
             dst[1] /= (h_[1]*h_[2]);
         }

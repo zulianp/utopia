@@ -8,7 +8,9 @@ namespace utopia {
     template<class Elem, int Components>
     class DirichletBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
     public:
-        using FunctionSpace = utopia::FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>;
+        using Mesh    = utopia::PetscDM<Elem::Dim>;
+        using NodeIndex = typename Mesh::NodeIndex;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, Components, Elem>;
         using Point    = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
         using Scalar   = typename FunctionSpace::Scalar;
@@ -63,13 +65,16 @@ namespace utopia {
                 ElemView e;
                 space_view.elem(i, e);
 
-                const SizeType n_nodes = e.n_nodes();
+                NodeIndex nodes;
+                space_view.mesh().nodes(i, nodes);
+
+                const SizeType n_nodes = nodes.size();
 
                 const SizeType nc = subspace.mesh().n_components();
 
                 Point p;
                 for(SizeType i = 0; i < n_nodes; ++i) {
-                    const SizeType node_id = e.node(i);
+                    const SizeType node_id = nodes[i];
                     auto idx = node_id * nc + component_;
                     e.node(i, p);
 

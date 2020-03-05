@@ -8,7 +8,7 @@ namespace utopia {
     inline static bool check_error(const SizeType err) {
         return PetscErrorHandler::Check(err);
     }
-    
+
     void PetscEvalTripleMatrixProduct::ptap(PetscMatrix & result, const PetscMatrix & A, const PetscMatrix &P)
     {
         if(!A.is_cuda() && (result.is_alias(A) || result.is_alias(P))) {
@@ -20,8 +20,8 @@ namespace utopia {
             MatDestroy(&temp);
         } else {
             MatDestroy(&result.raw_type());
-          
-            assert(A.same_type(P));
+
+            // assert(A.same_type(P));
 
             if(A.is_cuda()) {
                 m_utopia_status_once("MatPtAP does not work properly with the cusparse backend. Workaround implemented.");

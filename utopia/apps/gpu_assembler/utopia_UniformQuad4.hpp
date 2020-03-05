@@ -4,6 +4,7 @@
 #include "utopia_Views.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
+#include "utopia_Elem.hpp"
 
 namespace utopia {
 
@@ -208,7 +209,7 @@ namespace utopia {
     };
 
     template<typename Scalar_>
-    class UniformQuad4 {
+    class UniformQuad4 : public Elem {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
