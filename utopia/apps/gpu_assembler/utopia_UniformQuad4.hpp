@@ -62,33 +62,31 @@ namespace utopia {
         template<typename Point, typename Deriv>
         UTOPIA_INLINE_FUNCTION static void grad_x(const int i, const Point &p, Deriv &dst)
         {
-            const auto x = p[0];
-            const auto y = p[1];
+            UTOPIA_DEVICE_ASSERT(dst.size() == 1);
 
-            if(dst.size() > 1) {
-                dst[1] = 0;
-            }
+            const auto x = p[0];
+            const auto t = p[1];
 
             switch(i)
             {
                 case 0:
                 {
-                    dst[0] = y - 1.;
+                    dst[0] = t - 1.;
                     return;
                 }
                 case 1:
                 {
-                    dst[0] = 1 - y;
+                    dst[0] = 1 - t;
                     return;
                 }
                 case 2:
                 {
-                    dst[0] = y;
+                    dst[0] = t;
                     return;
                 }
                 case 3:
                 {
-                    dst[0] = -y;
+                    dst[0] = -t;
                     return;
                 }
                 default:
@@ -103,13 +101,8 @@ namespace utopia {
         template<typename Point, typename Deriv>
         UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
         {
-            const auto x = p[0];
-            const auto y = p[1];
-
             //project t coordinates to 0
-            if(dst.size() > 1) {
-                dst[1] = 0;
-            }
+            UTOPIA_DEVICE_ASSERT(dst.size() == 1);
 
             switch(i)
             {
@@ -280,7 +273,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
         {
             RefQuad4::grad_x_partial_t(i, p, dst);
-            dst[0] /= h_[1];
+            dst[0] /= (h_[0]*h_[1]);
         }
 
         template<typename Point, typename Grad>

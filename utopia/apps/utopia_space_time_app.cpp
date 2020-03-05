@@ -26,6 +26,8 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 
+#include "utopia_app_utils.hpp"
+
 #include <cmath>
 
 namespace utopia {
@@ -66,6 +68,24 @@ namespace utopia {
         using Point  = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
 
+
+
+        bool write_mat = false;
+        in.get("write_mat", write_mat);
+
+        if(write_mat) {
+            Model model(space);
+            PetscVector x;
+            PetscMatrix A;
+
+            space.create_vector(x);
+            space.create_matrix(A);
+            model.hessian(x, A);
+            rename("a", A);
+            write("A.m", A);
+            return;
+        }
+
         //bottom == before / top == after
         space.emplace_dirichlet_condition(
             SideSet::bottom(),
@@ -100,40 +120,49 @@ namespace utopia {
         stats.stop_collect_and_restart("BC");
 
         ////////////////////////////////////////////////////////////////
+        bool use_direct_solver = true;
 
-        Model model(space);
-        model.read(in);
+        if(use_direct_solver) {
 
-        PetscMatrix H;
-        PetscVector x, g;
+            Model model(space);
 
-        space.create_vector(x);
-        space.create_vector(g);
-        space.apply_constraints(g);
+            PetscMatrix H;
+            PetscVector x, g;
 
-        stats.stop_collect_and_restart("model-init");
+            space.create_vector(x);
+            space.create_vector(g);
+            space.apply_constraints(g);
 
-        model.hessian(x, H);
-        stats.stop_collect_and_restart("assemble");
-        Factorization<PetscMatrix, PetscVector> linear_solver;
-        linear_solver.solve(H, g, x);
-        stats.stop_collect_and_restart("solve");
+            stats.stop_collect_and_restart("model-init");
 
-        std::string output_path = "space_time.vtr";
+            model.hessian(x, H);
+            stats.stop_collect_and_restart("assemble");
+            Factorization<PetscMatrix, PetscVector> linear_solver;
+            linear_solver.solve(H, g, x);
+            stats.stop_collect_and_restart("solve");
 
-        in.get("output-path", output_path);
+            std::string output_path = "space_time.vtr";
 
-        rename("X", x);
-        space.subspace(0).write(output_path, x);
+            in.get("output-path", output_path);
+
+            rename("X", x);
+            space.subspace(0).write(output_path, x);
 
 
-        rename("G", g);
-        space.subspace(0).write("G.vtr", g);
+            rename("G", g);
+            space.subspace(0).write("G.vtr", g);
 
-        stats.stop_and_collect("output");
+            stats.stop_and_collect("output");
 
-        space.comm().root_print( "n_dofs: " + std::to_string(space.n_dofs()) );
-        stats.describe(std::cout);
+            space.comm().root_print( "n_dofs: " + std::to_string(space.n_dofs()) );
+            stats.describe(std::cout);
+
+        } else {
+            geometric_multigrid<Model>(space, in);
+        }
+
+
+
     }
 
     static void space_time_2(Input &in)

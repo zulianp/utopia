@@ -49,6 +49,14 @@ namespace utopia {
         model.read(in);
 
         model.hessian(x, A);
+
+        // bool write_mat = false;
+        // in.get("write_mat", write_mat);
+
+        // if(write_mat) {
+        //     rename("a", A);
+        //     write("A.m", A);
+        // }
         // model.gradient(x, b);
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-assembly");

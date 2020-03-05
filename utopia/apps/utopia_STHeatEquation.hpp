@@ -99,14 +99,14 @@ namespace utopia {
             }
 
             SpaceTimeDeriv<FunctionSpace, Quadrature> st_deriv(*space_, quadrature_);
-            ShapeFunction<FunctionSpace, Quadrature> shape_fun(*space_, quadrature_);
+            // ShapeFunction<FunctionSpace, Quadrature> shape_fun(*space_, quadrature_);
             Differential<FunctionSpace, Quadrature> differential(*space_, quadrature_);
 
             {
                 auto space_view     = space_->view_device();
                 auto H_view         = space_->assembly_view_device(H);
                 auto st_deriv_view  = st_deriv.view_device();
-                auto shape_fun_view = shape_fun.view_device();
+                // auto shape_fun_view = shape_fun.view_device();
                 auto dx_view        = differential.view_device();
 
                 Device::parallel_for(
@@ -120,7 +120,7 @@ namespace utopia {
 
                     auto &&dx    = dx_view.make(e);
                     auto &&deriv = st_deriv_view.make(e);
-                    auto &&shape = shape_fun_view.make(e);
+                    // auto &&shape = shape_fun_view.make(e);
 
                     for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
                         for(SizeType j = 0; j < NFunctions; ++j) {
