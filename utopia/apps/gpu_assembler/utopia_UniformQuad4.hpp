@@ -27,6 +27,120 @@ namespace utopia {
             }
         }
 
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION static auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            const auto x = p[0];
+
+            switch(i)
+            {
+                case 0:
+                {
+                    return x - 1.;
+                }
+                case 1:
+                {
+                    return -x;
+                }
+                case 2:
+                {
+                    return x;
+                }
+                case 3:
+                {
+                    return (1 - x);
+                }
+                default:
+                {
+                    return 0.0;
+                }
+            }
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            const auto x = p[0];
+            const auto y = p[1];
+
+            if(dst.size() > 1) {
+                dst[1] = 0;
+            }
+
+            switch(i)
+            {
+                case 0:
+                {
+                    dst[0] = y - 1.;
+                    return;
+                }
+                case 1:
+                {
+                    dst[0] = 1 - y;
+                    return;
+                }
+                case 2:
+                {
+                    dst[0] = y;
+                    return;
+                }
+                case 3:
+                {
+                    dst[0] = -y;
+                    return;
+                }
+                default:
+                {
+                    dst[0] = 0.0;
+                    return;
+                }
+            }
+        }
+
+        //space-time mixed derivative
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            const auto x = p[0];
+            const auto y = p[1];
+
+            //project t coordinates to 0
+            if(dst.size() > 1) {
+                dst[1] = 0;
+            }
+
+            switch(i)
+            {
+                case 0:
+                {
+                    dst[0] = 1.0;
+                    return;
+                }
+                case 1:
+                {
+                    dst[0] = -1.0;
+                    return;
+                }
+                case 2:
+                {
+                    dst[0] = 1.0;
+                    return;
+                }
+                case 3:
+                {
+                    dst[0] = -1.0;
+                    return;
+                }
+                default:
+                {
+                    dst[0] = 0.0;
+                    return;
+                }
+            }
+        }
+
         template<typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g)
         {
@@ -110,6 +224,7 @@ namespace utopia {
         static const int NFunctions = 4;
         using Point = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
+        using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
 
         template<typename Point>
@@ -142,6 +257,30 @@ namespace utopia {
             for(int i = 0; i < Dim; ++i) {
                 out[i] = translation_[i] + h_[i]/2.0;
             }
+        }
+
+
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            return RefQuad4::partial_t(i, p) / h_[1];
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            RefQuad4::grad_x(i, p, dst);
+             dst[0] /= h_[0];
+        }
+
+        ///space-time mixed derivative \nabla_x \partial_t \phi(x, t)
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            RefQuad4::grad_x_partial_t(i, p, dst);
+            dst[0] /= h_[1];
         }
 
         template<typename Point, typename Grad>

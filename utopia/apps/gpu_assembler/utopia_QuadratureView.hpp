@@ -19,6 +19,7 @@ namespace utopia {
     class QuadratureView {
     public:
         using Scalar = typename Traits<WeightView>::Scalar;
+        using Point  = utopia::StaticVector<Scalar, Dim_>;
 
         static const int Dim     = Dim_;
         static const int NPoints = NPoints_;
@@ -38,6 +39,13 @@ namespace utopia {
         {
             p[0] = points_(qp_idx, 0);
             p[1] = points_(qp_idx, 1);
+        }
+
+        UTOPIA_INLINE_FUNCTION Point point(const int qp_idx) const
+        {
+            Point p;
+            point(qp_idx, p);
+            return p;
         }
 
         UTOPIA_INLINE_FUNCTION const Scalar &weight(const int qp_idx) const
