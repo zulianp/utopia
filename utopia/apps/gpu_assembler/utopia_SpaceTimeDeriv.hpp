@@ -115,7 +115,7 @@ namespace utopia {
                 auto p = q.point(qp);
                 for(std::size_t i = 0; i < NFunctions; ++i) {
                     e.grad_x(i, q.point(qp), grad_x_(qp, i));
-                    e.grad_x_partial_t(i, p, grad_x_partial_t_(i, qp));
+                    e.grad_x_partial_t(i, p, grad_x_partial_t_(qp, i));
                     partial_t_(qp, i) = e.partial_t(i, p);
                 }
             }
