@@ -22,7 +22,7 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
-#include "utopia_PhaseField.hpp"
+#include "utopia_IsotropicPhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_MPRGP.hpp"
@@ -56,13 +56,13 @@ namespace utopia {
             // for(int i = 1; i < Dim; ++i) {
                 // auto dist_i = x[1];
                 //f += device::exp(-500.0 * x[i] * x[i]);
-                if(  x[0] > (0.5-space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing())  && x[1]  < 0.5 ){
+                // if(  x[0] > (0.5-space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing())  && x[1]  < 0.5 ){
                     f = 1.0; 
                     // f = 0.0; 
-                }
-                else{
-                    f = 0.0; 
-                }
+                // }
+                // else{
+                //     f = 0.0; 
+                // }
             // }
 
             return f;
@@ -141,20 +141,19 @@ namespace utopia {
 
             parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
             {
-                if(i%(Dim+1)==comp)
+                if(i%(Dim+1)==comp){
                     return d_x_old.get(i); 
-                else
+                }
+                else{
                     return -9e15; 
-                    
+                }                    
             });
         }
-
     }    
 
 
-
     template<class FunctionSpace>
-    static void phase_field_fracture_sim(
+    static void isotropic_phase_field_fracture_sim(
         FunctionSpace &space,
         MPITimeStatistics &stats,
         Input &in)
@@ -177,7 +176,7 @@ namespace utopia {
 
         using FEFunction     = utopia::FEFunction<FunctionSpace>;
         using Quadrature     = utopia::Quadrature<Elem, 2>;
-        using Parameters     = typename PhaseFieldForBrittleFractures<FunctionSpace>::Parameters;
+        using Parameters     = typename IsotropicPhaseFieldForBrittleFractures<FunctionSpace>::Parameters;
 
         auto &mesh = space.mesh();
 
@@ -215,8 +214,8 @@ namespace utopia {
 
         Scalar dt = 1e-4; 
         Scalar time_=dt; 
-        Scalar num_ts = 100; 
-        std::string output_path = "phase_field";
+        Scalar num_ts = 1; 
+        std::string output_path = "isotropic_phase_field";
         // print IG 
         rename("X", x);
 
@@ -237,7 +236,7 @@ namespace utopia {
             space.apply_constraints(x);    
 
             // as space gets copied, we need to instantiate PF problem every time BC changes ... 
-            PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+            IsotropicPhaseFieldForBrittleFractures<FunctionSpace> pp(space);
             pp.read(in);                
                                                                                         // PF component 
             build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
@@ -308,7 +307,7 @@ namespace utopia {
     // C.write(output_path, r);
     }
 
-    static void petsc_phase_field_2(Input &in)
+    static void petsc_tension_isotropic_phase_field_2(Input &in)
     {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -346,16 +345,16 @@ namespace utopia {
 
         stats.stop_and_collect("space-creation");
 
-        phase_field_fracture_sim(
+        isotropic_phase_field_fracture_sim(
             space,
             stats,
             in
         );
     }
 
-    UTOPIA_REGISTER_APP(petsc_phase_field_2);
+    UTOPIA_REGISTER_APP(petsc_tension_isotropic_phase_field_2);
 
-    static void petsc_phase_field_3(Input &in)
+    static void petsc_tension_isotropic_phase_field_3(Input &in)
     {
         static const int Dim = 3;
         static const int NVars = Dim + 1;
@@ -396,12 +395,12 @@ namespace utopia {
 
         stats.stop_and_collect("space-creation");
 
-        phase_field_fracture_sim(
+        isotropic_phase_field_fracture_sim(
             space,
             stats,
             in);
     }
 
-    UTOPIA_REGISTER_APP(petsc_phase_field_3);
+    UTOPIA_REGISTER_APP(petsc_tension_isotropic_phase_field_3);
 }
 

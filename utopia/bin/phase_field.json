@@ -1,8 +1,8 @@
 {
     "app" : "petsc_phase_field_2",
     "output-path" : "out.vtk",
-    "nx" : 50,
-    "ny" : 50,
+    "nx" : 30,
+    "ny" : 30,
     "nz" : 2,
     "disp" : 1,
     "with_damage" : true,
