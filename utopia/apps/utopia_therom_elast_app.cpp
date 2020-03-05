@@ -96,7 +96,7 @@ namespace utopia {
 
 
     template<class FunctionSpace>
-    static void therom_elast(
+    static void thermo_elast(
         FunctionSpace &space,
         Input &in)
     {
@@ -132,14 +132,16 @@ namespace utopia {
         const int disp_begin = 1;
         const int disp_end   = disp_begin + Dim;
 
+        bool matrix_free = true;
+        in.get("matrix_free", matrix_free);
 
-        bool apply_BC = true;
-        in.get("apply_BC", apply_BC);
+        // bool apply_BC = true;
+        // in.get("apply_BC", apply_BC);
 
-        if(apply_BC) {
+        // if(apply_BC) {
             temperature_BC(space, temperature, in);
             displacement_BC(space, disp_begin, disp_end, in);
-        }
+        // }
 
         stats.stop_collect_and_restart("BC");
 
@@ -153,25 +155,26 @@ namespace utopia {
 
         space.create_vector(x);
         space.create_vector(g);
-
-        stats.stop_collect_and_restart("model-init");
-        model.hessian(x, H);
-        // model.gradient(x, g);
-
-        // rename("h", H);
-        // write("H.m", H);
-
-
-        if(!apply_BC) return;
-
-        stats.stop_collect_and_restart("assemble");
-
         space.apply_constraints(g);
 
-        Factorization<PetscMatrix, PetscVector> linear_solver;
-        linear_solver.solve(H, g, x);
+        stats.stop_collect_and_restart("model-init");
 
-        stats.stop_collect_and_restart("solve");
+        if(matrix_free) {
+            // BiCGStab<PetscMatrix, PetscVector, HOMEMADE> linear_solver;
+            ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> linear_solver;
+            linear_solver.verbose(true);
+            linear_solver.max_it(space.n_dofs());
+            linear_solver.solve(model, g, x);
+            stats.stop_collect_and_restart("matrix-free-solve");
+
+        } else {
+            model.hessian(x, H);
+            stats.stop_collect_and_restart("assemble");
+            Factorization<PetscMatrix, PetscVector> linear_solver;
+            linear_solver.solve(H, g, x);
+            stats.stop_collect_and_restart("solve");
+
+        }
 
         std::string output_path = "thermo_elast.vtr";
 
@@ -203,7 +206,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        therom_elast(
+        thermo_elast(
             space,
             in
         );
@@ -224,7 +227,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        therom_elast(
+        thermo_elast(
             space,
             in
         );

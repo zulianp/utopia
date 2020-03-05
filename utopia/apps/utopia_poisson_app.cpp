@@ -11,7 +11,6 @@
 #include "utopia_ConjugateGradient.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
 #include "utopia_BratuFE.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_MassMatrixView.hpp"
@@ -23,10 +22,92 @@
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_app_utils.hpp"
+#include "utopia_PorousFlowFE.hpp"
 
 #include <cmath>
 
 namespace utopia {
+
+    static void poisson_mg_2(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Point            = FunctionSpace::Point;
+        using Scalar           = FunctionSpace::Scalar;
+
+        FunctionSpace space;
+        space.read(in);
+
+
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return p[1];
+                },
+                c
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return -p[1];
+                },
+                c
+            );
+        }
+
+        // geometric_multigrid<PoissonFE<FunctionSpace>>(space, in);
+        geometric_multigrid<PorousFlowFE<FunctionSpace>>(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(poisson_mg_2);
+
+
+    static void poisson_mg_3(Input &in)
+    {
+        static const int Dim = 3;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Point            = FunctionSpace::Point;
+        using Scalar           = FunctionSpace::Scalar;
+
+        FunctionSpace space;
+        space.read(in);
+
+
+        for(int c = 0; c < space.n_components(); ++c) {
+            space.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return p[1];
+                },
+                c
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return -p[1];
+                },
+                c
+            );
+        }
+
+        geometric_multigrid<PoissonFE<FunctionSpace>>(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(poisson_mg_3);
+
+
 
     template<class FunctionSpace>
     static void poisson_problem(FunctionSpace &space, Input &in)

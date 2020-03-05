@@ -111,6 +111,9 @@ namespace utopia {
         using Point     = Super::Point;
         using GradValue = UniformQuad4<Scalar>::GradValue;
         using FunValue  = UniformQuad4<Scalar>::FunValue;
+
+        using STGradX = UniformQuad4<Scalar>::STGradX;
+
         using MemType   = Uniform<>;
         static const int Dim = 2;
         static const int NNodes = 4;
@@ -142,6 +145,25 @@ namespace utopia {
         inline void grad(const int i, const Point &p, Grad &g) const
         {
            impl_.grad(i, p, g);
+        }
+
+        inline Scalar partial_t(const int i, const Point &p)
+        {
+            return impl_.partial_t(i, p);
+        }
+
+        //space-time spatial gradient
+
+        inline void grad_x(const int i, const Point &p, STGradX &dst)
+        {
+            impl_.grad_x(i, p, dst);
+        }
+
+        ///space-time mixed derivative \nabla_x \partial_t \phi(x, t)
+
+        inline void grad_x_partial_t(const int i, const Point &p, STGradX &dst)
+        {
+            impl_.grad_x_partial_t(i, p, dst);
         }
 
         inline constexpr static bool is_affine()
@@ -313,6 +335,12 @@ namespace utopia {
             p[1] = points_[qp_idx][1];
         }
 
+        inline Point point(const int qp_idx) const
+        {
+            Point p;
+            point(qp_idx, p);
+            return p;
+        }
 
         inline const Scalar &weight(const int qp_idx) const
         {

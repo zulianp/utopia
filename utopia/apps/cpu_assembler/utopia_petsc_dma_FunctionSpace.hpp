@@ -623,6 +623,28 @@ namespace utopia {
             }
         }
 
+        std::unique_ptr<FunctionSpace> uniform_refine() const
+        {
+            auto fine_space = utopia::make_unique<FunctionSpace>(
+                mesh_->uniform_refine(),
+                subspace_id_
+            );
+
+            const std::size_t n = dirichlet_bcs_.size();
+            fine_space->dirichlet_bcs_.resize(n);
+
+            for(std::size_t i = 0; i < n; ++i) {
+                fine_space->dirichlet_bcs_[i] = std::make_shared<DirichletBC>(*fine_space);
+                fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
+            }
+
+            return std::move(fine_space);
+        }
+
+        inline void dmda_set_interpolation_type_Q0() { mesh_->dmda_set_interpolation_type_Q0(); }
+        inline void dmda_set_interpolation_type_Q1() { mesh_->dmda_set_interpolation_type_Q1(); }
+        inline void create_interpolation(const FunctionSpace &target, PetscMatrix &I) const { mesh_->create_interpolation(target.mesh(), I); }
+
     private:
         std::shared_ptr<Mesh> mesh_;
         std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;

@@ -22,7 +22,10 @@
 namespace utopia {
 
     template<int Dim>
-    DM raw_type(const PetscDM<Dim> &dm);
+    const DM & raw_type(const PetscDM<Dim> &dm);
+
+    template<int Dim>
+    DM & raw_type(PetscDM<Dim> &dm);
 
     template<int Dim>
     class DMMirror  {
@@ -220,81 +223,6 @@ namespace utopia {
         using PetscNode = utopia::PetscNode<Dim>;
         using Point = typename utopia::PetscDM<Dim>::Point;
 
-        // template<class Array>
-        // void dims(Array &arr) const
-        // {
-        //     auto ierr = DMDAGetInfo(dm, nullptr, &arr[0], &arr[1], &arr[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
-        // }
-
-        // template<class Fun>
-        // void each_with_ghosts(Fun f)
-        // {
-        //     SizeType dims[3], start[3], extent[3];
-        //     DMDAGetGhostCorners(dm,
-        //         &start[0],  &start[1],  &start[2],
-        //         &extent[0], &extent[1], &extent[2]
-        //         );
-
-        //     this->dims(dims);
-        //     each(dims, start, extent, f);
-        // }
-
-        // template<class Fun>
-        // void each(
-        //     const SizeType dims[3],
-        //     const SizeType start[3],
-        //     const SizeType extent[3], Fun f) const
-        // {
-        //     switch(Dim) {
-        //         case 1:
-        //         {
-        //             for(SizeType i = 0; i < extent[0]; ++i) {
-        //                 SizeType idx = i + start[0];
-        //                 PetscNode node(*this, idx);
-        //                 f(node);
-        //             }
-
-        //             break;
-        //         }
-
-        //         case 2:
-        //         {
-        //             for(SizeType j = 0; j < extent[1]; ++j) {
-        //                 for(SizeType i = 0; i < extent[0]; ++i) {
-        //                     SizeType idx = (j + start[1]) * dims[0] + i + start[0];
-        //                     PetscNode node(*this, idx);
-        //                     f(node);
-        //                 }
-        //             }
-        //             break;
-        //         }
-
-        //         case 3:
-        //         {
-        //             for(SizeType k = 0; k < extent[2]; ++k) {
-        //                 const SizeType k_offset = (k + start[2]) * dims[2];
-
-        //                 for(SizeType j = 0; j < extent[1]; ++j) {
-        //                     const SizeType j_offset = (j + start[1]) * dims[0];
-
-        //                     for(SizeType i = 0; i < extent[0]; ++i) {
-        //                         SizeType idx = k_offset + j_offset + i + start[0];
-
-        //                         PetscNode node(*this, idx);
-        //                         f(node);
-        //                     }
-        //                 }
-        //             }
-        //             break;
-        //         }
-        //         default:
-        //         {
-        //             assert(false);
-        //             break;
-        //         }
-        //     }
-        // }
-
         inline bool is_ghost(const SizeType global_idx) const
         {
             return !range.inside(global_idx);
@@ -437,6 +365,10 @@ namespace utopia {
             DMDASetElementType(dm, elem_type);
             DMSetUp(dm);
             DMDASetUniformCoordinates(dm, min_x, max_x, min_y, max_y, min_z, max_z);
+
+            if(elem_type == DMDA_ELEMENT_Q1) {
+                DMDASetInterpolationType(dm, DMDA_Q1);
+            }
         }
 
         void destroy()
@@ -488,6 +420,14 @@ namespace utopia {
             }
         }
 
+        void update()
+        {
+            MPI_Comm mpi_comm = PetscObjectComm((PetscObject) dm);
+            comm.set(mpi_comm);
+            mirror.init(dm);
+
+        }
+
         PetscCommunicator comm;
         DM dm;
 
@@ -502,7 +442,13 @@ namespace utopia {
     {}
 
     template<int Dim>
-    DM raw_type(const PetscDM<Dim> &dm)
+    const DM & raw_type(const PetscDM<Dim> &dm)
+    {
+        return dm.impl().dm;
+    }
+
+    template<int Dim>
+    DM & raw_type(PetscDM<Dim> &dm)
     {
         return dm.impl().dm;
     }
@@ -835,6 +781,48 @@ namespace utopia {
     void PetscDM<Dim>::set_field_name(const SizeType &nf, const std::string &name)
     {
         DMDASetFieldName(impl_->dm, nf, name.c_str());
+    }
+
+
+    template<int Dim>
+    std::unique_ptr<PetscDM<Dim>> PetscDM<Dim>::uniform_refine() const
+    {
+        auto fine_dm = utopia::make_unique<PetscDM<Dim>>();
+        DMRefine(raw_type(*this), comm().get(), &raw_type(*fine_dm));
+        fine_dm->impl_->mirror.box_min.copy( impl_->mirror.box_min );
+        fine_dm->impl_->mirror.box_max.copy( impl_->mirror.box_max );
+
+        fine_dm->update_mirror();
+
+        return std::move(fine_dm);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::dmda_set_interpolation_type_Q0()
+    {
+        DMDASetInterpolationType(impl_->dm, DMDA_Q0);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::dmda_set_interpolation_type_Q1()
+    {
+        DMDASetInterpolationType(impl_->dm, DMDA_Q1);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::update_mirror()
+    {
+        impl_->update();
+
+        impl_->elements = utopia::make_unique<DMDAElements<Dim>>(*this);
+        impl_->nodes    = utopia::make_unique<DMDANodes<Dim>>(*this);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::create_interpolation(const PetscDM &target, PetscMatrix &I) const
+    {
+        I.destroy();
+        auto ierr = DMCreateInterpolation(raw_type(*this), raw_type(target), &I.raw_type(), nullptr); assert(ierr == 0);
     }
 
 }

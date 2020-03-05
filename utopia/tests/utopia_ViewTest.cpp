@@ -491,7 +491,43 @@ namespace utopia {
 
             Scalar val = inner(m1, contraction(tensor_product<0, 2, 1, 3>(m1, m1), m1));
             disp(val);
+
+            Tensor3x3x3x3<Scalar> t_mult = t * t;
+
+
+            static const int Dim = 2;
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> C, Id, actual;
+            C.set(0.0);
+            Id.identity();
+
+            auto kronecker_delta = [](const SizeType &i, const SizeType &j) -> bool
+            {
+                return (i==j) ? 1.0 : 0.0;
+            };
+
+            for(SizeType i = 0; i < Dim; ++i) {
+                for(SizeType j = 0; j < Dim; ++j) {
+                    for(SizeType k = 0; k < Dim; ++k) {
+                        for(SizeType l = 0; l < Dim; ++l) {
+                            Scalar val = 120 * kronecker_delta(i,j)* kronecker_delta(k,l);
+                            val += 80 * (kronecker_delta(i,k)* kronecker_delta(j,l));
+                            val += 80 * (kronecker_delta(i,l)* kronecker_delta(j,k));
+                            C(i, j, k, l) = val;
+                        }
+                    }
+                }
+            }
+
+            actual = Id * C;
+
+            disp(actual);
+            disp("----------");
+            disp(C);
+
+            utopia_test_assert(approxeq(actual, C, 1e-10));
         }
+
+
     };
 
     void view()

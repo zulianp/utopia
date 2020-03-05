@@ -39,6 +39,7 @@ namespace utopia {
     public:
         using FunctionSpace = utopia::FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>;
         using Vector        = typename FunctionSpace::Vector;
+        using Scalar        = typename FunctionSpace::Scalar;
         using ViewDevice    = utopia::CoefficientView<typename FunctionSpace::ViewDevice, LocalViewDevice<const PetscVector, 1>>;
 
 
@@ -60,6 +61,11 @@ namespace utopia {
         void update(const PetscVector &global_vector) {
             //FIXME
             space_.mesh().global_to_local(global_vector, *local_vector_);
+        }
+
+        void set(const Scalar &val)
+        {
+            local_vector_->set(val);
         }
 
 
