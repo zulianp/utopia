@@ -144,8 +144,8 @@ namespace utopia {
                 assert(var_offset == 0);
                 assert(NComponents == 1);
 
-                const SizeType n_dofs = e.nodes().size();
-                const NodeIndex &dofs = e.nodes();
+                typename PetscDM<Dim>::NodeIndex dofs;
+                mesh.nodes(e.idx(), dofs);
 
                 //Potentially breaks
                 mat.atomic_add_matrix(dofs, dofs, &el_mat(0, 0));
@@ -171,9 +171,8 @@ namespace utopia {
                 assert(var_offset == 0);
                 assert(NComponents == 1);
 
-                const SizeType n_dofs = e.nodes().size();
-                const auto &dofs = e.nodes();
-
+                typename PetscDM<Dim>::NodeIndex dofs;
+                mesh.nodes(e.idx(), dofs);
                 vec.atomic_add_vector(dofs, &el_vec(0));
 
             } else {
@@ -196,8 +195,10 @@ namespace utopia {
                  assert(var_offset == 0);
                  assert(NComponents == 1);
 
-                 const SizeType n_dofs = e.nodes().size();
-                 const auto &dofs = e.nodes();
+                 typename PetscDM<Dim>::NodeIndex dofs;
+                 mesh.nodes(e.idx(), dofs);
+
+                 const SizeType n_dofs = dofs.size();
 
                  for(SizeType i = 0; i < n_dofs; ++i) {
                      vec.atomic_set(dofs[i], el_vec(i));
@@ -258,6 +259,8 @@ namespace utopia {
         static const std::size_t UDim = Dim;
         static const int NComponents = NComponents_;
         using Mesh = utopia::PetscDM<Dim>;
+        using NodeIndex = typename Mesh::NodeIndex;
+
         using Elem = MultiVariateElem<Elem_, NComponents>;
         using Shape = Elem_;
         using MemType = typename Elem::MemType;
@@ -607,12 +610,13 @@ namespace utopia {
                     Elem e;
                     space_view.elem(i, e);
 
-
-                    const SizeType n_nodes = e.n_nodes();
+                    NodeIndex nodes;
+                    space_view.mesh().nodes(i, nodes);
+                    const SizeType n_nodes = nodes.size();
 
                     Point p;
                     for(SizeType i = 0; i < n_nodes; ++i) {
-                        auto idx = e.node_id(i) * mesh_->n_components() + subspace_id_;
+                        auto idx = nodes[i] * mesh_->n_components() + subspace_id_;
                         e.node(i, p);
 
                         if(r.inside(idx)) {

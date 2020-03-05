@@ -69,7 +69,7 @@ namespace utopia {
         static const std::size_t UDim = Dim;
         using SizeType = PetscInt;
         using IntArray = utopia::ArrayView<SizeType, UDim>;
-        using Point    = typename PetscElem<Dim>::Point;
+        using Point    = typename PetscDM<Dim>::Point;
 
         void init(DM dm) override
         {
@@ -250,7 +250,7 @@ namespace utopia {
     public:
         using SizeType = utopia::Traits<PetscVector>::SizeType;
         using Scalar   = utopia::Traits<PetscVector>::Scalar;
-        using Point    = typename PetscElem<Dim>::Point;
+        using Point    = typename PetscDM<Dim>::Point;
 
         Impl(const PetscCommunicator &comm)
         : comm(comm), dm(nullptr)
@@ -501,7 +501,7 @@ namespace utopia {
     template<int Dim>
     void PetscDM<Dim>::elem(const SizeType &idx, Elem &e) const
     {
-        this->nodes(idx, e.nodes());
+        // this->nodes(idx, e.nodes());
         e.idx(idx);
     }
 

@@ -30,8 +30,6 @@ namespace utopia {
         using STGradXValues        = utopia::ArrayView<STGradX, NQPoints, NFunctions>;
         using STGradPartialTValues = utopia::ArrayView<Scalar, NQPoints, NFunctions>;
 
-
-
         UTOPIA_INLINE_FUNCTION SpaceTimeDerivView(
             const STGradXValues &grad_x,
             const STGradXValues &grad_x_partial_t,

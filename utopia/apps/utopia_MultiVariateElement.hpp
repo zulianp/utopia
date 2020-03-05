@@ -10,7 +10,7 @@ namespace utopia {
     class MultiVariateElem {
     public:
         using Scalar         = typename Elem::Scalar;
-        using SizeType       = typename Elem::SizeType;
+        // using SizeType       = typename Elem::SizeType;
         using MemType        = typename Elem::MemType;
         static const int Dim = Elem::Dim;
         static const int NNodes = Elem::NNodes;
@@ -18,7 +18,7 @@ namespace utopia {
 
         using UnivGrad      = utopia::StaticVector<Scalar, Dim>;
         using GradValue     = utopia::StaticMatrix<Scalar, NVariables, Dim>;
-        using NodeIndex     = typename Elem::NodeIndex;
+        // using NodeIndex     = typename Elem::NodeIndex;
         using FunValue      = utopia::StaticVector<Scalar, Dim>;
         using Point         = typename Elem::Point;
 
@@ -101,26 +101,6 @@ namespace utopia {
             const H &h)
         {
            univar_elem_.set(translation, h);
-        }
-
-        UTOPIA_INLINE_FUNCTION NodeIndex nodes()
-        {
-            return univar_elem_.nodes();
-        }
-
-        UTOPIA_INLINE_FUNCTION NodeIndex nodes() const
-        {
-            return univar_elem_.nodes();
-        }
-
-        UTOPIA_INLINE_FUNCTION const std::size_t &node(const std::size_t &i) const
-        {
-            return univar_elem_.node(i);
-        }
-
-        UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()
-        {
-            return NNodes;
         }
 
         UTOPIA_INLINE_FUNCTION const StaticVector2<Scalar> &translation() const
