@@ -87,6 +87,65 @@ namespace utopia {
             return false;
         }
 
+        template<class Fun>
+        inline bool space_time_linear_form(
+            Fun fun,
+            Vector &g) const
+        {
+            Chrono c;
+            c.start();
+
+            if(empty(g)) {
+                space_->create_vector(g);
+            } else {
+                g *= 0.0;
+            }
+
+            SpaceTimeDeriv<FunctionSpace, Quadrature> st_deriv(*space_, quadrature_);
+            Differential<FunctionSpace, Quadrature> differential(*space_, quadrature_);
+            PhysicalPoint<FunctionSpace, Quadrature> points(*space_, quadrature_);
+
+            {
+                auto space_view     = space_->view_device();
+                auto g_view         = space_->assembly_view_device(g);
+                auto st_deriv_view  = st_deriv.view_device();
+                auto dx_view        = differential.view_device();
+                auto p_view         = points.view_device();
+
+                Device::parallel_for(
+                    space_->local_element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i)
+                {
+                    ElementVector el_vec; el_vec.set(0.0);
+
+                    Elem e;
+                    space_view.elem(i, e);
+
+                    auto &&dx    = dx_view.make(e);
+                    auto &&deriv = st_deriv_view.make(e);
+                    auto &&p     = p_view.make(e);
+
+                    Point p_qp;
+
+                    for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                        p.get(qp, p_qp);
+
+                        for(SizeType j = 0; j < NFunctions; ++j) {
+                            el_vec(j) += (fun(p_qp) * deriv.partial_t(j, qp) ) * dx(qp);
+                        }
+                    }
+
+                    space_view.add_vector(e, el_vec, g_view);
+                });
+            }
+
+            space_->apply_constraints(g);
+
+            c.stop();
+            if(g.comm().rank() == 0) { std::cout << "PoissonFE::hessian(...): " << c << std::endl; }
+            return true;
+        }
+
         inline bool hessian(const Vector &x, Matrix &H) const override
         {
             Chrono c;
@@ -99,7 +158,6 @@ namespace utopia {
             }
 
             SpaceTimeDeriv<FunctionSpace, Quadrature> st_deriv(*space_, quadrature_);
-            // ShapeFunction<FunctionSpace, Quadrature> shape_fun(*space_, quadrature_);
             Differential<FunctionSpace, Quadrature> differential(*space_, quadrature_);
 
             {

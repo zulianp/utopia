@@ -68,7 +68,7 @@ namespace utopia {
         using Point  = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
 
-
+        ///example from: Space-time Finite Element Methods for Parabolic Initial-Boundary Problems with Variable Coefficients (Andreas Schafelner)
 
         bool write_mat = false;
         in.get("write_mat", write_mat);
@@ -90,7 +90,7 @@ namespace utopia {
         space.emplace_dirichlet_condition(
             SideSet::bottom(),
             UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 1.0;
+                return 0.0;
             }
         );
 
@@ -131,6 +131,17 @@ namespace utopia {
 
             space.create_vector(x);
             space.create_vector(g);
+
+            model.space_time_linear_form(UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    static const Scalar pi = device::pi<Scalar>();
+                    const Scalar x = p[0];
+                    const Scalar y = p[1];
+                    return pi * device::sin(pi*x) * (device::cos(pi*y) + pi * device::sin(pi*y));
+                },
+                g
+            );
+
+
             space.apply_constraints(g);
 
             stats.stop_collect_and_restart("model-init");
