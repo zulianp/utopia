@@ -229,7 +229,7 @@ namespace utopia {
         space.emplace_dirichlet_condition(
             SideSet::front(),
             UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 1.0;
+                return 10.0;
             }
         );
 

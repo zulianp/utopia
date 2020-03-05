@@ -142,7 +142,7 @@ namespace utopia {
             space_->apply_constraints(g);
 
             c.stop();
-            if(g.comm().rank() == 0) { std::cout << "PoissonFE::hessian(...): " << c << std::endl; }
+            if(g.comm().rank() == 0) { std::cout << "STHeatEquation::space_time_linear_form(...): " << c << std::endl; }
             return true;
         }
 
@@ -198,7 +198,7 @@ namespace utopia {
             space_->apply_constraints(H);
 
             c.stop();
-            if(x.comm().rank() == 0) { std::cout << "PoissonFE::hessian(...): " << c << std::endl; }
+            if(x.comm().rank() == 0) { std::cout << "STHeatEquation::hessian(...): " << c << std::endl; }
             return true;
         }
 

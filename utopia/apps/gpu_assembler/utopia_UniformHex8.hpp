@@ -167,6 +167,7 @@ namespace utopia {
             switch(i)
             {
                 // f = (1.0 - x) * (1.0 - y) * (1.0 - t);
+                // f_t = -(1.0 - x) * (1.0 - y)
                 case 0:
                 {
                     dst[0] = (1.0 - y);
@@ -175,6 +176,7 @@ namespace utopia {
                 }
 
                 // f = x * (1.0 - y) * (1.0 - t);
+                // f_t = -x * (1.0 - y) 
                 case 1:
                 {
                     dst[0] = -(1.0 - y);
@@ -183,6 +185,7 @@ namespace utopia {
                 }
 
                 // f = x * y * (1.0 - t);
+                // f_t = -x * y
                 case 2:
                 {
                     dst[0] = -y;
@@ -191,6 +194,7 @@ namespace utopia {
                 }
 
                 // f = (1.0 - x) * y * (1.0 - t);
+                // f_t = -(1.0 - x) * y 
                 case 3:
                 {
                     dst[0] = y;
@@ -199,6 +203,7 @@ namespace utopia {
                 }
 
                 // f = (1.0 - x) * (1.0 - y) * t;
+                // f_t = (1.0 - x) * (1.0 - y)
                 case 4:
                 {
                     dst[0] = -(1.0 - y);
@@ -207,6 +212,7 @@ namespace utopia {
                 }
 
                 // f = x * (1.0 - y) * t;
+                // f_t = x * (1.0 - y) 
                 case 5:
                 {
                     dst[0] = (1.0 - y);
@@ -215,6 +221,7 @@ namespace utopia {
                 }
 
                 // f = x * y * t;
+                // f_t = x * y
                 case 6:
                 {
                     dst[0] = y;
@@ -223,6 +230,7 @@ namespace utopia {
                 }
 
                 // f = (1.0 - x) * y * t;
+                // f_t = (1.0 - x) * y 
                 case 7:
                 {
                     dst[0] = -y;
