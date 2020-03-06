@@ -34,6 +34,7 @@
 
 #include <random>
 #include <cmath>
+#include <chrono>
 
 namespace utopia {
 
@@ -148,27 +149,25 @@ namespace utopia {
             }
 
         private: 
-
             void randomly_generate(const T & width)
             {
-
-                std::random_device rd; // obtain a random number from hardware
-                std::mt19937 eng(rd()); // seed the generator
+                //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+                unsigned seed = 1.0; 
+                static std::default_random_engine generator (seed);
 
                 // this one needs to e replaced 
                 std::uniform_real_distribution<> distr_point(0.0, 1.0);                 
                 std::uniform_int_distribution<> distr_angle(0.0, 180); 
                 std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
 
-                A_.x = distr_point(eng); 
-                A_.y = distr_point(eng); 
+                A_.x = distr_point(generator); 
+                A_.y = distr_point(generator); 
 
-                T length = distr_length(eng); 
-                T theta = distr_angle(eng); 
+                T length = distr_length(generator); 
+                T theta = distr_angle(generator); 
 
                 generate_rectangle(length, width, theta); 
             }
-
 
             void generate_rectangle(const T & a, const T & b, const T & theta){
                 const T pi = std::acos(-1.0);
@@ -222,12 +221,12 @@ namespace utopia {
         // un-hard-code
         auto C = space.subspace(0);
 
-        auto width =  5.0 * space.mesh().min_spacing(); 
+        auto width =  4.0 * space.mesh().min_spacing(); 
 
         std::cout<<"width: "<< width << "  \n"; 
         std::vector<Rectangle<Scalar>> rectangles; 
 
-        for(auto r=0; r < 10; r++){
+        for(auto r=0; r < 20; r++){
             rectangles.push_back(Rectangle<Scalar>(width)); 
         }
 
@@ -400,7 +399,7 @@ namespace utopia {
 
         space.apply_constraints(x);                       
         space.write(output_path+"_"+std::to_string(0.0)+".vtk", x);     
-        exit(0); 
+        // exit(0); 
 
         for (auto t=0; t < num_ts; t++)
         {
