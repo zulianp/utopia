@@ -211,7 +211,6 @@ namespace utopia {
         
         stats.stop_collect_and_restart("phase-field-init");
 
-    // TrustRegion<PetscMatrix, PetscVector> solver;
 
         Scalar dt = 1e-4; 
         Scalar time_=dt; 
@@ -222,6 +221,10 @@ namespace utopia {
 
         PetscVector irreversibility_constraint = x; 
 
+        // as space gets copied, we need to instantiate PF problem every time BC changes ... 
+        PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
+        pp.read(in);                        
+
 
         space.write(output_path+"_"+std::to_string(0.0)+".vtk", x);        
         for (auto t=0; t < num_ts; t++)
@@ -229,16 +232,12 @@ namespace utopia {
             std::cout<<"Time-step: "<< t << "  \n"; 
      
             if(with_BC) {
-                // Scalar t = 1e-4; 
                 space.reset_bc(); 
                 enforce_BC_time_dependent(space, disp, time_);              
             }
 
             space.apply_constraints(x);    
 
-            // as space gets copied, we need to instantiate PF problem every time BC changes ... 
-            PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
-            pp.read(in);                
                                                                                         // PF component 
             build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
 
@@ -261,51 +260,13 @@ namespace utopia {
             // increment time step 
             time_+=dt;
         }
- 
-        // // REMOVE ME
-        // x.set(1.0);
-        // // x.set(0.0);
-        // {
-        //     Write<utopia::PetscVector> bla(x); 
-        //     x.set(1, 0.1); 
-        // }
-        
-
-        // // x.set(1.0); 
-        // pp.hessian(x, H);
-        // pp.gradient(x, g);
-
-        // utopia::disp(x, "x"); 
-        // utopia::disp(g, "g"); 
-        // utopia::disp(H, "H"); 
-
-        // exit(0); 
-
-
-        // space.apply_constraints(g);
-        // linear_solver->solve(H, g, x);
-        //
 
 
         stats.stop_collect_and_restart("solve+assemble");
 
-
-        // std::string output_path = "phase_field.vtk";
-
-        // in.get("output-path", output_path);
-
-        // rename("X", x);
-        // space.write("phase_field_1.vtk", x);
-        // space.write("phase_field_2.vtk", x);
-        // space.write("phase_field_3.vtk", x);
-
-        exit(0); 
-
         stats.stop_and_collect("output");
         stats.describe(std::cout);
 
-    // rename("X", r);
-    // C.write(output_path, r);
     }
 
     static void petsc_phase_field_2(Input &in)

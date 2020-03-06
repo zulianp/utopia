@@ -39,6 +39,7 @@ namespace utopia {
             fd.grad(fun, x, gfd);
             bool ok = approxeq(gfd, g, 1e-2);
 
+
             if (!ok) {
                 std::cout << "------ Failure -------\n";
                 std::cout << "------ Gradient ------\n";

@@ -879,7 +879,7 @@ namespace utopia {
         }
 
     private:
-        FunctionSpace space_;
+        FunctionSpace & space_;
         Parameters params_;
         DiffController<Matrix, Vector> diff_ctrl_;
 

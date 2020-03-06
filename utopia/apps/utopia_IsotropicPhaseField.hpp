@@ -56,13 +56,14 @@ namespace utopia {
                 in.get("fracture_toughness", fracture_toughness);
                 in.get("mu", mu);
                 in.get("lambda", lambda);
+                in.get("regularization", regularization);
             }
 
             Parameters()
-            : a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), mu(1.0), lambda(1.0)
+            : a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), mu(1.0), lambda(1.0), regularization(1e-7)
             {}
 
-            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda;
+            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, regularization;
         };
 
         void read(Input &in) override
@@ -266,7 +267,7 @@ namespace utopia {
 
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
-                            stress = quadratic_degradation(params_, c[qp]) * stress; 
+                            stress = (quadratic_degradation(params_, c[qp]) * (1.0 - params_.regularization) + params_.regularization) * stress; 
 
                             for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
                                 auto grad_test = u_grad_shape_el(j, qp);
@@ -509,9 +510,8 @@ namespace utopia {
             const Scalar &c_trial_fun
             )
         {
-            return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress_p, full_strain);
+            return ((1.0 - params.regularization) * quadratic_degradation_deriv(params, phase_field_value)) * c_trial_fun * inner(stress_p, full_strain);
         }
-
 
 
         template<class Stress, class FullStrain>
@@ -533,8 +533,7 @@ namespace utopia {
             const StressShape &stress,
             const Grad &g_test)
         {
-
-            const Scalar gc = quadratic_degradation(params, phase_field_value);
+            const Scalar gc = ((1.0 - params.regularization) * quadratic_degradation(params, phase_field_value) + params.regularization);
             auto C_test  = 0.5 * (g_test  + transpose(g_test));
             return inner(gc * stress, C_test);
         }        
@@ -564,10 +563,9 @@ namespace utopia {
             const Scalar &phase_field_value,
             const Scalar &elastic_energy,
             const Scalar &trial,
-            const Scalar &test
-            )
+            const Scalar &test)
         {
-            const Scalar dcc = quadratic_degradation_deriv2(params, phase_field_value);
+            const Scalar dcc = (1.0 - params.regularization)*quadratic_degradation_deriv2(params, phase_field_value);
             return dcc * trial * elastic_energy * test;
         }
 
@@ -575,12 +573,10 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static Scalar grad_elastic_energy_wrt_c(
             const Parameters &params,
             const Scalar &phase_field_value,
-            // const Grad   &phase_field_grad,
             const Scalar &trace,
-            const Strain &strain
-            )
+            const Strain &strain)
         {
-            return quadratic_degradation_deriv(params, phase_field_value) * strain_energy(params, trace, strain);
+            return (quadratic_degradation_deriv(params, phase_field_value) * (1.0 - params.regularization))* strain_energy(params, trace, strain);
         }
 
         template<class Grad, class GradTest>
@@ -608,30 +604,7 @@ namespace utopia {
             stress = (2.0 * params.mu * strain) + (params.lambda * tr * (device::identity<Scalar>())); 
         }
 
-
-        template<class EigenValues, class EigenMatrix, class Stress>
-        UTOPIA_INLINE_FUNCTION static void stress_positive(
-            const Parameters &params,
-            const Scalar &phase_field_value,
-            const EigenValues &values,
-            const EigenMatrix &mat,
-            Stress &stress_positive
-            )
-        {
-            Scalar tr = sum(values);
-            const Scalar tr_p = split_p(tr);
-            StaticVector<Scalar, Dim> v;
-            stress_positive.set(0.0);
-
-            for(int d = 0; d < Dim; ++d) {
-                const Scalar eig_p = split_p(values[d]);
-                const Scalar val_p = (params.lambda * tr_p + 2.0 * params.mu * eig_p);
-
-                mat.col(d, v);
-                stress_positive += val_p * outer(v, v);
-            }
-        }        
-
+    
         template<class Grad, class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar energy(
             const Parameters &params,
@@ -645,14 +618,6 @@ namespace utopia {
             return fracture_energy(params, phase_field_value, phase_field_grad) +
             elastic_energy(params,  phase_field_value, trace, strain);
         }
-
-        UTOPIA_INLINE_FUNCTION static Scalar split_p(const Scalar &x) {
-            return (device::abs(x) + x)/2;
-        };
-
-        UTOPIA_INLINE_FUNCTION static Scalar split_n(const Scalar &x) {
-            return (device::abs(x) - x)/2;
-        };
 
         template<class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(
@@ -682,19 +647,9 @@ namespace utopia {
             const Scalar &trace,
             const Strain &strain)
         {
-            return quadratic_degradation(params, phase_field_value) * strain_energy(params, trace, strain);
+            return (quadratic_degradation(params, phase_field_value) * (1.0 - params.regularization) + params.regularization)* strain_energy(params, trace, strain);
         }
 
-        template<class Strain>
-        UTOPIA_INLINE_FUNCTION static Scalar elastic_energy_positve(
-            const Parameters &params,
-            const Scalar &trace,
-            const Strain &strain_positive
-            )
-        {
-            const Scalar trace_positive = split_p(trace);
-            return strain_energy(params, trace_positive, strain_positive);
-        }
 
         UTOPIA_INLINE_FUNCTION static Scalar degradation(
             const Parameters &params,
@@ -738,7 +693,7 @@ namespace utopia {
         }
 
     private:
-        FunctionSpace space_;
+        FunctionSpace & space_;
         Parameters params_;
         DiffController<Matrix, Vector> diff_ctrl_;
 
