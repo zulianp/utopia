@@ -85,6 +85,10 @@ namespace utopia {
     struct Point2D{
         T x; 
         T y; 
+        void describe()
+        {
+            std::cout<<"(" << x << " , "<< y << " ) \n"; 
+        }
     }; 
 
     template<class T>
@@ -112,7 +116,7 @@ namespace utopia {
             {
                 Point2D<T> M; 
                 M.x = x_coord; 
-                M.x = y_coord; 
+                M.y = y_coord; 
 
                 return belongs_to_rectangle(M); 
             }
@@ -153,7 +157,7 @@ namespace utopia {
 
                 // this one needs to e replaced 
                 std::uniform_real_distribution<> distr_point(0.0, 1.0);                 
-                std::uniform_int_distribution<> distr_angle(30, 90); 
+                std::uniform_int_distribution<> distr_angle(0.0, 180); 
                 std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
 
                 A_.x = distr_point(eng); 
@@ -166,18 +170,18 @@ namespace utopia {
             }
 
 
-            void generate_rectangle(const T & length, const T & width, const T & theta){
-                const T pi = 3.16;
+            void generate_rectangle(const T & a, const T & b, const T & theta){
+                const T pi = std::acos(-1.0);
                 T theta_rad = theta * pi/180.0; 
 
-                B_.x = A_.x + length * std::cos(theta_rad); 
-                B_.y = A_.y + length * std::sin(theta_rad); 
+                B_.x = A_.x + (a * std::cos(theta_rad)); 
+                B_.y = A_.y + (a * std::sin(theta_rad)); 
 
-                C_.x = A_.x + width * std::cos(theta_rad + pi/2.0); 
-                C_.y = A_.y + width * std::sin(theta_rad + pi/2.0);     
+                C_.x = A_.x + (b * std::cos(theta_rad + pi/2.0)); 
+                C_.y = A_.y + (b * std::sin(theta_rad + pi/2.0));     
 
-                D_.x = A_.x + (length * std::cos(theta_rad)) + (width * std::cos(theta_rad + pi/2.0)); 
-                D_.y = A_.y + (length * std::sin(theta_rad)) + (width * std::sin(theta_rad + pi/2.0)); 
+                D_.x = A_.x + ((a * std::cos(theta_rad)) + (b * std::cos(theta_rad + pi/2.0))); 
+                D_.y = A_.y + ((a * std::sin(theta_rad)) + (b * std::sin(theta_rad + pi/2.0)));          
             }
 
 
@@ -189,7 +193,7 @@ namespace utopia {
 
             T vec_dot(const Point2D<T> & A, const Point2D<T> & B)
             {
-                return (A.x + B.x) + (A.y + B.y); 
+                return (A.x * B.x) + (A.y * B.y); 
             }            
 
         private:
@@ -218,21 +222,24 @@ namespace utopia {
         // un-hard-code
         auto C = space.subspace(0);
 
-        auto width =  2.0 * space.mesh().min_spacing(); 
-        auto rectangle = Rectangle<Scalar>(width); 
-        rectangle.describe(); 
+        auto width =  5.0 * space.mesh().min_spacing(); 
 
+        std::cout<<"width: "<< width << "  \n"; 
+        std::vector<Rectangle<Scalar>> rectangles; 
 
-        auto sampler = utopia::sampler(C, [&rectangle](const Point &x) -> Scalar {
+        for(auto r=0; r < 10; r++){
+            rectangles.push_back(Rectangle<Scalar>(width)); 
+        }
 
-            if(rectangle.belongs_to_rectangle(x[0], x[1])){
-                return 1.0; 
+        auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
+
+            for(auto r=0; r< rectangles.size(); r++){
+                if(rectangles[r].belongs_to_rectangle(x[0], x[1]))
+                    return true; 
             }
-            else{
-                return 0.0; 
-            }
-
+            return false; 
         });
+
 
         {
             auto C_view       = C.view_device();
@@ -369,9 +376,9 @@ namespace utopia {
         x.set(0.0);
 
         if(with_damage) {
-            init_phase_field_tension(space, x); 
+            // init_phase_field_tension(space, x); 
             // does not work 
-            // init_phase_field_frac_net(space, x); 
+            init_phase_field_frac_net(space, x); 
         }
         
         stats.stop_collect_and_restart("phase-field-init");
@@ -380,7 +387,7 @@ namespace utopia {
         Scalar dt = 1e-4; 
         Scalar time_=dt; 
         Scalar num_ts = 100; 
-        std::string output_path = "isotropic_phase_field_tension";
+        std::string output_path = "test_network";
         // print IG 
         rename("X", x);
 
@@ -388,17 +395,18 @@ namespace utopia {
 
         // as space gets copied, we need to instantiate PF problem every time BC changes ... 
         IsotropicPhaseFieldForBrittleFractures<FunctionSpace> pp(space);
-        pp.read(in);                        
+        pp.read(in);     
 
+
+        space.apply_constraints(x);                       
         space.write(output_path+"_"+std::to_string(0.0)+".vtk", x);     
-        // exit(0); 
+        exit(0); 
 
         for (auto t=0; t < num_ts; t++)
         {
             std::cout<<"Time-step: "<< t << "  \n"; 
      
             if(with_BC) {
-                // Scalar t = 1e-4; 
                 space.reset_bc(); 
                 enforce_BC_time_dependent(space, disp, time_);              
             }
