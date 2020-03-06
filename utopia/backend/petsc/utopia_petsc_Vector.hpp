@@ -844,6 +844,7 @@ namespace utopia {
             scale(numerator);
         }
 
+        void shift(const Scalar &x);
 
 
         bool has_nan_or_inf() const;

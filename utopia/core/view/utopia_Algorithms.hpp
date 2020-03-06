@@ -95,6 +95,12 @@ namespace utopia {
             return Kokkos::Details::ArithTraits<T>::epsilon();
         }
 
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION bool signbit(const T &a)
+        {
+            return ::signbit(a);
+        }
+
 #else
 
         template<typename T>
@@ -172,8 +178,15 @@ namespace utopia {
             return std::numeric_limits<T>::epsilon();
         }
 
+        template<typename T>
+        inline bool signbit(const T &a)
+        {
+            return std::signbit(a);
+        }
 
 #endif //KOKKOS_INLINE_FUNCTION
+
+
 
         template<typename Scalar>
         UTOPIA_INLINE_FUNCTION constexpr Scalar pi()
