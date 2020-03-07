@@ -98,7 +98,7 @@ namespace utopia {
         template<typename T>
         UTOPIA_INLINE_FUNCTION bool signbit(const T &a)
         {
-            return ::signbit(a);
+            return  ( a < 0 ) ? true : false;
         }
 
 #else
