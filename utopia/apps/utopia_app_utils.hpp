@@ -22,12 +22,14 @@ namespace utopia {
 
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
-	
-	Vector x;
-	
-	{
+    	
+    	Vector x;
+
+        std::shared_ptr<FunctionSpace> fine_space_ptr;
+    	
+    	{
         	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-		auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
+		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
         	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
         	mg.verbose(true);
         	mg.init(coarse_space, n_levels);
@@ -38,7 +40,8 @@ namespace utopia {
         	Vector b;
         	Matrix A;
 
-        	auto &space = mg.fine_space();
+            fine_space_ptr = mg.fine_space_ptr();
+        	auto &space = *fine_space_ptr;
 
         	space.create_vector(x);
         	space.create_vector(b);
@@ -62,10 +65,10 @@ namespace utopia {
         	mg.apply(b, x);
         	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
         	stats.stop_collect_and_restart("solve");
-	}
+    	}
 
-        //rename("x", x);
-        //space.write(output_path, x);
+        rename("x", x);
+        fine_space_ptr->write(output_path, x);
 
         stats.stop_collect_and_restart("output");
 
