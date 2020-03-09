@@ -22,61 +22,54 @@ namespace utopia {
 
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
+	
+	Vector x;
+	
+	{
+        	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
+		auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
+        	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
+        	mg.verbose(true);
+        	mg.init(coarse_space, n_levels);
 
+       		UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after mg-setup");
+        	stats.stop_collect_and_restart("mg-setup");
 
-        auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-        auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+        	Vector b;
+        	Matrix A;
 
-        GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
-        mg.verbose(true);
-        mg.init(coarse_space, n_levels);
+        	auto &space = mg.fine_space();
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after mg-setup");
-        stats.stop_collect_and_restart("mg-setup");
+        	space.create_vector(x);
+        	space.create_vector(b);
+        	space.create_matrix(A);
 
-        Vector x, b;
-        Matrix A;
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-create-matrix");
 
-        auto &space = mg.fine_space();
+        	Model model(space);
+        	model.read(in);
 
-        space.create_vector(x);
-        space.create_vector(b);
-        space.create_matrix(A);
+        	model.hessian(x, A);
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-create-matrix");
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-assembly");
+        	stats.stop_collect_and_restart("tensor-creation+assembly");
 
-        Model model(space);
-        model.read(in);
+        	space.apply_constraints(b);
 
-        model.hessian(x, A);
+        	mg.update(make_ref(A));
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
 
-        // bool write_mat = false;
-        // in.get("write_mat", write_mat);
+        	mg.apply(b, x);
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
+        	stats.stop_collect_and_restart("solve");
+	}
 
-        // if(write_mat) {
-        //     rename("a", A);
-        //     write("A.m", A);
-        // }
-        // model.gradient(x, b);
-
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-assembly");
-        stats.stop_collect_and_restart("tensor-creation+assembly");
-
-        space.apply_constraints(b);
-
-        mg.update(make_ref(A));
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
-
-        mg.apply(b, x);
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
-        stats.stop_collect_and_restart("solve");
-
-        rename("x", x);
-        space.write(output_path, x);
+        //rename("x", x);
+        //space.write(output_path, x);
 
         stats.stop_collect_and_restart("output");
 
-        comm.root_print("n_dofs: " + std::to_string(space.n_dofs()));
+        comm.root_print("n_dofs: " + std::to_string(x.size()));
         stats.describe(std::cout);
     }
 

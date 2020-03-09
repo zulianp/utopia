@@ -198,6 +198,31 @@ namespace utopia {
             init();
         }
 
+        class FractureNetwork {
+        public:
+            class LineFracture {
+            public:
+                Point p1, p2;
+                Scalar aperture;
+                Scalar permeability;
+            };
+
+            void init_demo()
+            {
+                line_fractures.resize(1);
+                auto &p1 = line_fractures[0].p1;
+                auto &p2 = line_fractures[0].p2;
+
+                p1[0] = 0.00001;
+                p1[1] = 0.2;
+
+                p2[0] = 0.99999;
+                p2[1] = 0.8;
+            }
+
+            std::vector<LineFracture> line_fractures;
+        };
+
         void init_demo_fracture_network()
         {
             using Point1 = utopia::StaticVector<Scalar, 1>;
@@ -212,7 +237,7 @@ namespace utopia {
 
             utopia::Quadrature<Scalar, 6, 1>::get(q_points, q_weights);
 
-            Point p1, p2, u, n;
+            Point p1, p2;
 
             p1[0] = 0.00001;
             p1[1] = 0.2;

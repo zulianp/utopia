@@ -186,6 +186,16 @@ namespace utopia {
 		}
 
 		template<typename T>
+		inline void min(const int n_values, T *inout) const {
+			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_MIN, get() );
+		}
+
+		template<typename T>
+		inline void max(const int n_values, T *inout) const {
+			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_MAX, get() );
+		}
+
+		template<typename T>
 		inline T min(const T &val) const {
 			T ret = val;
 			MPI_Allreduce( MPI_IN_PLACE, &ret, 1, MPIType<T>::value(), MPI_MIN, get() );
