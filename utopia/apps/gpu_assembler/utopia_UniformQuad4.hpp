@@ -4,6 +4,8 @@
 #include "utopia_Views.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
+#include "utopia_Elem.hpp"
+// #include "utopia_Edge2.hpp"
 
 namespace utopia {
 
@@ -23,6 +25,113 @@ namespace utopia {
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
                     return 0.0;
+                }
+            }
+        }
+
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION static auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            const auto x = p[0];
+
+            switch(i)
+            {
+                case 0:
+                {
+                    return x - 1.;
+                }
+                case 1:
+                {
+                    return -x;
+                }
+                case 2:
+                {
+                    return x;
+                }
+                case 3:
+                {
+                    return (1 - x);
+                }
+                default:
+                {
+                    return 0.0;
+                }
+            }
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            UTOPIA_DEVICE_ASSERT(dst.size() == 1);
+
+            const auto x = p[0];
+            const auto t = p[1];
+
+            switch(i)
+            {
+                case 0:
+                {
+                    dst[0] = t - 1.;
+                    return;
+                }
+                case 1:
+                {
+                    dst[0] = 1 - t;
+                    return;
+                }
+                case 2:
+                {
+                    dst[0] = t;
+                    return;
+                }
+                case 3:
+                {
+                    dst[0] = -t;
+                    return;
+                }
+                default:
+                {
+                    dst[0] = 0.0;
+                    return;
+                }
+            }
+        }
+
+        //space-time mixed derivative
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            //project t coordinates to 0
+            UTOPIA_DEVICE_ASSERT(dst.size() == 1);
+
+            switch(i)
+            {
+                case 0:
+                {
+                    dst[0] = 1.0;
+                    return;
+                }
+                case 1:
+                {
+                    dst[0] = -1.0;
+                    return;
+                }
+                case 2:
+                {
+                    dst[0] = 1.0;
+                    return;
+                }
+                case 3:
+                {
+                    dst[0] = -1.0;
+                    return;
+                }
+                default:
+                {
+                    dst[0] = 0.0;
+                    return;
                 }
             }
         }
@@ -101,7 +210,7 @@ namespace utopia {
     };
 
     template<typename Scalar_>
-    class UniformQuad4 {
+    class UniformQuad4 : public Elem {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
@@ -110,6 +219,7 @@ namespace utopia {
         static const int NFunctions = 4;
         using Point = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
+        using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
 
         template<typename Point>
@@ -144,6 +254,30 @@ namespace utopia {
             }
         }
 
+
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            return RefQuad4::partial_t(i, p) / h_[1];
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            RefQuad4::grad_x(i, p, dst);
+             dst[0] /= h_[0];
+        }
+
+        ///space-time mixed derivative \nabla_x \partial_t \phi(x, t)
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            RefQuad4::grad_x_partial_t(i, p, dst);
+            dst[0] /= (h_[0]*h_[1]);
+        }
+
         template<typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const
         {
@@ -174,6 +308,13 @@ namespace utopia {
             out[1] = in[1] * h_[1] + translation_[1];
         }
 
+        template<typename PhysicalPoint, typename RefPoint>
+        UTOPIA_INLINE_FUNCTION void inverse_transform(const PhysicalPoint &in, RefPoint &out) const
+        {
+            out[0] = (in[0] - translation_[0])/h_[0];
+            out[1] = (in[1] - translation_[1])/h_[1];
+        }
+
         UTOPIA_INLINE_FUNCTION UniformQuad4(const Scalar &hx, const Scalar &hy)
         {
             h_[0] = hx;
@@ -198,6 +339,132 @@ namespace utopia {
             h_[1] = h[1];
         }
 
+        bool intersect_line(const Point &a, const Point &b, Point &a_out, Point &b_out) const
+        {
+            //cheap detect
+            for(int d = 0; d < Dim; ++d) {
+                if(device::max(a[d], b[d]) <= translation_[d] ||
+                   device::min(a[d], b[d]) >= translation_[d] + h_[d]
+                ) {
+                    return false;
+                }
+            }
+
+            //copy content
+            a_out.copy(a);
+            b_out.copy(b);
+
+            //left-boundary
+            Scalar dist_a = a_out[0] - translation_[0];
+            Scalar dist_b = b_out[0] - translation_[0];
+            Scalar len    = b_out[0] - a_out[0];
+
+            bool intersects = false;
+
+            if(device::signbit(dist_a) != device::signbit(dist_b)) {
+                intersects = true;
+
+                const Scalar ratio_a = dist_b/len;
+                const Scalar ratio_b = -dist_a/len;
+
+                if(dist_a <= 0) {
+                    a_out = ratio_a * a_out + ratio_b * b_out;
+                } else {
+                    b_out = ratio_a * a_out + ratio_b * b_out;
+                }
+
+                len = b_out[0] - a_out[0];
+            } else {
+                if(dist_a <= 0 && dist_b <= 0) {
+                    return false;
+                }
+            }
+
+            //right-boundary
+            dist_a = a_out[0] - translation_[0] - h_[0];
+            dist_b = b_out[0] - translation_[0] - h_[0];
+
+            if(device::signbit(dist_a) != device::signbit(dist_b)) {
+                intersects = true;
+
+                const Scalar ratio_a = dist_b/len;
+                const Scalar ratio_b = -dist_a/len;
+
+                if(dist_a >= 0) {
+                    a_out = ratio_a * a_out + ratio_b * b_out;
+                } else {
+                    b_out = ratio_a * a_out + ratio_b * b_out;
+                }
+
+                len = b_out[0] - a_out[0];
+            } else {
+                if(dist_a >= 0 && dist_b >= 0) {
+                    return false;
+                }
+            }
+
+            //bottom-boundary
+            dist_a = a_out[1] - translation_[1];
+            dist_b = b_out[1] - translation_[1];
+            len    = b_out[1] - a_out[1];
+
+            if(device::signbit(dist_a) != device::signbit(dist_b)) {
+                intersects = true;
+
+                const Scalar ratio_a = dist_b/len;
+                const Scalar ratio_b = -dist_a/len;
+
+                if(dist_a <= 0) {
+                    a_out = ratio_a * a_out + ratio_b * b_out;
+                } else {
+                    b_out = ratio_a * a_out + ratio_b * b_out;
+                }
+
+                len = b_out[1] - a_out[1];
+            } else {
+                if(dist_a <= 0 && dist_b <= 0) {
+                    return false;
+                }
+            }
+
+            //top-boundary
+            dist_a = a_out[1] - translation_[1] - h_[1];
+            dist_b = b_out[1] - translation_[1] - h_[1];
+
+            if(device::signbit(dist_a) != device::signbit(dist_b)) {
+                intersects = true;
+
+                const Scalar ratio_a = dist_b/len;
+                const Scalar ratio_b = -dist_a/len;
+
+                if(dist_a >= 0) {
+                    a_out = ratio_a * a_out + ratio_b * b_out;
+                } else {
+                    b_out = ratio_a * a_out + ratio_b * b_out;
+                }
+            } else {
+                if(dist_a >= 0 && dist_b >= 0) {
+                    return false;
+                }
+            }
+
+            // disp("---------------");
+            // disp("line");
+            // disp(a);
+            // disp(b);
+            // disp("quad");
+            // disp(translation_);
+            // Point top = translation_ + h_;
+            // disp(top);
+            // disp("result");
+            // disp(a_out);
+            // disp(b_out);
+            // disp("---------------");
+
+
+            return intersects;
+        }
+
         UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()
         {
             return NNodes;
@@ -209,7 +476,7 @@ namespace utopia {
         }
 
     private:
-        Scalar h_[2];
+        StaticVector2<Scalar> h_;
         StaticVector2<Scalar> translation_;
     };
 

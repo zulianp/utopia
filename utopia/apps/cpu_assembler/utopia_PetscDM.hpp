@@ -125,10 +125,10 @@ namespace utopia {
         using SizeType  = PetscInt;
         using Scalar    = PetscScalar;
         using Point     = utopia::StaticVector<Scalar, Dim>;
-        using Elem      = utopia::PetscElem<Dim>;
+        // using Elem      = utopia::PetscElem<Dim>;
         using Node      = utopia::PetscNode<Dim>;
         using Device    = utopia::Device<PETSC>;
-        using NodeIndex = typename Elem::NodeIndex;
+        using NodeIndex = utopia::ArrayView<const SizeType>;
         using IntArray  = utopia::ArrayView<SizeType, UDim>;
         using ScalarArray = utopia::ArrayView<Scalar, UDim>;
 

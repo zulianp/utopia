@@ -5,6 +5,7 @@
 #include "utopia_Views.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
+#include "utopia_Elem.hpp"
 
 namespace utopia {
 
@@ -31,6 +32,217 @@ namespace utopia {
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
                     return 0.0;
+                }
+            }
+        }
+
+
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION static auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+            const Scalar t = p[2];
+
+            switch(i) {
+                case 0: { return -(1.0 - x) * (1.0 - y); }
+                case 1: { return -x * (1.0 - y); }
+                case 2: { return -x * y; }
+                case 3: { return -(1.0 - x) * y; }
+                case 4: { return (1.0 - x) * (1.0 - y); }
+                case 5: { return x * (1.0 - y); }
+                case 6: { return x * y; }
+                case 7: { return (1.0 - x) * y; }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                    return 0.0;
+                }
+            }
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            UTOPIA_DEVICE_ASSERT(dst.size() == 2);
+
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+            const Scalar t = p[2];
+
+            switch(i)
+            {
+                // f = (1.0 - x) * (1.0 - y) * (1.0 - t);
+                case 0:
+                {
+                    dst[0] = -(1.0 - y) * (1.0 - t);
+                    dst[1] = -(1.0 - x) * (1.0 - t);
+                    return;
+                }
+
+                // f = x * (1.0 - y) * (1.0 - t);
+                case 1:
+                {
+                    dst[0] = (1.0 - y) * (1.0 - t);
+                    dst[1] = -x * (1.0 - t);
+                    return;
+                }
+
+                // f = x * y * (1.0 - t);
+                case 2:
+                {
+                    dst[0] = y * (1.0 - t);
+                    dst[1] = x * (1.0 - t);
+                    return;
+                }
+
+                // f = (1.0 - x) * y * (1.0 - t);
+                case 3:
+                {
+                    dst[0] = - y * (1.0 - t);
+                    dst[1] = (1.0 - x) * (1.0 - t);
+                    return;
+                }
+
+                // f = (1.0 - x) * (1.0 - y) * t;
+                case 4:
+                {
+                    dst[0] = -(1.0 - y) * t;
+                    dst[1] = -(1.0 - x) * t;
+                    return;
+                }
+
+                // f = x * (1.0 - y) * t;
+                case 5:
+                {
+                    dst[0] = (1.0 - y) * t;
+                    dst[1] = -x * t;
+                    return;
+                }
+
+                // f = x * y * t;
+                case 6:
+                {
+                    dst[0] = y * t;
+                    dst[1] = x * t;
+                    return;
+                }
+
+                // f = (1.0 - x) * y * t;
+                case 7:
+                {
+                    dst[0] = -y * t;
+                    dst[1] = (1.0 - x) * t;
+                    return;
+                }
+
+                default:
+                {
+                    dst[0] = 0.0;
+                    dst[1] = 0.0;
+                    return;
+                }
+            }
+
+        }
+
+        //space-time mixed derivative
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            //project t coordinates to 0
+            UTOPIA_DEVICE_ASSERT(dst.size() == 2);
+
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+            const Scalar t = p[2];
+
+            switch(i)
+            {
+                // f = (1.0 - x) * (1.0 - y) * (1.0 - t);
+                // f_t = -(1.0 - x) * (1.0 - y)
+                case 0:
+                {
+                    dst[0] = (1.0 - y);
+                    dst[1] = (1.0 - x);
+                    return;
+                }
+
+                // f = x * (1.0 - y) * (1.0 - t);
+                // f_t = -x * (1.0 - y) 
+                case 1:
+                {
+                    dst[0] = -(1.0 - y);
+                    dst[1] = x;
+                    return;
+                }
+
+                // f = x * y * (1.0 - t);
+                // f_t = -x * y
+                case 2:
+                {
+                    dst[0] = -y;
+                    dst[1] = -x;
+                    return;
+                }
+
+                // f = (1.0 - x) * y * (1.0 - t);
+                // f_t = -(1.0 - x) * y 
+                case 3:
+                {
+                    dst[0] = y;
+                    dst[1] = -(1.0 - x);
+                    return;
+                }
+
+                // f = (1.0 - x) * (1.0 - y) * t;
+                // f_t = (1.0 - x) * (1.0 - y)
+                case 4:
+                {
+                    dst[0] = -(1.0 - y);
+                    dst[1] = -(1.0 - x);
+                    return;
+                }
+
+                // f = x * (1.0 - y) * t;
+                // f_t = x * (1.0 - y) 
+                case 5:
+                {
+                    dst[0] = (1.0 - y);
+                    dst[1] = -x;
+                    return;
+                }
+
+                // f = x * y * t;
+                // f_t = x * y
+                case 6:
+                {
+                    dst[0] = y;
+                    dst[1] = x;
+                    return;
+                }
+
+                // f = (1.0 - x) * y * t;
+                // f_t = (1.0 - x) * y 
+                case 7:
+                {
+                    dst[0] = -y;
+                    dst[1] = (1.0 - x);
+                    return;
+                }
+
+                default:
+                {
+                    dst[0] = 0.0;
+                    dst[1] = 0.0;
+                    return;
                 }
             }
         }
@@ -131,7 +343,7 @@ namespace utopia {
     };
 
     template<typename Scalar_>
-    class UniformHex8 {
+    class UniformHex8 : public Elem {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
@@ -139,8 +351,9 @@ namespace utopia {
         static const int NNodes = 8;
         static const int NFunctions = NNodes;
 
-        using Point = utopia::StaticVector<Scalar, Dim>;
+        using Point     = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
+        using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
 
         template<typename Point>
@@ -179,6 +392,32 @@ namespace utopia {
             g[0] /= h_[0];
             g[1] /= h_[1];
             g[2] /= h_[2];
+        }
+
+
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            return RefHex8::partial_t(i, p) / h_[2];
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            RefHex8::grad_x(i, p, dst);
+            dst[0] /= h_[0];
+            dst[1] /= h_[1];
+        }
+
+        ///space-time mixed derivative \nabla_x \partial_t \phi(x, t)
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            RefHex8::grad_x_partial_t(i, p, dst);
+            dst[0] /= (h_[0]*h_[2]);
+            dst[1] /= (h_[1]*h_[2]);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine()
