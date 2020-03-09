@@ -433,7 +433,7 @@ namespace utopia {
 
         stats.stop_collect_and_restart("BC");
 
-        Scalar pressure0; 
+        Scalar pressure0 = 0.0; 
         
         PetscVector x;
         space.create_vector(x);
