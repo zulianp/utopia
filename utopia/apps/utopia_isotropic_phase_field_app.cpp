@@ -155,7 +155,7 @@ namespace utopia {
                 unsigned seed = 1.0; 
                 static std::default_random_engine generator (seed);
 
-                // this one needs to e replaced 
+                // this one needs to be replaced 
                 std::uniform_real_distribution<> distr_point(0.0, 1.0);                 
                 std::uniform_int_distribution<> distr_angle(0.0, 180); 
                 std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
@@ -182,7 +182,6 @@ namespace utopia {
                 D_.x = A_.x + ((a * std::cos(theta_rad)) + (b * std::cos(theta_rad + pi/2.0))); 
                 D_.y = A_.y + ((a * std::sin(theta_rad)) + (b * std::sin(theta_rad + pi/2.0)));          
             }
-
 
             void build_vector(const Point2D<T> & A, const Point2D<T> & B, Point2D<T> & result)
             {
@@ -221,12 +220,12 @@ namespace utopia {
         // un-hard-code
         auto C = space.subspace(0);
 
-        auto width =  4.0 * space.mesh().min_spacing(); 
+        auto width =  3.0 * space.mesh().min_spacing(); 
 
         std::cout<<"width: "<< width << "  \n"; 
         std::vector<Rectangle<Scalar>> rectangles; 
 
-        for(auto r=0; r < 20; r++){
+        for(auto r=0; r < 30; r++){
             rectangles.push_back(Rectangle<Scalar>(width)); 
         }
 
@@ -234,11 +233,13 @@ namespace utopia {
 
             for(auto r=0; r< rectangles.size(); r++){
                 if(rectangles[r].belongs_to_rectangle(x[0], x[1]))
-                    return true; 
+                    return 1.0; 
             }
-            return false; 
-        });
+            return 0.0; 
 
+            // return 1.0; 
+
+        });
 
         {
             auto C_view       = C.view_device();
@@ -302,6 +303,50 @@ namespace utopia {
             }
     }
 
+    template<class FunctionSpace>
+    static void enforce_BC_all_disp_fixed(FunctionSpace &space){
+
+        static const int Dim   = FunctionSpace::Dim;
+
+        using Point          = typename FunctionSpace::Point;
+        using Scalar         = typename FunctionSpace::Scalar;
+
+        for(int d = 1; d < Dim + 1; ++d) {
+            space.emplace_dirichlet_condition(
+                SideSet::left(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                return 0.0;
+                },
+                d
+            );
+
+            space.emplace_dirichlet_condition(
+                SideSet::right(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 0.0;
+                },
+                d
+                );
+
+            space.emplace_dirichlet_condition(
+                SideSet::top(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 0.0;
+                },
+                d
+                ); 
+
+            space.emplace_dirichlet_condition(
+                SideSet::bottom(),
+                UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                    return 0.0;
+                },
+                d
+                );
+        }
+    }
+
+
     
     template<class FunctionSpace>
     static void build_irreversility_constraint(const PetscVector &x_old, PetscVector &x_new, const typename FunctionSpace::SizeType & comp)
@@ -364,29 +409,55 @@ namespace utopia {
         bool with_BC = true;
         in.get("with_BC", with_BC);
 
+        bool pressure_test = false;
+        in.get("pressure_test", pressure_test);      
+
+
+        bool tension_test = false;
+        in.get("tension_test", tension_test);     
+
+
+        std::cout<<"pressure_test: "<< pressure_test << "   \n"; 
+        std::cout<<"tension_test: "<< tension_test << "   \n"; 
+
+
+        Scalar dt = 1e-5;
+        in.get("dt", dt);   
+
+        Scalar num_time_steps = 1000;  
+        in.get("num_time_steps", num_time_steps);   
+
+
         stats.start();
 
 
         stats.stop_collect_and_restart("BC");
 
+        Scalar pressure0; 
         
         PetscVector x;
         space.create_vector(x);
         x.set(0.0);
 
         if(with_damage) {
-            // init_phase_field_tension(space, x); 
-            // does not work 
-            init_phase_field_frac_net(space, x); 
+
+            if(tension_test){
+                init_phase_field_tension(space, x); 
+            }
+
+            if(pressure_test){
+                init_phase_field_frac_net(space, x); 
+                in.get("pressure", pressure0);                
+            }
         }
         
         stats.stop_collect_and_restart("phase-field-init");
 
 
-        Scalar dt = 1e-4; 
-        Scalar time_=dt; 
-        Scalar num_ts = 100; 
-        std::string output_path = "test_network";
+
+        Scalar time_= dt; 
+        std::string output_path = "isotropic_PFfrac_test";
+        in.get("output-path", output_path);
         // print IG 
         rename("X", x);
 
@@ -396,23 +467,34 @@ namespace utopia {
         IsotropicPhaseFieldForBrittleFractures<FunctionSpace> pp(space);
         pp.read(in);     
 
-
+        // testing IC ... 
         space.apply_constraints(x);                       
         space.write(output_path+"_"+std::to_string(0.0)+".vtk", x);     
         // exit(0); 
 
-        for (auto t=0; t < num_ts; t++)
+        if(with_BC) {
+            if(pressure_test){
+                enforce_BC_all_disp_fixed(space); 
+            }        
+        }
+
+        for (auto t=1; t < num_time_steps; t++)
         {
             std::cout<<"Time-step: "<< t << "  \n"; 
      
             if(with_BC) {
-                space.reset_bc(); 
-                enforce_BC_time_dependent(space, disp, time_);              
+                if(tension_test){
+                    space.reset_bc(); 
+                    enforce_BC_time_dependent(space, disp, time_);              
+                }
             }
 
             space.apply_constraints(x);    
 
-                                                                                        // PF component 
+            std::cout<<"pressure: "<< pressure0 * time_ << "  \n"; 
+            pp.set_pressure(pressure0 * time_);     
+
+                                                                                        // PF component=0
             build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
 
 
@@ -423,9 +505,9 @@ namespace utopia {
             // Newton<PetscMatrix, PetscVector> solver(linear_solver);
             // in.get("solver", solver);
 
-            // MPRGP sucks as solver, as it can not be preconditioned easily ... 
+            // MPRGP sucks as a solver, as it can not be preconditioned easily ... 
             auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
-            qp_solver->max_it(5000); 
+            qp_solver->max_it(1000); 
 
             // tao seems to be even slower... 
             // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
@@ -443,13 +525,13 @@ namespace utopia {
             // auto qp_solver = std::make_shared<MPGRP<PetscMatrix, PetscVector> >();
             // qp_solver->max_it(5000); 
             
-            // // PetscMatrix H; 
-            // // std::function< void(const PetscVector &, PetscVector &) > H0_action_fun =
-            // // [&pp, &H](const PetscVector &x, PetscVector & result){ 
-            // //     pp.hessian(x, H); 
-            // //     result = H*x; 
-            // // };
-            // // hessian_approx->H0_action(H0_action_fun); 
+            // // // PetscMatrix H; 
+            // // // std::function< void(const PetscVector &, PetscVector &) > H0_action_fun =
+            // // // [&pp, &H](const PetscVector &x, PetscVector & result){ 
+            // // //     pp.hessian(x, H); 
+            // // //     result = H*x; 
+            // // // };
+            // // // hessian_approx->H0_action(H0_action_fun); 
 
             // QuasiTrustRegionVariableBound<PetscVector> solver(hessian_approx, qp_solver);
             // in.get("solver", solver);

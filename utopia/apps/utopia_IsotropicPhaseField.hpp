@@ -57,13 +57,17 @@ namespace utopia {
                 in.get("mu", mu);
                 in.get("lambda", lambda);
                 in.get("regularization", regularization);
+                in.get("pressure", pressure);
+
+                std::cout<<"pressure: "<< pressure << "  \n"; 
             }
 
+
             Parameters()
-            : a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), mu(1.0), lambda(1.0), regularization(1e-7)
+            : a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), mu(1.0), lambda(1.0), regularization(1e-8), pressure(0.0)
             {}
 
-            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, regularization;
+            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, regularization, pressure;
         };
 
         void read(Input &in) override
@@ -73,6 +77,12 @@ namespace utopia {
             in.get("check_derivatives", check_derivatives_);
             in.get("diff_controller", diff_ctrl_);
         }
+
+        // this is a bit of hack 
+        void set_pressure(const Scalar & pressure){
+            params_.pressure = pressure; 
+        }
+
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space)
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
@@ -109,10 +119,7 @@ namespace utopia {
             return true;
         }
 
-        bool value(
-            const Vector &x_const,
-            Scalar &val
-        ) const override
+        bool value(const Vector &x_const, Scalar &val) const override
         {
             USpace U;
             space_.subspace(1, U);
@@ -168,8 +175,19 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
+                        StaticMatrix<Scalar, Dim, Dim> identity; 
+                        identity.identity(); 
+
+                        Scalar pressure_energy = 0.0; 
+
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            el_energy += energy(params_, c[qp], c_grad_el[qp], trace(el_strain.strain[qp]), el_strain.strain[qp]) * dx(qp);
+
+                            Scalar tr = trace(el_strain.strain[qp]); 
+                            if(params_.pressure > 0){
+                                el_energy -= inner(c[qp] * params_.pressure * identity, el_strain.strain[qp]) * dx(qp); 
+                            }
+
+                            el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -241,6 +259,9 @@ namespace utopia {
                         StaticVector<Scalar, U_NDofs> u_el_vec;
                         StaticVector<Scalar, C_NDofs>  c_el_vec;
 
+                        StaticMatrix<Scalar, Dim, Dim> identity; 
+                        identity.identity();                         
+
                         u_el_vec.set(0.0);
                         c_el_vec.set(0.0);
 
@@ -269,6 +290,10 @@ namespace utopia {
                             compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
                             stress = (quadratic_degradation(params_, c[qp]) * (1.0 - params_.regularization) + params_.regularization) * stress; 
 
+                            if(params_.pressure > 0){
+                                stress = stress - (c[qp] * params_.pressure * identity); 
+                            }
+
                             for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
                                 auto grad_test = u_grad_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
@@ -293,6 +318,12 @@ namespace utopia {
                                             shape_test,
                                             c_grad_shape_el(j, qp)
                                     );
+
+                                
+                                if(params_.pressure > 0){
+                                    const Scalar der_c_pres = inner(- params_.pressure * shape_test * identity, el_strain.strain[qp]); 
+                                    c_el_vec(j) +=  der_c_pres * dx(qp);
+                                }
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
                             }
@@ -425,7 +456,7 @@ namespace utopia {
                                             c_shape_fun_el(l, qp),
                                             c_grad_shape_el(j, qp),
                                             c_grad_shape_el(l, qp)
-                                    ) * dx(qp);
+                                    ) * dx(qp);                                      
                                 }
                             }
 
@@ -444,21 +475,30 @@ namespace utopia {
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
                             compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
+                            StaticMatrix<Scalar, Dim, Dim> identity; 
+                            identity.identity();                                         
 
                             for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
                                 for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
-                                   const Scalar val =
+
+                                    auto strain_shape = 0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))); 
+
+                                   Scalar val =
                                         bilinear_uc(
                                             params_,
                                              c[qp],
                                              stress,
-                                             0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))),
+                                             strain_shape,
                                             c_shape_fun_el(c_i, qp)
                                         ) * dx(qp);
 
+                                    if(params_.pressure > 0){
+                                        val -= inner(params_.pressure * c_shape_fun_el(c_i, qp) * identity, strain_shape) * dx(qp); 
+                                    }
 
                                     el_mat(c_i, C_NDofs + u_i) += val;
                                     el_mat(C_NDofs + u_i, c_i) += val;
+
                                 }
                             }
 

@@ -1,6 +1,6 @@
 {
     "app" : "petsc_tension_isotropic_phase_field_2",
-    "output-path" : "out.vtk",
+    "output-path" : "tension_isotropic",
     "nx" : 20,
     "ny" : 20,
     "nz" : 2,
@@ -8,17 +8,20 @@
     "with_damage" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
+    "tension_test" : true, 
+    "num_time_steps" : 100, 
+    "dt" : 5e-5,     
     "diff_controller" : {
         "spacing" : 1e-6,
         "hessian_from_grad" : false
     },
     "solver" : {
         "verbose" : true,
-        "max-it" : 5000,
+        "max-it" : 500,
         "atol": 1e-6, 
         "linear-solver" : {
             "verbose" : false, 
-            "atol": 1e-10
+            "atol": 1e-9
         }
     }
 }
