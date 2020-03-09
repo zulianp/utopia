@@ -132,6 +132,12 @@ namespace utopia {
 	};
 
 	template<>
+	class MPIType<long long> {
+	public:
+		inline static MPI_Datatype value() noexcept { return MPI_LONG_LONG; }
+	};
+
+	template<>
 	class MPIType<int> {
 	public:
 		inline static MPI_Datatype value() noexcept { return MPI_INT; }
