@@ -331,9 +331,9 @@ namespace utopia
         }
         else if (rho > this->eta2() )
         {
-          // Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius);
+          Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius);
 
-          Scalar intermediate = this->gamma2() * radius;
+          // Scalar intermediate = this->gamma2() * radius;
           radius = std::min(intermediate, this->delta_max());
         }
       }
