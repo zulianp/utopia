@@ -3,6 +3,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_Range.hpp"
 
 namespace utopia {
 
@@ -35,6 +36,19 @@ namespace utopia {
         SizeType begin_, end_;
     };
 
+    template<class T>
+    inline RangeDevice<T> range_device(const T &t)
+    {
+        Range r = range(t);
+        return RangeDevice<T>(r.begin(), r.end());
+    }
+
+    template<class T>
+    inline RangeDevice<T> local_range_device(const T &t)
+    {
+        Range r = range(t);
+        return RangeDevice<T>(0, r.extent());
+    }
 
     template<class T, typename F>
     inline static void parallel_for(const RangeDevice<T> &r, F f)

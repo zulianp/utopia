@@ -205,6 +205,18 @@ namespace utopia {
                  // );
         }
 
+        //basic mutators
+        inline void l_set(const SizeType &index, const Scalar &value)
+        {
+            assert(range().inside(index));
+            // check_error(
+            // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+            writeable_->data[index] = value;
+                 // );
+        }
+
         inline void add(const SizeType &index, const Scalar &value) override
         {
             assert(range().inside(index));
