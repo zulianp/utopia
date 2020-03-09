@@ -536,6 +536,11 @@ namespace utopia {
             dirichlet_bcs_ = conds;
         }
 
+        void reset_bc()
+        {
+            dirichlet_bcs_.clear(); 
+        }
+
         template<class... Args>
         void emplace_dirichlet_condition(Args && ...args)
         {

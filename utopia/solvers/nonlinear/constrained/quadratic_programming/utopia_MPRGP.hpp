@@ -9,8 +9,6 @@
 #include "utopia_Allocations.hpp"
 #include "utopia_Algorithms.hpp"
 
-//#include "cuda_profiler_api.h"
-
 namespace  utopia
 {
 
@@ -64,6 +62,15 @@ namespace  utopia
                 auto &box = this->get_box_constraints();
 
                 this->update(A); 
+
+                // as it is not clear ATM, how to apply preconditioner, we use it at least to obtain initial guess 
+                if(precond_){
+                    // this is unconstrained step
+                    precond_->apply(rhs, sol);
+                    // projection to feasible set
+                    this->make_iterate_feasible(sol); 
+                }
+
                 return aux_solve(A, rhs, sol, box);
             }
 
@@ -79,6 +86,8 @@ namespace  utopia
             {
                 // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
                 // //cudaProfilerStart();
+
+                Scalar r_norm0 = norm2(rhs); 
 
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
@@ -170,6 +179,7 @@ namespace  utopia
                     }
 
                     converged = this->check_convergence(it, gnorm, 1, 1);
+                    //converged = (it > this->max_it() || gnorm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 ) ? true : false;
                 }
 
                 // //cudaProfilerStop();
@@ -358,6 +368,10 @@ namespace  utopia
                 loc_size_ = ls;
             }
 
+            void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
+            {
+                precond_ = precond;
+            }            
 
         private:
             Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, help_f1, help_f2;
@@ -367,6 +381,8 @@ namespace  utopia
 
             bool initialized_;
             SizeType loc_size_;
+
+            std::shared_ptr<Preconditioner<Vector> > precond_;
 
     };
 }

@@ -38,11 +38,11 @@ namespace utopia
                 const SizeType finest_level = n_dofs_.size(); 
 
                 if(this->box_constraints_.has_lower_bound()){
-                    constraints_memory_.active_lower[finest_level] = *(this->box_constraints_.lower_bound());
+                    constraints_memory_.active_lower[finest_level-1] = *(this->box_constraints_.lower_bound());
                 }
 
                 if(this->box_constraints_.has_upper_bound()){
-                    constraints_memory_.active_upper[finest_level] = *(this->box_constraints_.upper_bound());
+                    constraints_memory_.active_upper[finest_level-1] = *(this->box_constraints_.upper_bound());
                 }                
             }
 

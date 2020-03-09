@@ -111,6 +111,23 @@ namespace utopia
         return norm2(help_);
       }
 
+      virtual void project_gradient(const Vector & x, Vector & g)
+      {
+        g = x - g;
+
+        if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
+        {
+          this->fill_empty_bounds(local_size(x)); 
+        }
+
+        const auto &ub = *constraints_.upper_bound();
+        const auto &lb = *constraints_.lower_bound();
+
+        get_projection(lb, ub, g);
+        g -= x;
+      }
+
+
   public:  // expose it for CUDA
       bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc) const
       {
@@ -160,7 +177,6 @@ namespace utopia
                 }
             });
         }
-
         return true;
       }
 

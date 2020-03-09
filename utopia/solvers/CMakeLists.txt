@@ -5,6 +5,7 @@ list(APPEND SOLVERS_MODULES
     multilevel
     multilevel/transfer
     multilevel/constraints
+    multilevel/fun_evals
     smoothers
     nonlinear
     nonlinear/pseudo_transient_continuation

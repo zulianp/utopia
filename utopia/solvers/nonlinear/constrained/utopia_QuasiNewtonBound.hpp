@@ -9,6 +9,7 @@
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_VariableBoundSolverInterface.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_QuasiNewtonBase.hpp"
 
 #include <iomanip>
 #include <limits>

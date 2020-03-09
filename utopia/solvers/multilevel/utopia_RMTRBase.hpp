@@ -16,7 +16,7 @@
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_TRBase.hpp"
 
-#include "utopia_MultiLevelEvaluations.hpp"
+#include "utopia_FunEvalsIncludes.hpp"
 #include "utopia_LevelMemory.hpp"
 
 namespace utopia
