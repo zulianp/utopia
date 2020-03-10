@@ -5,7 +5,7 @@
 #include "utopia_PetscDM_impl.hpp"
 #include "utopia_petsc.hpp"
 
-// #include <petscviewerhdf5.h>
+#include <petscviewerhdf5.h>
 
 namespace utopia {
 
