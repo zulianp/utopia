@@ -5,6 +5,8 @@
 #include "utopia_PetscDM_impl.hpp"
 #include "utopia_petsc.hpp"
 
+// #include <petscviewerhdf5.h>
+
 namespace utopia {
 
     template<class Elem, int NComponents>
@@ -60,30 +62,65 @@ namespace utopia {
         PetscErrorCode ierr = 0;
         PetscViewer       viewer;
 
+        auto mpi_comm = comm().get();
+
         const auto ext = path.extension();
         if(ext == "vtk") {
-            ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD, path.c_str(), &viewer);
+            ierr = PetscViewerASCIIOpen(mpi_comm, path.c_str(), &viewer);
             if(ierr != 0) { assert(false); return false; }
 
             ierr = PetscViewerPushFormat(viewer,  PETSC_VIEWER_ASCII_VTK); assert(ierr == 0);
         } else if(ext == "vts") {
 
-            ierr = PetscViewerVTKOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_WRITE, &viewer);
+            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
             if(ierr != 0) { assert(false); return false; }
 
             ierr = PetscViewerPushFormat(viewer,  PETSC_VIEWER_VTK_VTS); assert(ierr == 0);
         } else if(ext == "vtr") {
 
-            ierr = PetscViewerVTKOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_WRITE, &viewer);
+            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
             if(ierr != 0) { assert(false); return false; }
 
             ierr = PetscViewerPushFormat(viewer,  PETSC_VIEWER_VTK_VTR); assert(ierr == 0);
         } else if(ext == "vtu") {
 
-            ierr = PetscViewerVTKOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_WRITE, &viewer);
+            ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
             if(ierr != 0) { assert(false); return false; }
 
             ierr = PetscViewerPushFormat(viewer,  PETSC_VIEWER_VTK_VTU); assert(ierr == 0);
+        } 
+#if defined(PETSC_HAVE_HDF5)
+        else if(ext == "h5") {
+            PetscViewerHDF5Open(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
+
+            ierr = DMView(raw_type(*mesh_), viewer);    assert(ierr == 0);
+            ierr = VecView(raw_type(x), viewer);        assert(ierr == 0);
+
+            ierr = PetscViewerDestroy(&viewer);  assert(ierr == 0);
+            return true;
+        }
+#endif
+        else if(ext == "png") {
+            // PetscViewerCreate(mpi_comm, &viewer);
+            // PetscViewerSetType(viewer, PETSCVIEWERDRAW);
+
+            // PetscDraw draw;
+            // PetscViewerGetDraw(viewer, &draw);
+            // PetscDrawSetType(draw, PETSC_DRAW_NULL);
+
+
+            // PetscDraw draw;
+            // PetscErrorCode ierr = PetscDrawOpenImage(
+            //     fine_space_ptr->comm().get(),
+            //     "MG.png",
+            //     w,
+            //     h,
+            //     &draw
+            // ); assert(ierr == 0);
+
+                        // PetscDrawView(PetscDraw indraw,PetscViewer viewer)
+            std::cerr << "unsupported format " << ext << std::endl;
+            return false;
         } else {
             std::cerr << "unknown format " << ext << std::endl;
             return false;

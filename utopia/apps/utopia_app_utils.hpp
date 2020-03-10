@@ -4,6 +4,8 @@
 #include "utopia_GeometricMultigrid.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 
+// #include "petscdraw.h" 
+
 namespace utopia {
 
     template<class Model, class FunctionSpace>
@@ -20,13 +22,16 @@ namespace utopia {
         int n_levels = 2;
         in.get("n_levels", n_levels);
 
+        // bool in_situ_rendering = false;
+        // in.get("in_situ_rendering", in_situ_rendering);
+
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
-    	
+
     	Vector x;
 
         std::shared_ptr<FunctionSpace> fine_space_ptr;
-    	
+
     	{
         	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
 		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
@@ -67,13 +72,42 @@ namespace utopia {
         	stats.stop_collect_and_restart("solve");
     	}
 
-	if(!output_path.empty()) {
+        // if(in_situ_rendering) {
+            // const int w = 600;
+            // const int h = 600;
+
+            // PetscErrorCode ierr;
+            // PetscViewer    viewer;
+
+            // PetscViewerCreate(fine_space_ptr->comm().get(), &viewer);
+            // PetscViewerSetType(viewer, PETSCVIEWERDRAW);
+
+            // ierr = DMView(raw_type(fine_space_ptr->mesh()), viewer); assert(ierr == 0);
+            // ierr = VecView(raw_type(x), viewer);                     assert(ierr == 0);
+
+            // PetscViewerDestroy(&viewer);
+
+            // PetscDraw draw;
+            // PetscErrorCode ierr = PetscDrawOpenImage(
+            //     fine_space_ptr->comm().get(),
+            //     "MG.png",
+            //     w,
+            //     h,
+            //     &draw
+            // ); assert(ierr == 0);
+
+            // PetscDrawView(PetscDraw indraw,PetscViewer viewer)
+
+
+            // PetscDrawDestroy(&draw);
+
+        // } else 
+        if(!output_path.empty()) {
             rename("x", x);
             fine_space_ptr->write(output_path, x);
-   
             stats.stop_collect_and_restart("output");
-	}
-	
+    	}
+
         comm.root_print("n_dofs: " + std::to_string(x.size()));
         stats.describe(std::cout);
     }
