@@ -16,6 +16,7 @@
 #include "utopia_Coefficient.hpp"
 #include "utopia_Edge2.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
+#include <random>
 
 namespace utopia {
 
@@ -57,7 +58,7 @@ namespace utopia {
             in.get("rescale_with_spacing", rescale_with_spacing_);
 
             if(demo) {
-                init_demo_fracture_network();
+                init_demo_fracture_network(in);
 
 		bool export_permeability = false;
 
@@ -218,6 +219,38 @@ namespace utopia {
                 }
             };
 
+            void init_random(const SizeType &n)
+            {
+                line_fractures.resize(n);
+
+                std::default_random_engine generator;
+                std::uniform_real_distribution<Scalar> distribution(0.1,0.9);
+
+                for(SizeType i = 0; i < n; ++i) {
+                    Scalar x1 = distribution(generator);
+                    Scalar y1 = distribution(generator);
+
+                    Scalar x2 = distribution(generator);
+                    Scalar y2 = distribution(generator);
+
+                    Scalar perm = distribution(generator);
+
+                    auto &frac = line_fractures[i];
+                    auto &p1 = frac.p1;
+                    auto &p2 = frac.p2;
+
+                    p1[0] = x1;
+                    p1[1] = y1;
+
+                    p2[0] = x2;
+                    p2[1] = y2;
+
+                    frac.aperture     = 1e-4;
+                    frac.permeability = 1e4 + 1e4 * perm;
+                }
+            }
+
+
             void init_demo()
             {
                 line_fractures.resize(1);
@@ -229,6 +262,9 @@ namespace utopia {
 
                 p2[0] = 0.99999;
                 p2[1] = 0.8;
+
+                line_fractures[0].aperture     = 1e-4;
+                line_fractures[0].permeability = 1e4;
             }
 
             UTOPIA_INLINE_FUNCTION SizeType n_fractures() const
@@ -246,13 +282,12 @@ namespace utopia {
             std::vector<LineFracture> line_fractures;
         };
 
-        void init_demo_fracture_network()
+        void init_demo_fracture_network(Input &in)
         {
             using Point1 = utopia::StaticVector<Scalar, 1>;
 
             Scalar backround_perm = 1e-4;
-            Scalar frac_aperture  = 1e-4;
-            Scalar frac_perm      = 1e4;
+     
             Scalar spacing        = space_->mesh().min_spacing();
 
             ArrayView<Point1, 12> q_points;
@@ -261,7 +296,11 @@ namespace utopia {
             utopia::Quadrature<Scalar, 6, 1>::get(q_points, q_weights);
 
             FractureNetwork network;
-            network.init_demo();
+            // network.init_demo();
+
+            SizeType n = 10;
+            in.get("n_fractures", n);
+            network.init_random(n);
 
             auto &mesh = space_->mesh();
 
@@ -349,6 +388,9 @@ namespace utopia {
             e_pseudo_inv(*mass_vector_, *mass_vector_, 1e-12);
             (*permeability_field_) = e_mul((*permeability_field_) , (*mass_vector_));
             permeability_field_->shift(backround_perm);
+
+            //just to be safe
+            permeability_field_->e_max(backround_perm);
         }
 
         void init_demo_fracture_network_gaussian()

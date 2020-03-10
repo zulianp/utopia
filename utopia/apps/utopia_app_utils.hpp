@@ -34,9 +34,10 @@ namespace utopia {
 
     	{
         	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
+		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
         	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
         	mg.verbose(true);
+            mg.read(in);
         	mg.init(coarse_space, n_levels);
 
        		UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after mg-setup");
