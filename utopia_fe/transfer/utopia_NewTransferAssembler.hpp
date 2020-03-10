@@ -68,7 +68,7 @@ namespace utopia {
             return std::make_shared<PseudoL2TransferOperator>(data.T);
         }
 
-        NewTransferAssembler() : use_convert_transfer_(true), remove_incomplete_intersections_(false), handle_adaptive_refinement_(false) {}
+        NewTransferAssembler() : use_convert_transfer_(true), remove_incomplete_intersections_(false), handle_adaptive_refinement_(false), use_dual_lagrange_multiplier_(true) {}
 
         inline void use_convert_transfer(const bool val)
         {
@@ -95,11 +95,17 @@ namespace utopia {
             data.constraint_matrix_to = mat;
         }
 
+        inline void use_dual_lagrange_multiplier(const bool val)
+        {
+            use_dual_lagrange_multiplier_ = val;
+        }
+
     private:
         TransferData data;
         bool use_convert_transfer_;
         bool remove_incomplete_intersections_;
         bool handle_adaptive_refinement_;
+        bool use_dual_lagrange_multiplier_;
     };
 }
 
