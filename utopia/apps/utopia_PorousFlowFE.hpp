@@ -59,8 +59,14 @@ namespace utopia {
             if(demo) {
                 init_demo_fracture_network();
 
-                rename("permeability", *permeability_field_);
-                space_->write("P.vts", *permeability_field_);
+		bool export_permeability = false;
+
+		in.get("export_permeability", export_permeability);
+
+		if(export_permeability) {
+		  rename("permeability", *permeability_field_);
+		  space_->write("P.vts", *permeability_field_);
+		}
             }
         }
 

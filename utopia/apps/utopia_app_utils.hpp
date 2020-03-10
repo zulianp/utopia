@@ -67,11 +67,13 @@ namespace utopia {
         	stats.stop_collect_and_restart("solve");
     	}
 
-        rename("x", x);
-        fine_space_ptr->write(output_path, x);
-
-        stats.stop_collect_and_restart("output");
-
+	if(!output_path.empty()) {
+            rename("x", x);
+            fine_space_ptr->write(output_path, x);
+   
+            stats.stop_collect_and_restart("output");
+	}
+	
         comm.root_print("n_dofs: " + std::to_string(x.size()));
         stats.describe(std::cout);
     }
