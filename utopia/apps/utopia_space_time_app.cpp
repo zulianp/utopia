@@ -111,7 +111,9 @@ namespace utopia {
             // KSPSolver<PetscMatrix, PetscVector> linear_solver;
             // linear_solver.max_it(nx*ny);
             // linear_solver.read(in);
-            Factorization<PetscMatrix, PetscVector> linear_solver;
+            // BiCGStab<PetscMatrix, PetscVector> linear_solver("bjacobi");
+            GMRES<PetscMatrix, PetscVector> linear_solver("bjacobi");
+            // Factorization<PetscMatrix, PetscVector> linear_solver;
             linear_solver.solve(H, g, x);
 
 
