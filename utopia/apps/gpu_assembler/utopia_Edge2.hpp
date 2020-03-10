@@ -114,7 +114,14 @@ namespace utopia {
             out = in[0] * nodes_[1] + nodes_[0];
         }
 
+        UTOPIA_INLINE_FUNCTION Edge2() {}
+
         UTOPIA_INLINE_FUNCTION Edge2(const Point &p1, const Point &p2)
+        {
+            init(p1, p2);
+        }
+
+        UTOPIA_INLINE_FUNCTION void init(const Point &p1, const Point &p2)
         {
             nodes_[0].copy(p1);
             nodes_[1].copy(p2);

@@ -211,6 +211,11 @@ namespace utopia {
                 Point p1, p2;
                 Scalar aperture;
                 Scalar permeability;
+
+                void init(Edge2<Scalar, Dim> &edge) const
+                {
+                    edge.init(p1, p2);
+                }
             };
 
             void init_demo()
@@ -224,6 +229,18 @@ namespace utopia {
 
                 p2[0] = 0.99999;
                 p2[1] = 0.8;
+            }
+
+            UTOPIA_INLINE_FUNCTION SizeType n_fractures() const
+            {
+                return line_fractures.size();
+            }
+
+            UTOPIA_INLINE_FUNCTION const LineFracture &line_fracture(const SizeType &f) const
+            {
+                UTOPIA_DEVICE_ASSERT(f < n_fractures());
+                return line_fractures[f];
+                
             }
 
             std::vector<LineFracture> line_fractures;
@@ -243,15 +260,8 @@ namespace utopia {
 
             utopia::Quadrature<Scalar, 6, 1>::get(q_points, q_weights);
 
-            Point p1, p2;
-
-            p1[0] = 0.00001;
-            p1[1] = 0.2;
-
-            p2[0] = 0.99999;
-            p2[1] = 0.8;
-
-            Edge2<Scalar, 2> fracture(p1, p2);
+            FractureNetwork network;
+            network.init_demo();
 
             auto &mesh = space_->mesh();
 
@@ -283,6 +293,7 @@ namespace utopia {
                     StaticVector<Scalar, 1> p_fracture;
                     StaticVector<Scalar, NQPoints> permeability;
                     ElementVector p_el_vec, m_el_vec;
+                    Edge2<Scalar, Dim> fracture;
 
                     p_el_vec.set(0.0);
                     m_el_vec.set(0.0);
@@ -295,27 +306,40 @@ namespace utopia {
                     const auto n_qp  = fun.n_points();
                     const auto n_fun = fun.n_functions();
 
-                    if(e.univar_elem().intersect_line(fracture.node(0), fracture.node(1), isect_1, isect_2)) {
-                        UTOPIA_DEVICE_ASSERT(fracture.contains(isect_1));
-                        UTOPIA_DEVICE_ASSERT(fracture.contains(isect_2));
+                    bool intersected = false;
 
-                        v = isect_2 - isect_1;
+                    const SizeType n_fracs = network.n_fractures();
+                    for(SizeType f = 0; f < n_fracs; ++f) {
+                        const auto &lf = network.line_fracture(f);
+                        lf.init(fracture);
 
-                        for(SizeType k = 0; k < n_qp; ++k) {
-                            Scalar w = q_weights[k] * fracture.measure();
-                            p = q_points[k](0) * v;
-                            fracture.inverse_transform(p, p_fracture);
-                            e.inverse_transform(p, p_quad);
+                        if(e.univar_elem().intersect_line(fracture.node(0), fracture.node(1), isect_1, isect_2)) {
+                            intersected = true;
+                            UTOPIA_DEVICE_ASSERT(fracture.contains(isect_1));
+                            UTOPIA_DEVICE_ASSERT(fracture.contains(isect_2));
 
-                            for(SizeType j = 0; j < n_fun; ++j) {
-                                for(SizeType l = 0; l < fracture.n_functions(); ++l) {
-                                    const Scalar mm = e.fun(j, p_quad) * fracture.fun(l, p_fracture);
-                                    p_el_vec(j) += frac_perm * frac_aperture * mm * w;
-                                    m_el_vec(j) += mm * w;
+                            v = isect_2 - isect_1;
+
+                            for(SizeType k = 0; k < n_qp; ++k) {
+                                Scalar w = q_weights[k] * fracture.measure();
+                                p = q_points[k](0) * v;
+                                fracture.inverse_transform(p, p_fracture);
+                                e.inverse_transform(p, p_quad);
+
+                                for(SizeType j = 0; j < n_fun; ++j) {
+                                    for(SizeType l = 0; l < fracture.n_functions(); ++l) {
+                                        const Scalar mm = e.fun(j, p_quad) * fracture.fun(l, p_fracture);
+                                        p_el_vec(j) += lf.permeability * lf.aperture * mm * w;
+                                        m_el_vec(j) += mm * w;
+                                    }
                                 }
                             }
                         }
 
+                    }
+
+
+                    if(intersected) {
                         space_view.add_vector(e, p_el_vec, p_view);
                         space_view.add_vector(e, m_el_vec, m_view);
                     }
