@@ -223,7 +223,9 @@ namespace utopia {
             {
                 line_fractures.resize(n);
 
-                std::default_random_engine generator;
+                // std::default_random_engine generator;
+                std::random_device generator;
+
                 std::uniform_real_distribution<Scalar> distribution(0.1,0.9);
 
                 for(SizeType i = 0; i < n; ++i) {
