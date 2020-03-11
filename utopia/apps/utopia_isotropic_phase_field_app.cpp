@@ -348,27 +348,27 @@ namespace utopia {
 
 
     
-    template<class FunctionSpace>
-    static void build_irreversility_constraint(const PetscVector &x_old, PetscVector &x_new, const typename FunctionSpace::SizeType & comp)
-    {   
-        static const int Dim   = FunctionSpace::Dim;
-        using Scalar         = typename FunctionSpace::Scalar;
-        using SizeType       = typename FunctionSpace::SizeType;
+    // template<class FunctionSpace>
+    // static void build_irreversility_constraint(const PetscVector &x_old, PetscVector &x_new, const typename FunctionSpace::SizeType & comp)
+    // {   
+    //     static const int Dim   = FunctionSpace::Dim;
+    //     using Scalar         = typename FunctionSpace::Scalar;
+    //     using SizeType       = typename FunctionSpace::SizeType;
 
-        {
-            auto d_x_old = const_device_view(x_old);
+    //     {
+    //         auto d_x_old = const_device_view(x_old);
 
-            parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
-            {
-                if(i%(Dim+1)==comp){
-                    return d_x_old.get(i); 
-                }
-                else{
-                    return -9e15; 
-                }                    
-            });
-        }
-    }    
+    //         parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+    //         {
+    //             if(i%(Dim+1)==comp){
+    //                 return d_x_old.get(i); 
+    //             }
+    //             else{
+    //                 return -9e15; 
+    //             }                    
+    //         });
+    //     }
+    // }    
 
 
     template<class FunctionSpace>
@@ -478,6 +478,8 @@ namespace utopia {
             }        
         }
 
+        pp.old_solution(x); 
+
         for (auto t=1; t < num_time_steps; t++)
         {
             std::cout<<"Time-step: "<< t << "  \n"; 
@@ -494,16 +496,10 @@ namespace utopia {
             std::cout<<"pressure: "<< pressure0 * time_ << "  \n"; 
             pp.set_pressure(pressure0 * time_);     
 
-                                                                                        // PF component=0
-            build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
 
+            pp.old_solution(x); 
+            pp.build_irreversility_constraint(irreversibility_constraint); 
 
-            // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-            // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-            // // linear_solver->max_it(200); 
-            // linear_solver->pc_type("jacobi");
-            // Newton<PetscMatrix, PetscVector> solver(linear_solver);
-            // in.get("solver", solver);
 
             // MPRGP sucks as a solver, as it can not be preconditioned easily ... 
             auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
