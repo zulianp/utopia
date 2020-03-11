@@ -56,19 +56,20 @@ namespace utopia {
 
             in.get("demo", demo);
             in.get("rescale_with_spacing", rescale_with_spacing_);
+            in.get("use_lagrange_mult_method", use_lagrange_mult_method_);
 
             if(demo) {
                 network_.read(in);
                 init_permeability(in);
 
-        		bool export_permeability = false;
+                bool export_permeability = false;
 
-        		in.get("export_permeability", export_permeability);
+                in.get("export_permeability", export_permeability);
 
-        		if(export_permeability) {
-        		  rename("permeability", *permeability_field_);
-        		  space_->write("P.vts", *permeability_field_);
-        		}
+                if(export_permeability) {
+                    rename("permeability", *permeability_field_);
+                    space_->write("P.vtr", *permeability_field_);
+                }
             }
         }
 
@@ -105,7 +106,7 @@ namespace utopia {
             return false;
         }
 
-        inline bool hessian_old(const Vector &x, Matrix &H) const
+        inline bool hessian_from_field(const Vector &x, Matrix &H) const
         {
             Chrono c;
             c.start();
@@ -176,6 +177,10 @@ namespace utopia {
 
         inline bool hessian(const Vector &x, Matrix &H) const override
         {
+            if(!use_lagrange_mult_method_) {
+                return hessian_from_field(x, H);
+            }
+
             using Point1 = utopia::StaticVector<Scalar, 1>;
 
             Chrono c;
@@ -241,44 +246,44 @@ namespace utopia {
 
                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                   // StaticVector<Scalar, Dim> g_trial, g_test, isect_1, isect_2, v, t, p, p_quad;
+                   StaticVector<Scalar, Dim> g_trial, g_test, isect_1, isect_2, v, t, p, p_quad;
 
-                   // const SizeType n_fracs = network_.n_fractures();
-                   // for(SizeType f = 0; f < n_fracs; ++f) {
-                   //     const auto &lf = network_.line_fracture(f);
+                   const SizeType n_fracs = network_.n_fractures();
+                   for(SizeType f = 0; f < n_fracs; ++f) {
+                       const auto &lf = network_.line_fracture(f);
 
-                   //     if(e.univar_elem().intersect_line(lf.p1, lf.p2, isect_1, isect_2)) {
-                   //         v = isect_2 - isect_1;
-                   //         const Scalar len_isect = norm2(v);
-                           
-                   //         if(device::abs(len_isect) <= device::epsilon<Scalar>()) {
-                   //              continue;
-                   //         }
+                       if(e.univar_elem().intersect_line(lf.p1, lf.p2, isect_1, isect_2)) {
+                           v = isect_2 - isect_1;
+                           const Scalar len_isect = norm2(v);
 
-                   //         t = v / len_isect;
+                           if(device::abs(len_isect) <= device::epsilon<Scalar>()) {
+                                continue;
+                           }
 
-                   //         for(SizeType k = 0; k < n_qp; ++k) {
-                   //             const Scalar w = q_weights[k] * len_isect * (lf.permeability * lf.aperture);
+                           t = v / len_isect;
 
-                   //             p = isect_1 + q_points[k](0) * v;
-                   //             e.inverse_transform(p, p_quad);
+                           for(SizeType k = 0; k < n_qp; ++k) {
+                               const Scalar w = q_weights[k] * len_isect * (lf.permeability * lf.aperture);
 
-                   //             for(SizeType j = 0; j < n_fun; ++j) {
-                   //                  e.grad(j, p_quad, g_test);
-                   //                  const Scalar g_t_test = inner(g_test, t);
+                               p = isect_1 + q_points[k](0) * v;
+                               e.inverse_transform(p, p_quad);
 
-                   //                  el_mat(j, j) += g_t_test * g_t_test * w;
+                               for(SizeType j = 0; j < n_fun; ++j) {
+                                    e.grad(j, p_quad, g_test);
+                                    const Scalar g_t_test = inner(g_test, t);
 
-                   //                  for(SizeType l = j + 1; l < n_fun; ++l) {
-                   //                      e.grad(l, p_quad, g_trial);
-                   //                      const Scalar v = g_t_test * inner(g_trial, t) * w;
-                   //                      el_mat(j, l) += v;
-                   //                      el_mat(l, j) += v;
-                   //                  }
-                   //             }
-                   //         }
-                   //     }
-                   // }
+                                    el_mat(j, j) += g_t_test * g_t_test * w;
+
+                                    for(SizeType l = j + 1; l < n_fun; ++l) {
+                                        e.grad(l, p_quad, g_trial);
+                                        const Scalar v = g_t_test * inner(g_trial, t) * w;
+                                        el_mat(j, l) += v;
+                                        el_mat(l, j) += v;
+                                    }
+                               }
+                           }
+                       }
+                   }
 
                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -315,7 +320,9 @@ namespace utopia {
         PorousFlowFE(FunctionSpace &space)
         : space_(utopia::make_ref(space)),
           quadrature_(),
-          rescale_with_spacing_(false)
+          rescale_with_spacing_(false),
+          use_lagrange_mult_method_(false),
+          backround_perm_(1e-4)
         {
             init();
         }
@@ -323,7 +330,9 @@ namespace utopia {
         PorousFlowFE(const std::shared_ptr<FunctionSpace> &space)
         : space_(space),
           quadrature_(),
-          rescale_with_spacing_(false)
+          rescale_with_spacing_(false),
+          use_lagrange_mult_method_(false),
+          backround_perm_(1e-4)
         {
             init();
         }
@@ -424,7 +433,7 @@ namespace utopia {
             {
                 UTOPIA_DEVICE_ASSERT(f < n_fractures());
                 return line_fractures[f];
-                
+
             }
 
             std::vector<LineFracture> line_fractures;
@@ -432,110 +441,111 @@ namespace utopia {
 
         void init_permeability(Input &in)
         {
-            using Point1 = utopia::StaticVector<Scalar, 1>;
+            if(use_lagrange_mult_method_) {
+                permeability_field_->set(backround_perm_);
+            } else {
+                using Point1 = utopia::StaticVector<Scalar, 1>;
 
-            Scalar backround_perm = 1e-4;
-     
-            Scalar spacing        = space_->mesh().min_spacing();
+                Scalar spacing        = space_->mesh().min_spacing();
 
-            ArrayView<Point1, 12> q_points;
-            ArrayView<Scalar, 12> q_weights;
+                ArrayView<Point1, 12> q_points;
+                ArrayView<Scalar, 12> q_weights;
 
-            utopia::Quadrature<Scalar, 6, 1>::get(q_points, q_weights);
+                utopia::Quadrature<Scalar, 6, 1>::get(q_points, q_weights);
 
-            network_.read(in);
+                network_.read(in);
 
 
-            auto &mesh = space_->mesh();
+                auto &mesh = space_->mesh();
 
-            mass_vector_ = std::make_shared<Vector>();
-            space_->create_vector(*mass_vector_);
-            permeability_field_->set(0.0);
+                mass_vector_ = std::make_shared<Vector>();
+                space_->create_vector(*mass_vector_);
+                permeability_field_->set(0.0);
 
-            ShapeFunction<FunctionSpace, Quadrature> fun_temp(*space_, quadrature_);
-            Differential<FunctionSpace, Quadrature> differential_temp(*space_, quadrature_);
-            // PhysicalPoint<FunctionSpace, Quadrature> points_temp(*space_, quadrature_);
+                ShapeFunction<FunctionSpace, Quadrature> fun_temp(*space_, quadrature_);
+                Differential<FunctionSpace, Quadrature> differential_temp(*space_, quadrature_);
+                // PhysicalPoint<FunctionSpace, Quadrature> points_temp(*space_, quadrature_);
 
-            {
-                auto space_view = space_->view_device();
-
-                auto dx_view    = differential_temp.view_device();
-                auto fun_view   = fun_temp.view_device();
-
-                auto p_view     = space_->assembly_view_device(*permeability_field_);
-                auto m_view     = space_->assembly_view_device(*mass_vector_);
-
-                // auto points_view = points_temp.view_device();
-
-                Device::parallel_for(
-                    space_->local_element_range(),
-                    UTOPIA_LAMBDA(const SizeType &i)
                 {
-                    Elem e;
-                    Point p, v, p_quad, isect_1, isect_2;
-                    StaticVector<Scalar, 1> p_fracture;
-                    StaticVector<Scalar, NQPoints> permeability;
-                    ElementVector p_el_vec, m_el_vec;
-                    Edge2<Scalar, Dim> fracture;
+                    auto space_view = space_->view_device();
 
-                    p_el_vec.set(0.0);
-                    m_el_vec.set(0.0);
+                    auto dx_view    = differential_temp.view_device();
+                    auto fun_view   = fun_temp.view_device();
 
-                    space_view.elem(i, e);
+                    auto p_view     = space_->assembly_view_device(*permeability_field_);
+                    auto m_view     = space_->assembly_view_device(*mass_vector_);
 
-                    auto fun    = fun_view.make(e);
-                    auto dx     = dx_view.make(e);
+                    // auto points_view = points_temp.view_device();
 
-                    const auto n_qp  = fun.n_points();
-                    const auto n_fun = fun.n_functions();
+                    Device::parallel_for(
+                        space_->local_element_range(),
+                        UTOPIA_LAMBDA(const SizeType &i)
+                    {
+                        Elem e;
+                        Point p, v, p_quad, isect_1, isect_2;
+                        StaticVector<Scalar, 1> p_fracture;
+                        StaticVector<Scalar, NQPoints> permeability;
+                        ElementVector p_el_vec, m_el_vec;
+                        Edge2<Scalar, Dim> fracture;
 
-                    bool intersected = false;
+                        p_el_vec.set(0.0);
+                        m_el_vec.set(0.0);
 
-                    const SizeType n_fracs = network_.n_fractures();
-                    for(SizeType f = 0; f < n_fracs; ++f) {
-                        const auto &lf = network_.line_fracture(f);
-                        lf.init(fracture);
+                        space_view.elem(i, e);
 
-                        if(e.univar_elem().intersect_line(fracture.node(0), fracture.node(1), isect_1, isect_2)) {
-                            intersected = true;
-                            UTOPIA_DEVICE_ASSERT(fracture.contains(isect_1));
-                            UTOPIA_DEVICE_ASSERT(fracture.contains(isect_2));
+                        auto fun    = fun_view.make(e);
+                        auto dx     = dx_view.make(e);
 
-                            v = isect_2 - isect_1;
-                            const Scalar len_isect = norm2(v);
+                        const auto n_qp  = fun.n_points();
+                        const auto n_fun = fun.n_functions();
 
-                            for(SizeType k = 0; k < n_qp; ++k) {
-                                Scalar w = q_weights[k] * len_isect;
-                                p = isect_1 + q_points[k](0) * v;
-                                fracture.inverse_transform(p, p_fracture);
-                                e.inverse_transform(p, p_quad);
+                        bool intersected = false;
 
-                                for(SizeType j = 0; j < n_fun; ++j) {
-                                    for(SizeType l = 0; l < fracture.n_functions(); ++l) {
-                                        const Scalar mm = e.fun(j, p_quad) * fracture.fun(l, p_fracture);
-                                        p_el_vec(j) += lf.permeability * lf.aperture * mm * w;
-                                        m_el_vec(j) += mm * w;
+                        const SizeType n_fracs = network_.n_fractures();
+                        for(SizeType f = 0; f < n_fracs; ++f) {
+                            const auto &lf = network_.line_fracture(f);
+                            lf.init(fracture);
+
+                            if(e.univar_elem().intersect_line(fracture.node(0), fracture.node(1), isect_1, isect_2)) {
+                                intersected = true;
+                                UTOPIA_DEVICE_ASSERT(fracture.contains(isect_1));
+                                UTOPIA_DEVICE_ASSERT(fracture.contains(isect_2));
+
+                                v = isect_2 - isect_1;
+                                const Scalar len_isect = norm2(v);
+
+                                for(SizeType k = 0; k < n_qp; ++k) {
+                                    Scalar w = q_weights[k] * len_isect;
+                                    p = isect_1 + q_points[k](0) * v;
+                                    fracture.inverse_transform(p, p_fracture);
+                                    e.inverse_transform(p, p_quad);
+
+                                    for(SizeType j = 0; j < n_fun; ++j) {
+                                        for(SizeType l = 0; l < fracture.n_functions(); ++l) {
+                                            const Scalar mm = e.fun(j, p_quad) * fracture.fun(l, p_fracture);
+                                            p_el_vec(j) += lf.permeability * lf.aperture * mm * w;
+                                            m_el_vec(j) += mm * w;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    if(intersected) {
-                        space_view.add_vector(e, p_el_vec, p_view);
-                        space_view.add_vector(e, m_el_vec, m_view);
-                    }
-                });
+                        if(intersected) {
+                            space_view.add_vector(e, p_el_vec, p_view);
+                            space_view.add_vector(e, m_el_vec, m_view);
+                        }
+                    });
+                }
+
+                e_pseudo_inv(*mass_vector_, *mass_vector_, 1e-12);
+                (*permeability_field_) = e_mul((*permeability_field_) , (*mass_vector_));
+                permeability_field_->shift(backround_perm_);
+
+                //just to be safe
+                permeability_field_->e_max(backround_perm_);
             }
 
-            e_pseudo_inv(*mass_vector_, *mass_vector_, 1e-12);
-            (*permeability_field_) = e_mul((*permeability_field_) , (*mass_vector_));
-            permeability_field_->shift(backround_perm);
-
-            //just to be safe
-            permeability_field_->e_max(backround_perm);
-
-            // permeability_field_->set(backround_perm);
         }
 
         // void init_permeability_gaussian()
@@ -668,6 +678,8 @@ namespace utopia {
         std::shared_ptr<Vector> mass_vector_;
         std::unique_ptr<FEFunction<FunctionSpace> > permeability_field_fun_;
         bool rescale_with_spacing_;
+        bool use_lagrange_mult_method_;
+        Scalar backround_perm_;
 
         FractureNetwork network_;
 

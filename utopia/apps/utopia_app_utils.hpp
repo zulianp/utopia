@@ -4,7 +4,7 @@
 #include "utopia_GeometricMultigrid.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 
-// #include "petscdraw.h" 
+// #include "petscdraw.h"
 
 namespace utopia {
 
@@ -34,9 +34,13 @@ namespace utopia {
 
     	{
         	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
+            // auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
+            // smoother->pc_type("bjacobi");
+            // smoother->ksp_type("sor");
+
 		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
         	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
-        	mg.verbose(true);
+        	// mg.verbose(true);
             mg.read(in);
         	mg.init(coarse_space, n_levels);
 
@@ -65,44 +69,20 @@ namespace utopia {
 
         	space.apply_constraints(b);
 
-        	mg.update(make_ref(A));
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+
+            mg.max_it(1);
+            cg.set_preconditioner(make_ref(mg));
+
+            cg.update(make_ref(A));
         	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
 
-        	mg.apply(b, x);
+            cg.verbose(true);
+            cg.apply(b, x);
         	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
         	stats.stop_collect_and_restart("solve");
     	}
 
-        // if(in_situ_rendering) {
-            // const int w = 600;
-            // const int h = 600;
-
-            // PetscErrorCode ierr;
-            // PetscViewer    viewer;
-
-            // PetscViewerCreate(fine_space_ptr->comm().get(), &viewer);
-            // PetscViewerSetType(viewer, PETSCVIEWERDRAW);
-
-            // ierr = DMView(raw_type(fine_space_ptr->mesh()), viewer); assert(ierr == 0);
-            // ierr = VecView(raw_type(x), viewer);                     assert(ierr == 0);
-
-            // PetscViewerDestroy(&viewer);
-
-            // PetscDraw draw;
-            // PetscErrorCode ierr = PetscDrawOpenImage(
-            //     fine_space_ptr->comm().get(),
-            //     "MG.png",
-            //     w,
-            //     h,
-            //     &draw
-            // ); assert(ierr == 0);
-
-            // PetscDrawView(PetscDraw indraw,PetscViewer viewer)
-
-
-            // PetscDrawDestroy(&draw);
-
-        // } else 
         if(!output_path.empty()) {
             rename("x", x);
             fine_space_ptr->write(output_path, x);
