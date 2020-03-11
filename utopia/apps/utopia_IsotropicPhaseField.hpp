@@ -6,6 +6,7 @@
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_Views.hpp"
+#include "utopia_Algorithms.hpp"
 #include "utopia_PrincipalShapeStressView.hpp"
 #include "utopia_DiffController.hpp"
 #include "utopia_TensorView4.hpp"
@@ -66,7 +67,7 @@ namespace utopia {
 
             Parameters()
             :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0),
-                mu(1.0), lambda(1.0), regularization(1e-8), pressure(0.0),
+                mu(1.0), lambda(1.0), regularization(1e-6), pressure(0.0),
                 use_penalty_irreversibbility(false), penalty_param(0.0)
             {
 
@@ -98,6 +99,10 @@ namespace utopia {
 
             params_.mu = 80.0;
             params_.lambda = 120.0;
+
+            Scalar tol = 1e-3; 
+            Scalar tol2 = tol*tol; 
+            params_.penalty_param = params_.fracture_toughness/params_.length_scale * (1.0/ tol2 - 1.0); 
         }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
@@ -135,12 +140,16 @@ namespace utopia {
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
 
-            FEFunction<CSpace> c_old_fun(C, x_old_);
+            auto &x_old = const_cast<Vector &>(x_old_);
+            FEFunction<CSpace> c_old_fun(C, x_old);
 
 
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
+            auto c_old  = c_old_fun.value(q); 
+
+
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
             auto differential = C.differential(q);
@@ -155,6 +164,9 @@ namespace utopia {
                 auto C_view = C.view_device();
 
                 auto c_view      = c_val.view_device();
+                auto c_old_view  = c_old.view_device(); 
+
+
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
 
@@ -172,7 +184,9 @@ namespace utopia {
                         C_view.elem(i, c_e);
 
                         StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> c_old;
                         c_view.get(c_e, c);
+                        c_old_view.get(c_e, c_old); 
 
                         UElem u_e;
                         U_view.elem(i, u_e);
@@ -196,6 +210,13 @@ namespace utopia {
                             }
 
                             el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
+
+                            if(params_.use_penalty_irreversibbility){
+                                auto c_cold             = c[qp] - c_old[qp]; 
+                                auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
+                                el_energy               += params_.penalty_param/2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+                            }
+
                         }
 
                         assert(el_energy == el_energy);
@@ -228,9 +249,14 @@ namespace utopia {
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
 
+            auto &x_old = const_cast<Vector &>(x_old_);
+            FEFunction<CSpace> c_old_fun(C, x_old);
+
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
+            auto c_old  = c_old_fun.value(q); 
+
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
             auto differential = C.differential(q);
@@ -247,6 +273,8 @@ namespace utopia {
                 auto C_view      = C.view_device();
 
                 auto c_view      = c_val.view_device();
+                auto c_old_view  = c_old.view_device();                 
+
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
 
@@ -285,7 +313,9 @@ namespace utopia {
                         CElem c_e;
                         C_view.elem(i, c_e);
                         StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> c_old;
                         c_view.get(c_e, c);
+                        c_old_view.get(c_e, c_old); 
 
                         auto c_grad_el = c_grad_view.make(c_e);
                         auto dx        = differential_view.make(c_e);
@@ -334,6 +364,15 @@ namespace utopia {
                                 }
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
+
+                                // this can be computed outside 
+                                if(params_.use_penalty_irreversibbility){
+                                    auto c_cold             = c[qp] - c_old[qp]; 
+                                    auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
+                                    c_el_vec(j)             += params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
+                                }
+
+
                             }
 
                         }
@@ -377,6 +416,10 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
+            auto &x_old = const_cast<Vector &>(x_old_);
+            FEFunction<CSpace> c_old_fun(C, x_old);            
+
+
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
 
@@ -401,8 +444,8 @@ namespace utopia {
                 auto U_view      = U.view_device();
                 auto C_view      = C.view_device();
                 auto space_view  = space_.view_device();
-
                 auto c_view      = c_val.view_device();
+
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
 
@@ -464,7 +507,13 @@ namespace utopia {
                                             c_shape_fun_el(l, qp),
                                             c_grad_shape_el(j, qp),
                                             c_grad_shape_el(l, qp)
-                                    ) * dx(qp);                                      
+                                    ) * dx(qp);         
+
+                                    if(params_.use_penalty_irreversibbility){
+                                        el_mat(l, j)            += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_fun_el(l, qp) * dx(qp);
+                                    }
+
+
                                 }
                             }
 

@@ -347,28 +347,6 @@ namespace utopia {
     }
 
 
-    
-    // template<class FunctionSpace>
-    // static void build_irreversility_constraint(const PetscVector &x_old, PetscVector &x_new, const typename FunctionSpace::SizeType & comp)
-    // {   
-    //     static const int Dim   = FunctionSpace::Dim;
-    //     using Scalar         = typename FunctionSpace::Scalar;
-    //     using SizeType       = typename FunctionSpace::SizeType;
-
-    //     {
-    //         auto d_x_old = const_device_view(x_old);
-
-    //         parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
-    //         {
-    //             if(i%(Dim+1)==comp){
-    //                 return d_x_old.get(i); 
-    //             }
-    //             else{
-    //                 return -9e15; 
-    //             }                    
-    //         });
-    //     }
-    // }    
 
 
     template<class FunctionSpace>
@@ -493,10 +471,8 @@ namespace utopia {
 
             space.apply_constraints(x);    
 
-            std::cout<<"pressure: "<< pressure0 * time_ << "  \n"; 
+            
             pp.set_pressure(pressure0 * time_);     
-
-
             pp.old_solution(x); 
             pp.build_irreversility_constraint(irreversibility_constraint); 
 
@@ -515,6 +491,20 @@ namespace utopia {
             solver.set_box_constraints(box);
             in.get("solver", solver);
             solver.solve(pp, x);
+
+
+            // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector> >();
+            // auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector> >();
+            // qp_solver->pc_type("bjacobi"); 
+            // qp_solver->max_it(1000); 
+
+
+            // TrustRegion<PetscMatrix, PetscVector> solver(qp_solver);
+            // solver.verbose(true); 
+            // solver.delta0(1e4); 
+            // in.get("solver", solver);
+            // solver.solve(pp, x);
+
             
 
             // auto hessian_approx   = std::make_shared<LBFGS<PetscVector> >(15);
