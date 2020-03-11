@@ -483,41 +483,43 @@ namespace utopia {
             
             pp.set_pressure(pressure0 * time_);     
             pp.old_solution(x); 
-            pp.build_irreversility_constraint(irreversibility_constraint); 
+            // pp.build_irreversility_constraint(irreversibility_constraint); 
 
-            std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
-            if(use_mprgp) {
-                // MPRGP sucks as a solver, as it can not be preconditioned easily ... 
-                qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
-            } else {
-                // tao seems to be faster until it stalls ... 
-                // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-                auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-                linear_solver->max_it(200); 
-                linear_solver->pc_type("bjacobi");            
-                qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
-            }
-
-
-            qp_solver->max_it(1000); 
-            TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
-            auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));
-            solver.set_box_constraints(box);
-            in.get("solver", solver);
-            solver.solve(pp, x);
+            // std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
+            // if(use_mprgp) {
+            //     // MPRGP sucks as a solver, as it can not be preconditioned easily ... 
+            //     qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+            // } else {
+            //     // tao seems to be faster until it stalls ... 
+            //     // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+            //     auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+            //     linear_solver->max_it(200); 
+            //     linear_solver->pc_type("bjacobi");            
+            //     qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
+            // }
 
 
-            // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector> >();
-            // auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector> >();
-            // qp_solver->pc_type("bjacobi"); 
+
             // qp_solver->max_it(1000); 
-
-
-            // TrustRegion<PetscMatrix, PetscVector> solver(qp_solver);
-            // solver.verbose(true); 
-            // solver.delta0(1e4); 
+            // TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
+            // // auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));
+            // // solver.set_box_constraints(box);
             // in.get("solver", solver);
             // solver.solve(pp, x);
+
+
+
+            auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector> >();
+            // auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector> >();
+            qp_solver->pc_type("bjacobi"); 
+            qp_solver->max_it(1000); 
+
+
+            TrustRegion<PetscMatrix, PetscVector> solver(qp_solver);
+            solver.verbose(true); 
+            solver.delta0(1e4); 
+            in.get("solver", solver);
+            solver.solve(pp, x);
 
             
 

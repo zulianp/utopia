@@ -1,15 +1,15 @@
 {
     "app" : "petsc_tension_isotropic_phase_field_2",
     "output-path" : "tension_isotropic",
-    "nx" : 10,
-    "ny" : 10,
+    "nx" : 100,
+    "ny" : 100,
     "nz" : 2,
     "disp" : 1,
     "with_damage" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
     "tension_test" : true, 
-    "num_time_steps" : 3, 
+    "num_time_steps" : 100, 
     "dt" : 1e-4,     
     "diff_controller" : {
         "spacing" : 1e-6,
@@ -17,7 +17,7 @@
     },
     "solver" : {
         "verbose" : true,
-        "max-it" : 100,
+        "max-it" : 300,
         "atol": 1e-6, 
         "linear-solver" : {
             "verbose" : false, 

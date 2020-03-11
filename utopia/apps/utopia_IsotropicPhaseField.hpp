@@ -59,16 +59,24 @@ namespace utopia {
                 in.get("lambda", lambda);
                 in.get("regularization", regularization);
                 in.get("pressure", pressure);
+
+                in.get("use_penalty_irreversibility", use_penalty_irreversibility);
+                in.get("penalty_param", penalty_param);
+
+                in.get("use_crack_set_irreversibiblity", use_crack_set_irreversibiblity); 
+                in.get("crack_set_tol", crack_set_tol); 
             }
 
 
             Parameters()
             :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), 
-                mu(1.0), lambda(1.0), regularization(1e-8), pressure(0.0), 
-                use_penalty_irreversibbility(false), penalty_param(0.0)
+                mu(1.0), lambda(1.0), regularization(1e-10), pressure(0.0), penalty_param(0.0), 
+                crack_set_tol(0.9), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(true)
             {}
 
-            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, regularization, pressure, use_penalty_irreversibbility, penalty_param;
+            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda; 
+            Scalar regularization, pressure, penalty_param, crack_set_tol;
+            bool use_penalty_irreversibility, use_crack_set_irreversibiblity; 
         };
 
         void read(Input &in) override
@@ -94,11 +102,13 @@ namespace utopia {
             params_.mu = 80.0;
             params_.lambda = 120.0;
 
-
             // this computation follows eq. 50 from "On penalization in variational phase-field models of britlle fracture, Gerasimov, Lorenzis"
-            Scalar tol = 1e-3; 
-            Scalar tol2 = tol*tol; 
-            params_.penalty_param = params_.fracture_toughness/params_.length_scale * (1.0/ tol2 - 1.0);             
+            if(params_.use_penalty_irreversibility)
+            {
+                Scalar tol = 1e-3; 
+                Scalar tol2 = tol*tol; 
+                params_.penalty_param = params_.fracture_toughness/params_.length_scale * (1.0/ tol2 - 1.0);             
+            }
         }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
@@ -206,7 +216,7 @@ namespace utopia {
 
                             el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
-                            if(params_.use_penalty_irreversibbility){
+                            if(params_.use_penalty_irreversibility){
                                 auto c_cold             = c[qp] - c_old[qp]; 
                                 auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
                                 el_energy               += params_.penalty_param/2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
@@ -371,7 +381,7 @@ namespace utopia {
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
                                 
-                                if(params_.use_penalty_irreversibbility){
+                                if(params_.use_penalty_irreversibility){
                                     auto c_cold             = c[qp] - c_old[qp]; 
                                     auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
                                     c_el_vec(j)             += params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
@@ -396,6 +406,10 @@ namespace utopia {
 
             space_.apply_zero_constraints(g);
 
+            // fully broken case is treated as Dirichlet BC
+            if(params_.use_crack_set_irreversibiblity){
+                apply_zero_constraints_irreversibiblity(g); 
+            }
 
             // static int iter = 0;
             // write("g" + std::to_string(iter++) + ".m", g);
@@ -518,7 +532,7 @@ namespace utopia {
                                             c_grad_l
                                     ) * dx(qp);                                      
 
-                                    if(params_.use_penalty_irreversibbility){
+                                    if(params_.use_penalty_irreversibility){
                                         el_mat(l, j) += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     }                                        
                                 }
@@ -591,6 +605,10 @@ namespace utopia {
             }
 
             space_.apply_constraints(H);
+
+            if(params_.use_crack_set_irreversibiblity){
+                apply_zero_constraints_irreversibiblity(H);
+            }
 
             // static int iter = 0;
             // write("H" + std::to_string(iter++) + ".m", H);
@@ -833,6 +851,50 @@ namespace utopia {
                 });
             }
         }    
+
+        // this 2 functions need to be moved to BC conditions 
+        void apply_zero_constraints_irreversibiblity(Vector & g) const
+        {
+            {
+                auto d_x_old = const_device_view(x_old_);
+
+                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                {
+                    if(i%(Dim+1)==0){
+                        if(d_x_old.get(i) > params_.crack_set_tol){
+                            return 0.0; 
+                        }
+                        else{
+                            return xi; 
+                        }
+                    }
+                    else{
+                        return xi; 
+                    }                    
+                
+                });
+            }
+        }
+
+        // we should move this to BC conditions
+        // also, will not run efficienetly in parallel 
+        void apply_zero_constraints_irreversibiblity(Matrix & H) const
+        {
+            std::vector<SizeType> indices; 
+            {
+                Read<Vector> r(x_old_);
+
+                Range range_w = range(x_old_);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                {
+                    if(i%(Dim+1)==0 && x_old_.get(i) > params_.crack_set_tol){
+                        indices.push_back(i);
+                    }
+                }
+            }                 
+
+            set_zero_rows(H, indices, 1.);
+        }        
 
 
     private:
