@@ -71,7 +71,7 @@ namespace utopia {
             Parameters()
             :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), 
                 mu(1.0), lambda(1.0), regularization(1e-10), pressure(0.0), penalty_param(0.0), 
-                crack_set_tol(0.9), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(true)
+                crack_set_tol(0.98), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(false)
             {}
 
             Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda; 
@@ -211,7 +211,7 @@ namespace utopia {
                             if(params_.pressure > 0){
                                 //CHANGE no Id (but equivalent)
                                 // el_energy -= inner(c[qp] * params_.pressure * identity, el_strain.strain[qp]) * dx(qp); 
-                                el_energy -= c[qp] * params_.pressure *  sum(diag(el_strain.strain[qp])) * dx(qp); 
+                                el_energy -= c[qp] * params_.pressure *  tr * dx(qp); 
                             }
 
                             el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
@@ -833,6 +833,11 @@ namespace utopia {
         {
             return x_old_;
         }        
+
+        void get_old_solution(Vector & x) const 
+        {
+            x = x_old_;
+        }                
 
 
         void build_irreversility_constraint(Vector &lb)
