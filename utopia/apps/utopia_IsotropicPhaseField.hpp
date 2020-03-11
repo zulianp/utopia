@@ -6,12 +6,12 @@
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_Views.hpp"
-#include "utopia_Algorithms.hpp"
 #include "utopia_PrincipalShapeStressView.hpp"
 #include "utopia_DiffController.hpp"
 #include "utopia_TensorView4.hpp"
 #include "utopia_DeviceTensorProduct.hpp"
 #include "utopia_DeviceTensorContraction.hpp"
+#include "utopia_StrainView.hpp"
 
 namespace utopia {
 
@@ -59,19 +59,14 @@ namespace utopia {
                 in.get("lambda", lambda);
                 in.get("regularization", regularization);
                 in.get("pressure", pressure);
-
-                in.get("penalty_param", penalty_param);
-                in.get("penalty", use_penalty_irreversibbility);
             }
 
 
             Parameters()
-            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0),
-                mu(1.0), lambda(1.0), regularization(1e-6), pressure(0.0),
+            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), 
+                mu(1.0), lambda(1.0), regularization(1e-8), pressure(0.0), 
                 use_penalty_irreversibbility(false), penalty_param(0.0)
-            {
-
-            }
+            {}
 
             Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, regularization, pressure, use_penalty_irreversibbility, penalty_param;
         };
@@ -94,15 +89,16 @@ namespace utopia {
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
         {
             params_.length_scale = 2.0 * space.mesh().min_spacing();
-            std::cout<<"params_.length_scale: "<< params_.length_scale << "  \n"; 
             params_.fracture_toughness = 0.001;
 
             params_.mu = 80.0;
             params_.lambda = 120.0;
 
+
+            // this computation follows eq. 50 from "On penalization in variational phase-field models of britlle fracture, Gerasimov, Lorenzis"
             Scalar tol = 1e-3; 
             Scalar tol2 = tol*tol; 
-            params_.penalty_param = params_.fracture_toughness/params_.length_scale * (1.0/ tol2 - 1.0); 
+            params_.penalty_param = params_.fracture_toughness/params_.length_scale * (1.0/ tol2 - 1.0);             
         }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
@@ -137,18 +133,16 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
+            auto &x_old = const_cast<Vector &>(x_old_);
+            FEFunction<CSpace> c_old_fun(C, x_old);            
+
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
-
-            auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);
-
 
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
-            auto c_old  = c_old_fun.value(q); 
-
+            auto c_old  = c_old_fun.value(q);             
 
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
@@ -165,7 +159,6 @@ namespace utopia {
 
                 auto c_view      = c_val.view_device();
                 auto c_old_view  = c_old.view_device(); 
-
 
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
@@ -197,8 +190,8 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        StaticMatrix<Scalar, Dim, Dim> identity; 
-                        identity.identity(); 
+                        // StaticMatrix<Scalar, Dim, Dim> identity; 
+                        // identity.identity(); 
 
                         Scalar pressure_energy = 0.0; 
 
@@ -206,7 +199,9 @@ namespace utopia {
 
                             Scalar tr = trace(el_strain.strain[qp]); 
                             if(params_.pressure > 0){
-                                el_energy -= inner(c[qp] * params_.pressure * identity, el_strain.strain[qp]) * dx(qp); 
+                                //CHANGE no Id (but equivalent)
+                                // el_energy -= inner(c[qp] * params_.pressure * identity, el_strain.strain[qp]) * dx(qp); 
+                                el_energy -= c[qp] * params_.pressure *  sum(diag(el_strain.strain[qp])) * dx(qp); 
                             }
 
                             el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
@@ -215,8 +210,7 @@ namespace utopia {
                                 auto c_cold             = c[qp] - c_old[qp]; 
                                 auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
                                 el_energy               += params_.penalty_param/2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
-                            }
-
+                            }                            
                         }
 
                         assert(el_energy == el_energy);
@@ -246,11 +240,11 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
+            auto &x_old = const_cast<Vector &>(x_old_);
+            FEFunction<CSpace> c_old_fun(C, x_old);            
+
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
-
-            auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);
 
             Quadrature q;
 
@@ -268,12 +262,14 @@ namespace utopia {
             PrincipalStrains<USpace, Quadrature> strain(U, q);
             strain.update(x);
 
+            Strain<USpace, Quadrature> ref_strain_u(U, q);
+
             {
                 auto U_view      = U.view_device();
                 auto C_view      = C.view_device();
 
                 auto c_view      = c_val.view_device();
-                auto c_old_view  = c_old.view_device();                 
+                auto c_old_view  = c_old.view_device();   
 
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
@@ -286,6 +282,7 @@ namespace utopia {
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
                 auto g_view = space_.assembly_view_device(g);
+                auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(
                     space_.local_element_range(),
@@ -295,8 +292,8 @@ namespace utopia {
                         StaticVector<Scalar, U_NDofs> u_el_vec;
                         StaticVector<Scalar, C_NDofs>  c_el_vec;
 
-                        StaticMatrix<Scalar, Dim, Dim> identity; 
-                        identity.identity();                         
+                        // StaticMatrix<Scalar, Dim, Dim> identity; 
+                        // identity.identity();                         
 
                         u_el_vec.set(0.0);
                         c_el_vec.set(0.0);
@@ -307,15 +304,18 @@ namespace utopia {
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
                         auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                        auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
                         ////////////////////////////////////////////
 
                         CElem c_e;
                         C_view.elem(i, c_e);
                         StaticVector<Scalar, NQuadPoints> c;
-                        StaticVector<Scalar, NQuadPoints> c_old;
                         c_view.get(c_e, c);
+
+                        StaticVector<Scalar, NQuadPoints> c_old;
                         c_old_view.get(c_e, c_old); 
+
 
                         auto c_grad_el = c_grad_view.make(c_e);
                         auto dx        = differential_view.make(c_e);
@@ -329,12 +329,16 @@ namespace utopia {
                             stress = (quadratic_degradation(params_, c[qp]) * (1.0 - params_.regularization) + params_.regularization) * stress; 
 
                             if(params_.pressure > 0){
-                                stress = stress - (c[qp] * params_.pressure * identity); 
+                                stress = stress - (c[qp] * params_.pressure * device::identity<Scalar>()); 
                             }
 
-                            for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
-                                auto grad_test = u_grad_shape_el(j, qp);
-                                u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
+                            for(SizeType j = 0; j < U_NDofs; ++j) {
+                                //CHANGE
+                                // auto &&grad_test = u_grad_shape_el(j, qp);
+                                // u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
+
+                                auto &&strain_test = u_strain_shape_el(j, qp);
+                                u_el_vec(j) += inner(stress, strain_test) * dx(qp);
                             }
 
                             const Scalar elast =
@@ -346,7 +350,7 @@ namespace utopia {
                                 );
 
 
-                            for(SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
+                            for(SizeType j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test   = c_shape_fun_el(j, qp);
                                 const Scalar frac =
                                     grad_fracture_energy_wrt_c(
@@ -359,13 +363,14 @@ namespace utopia {
 
                                 
                                 if(params_.pressure > 0){
-                                    const Scalar der_c_pres = inner(- params_.pressure * shape_test * identity, el_strain.strain[qp]); 
+                                    //CHANGE
+                                    // const Scalar der_c_pres = inner(- params_.pressure * shape_test * identity, el_strain.strain[qp]); 
+                                    const Scalar der_c_pres = - params_.pressure * shape_test * sum(diag(el_strain.strain[qp])); 
                                     c_el_vec(j) +=  der_c_pres * dx(qp);
                                 }
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
-
-                                // this can be computed outside 
+                                
                                 if(params_.use_penalty_irreversibbility){
                                     auto c_cold             = c[qp] - c_old[qp]; 
                                     auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
@@ -416,10 +421,6 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
-            auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);            
-
-
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
 
@@ -434,18 +435,20 @@ namespace utopia {
             auto c_shape      = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
+            //value based
             PrincipalStrains<USpace, Quadrature> strain(U, q);
             strain.update(x);
 
-            
+            //reference based
             PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, params_.mu, params_.lambda);
+            Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
                 auto U_view      = U.view_device();
                 auto C_view      = C.view_device();
                 auto space_view  = space_.view_device();
-                auto c_view      = c_val.view_device();
 
+                auto c_view      = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
 
@@ -460,6 +463,7 @@ namespace utopia {
                 auto p_stress_view     = p_stress.view_device();
 
                 auto H_view = space_.assembly_view_device(H);
+                auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(
                     space_.local_element_range(),
@@ -479,6 +483,7 @@ namespace utopia {
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
                         auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                        auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
                         ////////////////////////////////////////////
 
@@ -495,8 +500,12 @@ namespace utopia {
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar eep = elastic_energy(params_,  c[qp], trace(el_strain.strain[qp]), el_strain.strain[qp]); 
 
-                            for(SizeType l = 0; l < c_grad_shape_el.n_functions(); ++l) {
-                                for(SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
+                            for(SizeType l = 0; l < C_NDofs; ++l) {
+                                //CHANGE store test-fun evalutions
+                                const Scalar c_shape_l = c_shape_fun_el(l, qp);
+                                auto &&      c_grad_l  = c_grad_shape_el(l, qp);
+
+                                for(SizeType j = 0; j < C_NDofs; ++j) {
 
                                    el_mat(l, j) +=
                                         bilinear_cc(
@@ -504,27 +513,28 @@ namespace utopia {
                                             c[qp],
                                             eep,
                                             c_shape_fun_el(j, qp),
-                                            c_shape_fun_el(l, qp),
+                                            c_shape_l,
                                             c_grad_shape_el(j, qp),
-                                            c_grad_shape_el(l, qp)
-                                    ) * dx(qp);         
+                                            c_grad_l
+                                    ) * dx(qp);                                      
 
                                     if(params_.use_penalty_irreversibbility){
-                                        el_mat(l, j)            += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_fun_el(l, qp) * dx(qp);
-                                    }
-
-
+                                        el_mat(l, j) += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                    }                                        
                                 }
                             }
 
 
-                            for(SizeType l = 0; l < u_grad_shape_el.n_functions(); ++l) {
-                                for(SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
+                            for(SizeType l = 0; l < U_NDofs; ++l) {
+                                //CHANGE (pre-compute/store shape fun)
+                                auto &&u_grad_l = u_grad_shape_el(l, qp);
+
+                                for(SizeType j = 0; j < U_NDofs; ++j) {
                                     el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
                                         params_,
                                         c[qp],
                                         p_stress_view.stress(j, qp), 
-                                        u_grad_shape_el(l, qp)
+                                        u_grad_l
                                         ) * dx(qp);
                                 }
                             }
@@ -532,25 +542,32 @@ namespace utopia {
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
                             compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
-                            StaticMatrix<Scalar, Dim, Dim> identity; 
-                            identity.identity();                                         
+                            // StaticMatrix<Scalar, Dim, Dim> identity; 
+                            // identity.identity();                                         
 
-                            for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
-                                for(SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
+                            for(SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
+                                //CHANGE (pre-compute/store shape fun)
+                                const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
 
-                                    auto strain_shape = 0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))); 
+                                for(SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
 
-                                   Scalar val =
+                                    //CHANGE (use pre-computed strain)
+                                    // auto strain_shape = 0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))); 
+                                    auto && strain_shape = u_strain_shape_el(u_i, qp);
+
+                                    Scalar val =
                                         bilinear_uc(
                                             params_,
                                              c[qp],
                                              stress,
                                              strain_shape,
-                                            c_shape_fun_el(c_i, qp)
+                                             c_shape_i
                                         ) * dx(qp);
 
                                     if(params_.pressure > 0){
-                                        val -= inner(params_.pressure * c_shape_fun_el(c_i, qp) * identity, strain_shape) * dx(qp); 
+                                        //CHANGE No Id
+                                        // val -= inner(params_.pressure * c_shape_fun_el(c_i, qp) * identity, strain_shape) * dx(qp); 
+                                        val -= params_.pressure * c_shape_i * sum(diag(strain_shape)) * dx(qp); 
                                     }
 
                                     el_mat(c_i, C_NDofs + u_i) += val;
@@ -789,7 +806,6 @@ namespace utopia {
             return 2.0;
         }
 
-
         void old_solution(const Vector & x_old)
         {
             x_old_ = x_old; 
@@ -817,7 +833,6 @@ namespace utopia {
                 });
             }
         }    
-
 
 
     private:

@@ -4,6 +4,8 @@
 #include "utopia_GeometricMultigrid.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 
+// #include "petscdraw.h"
+
 namespace utopia {
 
     template<class Model, class FunctionSpace>
@@ -20,63 +22,74 @@ namespace utopia {
         int n_levels = 2;
         in.get("n_levels", n_levels);
 
+        // bool in_situ_rendering = false;
+        // in.get("in_situ_rendering", in_situ_rendering);
+
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
 
+    	Vector x;
 
-        auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-        auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+        std::shared_ptr<FunctionSpace> fine_space_ptr;
 
-        GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
-        mg.verbose(true);
-        mg.init(coarse_space, n_levels);
+    	{
+        	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
+            // auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
+            // smoother->pc_type("bjacobi");
+            // smoother->ksp_type("sor");
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after mg-setup");
-        stats.stop_collect_and_restart("mg-setup");
+		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+        	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
+        	// mg.verbose(true);
+            mg.read(in);
+        	mg.init(coarse_space, n_levels);
 
-        Vector x, b;
-        Matrix A;
+       		UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after mg-setup");
+        	stats.stop_collect_and_restart("mg-setup");
 
-        auto &space = mg.fine_space();
+        	Vector b;
+        	Matrix A;
 
-        space.create_vector(x);
-        space.create_vector(b);
-        space.create_matrix(A);
+            fine_space_ptr = mg.fine_space_ptr();
+        	auto &space = *fine_space_ptr;
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-create-matrix");
+        	space.create_vector(x);
+        	space.create_vector(b);
+        	space.create_matrix(A);
 
-        Model model(space);
-        model.read(in);
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-create-matrix");
 
-        model.hessian(x, A);
+        	Model model(space);
+        	model.read(in);
 
-        // bool write_mat = false;
-        // in.get("write_mat", write_mat);
+        	model.hessian(x, A);
 
-        // if(write_mat) {
-        //     rename("a", A);
-        //     write("A.m", A);
-        // }
-        // model.gradient(x, b);
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-assembly");
+        	stats.stop_collect_and_restart("tensor-creation+assembly");
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-assembly");
-        stats.stop_collect_and_restart("tensor-creation+assembly");
+        	space.apply_constraints(b);
 
-        space.apply_constraints(b);
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 
-        mg.update(make_ref(A));
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
+            mg.max_it(1);
+            cg.set_preconditioner(make_ref(mg));
 
-        mg.apply(b, x);
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
-        stats.stop_collect_and_restart("solve");
+            cg.update(make_ref(A));
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
 
-        rename("x", x);
-        space.write(output_path, x);
+            cg.verbose(true);
+            cg.apply(b, x);
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
+        	stats.stop_collect_and_restart("solve");
+    	}
 
-        stats.stop_collect_and_restart("output");
+        if(!output_path.empty()) {
+            rename("x", x);
+            fine_space_ptr->write(output_path, x);
+            stats.stop_collect_and_restart("output");
+    	}
 
-        comm.root_print("n_dofs: " + std::to_string(space.n_dofs()));
+        comm.root_print("n_dofs: " + std::to_string(x.size()));
         stats.describe(std::cout);
     }
 

@@ -71,6 +71,16 @@ namespace utopia {
 
         void set_tol(const double val);
 
+        const std::vector<std::shared_ptr<USparseMatrix>> &matrices() const
+        {
+            return matrices_;
+        }
+
+        inline bool has_operator() const
+        {
+            return static_cast<bool>(operator_);
+        }
+
     private:
         std::shared_ptr<MeshBase> from_mesh;
         std::shared_ptr<MeshBase> filtered_from_mesh;
@@ -81,6 +91,7 @@ namespace utopia {
         TransferOptions opts;
 
         std::shared_ptr<TransferOperator> operator_;
+        std::vector<std::shared_ptr<USparseMatrix>> matrices_;
 
         class Params;
         std::unique_ptr<Params> params_;

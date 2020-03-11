@@ -222,7 +222,10 @@ namespace utopia {
 
         auto width =  3.0 * space.mesh().min_spacing(); 
 
-        std::cout<<"width: "<< width << "  \n"; 
+        if(mpi_world_rank()==0){
+            std::cout<<"width: "<< width << "  \n"; 
+        }
+
         std::vector<Rectangle<Scalar>> rectangles; 
 
         for(auto r=0; r < 30; r++){
@@ -392,11 +395,15 @@ namespace utopia {
 
 
         bool tension_test = false;
-        in.get("tension_test", tension_test);     
+        in.get("tension_test", tension_test);   
 
+        bool use_mprgp = true;
+        in.get("use_mprgp", use_mprgp);  
 
-        std::cout<<"pressure_test: "<< pressure_test << "   \n"; 
-        std::cout<<"tension_test: "<< tension_test << "   \n"; 
+        if(mpi_world_rank()==0){
+            std::cout<<"pressure_test: "<< pressure_test << "   \n"; 
+            std::cout<<"tension_test: "<< tension_test << "   \n"; 
+        }
 
 
         Scalar dt = 1e-5;
@@ -411,7 +418,7 @@ namespace utopia {
 
         stats.stop_collect_and_restart("BC");
 
-        Scalar pressure0; 
+        Scalar pressure0 = 0.0; 
         
         PetscVector x;
         space.create_vector(x);
@@ -460,7 +467,9 @@ namespace utopia {
 
         for (auto t=1; t < num_time_steps; t++)
         {
-            std::cout<<"Time-step: "<< t << "  \n"; 
+            if(mpi_world_rank()==0){
+                std::cout<<"Time-step: "<< t << "  \n"; 
+            }
      
             if(with_BC) {
                 if(tension_test){
@@ -476,16 +485,21 @@ namespace utopia {
             pp.old_solution(x); 
             pp.build_irreversility_constraint(irreversibility_constraint); 
 
+            std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
+            if(use_mprgp) {
+                // MPRGP sucks as a solver, as it can not be preconditioned easily ... 
+                qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+            } else {
+                // tao seems to be faster until it stalls ... 
+                // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+                auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+                linear_solver->max_it(200); 
+                linear_solver->pc_type("bjacobi");            
+                qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
+            }
 
-            // MPRGP sucks as a solver, as it can not be preconditioned easily ... 
-            auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+
             qp_solver->max_it(1000); 
-
-            // tao seems to be even slower... 
-            // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-            // // linear_solver->max_it(200); 
-            // linear_solver->pc_type("jacobi");            
-            // auto qp_solver =  std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
             TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
             auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));
             solver.set_box_constraints(box);
@@ -530,9 +544,11 @@ namespace utopia {
             // increment time step 
             time_+=dt;
         }
- 
+    
+
         stats.stop_collect_and_restart("solve+assemble");
 
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
         stats.stop_and_collect("output");
         stats.describe(std::cout);
 

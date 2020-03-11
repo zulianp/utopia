@@ -132,6 +132,16 @@ namespace utopia {
             return *spaces_.back();
         }
 
+        std::shared_ptr<FunctionSpace> fine_space_ptr()
+        {
+            return spaces_.back();
+        }
+
+        std::shared_ptr<const FunctionSpace> fine_space_ptr() const
+        {
+            return spaces_.back();
+        }
+
     private:
         std::shared_ptr<Multigrid<Matrix, Vector>> algebraic_mg_;
         std::vector<std::shared_ptr<FunctionSpace>> spaces_;
