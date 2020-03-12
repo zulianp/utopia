@@ -489,6 +489,25 @@ namespace utopia {
     }
 
     template<int Dim>
+    void PetscDM<Dim>::build_simplicial_complex(
+        const PetscCommunicator     &comm,
+        const std::array<SizeType, UDim> &dims,
+        const std::array<Scalar, UDim>   &box_min,
+        const std::array<Scalar, UDim>   &box_max,
+        const SizeType &n_components
+    )
+    {
+        impl_ = utopia::make_unique<Impl>(comm);
+        impl_->init_uniform(comm, dims, box_min, box_max, n_components, DMDA_ELEMENT_P1);
+
+        //FIXME move into init uniform
+        impl_->mirror.init(impl_->dm);
+
+        impl_->elements = utopia::make_unique<DMDAElements<Dim>>(*this);
+        impl_->nodes    = utopia::make_unique<DMDANodes<Dim>>(*this);
+    }
+
+    template<int Dim>
     PetscDM<Dim>::~PetscDM()
     {}
 
