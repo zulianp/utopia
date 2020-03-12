@@ -118,6 +118,71 @@ namespace utopia {
     };
 
 
+    template<class FunctionSpace>
+    class InitialCondidtionPFTbar : public InitialCondition<FunctionSpace>
+    {
+        public: 
+
+            // using Comm           = typename FunctionSpace::Comm;
+            using Mesh           = typename FunctionSpace::Mesh;
+            using Elem           = typename FunctionSpace::Shape;
+            using ElemView       = typename FunctionSpace::ViewDevice::Elem;
+            using SizeType       = typename FunctionSpace::SizeType;
+            using Scalar         = typename FunctionSpace::Scalar;
+            using Dev            = typename FunctionSpace::Device;
+            using Point          = typename FunctionSpace::Point;
+            using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+            static const int NNodes = Elem::NNodes;
+
+
+            InitialCondidtionPFTbar(FunctionSpace &space, const SizeType & PF_component):   InitialCondition<FunctionSpace>(space), 
+                                                                                            PF_component_(PF_component) 
+            {
+
+            }
+
+
+            void init(PetscVector &x) override
+            {
+                // un-hard-code
+                auto C = this->space_.subspace(PF_component_);
+
+                auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) -> Scalar {
+                    Scalar f = 0.0;
+                        if(  x[0] > (0.5-this->space_.mesh().min_spacing()) && x[0] < (0.5 + this->space_.mesh().min_spacing())  && x[1]  < 0.5  && x[1]  > 0.3  ){
+                            f = 1.0; 
+                        }
+                        else if((x[0] > 0.3) && (x[0] < 0.7) && (x[1]  > 0.7 - this->space_.mesh().min_spacing())  &&  (x[1]  < 0.7 + this->space_.mesh().min_spacing())){
+                            f = 1.0; 
+                        }
+                        else{
+                            f = 0.0; 
+                        }
+
+                    return f;
+                });
+
+                {
+                    auto C_view       = C.view_device();
+                    auto sampler_view = sampler.view_device();
+                    auto x_view       = this->space_.assembly_view_device(x);
+
+                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+                }
+            }
+
+        private:
+            SizeType PF_component_; 
+    }; 
+
+
     template<class T>
     struct Point2D{
         T x; 

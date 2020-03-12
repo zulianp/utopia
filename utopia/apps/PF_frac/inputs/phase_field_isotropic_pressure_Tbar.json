@@ -1,0 +1,31 @@
+{
+    "app" : "petsc_pressure_Tbar_isotropic_phase_field_2",
+    "output-path" : "isotropic_Tbar",
+    "nx" : 50,
+    "ny" : 50,
+    "nz" : 2,
+    "disp" : 1,
+    "with_damage" : true,
+    "use_dense_hessian" : false,
+    "check_derivatives" : false,
+    "tension_test" : true, 
+    "num_time_steps" : 2, 
+    "dt" : 1e-4,     
+    "use_mprgp" : true,
+    "adjust_dt_on_failure": false, 
+    "shrinking_factor" : 0.5, 
+    "diff_controller" : {
+        "spacing" : 1e-6,
+        "hessian_from_grad" : false
+    },
+    "solver" : {
+        "verbose" : true,
+        "max-it" : 300,
+        "atol": 1e-6, 
+        "linear-solver" : {
+            "verbose" : false, 
+            "atol": 1e-9, 
+            "max-it": 1000
+        }
+    }
+}
