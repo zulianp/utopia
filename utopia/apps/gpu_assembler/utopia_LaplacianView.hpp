@@ -38,6 +38,63 @@ namespace utopia {
 
     };
 
+    template<class Elem>
+    class LaplacianAssembler {
+    public:
+        using GradValue = typename Elem::GradValue;
+        using Point     = typename Elem::Point;
+        using Scalar    = typename Elem::Scalar;
+
+        static const int NFunctions = Elem::NFunctions;
+
+        UTOPIA_INLINE_FUNCTION LaplacianAssembler(
+            const Elem &elem,
+            const Scalar diffusivity = 1.0)
+        : elem_(elem), diffusivity_(diffusivity)
+        {}
+
+        UTOPIA_INLINE_FUNCTION void init(const Point &p, const Scalar &weight)
+        {
+            for(int i = 0; i < NFunctions; ++i) {
+                elem_.grad(i, p, g_[i]);
+            }
+
+            dx_ = weight * elem_.measure();
+        }
+
+        UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const
+        {
+            return diffusivity_ * inner(g_[i], g_[j]) * dx_;
+        }
+
+        template<class Quadrature, class Matrix>
+        UTOPIA_INLINE_FUNCTION void assemble(const Quadrature &q, Matrix &mat)
+        {
+            Scalar w;
+            Point p;
+            for(int qp = 0; qp < Quadrature::NPoints; ++qp) {
+                q.point(qp, p);
+                w = q.weight(qp);
+
+                init(p, w);
+
+                for(int i = 0; i < NFunctions; ++i) {
+                    mat(i, i) += (*this)(i, i);
+
+                    for(int j = i + 1; j < NFunctions; ++j) {
+                        mat(i, j) += (*this)(i, j);
+                    }
+                }
+            }
+        }
+
+    private:
+        const Elem &elem_;
+        Scalar diffusivity_;
+        StaticVector<GradValue, NFunctions> g_;
+        Scalar dx_;
+    };
+
     template<class T>
     class AssemblerView {
     public:

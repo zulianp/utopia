@@ -339,6 +339,17 @@ namespace utopia {
             h_[1] = h[1];
         }
 
+        bool contains(const Point &p, const Scalar tol = 0.0) const
+        {
+            for(int i = 0; i < Dim; ++i) {
+                if((p[i] + tol) <= translation_[i] ||
+                   (p[i] - tol) > (translation_[i] + h_[i])
+                ) return false;
+            }
+
+            return true;
+        }
+
         bool intersect_line(const Point &a, const Point &b, Point &a_out, Point &b_out) const
         {
             //cheap detect

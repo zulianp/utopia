@@ -262,11 +262,15 @@ namespace utopia {
 
                            t = v / len_isect;
 
-                           for(SizeType k = 0; k < n_qp; ++k) {
+                           for(SizeType k = 0; k < q_weights.size(); ++k) {
                                const Scalar w = q_weights[k] * len_isect * (lf.permeability * lf.aperture);
 
                                p = isect_1 + q_points[k](0) * v;
+
+                               UTOPIA_DEVICE_ASSERT(e.contains(p, 1e-8));
                                e.inverse_transform(p, p_quad);
+
+                               // std::cout << p[0] << " " << p[1] << std::endl;
 
                                for(SizeType j = 0; j < n_fun; ++j) {
                                     e.grad(j, p_quad, g_test);
@@ -344,6 +348,21 @@ namespace utopia {
                 Point p1, p2;
                 Scalar aperture;
                 Scalar permeability;
+
+
+
+                template<class Quadrature>
+                void init_op(const Quadrature &q, StaticMatrix<Scalar, Dim, Dim> &rescaled_op)
+                {
+                    Edge2<Scalar, Dim> elem;
+                    init(elem);
+
+                    LaplacianAssembler<Edge2<Scalar, Dim> > assembler(elem, aperture*permeability);
+
+                    assembler.assemble(q, rescaled_op);
+
+
+                }
 
                 void init(Edge2<Scalar, Dim> &edge) const
                 {
@@ -514,7 +533,7 @@ namespace utopia {
                                 v = isect_2 - isect_1;
                                 const Scalar len_isect = norm2(v);
 
-                                for(SizeType k = 0; k < n_qp; ++k) {
+                                for(SizeType k = 0; k < q_weights.size(); ++k) {
                                     Scalar w = q_weights[k] * len_isect;
                                     p = isect_1 + q_points[k](0) * v;
                                     fracture.inverse_transform(p, p_fracture);
