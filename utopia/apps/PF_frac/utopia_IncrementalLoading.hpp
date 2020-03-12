@@ -334,7 +334,7 @@ namespace utopia {
                     else
                     {
                         rename("X", solution_);
-                        space_.write(output_path_+"_"+std::to_string(time_)+".vtk", solution_);      
+                        space_.write(output_path_+"_"+std::to_string(1e-5*time_)+".vtk", solution_);      
                         fe_problem.old_solution(solution_); 
 
                         // increment time step 

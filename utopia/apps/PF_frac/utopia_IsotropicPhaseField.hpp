@@ -342,7 +342,6 @@ namespace utopia {
                                 if(params_.pressure > 0){
                                     u_el_vec(j) +=  quadratic_degradation(params_, c[qp]) *  params_.pressure  * sum(diag(strain_test)) * dx(qp);
                                 }
-
                             }
 
 
@@ -505,10 +504,12 @@ namespace utopia {
 
                         ////////////////////////////////////////////
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            const Scalar eep = elastic_energy(params_,  c[qp], trace(el_strain.strain[qp]), el_strain.strain[qp]); 
+
+                            const Scalar tr_strain_u = trace(el_strain.strain[qp]); 
+
+                            const Scalar eep = elastic_energy(params_,  c[qp], tr_strain_u, el_strain.strain[qp]); 
 
                             for(SizeType l = 0; l < C_NDofs; ++l) {
-                                //CHANGE store test-fun evalutions
                                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
                                 auto &&      c_grad_l  = c_grad_shape_el(l, qp);
 
@@ -523,7 +524,11 @@ namespace utopia {
                                             c_shape_l,
                                             c_grad_shape_el(j, qp),
                                             c_grad_l
-                                    ) * dx(qp);                                      
+                                    ) * dx(qp);        
+
+                                    if(params_.pressure > 0){
+                                        el_mat(l, j) +=  quadratic_degradation_deriv2(params_, c[qp]) * params_.pressure * tr_strain_u * c_shape_fun_el(j, qp) *  c_shape_l * dx(qp);        
+                                    }
 
                                     if(params_.use_penalty_irreversibility){
                                         el_mat(l, j) += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
@@ -533,7 +538,6 @@ namespace utopia {
 
 
                             for(SizeType l = 0; l < U_NDofs; ++l) {
-                                //CHANGE (pre-compute/store shape fun)
                                 auto &&u_grad_l = u_grad_shape_el(l, qp);
 
                                 for(SizeType j = 0; j < U_NDofs; ++j) {
@@ -572,14 +576,12 @@ namespace utopia {
                                         ) * dx(qp);
 
                                     if(params_.pressure > 0){
-                                        //CHANGE No Id
-                                        // val -= inner(params_.pressure * c_shape_fun_el(c_i, qp) * identity, strain_shape) * dx(qp); 
-                                        val -= params_.pressure * c_shape_i * sum(diag(strain_shape)) * dx(qp); 
+                                        const Scalar tr_strain_shape = sum(diag(strain_shape)); 
+                                        val += quadratic_degradation_deriv(params_, c[qp]) * params_.pressure * tr_strain_shape * c_shape_i * dx(qp); 
                                     }
 
                                     el_mat(c_i, C_NDofs + u_i) += val;
                                     el_mat(C_NDofs + u_i, c_i) += val;
-
                                 }
                             }
 

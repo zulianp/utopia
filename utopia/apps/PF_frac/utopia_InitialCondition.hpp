@@ -148,19 +148,16 @@ namespace utopia {
                 auto C = this->space_.subspace(PF_component_);
 
                 auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) -> Scalar {
-                    // Scalar f = 0.0;
-                    //     if(  x[0] > (0.5-this->space_.mesh().min_spacing()) && x[0] < (0.5 + this->space_.mesh().min_spacing())  && x[1]  < 0.5  && x[1]  > 0.3  ){
-                    //         f = 1.0; 
-                    //     }
-                    //     else if((x[0] > 0.3) && (x[0] < 0.7) && (x[1]  > 0.7 - this->space_.mesh().min_spacing())  &&  (x[1]  < 0.7 + this->space_.mesh().min_spacing())){
-                    //         f = 1.0; 
-                    //     }
-                    //     else{
-                    //         f = 0.0; 
-                    //     }
-
-
-                    Scalar f = 1.0; 
+                    Scalar f = 0.0;
+                        if(  x[0] > (0.5-this->space_.mesh().min_spacing()) && x[0] < (0.5 + this->space_.mesh().min_spacing())  && x[1]  < 0.5  && x[1]  > 0.3  ){
+                            f = 1.0; 
+                        }
+                        else if((x[0] > 0.3) && (x[0] < 0.7) && (x[1]  > 0.7 - this->space_.mesh().min_spacing())  &&  (x[1]  < 0.7 + this->space_.mesh().min_spacing())){
+                            f = 1.0; 
+                        }
+                        else{
+                            f = 0.0; 
+                        }
 
                     return f;
                 });
