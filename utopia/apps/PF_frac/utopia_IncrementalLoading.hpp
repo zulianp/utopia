@@ -231,7 +231,9 @@ namespace utopia {
             output_path_("out.vtk"), 
             use_mprgp_(false), 
             adjust_dt_on_failure_(true), 
-            shrinking_factor_(0.5)
+            shrinking_factor_(0.5), 
+            pressure0_(0.0),
+            pressure_increase_factor_(0.0)
             {
 
             }
@@ -245,6 +247,8 @@ namespace utopia {
                 in.get("use_mprgp", use_mprgp_); 
                 in.get("shrinking_factor", shrinking_factor_); 
                 in.get("adjust_dt_on_failure", adjust_dt_on_failure_); 
+                in.get("pressure0", pressure0_); 
+                in.get("pressure_increase_factor", pressure_increase_factor_);
             }
 
             // allow passing solver 
@@ -283,11 +287,16 @@ namespace utopia {
                     BC_.emplace_time_dependent_BC(time_); 
                     space_.apply_constraints(solution_);    
 
+                    std::cout<<"pressure0_ " << pressure0_ << " \n";
+
+                    if(pressure0_!= 0.0){
+                        fe_problem.set_pressure(pressure0_ + (time_ * pressure_increase_factor_) );     
+                        std::cout<<"pressure0_ + (time_ * pressure_increase_factor_): "<< pressure0_ + (time_ * pressure_increase_factor_) << "  \n"; 
+                    }
                     
-                    // pp.set_pressure(pressure0 + time_);     
                     fe_problem.build_irreversility_constraint(lb_); 
 
-
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////////
                     std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
                     if(use_mprgp_) {
                         // MPRGP sucks as a solver, as it can not be preconditioned easily ... 
@@ -307,6 +316,7 @@ namespace utopia {
                     solver.set_box_constraints(box);
                     in.get("solver", solver);
                     solver.solve(fe_problem, solution_);
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
                     auto sol_status = solver.solution_status(); 
@@ -347,6 +357,8 @@ namespace utopia {
             bool use_mprgp_; 
             bool adjust_dt_on_failure_; 
             Scalar shrinking_factor_; 
+            Scalar pressure0_; 
+            Scalar pressure_increase_factor_; 
 
             Vector solution_;
             Vector lb_; // this is quite particular for PF-frac 

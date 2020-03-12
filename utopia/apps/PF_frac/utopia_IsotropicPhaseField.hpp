@@ -200,19 +200,13 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        // StaticMatrix<Scalar, Dim, Dim> identity; 
-                        // identity.identity(); 
-
-                        Scalar pressure_energy = 0.0; 
-
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
 
                             Scalar tr = trace(el_strain.strain[qp]); 
                             if(params_.pressure > 0){
-                                //CHANGE no Id (but equivalent)
-                                // el_energy -= inner(c[qp] * params_.pressure * identity, el_strain.strain[qp]) * dx(qp); 
-                                el_energy -= c[qp] * params_.pressure *  tr * dx(qp); 
+                                el_energy += quadratic_degradation(params_,  c[qp]) *  params_.pressure *  tr * dx(qp); 
                             }
+
 
                             el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
@@ -335,27 +329,28 @@ namespace utopia {
                         ////////////////////////////////////////////
 
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
+
+                            const Scalar tr_strain_u = trace(el_strain.strain[qp]); 
+
+                            compute_stress(params_, tr_strain_u, el_strain.strain[qp],  stress); 
                             stress = (quadratic_degradation(params_, c[qp]) * (1.0 - params_.regularization) + params_.regularization) * stress; 
 
-                            if(params_.pressure > 0){
-                                stress = stress - (c[qp] * params_.pressure * device::identity<Scalar>()); 
-                            }
-
                             for(SizeType j = 0; j < U_NDofs; ++j) {
-                                //CHANGE
-                                // auto &&grad_test = u_grad_shape_el(j, qp);
-                                // u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
-
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
+
+                                if(params_.pressure > 0){
+                                    u_el_vec(j) +=  quadratic_degradation(params_, c[qp]) *  params_.pressure  * sum(diag(strain_test)) * dx(qp);
+                                }
+
                             }
+
 
                             const Scalar elast =
                                 grad_elastic_energy_wrt_c(
                                             params_,
                                             c[qp],
-                                            trace(el_strain.strain[qp]),
+                                            tr_strain_u,
                                             el_strain.strain[qp]
                                 );
 
@@ -373,9 +368,7 @@ namespace utopia {
 
                                 
                                 if(params_.pressure > 0){
-                                    //CHANGE
-                                    // const Scalar der_c_pres = inner(- params_.pressure * shape_test * identity, el_strain.strain[qp]); 
-                                    const Scalar der_c_pres = - params_.pressure * shape_test * sum(diag(el_strain.strain[qp])); 
+                                    const Scalar der_c_pres  = quadratic_degradation_deriv(params_, c[qp]) * params_.pressure * tr_strain_u * shape_test; 
                                     c_el_vec(j) +=  der_c_pres * dx(qp);
                                 }
 
