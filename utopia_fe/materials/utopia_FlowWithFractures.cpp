@@ -240,6 +240,10 @@ namespace utopia {
             algo.trafo_slave  = surf_trafo;
 
             if(algo.compute()) {
+                if(moonolith::measure(algo.q_master) < 1e-16) {
+                    return false;
+                }
+
                 auto q_mortar = std::make_shared<QMortar>(2);
 
                 utopia::convert(

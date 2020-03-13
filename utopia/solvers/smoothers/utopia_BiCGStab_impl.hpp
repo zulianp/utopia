@@ -16,7 +16,7 @@ namespace utopia {
     }
 
     template<typename Matrix, typename Vector, int Backend>
-    void BiCGStab<Matrix, Vector, Backend>::update(const Operator<Vector> &A) 
+    void BiCGStab<Matrix, Vector, Backend>::update(const Operator<Vector> &A)
     {
         SizeType loc_size_rhs = A.local_size().get(0);
 
@@ -29,8 +29,8 @@ namespace utopia {
     template<typename Matrix, typename Vector, int Backend>
     void BiCGStab<Matrix, Vector, Backend>::init_memory(const SizeType &ls)
     {
-        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(ls); 
-        
+        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(ls);
+
         v_ = local_zeros(ls);
         p_ = local_zeros(ls);
         h_ = local_zeros(ls);
@@ -80,6 +80,18 @@ namespace utopia {
 
             if(r0_dot_v == 0.0) {
                 assert(false);
+
+                A.apply(x, r_);
+                r_ = b - r_;
+
+                r_norm = norm2(s_);
+
+                if(this->verbose()) {
+                    PrintInfo::print_iter_status(it, { r_norm });
+                }
+
+                converged = this->check_convergence(it, r_norm, 1, 1);
+                break;
             }
 
             alpha = rho/r0_dot_v;
@@ -94,7 +106,7 @@ namespace utopia {
                 r_norm = norm2(s_);
 
                 if(this->verbose()) {
-                    PrintInfo::print_iter_status({ Scalar(it), r_norm });
+                    PrintInfo::print_iter_status(it, { r_norm });
                 }
 
                 converged = this->check_convergence(it, r_norm, 1, 1);
@@ -113,6 +125,7 @@ namespace utopia {
 
             if(std::isnan(omega)) {
                 assert(false);
+                break;
             }
 
             x = h_ + omega * z_;
@@ -125,12 +138,11 @@ namespace utopia {
 
             if((it % check_norm_each) == 0) {
                 r_norm = norm2(r_);
-
-                if(this->verbose()) {
-                    PrintInfo::print_iter_status({ Scalar(it), r_norm });
-                }
-
                 converged = this->check_convergence(it, r_norm, 1, 1);
+
+                if(converged && this->verbose()) {
+                    PrintInfo::print_iter_status(it, { r_norm });
+                }
             }
 
             it++;

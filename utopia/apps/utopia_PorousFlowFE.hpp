@@ -188,7 +188,7 @@ namespace utopia {
                            v = isect_2 - isect_1;
                            const Scalar len_isect = norm2(v);
 
-                           if(device::abs(len_isect) <= device::epsilon<Scalar>()) {
+                           if(len_isect <= device::epsilon<Scalar>()) {
                                 continue;
                            }
 
@@ -577,7 +577,7 @@ namespace utopia {
                 std::default_random_engine generator;
                 // std::random_device generator;
 
-                std::uniform_real_distribution<Scalar> distribution(0.0001,0.999999);
+                std::uniform_real_distribution<Scalar> distribution(0.01,0.99);
 
                 for(SizeType i = 0; i < n; ++i) {
                     Scalar x1 = distribution(generator);
@@ -613,17 +613,17 @@ namespace utopia {
                 auto &p1 = frac.node(0);
                 auto &p2 = frac.node(1);
 
-                p1[0] = 0.00001;
-                p1[1] = 0.2;
-
-                p2[0] = 0.99999;
-                p2[1] = 0.8;
-
-                // p1[0] = 0.2;
+                // p1[0] = 0.00001;
                 // p1[1] = 0.2;
 
-                // p2[0] = 0.8;
+                // p2[0] = 0.99999;
                 // p2[1] = 0.8;
+
+                p1[0] = 0.2;
+                p1[1] = 0.2;
+
+                p2[0] = 0.8;
+                p2[1] = 0.8;
 
                 frac.aperture     = 1e-4;
                 frac.permeability = 1e4;

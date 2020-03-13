@@ -40,11 +40,15 @@ namespace utopia {
 
     	{
         	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-            // auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
-            // smoother->pc_type("bjacobi");
-            // smoother->ksp_type("sor");
+            std::shared_ptr< LinearSolver<Matrix, Vector> > coarse_solver;
+            if(direct_solution) {
+                coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+		    } else {
+                auto bcg = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+                // bcg->max_it(coarse_space.n_dofs());
+                coarse_solver = bcg;
+            }
 
-		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
         	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
         	// mg.verbose(true);
             mg.read(in);
@@ -92,6 +96,8 @@ namespace utopia {
             }
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            // BiCGStab<Matrix, Vector, HOMEMADE> cg;
+            cg.read(in);
 
             mg.max_it(1);
             cg.set_preconditioner(make_ref(mg));
@@ -100,7 +106,11 @@ namespace utopia {
         	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
 
             cg.verbose(true);
-            cg.apply(b, x);
+
+            if(!cg.apply(b, x)) {
+                std::cerr << "[Error] Unable to solve system up to requested precision" << std::endl;
+            }
+
         	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
         	stats.stop_collect_and_restart("solve");
     	}
