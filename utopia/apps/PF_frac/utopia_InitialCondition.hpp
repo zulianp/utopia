@@ -1,5 +1,5 @@
-#ifndef UTOPIA_INITIAL_CONDITION_HPP
-#define UTOPIA_INITIAL_CONDITION_HPP
+#ifndef UTOPIA_INITIAL_CONDITION_PF_HPP
+#define UTOPIA_INITIAL_CONDITION_PF_HPP
 
 #include "utopia_Base.hpp"
 #include "utopia_RangeDevice.hpp"
@@ -49,7 +49,7 @@ namespace utopia {
 
             }                  
 
-        virtual void init(PetscVector &x); 
+        virtual void init(PetscVector &x) = 0; 
 
 
         protected:
