@@ -233,7 +233,9 @@ namespace utopia {
             adjust_dt_on_failure_(true), 
             shrinking_factor_(0.5), 
             pressure0_(0.0),
-            pressure_increase_factor_(0.0)
+            pressure_increase_factor_(0.0), 
+            use_pressure_(false),
+            use_constant_pressure_(false)
             {
 
             }
@@ -249,6 +251,8 @@ namespace utopia {
                 in.get("adjust_dt_on_failure", adjust_dt_on_failure_); 
                 in.get("pressure0", pressure0_); 
                 in.get("pressure_increase_factor", pressure_increase_factor_);
+                in.get("use_pressure", use_pressure_);
+                in.get("use_constant_pressure", use_constant_pressure_);
             }
 
             // allow passing solver 
@@ -267,6 +271,15 @@ namespace utopia {
                 rename("X", solution_);
 
                 IC_.init(solution_); 
+                if(use_pressure_ && !use_constant_pressure_){
+                    Vector & pressure_vec =  fe_problem.pressure_field(); 
+                    IC_.init(solution_, pressure_vec); 
+                }                
+
+
+                if(pressure0_ != 0.0){
+                    use_pressure_ = true; 
+                }
 
                 space_.apply_constraints(solution_);                    
                 fe_problem.old_solution(solution_); 
@@ -275,6 +288,7 @@ namespace utopia {
 
                 dt0_ = dt_; 
                 time_ = dt_; 
+
 
                 for (auto t=1; t < num_time_steps_; t++)
                 {
@@ -287,8 +301,18 @@ namespace utopia {
                     BC_.emplace_time_dependent_BC(time_); 
                     space_.apply_constraints(solution_);    
 
-                    if(pressure0_!= 0.0){
-                        fe_problem.set_pressure(pressure0_ + (time_ * pressure_increase_factor_) );     
+                    if(use_pressure_){
+                        auto press_ts = pressure0_ + (time_ * pressure_increase_factor_); 
+
+                        if(use_constant_pressure_){
+                            fe_problem.setup_constant_pressure_field(press_ts);     
+                        }
+                        else{
+                            Vector & pressure_vec =  fe_problem.pressure_field(); 
+                            // set_nonzero_elem_to(pressure_vec, press_ts); 
+                            
+                            set_nonzero_elem_to(pressure_vec, (time_ * pressure_increase_factor_)); 
+                        }
                     }
                     
                     fe_problem.build_irreversility_constraint(lb_); 
@@ -326,8 +350,6 @@ namespace utopia {
                     // solver.delta0(1e4); 
                     // in.get("solver", solver);
                     // solver.solve(fe_problem, solution_);
-
-
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -363,6 +385,21 @@ namespace utopia {
             }
 
 
+
+
+
+    private:
+
+        void set_nonzero_elem_to(Vector & v, const Scalar & val)
+        {
+            parallel_transform(v, UTOPIA_LAMBDA(const SizeType &i, const Scalar &vi) -> Scalar 
+            {
+                return vi + val; 
+            });
+        }
+
+
+
         private:
             FunctionSpace & space_; 
             InitialCondition<FunctionSpace> & IC_; 
@@ -376,6 +413,8 @@ namespace utopia {
             Scalar shrinking_factor_; 
             Scalar pressure0_; 
             Scalar pressure_increase_factor_; 
+            bool use_pressure_; 
+            bool use_constant_pressure_; 
 
             Vector solution_;
             Vector lb_; // this is quite particular for PF-frac 

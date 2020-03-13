@@ -172,6 +172,7 @@ namespace utopia {
         using Elem           = utopia::PetscUniformQuad4;
         using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType       = FunctionSpace::SizeType;
+        using Vector         = typename FunctionSpace::Vector;
 
         Comm world;
 
@@ -202,10 +203,10 @@ namespace utopia {
         stats.stop_and_collect("space-creation");
         stats.start();
 
-        InitialCondidtionPFFracNet<FunctionSpace> IC_setup(space, 0.0, 30);  
+        InitialCondidtionPFFracNet<FunctionSpace> IC_setup(space, 0.0);  
         PFFracFixAllDisp2D<FunctionSpace> BC_setup(space); 
-        IncrementalLoading<FunctionSpace > time_stepper(space, IC_setup, BC_setup); 
 
+        IncrementalLoading<FunctionSpace > time_stepper(space, IC_setup, BC_setup); 
         time_stepper.template run<IsotropicPhaseFieldForBrittleFractures<FunctionSpace>>(in); 
 
         stats.stop_collect_and_restart("end");
