@@ -41,10 +41,11 @@ namespace utopia {
         {
             using Side     = typename Elem::Side;
             using SideView = typename Side::ViewDevice;
+            using SideQuadrature = utopia::Quadrature<SideElem, 2, 1>;
 
             auto subspace   = space_.subspace(component_);
 
-            Quadrature<SideElem, 2, 1> q;
+            SideQuadrature q;
             auto points      = subspace.side_points(q);
             auto shape       = subspace.side_shape(q);
 
@@ -54,7 +55,7 @@ namespace utopia {
             auto shape_view  = shape.view_device();
 
             Device::parallel_for(
-                // subspace.boundary_element_range(),
+                // subspace.boundary_element_range(side_set_),
                 subspace.local_element_range(),
                 UTOPIA_LAMBDA(const SizeType &i)
             {
@@ -69,19 +70,25 @@ namespace utopia {
                 auto fun = shape_view.make(e);
 
                 for(SizeType s = 0; s < Elem::NSides; ++s) {
-                    if(!space_view.on_boundary(i, s)) {
+                    if(!space_view.on_boundary(i, s, side_set_)) {
                         continue;
                     }
 
                     space_view.elem(i, s, e);
 
                     //assemble
-                    for(SizeType k = 0; k < NQPoints; ++k) {
-                        auto dx_k = dx(k);
-                        auto fun_k = fun_(p(k));
+                    for(SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
+                        auto dx_k  = dx(k);
+                        auto p_k   = p(k);
 
-                        for(SizeType j = 0; j < Side::NFunctions; ++j) {
-                            vec(j) += fun_k * fun(j, k) * dx_k;
+                        if(!selector_ || selector_(p_k)) {
+
+                            auto fun_k = fun_(p_k);
+
+                            for(SizeType j = 0; j < Side::NFunctions; ++j) {
+                                vec(j) += fun_k * fun(j, k) * dx_k;
+                            }
+
                         }
                     }
                 }
