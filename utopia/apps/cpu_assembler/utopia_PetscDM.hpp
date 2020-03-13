@@ -235,7 +235,8 @@ namespace utopia {
 
         void update_mirror();
 
-
+        std::unique_ptr<PetscDM> clone(const SizeType &n_components) const;
+        std::unique_ptr<PetscDM> clone() const;
     private:
         std::unique_ptr<Impl> impl_;
     };

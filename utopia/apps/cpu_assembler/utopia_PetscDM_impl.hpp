@@ -844,6 +844,40 @@ namespace utopia {
         auto ierr = DMCreateInterpolation(raw_type(*this), raw_type(target), &I.raw_type(), nullptr); assert(ierr == 0);
     }
 
+    template<typename T, size_t Size>
+    inline void convert(const ArrayView<T, Size> &in, std::array<T, Size> &out)
+    {
+        std::copy(&in[0], &in[0] + Size, &out[0]);
+    }
+
+    template<class View, typename T, size_t Size>
+    inline void convert(const VectorView<View> &in, std::array<T, Size> &out)
+    {
+        std::copy(&in[0], &in[0] + Size, &out[0]);
+    }
+
+    template<int Dim>
+    std::unique_ptr<PetscDM<Dim>> PetscDM<Dim>::clone(const SizeType &n_components) const
+    {
+        auto dm = utopia::make_unique<PetscDM>();
+
+        std::array<SizeType, UDim> t_dims;
+        std::array<Scalar, UDim> t_box_min, t_box_max;
+
+        convert(impl_->mirror.dims, t_dims);
+        convert(impl_->mirror.box_min, t_box_min);
+        convert(impl_->mirror.box_max, t_box_max);
+
+        dm->build(comm(), t_dims, t_box_min, t_box_max, n_components);
+        return std::move(dm);
+    }
+
+    template<int Dim>
+    std::unique_ptr<PetscDM<Dim>> PetscDM<Dim>::clone() const
+    {
+        return this->clone(n_components());
+    }
+
 }
 
 #endif //UTOPIA_PETSC_DM_IMPL_HPP
