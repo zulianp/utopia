@@ -22,7 +22,7 @@ namespace utopia {
         static const int Dim = Subspace::Dim;
 
         DirichletBoundaryCondition(const FunctionSpace &space)
-        : space_(space), side_set_(0), component_(0)
+        : space_(space), side_set_(SideSet::invalid()), component_(0)
         {}
 
         DirichletBoundaryCondition(

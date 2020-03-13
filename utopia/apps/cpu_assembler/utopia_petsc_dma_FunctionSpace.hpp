@@ -315,6 +315,12 @@ namespace utopia {
             return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
         }
 
+        template<class Quadrature>
+        PhysicalPoint<FunctionSpace, Quadrature> points(const Quadrature &q)
+        {
+            return PhysicalPoint<FunctionSpace, Quadrature>(*this, q);
+        }
+
 
         template<class Quadrature>
         Differential<FunctionSpace, Quadrature> differential(const Quadrature &q)
@@ -538,7 +544,7 @@ namespace utopia {
 
         void reset_bc()
         {
-            dirichlet_bcs_.clear(); 
+            dirichlet_bcs_.clear();
         }
 
         template<class... Args>
