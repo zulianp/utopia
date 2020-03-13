@@ -60,15 +60,23 @@ namespace utopia {
                 in.get("regularization", regularization);
                 in.get("pressure", pressure);
 
-                std::cout<<"pressure: "<< pressure << "  \n"; 
+                in.get("use_penalty_irreversibility", use_penalty_irreversibility);
+                in.get("penalty_param", penalty_param);
+
+                in.get("use_crack_set_irreversibiblity", use_crack_set_irreversibiblity); 
+                in.get("crack_set_tol", crack_set_tol); 
             }
 
 
             Parameters()
-            : a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), mu(1.0), lambda(1.0), regularization(1e-8), pressure(0.0)
+            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), 
+                mu(1.0), lambda(1.0), regularization(1e-10), pressure(0.0), penalty_param(0.0), 
+                crack_set_tol(0.98), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(false)
             {}
 
-            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, regularization, pressure;
+            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda; 
+            Scalar regularization, pressure, penalty_param, crack_set_tol;
+            bool use_penalty_irreversibility, use_crack_set_irreversibiblity; 
         };
 
         void read(Input &in) override
@@ -89,11 +97,18 @@ namespace utopia {
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
         {
             params_.length_scale = 2.0 * space.mesh().min_spacing();
-            std::cout<<"params_.length_scale: "<< params_.length_scale << "  \n"; 
             params_.fracture_toughness = 0.001;
 
             params_.mu = 80.0;
             params_.lambda = 120.0;
+
+            // this computation follows eq. 50 from "On penalization in variational phase-field models of britlle fracture, Gerasimov, Lorenzis"
+            if(params_.use_penalty_irreversibility)
+            {
+                Scalar tol = 1e-3; 
+                Scalar tol2 = tol*tol; 
+                params_.penalty_param = params_.fracture_toughness/params_.length_scale * (1.0/ tol2 - 1.0);             
+            }
         }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
@@ -128,12 +143,17 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
+            auto &x_old = const_cast<Vector &>(x_old_);
+            FEFunction<CSpace> c_old_fun(C, x_old);            
+
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
 
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
+            auto c_old  = c_old_fun.value(q);             
+
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
             auto differential = C.differential(q);
@@ -148,6 +168,8 @@ namespace utopia {
                 auto C_view = C.view_device();
 
                 auto c_view      = c_val.view_device();
+                auto c_old_view  = c_old.view_device(); 
+
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
 
@@ -165,7 +187,9 @@ namespace utopia {
                         C_view.elem(i, c_e);
 
                         StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> c_old;
                         c_view.get(c_e, c);
+                        c_old_view.get(c_e, c_old); 
 
                         UElem u_e;
                         U_view.elem(i, u_e);
@@ -176,21 +200,21 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        // StaticMatrix<Scalar, Dim, Dim> identity; 
-                        // identity.identity(); 
-
-                        Scalar pressure_energy = 0.0; 
-
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
 
                             Scalar tr = trace(el_strain.strain[qp]); 
                             if(params_.pressure > 0){
-                                //CHANGE no Id (but equivalent)
-                                // el_energy -= inner(c[qp] * params_.pressure * identity, el_strain.strain[qp]) * dx(qp); 
-                                el_energy -= c[qp] * params_.pressure *  sum(diag(el_strain.strain[qp])) * dx(qp); 
+                                el_energy += quadratic_degradation(params_,  c[qp]) *  params_.pressure *  tr * dx(qp); 
                             }
 
+
                             el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
+
+                            if(params_.use_penalty_irreversibility){
+                                auto c_cold             = c[qp] - c_old[qp]; 
+                                auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
+                                el_energy               += params_.penalty_param/2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+                            }                            
                         }
 
                         assert(el_energy == el_energy);
@@ -220,12 +244,17 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
+            auto &x_old = const_cast<Vector &>(x_old_);
+            FEFunction<CSpace> c_old_fun(C, x_old);            
+
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
 
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
+            auto c_old  = c_old_fun.value(q); 
+
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
             auto differential = C.differential(q);
@@ -244,6 +273,8 @@ namespace utopia {
                 auto C_view      = C.view_device();
 
                 auto c_view      = c_val.view_device();
+                auto c_old_view  = c_old.view_device();   
+
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
 
@@ -286,6 +317,10 @@ namespace utopia {
                         StaticVector<Scalar, NQuadPoints> c;
                         c_view.get(c_e, c);
 
+                        StaticVector<Scalar, NQuadPoints> c_old;
+                        c_old_view.get(c_e, c_old); 
+
+
                         auto c_grad_el = c_grad_view.make(c_e);
                         auto dx        = differential_view.make(c_e);
                         auto c_grad_shape_el = c_grad_shape_view.make(c_e);
@@ -294,27 +329,27 @@ namespace utopia {
                         ////////////////////////////////////////////
 
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
+
+                            const Scalar tr_strain_u = trace(el_strain.strain[qp]); 
+
+                            compute_stress(params_, tr_strain_u, el_strain.strain[qp],  stress); 
                             stress = (quadratic_degradation(params_, c[qp]) * (1.0 - params_.regularization) + params_.regularization) * stress; 
 
-                            if(params_.pressure > 0){
-                                stress = stress - (c[qp] * params_.pressure * device::identity<Scalar>()); 
-                            }
-
                             for(SizeType j = 0; j < U_NDofs; ++j) {
-                                //CHANGE
-                                // auto &&grad_test = u_grad_shape_el(j, qp);
-                                // u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
-
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
+
+                                if(params_.pressure > 0){
+                                    u_el_vec(j) +=  quadratic_degradation(params_, c[qp]) *  params_.pressure  * sum(diag(strain_test)) * dx(qp);
+                                }
                             }
+
 
                             const Scalar elast =
                                 grad_elastic_energy_wrt_c(
                                             params_,
                                             c[qp],
-                                            trace(el_strain.strain[qp]),
+                                            tr_strain_u,
                                             el_strain.strain[qp]
                                 );
 
@@ -332,13 +367,19 @@ namespace utopia {
 
                                 
                                 if(params_.pressure > 0){
-                                    //CHANGE
-                                    // const Scalar der_c_pres = inner(- params_.pressure * shape_test * identity, el_strain.strain[qp]); 
-                                    const Scalar der_c_pres = - params_.pressure * shape_test * sum(diag(el_strain.strain[qp])); 
+                                    const Scalar der_c_pres  = quadratic_degradation_deriv(params_, c[qp]) * params_.pressure * tr_strain_u * shape_test; 
                                     c_el_vec(j) +=  der_c_pres * dx(qp);
                                 }
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
+                                
+                                if(params_.use_penalty_irreversibility){
+                                    auto c_cold             = c[qp] - c_old[qp]; 
+                                    auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
+                                    c_el_vec(j)             += params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
+                                }
+
+
                             }
 
                         }
@@ -357,6 +398,10 @@ namespace utopia {
 
             space_.apply_zero_constraints(g);
 
+            // fully broken case is treated as Dirichlet BC
+            if(params_.use_crack_set_irreversibiblity){
+                apply_zero_constraints_irreversibiblity(g); 
+            }
 
             // static int iter = 0;
             // write("g" + std::to_string(iter++) + ".m", g);
@@ -459,10 +504,12 @@ namespace utopia {
 
                         ////////////////////////////////////////////
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            const Scalar eep = elastic_energy(params_,  c[qp], trace(el_strain.strain[qp]), el_strain.strain[qp]); 
+
+                            const Scalar tr_strain_u = trace(el_strain.strain[qp]); 
+
+                            const Scalar eep = elastic_energy(params_,  c[qp], tr_strain_u, el_strain.strain[qp]); 
 
                             for(SizeType l = 0; l < C_NDofs; ++l) {
-                                //CHANGE store test-fun evalutions
                                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
                                 auto &&      c_grad_l  = c_grad_shape_el(l, qp);
 
@@ -477,13 +524,20 @@ namespace utopia {
                                             c_shape_l,
                                             c_grad_shape_el(j, qp),
                                             c_grad_l
-                                    ) * dx(qp);                                      
+                                    ) * dx(qp);        
+
+                                    if(params_.pressure > 0){
+                                        el_mat(l, j) +=  quadratic_degradation_deriv2(params_, c[qp]) * params_.pressure * tr_strain_u * c_shape_fun_el(j, qp) *  c_shape_l * dx(qp);        
+                                    }
+
+                                    if(params_.use_penalty_irreversibility){
+                                        el_mat(l, j) += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                    }                                        
                                 }
                             }
 
 
                             for(SizeType l = 0; l < U_NDofs; ++l) {
-                                //CHANGE (pre-compute/store shape fun)
                                 auto &&u_grad_l = u_grad_shape_el(l, qp);
 
                                 for(SizeType j = 0; j < U_NDofs; ++j) {
@@ -522,14 +576,12 @@ namespace utopia {
                                         ) * dx(qp);
 
                                     if(params_.pressure > 0){
-                                        //CHANGE No Id
-                                        // val -= inner(params_.pressure * c_shape_fun_el(c_i, qp) * identity, strain_shape) * dx(qp); 
-                                        val -= params_.pressure * c_shape_i * sum(diag(strain_shape)) * dx(qp); 
+                                        const Scalar tr_strain_shape = sum(diag(strain_shape)); 
+                                        val += quadratic_degradation_deriv(params_, c[qp]) * params_.pressure * tr_strain_shape * c_shape_i * dx(qp); 
                                     }
 
                                     el_mat(c_i, C_NDofs + u_i) += val;
                                     el_mat(C_NDofs + u_i, c_i) += val;
-
                                 }
                             }
 
@@ -548,6 +600,10 @@ namespace utopia {
             }
 
             space_.apply_constraints(H);
+
+            if(params_.use_crack_set_irreversibiblity){
+                apply_zero_constraints_irreversibiblity(H);
+            }
 
             // static int iter = 0;
             // write("H" + std::to_string(iter++) + ".m", H);
@@ -763,6 +819,84 @@ namespace utopia {
             return 2.0;
         }
 
+        void old_solution(const Vector & x_old)
+        {
+            x_old_ = x_old; 
+        }
+
+        const Vector & old_solution() const 
+        {
+            return x_old_;
+        }        
+
+        void get_old_solution(Vector & x) const 
+        {
+            x = x_old_;
+        }                
+
+
+        void build_irreversility_constraint(Vector &lb)
+        {   
+            {
+                auto d_x_old = const_device_view(x_old_);
+
+                parallel_transform(lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                {
+                    if(i%(Dim+1)==0){
+                        return d_x_old.get(i); 
+                    }
+                    else{
+                        return -9e15; 
+                    }                    
+                });
+            }
+        }    
+
+        // this 2 functions need to be moved to BC conditions 
+        void apply_zero_constraints_irreversibiblity(Vector & g) const
+        {
+            {
+                auto d_x_old = const_device_view(x_old_);
+
+                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                {
+                    if(i%(Dim+1)==0){
+                        if(d_x_old.get(i) > params_.crack_set_tol){
+                            return 0.0; 
+                        }
+                        else{
+                            return xi; 
+                        }
+                    }
+                    else{
+                        return xi; 
+                    }                    
+                
+                });
+            }
+        }
+
+        // we should move this to BC conditions
+        // also, will not run efficienetly in parallel 
+        void apply_zero_constraints_irreversibiblity(Matrix & H) const
+        {
+            std::vector<SizeType> indices; 
+            {
+                Read<Vector> r(x_old_);
+
+                Range range_w = range(x_old_);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                {
+                    if(i%(Dim+1)==0 && x_old_.get(i) > params_.crack_set_tol){
+                        indices.push_back(i);
+                    }
+                }
+            }                 
+
+            set_zero_rows(H, indices, 1.);
+        }        
+
+
     private:
         FunctionSpace & space_;
         Parameters params_;
@@ -770,6 +904,8 @@ namespace utopia {
 
         bool use_dense_hessian_;
         bool check_derivatives_;
+
+        Vector x_old_; // stores old solution  - used for treatment of irreversibility constraint 
     };
 
 }
