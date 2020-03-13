@@ -28,6 +28,12 @@ namespace utopia {
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
 
+        bool export_system = false;
+        in.get("export_system", export_system);
+
+        bool direct_solution = false;
+        in.get("direct_solution", direct_solution);
+
     	Vector x;
 
         std::shared_ptr<FunctionSpace> fine_space_ptr;
@@ -68,6 +74,22 @@ namespace utopia {
         	stats.stop_collect_and_restart("tensor-creation+assembly");
 
         	space.apply_constraints(b);
+
+            if(export_system) {
+                rename("a", A);
+                write("A.m", A);
+
+                rename("b", b);
+                write("B.m", b);
+            }
+
+            if(direct_solution) {
+                Factorization<Matrix, Vector> solver;
+                solver.solve(A, b, x);
+                rename("x", x);
+                fine_space_ptr->write("direct_solution.vtr", x);
+                x.set(0.0);
+            }
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 

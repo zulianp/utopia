@@ -697,7 +697,7 @@ namespace utopia {
                         StaticVector<Scalar, 1> p_fracture;
                         StaticVector<Scalar, NQPoints> permeability;
                         ElementVector p_el_vec, m_el_vec;
-                        
+
 
                         p_el_vec.set(0.0);
                         m_el_vec.set(0.0);
