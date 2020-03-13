@@ -2,11 +2,55 @@
 #define UTOPIA_DUAL_ELEM_HPP
 
 #include "utopia_UniformQuad4.hpp"
+#include "utopia_Edge2.hpp"
 
 namespace utopia {
 
-    template<class Elem, class Quadrature>
+    template<class Elem>
     class DualElem {};
+
+    template<typename Scalar, int Dim>
+    class DualElem< Edge2<Scalar, Dim> > {
+    public:
+        using Elem = utopia::Edge2<Scalar, Dim>;
+        using Point = typename Elem::Point;
+
+        UTOPIA_INLINE_FUNCTION DualElem() {}
+
+        UTOPIA_INLINE_FUNCTION DualElem(const Elem &elem, const Point &q)
+        {
+            init(elem, q);
+        }
+
+        UTOPIA_INLINE_FUNCTION void init(const Elem &elem, const Point &q)
+        {
+            StaticVector<Scalar, 2> buff;
+            buff[0] = elem.fun(0, q);
+            buff[1] = elem.fun(1, q);
+            init(buff);
+        }
+
+        UTOPIA_INLINE_FUNCTION Scalar operator()(const int i) const
+        {
+            UTOPIA_DEVICE_ASSERT(i >= 0);
+            UTOPIA_DEVICE_ASSERT(i < 2);
+            return eval_[i];
+        }
+
+        template<class Evals>
+        UTOPIA_INLINE_FUNCTION void init(const Evals &evals)
+        {
+            const Scalar f0 = evals[0];
+            const Scalar f1 = evals[1];
+
+            eval_[0] =  2 * f0 -     f1;
+            eval_[1] =    - f0 + 2 * f1;
+
+        }
+
+    private:
+        StaticVector<Scalar, 2> eval_;
+    };
 
     template<typename Scalar>
     class DualElem< UniformQuad4<Scalar>> {
@@ -38,6 +82,7 @@ namespace utopia {
             return eval_[i];
         }
 
+        template<class Evals>
         UTOPIA_INLINE_FUNCTION void init(const Evals &evals)
         {
             const Scalar f0 = evals[0];
@@ -60,7 +105,8 @@ namespace utopia {
     public:
         static const Size_t NFunctions = DualElem::NFunctions;
         static const Size_t NQPoints   = Quadrature::NPoints;
-        using Point = typename Quadrature::Point;
+        using Point  = typename Quadrature::Point;
+        using Scalar = typename Quadrature::Scalar;
 
         MassMatrixDual()
         {

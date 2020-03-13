@@ -1,10 +1,11 @@
-#ifndef UTOPIA_EDGE_2_HPP
-#define UTOPIA_EDGE_2_HPP
+#ifndef UTOPIA_REF_EDGE_AND_EDGE_2_HPP
+#define UTOPIA_REF_EDGE_AND_EDGE_2_HPP
 
 #include "utopia_Views.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Elem.hpp"
+
 
 namespace utopia {
 
@@ -20,6 +21,19 @@ namespace utopia {
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
                     return 0.0;
+                }
+            }
+        }
+
+        template<typename Point, typename Grad>
+        UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g)
+        {
+            const auto x = p[0];
+            switch(i) {
+                case 0: { g[0] = -1; return; }
+                case 1: { g[0] =  1; return; }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
                 }
             }
         }
@@ -45,10 +59,20 @@ namespace utopia {
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
 
+        virtual ~Edge2() {}
+
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefEdge2::fun(i, p))
         {
           return RefEdge2::fun(i, p);
+        }
+
+        template<typename Point, typename Grad>
+        UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const
+        {
+            Scalar g_x[1] = {0.0};
+            RefEdge2::grad(i, p, g_x);
+            g = (nodes_[1] - nodes_[0]) * (g_x[0] * h_ * h_);
         }
 
         template<typename Point>
@@ -58,6 +82,11 @@ namespace utopia {
         }
 
         UTOPIA_INLINE_FUNCTION const Point & node(const std::size_t &i) const
+        {
+            return nodes_[i];
+        }
+
+        UTOPIA_INLINE_FUNCTION Point & node(const std::size_t &i)
         {
             return nodes_[i];
         }
@@ -128,6 +157,11 @@ namespace utopia {
             h_ = norm2(p2 - p1);
         }
 
+        void init()
+        {
+            h_ = norm2(nodes_[1] - nodes_[0]);
+        }
+
         template<typename PhysicalPoint, typename RefPoint>
         UTOPIA_INLINE_FUNCTION void inverse_transform(const PhysicalPoint &in, RefPoint &out) const
         {
@@ -156,4 +190,4 @@ namespace utopia {
 
 }
 
-#endif //UTOPIA_EDGE_2_HPP
+#endif //UTOPIA_REF_EDGE_AND_EDGE_2_HPP

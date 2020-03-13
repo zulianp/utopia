@@ -53,7 +53,8 @@ namespace utopia {
         : elem_(elem), diffusivity_(diffusivity)
         {}
 
-        UTOPIA_INLINE_FUNCTION void init(const Point &p, const Scalar &weight)
+        template<class QPoint>
+        UTOPIA_INLINE_FUNCTION void init(const QPoint &p, const Scalar &weight)
         {
             for(int i = 0; i < NFunctions; ++i) {
                 elem_.grad(i, p, g_[i]);
@@ -71,9 +72,9 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void assemble(const Quadrature &q, Matrix &mat)
         {
             Scalar w;
-            Point p;
+            
             for(int qp = 0; qp < Quadrature::NPoints; ++qp) {
-                q.point(qp, p);
+                auto &&p = q.point(qp);
                 w = q.weight(qp);
 
                 init(p, w);
