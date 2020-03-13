@@ -246,6 +246,13 @@ namespace utopia {
     {
         return t.size();
     }
+
+
+    template<class View, typename T, size_t Size>
+    inline void convert(const VectorView<View> &in, std::array<T, Size> &out)
+    {
+        std::copy(&in[0], &in[0] + Size, &out[0]);
+    }
 }
 
 #endif //UTOPIA_KOKKOS_VECTOR_VIEW_HPP

@@ -362,6 +362,12 @@ namespace utopia {
         os << "\n";
     }
 
+    template<typename T, size_t Size>
+    inline void convert(const ArrayView<T, Size> &in, std::array<T, Size> &out)
+    {
+        std::copy(&in[0], &in[0] + Size, &out[0]);
+    }
+
 }
 
 #endif //UTOPIA_ARRAY_2D_HPP
