@@ -253,13 +253,15 @@ namespace utopia {
             void randomly_generate(const T & width)
             {
                 //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-                unsigned seed = 10.0; 
+                const unsigned seed = 3; 
                 static std::default_random_engine generator (seed);
 
                 // this one needs to be replaced 
-                std::uniform_real_distribution<> distr_point(-0.5, 1.0);                 
+                std::uniform_real_distribution<> distr_point(0.0, 1.0);                 
                 std::uniform_int_distribution<> distr_angle(0.0, 180); 
-                std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
+
+                // this one should be driven from power distribution 
+                std::uniform_real_distribution<> distr_length(2.0*width, 0.4);                 
 
                 A_.x = distr_point(generator); 
                 A_.y = distr_point(generator); 

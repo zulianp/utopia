@@ -287,11 +287,8 @@ namespace utopia {
                     BC_.emplace_time_dependent_BC(time_); 
                     space_.apply_constraints(solution_);    
 
-                    std::cout<<"pressure0_ " << pressure0_ << " \n";
-
                     if(pressure0_!= 0.0){
                         fe_problem.set_pressure(pressure0_ + (time_ * pressure_increase_factor_) );     
-                        std::cout<<"pressure0_ + (time_ * pressure_increase_factor_): "<< pressure0_ + (time_ * pressure_increase_factor_) << "  \n"; 
                     }
                     
                     fe_problem.build_irreversility_constraint(lb_); 
@@ -316,14 +313,28 @@ namespace utopia {
                     solver.set_box_constraints(box);
                     in.get("solver", solver);
                     solver.solve(fe_problem, solution_);
+
+
+                    // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector> >();
+                    // // auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector> >();
+                    // qp_solver->pc_type("bjacobi"); 
+                    // qp_solver->max_it(1000); 
+
+
+                    // TrustRegion<PetscMatrix, PetscVector> solver(qp_solver);
+                    // solver.verbose(true); 
+                    // solver.delta0(1e4); 
+                    // in.get("solver", solver);
+                    // solver.solve(fe_problem, solution_);
+
+
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
                     auto sol_status = solver.solution_status(); 
                     const auto conv_reason = sol_status.reason;                     
 
-                    if(adjust_dt_on_failure_ && conv_reason < 0)
-                    {
+                    if(adjust_dt_on_failure_ && conv_reason < 0){
                         // reset solution
                         fe_problem.get_old_solution(solution_); 
 
@@ -331,10 +342,16 @@ namespace utopia {
                         dt_ = dt_ * shrinking_factor_; 
                         time_ += dt_; 
                     }
-                    else
-                    {
+                    else{   
                         rename("X", solution_);
-                        space_.write(output_path_+"_"+std::to_string(1e-5*time_)+".vtk", solution_);      
+
+                        if(pressure0_!= 0.0){
+                            space_.write(output_path_+"_"+std::to_string(1e-5*time_)+".vtk", solution_);      
+                        }   
+                        else{
+                            space_.write(output_path_+"_"+std::to_string(time_)+".vtk", solution_);      
+                        }
+
                         fe_problem.old_solution(solution_); 
 
                         // increment time step 

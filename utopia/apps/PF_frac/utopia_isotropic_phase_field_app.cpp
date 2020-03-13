@@ -161,6 +161,62 @@ namespace utopia {
 
 
 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+    static void petsc_pressure_network_isotropic_phase_field_2(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformQuad4;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType       = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        SizeType scale = (world.size() + 1);
+        SizeType nx = scale * 4;
+        SizeType ny = scale * 4;
+
+        in.get("nx", nx);
+        in.get("ny", ny);
+
+        FunctionSpace space;
+
+
+        space.build(
+            world,
+            {nx, ny},
+            {0.0, 0.0},
+            {1.0, 1.0}
+            );
+
+        space.mesh().set_field_name(0, "c");
+        space.mesh().set_field_name(1, "disp_x");
+        space.mesh().set_field_name(2, "disp_y");
+
+        stats.stop_and_collect("space-creation");
+        stats.start();
+
+        InitialCondidtionPFFracNet<FunctionSpace> IC_setup(space, 0.0, 30);  
+        PFFracFixAllDisp2D<FunctionSpace> BC_setup(space); 
+        IncrementalLoading<FunctionSpace > time_stepper(space, IC_setup, BC_setup); 
+
+        time_stepper.template run<IsotropicPhaseFieldForBrittleFractures<FunctionSpace>>(in); 
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_pressure_network_isotropic_phase_field_2);
+
 
 
 
