@@ -37,7 +37,7 @@ namespace utopia {
             FiniteDifference<typename Vector::Scalar> fd(spacing_);
             Vector gfd;
             fd.grad(fun, x, gfd);
-            bool ok = approxeq(gfd, g, 1e-2);
+            bool ok = approxeq(gfd, g, 1e-7);
 
 
             if (!ok) {
@@ -74,7 +74,7 @@ namespace utopia {
             Matrix diff_mat = H - Hfd;
             Scalar diff = norm1(diff_mat);
 
-            bool ok = diff < 1e-2;
+            bool ok = diff < 1e-7;
 
             if (!ok) {
                 std::cerr << "------- Failure -------\n";

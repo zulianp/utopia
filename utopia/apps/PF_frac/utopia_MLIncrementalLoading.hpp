@@ -29,9 +29,10 @@ namespace utopia {
 
             for (auto l=0; l < level_functions_.size(); l++){
                 level_functions_[l]->read(in);    
+                BC_conditions_[l]->read(in); 
             }
 
-            
+            IC_->read(in); 
         }
 
 
@@ -50,9 +51,13 @@ namespace utopia {
             spaces_[0] = space;
 
             level_functions_.resize(n_levels_); 
-
             auto fun = std::make_shared<ProblemType>(*spaces_[0]);
             level_functions_[0] = fun; 
+
+
+            BC_conditions_.resize(n_levels_); 
+            auto bc = std::make_shared<BCType>(*spaces_[0]);
+            BC_conditions_[0] = bc; 
 
 
             transfers_.resize(n_levels_ - 1);
@@ -60,9 +65,11 @@ namespace utopia {
             for(SizeType i = 1; i < n_levels_; ++i) {
                 spaces_[i] = spaces_[i-1]->uniform_refine();
 
-
                 auto fun = std::make_shared<ProblemType>(*spaces_[i]);
                 level_functions_[i] = fun; 
+
+                auto bc = std::make_shared<BCType>(*spaces_[i]);
+                BC_conditions_[i] = bc; 
 
 
                 auto I = std::make_shared<Matrix>();
@@ -70,6 +77,12 @@ namespace utopia {
                 assert(!empty(*I));
                 transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(I);
             }
+
+
+            // only needed for the finest level 
+            SizeType pf_comp = 0; 
+            IC_ = std::make_shared<ICType>(*spaces_.back(), pf_comp);
+
 
             return true;
         }
@@ -99,7 +112,12 @@ namespace utopia {
 
         std::vector<std::shared_ptr<FunctionSpace>> spaces_;
         std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_;
+
         std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_;
+        std::vector<std::shared_ptr<BCType > >  BC_conditions_;
+
+        std::shared_ptr<ICType > IC_; 
+
 
     };
 
