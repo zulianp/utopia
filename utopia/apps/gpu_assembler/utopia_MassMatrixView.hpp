@@ -37,7 +37,9 @@ namespace utopia {
                     mat(i, i) += fun_i * fun_i * w;
 
                     for(int j = i + 1; j < NFunctions; ++j) {
-                        mat(i, j) += fun_i * elem_.fun(j, p) * w;
+                        const Scalar v = inner(fun_i, elem_.fun(j, p)) * w;
+                        mat(i, j) += v;
+                        mat(j, i) += v;
                     }
                 }
             }
@@ -57,7 +59,9 @@ namespace utopia {
                     vec(i) += fun_i * fun_i * w;
 
                     for(int j = i + 1; j < NFunctions; ++j) {
-                        vec(i) += fun_i * elem_.fun(j, p) * w;
+                        const Scalar v = inner(fun_i, elem_.fun(j, p)) * w;
+                        vec(i) += v;
+                        vec(j) += v;
                     }
                 }
             }

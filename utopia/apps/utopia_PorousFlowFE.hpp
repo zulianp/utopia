@@ -178,7 +178,7 @@ namespace utopia {
 
                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                   StaticVector<Scalar, Dim> g_trial, g_test, isect_1, isect_2, v, t, p, p_quad;
+                   StaticVector<Scalar, Dim> g_trial, g_test, isect_1, isect_2, v, t, p, p_quad, p_frac;
 
                    const SizeType n_fracs = network_.n_fractures();
                    for(SizeType f = 0; f < n_fracs; ++f) {
@@ -195,24 +195,26 @@ namespace utopia {
                            t = v / len_isect;
 
                            for(SizeType k = 0; k < q_weights.size(); ++k) {
-                               const Scalar w = q_weights[k] * len_isect * (fracture.permeability * fracture.aperture);
+                              p = isect_1 + q_points[k](0) * v;
 
-                               p = isect_1 + q_points[k](0) * v;
+                              fracture.inverse_transform(p, p_frac);
+                              Scalar dx2 = q_weights[k] * len_isect;
+                              dx2 *= dx2;
+
+                              const Scalar w = dx2 * fracture.assemble_dual_flow_contraction(p_frac);
 
                                UTOPIA_DEVICE_ASSERT(e.contains(p, 1e-8));
                                e.inverse_transform(p, p_quad);
 
-                               // std::cout << p[0] << " " << p[1] << std::endl;
-
                                for(SizeType j = 0; j < n_fun; ++j) {
-                                    e.grad(j, p_quad, g_test);
-                                    const Scalar g_t_test = inner(g_test, t);
+                                    const Scalar f_test = e.fun(j, p_quad);
 
-                                    el_mat(j, j) += g_t_test * g_t_test * w;
+                                    el_mat(j, j) += f_test * f_test * w;
 
                                     for(SizeType l = j + 1; l < n_fun; ++l) {
-                                        e.grad(l, p_quad, g_trial);
-                                        const Scalar v = g_t_test * inner(g_trial, t) * w;
+                                        const Scalar f_trial = e.fun(l, p_quad);
+
+                                        const Scalar v = f_test * f_trial * w;
                                         el_mat(j, l) += v;
                                         el_mat(l, j) += v;
                                     }
@@ -474,30 +476,27 @@ namespace utopia {
 
         class FractureNetwork : public Configurable {
         public:
+            using Point1 = utopia::StaticVector<Scalar, 1>;
+
             class LineFracture : public Edge2<Scalar, Dim> {
             public:
                 using Super = utopia::Edge2<Scalar, Dim>;
                 Scalar aperture;
                 Scalar permeability;
 
-                template<class VolElem>
-                UTOPIA_INLINE_FUNCTION void assemble_coupling(
-                    const VolElem &e,
-                    const Point &q_point,
-                    const Scalar &q_weight,
-                    StaticMatrix<Scalar, Dim, Dim> &mat)
+                UTOPIA_INLINE_FUNCTION Scalar assemble_dual_flow_contraction(const Point &x) const
                 {
-                    const Scalar w = assemble_dual_flow_contraction(q_point) * q_weight*q_weight;
-                    for(int i = 0; i < VolElem::NFunctions; ++i) {
-                        const Scalar fun_i = e.fun(i, q_point);
-                        mat(i, i) += fun_i * fun_i;
+                    DualElem<Super> dual;
+                    dual.init(*this, x);
+                    Scalar ret = 0.0;
 
-                        for(int j = i + 1; j < VolElem::NFunctions; ++j) {
-                            const Scalar v = fun_i * e.fun(j, q_point);
-                            mat(i, j) += v;
-                            mat(j, i) += v;
+                    for(int i = 0; i < Dim; ++i) {
+                        for(int j = 0; j < Dim; ++j) {
+                            ret += rescaled_op(i, j) * dual(i) * dual(j);
                         }
                     }
+
+                    return ret;
                 }
 
 
@@ -509,8 +508,6 @@ namespace utopia {
                 }
 
             private:
-
-                DualElem<Super> dual_;
                 StaticMatrix<Scalar, Dim, Dim> rescaled_op;
 
 
@@ -532,27 +529,12 @@ namespace utopia {
                         rescaled_op(i, i) /= mass[i] * mass[i];
 
                         for(int j = i+1; j < Dim; ++j) {
-                            Scalar val = rescaled_op(i, j) / mass[i] * mass[j];
+                            Scalar val = rescaled_op(i, j) / (mass[i] * mass[j]);
                             rescaled_op(i, j) = val;
                             rescaled_op(j, i) = val;
                         }
                     }
                 }
-
-                UTOPIA_INLINE_FUNCTION Scalar assemble_dual_flow_contraction(const Point &x) const
-                {
-                    dual_.init(*this, x);
-                    Scalar ret = 0.0;
-
-                    for(int i = 0; i < Dim; ++i) {
-                        for(int j = 0; j < Dim; ++j) {
-                            ret += rescaled_op(i, j) * dual_(i) * dual_(j);
-                        }
-                    }
-
-                    return 0.0;
-                }
-
             };
 
             void read(Input &in) override
@@ -644,10 +626,20 @@ namespace utopia {
 
             FractureNetwork() {
                 utopia::Quadrature<Scalar, 6, 1>::get(quadrature.points(), quadrature.weights());
+
+                disp("--------------------");
+                for(auto &p : quadrature.points()) {
+                    disp(p);
+                    disp("");
+                }
+                disp("--------------------");
+
+                disp(quadrature.weights());
+                disp("--------------------");
             }
 
             std::vector<LineFracture> line_fractures;
-            QuadratureView<ArrayView<Point, 12>, ArrayView<Scalar, 12>, 1, 12> quadrature;
+            QuadratureView<ArrayView<Point1, 12>, ArrayView<Scalar, 12>, 1, 12> quadrature;
         };
 
         void init_permeability(Input &in)
