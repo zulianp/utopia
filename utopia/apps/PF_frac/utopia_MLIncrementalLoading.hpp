@@ -83,7 +83,6 @@ namespace utopia {
             SizeType pf_comp = 0; 
             IC_ = std::make_shared<ICType>(*spaces_.back(), pf_comp);
 
-
             return true;
         }
 
