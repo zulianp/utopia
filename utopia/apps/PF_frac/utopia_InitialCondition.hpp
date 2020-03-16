@@ -271,11 +271,11 @@ namespace utopia {
                 static std::default_random_engine generator (seed);
 
                 // this one needs to be replaced 
-                std::uniform_real_distribution<> distr_point(0.0, 1.0);                 
+                std::uniform_real_distribution<> distr_point(0.1, 0.9);                 
                 std::uniform_int_distribution<> distr_angle(0.0, 180); 
 
                 // this one should be driven from power distribution 
-                std::uniform_real_distribution<> distr_length(3.0*width, 0.2);                 
+                std::uniform_real_distribution<> distr_length(3.0*width, 0.15);                 
 
                 A_.x = distr_point(generator); 
                 A_.y = distr_point(generator); 

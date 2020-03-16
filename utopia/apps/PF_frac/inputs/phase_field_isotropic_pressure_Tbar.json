@@ -1,5 +1,5 @@
 {
-    "app" : "petsc_pressure_Tbar_isotropic_phase_field_2",
+    "app" : "petsc_pressure_Tbar_isotropic_phase_field_2_rmtr",
     "output-path" : "isotropic_Tbar",
     "nx" : 100,
     "ny" : 100,

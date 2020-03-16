@@ -1,6 +1,6 @@
 {
     "app" : "petsc_pressure_network_isotropic_phase_field_2",
-    "output-path" : "isotropic_network",
+    "output-path" : "isotropic_75network",
     "nx" : 500,
     "ny" : 500,
     "nz" : 2,
@@ -16,7 +16,7 @@
     "shrinking_factor" : 0.5, 
     "use_pressure": true, 
     "use_constant_pressure" : true,
-    "num_fracs" : 50, 
+    "num_fracs" : 75, 
     "lambda": 100, 
     "mu":100, 
     "fracture_toughness":1e-3, 
