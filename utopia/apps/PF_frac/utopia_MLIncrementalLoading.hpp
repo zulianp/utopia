@@ -216,7 +216,8 @@ namespace utopia {
                 tr_strategy_coarse->atol(1e-10);
 
                 // TODO:: test different types of constraints
-                auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
+                // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+                auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, GALERKIN> >(n_levels_);
 
                 // Set TR-QP strategies
                 rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -228,11 +229,13 @@ namespace utopia {
 
                 rmtr->set_transfer_operators(transfers_);
                 rmtr->set_functions(level_functions_);                
+                rmtr->delta0(100000);
 
 
                 auto box = make_lower_bound_constraints(make_ref(this->lb_));
                 rmtr->set_box_constraints(box);
                 rmtr->verbose(true); 
+                rmtr->max_QP_smoothing_it(20); 
                 in.get("solver", *rmtr);
 
 
