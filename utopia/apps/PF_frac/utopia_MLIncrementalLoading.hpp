@@ -78,7 +78,14 @@ namespace utopia {
                 auto I = std::make_shared<Matrix>();
                 spaces_[i-1]->create_interpolation(*spaces_[i], *I);
                 assert(!empty(*I));
-                transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(I);
+
+                Matrix Iu; // = *I; 
+                // MatConvert(raw_type(*I),  MATMPIAIJ, MAT_INITIAL_MATRIX, &raw_type(Iu));
+                MatConvert(raw_type(*I),  MATSEQAIJ, MAT_INITIAL_MATRIX, &raw_type(Iu));
+                
+
+                // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));   
+                transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(transpose(Iu)));
             }
 
 
@@ -126,8 +133,12 @@ namespace utopia {
             //     // IC_->init(this->solution_, pressure_vec); 
             // }        
 
-            spaces_.back()->apply_constraints(this->solution_);                    
-            level_functions_.back()->old_solution(this->solution_); 
+            spaces_.back()->apply_constraints(this->solution_);           
+
+
+            if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){         
+                fun_finest->old_solution(this->solution_); 
+            }
 
         }
 
@@ -139,7 +150,10 @@ namespace utopia {
 
             // update fine level solution  and constraint 
             spaces_.back()->apply_constraints(this->solution_);    
-            level_functions_.back()->build_irreversility_constraint(this->lb_); 
+
+            if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
+                fun_finest->build_irreversility_constraint(this->lb_); 
+            }
 
 
             for(auto l=0; l < BC_conditions_.size(); l++){
@@ -149,6 +163,7 @@ namespace utopia {
                 spaces_[l]->apply_constraints(bc_values);    
                 spaces_[l]->build_constraints_markers(bc_flgs); 
 
+               level_functions_[l]->init_constraint_indices(); 
             }
 
 
@@ -212,18 +227,19 @@ namespace utopia {
 
 
                 rmtr->set_transfer_operators(transfers_);
-                // rmtr->set_functions(level_functions_);                
-
+                rmtr->set_functions(level_functions_);                
 
 
                 auto box = make_lower_bound_constraints(make_ref(this->lb_));
                 rmtr->set_box_constraints(box);
+                rmtr->verbose(true); 
                 in.get("solver", *rmtr);
 
 
 
                 rmtr->solve(this->solution_); 
                 auto sol_status = rmtr->solution_status(); 
+                exit(0);
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -248,7 +264,7 @@ namespace utopia {
         std::vector<std::shared_ptr<FunctionSpace>> spaces_;
         std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_;
 
-        std::vector<std::shared_ptr<ProblemType > >  level_functions_;
+        std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_;
         std::vector<std::shared_ptr<BCType > >  BC_conditions_;
 
         std::shared_ptr<ICType > IC_; 

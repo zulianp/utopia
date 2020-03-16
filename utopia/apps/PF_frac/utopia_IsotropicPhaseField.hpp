@@ -114,10 +114,10 @@ namespace utopia {
             }
 
             // in case of constant pressure field 
-            if(params_.pressure != 0.0){
+            // if(params_.pressure != 0.0){
                 params_.use_pressure = true; 
                 setup_constant_pressure_field(params_.pressure); 
-            }
+            // }
 
             // needed for ML setup 
             space_.create_vector(this->_x_eq_values);
@@ -156,8 +156,8 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
-            auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);     
+            // auto &x_old = const_cast<Vector &>(x_old_);
+            // FEFunction<CSpace> c_old_fun(C, x_old);     
 
 
             auto &press = const_cast<Vector &>(pressure_field_);
@@ -170,7 +170,7 @@ namespace utopia {
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
-            auto c_old  = c_old_fun.value(q);    
+            // auto c_old  = c_old_fun.value(q);    
             auto p_val  = press_fun.value(q); 
 
             auto c_grad = c_fun.gradient(q);
@@ -187,7 +187,7 @@ namespace utopia {
                 auto C_view = C.view_device();
 
                 auto c_view      = c_val.view_device();
-                auto c_old_view  = c_old.view_device(); 
+                // auto c_old_view  = c_old.view_device(); 
                 auto p_view      = p_val.view_device(); 
 
                 auto c_grad_view = c_grad.view_device();
@@ -207,10 +207,10 @@ namespace utopia {
                         C_view.elem(i, c_e);
 
                         StaticVector<Scalar, NQuadPoints> c;
-                        StaticVector<Scalar, NQuadPoints> c_old;
+                        // StaticVector<Scalar, NQuadPoints> c_old;
                         StaticVector<Scalar, NQuadPoints> p;
                         c_view.get(c_e, c);
-                        c_old_view.get(c_e, c_old); 
+                        // c_old_view.get(c_e, c_old); 
                         p_view.get(c_e, p); 
 
 
@@ -233,11 +233,11 @@ namespace utopia {
 
                             el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
-                            if(params_.use_penalty_irreversibility){
-                                auto c_cold             = c[qp] - c_old[qp]; 
-                                auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
-                                el_energy               += params_.penalty_param/2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
-                            }                            
+                            // if(params_.use_penalty_irreversibility){
+                            //     auto c_cold             = c[qp] - c_old[qp]; 
+                            //     auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
+                            //     el_energy               += params_.penalty_param/2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+                            // }                            
                         }
 
                         assert(el_energy == el_energy);
@@ -267,8 +267,8 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
-            auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);     
+            // auto &x_old = const_cast<Vector &>(x_old_);
+            // FEFunction<CSpace> c_old_fun(C, x_old);     
 
             auto &press = const_cast<Vector &>(pressure_field_);
             FEFunction<CSpace> press_fun(C, press);    
@@ -280,7 +280,7 @@ namespace utopia {
             Quadrature q;
 
             auto c_val      = c_fun.value(q);
-            auto c_old      = c_old_fun.value(q); 
+            // auto c_old      = c_old_fun.value(q); 
             auto press_val  = press_fun.value(q); 
 
             auto c_grad = c_fun.gradient(q);
@@ -301,7 +301,7 @@ namespace utopia {
                 auto C_view      = C.view_device();
 
                 auto c_view      = c_val.view_device();
-                auto c_old_view  = c_old.view_device();  
+                // auto c_old_view  = c_old.view_device();  
                 auto p_view      = press_val.view_device();  
 
                 auto c_grad_view = c_grad.view_device();
@@ -346,8 +346,8 @@ namespace utopia {
                         StaticVector<Scalar, NQuadPoints> c;
                         c_view.get(c_e, c);
 
-                        StaticVector<Scalar, NQuadPoints> c_old;
-                        c_old_view.get(c_e, c_old);
+                        // StaticVector<Scalar, NQuadPoints> c_old;
+                        // c_old_view.get(c_e, c_old);
 
                         StaticVector<Scalar, NQuadPoints> p;
                         p_view.get(c_e, p);
@@ -405,11 +405,11 @@ namespace utopia {
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
                                 
-                                if(params_.use_penalty_irreversibility){
-                                    auto c_cold             = c[qp] - c_old[qp]; 
-                                    auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
-                                    c_el_vec(j)             += params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
-                                }
+                                // if(params_.use_penalty_irreversibility){
+                                //     auto c_cold             = c[qp] - c_old[qp]; 
+                                //     auto c_cold_bracket     = c_cold < 0.0 ? c_cold: 0.0; 
+                                //     c_el_vec(j)             += params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
+                                // }
 
 
                             }
