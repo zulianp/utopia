@@ -26,7 +26,6 @@ namespace utopia
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class MultigridQR final:  public LinearMultiLevel<Matrix, Vector>,
-                              public IterativeSolver<Matrix, Vector>, 
                               public VariableBoundSolverInterface<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -34,12 +33,14 @@ namespace utopia
 
         typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::IterativeSolver<Matrix, Vector>     Smoother;
-        typedef std::shared_ptr<Smoother>                   SmootherPtr;        
+        typedef std::shared_ptr<Smoother>                   SmootherPtr;
 
         typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
-        typedef utopia::VariableBoundSolverInterface<Vector> VariableBoundSolverInterface;  
+        typedef utopia::VariableBoundSolverInterface<Vector> VariableBoundSolverInterface;
+
+        using Super =  utopia::LinearMultiLevel<Matrix, Vector>;
 
         typedef struct
         {
@@ -74,18 +75,18 @@ namespace utopia
          * @param[in]  smoother       The smoother.
          * @param[in]  coarse_solver  The direct solver for coarse level.
          */
-        MultigridQR(const std::shared_ptr<Smoother> &fine_smoother, 
+        MultigridQR(const std::shared_ptr<Smoother> &fine_smoother,
                     const std::shared_ptr<Smoother> &coarse_smoother,
-                    const std::shared_ptr<Solver>   &coarse_solver, 
+                    const std::shared_ptr<Solver>   &coarse_solver,
                     const SizeType & num_levels)
         : coarse_solver_(coarse_solver),
           use_line_search_(false)
         {
             this->must_generate_masks(true);
-            this->num_levels_ = num_levels; 
+            this->num_levels_ = num_levels;
 
-            smoothers_.resize(this->n_levels());   
-            smoothers_[this->num_levels_ - 1] = fine_smoother; 
+            smoothers_.resize(this->n_levels());
+            smoothers_[this->num_levels_ - 1] = fine_smoother;
 
             for(std::size_t l = 1; l < this->num_levels_ - 1; ++l) {
               smoothers_[l] = std::shared_ptr<Smoother>(coarse_smoother->clone());
@@ -96,12 +97,11 @@ namespace utopia
 
         void read(Input &in) override
         {
-          LinearMultiLevel<Matrix, Vector>::read(in);
-          IterativeSolver::read(in);
+          Super::read(in);
 
           in.get("use_line_search", use_line_search_);
 
-          // TODO:: read params for all smoothers 
+          // TODO:: read params for all smoothers
           // if(smoother_cloneable_) {
           //     in.get("smoother", *smoother_cloneable_);
           // }
@@ -114,8 +114,7 @@ namespace utopia
 
         void print_usage(std::ostream &os) const override
         {
-          LinearMultiLevel<Matrix, Vector>::print_usage(os);
-          IterativeSolver::print_usage(os);
+          Super::print_usage(os);
 
           this->print_param_usage(os, "perform_galerkin_assembly", "bool", "Flag turning on/off galerkin assembly.", "true");
           this->print_param_usage(os, "use_line_search", "bool", "Flag turning on/off line-search after coarse grid correction.", "false");
@@ -128,7 +127,7 @@ namespace utopia
          */
         void update(const std::shared_ptr<const Matrix> &op) override
         {
-            IterativeSolver::update(op);
+            Super::update(op);
             this->galerkin_assembly(op);
 
             update();
@@ -162,14 +161,14 @@ namespace utopia
             utopia_error("MultigridQR:: set_smoother, smoothers array was not allocated.");
           }
 
-          smoothers_[level] = smoother; 
+          smoothers_[level] = smoother;
         }
 
       void init_memory(const SizeType & ls) override
       {
-        IterativeSolver::init_memory(ls);
-        VariableBoundSolverInterface::init_memory(ls);        
-      }        
+        Super::init_memory(ls);
+        VariableBoundSolverInterface::init_memory(ls);
+      }
 
         /**
          * @brief      The solve function for multigrid method.
@@ -190,12 +189,12 @@ namespace utopia
           SizeType l = L - 1;
 
           memory.x[l] = x_fine;
-          memory.rhs[l] = rhs; 
+          memory.rhs[l] = rhs;
 
           r_norm = norm2(memory.rhs[l] - level(l).A() * memory.x[l]);
           r0_norm = r_norm;
 
-          Vector x_old = memory.x[l]; 
+          Vector x_old = memory.x[l];
 
           std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
           this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "||x_old - x_new||" });
@@ -212,7 +211,7 @@ namespace utopia
           {
               if(this->cycle_type() == MULTIPLICATIVE_CYCLE) {
                   ok = standard_cycle(l); assert(ok);
-              } 
+              }
               else {
                   std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n";
               }
@@ -226,8 +225,8 @@ namespace utopia
 #else
               // assert(!has_nan_or_inf(x));
 #endif
-              diff_norm = norm2(x_old - memory.x[l]); 
-              x_old = memory.x[l]; 
+              diff_norm = norm2(x_old - memory.x[l]);
+              x_old = memory.x[l];
 
               r_norm = norm2(memory.rhs[l] - level(l).A() * memory.x[l]);
 
@@ -240,7 +239,7 @@ namespace utopia
               it++;
           }
 
-          x_fine = memory.x[l]; 
+          x_fine = memory.x[l];
           this->print_statistics(it);
 
           return true;
@@ -259,7 +258,7 @@ namespace utopia
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
 
             ////////////////////////////////////
-            if(l == 0) 
+            if(l == 0)
             {
               coarse_solve(memory.rhs[l], memory.x[l]);
               return true;
@@ -285,20 +284,20 @@ namespace utopia
                 this->transfer(l-1).restrict(memory.r[l], memory.rhs[l-1]);
 
 
-                // BC conditions treatment ... 
+                // BC conditions treatment ...
                 if(this->must_generate_masks()) {
                   this->apply_mask(l-1, memory.rhs[l-1]);
                 }
 
                 if(empty(memory.x[l-1])){
-                  memory.x[l-1] = 0.0*memory.rhs[l-1]; 
+                  memory.x[l-1] = 0.0*memory.rhs[l-1];
                 }
                 else{
-                  memory.x[l-1].set(0.0); 
+                  memory.x[l-1].set(0.0);
                 }
 
-                standard_cycle(l-1); 
-                
+                standard_cycle(l-1);
+
                 // correction transfer
                 this->transfer(l-1).interpolate(memory.x[l-1], memory.r[l]);
 
@@ -334,34 +333,34 @@ namespace utopia
             return true;
         }
 
-        
+
         inline bool smoothing_fine(const SizeType l, const Vector &rhs, Vector &x, const SizeType &nu = 1, const bool & pre_sm = false)
         {
-            assert(l != this->n_levels()-2); 
-            
+            assert(l != this->n_levels()-2);
+
             if(ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get())){
-              GS_smoother->set_R(R_);            
+              GS_smoother->set_R(R_);
               GS_smoother->sweeps(nu);
-              GS_smoother->set_box_constraints(this->get_box_constraints());          
+              GS_smoother->set_box_constraints(this->get_box_constraints());
               GS_smoother->smooth(rhs, x);
             }
             else{
-              utopia_error("MG_QR: requires ProjectedGaussSeidelQR to be the fine level smoother "); 
+              utopia_error("MG_QR: requires ProjectedGaussSeidelQR to be the fine level smoother ");
             }
 
             if(pre_sm){
-             
-              if(MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get())){ 
+
+              if(MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get())){
                 ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get());
                 const Vector & active_set = GS_smoother->get_active_set();
 
-                trunc_transfer->truncate_interpolation(active_set); 
+                trunc_transfer->truncate_interpolation(active_set);
                 this->galerkin_assembly(this->get_operator());
 
                 for(std::size_t l = 1; l != smoothers_.size()-1; ++l) {
                     smoothers_[l]->update(level(l).A_ptr());
                 }
-                coarse_solver_->update(level(0).A_ptr());              
+                coarse_solver_->update(level(0).A_ptr());
               }
 
             else{
@@ -390,7 +389,7 @@ namespace utopia
            return new MultigridQR(
             std::shared_ptr<Smoother>(smoothers_[smoothers_.size()-1]->clone()),
             std::shared_ptr<Smoother>(smoothers_[1]->clone()),
-            std::shared_ptr<Solver>(coarse_solver_->clone()), 
+            std::shared_ptr<Solver>(coarse_solver_->clone()),
             this->n_levels()
             );
         }
@@ -422,19 +421,19 @@ namespace utopia
 
         void set_R(const Matrix & R)
         {
-          R_ = R; 
+          R_ = R;
         }
 
         void set_Q(const Matrix & Q)
         {
-          Q_ = Q; 
-        }        
+          Q_ = Q;
+        }
 
         void set_QR(const Matrix & Q, const Matrix & R)
         {
-          Q_ = Q; 
-          R_ = R; 
-        }                
+          Q_ = Q;
+          R_ = R;
+        }
 
     protected:
       std::vector<SmootherPtr>  smoothers_;

@@ -22,9 +22,6 @@ namespace utopia {
         int n_levels = 2;
         in.get("n_levels", n_levels);
 
-        // bool in_situ_rendering = false;
-        // in.get("in_situ_rendering", in_situ_rendering);
-
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
 
@@ -34,23 +31,31 @@ namespace utopia {
         bool direct_solution = false;
         in.get("direct_solution", direct_solution);
 
+        bool coarse_direct_solver = true;
+        in.get("coarse_direct_solver", coarse_direct_solver);
+
+        bool use_petsc_mg = false;
+        in.get("use_petsc_mg", use_petsc_mg);
+
     	Vector x;
 
         std::shared_ptr<FunctionSpace> fine_space_ptr;
 
     	{
-        	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
+        	auto smoother = std::make_shared<SOR<Matrix, Vector>>();
+            // auto smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            // auto smoother = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
             std::shared_ptr< LinearSolver<Matrix, Vector> > coarse_solver;
-            // if(direct_solution) {
+            if(coarse_direct_solver) {
                 coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
-		    // } else {
-      //           auto bcg = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
-      //           // auto bcg = std::make_shared<GMRES<Matrix, Vector>>("bjacobi");
-      //           bcg->max_it(coarse_space.n_dofs());
-      //           coarse_solver = bcg;
-      //       }
+		    } else {
+                auto bcg = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+                // auto bcg = std::make_shared<GMRES<Matrix, Vector>>("bjacobi");
+                bcg->max_it(coarse_space.n_dofs());
+                coarse_solver = bcg;
+            }
 
-        	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
+        	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver, use_petsc_mg);
         	// mg.verbose(true);
             mg.read(in);
         	mg.init(coarse_space, n_levels);

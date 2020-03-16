@@ -4,21 +4,26 @@
 #include "utopia_Multigrid.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_petsc.hpp"
+#include "utopia_SolverForwardDeclarations.hpp"
+#include "utopia_IPTransfer.hpp"
 
 namespace utopia {
 
 
     template<class Matrix, class Vector>
-    class Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector>, public LinearMultiLevel<Matrix, Vector> {
+    class Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> : public LinearMultiLevel<Matrix, Vector> {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::LinearSolver<Matrix, Vector>        Solver;
-        typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
-        typedef utopia::IterativeSolver<Matrix, Vector>     Smoother;
-        typedef utopia::Level<Matrix, Vector>               Level;
-        typedef utopia::Transfer<Matrix, Vector>            Transfer;
-        typedef utopia::MatrixTransfer<Matrix, Vector>      MatrixTransfer;
+        using Solver          = utopia::LinearSolver<Matrix, Vector>;
+        using IterativeSolver = utopia::IterativeSolver<Matrix, Vector>;
+        using Smoother        = utopia::IterativeSolver<Matrix, Vector>;
+        using Level           = utopia::Level<Matrix, Vector>;
+        using Transfer        = utopia::Transfer<Matrix, Vector>;
+        using MatrixTransfer  = utopia::MatrixTransfer<Matrix, Vector>;
+        using IPTransfer      = utopia::IPTransfer<Matrix, Vector>;
+        using Super           = utopia::LinearMultiLevel<Matrix, Vector>;
+
     public:
         void update(const std::shared_ptr<const Matrix> &op) override
         {
@@ -101,8 +106,7 @@ namespace utopia {
 
         void read(Input &in) override
         {
-          LinearMultiLevel<Matrix, Vector>::read(in);
-          IterativeSolver::read(in);
+          Super::read(in);
 
           in.get("block_size", block_size_);
 
@@ -117,8 +121,7 @@ namespace utopia {
 
         void print_usage(std::ostream &os) const override
         {
-          LinearMultiLevel<Matrix, Vector>::print_usage(os);
-          IterativeSolver::print_usage(os);
+          Super::print_usage(os);
 
           this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1");
           this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-");
@@ -268,17 +271,26 @@ namespace utopia {
 
                 auto mat_transfer = dynamic_cast<MatrixTransfer *>(&this->transfer(i));
 
-                if(!mat_transfer) {
-                    std::cerr << "[Error] FIXME incompatible transfer type" << std::endl;
-                    assert(false);
-                    return;
+                if(mat_transfer) {
+                    Mat I = raw_type(mat_transfer->I());
+                    PCMGSetInterpolation(pc, i + 1, I);
+
+                    Mat R = raw_type(mat_transfer->R());
+                    PCMGSetRestriction(pc, i + 1, R);
+                } else {
+                    auto ip_transfer = dynamic_cast<IPTransfer *>(&this->transfer(i));
+
+                    if(ip_transfer) {
+                        Mat I = raw_type(ip_transfer->I());
+                        PCMGSetInterpolation(pc, i + 1, I);
+                    } else {
+                        std::cerr << "[Error] FIXME incompatible transfer type" << std::endl;
+                        assert(false);
+                        return;
+                    }
                 }
 
-                Mat I = raw_type(mat_transfer->I());
-                PCMGSetInterpolation(pc, i + 1, I);
 
-                Mat R = raw_type(mat_transfer->R());
-                PCMGSetRestriction(pc, i + 1, R);
 
                 if(linear_solver_) {
                     KSP coarse_solver;
