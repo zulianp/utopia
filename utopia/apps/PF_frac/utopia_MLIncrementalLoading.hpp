@@ -81,10 +81,11 @@ namespace utopia {
 
                 Matrix Iu; // = *I; 
                 // MatConvert(raw_type(*I),  MATMPIAIJ, MAT_INITIAL_MATRIX, &raw_type(Iu));
-                MatConvert(raw_type(*I),  MATSEQAIJ, MAT_INITIAL_MATRIX, &raw_type(Iu));
+                MatConvert(raw_type(*I),  I->type_override(), MAT_INITIAL_MATRIX, &raw_type(Iu));
                 
 
-                // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));   
+                // TODO:: assemble P correctly => not I^T.... 
+                // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));    // still seq. faults 
                 transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(transpose(Iu)));
             }
 
