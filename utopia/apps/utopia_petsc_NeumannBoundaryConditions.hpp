@@ -63,18 +63,24 @@ namespace utopia {
                     return;
                 }
 
+                ArrayView<SizeType, Side::NFunctions> idx;
                 StaticVector<Scalar, NFunctions> vec; vec.set(0.0);
+                ElemView vol_e;
                 SideElemView e;
+
+                space_view.elem(i, vol_e);
+
 
                 auto p   = points_view.make(e);
                 auto fun = shape_view.make(e);
 
                 for(SizeType s = 0; s < Elem::NSides; ++s) {
-                    if(!space_view.on_boundary(i, s, side_set_)) {
+                    if(!space_view.on_boundary(vol_e, s, side_set_)) {
                         continue;
                     }
 
-                    space_view.elem(i, s, e);
+                    vol_e.side(s, e);
+                    vol_e.side_idx(s, idx);
 
                     //assemble
                     for(SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
@@ -86,7 +92,7 @@ namespace utopia {
                             auto fun_k = fun_(p_k);
 
                             for(SizeType j = 0; j < Side::NFunctions; ++j) {
-                                vec(j) += fun_k * fun(j, k) * dx_k;
+                                vec(idx[j]) += fun_k * fun(j, k) * dx_k;
                             }
 
                         }

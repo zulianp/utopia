@@ -5,7 +5,7 @@
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Elem.hpp"
-// #include "utopia_Edge2.hpp"
+#include "utopia_Edge2.hpp"
 
 namespace utopia {
 
@@ -217,10 +217,13 @@ namespace utopia {
         static const int Dim = 2;
         static const int NNodes = 4;
         static const int NFunctions = 4;
-        using Point = utopia::StaticVector<Scalar, Dim>;
+
+        using Side      = utopia::Edge2<Scalar, Dim>;
+        using Point     = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
+
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefQuad4::fun(i, p))
@@ -242,6 +245,76 @@ namespace utopia {
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
                     return;
+                }
+            }
+        }
+
+        template<typename IntArray>
+        UTOPIA_INLINE_FUNCTION void side_idx(const std::size_t &i, IntArray &local_side_idx) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    local_side_idx[0]= 0;
+                    local_side_idx[1]= 1;
+                    return;
+                }
+                case 1:
+                {
+                    local_side_idx[0]= 1;
+                    local_side_idx[1]= 2;
+                    return;
+                }
+                case 2:
+                {
+                    local_side_idx[0]= 2;
+                    local_side_idx[1]= 3;
+                    return;
+                }
+                case 3:
+                {
+                    local_side_idx[0]= 3;
+                    local_side_idx[1]= 0;
+                    return;
+                }
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
+            }
+        }
+
+
+        UTOPIA_INLINE_FUNCTION void side(const std::size_t &i, Side &side) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    node(0, side.node(0));
+                    node(1, side.node(1));
+                    return;
+                }
+                case 1:
+                {
+                    node(1, side.node(0));
+                    node(2, side.node(1));
+                    return;
+                }
+                case 2:
+                {
+                    node(2, side.node(0));
+                    node(3, side.node(1));
+                    return;
+                }
+                case 3:
+                {
+                    node(3, side.node(0));
+                    node(0, side.node(1));
+                    return;
+                }
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
                 }
             }
         }

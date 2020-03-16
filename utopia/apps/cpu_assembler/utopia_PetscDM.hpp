@@ -174,6 +174,7 @@ namespace utopia {
         void cell_point(const SizeType &idx, Point &translation);
         void cell_size(const SizeType &idx, Point &cell_size);
 
+        bool is_local_node_on_boundary(const SizeType &idx) const;
         bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
         void node(const SizeType &idx, Point &node) const;
         void elem(const SizeType &idx, Elem &e) const;
@@ -224,6 +225,8 @@ namespace utopia {
 
         bool is_ghost(const SizeType &global_node_idx) const;
         bool is_boundary(const SizeType &global_node_idx) const;
+
+        bool on_boundary(const SizeType &elem_idx) const;
 
         void set_field_name(const SizeType &nf, const std::string &name);
 

@@ -154,7 +154,7 @@ namespace utopia {
         {
             nodes_[0].copy(p1);
             nodes_[1].copy(p2);
-            h_ = norm2(p2 - p1);
+            init();
         }
 
         void init()

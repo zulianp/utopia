@@ -663,6 +663,23 @@ namespace utopia {
     }
 
     template<int Dim>
+    bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx) const
+    {
+        std::array<SizeType, 3> tensor_index = {0, 0, 0};
+        impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
+
+        const auto &mirror = impl_->mirror;
+
+        for(int d = 0; d < Dim; ++d) {
+            if(tensor_index[d] == 0 || tensor_index[d] == (mirror.dims[d] - 1)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    template<int Dim>
     bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
     {
         std::array<SizeType, 3> tensor_index = {0, 0, 0};
@@ -866,6 +883,21 @@ namespace utopia {
     std::unique_ptr<PetscDM<Dim>> PetscDM<Dim>::clone() const
     {
         return this->clone(n_components());
+    }
+
+    template<int Dim>
+    bool PetscDM<Dim>::on_boundary(const SizeType &elem_idx) const
+    {
+        NodeIndex idx;
+        nodes(elem_idx, idx);
+
+        for(auto i : idx) {
+            if(is_local_node_on_boundary(i)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

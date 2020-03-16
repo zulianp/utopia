@@ -57,6 +57,12 @@ namespace utopia {
     }
 
     template<class Elem, int NComponents>
+    bool FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::on_boundary(const SizeType &elem_idx) const
+    {
+        return mesh_->on_boundary(elem_idx);
+    }
+
+    template<class Elem, int NComponents>
     bool FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::write(const Path &path, const PetscVector &x) const
     {
         PetscErrorCode ierr = 0;
@@ -88,7 +94,7 @@ namespace utopia {
             if(ierr != 0) { assert(false); return false; }
 
             ierr = PetscViewerPushFormat(viewer,  PETSC_VIEWER_VTK_VTU); assert(ierr == 0);
-        } 
+        }
 #if defined(PETSC_HAVE_HDF5)
         else if(ext == "h5") {
             PetscViewerHDF5Open(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);

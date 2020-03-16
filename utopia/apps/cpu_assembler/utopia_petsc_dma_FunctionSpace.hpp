@@ -375,6 +375,8 @@ namespace utopia {
 
         void elem(const SizeType &idx, Elem &e) const;
 
+        bool on_boundary(const SizeType &elem_idx) const;
+
 
         // bool is_boundary_dof(const SizeType &idx) const
         // {
