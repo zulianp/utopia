@@ -72,7 +72,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void assemble(const Quadrature &q, Matrix &mat)
         {
             Scalar w;
-            
+
             for(int qp = 0; qp < Quadrature::NPoints; ++qp) {
                 auto &&p = q.point(qp);
                 w = q.weight(qp);
@@ -103,6 +103,11 @@ namespace utopia {
 
         template<typename SizeType, class Elem, class Accumulator>
         UTOPIA_INLINE_FUNCTION void assemble(const SizeType &, const Elem &, Accumulator &acc) const {
+            acc += value_;
+        }
+
+        template<class Elem, class Accumulator>
+        UTOPIA_INLINE_FUNCTION void assemble(const Elem &, Accumulator &acc) const {
             acc += value_;
         }
 

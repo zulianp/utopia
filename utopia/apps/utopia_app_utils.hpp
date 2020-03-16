@@ -41,13 +41,14 @@ namespace utopia {
     	{
         	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
             std::shared_ptr< LinearSolver<Matrix, Vector> > coarse_solver;
-            if(direct_solution) {
+            // if(direct_solution) {
                 coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
-		    } else {
-                auto bcg = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
-                // bcg->max_it(coarse_space.n_dofs());
-                coarse_solver = bcg;
-            }
+		    // } else {
+      //           auto bcg = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+      //           // auto bcg = std::make_shared<GMRES<Matrix, Vector>>("bjacobi");
+      //           bcg->max_it(coarse_space.n_dofs());
+      //           coarse_solver = bcg;
+      //       }
 
         	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
         	// mg.verbose(true);
