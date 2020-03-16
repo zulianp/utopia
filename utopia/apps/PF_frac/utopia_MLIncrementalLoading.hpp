@@ -5,14 +5,15 @@
 #include "utopia_Multigrid.hpp"
 #include "utopia_IPTransfer.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_IsotropicPhaseField.hpp"
 
 #include <memory>
 
 namespace utopia {
 
     //FIXME complete the overriding process
-    template<class FunctionSpace, class ProblemType>
-    class RMTRSetup final : public Configurable {
+    template<class FunctionSpace, class ProblemType, class BCType, class ICType>
+    class MLIncrementalLoading final : public Configurable {
     public:
         using Matrix   = typename FunctionSpace::Matrix;
         using Vector   = typename FunctionSpace::Vector;
@@ -20,8 +21,8 @@ namespace utopia {
         using SizeType = typename FunctionSpace::SizeType;
 
 
-        RMTRSetup(FunctionSpace &space, const SizeType & n_levels) : n_levels_(n_levels){
-            init(space); 
+        MLIncrementalLoading(FunctionSpace &space_coarse, const SizeType & n_levels) : n_levels_(n_levels){
+            init(space_coarse); 
         }   
 
         void read(Input &in) override {
@@ -50,7 +51,7 @@ namespace utopia {
 
             level_functions_.resize(n_levels_); 
 
-            auto fun = std::make_shared<ProblemType>(spaces_[0]);
+            auto fun = std::make_shared<ProblemType>(*spaces_[0]);
             level_functions_[0] = fun; 
 
 
@@ -60,7 +61,7 @@ namespace utopia {
                 spaces_[i] = spaces_[i-1]->uniform_refine();
 
 
-                auto fun = std::make_shared<ProblemType>(spaces_[i]);
+                auto fun = std::make_shared<ProblemType>(*spaces_[i]);
                 level_functions_[i] = fun; 
 
 

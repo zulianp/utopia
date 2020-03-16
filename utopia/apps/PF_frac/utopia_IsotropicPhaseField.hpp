@@ -16,7 +16,7 @@
 namespace utopia {
 
     template<class FunctionSpace, int Dim = FunctionSpace::Dim>
-    class IsotropicPhaseFieldForBrittleFractures final : public Function<
+    class IsotropicPhaseFieldForBrittleFractures final : public ExtendedFunction<
                             typename FunctionSpace::Matrix,
                             typename FunctionSpace::Vector>,
                             public Configurable

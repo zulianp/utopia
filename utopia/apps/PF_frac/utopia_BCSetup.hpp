@@ -35,7 +35,6 @@
 #include "utopia_LBFGS.hpp"
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 #include "utopia_InitialCondition.hpp"
-#include "utopia_RMTRSetup.hpp"
 
 
 #include <random>

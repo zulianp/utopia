@@ -33,6 +33,7 @@
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 #include "utopia_InitialCondition.hpp"
 #include "utopia_IncrementalLoading.hpp"
+#include "utopia_MLIncrementalLoading.hpp"
 
 #include <random>
 #include <cmath>
@@ -205,11 +206,15 @@ namespace utopia {
 
         stats.start();
 
-        InitialCondidtionPFTbar<FunctionSpace> IC_setup(space, 0.0);  
-        PFFracFixAllDisp2D<FunctionSpace> BC_setup(space); 
-        IncrementalLoading<FunctionSpace > time_stepper(space, IC_setup, BC_setup); 
+        // InitialCondidtionPFTbar<FunctionSpace> IC_setup(space, 0.0);  
+        // PFFracFixAllDisp2D<FunctionSpace> BC_setup(space); 
 
-        time_stepper.template run<IsotropicPhaseFieldForBrittleFractures<FunctionSpace>>(in); 
+        const auto n_levels = 2; 
+        MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>, 
+                            PFFracFixAllDisp2D<FunctionSpace>, InitialCondidtionPFTbar<FunctionSpace> > time_stepper(space, n_levels); 
+                            
+
+        // time_stepper.template run<IsotropicPhaseFieldForBrittleFractures<FunctionSpace>>(in); 
 
         stats.stop_collect_and_restart("end");
 
