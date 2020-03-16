@@ -582,6 +582,14 @@ namespace utopia {
             }
         }
 
+        void build_constraints_markers(PetscVector &vec) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->apply_val(vec, 1.0);
+            }
+        }
+
+
         inline bool empty() const
         {
             return !static_cast<bool>(mesh_);

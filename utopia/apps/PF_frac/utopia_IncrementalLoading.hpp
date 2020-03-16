@@ -89,16 +89,11 @@ namespace utopia {
                 in.get("use_constant_pressure", use_constant_pressure_);
             }
 
-
-
             // allow passing solver 
             virtual void run(Input &in) = 0; 
-
-
             virtual void init_solution() = 0; 
-
-
             virtual void prepare_for_solve() = 0; 
+            virtual void update_time_step(const SizeType & conv_reason) = 0; 
 
 
             void init(Input &in, FunctionSpace & space)
@@ -119,14 +114,11 @@ namespace utopia {
 
 
         protected:
-
             virtual void write_to_file(FunctionSpace & space, const Scalar & time)
             {
                 space.write(output_path_+"_"+std::to_string(time)+".vtk", solution_);     
             }
 
-
-            virtual void update_time_step(const SizeType & conv_reason) = 0; 
 
 
         protected:

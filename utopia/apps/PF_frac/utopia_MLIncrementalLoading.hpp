@@ -6,6 +6,7 @@
 #include "utopia_IPTransfer.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_IsotropicPhaseField.hpp"
+#include "utopia_Multilevel.hpp"
 
 #include <memory>
 
@@ -13,7 +14,7 @@ namespace utopia {
 
     //FIXME complete the overriding process
     template<class FunctionSpace, class ProblemType, class BCType, class ICType>
-    class MLIncrementalLoading final : public Configurable {
+    class MLIncrementalLoading final : public IncrementalLoadingBase<FunctionSpace> {
     public:
         using Matrix   = typename FunctionSpace::Matrix;
         using Vector   = typename FunctionSpace::Vector;
@@ -22,10 +23,12 @@ namespace utopia {
 
 
         MLIncrementalLoading(FunctionSpace &space_coarse, const SizeType & n_levels) : n_levels_(n_levels){
-            init(space_coarse); 
+            init_ml_setup(space_coarse); 
         }   
 
         void read(Input &in) override {
+
+            IncrementalLoadingBase<FunctionSpace>::read(in); 
 
             for (auto l=0; l < level_functions_.size(); l++){
                 level_functions_[l]->read(in);    
@@ -36,11 +39,11 @@ namespace utopia {
         }
 
 
-        bool init(FunctionSpace &space){
-            return init(make_ref(space));
+        bool init_ml_setup(FunctionSpace &space){
+            return init_ml_setup(make_ref(space));
         }
 
-        bool init(const std::shared_ptr<FunctionSpace> &space)
+        bool init_ml_setup(const std::shared_ptr<FunctionSpace> &space)
         {
             if(n_levels_ < 2) {
                 std::cerr << "n_levels must be at least 2" << std::endl;
@@ -106,13 +109,146 @@ namespace utopia {
             return spaces_.back();
         }
 
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+
+        void init_solution() override{
+
+            spaces_.back()->create_vector(this->solution_);
+            spaces_.back()->create_vector(this->lb_);
+            rename("X", this->solution_);
+
+            IC_->init(this->solution_); 
+            // if(this->use_pressure_ && !this->use_constant_pressure_){
+            //     Vector & pressure_vec =  level_functions_.back()->pressure_field(); 
+            //     // IC_->init(this->solution_, pressure_vec); 
+            // }        
+
+            spaces_.back()->apply_constraints(this->solution_);                    
+            level_functions_.back()->old_solution(this->solution_); 
+
+        }
+
+        void prepare_for_solve() override{
+
+            for(auto l=0; l < BC_conditions_.size(); l++){
+                BC_conditions_[l]->emplace_time_dependent_BC(this->time_); 
+            }
+
+            // update fine level solution  and constraint 
+            spaces_.back()->apply_constraints(this->solution_);    
+            level_functions_.back()->build_irreversility_constraint(this->lb_); 
+
+
+            for(auto l=0; l < BC_conditions_.size(); l++){
+                Vector & bc_flgs    = level_functions_[l]->get_eq_constrains_flg(); 
+                Vector & bc_values  = level_functions_[l]->get_eq_constrains_values(); 
+
+                spaces_[l]->apply_constraints(bc_values);    
+                spaces_[l]->build_constraints_markers(bc_flgs); 
+
+            }
+
+
+            // if(this->use_pressure_){
+            //     auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_); 
+
+            //     if(this->use_constant_pressure_){
+            //         fe_problem_->setup_constant_pressure_field(press_ts);     
+            //     }
+            //     else{
+            //         Vector & pressure_vec =  fe_problem_->pressure_field(); 
+            //         // set_nonzero_elem_to(pressure_vec, press_ts); 
+                    
+            //         set_nonzero_elem_to(pressure_vec, (this->time_ * this->pressure_increase_factor_)); 
+            //     }
+            // }
+
+        }
+
+        void update_time_step(const SizeType & conv_reason) override{
+
+        }
+
+
+        void run(Input &in) override{   
+
+            // init fine level spaces 
+            this->init(in, *spaces_[n_levels_ - 1]); 
+
+
+
+            for (auto t=1; t < this->num_time_steps_; t++)
+            {
+                if(mpi_world_rank()==0){
+                    std::cout<<"###################################################################### \n"; 
+                    std::cout<<"Time-step: "<< t << "  time:  "<< this->time_ << "  dt:  "<< this->dt_ << " \n"; 
+                    std::cout<<"###################################################################### \n"; 
+                }
+         
+                
+                prepare_for_solve(); 
+
+
+                // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+                auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                tr_strategy_fine->atol(1e-10);
+
+                auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                // auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+                tr_strategy_coarse->atol(1e-10);
+
+                // TODO:: test different types of constraints
+                auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
+
+                // Set TR-QP strategies
+                rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+                // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+
+                rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+                rmtr->set_fine_tr_strategy(tr_strategy_fine);
+
+
+                rmtr->set_transfer_operators(transfers_);
+                // rmtr->set_functions(level_functions_);                
+
+
+
+                auto box = make_lower_bound_constraints(make_ref(this->lb_));
+                rmtr->set_box_constraints(box);
+                in.get("solver", *rmtr);
+
+
+
+                rmtr->solve(this->solution_); 
+                auto sol_status = rmtr->solution_status(); 
+
+                // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                const auto conv_reason = sol_status.reason;                     
+                // update_time_step(conv_reason); 
+
+            } 
+
+
+
+
+        }
+
+
+
+
+
+
     private:
         SizeType n_levels_; 
 
         std::vector<std::shared_ptr<FunctionSpace>> spaces_;
         std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_;
 
-        std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_;
+        std::vector<std::shared_ptr<ProblemType > >  level_functions_;
         std::vector<std::shared_ptr<BCType > >  BC_conditions_;
 
         std::shared_ptr<ICType > IC_; 

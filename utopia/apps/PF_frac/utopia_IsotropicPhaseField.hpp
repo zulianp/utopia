@@ -119,7 +119,9 @@ namespace utopia {
                 setup_constant_pressure_field(params_.pressure); 
             }
 
-
+            // needed for ML setup 
+            space_.create_vector(this->_x_eq_values);
+            space_.create_vector(this->_eq_constrains_flg);
         }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
