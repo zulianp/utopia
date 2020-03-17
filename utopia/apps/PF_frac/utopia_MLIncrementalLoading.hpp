@@ -164,16 +164,18 @@ namespace utopia {
             }
 
             // adding sol to all levels 
-            for(auto l=0; l < n_levels_-1; l++){
+            for(auto l=n_levels_-1; l > 0; l--){
 
-                ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l+1].get());                             
+                ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
                 Vector & fine_sol  = fun_fine->old_solution(); 
 
-                ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
+                ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());                             
                 Vector & coarse_sol  = fun_coarse->old_solution();      
                 spaces_[l]->create_vector(coarse_sol); 
 
-                transfers_[l]->project_down(fine_sol, coarse_sol); 
+                transfers_[l-1]->project_down(fine_sol, coarse_sol); 
+                spaces_[l]->apply_constraints(coarse_sol);   
+
                 // transfers_[l]->restrict(fine_sol, coarse_sol); 
             }
 
@@ -218,9 +220,10 @@ namespace utopia {
                 spaces_[l]->apply_constraints(bc_values);    
                 spaces_[l]->build_constraints_markers(bc_flgs); 
 
+                // disp(bc_values, "bc_values"); 
+                // disp(bc_flgs, "bc_flgs"); 
                level_functions_[l]->init_constraint_indices(); 
             }
-
 
             // if(this->use_pressure_){
             //     auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_); 
@@ -238,9 +241,66 @@ namespace utopia {
 
         }
 
-        void update_time_step(const SizeType & conv_reason) override{
+        void update_time_step(const SizeType & conv_reason) override
+        {
+            if(this->adjust_dt_on_failure_ && conv_reason < 0){
+                    
+                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
+                        fun_finest->get_old_solution(this->solution_); 
+                    }
 
+                    // reset sol on all levels - important for BC conditions mostly s
+                    for(auto l=n_levels_-1; l > 0; l--){
+
+                        ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
+                        Vector & fine_sol  = fun_fine->old_solution(); 
+
+                        ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());                             
+                        Vector & coarse_sol  = fun_coarse->old_solution();      
+                        spaces_[l]->create_vector(coarse_sol); 
+
+                        transfers_[l-1]->project_down(fine_sol, coarse_sol); 
+                        spaces_[l]->apply_constraints(coarse_sol); 
+                        // transfers_[l]->restrict(fine_sol, coarse_sol); 
+                    }                    
+
+                    this->time_ -= this->dt_; 
+                    this->dt_ = this->dt_ * this->shrinking_factor_; 
+                    this->time_ += this->dt_; 
+                }
+                else{   
+                    
+                    if(this->pressure0_!= 0.0){
+                        this->write_to_file(*spaces_.back(), 1e-5*this->time_);  
+                    }   
+                    else{
+                        this->write_to_file(*spaces_.back(), this->time_);   
+                    }
+
+                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
+                        fun_finest->get_old_solution(this->solution_); 
+                    }                    
+
+                    // update sol on all levels 
+                    for(auto l=n_levels_-1; l > 0; l--){
+
+                        ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
+                        Vector & fine_sol  = fun_fine->old_solution(); 
+
+                        ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());                             
+                        Vector & coarse_sol  = fun_coarse->old_solution();      
+                        spaces_[l]->create_vector(coarse_sol); 
+
+                        transfers_[l-1]->project_down(fine_sol, coarse_sol); 
+                        spaces_[l]->apply_constraints(coarse_sol); 
+                        // transfers_[l]->restrict(fine_sol, coarse_sol); 
+                    }                          
+
+                    // increment time step 
+                    this->time_ += this->dt_;
+                }
         }
+
 
 
         void run(Input &in) override{   
@@ -266,10 +326,12 @@ namespace utopia {
                 auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
                 // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
                 tr_strategy_fine->atol(1e-10);
+                tr_strategy_fine->max_it(20); 
 
                 auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
                 // auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
                 tr_strategy_coarse->atol(1e-10);
+                tr_strategy_fine->max_it(100); 
 
                 // TODO:: test different types of constraints
                 // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
@@ -285,7 +347,7 @@ namespace utopia {
 
                 rmtr->set_transfer_operators(transfers_);
                 rmtr->set_functions(level_functions_);                
-                rmtr->delta0(100000);
+                rmtr->delta0(1);
 
 
                 auto box = make_lower_bound_constraints(make_ref(this->lb_));
@@ -295,15 +357,15 @@ namespace utopia {
                 in.get("solver", *rmtr);
 
 
-
                 rmtr->solve(this->solution_); 
                 auto sol_status = rmtr->solution_status(); 
-                exit(0);
-
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
                 const auto conv_reason = sol_status.reason;                     
-                // update_time_step(conv_reason); 
+                update_time_step(conv_reason); 
+
+                exit(0);
 
             } 
 
