@@ -32,6 +32,14 @@ namespace utopia {
 
         NeumannBoundaryCondition(
             const FunctionSpace &space,
+            const std::function<bool(const Point &)>   &selector,
+            const std::function<Scalar(const Point &)> &fun,
+            const int component = 0)
+        : space_(space), side_set_(SideSet::invalid()), selector_(selector), fun_(fun), component_(component)
+        {}
+
+        NeumannBoundaryCondition(
+            const FunctionSpace &space,
             SideSet::BoundaryIdType side_set,
             const std::function<Scalar(const Point &)> &fun,
             const int component = 0)
@@ -152,6 +160,13 @@ namespace utopia {
                 //     }
 
                     vol_e.side(s, e);
+
+                    e.centroid(p_k);
+
+                    if(!selector_(p_k)) continue;
+
+                    assembled = true;
+
                     vol_e.side_idx(s, idx);
 
                     auto p   = points_view.make(e);
@@ -163,14 +178,13 @@ namespace utopia {
                         auto dx_k = dx(k);
                         p.get(k, p_k);
 
-                        if(selector_(p_k)) {
-                            assembled = true;
+
                             auto fun_k = fun_(p_k);
                             for(SizeType j = 0; j < SideView::NFunctions; ++j) {
                                 vec(idx[j]) += fun_k * fun(j, k) * dx_k;
                                 // vec(idx[j]) = idx[j];
                             }
-                        }
+
                     }
                 }
 
