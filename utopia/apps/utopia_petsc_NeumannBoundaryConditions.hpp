@@ -5,6 +5,9 @@
 
 namespace utopia {
 
+    template<class Space, typename...>
+    class NeumannBoundaryCondition {};
+
     template<class Elem, int Components>
     class NeumannBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
     public:
@@ -17,10 +20,11 @@ namespace utopia {
         using Subspace = typename FunctionSpace::template Subspace<1>;
         using Device   = typename Subspace::Device;
         using ElemView = typename Subspace::ViewDevice::Elem;
+        using SideView = typename ElemView::Side;
         using IndexSet = Traits<PetscVector>::IndexSet;
 
         static const int Dim = Subspace::Dim;
-        static const int NFunctions = Subspace::NFunctions;
+        static const int NFunctions = ElemView::NFunctions;
 
         NeumannBoundaryCondition(const FunctionSpace &space)
         : space_(space), side_set_(SideSet::invalid()), component_(0)
@@ -40,8 +44,7 @@ namespace utopia {
         void apply(PetscVector &v) const
         {
             using Side     = typename Elem::Side;
-            using SideView = typename Side::ViewDevice;
-            using SideQuadrature = utopia::Quadrature<SideElem, 2, 1>;
+            using SideQuadrature = utopia::Quadrature<Side, 2, 1>;
 
             auto subspace   = space_.subspace(component_);
 
@@ -66,7 +69,7 @@ namespace utopia {
                 ArrayView<SizeType, Side::NFunctions> idx;
                 StaticVector<Scalar, NFunctions> vec; vec.set(0.0);
                 ElemView vol_e;
-                SideElemView e;
+                SideView e;
 
                 space_view.elem(i, vol_e);
 
@@ -91,7 +94,7 @@ namespace utopia {
 
                             auto fun_k = fun_(p_k);
 
-                            for(SizeType j = 0; j < Side::NFunctions; ++j) {
+                            for(SizeType j = 0; j < SideView::NFunctions; ++j) {
                                 vec(idx[j]) += fun_k * fun(j, k) * dx_k;
                             }
 
