@@ -327,6 +327,7 @@ namespace utopia {
                 // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
                 tr_strategy_fine->atol(1e-10);
                 tr_strategy_fine->max_it(20); 
+                tr_strategy_fine->verbose(false);
 
                 auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
                 // auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
