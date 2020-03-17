@@ -321,6 +321,18 @@ namespace utopia {
             return PhysicalPoint<FunctionSpace, Quadrature>(*this, q);
         }
 
+        template<class Quadrature>
+        ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_shape_device(const Quadrature &q)
+        {
+            return ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
+
+        template<class Quadrature>
+        PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_points_device(const Quadrature &q)
+        {
+            return PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
+
 
         template<class Quadrature>
         Differential<FunctionSpace, Quadrature> differential(const Quadrature &q)

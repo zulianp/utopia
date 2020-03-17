@@ -6,6 +6,7 @@
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Elem.hpp"
+#include "utopia_Quad4.hpp"
 
 namespace utopia {
 
@@ -176,7 +177,7 @@ namespace utopia {
                 }
 
                 // f = x * (1.0 - y) * (1.0 - t);
-                // f_t = -x * (1.0 - y) 
+                // f_t = -x * (1.0 - y)
                 case 1:
                 {
                     dst[0] = -(1.0 - y);
@@ -194,7 +195,7 @@ namespace utopia {
                 }
 
                 // f = (1.0 - x) * y * (1.0 - t);
-                // f_t = -(1.0 - x) * y 
+                // f_t = -(1.0 - x) * y
                 case 3:
                 {
                     dst[0] = y;
@@ -212,7 +213,7 @@ namespace utopia {
                 }
 
                 // f = x * (1.0 - y) * t;
-                // f_t = x * (1.0 - y) 
+                // f_t = x * (1.0 - y)
                 case 5:
                 {
                     dst[0] = (1.0 - y);
@@ -230,7 +231,7 @@ namespace utopia {
                 }
 
                 // f = (1.0 - x) * y * t;
-                // f_t = (1.0 - x) * y 
+                // f_t = (1.0 - x) * y
                 case 7:
                 {
                     dst[0] = -y;
@@ -349,12 +350,14 @@ namespace utopia {
         using MemType = Uniform<>;
         static const int Dim = 3;
         static const int NNodes = 8;
+        static const int NSides = 6;
         static const int NFunctions = NNodes;
 
         using Point     = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
+        using Side      = utopia::Quad4<Scalar, Dim>;
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefHex8::fun(i, p))

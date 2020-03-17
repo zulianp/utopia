@@ -35,7 +35,7 @@ namespace utopia {
             SideSet::BoundaryIdType side_set,
             const std::function<Scalar(const Point &)> &fun,
             const int component = 0)
-        : space_(space), side_set_(SideSet::invalid()), fun_(fun), component_(component)
+        : space_(space), side_set_(side_set), fun_(fun), component_(component)
         {
             // init_element_list();
         }
@@ -49,13 +49,11 @@ namespace utopia {
             auto subspace   = space_.subspace(component_);
 
             SideQuadrature q;
-            auto points      = subspace.side_points(q);
-            auto shape       = subspace.side_shape(q);
 
             auto space_view  = subspace.view_device();
-            auto v_view      = subspace.assembly_view(v);
-            auto points_view = points.view_device();
-            auto shape_view  = shape.view_device();
+            auto v_view      = subspace.assembly_view_device(v);
+            auto points_view = subspace.side_points_device(q);
+            auto shape_view  = subspace.side_shape_device(q);
 
             Device::parallel_for(
                 // subspace.boundary_element_range(side_set_),
@@ -77,32 +75,32 @@ namespace utopia {
                 auto p   = points_view.make(e);
                 auto fun = shape_view.make(e);
 
-                for(SizeType s = 0; s < Elem::NSides; ++s) {
-                    if(!space_view.on_boundary(vol_e, s, side_set_)) {
-                        continue;
-                    }
+                // for(SizeType s = 0; s < Elem::NSides; ++s) {
+                //     if(!space_view.on_boundary(vol_e, s, side_set_)) {
+                //         continue;
+                //     }
 
-                    vol_e.side(s, e);
-                    vol_e.side_idx(s, idx);
+                //     vol_e.side(s, e);
+                //     vol_e.side_idx(s, idx);
 
-                    //assemble
-                    for(SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
-                        auto dx_k  = dx(k);
-                        auto p_k   = p(k);
+                //     //assemble
+                //     for(SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
+                //         auto dx_k = dx(k);
+                //         auto p_k  = p(k);
 
-                        if(!selector_ || selector_(p_k)) {
+                //         if(!selector_ || selector_(p_k)) {
 
-                            auto fun_k = fun_(p_k);
+                //             auto fun_k = fun_(p_k);
 
-                            for(SizeType j = 0; j < SideView::NFunctions; ++j) {
-                                vec(idx[j]) += fun_k * fun(j, k) * dx_k;
-                            }
+                //             for(SizeType j = 0; j < SideView::NFunctions; ++j) {
+                //                 vec(idx[j]) += fun_k * fun(j, k) * dx_k;
+                //             }
 
-                        }
-                    }
-                }
+                //         }
+                //     }
+                // }
 
-                space_view.add_vector(e, vec, v_view);
+                // space_view.add_vector(vol_e, vec, v_view);
             });
 
         }

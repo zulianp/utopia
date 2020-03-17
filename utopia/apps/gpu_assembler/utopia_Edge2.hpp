@@ -5,6 +5,7 @@
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Elem.hpp"
+#include "utopia_Node1.hpp"
 
 
 namespace utopia {
@@ -53,11 +54,14 @@ namespace utopia {
         using Scalar = Scalar_;
         static const int Dim = PhysicalDim;
         static const int NNodes = 2;
+        static const int NSides = 2;
         static const int NFunctions = 2;
         using Point = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
+        using MemType   = utopia::Varying<>;
+        using Side      = utopia::Node1<Scalar, Dim>;
 
         virtual ~Edge2() {}
 

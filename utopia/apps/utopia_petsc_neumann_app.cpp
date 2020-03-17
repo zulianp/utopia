@@ -40,18 +40,32 @@ namespace utopia {
     void neumann_example(Input &in)
     {
         static const int Dim = 2;
-        static const int NVars = Dim;
+        static const int NVars = 1;
 
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using Point            = FunctionSpace::Point;
         using Scalar           = FunctionSpace::Scalar;
+        using Vector           = FunctionSpace::Vector;
 
         FunctionSpace space;
         space.read(in);
 
-        NeumannBoundaryCondition<FunctionSpace> bc(space);
+        NeumannBoundaryCondition<FunctionSpace> bc(
+            space,
+            SideSet::left(),
+            [](const Point &) -> Scalar {
+                return 1.0;
+            },
+            0
+        );
+
+
+        Vector v;
+        space.create_vector(v);
+
+        bc.apply(v);
     }
 
     UTOPIA_REGISTER_APP(neumann_example);

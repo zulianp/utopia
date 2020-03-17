@@ -216,6 +216,7 @@ namespace utopia {
         using MemType = Uniform<>;
         static const int Dim = 2;
         static const int NNodes = 4;
+        static const int NSides = 4;
         static const int NFunctions = 4;
 
         using Side      = utopia::Edge2<Scalar, Dim>;

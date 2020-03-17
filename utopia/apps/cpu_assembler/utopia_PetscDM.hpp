@@ -166,7 +166,7 @@ namespace utopia {
         PetscCommunicator &comm();
         const PetscCommunicator &comm() const;
 
-        constexpr typename SideSets::Sides sides()
+        constexpr static typename SideSets::Sides sides()
         {
             return SideSets::sides();
         }
