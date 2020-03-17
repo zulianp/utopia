@@ -73,7 +73,7 @@ namespace utopia {
             }
 
             Parameters()
-            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(0.001), 
+            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(0.0), fracture_toughness(0.001), 
                 mu(80.0), lambda(120.0), regularization(1e-10), pressure(0.0), penalty_param(0.0), 
                 crack_set_tol(0.95), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(false), 
                 use_pressure(false)
@@ -102,7 +102,12 @@ namespace utopia {
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
         {
 
-            params_.length_scale = 2.0 * space.mesh().min_spacing();
+            if(params_.length_scale ==0){
+                params_.length_scale = 2.0 * space.mesh().min_spacing();
+            }
+            else{
+                std::cout<<"  ls: "<< params_.length_scale << "  \n"; 
+            }
 
 
             // this computation follows eq. 50 from "On penalization in variational phase-field models of britlle fracture, Gerasimov, Lorenzis"
@@ -864,7 +869,7 @@ namespace utopia {
             x_old_ = x_old; 
         }
 
-        const Vector & old_solution() const 
+        Vector & old_solution() 
         {
             return x_old_;
         }        

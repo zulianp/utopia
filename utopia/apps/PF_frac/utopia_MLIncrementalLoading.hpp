@@ -163,7 +163,39 @@ namespace utopia {
                 fun_finest->old_solution(this->solution_); 
             }
 
+            // adding sol to all levels 
+            for(auto l=0; l < n_levels_-1; l++){
+
+                ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l+1].get());                             
+                Vector & fine_sol  = fun_fine->old_solution(); 
+
+                ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
+                Vector & coarse_sol  = fun_coarse->old_solution();      
+                spaces_[l]->create_vector(coarse_sol); 
+
+                transfers_[l]->project_down(fine_sol, coarse_sol); 
+                // transfers_[l]->restrict(fine_sol, coarse_sol); 
+            }
+
         }
+
+        void write_to_file(FunctionSpace & space, const Scalar & time) override
+        {
+            // only finest level 
+            // IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time); 
+
+            // all levels
+            for(auto l=0; l < spaces_.size(); l++){
+
+                ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
+                Vector & sol  = fun->old_solution();   
+                rename("X", sol);
+
+                spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtk", sol);     
+            }        
+
+        }
+
 
         void prepare_for_solve() override{
 
