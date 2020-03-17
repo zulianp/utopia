@@ -123,17 +123,12 @@ namespace utopia {
 
             SideQuadrature q;
 
-            q.describe();
-
-
-
+            // q.describe();
             auto space_view  = subspace.view_device();
             auto v_view      = subspace.assembly_view_device(v);
             auto points_view = subspace.side_points_device(q);
             auto shape_view  = subspace.side_shape_device(q);
             auto dx_view     = subspace.side_differential_device(q);
-
-
 
             Device::parallel_for(
                 // subspace.boundary_element_range(side_set_),

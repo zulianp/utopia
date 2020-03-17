@@ -54,13 +54,14 @@ namespace utopia {
 
         NeumannBoundaryCondition<FunctionSpace> bc(
             space,
+            //selector
             SideSet::left(),
+            //value
             UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 2.0;
+                return 1.0;
             },
             0
         );
-
 
         Vector v;
         space.create_vector(v);
@@ -69,29 +70,29 @@ namespace utopia {
 
         Scalar side_area = sum(v);
 
-        disp(side_area);
+        space.comm().root_print(side_area);
 
         space.write("neumman.vtr", v);
 
-
         NeumannBoundaryCondition<FunctionSpace> bc2(
             space,
+            //selector
             UTOPIA_LAMBDA(const Point &x) -> bool {
                 return x[0] <= device::epsilon<Scalar>() && (x[1] >= 0.5 && x[1] <= 1.0);
             },
+            //value
             UTOPIA_LAMBDA(const Point &) -> Scalar {
                 return 1.0;
             },
             0
         );
 
-
         v.set(0.0);
         bc2.apply(v);
 
         side_area = sum(v);
 
-        disp(side_area);
+        space.comm().root_print(side_area);
 
         space.write("neumman2.vtr", v);
     }
