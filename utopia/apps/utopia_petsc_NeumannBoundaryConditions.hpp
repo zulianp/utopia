@@ -38,6 +38,71 @@ namespace utopia {
         : space_(space), side_set_(side_set), fun_(fun), component_(component)
         {
             // init_element_list();
+
+            auto &&box_min = space.mesh().box_min();
+            auto &&box_max = space.mesh().box_max();
+
+            switch(side_set) {
+                case SideSet::left():
+                {
+                    auto min_x = box_min[0];
+                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                        return device::approxeq(min_x, x[0], device::epsilon<Scalar>());
+                    };
+
+                    break;
+                }
+                case SideSet::right():
+                {
+                    auto max_x = box_max[0];
+                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                        return device::approxeq(max_x, x[0], device::epsilon<Scalar>());
+                    };
+
+                    break;
+                }
+                case SideSet::bottom():
+                {
+                    auto min_y = box_min[1];
+                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                        return device::approxeq(min_y, x[1], device::epsilon<Scalar>());
+                    };
+
+                    break;
+                }
+                case SideSet::top():
+                {
+                    auto max_y = box_max[1];
+                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                        return device::approxeq(max_y, x[1], device::epsilon<Scalar>());
+                    };
+
+                    break;
+                }
+                case SideSet::back():
+                {
+                    auto min_z = box_min[2];
+                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                        return device::approxeq(min_z, x[2], device::epsilon<Scalar>());
+                    };
+
+                    break;
+                }
+                case SideSet::front():
+                {
+                    auto max_z = box_max[2];
+                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                        return device::approxeq(max_z, x[2], device::epsilon<Scalar>());
+                    };
+
+                    break;
+                }
+                default:
+                {
+                    assert(false);
+                    break;
+                }
+            }
         }
 
 
@@ -50,10 +115,17 @@ namespace utopia {
 
             SideQuadrature q;
 
+            q.describe();
+
+
+
             auto space_view  = subspace.view_device();
             auto v_view      = subspace.assembly_view_device(v);
             auto points_view = subspace.side_points_device(q);
             auto shape_view  = subspace.side_shape_device(q);
+            auto dx_view     = subspace.side_differential_device(q);
+
+
 
             Device::parallel_for(
                 // subspace.boundary_element_range(side_set_),
@@ -68,39 +140,43 @@ namespace utopia {
                 StaticVector<Scalar, NFunctions> vec; vec.set(0.0);
                 ElemView vol_e;
                 SideView e;
+                Point p_k;
 
                 space_view.elem(i, vol_e);
 
-
-                auto p   = points_view.make(e);
-                auto fun = shape_view.make(e);
-
-                // for(SizeType s = 0; s < Elem::NSides; ++s) {
+                bool assembled = false;
+                for(SizeType s = 0; s < Elem::NSides; ++s) {
+                    //TODO
                 //     if(!space_view.on_boundary(vol_e, s, side_set_)) {
                 //         continue;
                 //     }
 
-                //     vol_e.side(s, e);
-                //     vol_e.side_idx(s, idx);
+                    vol_e.side(s, e);
+                    vol_e.side_idx(s, idx);
+
+                    auto p   = points_view.make(e);
+                    auto fun = shape_view.make(e);
+                    auto dx  = dx_view.make(e);
 
                 //     //assemble
-                //     for(SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
-                //         auto dx_k = dx(k);
-                //         auto p_k  = p(k);
+                    for(SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
+                        auto dx_k = dx(k);
+                        p.get(k, p_k);
 
-                //         if(!selector_ || selector_(p_k)) {
+                        if(selector_(p_k)) {
+                            assembled = true;
+                            auto fun_k = fun_(p_k);
+                            for(SizeType j = 0; j < SideView::NFunctions; ++j) {
+                                vec(idx[j]) += fun_k * fun(j, k) * dx_k;
+                                // vec(idx[j]) = idx[j];
+                            }
+                        }
+                    }
+                }
 
-                //             auto fun_k = fun_(p_k);
-
-                //             for(SizeType j = 0; j < SideView::NFunctions; ++j) {
-                //                 vec(idx[j]) += fun_k * fun(j, k) * dx_k;
-                //             }
-
-                //         }
-                //     }
-                // }
-
-                // space_view.add_vector(vol_e, vec, v_view);
+                if(assembled) {
+                    space_view.add_vector(vol_e, vec, v_view);
+                }
             });
 
         }

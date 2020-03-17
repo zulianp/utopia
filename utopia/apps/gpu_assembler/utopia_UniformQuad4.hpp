@@ -293,31 +293,34 @@ namespace utopia {
                 {
                     node(0, side.node(0));
                     node(1, side.node(1));
-                    return;
+                    break;
                 }
                 case 1:
                 {
                     node(1, side.node(0));
                     node(2, side.node(1));
-                    return;
+                    break;
                 }
                 case 2:
                 {
                     node(2, side.node(0));
                     node(3, side.node(1));
-                    return;
+                    break;
                 }
                 case 3:
                 {
                     node(3, side.node(0));
                     node(0, side.node(1));
-                    return;
+                    break;
                 }
                 default:
                 {
                     UTOPIA_DEVICE_ASSERT(false);
+                    break;
                 }
             }
+
+            side.init();
         }
 
         template<typename PhysicalPoint>

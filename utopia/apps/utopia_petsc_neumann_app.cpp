@@ -56,7 +56,7 @@ namespace utopia {
             space,
             SideSet::left(),
             [](const Point &) -> Scalar {
-                return 1.0;
+                return 2.0;
             },
             0
         );
@@ -66,6 +66,12 @@ namespace utopia {
         space.create_vector(v);
 
         bc.apply(v);
+
+        Scalar side_area = sum(v);
+
+        disp(side_area);
+
+        space.write("neumman.vtr", v);
     }
 
     UTOPIA_REGISTER_APP(neumann_example);

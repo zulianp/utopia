@@ -900,6 +900,18 @@ namespace utopia {
         return false;
     }
 
+    template<int Dim>
+    const typename PetscDM<Dim>::Point & PetscDM<Dim>::box_min() const
+    {
+        return impl_->mirror.box_min;
+    }
+
+    template<int Dim>
+    const typename PetscDM<Dim>::Point & PetscDM<Dim>::box_max() const
+    {
+        return impl_->mirror.box_max;
+    }
+
 }
 
 #endif //UTOPIA_PETSC_DM_IMPL_HPP

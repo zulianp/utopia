@@ -204,8 +204,8 @@ namespace utopia {
         const IntArray &local_nodes_end() const;
 
         const IntArray &dims() const;
-        const ScalarArray &box_min() const;
-        const ScalarArray &box_max() const;
+        const Point &box_min() const;
+        const Point &box_max() const;
 
         inline Impl &impl()
         {

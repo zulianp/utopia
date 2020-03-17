@@ -259,6 +259,15 @@ namespace utopia {
             return *this;
         }
 
+        void describe(std::ostream &os = std::cout) const
+        {
+            for(auto w : weights_) {
+                os << w << " ";
+            }
+
+            os << std::endl;
+        }
+
     private:
         std::array<Point, NPoints> points_;
         std::array<Scalar, NPoints> weights_;
