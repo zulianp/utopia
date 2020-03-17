@@ -84,23 +84,31 @@ namespace utopia {
                 Matrix Iu; // = *I; 
                 // MatConvert(raw_type(*I),  MATMPIAIJ, MAT_INITIAL_MATRIX, &raw_type(Iu));
                 MatConvert(raw_type(*I),  I->type_override(), MAT_INITIAL_MATRIX, &raw_type(Iu));
+                Matrix R = transpose(Iu); 
 
 
-                PFMassMatrix<FunctionSpace> mass_matrix_assembler(*spaces_[i]); 
-                Matrix H; 
-                mass_matrix_assembler.mass_matrix(H); 
-                disp(H); 
+                PFMassMatrix<FunctionSpace> mass_matrix_assembler_fine(*spaces_[i]); 
+                Matrix M_fine; 
+                mass_matrix_assembler_fine.mass_matrix(M_fine); 
+                // disp(H); 
 
-                Vector diag = sum(H, 1); 
-                disp(diag); 
 
-                exit(0);
+                PFMassMatrix<FunctionSpace> mass_matrix_assembler_coarse(*spaces_[i-1]); 
+                Matrix M_coarse; 
+                mass_matrix_assembler_coarse.mass_matrix(M_coarse);                 
+
+                Matrix inv_lumped_mass = diag(1./sum(M_coarse, 1)); 
+                // disp(inv_lumped_mass); 
+
+                Matrix P = inv_lumped_mass * R * M_fine; 
+                // disp(P);
+                // exit(0);
 
                 
 
                 // TODO:: assemble P correctly => not I^T.... 
                 // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));    // still seq. faults 
-                transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(transpose(Iu)));
+                transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(R), std::make_shared<Matrix>(P));
             }
 
 
@@ -223,8 +231,8 @@ namespace utopia {
 
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
-                // auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+                auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
                 tr_strategy_fine->atol(1e-10);
 
                 auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
