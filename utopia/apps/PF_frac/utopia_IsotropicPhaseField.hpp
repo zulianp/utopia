@@ -114,8 +114,8 @@ namespace utopia {
             }
 
             // in case of constant pressure field 
-            // if(params_.pressure != 0.0){
-                params_.use_pressure = true; 
+            // if(params_.pressure){
+                params_.use_pressure = false; 
                 setup_constant_pressure_field(params_.pressure); 
             // }
 

@@ -7,6 +7,8 @@
 #include "utopia_make_unique.hpp"
 #include "utopia_IsotropicPhaseField.hpp"
 #include "utopia_Multilevel.hpp"
+#include "utopia_MLIncrementalLoading.hpp"
+#include "utopia_PFMassMatrix.hpp"
 
 #include <memory>
 
@@ -82,6 +84,18 @@ namespace utopia {
                 Matrix Iu; // = *I; 
                 // MatConvert(raw_type(*I),  MATMPIAIJ, MAT_INITIAL_MATRIX, &raw_type(Iu));
                 MatConvert(raw_type(*I),  I->type_override(), MAT_INITIAL_MATRIX, &raw_type(Iu));
+
+
+                PFMassMatrix<FunctionSpace> mass_matrix_assembler(*spaces_[i]); 
+                Matrix H; 
+                mass_matrix_assembler.mass_matrix(H); 
+                disp(H); 
+
+                Vector diag = sum(H, 1); 
+                disp(diag); 
+
+                exit(0);
+
                 
 
                 // TODO:: assemble P correctly => not I^T.... 
@@ -209,7 +223,8 @@ namespace utopia {
 
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
-                auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                // auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
                 tr_strategy_fine->atol(1e-10);
 
                 auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
@@ -218,7 +233,7 @@ namespace utopia {
 
                 // TODO:: test different types of constraints
                 // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-                auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, GALERKIN> >(n_levels_);
+                auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGelmanMandelBoxGelmanMandel<Matrix, Vector>, GALERKIN> >(n_levels_);
 
                 // Set TR-QP strategies
                 rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
