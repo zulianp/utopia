@@ -130,8 +130,8 @@ namespace utopia {
             auto shape_view  = subspace.side_shape_device(q);
             auto dx_view     = subspace.side_differential_device(q);
 
+            // subspace.each_boundary_element(side_set_, ...
             Device::parallel_for(
-                // subspace.boundary_element_range(side_set_),
                 subspace.local_element_range(),
                 UTOPIA_LAMBDA(const SizeType &i)
             {
@@ -149,7 +149,7 @@ namespace utopia {
 
                 bool assembled = false;
                 for(SizeType s = 0; s < Elem::NSides; ++s) {
-                    //TODO
+                //TODO
                 //     if(!space_view.on_boundary(vol_e, s, side_set_)) {
                 //         continue;
                 //     }
@@ -168,18 +168,14 @@ namespace utopia {
                     auto fun = shape_view.make(e);
                     auto dx  = dx_view.make(e);
 
-                //     //assemble
                     for(SizeType k = 0; k < SideQuadrature::NPoints; ++k) {
                         auto dx_k = dx(k);
                         p.get(k, p_k);
 
-
-                            auto fun_k = fun_(p_k);
-                            for(SizeType j = 0; j < SideView::NFunctions; ++j) {
-                                vec(idx[j]) += fun_k * fun(j, k) * dx_k;
-                                // vec(idx[j]) = idx[j];
-                            }
-
+                        auto fun_k = fun_(p_k);
+                        for(SizeType j = 0; j < SideView::NFunctions; ++j) {
+                            vec(idx[j]) += fun_k * fun(j, k) * dx_k;
+                        }
                     }
                 }
 

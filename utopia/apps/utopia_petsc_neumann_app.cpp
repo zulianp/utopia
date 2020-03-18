@@ -94,6 +94,12 @@ namespace utopia {
 
         space.comm().root_print(side_area);
 
+        bc2.apply(v);
+
+        side_area = sum(v);
+
+        space.comm().root_print(side_area);
+
         space.write("neumman2.vtr", v);
     }
 
