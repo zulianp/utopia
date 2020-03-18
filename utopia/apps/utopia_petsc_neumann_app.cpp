@@ -100,10 +100,9 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = 1;
 
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-
+        using Mesh          = utopia::PetscDM<Dim>;
+        using Elem          = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
         FunctionSpace space;
         space.read(in);
@@ -118,9 +117,9 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = 1;
 
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformHex8;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Mesh          = utopia::PetscDM<Dim>;
+        using Elem          = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
         FunctionSpace space;
         space.read(in);

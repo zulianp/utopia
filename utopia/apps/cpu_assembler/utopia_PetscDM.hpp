@@ -133,6 +133,7 @@ namespace utopia {
         using ScalarArray = utopia::ArrayView<Scalar, UDim>;
 
         using SideSets = utopia::SideSets<Dim>;
+        using Comm     = utopia::PetscCommunicator;
 
         class Impl;
 

@@ -79,6 +79,20 @@ namespace utopia {
             get_ghost_corners(dm, ghost_corners_begin, ghost_corners_extent);
             n_components = get_dof(dm);
 
+
+            DMDAElementType elem_type;
+            DMDAGetElementType(dm, &elem_type);
+
+            if(elem_type == DMDA_ELEMENT_P1) {
+                if constexpr(Dim == 2) {
+                    elements_x_cell = 2;
+                } else if constexpr(Dim == 3) {
+                    elements_x_cell = 6;
+                } else {
+                    assert(false);
+                }
+            }
+
             // describe();
         }
 
@@ -86,6 +100,7 @@ namespace utopia {
         {
             box_min.set(0.0);
             box_max.set(1.0);
+            elements_x_cell = 1;
         }
 
         // void describe(std::ostream &os = std::cout)
@@ -131,6 +146,7 @@ namespace utopia {
         IntArray ghost_corners_extent;
 
         SizeType n_components;
+        SizeType elements_x_cell;
 
         //geometry
         Point box_min, box_max;
@@ -804,7 +820,7 @@ namespace utopia {
             ret *= (mirror.dims[i] - 1);
         }
 
-        return ret;
+        return ret * mirror.elements_x_cell;
     }
 
     template<int Dim>
