@@ -73,8 +73,8 @@ namespace utopia {
                 return x[0] <= device::epsilon<Scalar>() && (x[1] >= 0.5 && x[1] <= 1.0);
             },
             //value
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 1.0;
+            UTOPIA_LAMBDA(const Point &x) -> Scalar {
+                return x[1];
             },
             0
         );

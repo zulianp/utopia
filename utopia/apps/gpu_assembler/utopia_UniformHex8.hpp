@@ -357,9 +357,6 @@ namespace utopia {
             |/            |/
             0 ----------- 1
 
-        DM format:
-        ?
-
     */
     template<typename Scalar_>
     class UniformHex8 : public Elem {
