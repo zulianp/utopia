@@ -38,6 +38,7 @@ namespace utopia {
             }
 
             IC_->read(in); 
+
         }
 
 
@@ -65,8 +66,6 @@ namespace utopia {
             BC_conditions_.resize(n_levels_); 
             auto bc = std::make_shared<BCType>(*spaces_[0]);
             BC_conditions_[0] = bc; 
-
-            
 
             transfers_.resize(n_levels_ - 1);
 
@@ -248,18 +247,26 @@ namespace utopia {
                level_functions_[l]->init_constraint_indices(); 
             }
 
-            // if(this->use_pressure_){
-            //     auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_); 
 
-            //     if(this->use_constant_pressure_){
-            //         fe_problem_->setup_constant_pressure_field(press_ts);     
-            //     }
+            // if(this->use_pressure_){
+                auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_); 
+
+                // if(this->use_constant_pressure_){
+                    // fe_problem_->setup_constant_pressure_field(press_ts);    
+                    std::cout<<"----- yes, constant pressure, "<< press_ts << " ......... \n";  
+
+                    for(auto l=0; l < n_levels_; l++){
+                        ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
+                        fun->setup_constant_pressure_field(press_ts);    
+                        fun->set_pressure(press_ts); 
+                    }   
+                // }
             //     else{
             //         Vector & pressure_vec =  fe_problem_->pressure_field(); 
             //         // set_nonzero_elem_to(pressure_vec, press_ts); 
                     
             //         set_nonzero_elem_to(pressure_vec, (this->time_ * this->pressure_increase_factor_)); 
-            //     }
+                // }
             // }
 
         }
@@ -293,6 +300,7 @@ namespace utopia {
                 }
                 else{   
                     
+                    // std::cout<<"------- yes, updating...  \n"; 
 
                     if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
                         fun_finest->set_old_solution(this->solution_); 
@@ -383,13 +391,10 @@ namespace utopia {
 
                 rmtr->solve(this->solution_); 
                 auto sol_status = rmtr->solution_status(); 
-                // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////
                 const auto conv_reason = sol_status.reason;                     
                 update_time_step(conv_reason); 
-
-                // exit(0);
 
             } 
 

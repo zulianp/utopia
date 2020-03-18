@@ -75,7 +75,7 @@ namespace utopia {
             Parameters()
             :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(0.0), fracture_toughness(0.001), 
                 mu(80.0), lambda(120.0), regularization(1e-10), pressure(0.0), penalty_param(0.0), 
-                crack_set_tol(0.95), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(true), 
+                crack_set_tol(0.95), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(false), 
                 use_pressure(false)
             {}
 
@@ -119,7 +119,7 @@ namespace utopia {
 
             // in case of constant pressure field 
             // if(params_.pressure){
-                params_.use_pressure = false; 
+                params_.use_pressure = true; 
                 setup_constant_pressure_field(params_.pressure); 
             // }
 
@@ -433,7 +433,7 @@ namespace utopia {
 
             // fully broken case is treated as Dirichlet BC
             if(params_.use_crack_set_irreversibiblity){
-                apply_zero_constraints_irreversibiblity(g); 
+                apply_zero_constraints_irreversibiblity(g, x_const); 
             }
 
             // static int iter = 0;
@@ -639,7 +639,7 @@ namespace utopia {
             space_.apply_constraints(H);
 
             if(params_.use_crack_set_irreversibiblity){
-                apply_zero_constraints_irreversibiblity(H);
+                apply_zero_constraints_irreversibiblity(H, x_const);
             }
 
             // static int iter = 0;
@@ -919,6 +919,32 @@ namespace utopia {
         }
 
         // this 2 functions need to be moved to BC conditions 
+        void apply_zero_constraints_irreversibiblity(Vector & g, const Vector & x) const
+        {
+            {
+                auto d_x_old = const_device_view(x_old_);
+                auto d_x = const_device_view(x);
+
+                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                {
+                    if(i%(Dim+1)==0){
+                        if(d_x_old.get(i) > params_.crack_set_tol || d_x.get(i) > params_.crack_set_tol){
+                            return 0.0; 
+                        }
+                        else{
+                            return xi; 
+                        }
+                    }
+                    else{
+                        return xi; 
+                    }                    
+                
+                });
+            }
+        }
+
+
+        // this 2 functions need to be moved to BC conditions 
         void add_irr_values_markers(Vector & val, Vector & flg) const
         {
             {
@@ -979,6 +1005,27 @@ namespace utopia {
 
             set_zero_rows(H, indices, 1.);
         }        
+
+
+        void apply_zero_constraints_irreversibiblity(Matrix & H, const Vector & x) const
+        {
+            std::vector<SizeType> indices; 
+            {
+                Read<Vector> r(x_old_);
+                Read<Vector> r2(x);
+
+                Range range_w = range(x_old_);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                {
+                    if(i%(Dim+1)==0 && (x_old_.get(i) > params_.crack_set_tol || x.get(i) > params_.crack_set_tol)){
+                        indices.push_back(i);
+                    }
+                }
+            }                 
+
+            set_zero_rows(H, indices, 1.);
+        }     
+
 
 
         void pressure_field(const Vector & pressure_field)
