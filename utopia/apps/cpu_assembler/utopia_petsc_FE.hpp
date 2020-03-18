@@ -9,6 +9,7 @@
 #include "utopia_UniformQuad4.hpp"
 #include "utopia_UniformHex8.hpp"
 #include "utopia_petsc_Vector.hpp"
+#include "utopia_Quad4.hpp"
 
 namespace utopia {
 
@@ -109,6 +110,14 @@ namespace utopia {
     private:
         std::array<Point, NPoints> points_;
         std::array<Scalar, NPoints> weights_;
+    };
+
+
+    template<typename Scalar_, int PhysicalDim>
+    class Quadrature<Quad4<Scalar_, PhysicalDim>, 2, 2> : public Quadrature<PetscUniformQuad4, 2, 2>  {
+    public:
+        using ViewDevice = utopia::Quadrature<PetscUniformQuad4, 2, 2>;
+        using ViewHost   = utopia::Quadrature<PetscUniformQuad4, 2, 2>;
     };
 
     template<>

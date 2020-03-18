@@ -117,7 +117,7 @@ namespace utopia {
         void apply(PetscVector &v) const
         {
             using Side     = typename Elem::Side;
-            using SideQuadrature = utopia::Quadrature<Side, 2, 1>;
+            using SideQuadrature = utopia::Quadrature<Side, 2, Dim-1>;
 
             auto subspace   = space_.subspace(component_);
 

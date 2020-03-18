@@ -343,6 +343,24 @@ namespace utopia {
 
     };
 
+    /*
+        ExodusII format:
+
+               7 ----------- 6
+              /|            /|
+             / |           / |
+            4 ----------- 5  |
+            |  |          |  |
+            |  |          |  |
+            |  3 ---------|- 2
+            | /           | /
+            |/            |/
+            0 ----------- 1
+
+        DM format:
+        ?
+
+    */
     template<typename Scalar_>
     class UniformHex8 : public Elem {
     public:
@@ -358,6 +376,129 @@ namespace utopia {
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
         using Side      = utopia::Quad4<Scalar, Dim>;
+
+        template<typename IntArray>
+        UTOPIA_INLINE_FUNCTION void side_idx(const std::size_t &i, IntArray &local_side_idx) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 1;
+                    local_side_idx[2] = 5;
+                    local_side_idx[3] = 4;
+                    return;
+                }
+                case 1:
+                {
+                    local_side_idx[0] = 1;
+                    local_side_idx[1] = 2;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 5;
+                    return;
+                }
+                case 2:
+                {
+                    local_side_idx[0] = 3;
+                    local_side_idx[1] = 2;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 7;
+                    return;
+                }
+                case 3:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 4;
+                    local_side_idx[2] = 7;
+                    local_side_idx[3] = 3;
+                    return;
+                }
+                case 4:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 1;
+                    local_side_idx[2] = 2;
+                    local_side_idx[3] = 3;
+                    return;
+                }
+                case 5:
+                {
+                    local_side_idx[0] = 4;
+                    local_side_idx[1] = 5;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 7;
+                    return;
+                }
+
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
+            }
+        }
+
+
+        UTOPIA_INLINE_FUNCTION void side(const std::size_t &i, Side &side) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    node(0, side.node(0));
+                    node(1, side.node(1));
+                    node(5, side.node(2));
+                    node(4, side.node(3));
+                    break;
+                }
+                case 1:
+                {
+                    node(1, side.node(0));
+                    node(2, side.node(1));
+                    node(6, side.node(2));
+                    node(5, side.node(3));
+                    break;
+                }
+                case 2:
+                {
+                    node(3, side.node(0));
+                    node(2, side.node(1));
+                    node(6, side.node(2));
+                    node(7, side.node(3));
+                    break;
+                }
+                case 3:
+                {
+                    node(0, side.node(0));
+                    node(4, side.node(1));
+                    node(7, side.node(2));
+                    node(3, side.node(3));
+                    break;
+                }
+                case 4:
+                {
+                    node(0, side.node(0));
+                    node(1, side.node(1));
+                    node(2, side.node(2));
+                    node(3, side.node(3));
+                    break;
+                }
+                case 5:
+                {
+                    node(4, side.node(0));
+                    node(5, side.node(1));
+                    node(6, side.node(2));
+                    node(7, side.node(3));
+                    break;
+                }
+
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
+                    break;
+                }
+            }
+
+            side.init(true);
+        }
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefHex8::fun(i, p))

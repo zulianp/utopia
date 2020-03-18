@@ -37,20 +37,12 @@
 
 namespace utopia {
 
-    void neumann_example(Input &in)
+    template<class FunctionSpace>
+    void neumman_test(FunctionSpace &space, Input &in)
     {
-        static const int Dim = 2;
-        static const int NVars = 1;
-
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using Point            = FunctionSpace::Point;
-        using Scalar           = FunctionSpace::Scalar;
-        using Vector           = FunctionSpace::Vector;
-
-        FunctionSpace space;
-        space.read(in);
+        using Point  = typename FunctionSpace::Point;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
 
         NeumannBoundaryCondition<FunctionSpace> bc(
             space,
@@ -103,5 +95,39 @@ namespace utopia {
         space.write("neumman2.vtr", v);
     }
 
-    UTOPIA_REGISTER_APP(neumann_example);
+    void neumann_example_2(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformQuad4;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+
+        FunctionSpace space;
+        space.read(in);
+
+        neumman_test(space, in);
+    }
+
+    UTOPIA_REGISTER_APP(neumann_example_2);
+
+    void neumann_example_3(Input &in)
+    {
+        static const int Dim = 3;
+        static const int NVars = 1;
+
+        using Mesh             = utopia::PetscDM<Dim>;
+        using Elem             = utopia::PetscUniformHex8;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+        FunctionSpace space;
+        space.read(in);
+
+        neumman_test(space, in);
+    }
+
+
+    UTOPIA_REGISTER_APP(neumann_example_3);
 }

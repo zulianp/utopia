@@ -6,7 +6,7 @@
 namespace utopia {
 
     template<class Expr>
-    class DeviceInverse {
+    class DeviceInverse : public DeviceExpression<DeviceInverse<Expr>> {
     public:
         using Scalar   = typename Traits<Expr>::Scalar;
         using SizeType = typename Traits<Expr>::SizeType;
@@ -30,10 +30,29 @@ namespace utopia {
             const SizeType rows = result.rows();
             const SizeType cols = result.cols();
 
-            if(rows > cols) {
-                UTOPIA_DEVICE_ASSERT(false);
-            } else if(cols > rows) {
-                UTOPIA_DEVICE_ASSERT(false);
+            if(rows != cols) {
+                //expr has rows > cols
+                const bool row_full_rank = rows < cols;
+
+                switch(rows) {
+                    case 1:
+                    {
+                        return pseudo_inverse<1>(row_full_rank, expr, d, result);
+                    }
+                    case 2:
+                    {
+                        return pseudo_inverse<2>(row_full_rank, expr, d, result);
+                    }
+                    case 3:
+                    {
+                        return pseudo_inverse<3>(row_full_rank, expr, d, result);
+                    }
+                    default:
+                    {
+                        return false;
+                    }
+                }
+
             } else {
                 inverse(expr, d, result);
             }
@@ -41,8 +60,27 @@ namespace utopia {
             return true;
         }
 
-        template<class Result>
-        UTOPIA_INLINE_FUNCTION static void inverse(const Expr &expr, const Scalar &det, Result &result)
+        template<int Dim, class Result>
+        UTOPIA_INLINE_FUNCTION static bool pseudo_inverse(
+            bool row_full_rank,
+            const Expr &expr,
+            const Scalar &det,
+            Result &result)
+        {
+            if(row_full_rank) {
+                auto mat = transpose(expr) * expr;
+                StaticMatrix<Scalar, Dim, Dim> temp;
+                inverse(mat, det, temp);
+                result = temp * transpose(expr);
+                return true;
+            } else {
+                UTOPIA_DEVICE_ASSERT(false);
+                return false;
+            }
+        }
+
+        template<class ExprT, class Result>
+        UTOPIA_INLINE_FUNCTION static void inverse(const ExprT &expr, const Scalar &det, Result &result)
         {
             const SizeType n = result.rows();
 
