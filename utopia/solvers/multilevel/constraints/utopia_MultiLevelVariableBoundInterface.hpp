@@ -75,30 +75,29 @@ namespace utopia
 
         virtual bool check_feasibility(const SizeType & level, Vector & x)
         {
-            // SizeType n_terminates = 0;
-            // // active lower/upper
-            // {
-            //     auto d_u = const_device_view(active_upper(level));
-            //     auto d_l = const_device_view(active_lower(level));
-            //     auto d_x = const_device_view(x);
+            SizeType n_terminates = 0;
+            // active lower/upper
+            {
+                auto d_u = const_device_view(active_upper(level));
+                auto d_l = const_device_view(active_lower(level));
+                auto d_x = const_device_view(x);
 
 
-            //     Device::parallel_reduce(range(x), UTOPIA_LAMBDA(const SizeType i) -> SizeType
-            //     {
-            //         const Scalar xi = d_x.get(i);
-            //         const Scalar li = d_l.get(i);
-            //         const Scalar ui = d_u.get(i);
+                Device::parallel_reduce(range(x), UTOPIA_LAMBDA(const SizeType i) -> SizeType
+                {
+                    const Scalar xi = d_x.get(i);
+                    const Scalar li = d_l.get(i);
+                    const Scalar ui = d_u.get(i);
 
-            //         return static_cast<SizeType>(xi < li || xi > ui);
-            //     }, n_terminates);
-            // }
+                    return static_cast<SizeType>(xi < li || xi > ui);
+                }, n_terminates);
+            }
 
-            get_projection(active_lower(level), active_upper(level), x); 
+            bool terminate = n_terminates > 0;
+            return x.comm().disjunction(terminate);
 
-            return false; 
-
-            // bool terminate = n_terminates > 0;
-            // return x.comm().disjunction(terminate);
+            // get_projection(active_lower(level), active_upper(level), x); 
+            // return false;             
         }
 
 

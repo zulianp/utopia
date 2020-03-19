@@ -232,12 +232,8 @@ namespace utopia
             // mostly case for rmtr_inf with bounds...
             if(rho > this->rho_tol() && converged==false){
                 converged = this->check_feasibility(level);
-                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && converged==true)
-                {
+                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && converged==true){
                     std::cout<<"- feasibility problems, terminating \n"; 
-
-                    // disp(this->memory_.x[level], "x");
-                    // exit(0); 
                 }
             }
 
@@ -416,8 +412,7 @@ namespace utopia
             // }
 
             UTOPIA_NO_ALLOC_BEGIN("RMTR::region9");
-            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0)
-            {
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0){
                 PrintInfo::print_iter_status(it, {this->memory_.gnorm[level], this->memory_.energy[level], ared, pred, rho, this->memory_.delta[level]});
             }
 

@@ -200,7 +200,7 @@ namespace utopia
         }
 
         // -------------------------- tr radius managment ---------------------------------------------
-        bool delta_update(const Scalar & rho, const SizeType & level, const Vector & /*s_global*/) override
+        bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) override
         {
             Scalar intermediate_delta;
 
@@ -216,7 +216,6 @@ namespace utopia
             }
 
             this->memory_.delta[level] = intermediate_delta;
-
             return false;
         }
 

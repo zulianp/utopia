@@ -210,9 +210,17 @@ namespace utopia {
         // InitialCondidtionPFTbar<FunctionSpace> IC_setup(space, 0.0);  
         // PFFracFixAllDisp2D<FunctionSpace> BC_setup(space); 
 
-        const auto n_levels = 2; 
-        MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>, 
-                            PFFracFixAllDisp2D<FunctionSpace>, InitialCondidtionPFTbar<FunctionSpace> > time_stepper(space, n_levels); 
+        // const auto n_levels = 3; 
+        // MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>, 
+        //                     PFFracFixAllDisp2D<FunctionSpace>, InitialCondidtionPFTbar<FunctionSpace> > time_stepper(space, n_levels); 
+
+
+        auto n_levels = 2; 
+        in.get("n_levels", n_levels);
+
+       MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>, 
+                            PFFracFixAllDisp2D<FunctionSpace>, InitialCondidtionPFFracNet<FunctionSpace> > time_stepper(space, n_levels); 
+
 
 
         time_stepper.run(in); 
@@ -275,9 +283,15 @@ namespace utopia {
 
         stats.start();
 
-        const auto n_levels = 2; 
+        auto n_levels = 2; 
+        in.get("n_levels", n_levels);
+
+
         MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>, 
                             PFFracTension2D<FunctionSpace>, InitialCondidtionPFTension<FunctionSpace> > time_stepper(space, n_levels); 
+
+
+
 
 
         time_stepper.run(in); 
