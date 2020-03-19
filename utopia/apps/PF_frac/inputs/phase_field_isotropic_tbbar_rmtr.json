@@ -1,7 +1,7 @@
 {
     "app" : "petsc_pressure_Tbar_isotropic_phase_field_2_rmtr",
-    "output-path" : "net_RMTRRR",
-    "log_output_path": "pf_rmtr_gal3l_tr_tests.csv",
+    "output-path" : "second_orderRMTR",
+    "log_output_path": "second_orderRMTR_nMT.csv",
     "nx" : 50,
     "ny" : 50,
     "nz" : 2,
@@ -10,7 +10,7 @@
     "use_dense_hessian" : false,
     "check_derivatives" : false,
     "tension_test" : true, 
-    "num_time_steps" : 20, 
+    "num_time_steps" : 15, 
     "dt" : 1,     
     "use_mprgp" : true,
     "adjust_dt_on_failure": false, 
