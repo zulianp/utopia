@@ -23,6 +23,7 @@
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_Tri3.hpp"
 
 #include "utopia_LinearElasticityFE.hpp"
 
@@ -40,9 +41,12 @@ namespace utopia {
         static const int Dim = 2;
         // static const int Dim = 3;
 
-        using Mesh = utopia::PetscDM<Dim>;
-        using Comm = Mesh::Comm;
+        using Mesh     = utopia::PetscDM<Dim>;
+        using Comm     = Mesh::Comm;
         using SizeType = Mesh::SizeType;
+        using Scalar   = Mesh::Scalar;
+
+        // using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Tri3<Scalar, 2>>;
 
         Comm comm;
         Mesh mesh;
@@ -69,6 +73,8 @@ namespace utopia {
             mesh.nodes(i, nodes);
             disp(nodes);
         }
+
+        Tri3<double, 3> tri3;
     }
 
     UTOPIA_REGISTER_APP(petsc_tri);
