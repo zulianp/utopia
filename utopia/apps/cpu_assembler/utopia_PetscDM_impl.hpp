@@ -79,6 +79,20 @@ namespace utopia {
             get_ghost_corners(dm, ghost_corners_begin, ghost_corners_extent);
             n_components = get_dof(dm);
 
+
+            DMDAElementType elem_type;
+            DMDAGetElementType(dm, &elem_type);
+
+            if(elem_type == DMDA_ELEMENT_P1) {
+                if constexpr(Dim == 2) {
+                    elements_x_cell = 2;
+                } else if constexpr(Dim == 3) {
+                    elements_x_cell = 6;
+                } else {
+                    assert(false);
+                }
+            }
+
             // describe();
         }
 
@@ -86,6 +100,7 @@ namespace utopia {
         {
             box_min.set(0.0);
             box_max.set(1.0);
+            elements_x_cell = 1;
         }
 
         // void describe(std::ostream &os = std::cout)
@@ -131,6 +146,7 @@ namespace utopia {
         IntArray ghost_corners_extent;
 
         SizeType n_components;
+        SizeType elements_x_cell;
 
         //geometry
         Point box_min, box_max;
@@ -489,6 +505,25 @@ namespace utopia {
     }
 
     template<int Dim>
+    void PetscDM<Dim>::build_simplicial_complex(
+        const PetscCommunicator     &comm,
+        const std::array<SizeType, UDim> &dims,
+        const std::array<Scalar, UDim>   &box_min,
+        const std::array<Scalar, UDim>   &box_max,
+        const SizeType &n_components
+    )
+    {
+        impl_ = utopia::make_unique<Impl>(comm);
+        impl_->init_uniform(comm, dims, box_min, box_max, n_components, DMDA_ELEMENT_P1);
+
+        //FIXME move into init uniform
+        impl_->mirror.init(impl_->dm);
+
+        impl_->elements = utopia::make_unique<DMDAElements<Dim>>(*this);
+        impl_->nodes    = utopia::make_unique<DMDANodes<Dim>>(*this);
+    }
+
+    template<int Dim>
     PetscDM<Dim>::~PetscDM()
     {}
 
@@ -644,6 +679,23 @@ namespace utopia {
     }
 
     template<int Dim>
+    bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx) const
+    {
+        std::array<SizeType, 3> tensor_index = {0, 0, 0};
+        impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
+
+        const auto &mirror = impl_->mirror;
+
+        for(int d = 0; d < Dim; ++d) {
+            if(tensor_index[d] == 0 || tensor_index[d] == (mirror.dims[d] - 1)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    template<int Dim>
     bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
     {
         std::array<SizeType, 3> tensor_index = {0, 0, 0};
@@ -768,7 +820,7 @@ namespace utopia {
             ret *= (mirror.dims[i] - 1);
         }
 
-        return ret;
+        return ret * mirror.elements_x_cell;
     }
 
     template<int Dim>
@@ -823,6 +875,57 @@ namespace utopia {
     {
         I.destroy();
         auto ierr = DMCreateInterpolation(raw_type(*this), raw_type(target), &I.raw_type(), nullptr); assert(ierr == 0);
+    }
+
+    template<int Dim>
+    std::unique_ptr<PetscDM<Dim>> PetscDM<Dim>::clone(const SizeType &n_components) const
+    {
+        auto dm = utopia::make_unique<PetscDM>();
+
+        std::array<SizeType, UDim> t_dims;
+        std::array<Scalar, UDim> t_box_min, t_box_max;
+
+        convert(impl_->mirror.dims, t_dims);
+        convert(impl_->mirror.box_min, t_box_min);
+        convert(impl_->mirror.box_max, t_box_max);
+
+        dm->build(comm(), t_dims, t_box_min, t_box_max, n_components);
+
+        //FIXME copy other fields
+        return std::move(dm);
+    }
+
+    template<int Dim>
+    std::unique_ptr<PetscDM<Dim>> PetscDM<Dim>::clone() const
+    {
+        return this->clone(n_components());
+    }
+
+    template<int Dim>
+    bool PetscDM<Dim>::on_boundary(const SizeType &elem_idx) const
+    {
+        NodeIndex idx;
+        nodes(elem_idx, idx);
+
+        for(auto i : idx) {
+            if(is_local_node_on_boundary(i)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    template<int Dim>
+    const typename PetscDM<Dim>::Point & PetscDM<Dim>::box_min() const
+    {
+        return impl_->mirror.box_min;
+    }
+
+    template<int Dim>
+    const typename PetscDM<Dim>::Point & PetscDM<Dim>::box_max() const
+    {
+        return impl_->mirror.box_max;
     }
 
 }

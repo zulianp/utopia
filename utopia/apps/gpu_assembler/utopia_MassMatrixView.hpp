@@ -8,6 +8,70 @@
 
 namespace utopia {
 
+    template<class Elem>
+    class MassMatrixAssembler {
+    public:
+        using FunValue  = typename Elem::FunValue;
+        using Point     = typename Elem::Point;
+        using Scalar    = typename Elem::Scalar;
+
+        static const int NFunctions = Elem::NFunctions;
+
+        UTOPIA_INLINE_FUNCTION MassMatrixAssembler(
+            const Elem &elem
+        )
+        : elem_(elem)
+        {}
+
+        template<class Quadrature, class Matrix>
+        UTOPIA_INLINE_FUNCTION void assemble(const Quadrature &q, Matrix &mat)
+        {
+            Scalar w;
+            Point p;
+            for(int qp = 0; qp < Quadrature::NPoints; ++qp) {
+                q.point(qp, p);
+                w = q.weight(qp) * elem_.measure();
+
+                for(int i = 0; i < NFunctions; ++i) {
+                    FunValue &&fun_i = elem_.fun(i, p);
+                    mat(i, i) += fun_i * fun_i * w;
+
+                    for(int j = i + 1; j < NFunctions; ++j) {
+                        const Scalar v = inner(fun_i, elem_.fun(j, p)) * w;
+                        mat(i, j) += v;
+                        mat(j, i) += v;
+                    }
+                }
+            }
+        }
+
+        template<class Quadrature, class Vector>
+        UTOPIA_INLINE_FUNCTION void assemble_vector(const Quadrature &q, Vector &vec)
+        {
+            Scalar w;
+            // Point p;
+            for(int qp = 0; qp < Quadrature::NPoints; ++qp) {
+                auto && p = q.point(qp);
+                w = q.weight(qp) * elem_.measure();
+
+                for(int i = 0; i < NFunctions; ++i) {
+                    FunValue &&fun_i = elem_.fun(i, p);
+                    vec(i) += fun_i * fun_i * w;
+
+                    for(int j = i + 1; j < NFunctions; ++j) {
+                        const Scalar v = inner(fun_i, elem_.fun(j, p)) * w;
+                        vec(i) += v;
+                        vec(j) += v;
+                    }
+                }
+            }
+        }
+
+    private:
+        const Elem &elem_;
+
+    };
+
     template<class Elem, class Quadrature, class MemType = typename Elem::MemType, typename...>
     class MassMatrix {};
 

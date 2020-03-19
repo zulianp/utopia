@@ -43,7 +43,7 @@
 namespace utopia {
 
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
     static void petsc_tension_isotropic_phase_field_2(Input &in)
     {
         static const int Dim = 2;
@@ -90,6 +90,7 @@ namespace utopia {
 
         time_stepper.run(in); 
 
+
         stats.stop_collect_and_restart("end");
 
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
@@ -103,7 +104,7 @@ namespace utopia {
 
 
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
     static void petsc_pressure_Tbar_isotropic_phase_field_2(Input &in)
     {
         static const int Dim = 2;
@@ -150,6 +151,7 @@ namespace utopia {
 
         time_stepper.run(in); 
 
+
         stats.stop_collect_and_restart("end");
 
         space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
@@ -159,10 +161,6 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_pressure_Tbar_isotropic_phase_field_2);
-
-
-
-
 
 
 
@@ -310,12 +308,6 @@ namespace utopia {
 
 
 
-
-
-
-
-
-
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
     static void petsc_pressure_network_isotropic_phase_field_2(Input &in)
     {
@@ -408,7 +400,6 @@ namespace utopia {
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);  
         PFFracTension2D<FunctionSpace> BC_setup(space); 
         IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(space, IC_setup, BC_setup); 
-
         time_stepper.run(in); 
 
         stats.stop_collect_and_restart("end");
@@ -419,7 +410,7 @@ namespace utopia {
 
     }
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
     static void petsc_tension_isotropic_phase_field_3(Input &in)
     {
         static const int Dim = 3;

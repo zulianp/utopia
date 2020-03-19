@@ -6,6 +6,7 @@
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Elem.hpp"
+#include "utopia_Quad4.hpp"
 
 namespace utopia {
 
@@ -176,7 +177,7 @@ namespace utopia {
                 }
 
                 // f = x * (1.0 - y) * (1.0 - t);
-                // f_t = -x * (1.0 - y) 
+                // f_t = -x * (1.0 - y)
                 case 1:
                 {
                     dst[0] = -(1.0 - y);
@@ -194,7 +195,7 @@ namespace utopia {
                 }
 
                 // f = (1.0 - x) * y * (1.0 - t);
-                // f_t = -(1.0 - x) * y 
+                // f_t = -(1.0 - x) * y
                 case 3:
                 {
                     dst[0] = y;
@@ -212,7 +213,7 @@ namespace utopia {
                 }
 
                 // f = x * (1.0 - y) * t;
-                // f_t = x * (1.0 - y) 
+                // f_t = x * (1.0 - y)
                 case 5:
                 {
                     dst[0] = (1.0 - y);
@@ -230,7 +231,7 @@ namespace utopia {
                 }
 
                 // f = (1.0 - x) * y * t;
-                // f_t = (1.0 - x) * y 
+                // f_t = (1.0 - x) * y
                 case 7:
                 {
                     dst[0] = -y;
@@ -342,6 +343,21 @@ namespace utopia {
 
     };
 
+    /*
+        ExodusII format:
+
+               7 ----------- 6
+              /|            /|
+             / |           / |
+            4 ----------- 5  |
+            |  |          |  |
+            |  |          |  |
+            |  3 ---------|- 2
+            | /           | /
+            |/            |/
+            0 ----------- 1
+
+    */
     template<typename Scalar_>
     class UniformHex8 : public Elem {
     public:
@@ -349,12 +365,137 @@ namespace utopia {
         using MemType = Uniform<>;
         static const int Dim = 3;
         static const int NNodes = 8;
+        static const int NSides = 6;
         static const int NFunctions = NNodes;
 
         using Point     = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
+        using Side      = utopia::Quad4<Scalar, Dim>;
+
+        template<typename IntArray>
+        UTOPIA_INLINE_FUNCTION void side_idx(const std::size_t &i, IntArray &local_side_idx) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 1;
+                    local_side_idx[2] = 5;
+                    local_side_idx[3] = 4;
+                    return;
+                }
+                case 1:
+                {
+                    local_side_idx[0] = 1;
+                    local_side_idx[1] = 2;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 5;
+                    return;
+                }
+                case 2:
+                {
+                    local_side_idx[0] = 3;
+                    local_side_idx[1] = 2;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 7;
+                    return;
+                }
+                case 3:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 4;
+                    local_side_idx[2] = 7;
+                    local_side_idx[3] = 3;
+                    return;
+                }
+                case 4:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 1;
+                    local_side_idx[2] = 2;
+                    local_side_idx[3] = 3;
+                    return;
+                }
+                case 5:
+                {
+                    local_side_idx[0] = 4;
+                    local_side_idx[1] = 5;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 7;
+                    return;
+                }
+
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
+            }
+        }
+
+
+        UTOPIA_INLINE_FUNCTION void side(const std::size_t &i, Side &side) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    node(0, side.node(0));
+                    node(1, side.node(1));
+                    node(5, side.node(2));
+                    node(4, side.node(3));
+                    break;
+                }
+                case 1:
+                {
+                    node(1, side.node(0));
+                    node(2, side.node(1));
+                    node(6, side.node(2));
+                    node(5, side.node(3));
+                    break;
+                }
+                case 2:
+                {
+                    node(3, side.node(0));
+                    node(2, side.node(1));
+                    node(6, side.node(2));
+                    node(7, side.node(3));
+                    break;
+                }
+                case 3:
+                {
+                    node(0, side.node(0));
+                    node(4, side.node(1));
+                    node(7, side.node(2));
+                    node(3, side.node(3));
+                    break;
+                }
+                case 4:
+                {
+                    node(0, side.node(0));
+                    node(1, side.node(1));
+                    node(2, side.node(2));
+                    node(3, side.node(3));
+                    break;
+                }
+                case 5:
+                {
+                    node(4, side.node(0));
+                    node(5, side.node(1));
+                    node(6, side.node(2));
+                    node(7, side.node(3));
+                    break;
+                }
+
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
+                    break;
+                }
+            }
+
+            side.init(true);
+        }
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefHex8::fun(i, p))

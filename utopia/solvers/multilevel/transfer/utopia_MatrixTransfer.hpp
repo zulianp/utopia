@@ -221,6 +221,19 @@
                 return true;
             }
 
+            void handle_equality_constraints(const Vector &is_constrained) override {
+                assert(_I);
+                assert(!empty(*_I));
+                assert(!empty(is_constrained));
+                assert( size(is_constrained).get(0) == size(*_I).get(0) );
+
+                if(empty(is_constrained) || empty(*_I)) return;
+
+                set_zero_rows(*_I, is_constrained, 0.0);
+                *_R = transpose(*_I); 
+            }
+
+
             /**
              * @brief      Projection of vector
              *            \f$  x_{new} = P * x  \f$

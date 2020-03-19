@@ -9,6 +9,7 @@
 #include "utopia_UniformQuad4.hpp"
 #include "utopia_UniformHex8.hpp"
 #include "utopia_petsc_Vector.hpp"
+#include "utopia_Quad4.hpp"
 
 namespace utopia {
 
@@ -111,6 +112,14 @@ namespace utopia {
         std::array<Scalar, NPoints> weights_;
     };
 
+
+    template<typename Scalar_, int PhysicalDim>
+    class Quadrature<Quad4<Scalar_, PhysicalDim>, 2, 2> : public Quadrature<PetscUniformQuad4, 2, 2>  {
+    public:
+        using ViewDevice = utopia::Quadrature<PetscUniformQuad4, 2, 2>;
+        using ViewHost   = utopia::Quadrature<PetscUniformQuad4, 2, 2>;
+    };
+
     template<>
     class Quadrature<PetscUniformHex8, 2, 3> {
     public:
@@ -182,6 +191,90 @@ namespace utopia {
         inline const ViewHost &view_host() const
         {
             return *this;
+        }
+
+    private:
+        std::array<Point, NPoints> points_;
+        std::array<Scalar, NPoints> weights_;
+    };
+
+
+    template<typename Scalar_, int PhysicalDim>
+    class Quadrature<Edge2<Scalar_, PhysicalDim>, 2, 1> {
+    public:
+        using Scalar   = Scalar_;
+        // using SizeType = PetscUniformHex8::SizeType;
+        using Point      = utopia::StaticVector<Scalar, 1>;
+        using ViewDevice = Quadrature;
+        using ViewHost   = Quadrature;
+
+        static const int Order   = 2;
+        static const int Dim     = 1;
+        static const int NPoints = 12;
+
+        inline static constexpr int n_points()
+        {
+            return NPoints;
+        }
+
+        inline static constexpr int dim()
+        {
+            return Dim;
+        }
+
+        void init()
+        {
+            utopia::Quadrature<Scalar, 6, 1>::get(points_, weights_);
+        }
+
+        template<class Point>
+        inline void point(const int qp_idx, Point &p) const
+        {
+            p[0] = points_[qp_idx][0];
+        }
+
+        inline Point point(const int qp_idx) const
+        {
+            Point p;
+            point(qp_idx, p);
+            return p;
+        }
+
+        inline const Scalar &weight(const int qp_idx) const
+        {
+            return weights_[qp_idx];
+        }
+
+        Quadrature()
+        {
+            init();
+        }
+
+        Quadrature(const Quadrature &other)
+        {
+            for(int i = 0; i < NPoints; ++i) {
+                points_[i][0] = other.points_[i][0];
+                weights_[i] = other.weights_[i];
+            }
+        }
+
+        inline const ViewDevice &view_device() const
+        {
+            return *this;
+        }
+
+        inline const ViewHost &view_host() const
+        {
+            return *this;
+        }
+
+        void describe(std::ostream &os = std::cout) const
+        {
+            for(auto w : weights_) {
+                os << w << " ";
+            }
+
+            os << std::endl;
         }
 
     private:

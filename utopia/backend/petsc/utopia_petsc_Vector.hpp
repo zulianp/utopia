@@ -208,7 +208,8 @@ namespace utopia {
         //basic mutators
         inline void l_set(const SizeType &index, const Scalar &value)
         {
-            assert(range().inside(index));
+            assert(index >= 0);
+            assert((index < local_size()));
             // check_error(
             // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
 

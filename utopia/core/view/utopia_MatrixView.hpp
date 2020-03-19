@@ -61,11 +61,6 @@ namespace utopia {
         // : view_(std::forward<Args>(args)...)
         // {}
 
-        template<class Expr>
-        UTOPIA_FUNCTION TensorView(const DeviceInverse<Expr> &expr)
-        {
-            expr.apply(*this);
-        }
 
         template<class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)

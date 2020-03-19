@@ -21,6 +21,7 @@ namespace utopia {
         // using NodeIndex     = typename Elem::NodeIndex;
         using FunValue      = utopia::StaticVector<Scalar, Dim>;
         using Point         = typename Elem::Point;
+        using Side          = utopia::MultiVariateElem<typename Elem::Side, NVariables>;
 
         // static_assert(NVariables == Dim, "Number of variables must be equal to dim for vector elements");
 

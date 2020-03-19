@@ -22,24 +22,40 @@ namespace utopia {
         int n_levels = 2;
         in.get("n_levels", n_levels);
 
-        // bool in_situ_rendering = false;
-        // in.get("in_situ_rendering", in_situ_rendering);
-
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
+
+        bool export_system = false;
+        in.get("export_system", export_system);
+
+        bool direct_solution = false;
+        in.get("direct_solution", direct_solution);
+
+        bool coarse_direct_solver = true;
+        in.get("coarse_direct_solver", coarse_direct_solver);
+
+        bool use_petsc_mg = false;
+        in.get("use_petsc_mg", use_petsc_mg);
 
     	Vector x;
 
         std::shared_ptr<FunctionSpace> fine_space_ptr;
 
     	{
-        	auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-            // auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
-            // smoother->pc_type("bjacobi");
-            // smoother->ksp_type("sor");
+        	auto smoother = std::make_shared<SOR<Matrix, Vector>>();
+            // auto smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            // auto smoother = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+            std::shared_ptr< LinearSolver<Matrix, Vector> > coarse_solver;
+            if(coarse_direct_solver) {
+                coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+		    } else {
+                auto bcg = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+                // auto bcg = std::make_shared<GMRES<Matrix, Vector>>("bjacobi");
+                bcg->max_it(coarse_space.n_dofs());
+                coarse_solver = bcg;
+            }
 
-		    auto coarse_solver = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
-        	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
+        	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver, use_petsc_mg);
         	// mg.verbose(true);
             mg.read(in);
         	mg.init(coarse_space, n_levels);
@@ -69,7 +85,25 @@ namespace utopia {
 
         	space.apply_constraints(b);
 
+            if(export_system) {
+                rename("a", A);
+                write("A.m", A);
+
+                rename("b", b);
+                write("B.m", b);
+            }
+
+            if(direct_solution) {
+                Factorization<Matrix, Vector> solver;
+                solver.solve(A, b, x);
+                rename("x", x);
+                fine_space_ptr->write("direct_solution.vtr", x);
+                x.set(0.0);
+            }
+
             ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            // BiCGStab<Matrix, Vector, HOMEMADE> cg;
+            cg.read(in);
 
             mg.max_it(1);
             cg.set_preconditioner(make_ref(mg));
@@ -78,7 +112,11 @@ namespace utopia {
         	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
 
             cg.verbose(true);
-            cg.apply(b, x);
+
+            if(!cg.apply(b, x)) {
+                std::cerr << "[Error] Unable to solve system up to requested precision" << std::endl;
+            }
+
         	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
         	stats.stop_collect_and_restart("solve");
     	}

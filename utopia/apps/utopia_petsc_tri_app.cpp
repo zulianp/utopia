@@ -1,0 +1,76 @@
+#include "utopia_Base.hpp"
+
+//include edsl components
+#include "utopia_AppRunner.hpp"
+#include "utopia_Core.hpp"
+#include "utopia_PetscDM.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_AssemblyView.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_ConjugateGradient.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_LaplacianView.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_BratuFE.hpp"
+#include "utopia_PoissonFE.hpp"
+#include "utopia_MassMatrixView.hpp"
+#include "utopia_petsc_dma_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_LinearElasticityView.hpp"
+#include "utopia_GradInterpolate.hpp"
+#include "utopia_PrincipalStrainsView.hpp"
+#include "utopia_PhaseField.hpp"
+#include "utopia_FEFunction.hpp"
+#include "utopia_SampleView.hpp"
+
+#include "utopia_LinearElasticityFE.hpp"
+
+#include "utopia_app_utils.hpp"
+
+#include "utopia_petsc_NeumannBoundaryConditions.hpp"
+
+#include <cmath>
+
+namespace utopia {
+
+    void petsc_tri(Input &)
+    {
+        std::cout << "petsc_tri" << std::endl;
+        static const int Dim = 2;
+        // static const int Dim = 3;
+
+        using Mesh = utopia::PetscDM<Dim>;
+        using Comm = Mesh::Comm;
+        using SizeType = Mesh::SizeType;
+
+        Comm comm;
+        Mesh mesh;
+
+        mesh.build_simplicial_complex(
+            comm,
+            {2, 2},
+            {0., 0.},
+            {1.0, 1.0}
+        );
+
+        // mesh.build_simplicial_complex(
+        //     comm,
+        //     {2, 2, 2},
+        //     {0., 0., 0.0},
+        //     {1.0, 1.0, 1.0}
+        // );
+
+        mesh.describe();
+
+        ArrayView<const SizeType> nodes;
+
+        for(SizeType i = 0; i < mesh.n_elements(); ++i) {
+            mesh.nodes(i, nodes);
+            disp(nodes);
+        }
+    }
+
+    UTOPIA_REGISTER_APP(petsc_tri);
+
+}

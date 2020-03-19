@@ -76,7 +76,6 @@ namespace utopia {
 
                 auto fun = std::make_shared<ProblemType>(*spaces_[i]);
                 
-
                 if(i <n_levels_-1){
                     fun->use_crack_set_irreversibiblity(false); 
                 }
@@ -102,30 +101,20 @@ namespace utopia {
                 PFMassMatrix<FunctionSpace> mass_matrix_assembler_fine(*spaces_[i]); 
                 Matrix M_fine; 
                 mass_matrix_assembler_fine.mass_matrix(M_fine); 
-                // disp(H); 
-
 
                 PFMassMatrix<FunctionSpace> mass_matrix_assembler_coarse(*spaces_[i-1]); 
                 Matrix M_coarse; 
                 mass_matrix_assembler_coarse.mass_matrix(M_coarse);                 
 
                 Matrix inv_lumped_mass = diag(1./sum(M_coarse, 1)); 
-                // disp(inv_lumped_mass); 
-
                 Matrix P = inv_lumped_mass * R * M_fine; 
-                // disp(P);
-                // exit(0);
                 
-
                 // TODO:: assemble P correctly => not I^T.... 
                 // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));    // still seq. faults 
                 transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(R), std::make_shared<Matrix>(P));
             }
 
-            
-
-
-            // only needed for the finest level 
+            // initial conddition needs to be setup only on the finest level 
             SizeType pf_comp = 0; 
             IC_ = std::make_shared<ICType>(*spaces_.back(), pf_comp);
 

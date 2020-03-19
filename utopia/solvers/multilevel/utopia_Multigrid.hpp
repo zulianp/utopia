@@ -25,8 +25,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Multigrid final:  public LinearMultiLevel<Matrix, Vector>,
-                            public IterativeSolver<Matrix, Vector>
+    class Multigrid final : public LinearMultiLevel<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -37,6 +36,8 @@ namespace utopia
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef std::shared_ptr<Smoother>                   SmootherPtr;
+
+        using Super = utopia::LinearMultiLevel<Matrix, Vector>;
 
         typedef struct
         {
@@ -87,8 +88,7 @@ namespace utopia
 
         void read(Input &in) override
         {
-          LinearMultiLevel<Matrix, Vector>::read(in);
-          IterativeSolver::read(in);
+          Super::read(in);
 
           in.get("perform_galerkin_assembly", perform_galerkin_assembly_);
           in.get("use_line_search", use_line_search_);
@@ -105,8 +105,8 @@ namespace utopia
 
         void print_usage(std::ostream &os) const override
         {
-          LinearMultiLevel<Matrix, Vector>::print_usage(os);
-          IterativeSolver::print_usage(os);
+          Super::print_usage(os);
+
 
           this->print_param_usage(os, "perform_galerkin_assembly", "bool", "Flag turning on/off galerkin assembly.", "true");
           this->print_param_usage(os, "use_line_search", "bool", "Flag turning on/off line-search after coarse grid correction.", "false");
