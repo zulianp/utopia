@@ -15,12 +15,17 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Vector>
-    class FunctionBase
+    class FunctionBase : public Configurable
     {
     public:
         DEF_UTOPIA_SCALAR(Vector);
 
         virtual ~FunctionBase() { }
+
+        virtual void read(Input &in) override
+        {
+
+        }
 
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const = 0;
         virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;

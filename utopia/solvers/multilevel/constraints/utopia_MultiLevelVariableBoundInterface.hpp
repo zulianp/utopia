@@ -73,7 +73,7 @@ namespace utopia
 
 
 
-        virtual bool check_feasibility(const SizeType & level, const Vector & x)
+        virtual bool check_feasibility(const SizeType & level, Vector & x)
         {
             SizeType n_terminates = 0;
             // active lower/upper
@@ -95,6 +95,9 @@ namespace utopia
 
             bool terminate = n_terminates > 0;
             return x.comm().disjunction(terminate);
+
+            // get_projection(active_lower(level), active_upper(level), x); 
+            // return false;             
         }
 
 

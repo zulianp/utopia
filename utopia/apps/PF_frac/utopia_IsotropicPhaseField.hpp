@@ -16,7 +16,7 @@
 namespace utopia {
 
     template<class FunctionSpace, int Dim = FunctionSpace::Dim>
-    class IsotropicPhaseFieldForBrittleFractures final : public Function<
+    class IsotropicPhaseFieldForBrittleFractures final : public ExtendedFunction<
                             typename FunctionSpace::Matrix,
                             typename FunctionSpace::Vector>,
                             public Configurable
@@ -59,24 +59,29 @@ namespace utopia {
                 in.get("lambda", lambda);
                 in.get("regularization", regularization);
                 in.get("pressure", pressure);
+                in.get("use_pressure", use_pressure);
 
                 in.get("use_penalty_irreversibility", use_penalty_irreversibility);
                 in.get("penalty_param", penalty_param);
 
                 in.get("use_crack_set_irreversibiblity", use_crack_set_irreversibiblity); 
                 in.get("crack_set_tol", crack_set_tol); 
+
+                in.get("mu", mu); 
+                in.get("lambda", lambda); 
+                in.get("fracture_toughness", fracture_toughness); 
             }
 
-
             Parameters()
-            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(1.0), fracture_toughness(1.0), 
-                mu(1.0), lambda(1.0), regularization(1e-10), pressure(0.0), penalty_param(0.0), 
-                crack_set_tol(0.98), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(false)
+            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(0.0), fracture_toughness(0.001), 
+                mu(80.0), lambda(120.0), regularization(1e-10), pressure(0.0), penalty_param(0.0), 
+                crack_set_tol(0.95), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(false), 
+                use_pressure(false)
             {}
 
             Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda; 
             Scalar regularization, pressure, penalty_param, crack_set_tol;
-            bool use_penalty_irreversibility, use_crack_set_irreversibiblity; 
+            bool use_penalty_irreversibility, use_crack_set_irreversibiblity, use_pressure; 
         };
 
         void read(Input &in) override
@@ -93,14 +98,16 @@ namespace utopia {
         }
 
 
+        void use_crack_set_irreversibiblity(const bool & flg){
+            params_.use_crack_set_irreversibiblity = flg; 
+        }
+
+
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space)
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
         {
-            params_.length_scale = 2.0 * space.mesh().min_spacing();
-            params_.fracture_toughness = 0.001;
 
-            params_.mu = 80.0;
-            params_.lambda = 120.0;
+            params_.length_scale = 2.0 * space.mesh().min_spacing();
 
             // this computation follows eq. 50 from "On penalization in variational phase-field models of britlle fracture, Gerasimov, Lorenzis"
             if(params_.use_penalty_irreversibility)
@@ -109,6 +116,16 @@ namespace utopia {
                 Scalar tol2 = tol*tol; 
                 params_.penalty_param = params_.fracture_toughness/params_.length_scale * (1.0/ tol2 - 1.0);             
             }
+
+            // in case of constant pressure field 
+            // if(params_.pressure){
+                params_.use_pressure = true; 
+                setup_constant_pressure_field(params_.pressure); 
+            // }
+
+            // needed for ML setup 
+            space_.create_vector(this->_x_eq_values);
+            space_.create_vector(this->_eq_constrains_flg);
         }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
@@ -144,7 +161,12 @@ namespace utopia {
             auto &x = const_cast<Vector &>(x_const);
 
             auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);            
+            FEFunction<CSpace> c_old_fun(C, x_old);     
+
+
+            auto &press = const_cast<Vector &>(pressure_field_);
+            FEFunction<CSpace> press_fun(C, press);     
+                   
 
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
@@ -152,7 +174,8 @@ namespace utopia {
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
-            auto c_old  = c_old_fun.value(q);             
+            auto c_old  = c_old_fun.value(q);    
+            auto p_val  = press_fun.value(q); 
 
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
@@ -169,6 +192,7 @@ namespace utopia {
 
                 auto c_view      = c_val.view_device();
                 auto c_old_view  = c_old.view_device(); 
+                auto p_view      = p_val.view_device(); 
 
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
@@ -188,8 +212,11 @@ namespace utopia {
 
                         StaticVector<Scalar, NQuadPoints> c;
                         StaticVector<Scalar, NQuadPoints> c_old;
+                        StaticVector<Scalar, NQuadPoints> p;
                         c_view.get(c_e, c);
                         c_old_view.get(c_e, c_old); 
+                        p_view.get(c_e, p); 
+
 
                         UElem u_e;
                         U_view.elem(i, u_e);
@@ -203,8 +230,8 @@ namespace utopia {
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
 
                             Scalar tr = trace(el_strain.strain[qp]); 
-                            if(params_.pressure > 0){
-                                el_energy += quadratic_degradation(params_,  c[qp]) *  params_.pressure *  tr * dx(qp); 
+                            if(params_.use_pressure){
+                                el_energy += quadratic_degradation(params_,  c[qp]) *  p[qp] *  tr * dx(qp); 
                             }
 
 
@@ -245,15 +272,20 @@ namespace utopia {
             auto &x = const_cast<Vector &>(x_const);
 
             auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);            
+            FEFunction<CSpace> c_old_fun(C, x_old);     
+
+            auto &press = const_cast<Vector &>(pressure_field_);
+            FEFunction<CSpace> press_fun(C, press);    
+
 
             FEFunction<CSpace> c_fun(C, x);
             FEFunction<USpace> u_fun(U, x);
 
             Quadrature q;
 
-            auto c_val  = c_fun.value(q);
-            auto c_old  = c_old_fun.value(q); 
+            auto c_val      = c_fun.value(q);
+            auto c_old      = c_old_fun.value(q); 
+            auto press_val  = press_fun.value(q); 
 
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
@@ -273,7 +305,8 @@ namespace utopia {
                 auto C_view      = C.view_device();
 
                 auto c_view      = c_val.view_device();
-                auto c_old_view  = c_old.view_device();   
+                auto c_old_view  = c_old.view_device();  
+                auto p_view      = press_val.view_device();  
 
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
@@ -295,10 +328,7 @@ namespace utopia {
                         StaticMatrix<Scalar, Dim, Dim> stress, strain_p;
                         StaticVector<Scalar, U_NDofs> u_el_vec;
                         StaticVector<Scalar, C_NDofs>  c_el_vec;
-
-                        // StaticMatrix<Scalar, Dim, Dim> identity; 
-                        // identity.identity();                         
-
+                   
                         u_el_vec.set(0.0);
                         c_el_vec.set(0.0);
 
@@ -318,7 +348,10 @@ namespace utopia {
                         c_view.get(c_e, c);
 
                         StaticVector<Scalar, NQuadPoints> c_old;
-                        c_old_view.get(c_e, c_old); 
+                        c_old_view.get(c_e, c_old);
+
+                        StaticVector<Scalar, NQuadPoints> p;
+                        p_view.get(c_e, p);
 
 
                         auto c_grad_el = c_grad_view.make(c_e);
@@ -339,8 +372,8 @@ namespace utopia {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
 
-                                if(params_.pressure > 0){
-                                    u_el_vec(j) +=  quadratic_degradation(params_, c[qp]) *  params_.pressure  * sum(diag(strain_test)) * dx(qp);
+                                if(params_.use_pressure){
+                                    u_el_vec(j) +=  quadratic_degradation(params_, c[qp]) *  p[qp]  * sum(diag(strain_test)) * dx(qp);
                                 }
                             }
 
@@ -366,8 +399,8 @@ namespace utopia {
                                     );
 
                                 
-                                if(params_.pressure > 0){
-                                    const Scalar der_c_pres  = quadratic_degradation_deriv(params_, c[qp]) * params_.pressure * tr_strain_u * shape_test; 
+                                if(params_.use_pressure){
+                                    const Scalar der_c_pres  = quadratic_degradation_deriv(params_, c[qp]) * p[qp] * tr_strain_u * shape_test; 
                                     c_el_vec(j) +=  der_c_pres * dx(qp);
                                 }
 
@@ -400,7 +433,7 @@ namespace utopia {
 
             // fully broken case is treated as Dirichlet BC
             if(params_.use_crack_set_irreversibiblity){
-                apply_zero_constraints_irreversibiblity(g); 
+                apply_zero_constraints_irreversibiblity(g, x_const); 
             }
 
             // static int iter = 0;
@@ -425,14 +458,18 @@ namespace utopia {
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
 
-            auto &x = const_cast<Vector &>(x_const);
+            auto &x     = const_cast<Vector &>(x_const);
+            auto &press = const_cast<Vector &>(pressure_field_);
 
             FEFunction<CSpace> c_fun(C, x);
+            FEFunction<CSpace> press_fun(C, press);    
             FEFunction<USpace> u_fun(U, x);
-
+            
             Quadrature q;
 
             auto c_val  = c_fun.value(q);
+            auto p_val  = press_fun.value(q); 
+
             auto c_grad = c_fun.gradient(q);
             auto u_val  = u_fun.value(q);
             auto differential = C.differential(q);
@@ -455,6 +492,8 @@ namespace utopia {
                 auto space_view  = space_.view_device();
 
                 auto c_view      = c_val.view_device();
+                auto p_view      = p_val.view_device(); 
+
                 auto c_grad_view = c_grad.view_device();
                 auto u_view      = u_val.view_device();
 
@@ -484,19 +523,21 @@ namespace utopia {
                         el_mat.set(0.0);
 
                         ////////////////////////////////////////////
-
                         UElem u_e;
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
                         auto u_grad_shape_el = v_grad_shape_view.make(u_e);
                         auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
-                        ////////////////////////////////////////////
 
+                        ////////////////////////////////////////////
                         CElem c_e;
                         C_view.elem(i, c_e);
                         StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> p;
                         c_view.get(c_e, c);
+                        p_view.get(c_e, p);
+
 
                         auto dx                 = differential_view.make(c_e);
                         auto c_grad_shape_el    = c_grad_shape_view.make(c_e);
@@ -526,8 +567,8 @@ namespace utopia {
                                             c_grad_l
                                     ) * dx(qp);        
 
-                                    if(params_.pressure > 0){
-                                        el_mat(l, j) +=  quadratic_degradation_deriv2(params_, c[qp]) * params_.pressure * tr_strain_u * c_shape_fun_el(j, qp) *  c_shape_l * dx(qp);        
+                                    if(params_.use_pressure){
+                                        el_mat(l, j) +=  quadratic_degradation_deriv2(params_, c[qp]) * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) *  c_shape_l * dx(qp);        
                                     }
 
                                     if(params_.use_penalty_irreversibility){
@@ -553,17 +594,13 @@ namespace utopia {
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
                             compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress); 
-                            // StaticMatrix<Scalar, Dim, Dim> identity; 
-                            // identity.identity();                                         
-
+                                    
                             for(SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
                                 //CHANGE (pre-compute/store shape fun)
                                 const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
 
                                 for(SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
 
-                                    //CHANGE (use pre-computed strain)
-                                    // auto strain_shape = 0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))); 
                                     auto && strain_shape = u_strain_shape_el(u_i, qp);
 
                                     Scalar val =
@@ -575,9 +612,9 @@ namespace utopia {
                                              c_shape_i
                                         ) * dx(qp);
 
-                                    if(params_.pressure > 0){
+                                    if(params_.use_pressure){
                                         const Scalar tr_strain_shape = sum(diag(strain_shape)); 
-                                        val += quadratic_degradation_deriv(params_, c[qp]) * params_.pressure * tr_strain_shape * c_shape_i * dx(qp); 
+                                        val += quadratic_degradation_deriv(params_, c[qp]) * p[qp] * tr_strain_shape * c_shape_i * dx(qp); 
                                     }
 
                                     el_mat(c_i, C_NDofs + u_i) += val;
@@ -602,7 +639,7 @@ namespace utopia {
             space_.apply_constraints(H);
 
             if(params_.use_crack_set_irreversibiblity){
-                apply_zero_constraints_irreversibiblity(H);
+                apply_zero_constraints_irreversibiblity(H, x_const);
             }
 
             // static int iter = 0;
@@ -824,7 +861,7 @@ namespace utopia {
             x_old_ = x_old; 
         }
 
-        const Vector & old_solution() const 
+        Vector & old_solution() 
         {
             return x_old_;
         }        
@@ -832,7 +869,12 @@ namespace utopia {
         void get_old_solution(Vector & x) const 
         {
             x = x_old_;
-        }                
+        }   
+
+        void set_old_solution(const Vector & x) 
+        {
+            x_old_ = x;
+        }                        
 
 
         void build_irreversility_constraint(Vector &lb)
@@ -876,6 +918,74 @@ namespace utopia {
             }
         }
 
+        // this 2 functions need to be moved to BC conditions 
+        void apply_zero_constraints_irreversibiblity(Vector & g, const Vector & x) const
+        {
+            {
+                auto d_x_old = const_device_view(x_old_);
+                auto d_x = const_device_view(x);
+
+                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+                {
+                    if(i%(Dim+1)==0){
+                        if(d_x_old.get(i) > params_.crack_set_tol || d_x.get(i) > params_.crack_set_tol){
+                            return 0.0; 
+                        }
+                        else{
+                            return xi; 
+                        }
+                    }
+                    else{
+                        return xi; 
+                    }                    
+                
+                });
+            }
+        }
+
+
+        // this 2 functions need to be moved to BC conditions 
+        void add_irr_values_markers(Vector & val, Vector & flg) const
+        {
+            {
+                auto d_x_old = const_device_view(x_old_);
+
+                parallel_transform(val, UTOPIA_LAMBDA(const SizeType &i, const Scalar &vi) -> Scalar 
+                {
+                    if(i%(Dim+1)==0){
+                        if(d_x_old.get(i) > params_.crack_set_tol){
+                            return d_x_old.get(i); 
+                        }
+                        else{
+                            return vi; 
+                        }
+                    }
+                    else{
+                        return vi; 
+                    }                    
+                
+                });
+
+                parallel_transform(flg, UTOPIA_LAMBDA(const SizeType &i, const Scalar &fi) -> Scalar 
+                {
+                    if(i%(Dim+1)==0){
+                        if(d_x_old.get(i) > params_.crack_set_tol){
+                            return 1.0; 
+                        }
+                        else{
+                            return fi; 
+                        }
+                    }
+                    else{
+                        return fi; 
+                    }                    
+                
+                });
+
+            }
+        }
+
+
         // we should move this to BC conditions
         // also, will not run efficienetly in parallel 
         void apply_zero_constraints_irreversibiblity(Matrix & H) const
@@ -897,6 +1007,50 @@ namespace utopia {
         }        
 
 
+        void apply_zero_constraints_irreversibiblity(Matrix & H, const Vector & x) const
+        {
+            std::vector<SizeType> indices; 
+            {
+                Read<Vector> r(x_old_);
+                Read<Vector> r2(x);
+
+                Range range_w = range(x_old_);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
+                {
+                    if(i%(Dim+1)==0 && (x_old_.get(i) > params_.crack_set_tol || x.get(i) > params_.crack_set_tol)){
+                        indices.push_back(i);
+                    }
+                }
+            }                 
+
+            set_zero_rows(H, indices, 1.);
+        }     
+
+
+
+        void pressure_field(const Vector & pressure_field)
+        {
+            pressure_field_ = pressure_field; 
+        }
+
+        void setup_constant_pressure_field(const Scalar & p_val)
+        {
+            if(empty(pressure_field_)){
+                space_.create_vector(pressure_field_);
+            }
+
+            pressure_field_.set(p_val); 
+        }        
+
+        Vector & pressure_field()
+        {
+            if(empty(pressure_field_))
+                space_.create_vector(pressure_field_);
+
+            return pressure_field_; 
+        }
+
+
     private:
         FunctionSpace & space_;
         Parameters params_;
@@ -906,6 +1060,7 @@ namespace utopia {
         bool check_derivatives_;
 
         Vector x_old_; // stores old solution  - used for treatment of irreversibility constraint 
+        Vector pressure_field_;  // stores heterogenous pressure field - ideally, this vector would have lower size than all 4 variables
     };
 
 }
