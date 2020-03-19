@@ -8,23 +8,26 @@
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
 #include "utopia_polymorphic_QPSolver.hpp"
+#include "utopia_ProjectedGaussSeidelNew.hpp"
+
+#ifdef WITH_PETSC
+#include "utopia_petsc_Matrix_impl.hpp"
+#endif //WITH_PETSC
 
 namespace utopia {
 
     template<class Matrix, class Vector>
-    class QPSolverTest {
+    class QPSolverTestProblem {
     public:
-
-        static void print_backend_info()
-        {
-            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
-            }
-        }
+        using SizeType = typename Traits<Vector>::SizeType;
 
         template<class QPSolver>
-        void run_qp_solver(QPSolver &qp_solver) const {
-
+        static void run(
+            const SizeType &n,
+            const bool verbose,
+            QPSolver &qp_solver,
+            const bool use_constraints = true)
+        {
             Matrix m = sparse(n, n, 3);
             assemble_laplacian_1D(m);
             {
@@ -61,7 +64,10 @@ namespace utopia {
 
             qp_solver.max_it(n*40);
             qp_solver.verbose(verbose);
-            qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+
+            if(use_constraints) {
+                qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+            }
 
             Chrono c;
             c.start();
@@ -70,6 +76,26 @@ namespace utopia {
 
 
             utopia_test_assert(ok);
+        }
+
+    };
+
+
+
+    template<class Matrix, class Vector>
+    class QPSolverTest {
+    public:
+
+        static void print_backend_info()
+        {
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
+
+        template<class QPSolver>
+        void run_qp_solver(QPSolver &qp_solver) const {
+            QPSolverTestProblem<Matrix, Vector>::run(n, verbose, qp_solver);
         }
 
         void pg_test() const
@@ -162,13 +188,13 @@ namespace utopia {
             Vector rhs, x;
             Vector upper_bound,lower_bound;
             Matrix A, R, Q, Ih_fine, Rot;
-            Matrix Ih1, Ih0; 
+            Matrix Ih1, Ih0;
 
             const std::string data_path = Utopia::instance().get("data_path");
 
             read(data_path + "/forQR/b", rhs);
             read(data_path + "/forQR/x", x);
-            read(data_path + "/forQR/A", A);            
+            read(data_path + "/forQR/A", A);
             read(data_path + "/forQR/Q", Q);
             read(data_path + "/forQR/R", R);
             read(data_path + "/forQR/Rot", Rot);
@@ -182,57 +208,57 @@ namespace utopia {
             auto num_levels = 3;
 
 
-            // chop_abs(Q, 1e-7); 
+            // chop_abs(Q, 1e-7);
 
-            // std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
-            // std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
-            // std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
-            // std::cout<<"I: "<< local_size(Ih_fine).get(0) << "  \n"; 
-            // std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
+            // std::cout<<"A: "<< local_size(A).get(0) << "  \n";
+            // std::cout<<"Q: "<< local_size(Q).get(0) << "  \n";
+            // std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n";
+            // std::cout<<"I: "<< local_size(Ih_fine).get(0) << "  \n";
+            // std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n";
 
 
-            R = transpose(R);   
+            R = transpose(R);
 
-            // version 1 
+            // version 1
             Matrix QtAQ  = transpose(Q)* Rot*A*Rot *Q;
             Matrix QtIh  = transpose(Q)* Rot* Ih_fine;
             Vector Qtrhs = transpose(Q)* Rot *rhs;
-            Vector Qtx   = transpose(Q)* Rot *x; 
+            Vector Qtx   = transpose(Q)* Rot *x;
 
             // Matrix QtAQ  = Rot*A*Rot;
             // Matrix QtIh  = Rot* Ih_fine;
             // Vector Qtrhs = Rot *rhs;
-            // Vector Qtx   = Rot *x;             
+            // Vector Qtx   = Rot *x;
 
             auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
-            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);            
-        
-            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);
+
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
             interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
             interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih1));
-               
-            
+
+
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
-            multigrid.pre_smoothing_steps(3); 
-            multigrid.post_smoothing_steps(3); 
+            multigrid.pre_smoothing_steps(3);
+            multigrid.post_smoothing_steps(3);
             multigrid.verbose(false);
-            // multigrid.mg_type(2); 
+            // multigrid.mg_type(2);
 
-            // This should be somewhere else... 
-            multigrid.set_QR(Q, R); 
+            // This should be somewhere else...
+            multigrid.set_QR(Q, R);
             multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
 
 
             multigrid.solve(QtAQ, Qtrhs, Qtx);
-            x = Rot*Q * Qtx; 
-            // x = Rot*Qtx; 
+            x = Rot*Q * Qtx;
+            // x = Rot*Qtx;
 
 
-            // write("x.m", x); 
+            // write("x.m", x);
             // write("IX.m", Qtx);
             // disp(x);
 
@@ -297,12 +323,37 @@ namespace utopia {
 
     };
 
+    // template<class Matrix, class Vector>
+    // class ProjectedGaussSeidelNewTest {
+    // public:
+    //     void run()
+    //     {
+    //         //FIXME
+    //        UTOPIA_RUN_TEST(pg_new_test);
+    //     }
+
+    //     template<class QPSolver>
+    //     void run_qp_solver(QPSolver &qp_solver) const {
+    //         QPSolverTestProblem<Matrix, Vector>::run(n, verbose, qp_solver, true);
+    //     }
+
+    //     void pg_new_test()
+    //     {
+    //         ProjectedGaussSeidelNew<Matrix, Vector> pgs;
+    //         run_qp_solver(pgs);
+    //     }
+
+    //     SizeType n = 20;
+    //     bool verbose = true;
+    // };
+
     static void qp_solver() {
 #ifdef WITH_PETSC
         QPSolverTest<PetscMatrix, PetscVector>().run();
-        QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR(); 
+        QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
 
         PQPSolverTest<PetscMatrix, PetscVector>().run();
+        // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
 
 #endif //WITH_PETSC
 
