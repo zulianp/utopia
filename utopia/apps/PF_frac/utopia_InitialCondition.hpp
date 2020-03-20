@@ -288,7 +288,7 @@ namespace utopia {
                 // length should be driven from power distribution 
                 std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
                 // const T alpha = 2.0; 
-                const T alpha = 2.2; 
+                const T alpha = 2.8; 
                 const T x_min = 3.0*width > 0.04 ? 3.0*width : 0.04; 
                 const T r = distr_length(generator);
                 T length = x_min * std::pow( (1.-r), (-1./(alpha-1.)));
