@@ -2,12 +2,15 @@
 #define UTOPIA_PETSC_NEUMANN_BOUNDARY_CONDITIONS_HPP
 
 #include "utopia_petsc_dma_FunctionSpace.hpp"
+#include "utopia_std_function.hpp"
 
 namespace utopia {
 
     template<class Space, typename...>
     class NeumannBoundaryCondition {};
 
+
+    //!! Only for petsc
     template<class Elem, int Components>
     class NeumannBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
     public:
@@ -38,23 +41,17 @@ namespace utopia {
         : space_(space), side_set_(SideSet::invalid()), selector_(selector), fun_(fun), component_(component)
         {}
 
-        NeumannBoundaryCondition(
-            const FunctionSpace &space,
-            SideSet::BoundaryIdType side_set,
-            const std::function<Scalar(const Point &)> &fun,
-            const int component = 0)
-        : space_(space), side_set_(side_set), fun_(fun), component_(component)
+        static utopia::function<bool(const Point &)> make_boundary_selector(
+            const SideSet::BoundaryIdType &side_set,
+            const Point &box_min,
+            const Point &box_max
+        )
         {
-            // init_element_list();
-
-            auto &&box_min = space.mesh().box_min();
-            auto &&box_max = space.mesh().box_max();
-
             switch(side_set) {
                 case SideSet::left():
                 {
-                    auto min_x = box_min[0];
-                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                    const Scalar min_x = box_min[0];
+                    return UTOPIA_LAMBDA(const Point &x) -> bool {
                         return device::approxeq(min_x, x[0], device::epsilon<Scalar>());
                     };
 
@@ -62,8 +59,8 @@ namespace utopia {
                 }
                 case SideSet::right():
                 {
-                    auto max_x = box_max[0];
-                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                    const Scalar max_x = box_max[0];
+                    return UTOPIA_LAMBDA(const Point &x) -> bool {
                         return device::approxeq(max_x, x[0], device::epsilon<Scalar>());
                     };
 
@@ -71,8 +68,8 @@ namespace utopia {
                 }
                 case SideSet::bottom():
                 {
-                    auto min_y = box_min[1];
-                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                    const Scalar min_y = box_min[1];
+                    return UTOPIA_LAMBDA(const Point &x) -> bool {
                         return device::approxeq(min_y, x[1], device::epsilon<Scalar>());
                     };
 
@@ -80,8 +77,8 @@ namespace utopia {
                 }
                 case SideSet::top():
                 {
-                    auto max_y = box_max[1];
-                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                    const Scalar max_y = box_max[1];
+                    return UTOPIA_LAMBDA(const Point &x) -> bool {
                         return device::approxeq(max_y, x[1], device::epsilon<Scalar>());
                     };
 
@@ -89,8 +86,8 @@ namespace utopia {
                 }
                 case SideSet::back():
                 {
-                    auto min_z = box_min[2];
-                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                    const Scalar min_z = box_min[2];
+                    return UTOPIA_LAMBDA(const Point &x) -> bool {
                         return device::approxeq(min_z, x[2], device::epsilon<Scalar>());
                     };
 
@@ -98,8 +95,8 @@ namespace utopia {
                 }
                 case SideSet::front():
                 {
-                    auto max_z = box_max[2];
-                    selector_ = UTOPIA_LAMBDA(const Point &x) -> bool {
+                    const Scalar max_z = box_max[2];
+                    return UTOPIA_LAMBDA(const Point &x) -> bool {
                         return device::approxeq(max_z, x[2], device::epsilon<Scalar>());
                     };
 
@@ -108,9 +105,22 @@ namespace utopia {
                 default:
                 {
                     assert(false);
+                    return nullptr;
                     break;
                 }
             }
+        }
+
+        NeumannBoundaryCondition(
+            const FunctionSpace &space,
+            SideSet::BoundaryIdType side_set,
+            const std::function<Scalar(const Point &)> &fun,
+            const int component = 0)
+        : space_(space), side_set_(side_set), fun_(fun), component_(component)
+        {
+            auto &&box_min = space.mesh().box_min();
+            auto &&box_max = space.mesh().box_max();
+            selector_ = make_boundary_selector(side_set_, box_min, box_max);
         }
 
 
@@ -183,23 +193,17 @@ namespace utopia {
                     space_view.add_vector(vol_e, vec, v_view);
                 }
             });
-
         }
+
 
     private:
         const FunctionSpace &space_;
         SideSet::BoundaryIdType side_set_;
 
-        std::function<bool(const Point &)>   selector_;
-        std::function<Scalar(const Point &)> fun_;
+        utopia::function<bool(const Point &)>   selector_;
+        utopia::function<Scalar(const Point &)> fun_;
+
         int component_;
-
-        // IndexSet indices_;
-
-        // void init_element_list()
-        // {
-
-        // }
     };
 
 }

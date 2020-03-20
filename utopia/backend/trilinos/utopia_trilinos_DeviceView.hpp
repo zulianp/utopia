@@ -85,6 +85,59 @@ namespace utopia {
         LocalMapType   map_;
     };
 
+
+    ////////////////////////////////////////////////////////////////////////
+
+    template<>
+    class LocalViewDevice<const TpetraVector, 1> {
+    public:
+        using Scalar          = typename Traits<TpetraVector>::Scalar;
+        using SizeType        = typename Traits<TpetraVector>::SizeType;
+        using ExecutionSpaceT = typename TpetraVector::ExecutionSpace;
+        using DualViewType    = typename TpetraVector::VectorType::dual_view_type;
+        using DeviceViewType  = typename DualViewType::t_dev;
+        using LocalMapType    = typename TpetraVector::MapType::local_map_type;
+
+        UTOPIA_INLINE_FUNCTION Scalar get(const SizeType &idx) const
+        {
+            return view_(idx, 0);
+        }
+
+        LocalViewDevice(const TpetraVector &tensor) : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {}
+
+    private:
+        const DeviceViewType view_;
+    };
+
+    template<>
+    class LocalViewDevice<TpetraVector, 1> {
+    public:
+        using Scalar          = typename Traits<TpetraVector>::Scalar;
+        using SizeType        = typename Traits<TpetraVector>::SizeType;
+        using ExecutionSpaceT = typename TpetraVector::ExecutionSpace;
+        using DualViewType    = typename TpetraVector::VectorType::dual_view_type;
+        using DeviceViewType  = typename DualViewType::t_dev;
+        using LocalMapType    = typename TpetraVector::MapType::local_map_type;
+
+        UTOPIA_INLINE_FUNCTION Scalar get(const SizeType &idx) const
+        {
+            return view_(idx, 0);
+        }
+
+        UTOPIA_INLINE_FUNCTION void set(const SizeType &idx, const Scalar &val) const
+        {
+            view_(idx, 0) = val;
+        }
+
+        LocalViewDevice(TpetraVector &tensor) : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {}
+
+    private:
+        DeviceViewType view_;
+    };
+
+
+    ///////////////////////////////////////////////////////////////////////
+
     template<>
     class DeviceView<TpetraMatrix, 2> {
     public:

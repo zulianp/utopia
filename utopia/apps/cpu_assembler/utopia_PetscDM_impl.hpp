@@ -13,6 +13,7 @@
 #include "utopia_petsc_Eval_Rename.hpp"
 #include "utopia_petsc_Each.hpp"
 #include "utopia_ArrayView.hpp"
+#include "utopia_CppMacros.hpp"
 
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -84,9 +85,9 @@ namespace utopia {
             DMDAGetElementType(dm, &elem_type);
 
             if(elem_type == DMDA_ELEMENT_P1) {
-                if constexpr(Dim == 2) {
+                UTOPIA_IF_CONSTEXPR(Dim == 2) {
                     elements_x_cell = 2;
-                } else if constexpr(Dim == 3) {
+                } else UTOPIA_IF_CONSTEXPR(Dim == 3) {
                     elements_x_cell = 6;
                 } else {
                     assert(false);

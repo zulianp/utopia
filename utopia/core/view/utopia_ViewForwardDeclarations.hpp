@@ -3,8 +3,8 @@
 
 #include <cassert>
 //FIXME check if there is a device compilation
-#define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
-// #define UTOPIA_DEVICE_ASSERT(...)
+// #define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
+#define UTOPIA_DEVICE_ASSERT(...)
 
 namespace utopia {
     using Size_t = std::size_t;
