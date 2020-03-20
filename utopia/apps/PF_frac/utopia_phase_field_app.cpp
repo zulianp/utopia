@@ -57,11 +57,11 @@ namespace utopia {
                 // auto dist_i = x[1];
                 //f += device::exp(-500.0 * x[i] * x[i]);
                 if(  x[0] > (0.5-space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing())  && x[1]  < 0.5 ){
-                    f = 1.0; 
-                    // f = 0.0; 
+                    f = 1.0;
+                    // f = 0.0;
                 }
                 else{
-                    f = 0.0; 
+                    f = 0.0;
                 }
             // }
 
@@ -128,10 +128,10 @@ namespace utopia {
             }
     }
 
-    
+
     template<class FunctionSpace>
     static void build_irreversility_constraint(const PetscVector &x_old, PetscVector &x_new, const typename FunctionSpace::SizeType & comp)
-    {   
+    {
         static const int Dim   = FunctionSpace::Dim;
         using Scalar         = typename FunctionSpace::Scalar;
         using SizeType       = typename FunctionSpace::SizeType;
@@ -139,17 +139,17 @@ namespace utopia {
         {
             auto d_x_old = const_device_view(x_old);
 
-            parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+            parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar
             {
                 if(i%(Dim+1)==comp)
-                    return d_x_old.get(i); 
+                    return d_x_old.get(i);
                 else
-                    return -9e15; 
-                    
+                    return -9e15;
+
             });
         }
 
-    }    
+    }
 
 
 
@@ -200,46 +200,46 @@ namespace utopia {
         // PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
         // pp.read(in);
 
-        
+
         PetscVector x;
         space.create_vector(x);
         x.set(0.0);
 
         if(with_damage) {
-            init_phase_field(space, x); 
+            init_phase_field(space, x);
         }
-        
+
         stats.stop_collect_and_restart("phase-field-init");
 
 
-        Scalar dt = 1e-4; 
-        Scalar time_=dt; 
-        Scalar num_ts = 100; 
+        Scalar dt = 1e-4;
+        Scalar time_=dt;
+        Scalar num_ts = 100;
         std::string output_path = "phase_field";
-        // print IG 
+        // print IG
         rename("X", x);
 
-        PetscVector irreversibility_constraint = x; 
+        PetscVector irreversibility_constraint = x;
 
-        // as space gets copied, we need to instantiate PF problem every time BC changes ... 
+        // as space gets copied, we need to instantiate PF problem every time BC changes ...
         PhaseFieldForBrittleFractures<FunctionSpace> pp(space);
-        pp.read(in);                        
+        pp.read(in);
 
 
-        space.write(output_path+"_"+std::to_string(0.0)+".vtk", x);        
+        space.write(output_path+"_"+std::to_string(0.0)+".vtr", x);
         for (auto t=0; t < num_ts; t++)
         {
-            std::cout<<"Time-step: "<< t << "  \n"; 
-     
+            std::cout<<"Time-step: "<< t << "  \n";
+
             if(with_BC) {
-                space.reset_bc(); 
-                enforce_BC_time_dependent(space, disp, time_);              
+                space.reset_bc();
+                enforce_BC_time_dependent(space, disp, time_);
             }
 
-            space.apply_constraints(x);    
+            space.apply_constraints(x);
 
-                                                                                        // PF component 
-            build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0); 
+                                                                                        // PF component
+            build_irreversility_constraint<FunctionSpace>(x, irreversibility_constraint, 0);
 
             //auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
             auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
@@ -255,9 +255,9 @@ namespace utopia {
             solver.solve(pp, x);
 
             rename("X", x);
-            space.write(output_path+"_"+std::to_string(time_)+".vtk", x);       
+            space.write(output_path+"_"+std::to_string(time_)+".vtr", x);
 
-            // increment time step 
+            // increment time step
             time_+=dt;
         }
 

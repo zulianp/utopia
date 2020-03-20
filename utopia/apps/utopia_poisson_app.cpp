@@ -307,7 +307,7 @@ namespace utopia {
         //////////////////////////////////////////
         stats.start();
         rename("x", x);
-        space.write("X.vtk", x);
+        space.write("X.vtr", x);
         stats.stop_and_collect("write");
         //////////////////////////////////////////
 

@@ -25,20 +25,20 @@ namespace utopia {
 
 
         MLIncrementalLoading(FunctionSpace &space_coarse, const SizeType & n_levels) : n_levels_(n_levels), log_output_path_("rmtr_log_file.csv"){
-            init_ml_setup(space_coarse); 
-        }   
+            init_ml_setup(space_coarse);
+        }
 
         void read(Input &in) override {
 
-            IncrementalLoadingBase<FunctionSpace>::read(in); 
+            IncrementalLoadingBase<FunctionSpace>::read(in);
 
             for (auto l=0; l < level_functions_.size(); l++){
-                level_functions_[l]->read(in);    
-                BC_conditions_[l]->read(in); 
+                level_functions_[l]->read(in);
+                BC_conditions_[l]->read(in);
             }
 
-            IC_->read(in); 
-            in.get("log_output_path", log_output_path_); 
+            IC_->read(in);
+            in.get("log_output_path", log_output_path_);
             in.get("solver", *rmtr_);
 
         }
@@ -58,16 +58,16 @@ namespace utopia {
             spaces_.resize(n_levels_);
             spaces_[0] = space;
 
-            level_functions_.resize(n_levels_); 
+            level_functions_.resize(n_levels_);
             auto fun = std::make_shared<ProblemType>(*spaces_[0]);
-            fun->use_crack_set_irreversibiblity(false); 
-            level_functions_[0] = fun; 
+            fun->use_crack_set_irreversibiblity(false);
+            level_functions_[0] = fun;
 
 
 
-            BC_conditions_.resize(n_levels_); 
+            BC_conditions_.resize(n_levels_);
             auto bc = std::make_shared<BCType>(*spaces_[0]);
-            BC_conditions_[0] = bc; 
+            BC_conditions_[0] = bc;
 
             transfers_.resize(n_levels_ - 1);
 
@@ -75,59 +75,59 @@ namespace utopia {
                 spaces_[i] = spaces_[i-1]->uniform_refine();
 
                 auto fun = std::make_shared<ProblemType>(*spaces_[i]);
-                
+
                 if(i <n_levels_-1){
-                    fun->use_crack_set_irreversibiblity(false); 
+                    fun->use_crack_set_irreversibiblity(false);
                 }
                 else{
-                    fun->use_crack_set_irreversibiblity(true); 
+                    fun->use_crack_set_irreversibiblity(true);
                 }
 
 
-                level_functions_[i] = fun; 
+                level_functions_[i] = fun;
 
                 auto bc = std::make_shared<BCType>(*spaces_[i]);
-                BC_conditions_[i] = bc; 
+                BC_conditions_[i] = bc;
 
 
                 auto I = std::make_shared<Matrix>();
                 spaces_[i-1]->create_interpolation(*spaces_[i], *I);
                 assert(!empty(*I));
 
-                Matrix Iu; // = *I; 
+                Matrix Iu; // = *I;
                 MatConvert(raw_type(*I),  I->type_override(), MAT_INITIAL_MATRIX, &raw_type(Iu));
-                Matrix R = transpose(Iu); 
+                Matrix R = transpose(Iu);
 
-                PFMassMatrix<FunctionSpace> mass_matrix_assembler_fine(*spaces_[i]); 
-                Matrix M_fine; 
-                mass_matrix_assembler_fine.mass_matrix(M_fine); 
+                PFMassMatrix<FunctionSpace> mass_matrix_assembler_fine(*spaces_[i]);
+                Matrix M_fine;
+                mass_matrix_assembler_fine.mass_matrix(M_fine);
 
-                PFMassMatrix<FunctionSpace> mass_matrix_assembler_coarse(*spaces_[i-1]); 
-                Matrix M_coarse; 
-                mass_matrix_assembler_coarse.mass_matrix(M_coarse);                 
+                PFMassMatrix<FunctionSpace> mass_matrix_assembler_coarse(*spaces_[i-1]);
+                Matrix M_coarse;
+                mass_matrix_assembler_coarse.mass_matrix(M_coarse);
 
-                Matrix inv_lumped_mass = diag(1./sum(M_coarse, 1)); 
-                Matrix P = inv_lumped_mass * R * M_fine; 
-                
-                // TODO:: assemble P correctly => not I^T.... 
-                // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));    // still seq. faults 
+                Matrix inv_lumped_mass = diag(1./sum(M_coarse, 1));
+                Matrix P = inv_lumped_mass * R * M_fine;
+
+                // TODO:: assemble P correctly => not I^T....
+                // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));    // still seq. faults
                 transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(R), std::make_shared<Matrix>(P));
             }
 
-            // initial conddition needs to be setup only on the finest level 
-            SizeType pf_comp = 0; 
+            // initial conddition needs to be setup only on the finest level
+            SizeType pf_comp = 0;
             IC_ = std::make_shared<ICType>(*spaces_.back(), pf_comp);
 
-            
+
             //////////////////////////////////////////////// init solver ////////////////////////////////////////////////
             rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);  
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN> >(n_levels_);        
+            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN> >(n_levels_);
 
 
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                            
+
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
@@ -135,8 +135,8 @@ namespace utopia {
             rmtr_->set_fine_tr_strategy(tr_strategy_fine);
 
             rmtr_->set_transfer_operators(transfers_);
-            rmtr_->set_functions(level_functions_);    
-            rmtr_->verbose(true);             
+            rmtr_->set_functions(level_functions_);
+            rmtr_->verbose(true);
 
             return true;
         }
@@ -172,53 +172,53 @@ namespace utopia {
             spaces_.back()->create_vector(this->lb_);
             rename("X", this->solution_);
 
-            IC_->init(this->solution_); 
+            IC_->init(this->solution_);
             // if(this->use_pressure_ && !this->use_constant_pressure_){
-            //     Vector & pressure_vec =  level_functions_.back()->pressure_field(); 
-            //     // IC_->init(this->solution_, pressure_vec); 
-            // }        
+            //     Vector & pressure_vec =  level_functions_.back()->pressure_field();
+            //     // IC_->init(this->solution_, pressure_vec);
+            // }
 
-            spaces_.back()->apply_constraints(this->solution_);           
+            spaces_.back()->apply_constraints(this->solution_);
 
 
-            if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){         
-                fun_finest->old_solution(this->solution_); 
+            if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){
+                fun_finest->old_solution(this->solution_);
             }
 
-            // adding sol to all levels 
+            // adding sol to all levels
             for(auto l=n_levels_-1; l > 0; l--){
 
-                ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
-                Vector & fine_sol  = fun_fine->old_solution(); 
+                ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                Vector & fine_sol  = fun_fine->old_solution();
 
-                ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());                             
-                Vector & coarse_sol  = fun_coarse->old_solution();      
-                spaces_[l]->create_vector(coarse_sol); 
+                ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
+                Vector & coarse_sol  = fun_coarse->old_solution();
+                spaces_[l]->create_vector(coarse_sol);
 
-                transfers_[l-1]->project_down(fine_sol, coarse_sol); 
-                spaces_[l]->apply_constraints(coarse_sol);   
+                transfers_[l-1]->project_down(fine_sol, coarse_sol);
+                spaces_[l]->apply_constraints(coarse_sol);
 
-                // transfers_[l]->restrict(fine_sol, coarse_sol); 
+                // transfers_[l]->restrict(fine_sol, coarse_sol);
             }
 
         }
 
         void write_to_file(FunctionSpace & space, const Scalar & time) override
         {
-            // only finest level 
-            IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time); 
+            // only finest level
+            IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
 
             // all levels
             // for(auto l=0; l < spaces_.size(); l++){
 
-            //     ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
-            //     Vector & sol  = fun->old_solution();   
+            //     ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
+            //     Vector & sol  = fun->old_solution();
             //     rename("X", sol);
 
             //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr", sol);     
             // }        
 
-            Utopia::instance().set("log_output_path", log_output_path_); 
+            Utopia::instance().set("log_output_path", log_output_path_);
 
         }
 
@@ -226,55 +226,55 @@ namespace utopia {
         void prepare_for_solve() override{
 
             for(auto l=0; l < BC_conditions_.size(); l++){
-                BC_conditions_[l]->emplace_time_dependent_BC(this->time_); 
+                BC_conditions_[l]->emplace_time_dependent_BC(this->time_);
             }
 
-            // update fine level solution  and constraint 
-            spaces_.back()->apply_constraints(this->solution_);    
+            // update fine level solution  and constraint
+            spaces_.back()->apply_constraints(this->solution_);
 
-            if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
-                fun_finest->build_irreversility_constraint(this->lb_); 
+            if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){
+                fun_finest->build_irreversility_constraint(this->lb_);
             }
 
 
             for(auto l=0; l < BC_conditions_.size(); l++){
-                Vector & bc_flgs    = level_functions_[l]->get_eq_constrains_flg(); 
-                Vector & bc_values  = level_functions_[l]->get_eq_constrains_values(); 
+                Vector & bc_flgs    = level_functions_[l]->get_eq_constrains_flg();
+                Vector & bc_values  = level_functions_[l]->get_eq_constrains_values();
 
-                spaces_[l]->apply_constraints(bc_values);    
-                spaces_[l]->build_constraints_markers(bc_flgs); 
+                spaces_[l]->apply_constraints(bc_values);
+                spaces_[l]->build_constraints_markers(bc_flgs);
 
-                // only on the finest level 
+                // only on the finest level
                 if(l == (BC_conditions_.size()-1)){
-                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
-                        fun_finest->add_irr_values_markers(bc_values, bc_flgs); 
-                    }                    
-                }   
+                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){
+                        fun_finest->add_irr_values_markers(bc_values, bc_flgs);
+                    }
+                }
 
-                // disp(bc_values, "bc_values"); 
-                // disp(bc_flgs, "bc_flgs"); 
-               level_functions_[l]->init_constraint_indices(); 
+                // disp(bc_values, "bc_values");
+                // disp(bc_flgs, "bc_flgs");
+               level_functions_[l]->init_constraint_indices();
             }
 
 
             // if(this->use_pressure_){
-                auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_); 
+                auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_);
 
                 // if(this->use_constant_pressure_){
-                    // fe_problem_->setup_constant_pressure_field(press_ts);    
-                    // std::cout<<"----- yes, constant pressure, "<< press_ts << " ......... \n";  
+                    // fe_problem_->setup_constant_pressure_field(press_ts);
+                    // std::cout<<"----- yes, constant pressure, "<< press_ts << " ......... \n";
 
                     for(auto l=0; l < n_levels_; l++){
-                        ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
-                        fun->setup_constant_pressure_field(press_ts);    
-                        fun->set_pressure(press_ts); 
-                    }   
+                        ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                        fun->setup_constant_pressure_field(press_ts);
+                        fun->set_pressure(press_ts);
+                    }
                 // }
             //     else{
-            //         Vector & pressure_vec =  fe_problem_->pressure_field(); 
-            //         // set_nonzero_elem_to(pressure_vec, press_ts); 
-                    
-            //         set_nonzero_elem_to(pressure_vec, (this->time_ * this->pressure_increase_factor_)); 
+            //         Vector & pressure_vec =  fe_problem_->pressure_field();
+            //         // set_nonzero_elem_to(pressure_vec, press_ts);
+
+            //         set_nonzero_elem_to(pressure_vec, (this->time_ * this->pressure_increase_factor_));
                 // }
             // }
 
@@ -283,95 +283,96 @@ namespace utopia {
         void update_time_step(const SizeType & conv_reason) override
         {
             if(this->adjust_dt_on_failure_ && conv_reason < 0){
-                    
-                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
-                        fun_finest->get_old_solution(this->solution_); 
+
+                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){
+                        fun_finest->get_old_solution(this->solution_);
                     }
 
                     // reset sol on all levels - important for BC conditions mostly s
                     for(auto l=n_levels_-1; l > 0; l--){
 
-                        ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
-                        Vector & fine_sol  = fun_fine->old_solution(); 
+                        ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                        Vector & fine_sol  = fun_fine->old_solution();
 
-                        ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());                             
-                        Vector & coarse_sol  = fun_coarse->old_solution();      
-                        spaces_[l]->create_vector(coarse_sol); 
+                        ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
+                        Vector & coarse_sol  = fun_coarse->old_solution();
+                        spaces_[l]->create_vector(coarse_sol);
 
-                        transfers_[l-1]->project_down(fine_sol, coarse_sol); 
-                        spaces_[l]->apply_constraints(coarse_sol); 
-                        // transfers_[l]->restrict(fine_sol, coarse_sol); 
-                    }                    
-
-                    this->time_ -= this->dt_; 
-                    this->dt_ = this->dt_ * this->shrinking_factor_; 
-                    this->time_ += this->dt_; 
-                }
-                else{   
-                    
-                    // std::cout<<"------- yes, updating...  \n"; 
-
-                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){    
-                        fun_finest->set_old_solution(this->solution_); 
-                    }    
-
-                    // update sol on all levels 
-                    for(auto l=n_levels_-1; l > 0; l--){
-
-                        ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());                             
-                        Vector & fine_sol  = fun_fine->old_solution(); 
-
-                        ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());                             
-                        Vector & coarse_sol  = fun_coarse->old_solution();      
-                        spaces_[l]->create_vector(coarse_sol); 
-
-                        transfers_[l-1]->project_down(fine_sol, coarse_sol); 
-                        spaces_[l]->apply_constraints(coarse_sol); 
-                        // transfers_[l]->restrict(fine_sol, coarse_sol); 
-                    }     
-
-                    if(this->pressure0_!= 0.0){
-                        this->write_to_file(*spaces_.back(), 1e-5*this->time_);  
-                    }   
-                    else{
-                        this->write_to_file(*spaces_.back(), this->time_);   
+                        transfers_[l-1]->project_down(fine_sol, coarse_sol);
+                        spaces_[l]->apply_constraints(coarse_sol);
+                        // transfers_[l]->restrict(fine_sol, coarse_sol);
                     }
 
-                    // increment time step 
+                    this->time_ -= this->dt_;
+                    this->dt_ = this->dt_ * this->shrinking_factor_;
+                    this->time_ += this->dt_;
+                }
+                else{
+
+                    // std::cout<<"------- yes, updating...  \n";
+
+                    if(ProblemType * fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())){
+                        fun_finest->set_old_solution(this->solution_);
+                    }
+
+                    // update sol on all levels
+                    for(auto l=n_levels_-1; l > 0; l--){
+
+                        ProblemType * fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                        Vector & fine_sol  = fun_fine->old_solution();
+
+                        ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
+                        Vector & coarse_sol  = fun_coarse->old_solution();
+                        spaces_[l]->create_vector(coarse_sol);
+
+                        transfers_[l-1]->project_down(fine_sol, coarse_sol);
+                        spaces_[l]->apply_constraints(coarse_sol);
+                        // transfers_[l]->restrict(fine_sol, coarse_sol);
+                    }
+
+                    if(this->pressure0_!= 0.0){
+                        this->write_to_file(*spaces_.back(), 1e-5*this->time_);
+                    }
+                    else{
+                        this->write_to_file(*spaces_.back(), this->time_);
+                    }
+
+                    // increment time step
                     this->time_ += this->dt_;
                 }
         }
 
 
 
-        void run(Input &in) override{   
+        void run(Input &in) override{
 
-            // init fine level spaces 
-            this->init(in, *spaces_[n_levels_ - 1]); 
+            // init fine level spaces
+            this->init(in, *spaces_[n_levels_ - 1]);
 
             for (auto t=1; t < this->num_time_steps_; t++)
             {
                 if(mpi_world_rank()==0){
-                    std::cout<<"###################################################################### \n"; 
-                    std::cout<<"Time-step: "<< t << "  time:  "<< this->time_ << "  dt:  "<< this->dt_ << " \n"; 
-                    std::cout<<"###################################################################### \n"; 
+                    std::cout<<"###################################################################### \n";
+                    std::cout<<"Time-step: "<< t << "  time:  "<< this->time_ << "  dt:  "<< this->dt_ << " \n";
+                    std::cout<<"###################################################################### \n";
                 }
-                
-                prepare_for_solve(); 
+
+                prepare_for_solve();
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
-                rmtr_->solve(this->solution_); 
-                auto sol_status = rmtr_->solution_status(); 
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////                
+                rmtr_->solve(this->solution_);
+                auto sol_status = rmtr_->solution_status();
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                update_time_step(sol_status.reason);
 
-                update_time_step(sol_status.reason); 
-            } 
+            }
+
         }
 
 
 
     private:
-        SizeType n_levels_; 
+        SizeType n_levels_;
 
         std::vector<std::shared_ptr<FunctionSpace>> spaces_;
         std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_;
@@ -379,9 +380,9 @@ namespace utopia {
         std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions_;
         std::vector<std::shared_ptr<BCType > >  BC_conditions_;
 
-        std::shared_ptr<ICType > IC_; 
+        std::shared_ptr<ICType > IC_;
 
-        std::string log_output_path_; 
+        std::string log_output_path_;
 
 
         std::shared_ptr<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> > rmtr_;

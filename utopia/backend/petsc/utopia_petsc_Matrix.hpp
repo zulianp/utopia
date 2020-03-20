@@ -523,6 +523,13 @@ namespace utopia {
          template<class F>
          void transform_ijv(F f);
 
+
+         template<class Op>
+         void read(Op op);
+
+         template<class Op>
+         void read_reverse(Op op);
+
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
@@ -1012,6 +1019,7 @@ namespace utopia {
           bool create_vecs(Vec *x, Vec *y) const;
 
           bool valid() const;
+
 
           //helpers
           template<class Op>
