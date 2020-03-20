@@ -1,5 +1,10 @@
 
+
 #include "utopia_Base.hpp"
+
+//FIXME: this file causes nvcc to fail
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "utopia_RangeDevice.hpp"
 
 //include edsl components
@@ -467,3 +472,4 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_tension_isotropic_phase_field_3);
 }
 
+#endif

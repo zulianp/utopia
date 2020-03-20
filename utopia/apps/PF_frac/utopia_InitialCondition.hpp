@@ -1,6 +1,12 @@
 #ifndef UTOPIA_INITIAL_CONDITION_PF_HPP
 #define UTOPIA_INITIAL_CONDITION_PF_HPP
 
+
+#include "utopia_Base.hpp"
+
+//FIXME: this file causes nvcc to fail
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "utopia_Base.hpp"
 #include "utopia_RangeDevice.hpp"
 
@@ -467,5 +473,7 @@ namespace utopia {
     };
 
 }
+
+#endif
 
 #endif
