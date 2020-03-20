@@ -57,7 +57,7 @@ namespace utopia {
             dt0_(1e-5),
             num_time_steps_(100), 
             time_(0.0),
-            output_path_("out.vtk"), 
+            output_path_("out.vtr"), 
             adjust_dt_on_failure_(true), 
             shrinking_factor_(0.5), 
             pressure0_(0.0),
@@ -116,7 +116,7 @@ namespace utopia {
         protected:
             virtual void write_to_file(FunctionSpace & space, const Scalar & time)
             {
-                space.write(output_path_+"_"+std::to_string(time)+".vtk", solution_);     
+                space.write(output_path_+"_"+std::to_string(time)+".vtr", solution_);     
             }
 
 

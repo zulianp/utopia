@@ -215,7 +215,7 @@ namespace utopia {
             //     Vector & sol  = fun->old_solution();   
             //     rename("X", sol);
 
-            //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtk", sol);     
+            //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr", sol);     
             // }        
 
             Utopia::instance().set("log_output_path", log_output_path_); 
@@ -356,7 +356,6 @@ namespace utopia {
                     std::cout<<"Time-step: "<< t << "  time:  "<< this->time_ << "  dt:  "<< this->dt_ << " \n"; 
                     std::cout<<"###################################################################### \n"; 
                 }
-         
                 
                 prepare_for_solve(); 
 
@@ -366,12 +365,8 @@ namespace utopia {
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////                
 
                 update_time_step(sol_status.reason); 
-
             } 
-
         }
-
-
 
 
 
