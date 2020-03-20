@@ -13,6 +13,7 @@ namespace utopia {
         static const int Dim        = 1;
         static const int NNodes     = 4;
         static const int NFunctions = 4;
+        static const int Order = 1;
 
         using Point         = utopia::StaticVector<Scalar, PhysicalDim>;
         using RefPoint      = utopia::StaticVector<Scalar, Dim>;

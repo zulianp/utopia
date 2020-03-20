@@ -34,55 +34,87 @@ namespace utopia {
         }
     };
 
+    template<int Order_, int NPoints_, int Dim_>
+    class QuadratureBase {
+    public:
+        static const int Order   = Order_;
+        static const int Dim     = Dim_;
+        static const int NPoints = NPoints_;
+
+        using Scalar   = PetscScalar;
+        using Point    = utopia::StaticVector<PetscScalar, Dim_>;
+
+        inline static constexpr int n_points()
+        {
+            return NPoints;
+        }
+
+        inline static constexpr int dim()
+        {
+            return Dim;
+        }
+
+        template<class Point>
+        inline void point(const int qp_idx, Point &p) const
+        {
+            for(int d = 0; d < Dim; ++d) {
+                p[d] = points_[qp_idx][d];
+            }
+        }
+
+        inline Point point(const int qp_idx) const
+        {
+            Point p;
+            point(qp_idx, p);
+            return p;
+        }
+
+        inline const Scalar &weight(const int qp_idx) const
+        {
+            return weights_[qp_idx];
+        }
+
+        void copy(const QuadratureBase &other)
+        {
+            for(int i = 0; i < NPoints; ++i) {
+                points_[i].copy(other.points_[i]);
+                weights_[i] = other.weights_[i];
+            }
+        }
+
+        QuadratureBase()
+        {}
+
+        QuadratureBase(const QuadratureBase &other)
+        {
+            copy(other);
+        }
+
+        void describe(std::ostream &os = std::cout) const
+        {
+            for(auto w : weights_) {
+                os << w << " ";
+            }
+
+            os << std::endl;
+        }
+
+
+    protected:
+        std::array<Point, NPoints> points_;
+        std::array<Scalar, NPoints> weights_;
+    };
 
     //FIXME these quadrature defs are redundant
 
     template<>
-    class Quadrature<PetscUniformQuad4, 2, 2> {
+    class Quadrature<PetscUniformQuad4, 2, 2> : public QuadratureBase<2, 6, 2> {
     public:
-        using Scalar   = PetscUniformQuad4::Scalar;
-        // using SizeType = PetscUniformQuad4::SizeType;
-        using Point    = PetscUniformQuad4::Point;
+        using Super      = utopia::QuadratureBase<2, 6, 2>;
+        using Scalar     = Super::Scalar;
+        using Point      = Super::Point;
         using ViewDevice = Quadrature;
         using ViewHost   = Quadrature;
-
-        static const int Order   = 2;
-        static const int Dim     = 2;
-        static const int NPoints = 6;
-
-        inline static constexpr int n_points()
-        {
-            return NPoints;
-        }
-
-        inline static constexpr int dim()
-        {
-            return Dim;
-        }
-
-        void init()
-        {
-            Quad4Quadrature<Scalar, Order, Dim, NPoints>::get(points_, weights_);
-        }
-
-        template<class Point>
-        inline void point(const int qp_idx, Point &p) const
-        {
-            p[0] = points_[qp_idx][0];
-            p[1] = points_[qp_idx][1];
-        }
-
-        inline Point point(const int qp_idx) const
-        {
-            Point p;
-            point(qp_idx, p);
-            return p;
-        }
-
-        inline const Scalar &weight(const int qp_idx) const
-        {
-            return weights_[qp_idx];
-        }
 
         Quadrature()
         {
@@ -90,12 +122,12 @@ namespace utopia {
         }
 
         Quadrature(const Quadrature &other)
+        : Super(other)
+        {}
+
+        void init()
         {
-            for(int i = 0; i < NPoints; ++i) {
-                points_[i][0] = other.points_[i][0];
-                points_[i][1] = other.points_[i][1];
-                weights_[i] = other.weights_[i];
-            }
+            Quad4Quadrature<Scalar, Super::Order, Super::Dim, Super::NPoints>::get(this->points_, this->weights_);
         }
 
         inline const ViewDevice &view_device() const
@@ -107,67 +139,16 @@ namespace utopia {
         {
             return *this;
         }
-
-    private:
-        std::array<Point, NPoints> points_;
-        std::array<Scalar, NPoints> weights_;
-    };
-
-
-    template<typename Scalar_, int PhysicalDim>
-    class Quadrature<Quad4<Scalar_, PhysicalDim>, 2, 2> : public Quadrature<PetscUniformQuad4, 2, 2>  {
-    public:
-        using ViewDevice = utopia::Quadrature<PetscUniformQuad4, 2, 2>;
-        using ViewHost   = utopia::Quadrature<PetscUniformQuad4, 2, 2>;
     };
 
     template<>
-    class Quadrature<PetscUniformHex8, 2, 3> {
+    class Quadrature<PetscUniformQuad4, 0, 2> : public QuadratureBase<0, 4, 2> {
     public:
-        using Scalar   = PetscUniformHex8::Scalar;
-        // using SizeType = PetscUniformHex8::SizeType;
-        using Point    = PetscUniformHex8::Point;
+        using Super      = utopia::QuadratureBase<0, 4, 2>;
+        using Scalar     = Super::Scalar;
+        using Point      = Super::Point;
         using ViewDevice = Quadrature;
         using ViewHost   = Quadrature;
-
-        static const int Order   = 2;
-        static const int Dim     = 3;
-        static const int NPoints = 27;
-
-        inline static constexpr int n_points()
-        {
-            return NPoints;
-        }
-
-        inline static constexpr int dim()
-        {
-            return Dim;
-        }
-
-        void init()
-        {
-            Hex8Quadrature<Scalar, Order, Dim, NPoints>::get(points_, weights_);
-        }
-
-        template<class Point>
-        inline void point(const int qp_idx, Point &p) const
-        {
-            p[0] = points_[qp_idx][0];
-            p[1] = points_[qp_idx][1];
-            p[2] = points_[qp_idx][2];
-        }
-
-        inline Point point(const int qp_idx) const
-        {
-            Point p;
-            point(qp_idx, p);
-            return p;
-        }
-
-        inline const Scalar &weight(const int qp_idx) const
-        {
-            return weights_[qp_idx];
-        }
 
         Quadrature()
         {
@@ -175,13 +156,26 @@ namespace utopia {
         }
 
         Quadrature(const Quadrature &other)
+        : Super(other)
+        {}
+
+        void init()
         {
-            for(int i = 0; i < NPoints; ++i) {
-                points_[i][0] = other.points_[i][0];
-                points_[i][1] = other.points_[i][1];
-                points_[i][2] = other.points_[i][2];
-                weights_[i] = other.weights_[i];
-            }
+            this->points_[0][0] = 0.211324865405187;
+            this->points_[0][1] = 0.211324865405187;
+            this->points_[1][0] = 0.788675134594813;
+            this->points_[1][1] = 0.211324865405187;
+            this->points_[2][0] = 0.211324865405187;
+            this->points_[2][1] = 0.788675134594813;
+            this->points_[3][0] = 0.788675134594813;
+            this->points_[3][1] = 0.788675134594813;
+
+            this->weights_ = {
+                0.25,
+                0.25,
+                0.25,
+                0.25
+            };
         }
 
         inline const ViewDevice &view_device() const
@@ -193,12 +187,108 @@ namespace utopia {
         {
             return *this;
         }
-
-    private:
-        std::array<Point, NPoints> points_;
-        std::array<Scalar, NPoints> weights_;
     };
 
+    template<typename Scalar_, int PhysicalDim, int Order>
+    class Quadrature<Quad4<Scalar_, PhysicalDim>, Order, 2> : public Quadrature<PetscUniformQuad4, Order, 2>  {
+    public:
+        using ViewDevice = utopia::Quadrature<PetscUniformQuad4, Order, 2>;
+        using ViewHost   = utopia::Quadrature<PetscUniformQuad4, Order, 2>;
+    };
+
+    template<>
+    class Quadrature<PetscUniformHex8, 0, 3> : public QuadratureBase<0, 6, 3>{
+    public:
+        using Super      = utopia::QuadratureBase<0, 6, 3>;
+        using Scalar     = Super::Scalar;
+        using Point      = Super::Point;
+        using ViewDevice = Quadrature;
+        using ViewHost   = Quadrature;
+
+        void init()
+        {
+            this->points_[0][0] = 0.0;
+            this->points_[0][1] = 0.5;
+            this->points_[0][2] = 0.5;
+            this->points_[1][0] = 0.5;
+            this->points_[1][1] = 0.0;
+            this->points_[1][2] = 0.5;
+            this->points_[2][0] = 0.5;
+            this->points_[2][1] = 0.5;
+            this->points_[2][2] = 0.0;
+            this->points_[3][0] = 0.5;
+            this->points_[3][1] = 0.5;
+            this->points_[3][2] = 1.0;
+            this->points_[4][0] = 0.5;
+            this->points_[4][1] = 1.0;
+            this->points_[4][2] = 0.5;
+            this->points_[5][0] = 1.0;
+            this->points_[5][1] = 0.5;
+            this->points_[5][2] = 0.5;
+
+            this->weights_ = {
+                0.16666666666666666666666666666667,
+                0.16666666666666666666666666666667,
+                0.16666666666666666666666666666667,
+                0.16666666666666666666666666666667,
+                0.16666666666666666666666666666667,
+                0.16666666666666666666666666666667
+            };
+        }
+
+        Quadrature()
+        {
+            init();
+        }
+
+        Quadrature(const Quadrature &other)
+        : Super(other)
+        {}
+
+        inline const ViewDevice &view_device() const
+        {
+            return *this;
+        }
+
+        inline const ViewHost &view_host() const
+        {
+            return *this;
+        }
+    };
+
+    template<>
+    class Quadrature<PetscUniformHex8, 2, 3> : public QuadratureBase<2, 27, 3>{
+    public:
+        using Super      = utopia::QuadratureBase<2, 27, 3>;
+        using Scalar     = Super::Scalar;
+        using Point      = Super::Point;
+        using ViewDevice = Quadrature;
+        using ViewHost   = Quadrature;
+
+        void init()
+        {
+            Hex8Quadrature<Scalar, Super::Order, Super::Dim, Super::NPoints>::get(this->points_, this->weights_);
+        }
+
+        Quadrature()
+        {
+            init();
+        }
+
+        Quadrature(const Quadrature &other)
+        : Super(other)
+        {}
+
+        inline const ViewDevice &view_device() const
+        {
+            return *this;
+        }
+
+        inline const ViewHost &view_host() const
+        {
+            return *this;
+        }
+    };
 
     template<typename Scalar_, int PhysicalDim>
     class Quadrature<Edge2<Scalar_, PhysicalDim>, 2, 1> {
@@ -283,65 +373,31 @@ namespace utopia {
         std::array<Scalar, NPoints> weights_;
     };
 
-
     template<typename Scalar_, int PhysicalDim>
-    class Quadrature<Tri3<Scalar_, PhysicalDim>, 2, 2> {
+    class Quadrature<Tri3<Scalar_, PhysicalDim>, 2, 2> : public QuadratureBase<2, 6, 2> {
     public:
-        using Scalar   = Scalar_;
-        // using SizeType = PetscUniformHex8::SizeType;
-        using Point      = utopia::StaticVector<Scalar, 2>;
+        using Super      = utopia::QuadratureBase<2, 6, 2>;
+        using Scalar     = Super::Scalar;
+        using Point      = Super::Point;
         using ViewDevice = Quadrature;
         using ViewHost   = Quadrature;
 
-        static const int Order   = 2;
-        static const int Dim     = 2;
-        static const int NPoints = 6;
-
-        inline static constexpr int n_points()
-        {
-            return NPoints;
-        }
-
-        inline static constexpr int dim()
-        {
-            return Dim;
-        }
-
         void init()
         {
+            this->points_[0][0] = 0.5;
+            this->points_[0][1] = 0.5;
+            this->points_[1][0] = 0.5;
+            this->points_[1][1] = 0.0;
+            this->points_[2][0] = 0.0;
+            this->points_[2][1] = 0.5;
+            this->points_[3][0] = 1.0/6.0;
+            this->points_[3][1] = 1.0/6.0;
+            this->points_[4][0] = 1.0/6.0;
+            this->points_[4][1] = 2.0/3.0;
+            this->points_[5][0] = 2.0/3.0;
+            this->points_[5][1] = 1.0/6.0;
 
-            points_[0][0] = 0.5;
-            points_[0][1] = 0.5;
-            points_[1][0] = 0.5;
-            points_[1][1] = 0.0;
-            points_[2][0] = 0.0;
-            points_[2][1] = 0.5;
-            points_[3][0] = 1.0/6.0;
-            points_[3][1] = 1.0/6.0;
-            points_[4][0] = 1.0/6.0;
-            points_[4][1] = 2.0/3.0;
-            points_[5][0] = 2.0/3.0;
-            points_[5][1] = 1.0/6.0;
-
-            weights_ = { 1.0/30.0, 1.0/30.0, 1.0/30.0, 0.3, 0.3, 0.3 };
-        }
-
-        template<class Point>
-        inline void point(const int qp_idx, Point &p) const
-        {
-            p[0] = points_[qp_idx][0];
-        }
-
-        inline Point point(const int qp_idx) const
-        {
-            Point p;
-            point(qp_idx, p);
-            return p;
-        }
-
-        inline const Scalar &weight(const int qp_idx) const
-        {
-            return weights_[qp_idx];
+            this->weights_ = { 1.0/30.0, 1.0/30.0, 1.0/30.0, 0.3, 0.3, 0.3 };
         }
 
         Quadrature()
@@ -350,12 +406,8 @@ namespace utopia {
         }
 
         Quadrature(const Quadrature &other)
-        {
-            for(int i = 0; i < NPoints; ++i) {
-                points_[i][0] = other.points_[i][0];
-                weights_[i] = other.weights_[i];
-            }
-        }
+        : Super(other)
+        {}
 
         inline const ViewDevice &view_device() const
         {
@@ -366,19 +418,43 @@ namespace utopia {
         {
             return *this;
         }
+    };
 
-        void describe(std::ostream &os = std::cout) const
+    template<typename Scalar_, int PhysicalDim>
+    class Quadrature<Tri3<Scalar_, PhysicalDim>, 0, 2> : public QuadratureBase<0, 1, 2> {
+    public:
+        using Super      = utopia::QuadratureBase<0, 1, 2>;
+        using Scalar     = Super::Scalar;
+        using Point      = Super::Point;
+        using ViewDevice = Quadrature;
+        using ViewHost   = Quadrature;
+
+        void init()
         {
-            for(auto w : weights_) {
-                os << w << " ";
-            }
+            this->points_[0][0] = 0.;
+            this->points_[0][1] = 0.;
 
-            os << std::endl;
+            this->weights_ = { 1.0 };
         }
 
-    private:
-        std::array<Point, NPoints> points_;
-        std::array<Scalar, NPoints> weights_;
+        Quadrature()
+        {
+            init();
+        }
+
+        Quadrature(const Quadrature &other)
+        : Super(other)
+        {}
+
+        inline const ViewDevice &view_device() const
+        {
+            return *this;
+        }
+
+        inline const ViewHost &view_host() const
+        {
+            return *this;
+        }
     };
 
 }

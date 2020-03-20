@@ -141,7 +141,7 @@ namespace utopia {
 
     static void space_time_2(Input &in)
     {
-        static const int Dim = 2;
+        static const int Dim   = 2;
         static const int NVars = 1;
 
         using Mesh           = utopia::PetscDM<Dim>;

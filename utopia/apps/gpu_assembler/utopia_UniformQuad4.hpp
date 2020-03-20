@@ -218,6 +218,7 @@ namespace utopia {
         static const int NNodes = 4;
         static const int NSides = 4;
         static const int NFunctions = 4;
+        static const int Order = 1;
 
         using Side      = utopia::Edge2<Scalar, Dim>;
         using Point     = utopia::StaticVector<Scalar, Dim>;

@@ -18,6 +18,7 @@ namespace utopia {
         static const int Dim = Elem::Dim;
         static const int NNodes = Elem::NNodes;
         static const int NFunctions = NNodes * NVariables;
+        static const int Order = Elem::Order;
 
         using UnivGrad      = utopia::StaticVector<Scalar, Dim>;
         using GradValue     = utopia::StaticMatrix<Scalar, NVariables, Dim>;

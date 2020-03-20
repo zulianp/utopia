@@ -56,6 +56,8 @@ namespace utopia {
         static const int NNodes = 2;
         static const int NSides = 2;
         static const int NFunctions = 2;
+        static const int Order = 1;
+
         using Point = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
         using STGradX   = utopia::StaticVector<Scalar, Dim-1>;

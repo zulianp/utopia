@@ -40,7 +40,7 @@ namespace utopia {
 
         using Mesh             = utopia::PetscDM<Dim>;
         // using Elem             = utopia::PetscUniformQuad4;
-        using Elem             = utopia::Tri3<double, 2>;
+        using Elem             = utopia::Tri3<PetscScalar, 2>;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using Point            = FunctionSpace::Point;
         using Scalar           = FunctionSpace::Scalar;

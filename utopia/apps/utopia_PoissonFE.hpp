@@ -30,7 +30,7 @@ namespace utopia {
         using Scalar     = typename Traits<Vector>::Scalar;
         using SizeType   = typename Traits<Vector>::SizeType;
         using Elem       = typename FunctionSpace::Elem;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
+        using Quadrature = utopia::Quadrature<Elem, 2*(Elem::Order - 1)>;
         using Laplacian  = utopia::Laplacian<FunctionSpace, Quadrature>;
         using ScaledMassMatrix = utopia::ScaledMassMatrix<FunctionSpace, Quadrature>;
         using Coefficient = utopia::Coefficient<FunctionSpace>;
@@ -76,7 +76,7 @@ namespace utopia {
 
             PhysicalGradient<FunctionSpace, Quadrature> grad_temp(*space_, quadrature_);
             Differential<FunctionSpace, Quadrature> differential_temp(*space_, quadrature_);
-            
+
             {
                 auto space_view = space_->view_device();
                 auto y_view     = space_->assembly_view_device(y);
@@ -92,16 +92,16 @@ namespace utopia {
                     Elem e;
                     ElementVector coeff, el_vec;
                     space_view.elem(i, e);
-                    
+
                     coeff_view.get(e, coeff);
                     el_vec.set(0.0);
 
                     auto grad = grad_view.make(e);
                     auto dx   = dx_view.make(e);
-                    
+
                     const auto n_qp  = grad.n_points();
                     const auto n_fun = grad.n_functions();
-            
+
                     // for(SizeType k = 0; k < n; ++k) {
                     //     for(SizeType j = 0; j < grad.n_functions(); ++j) {
                     //         for(SizeType l = 0; l < grad.n_functions(); ++l) {
@@ -120,7 +120,7 @@ namespace utopia {
                             for(SizeType l = j + 1; l < n_fun; ++l) {
                                 const auto g_trial = grad(l, k);
                                 const Scalar v =  LKernel::apply(1.0, g_trial, g_test, dx(k));
-                                
+
                                 el_vec(j) += v * coeff(l);
                                 el_vec(l) += v * coeff(j);
                             }
