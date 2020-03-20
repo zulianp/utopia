@@ -136,27 +136,25 @@ namespace utopia {
         }
 
         // //space-time spatial gradient
-        // template<typename Point>
-        // UTOPIA_INLINE_FUNCTION auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
-        // {
-        //     return RefTri3::partial_t(i, p) / h_[1];
-        // }
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            return jacobian_inverse_(1, 0) * RefTri3::partial_x(i, p) + jacobian_inverse_(1, 1) * RefTri3::partial_y(i, p);
+        }
 
         // //space-time spatial gradient
-        // template<typename Point, typename Deriv>
-        // UTOPIA_INLINE_FUNCTION void grad_x(const int i, const Point &p, Deriv &dst)
-        // {
-        //     RefTri3::grad_x(i, p, dst);
-        //     dst[0] /= h_[0];
-        // }
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+           dst[0] = jacobian_inverse_(0, 0) * RefTri3::partial_x(i, p) + jacobian_inverse_(0, 1) *  RefTri3::partial_y(i, p);
+        }
 
         // ///space-time mixed derivative \nabla_x \partial_t \phi(x, t)
-        // template<typename Point, typename Deriv>
-        // UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
-        // {
-        //     RefTri3::grad_x_partial_t(i, p, dst);
-        //     dst[0] /= (h_[0]*h_[1]);
-        // }
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int , const Point &, Deriv &dst)
+        {
+            dst[0] = 0;
+        }
 
         template<typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const
@@ -196,7 +194,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Tri3() {}
 
         template<class P0, class P1, class P2>
-        UTOPIA_INLINE_FUNCTION void init(
+        UTOPIA_INLINE_FUNCTION void set(
             const P0 &p0,
             const P1 &p1,
             const P2 &p2
@@ -210,6 +208,7 @@ namespace utopia {
             jacobian_inverse_ = inv(jacobian_);
 
             measure_ = det(jacobian_);
+            UTOPIA_DEVICE_ASSERT(measure_>0);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()

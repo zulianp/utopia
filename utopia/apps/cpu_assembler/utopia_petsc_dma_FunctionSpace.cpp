@@ -16,4 +16,5 @@ namespace utopia {
     /////////////////////////////////////////////////////////////////
 
     template class FunctionSpace<PetscDM<2>, 1, Tri3<PetscScalar, 2>>;
+    template class FunctionSpace<PetscDM<2>, 2, Tri3<PetscScalar, 2>>;
 }

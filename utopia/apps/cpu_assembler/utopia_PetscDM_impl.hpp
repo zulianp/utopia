@@ -848,8 +848,14 @@ namespace utopia {
     {
         auto fine_dm = utopia::make_unique<PetscDM<Dim>>();
         DMRefine(raw_type(*this), comm().get(), &raw_type(*fine_dm));
+
+        DMDAElementType elem_type;
+        DMDAGetElementType(raw_type(*this), &elem_type);
+        DMDASetElementType(raw_type(*fine_dm), elem_type);
+
         fine_dm->impl_->mirror.box_min.copy( impl_->mirror.box_min );
         fine_dm->impl_->mirror.box_max.copy( impl_->mirror.box_max );
+        fine_dm->impl_->mirror.elements_x_cell = impl_->mirror.elements_x_cell;
 
         fine_dm->update_mirror();
 
@@ -896,7 +902,11 @@ namespace utopia {
         convert(impl_->mirror.box_min, t_box_min);
         convert(impl_->mirror.box_max, t_box_max);
 
-        dm->build(comm(), t_dims, t_box_min, t_box_max, n_components);
+        if(impl_->mirror.elements_x_cell != 1) {
+            dm->build_simplicial_complex(comm(), t_dims, t_box_min, t_box_max, n_components);
+        } else {
+            dm->build(comm(), t_dims, t_box_min, t_box_max, n_components);
+        }
 
         //FIXME copy other fields
         return std::move(dm);

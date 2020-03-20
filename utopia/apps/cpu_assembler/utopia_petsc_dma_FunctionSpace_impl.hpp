@@ -92,7 +92,7 @@ namespace utopia {
                 mesh.point(nodes[1], p1);
                 mesh.point(nodes[2], p2);
 
-                e.init(p0, p1, p2);
+                e.set(p0, p1, p2);
             } else  {
                 assert(false);
                 // Point p4;

@@ -39,7 +39,6 @@ namespace utopia {
     {
         std::cout << "petsc_tri" << std::endl;
         static const int Dim = 2;
-        // static const int Dim = 3;
 
         using Mesh     = utopia::PetscDM<Dim>;
         using Comm     = Mesh::Comm;

@@ -5,6 +5,8 @@
 #include "utopia_ArrayView.hpp"
 #include "utopia_ElemTraits.hpp"
 
+#include <utility>
+
 namespace utopia {
 
     template<class Elem, int NVariables>
@@ -97,12 +99,10 @@ namespace utopia {
         : univar_elem_(std::forward<Args>(args)...)
         {}
 
-        template<class H>
-        UTOPIA_INLINE_FUNCTION void set(
-            const StaticVector<Scalar, Dim> &translation,
-            const H &h)
+        template<class... H>
+        UTOPIA_INLINE_FUNCTION void set(H && ...args)
         {
-           univar_elem_.set(translation, h);
+           univar_elem_.set(std::forward<H>(args)...);
         }
 
         UTOPIA_INLINE_FUNCTION const StaticVector2<Scalar> &translation() const

@@ -25,6 +25,7 @@
 #include "utopia_STHeatEquation.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_Tri3.hpp"
 
 #include "utopia_app_utils.hpp"
 
@@ -145,6 +146,7 @@ namespace utopia {
 
         using Mesh           = utopia::PetscDM<Dim>;
         using Elem           = utopia::PetscUniformQuad4;
+        // using Elem           = utopia::Tri3<double, 2>;
         using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType       = FunctionSpace::SizeType;
         using Scalar         = FunctionSpace::Scalar;
