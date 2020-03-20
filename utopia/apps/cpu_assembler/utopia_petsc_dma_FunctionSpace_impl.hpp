@@ -4,6 +4,8 @@
 #include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_PetscDM_impl.hpp"
 #include "utopia_petsc.hpp"
+#include "utopia_Tri3.hpp"
+#include "utopia_CppMacros.hpp"
 
 #include <petscviewerhdf5.h>
 
@@ -38,20 +40,78 @@ namespace utopia {
 
         PetscCommunicator comm;
         if(!mesh_) {
-            mesh_ = std::make_shared<Mesh>(comm, a_n, a_box_min, a_box_max, NComponents);
+            mesh_ = std::make_shared<Mesh>();
+        }
+
+        UTOPIA_IF_CONSTEXPR(is_simplex<Elem>::value) {
+            mesh_->build_simplicial_complex(comm, a_n, a_box_min, a_box_max, NComponents);
         } else {
             mesh_->build(comm, a_n, a_box_min, a_box_max, NComponents);
         }
     }
 
+    template<class Space, class Elem, bool IsSimplex = is_simplex<Elem>::value>
+    class GetElem {};
+
+    template<class Space, class Elem>
+    class GetElem<Space, Elem, false> {
+    public:
+
+        inline static void apply(const Space &space, const SizeType &idx, Elem &e)
+        {
+            const auto &mesh = space.mesh();
+            mesh.elem(idx, e.univar_elem());
+            typename Space::Mesh::Point translation, cell_size;
+            mesh.cell_point(idx, translation);
+            mesh.cell_size(idx, cell_size);
+            e.set(translation, cell_size);
+        }
+
+    };
+
+    template<class Space, class Elem>
+    class GetElem<Space, Elem, true> {
+    public:
+        using SizeType = typename Space::SizeType;
+        using Point    = typename Space::Point;
+
+        inline static void apply(const Space &space, const SizeType &idx, Elem &e)
+        {
+            const auto &mesh = space.mesh();
+            mesh.elem(idx, e.univar_elem());
+
+            typename Space::Mesh::NodeIndex nodes;
+            mesh.nodes(idx, nodes);
+
+            const SizeType n = nodes.size();
+
+            Point p0, p1, p2;
+
+            if(n == 3) {
+                mesh.point(nodes[0], p0);
+                mesh.point(nodes[1], p1);
+                mesh.point(nodes[2], p2);
+
+                e.init(p0, p1, p2);
+            } else  {
+                assert(false);
+                // Point p4;
+
+                // e.init()
+            }
+        }
+    };
+
     template<class Elem, int NComponents>
     void FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::elem(const SizeType &idx, Elem &e) const
     {
-        mesh_->elem(idx, e.univar_elem());
-        typename Mesh::Point translation, cell_size;
-        mesh_->cell_point(idx, translation);
-        mesh_->cell_size(idx, cell_size);
-        e.set(translation, cell_size);
+        // mesh_->elem(idx, e.univar_elem());
+        // typename Mesh::Point translation, cell_size;
+        // mesh_->cell_point(idx, translation);
+        // mesh_->cell_size(idx, cell_size);
+        // e.set(translation, cell_size);
+
+        GetElem<FunctionSpace, Elem>::apply(*this, idx, e);
 
         // assert(e.is_valid());
     }

@@ -172,8 +172,9 @@ namespace utopia {
             return SideSets::sides();
         }
 
-        void cell_point(const SizeType &idx, Point &translation);
-        void cell_size(const SizeType &idx, Point &cell_size);
+        void point(const SizeType &local_node_idx, Point &p) const;
+        void cell_point(const SizeType &idx, Point &translation) const;
+        void cell_size(const SizeType &idx, Point &cell_size) const;
 
         bool is_local_node_on_boundary(const SizeType &idx) const;
         bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;

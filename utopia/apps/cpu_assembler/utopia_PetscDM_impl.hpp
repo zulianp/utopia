@@ -745,14 +745,20 @@ namespace utopia {
     }
 
     template<int Dim>
-    void PetscDM<Dim>::cell_point(const SizeType &idx, Point &translation)
+    void PetscDM<Dim>::cell_point(const SizeType &idx, Point &translation) const
     {
         SizeType v0 = impl_->elements->e[idx*impl_->elements->nc];
         impl_->local_node_idx_coord(v0, translation);
     }
 
     template<int Dim>
-    void PetscDM<Dim>::cell_size(const SizeType &, Point &cell_size)
+    void PetscDM<Dim>::point(const SizeType &local_node_idx, Point &p) const
+    {
+        impl_->local_node_idx_coord(local_node_idx, p);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::cell_size(const SizeType &, Point &cell_size) const
     {
         const auto &mirror = impl_->mirror;
         for(int d = 0; d < Dim; ++d) {

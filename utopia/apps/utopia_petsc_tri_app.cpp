@@ -35,7 +35,7 @@
 
 namespace utopia {
 
-    void petsc_tri(Input &)
+    void petsc_tri(Input &in)
     {
         std::cout << "petsc_tri" << std::endl;
         static const int Dim = 2;
@@ -46,24 +46,12 @@ namespace utopia {
         using SizeType = Mesh::SizeType;
         using Scalar   = Mesh::Scalar;
 
-        // using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Tri3<Scalar, 2>>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Tri3<Scalar, 2>>;
 
-        Comm comm;
-        Mesh mesh;
+        FunctionSpace space;
+        space.read(in);
 
-        mesh.build_simplicial_complex(
-            comm,
-            {2, 2},
-            {0., 0.},
-            {1.0, 1.0}
-        );
-
-        // mesh.build_simplicial_complex(
-        //     comm,
-        //     {2, 2, 2},
-        //     {0., 0., 0.0},
-        //     {1.0, 1.0, 1.0}
-        // );
+        auto &mesh = space.mesh();
 
         mesh.describe();
 
@@ -73,8 +61,6 @@ namespace utopia {
             mesh.nodes(i, nodes);
             disp(nodes);
         }
-
-        Tri3<double, 3> tri3;
     }
 
     UTOPIA_REGISTER_APP(petsc_tri);

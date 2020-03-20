@@ -2,6 +2,7 @@
 #define UTOPIA_TRI_3_HPP
 
 #include "utopia_UniformTri3.hpp"
+#include "utopia_ElemTraits.hpp"
 
 namespace utopia {
 
@@ -34,7 +35,7 @@ namespace utopia {
         template<typename Point>
         UTOPIA_INLINE_FUNCTION void node(const std::size_t &i, Point &p) const
         {
-            p = translation_;
+            p.copy(translation_);
             auto &&data = jacobian_.raw_type();
 
             switch(i) {
@@ -201,7 +202,7 @@ namespace utopia {
             const P2 &p2
         )
         {
-            translation_= p0;
+            translation_.copy(p0);
 
             jacobian_.set_col(0, p1 - translation_);
             jacobian_.set_col(1, p2 - translation_);
@@ -226,6 +227,11 @@ namespace utopia {
         Jacobian jacobian_;
         JacobianInverse jacobian_inverse_;
         Scalar measure_;
+    };
+
+    template<typename Scalar, int PhysicalDim>
+    struct is_simplex<Tri3<Scalar, PhysicalDim>> {
+        static const bool value = true;
     };
 
 }

@@ -3,6 +3,7 @@
 
 #include "utopia_Quadrature.hpp"
 #include "utopia_ArrayView.hpp"
+#include "utopia_ElemTraits.hpp"
 
 namespace utopia {
 
@@ -153,6 +154,11 @@ namespace utopia {
     class Quadrature<MultiVariateElem<Elem, NVariables>, Order, Dim, Args...> : public Quadrature<Elem, Order, Dim, Args...>
     {};
 
+
+    template<class Elem, int NVar>
+    struct is_simplex<MultiVariateElem<Elem, NVar>>  {
+        static const bool value = is_simplex<Elem>::value;
+    };
 }
 
 #endif //UTOPIA_MULTI_VARIATE_ELEMENT_HPP
