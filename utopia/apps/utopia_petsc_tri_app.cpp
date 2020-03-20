@@ -45,6 +45,7 @@ namespace utopia {
         using Comm     = Mesh::Comm;
         using SizeType = Mesh::SizeType;
         using Scalar   = Mesh::Scalar;
+        using Point    = Mesh::Point;
 
         using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Tri3<Scalar, 2>>;
 
@@ -61,6 +62,17 @@ namespace utopia {
             mesh.nodes(i, nodes);
             disp(nodes);
         }
+
+        PetscVector v;
+
+        space.create_vector(v);
+
+        space.sample(v, UTOPIA_LAMBDA(const Point &p) -> Scalar {
+            return p[0]*p[1];
+        });
+
+        rename("f", v);
+        space.write("trifun.vtk", v);
     }
 
     UTOPIA_REGISTER_APP(petsc_tri);

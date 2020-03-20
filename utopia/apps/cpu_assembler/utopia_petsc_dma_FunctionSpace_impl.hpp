@@ -105,15 +105,7 @@ namespace utopia {
     template<class Elem, int NComponents>
     void FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::elem(const SizeType &idx, Elem &e) const
     {
-        // mesh_->elem(idx, e.univar_elem());
-        // typename Mesh::Point translation, cell_size;
-        // mesh_->cell_point(idx, translation);
-        // mesh_->cell_size(idx, cell_size);
-        // e.set(translation, cell_size);
-
         GetElem<FunctionSpace, Elem>::apply(*this, idx, e);
-
-        // assert(e.is_valid());
     }
 
     template<class Elem, int NComponents>
