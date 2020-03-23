@@ -293,7 +293,7 @@ namespace utopia {
 
 
 
-    private:
+    public: //made public because of nvcc
 
         void set_nonzero_elem_to(Vector & v, const Scalar & val)
         {

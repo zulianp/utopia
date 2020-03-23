@@ -29,12 +29,9 @@ namespace utopia {
             }
         }
 
-        //space-time spatial gradient
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        UTOPIA_INLINE_FUNCTION static auto partial_y(const int i, const Point &) -> typename Traits<Point>::Scalar
         {
-            const auto x = p[0];
-
             switch(i)
             {
                 case 0:
@@ -56,36 +53,27 @@ namespace utopia {
             }
         }
 
-        //space-time spatial gradient
-        template<typename Point, typename Deriv>
-        UTOPIA_INLINE_FUNCTION static void grad_x(const int i, const Point &p, Deriv &dst)
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION static auto partial_x(const int i, const Point &)  -> typename Traits<Point>::Scalar
         {
-            UTOPIA_DEVICE_ASSERT(dst.size() == 1);
-
-            const auto x = p[0];
-            const auto t = p[1];
-
             switch(i)
             {
                 case 0:
                 {
-                    dst[0] = - 1.;
-                    return;
+                    return - 1.;
                 }
                 case 1:
                 {
-                    dst[0]  = 1;
-                    return;
+                    return 1;
                 }
                 case 2:
                 {
-                    dst[0]  = 0;
-                    return;
+                    return 0;
                 }
                 default:
                 {
                     UTOPIA_DEVICE_ASSERT(false);
-                    return;
+                    return 0.0;
                 }
             }
         }
@@ -96,7 +84,6 @@ namespace utopia {
         {
             //project t coordinates to 0
             UTOPIA_DEVICE_ASSERT(dst.size() == 1);
-
             dst[0] = 0;
         }
 

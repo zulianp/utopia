@@ -3,6 +3,9 @@
 
 #include "utopia_Quadrature.hpp"
 #include "utopia_ArrayView.hpp"
+#include "utopia_ElemTraits.hpp"
+
+#include <utility>
 
 namespace utopia {
 
@@ -15,6 +18,7 @@ namespace utopia {
         static const int Dim = Elem::Dim;
         static const int NNodes = Elem::NNodes;
         static const int NFunctions = NNodes * NVariables;
+        static const int Order = Elem::Order;
 
         using UnivGrad      = utopia::StaticVector<Scalar, Dim>;
         using GradValue     = utopia::StaticMatrix<Scalar, NVariables, Dim>;
@@ -96,12 +100,10 @@ namespace utopia {
         : univar_elem_(std::forward<Args>(args)...)
         {}
 
-        template<class H>
-        UTOPIA_INLINE_FUNCTION void set(
-            const StaticVector<Scalar, Dim> &translation,
-            const H &h)
+        template<class... H>
+        UTOPIA_INLINE_FUNCTION void set(H && ...args)
         {
-           univar_elem_.set(translation, h);
+           univar_elem_.set(std::forward<H>(args)...);
         }
 
         UTOPIA_INLINE_FUNCTION const StaticVector2<Scalar> &translation() const
@@ -153,6 +155,11 @@ namespace utopia {
     class Quadrature<MultiVariateElem<Elem, NVariables>, Order, Dim, Args...> : public Quadrature<Elem, Order, Dim, Args...>
     {};
 
+
+    template<class Elem, int NVar>
+    struct is_simplex<MultiVariateElem<Elem, NVar>>  {
+        static const bool value = is_simplex<Elem>::value;
+    };
 }
 
 #endif //UTOPIA_MULTI_VARIATE_ELEMENT_HPP

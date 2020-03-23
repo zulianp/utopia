@@ -2,6 +2,7 @@
 #define UTOPIA_ARRAY_VIEW_4_HPP
 
 #include "utopia_ArrayView.hpp"
+#include "utopia_CppMacros.hpp"
 
 namespace utopia {
 
@@ -62,16 +63,7 @@ namespace utopia {
             UTOPIA_DEVICE_ASSERT(i < 4);
             UTOPIA_DEVICE_ASSERT(i >= 0);
 
-            switch(i) {
-                case 0: return N0_;
-                case 1: return N1_;
-                case 2: return N2_;
-                case 3: return N3_;
-                default:
-                {
-                    return 0;
-                }
-            }
+            return (i==0) ? N0_ : ((i==1) ? N1_ : ((i==2) ? N2_ : N3_ ));
         }
 
         UTOPIA_INLINE_FUNCTION T* begin()

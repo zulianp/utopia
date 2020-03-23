@@ -1,6 +1,12 @@
 #ifndef UTOPIA_INITIAL_CONDITION_PF_HPP
 #define UTOPIA_INITIAL_CONDITION_PF_HPP
 
+
+#include "utopia_Base.hpp"
+
+//FIXME: this file causes nvcc to fail
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "utopia_Base.hpp"
 #include "utopia_RangeDevice.hpp"
 
@@ -49,10 +55,10 @@ namespace utopia {
 
             }
 
-            
-        virtual void init(PetscVector &x) = 0; 
+
+        virtual void init(PetscVector &x) = 0;
         virtual void init(PetscVector &sol_vec, PetscVector & /*press_vec*/ ){
-            this->init(sol_vec); 
+            this->init(sol_vec);
         }
 
 
@@ -195,14 +201,14 @@ namespace utopia {
 
         }
 
-        Point2D(const T & xx, const T & yy): 
+        Point2D(const T & xx, const T & yy):
         x(xx), y(yy)
         {
 
         }
 
-        T x; 
-        T y; 
+        T x;
+        T y;
 
         void describe()
         {
@@ -270,12 +276,13 @@ namespace utopia {
             void randomly_generate(const T & width)
             {
                 //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-                const unsigned seed = 3; 
+                const unsigned seed = 3;
                 static std::default_random_engine generator (seed);
 
-                // this one needs to be replaced 
-                std::uniform_real_distribution<> distr_point(0.1, 0.9);                 
-                std::uniform_int_distribution<> distr_angle(0.0, 180); 
+                // this one needs to be replaced
+                std::uniform_real_distribution<> distr_point(0.1, 0.9);
+                std::uniform_int_distribution<> distr_angle(0.0, 180);
+
 
                 A_.x = distr_point(generator);
                 A_.y = distr_point(generator);             
@@ -345,7 +352,7 @@ namespace utopia {
             using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
             static const int NNodes = Elem::NNodes;
 
-            InitialCondidtionPFFracNet(FunctionSpace &space, const SizeType & PF_component, const SizeType & num_fracs=10):    
+            InitialCondidtionPFFracNet(FunctionSpace &space, const SizeType & PF_component, const SizeType & num_fracs=10):
             InitialCondition<FunctionSpace>(space), PF_component_(PF_component), num_fracs_(num_fracs), pressure0_(1.0)
             {
 
@@ -355,12 +362,13 @@ namespace utopia {
             {
                 in.get("num_fracs", num_fracs_);
                 in.get("pressure0", pressure0_);
-            }                
+            }
 
 
 
             void init(PetscVector &x) override
             {
+                using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
                 // un-hard-code
                 auto C = this->space_.subspace(PF_component_);
 
@@ -394,7 +402,7 @@ namespace utopia {
                         ElemViewScalar e;
                         C_view.elem(i, e);
 
-                        StaticVector<Scalar, NNodes> s;
+                        CoeffVector s;
                         sampler_view.assemble(e, s);
                         C_view.set_vector(e, s, x_view);
                     });
@@ -403,37 +411,37 @@ namespace utopia {
 
             void init(PetscVector &sol_vec, PetscVector &press_vec) override
             {
-                PetscVector sol_vec_copy = sol_vec; 
+                PetscVector sol_vec_copy = sol_vec;
 
                 // un-hard-code
                 auto C = this->space_.subspace(PF_component_);
-                auto width =  5.0 * this->space_.mesh().min_spacing(); 
+                auto width =  5.0 * this->space_.mesh().min_spacing();
 
                 if(mpi_world_rank()==0){
-                    std::cout<<"width: "<< width << "  \n"; 
+                    std::cout<<"width: "<< width << "  \n";
                 }
 
-                const Point2D<Scalar> A(0.5, 0.5); 
-                Rectangle<Scalar> rectangle(A, width, width, 0.0); 
+                const Point2D<Scalar> A(0.5, 0.5);
+                Rectangle<Scalar> rectangle(A, width, width, 0.0);
 
                 auto sampler = utopia::sampler(C, [&rectangle](const Point &x) -> Scalar {
                     if(rectangle.belongs_to_rectangle(x[0], x[1])){
-                        return 1.0; 
+                        return 1.0;
                     }
                     else{
-                        return 0.0; 
+                        return 0.0;
                     }
                 });
 
 
                 Scalar p = pressure0_;
-                
+
                 auto press_sampler = utopia::sampler(C, [&rectangle, p](const Point &x) -> Scalar {
                     if(rectangle.belongs_to_rectangle(x[0], x[1])){
-                        return p; 
+                        return p;
                     }
                     else{
-                        return p/10.0; 
+                        return p/10.0;
                     }
                 });
 
@@ -441,7 +449,7 @@ namespace utopia {
                 {
                     auto C_view             = C.view_device();
                     auto sampler_view       = sampler.view_device();
-                    auto press_sampler_view = press_sampler.view_device(); 
+                    auto press_sampler_view = press_sampler.view_device();
 
                     auto sol_view       = this->space_.assembly_view_device(sol_vec);
                     auto press_view     = this->space_.assembly_view_device(press_vec);
@@ -454,23 +462,25 @@ namespace utopia {
                         sampler_view.assemble(e, s);
                         C_view.set_vector(e, s, sol_view);
 
-                        press_sampler_view.assemble(e, s); 
+                        press_sampler_view.assemble(e, s);
                         C_view.set_vector(e, s, press_view);
 
                     });
                 }
 
-                // add new fracture to existing ones 
-                sol_vec += sol_vec_copy; 
-            }            
+                // add new fracture to existing ones
+                sol_vec += sol_vec_copy;
+            }
 
         private:
-            SizeType PF_component_; 
-            SizeType num_fracs_; 
-            Scalar pressure0_; 
+            SizeType PF_component_;
+            SizeType num_fracs_;
+            Scalar pressure0_;
 
     };
 
 }
+
+#endif
 
 #endif

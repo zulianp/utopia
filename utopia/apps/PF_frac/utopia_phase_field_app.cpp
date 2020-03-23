@@ -44,7 +44,10 @@ namespace utopia {
         using Scalar         = typename FunctionSpace::Scalar;
         using Dev            = typename FunctionSpace::Device;
         using Point          = typename FunctionSpace::Point;
-        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+
+        using Subspace       = typename FunctionSpace::template Subspace<1>;
+        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
+
         static const int NNodes = Elem::NNodes;
 
         // un-hard-code
@@ -171,7 +174,9 @@ namespace utopia {
         using Scalar         = typename FunctionSpace::Scalar;
         using Dev            = typename FunctionSpace::Device;
         using Point          = typename FunctionSpace::Point;
-        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+
+        using Subspace       = typename FunctionSpace::template Subspace<1>;
+        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
 
         static const int NNodes = Elem::NNodes;
 

@@ -2,9 +2,14 @@
 #define UTOPIA_VIEW_FORWARD_DECLARATIONS_HPP
 
 #include <cassert>
+#include "utopia_Base.hpp"
 //FIXME check if there is a device compilation
-#define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
-// #define UTOPIA_DEVICE_ASSERT(...)
+
+#ifdef KOKKOS_ENABLE_CUDA
+#define UTOPIA_DEVICE_ASSERT(...)
+#else
+#define UTOPIA_DEVICE_ASSERT(expr) assert((expr))
+#endif
 
 namespace utopia {
     using Size_t = std::size_t;

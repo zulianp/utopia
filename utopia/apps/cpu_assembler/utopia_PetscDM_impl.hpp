@@ -13,6 +13,7 @@
 #include "utopia_petsc_Eval_Rename.hpp"
 #include "utopia_petsc_Each.hpp"
 #include "utopia_ArrayView.hpp"
+#include "utopia_CppMacros.hpp"
 
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -84,9 +85,9 @@ namespace utopia {
             DMDAGetElementType(dm, &elem_type);
 
             if(elem_type == DMDA_ELEMENT_P1) {
-                if constexpr(Dim == 2) {
+                UTOPIA_IF_CONSTEXPR(Dim == 2) {
                     elements_x_cell = 2;
-                } else if constexpr(Dim == 3) {
+                } else UTOPIA_IF_CONSTEXPR(Dim == 3) {
                     elements_x_cell = 6;
                 } else {
                     assert(false);
@@ -744,14 +745,20 @@ namespace utopia {
     }
 
     template<int Dim>
-    void PetscDM<Dim>::cell_point(const SizeType &idx, Point &translation)
+    void PetscDM<Dim>::cell_point(const SizeType &idx, Point &translation) const
     {
         SizeType v0 = impl_->elements->e[idx*impl_->elements->nc];
         impl_->local_node_idx_coord(v0, translation);
     }
 
     template<int Dim>
-    void PetscDM<Dim>::cell_size(const SizeType &, Point &cell_size)
+    void PetscDM<Dim>::point(const SizeType &local_node_idx, Point &p) const
+    {
+        impl_->local_node_idx_coord(local_node_idx, p);
+    }
+
+    template<int Dim>
+    void PetscDM<Dim>::cell_size(const SizeType &, Point &cell_size) const
     {
         const auto &mirror = impl_->mirror;
         for(int d = 0; d < Dim; ++d) {
@@ -841,8 +848,14 @@ namespace utopia {
     {
         auto fine_dm = utopia::make_unique<PetscDM<Dim>>();
         DMRefine(raw_type(*this), comm().get(), &raw_type(*fine_dm));
+
+        DMDAElementType elem_type;
+        DMDAGetElementType(raw_type(*this), &elem_type);
+        DMDASetElementType(raw_type(*fine_dm), elem_type);
+
         fine_dm->impl_->mirror.box_min.copy( impl_->mirror.box_min );
         fine_dm->impl_->mirror.box_max.copy( impl_->mirror.box_max );
+        fine_dm->impl_->mirror.elements_x_cell = impl_->mirror.elements_x_cell;
 
         fine_dm->update_mirror();
 
@@ -889,7 +902,11 @@ namespace utopia {
         convert(impl_->mirror.box_min, t_box_min);
         convert(impl_->mirror.box_max, t_box_max);
 
-        dm->build(comm(), t_dims, t_box_min, t_box_max, n_components);
+        if(impl_->mirror.elements_x_cell != 1) {
+            dm->build_simplicial_complex(comm(), t_dims, t_box_min, t_box_max, n_components);
+        } else {
+            dm->build(comm(), t_dims, t_box_min, t_box_max, n_components);
+        }
 
         //FIXME copy other fields
         return std::move(dm);

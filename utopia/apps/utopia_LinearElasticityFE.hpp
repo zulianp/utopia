@@ -45,7 +45,7 @@ namespace utopia {
 		using Point            = typename FunctionSpace::Point;
 		using Scalar           = typename FunctionSpace::Scalar;
 		using SizeType         = typename FunctionSpace::SizeType;
-		using Quadrature       = utopia::Quadrature<Elem, 2>;
+		using Quadrature       = utopia::Quadrature<Elem, 2*(Elem::Order -1)>;
 		using ElementMatrix    = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
 		using ElementVector    = utopia::StaticVector<Scalar, NFunctions>;
 
