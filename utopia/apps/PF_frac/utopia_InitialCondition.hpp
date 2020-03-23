@@ -294,7 +294,6 @@ namespace utopia {
                 
                 // length should be driven from power distribution 
                 std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
-                // const T alpha = 2.0; 
                 const T alpha = 2.8; 
                 const T x_min = 3.0*width > 0.04 ? 3.0*width : 0.04; 
                 const T r = distr_length(generator);
@@ -478,6 +477,80 @@ namespace utopia {
             Scalar pressure0_;
 
     };
+
+
+
+    template<class FunctionSpace>
+    class InitialCondidtionPFShaldon : public InitialCondition<FunctionSpace>
+    {
+        public:
+
+            // using Comm           = typename FunctionSpace::Comm;
+            using Mesh           = typename FunctionSpace::Mesh;
+            using Elem           = typename FunctionSpace::Shape;
+            using ElemView       = typename FunctionSpace::ViewDevice::Elem;
+            using SizeType       = typename FunctionSpace::SizeType;
+            using Scalar         = typename FunctionSpace::Scalar;
+            using Dev            = typename FunctionSpace::Device;
+            using Point          = typename FunctionSpace::Point;
+            using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+            static const int NNodes = Elem::NNodes;
+
+
+            InitialCondidtionPFShaldon(FunctionSpace &space, const SizeType & PF_component):   InitialCondition<FunctionSpace>(space),
+                                                                                                PF_component_(PF_component)
+            {
+
+            }
+
+
+            void init(PetscVector &x) override
+            {
+                // un-hard-code
+                auto C = this->space_.subspace(PF_component_);
+
+                auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) -> Scalar {
+                    Scalar f = 0.0;
+                    Scalar h = this->space_.mesh().min_spacing(); 
+
+                    if( x[0] > (0.26-h) && x[0] < (0.26 + h)  && x[1]  > 0.38  && x[1]  < 0.55 && x[2] < (0.4+h) && x[2] > (0.4-h) ){
+                        f = 1.0;
+                    }
+                    else if( x[0] > 0.55 && x[0] < 0.7  && x[1]  > (0.4-h)  && x[1]  < (0.4+h) && x[2] < (0.6+h) && x[2] > (0.6-h)){
+                        f = 1.0;
+                    }
+                    else{
+                        f = 0.0;
+                    }
+
+                    return f;
+                });
+
+                {
+                    auto C_view       = C.view_device();
+                    auto sampler_view = sampler.view_device();
+                    auto x_view       = this->space_.assembly_view_device(x);
+
+                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+                }
+            }
+
+        private:
+            SizeType PF_component_;
+    };
+
+
+
+
+
+
 
 }
 

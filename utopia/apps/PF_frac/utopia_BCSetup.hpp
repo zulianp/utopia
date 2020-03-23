@@ -73,13 +73,13 @@ namespace utopia {
 
 
     template<class FunctionSpace>
-    class PFFracFixAllDisp2D : public BCSetup<FunctionSpace>
+    class PFFracFixAllDisp : public BCSetup<FunctionSpace>
     {
         public:
             using Scalar    = typename FunctionSpace::Scalar;
             using Vector   = typename FunctionSpace::Vector;
 
-            PFFracFixAllDisp2D(FunctionSpace & space): BCSetup<FunctionSpace>(space)
+            PFFracFixAllDisp(FunctionSpace & space): BCSetup<FunctionSpace>(space)
             {
 
             }
