@@ -123,9 +123,30 @@ namespace utopia {
                         },
                         d
                         );
+
+
+                    if(Dim ==3){
+                        this->space_.emplace_dirichlet_condition(
+                            SideSet::front(),
+                            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                                return 0.0;
+                            },
+                            d
+                            );
+
+                        this->space_.emplace_dirichlet_condition(
+                            SideSet::back(),
+                            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                                return 0.0;
+                            },
+                            d
+                            );                                                    
+                    }
+
                 }
             }
     };   
+
 
 
 

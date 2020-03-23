@@ -216,6 +216,31 @@ namespace utopia {
         }
     };
 
+
+    template<class T>
+    struct Point3D{
+
+        Point3D()
+        {
+
+        }
+
+        Point3D(const T & xx, const T & yy, const T && zz):
+        x(xx), y(yy), z(zz)
+        {
+
+        }
+
+        T x;
+        T y;
+        T z; 
+
+        void describe()
+        {
+            std::cout<<"( " << x << " , "<< y << " , "<< z << " )" <<  " \n";
+        }
+    };    
+
     template<class T>
     class Rectangle
     {
@@ -333,6 +358,284 @@ namespace utopia {
             Point2D<T> C_;
             Point2D<T> D_;
     };
+
+
+    template<class T>
+    class Paralleloid
+    {
+        public:
+            Paralleloid(const Point3D<T> & A, const Point3D<T> & B, const Point3D<T> & C, const Point3D<T> & D, const Point3D<T> & E, const Point3D<T> & F, const Point3D<T> & G, const Point3D<T> & H):
+            A_(A), B_(B), C_(C), D_(D), E_(E), F_(F), G_(G), H_(H)
+            {
+
+            }
+
+            Paralleloid(const T & width)
+            {
+                randomly_generate(width);
+            }
+
+            Paralleloid(const Point3D<T> & A, const T & length, const T & width, const T & theta, const T & gamma ):
+            A_(A)
+            {
+                this->generate_paralleloid(length, width, theta, gamma);
+            }
+
+            bool belongs_to_paralleloid(const T & x_coord, const T & y_coord, const T & z_coord)
+            {
+                Point3D<T> M;
+                M.x = x_coord;
+                M.y = y_coord;
+                M.z = z_coord;
+
+                return belongs_to_paralleloid(M);
+            }
+
+            bool belongs_to_paralleloid(Point3D<T> M)
+            {
+                // Point3D<T> AB, AM, BD, BM;
+                // build_vector(A_, B_, AB);
+                // build_vector(A_, M, AM);
+                // build_vector(B_, D_, BD);
+                // build_vector(B_, M, BM);
+
+                // T dotABAM = vec_dot(AB, AM);
+                // T dotABAB = vec_dot(AB, AB);
+                // T dotBDBM = vec_dot(BD, BM);
+                // T dotBDBD = vec_dot(BD, BD);
+
+                // // bool flg1 = (0.0 <= dotABAM) && (dotABAM <= dotABAB); // && (0.0 <= dotBDBM) && (dotBDBM <= dotBDBD));
+                // bool flg1 = (0.0 <= dotABAM) && (dotABAM <= dotABAB); 
+                // return flg1; 
+
+                // Point3D<T> EF, EM, FH, FM;
+                // build_vector(E_, F_, EF);
+                // build_vector(E_, M, EM);
+                // build_vector(F_, H_, FH);
+                // build_vector(F_, M, FM);
+
+                // T dotEFEM = vec_dot(EF, EM);
+                // T dotEFEF = vec_dot(EF, EF);
+                // T dotFHFM = vec_dot(FH, FM);
+                // T dotFHFH = vec_dot(FH, FH);
+
+                // bool flg2 = ((0.0 <= dotEFEM) && (dotEFEM <= dotEFEF) && (0.0 <= dotFHFM) && (dotFHFM <= dotFHFH));                
+
+
+                // Point3D<T> FB, FM;
+                // build_vector(F_, B_, FB);
+                // build_vector(F_, M, FM);
+                // // build_vector(B_, D_, BD);
+                // // build_vector(B_, M, BM);
+
+                // T dotFBFM = vec_dot(FB, FM);
+                // T dotFBFB = vec_dot(FB, FB);
+                // // T dotBDBM = vec_dot(BD, BM);
+                // // T dotBDBD = vec_dot(BD, BD);
+
+                // bool flg3 = ((0.0 <= dotFBFM) && (dotFBFM <= dotFBFB) && (0.0 <= dotBDBM) && (dotBDBM <= dotBDBD));
+
+                // return flg1 && flg3; 
+
+
+
+                Point3D<T> u, v, w;
+                build_vector(A_, E_, u);
+                build_vector(A_, B_, v);
+                build_vector(A_, C_, w);
+
+                bool flg1 =  (vec_dot(u, E_) <= vec_dot(M, u)) && (vec_dot(M, u) <= vec_dot(u, A_)); 
+                bool flg2 =  (vec_dot(v, B_) <= vec_dot(M, v)) && (vec_dot(M, v) <= vec_dot(v, A_)); 
+                bool flg3 =  (vec_dot(w, C_) <= vec_dot(M, w)) && (vec_dot(M, w) <= vec_dot(w, A_));    
+
+
+
+                return flg1 && flg2 && flg3; 
+
+            }
+
+
+            void describe()
+            {
+                std::cout<<"A: "<< A_.x << " "<< A_.y << " " << A_.z  <<" \n";
+                std::cout<<"B: "<< B_.x << " "<< B_.y << " " << B_.z  <<" \n";
+                std::cout<<"C: "<< C_.x << " "<< C_.y << " " << C_.z  <<" \n";
+                std::cout<<"D: "<< D_.x << " "<< D_.y << " " << D_.z  <<" \n \n";
+
+                std::cout<<"E: "<< E_.x << " "<< E_.y <<  "  "<< E_.z << "  \n";
+                std::cout<<"F: "<< F_.x << " "<< F_.y <<  "  "<< F_.z << "  \n";
+                std::cout<<"G: "<< G_.x << " "<< G_.y <<  "  "<< G_.z << "  \n";
+                std::cout<<"H: "<< H_.x << " "<< H_.y <<  "  "<< H_.z << "  \n";
+                std::cout<<"------------------------------  \n";                
+            }
+
+        private:
+            void randomly_generate(const T & depth)
+            {
+                //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+                const unsigned seed = 15;
+                static std::default_random_engine generator (seed);
+
+                // this one needs to be replaced
+                std::uniform_real_distribution<> distr_point(-0.3, 1.3);
+                std::uniform_int_distribution<> distr_angle(0.0, 360);
+
+
+                A_.x = distr_point(generator);
+                A_.y = distr_point(generator);             
+                A_.z = distr_point(generator);  
+
+
+                const T theta = distr_angle(generator);   
+                // std::cout<<"theta: "<< theta << "  \n"; 
+                          
+                // length should be driven from power distribution 
+                std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
+                const T alpha = 2.8; 
+                const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04; 
+                const T r1 = distr_length(generator);
+                const T length = x_min * std::pow( (1.-r1), (-1./(alpha-1.)));
+
+                std::uniform_int_distribution<> distr_angle2(0.0, 360);
+                const T gamma = distr_angle2(generator);   
+
+                generate_paralleloid(0.2, 0.2, depth, theta, gamma);
+
+            }
+
+            void generate_paralleloid(const T & a, const T & b, const T & c, const T & theta, const T & gamma){
+                const T pi = std::acos(-1.0);
+                const T theta_rad = theta * pi/180.0;
+                const T gamma_rad = gamma * pi/180.0;
+
+
+                B_.x = A_.x + (a * std::cos(theta_rad));
+                B_.y = A_.y + (a * std::sin(theta_rad));
+                B_.z = A_.z; // + (d * std::sin(gamma_rad));
+
+                C_.x = A_.x + (b * std::cos(theta_rad + pi/2.0));
+                C_.y = A_.y + (b * std::sin(theta_rad + pi/2.0));
+                C_.z = A_.z; // + (d * std::sin(gamma_rad + pi/2.0));
+
+                D_.x = A_.x + ((a * std::cos(theta_rad)) + (b * std::cos(theta_rad + pi/2.0)));
+                D_.y = A_.y + ((a * std::sin(theta_rad)) + (b * std::sin(theta_rad + pi/2.0)));
+                D_.z = A_.z; // + ((d * std::sin(gamma_rad)) + (d * std::sin(gamma_rad + pi/2.0)));
+
+                E_.x = A_.x;
+                E_.y = A_.y;
+                E_.z = A_.z + c;
+
+                F_.x = B_.x;
+                F_.y = B_.y;
+                F_.z = B_.z + c;
+
+                G_.x = C_.x;
+                G_.y = C_.y;
+                G_.z = C_.z + c;
+
+                H_.x = D_.x;
+                H_.y = D_.y;
+                H_.z = D_.z + c;
+
+
+                // rotate around z-axis
+                auto ax = A_.x; 
+                auto ay = A_.z; 
+                A_.x = (ax* std::cos(gamma_rad)) - (ay * std::sin(gamma_rad)); 
+                A_.z = (ay* std::cos(gamma_rad)) + (ax * std::sin(gamma_rad)); 
+
+
+                auto bx = B_.x; 
+                auto by = B_.z; 
+                B_.x = (bx* std::cos(gamma_rad)) - (by * std::sin(gamma_rad)); 
+                B_.z = (by* std::cos(gamma_rad)) + (bx * std::sin(gamma_rad)); 
+
+
+                auto cx = C_.x; 
+                auto cy = C_.z; 
+                C_.x = (cx* std::cos(gamma_rad)) - (cy * std::sin(gamma_rad)); 
+                C_.z = (cy* std::cos(gamma_rad)) + (cx * std::sin(gamma_rad)); 
+
+
+                auto dx = D_.x; 
+                auto dy = D_.z; 
+                D_.x = (dx* std::cos(gamma_rad)) - (dy * std::sin(gamma_rad)); 
+                D_.z = (dy* std::cos(gamma_rad)) + (dx * std::sin(gamma_rad)); 
+
+
+                auto ex = E_.x; 
+                auto ey = E_.z; 
+                E_.x = (ex* std::cos(gamma_rad)) - (ey * std::sin(gamma_rad)); 
+                E_.z = (ey* std::cos(gamma_rad)) + (ex * std::sin(gamma_rad)); 
+
+
+                auto fx = F_.x; 
+                auto fy = F_.z; 
+                F_.x = (fx* std::cos(gamma_rad)) - (fy * std::sin(gamma_rad)); 
+                F_.z = (fy* std::cos(gamma_rad)) + (fx * std::sin(gamma_rad)); 
+
+
+                auto gx = G_.x; 
+                auto gy = G_.z; 
+                G_.x = (gx* std::cos(gamma_rad)) - (gy* std::sin(gamma_rad)); 
+                G_.z = (gy* std::cos(gamma_rad)) + (gx * std::sin(gamma_rad)); 
+
+
+                auto hx = H_.x; 
+                auto hy = H_.z; 
+                H_.x = (hx* std::cos(gamma_rad)) - (hy * std::sin(gamma_rad)); 
+                H_.z = (hy* std::cos(gamma_rad)) + (hx* std::sin(gamma_rad));                                                                                                                 
+
+
+
+
+
+                // std::cout<<"a: "<< a << "  \n"; 
+                // std::cout<<"b: "<< b << "  \n"; 
+                // std::cout<<"c: "<< c << "  \n"; 
+                // std::cout<<"d: "<< d << "  \n"; 
+
+                // std::cout<<"theta_rad: "<< theta_rad << " \n"; 
+                // std::cout<<"gamma_rad: "<< gamma_rad << " \n"; 
+
+                // describe(); 
+
+
+                // exit(0); 
+            }
+
+            void build_vector(const Point3D<T> & A, const Point3D<T> & B, Point3D<T> & result)
+            {
+                result.x = A.x - B.x;
+                result.y = A.y - B.y;
+                result.z = A.z - B.z;
+            }
+
+            T vec_dot(const Point3D<T> & A, const Point3D<T> & B)
+            {
+                return (A.x * B.x) + (A.y * B.y) + (A.z * B.z);
+            }
+
+
+            void vec_cross(const Point3D<T> & A, const Point3D<T> & B, Point3D<T> & result)
+            {
+                result.x = A.y * B.z - A.z*B.y;
+                result.y = A.z * B.x - A.x*B.z;
+                result.z = A.x * B.y - A.y*B.x;
+            }            
+
+        private:
+            Point3D<T> A_;
+            Point3D<T> B_;
+            Point3D<T> C_;
+            Point3D<T> D_;
+
+            Point3D<T> E_;
+            Point3D<T> F_;
+            Point3D<T> G_;
+            Point3D<T> H_;            
+
+    };    
 
 
     template<class FunctionSpace>
@@ -479,9 +782,152 @@ namespace utopia {
     };
 
 
+    template<class FunctionSpace>
+    class InitialCondidtionPFFracNet3D : public InitialCondition<FunctionSpace>
+    {
+        public:
+
+            // using Comm           = typename FunctionSpace::Comm;
+            using Mesh           = typename FunctionSpace::Mesh;
+            using Elem           = typename FunctionSpace::Shape;
+            using ElemView       = typename FunctionSpace::ViewDevice::Elem;
+            using SizeType       = typename FunctionSpace::SizeType;
+            using Scalar         = typename FunctionSpace::Scalar;
+            using Dev            = typename FunctionSpace::Device;
+            using Point          = typename FunctionSpace::Point;
+            using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+            static const int NNodes = Elem::NNodes;
+
+            InitialCondidtionPFFracNet3D(FunctionSpace &space, const SizeType & PF_component, const SizeType & num_fracs=10):
+            InitialCondition<FunctionSpace>(space), PF_component_(PF_component), num_fracs_(num_fracs)//, pressure0_(1.0)
+            {
+
+            }
+
+            void read(Input &in) override
+            {
+                in.get("num_fracs", num_fracs_);
+                // in.get("pressure0", pressure0_);
+            }
+
+
+
+            void init(PetscVector &x) override
+            {
+                using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+                // un-hard-code
+                auto C = this->space_.subspace(PF_component_);
+
+                auto width =  3.0 * this->space_.mesh().min_spacing();
+
+                if(mpi_world_rank()==0){
+                    std::cout<<"width: "<< width << "  \n";
+                }
+
+                std::vector<Paralleloid<Scalar>> paralleloids;
+
+                for(auto r=0; r < num_fracs_; r++){
+                    paralleloids.push_back(Paralleloid<Scalar>(width));
+                }
+
+                auto sampler = utopia::sampler(C, [&paralleloids](const Point &x) -> Scalar {
+
+                    for(auto r=0; r < paralleloids.size(); r++){
+                        if(paralleloids[r].belongs_to_paralleloid(x[0], x[1], x[2]))
+                            return 1.0;
+                    }
+                    return 0.0;
+                });
+
+                {
+                    auto C_view       = C.view_device();
+                    auto sampler_view = sampler.view_device();
+                    auto x_view       = this->space_.assembly_view_device(x);
+
+                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+                }
+            }
+
+            // void init(PetscVector &sol_vec, PetscVector &press_vec) override
+            // {
+            //     PetscVector sol_vec_copy = sol_vec;
+
+            //     // un-hard-code
+            //     auto C = this->space_.subspace(PF_component_);
+            //     auto width =  5.0 * this->space_.mesh().min_spacing();
+
+            //     if(mpi_world_rank()==0){
+            //         std::cout<<"width: "<< width << "  \n";
+            //     }
+
+            //     const Point2D<Scalar> A(0.5, 0.5);
+            //     Rectangle<Scalar> rectangle(A, width, width, 0.0);
+
+            //     auto sampler = utopia::sampler(C, [&rectangle](const Point &x) -> Scalar {
+            //         if(rectangle.belongs_to_rectangle(x[0], x[1])){
+            //             return 1.0;
+            //         }
+            //         else{
+            //             return 0.0;
+            //         }
+            //     });
+
+
+            //     Scalar p = pressure0_;
+
+            //     auto press_sampler = utopia::sampler(C, [&rectangle, p](const Point &x) -> Scalar {
+            //         if(rectangle.belongs_to_rectangle(x[0], x[1])){
+            //             return p;
+            //         }
+            //         else{
+            //             return p/10.0;
+            //         }
+            //     });
+
+
+            //     {
+            //         auto C_view             = C.view_device();
+            //         auto sampler_view       = sampler.view_device();
+            //         auto press_sampler_view = press_sampler.view_device();
+
+            //         auto sol_view       = this->space_.assembly_view_device(sol_vec);
+            //         auto press_view     = this->space_.assembly_view_device(press_vec);
+
+            //         Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            //             ElemViewScalar e;
+            //             C_view.elem(i, e);
+
+            //             StaticVector<Scalar, NNodes> s;
+            //             sampler_view.assemble(e, s);
+            //             C_view.set_vector(e, s, sol_view);
+
+            //             press_sampler_view.assemble(e, s);
+            //             C_view.set_vector(e, s, press_view);
+
+            //         });
+            //     }
+
+            //     // add new fracture to existing ones
+            //     sol_vec += sol_vec_copy;
+            // }
+
+        private:
+            SizeType PF_component_;
+            SizeType num_fracs_;
+            // Scalar pressure0_;
+
+    };
+
 
     template<class FunctionSpace>
-    class InitialCondidtionPFShaldon : public InitialCondition<FunctionSpace>
+    class InitialCondidtionPFSneddon : public InitialCondition<FunctionSpace>
     {
         public:
 
@@ -497,7 +943,7 @@ namespace utopia {
             static const int NNodes = Elem::NNodes;
 
 
-            InitialCondidtionPFShaldon(FunctionSpace &space, const SizeType & PF_component):   InitialCondition<FunctionSpace>(space),
+            InitialCondidtionPFSneddon(FunctionSpace &space, const SizeType & PF_component):   InitialCondition<FunctionSpace>(space),
                                                                                                 PF_component_(PF_component)
             {
 
@@ -513,12 +959,9 @@ namespace utopia {
                     Scalar f = 0.0;
                     Scalar h = this->space_.mesh().min_spacing(); 
 
-                    if( x[0] > (0.26-h) && x[0] < (0.26 + h)  && x[1]  > 0.38  && x[1]  < 0.55 && x[2] < (0.4+h) && x[2] > (0.4-h) ){
+                    if( x[0] > 0.55 && x[0] < 0.7  && x[1]  > (0.4)  && x[1]  < (0.6) && x[2] < (0.6+h) && x[2] > (0.6-h)){
                         f = 1.0;
-                    }
-                    else if( x[0] > 0.55 && x[0] < 0.7  && x[1]  > (0.4-h)  && x[1]  < (0.4+h) && x[2] < (0.6+h) && x[2] > (0.6-h)){
-                        f = 1.0;
-                    }
+                    }             
                     else{
                         f = 0.0;
                     }
