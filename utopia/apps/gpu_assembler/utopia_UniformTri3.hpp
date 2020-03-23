@@ -13,7 +13,7 @@ namespace utopia {
     class RefTri3 {
     public:
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        UTOPIA_INLINE_FUNCTION static constexpr auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar
         {
             const auto x = p[0];
             const auto y = p[1];
@@ -30,7 +30,7 @@ namespace utopia {
         }
 
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static auto partial_y(const int i, const Point &) -> typename Traits<Point>::Scalar
+        UTOPIA_INLINE_FUNCTION static constexpr auto partial_y(const int i, const Point &) -> typename Traits<Point>::Scalar
         {
             switch(i)
             {
@@ -54,7 +54,7 @@ namespace utopia {
         }
 
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static auto partial_x(const int i, const Point &)  -> typename Traits<Point>::Scalar
+        UTOPIA_INLINE_FUNCTION static constexpr auto partial_x(const int i, const Point &)  -> typename Traits<Point>::Scalar
         {
             switch(i)
             {
@@ -80,7 +80,7 @@ namespace utopia {
 
         //space-time mixed derivative
         template<typename Point, typename Deriv>
-        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &, Deriv &dst)
         {
             //project t coordinates to 0
             UTOPIA_DEVICE_ASSERT(dst.size() == 1);
@@ -88,11 +88,8 @@ namespace utopia {
         }
 
         template<typename Point, typename Grad>
-        UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g)
+        UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &, Grad &g)
         {
-            const auto x = p[0];
-            const auto y = p[1];
-
             switch(i)
             {
                 case 0:
