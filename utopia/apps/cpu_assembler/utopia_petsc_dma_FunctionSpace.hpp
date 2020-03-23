@@ -315,6 +315,29 @@ namespace utopia {
             return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
         }
 
+        template<class Quadrature>
+        PhysicalPoint<FunctionSpace, Quadrature> points(const Quadrature &q)
+        {
+            return PhysicalPoint<FunctionSpace, Quadrature>(*this, q);
+        }
+
+        template<class Quadrature>
+        ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_shape_device(const Quadrature &q)
+        {
+            return ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
+
+        template<class Quadrature>
+        PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_points_device(const Quadrature &q)
+        {
+            return PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
+
+        template<class Quadrature>
+        Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_differential_device(const Quadrature &q)
+        {
+            return Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
 
         template<class Quadrature>
         Differential<FunctionSpace, Quadrature> differential(const Quadrature &q)
@@ -368,6 +391,8 @@ namespace utopia {
         }
 
         void elem(const SizeType &idx, Elem &e) const;
+
+        bool on_boundary(const SizeType &elem_idx) const;
 
 
         // bool is_boundary_dof(const SizeType &idx) const
@@ -536,6 +561,11 @@ namespace utopia {
             dirichlet_bcs_ = conds;
         }
 
+        void reset_bc()
+        {
+            dirichlet_bcs_.clear();
+        }
+
         template<class... Args>
         void emplace_dirichlet_condition(Args && ...args)
         {
@@ -576,6 +606,14 @@ namespace utopia {
                 bc->apply_zero(vec);
             }
         }
+
+        void build_constraints_markers(PetscVector &vec) const
+        {
+            for(const auto &bc : dirichlet_bcs_) {
+                bc->apply_val(vec, 1.0);
+            }
+        }
+
 
         inline bool empty() const
         {

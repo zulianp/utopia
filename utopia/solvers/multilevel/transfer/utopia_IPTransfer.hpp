@@ -183,16 +183,16 @@
         {
             if(empty(P_pos_)){
                 P_pos_ = *_Pr;
-                chop_smaller_than(P_pos_, 1e-13); 
+                chop_smaller_than(P_pos_, 1e-13);
             }
 
             if(empty(P_neg_)){
-                P_neg_ = (*_Pr); 
-                chop_greater_than(P_neg_, -1e-13); 
+                P_neg_ = (*_Pr);
+                chop_greater_than(P_neg_, -1e-13);
             }
-                
-            x_new = (P_pos_*x_pos) + (P_neg_*x_neg); 
-            return true; 
+
+            x_new = (P_pos_*x_pos) + (P_neg_*x_neg);
+            return true;
         }
 
 
@@ -212,13 +212,19 @@
             return norm_infty(*_Pr);
         }
 
+        const Matrix &I() const
+        {
+            assert(_I);
+            return *_I;
+        }
+
         protected:
             std::shared_ptr<Matrix> _I;
             std::shared_ptr<Matrix> _Pr;
             Scalar restrict_factor_;
 
-            Matrix P_pos_; 
-            Matrix P_neg_; 
+            Matrix P_pos_;
+            Matrix P_neg_;
     };
 
 }

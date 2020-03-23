@@ -191,6 +191,7 @@
     //      tr. radius update 
     //----------------------------------------------------------------------------
           this->delta_update_inf(rho, p_k, delta); 
+          // this->delta_update_new(rho, p_k, delta, g); 
 
           it++; 
         }
@@ -222,6 +223,47 @@
             initialized_ = true;    
             loc_size_ = ls;                                        
         }
+
+        // void delta_update_new(const Scalar & rho, const Vector & p_k, Scalar & delta, const Vector & Pg) 
+        // {
+        //   Vector Bp_k; 
+
+        //   auto multiplication_action = this->hessian_approx_strategy_->build_apply_H(); 
+        //   multiplication_action->apply(p_k, Bp_k);
+
+        //   Scalar contraction_factor = dot(Pg, p_k)/dot(p_k, Bp_k) * norm_infty(p_k); 
+        //   // std::cout<<"contraction_factor: "<< contraction_factor << "  \n"; 
+
+        //   contraction_factor = std::abs(contraction_factor); 
+
+        //   Scalar b0 = 10e-5; 
+        //   Scalar b1 = 0.2; 
+        //   Scalar b2 = 0.8; 
+
+        //   Scalar sigma0 = 0.25; 
+        //   Scalar sigma1 = 0.5; 
+        //   Scalar sigma2 = 2.0; 
+
+        //   // std::cout<<"tho: "<< rho << "  \n"; 
+
+        //   if(rho < b0)
+        //   {
+        //     delta = sigma0 * delta; 
+        //   }
+        //   else if( b0 <= rho <= b1){
+        //     delta = sigma1 * contraction_factor; 
+        //   }
+        //   else if(b1 <= rho <= b2){
+        //     delta = contraction_factor; 
+        //   }
+        //   else{
+        //     delta = sigma2 * contraction_factor; 
+        //   }
+
+        //   // std::cout<<"delta: "<< delta << "  \n"; 
+
+
+        // }
 
 
       SizeType it_successful_; 

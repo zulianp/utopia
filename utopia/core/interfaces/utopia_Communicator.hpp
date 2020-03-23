@@ -132,6 +132,12 @@ namespace utopia {
 	};
 
 	template<>
+	class MPIType<long long> {
+	public:
+		inline static MPI_Datatype value() noexcept { return MPI_LONG_LONG; }
+	};
+
+	template<>
 	class MPIType<int> {
 	public:
 		inline static MPI_Datatype value() noexcept { return MPI_INT; }
@@ -183,6 +189,16 @@ namespace utopia {
 		template<typename T>
 		inline void sum(const int n_values, T *inout) const {
 			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_SUM, get() );
+		}
+
+		template<typename T>
+		inline void min(const int n_values, T *inout) const {
+			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_MIN, get() );
+		}
+
+		template<typename T>
+		inline void max(const int n_values, T *inout) const {
+			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_MAX, get() );
 		}
 
 		template<typename T>

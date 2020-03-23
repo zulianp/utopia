@@ -307,7 +307,7 @@ namespace utopia {
         //////////////////////////////////////////
         stats.start();
         rename("x", x);
-        space.write("X.vtk", x);
+        space.write("X.vtr", x);
         stats.stop_and_collect("write");
         //////////////////////////////////////////
 
@@ -322,6 +322,7 @@ namespace utopia {
 
         using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
+        // using Elem             = utopia::Tri3<double, 2>;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
         using SizeType         = Mesh::SizeType;
 

@@ -4,6 +4,8 @@
 #include "utopia_GeometricMultigrid.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 
+// #include "petscdraw.h"
+
 namespace utopia {
 
     template<class Model, class FunctionSpace>
@@ -23,60 +25,109 @@ namespace utopia {
         std::string output_path = "MG.vtr";
         in.get("output_path", output_path);
 
+        bool export_system = false;
+        in.get("export_system", export_system);
 
-        auto smoother      = std::make_shared<SOR<Matrix, Vector>>();
-        auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+        bool direct_solution = false;
+        in.get("direct_solution", direct_solution);
 
-        GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver);
-        mg.verbose(true);
-        mg.init(coarse_space, n_levels);
+        bool coarse_direct_solver = true;
+        in.get("coarse_direct_solver", coarse_direct_solver);
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after mg-setup");
-        stats.stop_collect_and_restart("mg-setup");
+        bool use_petsc_mg = false;
+        in.get("use_petsc_mg", use_petsc_mg);
 
-        Vector x, b;
-        Matrix A;
+    	Vector x;
 
-        auto &space = mg.fine_space();
+        std::shared_ptr<FunctionSpace> fine_space_ptr;
 
-        space.create_vector(x);
-        space.create_vector(b);
-        space.create_matrix(A);
+    	{
+        	auto smoother = std::make_shared<SOR<Matrix, Vector>>();
+            // auto smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            // auto smoother = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+            std::shared_ptr< LinearSolver<Matrix, Vector> > coarse_solver;
+            if(coarse_direct_solver) {
+                coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+		    } else {
+                auto bcg = std::make_shared<BiCGStab<Matrix, Vector>>("bjacobi");
+                // auto bcg = std::make_shared<GMRES<Matrix, Vector>>("bjacobi");
+                bcg->max_it(coarse_space.n_dofs());
+                coarse_solver = bcg;
+            }
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-create-matrix");
+        	GeometricMultigrid<FunctionSpace> mg(smoother, coarse_solver, use_petsc_mg);
+        	// mg.verbose(true);
+            mg.read(in);
+        	mg.init(coarse_space, n_levels);
 
-        Model model(space);
-        model.read(in);
+       		UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after mg-setup");
+        	stats.stop_collect_and_restart("mg-setup");
 
-        model.hessian(x, A);
+        	Vector b;
+        	Matrix A;
 
-        // bool write_mat = false;
-        // in.get("write_mat", write_mat);
+            fine_space_ptr = mg.fine_space_ptr();
+        	auto &space = *fine_space_ptr;
 
-        // if(write_mat) {
-        //     rename("a", A);
-        //     write("A.m", A);
-        // }
-        // model.gradient(x, b);
+        	space.create_vector(x);
+        	space.create_vector(b);
+        	space.create_matrix(A);
 
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-assembly");
-        stats.stop_collect_and_restart("tensor-creation+assembly");
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-create-matrix");
 
-        space.apply_constraints(b);
+        	Model model(space);
+        	model.read(in);
 
-        mg.update(make_ref(A));
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
+        	model.hessian(x, A);
 
-        mg.apply(b, x);
-        UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
-        stats.stop_collect_and_restart("solve");
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-assembly");
+        	stats.stop_collect_and_restart("tensor-creation+assembly");
 
-        rename("x", x);
-        space.write(output_path, x);
+        	space.apply_constraints(b);
 
-        stats.stop_collect_and_restart("output");
+            if(export_system) {
+                rename("a", A);
+                write("A.m", A);
 
-        comm.root_print("n_dofs: " + std::to_string(space.n_dofs()));
+                rename("b", b);
+                write("B.m", b);
+            }
+
+            if(direct_solution) {
+                Factorization<Matrix, Vector> solver;
+                solver.solve(A, b, x);
+                rename("x", x);
+                fine_space_ptr->write("direct_solution.vtr", x);
+                x.set(0.0);
+            }
+
+            ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            // BiCGStab<Matrix, Vector, HOMEMADE> cg;
+            cg.read(in);
+
+            mg.max_it(1);
+            cg.set_preconditioner(make_ref(mg));
+
+            cg.update(make_ref(A));
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-update");
+
+            cg.verbose(true);
+
+            if(!cg.apply(b, x)) {
+                std::cerr << "[Error] Unable to solve system up to requested precision" << std::endl;
+            }
+
+        	UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after-apply");
+        	stats.stop_collect_and_restart("solve");
+    	}
+
+        if(!output_path.empty()) {
+            rename("x", x);
+            fine_space_ptr->write(output_path, x);
+            stats.stop_collect_and_restart("output");
+    	}
+
+        comm.root_print("n_dofs: " + std::to_string(x.size()));
         stats.describe(std::cout);
     }
 

@@ -24,6 +24,15 @@ namespace utopia {
     template<class Matrix, class Vector>
     class PreconditionedSolver;
 
+    template<class Matrix, class Vector>
+    class Transfer;
+
+    template<class Matrix, class Vector>
+    class IPTransfer;
+
+    template<class Matrix, class Vector>
+    class MatrixTransfer;
+
 }
 
 #endif //UTOPIA_SOLVERFORWARDDECLARATIONS_HPP

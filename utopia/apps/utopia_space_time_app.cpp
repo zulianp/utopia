@@ -25,6 +25,7 @@
 #include "utopia_STHeatEquation.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_Tri3.hpp"
 
 #include "utopia_app_utils.hpp"
 
@@ -50,7 +51,8 @@ namespace utopia {
         using Scalar         = typename FunctionSpace::Scalar;
         using Dev            = typename FunctionSpace::Device;
         using Point          = typename FunctionSpace::Point;
-        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        using Subspace       = typename FunctionSpace::template Subspace<1>;
+        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
 
         static const int NNodes = Elem::NNodes;
 
@@ -111,7 +113,9 @@ namespace utopia {
             // KSPSolver<PetscMatrix, PetscVector> linear_solver;
             // linear_solver.max_it(nx*ny);
             // linear_solver.read(in);
-            Factorization<PetscMatrix, PetscVector> linear_solver;
+            // BiCGStab<PetscMatrix, PetscVector> linear_solver("bjacobi");
+            GMRES<PetscMatrix, PetscVector> linear_solver("bjacobi");
+            // Factorization<PetscMatrix, PetscVector> linear_solver;
             linear_solver.solve(H, g, x);
 
 
@@ -137,11 +141,12 @@ namespace utopia {
 
     static void space_time_2(Input &in)
     {
-        static const int Dim = 2;
+        static const int Dim   = 2;
         static const int NVars = 1;
 
         using Mesh           = utopia::PetscDM<Dim>;
         using Elem           = utopia::PetscUniformQuad4;
+        // using Elem           = utopia::Tri3<double, 2>;
         using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType       = FunctionSpace::SizeType;
         using Scalar         = FunctionSpace::Scalar;
@@ -225,11 +230,11 @@ namespace utopia {
                                     "respectively dt < h^2/2");
         }
 
-        //front == before / back == after
+        //back == before / front == after
         space.emplace_dirichlet_condition(
-            SideSet::front(),
+            SideSet::back(),
             UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 1.0;
+                return 10.0;
             }
         );
 

@@ -180,6 +180,13 @@ namespace utopia {
             entries_[i] = value;
         }
 
+        inline void l_set(const SizeType &i, const T &value)
+        {
+            assert(i < size());
+
+            entries_[i] = value;
+        }
+
         virtual void set(const T &val) override
         {
             std::fill(std::begin(entries_), std::end(entries_), val);
@@ -219,10 +226,17 @@ namespace utopia {
         }
 
         ///////////////////////////////////////////////////////////////////////////
-        ////////////// OVERRIDES FOR DenseMatrix //////////////////////////////////
+        ////////////// OVERRIDES FOR Vector //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
         inline T get(const SizeType &i) const override
+        {
+            assert(i < size());
+
+            return entries_[i];
+        }
+
+        inline T l_get(const SizeType &i) const //override
         {
             assert(i < size());
 

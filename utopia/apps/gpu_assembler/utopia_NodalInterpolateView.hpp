@@ -45,7 +45,7 @@ namespace utopia {
             Coeff elem_coeff;
             coeff_.get(elem, elem_coeff);
 
-            auto shape_i = fun_.make(elem);
+            auto &&shape_i = fun_.make(elem);
 
             const std::size_t n = shape_i.n_points();
             for(std::size_t k = 0; k < n; ++k) {

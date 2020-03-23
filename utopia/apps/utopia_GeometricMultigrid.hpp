@@ -25,9 +25,16 @@ namespace utopia {
 
         GeometricMultigrid(
             const std::shared_ptr<Smoother> &smoother,
-            const std::shared_ptr<Solver>   &coarse_solver
-        ) : algebraic_mg_(std::make_shared< Multigrid<Matrix, Vector> >(smoother, coarse_solver))
+            const std::shared_ptr<Solver>   &coarse_solver,
+            const bool use_petsc_mg = false
+        )
         {
+            if(use_petsc_mg) {
+                algebraic_mg_ = std::make_shared< Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> >(smoother, coarse_solver);
+            } else {
+                algebraic_mg_ = std::make_shared< Multigrid<Matrix, Vector> >(smoother, coarse_solver);
+            }
+
             algebraic_mg_->must_generate_masks(false);
         }
 
@@ -132,8 +139,18 @@ namespace utopia {
             return *spaces_.back();
         }
 
+        std::shared_ptr<FunctionSpace> fine_space_ptr()
+        {
+            return spaces_.back();
+        }
+
+        std::shared_ptr<const FunctionSpace> fine_space_ptr() const
+        {
+            return spaces_.back();
+        }
+
     private:
-        std::shared_ptr<Multigrid<Matrix, Vector>> algebraic_mg_;
+        std::shared_ptr<LinearMultiLevel<Matrix, Vector>> algebraic_mg_;
         std::vector<std::shared_ptr<FunctionSpace>> spaces_;
     };
 

@@ -37,7 +37,7 @@ namespace utopia
             return _x_eq_values; 
         }
 
-        SizeType loc_size() const 
+        virtual SizeType loc_size() const 
         {
             return local_size(_x_eq_values).get(0); 
         }
@@ -76,12 +76,12 @@ namespace utopia
         }
 
 
-        const Vector &get_eq_constrains_flg() const
+        Vector &get_eq_constrains_flg() 
         {
             return _eq_constrains_flg;
         }
 
-        const Vector &get_eq_constrains_values() const 
+        Vector &get_eq_constrains_values()  
         {
             return  _x_eq_values;
         }        
@@ -91,8 +91,15 @@ namespace utopia
             _x_eq_values        =  x_in;
             _eq_constrains_flg  = eq_constrains_flg;
 
-            // _eq_constraints_mask_matrix_   = local_identity(local_size(_eq_constrains_flg).get(0), local_size(_eq_constrains_flg).get(0)); 
-            // _eq_constraints_mask_matrix_  -= diag(_eq_constrains_flg); 
+            this->init_constraint_indices(); 
+
+            return true;
+        }
+
+
+        bool init_constraint_indices()
+        {
+            indices_eq_constraints_.clear();
 
             {
                 Read<Vector> r(_eq_constrains_flg);
@@ -104,10 +111,11 @@ namespace utopia
                         indices_eq_constraints_.push_back(i);
                     }
                 }
-            }            
+            }      
 
             return true;
         }
+
 
 
         virtual bool zero_contribution_to_equality_constrains(Vector & x) const
@@ -142,8 +150,6 @@ namespace utopia
         Vector _x_eq_values;
         Vector _eq_constrains_flg;
         
-
-        // Matrix _eq_constraints_mask_matrix_; 
         std::vector<SizeType> indices_eq_constraints_; 
     };
 

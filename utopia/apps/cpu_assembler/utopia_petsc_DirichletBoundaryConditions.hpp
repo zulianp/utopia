@@ -22,7 +22,7 @@ namespace utopia {
         static const int Dim = Subspace::Dim;
 
         DirichletBoundaryCondition(const FunctionSpace &space)
-        : space_(space), side_set_(0), component_(0)
+        : space_(space), side_set_(SideSet::invalid()), component_(0)
         {}
 
         DirichletBoundaryCondition(
@@ -88,11 +88,18 @@ namespace utopia {
 
         void apply_zero(PetscVector &vec) const
         {
+           apply_val(vec, 0.0); 
+        }
+
+
+        void apply_val(PetscVector &vec, const Scalar val) const
+        {
             Write<PetscVector> w(vec, utopia::AUTO);
             for(auto i : indices_) {
-                vec.set(i, 0);
+                vec.set(i, val);
             }
         }
+
 
         void copy(const PetscVector &in, PetscVector &vec) const
         {

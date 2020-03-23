@@ -40,7 +40,8 @@ namespace utopia {
         use_convert_transfer(true),
         remove_incomplete_intersections(false),
         surface_transfer(false),
-        handle_adaptivity(false)
+        handle_adaptivity(false),
+        coupling_matrix_only(false)
         {}
 
         void describe(std::ostream &os = std::cout) const
@@ -63,6 +64,7 @@ namespace utopia {
             os << "output_path " << output_path << std::endl;
             os << "discretization " << discretization << std::endl;
             os << "remove_incomplete_intersections: " << remove_incomplete_intersections << std::endl;
+            os << "coupling_matrix_only: " << coupling_matrix_only << std::endl;
         }
 
         inline void read(Input &is) override
@@ -91,6 +93,7 @@ namespace utopia {
             is.get("remove-incomplete-intersections", remove_incomplete_intersections);
             is.get("surface-transfer", surface_transfer);
             is.get("handle-adaptivity", handle_adaptivity);
+            is.get("coupling-matrix-only", coupling_matrix_only);
         }
 
         bool normalize_rows;
@@ -115,6 +118,7 @@ namespace utopia {
         bool remove_incomplete_intersections;
         bool surface_transfer;
         bool handle_adaptivity;
+        bool coupling_matrix_only;
     };
 
     static const std::map<std::string, TransferOperatorType> &get_str_to_type()
@@ -362,12 +366,17 @@ namespace utopia {
     bool MeshTransferOperator::set_up_bidirectional_transfer()
     {
         std::cout << "[Status] using bi l2 projection" << std::endl;
+        matrices_.clear();
+        operator_ = nullptr;
+
+
         std::shared_ptr<LocalAssembler> assembler;
 
         bool use_interpolation = false;
-        const bool assemble_D =
+        const bool assemble_D = !params_->coupling_matrix_only && (
             !params_->bi_operator_mass_mat_outside ||
-             params_->use_composite_bidirectional;
+             params_->use_composite_bidirectional 
+        );
 
 
         // params_->print();
@@ -411,6 +420,13 @@ namespace utopia {
             mats,
             opts)) {
             return false;
+        }
+
+        if(params_->coupling_matrix_only) {
+            std::cout << "[WARNING] MeshTransferOperator::set_up_bidirectional_transfer(), has coupling-matrix-only option enabled " << std::endl;
+            matrices_.push_back(mats[0]);
+            matrices_.push_back(mats[1]);
+            return true;
         }
 
         if(!assemble_D && !use_interpolation) {
@@ -557,6 +573,7 @@ namespace utopia {
             new_assembler.use_convert_transfer(params_->use_convert_transfer);
             new_assembler.remove_incomplete_intersections(params_->remove_incomplete_intersections);
             new_assembler.handle_adaptive_refinement(params_->handle_adaptivity);
+            new_assembler.use_dual_lagrange_multiplier(operator_type == PSEUDO_L2_PROJECTION);
             
             if(params_->surface_transfer) {
                 if(!new_assembler.surface_assemble(from_mesh, from_dofs, to_mesh, to_dofs, opts)) {

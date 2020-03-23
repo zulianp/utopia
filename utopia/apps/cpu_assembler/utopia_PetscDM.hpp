@@ -133,6 +133,7 @@ namespace utopia {
         using ScalarArray = utopia::ArrayView<Scalar, UDim>;
 
         using SideSets = utopia::SideSets<Dim>;
+        using Comm     = utopia::PetscCommunicator;
 
         class Impl;
 
@@ -152,20 +153,30 @@ namespace utopia {
             const SizeType &n_components = 1
         );
 
+        void build_simplicial_complex(
+            const PetscCommunicator     &comm,
+            const std::array<SizeType, UDim> &dims,
+            const std::array<Scalar, UDim>   &box_min,
+            const std::array<Scalar, UDim>   &box_max,
+            const SizeType &n_components = 1
+        );
+
         PetscDM();
         ~PetscDM();
 
         PetscCommunicator &comm();
         const PetscCommunicator &comm() const;
 
-        constexpr typename SideSets::Sides sides()
+        constexpr static typename SideSets::Sides sides()
         {
             return SideSets::sides();
         }
 
-        void cell_point(const SizeType &idx, Point &translation);
-        void cell_size(const SizeType &idx, Point &cell_size);
+        void point(const SizeType &local_node_idx, Point &p) const;
+        void cell_point(const SizeType &idx, Point &translation) const;
+        void cell_size(const SizeType &idx, Point &cell_size) const;
 
+        bool is_local_node_on_boundary(const SizeType &idx) const;
         bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
         void node(const SizeType &idx, Point &node) const;
         void elem(const SizeType &idx, Elem &e) const;
@@ -195,8 +206,8 @@ namespace utopia {
         const IntArray &local_nodes_end() const;
 
         const IntArray &dims() const;
-        const ScalarArray &box_min() const;
-        const ScalarArray &box_max() const;
+        const Point &box_min() const;
+        const Point &box_max() const;
 
         inline Impl &impl()
         {
@@ -217,6 +228,8 @@ namespace utopia {
         bool is_ghost(const SizeType &global_node_idx) const;
         bool is_boundary(const SizeType &global_node_idx) const;
 
+        bool on_boundary(const SizeType &elem_idx) const;
+
         void set_field_name(const SizeType &nf, const std::string &name);
 
         std::unique_ptr<PetscDM> uniform_refine() const;
@@ -227,7 +240,8 @@ namespace utopia {
 
         void update_mirror();
 
-
+        std::unique_ptr<PetscDM> clone(const SizeType &n_components) const;
+        std::unique_ptr<PetscDM> clone() const;
     private:
         std::unique_ptr<Impl> impl_;
     };

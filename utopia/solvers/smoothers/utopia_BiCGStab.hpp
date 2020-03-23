@@ -17,7 +17,11 @@ namespace utopia {
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
-        using PreconditionedSolver<Matrix, Vector>::solve;
+        using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
+
+        using Super::solve;
+        using Super::update;
+        using Super::apply;
 
         BiCGStab();
         BiCGStab * clone() const override;
@@ -44,7 +48,7 @@ namespace utopia {
             OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
         }
 
-        void init_memory(const SizeType &ls) override; 
+        void init_memory(const SizeType &ls) override;
 
     private:
         bool solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
