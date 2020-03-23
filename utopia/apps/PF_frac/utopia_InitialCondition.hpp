@@ -283,16 +283,23 @@ namespace utopia {
                 std::uniform_real_distribution<> distr_point(0.1, 0.9);
                 std::uniform_int_distribution<> distr_angle(0.0, 180);
 
-                // this one should be driven from power distribution
-                std::uniform_real_distribution<> distr_length(3.0*width, 0.15);
-
 
                 A_.x = distr_point(generator);
-                A_.y = distr_point(generator);
+                A_.y = distr_point(generator);             
 
-                T length = distr_length(generator);
-                T theta = distr_angle(generator);
+                T theta = distr_angle(generator);   
 
+                // length should be driven from power distribution 
+                // std::uniform_real_distribution<> distr_length(3.0*width, 0.15);                 
+                
+                // length should be driven from power distribution 
+                std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
+                // const T alpha = 2.0; 
+                const T alpha = 2.8; 
+                const T x_min = 3.0*width > 0.04 ? 3.0*width : 0.04; 
+                const T r = distr_length(generator);
+                T length = x_min * std::pow( (1.-r), (-1./(alpha-1.)));
+                
                 generate_rectangle(length, width, theta);
             }
 
