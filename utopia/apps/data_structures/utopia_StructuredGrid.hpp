@@ -82,10 +82,58 @@ namespace utopia {
             return min_h;
         }
 
-        constexpr static typename SideSets::Sides sides()
-        {
-            return SideSets::sides();
-        }
+        // bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
+        // {
+        //     IntArray tensor_index = {0, 0, 0};
+        //     impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
+
+        //     const auto &mirror = impl_->mirror;
+
+        //     switch(b_id) {
+        //         case SideSet::left():
+        //         {
+        //             return tensor_index[0] == 0;
+        //         }
+
+        //         case SideSet::right():
+        //         {
+        //             return tensor_index[0] == (mirror.dims[0] - 1);
+        //         }
+
+        //         case SideSet::bottom():
+        //         {
+        //             return tensor_index[1] == 0;
+        //         }
+
+        //         case SideSet::top():
+        //         {
+        //             return tensor_index[1] == (mirror.dims[1] - 1);
+        //         }
+
+        //         case SideSet::back():
+        //         {
+        //             return tensor_index[2] == 0;
+        //         }
+
+        //         case SideSet::front():
+        //         {
+        //             return tensor_index[2] == (mirror.dims[2] - 1);
+        //         }
+
+        //         default:
+        //         {
+        //             break;
+        //         }
+        //     }
+
+        //     return false;
+        // }
+
+
+        // constexpr static typename SideSets::Sides sides()
+        // {
+        //     return SideSets::sides();
+        // }
 
         UTOPIA_INLINE_FUNCTION constexpr StructuredGrid(
             const IntArray &dims,
@@ -128,6 +176,7 @@ namespace utopia {
                 current = next;
             }
         }
+
 
         ///////////////////////////////// non-constexpr methods ////////////////////////
         UTOPIA_INLINE_FUNCTION StructuredGrid() {}
