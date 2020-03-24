@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Algorithms.hpp"
+#include "utopia_SideSets.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -79,6 +80,11 @@ namespace utopia {
             }
 
             return min_h;
+        }
+
+        constexpr static typename SideSets::Sides sides()
+        {
+            return SideSets::sides();
         }
 
         UTOPIA_INLINE_FUNCTION constexpr StructuredGrid(
