@@ -364,20 +364,16 @@ namespace utopia {
     class Paralleloid
     {
         public:
-            Paralleloid(const Point3D<T> & A, const Point3D<T> & B, const Point3D<T> & C, const Point3D<T> & D, const Point3D<T> & E, const Point3D<T> & F, const Point3D<T> & G, const Point3D<T> & H):
-            A_(A), B_(B), C_(C), D_(D), E_(E), F_(F), G_(G), H_(H)
-            {
-
-            }
-
             Paralleloid(const T & width)
             {
+                points_.resize(8); 
                 randomly_generate(width);
             }
 
-            Paralleloid(const Point3D<T> & A, const T & length, const T & width, const T & theta, const T & gamma ):
-            A_(A)
+            Paralleloid(const Point3D<T> & A, const T & length, const T & width, const T & theta, const T & gamma )
             {
+                points_.resize(8); 
+                points_[0] = A; 
                 this->generate_paralleloid(length, width, theta, gamma);
             }
 
@@ -393,62 +389,20 @@ namespace utopia {
 
             bool belongs_to_paralleloid(Point3D<T> M)
             {
-                // Point3D<T> AB, AM, BD, BM;
-                // build_vector(A_, B_, AB);
-                // build_vector(A_, M, AM);
-                // build_vector(B_, D_, BD);
-                // build_vector(B_, M, BM);
-
-                // T dotABAM = vec_dot(AB, AM);
-                // T dotABAB = vec_dot(AB, AB);
-                // T dotBDBM = vec_dot(BD, BM);
-                // T dotBDBD = vec_dot(BD, BD);
-
-                // // bool flg1 = (0.0 <= dotABAM) && (dotABAM <= dotABAB); // && (0.0 <= dotBDBM) && (dotBDBM <= dotBDBD));
-                // bool flg1 = (0.0 <= dotABAM) && (dotABAM <= dotABAB); 
-                // return flg1; 
-
-                // Point3D<T> EF, EM, FH, FM;
-                // build_vector(E_, F_, EF);
-                // build_vector(E_, M, EM);
-                // build_vector(F_, H_, FH);
-                // build_vector(F_, M, FM);
-
-                // T dotEFEM = vec_dot(EF, EM);
-                // T dotEFEF = vec_dot(EF, EF);
-                // T dotFHFM = vec_dot(FH, FM);
-                // T dotFHFH = vec_dot(FH, FH);
-
-                // bool flg2 = ((0.0 <= dotEFEM) && (dotEFEM <= dotEFEF) && (0.0 <= dotFHFM) && (dotFHFM <= dotFHFH));                
-
-
-                // Point3D<T> FB, FM;
-                // build_vector(F_, B_, FB);
-                // build_vector(F_, M, FM);
-                // // build_vector(B_, D_, BD);
-                // // build_vector(B_, M, BM);
-
-                // T dotFBFM = vec_dot(FB, FM);
-                // T dotFBFB = vec_dot(FB, FB);
-                // // T dotBDBM = vec_dot(BD, BM);
-                // // T dotBDBD = vec_dot(BD, BD);
-
-                // bool flg3 = ((0.0 <= dotFBFM) && (dotFBFM <= dotFBFB) && (0.0 <= dotBDBM) && (dotBDBM <= dotBDBD));
-
-                // return flg1 && flg3; 
-
-
 
                 Point3D<T> u, v, w;
-                build_vector(A_, E_, u);
-                build_vector(A_, B_, v);
-                build_vector(A_, C_, w);
+                build_vector(points_[0], points_[4], u);
+                build_vector(points_[0], points_[1], v);
+                build_vector(points_[0], points_[2], w);
 
-                bool flg1 =  (vec_dot(u, E_) <= vec_dot(M, u)) && (vec_dot(M, u) <= vec_dot(u, A_)); 
-                bool flg2 =  (vec_dot(v, B_) <= vec_dot(M, v)) && (vec_dot(M, v) <= vec_dot(v, A_)); 
-                bool flg3 =  (vec_dot(w, C_) <= vec_dot(M, w)) && (vec_dot(M, w) <= vec_dot(w, A_));    
+                const T dotMu = vec_dot(M, u); 
+                const T dotMv = vec_dot(M, v); 
+                const T dotMw = vec_dot(M, w); 
 
 
+                bool flg1 =  (vec_dot(u, points_[4]) <= dotMu) && (dotMu <= vec_dot(u, points_[0])); 
+                bool flg2 =  (vec_dot(v, points_[1]) <= dotMv) && (dotMv <= vec_dot(v, points_[0])); 
+                bool flg3 =  (vec_dot(w, points_[2]) <= dotMw) && (dotMw <= vec_dot(w, points_[0]));    
 
                 return flg1 && flg2 && flg3; 
 
@@ -457,15 +411,15 @@ namespace utopia {
 
             void describe()
             {
-                std::cout<<"A: "<< A_.x << " "<< A_.y << " " << A_.z  <<" \n";
-                std::cout<<"B: "<< B_.x << " "<< B_.y << " " << B_.z  <<" \n";
-                std::cout<<"C: "<< C_.x << " "<< C_.y << " " << C_.z  <<" \n";
-                std::cout<<"D: "<< D_.x << " "<< D_.y << " " << D_.z  <<" \n \n";
+                std::cout<<"A: "<< points_[0].x << " "<< points_[0].y << " " << points_[0].z  <<" \n";
+                std::cout<<"B: "<< points_[1].x << " "<< points_[1].y << " " << points_[1].z  <<" \n";
+                std::cout<<"C: "<< points_[2].x << " "<< points_[2].y << " " << points_[2].z  <<" \n";
+                std::cout<<"D: "<< points_[3].x << " "<< points_[3].y << " " << points_[3].z  <<" \n \n";
 
-                std::cout<<"E: "<< E_.x << " "<< E_.y <<  "  "<< E_.z << "  \n";
-                std::cout<<"F: "<< F_.x << " "<< F_.y <<  "  "<< F_.z << "  \n";
-                std::cout<<"G: "<< G_.x << " "<< G_.y <<  "  "<< G_.z << "  \n";
-                std::cout<<"H: "<< H_.x << " "<< H_.y <<  "  "<< H_.z << "  \n";
+                std::cout<<"E: "<< points_[4].x << " "<< points_[4].y <<  "  "<< points_[4].z << "  \n";
+                std::cout<<"F: "<< points_[5].x << " "<< points_[5].y <<  "  "<< points_[5].z << "  \n";
+                std::cout<<"G: "<< points_[6].x << " "<< points_[6].y <<  "  "<< points_[6].z << "  \n";
+                std::cout<<"H: "<< points_[7].x << " "<< points_[7].y <<  "  "<< points_[7].z << "  \n";
                 std::cout<<"------------------------------  \n";                
             }
 
@@ -477,12 +431,12 @@ namespace utopia {
                 static std::default_random_engine generator (seed);
 
                 // this one needs to be replaced
-                std::uniform_real_distribution<> distr_point(0.0, 1.0);
-                std::uniform_int_distribution<> distr_angle(-360, 360);
+                std::uniform_real_distribution<> distr_point(0.1, 0.9);
+                std::uniform_int_distribution<> distr_angle(0, 180);
 
-                A_.x = distr_point(generator);
-                A_.y = distr_point(generator);             
-                A_.z = distr_point(generator);  
+                points_[0].x = distr_point(generator);
+                points_[0].y = distr_point(generator);             
+                points_[0].z = distr_point(generator);  
 
 
                 const T theta = distr_angle(generator);   
@@ -495,10 +449,10 @@ namespace utopia {
                 const T r = distr_length(generator);
                 const T length = x_min * std::pow( (1.-r), (-1./(alpha1-1.)));
 
-
                 
-                const T alpha2 = 2.1; 
-                const T width = x_min * std::pow( (1.-r), (-1./(alpha2-1.)));    
+                const T alpha2 = 2.95; 
+                const T r2 = distr_length(generator);
+                const T width = x_min * std::pow( (1.-r2), (-1./(alpha2-1.)));    
 
 
                 std::uniform_int_distribution<> distr_dir(0.0, 6);
@@ -531,100 +485,54 @@ namespace utopia {
                 const T theta_rad = theta * pi/180.0;
                 const T gamma_rad = gamma * pi/180.0;
 
+                const auto cos_theta = std::cos(theta_rad); 
+                const auto sin_theta = std::sin(theta_rad); 
 
-                B_.x = A_.x + (a * std::cos(theta_rad));
-                B_.y = A_.y + (a * std::sin(theta_rad));
-                B_.z = A_.z; // + (d * std::sin(gamma_rad));
-
-                C_.x = A_.x + (b * std::cos(theta_rad + pi/2.0));
-                C_.y = A_.y + (b * std::sin(theta_rad + pi/2.0));
-                C_.z = A_.z; // + (d * std::sin(gamma_rad + pi/2.0));
-
-                D_.x = A_.x + ((a * std::cos(theta_rad)) + (b * std::cos(theta_rad + pi/2.0)));
-                D_.y = A_.y + ((a * std::sin(theta_rad)) + (b * std::sin(theta_rad + pi/2.0)));
-                D_.z = A_.z; // + ((d * std::sin(gamma_rad)) + (d * std::sin(gamma_rad + pi/2.0)));
-
-                E_.x = A_.x;
-                E_.y = A_.y;
-                E_.z = A_.z + c;
-
-                F_.x = B_.x;
-                F_.y = B_.y;
-                F_.z = B_.z + c;
-
-                G_.x = C_.x;
-                G_.y = C_.y;
-                G_.z = C_.z + c;
-
-                H_.x = D_.x;
-                H_.y = D_.y;
-                H_.z = D_.z + c;
+                const auto cos_theta_pi = std::cos(theta_rad + pi/2.0); 
+                const auto sin_theta_pi = std::sin(theta_rad + pi/2.0); 
 
 
-                // rotate around z-axis
-                auto ax = A_.x; 
-                auto ay = A_.z; 
-                A_.x = (ax* std::cos(gamma_rad)) - (ay * std::sin(gamma_rad)); 
-                A_.z = (ay* std::cos(gamma_rad)) + (ax * std::sin(gamma_rad)); 
+                points_[1].x = points_[0].x + (a * cos_theta);
+                points_[1].y = points_[0].y + (a * sin_theta);
+                points_[1].z = points_[0].z; 
+
+                points_[2].x = points_[0].x + (b * cos_theta_pi);
+                points_[2].y = points_[0].y + (b * sin_theta_pi);
+                points_[2].z = points_[0].z; 
+
+                points_[3].x = points_[0].x + ((a * cos_theta) + (b * cos_theta_pi));
+                points_[3].y = points_[0].y + ((a * sin_theta) + (b * sin_theta_pi));
+                points_[3].z = points_[0].z; 
+
+                points_[4].x = points_[0].x;
+                points_[4].y = points_[0].y;
+                points_[4].z = points_[0].z + c;
+
+                points_[5].x = points_[1].x;
+                points_[5].y = points_[1].y;
+                points_[5].z = points_[1].z + c;
+
+                points_[6].x = points_[2].x;
+                points_[6].y = points_[2].y;
+                points_[6].z = points_[2].z + c;
+
+                points_[7].x = points_[3].x;
+                points_[7].y = points_[3].y;
+                points_[7].z = points_[3].z + c;
 
 
-                auto bx = B_.x; 
-                auto by = B_.z; 
-                B_.x = (bx* std::cos(gamma_rad)) - (by * std::sin(gamma_rad)); 
-                B_.z = (by* std::cos(gamma_rad)) + (bx * std::sin(gamma_rad)); 
+                // rotate 
+                const auto cos_gamma = std::cos(gamma_rad); 
+                const auto sin_gamma = std::sin(gamma_rad); 
+
+                for(auto p=0; p < points_.size(); p++){
+                    auto ax = points_[p].x; 
+                    auto ay = points_[p].z; 
+                    points_[p].x = (ax* cos_gamma) - (ay * sin_gamma); 
+                    points_[p].z = (ay* cos_gamma) + (ax * sin_gamma); 
+                }
 
 
-                auto cx = C_.x; 
-                auto cy = C_.z; 
-                C_.x = (cx* std::cos(gamma_rad)) - (cy * std::sin(gamma_rad)); 
-                C_.z = (cy* std::cos(gamma_rad)) + (cx * std::sin(gamma_rad)); 
-
-
-                auto dx = D_.x; 
-                auto dy = D_.z; 
-                D_.x = (dx* std::cos(gamma_rad)) - (dy * std::sin(gamma_rad)); 
-                D_.z = (dy* std::cos(gamma_rad)) + (dx * std::sin(gamma_rad)); 
-
-
-                auto ex = E_.x; 
-                auto ey = E_.z; 
-                E_.x = (ex* std::cos(gamma_rad)) - (ey * std::sin(gamma_rad)); 
-                E_.z = (ey* std::cos(gamma_rad)) + (ex * std::sin(gamma_rad)); 
-
-
-                auto fx = F_.x; 
-                auto fy = F_.z; 
-                F_.x = (fx* std::cos(gamma_rad)) - (fy * std::sin(gamma_rad)); 
-                F_.z = (fy* std::cos(gamma_rad)) + (fx * std::sin(gamma_rad)); 
-
-
-                auto gx = G_.x; 
-                auto gy = G_.z; 
-                G_.x = (gx* std::cos(gamma_rad)) - (gy* std::sin(gamma_rad)); 
-                G_.z = (gy* std::cos(gamma_rad)) + (gx * std::sin(gamma_rad)); 
-
-
-                auto hx = H_.x; 
-                auto hy = H_.z; 
-                H_.x = (hx* std::cos(gamma_rad)) - (hy * std::sin(gamma_rad)); 
-                H_.z = (hy* std::cos(gamma_rad)) + (hx* std::sin(gamma_rad));                                                                                                                 
-
-
-
-
-
-                // std::cout<<"a: "<< a << "  \n"; 
-                // std::cout<<"b: "<< b << "  \n"; 
-                // std::cout<<"c: "<< c << "  \n"; 
-                // std::cout<<"d: "<< d << "  \n"; 
-
-                // std::cout<<"theta_rad: "<< theta_rad << " \n"; 
-                // std::cout<<"gamma_rad: "<< gamma_rad << " \n"; 
-
-                // describe(); 
-
-
-                // exit(0); 
             }
 
             void build_vector(const Point3D<T> & A, const Point3D<T> & B, Point3D<T> & result)
@@ -648,15 +556,7 @@ namespace utopia {
             }            
 
         private:
-            Point3D<T> A_;
-            Point3D<T> B_;
-            Point3D<T> C_;
-            Point3D<T> D_;
-
-            Point3D<T> E_;
-            Point3D<T> F_;
-            Point3D<T> G_;
-            Point3D<T> H_;            
+            std::vector< Point3D<T> > points_; 
 
     };    
 
