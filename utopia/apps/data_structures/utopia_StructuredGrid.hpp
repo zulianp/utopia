@@ -41,8 +41,12 @@ namespace utopia {
     template<class Point, class IntArray, typename...>
     class StructuredGrid {
     public:
-        using SizeType = typename Traits<IntArray>::SizeType;
+        using SizeType = typename Traits<IntArray>::ValueType;
         using Scalar   = typename Traits<Point>::Scalar;
+
+        ////////////////////////////////////////////////////////////////
+        //////////////////////// GETTERS //////////////////////////////
+        ////////////////////////////////////////////////////////////////
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType dim() const
         {
@@ -54,9 +58,71 @@ namespace utopia {
             return n_components_;
         }
 
+        UTOPIA_INLINE_FUNCTION constexpr const Point &box_min() const
+        {
+            return box_min_;
+        }
+
+        UTOPIA_INLINE_FUNCTION constexpr const Point &box_max() const
+        {
+            return box_max_;
+        }
+
+        UTOPIA_INLINE_FUNCTION constexpr const IntArray &dims() const { return dims_; }
+        UTOPIA_INLINE_FUNCTION constexpr const IntArray &corners_begin() const { return corners_begin_; }
+        UTOPIA_INLINE_FUNCTION constexpr const IntArray &corners_extent() const { return corners_extent_; }
+
+        UTOPIA_INLINE_FUNCTION constexpr const IntArray &ghost_corners_begin() const { return ghost_corners_begin_; }
+        UTOPIA_INLINE_FUNCTION constexpr const IntArray &ghost_corners_extent() const { return ghost_corners_extent_; }
+
+        UTOPIA_INLINE_FUNCTION constexpr SizeType elements_x_cell() const { return elements_x_cell_; }
+        UTOPIA_INLINE_FUNCTION constexpr SizeType dof_range_begin() const { return dof_range_begin_; }
+        UTOPIA_INLINE_FUNCTION constexpr SizeType dof_range_end() const { return dof_range_end_; }
+
+        ////////////////////////////////////////////////////////////////
+        //////////////////////// SETTERS //////////////////////////////
+        ////////////////////////////////////////////////////////////////
+
+        UTOPIA_INLINE_FUNCTION Point &box_min()
+        {
+            return box_min_;
+        }
+
+        UTOPIA_INLINE_FUNCTION Point &box_max()
+        {
+            return box_max_;
+        }
+
+        UTOPIA_INLINE_FUNCTION IntArray &dims() { return dims_; }
+        UTOPIA_INLINE_FUNCTION IntArray &corners_begin() { return corners_begin_; }
+        UTOPIA_INLINE_FUNCTION IntArray &corners_extent() { return corners_extent_; }
+
+        UTOPIA_INLINE_FUNCTION IntArray &ghost_corners_begin() { return ghost_corners_begin_; }
+        UTOPIA_INLINE_FUNCTION IntArray &ghost_corners_extent() { return ghost_corners_extent_; }
+
+        UTOPIA_INLINE_FUNCTION void set_n_components(const SizeType &val) { n_components_ = val; }
+        UTOPIA_INLINE_FUNCTION void set_elements_x_cell(const SizeType &val) { elements_x_cell_ = val; }
+        UTOPIA_INLINE_FUNCTION void set_dof_range_begin(const SizeType &val) { dof_range_begin_ = val; }
+        UTOPIA_INLINE_FUNCTION void set_dof_range_end(const SizeType &val) { dof_range_end_ = val; }
+
+        ////////////////////////////////////////////////////////////////
+
         UTOPIA_INLINE_FUNCTION constexpr SizeType n_nodes() const
         {
             return prod(dims_, dims_.size());
+        }
+
+        UTOPIA_INLINE_FUNCTION constexpr SizeType n_elements() const
+        {
+            const SizeType n = dim();
+
+            SizeType ret = dims_[0] - 1;
+
+            for(SizeType i = 1; i < n; ++i) {
+                ret *= (dims_[i] - 1);
+            }
+
+            return ret * elements_x_cell_;
         }
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType n_local_dofs() const
@@ -82,58 +148,30 @@ namespace utopia {
             return min_h;
         }
 
-        // bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
-        // {
-        //     IntArray tensor_index = {0, 0, 0};
-        //     impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
+        UTOPIA_INLINE_FUNCTION constexpr Scalar cell_size(const SizeType &, const SizeType &d) const
+        {
+            return (box_max_[d] - box_min_[d])/(dims_[d] - 1);
+        }
 
-        //     const auto &mirror = impl_->mirror;
+        UTOPIA_INLINE_FUNCTION constexpr bool is_node_on_boundary(const SizeType &idx) const //_local_no_ghost
+        {
+            const SizeType n = dim();
 
-        //     switch(b_id) {
-        //         case SideSet::left():
-        //         {
-        //             return tensor_index[0] == 0;
-        //         }
+            SizeType current = idx;
 
-        //         case SideSet::right():
-        //         {
-        //             return tensor_index[0] == (mirror.dims[0] - 1);
-        //         }
+            for(SizeType i = 0; i < n; ++i) {
+                const SizeType next = current / corners_extent_[i];
+                const SizeType tensor_index = current - next * corners_extent_[i] + corners_begin_[i];
 
-        //         case SideSet::bottom():
-        //         {
-        //             return tensor_index[1] == 0;
-        //         }
+                if(tensor_index == SizeType(0) || tensor_index == SizeType(dims_[i] - 1)) {
+                    return true;
+                }
 
-        //         case SideSet::top():
-        //         {
-        //             return tensor_index[1] == (mirror.dims[1] - 1);
-        //         }
+                current = next;
+            }
 
-        //         case SideSet::back():
-        //         {
-        //             return tensor_index[2] == 0;
-        //         }
-
-        //         case SideSet::front():
-        //         {
-        //             return tensor_index[2] == (mirror.dims[2] - 1);
-        //         }
-
-        //         default:
-        //         {
-        //             break;
-        //         }
-        //     }
-
-        //     return false;
-        // }
-
-
-        // constexpr static typename SideSets::Sides sides()
-        // {
-        //     return SideSets::sides();
-        // }
+            return false;
+        }
 
         UTOPIA_INLINE_FUNCTION constexpr StructuredGrid(
             const IntArray &dims,
@@ -158,14 +196,13 @@ namespace utopia {
           box_max_(box_max)
         {}
 
-
-        ///////////////////////////////// non-constexpr methods with gcc ////////////////////////
+        ///////////////////////////////// void-constexpr methods (which do not work)////////////////////////
 
         template<class Array>
-        UTOPIA_CONSTEXPR_VOID node_to_grid_coord_local_no_ghost(
+        UTOPIA_INLINE_FUNCTION UTOPIA_CONSTEXPR_VOID node_to_grid_coord(
             const SizeType &idx,
             Array &tensor_index
-        ) const
+        ) const //_local_no_ghost
         {
             const SizeType n = dim();
 
@@ -177,9 +214,43 @@ namespace utopia {
             }
         }
 
+        UTOPIA_INLINE_FUNCTION UTOPIA_CONSTEXPR_VOID cell_size(const SizeType &elem_idx, Point &s) const
+        {
+            const SizeType n = dim();
+            for(SizeType d = 0; d < n; ++d) {
+                s[d] = cell_size(elem_idx, d);
+            }
+        }
+
+        UTOPIA_INLINE_FUNCTION UTOPIA_CONSTEXPR_VOID point(const SizeType &local_node_idx, Point &p) const
+        {
+            const SizeType n = dim();
+
+            SizeType current = local_node_idx;
+            for(SizeType i = 0; i < n; ++i) {
+                const SizeType next = current / ghost_corners_extent_[i];
+                const SizeType tensor_index = current - next * ghost_corners_extent_[i];
+                const SizeType c = tensor_index + ghost_corners_begin_[i];
+
+                p[i] = c * (box_max_[i] - box_min_[i])/(dims_[i] - 1) + box_min_[i];
+
+                //next
+                current = next;
+            }
+        }
 
         ///////////////////////////////// non-constexpr methods ////////////////////////
         UTOPIA_INLINE_FUNCTION StructuredGrid() {}
+        // UTOPIA_FUNCTION virtual ~StructuredGrid() {}
+
+        UTOPIA_INLINE_FUNCTION bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const //_local_no_ghost
+        {
+            IntArray tensor_index;
+            node_to_grid_coord(idx, tensor_index); //_local_no_ghost
+
+            //FIXME use dim-dependent version
+            return SideSets<-1>::on_side(b_id, tensor_index, dims_);
+        }
 
     private:
         IntArray dims_;

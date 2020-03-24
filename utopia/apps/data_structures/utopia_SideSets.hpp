@@ -35,6 +35,30 @@ namespace utopia {
         {
             return ids_;
         }
+
+        template<class TensorIndex, class Dims>
+        UTOPIA_INLINE_FUNCTION static constexpr bool on_side(
+            const SideSet::BoundaryIdType &boundary_id,
+            const TensorIndex &tensor_index,
+            const Dims &dims)
+        {
+            switch(boundary_id) {
+                case SideSet::left():
+                {
+                    return tensor_index[0] == 0;
+                }
+
+                case SideSet::right():
+                {
+                    return tensor_index[0] == (dims[0] - 1);
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
     };
 
     template<>
@@ -54,6 +78,40 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static constexpr const Sides &sides()
         {
             return ids_;
+        }
+
+        template<class TensorIndex, class Dims>
+        UTOPIA_INLINE_FUNCTION static constexpr bool on_side(
+            const SideSet::BoundaryIdType &boundary_id,
+            const TensorIndex &tensor_index,
+            const Dims &dims)
+        {
+            switch(boundary_id) {
+                case SideSet::left():
+                {
+                    return tensor_index[0] == 0;
+                }
+
+                case SideSet::right():
+                {
+                    return tensor_index[0] == (dims[0] - 1);
+                }
+
+                case SideSet::bottom():
+                {
+                    return tensor_index[1] == 0;
+                }
+
+                case SideSet::top():
+                {
+                    return tensor_index[1] == (dims[1] - 1);
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
         }
     };
 
@@ -77,6 +135,64 @@ namespace utopia {
         {
             return ids_;
         }
+
+        template<class TensorIndex, class Dims>
+        UTOPIA_INLINE_FUNCTION static constexpr bool on_side(
+            const SideSet::BoundaryIdType &boundary_id,
+            const TensorIndex &tensor_index,
+            const Dims &dims)
+        {
+            switch(boundary_id) {
+                case SideSet::left():
+                {
+                    return tensor_index[0] == 0;
+                }
+
+                case SideSet::right():
+                {
+                    return tensor_index[0] == (dims[0] - 1);
+                }
+
+                case SideSet::bottom():
+                {
+                    return tensor_index[1] == 0;
+                }
+
+                case SideSet::top():
+                {
+                    return tensor_index[1] == (dims[1] - 1);
+                }
+
+                case SideSet::back():
+                {
+                    return tensor_index[2] == 0;
+                }
+
+                case SideSet::front():
+                {
+                    return tensor_index[2] == (dims[2] - 1);
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+    };
+
+    template<>
+    class SideSets<-1> {
+    public:
+        template<class TensorIndex, class Dims>
+        UTOPIA_INLINE_FUNCTION static bool on_side(
+            const SideSet::BoundaryIdType &boundary_id,
+            const TensorIndex &tensor_index,
+            const Dims &dims)
+        {
+            return SideSets<3>::on_side(boundary_id, tensor_index, dims);
+        }
+
     };
 
 }
