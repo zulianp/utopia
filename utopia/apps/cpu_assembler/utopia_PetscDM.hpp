@@ -16,83 +16,13 @@
 #include "utopia_Writable.hpp"
 #include "utopia_petsc_FE.hpp"
 #include "utopia_DeviceView.hpp"
+#include "utopia_SideSets.hpp"
 
 #include <array>
 #include <memory>
 #include <functional>
 
 namespace utopia {
-
-    class SideSet {
-    public:
-        using BoundaryIdType = int;
-        inline static constexpr BoundaryIdType left() { return 1; }
-        inline static constexpr BoundaryIdType right() { return 2; }
-        inline static constexpr BoundaryIdType bottom() { return 3; }
-        inline static constexpr BoundaryIdType top() { return 4; }
-        inline static constexpr BoundaryIdType front() { return 5; }
-        inline static constexpr BoundaryIdType back() { return 6; }
-        inline static constexpr BoundaryIdType invalid() { return 0; }
-    };
-
-    template<int Dim>
-    class SideSets {};
-
-    template<>
-    class SideSets<1> {
-    public:
-        static const int n_sides = 2;
-
-        using Sides = std::array<SideSet::BoundaryIdType, n_sides>;
-
-        static const Sides &sides()
-        {
-            static const Sides ids_ = { SideSet::left(), SideSet::right() };
-            return ids_;
-        }
-    };
-
-    template<>
-    class SideSets<2> {
-    public:
-        static const int n_sides = 4;
-
-        using Sides = std::array<SideSet::BoundaryIdType, n_sides>;
-
-        static const Sides &sides()
-        {
-            static const Sides ids_ =  {
-                SideSet::left(),
-                SideSet::right(),
-                SideSet::bottom(),
-                SideSet::top()
-            };
-
-            return ids_;
-        }
-    };
-
-    template<>
-    class SideSets<3> {
-    public:
-        static const int n_sides = 6;
-
-        using Sides = std::array<SideSet::BoundaryIdType, n_sides>;
-
-        static const Sides &sides()
-        {
-            static const Sides ids_ = {
-                SideSet::left(),
-                SideSet::right(),
-                SideSet::bottom(),
-                SideSet::top(),
-                SideSet::front(),
-                SideSet::back()
-            };
-
-            return ids_;
-        }
-    };
 
     template<int Dim>
     class DMDAMirror;
