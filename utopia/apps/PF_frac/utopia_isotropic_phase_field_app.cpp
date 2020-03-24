@@ -420,14 +420,19 @@ namespace utopia {
         auto n_levels = 2;
         in.get("n_levels", n_levels);
 
+        // MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+        //             PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFSneddon<FunctionSpace> > time_stepper(space, n_levels);
+
+
         MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-                    PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFShaldon<FunctionSpace> > time_stepper(space, n_levels);
+                    PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFFracNet3D<FunctionSpace> > time_stepper(space, n_levels);        
+
 
         time_stepper.run(in);
 
 
         stats.stop_collect_and_restart("end");
-        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        space.comm().root_print(std::to_string(space.n_dofs()) + " corase dofs");
         stats.stop_and_collect("space-creation");
 
     }

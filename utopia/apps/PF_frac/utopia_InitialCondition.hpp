@@ -477,9 +477,8 @@ namespace utopia {
                 static std::default_random_engine generator (seed);
 
                 // this one needs to be replaced
-                std::uniform_real_distribution<> distr_point(-0.3, 1.3);
-                std::uniform_int_distribution<> distr_angle(0.0, 360);
-
+                std::uniform_real_distribution<> distr_point(0.0, 1.0);
+                std::uniform_int_distribution<> distr_angle(-360, 360);
 
                 A_.x = distr_point(generator);
                 A_.y = distr_point(generator);             
@@ -487,19 +486,43 @@ namespace utopia {
 
 
                 const T theta = distr_angle(generator);   
-                // std::cout<<"theta: "<< theta << "  \n"; 
+                const T gamma = distr_angle(generator);   
                           
                 // length should be driven from power distribution 
                 std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
-                const T alpha = 2.8; 
+                const T alpha1 = 2.8; 
                 const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04; 
-                const T r1 = distr_length(generator);
-                const T length = x_min * std::pow( (1.-r1), (-1./(alpha-1.)));
+                const T r = distr_length(generator);
+                const T length = x_min * std::pow( (1.-r), (-1./(alpha1-1.)));
 
-                std::uniform_int_distribution<> distr_angle2(0.0, 360);
-                const T gamma = distr_angle2(generator);   
 
-                generate_paralleloid(0.2, 0.2, depth, theta, gamma);
+                
+                const T alpha2 = 2.1; 
+                const T width = x_min * std::pow( (1.-r), (-1./(alpha2-1.)));    
+
+
+                std::uniform_int_distribution<> distr_dir(0.0, 6);
+                const int i = distr_dir(generator); 
+
+                if(i==0){
+                    generate_paralleloid(width, length, depth, theta, gamma);
+                }
+                else if(i==1){
+                    generate_paralleloid(length, width, depth, theta, gamma);
+                }
+                else if(i==3){
+                    generate_paralleloid(depth, length, width, theta, gamma);
+                }           
+                else if(i==4){
+                    generate_paralleloid(depth, width, length, theta, gamma);
+                }           
+                else if(i==5){
+                    generate_paralleloid(length, depth, width, theta, gamma);
+                }   
+                else{
+                    generate_paralleloid(width, depth, length, theta, gamma);
+                }
+                                                                                
 
             }
 
