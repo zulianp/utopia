@@ -83,6 +83,7 @@ namespace utopia {
 
         PetscVector v;
         dmda.create_vector(v);
+        v.set(1.0);
 
         dmda.write("prova.vtr", v);
     }
