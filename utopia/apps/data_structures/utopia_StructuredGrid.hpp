@@ -11,7 +11,7 @@
 
 namespace utopia {
 
-#define UTOPIA_CONSTEXPR_VOID constexpr void
+#define UTOPIA_CONSTEXPR_VOID void
 
     template<typename Array, typename SizeType>
     UTOPIA_INLINE_FUNCTION constexpr auto prod(const Array &vals, const SizeType &n) -> typename std::remove_reference<decltype(vals[0])>::type
@@ -171,6 +171,21 @@ namespace utopia {
             }
 
             return false;
+        }
+
+        UTOPIA_INLINE_FUNCTION void copy(const StructuredGrid &other)
+        {
+            n_components_    = other.n_components_;
+            elements_x_cell_ = other.elements_x_cell_;
+            dof_range_begin_ = other.dof_range_begin_;
+            dof_range_end_   = other.dof_range_end_;
+
+            device::copy(other.dims_, dims_);
+            device::copy(other.corners_begin_, corners_begin_);
+            device::copy(other.corners_extent_, corners_extent_);
+            device::copy(other.ghost_corners_begin_, ghost_corners_begin_);
+            device::copy(other.ghost_corners_extent_, ghost_corners_extent_);
+            device::copy(other.box_min_, box_min_);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr StructuredGrid(

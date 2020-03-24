@@ -10,23 +10,24 @@
 
 
 namespace utopia {
+
     class Range {
     private:
         SizeType begin_, end_, extent_;
 
     public:
-        Range() {}
-        constexpr Range(const SizeType begin, const SizeType to)
+        UTOPIA_INLINE_FUNCTION Range() {}
+        UTOPIA_INLINE_FUNCTION constexpr Range(const SizeType begin, const SizeType to)
                 : begin_(begin), end_(to), extent_(to - begin) { }
 
 
-       constexpr explicit Range(const SizeType beginAndTo)
+        UTOPIA_INLINE_FUNCTION constexpr explicit Range(const SizeType beginAndTo)
                 : begin_(beginAndTo), end_(beginAndTo + 1), extent_(1)
         {
             assert(beginAndTo >= 0);
         }
 
-        inline void set(const SizeType &begin, const SizeType &end)
+        UTOPIA_INLINE_FUNCTION void set(const SizeType &begin, const SizeType &end)
         {
             begin_ = begin;
             end_ = end;
@@ -86,7 +87,7 @@ namespace utopia {
         /**
          * @brief      Unites with other range.
          */
-        inline constexpr Range unite(const Range &other) const {
+        UTOPIA_INLINE_FUNCTION constexpr Range unite(const Range &other) const {
             assert(are_contiguous(*this, other));
             return Range(device::min(begin(), other.begin()),
                          device::max(end(), other.end()));
@@ -95,7 +96,7 @@ namespace utopia {
         /**
          * @brief      Finds intersection with other range.
          */
-        inline constexpr Range intersect(const Range &other) const {
+        UTOPIA_INLINE_FUNCTION constexpr Range intersect(const Range &other) const {
             return Range(device::max(begin(), other.begin()),
                          device::min(end(), other.end()));
         }
@@ -103,20 +104,20 @@ namespace utopia {
         /*!
          * @return true of range1 and range2 || range2 and range1 are contiguos
          */
-        inline friend constexpr bool are_contiguous(const Range &range1, const Range &range2)
+        UTOPIA_INLINE_FUNCTION friend constexpr bool are_contiguous(const Range &range1, const Range &range2)
         {
             return range1.begin() == range2.end() || range1.begin() == range2.end();
         }
 
-        inline const constexpr Range operator + (const long shift) const {
+        UTOPIA_INLINE_FUNCTION const constexpr Range operator + (const long shift) const {
             return Range(begin_ + shift, end_ + shift);
         }
 
-        inline const constexpr Range operator - (const long shift) const {
+        UTOPIA_INLINE_FUNCTION const constexpr Range operator - (const long shift) const {
             return Range(begin_ - shift, end_ - shift);
         }
 
-        inline constexpr bool operator==(const Range &other) const
+        UTOPIA_INLINE_FUNCTION constexpr bool operator==(const Range &other) const
         {
             return begin_ == other.begin_ && end_ == other.end_;
         }

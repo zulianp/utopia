@@ -39,12 +39,14 @@ namespace utopia {
 
     void vec_grid_test(Input &in)
     {
-        //run-time sizes
+        //run-time sizes real data
         std::vector<int>   zeros_v  = {0, 0};
         std::vector<int>   dims_v   = {10, 10};
         std::vector<float> box_min_v = {0.0f, 0.0f};
         std::vector<float> box_max_v = {1.0f, 1.0f};
 
+
+        //views on data
         ArrayView<int>   zeros(&zeros_v[0], zeros_v.size());
         ArrayView<int>   dims(&dims_v[0], dims_v.size());
         ArrayView<float> box_min(&box_min_v[0], box_min_v.size());
@@ -74,6 +76,16 @@ namespace utopia {
 
     void dmda_test(Input &in)
     {
-        PetscDMDA<V, I> dmda;
+        PetscCommunicator comm;
+        PetscDMDA<V, I> dmda(comm);
+
+        dmda.read(in);
+
+        PetscVector v;
+        dmda.create_vector(v);
+
+        dmda.write("prova.vtr", v);
     }
+
+    UTOPIA_REGISTER_APP(dmda_test);
 }
