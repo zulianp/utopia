@@ -81,6 +81,19 @@ namespace utopia {
         : data_(other.data_), size_(other.size())
         {}
 
+        UTOPIA_FUNCTION ArrayView(ArrayView &&other)
+        : data_(std::move(other.data_)), size_(std::move(other.size_))
+        {}
+
+        UTOPIA_FUNCTION ArrayView &operator=(ArrayView &&other)
+        {
+            data_ = std::move(other.data_);
+            size_ = std::move(other.size_);
+            return *this;
+        }
+
+        UTOPIA_FUNCTION ArrayView &operator=(const ArrayView &other) = default;
+        UTOPIA_FUNCTION ArrayView(const ArrayView &other)            = default;
     private:
         T *data_;
         Size_t size_;
@@ -114,46 +127,30 @@ namespace utopia {
             return data_[i];
         }
 
-        UTOPIA_INLINE_FUNCTION T* begin()
+        UTOPIA_INLINE_FUNCTION constexpr T* begin()
         {
             return data_;
         }
 
-        UTOPIA_INLINE_FUNCTION T* end()
+        UTOPIA_INLINE_FUNCTION constexpr T* end()
         {
             return data_ + Size;
         }
 
-        UTOPIA_INLINE_FUNCTION const T* begin() const
+        UTOPIA_INLINE_FUNCTION constexpr const T* begin() const
         {
             return data_;
         }
 
-        UTOPIA_INLINE_FUNCTION const T* end() const
+        UTOPIA_INLINE_FUNCTION constexpr const T* end() const
         {
             return data_ + Size;
         }
 
-        ArrayView() {}
-
         template<class ArrayViewOther>
-        ArrayView(const ArrayViewOther &other)
+        UTOPIA_INLINE_FUNCTION constexpr ArrayView &operator=(const ArrayViewOther &other)
         {
-            for(Size_t i = 0; i < Size; ++i) {
-                data_[i] = other[i];
-            }
-        }
-
-        // ArrayView(const ArrayView &other)
-        // {
-        //     for(Size_t i = 0; i < Size; ++i) {
-        //         data_[i] = other[i];
-        //     }
-        // }
-
-        template<class ArrayViewOther>
-        ArrayView &operator=(const ArrayViewOther &other)
-        {
+            #pragma unroll(Size)
             for(Size_t i = 0; i < Size; ++i) {
                 data_[i] = other[i];
             }
@@ -161,7 +158,17 @@ namespace utopia {
             return *this;
         }
 
-    private:
+        static constexpr ArrayView make(const T &value)
+        {
+            ArrayView ret;
+            for(Size_t i = 0; i < Size; ++i) {
+                ret.data_[i] = value;
+            }
+
+            return ret;
+        }
+
+        ////public for aggregate intialization
         T data_[Size];
     };
 

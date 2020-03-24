@@ -51,7 +51,7 @@ option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
-option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
+option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
