@@ -8,6 +8,8 @@
 //1)  MatMPIAIJGetSeqAIJ (not MatMPIAIJGetLocalMat)
 // PETSC_EXTERN PetscErrorCode MatMPIAIJGetSeqAIJ(Mat,Mat*,Mat*,const PetscInt*[]);
 
+#define UNROLL_FACTOR 5
+
 
 namespace utopia {
 
@@ -34,7 +36,11 @@ namespace utopia {
 			MatSeqAIJGetArray(mat, &array);
 
 			for(PetscInt i = 0; i < n; ++i) {
-				for(PetscInt k = ia[i]; k < ia[i+1]; ++k) {
+				const PetscInt row_end = ia[i+1];
+
+				#pragma clang loop unroll_count(UNROLL_FACTOR)
+				#pragma GCC unroll UNROLL_FACTOR
+				for(PetscInt k = ia[i]; k < row_end; ++k) {
 			    	op(i, ja[k], array[k]);
 			    }
 			}
@@ -64,7 +70,11 @@ namespace utopia {
 			MatSeqAIJGetArray(mat, &array);
 
 			for(PetscInt i = n-1; i >= 0; --i) {
-				for(PetscInt k = ia[i]; k < ia[i+1]; ++k) {
+				const PetscInt row_end = ia[i+1];
+
+				#pragma clang loop unroll_count(UNROLL_FACTOR)
+				#pragma GCC unroll UNROLL_FACTOR
+				for(PetscInt k = ia[i]; k < row_end; ++k) {
 			    	op(i, ja[k], array[k]);
 			    }
 			}
@@ -351,4 +361,6 @@ namespace utopia {
 
 }
 
+#undef UNROLL_FACTOR //clean-up
 #endif //UTOPIA_PETSC_MATRIX_IMPL_HPP
+
