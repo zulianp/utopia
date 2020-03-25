@@ -127,6 +127,13 @@ namespace utopia {
             return true;
         }
 
+        bool write(const Path &path) const
+        {
+            PetscIO io;
+            if(!io.open(comm(), path)) { return false; }
+            return io.write(*this);
+        }
+
     private:
         PetscCommunicator comm_;
 

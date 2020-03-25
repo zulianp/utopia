@@ -127,12 +127,12 @@ namespace utopia {
             return data_[i];
         }
 
-        UTOPIA_INLINE_FUNCTION constexpr T* begin()
+        UTOPIA_INLINE_FUNCTION T* begin()
         {
             return data_;
         }
 
-        UTOPIA_INLINE_FUNCTION constexpr T* end()
+        UTOPIA_INLINE_FUNCTION T* end()
         {
             return data_ + Size;
         }
@@ -148,7 +148,7 @@ namespace utopia {
         }
 
         template<class ArrayViewOther>
-        UTOPIA_INLINE_FUNCTION constexpr ArrayView &operator=(const ArrayViewOther &other)
+        UTOPIA_INLINE_FUNCTION ArrayView &operator=(const ArrayViewOther &other)
         {
             #pragma unroll(Size)
             for(Size_t i = 0; i < Size; ++i) {
@@ -161,6 +161,8 @@ namespace utopia {
         static constexpr ArrayView make(const T &value)
         {
             ArrayView ret;
+
+            #pragma unroll(Size)
             for(Size_t i = 0; i < Size; ++i) {
                 ret.data_[i] = value;
             }

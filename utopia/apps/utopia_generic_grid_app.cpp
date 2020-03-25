@@ -1,3 +1,7 @@
+
+#include "utopia_Base.hpp"
+
+#if WITH_CXX14
 #include "utopia_StructuredGrid.hpp"
 #include "utopia_ui.hpp"
 #include "utopia_Views.hpp"
@@ -10,6 +14,7 @@ namespace utopia {
     using I = utopia::ArrayView<int, 2>;
     using VA = utopia::ArrayView<double, 2>;
     template class StructuredGrid<V, I>;
+
 
     void generic_grid_test(Input &in)
     {
@@ -36,6 +41,7 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(generic_grid_test);
+
 
     void vec_grid_test(Input &in)
     {
@@ -90,3 +96,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(dmda_test);
 }
+
+#endif
