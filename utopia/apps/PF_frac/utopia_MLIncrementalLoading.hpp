@@ -121,12 +121,8 @@ namespace utopia {
 
             //////////////////////////////////////////////// init solver ////////////////////////////////////////////////
             // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN> >(n_levels_);
-
-
             rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+
 
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             // tr_strategy_fine->l1(true); 
