@@ -431,7 +431,7 @@ namespace utopia {
                 static std::default_random_engine generator (seed);
 
                 // this one needs to be replaced
-                std::uniform_real_distribution<> distr_point(0.1, 0.9);
+                std::uniform_real_distribution<> distr_point(-0.1, 1.1);
                 std::uniform_int_distribution<> distr_angle(0, 180);
 
                 points_[0].x = distr_point(generator);
@@ -443,16 +443,20 @@ namespace utopia {
                 const T gamma = distr_angle(generator);   
                           
                 // length should be driven from power distribution 
-                std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
-                const T alpha1 = 2.8; 
-                const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04; 
-                const T r = distr_length(generator);
-                const T length = x_min * std::pow( (1.-r), (-1./(alpha1-1.)));
+                // std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
+                // const T alpha1 = 2.8; 
+                // const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04; 
+                // const T r = distr_length(generator);
+                // const T length = x_min * std::pow( (1.-r), (-1./(alpha1-1.)));
 
                 
-                const T alpha2 = 2.95; 
-                const T r2 = distr_length(generator);
-                const T width = x_min * std::pow( (1.-r2), (-1./(alpha2-1.)));    
+                // const T alpha2 = 2.95; 
+                // const T r2 = distr_length(generator);
+                // const T width = x_min * std::pow( (1.-r2), (-1./(alpha2-1.)));   
+
+
+                const T width = 0.1; 
+                const T length = 0.1;  
 
 
                 std::uniform_int_distribution<> distr_dir(0.0, 6);
@@ -778,74 +782,9 @@ namespace utopia {
                 }
             }
 
-            // void init(PetscVector &sol_vec, PetscVector &press_vec) override
-            // {
-            //     PetscVector sol_vec_copy = sol_vec;
-
-            //     // un-hard-code
-            //     auto C = this->space_.subspace(PF_component_);
-            //     auto width =  5.0 * this->space_.mesh().min_spacing();
-
-            //     if(mpi_world_rank()==0){
-            //         std::cout<<"width: "<< width << "  \n";
-            //     }
-
-            //     const Point2D<Scalar> A(0.5, 0.5);
-            //     Rectangle<Scalar> rectangle(A, width, width, 0.0);
-
-            //     auto sampler = utopia::sampler(C, [&rectangle](const Point &x) -> Scalar {
-            //         if(rectangle.belongs_to_rectangle(x[0], x[1])){
-            //             return 1.0;
-            //         }
-            //         else{
-            //             return 0.0;
-            //         }
-            //     });
-
-
-            //     Scalar p = pressure0_;
-
-            //     auto press_sampler = utopia::sampler(C, [&rectangle, p](const Point &x) -> Scalar {
-            //         if(rectangle.belongs_to_rectangle(x[0], x[1])){
-            //             return p;
-            //         }
-            //         else{
-            //             return p/10.0;
-            //         }
-            //     });
-
-
-            //     {
-            //         auto C_view             = C.view_device();
-            //         auto sampler_view       = sampler.view_device();
-            //         auto press_sampler_view = press_sampler.view_device();
-
-            //         auto sol_view       = this->space_.assembly_view_device(sol_vec);
-            //         auto press_view     = this->space_.assembly_view_device(press_vec);
-
-            //         Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-            //             ElemViewScalar e;
-            //             C_view.elem(i, e);
-
-            //             StaticVector<Scalar, NNodes> s;
-            //             sampler_view.assemble(e, s);
-            //             C_view.set_vector(e, s, sol_view);
-
-            //             press_sampler_view.assemble(e, s);
-            //             C_view.set_vector(e, s, press_view);
-
-            //         });
-            //     }
-
-            //     // add new fracture to existing ones
-            //     sol_vec += sol_vec_copy;
-            // }
-
         private:
             SizeType PF_component_;
             SizeType num_fracs_;
-            // Scalar pressure0_;
-
     };
 
 
