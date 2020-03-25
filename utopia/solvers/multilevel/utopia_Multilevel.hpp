@@ -6,6 +6,7 @@
 	#include "utopia_Level.hpp"
 	#include "utopia_MultiLevelBase.hpp"
 	#include "utopia_Multigrid.hpp"
+	#include "utopia_MultigridQR.hpp"
 
 	#include "utopia_MLConstraintsIncludes.hpp"
 
@@ -22,11 +23,13 @@
 	#include "utopia_QuasiRMTR_inf.hpp"
 
 	#include "utopia_NonlinearMultiLevelBase.hpp"
-	#include "utopia_MultiLevelEvaluations.hpp"
-
+	#include "utopia_FunEvalsIncludes.hpp"
+	
 	#include "utopia_Transfer.hpp"
 	#include "utopia_IdentityTransfer.hpp"
 	#include "utopia_IPTransfer.hpp"
 	#include "utopia_MatrixTransfer.hpp"
+
+	#include "utopia_MatrixTruncatedTransfer.hpp"
 
 #endif //UTOPIA_MULTILEVEL_HPP

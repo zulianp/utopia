@@ -24,7 +24,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class LinearMultiLevel : public MultiLevelBase<Matrix, Vector> {
+    class LinearMultiLevel : public MultiLevelBase<Matrix, Vector>, public IterativeSolver<Matrix, Vector> {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Level<Matrix, Vector> Level;
@@ -39,6 +39,7 @@ namespace utopia
 
         virtual void read(Input &in) override
         {
+            IterativeSolver<Matrix, Vector>::read(in);
             MultiLevelBase<Matrix, Vector>::read(in);
 
             bool flg_masks;
@@ -46,8 +47,11 @@ namespace utopia
             mask_.active(flg_masks);
         }
 
+        virtual LinearMultiLevel * clone() const override = 0;
+
         virtual void print_usage(std::ostream &os) const override
         {
+            IterativeSolver<Matrix, Vector>::print_usage(os);
             MultiLevelBase<Matrix, Vector>::print_usage(os);
             this->print_param_usage(os, "must_generate_masks", "bool", "Flag deciding if masks should be generated.", "-");
         }
@@ -103,16 +107,16 @@ namespace utopia
         static void fix_semidefinite_operator(Matrix &A)
         {
             Vector d;
-
             Size s = local_size(A);
-            d = local_values(s.get(0), 1.);
+            d = local_values(s.get(0), 0.);
 
             {
                 Write<Vector> w_d(d);
 
-                each_read(A,[&d](const SizeType i, const SizeType, const Scalar &val) {
-                    if(val != 0.0) {
-                        d.set(i, 0.);
+                each_read(A,[&d](const SizeType i, const SizeType j, const double & val) {
+                    if(i==j && std::abs(val) < 1e-12){
+                        d.set(i, 1.0);
+
                     }
                 });
             }

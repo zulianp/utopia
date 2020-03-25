@@ -10,24 +10,24 @@ namespace utopia
     /**
      * @brief Morebv: a nonlinenar and nonconvex boundary value problem, discreitzed with 1D, dinite differences
      * @details For details see, Testing unconstrained Optimization software, More, Garbow, Hillstrom, (ex28)
-     * 
+     *
      * @tparam Matrix [description]
      * @tparam Vector [description]
      */
     template<typename Matrix, typename Vector>
-    class Morebv1D final:   virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, 
+    class Morebv1D final:   virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
                             virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
         public: typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
                 typedef UTOPIA_SCALAR(Vector)       Scalar;
 
         Morebv1D(const SizeType & n): n_(n)
-        { 
+        {
             if(mpi_world_size() > 1 ){
-                utopia_error("Morebv1D:: does not run in parallel, ghost vectors should be added"); 
+                utopia_error("Morebv1D:: does not run in parallel, ghost vectors should be added");
             }
 
-            assembly_problem_type(); 
+            assembly_problem_type();
         }
 
         bool initialize_hessian(Matrix &H, Matrix &/*H_pre*/) const override
@@ -40,32 +40,32 @@ namespace utopia
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            A_help1_->set(0.0); 
-            auto n = size(x).get(0);   
+            A_help1_->set(0.0);
+            auto n = size(x).get(0);
 
             {
                 auto d_x  = const_device_view(x);
                 auto d_t = const_device_view(coords_);
 
-                parallel_each_write( *A_help1_ , UTOPIA_LAMBDA(const SizeType &i) -> Scalar 
+                parallel_each_write( *A_help1_ , UTOPIA_LAMBDA(const SizeType &i) -> Scalar
                 {
-                    
+
                     Scalar xi = d_x.get(i);
                     Scalar ti = d_t.get(i);
-                    Scalar element, item; 
+                    Scalar element, item;
 
                     if(i==0){
                         Scalar xi_p = d_x.get(i+1);
                         element = xi + h_ + 1.0;
                         item = 2. * xi - xi_p + 0.5*(h_*h_*std::pow(element, 3));
-                        return item*item; 
+                        return item*item;
                     }
 
                     if(i==n-1){
                         Scalar xi_m = d_x.get(i-1);
                         element = xi + ti + 1.0;
                         item = 2. * xi - xi_m + 0.5*(h_*h_*std::pow(element, 3));
-                        return item*item; 
+                        return item*item;
                     }
 
                     Scalar xi_m = d_x.get(i-1);
@@ -73,17 +73,17 @@ namespace utopia
                     element = xi + ti + 1.0;
                     item = 2. * xi - xi_m - xi_p + 0.5*(h_*h_*std::pow(element, 3));
 
-                    return item*item; 
+                    return item*item;
                 });
-            }      
+            }
 
-            value = sum(*A_help1_); 
+            value = sum(*A_help1_);
 
             return true;
         }
 
         bool gradient(const Vector &x, Vector &g) const override
-        {   
+        {
             if(empty(g)){
                 g = local_zeros(local_size(x));
             }
@@ -91,33 +91,33 @@ namespace utopia
                 g.set(0.0);
             }
 
-            auto n = size(x).get(0);   
+            auto n = size(x).get(0);
             {
-                Read<Vector>    d_x(x); 
-                Read<Vector>    d_t(coords_); 
-                Write<Vector>   w_t(g); 
+                Read<Vector>    d_x(x);
+                Read<Vector>    d_t(coords_);
+                Write<Vector>   w_t(g);
 
                 Range r = range(g);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i) 
+                for(SizeType i = r.begin(); i != r.end(); ++i)
                 {
                     Scalar xi = x.get(i);
                     Scalar ti = coords_.get(i);
-                    Scalar element, item; 
+                    Scalar element, item;
 
                     if(i==0){
                         Scalar xi_p = x.get(i+1);
                         element = xi + h_ + 1.0;
                         item = 2. * xi - xi_p + 0.5*(h_*h_*std::pow(element, 3));
-                        g.add(i,    2.0*item *(2.0+ h_*h_ *1.5*std::pow(element,2))); 
-                        g.add(i+1, -2.0*item); 
+                        g.add(i,    2.0*item *(2.0+ h_*h_ *1.5*std::pow(element,2)));
+                        g.add(i+1, -2.0*item);
                     }
                     else if(i==n-1){
                         Scalar xi_m = x.get(i-1);
                         element = xi + ti + 1.0;
                         item = 2. * xi - xi_m + 0.5*(h_*h_*std::pow(element, 3));
-                        g.add(i,    4.0*item *(2.0+ h_*h_ *1.5*std::pow(element,2))); 
-                        g.add(i-1, -2.0*item); 
+                        g.add(i,    4.0*item *(2.0+ h_*h_ *1.5*std::pow(element,2)));
+                        g.add(i-1, -2.0*item);
                     }
                     else
                     {
@@ -132,68 +132,68 @@ namespace utopia
                     }
                 }
 
-                if(r.begin() == 0){                
-                    // g.set(0,  -x.get(0)); 
-                    g.set(0,  0.0); 
+                if(r.begin() == 0){
+                    // g.set(0,  -x.get(0));
+                    g.set(0,  0.0);
                 }
-                if(r.end() == n_){                
-                    // g.set(n_-1, -x.get(n_-1)); 
-                    g.set(n_-1, 0.0); 
-                }                
-            }      
+                if(r.end() == n_){
+                    // g.set(n_-1, -x.get(n_-1));
+                    g.set(n_-1, 0.0);
+                }
+            }
 
             return true;
-        }    
+        }
 
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            H = 0.0*H_; 
-            auto n = size(x).get(0);   
+            H = 0.0*H_;
+            auto n = size(x).get(0);
             {
-                Read<Vector>    d_x(x); 
-                Read<Vector>    d_t(coords_); 
-                Write<Matrix>   d_w(H); 
+                Read<Vector>    d_x(x);
+                Read<Vector>    d_t(coords_);
+                Write<Matrix>   d_w(H);
 
                 Range r = row_range(H);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i) 
+                for(SizeType i = r.begin(); i != r.end(); ++i)
                 {
                     Scalar xi = x.get(i);
                     Scalar ti = coords_.get(i);
-                    Scalar element, item; 
+                    Scalar element, item;
 
                     if(i==0){
                         Scalar xi_m = 0.0;
                         Scalar xi_p = x.get(i+1);
                         element = xi + ti + 1.0;
 
-                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p); 
-                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0); 
-                        H.add(i, i, term1+term2); 
+                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p);
+                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0);
+                        H.add(i, i, term1+term2);
 
-                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0); 
-                        H.add(i, i+1, term4); 
+                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0);
+                        H.add(i, i+1, term4);
 
                         Scalar term3 = -2.0*((1.5 * h_*h_ *element*element) + 2.0);
-                        H.add(i+1, i, term3); 
-                        H.add(i+1, i+1, 2.0); 
+                        H.add(i+1, i, term3);
+                        H.add(i+1, i+1, 2.0);
                     }
                     else if(i==n-1){
                         Scalar xi_m = x.get(i-1);
                         Scalar xi_p = 0.0;
                         element = xi + ti + 1.0;
 
-                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p); 
-                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0); 
-                        H.add(i, i, term1+term2); 
+                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p);
+                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0);
+                        H.add(i, i, term1+term2);
 
-                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0); 
-                        H.add(i, i-1, term4); 
+                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0);
+                        H.add(i, i-1, term4);
 
                         Scalar term3 = -2.0*((1.5 * h_*h_ *element*element) + 2.0);
-                        H.add(i-1, i, term3); 
-                        H.add(i-1, i-1, 2.0);           
+                        H.add(i-1, i, term3);
+                        H.add(i-1, i-1, 2.0);
                     }
                     else
                     {
@@ -201,25 +201,25 @@ namespace utopia
                         Scalar xi_p = x.get(i+1);
                         element = xi + ti + 1.0;
 
-                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p); 
-                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0); 
+                        Scalar term1 = 6.0*std::pow(h_,2)*element*(0.5*h_*h_*std::pow(element,3) + 2.0*xi - xi_m -xi_p);
+                        Scalar term2 = 2.0*(1.5*h_*h_ * (element*element) + 2.0)*(1.5*h_*h_ * (element*element) + 2.0);
                         // gi wrt i
-                        H.add(i, i, term1+term2); 
+                        H.add(i, i, term1+term2);
 
-                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0); 
+                        Scalar term4 = -2.0*(1.5*h_*h_*element*element + 2.0);
 
-                        H.add(i, i+1, term4); 
-                        H.add(i, i-1, term4); 
+                        H.add(i, i+1, term4);
+                        H.add(i, i-1, term4);
 
                         // g_i-1 wrt i
                         Scalar term3 = -2.0*((1.5 * h_*h_ *element*element) + 2.0);
-                        H.add(i-1, i, term3); 
-                        H.add(i-1, i+1, 2.0); 
-                        H.add(i-1, i-1, 2.0);         
+                        H.add(i-1, i, term3);
+                        H.add(i-1, i+1, 2.0);
+                        H.add(i-1, i-1, 2.0);
 
-                        H.add(i+1, i, term3); 
-                        H.add(i+1, i+1, 2.0); 
-                        H.add(i+1, i-1, 2.0);                                                 
+                        H.add(i+1, i, term3);
+                        H.add(i+1, i+1, 2.0);
+                        H.add(i+1, i-1, 2.0);
                     }
                 }
             }
@@ -243,28 +243,28 @@ namespace utopia
         }
 
         Vector initial_guess() const override
-        {   
-            return x0_; 
+        {
+            return x0_;
         }
-        
+
         const Vector & exact_sol() const override
         {
-            return exact_sol_; 
+            return exact_sol_;
         }
-        
+
         Scalar min_function_value() const override
-        {   
-            return 0.0; 
+        {
+            return 0.0;
         }
 
         std::string name() const override
         {
             return "Morebv1D";
         }
-        
+
         SizeType dim() const override
         {
-            return n_; 
+            return n_;
         }
 
         bool exact_sol_known() const override
@@ -275,17 +275,17 @@ namespace utopia
         bool parallel() const override
         {
             return true;
-        }   
+        }
 
 
-    private: 
+    private:
         void assemble_laplacian_1D(Matrix &M)
         {
             {
                 // n x n matrix with maximum 3 entries x row
                 Write<Matrix> w(M);
                 Range r = row_range(M);
-                auto n = size(M).get(0);                
+                auto n = size(M).get(0);
 
                 for(SizeType i = r.begin(); i != r.end(); ++i) {
                     if(i > 0) {
@@ -307,28 +307,28 @@ namespace utopia
 
         void init_memory()
         {
-            H_ = sparse(n_, n_, 3); 
-            assemble_laplacian_1D(H_);            
+            H_ = sparse(n_, n_, 3);
+            assemble_laplacian_1D(H_);
 
-            coords_     = values(n_, 0.0); 
-            ones_       = values(n_, 1.0); 
-            twos_       = values(n_, 2.0); 
-            x0_         = values(n_, 0.0); 
+            coords_     = values(n_, 0.0);
+            ones_       = values(n_, 1.0);
+            twos_       = values(n_, 2.0);
+            x0_         = values(n_, 0.0);
             exact_sol_  = values(n_, 0.0);
             A_help1_    = make_unique<Vector>(values(n_, 0.0));
             A_help2_    = make_unique<Vector>(values(n_, 0.0));
         }
 
-
+        public: //made public because of nvcc
         void assembly_problem_type()
         {
-            a_ = 0.0; 
-            b_ = 1.0;  
+            a_ = 0.0;
+            b_ = 1.0;
 
-            L_ = b_ - a_; 
-            h_ = L_ / (n_-1); 
+            L_ = b_ - a_;
+            h_ = L_ / (n_-1);
 
-            init_memory(); 
+            init_memory();
 
             {
                 parallel_each_write(coords_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
@@ -339,7 +339,7 @@ namespace utopia
                 // see More, Garbbow, Hillstrom
                 parallel_each_write(x0_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
                         return 0.0;
                     }
@@ -347,15 +347,15 @@ namespace utopia
                         return 0.0;
                     }
                     else{
-                        return xi * (xi - 1.0); 
+                        return xi * (xi - 1.0);
                     }
-                });     
+                });
 
             }
 
             Vector bc_markers = values(n_, 0.0);
             {
-                Write<Vector> wv(bc_markers); 
+                Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
 
                 if(r.begin() == 0)  {
@@ -371,40 +371,40 @@ namespace utopia
 
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
-            
 
-            // Vector upper_bound = values(n_, 0.0); 
+
+            // Vector upper_bound = values(n_, 0.0);
             // {
             //     parallel_each_write(upper_bound, UTOPIA_LAMBDA(const SizeType i) -> Scalar
             //     {
-            //         Scalar xi = (h_*i); 
+            //         Scalar xi = (h_*i);
             //         return 0.5 + ((xi - 0.5) * (xi - 0.5));
-            //     });                
-            // }            
+            //     });
+            // }
 
-            // this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound)); 
+            // this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound));
 
-        }        
+        }
 
 
-    private: 
-        Scalar a_, b_; 
-        Scalar n_, L_, h_;         
+    private:
+        Scalar a_, b_;
+        Scalar n_, L_, h_;
 
-        std::vector<SizeType> bc_indices_; 
+        std::vector<SizeType> bc_indices_;
 
-        Matrix H_; 
+        Matrix H_;
         Vector coords_;
-        Vector ones_; 
-        Vector twos_; 
-        Vector x0_; 
-        Vector exact_sol_; 
+        Vector ones_;
+        Vector twos_;
+        Vector x0_;
+        Vector exact_sol_;
 
 
-        std::unique_ptr<Vector>  A_help1_; 
-        std::unique_ptr<Vector>  A_help2_; 
+        std::unique_ptr<Vector>  A_help1_;
+        std::unique_ptr<Vector>  A_help2_;
 
-    }; 
+    };
 
 }
 #endif

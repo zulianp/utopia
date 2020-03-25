@@ -51,7 +51,7 @@ option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
-option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
+option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
@@ -61,7 +61,10 @@ option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(UTOPIA_SCRIPTING "Enable exports for other languages (C, Python, etc...)" OFF)
 
 
-option(INSTALL_TRILINOS "Install trilinos directly" OFF)
+option(INSTALL_TRILINOS "Install trilinos directly" ON)
+option(INSTALL_PETSC "Install petsc directly" ON)
+option(INSTALL_PETSC_DEBUG "Install petsc directly" ON)
+option(ENABLE_GPERFTOOLS "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)" OFF)
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 
@@ -72,6 +75,10 @@ set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type"
 
 )
+if(CMAKE_CXX_COMPILER MATCHES "nvcc")
+    string(REPLACE "-Werror=reorder" "" UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS}")
+    message(STATUS "Using nvcc so we remove the -Werror-reorder flag due to a bug in nvcc")
+endif()
 
 # set(CMAKE_CXX_FLAGS "-Wall -Wno-clobbered -Wno-vla -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-local-typedefs -Wno-literal-suffix -Wno-deprecated-declarations -Wno-misleading-indentation -Wno-int-in-bool-context -Wno-maybe-uninitialized -Wno-nonnull-compare -Wno-address -Wno-inline -DTRILINOS_HIDE_DEPRECATED_HEADER_WARNINGS -Werror" CACHE STRING "Warnings as errors settings")
 
@@ -92,6 +99,16 @@ endif()
 
 if(LINUX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
+if(ENABLE_GPERFTOOLS)
+    find_package(Gperftools)
+
+    if(Gperftools_FOUND)
+        link_libraries(gperftools::profiler)
+    else()
+        message(WARNING "GPERFTOOLS NOT FOUND")
+    endif()
 endif()
 
 
@@ -279,6 +296,14 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfil
 
 if(INSTALL_TRILINOS)
     include(InstallTrilinos)
+endif()
+
+if(INSTALL_PETSC)
+    include(InstallPetsc)
+endif()
+
+if(INSTALL_PETSC_DEBUG)
+    include(InstallPetscDebug)
 endif()
 
 # using this to defining UTOPIA_LAMBDA correctly

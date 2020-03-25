@@ -258,50 +258,50 @@ namespace utopia {
 
     static void petsc_dm_app()
     {
-        using Mesh = utopia::PetscDM<2>;
-        using SizeType = Mesh::SizeType;
-        SizeType nx = 10;
-        SizeType ny = 10;
+        // using Mesh = utopia::PetscDM<2>;
+        // using SizeType = Mesh::SizeType;
+        // SizeType nx = 10;
+        // SizeType ny = 10;
 
-        PetscCommunicator world;
-        Mesh dm(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-        );
+        // PetscCommunicator world;
+        // Mesh dm(
+        //     world,
+        //     {nx, ny},
+        //     {0.0, 0.0},
+        //     {1.0, 1.0}
+        // );
 
-        PetscMatrix mat;
-        dm.create_matrix(mat);
+        // PetscMatrix mat;
+        // dm.create_matrix(mat);
 
-        dm.each_element([](const Mesh::Elem &e) {
-            // std::cout << e.idx() << std::endl;
-        });
+        // dm.each_element([](const Mesh::Elem &e) {
+        //     // std::cout << e.idx() << std::endl;
+        // });
 
-        std::stringstream ss;
+        // std::stringstream ss;
 
-        dm.each_node([&ss](const Mesh::Node &node) {
-            assert(!node.is_ghost());
-        });
+        // dm.each_node([&ss](const Mesh::Node &node) {
+        //     assert(!node.is_ghost());
+        // });
 
-        dm.each_node_with_ghosts([&ss](const Mesh::Node &node) {
-            ss << "(" << node.idx() <<  ", " << node.is_ghost() << ") ";
-        });
+        // dm.each_node_with_ghosts([&ss](const Mesh::Node &node) {
+        //     ss << "(" << node.idx() <<  ", " << node.is_ghost() << ") ";
+        // });
 
-        int size = world.size();
-        int rank = world.rank();
+        // int size = world.size();
+        // int rank = world.rank();
 
-        world.barrier();
+        // world.barrier();
 
-        for(int i = 0; i < size; ++i) {
-            if(i == rank) {
-                std::cout << "--------------------------------------------\n";
-                std::cout << ss.str() << std::endl;
-                std::cout << "--------------------------------------------\n";
-            }
+        // for(int i = 0; i < size; ++i) {
+        //     if(i == rank) {
+        //         std::cout << "--------------------------------------------\n";
+        //         std::cout << ss.str() << std::endl;
+        //         std::cout << "--------------------------------------------\n";
+        //     }
 
-            world.barrier();
-        }
+        //     world.barrier();
+        // }
     }
 
     UTOPIA_REGISTER_APP(petsc_dm_app);

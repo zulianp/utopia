@@ -2,8 +2,10 @@ set(UTOPIA_APPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/apps)
 
 list(APPEND APPS_MODULES
     .
+    data_structures
     gpu_assembler
     cpu_assembler
+    PF_frac
 )
 
 set(LOCAL_HEADERS "")
@@ -16,6 +18,10 @@ utopia_link_default_targets(utopia_exec)
 target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})
 target_include_directories(utopia_exec PRIVATE .)
 target_include_directories(utopia_exec PRIVATE ${APPS_MODULES})
+
+if(Gperftools_FOUND)
+    target_link_libraries(utopia_exec gperftools::profiler)
+endif()
 
 if(TRY_WITH_EIGEN_3)
     find_package(Eigen3)

@@ -64,6 +64,18 @@ namespace utopia {
     }
 
     template<class Matrix, class Vector, int Backend>
+    void ConjugateGradient<Matrix, Vector, Backend>::gradient_descent_step(
+        const Operator<Vector> &A,
+        const Vector &b,
+        Vector &x)
+    {
+        A.apply(x, r);
+        //-grad = b - A * x
+        r = b - r;
+        x += r;
+    }
+
+    template<class Matrix, class Vector, int Backend>
     bool ConjugateGradient<Matrix, Vector, Backend>::unpreconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x)
     {
         SizeType it = 0;
@@ -73,18 +85,21 @@ namespace utopia {
 
         if(empty(x) || size(x) != size(b)) {
             x = local_zeros(local_size(b));
-            r = b;
         } else {
             assert(local_size(x) == local_size(b));
             if(reset_initial_guess_) {
                 x.set(0.);
             }
-            // r = b - A * x;
-            UTOPIA_NO_ALLOC_BEGIN("CG:region1");
-            A.apply(x, r);
-            r = b - r;
-            UTOPIA_NO_ALLOC_END();
         }
+
+        gradient_descent_step(A, b, x);
+
+        // r = b - A * x;
+        UTOPIA_NO_ALLOC_BEGIN("CG:region1");
+        A.apply(x, r);
+        r = b - r;
+        UTOPIA_NO_ALLOC_END();
+        // }
 
         this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||" });
         bool converged = false;
@@ -172,20 +187,23 @@ namespace utopia {
         if(empty(x) || size(x) != size(b)) {
             UTOPIA_NO_ALLOC_BEGIN("CG_pre:region0");
             x = local_zeros(local_size(b));
-            r = b;
-            UTOPIA_NO_ALLOC_END();
+            // r = b;
+            // UTOPIA_NO_ALLOC_END();
         } else {
             assert(local_size(x) == local_size(b));
 
             if(reset_initial_guess_) {
                 x.set(0.);
             }
-
-            UTOPIA_NO_ALLOC_BEGIN("CG_pre:region1");
-            A.apply(x, r);
-            r = b - r;
-            UTOPIA_NO_ALLOC_END();
         }
+
+        gradient_descent_step(A, b, x);
+
+        UTOPIA_NO_ALLOC_BEGIN("CG_pre:region1");
+        A.apply(x, r);
+        r = b - r;
+        UTOPIA_NO_ALLOC_END();
+
 
         UTOPIA_NO_ALLOC_BEGIN("CG_pre:region2");
         precond->apply(r, z);

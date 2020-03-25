@@ -44,6 +44,36 @@ namespace utopia {
 		}
 
 		template<class F>
+		void read_reverse_petsc_seqaij_impl(Mat &mat, F op)
+		{
+			PetscInt n;
+			const PetscInt *ia;
+			const PetscInt *ja;
+			PetscBool done;
+			PetscErrorCode err = 0;
+
+			err = MatGetRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done); assert(err == 0);
+			assert(done == PETSC_TRUE);
+
+			if(!done) {
+			    std::cerr << "PetscMatrix::read_petsc_seqaij_impl(const Op &op): MatGetRowIJ failed to provide what was asked." << std::endl;
+			    abort();
+			}
+
+			PetscScalar *array;
+			MatSeqAIJGetArray(mat, &array);
+
+			for(PetscInt i = n-1; i >= 0; --i) {
+				for(PetscInt k = ia[i]; k < ia[i+1]; ++k) {
+			    	op(i, ja[k], array[k]);
+			    }
+			}
+
+			MatSeqAIJRestoreArray(mat, &array);
+			err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done); assert(err == 0);
+		}
+
+		template<class F>
 		void read_petsc_mpiaij_impl(Mat &mat, F op)
 		{
 			// PetscErrorCode err = 0;
@@ -218,6 +248,26 @@ namespace utopia {
 	    transform_values([op](const Scalar &value) -> Scalar {
 	        return op.template apply(value);
 	    });
+	}
+
+	template<class Op>
+	void PetscMatrix::read(Op op)
+	{
+		if(has_type(MATSEQAIJ)) {
+			internal::read_petsc_seqaij_impl(raw_type(), op);
+		} else {
+			assert(false);
+		}
+	}
+
+	template<class Op>
+	void PetscMatrix::read_reverse(Op op)
+	{
+		if(has_type(MATSEQAIJ)) {
+			internal::read_reverse_petsc_seqaij_impl(raw_type(), op);
+		} else {
+			assert(false);
+		}
 	}
 
 	template<class Operation>

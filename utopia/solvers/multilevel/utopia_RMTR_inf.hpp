@@ -62,8 +62,7 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level.
         */
-        RMTR_inf(   const SizeType & n_levels): RMTR(n_levels),
-                                                MLConstraints(this->transfer())
+        RMTR_inf(const SizeType & n_levels) : RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>(n_levels), MLConstraints(this->transfer())
                                                 //has_box_constraints_(false) // not optional parameter
         {
 
@@ -90,7 +89,7 @@ namespace utopia
             this->print_param_usage(os, "fine-QPSolver", "QPSolver", "Input parameters for coarse level QP solver.", "-");
         }
 
-        virtual ~RMTR_inf()
+        ~RMTR_inf()
         {
             // do we need to destroy some memory or no???
         }
@@ -201,7 +200,7 @@ namespace utopia
         }
 
         // -------------------------- tr radius managment ---------------------------------------------
-        bool delta_update(const Scalar & rho, const SizeType & level, const Vector & /*s_global*/) override
+        bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) override
         {
             Scalar intermediate_delta;
 
@@ -217,7 +216,6 @@ namespace utopia
             }
 
             this->memory_.delta[level] = intermediate_delta;
-
             return false;
         }
 
@@ -238,7 +236,7 @@ namespace utopia
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]); 
         }
 
-
+    public: // nvcc requires it to be public when using lambdas
         bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
             Scalar radius = this->memory_.delta[level];
@@ -280,6 +278,7 @@ namespace utopia
 
             this->ml_derivs_.g[level] *= - 1.0; 
             UTOPIA_NO_ALLOC_BEGIN("RMTR::qp_solve1");
+            this->memory_.s[level].set(0.0); 
             this->_tr_subproblems[level]->solve(this->ml_derivs_.H[level], this->ml_derivs_.g[level], this->memory_.s[level]);
             UTOPIA_NO_ALLOC_END();
             this->ml_derivs_.g[level] *= - 1.0; 

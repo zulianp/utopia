@@ -15,6 +15,14 @@
 #include "utopia_Path.hpp"
 #include "utopia_CSV.hpp"
 
+#ifdef UTOPIA_WITH_BRANCH_PREDICTION
+#define UTOPIA_LIKELY(x)       __builtin_expect((x),1)
+#define UTOPIA_UNLIKELY(x)     __builtin_expect((x),0)
+#else
+#define UTOPIA_LIKELY(x)     (x)
+#define UTOPIA_UNLIKELY(x)   (x)
+#endif
+
 namespace utopia
 {
     bool is_matlab_file(const std::string &path);
@@ -52,6 +60,11 @@ namespace utopia
     }
 
     inline void disp(const long value, std::ostream &os = std::cout)
+    {
+        os << value << "\n";
+    }
+
+    inline void disp(const long long int value, std::ostream &os = std::cout)
     {
         os << value << "\n";
     }

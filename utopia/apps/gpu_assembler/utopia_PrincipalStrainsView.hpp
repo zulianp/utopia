@@ -19,7 +19,7 @@ namespace utopia {
         static const int Dim = Elem::Dim;
 
         using Scalar    = typename Elem::Scalar;
-        using SizeType  = typename Elem::SizeType;
+        // using SizeType  = typename Elem::SizeType;
         using GradValue = typename Elem::GradValue;
         static const std::size_t NQuadPoints = GradInterpolateView::NQuadPoints;
 
@@ -40,7 +40,7 @@ namespace utopia {
 
             grad_.get(elem, ret.strain);
 
-            for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
+            for(std::size_t qp = 0; qp < NQuadPoints; ++qp) {
                 ret.strain[qp].symmetrize();
                 eig(ret.strain[qp], ret.values[qp], ret.vectors[qp]);
             }
@@ -49,7 +49,7 @@ namespace utopia {
         }
 
         template<class Matrix>
-        UTOPIA_INLINE_FUNCTION static void split_positive(const Evaluation &el_strain, const SizeType &qp, Matrix &positive)
+        UTOPIA_INLINE_FUNCTION static void split_positive(const Evaluation &el_strain, const std::size_t &qp, Matrix &positive)
         {
             positive.set(0.0);
 
@@ -67,7 +67,7 @@ namespace utopia {
         }
 
         template<class Matrix>
-        UTOPIA_INLINE_FUNCTION static void split(const Evaluation &el_strain, const SizeType &qp, Matrix &negative, Matrix &positive)
+        UTOPIA_INLINE_FUNCTION static void split(const Evaluation &el_strain, const std::size_t &qp, Matrix &negative, Matrix &positive)
         {
             negative.set(0.0);
             positive.set(0.0);
@@ -92,7 +92,6 @@ namespace utopia {
     private:
 
         GradInterpolateView grad_;
-
 
         UTOPIA_INLINE_FUNCTION static constexpr Scalar split_positive(const Scalar &x) {
             return (device::abs(x) + x)/2;

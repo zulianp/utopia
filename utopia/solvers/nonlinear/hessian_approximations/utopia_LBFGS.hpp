@@ -473,6 +473,7 @@ namespace utopia
             }
 
 
+        public: // nvcc requires any lambda to be public
             void init_scaling_factors(const Vector & y, const Vector &s)
             {
                 if(scaling_tech_ == LBFGSScalingTechnique::NONE)
@@ -594,6 +595,7 @@ namespace utopia
             } // init_scaling_factors()
 
 
+        private:
             bool init_damping_nocedal(const Vector & y, const Vector & s, Vector & y_hat)
             {
                 bool skip_update = false; 
@@ -645,8 +647,7 @@ namespace utopia
 
             void apply_H0(const Vector & v, Vector & result) 
             {
-
-                if(H0_action_)
+                if(H0_action_ && current_m_ ==0)
                 {
                     // UTOPIA_NO_ALLOC_BEGIN("LBGFS:A1");
                     H0_action_(v, result); 
@@ -654,7 +655,7 @@ namespace utopia
                 }
                 else
                 {
-                    
+                    // why is this different ??? 
                     if(current_m_ ==0)
                     {
                         // UTOPIA_NO_ALLOC_BEGIN("LBGFS:A2");
@@ -673,7 +674,7 @@ namespace utopia
             void apply_H0_inv(const Vector & v, Vector & result) 
             {
 
-                if(H0_inv_action_)
+                if(H0_inv_action_ && current_m_ ==0)
                 {
                     H0_inv_action_(v, result); 
                 }

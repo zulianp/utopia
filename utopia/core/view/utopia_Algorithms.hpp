@@ -18,7 +18,7 @@ namespace utopia {
 #ifdef KOKKOS_INLINE_FUNCTION
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T isnan(const T &v)
+        UTOPIA_INLINE_FUNCTION constexpr T isnan(const T &v)
         {
             return !(v == v);
         }
@@ -30,13 +30,13 @@ namespace utopia {
         }
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T min(const T &left, const T &right)
+        UTOPIA_INLINE_FUNCTION constexpr T min(const T &left, const T &right)
         {
             return left < right ? left : right;
         }
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T max(const T &left, const T &right)
+        UTOPIA_INLINE_FUNCTION constexpr T max(const T &left, const T &right)
         {
             return left > right ? left : right;
         }
@@ -65,6 +65,12 @@ namespace utopia {
         }
 
         template<typename T>
+        UTOPIA_INLINE_FUNCTION T sin(const T &v)
+        {
+            return Kokkos::Details::ArithTraits<T>::sin(v);
+        }
+
+        template<typename T>
         UTOPIA_INLINE_FUNCTION T cos(const T &v)
         {
             return Kokkos::Details::ArithTraits<T>::cos(v);
@@ -77,35 +83,51 @@ namespace utopia {
         }
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T epsilon()
+        UTOPIA_INLINE_FUNCTION T atan2(const T &a, const T &b)
+        {
+            return ::atan2(a, b);
+        }
+
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION constexpr T epsilon()
         {
             return Kokkos::Details::ArithTraits<T>::epsilon();
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION constexpr bool signbit(const T &a)
+        {
+            return  ( a < 0 ) ? true : false;
         }
 
 #else
 
         template<typename T>
-        T isnan(const T &v)
+        inline constexpr T isnan(const T &v)
         {
             return !(v == v);
         }
 
         template<typename T>
-        inline T abs(const T &v)
+        inline constexpr T abs(const T &v)
         {
-            return std::abs(v);
+            // return std::abs(v);
+            return v >= 0? v : -v;
         }
 
         template<typename T>
-        inline T min(const T &left, const T &right)
+        inline constexpr T min(const T &left, const T &right)
         {
-            return std::min(left, right);
+            // return std::min(left, right);
+            return left < right ? left : right;
         }
 
         template<typename T>
-        inline T max(const T &left, const T &right)
+        inline constexpr T max(const T &left, const T &right)
         {
-            return std::max(left, right);
+            // return std::max(left, right);
+            return left > right ? left : right;
         }
 
         template<typename T>
@@ -123,6 +145,11 @@ namespace utopia {
             return (*dest) += val;
         }
 
+        template<typename T>
+        inline T sin(const T &v)
+        {
+            return std::sin(v);
+        }
 
         template<typename T>
         inline T cos(const T &v)
@@ -137,6 +164,12 @@ namespace utopia {
         }
 
         template<typename T>
+        inline T atan2(const T &a, const T &b)
+        {
+            return std::atan2(a, b);
+        }
+
+        template<typename T>
         inline void swap(T &left, T &right)
         {
             std::swap(left, right);
@@ -148,13 +181,26 @@ namespace utopia {
             return std::numeric_limits<T>::epsilon();
         }
 
+        template<typename T>
+        inline bool signbit(const T &a)
+        {
+            return std::signbit(a);
+        }
 
 #endif //KOKKOS_INLINE_FUNCTION
+
+
 
         template<typename Scalar>
         UTOPIA_INLINE_FUNCTION constexpr Scalar pi()
         {
             return M_PI;
+        }
+
+        template<typename T>
+        UTOPIA_INLINE_FUNCTION constexpr T squared(const T&x)
+        {
+            return x*x;
         }
 
         //FIXME use impl and specialize based on Input type

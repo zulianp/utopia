@@ -60,7 +60,7 @@ namespace utopia
 
         void run_trilinos()
         {
-            
+
             //FIXME (mem allocs)
             // UTOPIA_RUN_TEST(TR_tril_test);
             // UTOPIA_RUN_TEST(RMTR_l2_test);
@@ -73,7 +73,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(CG_test);
             // UTOPIA_RUN_TEST(ProjectedGS);
-            // UTOPIA_RUN_TEST(MPGRP_test);
+            UTOPIA_RUN_TEST(MPGRP_test);
 
             // nonlinear solver tests
             // UTOPIA_RUN_TEST(newton_test);
@@ -81,7 +81,7 @@ namespace utopia
             // UTOPIA_RUN_TEST(TR_constrained);
 
 
-            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            // UTOPIA_RUN_TEST(QuasiTR_unconstrained);
 
         }
 
@@ -223,7 +223,7 @@ namespace utopia
 
             // auto fun1 = multilevel_problem.level_functions_[n_levels_-1];
             auto funs = multilevel_problem.get_functions();
-            auto fun1 = funs.back(); 
+            auto fun1 = funs.back();
 
 
             Poisson3D<Matrix, Vector> * fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
@@ -342,7 +342,7 @@ namespace utopia
             hess_approx->theta_min(1.0);
 
             // hess_approx->damping_tech(POWEL);
-            hess_approx->damping_tech(NOCEDAL); 
+            hess_approx->damping_tech(NOCEDAL);
 
 
             hess_approx->scaling_tech(ADAPTIVE);
@@ -384,7 +384,7 @@ namespace utopia
             // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
 
-            
+
             Vector ub = fun.upper_bound();
             Vector lb = fun.lower_bound();
             auto box = make_box_constaints(make_ref(lb), make_ref(ub));
@@ -436,8 +436,8 @@ namespace utopia
 //FIXME
 #ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > multilevel_problem(2, n_levels_, n_);
-            
-            auto fun = multilevel_problem.get_functions().back(); 
+
+            auto fun = multilevel_problem.get_functions().back();
             Bratu2D<Matrix, Vector> * fun_Bratu2D = dynamic_cast<Bratu2D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Bratu2D->initial_guess();
 
@@ -484,7 +484,7 @@ namespace utopia
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
             // auto fun = multilevel_problem.level_functions_[n_levels_-1];
-            auto fun = multilevel_problem.get_functions().back(); 
+            auto fun = multilevel_problem.get_functions().back();
             Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Poisson3D->initial_guess();
 
@@ -529,7 +529,7 @@ namespace utopia
                 PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > multilevel_problem(3, n_levels_, n_);
 
                 auto funs = multilevel_problem.get_functions();
-                auto fun = funs.back(); 
+                auto fun = funs.back();
 
                 Poisson3D<Matrix, Vector> * fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
                 Vector x = fun_Poisson3D->initial_guess();
@@ -676,7 +676,7 @@ namespace utopia
                 PetscMultilevelTestProblem<PetscMatrix, PetscVector, Poisson3D<PetscMatrix, PetscVector> > multilevel_problem(3, n_levels_, n_);
 
                 auto funs = multilevel_problem.get_functions();
-                auto fun = funs.back(); 
+                auto fun = funs.back();
                 Poisson3D<PetscMatrix, PetscVector> * fun_Poisson3D = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
                 PetscVector x = fun_Poisson3D->initial_guess();
 
@@ -685,7 +685,7 @@ namespace utopia
 
                 backend_convert(x, x_fine);
 
-                auto transfers = multilevel_problem.get_transfer(); 
+                auto transfers = multilevel_problem.get_transfer();
 
                 for(auto i=0; i < multilevel_problem.n_levels(); i++)
                 {
@@ -950,9 +950,9 @@ namespace utopia
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
-// #ifdef WITH_TRILINOS
-//         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
-// #endif
+#ifdef WITH_TRILINOS
+        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+#endif
 #endif
 
     }

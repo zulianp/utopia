@@ -9,7 +9,7 @@ namespace utopia
 {
 
     template<typename Matrix, typename Vector>
-    class Poisson1D final:  virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, 
+    class Poisson1D final:  virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
                             virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
         public:
@@ -17,22 +17,22 @@ namespace utopia
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
 
-        Poisson1D(const SizeType & n, const SizeType & problem_type=2):     pi_(3.14159265358979323846), 
-                                                                            problem_type_(problem_type),  
+        Poisson1D(const SizeType & n, const SizeType & problem_type=2):     pi_(3.14159265358979323846),
+                                                                            problem_type_(problem_type),
                                                                             n_(n)
-        { 
+        {
 
             if(problem_type_==1){
-                assembly_problem_type1(); 
+                assembly_problem_type1();
             }else if(problem_type_==2){
-                assembly_problem_type2(); 
+                assembly_problem_type2();
             }else if(problem_type_==3){
-                assembly_problem_type3(); 
+                assembly_problem_type3();
             }else if(problem_type_==4){
-                assembly_problem_type4(); 
-            }                
+                assembly_problem_type4();
+            }
             else{
-                utopia_error("Poisson1D:: problem type non-existent"); 
+                utopia_error("Poisson1D:: problem type non-existent");
             }
         }
 
@@ -46,33 +46,33 @@ namespace utopia
 
         bool value(const Vector &x, Scalar &value) const override
         {
-            *A_help_  = (H_) * x; 
-            value = 0.5 * dot(x, *A_help_) - dot(rhs_, x); 
+            *A_help_  = (H_) * x;
+            value = 0.5 * dot(x, *A_help_) - dot(rhs_, x);
             return true;
         }
 
         bool gradient(const Vector &x, Vector &g) const override
-        {   
-            g = (H_ * x) - rhs_; 
+        {
+            g = (H_ * x) - rhs_;
 
             {
-                Write<Vector>   w(g); 
-                Read<Vector>    read(x); 
-                Read<Vector>    re(exact_sol_); 
+                Write<Vector>   w(g);
+                Read<Vector>    read(x);
+                Read<Vector>    re(exact_sol_);
 
                 Range r = range(g);
 
                 if(r.begin() == 0)  {
-                    g.set(0, (exact_sol_.get(0) - x.get(0))); 
+                    g.set(0, (exact_sol_.get(0) - x.get(0)));
                 }
 
                 if(r.end() == n_)  {
-                    g.set(n_-1, (exact_sol_.get(n_-1) - x.get(n_-1))); 
+                    g.set(n_-1, (exact_sol_.get(n_-1) - x.get(n_-1)));
                 }
             }
 
             return true;
-        }    
+        }
 
 
         bool get_rhs( Vector & rhs) const
@@ -83,7 +83,7 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            H = H_; 
+            H = H_;
             set_zero_rows(H, bc_indices_, 1.);
             return true;
         }
@@ -102,30 +102,30 @@ namespace utopia
         }
 
         Vector initial_guess() const override
-        {   
-            return x0_; 
+        {
+            return x0_;
         }
-        
+
         const Vector & exact_sol() const override
         {
-            return exact_sol_; 
+            return exact_sol_;
         }
-        
+
         Scalar min_function_value() const override
-        {   
-            // depends on the solution to which we converged to 
-            std::cout<<"Poisson1D:: min_function_value :: wrong.... \n"; 
-            return -1.012; 
+        {
+            // depends on the solution to which we converged to
+            std::cout<<"Poisson1D:: min_function_value :: wrong.... \n";
+            return -1.012;
         }
 
         std::string name() const override
         {
             return "Poisson1D";
         }
-        
+
         SizeType dim() const override
         {
-            return n_; 
+            return n_;
         }
 
         bool exact_sol_known() const override
@@ -136,17 +136,17 @@ namespace utopia
         bool parallel() const override
         {
             return true;
-        }   
+        }
 
 
-    private: 
+    private:
         void assemble_laplacian_1D(Matrix &M)
         {
             {
                 // n x n matrix with maximum 3 entries x row
                 Write<Matrix> w(M);
                 Range r = row_range(M);
-                auto n = size(M).get(0);                
+                auto n = size(M).get(0);
 
                 for(SizeType i = r.begin(); i != r.end(); ++i) {
                     if(i > 0) {
@@ -165,74 +165,77 @@ namespace utopia
                 }
             }
 
-            M *= 1./h_;  
+            M *= 1./h_;
         }
 
         void init_memory()
         {
-            H_ = sparse(n_, n_, 3); 
-            assemble_laplacian_1D(H_);            
+            H_ = sparse(n_, n_, 3);
+            assemble_laplacian_1D(H_);
 
-            rhs_ = values(n_, 0.0); 
-            x0_ = values(n_, 0.0); 
+            rhs_ = values(n_, 0.0);
+            x0_ = values(n_, 0.0);
             exact_sol_ = values(n_, 0.0);
             A_help_ = make_unique<Vector>(values(n_, 0.0));
         }
 
 
+    public: //made public because of nvcc
+
+
         void assembly_problem_type1()
         {
-            a_ = 0.0; 
-            b_ = 2.0 * pi_;  
+            a_ = 0.0;
+            b_ = 2.0 * pi_;
 
-            L_ = b_ - a_; 
-            h_ = L_ / (n_-1); 
+            L_ = b_ - a_;
+            h_ = L_ / (n_-1);
 
-            init_memory(); 
+            init_memory();
 
             {
                 parallel_each_write(rhs_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
-                        return xi * std::cos(xi); 
+                        return xi * std::cos(xi);
                     }
                     else if(i==n_-1){
-                        return xi * std::cos(xi); 
+                        return xi * std::cos(xi);
                     }
                     else
                     {
-                        // return (2.0* device::sin(xi)) + (xi*device::cos(xi)); 
-                        return h_ * (2.0* std::sin(xi)) + (xi* std::cos(xi)); 
+                        // return (2.0* device::sin(xi)) + (xi*device::cos(xi));
+                        return h_ * (2.0* std::sin(xi)) + (xi* std::cos(xi));
                     }
                 });
 
                 parallel_each_write(exact_sol_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
-                    // return xi * device::cos(xi); 
-                    return xi * std::cos(xi); 
-                });   
+                    Scalar xi = (h_*i);
+                    // return xi * device::cos(xi);
+                    return xi * std::cos(xi);
+                });
 
                 parallel_each_write(x0_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
-                        return xi * std::cos(xi); 
+                        return xi * std::cos(xi);
                     }
                     else if(i==n_-1){
-                        return xi * std::cos(xi); 
+                        return xi * std::cos(xi);
                     }
                     else{
-                        return 0.0; 
+                        return 0.0;
                     }
-                });                                
+                });
             }
 
 
             Vector bc_markers = values(n_, 0.0);
             {
-                Write<Vector> wv(bc_markers); 
+                Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
 
                 if(r.begin() == 0)  {
@@ -249,23 +252,23 @@ namespace utopia
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
 
             this->constraints_ = make_box_constaints(std::make_shared<Vector>(values(n_, -9e9)),
-                                                     std::make_shared<Vector>(values(n_, 9e9)));                
+                                                     std::make_shared<Vector>(values(n_, 9e9)));
         }
 
         void assembly_problem_type2()
         {
-            a_ = 0.0; 
-            b_ = 1.0;  
+            a_ = 0.0;
+            b_ = 1.0;
 
-            L_ = b_ - a_; 
-            h_ = L_ / (n_-1); 
+            L_ = b_ - a_;
+            h_ = L_ / (n_-1);
 
-            init_memory(); 
+            init_memory();
 
             {
                 parallel_each_write(rhs_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
                         return 0.0;
                     }
@@ -274,37 +277,37 @@ namespace utopia
                     }
                     else
                     {
-                        return h_ * -10.0; 
+                        return h_ * -10.0;
                     }
                 });
 
                 parallel_each_write(exact_sol_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
-                    return 5.0 * xi * (xi - 1.0); 
-                });   
+                    Scalar xi = (h_*i);
+                    return 5.0 * xi * (xi - 1.0);
+                });
 
 
                 parallel_each_write(x0_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
-                        return 5.0 * xi * (xi - 1.0); 
+                        return 5.0 * xi * (xi - 1.0);
                     }
                     else if(i==n_-1){
-                        return 5.0 * xi * (xi - 1.0); 
+                        return 5.0 * xi * (xi - 1.0);
                     }
                     else{
-                        return 0.0; 
+                        return 0.0;
                     }
-                });     
+                });
 
             }
 
 
             Vector bc_markers = values(n_, 0.0);
             {
-                Write<Vector> wv(bc_markers); 
+                Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
 
                 if(r.begin() == 0)  {
@@ -320,35 +323,35 @@ namespace utopia
 
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
-            Vector upper_bound = values(n_, 0.0); 
+            Vector upper_bound = values(n_, 0.0);
             {
                 parallel_each_write(upper_bound, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     return 0.5 + ((xi - 0.5) * (xi - 0.5));
-                });                
-            }            
+                });
+            }
 
-            this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound)); 
+            this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound));
 
-        }        
+        }
 
 
 
         void assembly_problem_type3()
         {
-            a_ = 0.0; 
-            b_ = 1.0;  
+            a_ = 0.0;
+            b_ = 1.0;
 
-            L_ = b_ - a_; 
-            h_ = L_ / (n_-1); 
+            L_ = b_ - a_;
+            h_ = L_ / (n_-1);
 
-            init_memory(); 
+            init_memory();
 
             {
                 parallel_each_write(rhs_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
                         return 0.0;
                     }
@@ -363,14 +366,14 @@ namespace utopia
 
                 parallel_each_write(exact_sol_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
-                    // return xi * device::cos(xi); 
+                    Scalar xi = (h_*i);
+                    // return xi * device::cos(xi);
                     return (std::sin(4.0*pi_*xi) + std::cos(xi*pi_*3.0));
-                });   
+                });
 
                 parallel_each_write(x0_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
                         return (std::sin(4.0*pi_*xi) + std::cos(xi*pi_*3.0));
                     }
@@ -378,16 +381,16 @@ namespace utopia
                         return (std::sin(4.0*pi_*xi) + std::cos(xi*pi_*3.0));
                     }
                     else{
-                        return 0.0; 
+                        return 0.0;
                     }
-                });                     
+                });
 
             }
 
 
             Vector bc_markers = values(n_, 0.0);
             {
-                Write<Vector> wv(bc_markers); 
+                Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
 
                 if(r.begin() == 0)  {
@@ -403,36 +406,36 @@ namespace utopia
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
 
-            Vector upper_bound = values(n_, 0.0); 
+            Vector upper_bound = values(n_, 0.0);
             {
                 parallel_each_write(upper_bound, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
-                    Scalar periods = 4.0; 
+                    Scalar xi = (h_*i);
+                    Scalar periods = 4.0;
                     Scalar c = 2.0 * 3.14 * periods * (2.0*xi - 1.0)/2.0;
                     // device::cos
                     return  0.5 + ((std::cos(c)) - 0.5) * ((std::cos(c)) - 0.5);
-                });                
-            }            
+                });
+            }
 
-            this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound)); 
-        }   
+            this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound));
+        }
 
 
         void assembly_problem_type4()
         {
-            a_ = 0.0; 
-            b_ = 1.0;  
+            a_ = 0.0;
+            b_ = 1.0;
 
-            L_ = b_ - a_; 
-            h_ = L_ / (n_-1); 
+            L_ = b_ - a_;
+            h_ = L_ / (n_-1);
 
-            init_memory(); 
+            init_memory();
 
             {
                 parallel_each_write(rhs_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
                         return 0.0;
                     }
@@ -442,43 +445,43 @@ namespace utopia
                     else
                     {
                         if(i<n_/2.0){
-                            return h_*50.0; 
+                            return h_*50.0;
                         }
                         else
                         {
-                            return h_*-50.0; 
+                            return h_*-50.0;
                         }
                     }
                 });
 
                 parallel_each_write(exact_sol_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
-                    // return xi * device::cos(xi); 
+                    Scalar xi = (h_*i);
+                    // return xi * device::cos(xi);
                     // not known yet
-                    return 0.0; 
-                });   
+                    return 0.0;
+                });
 
                 parallel_each_write(x0_, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
-                    Scalar xi = (h_*i); 
+                    Scalar xi = (h_*i);
                     if(i==0){
-                        return 0.0; 
+                        return 0.0;
                     }
                     else if(i==n_-1){
-                        return 0.0; 
+                        return 0.0;
                     }
                     else{
-                        return 0.0; 
+                        return 0.0;
                     }
-                });                     
+                });
 
             }
 
 
             Vector bc_markers = values(n_, 0.0);
             {
-                Write<Vector> wv(bc_markers); 
+                Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
 
                 if(r.begin() == 0)  {
@@ -495,28 +498,28 @@ namespace utopia
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
 
             this->constraints_ = make_box_constaints(std::make_shared<Vector>(values(n_, -0.5)),
-                                                     std::make_shared<Vector>(values(n_, 0.3)));    
-        }          
+                                                     std::make_shared<Vector>(values(n_, 0.3)));
+        }
 
 
-    private: 
-        const Scalar pi_; 
-        const SizeType problem_type_; 
+    private:
+        const Scalar pi_;
+        const SizeType problem_type_;
 
-        Scalar a_, b_; 
-        Scalar n_, L_, h_;         
+        Scalar a_, b_;
+        Scalar n_, L_, h_;
 
-        std::vector<SizeType> bc_indices_; 
+        std::vector<SizeType> bc_indices_;
 
-        Matrix H_; 
+        Matrix H_;
         Vector rhs_;
-        Vector x0_; 
-        Vector exact_sol_; 
+        Vector x0_;
+        Vector exact_sol_;
 
-        std::unique_ptr<Vector>  A_help_; 
+        std::unique_ptr<Vector>  A_help_;
 
 
-    }; 
+    };
 
 }
 #endif

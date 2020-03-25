@@ -70,18 +70,18 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION constexpr DeviceNumber(const Scalar &value = Zero<Scalar>::value())  : value_(value)
         {}
 
-        UTOPIA_INLINE_FUNCTION std::string get_class() const /*override*/
+        inline std::string get_class() const /*override*/
         {
             return "DeviceNumber";
         }
 
         template<typename OtherScalar>
-        constexpr DeviceNumber(const DeviceNumber<OtherScalar> &other)
+        UTOPIA_INLINE_FUNCTION constexpr DeviceNumber(const DeviceNumber<OtherScalar> &other)
         : value_(other.value_)
         {}
 
         template<typename OtherScalar>
-        constexpr DeviceNumber(DeviceNumber<OtherScalar> &&other)
+        UTOPIA_INLINE_FUNCTION constexpr DeviceNumber(DeviceNumber<OtherScalar> &&other)
         : value_(std::move(other.value_))
         {}
 
@@ -165,9 +165,9 @@ namespace utopia {
             return 0;
         }
 
-        inline static constexpr unsigned short size() { return 1; }
-        inline static constexpr unsigned short rows() { return 1; }
-        inline static constexpr unsigned short cols() { return 1; }
+        UTOPIA_INLINE_FUNCTION static constexpr unsigned short size() { return 1; }
+        UTOPIA_INLINE_FUNCTION static constexpr unsigned short rows() { return 1; }
+        UTOPIA_INLINE_FUNCTION static constexpr unsigned short cols() { return 1; }
 
     private:
         Scalar value_;

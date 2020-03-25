@@ -275,6 +275,11 @@ namespace utopia {
             return view_ptr_->view(local_index, 0);
         }
 
+        inline Scalar l_get(const SizeType &i) const //override
+        {
+            return view_ptr_->view(i, 0);
+        }
+
         inline Scalar operator[](const SizeType &i) const
         {
             // assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
@@ -297,6 +302,12 @@ namespace utopia {
             auto local_index = view_ptr_->map.getLocalElement(i);
 
             view_ptr_->view(local_index, 0) = value;
+        }
+
+        inline void l_set(const SizeType &i, const Scalar &value) //override
+        {
+            assert(view_ptr_);
+            view_ptr_->view(i, 0) = value;
         }
 
         inline void add(const SizeType &i, const Scalar &value) override
@@ -576,13 +587,13 @@ namespace utopia {
 
                 if(has_ghosts()) {
                     view_ptr_ = utopia::make_unique<View>(
-                        ghosted_vec_->getLocalView<Kokkos::HostSpace>(),
+                        ghosted_vec_->getLocalViewHost(),
                         ghosted_vec_->getMap()->getLocalMap()
                     );
 
                 } else {
                     view_ptr_ = utopia::make_unique<View>(
-                        vec_->getLocalView<Kokkos::HostSpace>(),
+                        vec_->getLocalViewHost(),
                         vec_->getMap()->getLocalMap()
                     );
                 }

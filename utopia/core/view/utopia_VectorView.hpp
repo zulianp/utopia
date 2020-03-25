@@ -43,33 +43,6 @@ namespace utopia {
             return "VectorView";
         }
 
-        UTOPIA_FUNCTION TensorView() {}
-        UTOPIA_FUNCTION TensorView(ArrayView &&view) : view_(std::move(view)) {}
-        UTOPIA_FUNCTION TensorView(const ArrayView &view) : view_(view) {}
-
-        template<class... Args>
-        UTOPIA_FUNCTION TensorView(const DelegateArgs &, Args && ...args)
-        : view_(std::forward<Args>(args)...)
-        {}
-
-        // template<class... Args>
-        // UTOPIA_FUNCTION TensorView(Args && ...args)
-        // : view_(std::forward<Args>(args)...)
-        // {}
-
-        UTOPIA_FUNCTION TensorView(TensorView &&other) : view_(std::move(other.view_)) {}
-
-        template<class Expr>
-        UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)
-        {
-            DeviceAssign<TensorView, Expr>::apply(*this, expr.derived());
-        }
-
-        template<class Expr>
-        UTOPIA_FUNCTION TensorView(DeviceExpression<Expr> &&expr)
-        {
-            DeviceAssign<TensorView, Expr>::apply(*this, std::move(expr.derived()));
-        }
 
         template<class Expr>
         UTOPIA_INLINE_FUNCTION TensorView &operator=(const DeviceExpression<Expr> &expr)
@@ -138,9 +111,9 @@ namespace utopia {
         }
 
         UTOPIA_INLINE_FUNCTION ArrayView &raw_type() { return view_; }
-        UTOPIA_INLINE_FUNCTION const ArrayView &raw_type() const { return view_; }
+        UTOPIA_INLINE_FUNCTION constexpr const ArrayView &raw_type() const { return view_; }
 
-        UTOPIA_INLINE_FUNCTION SizeType size() const
+        UTOPIA_INLINE_FUNCTION constexpr SizeType size() const
         {
             return view_.size();
         }
@@ -150,7 +123,7 @@ namespace utopia {
             return view_[i];
         }
 
-        UTOPIA_INLINE_FUNCTION const Scalar &operator()(const SizeType &i) const
+        UTOPIA_INLINE_FUNCTION constexpr const Scalar &operator()(const SizeType &i) const
         {
             return view_[i];
         }
@@ -160,12 +133,12 @@ namespace utopia {
             return view_[i];
         }
 
-        UTOPIA_INLINE_FUNCTION const Scalar &operator[](const SizeType &i) const
+        UTOPIA_INLINE_FUNCTION constexpr const Scalar &operator[](const SizeType &i) const
         {
             return view_[i];
         }
 
-        UTOPIA_INLINE_FUNCTION const Scalar &get(const SizeType &i) const
+        UTOPIA_INLINE_FUNCTION constexpr const Scalar &get(const SizeType &i) const
         {
             return view_[i];
         }
@@ -207,7 +180,7 @@ namespace utopia {
             view_ = view;
         }
 
-        UTOPIA_INLINE_FUNCTION bool is_alias(const TensorView &other) const
+        UTOPIA_INLINE_FUNCTION constexpr bool is_alias(const TensorView &other) const
         {
             return &(view_[0]) == &(other.view_[0]);
         }
@@ -219,7 +192,7 @@ namespace utopia {
         }
 
         template<class OtherArrayView>
-        UTOPIA_INLINE_FUNCTION bool equals(const TensorView<OtherArrayView, 1> &other, const Scalar &tol) const
+        UTOPIA_INLINE_FUNCTION constexpr bool equals(const TensorView<OtherArrayView, 1> &other, const Scalar &tol) const
         {
             if(size() != other.size()) return false;
             return device::approxeq(view_, other.raw_type(), tol);
@@ -233,18 +206,44 @@ namespace utopia {
             }
         }
 
-        UTOPIA_FUNCTION TensorView(const TensorView &other) : view_(other.view_) {}
+        UTOPIA_FUNCTION constexpr TensorView() {}
+        UTOPIA_FUNCTION constexpr TensorView(ArrayView &&view) : view_(std::move(view)) {}
+        UTOPIA_FUNCTION constexpr TensorView(const ArrayView &view) : view_(view) {}
+        UTOPIA_FUNCTION constexpr TensorView(TensorView &&other) : view_(std::move(other.view_)) {}
+        UTOPIA_FUNCTION constexpr TensorView(const TensorView &other) : view_(other.view_) {}
 
-    private:
+        template<class... Args>
+        UTOPIA_FUNCTION TensorView(const DelegateArgs &, Args && ...args)
+        : view_(std::forward<Args>(args)...)
+        {}
+
+        template<class Expr>
+        UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)
+        {
+            DeviceAssign<TensorView, Expr>::apply(*this, expr.derived());
+        }
+
+        template<class Expr>
+        UTOPIA_FUNCTION TensorView(DeviceExpression<Expr> &&expr)
+        {
+            DeviceAssign<TensorView, Expr>::apply(*this, std::move(expr.derived()));
+        }
+
+    // private:
         ArrayView view_;
-
-
     };
 
     template<class View>
     UTOPIA_INLINE_FUNCTION typename Traits<View>::SizeType size(const TensorView<View, 1> &t)
     {
         return t.size();
+    }
+
+
+    template<class View, typename T, size_t Size>
+    inline void convert(const VectorView<View> &in, std::array<T, Size> &out)
+    {
+        std::copy(&in[0], &in[0] + Size, &out[0]);
     }
 }
 
