@@ -229,6 +229,8 @@ namespace utopia {
 
             for(SizeType i = 0; i < n; ++i) {
                 assert(dofs[i] < mesh.n_nodes() * mesh.n_components());
+                assert(i < values.size());
+
                 values[i] = vec.get(dofs[i]);
             }
        }

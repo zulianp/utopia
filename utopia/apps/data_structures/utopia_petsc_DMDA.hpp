@@ -24,7 +24,7 @@ namespace utopia {
 
         using SizeType  = typename Super::SizeType;
         using Scalar    = typename Super::Scalar;
-        using NodeIndex = utopia::ArrayView<SizeType>;
+        using NodeIndex = utopia::ArrayView<const SizeType>;
 
         class Elements {
         public:
@@ -246,7 +246,7 @@ namespace utopia {
 
         std::unique_ptr<PetscDMDA> uniform_refine() const
         {
-            auto fine = utopia::make_unique<PetscDMDA>();
+            auto fine = utopia::make_unique<PetscDMDA>(comm(), type_override_);
             PetscDMBase::refine(raw_type(), comm().get(), fine->raw_type());
 
             //This does not transfer automatically for some reason
@@ -260,10 +260,10 @@ namespace utopia {
 
         std::unique_ptr<PetscDMDA> clone(const SizeType &n_components) const
         {
-            auto cloned = utopia::make_unique<PetscDMDA>();
+            auto cloned = utopia::make_unique<PetscDMDA>(comm(), type_override_);
             cloned->copy(*this);
             cloned->set_n_components(n_components);
-            cloned->type_override_ = type_override_;
+            // cloned->type_override_ = type_override_;
             cloned->init_from_mirror();
             return std::move(cloned);
         }

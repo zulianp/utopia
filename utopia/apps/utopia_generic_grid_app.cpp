@@ -1,19 +1,23 @@
 
 #include "utopia_Base.hpp"
 
-#if WITH_CXX14
+// #ifdef WITH_CXX14
+
 #include "utopia_StructuredGrid.hpp"
 #include "utopia_ui.hpp"
 #include "utopia_Views.hpp"
 #include "utopia_AppRunner.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMPlex.hpp"
 
 namespace utopia {
     using V = utopia::StaticVector<double, 2>;
     using I = utopia::ArrayView<int, 2>;
     using VA = utopia::ArrayView<double, 2>;
     template class StructuredGrid<V, I>;
+    template class PetscDMDA<V, I>;
+    template class PetscDMPlex<V, I>;
 
 
     void generic_grid_test(Input &in)
@@ -95,6 +99,23 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(dmda_test);
+
+    void dmplex_test(Input &in)
+    {
+        PetscCommunicator comm;
+        PetscDMPlex<V, I> dmplex(comm);
+
+        // dmplex.read(in);
+        dmplex.read("../../utopia_fe/data/contact/contact_squares_tri.e");
+
+        PetscVector v;
+        dmplex.create_vector(v);
+        v.set(1.0);
+
+        dmplex.write("prova.vtu");//, v);
+    }
+
+    UTOPIA_REGISTER_APP(dmplex_test);
 }
 
-#endif
+// #endif
