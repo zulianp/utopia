@@ -9,10 +9,10 @@
 namespace utopia {
 
     template<class Mesh, class Elem, int NComponents>
-    class DofMap {};
+    class DofMapping {};
 
     template<int Dim, class Elem_, int NComponents>
-    class DofMap<PetscDM<Dim>, Elem_, NComponents> {
+    class DofMapping<PetscDM<Dim>, Elem_, NComponents> {
     public:
         static const int NDofs = NComponents * Elem_::NNodes;
 
@@ -275,8 +275,8 @@ namespace utopia {
         using Matrix = utopia::PetscMatrix;
         using Comm = utopia::PetscCommunicator;
         using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
-        using DofMap      = utopia::DofMap<PetscDM<Dim>, Elem_, NComponents>;
-        static const int NDofs = DofMap::NDofs;
+        using DofMapping      = utopia::DofMapping<PetscDM<Dim>, Elem_, NComponents>;
+        static const int NDofs = DofMapping::NDofs;
 
         template<int NSubVars>
         using Subspace = FunctionSpace<PetscDM<Elem_::Dim>, NSubVars, Elem_>;
@@ -461,13 +461,13 @@ namespace utopia {
         template<class DofIndex>
         void dofs(const SizeType &idx, DofIndex &dofs) const
         {
-            DofMap::dofs(*mesh_, subspace_id_, idx, dofs);
+            DofMapping::dofs(*mesh_, subspace_id_, idx, dofs);
         }
 
         template<class DofIndex>
         void dofs_local(const SizeType &idx, DofIndex &dofs) const
         {
-           DofMap::dofs_local(*mesh_, subspace_id_, idx, dofs);
+           DofMapping::dofs_local(*mesh_, subspace_id_, idx, dofs);
         }
 
         template<class ElementMatrix, class MatView>
@@ -476,7 +476,7 @@ namespace utopia {
             const ElementMatrix &el_mat,
             MatView &mat) const
         {
-            DofMap::add_matrix(*mesh_, subspace_id_, e, el_mat, mat);
+            DofMapping::add_matrix(*mesh_, subspace_id_, e, el_mat, mat);
         }
 
         template<class ElementVector, class VecView>
@@ -485,7 +485,7 @@ namespace utopia {
             const ElementVector &el_vec,
             VecView &vec) const
         {
-            DofMap::add_vector(*mesh_, subspace_id_, e, el_vec, vec);
+            DofMapping::add_vector(*mesh_, subspace_id_, e, el_vec, vec);
         }
 
         template<class ElementVector, class VecView>
@@ -494,7 +494,7 @@ namespace utopia {
             const ElementVector &el_vec,
             VecView &vec) const
         {
-            DofMap::set_vector(*mesh_, subspace_id_, e, el_vec, vec);
+            DofMapping::set_vector(*mesh_, subspace_id_, e, el_vec, vec);
         }
 
         template<class VectorView, class Values>
@@ -503,7 +503,7 @@ namespace utopia {
             const VectorView &vec,
             Values &values) const
         {
-            DofMap::local_coefficients(*mesh_, subspace_id_, e, vec, values);
+            DofMapping::local_coefficients(*mesh_, subspace_id_, e, vec, values);
         }
 
         template<class VectorView, class Values>
@@ -513,7 +513,7 @@ namespace utopia {
             const SizeType &var,
             Values &values) const
         {
-            DofMap::local_coefficients_for_var(*mesh_, e, vec, subspace_id_ +var, values);
+            DofMapping::local_coefficients_for_var(*mesh_, e, vec, subspace_id_ +var, values);
         }
 
         const Mesh &mesh() const

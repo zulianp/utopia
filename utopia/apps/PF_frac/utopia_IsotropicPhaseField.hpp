@@ -370,6 +370,7 @@ namespace utopia {
                             compute_stress(params_, tr_strain_u, el_strain.strain[qp],  stress);
                             stress = (quadratic_degradation(params_, c[qp]) * (1.0 - params_.regularization) + params_.regularization) * stress;
 
+                            #pragma unroll(U_NDofs)
                             for(SizeType j = 0; j < U_NDofs; ++j) {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
@@ -389,6 +390,7 @@ namespace utopia {
                                 );
 
 
+                            #pragma unroll(C_NDofs)
                             for(SizeType j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test   = c_shape_fun_el(j, qp);
                                 const Scalar frac =
@@ -552,13 +554,41 @@ namespace utopia {
 
                             const Scalar eep = elastic_energy(params_,  c[qp], tr_strain_u, el_strain.strain[qp]);
 
+                            #pragma unroll(C_NDofs)
                             for(SizeType l = 0; l < C_NDofs; ++l) {
                                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
                                 auto &&      c_grad_l  = c_grad_shape_el(l, qp);
 
-                                for(SizeType j = 0; j < C_NDofs; ++j) {
+                                // #pragma unroll(C_NDofs)
+                                // for(SizeType j = 0; j < C_NDofs; ++j) {
 
-                                   el_mat(l, j) +=
+                                //     Scalar val =
+                                //         bilinear_cc(
+                                //             params_,
+                                //             c[qp],
+                                //             eep,
+                                //             c_shape_fun_el(j, qp),
+                                //             c_shape_l,
+                                //             c_grad_shape_el(j, qp),
+                                //             c_grad_l
+                                //     ) * dx(qp);
+
+                                //     if(params_.use_pressure){
+                                //         val += quadratic_degradation_deriv2(params_, c[qp]) * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) *  c_shape_l * dx(qp);
+                                //     }
+
+                                //     if(params_.use_penalty_irreversibility){
+                                //         val += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                //     }
+
+                                //     el_mat(l, j) += val;
+                                // }
+
+
+                                //SYMMETRIC VERSION
+                                for(SizeType j = l; j < C_NDofs; ++j) {
+
+                                    Scalar val =
                                         bilinear_cc(
                                             params_,
                                             c[qp],
@@ -570,26 +600,52 @@ namespace utopia {
                                     ) * dx(qp);
 
                                     if(params_.use_pressure){
-                                        el_mat(l, j) +=  quadratic_degradation_deriv2(params_, c[qp]) * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) *  c_shape_l * dx(qp);
+                                        val += quadratic_degradation_deriv2(params_, c[qp]) * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) *  c_shape_l * dx(qp);
                                     }
 
                                     if(params_.use_penalty_irreversibility){
-                                        el_mat(l, j) += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                        val += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     }
+
+                                    val = (l == j)? (0.5 * val) : val;
+
+                                    el_mat(l, j) += val;
+                                    el_mat(j, l) += val;
                                 }
                             }
 
-
+                            #pragma unroll(U_NDofs)
                             for(SizeType l = 0; l < U_NDofs; ++l) {
                                 auto &&u_grad_l = u_grad_shape_el(l, qp);
 
-                                for(SizeType j = 0; j < U_NDofs; ++j) {
-                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
+                                // for(SizeType j = 0; j < U_NDofs; ++j) {
+                                //     el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
+                                //         params_,
+                                //         c[qp],
+                                //         p_stress_view.stress(j, qp),
+                                //         u_grad_l
+                                //         ) * dx(qp);
+                                // }
+
+                                //SYMMETRIC VERSION
+                                el_mat(C_NDofs + l, C_NDofs + l)  += bilinear_uu(
+                                        params_,
+                                        c[qp],
+                                        p_stress_view.stress(l, qp),
+                                        u_grad_l
+                                    ) * dx(qp);
+
+
+                                for(SizeType j = l+1; j < U_NDofs; ++j) {
+                                    const Scalar v = bilinear_uu(
                                         params_,
                                         c[qp],
                                         p_stress_view.stress(j, qp),
                                         u_grad_l
-                                        ) * dx(qp);
+                                    ) * dx(qp);
+
+                                    el_mat(C_NDofs + l, C_NDofs + j) += v;
+                                    el_mat(C_NDofs + j, C_NDofs + l) += v;
                                 }
                             }
 
@@ -597,10 +653,12 @@ namespace utopia {
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
                             compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp],  stress);
 
+                            #pragma unroll(C_NDofs)
                             for(SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
                                 //CHANGE (pre-compute/store shape fun)
                                 const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
 
+                                #pragma unroll(U_NDofs)
                                 for(SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
 
                                     auto && strain_shape = u_strain_shape_el(u_i, qp);
@@ -623,9 +681,6 @@ namespace utopia {
                                     el_mat(C_NDofs + u_i, c_i) += val;
                                 }
                             }
-
-
-
                         }
 
                         space_view.add_matrix(e, el_mat, H_view);
