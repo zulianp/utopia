@@ -442,7 +442,7 @@ namespace utopia {
                 const T theta = distr_angle(generator);   
                 const T gamma = distr_angle(generator);   
                           
-                // length should be driven from power distribution 
+                // // length should be driven from power distribution 
                 // std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
                 // const T alpha1 = 2.8; 
                 // const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04; 
@@ -455,8 +455,8 @@ namespace utopia {
                 // const T width = x_min * std::pow( (1.-r2), (-1./(alpha2-1.)));   
 
 
-                const T width = 0.1; 
-                const T length = 0.1;  
+                const T width = 0.15; 
+                const T length = 0.15;  
 
 
                 std::uniform_int_distribution<> distr_dir(0.0, 6);
