@@ -44,7 +44,7 @@ namespace utopia {
 
     // }
 
-    UTOPIA_REGISTER_APP(generic_grid_test);
+    // UTOPIA_REGISTER_APP(generic_grid_test);
 
 
     void vec_grid_test(Input &in)
