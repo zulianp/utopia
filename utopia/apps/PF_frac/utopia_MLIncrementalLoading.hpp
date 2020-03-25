@@ -128,8 +128,6 @@ namespace utopia {
 
             rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
 
-
-
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             // tr_strategy_fine->l1(true); 
             
