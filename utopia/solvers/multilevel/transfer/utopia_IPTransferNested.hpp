@@ -26,7 +26,7 @@
 
             IPTransferNested(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                     _I(I),
-                    _R(std::make_shared<Matrix>(transpose(*I))),
+                    // _R(std::make_shared<Matrix>(transpose(*I))),
                     _Pr(P), 
                     I_norm_(1.0), 
                     R_norm_(1.0), 
@@ -91,10 +91,10 @@
                 return true;
             }
 
-            const Matrix &R() const
-            {
-                return *_R; 
-            }
+            // const Matrix &R() const
+            // {
+            //     return *_R; 
+            // }
 
 
             /**
@@ -199,7 +199,7 @@
             };
 
         private:
-            std::shared_ptr<Matrix> _I, _R; 
+            std::shared_ptr<Matrix> _I; // _R; 
             std::shared_ptr<Matrix> _Pr;
             Scalar I_norm_, R_norm_, P_norm_; 
     };

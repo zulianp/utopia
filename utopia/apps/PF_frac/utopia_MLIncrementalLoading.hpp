@@ -120,9 +120,14 @@ namespace utopia {
 
 
             //////////////////////////////////////////////// init solver ////////////////////////////////////////////////
-            rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
             // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
             // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN> >(n_levels_);
+
+
+            rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+
 
 
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
@@ -383,11 +388,10 @@ namespace utopia {
         std::vector<std::shared_ptr<BCType > >  BC_conditions_;
 
         std::shared_ptr<ICType > IC_;
-
         std::string log_output_path_;
 
 
-        std::shared_ptr<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> > rmtr_;
+        std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> > rmtr_;
 
 
     };
