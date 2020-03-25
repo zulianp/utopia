@@ -24,7 +24,10 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION constexpr explicit Range(const SizeType beginAndTo)
                 : begin_(beginAndTo), end_(beginAndTo + 1), extent_(1)
         {
-            assert(beginAndTo >= 0);
+#ifdef WITH_CPP14
+            UTOPIA_DEVICE_ASSERT(beginAndTo >= 0);
+#endif //WITH_CPP14
+
         }
 
         UTOPIA_INLINE_FUNCTION void set(const SizeType &begin, const SizeType &end)
