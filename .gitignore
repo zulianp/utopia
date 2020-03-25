@@ -9,3 +9,4 @@ utopia/doc/*
 *.sublime-workspace
 *.DS_Store
 *.vtk
+*.vtr

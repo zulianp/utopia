@@ -107,11 +107,10 @@ namespace utopia {
                 mass_matrix_assembler_coarse.mass_matrix(M_coarse);
 
                 Matrix inv_lumped_mass = diag(1./sum(M_coarse, 1));
-                Matrix P = inv_lumped_mass * R * M_fine;
+                Matrix P = inv_lumped_mass *   R * M_fine;
 
-                // TODO:: assemble P correctly => not I^T....
-                // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));    // still seq. faults
-                transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(R), std::make_shared<Matrix>(P));
+                
+                transfers_[i-1] = std::make_shared<IPTransferNested<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
             }
 
             // initial conddition needs to be setup only on the finest level
@@ -126,6 +125,8 @@ namespace utopia {
 
 
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            tr_strategy_fine->l1(true); 
+            
             auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
