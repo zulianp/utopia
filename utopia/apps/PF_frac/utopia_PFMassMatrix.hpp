@@ -11,10 +11,7 @@
 namespace utopia {
 
     template<class FunctionSpace, int Dim = FunctionSpace::Dim>
-    class PFMassMatrix final : public ExtendedFunction<
-                            typename FunctionSpace::Matrix,
-                            typename FunctionSpace::Vector>,
-                            public Configurable
+    class PFMassMatrix final :  public Configurable
 
     {
     public:
@@ -49,36 +46,6 @@ namespace utopia {
         PFMassMatrix(FunctionSpace &space) : space_(space)
         {
 
-        }
-
-
-        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
-        {
-            space_.create_matrix(H);
-            return true;
-        }
-
-        inline bool update(const Vector &x) override {
-            // x_coeff_.update(x);
-            return true;
-        }
-
-        bool value(const Vector &x_const, Scalar &val) const override
-        {
-            utopia_error("Not implementedd.... \n"); 
-            return true;
-        }
-
-        bool gradient(const Vector &x_const, Vector &g) const override
-        {
-            utopia_error("Not implementedd.... \n"); 
-            return true;
-        }
-
-        bool hessian(const Vector &x_const, Matrix &H) const override
-        {
-            mass_matrix(H); 
-            return true;
         }
 
         bool mass_matrix(Matrix &H) const

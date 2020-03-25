@@ -95,6 +95,7 @@ namespace utopia {
                 assert(!empty(*I));
 
                 Matrix Iu; // = *I;
+                Iu.destroy(); 
                 MatConvert(raw_type(*I),  I->type_override(), MAT_INITIAL_MATRIX, &raw_type(Iu));
                 Matrix R = transpose(Iu);
 
@@ -107,11 +108,10 @@ namespace utopia {
                 mass_matrix_assembler_coarse.mass_matrix(M_coarse);
 
                 Matrix inv_lumped_mass = diag(1./sum(M_coarse, 1));
-                Matrix P = inv_lumped_mass * R * M_fine;
+                Matrix P = inv_lumped_mass *   R * M_fine;
 
-                // TODO:: assemble P correctly => not I^T....
-                // transfers_[i-1] = std::make_shared<IPTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Iu));    // still seq. faults
-                transfers_[i-1] = std::make_shared<MatrixTransfer<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(R), std::make_shared<Matrix>(P));
+
+                transfers_[i-1] = std::make_shared<IPTransferNested<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
             }
 
             // initial conddition needs to be setup only on the finest level
@@ -120,12 +120,13 @@ namespace utopia {
 
 
             //////////////////////////////////////////////// init solver ////////////////////////////////////////////////
-            rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN> >(n_levels_);
-
+            // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
 
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            // tr_strategy_fine->l1(true); 
+            
+            
             auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -381,11 +382,10 @@ namespace utopia {
         std::vector<std::shared_ptr<BCType > >  BC_conditions_;
 
         std::shared_ptr<ICType > IC_;
-
         std::string log_output_path_;
 
 
-        std::shared_ptr<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> > rmtr_;
+        std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> > rmtr_;
 
 
     };
