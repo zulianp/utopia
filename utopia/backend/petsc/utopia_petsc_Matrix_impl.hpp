@@ -39,7 +39,7 @@ namespace utopia {
 				const PetscInt row_end = ia[i+1];
 
 				#pragma clang loop unroll_count(UNROLL_FACTOR)
-				#pragma GCC unroll UNROLL_FACTOR
+				#pragma GCC unroll 5
 				for(PetscInt k = ia[i]; k < row_end; ++k) {
 			    	op(i, ja[k], array[k]);
 			    }
@@ -73,7 +73,7 @@ namespace utopia {
 				const PetscInt row_end = ia[i+1];
 
 				#pragma clang loop unroll_count(UNROLL_FACTOR)
-				#pragma GCC unroll UNROLL_FACTOR
+				#pragma GCC unroll 5
 				for(PetscInt k = ia[i]; k < row_end; ++k) {
 			    	op(i, ja[k], array[k]);
 			    }
