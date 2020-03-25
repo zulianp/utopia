@@ -23,7 +23,7 @@ namespace utopia {
                 case 1: { return x; }
                 case 2: { return y; }
                 default: {
-                    UTOPIA_DEVICE_ASSERT(false);
+                    UTOPIA_DEVICE_ASSERT_CXX14(false);
                     return 0.0;
                 }
             }
@@ -72,7 +72,7 @@ namespace utopia {
                 }
                 default:
                 {
-                    UTOPIA_DEVICE_ASSERT(false);
+                    UTOPIA_DEVICE_ASSERT_CXX14(false);
                     return 0.0;
                 }
             }
@@ -83,7 +83,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &, Deriv &dst)
         {
             //project t coordinates to 0
-            UTOPIA_DEVICE_ASSERT(dst.size() == 1);
+            UTOPIA_DEVICE_ASSERT_CXX14(dst.size() == 1);
             dst[0] = 0;
         }
 
@@ -155,7 +155,7 @@ namespace utopia {
     //             case 2: { p[0] += h_[0]; p[1] += h_[1]; return; }
     //             case 3: { p[1] += h_[1]; return; }
     //             default: {
-    //                 UTOPIA_DEVICE_ASSERT(false);
+    //                 UTOPIA_DEVICE_ASSERT_CXX14(false);
     //                 return;
     //             }
     //         }
@@ -185,7 +185,7 @@ namespace utopia {
     //             }
     //             default:
     //             {
-    //                 UTOPIA_DEVICE_ASSERT(false);
+    //                 UTOPIA_DEVICE_ASSERT_CXX14(false);
     //             }
     //         }
     //     }
@@ -214,7 +214,7 @@ namespace utopia {
     //             }
     //             default:
     //             {
-    //                 UTOPIA_DEVICE_ASSERT(false);
+    //                 UTOPIA_DEVICE_ASSERT_CXX14(false);
     //                 break;
     //             }
     //         }
