@@ -368,8 +368,8 @@ namespace utopia {
 
                         ////////////////////////////////////////////
 
-                        #pragma clang loop unroll_count(U_MIN(NQuadPoints, UNROLL_FACTOR))
-                        #pragma GCC unroll U_MIN(NQuadPoints, UNROLL_FACTOR)
+                        // #pragma clang loop unroll_count(U_MIN(NQuadPoints, UNROLL_FACTOR))
+                        // #pragma GCC unroll U_MIN(NQuadPoints, UNROLL_FACTOR)
                         for(SizeType qp = 0; qp < NQuadPoints; ++qp) {
 
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
