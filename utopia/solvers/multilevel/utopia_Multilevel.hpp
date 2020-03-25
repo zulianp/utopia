@@ -29,6 +29,7 @@
 	#include "utopia_IdentityTransfer.hpp"
 	#include "utopia_IPTransfer.hpp"
 	#include "utopia_MatrixTransfer.hpp"
+	#include "utopia_IPTransferNested.hpp"
 
 	#include "utopia_MatrixTruncatedTransfer.hpp"
 
