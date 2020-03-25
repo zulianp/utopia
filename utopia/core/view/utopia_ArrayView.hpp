@@ -150,7 +150,7 @@ namespace utopia {
         template<class ArrayViewOther>
         UTOPIA_INLINE_FUNCTION ArrayView &operator=(const ArrayViewOther &other)
         {
-            #pragma unroll(Size)
+            #pragma GCC unroll(Size)
             for(Size_t i = 0; i < Size; ++i) {
                 data_[i] = other[i];
             }
@@ -162,7 +162,7 @@ namespace utopia {
         {
             ArrayView ret;
 
-            #pragma unroll(Size)
+            #pragma GCC unroll(Size)
             for(Size_t i = 0; i < Size; ++i) {
                 ret.data_[i] = value;
             }

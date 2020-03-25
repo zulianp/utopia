@@ -97,7 +97,7 @@ namespace utopia {
         {
             const auto n = grad.n_points();
             for(SizeType k = 0; k < n; ++k) {
-                #pragma unroll(NDofs)
+                #pragma GCC unroll(NDofs)
                 for(SizeType j = 0; j < grad.n_functions(); ++j) {
                     const auto g_test = grad(j, k);
                     mat(j, j) += kernel(grad, dx, j, j, k);

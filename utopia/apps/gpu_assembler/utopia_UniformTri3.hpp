@@ -27,6 +27,8 @@ namespace utopia {
                     return 0.0;
                 }
             }
+
+            return 0.0;
         }
 
         template<typename Point>
@@ -51,6 +53,8 @@ namespace utopia {
                     return 0.0;
                 }
             }
+
+            return 0.0;
         }
 
         template<typename Point>
@@ -76,6 +80,8 @@ namespace utopia {
                     return 0.0;
                 }
             }
+
+            return 0.0;
         }
 
         //space-time mixed derivative
