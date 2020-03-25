@@ -31,10 +31,15 @@ namespace utopia {
         const std::vector< std::pair<int, int> > &tags,
         const bool use_interpolation)
     {
+        // from_mesh->comm().barrier();
+        // if(from_mesh->comm().rank() == 0) { moonolith::logger() << "assemble_volume_transfer" << std::endl; }
 
 #ifdef WITH_NEW_TRANSFER
 #warning "enabling new transfer features with WITH_NEW_TRANSFER"
         if(use_biorth && !use_interpolation) {
+
+            from_mesh->comm().barrier();
+            if(from_mesh->comm().rank() == 0) { moonolith::logger() << "[Status] using new transfer" << std::endl; }
 
             TransferOptions opts;
             opts.from_var_num = from_var_num;

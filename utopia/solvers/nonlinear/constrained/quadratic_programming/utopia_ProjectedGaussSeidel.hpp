@@ -64,7 +64,10 @@ namespace utopia {
             SizeType it = 0;
             SizeType n_sweeps = this->sweeps();
             if(this->has_bound()) {
-                while(step(A, b, x) && it++ < n_sweeps) {}
+                while(it++ < n_sweeps) {
+                    step(A, b, x);
+                    std::cout<<"--------------------------------------------- sweep --------------------------------- \n"; 
+                }
             } else {
                 while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
             }
@@ -112,9 +115,6 @@ namespace utopia {
 
                 x_old = x;
             }
-
-
-
             return converged;
         }
 
@@ -204,7 +204,7 @@ namespace utopia {
             return true;
         }
 
-        bool step(const Matrix &A, const Vector &b, Vector &x)
+        virtual bool step(const Matrix &A, const Vector &b, Vector &x)
         {
             r = b - A * x;
 

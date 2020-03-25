@@ -8,7 +8,12 @@
 
 namespace utopia {
 
- 
+    void PetscVector::shift(const Scalar &x)
+    {
+        transform_values([x](const Scalar &val) -> Scalar {
+            return x + val;
+        });
+    }
 
     void PetscVector::transform(const Sqrt &op)
     {
@@ -240,7 +245,7 @@ namespace utopia {
     void PetscVector::copy_data_to(Vec vec) const
     {
         VecCopy(raw_type(), vec);
-    }    
+    }
 
     void PetscVector::ghosted(MPI_Comm comm,
         PetscInt local_size,
@@ -394,7 +399,7 @@ namespace utopia {
             return write_binary(path);
         }
     }
-    
+
     bool PetscVector::write_binary(const std::string &path) const
     {
         PetscViewer fd;
@@ -549,7 +554,7 @@ namespace utopia {
     bool PetscVector::equals(const PetscVector &other, const Scalar &tol) const
     {
         if(this->is_alias(other)) return true;
-        
+
         PetscVector diff = other;
         diff.axpy(-1.0, *this);
         return diff.norm_infty() < tol;
@@ -568,7 +573,7 @@ namespace utopia {
         assert(other.is_consistent());
         check_error( VecPointwiseDivide(raw_type(), raw_type(), other.raw_type() ) );
     }
-   
+
     void PetscVector::e_min(const PetscVector &other)
     {
         check_error( VecPointwiseMin( raw_type(), raw_type(), other.raw_type() ) );
@@ -625,7 +630,7 @@ namespace utopia {
          if(is_compatible(other) && !other.has_ghosts()) {
 
             // assert(same_type(other) && "TYPE " );
-            // assert(this->has_ghosts() && "GHOST" );                
+            // assert(this->has_ghosts() && "GHOST" );
 
              assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
              assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");

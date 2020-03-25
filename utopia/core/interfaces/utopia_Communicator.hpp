@@ -22,18 +22,23 @@ namespace utopia {
 		virtual bool conjunction(const bool &val) const = 0;
 		virtual bool disjunction(const bool &val) const = 0;
 
+		inline bool is_root() const
+		{
+			return rank() == 0;
+		}
+
 		template<typename T>
-		void root_print(T &obj) const
+		void root_print(const T &obj, std::ostream &os = std::cout) const
 		{
 			barrier();
 			if(rank() == 0) {
-				std::cout << obj << std::endl;
+				os << obj << std::endl;
 			}
 			barrier();
 		}
 
 		template<typename T>
-		void synched_print(T &obj) const
+		void synched_print(const T &obj, std::ostream &os = std::cout) const
 		{
 			const int n = size();
 			const int r = rank();
@@ -42,9 +47,9 @@ namespace utopia {
 				barrier();
 
 				if(i == r) {
-					std::cout << "[" << r << "] ---------------------\n";
-					std::cout << obj << std::endl;
-					std::cout << std::flush;
+					os << "[" << r << "] ---------------------\n";
+					os << obj << std::endl;
+					os << std::flush;
 				}
 			}
 
@@ -127,6 +132,12 @@ namespace utopia {
 	};
 
 	template<>
+	class MPIType<long long> {
+	public:
+		inline static MPI_Datatype value() noexcept { return MPI_LONG_LONG; }
+	};
+
+	template<>
 	class MPIType<int> {
 	public:
 		inline static MPI_Datatype value() noexcept { return MPI_INT; }
@@ -178,6 +189,16 @@ namespace utopia {
 		template<typename T>
 		inline void sum(const int n_values, T *inout) const {
 			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_SUM, get() );
+		}
+
+		template<typename T>
+		inline void min(const int n_values, T *inout) const {
+			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_MIN, get() );
+		}
+
+		template<typename T>
+		inline void max(const int n_values, T *inout) const {
+			MPI_Allreduce( MPI_IN_PLACE, inout, n_values, MPIType<T>::value(), MPI_MAX, get() );
 		}
 
 		template<typename T>

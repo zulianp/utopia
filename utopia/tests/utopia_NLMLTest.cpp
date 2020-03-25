@@ -203,7 +203,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
 			in.set("max-it", 20);
-			in.set("verbose", false);
+			in.set("verbose", true);
 
 
             // RMTR specific parameters
@@ -303,21 +303,52 @@ namespace utopia
 
 		void initialize() override
 		{
-			this->register_experiment("RMTR_quasi_LBFGS_test",
+			// this->register_experiment("RMTR_quasi_LBFGS_test",
+			// 	[this]() {
+
+		 //           	auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		 //            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+		 //            tr_strategy_fine->atol(1e-12); 
+
+			// 		auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+			// 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+			// 		tr_strategy_coarse->atol(1e-12);
+
+		 //            auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector> >(n_levels_);
+
+		 //            // Set TR-QP strategies
+		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		 //            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+		 //            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
+
+   //          		const SizeType memory_size = 5;
+   //              	auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
+   //          		rmtr->set_hessian_approximation_strategy(hess_approx);		      
+
+
+		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
+		 //            rmtr->set_fine_tr_strategy(tr_strategy_fine);
+
+		 //            run_test(this->ml_problems_, rmtr, "RMTR_quasi_LBFGS_test", this->verbose_);
+			// 	}
+			// );
+
+
+			this->register_experiment("RMTR_quasi_LBFGS_test_inf_unconstrained",
 				[this]() {
 
-		           	auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+		           	auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+		            // tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 		            tr_strategy_fine->atol(1e-12); 
 
-					auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-					tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+					auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+					// tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
 					tr_strategy_coarse->atol(1e-12);
 
-		            auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector> >(n_levels_);
+		            auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector> > >(n_levels_);
 
 		            // Set TR-QP strategies
-		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		            // rmtr->norm_schedule(MultilevelNormSchedule::OUTER_CYCLE);
 
@@ -331,7 +362,7 @@ namespace utopia
 
 		            run_test(this->ml_problems_, rmtr, "RMTR_quasi_LBFGS_test", this->verbose_);
 				}
-			);
+			);			
 
 
 			// this->register_experiment("RMTR_quasi_LSR1_test",
@@ -376,7 +407,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
 			in.set("max-it", 50);
-			in.set("verbose", false);
+			in.set("verbose", true);
 
             // RMTR specific parameters
             in.set("max_coarse_it", 10);
@@ -476,6 +507,7 @@ namespace utopia
 		#endif //WITH_PETSC
 
 	}
+
 
 	
 	UTOPIA_REGISTER_TEST_FUNCTION(rmtr);

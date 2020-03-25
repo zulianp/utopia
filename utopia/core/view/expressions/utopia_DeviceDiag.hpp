@@ -38,6 +38,11 @@ namespace utopia {
             return expr_.size();
         }
 
+        UTOPIA_INLINE_FUNCTION SizeType size() const
+        {
+            return device::min(expr_.rows(), expr_.cols());
+        }
+
     private:
         UTOPIA_STORE_CONST(InnerExpr) expr_;
     };

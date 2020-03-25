@@ -68,6 +68,7 @@ namespace utopia {
     public:
         static const int Dim = Elem::Dim;
         using Scalar = typename Elem::Scalar;
+      //        using SizeType = typename Elem::SizeType;
         using Point  = typename Elem::Point;
         using GradValue   = typename Elem::GradValue;
 

@@ -14,6 +14,7 @@
 #include "utopia_ConjugateGradient_impl.hpp"
 #include "utopia_RMTRVcycleImpl.hpp"
 #include "utopia_TRBoundsGratton.hpp"
+// #include "utopia_ProjectedGaussSeidelNew.hpp"
 
 //explicit instantiations
 namespace utopia {
@@ -27,7 +28,7 @@ namespace utopia {
     //petsc non-linear solvers
     template class NonLinearGaussSeidel<PetscMatrix, PetscVector>;
     template class Multigrid<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL>;
-    
+
     template class RMTR_l2<PetscMatrix, PetscVector, FIRST_ORDER>;
     template class RMTR_inf<PetscMatrix, PetscVector, TRBoundsGratton<PetscMatrix, PetscVector> >;
 

@@ -18,7 +18,7 @@ namespace utopia {
     public:
         static const int Dim = Elem::Dim;
         using Scalar   = typename Elem::Scalar;
-        using SizeType = typename Elem::SizeType;
+        // using SizeType = typename Elem::SizeType;
         using Point    = utopia::StaticVector<Scalar, Dim>;
         using Eval     = utopia::StaticVector<typename Elem::GradValue, QuadratureView::NPoints>;
         using Coeff    = utopia::StaticVector<Scalar, Elem::NFunctions>;
@@ -49,10 +49,10 @@ namespace utopia {
             auto grad_i = grad_.make(elem);
 
             const auto n = grad_i.n_points();
-            for(SizeType k = 0; k < n; ++k) {
+            for(std::size_t k = 0; k < n; ++k) {
                 values[k] = grad_i(0, k) * elem_coeff(0);
 
-                for(SizeType j = 1; j < grad_i.n_functions(); ++j) {
+                for(std::size_t j = 1; j < grad_i.n_functions(); ++j) {
                     values[k] += grad_i(j, k) * elem_coeff(j);
                 }
             }

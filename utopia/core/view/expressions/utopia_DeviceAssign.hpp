@@ -29,6 +29,19 @@ namespace utopia {
         UTOPIA_STORE_CONST(Right) right_;
 
     };
+
+
+    template<class Left, class Right>
+    class DeviceAssign<Left, DeviceInverse<Right>>  {
+    public:
+
+        UTOPIA_INLINE_FUNCTION static void apply(Left &left, const DeviceInverse<Right> &right)
+        {
+            right.apply(left);
+        }
+
+    };
+
 }
 
 #endif

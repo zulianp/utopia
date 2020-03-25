@@ -3,6 +3,9 @@
 
 #include "utopia_Quadrature.hpp"
 #include "utopia_ArrayView.hpp"
+#include "utopia_ElemTraits.hpp"
+
+#include <utility>
 
 namespace utopia {
 
@@ -10,17 +13,19 @@ namespace utopia {
     class MultiVariateElem {
     public:
         using Scalar         = typename Elem::Scalar;
-        using SizeType       = typename Elem::SizeType;
+        // using SizeType       = typename Elem::SizeType;
         using MemType        = typename Elem::MemType;
         static const int Dim = Elem::Dim;
         static const int NNodes = Elem::NNodes;
         static const int NFunctions = NNodes * NVariables;
+        static const int Order = Elem::Order;
 
         using UnivGrad      = utopia::StaticVector<Scalar, Dim>;
         using GradValue     = utopia::StaticMatrix<Scalar, NVariables, Dim>;
-        using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
+        // using NodeIndex     = typename Elem::NodeIndex;
         using FunValue      = utopia::StaticVector<Scalar, Dim>;
         using Point         = typename Elem::Point;
+        using Side          = utopia::MultiVariateElem<typename Elem::Side, NVariables>;
 
         // static_assert(NVariables == Dim, "Number of variables must be equal to dim for vector elements");
 
@@ -95,32 +100,10 @@ namespace utopia {
         : univar_elem_(std::forward<Args>(args)...)
         {}
 
-        template<class H>
-        UTOPIA_INLINE_FUNCTION void set(
-            const StaticVector<Scalar, Dim> &translation,
-            const H &h)
+        template<class... H>
+        UTOPIA_INLINE_FUNCTION void set(H && ...args)
         {
-           univar_elem_.set(translation, h);
-        }
-
-        UTOPIA_INLINE_FUNCTION NodeIndexView nodes()
-        {
-            return univar_elem_.nodes();
-        }
-
-        UTOPIA_INLINE_FUNCTION NodeIndexView nodes() const
-        {
-            return univar_elem_.nodes();
-        }
-
-        UTOPIA_INLINE_FUNCTION const std::size_t &node(const std::size_t &i) const
-        {
-            return univar_elem_.node(i);
-        }
-
-        UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()
-        {
-            return NNodes;
+           univar_elem_.set(std::forward<H>(args)...);
         }
 
         UTOPIA_INLINE_FUNCTION const StaticVector2<Scalar> &translation() const
@@ -141,6 +124,11 @@ namespace utopia {
         inline SizeType idx() const
         {
             return univar_elem_.idx();
+        }
+
+        inline bool is_valid() const
+        {
+            return univar_elem_.is_valid();
         }
 
     private:
@@ -167,6 +155,11 @@ namespace utopia {
     class Quadrature<MultiVariateElem<Elem, NVariables>, Order, Dim, Args...> : public Quadrature<Elem, Order, Dim, Args...>
     {};
 
+
+    template<class Elem, int NVar>
+    struct is_simplex<MultiVariateElem<Elem, NVar>>  {
+        static const bool value = is_simplex<Elem>::value;
+    };
 }
 
 #endif //UTOPIA_MULTI_VARIATE_ELEMENT_HPP

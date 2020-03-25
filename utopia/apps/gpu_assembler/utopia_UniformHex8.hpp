@@ -5,6 +5,8 @@
 #include "utopia_Views.hpp"
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_MemType.hpp"
+#include "utopia_Elem.hpp"
+#include "utopia_Quad4.hpp"
 
 namespace utopia {
 
@@ -31,6 +33,217 @@ namespace utopia {
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
                     return 0.0;
+                }
+            }
+        }
+
+
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION static auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+            const Scalar t = p[2];
+
+            switch(i) {
+                case 0: { return -(1.0 - x) * (1.0 - y); }
+                case 1: { return -x * (1.0 - y); }
+                case 2: { return -x * y; }
+                case 3: { return -(1.0 - x) * y; }
+                case 4: { return (1.0 - x) * (1.0 - y); }
+                case 5: { return x * (1.0 - y); }
+                case 6: { return x * y; }
+                case 7: { return (1.0 - x) * y; }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                    return 0.0;
+                }
+            }
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            UTOPIA_DEVICE_ASSERT(dst.size() == 2);
+
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+            const Scalar t = p[2];
+
+            switch(i)
+            {
+                // f = (1.0 - x) * (1.0 - y) * (1.0 - t);
+                case 0:
+                {
+                    dst[0] = -(1.0 - y) * (1.0 - t);
+                    dst[1] = -(1.0 - x) * (1.0 - t);
+                    return;
+                }
+
+                // f = x * (1.0 - y) * (1.0 - t);
+                case 1:
+                {
+                    dst[0] = (1.0 - y) * (1.0 - t);
+                    dst[1] = -x * (1.0 - t);
+                    return;
+                }
+
+                // f = x * y * (1.0 - t);
+                case 2:
+                {
+                    dst[0] = y * (1.0 - t);
+                    dst[1] = x * (1.0 - t);
+                    return;
+                }
+
+                // f = (1.0 - x) * y * (1.0 - t);
+                case 3:
+                {
+                    dst[0] = - y * (1.0 - t);
+                    dst[1] = (1.0 - x) * (1.0 - t);
+                    return;
+                }
+
+                // f = (1.0 - x) * (1.0 - y) * t;
+                case 4:
+                {
+                    dst[0] = -(1.0 - y) * t;
+                    dst[1] = -(1.0 - x) * t;
+                    return;
+                }
+
+                // f = x * (1.0 - y) * t;
+                case 5:
+                {
+                    dst[0] = (1.0 - y) * t;
+                    dst[1] = -x * t;
+                    return;
+                }
+
+                // f = x * y * t;
+                case 6:
+                {
+                    dst[0] = y * t;
+                    dst[1] = x * t;
+                    return;
+                }
+
+                // f = (1.0 - x) * y * t;
+                case 7:
+                {
+                    dst[0] = -y * t;
+                    dst[1] = (1.0 - x) * t;
+                    return;
+                }
+
+                default:
+                {
+                    dst[0] = 0.0;
+                    dst[1] = 0.0;
+                    return;
+                }
+            }
+
+        }
+
+        //space-time mixed derivative
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            //project t coordinates to 0
+            UTOPIA_DEVICE_ASSERT(dst.size() == 2);
+
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+            const Scalar t = p[2];
+
+            switch(i)
+            {
+                // f = (1.0 - x) * (1.0 - y) * (1.0 - t);
+                // f_t = -(1.0 - x) * (1.0 - y)
+                case 0:
+                {
+                    dst[0] = (1.0 - y);
+                    dst[1] = (1.0 - x);
+                    return;
+                }
+
+                // f = x * (1.0 - y) * (1.0 - t);
+                // f_t = -x * (1.0 - y)
+                case 1:
+                {
+                    dst[0] = -(1.0 - y);
+                    dst[1] = x;
+                    return;
+                }
+
+                // f = x * y * (1.0 - t);
+                // f_t = -x * y
+                case 2:
+                {
+                    dst[0] = -y;
+                    dst[1] = -x;
+                    return;
+                }
+
+                // f = (1.0 - x) * y * (1.0 - t);
+                // f_t = -(1.0 - x) * y
+                case 3:
+                {
+                    dst[0] = y;
+                    dst[1] = -(1.0 - x);
+                    return;
+                }
+
+                // f = (1.0 - x) * (1.0 - y) * t;
+                // f_t = (1.0 - x) * (1.0 - y)
+                case 4:
+                {
+                    dst[0] = -(1.0 - y);
+                    dst[1] = -(1.0 - x);
+                    return;
+                }
+
+                // f = x * (1.0 - y) * t;
+                // f_t = x * (1.0 - y)
+                case 5:
+                {
+                    dst[0] = (1.0 - y);
+                    dst[1] = -x;
+                    return;
+                }
+
+                // f = x * y * t;
+                // f_t = x * y
+                case 6:
+                {
+                    dst[0] = y;
+                    dst[1] = x;
+                    return;
+                }
+
+                // f = (1.0 - x) * y * t;
+                // f_t = (1.0 - x) * y
+                case 7:
+                {
+                    dst[0] = -y;
+                    dst[1] = (1.0 - x);
+                    return;
+                }
+
+                default:
+                {
+                    dst[0] = 0.0;
+                    dst[1] = 0.0;
+                    return;
                 }
             }
         }
@@ -130,21 +343,160 @@ namespace utopia {
 
     };
 
+    /*
+        ExodusII format:
+
+               7 ----------- 6
+              /|            /|
+             / |           / |
+            4 ----------- 5  |
+            |  |          |  |
+            |  |          |  |
+            |  3 ---------|- 2
+            | /           | /
+            |/            |/
+            0 ----------- 1
+
+    */
     template<typename Scalar_>
-    class UniformHex8 {
+    class UniformHex8 : public Elem {
     public:
         using Scalar = Scalar_;
         using MemType = Uniform<>;
-        // using DiscretizationType = FE;
         static const int Dim = 3;
         static const int NNodes = 8;
+        static const int NSides = 6;
         static const int NFunctions = NNodes;
+        static const int Order = 1;
 
-        using Point = utopia::StaticVector<Scalar, Dim>;
+        using Point     = utopia::StaticVector<Scalar, Dim>;
         using GradValue = utopia::StaticVector<Scalar, Dim>;
+        using STGradX   = utopia::StaticVector<Scalar, Dim-1>;
         using FunValue  = Scalar;
+        using Side      = utopia::Quad4<Scalar, Dim>;
 
-        using NodeIndexView = utopia::ArrayView<std::size_t, NNodes>;
+        template<typename IntArray>
+        UTOPIA_INLINE_FUNCTION void side_idx(const std::size_t &i, IntArray &local_side_idx) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 1;
+                    local_side_idx[2] = 5;
+                    local_side_idx[3] = 4;
+                    return;
+                }
+                case 1:
+                {
+                    local_side_idx[0] = 1;
+                    local_side_idx[1] = 2;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 5;
+                    return;
+                }
+                case 2:
+                {
+                    local_side_idx[0] = 3;
+                    local_side_idx[1] = 2;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 7;
+                    return;
+                }
+                case 3:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 4;
+                    local_side_idx[2] = 7;
+                    local_side_idx[3] = 3;
+                    return;
+                }
+                case 4:
+                {
+                    local_side_idx[0] = 0;
+                    local_side_idx[1] = 1;
+                    local_side_idx[2] = 2;
+                    local_side_idx[3] = 3;
+                    return;
+                }
+                case 5:
+                {
+                    local_side_idx[0] = 4;
+                    local_side_idx[1] = 5;
+                    local_side_idx[2] = 6;
+                    local_side_idx[3] = 7;
+                    return;
+                }
+
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
+            }
+        }
+
+
+        UTOPIA_INLINE_FUNCTION void side(const std::size_t &i, Side &side) const
+        {
+            switch(i) {
+                case 0:
+                {
+                    node(0, side.node(0));
+                    node(1, side.node(1));
+                    node(5, side.node(2));
+                    node(4, side.node(3));
+                    break;
+                }
+                case 1:
+                {
+                    node(1, side.node(0));
+                    node(2, side.node(1));
+                    node(6, side.node(2));
+                    node(5, side.node(3));
+                    break;
+                }
+                case 2:
+                {
+                    node(3, side.node(0));
+                    node(2, side.node(1));
+                    node(6, side.node(2));
+                    node(7, side.node(3));
+                    break;
+                }
+                case 3:
+                {
+                    node(0, side.node(0));
+                    node(4, side.node(1));
+                    node(7, side.node(2));
+                    node(3, side.node(3));
+                    break;
+                }
+                case 4:
+                {
+                    node(0, side.node(0));
+                    node(1, side.node(1));
+                    node(2, side.node(2));
+                    node(3, side.node(3));
+                    break;
+                }
+                case 5:
+                {
+                    node(4, side.node(0));
+                    node(5, side.node(1));
+                    node(6, side.node(2));
+                    node(7, side.node(3));
+                    break;
+                }
+
+                default:
+                {
+                    UTOPIA_DEVICE_ASSERT(false);
+                    break;
+                }
+            }
+
+            side.init(true);
+        }
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefHex8::fun(i, p))
@@ -182,6 +534,32 @@ namespace utopia {
             g[0] /= h_[0];
             g[1] /= h_[1];
             g[2] /= h_[2];
+        }
+
+
+        //space-time spatial gradient
+        template<typename Point>
+        UTOPIA_INLINE_FUNCTION auto partial_t(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        {
+            return RefHex8::partial_t(i, p) / h_[2];
+        }
+
+        //space-time spatial gradient
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x(const int i, const Point &p, Deriv &dst)
+        {
+            RefHex8::grad_x(i, p, dst);
+            dst[0] /= h_[0];
+            dst[1] /= h_[1];
+        }
+
+        ///space-time mixed derivative \nabla_x \partial_t \phi(x, t)
+        template<typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION void grad_x_partial_t(const int i, const Point &p, Deriv &dst)
+        {
+            RefHex8::grad_x_partial_t(i, p, dst);
+            dst[0] /= (h_[0]*h_[2]);
+            dst[1] /= (h_[1]*h_[2]);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine()
@@ -237,21 +615,6 @@ namespace utopia {
             h_[2] = h[2];
         }
 
-        UTOPIA_INLINE_FUNCTION NodeIndexView &nodes()
-        {
-            return nodes_;
-        }
-
-        UTOPIA_INLINE_FUNCTION const NodeIndexView &nodes() const
-        {
-            return nodes_;
-        }
-
-        UTOPIA_INLINE_FUNCTION const std::size_t &node(const std::size_t &i) const
-        {
-            return nodes_[i];
-        }
-
         UTOPIA_INLINE_FUNCTION constexpr static int n_nodes()
         {
             return NNodes;
@@ -265,7 +628,6 @@ namespace utopia {
     private:
         Scalar h_[3];
         Point translation_;
-        NodeIndexView nodes_;
     };
 
 }

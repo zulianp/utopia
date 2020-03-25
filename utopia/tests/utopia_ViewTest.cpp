@@ -2,6 +2,9 @@
 #include "utopia_Testing.hpp"
 #include "utopia_Views.hpp"
 #include "utopia_DeviceReduce.hpp"
+#include "utopia_TensorView4.hpp"
+#include "utopia_DeviceTensorProduct.hpp"
+#include "utopia_DeviceTensorContraction.hpp"
 
 #include <utility>
 
@@ -16,6 +19,7 @@ namespace utopia {
 
         void run()
         {
+            UTOPIA_RUN_TEST(failing_eigen_test);
             UTOPIA_RUN_TEST(array_view_test);
             UTOPIA_RUN_TEST(static_array_view_test);
             UTOPIA_RUN_TEST(vector_view_test);
@@ -38,6 +42,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(inner_test);
             UTOPIA_RUN_TEST(eigen_test);
             UTOPIA_RUN_TEST(composite_expr_test);
+            UTOPIA_RUN_TEST(tensor4_test);
         }
 
         void array_view_test()
@@ -287,12 +292,12 @@ namespace utopia {
             utopia_test_assert( approxeq(e[1],  3.561552812808830, 1e-10) );
 
             //first vector
-            utopia_test_assert( approxeq(v(0,0),  -0.788205438016109, 1e-10) );
-            utopia_test_assert( approxeq(v(1,0),   0.615412209402636 , 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(0,0)),   0.788205438016109, 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(1,0)),   0.615412209402636 , 1e-10) );
 
             //second vector
-            utopia_test_assert( approxeq(v(0,1),  0.615412209402636, 1e-10) );
-            utopia_test_assert( approxeq(v(1,1),  0.788205438016109, 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(0,1)),  0.615412209402636, 1e-10) );
+            utopia_test_assert( approxeq(std::abs(v(1,1)),  0.788205438016109, 1e-10) );
         }
 
         void view_eig_3_test()
@@ -398,10 +403,13 @@ namespace utopia {
             A(0,1) = A(1,0) = 6.35083e-11;
             A(0,2) = A(2,0) = 6.35083e-11;
 
+            // disp("------");
             // disp(A);
 
             V.set(0.0);
             eig(A, e, V);
+
+            // disp("------");
 
             // disp(e);
             // disp(V);
@@ -409,8 +417,24 @@ namespace utopia {
             sum_v = sum(V);
             utopia_test_assert(sum_v == sum_v);
 
+            utopia_test_assert( approxeq((V) * diag(e) * transpose(V), A) );
+        }
 
-            utopia_test_assert( approxeq(transpose(V) * diag(e) * V, A) );
+        void failing_eigen_test()
+        {
+            StaticMatrix<Scalar, 3, 3> A, V;
+            A.set(0.0);
+
+            StaticVector<Scalar, 3> e;
+
+            A.raw_type().copy(
+            {
+                0.020000000000000, 0.000001250000000, 0.000001250000000,
+                0.000001250000000, 0.000004436491673, 0.0,
+                0.000001250000000, 0.0, 0.000004436491673
+            });
+
+            eig(A, e, V);
         }
 
         void inner_test()
@@ -435,6 +459,75 @@ namespace utopia {
             const Scalar SdotE = inner(S, 0.5 * (F + transpose(F)));
             utopia_test_assert(approxeq(-2.8000, SdotE, 1e-8));
         }
+
+        void tensor4_test()
+        {
+            StaticMatrix3x3<Scalar> m1, m2, m3;
+            m1.identity();
+            m2.identity();
+            m3.identity();
+
+            //or Tensor4th<Scalar, 3, 3, 3, 3>
+            Tensor3x3x3x3<Scalar> t;
+            t.identity();
+
+            //get/set
+            t(0, 1, 2, 0) = 120;
+
+            t = t + 0.5 * t;
+            t = t - 1.5 * t;
+
+            //t_{ijkl} = m_{ij} * m_{kl}
+            t = tensor_product<0, 1, 2, 3>(m1, m1);
+            disp(t);
+
+            // t_{ijkl} = m_{ik} * m_{jl} ==
+            // t_{ikjl} = m_{ij} * m_{kl}
+            t = tensor_product<0, 2, 1, 3>(m1, m1);
+
+            // m2_{ij} = t_{ijkl} * m_{kl}
+            m2 = contraction(t, m1);
+            disp(m2);
+
+            Scalar val = inner(m1, contraction(tensor_product<0, 2, 1, 3>(m1, m1), m1));
+            disp(val);
+
+            Tensor3x3x3x3<Scalar> t_mult = t * t;
+
+
+            static const int Dim = 2;
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> C, Id, actual;
+            C.set(0.0);
+            Id.identity();
+
+            auto kronecker_delta = [](const SizeType &i, const SizeType &j) -> bool
+            {
+                return (i==j) ? 1.0 : 0.0;
+            };
+
+            for(SizeType i = 0; i < Dim; ++i) {
+                for(SizeType j = 0; j < Dim; ++j) {
+                    for(SizeType k = 0; k < Dim; ++k) {
+                        for(SizeType l = 0; l < Dim; ++l) {
+                            Scalar val = 120 * kronecker_delta(i,j)* kronecker_delta(k,l);
+                            val += 80 * (kronecker_delta(i,k)* kronecker_delta(j,l));
+                            val += 80 * (kronecker_delta(i,l)* kronecker_delta(j,k));
+                            C(i, j, k, l) = val;
+                        }
+                    }
+                }
+            }
+
+            actual = Id * C;
+
+            disp(actual);
+            disp("----------");
+            disp(C);
+
+            utopia_test_assert(approxeq(actual, C, 1e-10));
+        }
+
+
     };
 
     void view()

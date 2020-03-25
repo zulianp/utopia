@@ -61,11 +61,6 @@ namespace utopia {
         // : view_(std::forward<Args>(args)...)
         // {}
 
-        template<class Expr>
-        UTOPIA_FUNCTION TensorView(const DeviceInverse<Expr> &expr)
-        {
-            expr.apply(*this);
-        }
 
         template<class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr)
@@ -90,6 +85,13 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION TensorView &operator+=(const DeviceExpression<Expr> &expr)
         {
             DeviceInPlace<TensorView, Expr, Plus, 2>::apply(*this, expr.derived());
+            return *this;
+        }
+
+        template<class Expr>
+        UTOPIA_INLINE_FUNCTION TensorView &operator-=(const DeviceExpression<Expr> &expr)
+        {
+            DeviceInPlace<TensorView, Expr, Minus, 2>::apply(*this, expr.derived());
             return *this;
         }
 
@@ -135,7 +137,7 @@ namespace utopia {
             UTOPIA_DEVICE_ASSERT(rows() == other.rows());
             UTOPIA_DEVICE_ASSERT(cols() == other.cols());
 
-            device::copy(other.view_, view_);
+            device::copy(other.raw_type(), view_);
         }
 
         UTOPIA_INLINE_FUNCTION ArrayView2D &raw_type() { return view_; }
@@ -200,6 +202,22 @@ namespace utopia {
 
             for(SizeType i = 0; i < r; ++i) {
                 set(i, j, c(i));
+            }
+        }
+
+        template<class Block>
+        UTOPIA_INLINE_FUNCTION void set_matrix(const SizeType &i_offset, const SizeType &j_offset, const Block &block)
+        {
+            const SizeType r = block.rows();
+            const SizeType c = block.cols();
+
+            UTOPIA_DEVICE_ASSERT(i_offset + r <= rows());
+            UTOPIA_DEVICE_ASSERT(j_offset + c <= cols());
+
+            for(SizeType i = 0; i < r; ++i) {
+                for(SizeType j = 0; j < c; ++j) {
+                    set(i_offset + i, j_offset + j, block(i, j));
+                }
             }
         }
 

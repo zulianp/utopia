@@ -284,8 +284,9 @@ namespace utopia {
         }
     }
 
-    void PetscMatrix::select_aux(const std::vector<PetscInt> &row_index,
-       const std::vector<PetscInt> &col_index,
+    void PetscMatrix::select_aux(
+       const PetscIndexSet &row_index,
+       const PetscIndexSet &col_index,
        PetscMatrix &result) const
     {
         // Mat r = raw_type();
@@ -297,8 +298,11 @@ namespace utopia {
             max_col = std::max(max_col, col_index[i]);
         }
 
-        int vals[2] = { min_col, -max_col };
-        MPI_Allreduce(MPI_IN_PLACE, vals, 2, MPI_INT, MPI_MIN, comm);
+        static_assert(std::is_signed<PetscInt>::value, "petsc int must be signed for this to work");
+        PetscInt vals[2] = { min_col, -max_col };
+        // MPI_Allreduce(MPI_IN_PLACE, vals, 2, MPI_INT, MPI_MIN, comm);
+
+        this->comm().min(2, vals);
         min_col =  vals[0];
         max_col = -vals[1];
 
@@ -313,7 +317,7 @@ namespace utopia {
          &offsets_in,
          &offset_out,
          1,
-         MPI_UNSIGNED_LONG ,
+         MPI_UNSIGNED_LONG,
          MPI_SUM,
          comm);
 

@@ -2,9 +2,14 @@
 #define UTOPIA_VIEW_FORWARD_DECLARATIONS_HPP
 
 #include <cassert>
+#include "utopia_Base.hpp"
 //FIXME check if there is a device compilation
-#define UTOPIA_DEVICE_ASSERT(expr) assert(expr)
-// #define UTOPIA_DEVICE_ASSERT(...)
+
+#ifdef KOKKOS_ENABLE_CUDA
+#define UTOPIA_DEVICE_ASSERT(...)
+#else
+#define UTOPIA_DEVICE_ASSERT(expr) assert((expr))
+#endif
 
 namespace utopia {
     using Size_t = std::size_t;
@@ -12,9 +17,6 @@ namespace utopia {
 
     template<class InnerExpr, class Op>
     class DeviceUnary;
-
-    template<class InnerExpr>
-    using DeviceNegate = utopia::DeviceUnary<InnerExpr, Minus>;
 
     template<class Left, class Right>
     class DeviceAssign;
@@ -66,6 +68,9 @@ namespace utopia {
 
     template<class Expr>
     class DeviceEigenDecomposition;
+
+    template<class Expr>
+    class DeviceEigenDecompositionNew;
 
     template<class Expr>
     class DeviceSingularValues;
@@ -120,6 +125,12 @@ namespace utopia {
 
     template<typename T>
     using StaticMatrix4x4 = utopia::StaticMatrix<T, 4, 4>;
+
+    template<typename T, Size_t N0, Size_t N1, Size_t N2, Size_t N3>
+    using Tensor4th = utopia::TensorView<ArrayView<T, N0, N1, N2, N3>, 4>;
+
+    template<typename T>
+    using Tensor3x3x3x3 = utopia::Tensor4th<T, 3, 3, 3, 3>;
 
 }
 

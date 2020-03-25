@@ -1,6 +1,6 @@
 {
     "version" : 2,
-    "adaptivity" : true,
+    "adaptivity" : false,
     "pourous-matrix" : {
 
         "mesh" :

@@ -205,6 +205,19 @@ namespace utopia {
                  // );
         }
 
+        //basic mutators
+        inline void l_set(const SizeType &index, const Scalar &value)
+        {
+            assert(index >= 0);
+            assert((index < local_size()));
+            // check_error(
+            // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+            writeable_->data[index] = value;
+                 // );
+        }
+
         inline void add(const SizeType &index, const Scalar &value) override
         {
             assert(range().inside(index));
@@ -712,11 +725,16 @@ namespace utopia {
         }
 
 
+        // inline void add_vector(
+        //     const std::vector<SizeType> &indices,
+        //     const std::vector<Scalar> &values)
+
+        template<class Index, class Values>
         inline void add_vector(
-            const std::vector<SizeType> &indices,
-            const std::vector<Scalar> &values)
+            const Index &indices,
+            const Values &values)
         {
-            assert(indices.size() == values.size());
+            //assert(indices.size() == values.size());
             check_error( VecSetValues(implementation(), indices.size(), &indices[0], &values[0], ADD_VALUES) );
         }
 
@@ -839,6 +857,7 @@ namespace utopia {
             scale(numerator);
         }
 
+        void shift(const Scalar &x);
 
 
         bool has_nan_or_inf() const;

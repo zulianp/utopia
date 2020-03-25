@@ -221,6 +221,7 @@
                 return true;
             }
 
+
             /**
              * @brief      Projection of vector
              *            \f$  x_{new} = P * x  \f$

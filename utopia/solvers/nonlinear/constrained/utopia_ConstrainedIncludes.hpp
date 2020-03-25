@@ -10,6 +10,7 @@
 #include "utopia_SemismoothNewton.hpp"
 #include "utopia_GenericSemismoothNewton.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
+#include "utopia_ProjectedGaussSeidelQR.hpp"
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_GeneralizedCauchyPoint.hpp"
