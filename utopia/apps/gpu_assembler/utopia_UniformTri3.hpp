@@ -13,7 +13,7 @@ namespace utopia {
     class RefTri3 {
     public:
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static constexpr auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar
+        UTOPIA_INLINE_FUNCTION static UTOPIA_CONSTEXPR auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar
         {
             const auto x = p[0];
             const auto y = p[1];
@@ -32,7 +32,7 @@ namespace utopia {
         }
 
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static constexpr auto partial_y(const int i, const Point &) -> typename Traits<Point>::Scalar
+        UTOPIA_INLINE_FUNCTION static UTOPIA_CONSTEXPR auto partial_y(const int i, const Point &) -> typename Traits<Point>::Scalar
         {
             switch(i)
             {
@@ -58,7 +58,7 @@ namespace utopia {
         }
 
         template<typename Point>
-        UTOPIA_INLINE_FUNCTION static constexpr auto partial_x(const int i, const Point &)  -> typename Traits<Point>::Scalar
+        UTOPIA_INLINE_FUNCTION static UTOPIA_CONSTEXPR auto partial_x(const int i, const Point &)  -> typename Traits<Point>::Scalar
         {
             switch(i)
             {
