@@ -73,13 +73,13 @@ namespace utopia {
 
 
     template<class FunctionSpace>
-    class PFFracFixAllDisp2D : public BCSetup<FunctionSpace>
+    class PFFracFixAllDisp : public BCSetup<FunctionSpace>
     {
         public:
             using Scalar    = typename FunctionSpace::Scalar;
             using Vector   = typename FunctionSpace::Vector;
 
-            PFFracFixAllDisp2D(FunctionSpace & space): BCSetup<FunctionSpace>(space)
+            PFFracFixAllDisp(FunctionSpace & space): BCSetup<FunctionSpace>(space)
             {
 
             }
@@ -123,9 +123,30 @@ namespace utopia {
                         },
                         d
                         );
+
+
+                    if(Dim ==3){
+                        this->space_.emplace_dirichlet_condition(
+                            SideSet::front(),
+                            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                                return 0.0;
+                            },
+                            d
+                            );
+
+                        this->space_.emplace_dirichlet_condition(
+                            SideSet::back(),
+                            UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                                return 0.0;
+                            },
+                            d
+                            );                                                    
+                    }
+
                 }
             }
     };   
+
 
 
 
