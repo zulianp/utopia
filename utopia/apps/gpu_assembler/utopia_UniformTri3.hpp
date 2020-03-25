@@ -7,6 +7,7 @@
 #include "utopia_MemType.hpp"
 #include "utopia_Elem.hpp"
 #include "utopia_Edge2.hpp"
+#include "utopia_CppMacros.hpp"
 
 namespace utopia {
 

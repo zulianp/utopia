@@ -1,7 +1,6 @@
 
 #include "utopia_Base.hpp"
 
-// #ifdef WITH_CXX14
 
 #include "utopia_StructuredGrid.hpp"
 #include "utopia_ui.hpp"
@@ -20,31 +19,31 @@ namespace utopia {
     template class PetscDMPlex<V, I>;
 
     //FIXME
-    // void generic_grid_test(Input &in)
-    // {
-    //     //COMPILE-TIME BEGIN (everything is evaualted at compile time)
-    //     constexpr StructuredGrid<V, I> g(
-    //         {10, 10},
-    //         {0, 0}, {10, 10},
-    //         {0, 0}, {10, 10},
-    //         VA({0.0, 0.0}),
-    //         VA({1.0, 1.0})
-    //     );
+    void generic_grid_test(Input &in)
+    {
+        //COMPILE-TIME BEGIN (everything is evaualted at compile time)
+        constexpr StructuredGrid<V, I> g(
+            {10, 10},
+            {0, 0}, {10, 10},
+            {0, 0}, {10, 10},
+            VA({0.0, 0.0}),
+            VA({1.0, 1.0})
+        );
 
-    //     static_assert(g.dim() == 2, "dim must be constexpr");
-    //     static_assert(g.n_nodes() == 100, "n_nodes has to be computable at compile time");
-    //     static_assert(g.n_elements() == 81, "wrong number of elements");
-    //     constexpr double meas = g.measure();
-    //     constexpr bool is_b = g.is_node_on_boundary(0);
-    //     static_assert(is_b, "node 0 must be on boundary");
-    //     // constexpr bool is_b = g.is_node_on_boundary_local_no_ghost(0, SideSet::left());
+        static_assert(g.dim() == 2, "dim must be constexpr");
+        static_assert(g.n_nodes() == 100, "n_nodes has to be computable at compile time");
+        static_assert(g.n_elements() == 81, "wrong number of elements");
+        constexpr double meas = g.measure();
+        constexpr bool is_b = g.is_node_on_boundary(0);
+        static_assert(is_b, "node 0 must be on boundary");
+        // constexpr bool is_b = g.is_node_on_boundary_local_no_ghost(0, SideSet::left());
 
-    //     //COMPILE-TIME END
-    //     assert(device::approxeq(meas, 1.0, 1e-8));
+        //COMPILE-TIME END
+        assert(device::approxeq(meas, 1.0, 1e-8));
 
-    // }
+    }
 
-    // UTOPIA_REGISTER_APP(generic_grid_test);
+    UTOPIA_REGISTER_APP(generic_grid_test);
 
 
     void vec_grid_test(Input &in)
@@ -118,4 +117,3 @@ namespace utopia {
     UTOPIA_REGISTER_APP(dmplex_test);
 }
 
-// #endif
