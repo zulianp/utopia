@@ -7,8 +7,14 @@
 
 #ifdef KOKKOS_ENABLE_CUDA
 #define UTOPIA_DEVICE_ASSERT(...)
+#define UTOPIA_DEVICE_ASSERT_CXX14(...)
 #else
 #define UTOPIA_DEVICE_ASSERT(expr) assert((expr))
+#ifdef WITH_CXX14
+#define UTOPIA_DEVICE_ASSERT_CXX14(expr) assert((expr))
+#else
+#define UTOPIA_DEVICE_ASSERT_CXX14(...)
+#endif
 #endif
 
 namespace utopia {

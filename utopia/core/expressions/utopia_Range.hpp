@@ -91,7 +91,7 @@ namespace utopia {
          * @brief      Unites with other range.
          */
         UTOPIA_INLINE_FUNCTION constexpr Range unite(const Range &other) const {
-            assert(are_contiguous(*this, other));
+            UTOPIA_DEVICE_ASSERT_CXX14(are_contiguous(*this, other));
             return Range(device::min(begin(), other.begin()),
                          device::max(end(), other.end()));
         }
