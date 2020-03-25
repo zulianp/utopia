@@ -95,6 +95,7 @@ namespace utopia {
                 assert(!empty(*I));
 
                 Matrix Iu; // = *I;
+                Iu.destroy(); 
                 MatConvert(raw_type(*I),  I->type_override(), MAT_INITIAL_MATRIX, &raw_type(Iu));
                 Matrix R = transpose(Iu);
 
@@ -109,7 +110,7 @@ namespace utopia {
                 Matrix inv_lumped_mass = diag(1./sum(M_coarse, 1));
                 Matrix P = inv_lumped_mass *   R * M_fine;
 
-                
+
                 transfers_[i-1] = std::make_shared<IPTransferNested<Matrix, Vector> >( std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
             }
 
