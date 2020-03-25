@@ -5,6 +5,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Algorithms.hpp"
 #include "utopia_SideSets.hpp"
+#include "utopia_CppMacros.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -43,6 +44,9 @@ namespace utopia {
     public:
         using SizeType = typename Traits<IntArray>::ValueType;
         using Scalar   = typename Traits<Point>::Scalar;
+
+        //if 0 it means it is dynamic and not static
+        static constexpr const int StaticDim = Traits<IntArray>::StaticSize;
 
         ////////////////////////////////////////////////////////////////
         //////////////////////// GETTERS //////////////////////////////
@@ -264,7 +268,7 @@ namespace utopia {
             node_to_grid_coord(idx, tensor_index); //_local_no_ghost
 
             //FIXME use dim-dependent version
-            return SideSets<-1>::on_side(b_id, tensor_index, dims_);
+            return SideSets<StaticDim>::on_side(b_id, tensor_index, dims_);
         }
 
     private:
