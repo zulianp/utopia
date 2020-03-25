@@ -33,11 +33,13 @@ namespace utopia {
         static_assert(g.dim() == 2, "dim must be constexpr");
         static_assert(g.n_nodes() == 100, "n_nodes has to be computable at compile time");
         static_assert(g.n_elements() == 81, "wrong number of elements");
-        constexpr double meas = g.measure();
+
         constexpr bool is_b = g.is_node_on_boundary(0);
         static_assert(is_b, "node 0 must be on boundary");
         // constexpr bool is_b = g.is_node_on_boundary_local_no_ghost(0, SideSet::left());
 
+        //for some reaons clang is able to do this at compile time but not gcc
+        /*constexpr*/ double meas = g.measure();
         //COMPILE-TIME END
         assert(device::approxeq(meas, 1.0, 1e-8));
 

@@ -45,7 +45,7 @@ namespace utopia {
         using SizeType = typename Traits<IntArray>::ValueType;
         using Scalar   = typename Traits<Point>::Scalar;
 
-        //if 0 it means it is dynamic and not static
+        //if 0 (i.e. DYNAMIC_SIZE) it means it is dynamic and not static
         static constexpr const int StaticDim = Traits<IntArray>::StaticSize;
 
         ////////////////////////////////////////////////////////////////
