@@ -24,7 +24,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION constexpr explicit Range(const SizeType beginAndTo)
                 : begin_(beginAndTo), end_(beginAndTo + 1), extent_(1)
         {
-            assert(beginAndTo >= 0);
+            UTOPIA_DEVICE_ASSERT_CXX14(beginAndTo >= 0);
         }
 
         UTOPIA_INLINE_FUNCTION void set(const SizeType &begin, const SizeType &end)
@@ -88,7 +88,7 @@ namespace utopia {
          * @brief      Unites with other range.
          */
         UTOPIA_INLINE_FUNCTION constexpr Range unite(const Range &other) const {
-            assert(are_contiguous(*this, other));
+            UTOPIA_DEVICE_ASSERT_CXX14(are_contiguous(*this, other));
             return Range(device::min(begin(), other.begin()),
                          device::max(end(), other.end()));
         }
