@@ -5,10 +5,22 @@
 #include "utopia_Base.hpp"
 //FIXME check if there is a device compilation
 
+#ifdef WITH_CXX14
+#define UTOPIA_CONSTEXPR constexpr
+#else
+#define UTOPIA_CONSTEXPR
+#endif
+
 #ifdef KOKKOS_ENABLE_CUDA
 #define UTOPIA_DEVICE_ASSERT(...)
+#define UTOPIA_DEVICE_ASSERT_CXX14(...)
 #else
 #define UTOPIA_DEVICE_ASSERT(expr) assert((expr))
+#ifdef WITH_CXX14
+#define UTOPIA_DEVICE_ASSERT_CXX14(expr) assert((expr))
+#else
+#define UTOPIA_DEVICE_ASSERT_CXX14(...)
+#endif
 #endif
 
 namespace utopia {

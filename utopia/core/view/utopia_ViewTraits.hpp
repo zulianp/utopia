@@ -11,6 +11,7 @@ namespace utopia {
     public:
         using Scalar = T;
         using SizeType = Size_t;
+        using ValueType = T;
 
         static const int Backend = SERIAL_HOMEMADE;
         static const int FILL_TYPE = FillType::DENSE;

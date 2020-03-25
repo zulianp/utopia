@@ -56,13 +56,13 @@ namespace utopia {
         using SizeType = typename Traits<Left>::SizeType;
         using Scalar   = decltype(typename Traits<Left>::Scalar(0) + typename Traits<Right>::Scalar(0));
 
-        UTOPIA_INLINE_FUNCTION DeviceBinary(const Left &left, const Right &right)
+        UTOPIA_INLINE_FUNCTION constexpr DeviceBinary(const Left &left, const Right &right)
         : left_(left), right_(right)
         {
             // UTOPIA_DEVICE_ASSERT(left.size() == right.size());
         }
 
-        UTOPIA_INLINE_FUNCTION Scalar operator()(
+        UTOPIA_INLINE_FUNCTION constexpr Scalar operator()(
             const SizeType &i,
             const SizeType &j,
             const SizeType &k,
@@ -72,12 +72,12 @@ namespace utopia {
             return DeviceOp<Scalar, Op>::apply(left_(i, j, k, l), right_(i, j, k, l));
         }
 
-        UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const
+        UTOPIA_INLINE_FUNCTION constexpr Scalar operator()(const SizeType &i, const SizeType &j) const
         {
             return DeviceOp<Scalar, Op>::apply(left_(i, j), right_(i, j));
         }
 
-        UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i) const
+        UTOPIA_INLINE_FUNCTION constexpr Scalar operator()(const SizeType &i) const
         {
             return DeviceOp<Scalar, Op>::apply(left_(i), right_(i));
         }
@@ -87,27 +87,27 @@ namespace utopia {
             return std::string("DeviceBinary<") + left_.get_class() + ", " + right_.get_class() + ", " + GetClass<Op>() + ">";
         }
 
-        inline SizeType size() const
+        inline constexpr SizeType size() const
         {
             return left_.size();
         }
 
-        UTOPIA_INLINE_FUNCTION const Left &left() const
+        UTOPIA_INLINE_FUNCTION constexpr const Left &left() const
         {
             return left_;
         }
 
-        UTOPIA_INLINE_FUNCTION const Right &right() const
+        UTOPIA_INLINE_FUNCTION constexpr const Right &right() const
         {
             return right_;
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType rows() const
+        UTOPIA_INLINE_FUNCTION constexpr SizeType rows() const
         {
             return GetSize<Left, Right>::rows(left_, right_);
         }
 
-        UTOPIA_INLINE_FUNCTION SizeType cols() const
+        UTOPIA_INLINE_FUNCTION constexpr SizeType cols() const
         {
             return GetSize<Left, Right>::cols(left_, right_);
         }

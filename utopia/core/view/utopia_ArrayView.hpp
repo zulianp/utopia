@@ -67,8 +67,8 @@ namespace utopia {
         template<typename OtherT, Size_t... SizeArgs>
         UTOPIA_INLINE_FUNCTION void copy(const ArrayView<OtherT, SizeArgs...> &other)
         {
-            UTOPIA_DEVICE_ASSERT(data_);
-            UTOPIA_DEVICE_ASSERT(size_ >= other.size());
+            UTOPIA_DEVICE_ASSERT_CXX14(data_);
+            UTOPIA_DEVICE_ASSERT_CXX14(size_ >= other.size());
 
             size_ = other.size();
             for(Size_t i = 0; i < size_; ++i) {
@@ -81,6 +81,19 @@ namespace utopia {
         : data_(other.data_), size_(other.size())
         {}
 
+        UTOPIA_FUNCTION ArrayView(ArrayView &&other)
+        : data_(std::move(other.data_)), size_(std::move(other.size_))
+        {}
+
+        UTOPIA_FUNCTION ArrayView &operator=(ArrayView &&other)
+        {
+            data_ = std::move(other.data_);
+            size_ = std::move(other.size_);
+            return *this;
+        }
+
+        UTOPIA_FUNCTION ArrayView &operator=(const ArrayView &other) = default;
+        UTOPIA_FUNCTION ArrayView(const ArrayView &other)            = default;
     private:
         T *data_;
         Size_t size_;
@@ -102,14 +115,14 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION T &operator[](const SizeType &i)
         {
-            UTOPIA_DEVICE_ASSERT(i < size());
+            UTOPIA_DEVICE_ASSERT_CXX14(i < size());
 
             return data_[i];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr const T &operator[](const SizeType &i) const
         {
-            UTOPIA_DEVICE_ASSERT(i < size());
+            UTOPIA_DEVICE_ASSERT_CXX14(i < size());
 
             return data_[i];
         }
@@ -124,36 +137,20 @@ namespace utopia {
             return data_ + Size;
         }
 
-        UTOPIA_INLINE_FUNCTION const T* begin() const
+        UTOPIA_INLINE_FUNCTION constexpr const T* begin() const
         {
             return data_;
         }
 
-        UTOPIA_INLINE_FUNCTION const T* end() const
+        UTOPIA_INLINE_FUNCTION constexpr const T* end() const
         {
             return data_ + Size;
         }
 
-        ArrayView() {}
-
         template<class ArrayViewOther>
-        ArrayView(const ArrayViewOther &other)
+        UTOPIA_INLINE_FUNCTION ArrayView &operator=(const ArrayViewOther &other)
         {
-            for(Size_t i = 0; i < Size; ++i) {
-                data_[i] = other[i];
-            }
-        }
-
-        // ArrayView(const ArrayView &other)
-        // {
-        //     for(Size_t i = 0; i < Size; ++i) {
-        //         data_[i] = other[i];
-        //     }
-        // }
-
-        template<class ArrayViewOther>
-        ArrayView &operator=(const ArrayViewOther &other)
-        {
+            //pragma GCCunroll(Size)
             for(Size_t i = 0; i < Size; ++i) {
                 data_[i] = other[i];
             }
@@ -161,7 +158,19 @@ namespace utopia {
             return *this;
         }
 
-    private:
+        static UTOPIA_CONSTEXPR ArrayView make(const T &value)
+        {
+            ArrayView ret;
+
+            //pragma GCCunroll(Size)
+            for(Size_t i = 0; i < Size; ++i) {
+                ret.data_[i] = value;
+            }
+
+            return ret;
+        }
+
+        ////public for aggregate intialization
         T data_[Size];
     };
 
@@ -178,37 +187,37 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION T &operator[](const SizeType &i)
         {
-            UTOPIA_DEVICE_ASSERT(i < Size);
+            UTOPIA_DEVICE_ASSERT_CXX14(i < Size);
 
             return data_[i];
         }
 
         UTOPIA_INLINE_FUNCTION  T &operator()(const SizeType &i, const SizeType &j)
         {
-            UTOPIA_DEVICE_ASSERT(i < Rows_);
-            UTOPIA_DEVICE_ASSERT(j < Cols_);
+            UTOPIA_DEVICE_ASSERT_CXX14(i < Rows_);
+            UTOPIA_DEVICE_ASSERT_CXX14(j < Cols_);
 
             return data_[i*Cols_ + j];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr const T &operator[](const SizeType &i) const
         {
-            UTOPIA_DEVICE_ASSERT(i < Size);
+            UTOPIA_DEVICE_ASSERT_CXX14(i < Size);
             return data_[i];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr const T &operator()(const SizeType &i, const SizeType &j) const
         {
-            UTOPIA_DEVICE_ASSERT(i < Rows_);
-            UTOPIA_DEVICE_ASSERT(j < Cols_);
+            UTOPIA_DEVICE_ASSERT_CXX14(i < Rows_);
+            UTOPIA_DEVICE_ASSERT_CXX14(j < Cols_);
 
             return data_[i*Cols_ + j];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType extent(const SizeType &i) const
         {
-            UTOPIA_DEVICE_ASSERT(i < 2);
-            UTOPIA_DEVICE_ASSERT(i >= 0);
+            UTOPIA_DEVICE_ASSERT_CXX14(i < 2);
+            UTOPIA_DEVICE_ASSERT_CXX14(i >= 0);
 
             return (i == 0)? Rows_ : Cols_;
         }
@@ -237,7 +246,7 @@ namespace utopia {
         {
             SizeType i = 0;
             for(auto it = std::begin(data); it != std::end(data); ++it) {
-                UTOPIA_DEVICE_ASSERT(i < Size);
+                UTOPIA_DEVICE_ASSERT_CXX14(i < Size);
                 data_[i++] = *it;
             }
         }
@@ -277,38 +286,38 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION T &operator[](const SizeType &i)
         {
-            UTOPIA_DEVICE_ASSERT(i < size());
+            UTOPIA_DEVICE_ASSERT_CXX14(i < size());
 
             return data_[i];
         }
 
         UTOPIA_INLINE_FUNCTION  T &operator()(const SizeType &i, const SizeType &j)
         {
-            UTOPIA_DEVICE_ASSERT(i < extent(0));
-            UTOPIA_DEVICE_ASSERT(j < extent(1));
+            UTOPIA_DEVICE_ASSERT_CXX14(i < extent(0));
+            UTOPIA_DEVICE_ASSERT_CXX14(j < extent(1));
 
             return data_[i*cols_ + j];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr const T &operator[](const SizeType &i) const
         {
-            UTOPIA_DEVICE_ASSERT(i < size());
+            UTOPIA_DEVICE_ASSERT_CXX14(i < size());
 
             return data_[i];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr const T &operator()(const SizeType &i, const SizeType &j) const
         {
-            UTOPIA_DEVICE_ASSERT(i < extent(0));
-            UTOPIA_DEVICE_ASSERT(j < extent(1));
+            UTOPIA_DEVICE_ASSERT_CXX14(i < extent(0));
+            UTOPIA_DEVICE_ASSERT_CXX14(j < extent(1));
 
             return data_[i*cols_ + j];
         }
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType extent(const SizeType &i) const
         {
-            UTOPIA_DEVICE_ASSERT(i < 2);
-            UTOPIA_DEVICE_ASSERT(i >= 0);
+            UTOPIA_DEVICE_ASSERT_CXX14(i < 2);
+            UTOPIA_DEVICE_ASSERT_CXX14(i >= 0);
 
             return (i == 0)? rows_ : cols_;
         }

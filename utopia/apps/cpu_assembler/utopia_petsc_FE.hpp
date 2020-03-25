@@ -14,8 +14,8 @@
 
 namespace utopia {
 
-    class PetscUniformQuad4 : public UniformQuad4<PetscScalar> {};
-    class PetscUniformHex8  : public UniformHex8<PetscScalar>  {};
+    using PetscUniformQuad4 = utopia::UniformQuad4<PetscScalar>;
+    using PetscUniformHex8  = utopia::UniformHex8<PetscScalar>;
 
     template<typename View, std::size_t N>
     class Accessor<std::array<VectorView<View>, N>> {

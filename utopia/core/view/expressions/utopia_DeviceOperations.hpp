@@ -26,7 +26,7 @@ namespace utopia {
     }
 
     template<class Expr>
-    UTOPIA_INLINE_FUNCTION double operator-(const DeviceNumber<double> &left, const DeviceNumber<double> &right)
+    UTOPIA_INLINE_FUNCTION constexpr double operator-(const DeviceNumber<double> &left, const DeviceNumber<double> &right)
     {
         return static_cast<double>(left) - static_cast<double>(right);
     }
@@ -37,7 +37,7 @@ namespace utopia {
     }
 
     template<class Left, class Right>
-    UTOPIA_INLINE_FUNCTION DeviceBinary<Left, Right, Minus> operator-(const DeviceExpression<Left> &left, const DeviceExpression<Right> &right) {
+    UTOPIA_INLINE_FUNCTION constexpr DeviceBinary<Left, Right, Minus> operator-(const DeviceExpression<Left> &left, const DeviceExpression<Right> &right) {
         return DeviceBinary<Left, Right, Minus>(left.derived(), right.derived());
     }
 

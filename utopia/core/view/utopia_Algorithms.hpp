@@ -18,7 +18,7 @@ namespace utopia {
 #ifdef KOKKOS_INLINE_FUNCTION
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T isnan(const T &v)
+        UTOPIA_INLINE_FUNCTION constexpr T isnan(const T &v)
         {
             return !(v == v);
         }
@@ -30,13 +30,13 @@ namespace utopia {
         }
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T min(const T &left, const T &right)
+        UTOPIA_INLINE_FUNCTION constexpr T min(const T &left, const T &right)
         {
             return left < right ? left : right;
         }
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T max(const T &left, const T &right)
+        UTOPIA_INLINE_FUNCTION constexpr T max(const T &left, const T &right)
         {
             return left > right ? left : right;
         }
@@ -90,13 +90,13 @@ namespace utopia {
 
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T epsilon()
+        UTOPIA_INLINE_FUNCTION constexpr T epsilon()
         {
             return Kokkos::Details::ArithTraits<T>::epsilon();
         }
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION bool signbit(const T &a)
+        UTOPIA_INLINE_FUNCTION constexpr bool signbit(const T &a)
         {
             return  ( a < 0 ) ? true : false;
         }
@@ -104,27 +104,30 @@ namespace utopia {
 #else
 
         template<typename T>
-        T isnan(const T &v)
+        inline constexpr T isnan(const T &v)
         {
             return !(v == v);
         }
 
         template<typename T>
-        inline T abs(const T &v)
+        inline constexpr T abs(const T &v)
         {
-            return std::abs(v);
+            // return std::abs(v);
+            return v >= 0? v : -v;
         }
 
         template<typename T>
-        inline T min(const T &left, const T &right)
+        inline constexpr T min(const T &left, const T &right)
         {
-            return std::min(left, right);
+            // return std::min(left, right);
+            return left < right ? left : right;
         }
 
         template<typename T>
-        inline T max(const T &left, const T &right)
+        inline constexpr T max(const T &left, const T &right)
         {
-            return std::max(left, right);
+            // return std::max(left, right);
+            return left > right ? left : right;
         }
 
         template<typename T>
@@ -195,7 +198,7 @@ namespace utopia {
         }
 
         template<typename T>
-        UTOPIA_INLINE_FUNCTION T squared(const T&x)
+        UTOPIA_INLINE_FUNCTION constexpr T squared(const T&x)
         {
             return x*x;
         }

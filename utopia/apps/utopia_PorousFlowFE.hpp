@@ -657,6 +657,11 @@ namespace utopia {
             QuadratureView<ArrayView<Point1, 12>, ArrayView<Scalar, 12>, 1, 12> quadrature;
         };
 
+        inline void set_permeabolity(const std::shared_ptr<Vector> &permeability_field)
+        {
+            permeability_field_ = permeability_field;
+        }
+
         void init_permeability(Input &in)
         {
             // if(use_lagrange_mult_method_) {
