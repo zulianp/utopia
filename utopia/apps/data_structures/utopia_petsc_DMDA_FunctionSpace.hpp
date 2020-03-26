@@ -307,7 +307,7 @@ namespace utopia {
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i < NComponents);
 
-            std::cout << i << " " << subspace_id_ << " " << mesh_->n_components() << std::endl;
+            // std::cout << i << " " << subspace_id_ << " " << mesh_->n_components() << std::endl;
 
             assert(i + subspace_id_ < mesh_->n_components());
             return space;

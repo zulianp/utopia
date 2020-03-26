@@ -316,6 +316,9 @@ namespace utopia {
             auto fine = utopia::make_unique<PetscDMDA>(comm(), type_override_);
             PetscDMBase::refine(raw_type(), comm().get(), fine->raw_type());
 
+            device::copy(this->box_min(), fine->box_min());
+            device::copy(this->box_max(), fine->box_max());
+
             //This does not transfer automatically for some reason
             DMDAElementType elem_type;
             DMDAGetElementType(raw_type(), &elem_type);
@@ -395,6 +398,12 @@ namespace utopia {
             std::cout << "n_nodes         : " << this->n_nodes()         << std::endl;
             std::cout << "dim             : " << this->dim()             << std::endl;
             std::cout << "elements_x_cell : " << this->elements_x_cell() << std::endl;
+
+            disp("box_min");
+            disp(this->box_min());
+
+            disp("box_max");
+            disp(this->box_max());
         }
 
 
