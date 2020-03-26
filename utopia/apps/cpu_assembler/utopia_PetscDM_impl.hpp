@@ -237,7 +237,7 @@ namespace utopia {
     public:
         using SizeType = PetscInt;
         using Scalar   = PetscScalar;
-        using PetscNode = utopia::PetscNode<Dim>;
+        // using PetscNode = utopia::PetscNode<Dim>;
         using Point = typename utopia::PetscDM<Dim>::Point;
 
         inline bool is_ghost(const SizeType global_idx) const
@@ -667,11 +667,11 @@ namespace utopia {
         auto err = DMCreateLocalVector(impl_->dm, &raw_type(vec)); assert(err == 0);
     }
 
-    template<int Dim>
-    bool PetscNode<Dim>::is_ghost() const
-    {
-        return nodes_.is_ghost(idx());
-    }
+    // template<int Dim>
+    // bool PetscNode<Dim>::is_ghost() const
+    // {
+    //     return nodes_.is_ghost(idx());
+    // }
 
     template<int Dim>
     bool PetscDM<Dim>::is_ghost(const SizeType &global_node_idx) const

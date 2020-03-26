@@ -8,20 +8,27 @@
 
 namespace utopia {
 
-    template<class Mesh, class Elem, int NComponents>
-    class DofMapping {};
+    template<class Mesh, class Elem_, int NComponents>
+    class DofMapping
+    {
 
-    template<int Dim, class Elem_, int NComponents>
-    class DofMapping<PetscDM<Dim>, Elem_, NComponents> {
+    // };
+
+    // template<int Dim, class Elem_, int NComponents>
+    // class DofMapping<PetscDM<Dim>, Elem_, NComponents> {
     public:
+    //     using Mesh = utopia::PetscDM<Dim>;
+
+
         static const int NDofs = NComponents * Elem_::NNodes;
 
-        using SizeType  = typename PetscDM<Dim>::SizeType;
-        using NodeIndex = typename PetscDM<Dim>::NodeIndex;
+
+        using SizeType  = typename Mesh::SizeType;
+        using NodeIndex = typename Mesh::NodeIndex;
         using DofIndexNonConst = utopia::ArrayView<SizeType, NDofs>;
 
         template<class DofIndex>
-        static void dofs_local(const PetscDM<Dim> &mesh, const SizeType &var_offset, const SizeType &idx, DofIndex &dofs)
+        static void dofs_local(const Mesh &mesh, const SizeType &var_offset, const SizeType &idx, DofIndex &dofs)
         {
             if(mesh.n_components() == 1) {
                 assert(var_offset == 0);
@@ -43,7 +50,7 @@ namespace utopia {
 
         template<class DofIndex>
         static void dofs_local_for_var(
-            const PetscDM<Dim> &mesh,
+            const Mesh &mesh,
             const SizeType &idx,
             const SizeType &var,
             DofIndex &dofs
@@ -68,7 +75,7 @@ namespace utopia {
         }
 
         template<class DofIndex>
-        static void dofs(const PetscDM<Dim> &mesh, const SizeType &var_offset, const SizeType &idx, DofIndex &dofs)
+        static void dofs(const Mesh &mesh, const SizeType &var_offset, const SizeType &idx, DofIndex &dofs)
         {
             if(mesh.n_components() == 1) {
                 assert(var_offset == 0);
@@ -88,7 +95,7 @@ namespace utopia {
 
         template<class DofIndex>
         static void tensorize_dofs(
-            const PetscDM<Dim> &mesh,
+            const Mesh &mesh,
             const SizeType &var_offset,
             const NodeIndex &nodes,
             DofIndex &dofs)
@@ -113,7 +120,7 @@ namespace utopia {
 
         template<class DofIndex>
         static void get_var_dofs(
-            const PetscDM<Dim> &mesh,
+            const Mesh &mesh,
             const SizeType &var,
             const NodeIndex &nodes,
             DofIndex &dofs)
@@ -134,7 +141,7 @@ namespace utopia {
 
         template<class Elem, class ElementMatrix, class MatView>
         static void add_matrix(
-            const PetscDM<Dim> &mesh,
+            const Mesh &mesh,
             const SizeType &var_offset,
             const Elem &e,
             const ElementMatrix &el_mat,
@@ -144,7 +151,7 @@ namespace utopia {
                 assert(var_offset == 0);
                 assert(NComponents == 1);
 
-                typename PetscDM<Dim>::NodeIndex dofs;
+                typename Mesh::NodeIndex dofs;
                 mesh.nodes(e.idx(), dofs);
 
                 //Potentially breaks
@@ -161,7 +168,7 @@ namespace utopia {
 
        template<class Elem, class ElementVector, class VecView>
        static void add_vector(
-        const PetscDM<Dim> &mesh,
+        const Mesh &mesh,
         const SizeType &var_offset,
         const Elem &e,
         const ElementVector &el_vec,
@@ -171,7 +178,7 @@ namespace utopia {
                 assert(var_offset == 0);
                 assert(NComponents == 1);
 
-                typename PetscDM<Dim>::NodeIndex dofs;
+                typename Mesh::NodeIndex dofs;
                 mesh.nodes(e.idx(), dofs);
                 vec.atomic_add_vector(dofs, &el_vec(0));
 
@@ -185,7 +192,7 @@ namespace utopia {
 
         template<class Elem, class ElementVector, class VecView>
         static void set_vector(
-         const PetscDM<Dim> &mesh,
+         const Mesh &mesh,
          const SizeType &var_offset,
          const Elem &e,
          const ElementVector &el_vec,
@@ -195,7 +202,7 @@ namespace utopia {
                  assert(var_offset == 0);
                  assert(NComponents == 1);
 
-                 typename PetscDM<Dim>::NodeIndex dofs;
+                 typename Mesh::NodeIndex dofs;
                  mesh.nodes(e.idx(), dofs);
 
                  const SizeType n_dofs = dofs.size();
@@ -217,7 +224,7 @@ namespace utopia {
 
        template<class Elem, class VectorView, class Values>
        static void local_coefficients(
-           const PetscDM<Dim> &mesh,
+           const Mesh &mesh,
            const SizeType &var_offset,
            const Elem &e,
            const VectorView &vec,
@@ -237,7 +244,7 @@ namespace utopia {
 
        template<class Elem, class VectorView, class Values>
        static void local_coefficients_for_var(
-           const PetscDM<Dim> &mesh,
+           const Mesh &mesh,
            const Elem &e,
            const VectorView &vec,
            const SizeType &var,

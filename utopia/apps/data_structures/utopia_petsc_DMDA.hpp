@@ -25,6 +25,10 @@ namespace utopia {
         using SizeType  = typename Super::SizeType;
         using Scalar    = typename Super::Scalar;
         using NodeIndex = utopia::ArrayView<const SizeType>;
+        using SideSets  = utopia::SideSets<Super::StaticDim>;
+
+        using Device    = utopia::Device<PETSC>;
+        // using ViewDevice    = PetscDMDA;
 
         class Elements {
         public:
@@ -57,6 +61,12 @@ namespace utopia {
             SizeType n_local_elem_, n_nodes_x_elem_;
             const SizeType *local_elem_;
         };
+
+        //FIXME make this work also without static-sizes
+        constexpr static typename SideSets::Sides sides()
+        {
+            return SideSets::sides();
+        }
 
         std::unique_ptr<Elements> make_elements() const
         {
@@ -266,6 +276,11 @@ namespace utopia {
             // cloned->type_override_ = type_override_;
             cloned->init_from_mirror();
             return std::move(cloned);
+        }
+
+        std::unique_ptr<PetscDMDA> clone() const
+        {
+            return clone(this->n_components());
         }
 
         static void get_corners(DM dm, IntArray &start, IntArray &extent)

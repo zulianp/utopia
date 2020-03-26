@@ -1,5 +1,5 @@
-#ifndef UTOPIA_PETSC_DM_HPP
-#define UTOPIA_PETSC_DM_HPP
+#ifndef UTOPIA_PETSC_DM_OLD_HPP
+#define UTOPIA_PETSC_DM_OLD_HPP
 
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
@@ -36,17 +36,17 @@ namespace utopia {
     template<class Space>
     class DirichletBoundaryCondition {};
 
-    template<int Dim>
-    class PetscNode {
-    public:
-        PetscNode(const DMDANodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
-        SizeType idx() const { return idx_; }
-        bool is_ghost() const;
+    // template<int Dim>
+    // class PetscNode {
+    // public:
+    //     PetscNode(const DMDANodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
+    //     SizeType idx() const { return idx_; }
+    //     bool is_ghost() const;
 
-    private:
-        const DMDANodes<Dim> &nodes_;
-        SizeType idx_;
-    };
+    // private:
+    //     const DMDANodes<Dim> &nodes_;
+    //     SizeType idx_;
+    // };
 
     template<int Dim>
     class PetscDM final {
@@ -56,7 +56,7 @@ namespace utopia {
         using Scalar    = PetscScalar;
         using Point     = utopia::StaticVector<Scalar, Dim>;
         // using Elem      = utopia::PetscElem<Dim>;
-        using Node      = utopia::PetscNode<Dim>;
+        // using Node      = utopia::PetscNode<Dim>;
         using Device    = utopia::Device<PETSC>;
         using NodeIndex = utopia::ArrayView<const SizeType>;
         using IntArray  = utopia::ArrayView<SizeType, UDim>;
@@ -132,8 +132,8 @@ namespace utopia {
 
         const DMDAMirror<Dim> &mirror() const;
 
-        const IntArray &local_nodes_begin() const;
-        const IntArray &local_nodes_end() const;
+        // const IntArray &local_nodes_begin() const;
+        // const IntArray &local_nodes_end() const;
 
         const IntArray &dims() const;
         const Point &box_min() const;
@@ -177,4 +177,4 @@ namespace utopia {
     };
 }
 
-#endif //UTOPIA_PETSC_DM_HPP
+#endif //UTOPIA_PETSC_DM_OLD_HPP

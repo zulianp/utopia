@@ -10,6 +10,7 @@
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMPlex.hpp"
 #include "utopia_Rename.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 namespace utopia {
     using V = utopia::StaticVector<PetscScalar, 2>;
