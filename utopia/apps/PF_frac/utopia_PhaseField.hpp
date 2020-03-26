@@ -77,7 +77,7 @@ namespace utopia {
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
         {
             params_.length_scale = 2.0 * space.mesh().min_spacing();
-            std::cout<<"params_.length_scale: "<< params_.length_scale << "  \n"; 
+            std::cout<<"params_.length_scale: "<< params_.length_scale << "  \n";
             params_.fracture_toughness = 0.001;
 
             params_.mu = 80.0;
@@ -146,7 +146,7 @@ namespace utopia {
                 auto differential_view = differential.view_device();
 
                 Device::parallel_reduce(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, Dim, Dim> strain_n;
@@ -236,7 +236,7 @@ namespace utopia {
                 auto g_view = space_.assembly_view_device(g);
 
                 Device::parallel_for(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, Dim, Dim> stress, strain_p;
@@ -385,7 +385,7 @@ namespace utopia {
                 auto H_view = space_.assembly_view_device(H);
 
                 Device::parallel_for(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
@@ -445,9 +445,9 @@ namespace utopia {
                                         c[qp],
                                         el_strain.vectors[qp],
                                         el_strain.values[qp],
-                                        p_stress_view.stress(j, qp), 
-                                        p_stress_view.C, 
-                                        u_grad_shape_el(j, qp), 
+                                        p_stress_view.stress(j, qp),
+                                        p_stress_view.C,
+                                        u_grad_shape_el(j, qp),
                                         u_grad_shape_el(l, qp)
                                         ) * dx(qp);
                                 }
@@ -456,7 +456,7 @@ namespace utopia {
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                            StaticMatrix<Scalar, Dim, Dim> stress_positive_mat; 
+                            StaticMatrix<Scalar, Dim, Dim> stress_positive_mat;
                             stress_positive(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
 
                             for(SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
@@ -550,8 +550,8 @@ namespace utopia {
             const EigenVectors &eigen_vectors,
             const Eigenvalues &eigen_values,
             const StressShape &stress,
-            const Tensor4th<Scalar, Dim, Dim, Dim, Dim> & C, 
-            const Grad &g_trial, 
+            const Tensor4th<Scalar, Dim, Dim, Dim, Dim> & C,
+            const Grad &g_trial,
             const Grad &g_test
             )
         {
@@ -559,40 +559,40 @@ namespace utopia {
             const Scalar gc = quadratic_degradation(params, phase_field_value);
 
             // if gc ==1 => c=0, we can just call total linear elastic  (stress(trial), e(test))
-            Scalar tol = 1e-14; 
+            Scalar tol = 1e-14;
             if(device::abs(gc -1.0) < tol)
             {
                 auto C_test  = 0.5 * (g_test  + transpose(g_test));
                 return inner(stress, C_test);
             }
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_pos; 
-            positive_projection(eigen_vectors, eigen_values, proj_pos); 
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_pos;
+            positive_projection(eigen_vectors, eigen_values, proj_pos);
 
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_neg, I4sym;
-            I4sym.identity_sym(); 
+            I4sym.identity_sym();
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = (I4sym - (1.0 - gc) * proj_pos) * C; 
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = (I4sym - (1.0 - gc) * proj_pos) * C;
 
             auto C_test  = 0.5 * (g_test  + transpose(g_test));
             auto C_trial  = 0.5 * (g_trial  + transpose(g_trial));
             Scalar val = inner(C_trial, contraction(Jacobian_mult, C_test));
 
-            return val; 
-        }        
+            return val;
+        }
 
 
         template<class EigenVectors, class Eigenvalues>
         UTOPIA_INLINE_FUNCTION static void positive_projection(
-            const EigenVectors &eigen_vectors, 
-            const Eigenvalues &eigen_values, 
+            const EigenVectors &eigen_vectors,
+            const Eigenvalues &eigen_values,
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> & proj_pos)
         {
-            // decomposition based on Algorithm A from Miehe, Lambrecht; Algorithms for computation 
-            // of stresses and elasticity moduli in terms of Seth-Hill's family of generalized strain tensors 
+            // decomposition based on Algorithm A from Miehe, Lambrecht; Algorithms for computation
+            // of stresses and elasticity moduli in terms of Seth-Hill's family of generalized strain tensors
 
-            StaticVector<Scalar, Dim> epos; 
-            StaticVector<Scalar, Dim> dd; 
+            StaticVector<Scalar, Dim> epos;
+            StaticVector<Scalar, Dim> dd;
 
             for (unsigned int d = 0; d < Dim; ++d){
                 epos[d] = split_p(eigen_values[d]);
@@ -607,9 +607,9 @@ namespace utopia {
                 StaticVector<Scalar, Dim> v;
                 eigen_vectors.col(a, v);
                 Ma = outer(v, v);
-                                                //   outer 
+                                                //   outer
                 proj_pos = proj_pos + (dd[a] * tensor_product<0, 1, 2, 3>(Ma, Ma));
-            }                            
+            }
 
             for (unsigned int a = 0; a < Dim; ++a){
                 for (unsigned int b = 0; b < a; ++b){
@@ -619,24 +619,24 @@ namespace utopia {
                     eigen_vectors.col(b, v_b);
 
                     Ma = outer(v_a, v_a);
-                    Mb = outer(v_b, v_b);                                    
+                    Mb = outer(v_b, v_b);
 
                     Gab = tensor_product<0, 2, 1, 3>(Ma, Mb)  + tensor_product<0, 3, 1, 2>(Ma, Mb);
                     Gba = tensor_product<0, 2, 1, 3>(Mb, Ma)  + tensor_product<0, 3, 1, 2>(Mb, Ma);
 
 
-                    Scalar theta_ab=0; 
+                    Scalar theta_ab=0;
                     // add tol
                     // if(eigen_values[a] != eigen_values[b]){
-                    Scalar tol = 1e-14; 
+                    Scalar tol = 1e-14;
                     if(device::abs(eigen_values[a] - eigen_values[b]) > tol){
-                        theta_ab = 0.5 * (epos[a] - epos[b])/(eigen_values[a] - eigen_values[b]); 
+                        theta_ab = 0.5 * (epos[a] - epos[b])/(eigen_values[a] - eigen_values[b]);
                     }
                     else{
-                        theta_ab = 0.25 * (dd[a] + dd[b]); 
+                        theta_ab = 0.25 * (dd[a] + dd[b]);
                     }
 
-                    proj_pos = proj_pos + (theta_ab*(Gab + Gba)); 
+                    proj_pos = proj_pos + (theta_ab*(Gab + Gba));
                 }
             }
         }
@@ -762,7 +762,7 @@ namespace utopia {
                 mat.col(d, v);
                 stress_positive += val_p * outer(v, v);
             }
-        }        
+        }
 
         template<class Grad, class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar energy(

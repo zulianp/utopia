@@ -238,7 +238,7 @@ namespace utopia {
                 }
 
                 Dev::parallel_for(
-                    space.local_element_range(),
+                    space.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;

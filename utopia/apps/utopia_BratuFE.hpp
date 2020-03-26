@@ -55,7 +55,7 @@ namespace utopia {
             value = 0.0;
 
             Device::parallel_reduce(
-                space_->local_element_range(),
+                space_->element_range(),
                 UTOPIA_LAMBDA(const SizeType &i) -> Scalar
             {
                 Elem e;
@@ -114,7 +114,7 @@ namespace utopia {
                 };
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;
@@ -170,7 +170,7 @@ namespace utopia {
                 };
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;
@@ -232,7 +232,7 @@ namespace utopia {
                 auto rhs_view   = space_->assembly_view_device(rhs_);
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;

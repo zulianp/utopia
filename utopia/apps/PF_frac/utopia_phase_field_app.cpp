@@ -76,7 +76,7 @@ namespace utopia {
             auto sampler_view = sampler.view_device();
             auto x_view       = space.assembly_view_device(x);
 
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                 ElemViewScalar e;
                 C_view.elem(i, e);
 

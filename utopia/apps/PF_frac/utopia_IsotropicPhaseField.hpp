@@ -206,7 +206,7 @@ namespace utopia {
                 auto differential_view = differential.view_device();
 
                 Device::parallel_reduce(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, Dim, Dim> strain_n;
@@ -329,7 +329,7 @@ namespace utopia {
                 auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, Dim, Dim> stress, strain_p;
@@ -524,7 +524,7 @@ namespace utopia {
                 auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;

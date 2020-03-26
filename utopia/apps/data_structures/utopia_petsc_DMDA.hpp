@@ -36,6 +36,14 @@ namespace utopia {
             : dm_(dm)
             {
                 DMDAGetElements(dm_, &n_local_elem_, &n_nodes_x_elem_, &local_elem_);
+
+                const SizeType n_idx = n_local_elem_ * n_nodes_x_elem_;
+
+                global_elem_.resize(n_idx);
+
+                ISLocalToGlobalMapping map;
+                DMGetLocalToGlobalMapping(dm,&map);
+                ISLocalToGlobalMappingApplyBlock(map, n_idx, local_elem_, &global_elem_[0]);
             }
 
             ~Elements()
@@ -47,6 +55,18 @@ namespace utopia {
             {
                 return n_local_elem_;
             }
+            inline Range range() const
+            {
+                return Range(0, n_local_elem_);
+            }
+
+            inline NodeIndex nodes(const SizeType &local_elem_idx) const
+            {
+                return NodeIndex(
+                    &global_elem_[local_elem_idx * n_nodes_x_elem_],
+                    n_nodes_x_elem_
+                );
+            }
 
             inline NodeIndex nodes_local(const SizeType &local_elem_idx) const
             {
@@ -56,10 +76,16 @@ namespace utopia {
                 );
             }
 
+            inline SizeType first_node_idx(const SizeType &local_elem_idx) const
+            {
+                return local_elem_[local_elem_idx * n_nodes_x_elem_];
+            }
+
         private:
             DM dm_;
             SizeType n_local_elem_, n_nodes_x_elem_;
             const SizeType *local_elem_;
+            std::vector<SizeType> global_elem_;
         };
 
         //FIXME make this work also without static-sizes
@@ -68,9 +94,36 @@ namespace utopia {
             return SideSets::sides();
         }
 
-        std::unique_ptr<Elements> make_elements() const
+        inline void cell_point(const SizeType &idx, Point &p) const
         {
-            return utopia::make_unique<Elements>(this->raw_type());
+            assert(elements_ && "init_elements() has to be called before any access to element data");
+            const SizeType p_idx = elements_->first_node_idx(idx);
+            this->point(p_idx, p);
+        }
+
+        inline void nodes(const SizeType &idx, NodeIndex &nodes) const
+        {
+            assert(elements_ && "init_elements() has to be called before any access to element data");
+            nodes = elements_->nodes(idx);
+        }
+
+        inline void nodes_local(const SizeType &idx, NodeIndex &nodes) const
+        {
+            assert(elements_ && "init_elements() has to be called before any access to element data");
+            nodes = elements_->nodes_local(idx);
+        }
+
+        void init_elements()
+        {
+            if(!elements_) {
+                elements_ = make_elements();
+            }
+        }
+
+        std::shared_ptr<Elements> elements_ptr()
+        {
+            init_elements();
+            return elements_;
         }
 
         void wrap(DM &dm, const bool delegate_ownership) override
@@ -80,10 +133,14 @@ namespace utopia {
         }
 
         PetscDMDA(const PetscCommunicator &comm, const DMDAElementType &type_override = DMDA_ELEMENT_Q1)
-        : PetscDMBase(comm), type_override_(type_override) {}
+        : PetscDMBase(comm), type_override_(type_override)
+        {
+            this->set_n_components(1);
+        }
 
         PetscDMDA(DM &dm, const bool delegate_ownership)
         {
+            this->set_n_components(1);
             wrap(dm, delegate_ownership);
         }
 
@@ -331,20 +388,42 @@ namespace utopia {
             return ret;
         }
 
+
+        void describe() const override
+        {
+            std::cout << "n_elements      : " << this->n_elements()      << std::endl;
+            std::cout << "n_nodes         : " << this->n_nodes()         << std::endl;
+            std::cout << "dim             : " << this->dim()             << std::endl;
+            std::cout << "elements_x_cell : " << this->elements_x_cell() << std::endl;
+        }
+
+
     private:
         DMDAElementType type_override_;
 
+        //initialized in a lazy way
+        std::shared_ptr<Elements> elements_;
+
+        std::unique_ptr<Elements> make_elements() const
+        {
+            return utopia::make_unique<Elements>(this->raw_type());
+        }
+
         void init_default()
         {
+            elements_ = nullptr;
             device::fill(10, this->dims());
             device::fill(0,  this->box_min());
             device::fill(1,  this->box_max());
-            this->set_n_components(1);
+
+
+            init_elem_x_cell(type_override_);
         }
 
         void init_from_mirror()
         {
             this->destroy_dm();
+
             create_uniform(
                 comm().get(),
                 this->dims(),
@@ -354,10 +433,14 @@ namespace utopia {
                 this->n_components(),
                 this->raw_type()
             );
+
+            init_elem_x_cell(type_override_);
         }
 
         void init_from_dm(DM dm)
         {
+            elements_ = nullptr;
+
             MPI_Comm mpi_comm = PetscObjectComm((PetscObject) dm);
             comm().set(mpi_comm);
 
@@ -377,16 +460,23 @@ namespace utopia {
 
             DMDAElementType elem_type;
             DMDAGetElementType(dm, &elem_type);
+            init_elem_x_cell(elem_type);
+        }
 
+        void init_elem_x_cell(DMDAElementType elem_type)
+        {
+            int exc = 1;
             if(elem_type == DMDA_ELEMENT_P1) {
                 if(this->dim() == 2) {
-                    this->set_elements_x_cell(2);
+                    exc = 2;
                 } else if(this->dim() == 3) {
-                    this->set_elements_x_cell(6);
+                    exc = 6;
                 } else {
                     assert(false);
                 }
             }
+
+            this->set_elements_x_cell(exc);
         }
 
     };

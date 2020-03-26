@@ -529,7 +529,7 @@ namespace utopia {
     {}
 
     template<int Dim>
-    Range PetscDM<Dim>::local_element_range() const
+    Range PetscDM<Dim>::element_range() const
     {
         return Range(0, impl_->elements->ne);
     }
@@ -680,7 +680,7 @@ namespace utopia {
     }
 
     template<int Dim>
-    bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx) const
+    bool PetscDM<Dim>::is_node_on_boundary(const SizeType &idx) const
     {
         std::array<SizeType, 3> tensor_index = {0, 0, 0};
         impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
@@ -697,7 +697,7 @@ namespace utopia {
     }
 
     template<int Dim>
-    bool PetscDM<Dim>::is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
+    bool PetscDM<Dim>::is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const
     {
         std::array<SizeType, 3> tensor_index = {0, 0, 0};
         impl_->local_node_grid_coord_no_ghost(idx, tensor_index);
@@ -925,7 +925,7 @@ namespace utopia {
         nodes(elem_idx, idx);
 
         for(auto i : idx) {
-            if(is_local_node_on_boundary(i)) {
+            if(is_node_on_boundary(i)) {
                 return true;
             }
         }

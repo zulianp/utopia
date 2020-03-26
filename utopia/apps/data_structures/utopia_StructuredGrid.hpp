@@ -6,6 +6,7 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_SideSets.hpp"
 #include "utopia_CppMacros.hpp"
+#include "utopia_Range.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -39,9 +40,11 @@ namespace utopia {
     }
 
     //follows petsc dm layout
-    template<class Point, class IntArray, typename...>
+    template<class Point_, class IntArray_, typename...>
     class StructuredGrid {
     public:
+        using Point    = Point_;
+        using IntArray = IntArray_;
         using SizeType = typename Traits<IntArray>::ValueType;
         using Scalar   = typename Traits<Point>::Scalar;
 
@@ -82,6 +85,10 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION constexpr SizeType elements_x_cell() const { return elements_x_cell_; }
         UTOPIA_INLINE_FUNCTION constexpr SizeType dof_range_begin() const { return dof_range_begin_; }
         UTOPIA_INLINE_FUNCTION constexpr SizeType dof_range_end() const { return dof_range_end_; }
+        UTOPIA_INLINE_FUNCTION constexpr Range dof_range() const
+        {
+            return Range(dof_range_begin_, dof_range_end_);
+        }
 
         ////////////////////////////////////////////////////////////////
         //////////////////////// SETTERS //////////////////////////////
@@ -108,6 +115,8 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void set_elements_x_cell(const SizeType &val) { elements_x_cell_ = val; }
         UTOPIA_INLINE_FUNCTION void set_dof_range_begin(const SizeType &val) { dof_range_begin_ = val; }
         UTOPIA_INLINE_FUNCTION void set_dof_range_end(const SizeType &val) { dof_range_end_ = val; }
+
+
 
         ////////////////////////////////////////////////////////////////
 

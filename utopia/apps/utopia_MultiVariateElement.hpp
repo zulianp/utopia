@@ -126,6 +126,11 @@ namespace utopia {
             return univar_elem_.idx();
         }
 
+        inline void idx(const SizeType &idx)
+        {
+            return univar_elem_.idx(idx);
+        }
+
         inline bool is_valid() const
         {
             return univar_elem_.is_valid();

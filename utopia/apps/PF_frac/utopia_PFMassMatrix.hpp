@@ -59,7 +59,7 @@ namespace utopia {
             USpace U;
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
-       
+
             Quadrature q;
 
             auto differential = C.differential(q);
@@ -78,12 +78,12 @@ namespace utopia {
                 auto H_view = space_.assembly_view_device(H);
 
                 Device::parallel_for(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
                         el_mat.set(0.0);
-                     
+
                         MixedElem e;
                         space_view.elem(i, e);
 
@@ -92,7 +92,7 @@ namespace utopia {
                         C_view.elem(i, c_e);
 
                         UElem u_e;
-                        U_view.elem(i, u_e);                        
+                        U_view.elem(i, u_e);
 
                         auto c_shape_fun_el     = c_shape_view.make(c_e);
                         auto u_shape_fun_el     = u_shape_view.make(u_e);
@@ -109,7 +109,7 @@ namespace utopia {
                                     auto val = c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     // c-component
                                     el_mat(l, j) +=  val;
-                                }                                        
+                                }
                             }
 
                             for(SizeType l = 0; l < U_NDofs; ++l) {
@@ -117,9 +117,9 @@ namespace utopia {
                                 for(SizeType j = 0; j < U_NDofs; ++j) {
                                     auto val = inner(u_shape_fun_el(j, qp), u_shape_l) * dx(qp);
                                     // disp components
-                                    el_mat(C_NDofs + l, C_NDofs + j) +=  val; 
+                                    el_mat(C_NDofs + l, C_NDofs + j) +=  val;
                                 }
-                            }                            
+                            }
                         }
 
                         space_view.add_matrix(e, el_mat, H_view);

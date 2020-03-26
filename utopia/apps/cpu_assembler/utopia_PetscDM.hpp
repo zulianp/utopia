@@ -34,7 +34,7 @@ namespace utopia {
     class DMDANodes;
 
     template<class Space>
-    class DirichletBoundaryCondition {};
+    class DirichletBoundaryCondition;
 
     // template<int Dim>
     // class PetscNode {
@@ -106,8 +106,8 @@ namespace utopia {
         void cell_point(const SizeType &idx, Point &translation) const;
         void cell_size(const SizeType &idx, Point &cell_size) const;
 
-        bool is_local_node_on_boundary(const SizeType &idx) const;
-        bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
+        bool is_node_on_boundary(const SizeType &idx) const;
+        bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
         void node(const SizeType &idx, Point &node) const;
         void elem(const SizeType &idx, Elem &e) const;
         void nodes(const SizeType &idx, NodeIndex &nodes) const;
@@ -128,7 +128,7 @@ namespace utopia {
         SizeType n_local_nodes_with_ghosts() const;
         Scalar min_spacing() const;
 
-        Range local_element_range() const;
+        Range element_range() const;
 
         const DMDAMirror<Dim> &mirror() const;
 

@@ -23,6 +23,8 @@
 #include "utopia_PhaseField.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 #include "utopia_LinearElasticityFE.hpp"
 
@@ -33,12 +35,18 @@
 
 namespace utopia {
 
+    template<int Dim>
+    using MeshType = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
+
+    // template<int Dim>
+    // using MeshType = utopia::PetscDM<Dim>;
+
     static void elast_mg_2(Input &in)
     {
         static const int Dim = 2;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::PetscDM<Dim>;
+        using Mesh             = utopia::MeshType<Dim>;
         // using Elem             = utopia::PetscUniformQuad4;
         using Elem             = utopia::Tri3<PetscScalar, 2>;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
@@ -78,7 +86,7 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::PetscDM<Dim>;
+        using Mesh             = utopia::MeshType<Dim>;
         using Elem             = utopia::PetscUniformHex8;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using Point            = FunctionSpace::Point;
@@ -269,7 +277,7 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::PetscDM<Dim>;
+        using Mesh             = utopia::MeshType<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
@@ -278,6 +286,8 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
+
+        space.describe();
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
 
@@ -292,7 +302,7 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::PetscDM<Dim>;
+        using Mesh             = utopia::MeshType<Dim>;
         using Elem             = utopia::PetscUniformHex8;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
@@ -314,7 +324,7 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::PetscDM<Dim>;
+        using Mesh             = utopia::MeshType<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
         using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType         = Mesh::SizeType;
@@ -403,12 +413,12 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_matrix_free_test);
 
-    static void petsc_strain()
+    static void petsc_strain(Input &in)
     {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Mesh           = utopia::PetscDM<Dim>;
+        using Mesh           = utopia::MeshType<Dim>;
         using Elem           = utopia::PetscUniformHex8;
         using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using ElemView       = FunctionSpace::ViewDevice::Elem;
@@ -418,21 +428,8 @@ namespace utopia {
         using Dev            = FunctionSpace::Device;
         using VectorD        = utopia::StaticVector<Scalar, Dim>;
 
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
-        SizeType nz = scale * 2;
-
         FunctionSpace space;
-
-        space.build(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
+        space.read(in);
 
         PetscVector u;
         space.create_vector(u);

@@ -1,5 +1,5 @@
-#ifndef UTOPIA_PETSC_DMA_FUNCTIONSPACE_HPP
-#define UTOPIA_PETSC_DMA_FUNCTIONSPACE_HPP
+#ifndef UTOPIA_PETSC_DMA_FUNCTIONSPACE_OLD_HPP
+#define UTOPIA_PETSC_DMA_FUNCTIONSPACE_OLD_HPP
 
 #include "utopia_PetscDM.hpp"
 #include "utopia_MultiVariateElement.hpp"
@@ -424,9 +424,9 @@ namespace utopia {
             return *this;
         }
 
-        Range local_element_range() const
+        Range element_range() const
         {
-            return mesh_->local_element_range();
+            return mesh_->element_range();
         }
 
         Range dof_range() const
@@ -651,7 +651,7 @@ namespace utopia {
                 auto v_view = utopia::view_device(v);
 
                 Device::parallel_for(
-                    this->local_element_range(),
+                    this->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;
@@ -706,4 +706,4 @@ namespace utopia {
     const int FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_>::NComponents;
 }
 
-#endif //UTOPIA_PETSC_DMA_FUNCTIONSPACE_HPP
+#endif //UTOPIA_PETSC_DMA_FUNCTIONSPACE_OLD_HPP

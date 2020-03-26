@@ -149,7 +149,7 @@ namespace utopia {
             auto dx_view    = differential.view_device();
 
             Device::parallel_reduce(
-                space.local_element_range(),
+                space.element_range(),
                 UTOPIA_LAMBDA(const SizeType &i) -> Scalar
                 {
                     StaticVector<Scalar, Quadrature::NPoints> c;

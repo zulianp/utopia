@@ -533,7 +533,7 @@ namespace utopia {
 
 
             // Device Kernel (GPU or CPU) (this should be hidden better)
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
+            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
                 ElemView e;
                 space_view.elem(idx, e);
 
@@ -595,7 +595,7 @@ namespace utopia {
             auto x_view       = space.assembly_view_device(x);
             auto sampler_view = sampler.view_device();
 
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                 ElemView e;
                 space_view.elem(i, e);
 

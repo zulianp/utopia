@@ -109,7 +109,7 @@ namespace utopia {
 				auto dx_view   = differential_.view_device();
 
 				Dev::parallel_for(
-					space_.local_element_range(),
+					space_.element_range(),
 					UTOPIA_LAMBDA(const SizeType &i)
 					{
 						Elem e;
@@ -199,7 +199,7 @@ namespace utopia {
 			    }
 
 			    Dev::parallel_for(
-			        space_.local_element_range(),
+			        space_.element_range(),
 			        UTOPIA_LAMBDA(const SizeType &i)
 			    {
 			        Elem e;

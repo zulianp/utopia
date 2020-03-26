@@ -77,9 +77,9 @@ namespace utopia {
             return ViewDevice(mesh_.view_device());
         }
 
-        Range local_element_range() const
+        Range element_range() const
         {
-            return mesh_.local_element_range();
+            return mesh_.element_range();
         }
 
         FunctionSpace(const Mesh &mesh) : mesh_(mesh) {}

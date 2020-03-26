@@ -520,7 +520,7 @@ namespace utopia {
     //         return result + 1;
     //     }
 
-    //     Range local_element_range() const
+    //     Range element_range() const
     //     {
     //         return Range(local_elements_index_begin(), local_elements_index_end());
     //     }
@@ -528,7 +528,7 @@ namespace utopia {
     //     template<class Fun>
     //     void each_element(Fun fun)
     //     {
-    //         Dev::parallel_for(local_element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
+    //         Dev::parallel_for(element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
     //             Elem e;
     //             elem(e_index, e);
     //             fun(e_index, e);

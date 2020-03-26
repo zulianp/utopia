@@ -86,7 +86,7 @@ namespace utopia {
                 auto grad_view  = grad_temp.view_device();
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;
@@ -167,7 +167,7 @@ namespace utopia {
                 auto coeff_view = x_coeff_->view_device();
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;
@@ -218,7 +218,7 @@ namespace utopia {
                 auto l_view = laplacian_.view_device();
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;
@@ -263,7 +263,7 @@ namespace utopia {
                 auto rhs_view   = space_->assembly_view_device(rhs_);
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;

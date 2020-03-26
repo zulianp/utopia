@@ -4,8 +4,7 @@
 #include "utopia_PetscDM.hpp"
 
 namespace utopia {
-    template<class FunctionSpace>
-    class Coefficient {};
+
 
     template<class FunctionSpaceView, class VectorView>
     class CoefficientView {
@@ -34,10 +33,16 @@ namespace utopia {
         VectorView vec_;
     };
 
-    template<class Elem, int Components>
-    class Coefficient<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>>  {
+    template<class FunctionSpace>
+    class Coefficient
+    // {};
+
+    // template<class Elem, int Components>
+    // class Coefficient<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>>
+    {
     public:
-        using FunctionSpace = utopia::FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>;
+        using Mesh          = typename FunctionSpace::Mesh;
+        // using FunctionSpace = utopia::FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>;
         using Vector        = typename FunctionSpace::Vector;
         using Scalar        = typename FunctionSpace::Scalar;
         using ViewDevice    = utopia::CoefficientView<typename FunctionSpace::ViewDevice, LocalViewDevice<const PetscVector, 1>>;

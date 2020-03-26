@@ -6,6 +6,7 @@
 #include "utopia_petsc.hpp"
 #include "utopia_Tri3.hpp"
 #include "utopia_CppMacros.hpp"
+#include "utopia_petsc_MakeElem.hpp"
 
 #include <petscviewerhdf5.h>
 
@@ -50,62 +51,62 @@ namespace utopia {
         }
     }
 
-    template<class Space, class Elem, bool IsSimplex = is_simplex<Elem>::value>
-    class GetElem {};
+    // template<class Space, class Elem, bool IsSimplex = is_simplex<Elem>::value>
+    // class MakeElem {};
 
-    template<class Space, class Elem>
-    class GetElem<Space, Elem, false> {
-    public:
+    // template<class Space, class Elem>
+    // class MakeElem<Space, Elem, false> {
+    // public:
 
-        inline static void apply(const Space &space, const SizeType &idx, Elem &e)
-        {
-            const auto &mesh = space.mesh();
-            mesh.elem(idx, e.univar_elem());
-            typename Space::Mesh::Point translation, cell_size;
-            mesh.cell_point(idx, translation);
-            mesh.cell_size(idx, cell_size);
-            e.set(translation, cell_size);
-        }
+    //     inline static void apply(const Space &space, const SizeType &idx, Elem &e)
+    //     {
+    //         const auto &mesh = space.mesh();
+    //         mesh.elem(idx, e.univar_elem());
+    //         typename Space::Mesh::Point translation, cell_size;
+    //         mesh.cell_point(idx, translation);
+    //         mesh.cell_size(idx, cell_size);
+    //         e.set(translation, cell_size);
+    //     }
 
-    };
+    // };
 
-    template<class Space, class Elem>
-    class GetElem<Space, Elem, true> {
-    public:
-        using SizeType = typename Space::SizeType;
-        using Point    = typename Space::Point;
+    // template<class Space, class Elem>
+    // class MakeElem<Space, Elem, true> {
+    // public:
+    //     using SizeType = typename Space::SizeType;
+    //     using Point    = typename Space::Point;
 
-        inline static void apply(const Space &space, const SizeType &idx, Elem &e)
-        {
-            const auto &mesh = space.mesh();
-            mesh.elem(idx, e.univar_elem());
+    //     inline static void apply(const Space &space, const SizeType &idx, Elem &e)
+    //     {
+    //         const auto &mesh = space.mesh();
+    //         mesh.elem(idx, e.univar_elem());
 
-            typename Space::Mesh::NodeIndex nodes;
-            mesh.nodes(idx, nodes);
+    //         typename Space::Mesh::NodeIndex nodes;
+    //         mesh.nodes(idx, nodes);
 
-            const SizeType n = nodes.size();
+    //         const SizeType n = nodes.size();
 
-            Point p0, p1, p2;
+    //         Point p0, p1, p2;
 
-            if(n == 3) {
-                mesh.point(nodes[0], p0);
-                mesh.point(nodes[1], p1);
-                mesh.point(nodes[2], p2);
+    //         if(n == 3) {
+    //             mesh.point(nodes[0], p0);
+    //             mesh.point(nodes[1], p1);
+    //             mesh.point(nodes[2], p2);
 
-                e.set(p0, p1, p2);
-            } else  {
-                assert(false);
-                // Point p4;
+    //             e.set(p0, p1, p2);
+    //         } else  {
+    //             assert(false);
+    //             // Point p4;
 
-                // e.init()
-            }
-        }
-    };
+    //             // e.init()
+    //         }
+    //     }
+    // };
 
     template<class Elem, int NComponents>
     void FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>::elem(const SizeType &idx, Elem &e) const
     {
-        GetElem<FunctionSpace, Elem>::apply(*this, idx, e);
+        MakeElem<FunctionSpace, Elem>::apply(*this, idx, e);
     }
 
     template<class Elem, int NComponents>

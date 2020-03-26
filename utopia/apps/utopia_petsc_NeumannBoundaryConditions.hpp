@@ -142,7 +142,7 @@ namespace utopia {
 
             // subspace.each_boundary_element(side_set_, ...
             Device::parallel_for(
-                subspace.local_element_range(),
+                subspace.element_range(),
                 UTOPIA_LAMBDA(const SizeType &i)
             {
                 if(!space_view.on_boundary(i)) {
