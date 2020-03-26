@@ -124,14 +124,14 @@ namespace utopia {
         DMSetNumFields(dmplex.raw_type(),  num_fields);
 
         PetscFE   fe[2];
-        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,NULL,PETSC_DEFAULT,&fe[0]);
+        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,nullptr,PETSC_DEFAULT,&fe[0]);
         PetscFESetName(fe[0], "u");
-        DMSetField(dmplex.raw_type(),0,NULL,(PetscObject)fe[0]);
+        DMSetField(dmplex.raw_type(),0,nullptr,(PetscObject)fe[0]);
 
-        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,NULL,PETSC_DEFAULT,&fe[1]);
+        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,nullptr,PETSC_DEFAULT,&fe[1]);
         PetscFESetName(fe[1], "v");
 
-        DMSetField(dmplex.raw_type(),1,NULL,(PetscObject)fe[1]);
+        DMSetField(dmplex.raw_type(),1,nullptr,(PetscObject)fe[1]);
         DMCreateDS(dmplex.raw_type());
 
         PetscFEDestroy(&fe[0]);
