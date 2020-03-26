@@ -9,11 +9,12 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMPlex.hpp"
+#include "utopia_Rename.hpp"
 
 namespace utopia {
-    using V = utopia::StaticVector<double, 2>;
-    using I = utopia::ArrayView<int, 2>;
-    using VA = utopia::ArrayView<double, 2>;
+    using V = utopia::StaticVector<PetscScalar, 2>;
+    using I = utopia::ArrayView<PetscInt, 2>;
+    using VA = utopia::ArrayView<PetscScalar, 2>;
     template class StructuredGrid<V, I>;
     template class PetscDMDA<V, I>;
     template class PetscDMPlex<V, I>;
@@ -39,7 +40,7 @@ namespace utopia {
         // constexpr bool is_b = g.is_node_on_boundary_local_no_ghost(0, SideSet::left());
 
         //for some reaons clang is able to do this at compile time but not gcc
-        /*constexpr*/ double meas = g.measure();
+        /*constexpr*/ PetscScalar meas = g.measure();
         //COMPILE-TIME END
         assert(device::approxeq(meas, 1.0, 1e-8));
 
@@ -51,19 +52,19 @@ namespace utopia {
     void vec_grid_test(Input &in)
     {
         //run-time sizes real data
-        std::vector<int>   zeros_v  = {0, 0};
-        std::vector<int>   dims_v   = {10, 10};
-        std::vector<float> box_min_v = {0.0f, 0.0f};
-        std::vector<float> box_max_v = {1.0f, 1.0f};
+        std::vector<PetscInt>   zeros_v  = {0, 0};
+        std::vector<PetscInt>   dims_v   = {10, 10};
+        std::vector<PetscScalar> box_min_v = {0.0f, 0.0f};
+        std::vector<PetscScalar> box_max_v = {1.0f, 1.0f};
 
 
         //views on data
-        ArrayView<int>   zeros(&zeros_v[0], zeros_v.size());
-        ArrayView<int>   dims(&dims_v[0], dims_v.size());
-        ArrayView<float> box_min(&box_min_v[0], box_min_v.size());
-        ArrayView<float> box_max(&box_max_v[0], box_max_v.size());
+        ArrayView<PetscInt>   zeros(&zeros_v[0], zeros_v.size());
+        ArrayView<PetscInt>   dims(&dims_v[0], dims_v.size());
+        ArrayView<PetscScalar> box_min(&box_min_v[0], box_min_v.size());
+        ArrayView<PetscScalar> box_max(&box_max_v[0], box_max_v.size());
 
-        StructuredGrid<VectorView<ArrayView<float>>, ArrayView<int>> g(
+        StructuredGrid<VectorView<ArrayView<PetscScalar>>, ArrayView<PetscInt>> g(
             dims,
             zeros, dims,
             zeros, dims,
@@ -74,7 +75,7 @@ namespace utopia {
         assert(g.dim() == 2);
         assert(g.n_nodes() == 100);
         assert(g.n_elements() == 81);
-        double meas = g.measure();
+        PetscScalar meas = g.measure();
         bool is_b = g.is_node_on_boundary(0);
         assert(is_b);
 
@@ -109,11 +110,56 @@ namespace utopia {
         // dmplex.read(in);
         dmplex.read("../../utopia_fe/data/contact/contact_squares_tri.e");
 
+
+        // DMLabel *label = nullptr;
+        PetscInt num_fields = 2;
+        // PetscInt num_comp[1] = {1};
+        // PetscInt num_dof[1]  = {1};
+        // PetscInt num_bc = 0;
+        // PetscInt *bc_field = nullptr;
+        // IS *bc_comps = nullptr,* bc_points = nullptr, perm = nullptr;
+
+          // DMGetStratumIS(dm, "marker", 1, &bcPointIS[0]);
+
+        DMSetNumFields(dmplex.raw_type(),  num_fields);
+
+        PetscFE   fe[2];
+        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,NULL,PETSC_DEFAULT,&fe[0]);
+        PetscFESetName(fe[0], "u");
+        DMSetField(dmplex.raw_type(),0,NULL,(PetscObject)fe[0]);
+
+        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,NULL,PETSC_DEFAULT,&fe[1]);
+        PetscFESetName(fe[1], "v");
+
+        DMSetField(dmplex.raw_type(),1,NULL,(PetscObject)fe[1]);
+        DMCreateDS(dmplex.raw_type());
+
+        PetscFEDestroy(&fe[0]);
+        PetscFEDestroy(&fe[1]);
+
+
+        // DMPlexCreateClosureIndex(dmplex.raw_type(), nullptr);
+
+        // DMSetUp(dmplex.raw_type());
+
+        // PetscSection section;
+        // DMPlexCreateSection(dmplex.raw_type(), label, num_comp, num_dof, num_bc, bc_field, bc_comps, bc_points, perm, &section);
+        // PetscSectionSetFieldName(section, 0, "u");
+        // // DMSetLocalSection(dmplex.raw_type(), section);
+        // DMSetGlobalSection(dmplex.raw_type(), section);
+
+        // dmplex.create_section()
+
         PetscVector v;
         dmplex.create_vector(v);
         v.set(1.0);
 
-        dmplex.write("prova.vtu");//, v);
+        utopia::rename("X", v);
+
+        // dmplex.write("prova.vtu");//, v);
+        dmplex.write("prova.vtu", v);
+
+        // PetscSectionDestroy(&section);
     }
 
     UTOPIA_REGISTER_APP(dmplex_test);
