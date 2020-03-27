@@ -72,7 +72,7 @@ include(CodeCoverage)
 #################################################################################
 #################################################################################
 set(UTOPIA_DEV_FLAGS
-    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type"
+    "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" #-Werror=uninitialized
 
 )
 if(CMAKE_CXX_COMPILER MATCHES "nvcc")
