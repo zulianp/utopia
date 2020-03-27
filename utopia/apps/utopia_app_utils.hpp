@@ -31,7 +31,7 @@ namespace utopia {
         bool direct_solution = false;
         in.get("direct_solution", direct_solution);
 
-        bool coarse_direct_solver = true;
+        bool coarse_direct_solver = false;
         in.get("coarse_direct_solver", coarse_direct_solver);
 
         bool use_petsc_mg = false;

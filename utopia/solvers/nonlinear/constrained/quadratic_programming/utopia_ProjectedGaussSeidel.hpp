@@ -66,7 +66,7 @@ namespace utopia {
             if(this->has_bound()) {
                 while(it++ < n_sweeps) {
                     step(A, b, x);
-                    std::cout<<"--------------------------------------------- sweep --------------------------------- \n"; 
+                    std::cout<<"--------------------------------------------- sweep --------------------------------- \n";
                 }
             } else {
                 while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
@@ -100,7 +100,8 @@ namespace utopia {
                 }
 
                 if(iteration % check_s_norm_each == 0) {
-                    const Scalar diff = norm2(x_old - x);
+                    c = x - x_old;
+                    const Scalar diff = norm2(c);
 
                     if(this->verbose()) {
                         PrintInfo::print_iter_status(iteration, {diff});
