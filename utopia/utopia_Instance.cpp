@@ -180,6 +180,10 @@ namespace utopia {
 
                 i++;
             }
+
+            if(str == "--full_trace") {
+                Tracer::instance().full_trace(true);
+            }
 #endif //UTOPIA_TRACE_ENABLED
 
         }

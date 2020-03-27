@@ -47,7 +47,9 @@ option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
 
-option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
+option(ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
+option(ENABLE_TRACE_EXPR "enables utopia tracing facilities for every expression" OFF)
+
 option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
@@ -111,11 +113,18 @@ if(ENABLE_GPERFTOOLS)
     endif()
 endif()
 
+if(ENABLE_TRACE_EXPR)
+    set(ENABLE_TRACE ON)
+    set(UTOPIA_TRACE_EXPR_ENABLED ON)
+    set(UTOPIA_TRACE_ENABLED ON)
+endif()
 
 
 if(ENABLE_TRACE)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
+
+
 
 if(ENABLE_PASSO_EXTENSIONS)
     set(WITH_PASSO_EXTENSIONS TRUE)

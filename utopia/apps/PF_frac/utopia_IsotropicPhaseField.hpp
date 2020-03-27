@@ -12,6 +12,7 @@
 #include "utopia_DeviceTensorProduct.hpp"
 #include "utopia_DeviceTensorContraction.hpp"
 #include "utopia_StrainView.hpp"
+#include "utopia_Tracer.hpp"
 
 #define UNROLL_FACTOR 4
 #define U_MIN(a,b) ((a) < (b)? (a) : (b))
@@ -159,6 +160,8 @@ namespace utopia {
 
         bool value(const Vector &x_const, Scalar &val) const override
         {
+            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::value");
+
             USpace U;
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
@@ -261,11 +264,15 @@ namespace utopia {
             val = x.comm().sum(val);
 
             assert(val == val);
+
+            UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::value");
             return true;
         }
 
         bool gradient(const Vector &x_const, Vector &g) const override
         {
+            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::gradient");
+
             if(empty(g)) {
                 space_.create_vector(g);
             } else {
@@ -451,11 +458,16 @@ namespace utopia {
 
             // static int iter = 0;
             // write("g" + std::to_string(iter++) + ".m", g);
+
+            UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::gradient");
             return true;
         }
 
         bool hessian(const Vector &x_const, Matrix &H) const override
         {
+
+            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::hessian");
+
             if(empty(H)) {
                 if(use_dense_hessian_) {
                     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
@@ -687,6 +699,8 @@ namespace utopia {
 
             // static int iter = 0;
             // write("H" + std::to_string(iter++) + ".m", H);
+
+            UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::hessian");
             return true;
         }
 
