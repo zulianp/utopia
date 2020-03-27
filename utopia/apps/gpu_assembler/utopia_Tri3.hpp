@@ -224,12 +224,7 @@ namespace utopia {
 
     private:
         Point translation_;
-
-        //FIXME
-        #pragma GCC diagnostic warning "-Wuninitialized"
         Jacobian jacobian_;
-
-        #pragma GCC diagnostic warning "-Wuninitialized"
         JacobianInverse jacobian_inverse_;
         Scalar measure_;
     };

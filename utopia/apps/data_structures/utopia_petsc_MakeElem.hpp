@@ -2,15 +2,18 @@
 #define UTOPIA_PETSC_MAKE_ELEM_HPP
 
 #include "utopia_ElemTraits.hpp"
+#include "utopia_Tri3.hpp"
 #include <cassert>
 
 namespace utopia {
 
     template<class Space, class Elem, bool IsSimplex = is_simplex<Elem>::value>
-    class MakeElem {};
+    class MakeElem
+    // {};
 
-    template<class Space, class Elem>
-    class MakeElem<Space, Elem, false> {
+    // template<class Space, class Elem>
+    // class MakeElem<Space, Elem, false>
+    {
     public:
         using SizeType = typename Space::SizeType;
 
@@ -28,11 +31,12 @@ namespace utopia {
 
     };
 
-    template<class Space, class Elem>
-    class MakeElem<Space, Elem, true> {
+    template<class Space, typename Scalar, int PhysicalDim, int NVar>
+    class MakeElem<Space, MultiVariateElem<Tri3<Scalar, PhysicalDim>, NVar>, true> {
     public:
         using SizeType = typename Space::SizeType;
         using Point    = typename Space::Point;
+        using Elem     = utopia::MultiVariateElem<Tri3<Scalar, PhysicalDim>, NVar>;
 
         inline static void apply(const Space &space, const SizeType &idx, Elem &e)
         {
