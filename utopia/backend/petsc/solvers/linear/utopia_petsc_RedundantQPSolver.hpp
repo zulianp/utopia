@@ -88,22 +88,23 @@ namespace utopia {
             
                 // construct scatters 
                 PetscInt       mstart, mend, mlocal, M, mloc_sub;
-                Vector         xsub,ysub;            /* vectors of a subcommunicator to hold parallel vectors of PetscObjectComm((PetscObject)pc) */
-                Vec            xdup,ydup;            /* parallel vector that congregates xsub or ysub facilitating vector scattering */
+                Vector         sol_sub, rhs_sub;            /* vectors of a subcommunicator to hold parallel vectors of PetscObjectComm((PetscObject)pc) */
+                Vec            xdup,ydup;            /* parallel vector that congregates sol_sub or rhs_sub facilitating vector scattering */
                 VecScatter     scatterin,scatterout; /* scatter used to move all values to each processor group (subcommunicator) */                
 
 
-                /* get working vectors xsub and ysub */
-                MatCreateVecs(raw_type(pmats),  &raw_type(xsub), & raw_type(ysub));
+                /* get working vectors sol_sub and rhs_sub */
+                MatCreateVecs(raw_type(pmats),  &raw_type(sol_sub), & raw_type(rhs_sub));
 
 
                 /* create working vectors xdup and ydup.
                  xdup concatenates all xsub's contigously to form a mpi vector over dupcomm  (see PetscSubcommCreate_interlaced())
-                 ydup concatenates all ysub and has empty local arrays because ysub's arrays will be place into it.
+                 ydup concatenates all rhs_sub and has empty local arrays because rhs_sub's arrays will be place into it.
                  Note: we use communicator dupcomm, not PetscObjectComm((PetscObject)pc)! */
                 MatGetLocalSize(raw_type(pmats), &mloc_sub, NULL);
-                VecCreateMPI(PetscSubcommContiguousParent(psubcomm), mloc_sub,PETSC_DECIDE, &xdup);
-                VecCreateMPIWithArray(PetscSubcommContiguousParent(psubcomm), 1, mloc_sub, PETSC_DECIDE, NULL, &ydup);                
+                VecCreateMPI(PetscSubcommContiguousParent(psubcomm), mloc_sub, PETSC_DECIDE, &xdup);
+                VecCreateMPI(PetscSubcommContiguousParent(psubcomm), mloc_sub, PETSC_DECIDE, &ydup);
+                // VecCreateMPIWithArray(PetscSubcommContiguousParent(psubcomm), 1, mloc_sub, PETSC_DECIDE, NULL, &ydup);                
 
 
 
@@ -146,19 +147,28 @@ namespace utopia {
                 VecDestroy(&x);
             }
 
-            // scatter solution 
-            PetscScalar    *array_x;
+            // scatter solution, rhs 
+            PetscScalar    *array_sol, *array_rhs;
 
             /* scatter x to xdup */
             VecScatterBegin(scatterin, raw_type(sol), xdup, INSERT_VALUES, SCATTER_FORWARD);
             VecScatterEnd(scatterin, raw_type(sol), xdup, INSERT_VALUES, SCATTER_FORWARD);
 
             /* place xdup's local array into xsub */
-            VecGetArray(xdup, &array_x);
-            VecPlaceArray(raw_type(xsub),  (const PetscScalar*)array_x);
+            VecGetArray(xdup, &array_sol);
+            VecPlaceArray(raw_type(sol_sub),  (const PetscScalar*)array_sol);
+            // disp(sol_sub); 
 
 
-            disp(xsub); 
+            /* scatter x to xdup */
+            VecScatterBegin(scatterin, raw_type(rhs), ydup, INSERT_VALUES, SCATTER_FORWARD);
+            VecScatterEnd(scatterin, raw_type(rhs), ydup, INSERT_VALUES, SCATTER_FORWARD);
+
+
+            /* place xdup's local array into xsub */
+            VecGetArray(ydup, &array_rhs);
+            VecPlaceArray(raw_type(rhs_sub),  (const PetscScalar*)array_rhs);
+            // disp(rhs_sub);             
 
 
 
