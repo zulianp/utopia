@@ -261,449 +261,449 @@ namespace utopia {
        }
     };
 
-    template<class Elem_, int NComponents_>
-    class FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_> : public Configurable {
-    public:
-        static const int Dim = Elem_::Dim;
-        static const std::size_t UDim = Dim;
-        static const int NComponents = NComponents_;
-        using Mesh = utopia::PetscDM<Dim>;
-        using NodeIndex = typename Mesh::NodeIndex;
-
-        using Elem = MultiVariateElem<Elem_, NComponents>;
-        using Shape = Elem_;
-        using MemType = typename Elem::MemType;
-        using Scalar = typename Mesh::Scalar;
-        using SizeType = typename Mesh::SizeType;
-        using Point = typename Mesh::Point;
-
-        using ViewDevice = FunctionSpace;
-        using Device = typename Mesh::Device;
-        // using DofIndex = typename Mesh::NodeIndex;
-        using Vector = utopia::PetscVector;
-        using Matrix = utopia::PetscMatrix;
-        using Comm = utopia::PetscCommunicator;
-        using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
-        using DofMapping      = utopia::DofMapping<PetscDM<Dim>, Elem_, NComponents>;
-        static const int NDofs = DofMapping::NDofs;
-
-        template<int NSubVars>
-        using Subspace = FunctionSpace<PetscDM<Elem_::Dim>, NSubVars, Elem_>;
-
-        void read(Input &in) override;
-        bool write(const Path &path, const PetscVector &x) const;
-
-        FunctionSpace(const std::shared_ptr<Mesh> &mesh, const SizeType &subspace_id = 0)
-        : mesh_(mesh), subspace_id_(subspace_id)
-        {}
-
-        FunctionSpace(Mesh &mesh, const SizeType &subspace_id = 0)
-        : mesh_(utopia::make_ref(mesh)), subspace_id_(subspace_id)
-        {}
-
-        ///shallow copy
-        FunctionSpace(const FunctionSpace &other)
-        : mesh_(other.mesh_), dirichlet_bcs_(other.dirichlet_bcs_), subspace_id_(other.subspace_id_)
-        {}
-
-        FunctionSpace()
-        : subspace_id_(0)
-        {}
-
-        inline static constexpr int n_components() { return NComponents; }
-
-        template<class Quadrature>
-        ShapeFunction<FunctionSpace, Quadrature> shape(const Quadrature &q)
-        {
-            return ShapeFunction<FunctionSpace, Quadrature>(*this, q);
-        }
-
-        template<class Quadrature>
-        PhysicalGradient<FunctionSpace, Quadrature> shape_grad(const Quadrature &q)
-        {
-            return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
-        }
-
-        template<class Quadrature>
-        PhysicalPoint<FunctionSpace, Quadrature> points(const Quadrature &q)
-        {
-            return PhysicalPoint<FunctionSpace, Quadrature>(*this, q);
-        }
-
-        template<class Quadrature>
-        ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_shape_device(const Quadrature &q)
-        {
-            return ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
-        }
-
-        template<class Quadrature>
-        PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_points_device(const Quadrature &q)
-        {
-            return PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
-        }
-
-        template<class Quadrature>
-        Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_differential_device(const Quadrature &q)
-        {
-            return Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
-        }
-
-        template<class Quadrature>
-        Differential<FunctionSpace, Quadrature> differential(const Quadrature &q)
-        {
-            return Differential<FunctionSpace, Quadrature>(*this, q);
-        }
-
-        template<class... Args>
-        void build(
-            const PetscCommunicator     &comm,
-            const std::array<SizeType, UDim> &dims,
-            const std::array<Scalar, UDim>   &box_min,
-            const std::array<Scalar, UDim>   &box_max,
-            const SizeType &subspace_id = 0)
-        {
-            mesh_ = std::make_shared<Mesh>(comm, dims, box_min, box_max, NComponents);
-            subspace_id_ = subspace_id;
-        }
-
-        FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> subspace(const SizeType &i) const
-        {
-            FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> space(mesh_, subspace_id_ + i);
-            // space.set_dirichlet_conditions(dirichlet_bcs_);
-            assert(i < NComponents);
-            assert(i + subspace_id_ < mesh_->n_components());
-            return space;
-        }
-
-
-        template<int NVars>
-        void subspace(const SizeType &i, FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> &space) const
-        {
-            space.set_mesh(mesh_);
-            space.set_subspace_id(subspace_id_ + i);
-        }
-
-        template<int NVars>
-        FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> vector_subspace(const SizeType &i) const
-        {
-            FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> space(mesh_, subspace_id_ + i);
-            // space.set_dirichlet_conditions(dirichlet_bcs_);
-            assert(i + NVars < NComponents);
-            assert(subspace_id_ + i < mesh_->n_components());
-            return space;
-        }
-
-        template<class Fun>
-        void each_element(Fun fun)
-        {
-            mesh_->each_element(fun);
-        }
-
-        void elem(const SizeType &idx, Elem &e) const;
-
-        bool on_boundary(const SizeType &elem_idx) const;
-
-
-        // bool is_boundary_dof(const SizeType &idx) const
-        // {
-        //     return mesh_->is_boundary(idx);
-        // }
-
-        // SideSet::BoundaryIdType boundary_id(const SizeType &idx) const
-        // {
-        //     return mesh_->boundary_id(idx);
-        // }
-
-        inline SizeType component(const SizeType &idx) const
-        {
-            return mesh_->n_components() == 1? 0 : idx % mesh_->n_components();
-        }
-
-        const ViewDevice &view_device() const
-        {
-            return *this;
-        }
-
-        Range element_range() const
-        {
-            return mesh_->element_range();
-        }
-
-        Range dof_range() const
-        {
-            // Range node_range  = mesh_->local_node_range();
-            // const SizeType nc = mesh_->n_components();
-
-            // SizeType begin = node_range.begin() * nc;
-            // SizeType end   = node_range.end()   * nc;
-            // return Range(begin, end);
-
-            return  mesh_->local_node_range();
-        }
-
-
-        void create_matrix(PetscMatrix &mat) const
-        {
-            mesh_->create_matrix(mat);
-        }
-
-        void create_vector(PetscVector &vec) const
-        {
-            mesh_->create_vector(vec);
-        }
-
-        static DeviceView<PetscMatrix, 2> assembly_view_device(PetscMatrix &mat)
-        {
-            return DeviceView<PetscMatrix, 2>(mat, utopia::GLOBAL_ADD);
-        }
-
-        static DeviceView<PetscVector, 1> assembly_view_device(PetscVector &vec)
-        {
-            return DeviceView<PetscVector, 1>(vec, utopia::GLOBAL_ADD);
-        }
-
-        static DeviceView<const PetscVector, 1> assembly_view_device(const PetscVector &vec)
-        {
-            return DeviceView<const PetscVector, 1>(vec);
-        }
-
-        template<class DofIndex>
-        void dofs(const SizeType &idx, DofIndex &dofs) const
-        {
-            DofMapping::dofs(*mesh_, subspace_id_, idx, dofs);
-        }
-
-        template<class DofIndex>
-        void dofs_local(const SizeType &idx, DofIndex &dofs) const
-        {
-           DofMapping::dofs_local(*mesh_, subspace_id_, idx, dofs);
-        }
-
-        template<class ElementMatrix, class MatView>
-        void add_matrix(
-            const Elem &e,
-            const ElementMatrix &el_mat,
-            MatView &mat) const
-        {
-            DofMapping::add_matrix(*mesh_, subspace_id_, e, el_mat, mat);
-        }
-
-        template<class ElementVector, class VecView>
-        void add_vector(
-            const Elem &e,
-            const ElementVector &el_vec,
-            VecView &vec) const
-        {
-            DofMapping::add_vector(*mesh_, subspace_id_, e, el_vec, vec);
-        }
-
-        template<class ElementVector, class VecView>
-        void set_vector(
-            const Elem &e,
-            const ElementVector &el_vec,
-            VecView &vec) const
-        {
-            DofMapping::set_vector(*mesh_, subspace_id_, e, el_vec, vec);
-        }
-
-        template<class VectorView, class Values>
-        void local_coefficients(
-            const Elem &e,
-            const VectorView &vec,
-            Values &values) const
-        {
-            DofMapping::local_coefficients(*mesh_, subspace_id_, e, vec, values);
-        }
-
-        template<class VectorView, class Values>
-        void local_coefficients(
-            const Elem &e,
-            const VectorView &vec,
-            const SizeType &var,
-            Values &values) const
-        {
-            DofMapping::local_coefficients_for_var(*mesh_, e, vec, subspace_id_ +var, values);
-        }
-
-        const Mesh &mesh() const
-        {
-            return *mesh_;
-        }
-
-        Mesh &mesh()
-        {
-            return *mesh_;
-        }
-
-        PetscCommunicator &comm()
-        {
-            return mesh_->comm();
-        }
-
-        const PetscCommunicator &comm() const
-        {
-            return mesh_->comm();
-        }
-
-        inline SizeType n_dofs() const
-        {
-            return mesh_->n_nodes() * NComponents;
-        }
-
-        inline SizeType n_local_dofs() const
-        {
-            return mesh_->n_local_nodes() * NComponents;
-        }
-
-        void set_mesh(const std::shared_ptr<Mesh> &mesh)
-        {
-            mesh_ = mesh;
-        }
-
-        void set_subspace_id(const SizeType &i)
-        {
-            subspace_id_ = i;
-        }
-
-        void set_dirichlet_conditions(const std::vector<std::shared_ptr<DirichletBC>> &conds)
-        {
-            dirichlet_bcs_ = conds;
-        }
-
-        void reset_bc()
-        {
-            dirichlet_bcs_.clear();
-        }
-
-        template<class... Args>
-        void emplace_dirichlet_condition(Args && ...args)
-        {
-            dirichlet_bcs_.push_back(utopia::make_unique<DirichletBC>(*this, std::forward<Args>(args)...));
-        }
-
-        void apply_constraints(PetscMatrix &mat, PetscVector &vec) const
-        {
-            for(const auto &bc : dirichlet_bcs_) {
-                bc->apply(mat, vec);
-            }
-        }
-
-        void apply_constraints(PetscMatrix &mat) const
-        {
-            for(const auto &bc : dirichlet_bcs_) {
-                bc->apply(mat);
-            }
-        }
-
-        void apply_constraints(PetscVector &vec) const
-        {
-            for(const auto &bc : dirichlet_bcs_) {
-                bc->apply(vec);
-            }
-        }
-
-        void copy_at_constrained_dofs(const PetscVector &in, PetscVector &vec) const
-        {
-            for(const auto &bc : dirichlet_bcs_) {
-                bc->copy(in, vec);
-            }
-        }
-
-        void apply_zero_constraints(PetscVector &vec) const
-        {
-            for(const auto &bc : dirichlet_bcs_) {
-                bc->apply_zero(vec);
-            }
-        }
-
-        void build_constraints_markers(PetscVector &vec) const
-        {
-            for(const auto &bc : dirichlet_bcs_) {
-                bc->apply_val(vec, 1.0);
-            }
-        }
-
-
-        inline bool empty() const
-        {
-            return !static_cast<bool>(mesh_);
-        }
-
-
-        template<class F>
-        void sample(Vector &v, F f, const int c = 0)
-        {
-            auto r = v.range();
-            // auto n = r.extent() * NComponents;
-            assert(!v.empty());
-
-            // Write<Vector> w(v, utopia::AUTO);
-
-            // Point p;
-            // for(auto i = r.begin(); i < r.end(); ++i) {
-            //     this->mesh().node(i/NComponents, p);
-            //     v.set(i, f(p));
-            // }
-
-            //FIXME
-            {
-                auto space_view = view_device();
-                auto v_view = utopia::view_device(v);
-
-                Device::parallel_for(
-                    this->element_range(),
-                    UTOPIA_LAMBDA(const SizeType &i)
-                {
-                    Elem e;
-                    space_view.elem(i, e);
-
-                    NodeIndex nodes;
-                    space_view.mesh().nodes(i, nodes);
-                    const SizeType n_nodes = nodes.size();
-
-                    Point p;
-                    for(SizeType i = 0; i < n_nodes; ++i) {
-                        auto idx = nodes[i] * mesh_->n_components() + subspace_id_;
-                        e.node(i, p);
-
-                        if(r.inside(idx)) {
-                            v_view.set(idx, f(p));
-                        }
-                    }
-                });
-            }
-        }
-
-        std::unique_ptr<FunctionSpace> uniform_refine() const
-        {
-            auto fine_space = utopia::make_unique<FunctionSpace>(
-                mesh_->uniform_refine(),
-                subspace_id_
-            );
-
-            const std::size_t n = dirichlet_bcs_.size();
-            fine_space->dirichlet_bcs_.resize(n);
-
-            for(std::size_t i = 0; i < n; ++i) {
-                fine_space->dirichlet_bcs_[i] = std::make_shared<DirichletBC>(*fine_space);
-                fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
-            }
-
-            return std::move(fine_space);
-        }
-
-        inline void dmda_set_interpolation_type_Q0() { mesh_->dmda_set_interpolation_type_Q0(); }
-        inline void dmda_set_interpolation_type_Q1() { mesh_->dmda_set_interpolation_type_Q1(); }
-        inline void create_interpolation(const FunctionSpace &target, PetscMatrix &I) const { mesh_->create_interpolation(target.mesh(), I); }
-
-    private:
-        std::shared_ptr<Mesh> mesh_;
-        std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
-        SizeType subspace_id_;
-    };
-
-    template<class Elem_, int NComponents_>
-    const int FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_>::NComponents;
+    // template<class Elem_, int NComponents_>
+    // class FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_> : public Configurable {
+    // public:
+    //     static const int Dim = Elem_::Dim;
+    //     static const std::size_t UDim = Dim;
+    //     static const int NComponents = NComponents_;
+    //     using Mesh = utopia::PetscDM<Dim>;
+    //     using NodeIndex = typename Mesh::NodeIndex;
+
+    //     using Elem = MultiVariateElem<Elem_, NComponents>;
+    //     using Shape = Elem_;
+    //     using MemType = typename Elem::MemType;
+    //     using Scalar = typename Mesh::Scalar;
+    //     using SizeType = typename Mesh::SizeType;
+    //     using Point = typename Mesh::Point;
+
+    //     using ViewDevice = FunctionSpace;
+    //     using Device = typename Mesh::Device;
+    //     // using DofIndex = typename Mesh::NodeIndex;
+    //     using Vector = utopia::PetscVector;
+    //     using Matrix = utopia::PetscMatrix;
+    //     using Comm = utopia::PetscCommunicator;
+    //     using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
+    //     using DofMapping      = utopia::DofMapping<PetscDM<Dim>, Elem_, NComponents>;
+    //     static const int NDofs = DofMapping::NDofs;
+
+    //     template<int NSubVars>
+    //     using Subspace = FunctionSpace<PetscDM<Elem_::Dim>, NSubVars, Elem_>;
+
+    //     void read(Input &in) override;
+    //     bool write(const Path &path, const PetscVector &x) const;
+
+    //     FunctionSpace(const std::shared_ptr<Mesh> &mesh, const SizeType &subspace_id = 0)
+    //     : mesh_(mesh), subspace_id_(subspace_id)
+    //     {}
+
+    //     FunctionSpace(Mesh &mesh, const SizeType &subspace_id = 0)
+    //     : mesh_(utopia::make_ref(mesh)), subspace_id_(subspace_id)
+    //     {}
+
+    //     ///shallow copy
+    //     FunctionSpace(const FunctionSpace &other)
+    //     : mesh_(other.mesh_), dirichlet_bcs_(other.dirichlet_bcs_), subspace_id_(other.subspace_id_)
+    //     {}
+
+    //     FunctionSpace()
+    //     : subspace_id_(0)
+    //     {}
+
+    //     inline static constexpr int n_components() { return NComponents; }
+
+    //     template<class Quadrature>
+    //     ShapeFunction<FunctionSpace, Quadrature> shape(const Quadrature &q)
+    //     {
+    //         return ShapeFunction<FunctionSpace, Quadrature>(*this, q);
+    //     }
+
+    //     template<class Quadrature>
+    //     PhysicalGradient<FunctionSpace, Quadrature> shape_grad(const Quadrature &q)
+    //     {
+    //         return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
+    //     }
+
+    //     template<class Quadrature>
+    //     PhysicalPoint<FunctionSpace, Quadrature> points(const Quadrature &q)
+    //     {
+    //         return PhysicalPoint<FunctionSpace, Quadrature>(*this, q);
+    //     }
+
+    //     template<class Quadrature>
+    //     ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_shape_device(const Quadrature &q)
+    //     {
+    //         return ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+    //     }
+
+    //     template<class Quadrature>
+    //     PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_points_device(const Quadrature &q)
+    //     {
+    //         return PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+    //     }
+
+    //     template<class Quadrature>
+    //     Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_differential_device(const Quadrature &q)
+    //     {
+    //         return Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+    //     }
+
+    //     template<class Quadrature>
+    //     Differential<FunctionSpace, Quadrature> differential(const Quadrature &q)
+    //     {
+    //         return Differential<FunctionSpace, Quadrature>(*this, q);
+    //     }
+
+    //     template<class... Args>
+    //     void build(
+    //         const PetscCommunicator     &comm,
+    //         const std::array<SizeType, UDim> &dims,
+    //         const std::array<Scalar, UDim>   &box_min,
+    //         const std::array<Scalar, UDim>   &box_max,
+    //         const SizeType &subspace_id = 0)
+    //     {
+    //         mesh_ = std::make_shared<Mesh>(comm, dims, box_min, box_max, NComponents);
+    //         subspace_id_ = subspace_id;
+    //     }
+
+    //     FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> subspace(const SizeType &i) const
+    //     {
+    //         FunctionSpace<PetscDM<Elem_::Dim>, 1, Elem_> space(mesh_, subspace_id_ + i);
+    //         // space.set_dirichlet_conditions(dirichlet_bcs_);
+    //         assert(i < NComponents);
+    //         assert(i + subspace_id_ < mesh_->n_components());
+    //         return space;
+    //     }
+
+
+    //     template<int NVars>
+    //     void subspace(const SizeType &i, FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> &space) const
+    //     {
+    //         space.set_mesh(mesh_);
+    //         space.set_subspace_id(subspace_id_ + i);
+    //     }
+
+    //     template<int NVars>
+    //     FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> vector_subspace(const SizeType &i) const
+    //     {
+    //         FunctionSpace<PetscDM<Elem_::Dim>, NVars, Elem_> space(mesh_, subspace_id_ + i);
+    //         // space.set_dirichlet_conditions(dirichlet_bcs_);
+    //         assert(i + NVars < NComponents);
+    //         assert(subspace_id_ + i < mesh_->n_components());
+    //         return space;
+    //     }
+
+    //     template<class Fun>
+    //     void each_element(Fun fun)
+    //     {
+    //         mesh_->each_element(fun);
+    //     }
+
+    //     void elem(const SizeType &idx, Elem &e) const;
+
+    //     bool on_boundary(const SizeType &elem_idx) const;
+
+
+    //     // bool is_boundary_dof(const SizeType &idx) const
+    //     // {
+    //     //     return mesh_->is_boundary(idx);
+    //     // }
+
+    //     // SideSet::BoundaryIdType boundary_id(const SizeType &idx) const
+    //     // {
+    //     //     return mesh_->boundary_id(idx);
+    //     // }
+
+    //     inline SizeType component(const SizeType &idx) const
+    //     {
+    //         return mesh_->n_components() == 1? 0 : idx % mesh_->n_components();
+    //     }
+
+    //     const ViewDevice &view_device() const
+    //     {
+    //         return *this;
+    //     }
+
+    //     Range element_range() const
+    //     {
+    //         return mesh_->element_range();
+    //     }
+
+    //     Range dof_range() const
+    //     {
+    //         // Range node_range  = mesh_->local_node_range();
+    //         // const SizeType nc = mesh_->n_components();
+
+    //         // SizeType begin = node_range.begin() * nc;
+    //         // SizeType end   = node_range.end()   * nc;
+    //         // return Range(begin, end);
+
+    //         return  mesh_->local_node_range();
+    //     }
+
+
+    //     void create_matrix(PetscMatrix &mat) const
+    //     {
+    //         mesh_->create_matrix(mat);
+    //     }
+
+    //     void create_vector(PetscVector &vec) const
+    //     {
+    //         mesh_->create_vector(vec);
+    //     }
+
+    //     static DeviceView<PetscMatrix, 2> assembly_view_device(PetscMatrix &mat)
+    //     {
+    //         return DeviceView<PetscMatrix, 2>(mat, utopia::GLOBAL_ADD);
+    //     }
+
+    //     static DeviceView<PetscVector, 1> assembly_view_device(PetscVector &vec)
+    //     {
+    //         return DeviceView<PetscVector, 1>(vec, utopia::GLOBAL_ADD);
+    //     }
+
+    //     static DeviceView<const PetscVector, 1> assembly_view_device(const PetscVector &vec)
+    //     {
+    //         return DeviceView<const PetscVector, 1>(vec);
+    //     }
+
+    //     template<class DofIndex>
+    //     void dofs(const SizeType &idx, DofIndex &dofs) const
+    //     {
+    //         DofMapping::dofs(*mesh_, subspace_id_, idx, dofs);
+    //     }
+
+    //     template<class DofIndex>
+    //     void dofs_local(const SizeType &idx, DofIndex &dofs) const
+    //     {
+    //        DofMapping::dofs_local(*mesh_, subspace_id_, idx, dofs);
+    //     }
+
+    //     template<class ElementMatrix, class MatView>
+    //     void add_matrix(
+    //         const Elem &e,
+    //         const ElementMatrix &el_mat,
+    //         MatView &mat) const
+    //     {
+    //         DofMapping::add_matrix(*mesh_, subspace_id_, e, el_mat, mat);
+    //     }
+
+    //     template<class ElementVector, class VecView>
+    //     void add_vector(
+    //         const Elem &e,
+    //         const ElementVector &el_vec,
+    //         VecView &vec) const
+    //     {
+    //         DofMapping::add_vector(*mesh_, subspace_id_, e, el_vec, vec);
+    //     }
+
+    //     template<class ElementVector, class VecView>
+    //     void set_vector(
+    //         const Elem &e,
+    //         const ElementVector &el_vec,
+    //         VecView &vec) const
+    //     {
+    //         DofMapping::set_vector(*mesh_, subspace_id_, e, el_vec, vec);
+    //     }
+
+    //     template<class VectorView, class Values>
+    //     void local_coefficients(
+    //         const Elem &e,
+    //         const VectorView &vec,
+    //         Values &values) const
+    //     {
+    //         DofMapping::local_coefficients(*mesh_, subspace_id_, e, vec, values);
+    //     }
+
+    //     template<class VectorView, class Values>
+    //     void local_coefficients(
+    //         const Elem &e,
+    //         const VectorView &vec,
+    //         const SizeType &var,
+    //         Values &values) const
+    //     {
+    //         DofMapping::local_coefficients_for_var(*mesh_, e, vec, subspace_id_ +var, values);
+    //     }
+
+    //     const Mesh &mesh() const
+    //     {
+    //         return *mesh_;
+    //     }
+
+    //     Mesh &mesh()
+    //     {
+    //         return *mesh_;
+    //     }
+
+    //     PetscCommunicator &comm()
+    //     {
+    //         return mesh_->comm();
+    //     }
+
+    //     const PetscCommunicator &comm() const
+    //     {
+    //         return mesh_->comm();
+    //     }
+
+    //     inline SizeType n_dofs() const
+    //     {
+    //         return mesh_->n_nodes() * NComponents;
+    //     }
+
+    //     inline SizeType n_local_dofs() const
+    //     {
+    //         return mesh_->n_local_nodes() * NComponents;
+    //     }
+
+    //     void set_mesh(const std::shared_ptr<Mesh> &mesh)
+    //     {
+    //         mesh_ = mesh;
+    //     }
+
+    //     void set_subspace_id(const SizeType &i)
+    //     {
+    //         subspace_id_ = i;
+    //     }
+
+    //     void set_dirichlet_conditions(const std::vector<std::shared_ptr<DirichletBC>> &conds)
+    //     {
+    //         dirichlet_bcs_ = conds;
+    //     }
+
+    //     void reset_bc()
+    //     {
+    //         dirichlet_bcs_.clear();
+    //     }
+
+    //     template<class... Args>
+    //     void emplace_dirichlet_condition(Args && ...args)
+    //     {
+    //         dirichlet_bcs_.push_back(utopia::make_unique<DirichletBC>(*this, std::forward<Args>(args)...));
+    //     }
+
+    //     void apply_constraints(PetscMatrix &mat, PetscVector &vec) const
+    //     {
+    //         for(const auto &bc : dirichlet_bcs_) {
+    //             bc->apply(mat, vec);
+    //         }
+    //     }
+
+    //     void apply_constraints(PetscMatrix &mat) const
+    //     {
+    //         for(const auto &bc : dirichlet_bcs_) {
+    //             bc->apply(mat);
+    //         }
+    //     }
+
+    //     void apply_constraints(PetscVector &vec) const
+    //     {
+    //         for(const auto &bc : dirichlet_bcs_) {
+    //             bc->apply(vec);
+    //         }
+    //     }
+
+    //     void copy_at_constrained_dofs(const PetscVector &in, PetscVector &vec) const
+    //     {
+    //         for(const auto &bc : dirichlet_bcs_) {
+    //             bc->copy(in, vec);
+    //         }
+    //     }
+
+    //     void apply_zero_constraints(PetscVector &vec) const
+    //     {
+    //         for(const auto &bc : dirichlet_bcs_) {
+    //             bc->apply_zero(vec);
+    //         }
+    //     }
+
+    //     void build_constraints_markers(PetscVector &vec) const
+    //     {
+    //         for(const auto &bc : dirichlet_bcs_) {
+    //             bc->apply_val(vec, 1.0);
+    //         }
+    //     }
+
+
+    //     inline bool empty() const
+    //     {
+    //         return !static_cast<bool>(mesh_);
+    //     }
+
+
+    //     template<class F>
+    //     void sample(Vector &v, F f, const int c = 0)
+    //     {
+    //         auto r = v.range();
+    //         // auto n = r.extent() * NComponents;
+    //         assert(!v.empty());
+
+    //         // Write<Vector> w(v, utopia::AUTO);
+
+    //         // Point p;
+    //         // for(auto i = r.begin(); i < r.end(); ++i) {
+    //         //     this->mesh().node(i/NComponents, p);
+    //         //     v.set(i, f(p));
+    //         // }
+
+    //         //FIXME
+    //         {
+    //             auto space_view = view_device();
+    //             auto v_view = utopia::view_device(v);
+
+    //             Device::parallel_for(
+    //                 this->element_range(),
+    //                 UTOPIA_LAMBDA(const SizeType &i)
+    //             {
+    //                 Elem e;
+    //                 space_view.elem(i, e);
+
+    //                 NodeIndex nodes;
+    //                 space_view.mesh().nodes(i, nodes);
+    //                 const SizeType n_nodes = nodes.size();
+
+    //                 Point p;
+    //                 for(SizeType i = 0; i < n_nodes; ++i) {
+    //                     auto idx = nodes[i] * mesh_->n_components() + subspace_id_;
+    //                     e.node(i, p);
+
+    //                     if(r.inside(idx)) {
+    //                         v_view.set(idx, f(p));
+    //                     }
+    //                 }
+    //             });
+    //         }
+    //     }
+
+    //     std::unique_ptr<FunctionSpace> uniform_refine() const
+    //     {
+    //         auto fine_space = utopia::make_unique<FunctionSpace>(
+    //             mesh_->uniform_refine(),
+    //             subspace_id_
+    //         );
+
+    //         const std::size_t n = dirichlet_bcs_.size();
+    //         fine_space->dirichlet_bcs_.resize(n);
+
+    //         for(std::size_t i = 0; i < n; ++i) {
+    //             fine_space->dirichlet_bcs_[i] = std::make_shared<DirichletBC>(*fine_space);
+    //             fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
+    //         }
+
+    //         return std::move(fine_space);
+    //     }
+
+    //     inline void dmda_set_interpolation_type_Q0() { mesh_->dmda_set_interpolation_type_Q0(); }
+    //     inline void dmda_set_interpolation_type_Q1() { mesh_->dmda_set_interpolation_type_Q1(); }
+    //     inline void create_interpolation(const FunctionSpace &target, PetscMatrix &I) const { mesh_->create_interpolation(target.mesh(), I); }
+
+    // private:
+    //     std::shared_ptr<Mesh> mesh_;
+    //     std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
+    //     SizeType subspace_id_;
+    // };
+
+    // template<class Elem_, int NComponents_>
+    // const int FunctionSpace<PetscDM<Elem_::Dim>, NComponents_, Elem_>::NComponents;
 }
 
 #endif //UTOPIA_PETSC_DMA_FUNCTIONSPACE_OLD_HPP

@@ -287,7 +287,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        space.describe();
+        // space.describe();
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
 
@@ -311,6 +311,12 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
+
+        space.mesh().set_field_names({
+            "disp_x",
+            "disp_y",
+            "disp_z",
+        });
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
 

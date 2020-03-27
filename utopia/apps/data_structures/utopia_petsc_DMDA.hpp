@@ -28,6 +28,7 @@ namespace utopia {
         using SideSets  = utopia::SideSets<Super::StaticDim>;
 
         using Device    = utopia::Device<PETSC>;
+        using Comm      = utopia::PetscCommunicator;
         // using ViewDevice    = PetscDMDA;
 
         class Elements {
@@ -113,6 +114,20 @@ namespace utopia {
             nodes = elements_->nodes_local(idx);
         }
 
+        bool on_boundary(const SizeType &elem_idx) const
+        {
+            NodeIndex idx;
+            nodes(elem_idx, idx);
+
+            for(auto i : idx) {
+                if(this->is_node_on_boundary(i)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         void init_elements()
         {
             if(!elements_) {
@@ -142,6 +157,25 @@ namespace utopia {
         {
             this->set_n_components(1);
             wrap(dm, delegate_ownership);
+        }
+
+        void set_field_name(const SizeType &nf, const std::string &name)
+        {
+            DMDASetFieldName(raw_type(), nf, name.c_str());
+        }
+
+        void set_field_names(const std::vector<std::string> &names)
+        {
+            const std::size_t n_names = names.size();
+            std::vector<const char *> names_copy(n_names + 1);
+
+            for(std::size_t i = 0; i < n_names; ++i) {
+                names_copy[i] = names[i].c_str();
+            }
+
+            names_copy[n_names] = nullptr;
+
+            DMDASetFieldNames(raw_type(), &names_copy[0]);
         }
 
         void read(Input &in) override

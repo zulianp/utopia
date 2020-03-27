@@ -28,6 +28,9 @@
 #include "utopia_MPRGP.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
+
 #include <random>
 #include <cmath>
 
@@ -290,25 +293,12 @@ namespace utopia {
         MPITimeStatistics stats(world);
         stats.start();
 
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 4;
-        SizeType ny = scale * 4;
-
-        in.get("nx", nx);
-        in.get("ny", ny);
-
         FunctionSpace space;
+        space.read(in);
 
-        space.build(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-            );
-
-        space.mesh().set_field_name(0, "c");
-        space.mesh().set_field_name(1, "disp_x");
-        space.mesh().set_field_name(2, "disp_y");
+        // space.mesh().set_field_name(0, "c");
+        // space.mesh().set_field_name(1, "disp_x");
+        // space.mesh().set_field_name(2, "disp_y");
 
         stats.stop_and_collect("space-creation");
 
@@ -337,28 +327,13 @@ namespace utopia {
         MPITimeStatistics stats(world);
         stats.start();
 
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 4;
-        SizeType ny = scale * 4;
-        SizeType nz = scale * 4;
-
-        in.get("nx", nx);
-        in.get("ny", ny);
-        in.get("nz", nz);
-
         FunctionSpace space;
+        space.read(in);
 
-        space.build(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-            );
-
-        space.mesh().set_field_name(0, "c");
-        space.mesh().set_field_name(1, "disp_x");
-        space.mesh().set_field_name(2, "disp_y");
-        space.mesh().set_field_name(3, "disp_z");
+        // space.mesh().set_field_name(0, "c");
+        // space.mesh().set_field_name(1, "disp_x");
+        // space.mesh().set_field_name(2, "disp_y");
+        // space.mesh().set_field_name(3, "disp_z");
 
         stats.stop_and_collect("space-creation");
 

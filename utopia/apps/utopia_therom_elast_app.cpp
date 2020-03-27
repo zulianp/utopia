@@ -26,6 +26,10 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 
+
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
+
 #include <cmath>
 
 namespace utopia {

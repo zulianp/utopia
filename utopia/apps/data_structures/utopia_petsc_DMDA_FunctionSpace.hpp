@@ -48,6 +48,8 @@ namespace utopia {
         using Subspace = FunctionSpace<Mesh, NSubVars, UniVarElem_>;
 
 
+
+
         //////////////////////////////////////////
 
         inline static constexpr int n_components() { return NComponents; }
@@ -168,6 +170,10 @@ namespace utopia {
             return Differential<FunctionSpace, Quadrature>(*this, q);
         }
 
+        bool on_boundary(const SizeType &elem_idx) const
+        {
+            return mesh_->on_boundary(elem_idx);
+        }
 
         template<class... Args>
         void emplace_dirichlet_condition(Args && ...args)
@@ -458,6 +464,10 @@ namespace utopia {
 
     template<class Point_, class IntArray_, int NComponents_, class UniVarElem_>
     using PetscDMDAFunctionSpace = FunctionSpace< PetscDMDA<Point_, IntArray_>, NComponents_, UniVarElem_>;
+
+
+    template<class Point_, class IntArray_, int NComponents_, class UniVarElem_>
+    const int FunctionSpace< PetscDMDA<Point_, IntArray_>, NComponents_, UniVarElem_>::NComponents;
 
 }
 

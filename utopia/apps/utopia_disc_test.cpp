@@ -15,7 +15,7 @@
 #include "utopia_BratuFE.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
+// #include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_GradInterpolate.hpp"
@@ -24,6 +24,8 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_L2Norm.hpp"
+
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 #include <cmath>
 
