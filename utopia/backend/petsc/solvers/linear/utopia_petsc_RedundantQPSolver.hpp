@@ -59,9 +59,14 @@ namespace utopia {
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
 
+                // TODO:: check if we are in parallel, otherwise just run QP solver 
+
                 // creating sub-comunicators 
                 MPI_Comm            comm,subcomm;
                 PetscSubcomm        psubcomm;
+
+
+                comm = A.comm().get(); 
                 
                 PetscSubcommCreate(A.comm().get(), &psubcomm);
                 PetscSubcommSetNumber(psubcomm, n_solves_);
@@ -75,21 +80,93 @@ namespace utopia {
 
                 // destroy P mat 
                 // construct redundant matrix 
+                // reuse them for RMTR coarse grid 
                 Matrix pmats; 
                 MatCreateRedundantMatrix(raw_type(A), psubcomm->n, subcomm, MAT_INITIAL_MATRIX, &raw_type(pmats));
-                disp(pmats); 
+                // disp(pmats); 
 
-                // MatCreateVecs(red->pmats,&red->xsub,&red->ysub);
+            
+                // construct scatters 
+                PetscInt       mstart, mend, mlocal, M, mloc_sub;
+                Vector         xsub,ysub;            /* vectors of a subcommunicator to hold parallel vectors of PetscObjectComm((PetscObject)pc) */
+                Vec            xdup,ydup;            /* parallel vector that congregates xsub or ysub facilitating vector scattering */
+                VecScatter     scatterin,scatterout; /* scatter used to move all values to each processor group (subcommunicator) */                
+
+
+                /* get working vectors xsub and ysub */
+                MatCreateVecs(raw_type(pmats),  &raw_type(xsub), & raw_type(ysub));
+
+
+                /* create working vectors xdup and ydup.
+                 xdup concatenates all xsub's contigously to form a mpi vector over dupcomm  (see PetscSubcommCreate_interlaced())
+                 ydup concatenates all ysub and has empty local arrays because ysub's arrays will be place into it.
+                 Note: we use communicator dupcomm, not PetscObjectComm((PetscObject)pc)! */
+                MatGetLocalSize(raw_type(pmats), &mloc_sub, NULL);
+                VecCreateMPI(PetscSubcommContiguousParent(psubcomm), mloc_sub,PETSC_DECIDE, &xdup);
+                VecCreateMPIWithArray(PetscSubcommContiguousParent(psubcomm), 1, mloc_sub, PETSC_DECIDE, NULL, &ydup);                
 
 
 
 
 
-                // std::cout<<"----- here ---- \n";
-                exit(0);
+            /* create vecscatters */
+            // if (!scatterin) 
+            { 
+                IS       is1,is2;
+                PetscInt *idx1,*idx2,i,j,k;
+                Vec x; 
 
-                return false; 
+                MatCreateVecs(raw_type(A), &x, 0);
+                VecGetSize(x, &M);
+                VecGetOwnershipRange(x, &mstart, &mend);
+                mlocal = mend - mstart;
+                PetscMalloc2(psubcomm->n*mlocal, &idx1, psubcomm->n*mlocal, &idx2);
+                j    = 0;
+
+                for (k=0; k<psubcomm->n; k++) {
+                  for (i=mstart; i<mend; i++) {
+                    idx1[j]   = i;
+                    idx2[j++] = i + M*k;
+                  }
+                }
+
+                ISCreateGeneral(comm, psubcomm->n*mlocal, idx1, PETSC_COPY_VALUES, &is1);
+                ISCreateGeneral(comm, psubcomm->n*mlocal, idx2, PETSC_COPY_VALUES, &is2);
+                VecScatterCreate(x, is1, xdup, is2, &scatterin);
+                ISDestroy(&is1);
+                ISDestroy(&is2);
+
+                /* Impl below is good for PETSC_SUBCOMM_INTERLACED (no inter-process communication) and PETSC_SUBCOMM_CONTIGUOUS (communication within subcomm) */
+                ISCreateStride(comm, mlocal, mstart+ psubcomm->color*M, 1, &is1);
+                ISCreateStride(comm, mlocal, mstart, 1, &is2);
+                VecScatterCreate(xdup, is1, x, is2, &scatterout);
+                ISDestroy(&is1);
+                ISDestroy(&is2);
+                PetscFree2(idx1, idx2);
+                VecDestroy(&x);
             }
+
+            // scatter solution 
+            PetscScalar    *array_x;
+
+            /* scatter x to xdup */
+            VecScatterBegin(scatterin, raw_type(sol), xdup, INSERT_VALUES, SCATTER_FORWARD);
+            VecScatterEnd(scatterin, raw_type(sol), xdup, INSERT_VALUES, SCATTER_FORWARD);
+
+            /* place xdup's local array into xsub */
+            VecGetArray(xdup, &array_x);
+            VecPlaceArray(raw_type(xsub),  (const PetscScalar*)array_x);
+
+
+            disp(xsub); 
+
+
+
+            std::cout<<"----- here ---- \n";
+            exit(0);
+
+            return false; 
+        }
 
 
 
