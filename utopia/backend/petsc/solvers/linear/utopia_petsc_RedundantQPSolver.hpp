@@ -58,6 +58,10 @@ namespace utopia {
 
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
+                // std::cout<<"Size: "<< size(A) << "  \n"; 
+                // std::cout<<"Size: "<< size(rhs) << "  \n"; 
+                // std::cout<<"Size: "<< size(sol) << "  \n"; 
+
 
                 // TODO:: check if we are in parallel, otherwise just run QP solver 
 
@@ -169,6 +173,37 @@ namespace utopia {
             VecGetArray(ydup, &array_rhs);
             VecPlaceArray(raw_type(rhs_sub),  (const PetscScalar*)array_rhs);
             // disp(rhs_sub);             
+
+
+            // qp_solver_->solve(pmats, rhs_sub, sol_sub); 
+            // std::cout<<"1Size: "<< size(pmats) << "  \n"; 
+            // std::cout<<"1Size: "<< size(rhs_sub) << "  \n"; 
+            // std::cout<<"1Size: "<< size(sol_sub) << "  \n"; 
+
+            // // // // // // // // // // //  lets assume, there will be solve here... // // // // // // // // 
+            Vector bla = 0.0* sol_sub; 
+            bla = pmats * rhs_sub;
+            disp(bla); 
+            // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+            
+            /* place ysub's local array into ydup */
+            VecGetArray(raw_type(sol_sub), &array_sol);
+            VecPlaceArray(xdup, (const PetscScalar*)array_sol);
+
+
+            /* scatter ydup to y */
+            VecScatterBegin(scatterout, xdup, raw_type(sol), INSERT_VALUES, SCATTER_FORWARD);
+            VecScatterEnd(scatterout, xdup, raw_type(sol), INSERT_VALUES, SCATTER_FORWARD);
+
+
+            VecResetArray(xdup);
+            VecRestoreArray(raw_type(sol_sub), &array_sol);
+
+
+
+            disp(sol, "sol"); 
+            // TODO make sure that everything is deleted 
 
 
 
