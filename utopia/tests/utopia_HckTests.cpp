@@ -44,18 +44,21 @@ namespace utopia
 
         void run_petsc()
         {
-            UTOPIA_RUN_TEST(MPGRP_test);
-            UTOPIA_RUN_TEST(Poisson_test);
-            UTOPIA_RUN_TEST(ProjectedGS);
-            UTOPIA_RUN_TEST(QuasiTR_constrained);
-            UTOPIA_RUN_TEST(QuasiTR_unconstrained);
-            UTOPIA_RUN_TEST(RMTR_inf_linear_unconstr);
-            UTOPIA_RUN_TEST(RMTR_l2_linear);
-            UTOPIA_RUN_TEST(RMTR_unconstrained);
-            UTOPIA_RUN_TEST(STCG_test);
-            UTOPIA_RUN_TEST(TR_constrained);
-            UTOPIA_RUN_TEST(TR_unconstrained);
-            UTOPIA_RUN_TEST(newton_test);
+            // UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(Poisson_test);
+            // UTOPIA_RUN_TEST(ProjectedGS);
+            // UTOPIA_RUN_TEST(QuasiTR_constrained);
+            // UTOPIA_RUN_TEST(QuasiTR_unconstrained);
+            // UTOPIA_RUN_TEST(RMTR_inf_linear_unconstr);
+            // UTOPIA_RUN_TEST(RMTR_l2_linear);
+            // UTOPIA_RUN_TEST(RMTR_unconstrained);
+            // UTOPIA_RUN_TEST(STCG_test);
+            // UTOPIA_RUN_TEST(TR_constrained);
+            // UTOPIA_RUN_TEST(TR_unconstrained);
+            // UTOPIA_RUN_TEST(newton_test);
+
+            UTOPIA_RUN_TEST(MPGRP_redundant_test); 
+
         }
 
         void run_trilinos()
@@ -174,7 +177,7 @@ namespace utopia
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             QP_solver->atol(1e-10);
             QP_solver->max_it(100);
-            QP_solver->verbose(verbose_);
+            QP_solver->verbose(true);
 
             QP_solve(QP_solver);
         }
@@ -928,6 +931,41 @@ namespace utopia
 
 
 
+
+        void MPGRP_redundant_test()
+        {
+            auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            QP_solver->atol(1e-10);
+            QP_solver->max_it(10);
+            QP_solver->verbose(true);
+
+
+            // std::cout<<"mpi_world_size(): "<< mpi_world_size() << " \n"; 
+            // std::cout<<"mpi_world_rank(): "<< mpi_world_rank() << " \n"; 
+
+
+            // QP_solve(QP_solver);
+
+            Bratu2D<PetscMatrix, PetscVector> fun(n_);
+            PetscVector x = fun.initial_guess();
+            PetscMatrix H;
+            PetscVector g;
+
+            fun.hessian(x, H);
+            fun.gradient(x, g);
+
+            // Vector lb = local_values(local_size(x_working).get(0), -9e9);
+            // Vector ub = local_values(local_size(x_working).get(0), 9e9);
+            // qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
+            // QP_solver->solve(H, -1.0*g, x);
+
+            auto redundantQP = std::make_shared<utopia::RedundantQPSolver<Matrix, Vector> >(QP_solver);
+            redundantQP->solve(H, -1.0*g, x);
+
+        }
+
+
+
     private:
         SizeType n_;
         SizeType n_levels_;
@@ -944,15 +982,15 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 2;
 
-        auto coarse_dofs = 10;
+        auto coarse_dofs = 4;
         auto verbose     = false;
 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
-        HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+//         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
-#ifdef WITH_TRILINOS
-        HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
-#endif
+// #ifdef WITH_TRILINOS
+//         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
+// #endif
 #endif
 
     }
