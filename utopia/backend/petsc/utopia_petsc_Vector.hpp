@@ -440,6 +440,34 @@ namespace utopia {
         );
       }
 
+      // ------------------------  ------------------------  ------------------------ 
+      // ------------------------ just simple test ------------------------ 
+      // ------------------------  ------------------------  ------------------------ 
+      inline void local_zeros(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls) 
+      {
+        zeros(
+            comm.get(),
+            type_override(),
+            ls,
+            gs
+        );
+      }
+
+      inline void local_values(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls, const Scalar &val) 
+      {
+          values(
+              comm.get(),
+              type_override(),
+              ls,
+              gs,
+              val
+          );
+      }
+      // ------------------------  ------------------------  ------------------------ 
+      // ------------------------  ------------------------  ------------------------ 
+      // ------------------------  ------------------------  ------------------------ 
+
+
       inline void local_values(const SizeType &s, const Scalar &val) override
       {
         values(

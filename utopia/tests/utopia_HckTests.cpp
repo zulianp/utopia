@@ -957,9 +957,9 @@ namespace utopia
             // Vector lb = local_values(local_size(x_working).get(0), -9e9);
             // Vector ub = local_values(local_size(x_working).get(0), 9e9);
             // qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
-            QP_solver->update(H);
-            QP_solver->solve(H, -1.0*g, x);
-            disp(x, "x"); 
+            // QP_solver->update(H);
+            // QP_solver->solve(H, -1.0*g, x);
+            // disp(x, "x"); 
 
 
 
@@ -987,7 +987,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 2;
 
-        auto coarse_dofs = 5;
+        auto coarse_dofs = 100;
         auto verbose     = false;
 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();

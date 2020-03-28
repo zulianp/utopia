@@ -26,7 +26,13 @@ namespace utopia
             {
                 VariableBoundSolverInterface<Vector>::init_memory(ls); 
                 PreconditionedSolver<Matrix, Vector>::init_memory(ls); 
-            }      
+            }   
+
+            void init_memory(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls)         
+            {
+                VariableBoundSolverInterface<Vector>::init_memory(comm, gs, ls); 
+                // PreconditionedSolver<Matrix, Vector>::init_memory(comm, gs, ls);                 
+            }   
     };
 
 
@@ -49,7 +55,13 @@ namespace utopia
             {
                 VariableBoundSolverInterface<Vector>::init_memory(ls); 
                 MatrixFreeLinearSolver<Vector>::init_memory(ls); 
-            }             
+            }    
+
+            void init_memory(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls)         
+            {
+                VariableBoundSolverInterface<Vector>::init_memory(comm, gs, ls); 
+                // MatrixFreeLinearSolver<Vector>::init_memory(comm, gs, ls); 
+            }
     };
 
 
@@ -104,6 +116,12 @@ namespace utopia
             MatrixFreeQPSolver<Vector>::init_memory(ls); 
             QPSolver<Matrix, Vector>::init_memory(ls); 
         }   
+
+        void init_memory(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls)
+        {
+            MatrixFreeQPSolver<Vector>::init_memory(comm, gs, ls); 
+            QPSolver<Matrix, Vector>::init_memory(comm, gs, ls); 
+        }
 
     };
 

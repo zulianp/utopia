@@ -58,7 +58,7 @@ namespace  utopia
                 this->fill_empty_bounds(local_size(rhs));
                 auto &box = this->get_box_constraints();
 
-                // this->update(A); 
+                this->update(A); 
 
                 // as it is not clear ATM, how to apply preconditioner, we use it at least to obtain initial guess 
                 if(precond_){
@@ -78,7 +78,8 @@ namespace  utopia
             }
 
 
-        private:
+        // private:
+        public:
             bool aux_solve(const Operator<Vector> &A, const Vector &rhs, Vector &x, const BoxConstraints<Vector> & constraints)
             {
                 // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
@@ -86,14 +87,8 @@ namespace  utopia
 
                 Scalar r_norm0 = norm2(rhs); 
 
-                // const auto &ub = constraints.upper_bound();
-                // const auto &lb = constraints.lower_bound();
-
-
-                std::shared_ptr<Vector> ub = std::make_shared<Vector>(Vector(9e9*x)); 
-                std::shared_ptr<Vector> lb = std::make_shared<Vector>(Vector(-9e9*x)); 
-
-
+                const auto &ub = constraints.upper_bound();
+                const auto &lb = constraints.lower_bound();
 
                 if(this->verbose()){
                     this->init_solver("MPGRP", {"it", "|| g ||"});
@@ -438,8 +433,8 @@ namespace  utopia
             void init_memory(const SizeType & ls) override
             {
                 OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls); 
-                auto zero_expr = local_zeros(ls);
 
+                auto zero_expr = local_zeros(ls);
 
                 fi = zero_expr;
                 beta = zero_expr;
@@ -457,28 +452,27 @@ namespace  utopia
                 loc_size_ = ls;
             }
 
-            void init_memory(const Vector & x_shape) 
+            void init_memory(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls)
             {
-                // OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls); 
-                auto zero_expr = 0.0*x_shape; 
+                OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls); 
 
+                // auto zero_expr = local_zeros(ls);
 
-                fi = zero_expr;
-                beta = zero_expr;
-                gp = zero_expr;
-                p = zero_expr;
-                y = zero_expr;
-                Ap = zero_expr;
-                Abeta = zero_expr;
-                Ax = zero_expr;
-                g = zero_expr;
-                help_f1 = zero_expr;
-                help_f2 = zero_expr;
+                fi.local_zeros(comm, gs, ls); 
+                beta.local_zeros(comm, gs, ls); 
+                gp.local_zeros(comm, gs, ls); 
+                p.local_zeros(comm, gs, ls); 
+                y.local_zeros(comm, gs, ls); 
+                Ap.local_zeros(comm, gs, ls); 
+                Abeta.local_zeros(comm, gs, ls); 
+                Ax.local_zeros(comm, gs, ls); 
+                g.local_zeros(comm, gs, ls); 
+                help_f1.local_zeros(comm, gs, ls); 
+                help_f2.local_zeros(comm, gs, ls); 
 
                 initialized_ = true;
-                // loc_size_ = ls;
-            }
-
+                loc_size_ = ls;
+            }            
 
             void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
             {

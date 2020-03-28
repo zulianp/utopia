@@ -71,38 +71,33 @@ namespace utopia {
                     init_redundant(A, rhs); 
                 }
                 
-                // mpi_world_barrier();     
-                // disp(sol, "sol-before"); 
-
-
-                // mpi_world_barrier(); 
-
                 global_to_sub(sol, sol_sub, rhs, rhs_sub);
 
             
-
                 // // // // // // // // // // // // //  lets assume, there will be solve here... // // // // // // // // 
-                // Vector bla = 0.0* sol_sub; 
-                // bla = pmats * rhs_sub;
-                // // sol_sub = bla + bla; 
-                // // mpi_world_barrier(); 
-                // // disp(sol_sub, "sol_sub"); 
                 auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                QP_solver->init_memory(sol_sub); 
+                
+                Vector lb = -9e9*sol_sub; 
+                Vector ub = 9e9*sol_sub; 
+                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
                 QP_solver->max_it(10);
                 QP_solver->verbose(true); 
-                QP_solver->solve(pmats, rhs_sub, sol_sub);
+
+                QP_solver->init_memory(sol_sub.comm(), size(sol_sub).get(0), local_size(sol_sub).get(0)); 
+                QP_solver->aux_solve(pmats, rhs_sub, sol_sub, box);
+
+                
 
                 
                 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
                 // std::cout<<"---------------- \n"; 
                 sub_to_global(sol_sub, sol); 
 
-                disp(sol, "sol"); 
+                
 
 
-            return false; 
-        }
+                return false; 
+            }
 
 
 

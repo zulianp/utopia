@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Factory.hpp"
+#include "utopia_Communicator.hpp"
 
 #include <memory>
 #include <limits>
@@ -108,6 +109,37 @@ namespace utopia {
                 }
             }
         }  
+
+        inline void fill_empty_bounds(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls)
+        {
+            if(this->has_bounds())  
+            {
+                if(!lower_bound_->comm().conjunction(ls == local_size(*lower_bound_))){
+                    lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                }
+
+                if(!upper_bound_->comm().conjunction(ls == local_size(*upper_bound_))){
+                    upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                }
+
+                return; 
+            }
+            else if(!lower_bound_ && !upper_bound_)
+            {
+                lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+            }
+            else
+            {
+                if(!lower_bound_) {
+                    lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                }
+
+                if(!upper_bound_) {
+                    upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                }
+            }
+        }          
 
         inline bool uniform() const 
         {

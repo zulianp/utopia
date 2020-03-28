@@ -305,6 +305,13 @@ namespace utopia
         correction_constraints_.fill_empty_bounds(ls);
       }
 
+      void init_memory(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls)
+      {
+        help_.local_zeros(comm, gs, ls); 
+        constraints_.fill_empty_bounds(comm, gs, ls);
+        correction_constraints_.fill_empty_bounds(comm, gs, ls);        
+      }
+
 
     protected:
         BoxConstraints                  constraints_;             // variable bound constraints
