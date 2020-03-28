@@ -44,7 +44,7 @@ namespace utopia {
                 case 1:
                 {
                     for(int d = 0; d < PhysicalDim; ++d)  {
-                        p(d) += data[d*PhysicalDim];
+                        p(d) += data[d*Dim];
                     }
 
                     return;
@@ -52,7 +52,7 @@ namespace utopia {
                 case 2:
                 {
                     for(int d = 0; d < PhysicalDim; ++d)  {
-                        p(d) += data[d*PhysicalDim + 1];
+                        p(d) += data[d*Dim + 1];
                     }
 
                     return;

@@ -72,7 +72,7 @@
 //             // value = 0.0;
 
 //             // Device::parallel_reduce(
-//             //     space_->local_element_range(),
+//             //     space_->element_range(),
 //             //     UTOPIA_LAMBDA(const SizeType &i) -> Scalar
 //             // {
 //             //     Elem e;
@@ -130,7 +130,7 @@
 //                 };
 
 //                 Device::parallel_for(
-//                     space_->local_element_range(),
+//                     space_->element_range(),
 //                     UTOPIA_LAMBDA(const SizeType &i)
 //                 {
 //                     Elem e;
@@ -181,7 +181,7 @@
 //                 };
 
 //                 Device::parallel_for(
-//                     space_->local_element_range(),
+//                     space_->element_range(),
 //                     UTOPIA_LAMBDA(const SizeType &i)
 //                 {
 //                     Elem e;

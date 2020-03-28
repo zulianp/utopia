@@ -25,36 +25,29 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
+
 #include <cmath>
 
 namespace utopia {
 
-    static void petsc_dm_multivar()
+    static void petsc_dm_multivar(Input &in)
     {
         std::cout << "excuting: petsc_dm_multivar" << std::endl;
         static const int Dim = 2;
         static const int NVars = 2;
 
-        using DMDA             = utopia::PetscDM<Dim>;
+        using Mesh             = utopia::PetscDM<Dim>;
         using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<DMDA, NVars, Elem>;
-        using SizeType         = DMDA::SizeType;
-        using Scalar           = DMDA::Scalar;
-        // using Point            = DMDA::Point;
-
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
+        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType         = Mesh::SizeType;
+        using Scalar           = Mesh::Scalar;
+        // using Point            = Mesh::Point;
 
         FunctionSpace space;
-        space.build(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-        );
+        space.read(in);
+
 
         PetscVector v;
         space.create_vector(v);
@@ -73,7 +66,7 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_dm_multivar);
 
-    static void petsc_local_vec_view()
+    static void petsc_local_vec_view(Input &in)
     {
         static const int Dim = 3;
         static const int NNodes = 8;
@@ -84,25 +77,11 @@ namespace utopia {
         using SizeType         = Mesh::SizeType;
         // using Scalar           = Mesh::Scalar;
         // using Point            = Mesh::Point;
-
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
-        SizeType nz = scale * 2;
-
-        Mesh mesh(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
-
-        FunctionSpace space(mesh);
+        FunctionSpace space;
+        space.read(in);
 
         PetscVector vec;
-        mesh.create_local_vector(vec);
+        space.mesh().create_local_vector(vec);
         LocalViewDevice<const PetscVector, 1> view(vec);
     }
 
@@ -171,12 +150,12 @@ namespace utopia {
 
         in.get("model", model);
 
-        Mesh mesh(
-            world,
-            {nx, ny, nz},
-            {min_x, min_y, min_z},
-            {max_x, max_y, max_z}
-        );
+        // Mesh mesh(
+        //     world,
+        //     {nx, ny, nz},
+        //     {min_x, min_y, min_z},
+        //     {max_x, max_y, max_z}
+        // );
 
         stats.stop_and_collect("mesh-gen");
 
@@ -184,7 +163,8 @@ namespace utopia {
 
         stats.start();
 
-        FunctionSpace space(mesh);
+        FunctionSpace space;
+        space.read(in);
 
         //boundary conditions
         space.emplace_dirichlet_condition(
@@ -471,7 +451,7 @@ namespace utopia {
        );
     }
 
-    static void petsc_fe_function()
+    static void petsc_fe_function(Input &in)
     {
         static const int Dim = 3;
         static const int NVars = Dim;
@@ -488,21 +468,8 @@ namespace utopia {
         using FEFunction     = utopia::FEFunction<FunctionSpace>;
 
         //BEGIN: Host context
-        Comm world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
-        SizeType nz = scale * 2;
-
         FunctionSpace space;
-
-        space.build(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
+        space.read(in);
 
         FEFunction fun(space);
 
@@ -533,7 +500,7 @@ namespace utopia {
 
 
             // Device Kernel (GPU or CPU) (this should be hidden better)
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
+            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
                 ElemView e;
                 space_view.elem(idx, e);
 
@@ -548,7 +515,7 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_fe_function);
 
-    static void petsc_sample()
+    static void petsc_sample(Input &in)
     {
         static const int Dim = 2;
         static const int NVars = 1;
@@ -572,13 +539,7 @@ namespace utopia {
         SizeType ny = scale * 10;
 
         FunctionSpace space;
-
-        space.build(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-        );
+        space.read(in);
 
         PetscVector x;
         space.create_vector(x);
@@ -595,7 +556,7 @@ namespace utopia {
             auto x_view       = space.assembly_view_device(x);
             auto sampler_view = sampler.view_device();
 
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                 ElemView e;
                 space_view.elem(i, e);
 

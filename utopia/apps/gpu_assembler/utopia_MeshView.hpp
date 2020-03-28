@@ -598,7 +598,7 @@ namespace utopia {
             }
         }
 
-        Range local_element_range() const
+        Range element_range() const
         {
             return Range(local_element_index_begin(), local_element_index_end());
         }
@@ -638,7 +638,7 @@ namespace utopia {
         void each_element(Fun fun)
         {
             auto view = view_device();
-            Dev::parallel_for(local_element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
+            Dev::parallel_for(element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
                 typename ViewDevice::Elem e;
                 view.elem(e_index, e);
                 fun(e_index, e);

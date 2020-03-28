@@ -1,5 +1,5 @@
-#ifndef UTOPIA_PETSC_DM_HPP
-#define UTOPIA_PETSC_DM_HPP
+#ifndef UTOPIA_PETSC_DM_OLD_HPP
+#define UTOPIA_PETSC_DM_OLD_HPP
 
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
@@ -17,164 +17,168 @@
 #include "utopia_petsc_FE.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_SideSets.hpp"
+#include "utopia_petsc_DMDA.hpp"
 
 #include <array>
 #include <memory>
 #include <functional>
 
 namespace utopia {
-
     template<int Dim>
-    class DMDAMirror;
+    using PetscDM = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
-    template<int Dim>
-    class PetscDMElements;
+    // template<int Dim>
+    // class DMDAMirror;
 
-    template<int Dim>
-    class DMDANodes;
+    // template<int Dim>
+    // class PetscDMElements;
 
-    template<class Space>
-    class DirichletBoundaryCondition {};
+    // template<int Dim>
+    // class DMDANodes;
 
-    template<int Dim>
-    class PetscNode {
-    public:
-        PetscNode(const DMDANodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
-        SizeType idx() const { return idx_; }
-        bool is_ghost() const;
+    // template<class Space>
+    // class DirichletBoundaryCondition;
 
-    private:
-        const DMDANodes<Dim> &nodes_;
-        SizeType idx_;
-    };
+    // // template<int Dim>
+    // // class PetscNode {
+    // // public:
+    // //     PetscNode(const DMDANodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
+    // //     SizeType idx() const { return idx_; }
+    // //     bool is_ghost() const;
 
-    template<int Dim>
-    class PetscDM final {
-    public:
-        static const std::size_t UDim = Dim;
-        using SizeType  = PetscInt;
-        using Scalar    = PetscScalar;
-        using Point     = utopia::StaticVector<Scalar, Dim>;
-        // using Elem      = utopia::PetscElem<Dim>;
-        using Node      = utopia::PetscNode<Dim>;
-        using Device    = utopia::Device<PETSC>;
-        using NodeIndex = utopia::ArrayView<const SizeType>;
-        using IntArray  = utopia::ArrayView<SizeType, UDim>;
-        using ScalarArray = utopia::ArrayView<Scalar, UDim>;
+    // // private:
+    // //     const DMDANodes<Dim> &nodes_;
+    // //     SizeType idx_;
+    // // };
 
-        using SideSets = utopia::SideSets<Dim>;
-        using Comm     = utopia::PetscCommunicator;
+    // template<int Dim>
+    // class PetscDM final {
+    // public:
+    //     static const std::size_t UDim = Dim;
+    //     using SizeType  = PetscInt;
+    //     using Scalar    = PetscScalar;
+    //     using Point     = utopia::StaticVector<Scalar, Dim>;
+    //     // using Elem      = utopia::PetscElem<Dim>;
+    //     // using Node      = utopia::PetscNode<Dim>;
+    //     using Device    = utopia::Device<PETSC>;
+    //     using NodeIndex = utopia::ArrayView<const SizeType>;
+    //     using IntArray  = utopia::ArrayView<SizeType, UDim>;
+    //     using ScalarArray = utopia::ArrayView<Scalar, UDim>;
 
-        class Impl;
+    //     using SideSets = utopia::SideSets<Dim>;
+    //     using Comm     = utopia::PetscCommunicator;
 
-        PetscDM(
-            const PetscCommunicator     &comm,
-            const std::array<SizeType, UDim> &dims,
-            const std::array<Scalar, UDim>   &box_min,
-            const std::array<Scalar, UDim>   &box_max,
-            const SizeType &n_components = 1
-        );
+    //     class Impl;
 
-        void build(
-            const PetscCommunicator     &comm,
-            const std::array<SizeType, UDim> &dims,
-            const std::array<Scalar, UDim>   &box_min,
-            const std::array<Scalar, UDim>   &box_max,
-            const SizeType &n_components = 1
-        );
+    //     PetscDM(
+    //         const PetscCommunicator     &comm,
+    //         const std::array<SizeType, UDim> &dims,
+    //         const std::array<Scalar, UDim>   &box_min,
+    //         const std::array<Scalar, UDim>   &box_max,
+    //         const SizeType &n_components = 1
+    //     );
 
-        void build_simplicial_complex(
-            const PetscCommunicator     &comm,
-            const std::array<SizeType, UDim> &dims,
-            const std::array<Scalar, UDim>   &box_min,
-            const std::array<Scalar, UDim>   &box_max,
-            const SizeType &n_components = 1
-        );
+    //     void build(
+    //         const PetscCommunicator     &comm,
+    //         const std::array<SizeType, UDim> &dims,
+    //         const std::array<Scalar, UDim>   &box_min,
+    //         const std::array<Scalar, UDim>   &box_max,
+    //         const SizeType &n_components = 1
+    //     );
 
-        PetscDM();
-        ~PetscDM();
+    //     void build_simplicial_complex(
+    //         const PetscCommunicator     &comm,
+    //         const std::array<SizeType, UDim> &dims,
+    //         const std::array<Scalar, UDim>   &box_min,
+    //         const std::array<Scalar, UDim>   &box_max,
+    //         const SizeType &n_components = 1
+    //     );
 
-        PetscCommunicator &comm();
-        const PetscCommunicator &comm() const;
+    //     PetscDM();
+    //     ~PetscDM();
 
-        constexpr static typename SideSets::Sides sides()
-        {
-            return SideSets::sides();
-        }
+    //     PetscCommunicator &comm();
+    //     const PetscCommunicator &comm() const;
 
-        void point(const SizeType &local_node_idx, Point &p) const;
-        void cell_point(const SizeType &idx, Point &translation) const;
-        void cell_size(const SizeType &idx, Point &cell_size) const;
+    //     constexpr static typename SideSets::Sides sides()
+    //     {
+    //         return SideSets::sides();
+    //     }
 
-        bool is_local_node_on_boundary(const SizeType &idx) const;
-        bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
-        void node(const SizeType &idx, Point &node) const;
-        void elem(const SizeType &idx, Elem &e) const;
-        void nodes(const SizeType &idx, NodeIndex &nodes) const;
-        void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
+    //     void point(const SizeType &local_node_idx, Point &p) const;
+    //     void cell_point(const SizeType &idx, Point &translation) const;
+    //     void cell_size(const SizeType &idx, Point &cell_size) const;
 
-        void create_matrix(PetscMatrix &mat) const;
-        void create_vector(PetscVector &vec) const;
+    //     bool is_node_on_boundary(const SizeType &idx) const;
+    //     bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
+    //     void node(const SizeType &idx, Point &node) const;
+    //     void elem(const SizeType &idx, Elem &e) const;
+    //     void nodes(const SizeType &idx, NodeIndex &nodes) const;
+    //     void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
 
-        // void create_local_matrix(PetscMatrix &mat);
-        void create_local_vector(PetscVector &vec) const;
-        void local_to_global(const PetscVector &local,  PetscVector &global) const;
-        void global_to_local(const PetscVector &global, PetscVector &local) const;
+    //     void create_matrix(PetscMatrix &mat) const;
+    //     void create_vector(PetscVector &vec) const;
 
-        void describe() const;
+    //     // void create_local_matrix(PetscMatrix &mat);
+    //     void create_local_vector(PetscVector &vec) const;
+    //     void local_to_global(const PetscVector &local,  PetscVector &global) const;
+    //     void global_to_local(const PetscVector &global, PetscVector &local) const;
 
-        inline static constexpr SizeType dim() { return Dim; }
-        Range local_node_range() const;
-        SizeType n_local_nodes_with_ghosts() const;
-        Scalar min_spacing() const;
+    //     void describe() const;
 
-        Range local_element_range() const;
+    //     inline static constexpr SizeType dim() { return Dim; }
+    //     Range local_node_range() const;
+    //     SizeType n_local_nodes_with_ghosts() const;
+    //     Scalar min_spacing() const;
 
-        const DMDAMirror<Dim> &mirror() const;
+    //     Range element_range() const;
 
-        const IntArray &local_nodes_begin() const;
-        const IntArray &local_nodes_end() const;
+    //     const DMDAMirror<Dim> &mirror() const;
 
-        const IntArray &dims() const;
-        const Point &box_min() const;
-        const Point &box_max() const;
+    //     // const IntArray &local_nodes_begin() const;
+    //     // const IntArray &local_nodes_end() const;
 
-        inline Impl &impl()
-        {
-            return *impl_;
-        }
+    //     const IntArray &dims() const;
+    //     const Point &box_min() const;
+    //     const Point &box_max() const;
 
-        inline const Impl &impl() const
-        {
-            return *impl_;
-        }
+    //     inline Impl &impl()
+    //     {
+    //         return *impl_;
+    //     }
 
-        SizeType n_nodes() const;
-        SizeType n_local_nodes() const;
+    //     inline const Impl &impl() const
+    //     {
+    //         return *impl_;
+    //     }
 
-        SizeType n_elements() const;
-        SizeType n_components() const;
+    //     SizeType n_nodes() const;
+    //     SizeType n_local_nodes() const;
 
-        bool is_ghost(const SizeType &global_node_idx) const;
-        bool is_boundary(const SizeType &global_node_idx) const;
+    //     SizeType n_elements() const;
+    //     SizeType n_components() const;
 
-        bool on_boundary(const SizeType &elem_idx) const;
+    //     bool is_ghost(const SizeType &global_node_idx) const;
+    //     bool is_boundary(const SizeType &global_node_idx) const;
 
-        void set_field_name(const SizeType &nf, const std::string &name);
+    //     bool on_boundary(const SizeType &elem_idx) const;
 
-        std::unique_ptr<PetscDM> uniform_refine() const;
+    //     void set_field_name(const SizeType &nf, const std::string &name);
+    //     void set_field_names(const std::vector<std::string> &names);
 
-        void dmda_set_interpolation_type_Q0();
-        void dmda_set_interpolation_type_Q1();
-        void create_interpolation(const PetscDM &target, PetscMatrix &I) const;
+    //     std::unique_ptr<PetscDM> uniform_refine() const;
 
-        void update_mirror();
+    //     void dmda_set_interpolation_type_Q0();
+    //     void dmda_set_interpolation_type_Q1();
+    //     void create_interpolation(const PetscDM &target, PetscMatrix &I) const;
 
-        std::unique_ptr<PetscDM> clone(const SizeType &n_components) const;
-        std::unique_ptr<PetscDM> clone() const;
-    private:
-        std::unique_ptr<Impl> impl_;
-    };
+    //     void update_mirror();
+
+    //     std::unique_ptr<PetscDM> clone(const SizeType &n_components) const;
+    //     std::unique_ptr<PetscDM> clone() const;
+    // private:
+    //     std::unique_ptr<Impl> impl_;
+    // };
 }
 
-#endif //UTOPIA_PETSC_DM_HPP
+#endif //UTOPIA_PETSC_DM_OLD_HPP

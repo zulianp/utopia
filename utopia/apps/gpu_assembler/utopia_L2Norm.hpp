@@ -31,7 +31,7 @@
 //                 auto space_view = space_.view_device();
 
 //                 Device::parallel_reduce(
-//                     space_->local_element_range(),
+//                     space_->element_range(),
 //                     UTOPIA_LAMBDA(const SizeType &i) -> Scalar
 //                 {
 //                     Elem e;

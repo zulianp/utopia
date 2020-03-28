@@ -8,13 +8,13 @@
     "with_damage" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
-    "tension_test" : true, 
-    "num_time_steps" : 50, 
-    "dt" : 1,     
-    "use_mprgp" : true,
-    "adjust_dt_on_failure": false, 
-    "shrinking_factor" : 0.5, 
-    "use_pressure": true, 
+    "tension_test" : true,
+    "num_time_steps" : 50,
+    "dt" : 1,
+    "use_mprgp" : false,
+    "adjust_dt_on_failure": false,
+    "shrinking_factor" : 0.5,
+    "use_pressure": true,
     "pressure0" : 0.1,
     "pressure_increase_factor" : 0.1,
 
@@ -25,10 +25,10 @@
     "solver" : {
         "verbose" : true,
         "max-it" : 300,
-        "atol": 1e-6, 
+        "atol": 1e-6,
         "linear-solver" : {
-            "verbose" : false, 
-            "atol": 1e-9, 
+            "verbose" : false,
+            "atol": 1e-9,
             "max-it": 1000
         }
     }

@@ -134,6 +134,18 @@ namespace utopia {
             return io.write(*this);
         }
 
+        virtual void describe() const
+        {
+
+        }
+
+        inline PetscInt dm_dim() const
+        {
+            PetscInt ret;
+            DMGetDimension(raw_type(), &ret);
+            return ret;
+        }
+
     private:
         PetscCommunicator comm_;
 

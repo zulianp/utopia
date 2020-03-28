@@ -5,12 +5,24 @@
 
 namespace utopia {
 
-    template<class Elem, int Components>
-    class DirichletBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
+
+
+    template<class FunctionSpace>
+    class DirichletBoundaryCondition
+    {
+
+    // };
+
+    // template<class Elem, int NComponents>
+    // class DirichletBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, NComponents, Elem>> {
     public:
-        using Mesh    = utopia::PetscDM<Elem::Dim>;
+        // using Mesh    = utopia::PetscDM<Elem::Dim>;
+
+        using Mesh      = typename FunctionSpace::Mesh;
         using NodeIndex = typename Mesh::NodeIndex;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, Components, Elem>;
+        // using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Elem>;
+
+        using Elem     = typename FunctionSpace::Shape;
         using Point    = typename FunctionSpace::Point;
         using SizeType = typename FunctionSpace::SizeType;
         using Scalar   = typename FunctionSpace::Scalar;
@@ -20,6 +32,7 @@ namespace utopia {
         using IndexSet = Traits<PetscVector>::IndexSet;
 
         static const int Dim = Subspace::Dim;
+        static const int NComponents = FunctionSpace::NComponents;
 
         DirichletBoundaryCondition(const FunctionSpace &space)
         : space_(space), side_set_(SideSet::invalid()), component_(0)
@@ -59,7 +72,7 @@ namespace utopia {
 
 
             Device::parallel_for(
-                subspace.local_element_range(),
+                subspace.element_range(),
                 UTOPIA_LAMBDA(const SizeType &i)
             {
                 ElemView e;
@@ -88,7 +101,7 @@ namespace utopia {
 
         void apply_zero(PetscVector &vec) const
         {
-           apply_val(vec, 0.0); 
+           apply_val(vec, 0.0);
         }
 
 
@@ -139,7 +152,7 @@ namespace utopia {
                     mat(i, j) = (i == j);
                 }
 
-                e.node(i/Components, p);
+                e.node(i/NComponents, p);
                 vec[i] = fun_(p);
             }
         }
@@ -163,7 +176,7 @@ namespace utopia {
         bool is_constrained_dof(const SizeType &idx) const
         {
             if(space_.component(idx) != component_) return false;
-            return space_.mesh().is_local_node_on_boundary(idx/Components, side_set_);
+            return space_.mesh().is_node_on_boundary(idx/NComponents, side_set_);
         }
 
         void init_constraints_marker()

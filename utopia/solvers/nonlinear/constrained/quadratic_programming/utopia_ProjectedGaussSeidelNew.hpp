@@ -64,6 +64,8 @@ namespace utopia {
 
         virtual bool smooth(const Vector &b, Vector &x) override
         {
+            UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::smooth");
+
             const Matrix &A = *this->get_operator();
 
             // init(A);
@@ -77,6 +79,8 @@ namespace utopia {
             } else {
                 while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
             }
+
+            UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::smooth");
             return it == SizeType(this->sweeps() - 1);
         }
 
@@ -106,7 +110,8 @@ namespace utopia {
                 }
 
                 if(iteration % check_s_norm_each == 0) {
-                    const Scalar diff = norm2(x_old - x);
+                    c = x - x_old;
+                    const Scalar diff = norm2(c);
 
                     if(this->verbose()) {
                         PrintInfo::print_iter_status(iteration, {diff});

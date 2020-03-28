@@ -113,7 +113,7 @@ namespace utopia {
                 auto p_view         = points.view_device();
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     ElementVector el_vec; el_vec.set(0.0);
@@ -167,7 +167,7 @@ namespace utopia {
                 auto dx_view        = differential.view_device();
 
                 Device::parallel_for(
-                    space_->local_element_range(),
+                    space_->element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     ElementMatrix el_mat; el_mat.set(0.0);
