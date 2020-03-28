@@ -4,6 +4,7 @@
 
 #include "utopia_LinearSolverInterfaces.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
+#include "utopia_MPRGP.hpp"
 
 namespace utopia {
 
@@ -70,19 +71,39 @@ namespace utopia {
                     init_redundant(A, rhs); 
                 }
                 
-                global_to_sub(sol, rhs);
+                // mpi_world_barrier();     
+                // disp(sol, "sol-before"); 
 
 
-            // // // // // // // // // // // //  lets assume, there will be solve here... // // // // // // // // 
-            // Vector bla = 0.0* sol_sub; 
-            // bla = pmats * rhs_sub;
-            // disp(bla); 
-            // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+                // mpi_world_barrier(); 
+
+                global_to_sub(sol, sol_sub, rhs, rhs_sub);
 
             
 
+                // // // // // // // // // // // // //  lets assume, there will be solve here... // // // // // // // // 
+                // Vector bla = 0.0* sol_sub; 
+                // bla = pmats * rhs_sub;
+                // // sol_sub = bla + bla; 
+                // // mpi_world_barrier(); 
+                // // disp(sol_sub, "sol_sub"); 
+                auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                QP_solver->init_memory(sol_sub); 
+                QP_solver->max_it(10);
+                QP_solver->verbose(true); 
+                QP_solver->solve(pmats, rhs_sub, sol_sub);
+
+                
+                // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+                // std::cout<<"---------------- \n"; 
+                sub_to_global(sol_sub, sol); 
+
+                disp(sol, "sol"); 
+
+
             return false; 
         }
+
 
 
         void init_redundant(const Matrix A, const Vector & x)
@@ -147,7 +168,7 @@ namespace utopia {
         }
 
 
-        void global_to_sub(const Vector & sol, const Vector & rhs)
+        void global_to_sub(const Vector & sol, Vector & sol_sub, const Vector & rhs, Vector & rhs_sub)
         {
             // scatter solution, rhs 
             PetscScalar    *array_sol, *array_rhs;
@@ -166,12 +187,10 @@ namespace utopia {
             VecGetArray(raw_type(rhs_dup), &array_rhs);
             VecPlaceArray(raw_type(rhs_sub),  (const PetscScalar*)array_rhs);
             
-
-            PetscFree2(array_sol, array_rhs);
         }
 
 
-        void sub_to_global(Vector & sol)
+        void sub_to_global(const Vector & sol_sub, Vector & sol)
         {
             PetscScalar    *array_sol; 
 

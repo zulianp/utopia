@@ -957,9 +957,14 @@ namespace utopia
             // Vector lb = local_values(local_size(x_working).get(0), -9e9);
             // Vector ub = local_values(local_size(x_working).get(0), 9e9);
             // qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
-            // QP_solver->solve(H, -1.0*g, x);
+            QP_solver->update(H);
+            QP_solver->solve(H, -1.0*g, x);
+            disp(x, "x"); 
+
+
 
             auto redundantQP = std::make_shared<utopia::RedundantQPSolver<Matrix, Vector> >(QP_solver);
+            x = fun.initial_guess();
             redundantQP->solve(H, -1.0*g, x);
 
         }
@@ -982,7 +987,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 2;
 
-        auto coarse_dofs = 4;
+        auto coarse_dofs = 5;
         auto verbose     = false;
 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
