@@ -191,6 +191,13 @@ namespace utopia {
             entries_[i] = value;
         }
 
+        inline void l_add(const SizeType &i, const T &value)
+        {
+            assert(i < size());
+
+            entries_[i] += value;
+        }
+
         virtual void set(const T &val) override
         {
             std::fill(std::begin(entries_), std::end(entries_), val);
@@ -501,12 +508,12 @@ namespace utopia {
 
         inline void values(const Layout &l, const Scalar &val)
         {
-            values(l.global_size(), val);
+            values(l.size(), val);
         }
 
         inline void zeros(const Layout &l)
         {
-            values(l.global_size(), 0.0);
+            values(l.size(), 0.0);
         }
 
         inline void values(const SizeType &s, const Scalar &val) override

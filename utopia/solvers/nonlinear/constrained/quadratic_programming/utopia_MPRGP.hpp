@@ -21,7 +21,7 @@ namespace  utopia
         using Solver   = utopia::LinearSolver<Matrix, Vector>;
 
         public:
-            MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false), layout_(0)
+            MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false)
             {}
 
             void read(Input &in) override
@@ -38,25 +38,22 @@ namespace  utopia
                 this->print_param_usage(os, "power_method_max_it", "int", "Maximum number of iterations used inside of power method.", "10");
             }
 
-
             MPGRP * clone() const override
             {
                 return new MPGRP(*this);
             }
 
-
             void update(const Operator<Vector> &A) override
             {
-                SizeType layout_rhs = A.local_size().get(0);
-                if(!initialized_ || !A.comm().conjunction(layout_ == layout_rhs)) {
+                const auto layout_rhs = row_layout(A);
+                if(!initialized_ || !layout_rhs.same(layout_)) {
                     init_memory(layout_rhs);
                 }
             }
 
-
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
-                this->fill_empty_bounds(local_size(rhs));
+                this->fill_empty_bounds(layout(rhs));
                 auto &box = this->get_box_constraints();
 
                 this->update(A);
@@ -72,12 +69,10 @@ namespace  utopia
                 return aux_solve(A, rhs, sol, box);
             }
 
-
             void set_eig_comp_tol(const Scalar & eps_eig_est)
             {
                 eps_eig_est_ = eps_eig_est;
             }
-
 
         private:
             bool aux_solve(const Operator<Vector> &A, const Vector &rhs, Vector &x, const BoxConstraints<Vector> & constraints)
@@ -462,7 +457,7 @@ namespace  utopia
             SizeType power_method_max_it_;
 
             bool initialized_;
-            SizeType layout_;
+            Layout layout_;
 
             std::shared_ptr<Preconditioner<Vector> > precond_;
 

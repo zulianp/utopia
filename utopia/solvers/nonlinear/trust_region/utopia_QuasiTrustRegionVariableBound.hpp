@@ -26,8 +26,7 @@
                                     const std::shared_ptr <MatrixFreeQPSolver> &tr_subproblem) :
                                     NonLinearSolver(hessian_approx, tr_subproblem),
                                     it_successful_(0),
-                                    initialized_(false),
-                                    layout_(0)
+                                    initialized_(false)
 
       {
 
@@ -64,7 +63,8 @@
 
         Scalar delta, ared, pred, rho, E_old, E_new;
 
-        this->fill_empty_bounds(local_size(x_k));
+        auto x_layout = layout(x_k);
+        this->fill_empty_bounds(x_layout);
         this->make_iterate_feasible(x_k);
 
         SizeType it = 0;
@@ -73,11 +73,9 @@
         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
         bool rad_flg = false;
 
-
-        SizeType layout_x = local_size(x_k);
-        if(!initialized_ || !g.comm().conjunction(layout_ == layout_x))
+        if(!initialized_ || !x_layout.same(layout_))
         {
-          init_memory(layout_x);
+          init_memory(x_layout);
         }
 
         fun.gradient(x_k, g);

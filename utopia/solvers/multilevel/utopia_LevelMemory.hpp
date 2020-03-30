@@ -1,6 +1,9 @@
 #ifndef UTOPIA_LEVEL_MEMORY_HPP
 #define UTOPIA_LEVEL_MEMORY_HPP
-#include "utopia_Core.hpp"
+
+#include "utopia_Traits.hpp"
+#include <vector>
+#include <limits>
 
 namespace utopia
 {
@@ -27,6 +30,7 @@ namespace utopia
     {
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         public:
             void init_memory(const std::vector<Layout> &layouts)
@@ -63,9 +67,10 @@ namespace utopia
     {
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         public:
-            void init_memory(const std::vector<SizeType> &layouts)
+            void init_memory(const std::vector<Layout> &layouts)
             {
                 const Scalar inf = std::numeric_limits<Scalar>::infinity();
                 const auto n_levels = layouts.size();

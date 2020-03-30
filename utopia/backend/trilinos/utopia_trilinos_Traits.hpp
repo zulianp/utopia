@@ -8,6 +8,7 @@
 #include "utopia_trilinos_Base.hpp"
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Device.hpp"
+#include "utopia_Layout.hpp"
 
 #include <vector>
 

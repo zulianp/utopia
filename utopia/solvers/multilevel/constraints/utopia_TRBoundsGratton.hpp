@@ -36,7 +36,7 @@ namespace utopia
                 const auto n_levels = layouts.size();
                 help_loc_.resize(n_levels);
                 for(auto l=0; l < n_levels; l++){
-                    help_loc_[l] = local_zeros(layouts[l]);
+                    help_loc_[l].zeros(layouts[l]);
                 }
 
             }

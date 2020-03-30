@@ -38,7 +38,7 @@ namespace utopia
             const Matrix &A = *this->get_operator();
 
             // ideally, we have two separate implementations, or cases
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
 
             const auto &ub = this->get_upper_bound();
             const auto &lb = this->get_lower_bound();
@@ -127,7 +127,7 @@ namespace utopia
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             QPSolver<Matrix, Vector>::update(op);
-            init_memory(local_size(*op).get(0));
+            init_memory(row_layout(*op));
         }
 
 

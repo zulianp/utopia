@@ -55,7 +55,6 @@ namespace utopia {
             in.get("l1", l1_);
         }
 
-
         void print_usage(std::ostream &os) const override
         {
             QPSolver<Matrix, Vector>::print_usage(os);
@@ -138,7 +137,6 @@ namespace utopia {
             x = min(x + e_mul(d_inv, r), this->get_upper_bound());
         }
 
-
         ///residual must be computed outside
         void apply_local_sweeps(const Matrix &A, const Vector &r, Vector &c) const
         {
@@ -154,7 +152,7 @@ namespace utopia {
 
             auto &&c_view     = local_view_device(c);
 
-            //WARNING THIS DOES NOT WORK IN PARALLEL
+            //WARNING THIS DOES NOT WORK IN PARALLEL (i.e., no OpenMP no Cuda)
             SizeType prev_i = 0;
             Scalar val = 0.0;
 
@@ -303,7 +301,7 @@ namespace utopia {
             r = b - r;
 
             //localize gap function for correction
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
             ub_loc = this->get_upper_bound() - x;
             lb_loc = this->get_lower_bound() - x;
 
@@ -374,7 +372,6 @@ namespace utopia {
                 UTOPIA_NO_ALLOC_END();
             }
 
-
             return true;
         }
 
@@ -394,39 +391,29 @@ namespace utopia {
 
         void init(const Matrix &A)
         {
-            const auto &comm = A.comm();
+            auto A_layout = row_layout(A);
+            const bool reset = empty(c) || !A_layout.same(layout(c));
 
-            auto l = layout(comm, local_size(A).get(0), size(A).get(0));
-            const bool reset = empty(c) || size(c) != l.global_size() || !comm.conjunction(local_size(c) == l.local_size());
+            if(reset) {
+                init_memory(A_layout);
+            } else {
+                c.set(0);
+                inactive_set_.set(0);
+            }
 
             d = diag(A);
 
             if(l1_) {
-                Write<Vector> w(d);
-                each_read(A, [this](const SizeType &i, const SizeType &, const Scalar &value) {
-                    d.add(i, device::abs(value));
-                });
+                auto &&d_view = local_view_device(d);
+
+                A.read(
+                    UTOPIA_LAMBDA(const SizeType &i, const SizeType &, const Scalar &value) {
+                         d_view.atomic_add(i, device::abs(value));
+                    }
+                );
             }
 
             d_inv = 1./d;
-
-            if(reset) {
-                c.zeros(l);
-            } else {
-                c.set(0);
-            }
-
-            if(use_line_search_) {
-
-                if(empty(inactive_set_) || reset) {
-                    inactive_set_.zeros(l);
-                    Ac.zeros(l);
-                    is_c_.zeros(l);
-                    descent_dir.zeros(l);
-                } else {
-                    inactive_set_.set(0);
-                }
-            }
         }
 
         virtual void update(const std::shared_ptr<const Matrix> &op) override
@@ -434,7 +421,6 @@ namespace utopia {
             IterativeSolver<Matrix, Vector>::update(op);
             init(*op);
         }
-
 
         void use_line_search(const bool val)
         {

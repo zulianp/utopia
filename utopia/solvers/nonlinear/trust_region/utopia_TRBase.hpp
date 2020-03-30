@@ -12,8 +12,8 @@ namespace utopia
   template<class Vector>
   class TrustRegionParams : public virtual Configurable
   {
-    typedef UTOPIA_SCALAR(Vector)    Scalar;
-    typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    using Scalar   = typename Traits<Vector>::Scalar;
+    using SizeType = typename Traits<Vector>::SizeType;
 
   public:
     TrustRegionParams():
@@ -98,8 +98,9 @@ namespace utopia
   template<class Vector>
   class TrustRegionBase : public TrustRegionParams<Vector>
   {
-    typedef UTOPIA_SCALAR(Vector)    Scalar;
-    typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    using Scalar   = typename Traits<Vector>::Scalar;
+    using SizeType = typename Traits<Vector>::SizeType;
+    using Layout   = typename Traits<Vector>::Layout;
 
   public:
     TrustRegionBase(): TrustRegionParams<Vector>()

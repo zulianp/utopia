@@ -6,7 +6,7 @@
 namespace utopia {
 
     template<typename Matrix, typename Vector, int Backend>
-    BiCGStab<Matrix, Vector, Backend>::BiCGStab(): initialized_(false), layout_(0)
+    BiCGStab<Matrix, Vector, Backend>::BiCGStab(): initialized_(false)
     {}
 
     template<typename Matrix, typename Vector, int Backend>
@@ -18,9 +18,9 @@ namespace utopia {
     template<typename Matrix, typename Vector, int Backend>
     void BiCGStab<Matrix, Vector, Backend>::update(const Operator<Vector> &A)
     {
-        SizeType layout_rhs = A.local_size().get(0);
+        Layout layout_rhs = row_layout(A);
 
-        if(!initialized_ || !A.comm().conjunction(layout_ == layout_rhs)) {
+        if(!initialized_ || !layout_rhs.same(layout_)) {
             init_memory(layout_rhs);
         }
     }
@@ -45,13 +45,13 @@ namespace utopia {
     template<typename Matrix, typename Vector, int Backend>
     bool BiCGStab<Matrix, Vector, Backend>::solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x)
     {
-        const auto ls = local_size(b);
-        init_memory(ls);
+        const auto b_layout = layout(b);
+        init_memory(b_layout);
 
-        if(empty(x) || size(x) != size(b)) {
-            x = local_zeros(ls);
+        if(empty(x) || !b_layout.same(layout(x))) {
+            x.zeros(b_layout);
         } else {
-            assert(local_size(x) == ls);
+            assert( b_layout.same(layout(x)) );
         }
 
         Scalar rho = 1., rho_old = 1., alpha = 1., omega = 1., beta = 1.;
@@ -155,13 +155,13 @@ namespace utopia {
     template<typename Matrix, typename Vector, int Backend>
     bool BiCGStab<Matrix, Vector, Backend>::solve_unpreconditioned(const Operator<Vector> &A, const Vector &b, Vector &x)
     {
-        const auto ls = local_size(b);
-        init_memory(ls);
+        const auto b_layout = layout(b);
+        init_memory(b_layout);
 
-        if(empty(x) || size(x) != size(b)) {
-            x = local_zeros(ls);
+        if(empty(x) || !b_layout.same(layout(x))) {
+            x.zeros(b_layout);
         } else {
-            assert(local_size(x) == ls);
+            assert( b_layout.same(layout(x)) );
         }
 
         Scalar rho = 1., rho_old = 1., alpha = 1., omega = 1., beta = 1.;

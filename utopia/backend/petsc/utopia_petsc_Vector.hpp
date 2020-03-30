@@ -215,8 +215,20 @@ namespace utopia {
             // check_error(
             // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
 
-            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using l_setet. Check if you are using a copy of the vector");
             writeable_->data[index] = value;
+                 // );
+        }
+
+        inline void l_add(const SizeType &index, const Scalar &value)
+        {
+            assert(index >= 0);
+            assert((index < local_size()));
+            // check_error(
+            // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using l_add. Check if you are using a copy of the vector");
+            writeable_->data[index] += value;
                  // );
         }
 
@@ -249,7 +261,7 @@ namespace utopia {
             // return value;
             assert(local_size() > index);
             assert(index >= 0);
-            assert((readable_) && "use Read<Vector> r(vec) before using get. Check if you are using a copy of the vector");
+            assert((readable_) && "use Read<Vector> r(vec) before using l_get. Check if you are using a copy of the vector");
             return readable_->data[index];
         }
 
@@ -413,7 +425,7 @@ namespace utopia {
 
       inline void values(const Layout &l, const Scalar &value)
       {
-          values(l.comm(), l.local_size(), l.global_size(), value);
+          values(l.comm(), l.local_size(), l.size(), value);
       }
 
       inline void zeros(const Layout &l)

@@ -89,15 +89,15 @@ namespace utopia
             return fun.hessian(x, H[level]);
         }
 
-        void init_memory(const std::vector<Layouts> & layouts, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+        void init_memory(const std::vector<Layout> &layouts, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
         {
             g_diff.resize(n_levels_);
             g.resize(n_levels_);
             H.resize(n_levels_);
 
             for(auto l=0; l < n_levels_; l++){
-                g_diff[l]   = local_zeros(layouts[l]);
-                g[l]        = local_zeros(layouts[l]);
+                g_diff[l].zeros(layouts[l]);
+                g[l].zeros(layouts[l]);
                 level_functions[l]->initialize_hessian(H[l], H[l]);
             }
 

@@ -50,10 +50,11 @@ namespace utopia
         {
            using namespace utopia;
 
-            if(empty(x))
+            if(empty(x)) {
               utopia_error("utopia::Newton, initial guess is empty vector");
+            }
 
-            init_memory(local_size(x));
+            init_memory(layout(x));
 
             Matrix hessian, preconditioner;
 

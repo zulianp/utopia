@@ -29,8 +29,9 @@ namespace utopia {
     {
 
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         typedef utopia::Transfer<Matrix, Vector> Transfer;
         typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
@@ -80,7 +81,7 @@ namespace utopia {
         virtual bool set_functions(const std::vector<FunPtr> &level_functions)
         {
             level_functions_.clear();
-            local_level_dofs_.clear(); 
+            local_level_layouts_.clear();
 
             if(this->n_levels() != static_cast<SizeType>(level_functions.size())){
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and level_functions do not match. \n");
@@ -89,7 +90,7 @@ namespace utopia {
             level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
 
             for(auto l=0; l < this->n_levels(); l++){
-                local_level_dofs_.push_back(level_functions_[l]->loc_size()); 
+                local_level_layouts_.push_back(level_functions_[l]->layout());
             }
 
             return true;
@@ -160,7 +161,7 @@ namespace utopia {
         virtual bool make_iterate_feasible(Fun & fun, Vector & x)
         {
             const auto &bc_values   = fun.get_eq_constrains_values();
-            const auto &bc_ids      = fun.get_eq_constrains_flg(); 
+            const auto &bc_ids      = fun.get_eq_constrains_flg();
 
             {
                 auto d_bc_ids       = const_device_view(bc_ids);
@@ -183,9 +184,9 @@ namespace utopia {
          * @param      fun   The fun
          * @param      c     The correction
          */
-        virtual bool zero_correction_related_to_equality_constrain(const Fun & fun, Vector & c) 
+        virtual bool zero_correction_related_to_equality_constrain(const Fun & fun, Vector & c)
         {
-            fun.zero_contribution_to_equality_constrains(c); 
+            fun.zero_contribution_to_equality_constrains(c);
             return true;
         }
 
@@ -199,7 +200,7 @@ namespace utopia {
          */
         virtual bool zero_correction_related_to_equality_constrain_mat(const Fun & fun, Matrix & M)
         {
-            const std::vector<SizeType> & index = fun.get_indices_related_to_BC(); 
+            const std::vector<SizeType> & index = fun.get_indices_related_to_BC();
             set_zero_rows(M, index, 1.);
 
             return true;
@@ -267,27 +268,27 @@ namespace utopia {
             }
         }
 
-        SizeType local_dofs(const SizeType & level)
+        const Layout &local_layouts(const SizeType & level) const
         {
-            return local_level_dofs_[level]; 
+            return local_level_layouts_[level];
         }
 
 
-        const std::vector<SizeType> & local_level_dofs()
+        const std::vector<Layout> &local_level_layouts() const
         {
-            return local_level_dofs_; 
+            return local_level_layouts_;
         }
 
 
         const std::vector<FunPtr> & level_functions()
         {
-            return level_functions_; 
+            return level_functions_;
         }
 
 
     protected:
-        std::vector<FunPtr>                      level_functions_;
-        std::vector<SizeType>                    local_level_dofs_;
+        std::vector<FunPtr>                    level_functions_;
+        std::vector<Layout>                    local_level_layouts_;
 
     };
 

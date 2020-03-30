@@ -8,6 +8,7 @@
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_QuasiNewtonBase.hpp"
+#include "utopia_Layout.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -31,8 +32,7 @@ namespace utopia
         QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
                     const std::shared_ptr <LinSolver> &linear_solver):
                     QuasiNewtonBase<Vector>(hessian_approx, linear_solver),
-                    initialized_(false),
-                    loc_size_(0)
+                    initialized_(false)
         {
 
         }
@@ -47,10 +47,10 @@ namespace utopia
 
             bool converged = false;
 
-            SizeType loc_size_rhs = local_size(x);
-            if(!initialized_ || !g.comm().conjunction(loc_size_ == loc_size_rhs))
+            auto x_layout = utopia::layout(x);
+            if(!initialized_ || !x_layout.same(layout_))
             {
-                init_memory(loc_size_rhs);
+                init_memory(x_layout);
             }
 
             fun.gradient(x, g);
@@ -121,10 +121,10 @@ namespace utopia
     private:
         void init_memory(const Layout &layout)
         {
-            s.zero(layout);
-            g.zero(layout);
-            y.zero(layout);
-            g_minus.zero(layout);
+            s.zeros(layout);
+            g.zeros(layout);
+            y.zeros(layout);
+            g_minus.zeros(layout);
 
             initialized_ = true;
             layout_ = layout;

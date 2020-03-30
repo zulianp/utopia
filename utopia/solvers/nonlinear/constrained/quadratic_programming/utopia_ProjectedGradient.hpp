@@ -10,6 +10,7 @@
 #include "utopia_Recorder.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_Layout.hpp"
 
 #include <cmath>
 #include <cassert>
@@ -62,7 +63,7 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init_memory(local_size(b));
+            init_memory(layout(b));
 
             x_old = x;
             A.apply(x, u);
@@ -127,10 +128,10 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init_memory(local_size(b));
+            init_memory(layout(b));
 
             // ideally, we have two separate implementations, or cases
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
 
             const auto &upbo = this->get_upper_bound();
             const auto &lobo = this->get_lower_bound();

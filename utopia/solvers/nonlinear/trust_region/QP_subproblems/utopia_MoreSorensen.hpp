@@ -3,7 +3,7 @@
 
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_EigenSolver.hpp"
-
+#include "utopia_Layout.hpp"
 
 namespace utopia
 {
@@ -21,39 +21,38 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::LinearSolver<Matrix, Vector> 		LinearSolver;
-        typedef utopia::EigenSolver<Matrix, Vector> 		EigenSolver;
-
+        using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
+        using EigenSolver  = utopia::EigenSolver<Matrix, Vector>;
 
     public:
-        MoreSorensenEigen(	const std::shared_ptr<LinearSolver> &linear_solver,
-                            const std::shared_ptr<EigenSolver> & eigen_solver):
-                            TRSubproblem<Matrix, Vector>(),
-                            linear_solver_(linear_solver),
-                            eigen_solver_(eigen_solver),
-                            kappa_easy_(1e-10),
-                            lambda_eps_(1e-5),
-                            initialized_(false),
-                            layout_(0)
-        {  };
+        MoreSorensenEigen(
+            const std::shared_ptr<LinearSolver> &linear_solver,
+            const std::shared_ptr<EigenSolver> & eigen_solver
+        ):
+            TRSubproblem<Matrix, Vector>(),
+            linear_solver_(linear_solver),
+            eigen_solver_(eigen_solver),
+            kappa_easy_(1e-10),
+            lambda_eps_(1e-5),
+            initialized_(false)
+        {}
 
-
-        void kappa_easy(const Scalar & kappa)
+        inline void kappa_easy(const Scalar & kappa)
         {
             kappa_easy_ = kappa;
         }
 
-        Scalar kappa_easy()
+        inline Scalar kappa_easy()
         {
             return kappa_easy_;
         }
 
-        void lambda_eps(const Scalar & lambda_eps)
+        inline void lambda_eps(const Scalar & lambda_eps)
         {
             lambda_eps_ = lambda_eps;
         }
 
-        Scalar lambda_eps()
+        inline Scalar lambda_eps()
         {
             return lambda_eps_;
         }
@@ -70,10 +69,11 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
-            SizeType layout_rhs = local_size(b);
-            if(!initialized_ || !b.comm().conjunction(layout_ == layout_rhs)) {
-                    init_memory(layout_rhs);
+            auto b_layout = layout(b);
+            if(!initialized_ || !b_layout.same(layout_)) {
+                init_memory(b_layout);
             }
+
             return aux_solve(*this->get_operator(), b, x);
         }
 
@@ -102,8 +102,8 @@ namespace utopia
             this->print_param_usage(os, "eigen-solver", "EigenSolver", "Input parameters for eigen solver.", "-");
         }
 
-
     private:
+
         bool aux_solve(const Matrix &H, const Vector &g, Vector &s_k)
         {
             Scalar lambda, s_norm, lambda_old;
@@ -187,11 +187,8 @@ namespace utopia
             return true;
         }
 
-
         void init_memory(const Layout &layout) override
         {
-
-
             //resets all buffers in case the size has changed
             eigenvector_.zeros(layout);
             grad_s_lambda_.zeros(layout);
@@ -200,8 +197,8 @@ namespace utopia
             layout_ = layout;
         }
 
-
     private:
+
         std::shared_ptr<LinearSolver> linear_solver_;
         std::shared_ptr<EigenSolver> eigen_solver_;
 

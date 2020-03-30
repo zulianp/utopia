@@ -14,7 +14,7 @@ namespace utopia {
 
     template<class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient()
-    : reset_initial_guess_(false), initialized_(false), layout_(0)
+    : reset_initial_guess_(false), initialized_(false)
     {}
 
     template<class Matrix, class Vector, int Backend>
@@ -50,9 +50,9 @@ namespace utopia {
     template<class Matrix, class Vector, int Backend>
     void ConjugateGradient<Matrix, Vector, Backend>::update(const Operator<Vector> &A)
     {
-        SizeType layout_rhs = A.local_size().get(0);
+        const auto layout_rhs = row_layout(A);
 
-        if(!initialized_ || !A.comm().conjunction(layout_ == layout_rhs)) {
+        if(!initialized_ || !layout_rhs.same(layout_)) {
             init_memory(layout_rhs);
         }
     }
@@ -299,9 +299,7 @@ namespace utopia {
     void ConjugateGradient<Matrix, Vector, Backend>::init_memory(const Layout &layout)
     {
         assert(layout.local_size() > 0);
-
         OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
-        auto zero_expr = local_zeros(layout);
 
         //resets all buffers in case the size has changed
         r.zeros(layout);

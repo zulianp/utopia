@@ -142,7 +142,7 @@ namespace utopia {
 
         inline void values(const Layout &l, const Scalar &value)
         {
-            values(l.comm(), l.local_size(), l.global_size(), value);
+            values(l.comm(), l.local_size(), l.size(), value);
         }
 
         inline void zeros(const Layout &l)
@@ -339,6 +339,12 @@ namespace utopia {
         {
             assert(view_ptr_);
             view_ptr_->view(i, 0) = value;
+        }
+
+        inline void l_add(const SizeType &i, const Scalar &value) //override
+        {
+            assert(view_ptr_);
+            view_ptr_->view(i, 0) += value;
         }
 
         inline void add(const SizeType &i, const Scalar &value) override

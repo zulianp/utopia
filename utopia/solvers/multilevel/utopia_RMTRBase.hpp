@@ -356,7 +356,7 @@ namespace utopia
         // to overwrite
         virtual void init_memory() override
         {
-            const std::vector<SizeType> & layouts =  this->local_level_layouts();
+            const auto &layouts =  this->local_level_layouts();
             const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & funs =  this->level_functions();
 
             ml_derivs_.init_memory(layouts, funs);

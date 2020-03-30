@@ -25,8 +25,7 @@
           QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx,
                             const std::shared_ptr<TRSubproblem> &tr_subproblem):
                             NonLinearSolver(hessian_approx, tr_subproblem),
-                            initialized_(false),
-                            layout_(0)
+                            initialized_(false)
           {
 
           }
@@ -75,8 +74,8 @@
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
 
-        SizeType layout_x = local_size(x_k);
-        if(!initialized_ || !x_k.comm().conjunction(layout_ == layout_x))
+        auto layout_x = layout(x_k);
+        if(!initialized_ || !layout_x.same(layout_))
         {
           init_memory(layout_x);
         }

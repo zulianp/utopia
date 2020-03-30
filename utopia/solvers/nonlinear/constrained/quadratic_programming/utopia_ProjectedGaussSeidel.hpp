@@ -7,6 +7,7 @@
 #include "utopia_Smoother.hpp"
 #include "utopia_QPSolver.hpp"
 #include "utopia_RowView.hpp"
+#include "utopia_Layout.hpp"
 
 #include <cmath>
 
@@ -16,9 +17,10 @@ namespace utopia {
     class ProjectedGaussSeidel : public QPSolver<Matrix, Vector>
     {
     public:
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
 
         ProjectedGaussSeidel()
         : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
@@ -210,7 +212,7 @@ namespace utopia {
             r = b - A * x;
 
             //localize gap function for correction
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
             ub_loc = this->get_upper_bound() - x;
             lb_loc = this->get_lower_bound() - x;
 
@@ -334,37 +336,43 @@ namespace utopia {
             return true;
         }
 
+        void init_memory(const Layout &layout) override
+        {
+            d.zeros(layout);
+            c.zeros(layout);
+
+            if(use_line_search_) {
+                inactive_set_.zeros(layout);
+                Ac.zeros(layout);
+                is_c_.zeros(layout);
+                descent_dir.zeros(layout);
+            }
+        }
+
         void init(const Matrix &A)
         {
+            auto A_layout = row_layout(A);
+
+            if(empty(d) || !A_layout.same( layout(d)) ) {
+                init_memory(A_layout);
+            } else {
+                c.set(0.0);
+
+                if(use_line_search_) {
+                    inactive_set_.set(0);
+                }
+            }
+
             d = diag(A);
 
             if(l1_) {
                 Write<Vector> w(d);
-                each_read(A, [this](const SizeType &i, const SizeType &j, const Scalar &value) {
+                each_read(A, [this](const SizeType &i, const SizeType &, const Scalar &value) {
                     d.add(i, std::abs(value));
                 });
             }
 
             d_inv = 1./d;
-
-            if(empty(c) || size(c) != size(d)){
-                c = local_zeros(local_size(A).get(0));
-            }
-            else{
-                c.set(0);
-            }
-
-            if(use_line_search_) {
-                if(empty(inactive_set_) || size(inactive_set_) != size(d)) {
-                    inactive_set_ = local_zeros(local_size(c));
-                    Ac = local_zeros(local_size(c));
-                    is_c_ = local_zeros(local_size(c));
-                    descent_dir = local_zeros(local_size(c));
-                } else {
-                    inactive_set_.set(0);
-                }
-
-            }
         }
 
         virtual void update(const std::shared_ptr<const Matrix> &op) override
@@ -372,7 +380,6 @@ namespace utopia {
             IterativeSolver<Matrix, Vector>::update(op);
             init(*op);
         }
-
 
         void use_line_search(const bool val)
         {
