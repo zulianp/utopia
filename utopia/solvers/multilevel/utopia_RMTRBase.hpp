@@ -52,6 +52,11 @@ namespace utopia
             RMTRParams<Vector>::print_usage(os); 
         }
 
+        virtual void reset(){
+            init_ = false; 
+        }
+
+
     public: 
         virtual bool solve(Vector &x_h) override;
 
