@@ -398,7 +398,9 @@ namespace utopia {
                 init_memory(A_layout);
             } else {
                 c.set(0);
-                inactive_set_.set(0);
+                if(use_line_search_) {
+                    inactive_set_.set(0);
+                }
             }
 
             d = diag(A);

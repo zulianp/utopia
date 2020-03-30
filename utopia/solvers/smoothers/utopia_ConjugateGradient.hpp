@@ -29,6 +29,10 @@ namespace utopia {
         ConjugateGradient();
 
         void reset_initial_guess(const bool val);
+        inline void apply_gradient_descent_step(const bool val)
+        {
+            apply_gradient_descent_step_ = val;
+        }
 
         void read(Input &in) override;
 
@@ -42,6 +46,9 @@ namespace utopia {
 
         ConjugateGradient * clone() const override;
 
+        void copy(const ConjugateGradient &other);
+        ConjugateGradient(const ConjugateGradient &other);
+
     private:
         bool unpreconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x);
 
@@ -52,13 +59,16 @@ namespace utopia {
         void gradient_descent_step(
                 const Operator<Vector> &A,
                 const Vector &b,
-                Vector &x);
+                Vector &x
+        );
 
-        // std::shared_ptr<Preconditioner> precond_;
-        Vector r, p, q, Ap, r_new, z, z_new;
         bool reset_initial_guess_;
         bool initialized_;
+        bool apply_gradient_descent_step_;
         Layout layout_;
+
+        //This fields are not to be copied anywhere
+        Vector r, p, q, Ap, r_new, z, z_new;
     };
 }
 

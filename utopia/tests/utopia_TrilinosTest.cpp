@@ -7,6 +7,7 @@
 #include "utopia_trilinos_solvers.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
+#include "utopia_Jacobi.hpp"
 
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_MultilevelTestProblem1D.hpp"
@@ -615,11 +616,15 @@ namespace utopia {
         // ml_problem.describe();
         // ml_problem.write_matlab("./");
 
+        // auto smoother      = std::make_shared<Jacobi<Matrix, Vector>>();
         auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
         auto coarse_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
 
+
+        // smoother->set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
         coarse_solver->set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
         coarse_solver->max_it(1000);
+        // coarse_solver->verbose(true);
 
         Multigrid<Matrix, Vector> multigrid(
                                             smoother,

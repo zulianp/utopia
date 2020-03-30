@@ -963,6 +963,8 @@ namespace utopia {
 
     void petsc_mat_mul_add()
     {
+        srand(mpi_world_size());
+
         int n = mpi_world_size() * 2;
         for (size_t i = 0; i < 50; i++) {
             double d1 = rand()/(double)RAND_MAX,

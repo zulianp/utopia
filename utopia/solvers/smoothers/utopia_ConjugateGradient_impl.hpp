@@ -14,7 +14,19 @@ namespace utopia {
 
     template<class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient()
-    : reset_initial_guess_(false), initialized_(false)
+    : reset_initial_guess_(false), initialized_(false), apply_gradient_descent_step_(false)
+    {}
+
+    template<class Matrix, class Vector, int Backend>
+    void ConjugateGradient<Matrix, Vector, Backend>::copy(const ConjugateGradient &other)
+    {
+        Super::operator=(other);
+        reset_initial_guess_ = other.reset_initial_guess_;
+    }
+
+    template<class Matrix, class Vector, int Backend>
+    ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient(const ConjugateGradient &other)
+    : Super(other), reset_initial_guess_(other.reset_initial_guess_), initialized_(false), apply_gradient_descent_step_(other.apply_gradient_descent_step_)
     {}
 
     template<class Matrix, class Vector, int Backend>
@@ -28,6 +40,7 @@ namespace utopia {
     {
         OperatorBasedLinearSolver<Matrix, Vector>::read(in);
         in.get("reset_initial_guess", reset_initial_guess_);
+        in.get("apply_gradient_descent_step", apply_gradient_descent_step_);
     }
 
     template<class Matrix, class Vector, int Backend>
@@ -92,7 +105,9 @@ namespace utopia {
             }
         }
 
-        gradient_descent_step(A, b, x);
+        if(apply_gradient_descent_step_) {
+            gradient_descent_step(A, b, x);
+        }
 
         // r = b - A * x;
         UTOPIA_NO_ALLOC_BEGIN("CG:region1");
@@ -186,9 +201,7 @@ namespace utopia {
 
         if(empty(x) || size(x) != size(b)) {
             UTOPIA_NO_ALLOC_BEGIN("CG_pre:region0");
-            x = local_zeros(local_size(b));
-            // r = b;
-            // UTOPIA_NO_ALLOC_END();
+            x.zeros(layout(b));
         } else {
             assert(local_size(x) == local_size(b));
 
@@ -197,7 +210,9 @@ namespace utopia {
             }
         }
 
-        gradient_descent_step(A, b, x);
+        if(apply_gradient_descent_step_) {
+            gradient_descent_step(A, b, x);
+        }
 
         UTOPIA_NO_ALLOC_BEGIN("CG_pre:region1");
         A.apply(x, r);

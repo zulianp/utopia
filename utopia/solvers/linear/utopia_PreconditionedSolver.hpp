@@ -64,18 +64,6 @@ namespace utopia {
             }
         }
 
-        inline PreconditionedSolver &operator=(const PreconditionedSolver &other)
-        {
-            if(this == &other) {
-                return *this;
-            }
-
-            IterativeSolver::operator=(other);
-            this->set_preconditioner(std::shared_ptr<Preconditioner>(other.precond_->clone()));
-            return *this;
-        }
-
-
         virtual void read(Input &in) override
         {
             IterativeSolver::read(in);
@@ -84,15 +72,41 @@ namespace utopia {
             }
         }
 
-
         virtual void print_usage(std::ostream &os) const override
         {
             IterativeSolver::print_usage(os);
             this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-");
         }
 
+        inline PreconditionedSolver &operator=(const PreconditionedSolver &other)
+        {
+            if(this == &other) {
+                return *this;
+            }
+
+            IterativeSolver::operator=(other);
+            copy_preconditioner_from(other);
+            return *this;
+        }
+
+        PreconditionedSolver(const PreconditionedSolver &other)
+        : IterativeSolver(other)
+        {
+            copy_preconditioner_from(other);
+        }
+
+        PreconditionedSolver() : IterativeSolver() {}
+
     private:
         std::shared_ptr<Preconditioner> precond_;
+
+        void copy_preconditioner_from(const PreconditionedSolver &other)
+        {
+            if(other.has_preconditioner()) {
+                this->set_preconditioner(std::shared_ptr<Preconditioner>(other.precond_->clone()));
+            }
+        }
+
     };
 }
 

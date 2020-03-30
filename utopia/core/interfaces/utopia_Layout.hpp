@@ -38,12 +38,21 @@ namespace utopia {
 			return size_[i];
 		}
 
-		inline bool same_local(const Layout &other) const
+		inline bool same_local_size(const Layout &other) const
 		{
 			for(int i = 0; i < Order; ++i) {
-				if(local_size_[i] != other.local_size(i) ||
-				  size_[i] != other.size(i)
-				) {
+				if(local_size_[i] != other.local_size(i)) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		inline bool same_size(const Layout &other) const
+		{
+			for(int i = 0; i < Order; ++i) {
+				if(size_[i] != other.size(i)) {
 					return false;
 				}
 			}
@@ -55,7 +64,9 @@ namespace utopia {
 		inline bool same(const Layout &other) const
 		{
 			if(!comm().same(other.comm())) return false;
-			return comm().conjunction(same_local(other));
+			if(!same_size(other)) return false;
+
+			return comm().conjunction(same_local_size(other));
 		}
 
 		const Comm &comm() const { return comm_; }

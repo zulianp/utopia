@@ -102,6 +102,7 @@ namespace utopia {
             }
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            cg.apply_gradient_descent_step(true);
             // BiCGStab<Matrix, Vector, HOMEMADE> cg;
             cg.read(in);
 
