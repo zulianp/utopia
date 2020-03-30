@@ -68,32 +68,32 @@ namespace utopia {
             bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             {
                 if(init_==false){
-                    init_redundant(A, rhs); 
+                    init_redundant(A, x); 
                 }
                 
                 global_to_sub(sol, sol_sub, rhs, rhs_sub);
 
             
                 // // // // // // // // // // // // //  lets assume, there will be solve here... // // // // // // // // 
-                auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                // auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
                 
-                Vector lb = -9e9*sol_sub; 
-                Vector ub = 9e9*sol_sub; 
-                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
-                QP_solver->max_it(10);
-                QP_solver->verbose(true); 
+                // Vector lb = -9e9*sol_sub; 
+                // Vector ub = 9e9*sol_sub; 
+                // auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+                // QP_solver->max_it(10);
+                // QP_solver->verbose(true); 
 
-                QP_solver->init_memory(sol_sub.comm(), size(sol_sub).get(0), local_size(sol_sub).get(0)); 
-                QP_solver->aux_solve(pmats, rhs_sub, sol_sub, box);
+                // QP_solver->init_memory(sol_sub.comm(), size(sol_sub).get(0), local_size(sol_sub).get(0)); 
+                // QP_solver->aux_solve(pmats, rhs_sub, sol_sub, box);
 
-                
+                sol_sub = pmats * sol_sub; 
 
                 
                 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
                 // std::cout<<"---------------- \n"; 
                 sub_to_global(sol_sub, sol); 
+                disp(sol, "sol_global"); 
 
-                
 
 
                 return false; 

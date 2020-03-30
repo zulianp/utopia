@@ -115,28 +115,42 @@ namespace utopia {
             if(this->has_bounds())  
             {
                 if(!lower_bound_->comm().conjunction(ls == local_size(*lower_bound_))){
-                    lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                    // lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                    lower_bound_ = std::make_shared<Vector>(local_values(ls, min_val_));
+                    lower_bound_->local_values(comm, gs, ls, min_val_); 
+
                 }
 
                 if(!upper_bound_->comm().conjunction(ls == local_size(*upper_bound_))){
-                    upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                    // upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                    upper_bound_ = std::make_shared<Vector>(local_values(ls, max_val_));
+                    upper_bound_->local_values(comm, gs, ls, max_val_);
                 }
 
                 return; 
             }
             else if(!lower_bound_ && !upper_bound_)
             {
-                lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
-                upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                // lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                // upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                lower_bound_ = std::make_shared<Vector>(local_values(ls, min_val_));
+                upper_bound_ = std::make_shared<Vector>(local_values(ls, max_val_));
+                
+                lower_bound_->local_values(comm, gs, ls, min_val_);
+                upper_bound_->local_values(comm, gs, ls, max_val_);                                
             }
             else
             {
                 if(!lower_bound_) {
-                    lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                    // lower_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, min_val_));
+                    lower_bound_ = std::make_shared<Vector>(local_values(ls, min_val_));
+                    lower_bound_->local_values(comm, gs, ls, min_val_);
                 }
 
                 if(!upper_bound_) {
-                    upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                    // upper_bound_ = std::make_shared<Vector>(local_values(comm, gs, ls, max_val_));
+                    upper_bound_ = std::make_shared<Vector>(local_values(ls, max_val_));
+                    upper_bound_ ->local_values(comm, gs, ls, max_val_);
                 }
             }
         }          

@@ -965,7 +965,14 @@ namespace utopia
 
             auto redundantQP = std::make_shared<utopia::RedundantQPSolver<Matrix, Vector> >(QP_solver);
             x = fun.initial_guess();
-            redundantQP->solve(H, -1.0*g, x);
+            redundantQP->number_of_parallel_solves(2); 
+            redundantQP->solve(H, g, x);
+
+            
+            x = fun.initial_guess();
+            PetscVector vec_new = H*x; 
+            disp(vec_new, "vec_new"); 
+
 
         }
 
@@ -987,7 +994,7 @@ namespace utopia
 #ifdef WITH_PETSC
         auto n_levels    = 2;
 
-        auto coarse_dofs = 100;
+        auto coarse_dofs = 10;
         auto verbose     = false;
 
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();

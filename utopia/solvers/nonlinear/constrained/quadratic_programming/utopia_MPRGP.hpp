@@ -188,7 +188,8 @@ namespace  utopia
                     it++;
 
                     if(this->verbose()){
-                        PrintInfo::print_iter_status(it, {gnorm});
+                        // PrintInfo::print_iter_status(it, {gnorm});
+                        std::cout<<"it: "<< it << " gnorm: " << gnorm << "  \n"; 
                     }
 
                     converged = this->check_convergence(it, gnorm, 1, 1);
@@ -454,7 +455,7 @@ namespace  utopia
 
             void init_memory(const MPICommunicator & comm, const SizeType &gs, const SizeType &ls)
             {
-                OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls); 
+                OperatorBasedQPSolver<Matrix, Vector>::init_memory(comm, gs, ls); 
 
                 // auto zero_expr = local_zeros(ls);
 
