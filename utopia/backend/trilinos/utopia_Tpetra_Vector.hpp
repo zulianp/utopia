@@ -19,6 +19,7 @@
 #include "utopia_Allocations.hpp"
 #include "utopia_Select.hpp"
 #include "utopia_RangeDevice.hpp"
+#include "utopia_Layout.hpp"
 
 #include "utopia_kokkos_Eval_Binary.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
@@ -64,6 +65,7 @@ namespace utopia {
         using RCPCommType     = Teuchos::RCP<const Teuchos::Comm<int> > ;
         using RCPMapType      = Teuchos::RCP<const MapType>;
         using ExecutionSpace  = VectorType::execution_space;
+        using Layout          = utopia::Layout<TrilinosCommunicator, SizeType, 1>;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -71,6 +73,7 @@ namespace utopia {
 
         using Super         = utopia::Tensor<TpetraVector, 1>;
         using Constructible = utopia::Constructible<Scalar, SizeType, 1>;
+        using Constructible::zeros;
 
         using Super::Super;
 
@@ -136,6 +139,16 @@ namespace utopia {
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Constructible ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
+
+        inline void values(const Layout &l, const Scalar &value)
+        {
+            values(l.comm(), l.local_size(), l.global_size(), value);
+        }
+
+        inline void zeros(const Layout &l)
+        {
+            values(l, 0.0);
+        }
 
         void values(const SizeType &s, const Scalar &val) override;
         void local_values(const SizeType &s, const Scalar &val) override;
@@ -215,6 +228,24 @@ namespace utopia {
         //////////////////////////////////////////
         //API functions
         //////////////////////////////////////////
+
+        void zeros(
+            const TrilinosCommunicator &comm,
+            const SizeType &n_local,
+            const SizeType &n_global)
+        {
+            values(comm.get(), n_local, n_global, 0.0);
+        }
+
+        void values(
+            const TrilinosCommunicator &comm,
+            const SizeType &n_local,
+            const SizeType &n_global,
+            const Scalar &value)
+        {
+            values(comm.get(), n_local, n_global, value);
+        }
+
         void values(
             const RCPCommType &comm,
             const SizeType &n_local,

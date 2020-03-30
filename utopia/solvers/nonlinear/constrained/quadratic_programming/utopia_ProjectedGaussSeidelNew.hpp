@@ -8,6 +8,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_RowView.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
+#include "utopia_Algorithms.hpp"
 
 #include <cmath>
 
@@ -28,6 +29,7 @@ namespace utopia {
     public:
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Super    = utopia::QPSolver<Matrix, Vector>;
 
         ProjectedGaussSeidel()
         : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
@@ -375,36 +377,45 @@ namespace utopia {
             return true;
         }
 
+        void init_memory(const SizeType &ls)  override
+        {
+            Super::init_memory(ls);
+        }
+
         void init(const Matrix &A)
         {
+            const auto &comm = A.comm();
+
+            auto l = layout(comm, local_size(A).get(0), size(A).get(0));
+            const bool reset = empty(c) || size(c) != l.global_size() || !comm.conjunction(local_size(c) == l.local_size());
+
             d = diag(A);
 
             if(l1_) {
                 Write<Vector> w(d);
-                each_read(A, [this](const SizeType &i, const SizeType &j, const Scalar &value) {
-                    d.add(i, std::abs(value));
+                each_read(A, [this](const SizeType &i, const SizeType &, const Scalar &value) {
+                    d.add(i, device::abs(value));
                 });
             }
 
             d_inv = 1./d;
 
-            if(empty(c) || size(c) != size(d)){
-                c = local_zeros(local_size(A).get(0));
-            }
-            else{
+            if(reset) {
+                c.zeros(l);
+            } else {
                 c.set(0);
             }
 
             if(use_line_search_) {
-                if(empty(inactive_set_) || size(inactive_set_) != size(d)) {
-                    inactive_set_ = local_zeros(local_size(c));
-                    Ac = local_zeros(local_size(c));
-                    is_c_ = local_zeros(local_size(c));
-                    descent_dir = local_zeros(local_size(c));
+
+                if(empty(inactive_set_) || reset) {
+                    inactive_set_.zeros(l);
+                    Ac.zeros(l);
+                    is_c_.zeros(l);
+                    descent_dir.zeros(l);
                 } else {
                     inactive_set_.set(0);
                 }
-
             }
         }
 
