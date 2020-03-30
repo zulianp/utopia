@@ -121,13 +121,18 @@ namespace utopia {
 
             //////////////////////////////////////////////// init solver ////////////////////////////////////////////////
             // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            
             rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             // tr_strategy_fine->l1(true); 
             
             
             auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // auto ls = std::make_shared<GMRES<Matrix, Vector> >(); 
+            // ls->pc_type("bjacobi"); 
+            // auto tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
+
 
             // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -383,7 +388,6 @@ namespace utopia {
 
         std::shared_ptr<ICType > IC_;
         std::string log_output_path_;
-
 
         std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> > rmtr_;
 

@@ -203,6 +203,7 @@ namespace utopia {
                 in.get(max_str, this->box_max()[d]);
             }
 
+
             this->destroy_dm();
             create_uniform(
                 comm().get(),
