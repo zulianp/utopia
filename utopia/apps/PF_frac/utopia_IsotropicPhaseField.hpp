@@ -112,7 +112,7 @@ namespace utopia {
 
         void init_force_field(Input &in)
         {
-            in.get("neumann-bc", [&](Input &in) {
+            in.get("neumann_bc", [&](Input &in) {
                 in.get_all([&](Input &in) {
 
                     if(empty(force_field_)) {
