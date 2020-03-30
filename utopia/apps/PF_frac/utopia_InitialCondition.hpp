@@ -112,7 +112,7 @@ namespace utopia {
                     auto sampler_view = sampler.view_device();
                     auto x_view       = this->space_.assembly_view_device(x);
 
-                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         ElemViewScalar e;
                         C_view.elem(i, e);
 
@@ -177,7 +177,7 @@ namespace utopia {
                     auto sampler_view = sampler.view_device();
                     auto x_view       = this->space_.assembly_view_device(x);
 
-                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         ElemViewScalar e;
                         C_view.elem(i, e);
 
@@ -233,13 +233,13 @@ namespace utopia {
 
         T x;
         T y;
-        T z; 
+        T z;
 
         void describe()
         {
             std::cout<<"( " << x << " , "<< y << " , "<< z << " )" <<  " \n";
         }
-    };    
+    };
 
     template<class T>
     class Rectangle
@@ -310,20 +310,20 @@ namespace utopia {
 
 
                 A_.x = distr_point(generator);
-                A_.y = distr_point(generator);             
+                A_.y = distr_point(generator);
 
-                T theta = distr_angle(generator);   
+                T theta = distr_angle(generator);
 
-                // length should be driven from power distribution 
-                // std::uniform_real_distribution<> distr_length(3.0*width, 0.15);                 
-                
-                // length should be driven from power distribution 
-                std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
-                const T alpha = 2.8; 
-                const T x_min = 3.0*width > 0.04 ? 3.0*width : 0.04; 
+                // length should be driven from power distribution
+                // std::uniform_real_distribution<> distr_length(3.0*width, 0.15);
+
+                // length should be driven from power distribution
+                std::uniform_real_distribution<> distr_length(0.0, 1.0);
+                const T alpha = 2.8;
+                const T x_min = 3.0*width > 0.04 ? 3.0*width : 0.04;
                 const T r = distr_length(generator);
                 T length = x_min * std::pow( (1.-r), (-1./(alpha-1.)));
-                
+
                 generate_rectangle(length, width, theta);
             }
 
@@ -366,14 +366,14 @@ namespace utopia {
         public:
             Paralleloid(const T & width)
             {
-                points_.resize(8); 
+                points_.resize(8);
                 randomly_generate(width);
             }
 
             Paralleloid(const Point3D<T> & A, const T & length, const T & width, const T & theta, const T & gamma )
             {
-                points_.resize(8); 
-                points_[0] = A; 
+                points_.resize(8);
+                points_[0] = A;
                 this->generate_paralleloid(length, width, theta, gamma);
             }
 
@@ -395,16 +395,16 @@ namespace utopia {
                 build_vector(points_[0], points_[1], v);
                 build_vector(points_[0], points_[2], w);
 
-                const T dotMu = vec_dot(M, u); 
-                const T dotMv = vec_dot(M, v); 
-                const T dotMw = vec_dot(M, w); 
+                const T dotMu = vec_dot(M, u);
+                const T dotMv = vec_dot(M, v);
+                const T dotMw = vec_dot(M, w);
 
 
-                bool flg1 =  (vec_dot(u, points_[4]) <= dotMu) && (dotMu <= vec_dot(u, points_[0])); 
-                bool flg2 =  (vec_dot(v, points_[1]) <= dotMv) && (dotMv <= vec_dot(v, points_[0])); 
-                bool flg3 =  (vec_dot(w, points_[2]) <= dotMw) && (dotMw <= vec_dot(w, points_[0]));    
+                bool flg1 =  (vec_dot(u, points_[4]) <= dotMu) && (dotMu <= vec_dot(u, points_[0]));
+                bool flg2 =  (vec_dot(v, points_[1]) <= dotMv) && (dotMv <= vec_dot(v, points_[0]));
+                bool flg3 =  (vec_dot(w, points_[2]) <= dotMw) && (dotMw <= vec_dot(w, points_[0]));
 
-                return flg1 && flg2 && flg3; 
+                return flg1 && flg2 && flg3;
 
             }
 
@@ -420,7 +420,7 @@ namespace utopia {
                 std::cout<<"F: "<< points_[5].x << " "<< points_[5].y <<  "  "<< points_[5].z << "  \n";
                 std::cout<<"G: "<< points_[6].x << " "<< points_[6].y <<  "  "<< points_[6].z << "  \n";
                 std::cout<<"H: "<< points_[7].x << " "<< points_[7].y <<  "  "<< points_[7].z << "  \n";
-                std::cout<<"------------------------------  \n";                
+                std::cout<<"------------------------------  \n";
             }
 
         private:
@@ -436,33 +436,33 @@ namespace utopia {
                 std::uniform_real_distribution<> distr_point_z(4.0, 6.0);
                 std::uniform_int_distribution<> distr_angle(0, 180);
 
-                points_[0].x = distr_point_x(generator);
-                points_[0].y = distr_point_y(generator);             
-                points_[0].z = distr_point_z(generator);  
 
-                const T theta = distr_angle(generator);   
-                const T gamma = distr_angle(generator);   
-                          
-                // length should be driven from power distribution 
-                // std::uniform_real_distribution<> distr_length(0.0, 3.0);                 
-                // const T alpha1 = 2.8; 
-                // const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04; 
+                points_[0].x = distr_point_x(generator);
+                points_[0].y = distr_point_y(generator);
+                points_[0].z = distr_point_z(generator);
+
+
+                const T theta = distr_angle(generator);
+                const T gamma = distr_angle(generator);
+
+                // // length should be driven from power distribution
+                // std::uniform_real_distribution<> distr_length(0.0, 1.0);
+                // const T alpha1 = 2.8;
+                // const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04;
                 // const T r = distr_length(generator);
                 // const T length = x_min * std::pow( (1.-r), (-1./(alpha1-1.)));
 
-                
-                // const T alpha2 = 2.95; 
-                // std::uniform_real_distribution<> distr_length2(0.0, 1.0);   
-                // const T r2 = distr_length2(generator);
-                // const T width = x_min * std::pow( (1.-r2), (-1./(alpha2-1.)));   
+
+                // const T alpha2 = 2.95;
+                // const T r2 = distr_length(generator);
+                // const T width = x_min * std::pow( (1.-r2), (-1./(alpha2-1.)));
 
 
-                const T width = 1.0; 
-                const T length = 0.5;  
-
+                const T width = 0.15;
+                const T length = 0.15;
 
                 std::uniform_int_distribution<> distr_dir(0.0, 6);
-                const int i = distr_dir(generator); 
+                const int i = distr_dir(generator);
 
                 if(i==0){
                     generate_paralleloid(length, depth, width, theta, gamma);
@@ -472,17 +472,17 @@ namespace utopia {
                 }
                 else if(i==3){
                     generate_paralleloid(depth, length, width, theta, gamma);
-                }           
+                }
                 else if(i==4){
                     generate_paralleloid(depth, width, length, theta, gamma);
-                }           
+                }
                 else if(i==5){
                     generate_paralleloid(length, depth, width, theta, gamma);
-                }   
+                }
                 else{
                     generate_paralleloid(width, depth, length, theta, gamma);
                 }
-                                                                                
+
 
             }
 
@@ -491,24 +491,24 @@ namespace utopia {
                 const T theta_rad = theta * pi/180.0;
                 const T gamma_rad = gamma * pi/180.0;
 
-                const auto cos_theta = std::cos(theta_rad); 
-                const auto sin_theta = std::sin(theta_rad); 
+                const auto cos_theta = std::cos(theta_rad);
+                const auto sin_theta = std::sin(theta_rad);
 
-                const auto cos_theta_pi = std::cos(theta_rad + pi/2.0); 
-                const auto sin_theta_pi = std::sin(theta_rad + pi/2.0); 
+                const auto cos_theta_pi = std::cos(theta_rad + pi/2.0);
+                const auto sin_theta_pi = std::sin(theta_rad + pi/2.0);
 
 
                 points_[1].x = points_[0].x + (a * cos_theta);
                 points_[1].y = points_[0].y + (a * sin_theta);
-                points_[1].z = points_[0].z; 
+                points_[1].z = points_[0].z;
 
                 points_[2].x = points_[0].x + (b * cos_theta_pi);
                 points_[2].y = points_[0].y + (b * sin_theta_pi);
-                points_[2].z = points_[0].z; 
+                points_[2].z = points_[0].z;
 
                 points_[3].x = points_[0].x + ((a * cos_theta) + (b * cos_theta_pi));
                 points_[3].y = points_[0].y + ((a * sin_theta) + (b * sin_theta_pi));
-                points_[3].z = points_[0].z; 
+                points_[3].z = points_[0].z;
 
                 points_[4].x = points_[0].x;
                 points_[4].y = points_[0].y;
@@ -538,7 +538,6 @@ namespace utopia {
                 //     points_[p].z = (ay* cos_gamma) + (ax * sin_gamma); 
                 // }
 
-
             }
 
             void build_vector(const Point3D<T> & A, const Point3D<T> & B, Point3D<T> & result)
@@ -559,12 +558,12 @@ namespace utopia {
                 result.x = A.y * B.z - A.z*B.y;
                 result.y = A.z * B.x - A.x*B.z;
                 result.z = A.x * B.y - A.y*B.x;
-            }            
+            }
 
         private:
-            std::vector< Point3D<T> > points_; 
+            std::vector< Point3D<T> > points_;
 
-    };    
+    };
 
 
     template<class FunctionSpace>
@@ -629,7 +628,7 @@ namespace utopia {
                     auto sampler_view = sampler.view_device();
                     auto x_view       = this->space_.assembly_view_device(x);
 
-                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         ElemViewScalar e;
                         C_view.elem(i, e);
 
@@ -685,7 +684,7 @@ namespace utopia {
                     auto sol_view       = this->space_.assembly_view_device(sol_vec);
                     auto press_view     = this->space_.assembly_view_device(press_vec);
 
-                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         ElemViewScalar e;
                         C_view.elem(i, e);
 
@@ -773,7 +772,7 @@ namespace utopia {
                     auto sampler_view = sampler.view_device();
                     auto x_view       = this->space_.assembly_view_device(x);
 
-                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         ElemViewScalar e;
                         C_view.elem(i, e);
 
@@ -821,11 +820,11 @@ namespace utopia {
 
                 auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x) -> Scalar {
                     Scalar f = 0.0;
-                    Scalar h = this->space_.mesh().min_spacing(); 
+                    Scalar h = this->space_.mesh().min_spacing();
 
                     if( x[0] > 0.55 && x[0] < 0.7  && x[1]  > (0.4)  && x[1]  < (0.6) && x[2] < (0.6+h) && x[2] > (0.6-h)){
                         f = 1.0;
-                    }             
+                    }
                     else{
                         f = 0.0;
                     }
@@ -838,7 +837,7 @@ namespace utopia {
                     auto sampler_view = sampler.view_device();
                     auto x_view       = this->space_.assembly_view_device(x);
 
-                    Dev::parallel_for(this->space_.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         ElemViewScalar e;
                         C_view.elem(i, e);
 

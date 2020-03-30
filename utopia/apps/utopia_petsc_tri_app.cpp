@@ -31,6 +31,9 @@
 
 #include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
+
 #include <cmath>
 
 namespace utopia {

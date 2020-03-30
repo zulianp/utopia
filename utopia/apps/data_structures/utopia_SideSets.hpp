@@ -182,7 +182,7 @@ namespace utopia {
     };
 
     template<>
-    class SideSets<-1> {
+    class SideSets<DYNAMIC_SIZE> {
     public:
         template<class TensorIndex, class Dims>
         UTOPIA_INLINE_FUNCTION static bool on_side(

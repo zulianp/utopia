@@ -6,12 +6,25 @@
 
 namespace utopia {
 
+    template<Size_t...Args>
+    struct static_size_of_view {
+        static const Size_t value = 1;
+    };
+
+    template<Size_t N1, Size_t... Args>
+    struct static_size_of_view<N1, Args...> {
+        static const Size_t value = (N1 == DYNAMIC_SIZE)? DYNAMIC_SIZE : (static_size_of_view<Args...>::value == DYNAMIC_SIZE? DYNAMIC_SIZE : (static_size_of_view<Args...>::value * N1));
+    };
+
+
     template<typename T, Size_t... Args>
     class Traits< ArrayView<T, Args...> > {
     public:
         using Scalar = T;
         using SizeType = Size_t;
         using ValueType = T;
+
+        static const Size_t StaticSize = static_size_of_view<Args...>::value;
 
         static const int Backend = SERIAL_HOMEMADE;
         static const int FILL_TYPE = FillType::DENSE;

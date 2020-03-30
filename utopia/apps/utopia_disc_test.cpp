@@ -15,7 +15,7 @@
 #include "utopia_BratuFE.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
+// #include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_GradInterpolate.hpp"
@@ -24,6 +24,8 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_L2Norm.hpp"
+
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 #include <cmath>
 
@@ -149,7 +151,7 @@ namespace utopia {
             auto dx_view    = differential.view_device();
 
             Device::parallel_reduce(
-                space.local_element_range(),
+                space.element_range(),
                 UTOPIA_LAMBDA(const SizeType &i) -> Scalar
                 {
                     StaticVector<Scalar, Quadrature::NPoints> c;

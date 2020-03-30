@@ -149,7 +149,7 @@ namespace utopia {
                 auto laplacian_view = laplacian.view_device();
 
                 Device::parallel_for(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticVector<Scalar, C_NDofs + U_NDofs> coeff, el_vec;
@@ -319,7 +319,7 @@ namespace utopia {
                 auto laplacian_view = laplacian.view_device();
 
                 Device::parallel_for(
-                    space_.local_element_range(),
+                    space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                     {
                         StaticMatrix<Scalar, C_NDofs, C_NDofs> lap_mat;

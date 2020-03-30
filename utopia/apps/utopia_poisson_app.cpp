@@ -25,6 +25,9 @@
 #include "utopia_app_utils.hpp"
 #include "utopia_PorousFlowFE.hpp"
 
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
+
 #include <cmath>
 
 namespace utopia {
@@ -238,7 +241,7 @@ namespace utopia {
                 }
 
                 Dev::parallel_for(
-                    space.local_element_range(),
+                    space.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i)
                 {
                     Elem e;

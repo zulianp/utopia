@@ -24,7 +24,12 @@ namespace utopia {
 
         using SizeType  = typename Super::SizeType;
         using Scalar    = typename Super::Scalar;
-        using NodeIndex = utopia::ArrayView<SizeType>;
+        using NodeIndex = utopia::ArrayView<const SizeType>;
+        using SideSets  = utopia::SideSets<Super::StaticDim>;
+
+        using Device    = utopia::Device<PETSC>;
+        using Comm      = utopia::PetscCommunicator;
+        // using ViewDevice    = PetscDMDA;
 
         class Elements {
         public:
@@ -32,6 +37,14 @@ namespace utopia {
             : dm_(dm)
             {
                 DMDAGetElements(dm_, &n_local_elem_, &n_nodes_x_elem_, &local_elem_);
+
+                const SizeType n_idx = n_local_elem_ * n_nodes_x_elem_;
+
+                global_elem_.resize(n_idx);
+
+                ISLocalToGlobalMapping map;
+                DMGetLocalToGlobalMapping(dm,&map);
+                ISLocalToGlobalMappingApplyBlock(map, n_idx, local_elem_, &global_elem_[0]);
             }
 
             ~Elements()
@@ -43,6 +56,18 @@ namespace utopia {
             {
                 return n_local_elem_;
             }
+            inline Range range() const
+            {
+                return Range(0, n_local_elem_);
+            }
+
+            inline NodeIndex nodes(const SizeType &local_elem_idx) const
+            {
+                return NodeIndex(
+                    &global_elem_[local_elem_idx * n_nodes_x_elem_],
+                    n_nodes_x_elem_
+                );
+            }
 
             inline NodeIndex nodes_local(const SizeType &local_elem_idx) const
             {
@@ -52,15 +77,68 @@ namespace utopia {
                 );
             }
 
+            inline SizeType first_node_idx(const SizeType &local_elem_idx) const
+            {
+                return local_elem_[local_elem_idx * n_nodes_x_elem_];
+            }
+
         private:
             DM dm_;
             SizeType n_local_elem_, n_nodes_x_elem_;
             const SizeType *local_elem_;
+            std::vector<SizeType> global_elem_;
         };
 
-        std::unique_ptr<Elements> make_elements() const
+        //FIXME make this work also without static-sizes
+        constexpr static typename SideSets::Sides sides()
         {
-            return utopia::make_unique<Elements>(this->raw_type());
+            return SideSets::sides();
+        }
+
+        inline void cell_point(const SizeType &idx, Point &p) const
+        {
+            assert(elements_ && "init_elements() has to be called before any access to element data");
+            const SizeType p_idx = elements_->first_node_idx(idx);
+            this->point(p_idx, p);
+        }
+
+        inline void nodes(const SizeType &idx, NodeIndex &nodes) const
+        {
+            assert(elements_ && "init_elements() has to be called before any access to element data");
+            nodes = elements_->nodes(idx);
+        }
+
+        inline void nodes_local(const SizeType &idx, NodeIndex &nodes) const
+        {
+            assert(elements_ && "init_elements() has to be called before any access to element data");
+            nodes = elements_->nodes_local(idx);
+        }
+
+        bool on_boundary(const SizeType &elem_idx) const
+        {
+            NodeIndex idx;
+            nodes(elem_idx, idx);
+
+            for(auto i : idx) {
+                if(this->is_node_on_boundary(i)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void init_elements()
+        {
+            if(!elements_) {
+                elements_ = make_elements();
+            }
+        }
+
+        std::shared_ptr<Elements> elements_ptr()
+        {
+            init_elements();
+            return elements_;
         }
 
         void wrap(DM &dm, const bool delegate_ownership) override
@@ -70,11 +148,34 @@ namespace utopia {
         }
 
         PetscDMDA(const PetscCommunicator &comm, const DMDAElementType &type_override = DMDA_ELEMENT_Q1)
-        : PetscDMBase(comm), type_override_(type_override) {}
+        : PetscDMBase(comm), type_override_(type_override)
+        {
+            this->set_n_components(1);
+        }
 
         PetscDMDA(DM &dm, const bool delegate_ownership)
         {
+            this->set_n_components(1);
             wrap(dm, delegate_ownership);
+        }
+
+        void set_field_name(const SizeType &nf, const std::string &name)
+        {
+            DMDASetFieldName(raw_type(), nf, name.c_str());
+        }
+
+        void set_field_names(const std::vector<std::string> &names)
+        {
+            const std::size_t n_names = names.size();
+            std::vector<const char *> names_copy(n_names + 1);
+
+            for(std::size_t i = 0; i < n_names; ++i) {
+                names_copy[i] = names[i].c_str();
+            }
+
+            names_copy[n_names] = nullptr;
+
+            DMDASetFieldNames(raw_type(), &names_copy[0]);
         }
 
         void read(Input &in) override
@@ -101,6 +202,7 @@ namespace utopia {
                 in.get(min_str, this->box_min()[d]);
                 in.get(max_str, this->box_max()[d]);
             }
+
 
             this->destroy_dm();
             create_uniform(
@@ -246,8 +348,11 @@ namespace utopia {
 
         std::unique_ptr<PetscDMDA> uniform_refine() const
         {
-            auto fine = utopia::make_unique<PetscDMDA>();
+            auto fine = utopia::make_unique<PetscDMDA>(comm(), type_override_);
             PetscDMBase::refine(raw_type(), comm().get(), fine->raw_type());
+
+            device::copy(this->box_min(), fine->box_min());
+            device::copy(this->box_max(), fine->box_max());
 
             //This does not transfer automatically for some reason
             DMDAElementType elem_type;
@@ -260,12 +365,17 @@ namespace utopia {
 
         std::unique_ptr<PetscDMDA> clone(const SizeType &n_components) const
         {
-            auto cloned = utopia::make_unique<PetscDMDA>();
+            auto cloned = utopia::make_unique<PetscDMDA>(comm(), type_override_);
             cloned->copy(*this);
             cloned->set_n_components(n_components);
-            cloned->type_override_ = type_override_;
+            // cloned->type_override_ = type_override_;
             cloned->init_from_mirror();
             return std::move(cloned);
+        }
+
+        std::unique_ptr<PetscDMDA> clone() const
+        {
+            return clone(this->n_components());
         }
 
         static void get_corners(DM dm, IntArray &start, IntArray &extent)
@@ -316,20 +426,48 @@ namespace utopia {
             return ret;
         }
 
+
+        void describe() const override
+        {
+            std::cout << "n_elements      : " << this->n_elements()      << std::endl;
+            std::cout << "n_nodes         : " << this->n_nodes()         << std::endl;
+            std::cout << "dim             : " << this->dim()             << std::endl;
+            std::cout << "elements_x_cell : " << this->elements_x_cell() << std::endl;
+
+            disp("box_min");
+            disp(this->box_min());
+
+            disp("box_max");
+            disp(this->box_max());
+        }
+
+
     private:
         DMDAElementType type_override_;
 
+        //initialized in a lazy way
+        std::shared_ptr<Elements> elements_;
+
+        std::unique_ptr<Elements> make_elements() const
+        {
+            return utopia::make_unique<Elements>(this->raw_type());
+        }
+
         void init_default()
         {
+            elements_ = nullptr;
             device::fill(10, this->dims());
             device::fill(0,  this->box_min());
             device::fill(1,  this->box_max());
-            this->set_n_components(1);
+
+
+            init_elem_x_cell(type_override_);
         }
 
         void init_from_mirror()
         {
             this->destroy_dm();
+
             create_uniform(
                 comm().get(),
                 this->dims(),
@@ -339,10 +477,14 @@ namespace utopia {
                 this->n_components(),
                 this->raw_type()
             );
+
+            init_elem_x_cell(type_override_);
         }
 
         void init_from_dm(DM dm)
         {
+            elements_ = nullptr;
+
             MPI_Comm mpi_comm = PetscObjectComm((PetscObject) dm);
             comm().set(mpi_comm);
 
@@ -362,16 +504,23 @@ namespace utopia {
 
             DMDAElementType elem_type;
             DMDAGetElementType(dm, &elem_type);
+            init_elem_x_cell(elem_type);
+        }
 
+        void init_elem_x_cell(DMDAElementType elem_type)
+        {
+            int exc = 1;
             if(elem_type == DMDA_ELEMENT_P1) {
                 if(this->dim() == 2) {
-                    this->set_elements_x_cell(2);
+                    exc = 2;
                 } else if(this->dim() == 3) {
-                    this->set_elements_x_cell(6);
+                    exc = 6;
                 } else {
                     assert(false);
                 }
             }
+
+            this->set_elements_x_cell(exc);
         }
 
     };

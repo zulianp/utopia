@@ -143,7 +143,7 @@ namespace utopia {
            //     auto permeability_view = p_val.view_device();
 
            //     Device::parallel_for(
-           //         space_->local_element_range(),
+           //         space_->element_range(),
            //         UTOPIA_LAMBDA(const SizeType &i)
            //     {
            //         Elem e;
@@ -271,7 +271,7 @@ namespace utopia {
                auto permeability_view = p_val.view_device();
 
                Device::parallel_for(
-                   space_->local_element_range(),
+                   space_->element_range(),
                    UTOPIA_LAMBDA(const SizeType &i)
                {
                    Elem e;
@@ -351,7 +351,7 @@ namespace utopia {
         //        auto permeability_view = p_val.view_device();
 
         //        Device::parallel_for(
-        //            space_->local_element_range(),
+        //            space_->element_range(),
         //            UTOPIA_LAMBDA(const SizeType &i)
         //        {
         //            Elem e;
@@ -704,7 +704,7 @@ namespace utopia {
                     // auto points_view = points_temp.view_device();
 
                     Device::parallel_for(
-                        space_->local_element_range(),
+                        space_->element_range(),
                         UTOPIA_LAMBDA(const SizeType &i)
                     {
                         Elem e;
@@ -828,7 +828,7 @@ namespace utopia {
         //             // auto points_view = points_temp.view_device();
 
         //             Device::parallel_for(
-        //                 space_->local_element_range(),
+        //                 space_->element_range(),
         //                 UTOPIA_LAMBDA(const SizeType &i)
         //             {
         //                 Elem e;
@@ -963,7 +963,7 @@ namespace utopia {
         //         auto points_view = points_temp.view_device();
 
         //         Device::parallel_for(
-        //             space_->local_element_range(),
+        //             space_->element_range(),
         //             UTOPIA_LAMBDA(const SizeType &i)
         //         {
         //             Elem e;
