@@ -471,6 +471,11 @@ namespace utopia {
                 diff_ctrl_.check_grad(*this, x_const, g);
             }
 
+            if(!empty(force_field_)) {
+                //MAYBE g -= force_field_;
+                g += force_field_;
+            }
+
 
             space_.apply_zero_constraints(g);
 
@@ -479,10 +484,6 @@ namespace utopia {
                 apply_zero_constraints_irreversibiblity(g, x_const);
             }
 
-            if(!empty(force_field_)) {
-                //MAYBE g -= force_field_;
-                g += force_field_;
-            }
 
             // static int iter = 0;
             // write("g" + std::to_string(iter++) + ".m", g);

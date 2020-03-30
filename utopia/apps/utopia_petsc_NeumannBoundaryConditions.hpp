@@ -145,6 +145,7 @@ namespace utopia {
 
             } else {
                 assert(false);
+                std::cerr << "[Error] malformed neumann boundary condition " << std::endl;
             }
         }
 
