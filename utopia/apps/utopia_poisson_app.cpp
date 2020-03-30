@@ -202,6 +202,7 @@ namespace utopia {
             space.apply_constraints(rhs);
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+            cg.apply_gradient_descent_step(true);
             cg.verbose(true);
             cg.max_it(n_iter);
             cg.rtol(1e-8);
@@ -291,6 +292,8 @@ namespace utopia {
                 solver.solve(mat, rhs, x);
             }  else {
                 ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+                cg.apply_gradient_descent_step(true);
+
                 auto prec = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
                 cg.set_preconditioner(prec);
                 cg.verbose(true);

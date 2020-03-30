@@ -16,6 +16,7 @@
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Allocations.hpp"
 #include "utopia_Select.hpp"
+#include "utopia_Layout.hpp"
 
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -57,6 +58,7 @@ namespace utopia {
             using Constructible::local_values;
             using Constructible::local_zeros;
             using Constructible::zeros;
+            using Layout = utopia::Layout<PetscCommunicator, SizeType, 1>;
 
     private:
         class GhostValues {
@@ -213,8 +215,20 @@ namespace utopia {
             // check_error(
             // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
 
-            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using get. Check if you are using a copy of the vector");
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using l_setet. Check if you are using a copy of the vector");
             writeable_->data[index] = value;
+                 // );
+        }
+
+        inline void l_add(const SizeType &index, const Scalar &value)
+        {
+            assert(index >= 0);
+            assert((index < local_size()));
+            // check_error(
+            // VecSetValues(implementation(), 1, &index, &value, INSERT_VALUES);
+
+            assert((writeable_) && "use Write<Vector> w(vec, LOCAL) before using l_add. Check if you are using a copy of the vector");
+            writeable_->data[index] += value;
                  // );
         }
 
@@ -247,7 +261,7 @@ namespace utopia {
             // return value;
             assert(local_size() > index);
             assert(index >= 0);
-            assert((readable_) && "use Read<Vector> r(vec) before using get. Check if you are using a copy of the vector");
+            assert((readable_) && "use Read<Vector> r(vec) before using l_get. Check if you are using a copy of the vector");
             return readable_->data[index];
         }
 
@@ -371,7 +385,7 @@ namespace utopia {
        ///<Scalar>SCAL - x = a*x
        void scale(const Scalar &a) override;
        ///<Scalar>COPY - copy other into this
-        void copy(const PetscVector &other) override;
+       void copy(const PetscVector &other) override;
        ///<Scalar>AXPY - y = a*x + y
        void axpy(const Scalar &alpha, const PetscVector &x) override;
 
@@ -408,6 +422,42 @@ namespace utopia {
       ///////////////////////////////////////////////////////////////////////////
       ////////////// OVERRIDES FOR Constructible ////////////////////////////
       ///////////////////////////////////////////////////////////////////////////
+
+      inline void values(const Layout &l, const Scalar &value)
+      {
+          values(l.comm(), l.local_size(), l.size(), value);
+      }
+
+      inline void zeros(const Layout &l)
+      {
+          values(l, 0.0);
+      }
+
+      inline void values(const PetscCommunicator &comm, const SizeType &local_size, const SizeType &global_size, const Scalar &value)
+      {
+        comm_ = comm;
+        values(
+            this->comm().get(),
+            type_override(),
+            local_size,
+            global_size,
+            value
+        );
+      }
+
+      inline void zeros(const PetscCommunicator &comm, const SizeType &local_size, const SizeType &global_size)
+      {
+        comm_ = comm;
+        zeros(
+            this->comm().get(),
+            type_override(),
+            local_size,
+            global_size
+        );
+      }
+
+
+      //////////////////////////////////////////////////////////////////////////////////////////
 
       inline void zeros(const SizeType &s) override
       {

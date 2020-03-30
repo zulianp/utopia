@@ -16,6 +16,7 @@
 #include "utopia_Allocations.hpp"
 #include "utopia_Select.hpp"
 #include "utopia_Wrapper.hpp"
+#include "utopia_Layout.hpp"
 
 #include "utopia_make_unique.hpp"
 
@@ -26,6 +27,7 @@ namespace utopia {
         using Scalar = Scalar_;
         using SizeType = SizeType_;
         using Communicator = utopia::Communicator;
+        using Layout       = utopia::Layout<Communicator, SizeType, 1>;
     };
 
     //parallel types, collective operations

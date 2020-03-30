@@ -10,8 +10,10 @@ namespace utopia
     template<class Matrix, class Vector>
     class Dogleg final: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
 
         public:
@@ -46,10 +48,10 @@ namespace utopia
                 this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-");
             }
 
-            void init_memory(const SizeType & ls) override            
+            void init_memory(const Layout &layout) override
             {
-                Bg_     =  local_zeros(ls); 
-                p_SD_   =  local_zeros(ls); 
+                Bg_.zeros(layout);
+                p_SD_.zeros(layout);
             }
 
         protected:
@@ -71,26 +73,26 @@ namespace utopia
                 else
                 {
                     Scalar g_dots, g_B_g;
-                    Bg_ = B* g; 
+                    Bg_ = B* g;
 
-                    dots(g, g, g_dots, g, Bg_, g_B_g); 
+                    dots(g, g, g_dots, g, Bg_, g_B_g);
 
-                    g_B_g = g_dots/g_B_g; 
+                    g_B_g = g_dots/g_B_g;
                     p_SD_ = g_B_g * g;
-                    Scalar SD_norm = std::abs(g_B_g) * std::sqrt(g_dots); 
+                    Scalar SD_norm = std::abs(g_B_g) * std::sqrt(g_dots);
 
                     if(SD_norm >= this->current_radius())
                     {
-                        p_k = (this->current_radius()/ SD_norm)*p_SD_; 
+                        p_k = (this->current_radius()/ SD_norm)*p_SD_;
                         return true;
                     }
                     else
                     {
-                        Bg_ = p_k - p_SD_; 
+                        Bg_ = p_k - p_SD_;
 
-                        Scalar a, b; 
-                        dots(Bg_, Bg_, a, p_SD_, Bg_, b); 
-                        b *= 2.0; 
+                        Scalar a, b;
+                        dots(Bg_, Bg_, a, p_SD_, Bg_, b);
+                        b *= 2.0;
 
                         Scalar c = (SD_norm*SD_norm) -  (this->current_radius() * this->current_radius());
 
@@ -110,7 +112,7 @@ namespace utopia
 
         private:
             std::shared_ptr<LinearSolver> ls_solver_;
-            Vector Bg_, p_SD_; 
+            Vector Bg_, p_SD_;
     };
 }
 

@@ -30,7 +30,7 @@ namespace utopia
     public:
         QuasiRMTR(const SizeType & n_levels): RMTRBase(n_levels)
         {
-         
+
         }
 
         ~QuasiRMTR()
@@ -153,21 +153,19 @@ namespace utopia
         {
             if(! this->init_){
                 RMTRBase::init_memory();
-                const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+                const auto & layouts =  this->local_level_layouts();
 
                 for(Scalar l = 0; l < this->n_levels(); l ++){
-                    tr_subproblems_[l]->init_memory(dofs[l]); 
-                    hessian_approxs_[l]->initialize(this->memory_.x[l],this->ml_derivs_.g[l]);                
-                }  
-
-                this->init_ = true;           
+                    tr_subproblems_[l]->init_memory(layouts[l]);
+                    hessian_approxs_[l]->initialize(this->memory_.x[l],this->ml_derivs_.g[l]);
+                }
+                this->init_ = true;   
             }
-
         }
 
         bool check_initialization() override
         {
-            bool flg = RMTRBase::check_initialization(); 
+            bool flg = RMTRBase::check_initialization();
 
             if(static_cast<SizeType>(tr_subproblems_.size()) != this->n_levels()){
                 utopia_error("utopia::RMTR_l2_quasi:: number of level QP solvers and levels not equal. \n");
@@ -177,9 +175,9 @@ namespace utopia
             if(static_cast<SizeType>(hessian_approxs_.size()) != this->n_levels()){
                 utopia_error("utopia::RMTR_l2_quasi:: number of hessian approxiations and levels do not match. \n");
                 flg = false;
-            }            
+            }
 
-            return flg; 
+            return flg;
         }
 
         // -------------------------- tr radius managment ---------------------------------------------
@@ -241,18 +239,18 @@ namespace utopia
             Scalar Rg_norm, g_norm;
             norms2(g_restricted, g_coarse, Rg_norm, g_norm);
             return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
-        }        
+        }
 
 
 
         bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
-            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]);
 
             if(IterativeSolver<Matrix, Vector>* tr_solver =  dynamic_cast<IterativeSolver<Matrix, Vector>* > (tr_subproblems_[level].get()))
             {
                 if(tr_solver->atol() > atol_level){
-                    tr_solver->atol(atol_level);  
+                    tr_solver->atol(atol_level);
                 }
 
                 if(flg){
@@ -263,17 +261,17 @@ namespace utopia
                 }
             }
 
-            this->memory_.s[level].set(0.0); 
+            this->memory_.s[level].set(0.0);
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
 
             tr_subproblems_[level]->current_radius(this->memory_.delta[level]);
-            this->ml_derivs_.g[level] *= - 1.0; 
+            this->ml_derivs_.g[level] *= - 1.0;
             tr_subproblems_[level]->solve(*multiplication_action, this->ml_derivs_.g[level], this->memory_.s[level]);
-            this->ml_derivs_.g[level] *= - 1.0; 
+            this->ml_derivs_.g[level] *= - 1.0;
 
             if(has_nan_or_inf(this->memory_.s[level])){
-                this->memory_.s[level].set(0.0); 
-            }            
+                this->memory_.s[level].set(0.0);
+            }
 
             return true;
         }
@@ -281,7 +279,7 @@ namespace utopia
 
         // -------------------------- Matrix free stuff ----------------------------------------
         Scalar get_pred(const SizeType & level) override
-        {   
+        {
             UTOPIA_NO_ALLOC_BEGIN("RMTR::get_pred1");
             Scalar l_term = dot(this->ml_derivs_.g[level], this->memory_.s[level]);
             UTOPIA_NO_ALLOC_END();
@@ -289,7 +287,7 @@ namespace utopia
             UTOPIA_NO_ALLOC_BEGIN("RMTR::get_pred2");
             Scalar qp_term = hessian_approxs_[level]->compute_uHu_dot(this->memory_.s[level]);
             UTOPIA_NO_ALLOC_END();
-            
+
             return  (- l_term - 0.5 * qp_term);
         }
 
@@ -314,7 +312,7 @@ namespace utopia
                 if(solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE)
                 {
                     hessian_approxs_[level]->reset();
-                    // hessian_approxs_[level]->initialize(this->memory_.x[level], this->ml_derivs_.g[level]);                    
+                    // hessian_approxs_[level]->initialize(this->memory_.x[level], this->ml_derivs_.g[level]);
                 }
             // }
         }
@@ -322,7 +320,7 @@ namespace utopia
 
 
 
-    private: 
+    private:
         /**
          * @brief      Computes norm of coarse level vector wrt to fine level
          *

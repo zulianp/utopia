@@ -525,10 +525,10 @@ namespace utopia {
 
 
          template<class Op>
-         void read(Op op);
+         void read(Op op) const;
 
          template<class Op>
-         void read_reverse(Op op);
+         void read_reverse(Op op) const;
 
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////

@@ -83,7 +83,7 @@ namespace utopia
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
 
-            
+
             this->init_memory();
 
             memory_.x[n_levels-1] = x_h;
@@ -145,11 +145,11 @@ namespace utopia
 
         void init_memory() override
         {
-            // TODO:: modify allocation of constraints 
-            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
-            
+            // TODO:: modify allocation of constraints
+            const auto &layouts =  this->local_level_layouts();
+
             memory_.init(this->n_levels());
-            memory_.g_diff[this->n_levels()-1] = local_zeros(dofs.back());
+            memory_.g_diff[this->n_levels()-1].zeros(layouts.back());
         }
 
 
@@ -196,9 +196,9 @@ namespace utopia
         bool smoothing(Fun &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
             smoother_->sweeps(nu);
-            // This should be done way much more efficient 
+            // This should be done way much more efficient
             std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
-            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
             smoother_->smooth(fun_rhs, x, f);
             return true;
         }
@@ -206,9 +206,9 @@ namespace utopia
         bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs)
         {
             coarse_solver_->max_it(1);
-            // This should be done way much more efficient 
+            // This should be done way much more efficient
             std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
-            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
             coarse_solver_->solve(fun_rhs, x, rhs);
             return true;
         }

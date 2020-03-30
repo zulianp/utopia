@@ -13,8 +13,10 @@ namespace utopia {
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class BiCGStab final : public OperatorBasedLinearSolver<Matrix, Vector>{
     public:
-        typedef UTOPIA_SCALAR(Vector) 	 Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
         using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
@@ -48,7 +50,7 @@ namespace utopia {
             OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
         }
 
-        void init_memory(const SizeType &ls) override;
+        void init_memory(const Layout &layout) override;
 
     private:
         bool solve_preconditioned(const Operator<Vector> &A, const Vector &b, Vector &x);
@@ -66,7 +68,7 @@ namespace utopia {
         Vector K_inv_t_;
 
         bool initialized_;
-        SizeType loc_size_;
+        Layout layout_;
 
     };
 }

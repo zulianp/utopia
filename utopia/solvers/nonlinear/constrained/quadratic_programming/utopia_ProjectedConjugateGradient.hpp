@@ -14,8 +14,9 @@ namespace utopia
     class ProjectedConjugateGradient : public QPSolver<Matrix, Vector> {
     public:
 
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         ProjectedConjugateGradient() {}
 
@@ -37,7 +38,7 @@ namespace utopia
             const Matrix &A = *this->get_operator();
 
             // ideally, we have two separate implementations, or cases
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
 
             const auto &ub = this->get_upper_bound();
             const auto &lb = this->get_lower_bound();
@@ -113,22 +114,20 @@ namespace utopia
         }
 
 
-        void init_memory(const SizeType & n) override
+        void init_memory(const Layout &layout) override
         {
-            QPSolver<Matrix, Vector>::init_memory(n);
-            
-            // auto n = local_size(A).get(0);
-            r  = local_zeros(n);
-            uk = local_zeros(n);
-            wk = local_zeros(n);
-            zk = local_zeros(n);
-            pk = local_zeros(n);
+            QPSolver<Matrix, Vector>::init_memory(layout);
+            r.zeros(layout);
+            uk.zeros(layout);
+            wk.zeros(layout);
+            zk.zeros(layout);
+            pk.zeros(layout);
         }
 
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             QPSolver<Matrix, Vector>::update(op);
-            init_memory(local_size(*op).get(0));
+            init_memory(row_layout(*op));
         }
 
 

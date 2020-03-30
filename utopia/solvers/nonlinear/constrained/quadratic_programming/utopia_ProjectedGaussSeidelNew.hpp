@@ -8,6 +8,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_RowView.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
+#include "utopia_Algorithms.hpp"
 
 #include <cmath>
 
@@ -28,6 +29,8 @@ namespace utopia {
     public:
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+        using Super    = utopia::QPSolver<Matrix, Vector>;
 
         ProjectedGaussSeidel()
         : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
@@ -51,7 +54,6 @@ namespace utopia {
             in.get("n_local_sweeps", n_local_sweeps_);
             in.get("l1", l1_);
         }
-
 
         void print_usage(std::ostream &os) const override
         {
@@ -135,7 +137,6 @@ namespace utopia {
             x = min(x + e_mul(d_inv, r), this->get_upper_bound());
         }
 
-
         ///residual must be computed outside
         void apply_local_sweeps(const Matrix &A, const Vector &r, Vector &c) const
         {
@@ -151,7 +152,7 @@ namespace utopia {
 
             auto &&c_view     = local_view_device(c);
 
-            //WARNING THIS DOES NOT WORK IN PARALLEL
+            //WARNING THIS DOES NOT WORK IN PARALLEL (i.e., no OpenMP no Cuda)
             SizeType prev_i = 0;
             Scalar val = 0.0;
 
@@ -300,7 +301,7 @@ namespace utopia {
             r = b - r;
 
             //localize gap function for correction
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
             ub_loc = this->get_upper_bound() - x;
             lb_loc = this->get_lower_bound() - x;
 
@@ -371,41 +372,50 @@ namespace utopia {
                 UTOPIA_NO_ALLOC_END();
             }
 
-
             return true;
+        }
+
+        void init_memory(const Layout &layout)  override
+        {
+            Super::init_memory(layout);
+            d.zeros(layout);
+            c.zeros(layout);
+
+            if(use_line_search_) {
+                inactive_set_.zeros(layout);
+                Ac.zeros(layout);
+                is_c_.zeros(layout);
+                descent_dir.zeros(layout);
+            }
         }
 
         void init(const Matrix &A)
         {
+            auto A_layout = row_layout(A);
+            const bool reset = empty(c) || !A_layout.same(layout(c));
+
+            if(reset) {
+                init_memory(A_layout);
+            } else {
+                c.set(0);
+                if(use_line_search_) {
+                    inactive_set_.set(0);
+                }
+            }
+
             d = diag(A);
 
             if(l1_) {
-                Write<Vector> w(d);
-                each_read(A, [this](const SizeType &i, const SizeType &j, const Scalar &value) {
-                    d.add(i, std::abs(value));
-                });
+                auto &&d_view = local_view_device(d);
+
+                A.read(
+                    UTOPIA_LAMBDA(const SizeType &i, const SizeType &, const Scalar &value) {
+                         d_view.atomic_add(i, device::abs(value));
+                    }
+                );
             }
 
             d_inv = 1./d;
-
-            if(empty(c) || size(c) != size(d)){
-                c = local_zeros(local_size(A).get(0));
-            }
-            else{
-                c.set(0);
-            }
-
-            if(use_line_search_) {
-                if(empty(inactive_set_) || size(inactive_set_) != size(d)) {
-                    inactive_set_ = local_zeros(local_size(c));
-                    Ac = local_zeros(local_size(c));
-                    is_c_ = local_zeros(local_size(c));
-                    descent_dir = local_zeros(local_size(c));
-                } else {
-                    inactive_set_.set(0);
-                }
-
-            }
         }
 
         virtual void update(const std::shared_ptr<const Matrix> &op) override
@@ -413,7 +423,6 @@ namespace utopia {
             IterativeSolver<Matrix, Vector>::update(op);
             init(*op);
         }
-
 
         void use_line_search(const bool val)
         {

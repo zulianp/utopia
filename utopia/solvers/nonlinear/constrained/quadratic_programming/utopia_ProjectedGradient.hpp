@@ -10,6 +10,7 @@
 #include "utopia_Recorder.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_Layout.hpp"
 
 #include <cmath>
 #include <cassert>
@@ -20,8 +21,9 @@ namespace utopia {
     class ProjectedGradient final: public OperatorBasedQPSolver<Matrix, Vector>
     {
     public:
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         using QPSolver<Matrix, Vector>::solve;
 
@@ -61,7 +63,7 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init_memory(local_size(b));
+            init_memory(layout(b));
 
             x_old = x;
             A.apply(x, u);
@@ -126,10 +128,10 @@ namespace utopia {
             if(this->verbose())
                 this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-            init_memory(local_size(b));
+            init_memory(layout(b));
 
             // ideally, we have two separate implementations, or cases
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
 
             const auto &upbo = this->get_upper_bound();
             const auto &lobo = this->get_lower_bound();
@@ -226,14 +228,14 @@ namespace utopia {
         }
 
 
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
-            OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls);
+            OperatorBasedQPSolver<Matrix, Vector>::init_memory(layout);
 
-            p  = local_zeros(ls);
-            Ap = local_zeros(ls);
-            x_old = local_zeros(ls);
-            x_half = local_zeros(ls);
+            p.zeros(layout);
+            Ap.zeros(layout);
+            x_old.zeros(layout);
+            x_half.zeros(layout);
         }
 
         void update(const Operator<Vector> &A) override

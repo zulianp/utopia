@@ -3,7 +3,7 @@
 
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_EigenSolver.hpp"
-
+#include "utopia_Layout.hpp"
 
 namespace utopia
 {
@@ -17,42 +17,42 @@ namespace utopia
     template<class Matrix, class Vector>
     class MoreSorensenEigen final: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::LinearSolver<Matrix, Vector> 		LinearSolver;
-        typedef utopia::EigenSolver<Matrix, Vector> 		EigenSolver;
-
+        using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
+        using EigenSolver  = utopia::EigenSolver<Matrix, Vector>;
 
     public:
-        MoreSorensenEigen(	const std::shared_ptr<LinearSolver> &linear_solver,
-                            const std::shared_ptr<EigenSolver> & eigen_solver):
-                            TRSubproblem<Matrix, Vector>(),
-                            linear_solver_(linear_solver),
-                            eigen_solver_(eigen_solver),
-                            kappa_easy_(1e-10),
-                            lambda_eps_(1e-5), 
-                            initialized_(false), 
-                            loc_size_(0)
-        {  };
+        MoreSorensenEigen(
+            const std::shared_ptr<LinearSolver> &linear_solver,
+            const std::shared_ptr<EigenSolver> & eigen_solver
+        ):
+            TRSubproblem<Matrix, Vector>(),
+            linear_solver_(linear_solver),
+            eigen_solver_(eigen_solver),
+            kappa_easy_(1e-10),
+            lambda_eps_(1e-5),
+            initialized_(false)
+        {}
 
-
-        void kappa_easy(const Scalar & kappa)
+        inline void kappa_easy(const Scalar & kappa)
         {
             kappa_easy_ = kappa;
         }
 
-        Scalar kappa_easy()
+        inline Scalar kappa_easy()
         {
             return kappa_easy_;
         }
 
-        void lambda_eps(const Scalar & lambda_eps)
+        inline void lambda_eps(const Scalar & lambda_eps)
         {
             lambda_eps_ = lambda_eps;
         }
 
-        Scalar lambda_eps()
+        inline Scalar lambda_eps()
         {
             return lambda_eps_;
         }
@@ -69,10 +69,11 @@ namespace utopia
 
         bool apply(const Vector &b, Vector &x) override
         {
-            SizeType loc_size_rhs = local_size(b); 
-            if(!initialized_ || !b.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init_memory(loc_size_rhs);
-            }               
+            auto b_layout = layout(b);
+            if(!initialized_ || !b_layout.same(layout_)) {
+                init_memory(b_layout);
+            }
+
             return aux_solve(*this->get_operator(), b, x);
         }
 
@@ -101,17 +102,17 @@ namespace utopia
             this->print_param_usage(os, "eigen-solver", "EigenSolver", "Input parameters for eigen solver.", "-");
         }
 
-
     private:
+
         bool aux_solve(const Matrix &H, const Vector &g, Vector &s_k)
         {
             Scalar lambda, s_norm, lambda_old;
-            
+
             // UTOPIA_NO_ALLOC_BEGIN("MoreSorensen:region1");
             if(empty(s_k) || size(s_k) != size(g))
                 s_k = 0.0 * g;
             else
-                s_k.set(0.0); 
+                s_k.set(0.0);
 
             // ---------------------- initialization  of lambda_0 ------------------------
             eigen_solver_->portion_of_spectrum("smallest_real");
@@ -127,7 +128,7 @@ namespace utopia
             H_lambda_ = H;
             if(lambda != 0.0)
             {
-                H_lambda_.shift_diag(lambda); 
+                H_lambda_.shift_diag(lambda);
             }
 
 
@@ -143,8 +144,8 @@ namespace utopia
                 else
                 {
                     // UTOPIA_NO_ALLOC_BEGIN("MoreSorensen:region2");
-                    Scalar s_k_eigen, sk_sk; 
-                    dots(s_k, eigenvector_, s_k_eigen, s_k, s_k, sk_sk); 
+                    Scalar s_k_eigen, sk_sk;
+                    dots(s_k, eigenvector_, s_k_eigen, s_k, s_k, sk_sk);
 
                     // we are in hard case, let's find solution on boundary, which is orthogonal to E_1
                     //                     because eigenvector is normalized
@@ -160,12 +161,12 @@ namespace utopia
                 if( std::abs(s_norm - this->current_radius()) <= kappa_easy_ *  this->current_radius())
                     return true;
 
-                lambda_old = lambda; 
+                lambda_old = lambda;
 
                 // UTOPIA_NO_ALLOC_BEGIN("MoreSorensen:region3");
-                grad_s_lambda_.set(0); 
+                grad_s_lambda_.set(0);
 
-                s_k *= -1.0; 
+                s_k *= -1.0;
                 linear_solver_->solve(H_lambda_, s_k, grad_s_lambda_);
 
                 Scalar grad 	= 1.0/s_norm - 1.0/ this->current_radius();
@@ -175,7 +176,7 @@ namespace utopia
                 lambda -=  grad/hessian;
 
                 // H should be H + \lambda I
-                H_lambda_.shift_diag(lambda - lambda_old); 
+                H_lambda_.shift_diag(lambda - lambda_old);
 
                 s_k.set(0.0);
                 linear_solver_->solve(H_lambda_, g, s_k);
@@ -186,34 +187,31 @@ namespace utopia
             return true;
         }
 
-
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
-            auto zero_expr = local_zeros(ls);
-
             //resets all buffers in case the size has changed
-            eigenvector_ = zero_expr;
-            grad_s_lambda_ = zero_expr;
+            eigenvector_.zeros(layout);
+            grad_s_lambda_.zeros(layout);
 
-            initialized_ = true;    
-            loc_size_ = ls;                    
+            initialized_ = true;
+            layout_ = layout;
         }
 
-
     private:
+
         std::shared_ptr<LinearSolver> linear_solver_;
         std::shared_ptr<EigenSolver> eigen_solver_;
 
         Scalar kappa_easy_;
         Scalar lambda_eps_;
-        
-        bool initialized_; 
-        SizeType loc_size_;      
 
-        Vector eigenvector_; 
-        Vector grad_s_lambda_; 
+        bool initialized_;
+        Layout layout_;
 
-        Matrix H_lambda_; 
+        Vector eigenvector_;
+        Vector grad_s_lambda_;
+
+        Matrix H_lambda_;
 
     };
 

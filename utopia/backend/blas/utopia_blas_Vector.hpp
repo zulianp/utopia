@@ -45,14 +45,18 @@ namespace utopia {
         using SizeType = std::size_t;
 
         using Constructible<T, std::size_t, 1>::values;
+        using Constructible<T, std::size_t, 1>::zeros;
+
         using iterator = typename Entries::iterator;
         using const_iterator = typename Entries::iterator;
-
+        using Layout = utopia::Layout<SelfCommunicator, SizeType, 1>;
        ////////////////////////////////////////////////////////////////////
        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
        ////////////////////////////////////////////////////////////////////
         using Super = utopia::Tensor<BlasVector<T>, 1>;
         using Super::Super;
+
+
 
         template<class Expr>
         BlasVector(const Expression<Expr> &expr)
@@ -185,6 +189,13 @@ namespace utopia {
             assert(i < size());
 
             entries_[i] = value;
+        }
+
+        inline void l_add(const SizeType &i, const T &value)
+        {
+            assert(i < size());
+
+            entries_[i] += value;
         }
 
         virtual void set(const T &val) override
@@ -494,6 +505,16 @@ namespace utopia {
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
+
+        inline void values(const Layout &l, const Scalar &val)
+        {
+            values(l.size(), val);
+        }
+
+        inline void zeros(const Layout &l)
+        {
+            values(l.size(), 0.0);
+        }
 
         inline void values(const SizeType &s, const Scalar &val) override
         {

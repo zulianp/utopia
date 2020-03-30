@@ -20,7 +20,7 @@ namespace utopia {
         {
             const auto &i = instance();
             bool valid = i.types_.find(type) != i.types_.end();
-        
+
             if(!valid && verbose) {
                 std::cerr << "Invalid tao type " << type << ". Valid types are: " << std::endl;
                 i.describe(std::cerr);
@@ -348,18 +348,18 @@ namespace utopia {
         {
             if(tao != nullptr)
             {
-                PetscInt size; 
-                VecGetSize((*tao).solution, &size); 
-                return (size==n_global); 
+                PetscInt size;
+                VecGetSize((*tao).solution, &size);
+                return (size==n_global);
             }
             else
-                return false; 
+                return false;
         }
 
         inline bool initialized() const
         {
-            return (tao != nullptr); 
-        }        
+            return (tao != nullptr);
+        }
 
         void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver)
         {
@@ -481,17 +481,17 @@ namespace utopia {
     bool TaoSolver<Matrix, Vector>::solve(Function<Matrix, Vector> &fun, Vector &x)
     {
         init(fun, x);
-        this->init_solver("Tao Solver", {""}); 
+        this->init_solver("Tao Solver", {""});
         auto flg = impl_->solve(x);
 
-        PetscInt iterates; 
-        TaoConvergedReason reason; 
+        PetscInt iterates;
+        TaoConvergedReason reason;
 
-        impl_->get_sol_status(iterates, reason); 
-        this->exit_solver(iterates, reason); 
+        impl_->get_sol_status(iterates, reason);
+        this->exit_solver(iterates, reason);
         this->print_statistics(iterates);
 
-        return flg; 
+        return flg;
     }
 
     template<class Matrix, class Vector>
@@ -507,7 +507,7 @@ namespace utopia {
         if(!impl_->initialized(size(x)))
         {
             impl_->init(x.comm().get());
-            
+
              if(this->linear_solver()) {
                 impl_->set_linear_solver(this->linear_solver());
             }
@@ -516,7 +516,7 @@ namespace utopia {
         impl_->set_tol(this->atol(), this->rtol(), this->stol(), this->max_it());
 
         if(this->has_bound()) {
-            this->fill_empty_bounds(local_size(x));
+            this->fill_empty_bounds(layout(x));
             impl_->set_bounds(this->get_lower_bound(), this->get_upper_bound());
         }
 

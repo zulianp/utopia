@@ -20,30 +20,32 @@ namespace utopia
     class IdentityConstraints : public MultilevelVariableBoundSolverInterface<Matrix, Vector, IdentityConstraints<Matrix, Vector> >
     {
         public:
-            typedef UTOPIA_SCALAR(Vector)                           Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+            using Scalar   = typename Traits<Vector>::Scalar;
+            using SizeType = typename Traits<Vector>::SizeType;
+            using Layout   = typename Traits<Vector>::Layout;
 
-            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, IdentityConstraints<Matrix, Vector> > Base; 
+
+            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, IdentityConstraints<Matrix, Vector> > Base;
 
             IdentityConstraints(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer) : Base(transfer)
             {
-                // TODO:: move to checck innitialization 
+                // TODO:: move to checck innitialization
                 for (auto l=0; l < transfer.size(); l++){
                     if(IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (transfer[l].get())){
-                        // utopia_error("IdentityConstraints, termination due to incorrect setup. "); 
+                        // utopia_error("IdentityConstraints, termination due to incorrect setup. ");
                     }
                     else
                     {
-                        utopia_error("IdentityConstraints, termination due to incorrect setup. "); 
+                        utopia_error("IdentityConstraints, termination due to incorrect setup. ");
                     }
                 }
             }
 
 
-            void init_memory_impl(const std::vector<SizeType> & n_dofs_)
+            void init_memory_impl(const std::vector<Layout> &layouts)
             {
-                constraints_memory_.init_memory(n_dofs_); 
-                const SizeType finest_level = n_dofs_.size(); 
+                constraints_memory_.init_memory(layouts);
+                const SizeType finest_level = layouts.size();
 
                 if(this->box_constraints_.has_lower_bound()){
                     constraints_memory_.active_lower[finest_level-1] = *(this->box_constraints_.lower_bound());
@@ -56,7 +58,7 @@ namespace utopia
 
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
             {
-                auto finer_level = level + 1; 
+                auto finer_level = level + 1;
 
                 {
                     auto d_x_finer      = const_device_view(x_finer_level);
@@ -66,18 +68,18 @@ namespace utopia
                     parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         auto val1 = d_x_finer.get(i) + delta_fine;
-                        auto val2 = d_tr_ub.get(i); 
+                        auto val2 = d_tr_ub.get(i);
 
-                        return device::min(val1, val2); 
+                        return device::min(val1, val2);
                     });
 
                     parallel_each_write(constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         auto val1 = d_x_finer.get(i) - delta_fine;
-                        auto val2 = d_tr_lb.get(i); 
+                        auto val2 = d_tr_lb.get(i);
 
-                        return device::max(val1, val2); 
-                    });   
+                        return device::max(val1, val2);
+                    });
                 }
 
             }
@@ -89,11 +91,11 @@ namespace utopia
 
             const Vector & active_lower(const SizeType & level)
             {
-                return constraints_memory_.active_lower[level]; 
-            }                      
+                return constraints_memory_.active_lower[level];
+            }
 
         private:
-            ConstraintsLevelMemory<Vector> constraints_memory_; 
+            ConstraintsLevelMemory<Vector> constraints_memory_;
     };
 
 

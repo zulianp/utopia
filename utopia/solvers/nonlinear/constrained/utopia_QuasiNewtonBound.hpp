@@ -10,72 +10,73 @@
 #include "utopia_VariableBoundSolverInterface.hpp"
 #include "utopia_QPSolver.hpp"
 #include "utopia_QuasiNewtonBase.hpp"
+#include "utopia_Layout.hpp"
 
 #include <iomanip>
 #include <limits>
 
-
 namespace utopia
 {
     template<class Vector>
-    class QuasiNewtonBound :    public QuasiNewtonBase<Vector>,
-                                public VariableBoundSolverInterface<Vector>
+    class QuasiNewtonBound : public QuasiNewtonBase<Vector>,
+                             public VariableBoundSolverInterface<Vector>
 
     {
-        typedef UTOPIA_SCALAR(Vector)                           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::LSStrategy<Vector>                      LSStrategy;
-        typedef utopia::HessianApproximation<Vector>            HessianApproximation;
-
-        typedef utopia::MatrixFreeQPSolver<Vector>           QPSolver;
-
+        using LSStrategy           = utopia::LSStrategy<Vector>;
+        using HessianApproximation = utopia::HessianApproximation<Vector>;
+        using QPSolver             = utopia::MatrixFreeQPSolver<Vector>;
 
     public:
-        QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
-                            const std::shared_ptr <QPSolver> &linear_solver):
-                            QuasiNewtonBase<Vector>(hessian_approx, linear_solver), 
-                            initialized_(false), 
-                            loc_size_(0)
-        {
 
-        }
+        QuasiNewtonBound(
+            const std::shared_ptr <HessianApproximation> &hessian_approx,
+            const std::shared_ptr <QPSolver> &linear_solver
+        ):
+            QuasiNewtonBase<Vector>(hessian_approx, linear_solver),
+            initialized_(false)
+        {}
 
         bool solve(FunctionBase<Vector> &fun, Vector &x) override
         {
             using namespace utopia;
 
-            Scalar g_norm, r_norm, g0_norm, s_norm=1;
+            Scalar g_norm, r_norm, g0_norm, s_norm = 1;
             SizeType it = 0;
 
             Scalar alpha = 1.0;
             bool converged = false;
 
-            SizeType loc_size_x = local_size(x); 
+            const auto x_layout = utopia::layout(x);
 
-            this->fill_empty_bounds(loc_size_x); 
+            this->fill_empty_bounds(x_layout);
             this->make_iterate_feasible(x);
 
-            if(!initialized_ || !x.comm().conjunction(loc_size_ == loc_size_x)) 
+            if(!initialized_ || !x_layout.same(layout_))
             {
-                init_memory(loc_size_x);
-            }            
+                init_memory(x_layout);
+            }
 
             fun.gradient(x, g);
             g0_norm = this->criticality_measure_infty(x, g);
 
-            QuasiNewtonBase<Vector>::init_memory(x, g); 
+            QuasiNewtonBase<Vector>::init_memory(x, g);
 
             if(this->verbose_) {
                 this->init_solver("QUASI NEWTON BOUND", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
                 PrintInfo::print_iter_status(it, {g0_norm, s_norm});
             }
+
             it++;
 
             this->initialize_approximation(x, g);
             auto multiplication_action = this->hessian_approx_strategy_->build_apply_H();
 
             UTOPIA_NO_ALLOC_BEGIN("Quasi_NewtonBound");
+
             while(!converged)
             {
                 if(QPSolver * qp_solver = dynamic_cast<QPSolver*>(this->linear_solver().get()))
@@ -83,7 +84,7 @@ namespace utopia
                     auto box = this->build_correction_constraints(x);
                     qp_solver->set_box_constraints(box);
                     s.set(0.0);
-                    g_minus = -1.0 * g; 
+                    g_minus = -1.0 * g;
                     qp_solver->solve(*multiplication_action, g_minus, s);
                 }
                 else
@@ -124,36 +125,32 @@ namespace utopia
 
                 it++;
             }
+
             UTOPIA_NO_ALLOC_END();
 
             this->print_statistics(it);
             return true;
         }
 
-
     private:
-        void init_memory(const SizeType &ls)
+
+        void init_memory(const Layout &layout)
         {
-            auto zero_expr = local_zeros(ls);
+            s.zeros(layout);
+            g.zeros(layout);
+            y.zeros(layout);
+            g_minus.zeros(layout);
 
-            s       = zero_expr;
-            g       = zero_expr;
-            y       = zero_expr;
-            g_minus = zero_expr;
+            VariableBoundSolverInterface<Vector>::init_memory(layout);
 
-            VariableBoundSolverInterface<Vector>::init_memory(ls); 
-                           
-            initialized_ = true;    
-            loc_size_ = ls;                                        
+            initialized_ = true;
+            layout_ = layout;
         }
 
-
         Vector g, s, y, g_minus;
-        bool initialized_; 
-        SizeType loc_size_;            
-
+        bool initialized_;
+        Layout layout_;
     };
-
-
 }
+
 #endif //UTOPIA_QUASI_NEWTON_BOUND_HPP

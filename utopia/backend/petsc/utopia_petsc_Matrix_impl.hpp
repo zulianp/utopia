@@ -16,7 +16,7 @@ namespace utopia {
 	namespace internal {
 
 		template<class F>
-		void read_petsc_seqaij_impl(Mat &mat, F op)
+		void read_petsc_seqaij_impl(const Mat &mat, F op)
 		{
 			PetscInt n;
 			const PetscInt *ia;
@@ -50,7 +50,7 @@ namespace utopia {
 		}
 
 		template<class F>
-		void read_reverse_petsc_seqaij_impl(Mat &mat, F op)
+		void read_reverse_petsc_seqaij_impl(const Mat &mat, F op)
 		{
 			PetscInt n;
 			const PetscInt *ia;
@@ -84,7 +84,7 @@ namespace utopia {
 		}
 
 		template<class F>
-		void read_petsc_mpiaij_impl(Mat &mat, F op)
+		void read_petsc_mpiaij_impl(const Mat &mat, F op)
 		{
 			// PetscErrorCode err = 0;
 
@@ -261,7 +261,7 @@ namespace utopia {
 	}
 
 	template<class Op>
-	void PetscMatrix::read(Op op)
+	void PetscMatrix::read(Op op) const
 	{
 		if(has_type(MATSEQAIJ)) {
 			internal::read_petsc_seqaij_impl(raw_type(), op);
@@ -271,7 +271,7 @@ namespace utopia {
 	}
 
 	template<class Op>
-	void PetscMatrix::read_reverse(Op op)
+	void PetscMatrix::read_reverse(Op op) const
 	{
 		if(has_type(MATSEQAIJ)) {
 			internal::read_reverse_petsc_seqaij_impl(raw_type(), op);

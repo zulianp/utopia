@@ -8,14 +8,18 @@
 #include "utopia_Communicator.hpp"
 #include "utopia_Operator.hpp"
 #include "utopia_AbstractVector.hpp"
+#include "utopia_Layout.hpp"
 
 namespace utopia {
 
     template<typename Scalar_, typename SizeType_>
     class Traits< AbstractMatrix<Scalar_, SizeType_> > {
     public:
-        using Scalar = Scalar_;
+        using Scalar   = Scalar_;
         using SizeType = SizeType_;
+
+        using Communicator = utopia::Communicator;
+        using Layout       = utopia::Layout<Communicator, SizeType, 1>;
     };
 
     //parallel types, collective operations

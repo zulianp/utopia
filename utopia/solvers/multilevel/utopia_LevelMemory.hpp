@@ -1,6 +1,9 @@
 #ifndef UTOPIA_LEVEL_MEMORY_HPP
 #define UTOPIA_LEVEL_MEMORY_HPP
-#include "utopia_Core.hpp"
+
+#include "utopia_Traits.hpp"
+#include <vector>
+#include <limits>
 
 namespace utopia
 {
@@ -25,33 +28,34 @@ namespace utopia
     template<class Matrix, class Vector>
     class RMTRLevelMemory
     {
-        typedef UTOPIA_SCALAR(Vector)       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         public:
-            void init_memory(const std::vector<SizeType> & n_dofs_)
+            void init_memory(const std::vector<Layout> &layouts)
             {
-                const auto n_levels = n_dofs_.size(); 
+                const auto n_levels = layouts.size();
 
                 x.resize(n_levels);
                 x_0.resize(n_levels);
 
                 s.resize(n_levels);
                 s_working.resize(n_levels);
-                help.resize(n_levels); 
+                help.resize(n_levels);
 
                 delta.resize(n_levels);
-                energy.resize(n_levels); 
-                gnorm.resize(n_levels); 
+                energy.resize(n_levels);
+                gnorm.resize(n_levels);
 
                 for(auto l=0; l < n_levels; l++){
-                    x[l]            = local_zeros(n_dofs_[l]); 
-                    x_0[l]          = local_zeros(n_dofs_[l]); 
-                    s[l]            = local_zeros(n_dofs_[l]); 
-                    s_working[l]    = local_zeros(n_dofs_[l]); 
-                    help[l]         = local_zeros(n_dofs_[l]); 
+                    x[l].zeros(layouts[l]);
+                    x_0[l].zeros(layouts[l]);
+                    s[l].zeros(layouts[l]);
+                    s_working[l].zeros(layouts[l]);
+                    help[l].zeros(layouts[l]);
                 }
-            }            
+            }
 
         std::vector<Scalar> delta, energy, gnorm;
         std::vector<Vector> x, x_0, s, s_working, help;
@@ -61,24 +65,25 @@ namespace utopia
     template<class Vector>
     class ConstraintsLevelMemory
     {
-        typedef UTOPIA_SCALAR(Vector)        Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)     SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         public:
-            void init_memory(const std::vector<SizeType> & n_dofs_)
+            void init_memory(const std::vector<Layout> &layouts)
             {
                 const Scalar inf = std::numeric_limits<Scalar>::infinity();
-                const auto n_levels = n_dofs_.size(); 
+                const auto n_levels = layouts.size();
                 active_lower.resize(n_levels);
                 active_upper.resize(n_levels);
 
                 for(auto l=0; l < n_levels; l++){
-                    active_lower[l] = local_values(n_dofs_[l], -inf); 
-                    active_upper[l] = local_values(n_dofs_[l], inf); 
+                    active_lower[l].values(layouts[l], -inf);
+                    active_upper[l].values(layouts[l], inf);
                 }
             }
 
-        std::vector<Vector> active_lower, active_upper; 
+        std::vector<Vector> active_lower, active_upper;
     };
 
 }

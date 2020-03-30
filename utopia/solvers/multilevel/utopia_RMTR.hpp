@@ -21,7 +21,7 @@
 namespace utopia
 {
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_l2 final: public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> 
+    class RMTR_l2 final: public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>
     {
         typedef UTOPIA_SCALAR(Vector)           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
@@ -31,7 +31,7 @@ namespace utopia
 
         typedef utopia::Transfer<Matrix, Vector>        Transfer;
         typedef utopia::Level<Matrix, Vector>           Level;
-        
+
         typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>     RMTRBase;
         typedef typename RMTRBase::Fun Fun;
 
@@ -40,7 +40,7 @@ namespace utopia
     public:
 
        /**
-        * @brief      Implementation of RMTR with tr radius defined by l2 norm 
+        * @brief      Implementation of RMTR with tr radius defined by l2 norm
         *
         * @param[in]  n_levels       Number of levels
         */
@@ -137,27 +137,28 @@ namespace utopia
         void init_memory() override
         {
             if(! this->init_){
-                RMTRBase::init_memory(); 
-                const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
-                
+                RMTRBase::init_memory();
+                const auto &layouts = this->local_level_layouts();
+
                 // init deltas to some default value...
                 for(Scalar l = 0; l < this->n_levels(); l ++){
-                    this->_tr_subproblems[l]->init_memory(dofs[l]); 
+                    this->_tr_subproblems[l]->init_memory(layouts[l]);
                 }
+
                 this->init_ = true; 
             }
         }
 
         bool check_initialization() override
         {
-            bool flg = RMTRBase::check_initialization(); 
+            bool flg = RMTRBase::check_initialization();
 
             if(static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()){
                 utopia_error("utopia::RMTR_l2:: number of level QP solvers and levels not equal. \n");
                 flg = false;
             }
 
-            return flg; 
+            return flg;
         }
 
 
@@ -251,7 +252,7 @@ namespace utopia
             Scalar Rg_norm, g_norm;
             norms2(g_restricted, g_coarse, Rg_norm, g_norm);
             return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
-        }        
+        }
 
 
 //----------------------------- QP solve -----------------------------------------------------------------
@@ -264,10 +265,10 @@ namespace utopia
          *
          */
         bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
-        {            
-            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]); 
+        {
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]);
             if(_tr_subproblems[level]->atol() > atol_level){
-                _tr_subproblems[level]->atol(atol_level);  
+                _tr_subproblems[level]->atol(atol_level);
             }
 
             if(flg){
@@ -277,24 +278,24 @@ namespace utopia
                 _tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
             }
 
-            this->memory_.s[level].set(0.0); 
+            this->memory_.s[level].set(0.0);
             _tr_subproblems[level]->current_radius(this->memory_.delta[level]);
-            
+
             // maybe create help vector for this
-            this->ml_derivs_.g[level] *= - 1.0; 
+            this->ml_derivs_.g[level] *= - 1.0;
             _tr_subproblems[level]->solve(this->ml_derivs_.H[level], this->ml_derivs_.g[level], this->memory_.s[level]);
-            this->ml_derivs_.g[level] *= - 1.0; 
+            this->ml_derivs_.g[level] *= - 1.0;
 
             if(has_nan_or_inf(this->memory_.s[level])){
-                this->memory_.s[level].set(0.0); 
+                this->memory_.s[level].set(0.0);
             }
-            
+
             return true;
         }
 
         Scalar get_pred(const SizeType & level) override
         {
-            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level]; 
+            this->memory_.help[level] = this->ml_derivs_.H[level] * this->memory_.s[level];
             return (-1.0 * dot(this->ml_derivs_.g[level], this->memory_.s[level]) -0.5 *dot(this->memory_.help[level], this->memory_.s[level]));
         }
 

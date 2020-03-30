@@ -114,6 +114,17 @@ namespace utopia {
             return tensor_.l_set(idx, val);
         }
 
+        inline void add(const SizeType &idx, const Scalar &val) const
+        {
+            return tensor_.l_add(idx, val);
+        }
+
+        //FIXME
+        inline void atomic_add(const SizeType &idx, const Scalar &val) const
+        {
+            return tensor_.l_add(idx, val);
+        }
+
         LocalViewDevice(T &tensor) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor)) {}
 
     private:

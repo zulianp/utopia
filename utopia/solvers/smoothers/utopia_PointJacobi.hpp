@@ -11,10 +11,12 @@ namespace utopia {
      * costly allocations, possible temporaries are stored as member variables.
      */
     template<class Matrix, class Vector>
-    class PointJacobi final: public IterativeSolver<Matrix, Vector> 
+    class PointJacobi final: public IterativeSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
 
     public:
@@ -101,7 +103,7 @@ namespace utopia {
             d_inv_ = diag(A);
             UTOPIA_NO_ALLOC_END();
 
-            
+
             // lower and upper part of A
             LU_ = A;
             UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4.1");
@@ -118,11 +120,10 @@ namespace utopia {
         }
 
 
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
-            auto zero_expr = local_zeros(ls);
-            r_ = zero_expr;
-            d_inv_ = zero_expr;            
+            r_.zeros(layout);
+            d_inv_.zeros(layout);
         }
 
     private:

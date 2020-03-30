@@ -177,6 +177,9 @@ namespace utopia {
 
     template<typename Scalar, typename SizeType>
     class AbstractMatrix;
+
+    template<class V>
+    class Operator;
 }
 
 #endif //UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

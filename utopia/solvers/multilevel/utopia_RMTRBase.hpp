@@ -43,13 +43,13 @@ namespace utopia
         virtual void read(Input &in) override
         {
             NonlinearMultiLevelBase<Matrix, Vector>::read(in);
-            RMTRParams<Vector>::read(in); 
+            RMTRParams<Vector>::read(in);
         }
 
         virtual void print_usage(std::ostream &os) const override
         {
             NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
-            RMTRParams<Vector>::print_usage(os); 
+            RMTRParams<Vector>::print_usage(os);
         }
 
         virtual void reset(){
@@ -75,8 +75,8 @@ namespace utopia
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER_DF>::value, int> = 0 >
         bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
         {
-            return  false; 
-        }        
+            return  false;
+        }
 
         virtual bool get_multilevel_gradient(const Fun & fun, const SizeType & level, const Vector & s_global) final{
             return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global);
@@ -84,7 +84,7 @@ namespace utopia
 
         virtual bool get_multilevel_gradient(const Fun & fun, const SizeType & level) final{
             return ml_derivs_.compute_gradient(level, fun, memory_.x[level]);
-        }        
+        }
 
 
         virtual Scalar get_multilevel_energy(const Fun & fun, const SizeType & level, const Vector & s_global) final{
@@ -93,22 +93,22 @@ namespace utopia
 
         virtual Scalar get_multilevel_energy(const Fun & fun, const SizeType & level) final{
             return ml_derivs_.compute_energy(level, fun, memory_.x[level]);
-        }        
+        }
 
 
         virtual Scalar get_multilevel_gradient_energy(const Fun & fun, const SizeType & level, const Vector & s_global) final{
             return ml_derivs_.compute_gradient_energy(level, fun, memory_.x[level], s_global);
-        }        
+        }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF, FIRST_ORDER_MGOPT>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
             //UTOPIA_NO_ALLOC_BEGIN("RMTR::region111");
-            // Restricted fine level gradient 
+            // Restricted fine level gradient
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
-            // Projecting current iterate to obtain initial iterate on coarser grid 
+            // Projecting current iterate to obtain initial iterate on coarser grid
             this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
             //UTOPIA_NO_ALLOC_END();
 
@@ -131,7 +131,7 @@ namespace utopia
             //UTOPIA_NO_ALLOC_BEGIN("RMTR::region114");
             this->function(level-1).gradient(this->memory_.x[level-1], this->ml_derivs_.g[level-1]);
             //UTOPIA_NO_ALLOC_END();
-            
+
             //UTOPIA_NO_ALLOC_BEGIN("RMTR::region1145");
             if(!this->skip_BC_checks()){
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
@@ -139,21 +139,21 @@ namespace utopia
             //UTOPIA_NO_ALLOC_END();
 
             // UTOPIA_NO_ALLOC_BEGIN("RMTR::region115");
-            bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
+            bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true;
             this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
             // UTOPIA_NO_ALLOC_END();
 
-            return smoothness_flg; 
-        }        
+            return smoothness_flg;
+        }
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
             UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms0");
-            // Restricted fine level gradient 
+            // Restricted fine level gradient
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
-            // Projecting current iterate to obtain initial iterate on coarser grid 
+            // Projecting current iterate to obtain initial iterate on coarser grid
             this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
 
             if(!this->skip_BC_checks()){
@@ -176,7 +176,7 @@ namespace utopia
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
             }
 
-            bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true; 
+            bool smoothness_flg = this->check_grad_smoothness() ? this->recursion_termination_smoothness(this->ml_derivs_.g_diff[level-1], this->ml_derivs_.g[level-1], level-1) : true;
             this->ml_derivs_.g_diff[level-1] -= this->ml_derivs_.g[level-1];
             UTOPIA_NO_ALLOC_END();
 
@@ -204,22 +204,22 @@ namespace utopia
             this->ml_derivs_.H_diff[level-1] -= this->ml_derivs_.H[level-1];
             UTOPIA_NO_ALLOC_END();
 
-            return smoothness_flg; 
+            return smoothness_flg;
 
-        }   
+        }
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
         bool init_consistency_terms(const SizeType & level)
         {
             UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms0");
-            // Restricted fine level gradient 
+            // Restricted fine level gradient
             this->transfer(level-1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level-1]);
 
             if(!this->skip_BC_checks()){
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), this->ml_derivs_.g_diff[level-1]);
-            }            
+            }
 
-            // Projecting current iterate to obtain initial iterate on coarser grid 
+            // Projecting current iterate to obtain initial iterate on coarser grid
             this->transfer(level-1).project_down(this->memory_.x[level], this->memory_.x[level-1]);
 
             //----------------------------------------------------------------------------
@@ -233,7 +233,7 @@ namespace utopia
             UTOPIA_NO_ALLOC_END();
 
             this->transfer(level-1).restrict(this->ml_derivs_.H[level], this->ml_derivs_.H_diff[level-1]);
-            
+
 
             UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms1");
             if(!this->skip_BC_checks()){
@@ -241,8 +241,8 @@ namespace utopia
             }
             UTOPIA_NO_ALLOC_END();
 
-            return true; 
-        }                   
+            return true;
+        }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF, FIRST_ORDER_MGOPT>::value, int> = 0 >
@@ -251,16 +251,16 @@ namespace utopia
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)){
 
                 if(solve_type==PRE_SMOOTHING || solve_type == COARSE_SOLVE){
-                    this->ml_derivs_.g[level]  += this->ml_derivs_.g_diff[level]; 
+                    this->ml_derivs_.g[level]  += this->ml_derivs_.g_diff[level];
                     this->memory_.gnorm[level] = this->criticality_measure(level);
                 }
             }
 
-            return true; 
+            return true;
         }
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type) 
+        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
         {
             bool make_hess_updates = true;
 
@@ -268,32 +268,32 @@ namespace utopia
             {
                 if( solve_type==PRE_SMOOTHING  || solve_type == COARSE_SOLVE)
                 {
-                    this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level]; 
+                    this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level];
                     this->memory_.gnorm[level] = this->criticality_measure(level);
 
-                    this->ml_derivs_.H[level] += this->ml_derivs_.H_diff[level]; 
-                    make_hess_updates = false;                
+                    this->ml_derivs_.H[level] += this->ml_derivs_.H_diff[level];
+                    make_hess_updates = false;
                 }
             }
 
-            return make_hess_updates; 
+            return make_hess_updates;
         }
 
         template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type) 
+        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
         {
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)){
-         
+
                 if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE)){
-                    this->ml_derivs_.g[level] = this->ml_derivs_.g_diff[level]; 
+                    this->ml_derivs_.g[level] = this->ml_derivs_.g_diff[level];
                     this->memory_.gnorm[level] = this->criticality_measure(level);
                 }
             }
 
-            return true; 
+            return true;
         }
 
-///////////////////////////////////////////////////////////// HELPERS ///////////////////////////////////////////////////////////////////////////////////////////////        
+///////////////////////////////////////////////////////////// HELPERS ///////////////////////////////////////////////////////////////////////////////////////////////
 
         virtual void print_level_info(const SizeType & level) final
         {
@@ -331,7 +331,7 @@ namespace utopia
             if(rho > 0 && rho < this->hessian_update_eta())
                 return true;
 
-            // get rid of allocations 
+            // get rid of allocations
             Vector help = g_new - g_old - H * s;
 
             // Hessian approx is relativelly poor
@@ -349,29 +349,29 @@ namespace utopia
         {
             if(empty(this->memory_.x_0[level]))
             {
-                utopia_error("this should not happen, remove when done testing... \n"); 
+                utopia_error("this should not happen, remove when done testing... \n");
             }
             else if(level < this->n_levels()-1)
             {
                 s_global = this->memory_.x[level] - this->memory_.x_0[level];
             }
-            // we do not need to compute s_working on the fines level 
+            // we do not need to compute s_working on the fines level
         }
 
-    ///////////////////////////////////////////// INITIALIZATIONS ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    ///////////////////////////////////////////// INITIALIZATIONS ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // to overwrite
         virtual void init_memory() override
         {
-            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
-            const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & funs =  this->level_functions(); 
+            const auto &layouts =  this->local_level_layouts();
+            const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & funs =  this->level_functions();
 
-            ml_derivs_.init_memory(dofs, funs); 
-            memory_.init_memory(dofs); 
+            ml_derivs_.init_memory(layouts, funs);
+            memory_.init_memory(layouts);
 
             // init deltas to some default value...
             for(Scalar l = 0; l < this->n_levels(); l ++){
                 this->memory_.delta[l] = this->delta0();
-            }            
+            }
         }
 
         void handle_equality_constraints()
@@ -383,7 +383,7 @@ namespace utopia
                 assert(!empty(flags));
                 this->transfer(i).handle_equality_constraints(flags);
             }
-        }   
+        }
 
         virtual void init_level(const SizeType & level)
         {
@@ -410,7 +410,7 @@ namespace utopia
         }
 
 
-    ///////////////////////////////////////////// CONVERGENCE CHECKS  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    ///////////////////////////////////////////// CONVERGENCE CHECKS  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta)
         {
             bool converged = NonlinearMultiLevelBase<Matrix, Vector>::check_convergence(it, r_norm, rel_norm, 1);
@@ -427,7 +427,7 @@ namespace utopia
         virtual bool check_local_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const Scalar & delta, const LocalSolveType & solve_type)
         {
             if(this->check_iter_convergence(it, it_success, level, solve_type)){
-                return true; 
+                return true;
             }
             else if(delta < this->delta_min()){
                 return true;
@@ -436,7 +436,7 @@ namespace utopia
             return this->criticality_measure_termination(level);
         }
 
-        
+
         virtual bool check_iter_convergence(const SizeType & it, const SizeType & it_success, const SizeType & level, const LocalSolveType & solve_type)
         {
             // coarse one
@@ -459,33 +459,33 @@ namespace utopia
         }
 
 
-        virtual Scalar criticality_measure(const SizeType & level) = 0; 
-        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/) = 0; 
+        virtual Scalar criticality_measure(const SizeType & level) = 0;
+        virtual bool recursion_termination_smoothness(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/) = 0;
 
 
         virtual bool criticality_measure_termination(const SizeType & level)
         {
                                                                                                                                        // this should be ideally different norm of grad on previous iteration
-            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1] ); 
+            Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1] );
             return (this->memory_.gnorm[level] < atol_level) ? true : false;
         }
 
 
-///////////////////////////////////////////// TR-based stuff   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+///////////////////////////////////////////// TR-based stuff   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) = 0; 
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) = 0;
 
         virtual void initialize_local_solve(const SizeType & /*level*/, const LocalSolveType & /*solve_type*/){ }
 
-        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) = 0; 
+        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) = 0;
 
-        virtual Scalar get_pred(const SizeType & level)  = 0; 
+        virtual Scalar get_pred(const SizeType & level)  = 0;
 
 
 
     protected:
         RMTRLevelMemory<Matrix, Vector>         memory_;
-        MultilevelDerivEval<Matrix, Vector, CONSISTENCY_LEVEL>  ml_derivs_; 
+        MultilevelDerivEval<Matrix, Vector, CONSISTENCY_LEVEL>  ml_derivs_;
 
         bool init_; 
 

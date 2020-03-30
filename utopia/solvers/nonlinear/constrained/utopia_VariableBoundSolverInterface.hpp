@@ -22,6 +22,7 @@ namespace utopia
     {
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         using BoxConstraints = utopia::BoxConstraints<Vector>;
 
@@ -85,20 +86,20 @@ namespace utopia
           return constraints_.has_upper_bound();
         }
 
-        virtual void fill_empty_bounds(const SizeType & loc_size)
+        virtual void fill_empty_bounds(const Layout &layout)
         {
-          return constraints_.fill_empty_bounds(loc_size);
+          return constraints_.fill_empty_bounds(layout);
         }
 
 
     protected:
-      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
+      virtual Scalar criticality_measure_infty(const Vector &x, const Vector &g)
       {
         help_ = x - g;
 
         if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
         {
-          this->fill_empty_bounds(local_size(x));
+          this->fill_empty_bounds(layout(x));
         }
 
         const auto &ub = *constraints_.upper_bound();
@@ -116,7 +117,7 @@ namespace utopia
 
         if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
         {
-          this->fill_empty_bounds(local_size(x));
+          this->fill_empty_bounds(layout(x));
         }
 
         const auto &ub = *constraints_.upper_bound();
@@ -231,7 +232,7 @@ namespace utopia
 
       virtual const BoxConstraints &  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform)
       {
-        correction_constraints_.fill_empty_bounds(local_size(x_k));
+        correction_constraints_.fill_empty_bounds(layout(x_k));
 
         if(constraints_.has_upper_bound())
         {
@@ -275,7 +276,7 @@ namespace utopia
 
       virtual const BoxConstraints & build_correction_constraints(const Vector & x_k)
       {
-          correction_constraints_.fill_empty_bounds(local_size(x_k));
+          correction_constraints_.fill_empty_bounds(layout(x_k));
 
           if(constraints_.has_upper_bound()){
             *correction_constraints_.upper_bound() =  *constraints_.upper_bound() - x_k;
@@ -295,14 +296,11 @@ namespace utopia
           return correction_constraints_;
       }
 
-      virtual void init_memory(const SizeType & ls) override
+      virtual void init_memory(const Layout &layout) override
       {
-        auto zero_expr = local_zeros(ls);
-        help_  = zero_expr;
-        // xg_  = zero_expr;
-
-        constraints_.fill_empty_bounds(ls);
-        correction_constraints_.fill_empty_bounds(ls);
+        help_.zeros(layout);
+        constraints_.fill_empty_bounds(layout);
+        correction_constraints_.fill_empty_bounds(layout);
       }
 
 

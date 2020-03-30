@@ -8,6 +8,7 @@
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Communicator.hpp"
 #include "utopia_Device.hpp"
+#include "utopia_Layout.hpp"
 
 #include <vector>
 
@@ -16,15 +17,16 @@ namespace utopia {
     template<typename T>
     class BLASTraits {
     public:
-        using Scalar      = T;
-        using Matrix      = utopia::BlasMatrix<T>;
-        using Vector      = utopia::BlasVector<T>;
-        using SizeType    = std::size_t;
-        using IndexSet    = utopia::BlasIndexSet;
-        using ScalarArray = utopia::BlasArray<T>;
-        using IndexArray  = utopia::BlasArray<int>;
+        using Scalar       = T;
+        using Matrix       = utopia::BlasMatrix<T>;
+        using Vector       = utopia::BlasVector<T>;
+        using SizeType     = std::size_t;
+        using IndexSet     = utopia::BlasIndexSet;
+        using ScalarArray  = utopia::BlasArray<T>;
+        using IndexArray   = utopia::BlasArray<int>;
         using Communicator = utopia::SelfCommunicator;
-        using Device = utopia::Device<BLAS>;
+        using Device       = utopia::Device<BLAS>;
+        using Layout       = utopia::Layout<SelfCommunicator, SizeType, 1>;
 
         enum {
             Backend = BLAS
