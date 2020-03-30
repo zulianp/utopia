@@ -136,12 +136,15 @@ namespace utopia
     private:
         void init_memory() override
         {
-            RMTRBase::init_memory(); 
-            const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
-            
-            // init deltas to some default value...
-            for(Scalar l = 0; l < this->n_levels(); l ++){
-                this->_tr_subproblems[l]->init_memory(dofs[l]); 
+            if(! this->init_){
+                RMTRBase::init_memory(); 
+                const std::vector<SizeType> & dofs =  this->local_level_dofs(); 
+                
+                // init deltas to some default value...
+                for(Scalar l = 0; l < this->n_levels(); l ++){
+                    this->_tr_subproblems[l]->init_memory(dofs[l]); 
+                }
+                this->init_ = true; 
             }
         }
 

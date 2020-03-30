@@ -32,7 +32,8 @@ namespace utopia
 
         RMTRBase(const SizeType & n_levels):    NonlinearMultiLevelBase<Matrix,Vector>(n_levels),
                                                 RMTRParams<Vector>(),
-                                                ml_derivs_(n_levels)
+                                                ml_derivs_(n_levels), 
+                                                init_(false)
         {
 
         }
@@ -480,6 +481,8 @@ namespace utopia
     protected:
         RMTRLevelMemory<Matrix, Vector>         memory_;
         MultilevelDerivEval<Matrix, Vector, CONSISTENCY_LEVEL>  ml_derivs_; 
+
+        bool init_; 
 
     };
 
