@@ -431,19 +431,20 @@ namespace utopia {
                 static std::default_random_engine generator (seed);
 
                 // this one needs to be replaced
-                std::uniform_real_distribution<> distr_point(-0.1, 1.1);
+                std::uniform_real_distribution<> distr_point_x(4.0, 6.0);
+                std::uniform_real_distribution<> distr_point_y(4.0, 6.0);
+                std::uniform_real_distribution<> distr_point_z(4.0, 6.0);
                 std::uniform_int_distribution<> distr_angle(0, 180);
 
-                points_[0].x = distr_point(generator);
-                points_[0].y = distr_point(generator);             
-                points_[0].z = distr_point(generator);  
-
+                points_[0].x = distr_point_x(generator);
+                points_[0].y = distr_point_y(generator);             
+                points_[0].z = distr_point_z(generator);  
 
                 const T theta = distr_angle(generator);   
                 const T gamma = distr_angle(generator);   
                           
-                // // length should be driven from power distribution 
-                // std::uniform_real_distribution<> distr_length(0.0, 1.0);                 
+                // length should be driven from power distribution 
+                // std::uniform_real_distribution<> distr_length(0.0, 3.0);                 
                 // const T alpha1 = 2.8; 
                 // const T x_min = 3.0*depth > 0.04 ? 3.0*depth : 0.04; 
                 // const T r = distr_length(generator);
@@ -451,19 +452,20 @@ namespace utopia {
 
                 
                 // const T alpha2 = 2.95; 
-                // const T r2 = distr_length(generator);
+                // std::uniform_real_distribution<> distr_length2(0.0, 1.0);   
+                // const T r2 = distr_length2(generator);
                 // const T width = x_min * std::pow( (1.-r2), (-1./(alpha2-1.)));   
 
 
-                const T width = 0.15; 
-                const T length = 0.15;  
+                const T width = 1.0; 
+                const T length = 0.5;  
 
 
                 std::uniform_int_distribution<> distr_dir(0.0, 6);
                 const int i = distr_dir(generator); 
 
                 if(i==0){
-                    generate_paralleloid(width, length, depth, theta, gamma);
+                    generate_paralleloid(length, depth, width, theta, gamma);
                 }
                 else if(i==1){
                     generate_paralleloid(length, width, depth, theta, gamma);
@@ -525,16 +527,16 @@ namespace utopia {
                 points_[7].z = points_[3].z + c;
 
 
-                // rotate 
-                const auto cos_gamma = std::cos(gamma_rad); 
-                const auto sin_gamma = std::sin(gamma_rad); 
+                // // rotate 
+                // const auto cos_gamma = std::cos(gamma_rad); 
+                // const auto sin_gamma = std::sin(gamma_rad); 
 
-                for(auto p=0; p < points_.size(); p++){
-                    auto ax = points_[p].x; 
-                    auto ay = points_[p].z; 
-                    points_[p].x = (ax* cos_gamma) - (ay * sin_gamma); 
-                    points_[p].z = (ay* cos_gamma) + (ax * sin_gamma); 
-                }
+                // for(auto p=0; p < points_.size(); p++){
+                //     auto ax = points_[p].x; 
+                //     auto ay = points_[p].z; 
+                //     points_[p].x = (ax* cos_gamma) - (ay * sin_gamma); 
+                //     points_[p].z = (ay* cos_gamma) + (ax * sin_gamma); 
+                // }
 
 
             }

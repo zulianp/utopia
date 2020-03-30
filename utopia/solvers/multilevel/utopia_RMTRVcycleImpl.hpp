@@ -117,6 +117,7 @@ namespace utopia
             return true;
         }
 
+
         if(this->pre_smoothing_steps()==0 && level < this->n_levels()-1){
             // s_global is assumed to be zero at this point 
             this->get_multilevel_gradient(this->function(level), level);            

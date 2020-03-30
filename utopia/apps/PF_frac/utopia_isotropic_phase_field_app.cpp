@@ -409,7 +409,7 @@ namespace utopia {
             world,
             {nx, ny, nz},
             {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
+            {10.0, 10.0, 10.5}
             );
 
         space.mesh().set_field_name(0, "c");
