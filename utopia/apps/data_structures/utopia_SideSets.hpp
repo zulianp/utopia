@@ -2,6 +2,8 @@
 #define UTOPIA_SIDE_SETS_HPP
 
 #include "utopia_ArrayView.hpp"
+#include <algorithm>
+#include <string>
 
 namespace utopia {
 
@@ -15,6 +17,46 @@ namespace utopia {
         inline static constexpr BoundaryIdType front()   { return 5; }
         inline static constexpr BoundaryIdType back()    { return 6; }
         inline static constexpr BoundaryIdType invalid() { return 0; }
+
+        inline static BoundaryIdType from_name(const std::string &str_in)
+        {
+            if(str_in.empty()) {
+                return invalid();
+            }
+
+            std::string str;
+            str.resize(str_in.size(), '0');
+
+            std::transform(str_in.begin(), str_in.end(), str.begin(),
+                [](unsigned char c){ return std::tolower(c);
+            });
+
+            if(str == "left") {
+                return left();
+            }
+
+            if(str == "right") {
+                return right();
+            }
+
+            if(str == "bottom") {
+                return bottom();
+            }
+
+            if(str == "top") {
+                return top();
+            }
+
+            if(str == "front") {
+                return front();
+            }
+
+            if(str == "back") {
+                return back();
+            }
+
+            return invalid();
+        }
     };
 
     template<int Dim>
