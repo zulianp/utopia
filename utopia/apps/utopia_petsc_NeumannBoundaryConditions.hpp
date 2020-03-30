@@ -12,7 +12,7 @@ namespace utopia {
 
     //!! Only for petsc
     template<class Elem, int Components>
-    class NeumannBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> {
+    class NeumannBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> : public Configurable {
     public:
         using Mesh    = utopia::PetscDM<Elem::Dim>;
         using NodeIndex = typename Mesh::NodeIndex;
@@ -35,8 +35,8 @@ namespace utopia {
 
         NeumannBoundaryCondition(
             const FunctionSpace &space,
-            const std::function<bool(const Point &)>   &selector,
-            const std::function<Scalar(const Point &)> &fun,
+            const utopia::function<bool(const Point &)>   &selector,
+            const utopia::function<Scalar(const Point &)> &fun,
             const int component = 0)
         : space_(space), side_set_(SideSet::invalid()), selector_(selector), fun_(fun), component_(component)
         {}
@@ -114,7 +114,7 @@ namespace utopia {
         NeumannBoundaryCondition(
             const FunctionSpace &space,
             SideSet::BoundaryIdType side_set,
-            const std::function<Scalar(const Point &)> &fun,
+            const utopia::function<Scalar(const Point &)> &fun,
             const int component = 0)
         : space_(space), side_set_(side_set), fun_(fun), component_(component)
         {
@@ -123,6 +123,31 @@ namespace utopia {
             selector_ = make_boundary_selector(side_set_, box_min, box_max);
         }
 
+        void read(Input &in) override
+        {
+            std::string side_name = "";
+            Scalar value = 0.0;
+
+            in.get("side", side_name);
+            in.get("value", value);
+            in.get("component",  component_);
+
+            side_set_ = SideSet::from_name(side_name);
+
+            if(side_set_ != SideSet::invalid()) {
+                auto &&box_min = space_.mesh().box_min();
+                auto &&box_max = space_.mesh().box_max();
+                selector_ = make_boundary_selector(side_set_, box_min, box_max);
+
+                fun_ = UTOPIA_LAMBDA(const Point &) -> Scalar {
+                    return value;
+                };
+
+            } else {
+                assert(false);
+                std::cerr << "[Error] malformed neumann boundary condition " << std::endl;
+            }
+        }
 
         void apply(PetscVector &v) const
         {

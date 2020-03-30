@@ -13,6 +13,7 @@
 #include "utopia_DeviceTensorContraction.hpp"
 #include "utopia_StrainView.hpp"
 #include "utopia_Tracer.hpp"
+#include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
 #define UNROLL_FACTOR 4
 #define U_MIN(a,b) ((a) < (b)? (a) : (b))
@@ -96,6 +97,7 @@ namespace utopia {
             in.get("use_dense_hessian", use_dense_hessian_);
             in.get("check_derivatives", check_derivatives_);
             in.get("diff_controller", diff_ctrl_);
+            init_force_field(in);
         }
 
         // this is a bit of hack
@@ -108,6 +110,22 @@ namespace utopia {
             params_.use_crack_set_irreversibiblity = flg;
         }
 
+        void init_force_field(Input &in)
+        {
+            in.get("neumann_bc", [&](Input &in) {
+                in.get_all([&](Input &in) {
+
+                    if(empty(force_field_)) {
+                        space_.create_vector(force_field_);
+                        force_field_.set(0.0);
+                    }
+
+                    NeumannBoundaryCondition<FunctionSpace> bc(space_);
+                    bc.read(in);
+                    bc.apply(force_field_);
+                });
+            });
+        }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space)
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
@@ -264,6 +282,11 @@ namespace utopia {
             val = x.comm().sum(val);
 
             assert(val == val);
+
+            if(!empty(force_field_)) {
+                //MAYBE -= dot(x_const, force_field_);
+                val += dot(x_const, force_field_);
+            }
 
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::value");
             return true;
@@ -448,6 +471,11 @@ namespace utopia {
                 diff_ctrl_.check_grad(*this, x_const, g);
             }
 
+            if(!empty(force_field_)) {
+                //MAYBE g -= force_field_;
+                g += force_field_;
+            }
+
 
             space_.apply_zero_constraints(g);
 
@@ -455,6 +483,7 @@ namespace utopia {
             if(params_.use_crack_set_irreversibiblity){
                 apply_zero_constraints_irreversibiblity(g, x_const);
             }
+
 
             // static int iter = 0;
             // write("g" + std::to_string(iter++) + ".m", g);
@@ -1118,6 +1147,9 @@ namespace utopia {
 
         Vector x_old_; // stores old solution  - used for treatment of irreversibility constraint
         Vector pressure_field_;  // stores heterogenous pressure field - ideally, this vector would have lower size than all 4 variables
+
+
+        Vector force_field_;
     };
 
 }
