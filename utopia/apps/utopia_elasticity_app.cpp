@@ -198,8 +198,11 @@ namespace utopia {
         if(matrix_free) {
 
             ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
+            solver.apply_gradient_descent_step(true);
+
             UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after solver allocation");
             solver.verbose(true);
+
 
             solver.max_it(n_iter);
             solver.rtol(1e-6);
@@ -247,6 +250,7 @@ namespace utopia {
 
             } else {
                 ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
+                solver.apply_gradient_descent_step(true);
 
                 auto prec = std::make_shared<InvDiagPreconditioner<Matrix, Vector>>();
                 solver.set_preconditioner(prec);

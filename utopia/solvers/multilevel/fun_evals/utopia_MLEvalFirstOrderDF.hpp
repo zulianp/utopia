@@ -9,13 +9,14 @@
 
 namespace utopia
 {
-    // Matrix free first order 
+    // Matrix free first order
     template<typename Matrix, typename Vector>
     class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_DF> final
     {
 
-        typedef UTOPIA_SCALAR(Vector)           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         public:
 
@@ -36,13 +37,13 @@ namespace utopia
                 return energy;
             }
 
-            // s_global is assummed to be zero 
+            // s_global is assummed to be zero
             inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
             {
                 Scalar energy = 0.0;
                 fun.value(x, energy);
                 return energy;
-            }        
+            }
 
             inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /* s_global*/)
             {
@@ -55,7 +56,7 @@ namespace utopia
                 return true;
             }
 
-            // s_global is assummed to be zero 
+            // s_global is assummed to be zero
             inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
             {
                 fun.gradient(x, g[level]);
@@ -65,7 +66,7 @@ namespace utopia
                 }
 
                 return true;
-            }        
+            }
 
             inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & s_global)
             {
@@ -77,40 +78,39 @@ namespace utopia
                 {
                     energy      += dot(g_diff[level], s_global);
                     g[level]    += g_diff[level];
-                }            
+                }
 
                 return energy;
             }
 
-            void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+            void init_memory(const std::vector<Layout> &layouts, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
             {
                 g_diff.resize(n_levels_);
                 g.resize(n_levels_);
                 y.resize(n_levels_);
 
                 for(auto l=0; l < n_levels_; l++){
-                    g_diff[l]   = local_zeros(n_dofs_[l]); 
-                    g[l]        = local_zeros(n_dofs_[l]); 
-                    y[l]        = local_zeros(n_dofs_[l]); 
+                    g_diff[l].zeros(layouts[l]);
+                    g[l].zeros(layouts[l]);
+                    y[l].zeros(layouts[l]);
                 }
 
-                initialized_ = true; 
+                initialized_ = true;
             }
 
-            bool initialized() const 
+            bool initialized() const
             {
-                return initialized_; 
+                return initialized_;
             }
 
         private:
-            SizeType n_levels_; 
-            bool initialized_; 
+            SizeType n_levels_;
+            bool initialized_;
 
-        public:            
-            std::vector<Vector> g, g_diff, y; 
-    }; 
+        public:
+            std::vector<Vector> g, g_diff, y;
+    };
 }
 
 #endif //UTOPIA_ML_EVAL_FIRST_ORDER_DERIV_FREE_HPP
 
-    

@@ -482,6 +482,10 @@ namespace utopia {
             // fully broken case is treated as Dirichlet BC
             if(params_.use_crack_set_irreversibiblity){
                 apply_zero_constraints_irreversibiblity(g, x_const);
+
+                // // just a test... 
+                // auto* p_this = const_cast<IsotropicPhaseFieldForBrittleFractures<FunctionSpace> *>(this); 
+                // add_irr_values_markers(p_this->_x_eq_values, p_this->_eq_constrains_flg); 
             }
 
 

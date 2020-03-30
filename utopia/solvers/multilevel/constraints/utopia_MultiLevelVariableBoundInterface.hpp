@@ -18,18 +18,20 @@
 namespace utopia
 {
     template<class Matrix, class Vector, class Child>
-    class MultilevelVariableBoundSolverInterface 
+    class MultilevelVariableBoundSolverInterface
     {
-        typedef UTOPIA_SCALAR(Vector)                           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+       using Scalar   = typename Traits<Vector>::Scalar;
+       using SizeType = typename Traits<Vector>::SizeType;
+       using Layout   = typename Traits<Vector>::Layout;
+
         typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
 
         using Device   = typename Traits<Vector>::Device;
 
 
     public:
-        MultilevelVariableBoundSolverInterface(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer): 
-                                                has_box_constraints_(false), 
+        MultilevelVariableBoundSolverInterface(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer):
+                                                has_box_constraints_(false),
                                                 transfer_(transfer)
         {
 
@@ -50,25 +52,25 @@ namespace utopia
 
         const Vector & active_upper(const SizeType & level)
         {
-            return static_cast<Child*>(this)->active_upper(level); 
+            return static_cast<Child*>(this)->active_upper(level);
         }
 
         const Vector & active_lower(const SizeType & level)
         {
-            return static_cast<Child*>(this)->active_lower(level); 
-        }        
+            return static_cast<Child*>(this)->active_lower(level);
+        }
 
       public:
-        void init_memory(const std::vector<SizeType> & n_dofs_)
+        void init_memory(const std::vector<Layout> & layouts)
         {
-            const auto n_levels = n_dofs_.size();             
-            help_.resize(n_levels); 
+            const auto n_levels = layouts.size();
+            help_.resize(n_levels);
 
             for(auto l=0; l < n_levels; l++){
-                help_[l] = local_zeros(n_dofs_[l]);
+                help_[l].zeros(layouts[l]);
             }
 
-            return static_cast<Child*>(this)->init_memory_impl(n_dofs_);
+            return static_cast<Child*>(this)->init_memory_impl(layouts);
         }
 
 
@@ -96,8 +98,8 @@ namespace utopia
             bool terminate = n_terminates > 0;
             return x.comm().disjunction(terminate);
 
-            // get_projection(active_lower(level), active_upper(level), x); 
-            // return false;             
+            // get_projection(active_lower(level), active_upper(level), x);
+            // return false;
         }
 
 
@@ -107,7 +109,7 @@ namespace utopia
             auto d_lb = const_device_view(lb);
             auto d_ub = const_device_view(ub);
 
-            parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar 
+            parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi) -> Scalar
             {
                 Scalar li = d_lb.get(i);
                 Scalar ui = d_ub.get(i);
@@ -119,12 +121,12 @@ namespace utopia
                 }
             });
         }
-      }        
+      }
 
 
         virtual Scalar criticality_measure_inf(const SizeType & level, const Vector & x, const Vector & g)
         {
-            help_[level] = x - g; 
+            help_[level] = x - g;
             get_projection(active_lower(level), active_upper(level), help_[level]);
             help_[level] -= x;
 
@@ -140,12 +142,12 @@ namespace utopia
 
     protected:
         BoxConstraints box_constraints_;        // constraints on the finest level....
-        bool has_box_constraints_;               // as we can run rmtr with inf. norm also without constraints...      
+        bool has_box_constraints_;               // as we can run rmtr with inf. norm also without constraints...
 
-        const std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > & transfer_; 
+        const std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > & transfer_;
 
     protected:
-        std::vector<Vector> help_;         
+        std::vector<Vector> help_;
 
     };
 

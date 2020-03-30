@@ -13,8 +13,9 @@ namespace utopia
     class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_MGOPT> final
     {
 
-        typedef UTOPIA_SCALAR(Vector)           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
     public:
 
@@ -35,7 +36,7 @@ namespace utopia
             return energy;
         }
 
-        // s_global is assummed to be zero 
+        // s_global is assummed to be zero
         inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
         {
             Scalar energy = 0.0;
@@ -46,7 +47,7 @@ namespace utopia
             }
 
             return energy;
-        }        
+        }
 
         inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /* s_global*/)
         {
@@ -59,7 +60,7 @@ namespace utopia
             return true;
         }
 
-        // s_global is assummed to be zero 
+        // s_global is assummed to be zero
         inline bool compute_gradient(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
         {
             fun.gradient(x, g[level]);
@@ -69,7 +70,7 @@ namespace utopia
             }
 
             return true;
-        }        
+        }
 
         inline Scalar compute_gradient_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x, const Vector & /*s_global*/)
         {
@@ -81,7 +82,7 @@ namespace utopia
             {
                 energy      += dot(g_diff[level], x);
                 g[level]    += g_diff[level];
-            }            
+            }
 
             return energy;
         }
@@ -92,34 +93,34 @@ namespace utopia
             return fun.hessian(x, H[level]);
         }
 
-        void init_memory(const std::vector<SizeType> & n_dofs_, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
+        void init_memory(const std::vector<Layout> &layouts, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
         {
             g_diff.resize(n_levels_);
             g.resize(n_levels_);
             H.resize(n_levels_);
 
             for(auto l=0; l < n_levels_; l++){
-                g_diff[l]   = local_zeros(n_dofs_[l]); 
-                g[l]        = local_zeros(n_dofs_[l]); 
-                level_functions[l]->initialize_hessian(H[l], H[l]); 
+                g_diff[l].zeros(layouts[l]);
+                g[l].zeros(layouts[l]);
+                level_functions[l]->initialize_hessian(H[l], H[l]);
             }
 
-            initialized_ = true; 
+            initialized_ = true;
         }
 
-        bool initialized() const 
+        bool initialized() const
         {
-            return initialized_; 
+            return initialized_;
         }
 
         private:
-            SizeType n_levels_; 
-            bool initialized_; 
+            SizeType n_levels_;
+            bool initialized_;
 
-        public:            
-            std::vector<Vector> g, g_diff; 
-            std::vector<Matrix> H; 
-    }; 
+        public:
+            std::vector<Vector> g, g_diff;
+            std::vector<Matrix> H;
+    };
 
 
 }

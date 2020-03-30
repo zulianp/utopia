@@ -16,9 +16,10 @@ namespace  utopia
     class LSStrategy : virtual public Configurable
 
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-        
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
     public:
         virtual ~LSStrategy() {}
 
@@ -119,7 +120,7 @@ namespace  utopia
             this->print_param_usage(os, "alpha_min", "double", "Minimum allowed step-size.", "1e-9");
         }
 
-        virtual void init_memory(const SizeType & ls) = 0;
+        virtual void init_memory(const Layout &layout) = 0;
 
     private:
         bool verbose_;      /*!< Verbose inside of LS strategy.  */

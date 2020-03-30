@@ -24,8 +24,10 @@ namespace utopia {
     template<class Matrix, class Vector>
     class NewtonBase : public NonLinearSolver<Vector> {
     public:
-        using Scalar         = UTOPIA_SCALAR(Vector);
-        using SizeType       = UTOPIA_SIZE_TYPE(Vector);
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
         using Solver         = utopia::LinearSolver<Matrix, Vector>;
         using DiffController = utopia::DiffController<Matrix, Vector>;
 
@@ -187,9 +189,9 @@ namespace utopia {
 
         }
 
-        void init_memory(const SizeType & ls)
+        void init_memory(const Layout &layout)
         {
-            linear_solver_->init_memory(ls);
+            linear_solver_->init_memory(layout);
         }
 
 

@@ -27,8 +27,9 @@ namespace utopia {
                                               public virtual Clonable //FIXME all non-linear solvers should be clonable
 {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         typedef typename NewtonBase<Matrix, Vector>::Solver  LinearSolver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>    Smoother;
@@ -71,7 +72,7 @@ namespace utopia {
 
     private:
 
-        void set_variable_bounds(SNES &snes, const SizeType & ls);
+        void set_variable_bounds(SNES &snes, const Layout &layout);
 
         // this function is expensive - wrt to convert
         // however, in utopia is not ready for pure wrap implementation

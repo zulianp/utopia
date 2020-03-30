@@ -16,11 +16,12 @@ namespace  utopia
     class MPGRP final:  public OperatorBasedQPSolver<Matrix, Vector>
     {
         using Scalar   = typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;        
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
         using Solver   = utopia::LinearSolver<Matrix, Vector>;
 
         public:
-            MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false), loc_size_(0)
+            MPGRP(): eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false)
             {}
 
             void read(Input &in) override
@@ -37,46 +38,41 @@ namespace  utopia
                 this->print_param_usage(os, "power_method_max_it", "int", "Maximum number of iterations used inside of power method.", "10");
             }
 
-
             MPGRP * clone() const override
             {
                 return new MPGRP(*this);
             }
 
-
             void update(const Operator<Vector> &A) override
             {
-                SizeType loc_size_rhs = A.local_size().get(0);
-                if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init_memory(loc_size_rhs);
+                const auto layout_rhs = row_layout(A);
+                if(!initialized_ || !layout_rhs.same(layout_)) {
+                    init_memory(layout_rhs);
                 }
-            }            
-
+            }
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
-                this->fill_empty_bounds(local_size(rhs));
+                this->fill_empty_bounds(layout(rhs));
                 auto &box = this->get_box_constraints();
 
-                this->update(A); 
+                this->update(A);
 
-                // as it is not clear ATM, how to apply preconditioner, we use it at least to obtain initial guess 
+                // as it is not clear ATM, how to apply preconditioner, we use it at least to obtain initial guess
                 if(precond_){
                     // this is unconstrained step
                     precond_->apply(rhs, sol);
                     // projection to feasible set
-                    this->make_iterate_feasible(sol); 
+                    this->make_iterate_feasible(sol);
                 }
 
                 return aux_solve(A, rhs, sol, box);
             }
 
-
             void set_eig_comp_tol(const Scalar & eps_eig_est)
             {
                 eps_eig_est_ = eps_eig_est;
             }
-
 
         private:
             bool aux_solve(const Operator<Vector> &A, const Vector &rhs, Vector &x, const BoxConstraints<Vector> & constraints)
@@ -84,7 +80,7 @@ namespace  utopia
                 // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
                 // //cudaProfilerStart();
 
-                Scalar r_norm0 = norm2(rhs); 
+                Scalar r_norm0 = norm2(rhs);
 
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
@@ -111,18 +107,18 @@ namespace  utopia
                 A.apply(x, Ax);
                 g = Ax - rhs;
 
-                // std::cout<<"loc_size-lb: "<< local_size(*lb).get(0) << "  \n"; 
-                // std::cout<<"loc_size-ub: "<< local_size(*ub).get(0) << "  \n"; 
-                // std::cout<<"loc_size-g: "<< local_size(g).get(0) << "  \n"; 
-                // std::cout<<"loc_size-x: "<< local_size(x).get(0) << "  \n"; 
-                // std::cout<<"loc_size-fi: "<< local_size(fi).get(0) << "  \n";                 
+                // std::cout<<"loc_size-lb: "<< local_size(*lb).get(0) << "  \n";
+                // std::cout<<"loc_size-ub: "<< local_size(*ub).get(0) << "  \n";
+                // std::cout<<"loc_size-g: "<< local_size(g).get(0) << "  \n";
+                // std::cout<<"loc_size-x: "<< local_size(x).get(0) << "  \n";
+                // std::cout<<"loc_size-fi: "<< local_size(fi).get(0) << "  \n";
 
 
                 this->get_fi(x, g, *lb, *ub, fi);
 
 
-                // std::cout<<"----------------------- \n"; 
-                // exit(0); 
+                // std::cout<<"----------------------- \n";
+                // exit(0);
 
 
                 this->get_beta(x, g, *lb, *ub, beta);
@@ -346,9 +342,9 @@ namespace  utopia
                         const Scalar xi = d_x.get(i);
                         const Scalar gi = d_g.get(i);
 
-                        const Scalar val = 
-                        (device::abs(li - xi) < 1e-14)? 
-                                    device::min(0.0, gi) : 
+                        const Scalar val =
+                        (device::abs(li - xi) < 1e-14)?
+                                    device::min(0.0, gi) :
                                     ((device::abs(ui - xi) < 1e-14)? device::max(0.0, gi) : 0.0);
 
                         d_beta.set(i, val);
@@ -429,32 +425,30 @@ namespace  utopia
             }
 
         public:
-            void init_memory(const SizeType & ls) override
+            void init_memory(const Layout &layout) override
             {
-                OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls); 
+                OperatorBasedQPSolver<Matrix, Vector>::init_memory(layout);
 
-                auto zero_expr = local_zeros(ls);
-
-                fi = zero_expr;
-                beta = zero_expr;
-                gp = zero_expr;
-                p = zero_expr;
-                y = zero_expr;
-                Ap = zero_expr;
-                Abeta = zero_expr;
-                Ax = zero_expr;
-                g = zero_expr;
-                help_f1 = zero_expr;
-                help_f2 = zero_expr;
+                fi.zeros(layout);
+                beta.zeros(layout);
+                gp.zeros(layout);
+                p.zeros(layout);
+                y.zeros(layout);
+                Ap.zeros(layout);
+                Abeta.zeros(layout);
+                Ax.zeros(layout);
+                g.zeros(layout);
+                help_f1.zeros(layout);
+                help_f2.zeros(layout);
 
                 initialized_ = true;
-                loc_size_ = ls;
+                layout_ = layout;
             }
 
             void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
             {
                 precond_ = precond;
-            }            
+            }
 
         private:
             Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, help_f1, help_f2;
@@ -463,7 +457,7 @@ namespace  utopia
             SizeType power_method_max_it_;
 
             bool initialized_;
-            SizeType loc_size_;
+            Layout layout_;
 
             std::shared_ptr<Preconditioner<Vector> > precond_;
 

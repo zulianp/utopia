@@ -28,8 +28,7 @@ namespace utopia
     class MultigridQR final:  public LinearMultiLevel<Matrix, Vector>,
                               public VariableBoundSolverInterface<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
 
         typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::IterativeSolver<Matrix, Vector>     Smoother;
@@ -40,7 +39,11 @@ namespace utopia
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::VariableBoundSolverInterface<Vector> VariableBoundSolverInterface;
 
-        using Super =  utopia::LinearMultiLevel<Matrix, Vector>;
+        using Super  = utopia::LinearMultiLevel<Matrix, Vector>;
+
+        using Layout   = typename Traits<Vector>::Layout;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
 
         typedef struct
         {
@@ -164,10 +167,10 @@ namespace utopia
           smoothers_[level] = smoother;
         }
 
-      void init_memory(const SizeType & ls) override
+      void init_memory(const Layout &l) override
       {
-        Super::init_memory(ls);
-        VariableBoundSolverInterface::init_memory(ls);
+          Super::init_memory(l);
+          VariableBoundSolverInterface::init_memory(l);
       }
 
         /**

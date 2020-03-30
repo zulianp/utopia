@@ -1,3 +1,4 @@
+
 #ifndef UTOPIA_TRILINOSTRAITS_HPP
 #define UTOPIA_TRILINOSTRAITS_HPP
 
@@ -7,6 +8,7 @@
 #include "utopia_trilinos_Base.hpp"
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Device.hpp"
+#include "utopia_Layout.hpp"
 
 #include <vector>
 
@@ -28,6 +30,7 @@ namespace utopia {
         using Communicator  = utopia::TrilinosCommunicator;
         using Node          = utopia::DefaultKokkosNode;
         using Device        = utopia::Device<TRILINOS>;
+        using Layout        = utopia::Layout<TrilinosCommunicator, SizeType, 1>;
 
         enum {
             Backend = TRILINOS

@@ -10,6 +10,7 @@
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMPlex.hpp"
 #include "utopia_Rename.hpp"
+#include "petscfe.h" 
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 namespace utopia {
@@ -103,66 +104,66 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(dmda_test);
 
-    void dmplex_test(Input &in)
-    {
-        PetscCommunicator comm;
-        PetscDMPlex<V, I> dmplex(comm);
+    // void dmplex_test(Input &in)
+    // {
+    //     PetscCommunicator comm;
+    //     PetscDMPlex<V, I> dmplex(comm);
 
-        // dmplex.read(in);
-        dmplex.read("../../utopia_fe/data/contact/contact_squares_tri.e");
-
-
-        // DMLabel *label = nullptr;
-        PetscInt num_fields = 2;
-        // PetscInt num_comp[1] = {1};
-        // PetscInt num_dof[1]  = {1};
-        // PetscInt num_bc = 0;
-        // PetscInt *bc_field = nullptr;
-        // IS *bc_comps = nullptr,* bc_points = nullptr, perm = nullptr;
-
-          // DMGetStratumIS(dm, "marker", 1, &bcPointIS[0]);
-
-        DMSetNumFields(dmplex.raw_type(),  num_fields);
-
-        PetscFE   fe[2];
-        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,nullptr,PETSC_DEFAULT,&fe[0]);
-        PetscFESetName(fe[0], "u");
-        DMSetField(dmplex.raw_type(),0,nullptr,(PetscObject)fe[0]);
-
-        PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,nullptr,PETSC_DEFAULT,&fe[1]);
-        PetscFESetName(fe[1], "v");
-
-        DMSetField(dmplex.raw_type(),1,nullptr,(PetscObject)fe[1]);
-        DMCreateDS(dmplex.raw_type());
-
-        PetscFEDestroy(&fe[0]);
-        PetscFEDestroy(&fe[1]);
+    //     // dmplex.read(in);
+    //     dmplex.read("../../utopia_fe/data/contact/contact_squares_tri.e");
 
 
-        // DMPlexCreateClosureIndex(dmplex.raw_type(), nullptr);
+    //     // DMLabel *label = nullptr;
+    //     PetscInt num_fields = 2;
+    //     // PetscInt num_comp[1] = {1};
+    //     // PetscInt num_dof[1]  = {1};
+    //     // PetscInt num_bc = 0;
+    //     // PetscInt *bc_field = nullptr;
+    //     // IS *bc_comps = nullptr,* bc_points = nullptr, perm = nullptr;
 
-        // DMSetUp(dmplex.raw_type());
+    //       // DMGetStratumIS(dm, "marker", 1, &bcPointIS[0]);
 
-        // PetscSection section;
-        // DMPlexCreateSection(dmplex.raw_type(), label, num_comp, num_dof, num_bc, bc_field, bc_comps, bc_points, perm, &section);
-        // PetscSectionSetFieldName(section, 0, "u");
-        // // DMSetLocalSection(dmplex.raw_type(), section);
-        // DMSetGlobalSection(dmplex.raw_type(), section);
+    //     DMSetNumFields(dmplex.raw_type(),  num_fields);
 
-        // dmplex.create_section()
+    //     PetscFE   fe[2];
+    //     PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,nullptr,PETSC_DEFAULT,&fe[0]);
+    //     PetscFESetName(fe[0], "u");
+    //     DMSetField(dmplex.raw_type(),0,nullptr,(PetscObject)fe[0]);
 
-        PetscVector v;
-        dmplex.create_vector(v);
-        v.set(1.0);
+    //     PetscFECreateDefault(dmplex.comm().get(), 2,1,PETSC_TRUE,nullptr,PETSC_DEFAULT,&fe[1]);
+    //     PetscFESetName(fe[1], "v");
 
-        utopia::rename("X", v);
+    //     DMSetField(dmplex.raw_type(),1,nullptr,(PetscObject)fe[1]);
+    //     DMCreateDS(dmplex.raw_type());
 
-        // dmplex.write("prova.vtu");//, v);
-        dmplex.write("prova.vtu", v);
+    //     PetscFEDestroy(&fe[0]);
+    //     PetscFEDestroy(&fe[1]);
 
-        // PetscSectionDestroy(&section);
-    }
 
-    UTOPIA_REGISTER_APP(dmplex_test);
+    //     // DMPlexCreateClosureIndex(dmplex.raw_type(), nullptr);
+
+    //     // DMSetUp(dmplex.raw_type());
+
+    //     // PetscSection section;
+    //     // DMPlexCreateSection(dmplex.raw_type(), label, num_comp, num_dof, num_bc, bc_field, bc_comps, bc_points, perm, &section);
+    //     // PetscSectionSetFieldName(section, 0, "u");
+    //     // // DMSetLocalSection(dmplex.raw_type(), section);
+    //     // DMSetGlobalSection(dmplex.raw_type(), section);
+
+    //     // dmplex.create_section()
+
+    //     PetscVector v;
+    //     dmplex.create_vector(v);
+    //     v.set(1.0);
+
+    //     utopia::rename("X", v);
+
+    //     // dmplex.write("prova.vtu");//, v);
+    //     dmplex.write("prova.vtu", v);
+
+    //     // PetscSectionDestroy(&section);
+    // }
+
+    // UTOPIA_REGISTER_APP(dmplex_test);
 }
 

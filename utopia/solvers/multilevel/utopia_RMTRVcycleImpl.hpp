@@ -24,17 +24,17 @@ namespace utopia
 
         if(!this->skip_BC_checks()){
             this->make_iterate_feasible(this->function(fine_level), this->memory_.x[fine_level]);
-            this->handle_equality_constraints();    
+            this->handle_equality_constraints();
         }
 
-        this->memory_.energy[fine_level] = this->get_multilevel_gradient_energy(this->function(fine_level), fine_level, this->memory_.s[fine_level]); 
+        this->memory_.energy[fine_level] = this->get_multilevel_gradient_energy(this->function(fine_level), fine_level, this->memory_.s[fine_level]);
         this->memory_.gnorm[fine_level] = this->criticality_measure(fine_level);
         this->_it_global = 0;
 
         //----------------------------------------------
         if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && this->verbose()==true && mpi_world_rank() == 0){
             std::cout << this->red_;
-            std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(this->local_level_dofs_.back());
+            std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(this->local_level_layouts_.back().local_size());
             this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
 
             PrintInfo::print_iter_status(this->_it_global, {this->memory_.gnorm[fine_level], this->memory_.energy[fine_level]});
@@ -53,7 +53,7 @@ namespace utopia
 
             #ifdef CHECK_NUM_PRECISION_mode
                 if(has_nan_or_inf(this->memory_.x[fine_level]) == true){
-                    this->memory_.x[fine_level].set(0.0); 
+                    this->memory_.x[fine_level].set(0.0);
                     return false;
                 }
             #endif
@@ -111,15 +111,16 @@ namespace utopia
         if(converged){
 
             if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
-                std::cout<<"level converged after pre-smoothing \n"; 
+                std::cout<<"level converged after pre-smoothing \n";
             }
 
             return true;
         }
 
+
         if(this->pre_smoothing_steps()==0 && level < this->n_levels()-1){
-            // s_global is assumed to be zero at this point 
-            this->get_multilevel_gradient(this->function(level), level);            
+            // s_global is assumed to be zero at this point
+            this->get_multilevel_gradient(this->function(level), level);
             this->memory_.gnorm[level] = this->criticality_measure(level);
         }
 
@@ -127,14 +128,14 @@ namespace utopia
             converged =  this->criticality_measure_termination(level);
             if(converged==true){
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
-                    std::cout<<"level converged after pre-smoothing, criticality_measure_termination \n"; 
-                }                
+                    std::cout<<"level converged after pre-smoothing, criticality_measure_termination \n";
+                }
                 return true;
             }
         }
 
         UTOPIA_NO_ALLOC_BEGIN("RMTR::region11");
-        smoothness_flg = this->init_consistency_terms(level); 
+        smoothness_flg = this->init_consistency_terms(level);
         UTOPIA_NO_ALLOC_END();
 
         // UTOPIA_NO_ALLOC_BEGIN("RMTR::region12");
@@ -147,7 +148,7 @@ namespace utopia
         coarse_reduction = this->get_multilevel_energy(this->function(level-1), level-1);
 
         // store energy in order to avoid evaluation in the first local_solve
-        this->memory_.energy[level-1] = coarse_reduction; 
+        this->memory_.energy[level-1] = coarse_reduction;
         // UTOPIA_NO_ALLOC_END();
 
         //----------------------------------------------------------------------------
@@ -174,7 +175,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             // UTOPIA_NO_ALLOC_BEGIN("RMTR::region13");
             this->memory_.s[level-1] = this->memory_.x[level-1] - this->memory_.x_0[level-1];
-            coarse_reduction -= this->memory_.energy[level-1]; 
+            coarse_reduction -= this->memory_.energy[level-1];
 
             this->transfer(level-1).interpolate(this->memory_.s[level-1], this->memory_.s[level]);
 
@@ -182,7 +183,7 @@ namespace utopia
                 this->zero_correction_related_to_equality_constrain(this->function(level), this->memory_.s[level]);
             }
 
-            E_old = this->memory_.energy[level]; 
+            E_old = this->memory_.energy[level];
             this->memory_.x[level] += this->memory_.s[level];
 
             this->compute_s_global(level, this->memory_.s_working[level]);
@@ -196,10 +197,10 @@ namespace utopia
             ared = E_old - E_new;
             rho = ared / coarse_reduction;
             if(!std::isfinite(E_new) || !std::isfinite(rho)){
-                rho = 0.0;             
+                rho = 0.0;
             }
 
-            // in theory, this should never happen 
+            // in theory, this should never happen
             if(coarse_reduction<=0){
                 rho = 0;
             }
@@ -208,9 +209,9 @@ namespace utopia
             if(rho > this->rho_tol())
             {
                 coarse_corr_taken = true;
-                this->memory_.energy[level] = E_new; 
+                this->memory_.energy[level] = E_new;
 
-                // todo:: make sure that correct assumption 
+                // todo:: make sure that correct assumption
                 this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
                 this->memory_.gnorm[level] = this->criticality_measure(level);
             }
@@ -225,15 +226,15 @@ namespace utopia
             //----------------------------------------------------------------------------
             converged = this->delta_update(rho, level, this->memory_.s_working[level]);
             if(converged && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
-                    std::cout<<"cconverged after delta update  \n"; 
-            }         
+                    std::cout<<"cconverged after delta update  \n";
+            }
 
             // because, x + Is_{l-1} does not have to be inside of the feasible set....
             // mostly case for rmtr_inf with bounds...
             if(rho > this->rho_tol() && converged==false){
                 converged = this->check_feasibility(level);
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && converged==true){
-                    std::cout<<"- feasibility problems, terminating \n"; 
+                    std::cout<<"- feasibility problems, terminating \n";
                 }
             }
 
@@ -250,8 +251,8 @@ namespace utopia
             // terminate, since TR rad. does not allow to take more corrections on given level
             if(converged==true){
                 if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE){
-                    std::cout<<" converged last  \n"; 
-                }                
+                    std::cout<<" converged last  \n";
+                }
                 return true;
             }
 
@@ -291,7 +292,7 @@ namespace utopia
         const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
         this->initialize_local_solve(level, solve_type);
 
-        make_hess_updates = this->init_deriv_loc_solve(this->function(level), level, solve_type); 
+        make_hess_updates = this->init_deriv_loc_solve(this->function(level), level, solve_type);
 
         converged  = this->check_local_convergence(it, it_success, level, this->memory_.delta[level], solve_type);
         if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose()==true && mpi_world_rank() == 0)
@@ -340,10 +341,10 @@ namespace utopia
             rho = (ared < 0.0) ? 0.0 : ared/pred;
             rho = (rho != rho) ? 0.0 : rho;
 
-            // just some safety checks 
+            // just some safety checks
             if(!std::isfinite(energy_new) || !std::isfinite(rho) || has_nan_or_inf(this->memory_.x[level])){
-                rho = 0.0;             
-            }            
+                rho = 0.0;
+            }
 
             // update in hessian approx ...
             // TODO:: could be done in more elegant way....
@@ -372,15 +373,15 @@ namespace utopia
             delta_converged = this->delta_update(rho, level, this->memory_.s_working[level]);
 
 
-            // TODO:: minimize norm computations 
+            // TODO:: minimize norm computations
             // if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
             // if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success, level, solve_type))
             // {
-            //     make_grad_updates = false; 
+            //     make_grad_updates = false;
             // }
 
-            // can be more efficient, see commented lines below 
-            make_hess_updates =   make_grad_updates; 
+            // can be more efficient, see commented lines below
+            make_hess_updates =   make_grad_updates;
             UTOPIA_NO_ALLOC_END();
 
 
@@ -396,9 +397,9 @@ namespace utopia
                 // this is just a safety check
                 if(!std::isfinite(this->memory_.gnorm[level])){
                     UTOPIA_NO_ALLOC_BEGIN("RMTR::region8");
-                    rho = 0; 
+                    rho = 0;
                     this->memory_.x[level] -= this->memory_.s[level]; // return iterate into its initial state
-                    this->compute_s_global(level, this->memory_.s_working[level]);     
+                    this->compute_s_global(level, this->memory_.s_working[level]);
                     this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
                     this->memory_.gnorm[level] = this->criticality_measure(level);
                     UTOPIA_NO_ALLOC_END();
@@ -408,7 +409,7 @@ namespace utopia
             }
             // else
             // {
-            //     make_hess_updates = false;  
+            //     make_hess_updates = false;
             // }
 
             UTOPIA_NO_ALLOC_BEGIN("RMTR::region9");

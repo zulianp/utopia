@@ -18,8 +18,9 @@ namespace utopia
     template<class Vector>
     class QuasiNewtonBase : public MatrixFreeNonLinearSolver<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                               Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         typedef utopia::HessianApproximation<Vector>                HessianApproximation;
         typedef utopia::MatrixFreeLinearSolver<Vector>              MFSolver;
@@ -39,7 +40,6 @@ namespace utopia
 
         virtual ~QuasiNewtonBase() {}
 
-
         virtual void read(Input &in) override
         {
             MatrixFreeNonLinearSolver<Vector>::read(in);
@@ -56,7 +56,6 @@ namespace utopia
             }
         }
 
-
         virtual void print_usage(std::ostream &os) const override
         {
             MatrixFreeNonLinearSolver<Vector>::print_usage(os);
@@ -65,7 +64,6 @@ namespace utopia
             this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-");
             this->print_param_usage(os, "hessian-approx-strategy", "HessianApproxStrategy", "Input parameters for hessian-approximation strategy.", "-");
         }
-
 
         virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
         {
@@ -88,18 +86,15 @@ namespace utopia
             hessian_approx_strategy_->update(s, y, x, g);
         }
 
-
         virtual void initialize_approximation(const Vector &x, const Vector & g)
         {
-            return hessian_approx_strategy_->initialize(x, g); 
+            return hessian_approx_strategy_->initialize(x, g);
         }
-
 
         virtual void set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
         {
             ls_strategy_ = strategy;
         }
-
 
         virtual void dumping_parameter(const Scalar & alpha)
         {
@@ -113,18 +108,17 @@ namespace utopia
 
         virtual void init_memory(const Vector &x, const Vector & g)
         {
-            this->initialize_approximation(x, g); 
-            SizeType ls = local_size(x).get(0);
+            this->initialize_approximation(x, g);
+            auto x_layout = layout(x);
 
             if(ls_strategy_){
-               ls_strategy_->init_memory(ls); 
+               ls_strategy_->init_memory(x_layout);
             }
 
             if(mf_linear_solver_){
-               mf_linear_solver_->init_memory(ls); 
-            }            
+               mf_linear_solver_->init_memory(x_layout);
+            }
         }
-
 
     protected:
         inline bool linear_solve(const Vector &rhs, Vector &sol)

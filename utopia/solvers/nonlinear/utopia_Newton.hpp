@@ -32,8 +32,10 @@ namespace utopia
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Newton final: public NewtonBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
         typedef utopia::LSStrategy<Vector>                  LSStrategy;
 
@@ -48,10 +50,11 @@ namespace utopia
         {
            using namespace utopia;
 
-            if(empty(x))
+            if(empty(x)) {
               utopia_error("utopia::Newton, initial guess is empty vector");
+            }
 
-            init_memory(local_size(x));
+            init_memory(layout(x));
 
             Matrix hessian, preconditioner;
 
@@ -173,19 +176,19 @@ namespace utopia
         this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-");
     }
 
-    void init_memory(const SizeType & ls)
+    void init_memory(const Layout &layout)
     {
       // init of linear solver
-      NewtonBase<Matrix, Vector>::init_memory(ls);
+      NewtonBase<Matrix, Vector>::init_memory(layout);
 
       // init of vectors
-      grad_neg_ = local_zeros(ls);
-      step_ = local_zeros(ls);
-      grad_ = local_zeros(ls);
+      grad_neg_.zeros(layout);
+      step_.zeros(layout);
+      grad_.zeros(layout);
 
       // init of vectors
       if(ls_strategy_)
-        ls_strategy_->init_memory(ls);
+        ls_strategy_->init_memory(layout);
     }
 
     /**

@@ -1,45 +1,42 @@
 #ifndef UTOPIA_TR_L2_SUBPROBLEM_STEIHAUG_TOINT_HPP
 #define UTOPIA_TR_L2_SUBPROBLEM_STEIHAUG_TOINT_HPP
+
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_Layout.hpp"
 
 namespace utopia
 {
-
     /**
      * @brief      Class for Steihaug Toint conjugate gradient.
      */
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class SteihaugToint final:  public OperatorBasedTRSubproblem<Matrix, Vector>
+    class SteihaugToint final : public OperatorBasedTRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
     public:
         using OperatorBasedTRSubproblem<Matrix, Vector>::solve;
-        using OperatorBasedTRSubproblem<Matrix, Vector>::update; 
+        using OperatorBasedTRSubproblem<Matrix, Vector>::update;
 
-        typedef utopia::Preconditioner<Vector> Preconditioner;
+        using Preconditioner = utopia::Preconditioner<Vector>;
 
-
-        SteihaugToint(): OperatorBasedTRSubproblem<Matrix, Vector>(), use_precond_direction_(false), initialized_(false), loc_size_(0)
-        {  
-
-        }
+        SteihaugToint(): OperatorBasedTRSubproblem<Matrix, Vector>(), use_precond_direction_(false), initialized_(false)
+        {}
 
         void read(Input &in) override
         {
             OperatorBasedTRSubproblem<Matrix, Vector>::read(in);
         }
 
-
         void print_usage(std::ostream &os) const override
         {
             OperatorBasedTRSubproblem<Matrix, Vector>::print_usage(os);
         }
-
 
         SteihaugToint * clone() const override
         {
@@ -48,10 +45,10 @@ namespace utopia
 
         void update(const Operator<Vector> &A) override
         {
-            SizeType loc_size_rhs = A.local_size().get(0);
+            auto A_layout = row_layout(A);
 
-            if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                init_memory(loc_size_rhs);
+            if(!initialized_ || !A_layout.same(layout_)) {
+                init_memory(A_layout);
             }
 
             if(this->precond_)
@@ -62,13 +59,12 @@ namespace utopia
                     auto A_ptr = dynamic_cast<const Matrix *>(&A);
                     if(A_ptr)
                     {
-                        auto A_new = dynamic_cast<const Matrix &>(A); 
-                        ls_ptr->update(std::make_shared<const Matrix>(A_new)); 
+                        auto A_new = dynamic_cast<const Matrix &>(A);
+                        ls_ptr->update(std::make_shared<const Matrix>(A_new));
                     }
                 }
             }
-        }       
-
+        }
 
         bool apply(const Vector &b, Vector &x) override
         {
@@ -103,10 +99,10 @@ namespace utopia
             minus_rhs = rhs;
             minus_rhs *= -1.0;
 
-            SizeType loc_size_rhs   = local_size(rhs);
-            if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                init_memory(loc_size_rhs);
-            }   
+            auto rhs_layout = layout(rhs);
+            if(!initialized_ || !rhs_layout.same(layout_)) {
+                init_memory(rhs_layout);
+            }
 
             if(this->precond_)
             {
@@ -118,8 +114,8 @@ namespace utopia
             }
         }
 
-
     private:
+
         bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr)
         {
             r = -1.0 * g;
@@ -180,10 +176,8 @@ namespace utopia
             }
 
             //cudaProfilerStop();
-
             return true;
         }
-
 
         bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k)
         {
@@ -417,35 +411,31 @@ namespace utopia
             }
 
             //cudaProfilerStop();
-
             return true;
         }
 
-
-
     public:
-        void init_memory(const SizeType & ls) override
-        {
-            auto zero_expr = local_zeros(ls);
 
+        void init_memory(const Layout &layout) override
+        {
             //resets all buffers in case the size has changed
-            v_k   = zero_expr;
-            r     = zero_expr;
-            p_k   = zero_expr;
-            B_p_k = zero_expr;
-            minus_rhs = zero_expr;
+            v_k.zeros(layout);
+            r.zeros(layout);
+            p_k.zeros(layout);
+            B_p_k.zeros(layout);
+            minus_rhs.zeros(layout);
 
             initialized_ = true;
-            loc_size_ = ls;
+            layout_ = layout;
         }
 
-
     private:
+
         Vector v_k, r, p_k, B_p_k, minus_rhs;
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
         bool use_precond_direction_;
         bool initialized_;
-        SizeType loc_size_;
+        Layout layout_;
 
     };
 

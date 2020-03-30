@@ -19,8 +19,9 @@ namespace utopia {
     template<class Vector, int Backend = Traits<Vector>::Backend>
     class Backtracking final : public LSStrategy<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
 
     public:
@@ -175,7 +176,7 @@ namespace utopia {
                     alpha = alpha_c/10;
                 }
                 UTOPIA_NO_ALLOC_END();
-                
+
                 it++;
                 if(this->verbose())
                     PrintInfo::print_iter_status({it, alpha});
@@ -185,20 +186,19 @@ namespace utopia {
         }
 
     public:
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
             if(empty(x_k)){
-                x_k = local_zeros(ls);
+                x_k.zeros(layout);
+            } else if(!x_k.comm().conjunction(layout.local_size() == local_size(x_k).get(0))) {
+                x_k .zeros(layout);
             }
-            else if(!x_k.comm().conjunction(ls == local_size(x_k).get(0))){
-                x_k  = local_zeros(ls); 
-            }   
         }
 
 
     private:
         Scalar c2_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
-        Vector x_k; 
+        Vector x_k;
 
     };
 }

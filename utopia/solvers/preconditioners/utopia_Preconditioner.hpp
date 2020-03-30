@@ -84,7 +84,9 @@ namespace utopia {
     template<class Vector>
     class Preconditioner : public virtual Configurable, public virtual Clonable, public virtual MemoryInterface<Vector>{
     public:
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
@@ -100,7 +102,7 @@ namespace utopia {
         }
 
         // this should be left as virtual once all solvers allocations improve
-        virtual void init_memory(const SizeType & /*ls*/) override { }
+        virtual void init_memory(const Layout & /*ls*/) override { }
 
         // TODO
         virtual void update(const Operator<Vector> & A) { UTOPIA_UNUSED(A); }

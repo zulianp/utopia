@@ -28,9 +28,7 @@ namespace  utopia
         typedef UTOPIA_SIZE_TYPE(Matrix)        SizeType;
 
         IterativeSolver():  atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(300), verbose_(false), norm_freq_(1.0)
-        {
-
-        }
+        {}
 
         virtual ~IterativeSolver( ){}
 
@@ -73,12 +71,12 @@ namespace  utopia
 
         SizeType sweeps()
         {
-            return max_it(); 
+            return max_it();
         }
 
         void sweeps(const SizeType & sweeps)
         {
-            return max_it(sweeps); 
+            return max_it(sweeps);
         }
 
         Scalar get_time() { return _time.get_seconds();  }
@@ -232,7 +230,7 @@ namespace  utopia
                 return false;
             }
             else{
-                return (it % norm_freq_ == 0) ? true : false; 
+                return (it % norm_freq_ == 0) ? true : false;
             }
         }
 
@@ -247,10 +245,10 @@ namespace  utopia
         /**
          * @brief Define frequency with which we compute norms
          * @details 0 - never, any other number uses modulo
-         * 
+         *
          * @param freq - defines how often we compute norms
          */
-        virtual void norm_frequency(const SizeType & freq) {norm_freq_ = freq; };  
+        virtual void norm_frequency(const SizeType & freq) {norm_freq_ = freq; };
 
 
     private:
@@ -264,7 +262,7 @@ namespace  utopia
         bool verbose_;                  /*!< Verbose enable? . */
 
         Chrono _time;                 /*!<Timing of solver. */
-        SizeType norm_freq_; 
+        SizeType norm_freq_;
 
     };
 }

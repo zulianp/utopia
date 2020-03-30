@@ -18,6 +18,11 @@ namespace utopia {
 		virtual Communicator * clone() const override = 0;
 		virtual void barrier() const = 0;
 
+		virtual bool same(const Communicator &other) const
+		{
+			return size() == other.size();
+		}
+
 
 		virtual bool conjunction(const bool &val) const = 0;
 		virtual bool disjunction(const bool &val) const = 0;
