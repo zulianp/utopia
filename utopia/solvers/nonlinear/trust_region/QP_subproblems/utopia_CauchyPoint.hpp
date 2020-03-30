@@ -19,8 +19,9 @@ namespace utopia
     template<class Matrix, class Vector>
     class CauchyPoint final: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
     public:
 
@@ -36,26 +37,26 @@ namespace utopia
             return new CauchyPoint();
         }
 
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
-            Bg_ = local_zeros(ls);
+            Bg_.zeros(layout);
         }
 
     private:
         bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k)
         {
-            Scalar g_norm, g_B_g; 
-            Bg_ = B * g; 
+            Scalar g_norm, g_B_g;
+            Bg_ = B * g;
 
-            dots(g,g, g_norm, g, Bg_, g_B_g); 
-            g_norm = std::sqrt(g_norm); 
+            dots(g,g, g_norm, g, Bg_, g_B_g);
+            g_norm = std::sqrt(g_norm);
 
             Scalar tau = std::min(1.0, pow(g_norm,3.0) / (this->current_radius() * g_B_g));
             p_k = tau * (this->current_radius() / g_norm) * (g) ;
             return true;
         }
 
-        Vector Bg_; 
+        Vector Bg_;
 
     };
 }

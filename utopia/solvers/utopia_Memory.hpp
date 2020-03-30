@@ -12,11 +12,11 @@ namespace utopia
     public:
         using SizeType     = typename Traits<Vector>::SizeType;
         using Communicator = typename Traits<Vector>::Communicator;
-        using Layout       = utopia::Layout<Communicator, SizeType, 1>;
+        using Layout       = typename Traits<Vector>::Layout;
 
         virtual ~MemoryInterface() {}
 
-        virtual void init_memory(const SizeType & ls) = 0;
+        virtual void init_memory(const Layout &l) = 0;
     };
 }
 

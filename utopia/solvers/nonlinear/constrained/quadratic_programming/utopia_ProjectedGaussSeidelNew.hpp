@@ -29,6 +29,7 @@ namespace utopia {
     public:
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
         using Super    = utopia::QPSolver<Matrix, Vector>;
 
         ProjectedGaussSeidel()
@@ -377,9 +378,18 @@ namespace utopia {
             return true;
         }
 
-        void init_memory(const SizeType &ls)  override
+        void init_memory(const Layout &layout)  override
         {
-            Super::init_memory(ls);
+            Super::init_memory(layout);
+            d.zeros(layout);
+            c.zeros(layout);
+
+            if(use_line_search_) {
+                inactive_set_.zeros(layout);
+                Ac.zeros(layout);
+                is_c_.zeros(layout);
+                descent_dir.zeros(layout);
+            }
         }
 
         void init(const Matrix &A)

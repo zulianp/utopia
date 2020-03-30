@@ -93,7 +93,7 @@ namespace utopia
 
   /**
    * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
-   *             
+   *
    */
   template<class Vector>
   class TrustRegionBase : public TrustRegionParams<Vector>
@@ -137,16 +137,16 @@ namespace utopia
     virtual Scalar get_pred(const Vector &g, const Operator<Vector> &B, const Vector & p_k)
     {
       if(empty(Bp_) || size(Bp_) != size(g)){
-        Bp_ = 0.0*g; 
+        Bp_ = 0.0*g;
       }
 
       B.apply(p_k, Bp_);
       return -1.0 * dot(g, p_k) - 0.5 * dot(Bp_, p_k);
     }
 
-    virtual void init_memory(const SizeType & ls)
+    virtual void init_memory(const Layout &layout)
     {
-      Bp_ = local_zeros(ls); 
+      Bp_.zeros(layout);
     }
 
 
@@ -349,11 +349,11 @@ namespace utopia
         }
         else if (rho < this->eta1() && rho > 0 )
         {
-          radius = this->gamma1() * norm_infty(p_k); 
+          radius = this->gamma1() * norm_infty(p_k);
         }
         else if(rho ==0)
         {
-          radius = this->gamma1() * radius; 
+          radius = this->gamma1() * radius;
         }
     }
 
@@ -365,9 +365,9 @@ namespace utopia
     //     }
     //     else if (rho < eta1_ )
     //     {
-    //       radius = gamma1_ * radius; 
+    //       radius = gamma1_ * radius;
     //     }
-    // }    
+    // }
 
 
 
@@ -398,12 +398,12 @@ namespace utopia
 
     void read(Input &in) override
     {
-      TrustRegionParams<Vector>::read(in); 
+      TrustRegionParams<Vector>::read(in);
     }
 
     void print_usage(std::ostream &os) const override
     {
-      TrustRegionParams<Vector>::print_usage(os); 
+      TrustRegionParams<Vector>::print_usage(os);
     }
 
 

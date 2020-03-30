@@ -11,12 +11,14 @@ namespace  utopia
     class ProjectedGradientActiveSet final:  //public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector>
                                             public OperatorBasedQPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
         typedef utopia::LinearSolver<Matrix, Vector>    Solver;
 
         public:
-            ProjectedGradientActiveSet(): initialized_(false), loc_size_(0)
+            ProjectedGradientActiveSet(): initialized_(false), layout_(0)
             {
 
             }
@@ -60,17 +62,17 @@ namespace  utopia
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 auto &box = this->get_box_constraints();
-                update(A); 
+                update(A);
                 return aux_solve(A, -1.0*rhs, sol, box);
             }
 
             void update(const Operator<Vector> &A) override
             {
-                SizeType loc_size_rhs = A.local_size().get(0);
-                if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                    init_memory(loc_size_rhs);
+                SizeType layout_rhs = A.local_size().get(0);
+                if(!initialized_ || !A.comm().conjunction(layout_ == layout_rhs)) {
+                    init_memory(layout_rhs);
                 }
-            }        
+            }
 
             // bool solve(const Matrix &A, const Vector &rhs, Vector &sol) override
             // {
@@ -316,19 +318,18 @@ namespace  utopia
                 return min(alpha_stars);
             }
 
-            void init_memory(const SizeType & ls) override
+            void init_memory(const Layout &layout) override
             {
-                OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls);
-                auto zero_expr = local_zeros(ls);
+                OperatorBasedQPSolver<Matrix, Vector>::init_memory(layout);
 
                 //resets all buffers in case the size has changed
-                r = zero_expr;
-                q = zero_expr;
-                d = zero_expr;
-                Hd = zero_expr;
+                r.zeros(layout);
+                q.zeros(layout);
+                d.zeros(layout);
+                Hd.zeros(layout);
 
                 initialized_ = true;
-                loc_size_ = ls;                
+                layout_ = layout;
             }
 
         private:
@@ -339,7 +340,7 @@ namespace  utopia
             Vector r, q, d, Hd;
 
             bool initialized_;
-            SizeType loc_size_;
+            SizeType layout_;
 
     };
 }

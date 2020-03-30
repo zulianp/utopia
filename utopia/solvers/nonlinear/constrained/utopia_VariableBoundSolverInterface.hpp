@@ -22,6 +22,7 @@ namespace utopia
     {
         using Scalar   = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         using BoxConstraints = utopia::BoxConstraints<Vector>;
 
@@ -295,14 +296,13 @@ namespace utopia
           return correction_constraints_;
       }
 
-      virtual void init_memory(const SizeType & ls) override
+      virtual void init_memory(const Layout &layout) override
       {
-        auto zero_expr = local_zeros(ls);
-        help_  = zero_expr;
-        // xg_  = zero_expr;
 
-        constraints_.fill_empty_bounds(ls);
-        correction_constraints_.fill_empty_bounds(ls);
+        help_.zero(layout)
+
+        constraints_.fill_empty_bounds(layout);
+        correction_constraints_.fill_empty_bounds(layout);
       }
 
 

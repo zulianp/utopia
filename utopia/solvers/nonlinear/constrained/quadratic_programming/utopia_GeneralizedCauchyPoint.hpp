@@ -11,8 +11,9 @@ namespace  utopia
     template<class Matrix, class Vector>
     class GeneralizedCauchyPoint final: public OperatorBasedQPSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
 
         public:
@@ -58,14 +59,14 @@ namespace  utopia
                 if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
                     init_memory(loc_size_rhs);
                 }
-            }                
+            }
 
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
                 auto &box = this->get_box_constraints();
                 update(A);
-                rhs_minus_ = -1.0 *rhs; 
+                rhs_minus_ = -1.0 *rhs;
                 return aux_solve(A, rhs_minus_, sol, box);
             }
 
@@ -74,7 +75,7 @@ namespace  utopia
             {
                 auto &box = this->get_box_constraints();
                 update(A);
-                rhs_minus_ = -1.0 *rhs; 
+                rhs_minus_ = -1.0 *rhs;
                 return aux_solve(A, rhs_minus_, sol, box);
             }
 
@@ -154,7 +155,7 @@ namespace  utopia
             SizeType get_number_of_sorted_break_points(const Vector & sorted_break_points)
             {
                 // Vector help = local_values(1, 0.0);
-                t_help_.set(0.0); 
+                t_help_.set(0.0);
                 SizeType val = size(sorted_break_points).get(0);
 
                 {
@@ -215,7 +216,7 @@ namespace  utopia
             Scalar get_next_break_point(const Vector & sorted_break_points, const SizeType & index)
             {
                 // Vector t_help = local_values(1, 0.0);
-                t_help_.set(0.0); 
+                t_help_.set(0.0);
                 Scalar value = 0.0;
 
                 {
@@ -242,31 +243,30 @@ namespace  utopia
 
 
         public:
-            void init_memory(const SizeType & ls) override
+            void init_memory(const Layout &layout) override
             {
-                OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls); 
+                OperatorBasedQPSolver<Matrix, Vector>::init_memory(layout);
+                t_help_.zeros(layout.comm(), 1, layout.comm().size());
 
-                t_help_ = local_values(1, 0.0);
 
-                auto zero_expr          = local_zeros(ls);
-                break_points_           = zero_expr; 
-                sorted_break_points_    = zero_expr; 
-                active_set_             = zero_expr; 
-                e_                      = zero_expr; 
-                Hd_                     = zero_expr; 
-                d_                      = zero_expr; 
+                break_points_.zeros(layout)
+                sorted_break_points_.zeros(layout)
+                active_set_.zeros(layout)
+                e_.zeros(layout)
+                Hd_.zeros(layout)
+                d_.zeros(layout)
 
-                initialized_ = true;    
-                loc_size_ = ls;      
+                initialized_ = true;
+                layout_ = layout;
             }
 
 
         private:
             SizeType cp_memory_;    // memory size
-            Vector t_help_, break_points_, sorted_break_points_, active_set_, e_, Hd_, d_, rhs_minus_; 
+            Vector t_help_, break_points_, sorted_break_points_, active_set_, e_, Hd_, d_, rhs_minus_;
 
-            bool initialized_; 
-            SizeType loc_size_;                 
+            bool initialized_;
+            SizeType layout_;
 
     };
 }

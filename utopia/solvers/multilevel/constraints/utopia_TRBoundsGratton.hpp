@@ -17,10 +17,11 @@ namespace utopia
     class TRBoundsGratton : public MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoundsGratton<Matrix, Vector> >
     {
         public:
-            typedef UTOPIA_SCALAR(Vector)                           Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+            using Scalar   = typename Traits<Vector>::Scalar;
+            using SizeType = typename Traits<Vector>::SizeType;
+            using Layout   = typename Traits<Vector>::Layout;
 
-            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoundsGratton<Matrix, Vector> > Base; 
+            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoundsGratton<Matrix, Vector> > Base;
 
             TRBoundsGratton(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer) : Base(transfer)
             {
@@ -28,21 +29,21 @@ namespace utopia
             }
 
 
-            void init_memory_impl(const std::vector<SizeType> & n_dofs_)
+            void init_memory_impl(const std::vector<Layout> &layouts)
             {
-                constraints_memory_.init_memory(n_dofs_); 
+                constraints_memory_.init_memory(layouts);
 
-                const auto n_levels = n_dofs_.size(); 
-                help_loc_.resize(n_levels); 
+                const auto n_levels = layouts.size();
+                help_loc_.resize(n_levels);
                 for(auto l=0; l < n_levels; l++){
-                    help_loc_[l] = local_zeros(n_dofs_[l]); 
-                }                
+                    help_loc_[l] = local_zeros(layouts[l]);
+                }
 
             }
 
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
             {
-                auto finer_level = level + 1; 
+                auto finer_level = level + 1;
                 {
                     auto d_x_finer      = const_device_view(x_finer_level);
                     auto d_tr_lb        = const_device_view(constraints_memory_.active_lower[finer_level]);
@@ -51,16 +52,16 @@ namespace utopia
                     parallel_each_write(this->help_[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         auto val = d_x_finer.get(i) - delta_fine;
-                        auto lbi = d_tr_lb.get(i); 
+                        auto lbi = d_tr_lb.get(i);
                         return device::max(lbi, val);
-                    });   
+                    });
 
                     parallel_each_write(help_loc_[finer_level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
                         auto val = d_x_finer.get(i) + delta_fine;
-                        auto ubi = d_tr_ub.get(i); 
+                        auto ubi = d_tr_ub.get(i);
                         return device::min(ubi, val);
-                    });   
+                    });
                 }
 
                 //------------------------ we should take into account  positive and negative elements projection separatelly -----------------
@@ -75,12 +76,12 @@ namespace utopia
 
             const Vector & active_lower(const SizeType & level)
             {
-                return constraints_memory_.active_lower[level]; 
-            }                      
+                return constraints_memory_.active_lower[level];
+            }
 
         private:
-            ConstraintsLevelMemory<Vector> constraints_memory_; 
-            std::vector<Vector> help_loc_; 
+            ConstraintsLevelMemory<Vector> constraints_memory_;
+            std::vector<Vector> help_loc_;
     };
 
 }

@@ -6,7 +6,7 @@
 namespace utopia {
 
     template<typename Matrix, typename Vector, int Backend>
-    BiCGStab<Matrix, Vector, Backend>::BiCGStab(): initialized_(false), loc_size_(0)
+    BiCGStab<Matrix, Vector, Backend>::BiCGStab(): initialized_(false), layout_(0)
     {}
 
     template<typename Matrix, typename Vector, int Backend>
@@ -18,27 +18,27 @@ namespace utopia {
     template<typename Matrix, typename Vector, int Backend>
     void BiCGStab<Matrix, Vector, Backend>::update(const Operator<Vector> &A)
     {
-        SizeType loc_size_rhs = A.local_size().get(0);
+        SizeType layout_rhs = A.local_size().get(0);
 
-        if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-            init_memory(loc_size_rhs);
+        if(!initialized_ || !A.comm().conjunction(layout_ == layout_rhs)) {
+            init_memory(layout_rhs);
         }
     }
 
 
     template<typename Matrix, typename Vector, int Backend>
-    void BiCGStab<Matrix, Vector, Backend>::init_memory(const SizeType &ls)
+    void BiCGStab<Matrix, Vector, Backend>::init_memory(const Layout &layout)
     {
-        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(ls);
+        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
 
-        v_ = local_zeros(ls);
-        p_ = local_zeros(ls);
-        h_ = local_zeros(ls);
-        y_ = local_zeros(ls);
-        t_ = local_zeros(ls);
-        s_ = local_zeros(ls);
-        z_ = local_zeros(ls);
-        K_inv_t_ = local_zeros(ls);
+        v_.zeros(layout);
+        p_.zeros(layout);
+        h_.zeros(layout);
+        y_.zeros(layout);
+        t_.zeros(layout);
+        s_.zeros(layout);
+        z_.zeros(layout);
+        K_inv_t_.zeros(layout);
     }
 
     //https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method (Preconditioned BiCGSTAB)

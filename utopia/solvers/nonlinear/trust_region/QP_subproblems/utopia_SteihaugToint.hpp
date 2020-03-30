@@ -14,18 +14,19 @@ namespace utopia
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class SteihaugToint final:  public OperatorBasedTRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
     public:
         using OperatorBasedTRSubproblem<Matrix, Vector>::solve;
-        using OperatorBasedTRSubproblem<Matrix, Vector>::update; 
+        using OperatorBasedTRSubproblem<Matrix, Vector>::update;
 
         typedef utopia::Preconditioner<Vector> Preconditioner;
 
 
-        SteihaugToint(): OperatorBasedTRSubproblem<Matrix, Vector>(), use_precond_direction_(false), initialized_(false), loc_size_(0)
-        {  
+        SteihaugToint(): OperatorBasedTRSubproblem<Matrix, Vector>(), use_precond_direction_(false), initialized_(false), layout_(0)
+        {
 
         }
 
@@ -48,10 +49,10 @@ namespace utopia
 
         void update(const Operator<Vector> &A) override
         {
-            SizeType loc_size_rhs = A.local_size().get(0);
+            SizeType layout_rhs = A.local_size().get(0);
 
-            if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                init_memory(loc_size_rhs);
+            if(!initialized_ || !A.comm().conjunction(layout_ == layout_rhs)) {
+                init_memory(layout_rhs);
             }
 
             if(this->precond_)
@@ -62,12 +63,12 @@ namespace utopia
                     auto A_ptr = dynamic_cast<const Matrix *>(&A);
                     if(A_ptr)
                     {
-                        auto A_new = dynamic_cast<const Matrix &>(A); 
-                        ls_ptr->update(std::make_shared<const Matrix>(A_new)); 
+                        auto A_new = dynamic_cast<const Matrix &>(A);
+                        ls_ptr->update(std::make_shared<const Matrix>(A_new));
                     }
                 }
             }
-        }       
+        }
 
 
         bool apply(const Vector &b, Vector &x) override
@@ -103,10 +104,10 @@ namespace utopia
             minus_rhs = rhs;
             minus_rhs *= -1.0;
 
-            SizeType loc_size_rhs   = local_size(rhs);
-            if(!initialized_ || !rhs.comm().conjunction(loc_size_ == loc_size_rhs)) {
-                init_memory(loc_size_rhs);
-            }   
+            SizeType layout_rhs   = local_size(rhs);
+            if(!initialized_ || !rhs.comm().conjunction(layout_ == layout_rhs)) {
+                init_memory(layout_rhs);
+            }
 
             if(this->precond_)
             {
@@ -424,19 +425,19 @@ namespace utopia
 
 
     public:
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
-            auto zero_expr = local_zeros(ls);
+            auto zero_expr = local_zeros(layout);
 
             //resets all buffers in case the size has changed
-            v_k   = zero_expr;
-            r     = zero_expr;
-            p_k   = zero_expr;
-            B_p_k = zero_expr;
-            minus_rhs = zero_expr;
+            v_k.zeros(layout);
+            r.zeros(layout);
+            p_k.zeros(layout);
+            B_p_k.zeros(layout);
+            minus_rhs.zeros(layout);
 
             initialized_ = true;
-            loc_size_ = ls;
+            layout_ = layout;
         }
 
 
@@ -445,7 +446,7 @@ namespace utopia
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
         bool use_precond_direction_;
         bool initialized_;
-        SizeType loc_size_;
+        Layout layout_;
 
     };
 

@@ -18,8 +18,10 @@ namespace utopia {
     template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class GaussSeidel final : public IterativeSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
+
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
 
     public:
@@ -238,7 +240,6 @@ namespace utopia {
 
         void init(const Matrix &A)
         {
-            SizeType n = local_size(A).get(0);
             d = diag(A);
 
             if(l1_) {
@@ -249,26 +250,19 @@ namespace utopia {
             }
 
             d_inv = 1./d;
-            // c = local_zeros(n);
-            // r = local_zeros(n);
-
-            // if(use_line_search_) {
-            //     Ac = local_zeros(n);
-            // }
-            init_memory(n); 
+            init_memory(row_layout(A));
         }
 
-
-    public: 
-        void init_memory(const SizeType & n) override
+    public:
+        void init_memory(const Layout &layout) override
         {
-            c = local_zeros(n);
-            r = local_zeros(n);
+            c.zeros(layout);
+            r.zeros(layout);
 
             if(use_line_search_) {
-                Ac = local_zeros(n);
+                Ac.zeros(layout);
             }
-        }        
+        }
 
 
 

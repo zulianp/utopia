@@ -20,8 +20,9 @@ namespace utopia {
     class ProjectedGradient final: public OperatorBasedQPSolver<Matrix, Vector>
     {
     public:
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         using QPSolver<Matrix, Vector>::solve;
 
@@ -226,14 +227,14 @@ namespace utopia {
         }
 
 
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
-            OperatorBasedQPSolver<Matrix, Vector>::init_memory(ls);
+            OperatorBasedQPSolver<Matrix, Vector>::init_memory(layout);
 
-            p  = local_zeros(ls);
-            Ap = local_zeros(ls);
-            x_old = local_zeros(ls);
-            x_half = local_zeros(ls);
+            p.zeros(layout);
+            Ap.zeros(layout);
+            x_old.zeros(layout);
+            x_half.zeros(layout);
         }
 
         void update(const Operator<Vector> &A) override

@@ -17,8 +17,10 @@ namespace utopia
     class InvDiagPreconditioner final : public LinearSolver<Matrix, Vector>
     {
         public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         bool apply(const Vector &rhs, Vector &sol) override
         {
@@ -53,9 +55,9 @@ namespace utopia
             return new InvDiagPreconditioner(*this);
         }
 
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
-            d = local_zeros(ls);
+            d.zeros(layout);
         }
 
     private:
@@ -78,7 +80,7 @@ namespace utopia
         }
 
     };
-    
+
 
     template<class Vector>
     class FunctionPreconditioner final: public Preconditioner<Vector>

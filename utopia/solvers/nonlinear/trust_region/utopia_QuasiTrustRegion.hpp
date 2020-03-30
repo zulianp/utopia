@@ -13,19 +13,20 @@
       template<class Vector>
       class QuasiTrustRegion final: public TrustRegionBase<Vector>, public QuasiNewtonBase<Vector>
       {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         typedef utopia::MatrixFreeTRSubproblem<Vector>  TRSubproblem;
         typedef utopia::HessianApproximation<Vector>    HessianApproximation;
         typedef utopia::QuasiNewtonBase<Vector>         NonLinearSolver;
 
         public:
-          QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx, 
+          QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx,
                             const std::shared_ptr<TRSubproblem> &tr_subproblem):
-                            NonLinearSolver(hessian_approx, tr_subproblem), 
-                            initialized_(false), 
-                            loc_size_(0)
+                            NonLinearSolver(hessian_approx, tr_subproblem),
+                            initialized_(false),
+                            layout_(0)
           {
 
           }
@@ -74,17 +75,17 @@
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
 
-        SizeType loc_size_x = local_size(x_k); 
-        if(!initialized_ || !x_k.comm().conjunction(loc_size_ == loc_size_x)) 
+        SizeType layout_x = local_size(x_k);
+        if(!initialized_ || !x_k.comm().conjunction(layout_ == layout_x))
         {
-          init_memory(loc_size_x);
+          init_memory(layout_x);
         }
 
         fun.gradient(x_k, g);
         g0_norm = norm2(g);
         g_norm = g0_norm;
 
-        QuasiNewtonBase<Vector>::init_memory(x_k, g); 
+        QuasiNewtonBase<Vector>::init_memory(x_k, g);
 
 
         // print out - just to have idea how we are starting
@@ -122,7 +123,7 @@
           {
             p_k.set(0);
             tr_subproblem->current_radius(delta);
-            g_help = -1.0*g; 
+            g_help = -1.0*g;
             tr_subproblem->solve(*multiplication_action, g_help, p_k);
             this->solution_status_.num_linear_solves++;
           }
@@ -224,27 +225,25 @@
     }
 
 
-  private: 
-    void init_memory(const SizeType & ls)
+  private:
+    void init_memory(const Layout &layout)
     {
-      auto zero_expr = local_zeros(ls);
+      y.zeros(layout);
+      p_k.zeros(layout);
+      x_trial.zeros(layout);
+      g_help.zeros(layout);
+      g.zeros(layout);
 
-      y         = zero_expr; 
-      p_k       = zero_expr; 
-      x_trial   = zero_expr; 
-      g_help    = zero_expr; 
-      g         = zero_expr; 
+      TrustRegionBase<Vector>::init_memory(layout);
 
-      TrustRegionBase<Vector>::init_memory(ls);
-
-      initialized_ = true;    
-      loc_size_ = ls;    
+      initialized_ = true;
+      layout_ = layout;
     }
 
     private:
       Vector g, g_help,  y, p_k, x_trial;
-      bool initialized_; 
-      SizeType loc_size_;        
+      bool initialized_;
+      Layout layout_;
 
 
   };

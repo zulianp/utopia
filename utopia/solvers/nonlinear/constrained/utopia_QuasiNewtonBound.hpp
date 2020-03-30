@@ -22,8 +22,9 @@ namespace utopia
                                 public VariableBoundSolverInterface<Vector>
 
     {
-        typedef UTOPIA_SCALAR(Vector)                           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
         typedef utopia::LSStrategy<Vector>                      LSStrategy;
         typedef utopia::HessianApproximation<Vector>            HessianApproximation;
@@ -34,8 +35,8 @@ namespace utopia
     public:
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
                             const std::shared_ptr <QPSolver> &linear_solver):
-                            QuasiNewtonBase<Vector>(hessian_approx, linear_solver), 
-                            initialized_(false), 
+                            QuasiNewtonBase<Vector>(hessian_approx, linear_solver),
+                            initialized_(false),
                             loc_size_(0)
         {
 
@@ -51,20 +52,20 @@ namespace utopia
             Scalar alpha = 1.0;
             bool converged = false;
 
-            SizeType loc_size_x = local_size(x); 
+            SizeType loc_size_x = local_size(x);
 
-            this->fill_empty_bounds(loc_size_x); 
+            this->fill_empty_bounds(loc_size_x);
             this->make_iterate_feasible(x);
 
-            if(!initialized_ || !x.comm().conjunction(loc_size_ == loc_size_x)) 
+            if(!initialized_ || !x.comm().conjunction(loc_size_ == loc_size_x))
             {
                 init_memory(loc_size_x);
-            }            
+            }
 
             fun.gradient(x, g);
             g0_norm = this->criticality_measure_infty(x, g);
 
-            QuasiNewtonBase<Vector>::init_memory(x, g); 
+            QuasiNewtonBase<Vector>::init_memory(x, g);
 
             if(this->verbose_) {
                 this->init_solver("QUASI NEWTON BOUND", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
@@ -83,7 +84,7 @@ namespace utopia
                     auto box = this->build_correction_constraints(x);
                     qp_solver->set_box_constraints(box);
                     s.set(0.0);
-                    g_minus = -1.0 * g; 
+                    g_minus = -1.0 * g;
                     qp_solver->solve(*multiplication_action, g_minus, s);
                 }
                 else
@@ -132,25 +133,24 @@ namespace utopia
 
 
     private:
-        void init_memory(const SizeType &ls)
+        void init_memory(const Layout &layout)
         {
-            auto zero_expr = local_zeros(ls);
 
-            s       = zero_expr;
-            g       = zero_expr;
-            y       = zero_expr;
-            g_minus = zero_expr;
+            s.zero(layout);
+            g.zero(layout);
+            y.zero(layout);
+            g_minus.zero(layout);
 
-            VariableBoundSolverInterface<Vector>::init_memory(ls); 
-                           
-            initialized_ = true;    
-            loc_size_ = ls;                                        
+            VariableBoundSolverInterface<Vector>::init_memory(layout);
+
+            initialized_ = true;
+            layout_ = layout;
         }
 
 
         Vector g, s, y, g_minus;
-        bool initialized_; 
-        SizeType loc_size_;            
+        bool initialized_;
+        SizeType layout_;
 
     };
 

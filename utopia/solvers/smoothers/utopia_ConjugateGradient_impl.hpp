@@ -14,7 +14,7 @@ namespace utopia {
 
     template<class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient()
-    : reset_initial_guess_(false), initialized_(false), loc_size_(0)
+    : reset_initial_guess_(false), initialized_(false), layout_(0)
     {}
 
     template<class Matrix, class Vector, int Backend>
@@ -50,10 +50,10 @@ namespace utopia {
     template<class Matrix, class Vector, int Backend>
     void ConjugateGradient<Matrix, Vector, Backend>::update(const Operator<Vector> &A)
     {
-        SizeType loc_size_rhs = A.local_size().get(0);
+        SizeType layout_rhs = A.local_size().get(0);
 
-        if(!initialized_ || !A.comm().conjunction(loc_size_ == loc_size_rhs)) {
-            init_memory(loc_size_rhs);
+        if(!initialized_ || !A.comm().conjunction(layout_ == layout_rhs)) {
+            init_memory(layout_rhs);
         }
     }
 
@@ -296,24 +296,24 @@ namespace utopia {
     }
 
     template<class Matrix, class Vector, int Backend>
-    void ConjugateGradient<Matrix, Vector, Backend>::init_memory(const SizeType & ls)
+    void ConjugateGradient<Matrix, Vector, Backend>::init_memory(const Layout &layout)
     {
-        assert(ls > 0);
+        assert(layout.local_size() > 0);
 
-        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(ls); 
-        auto zero_expr = local_zeros(ls);
+        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
+        auto zero_expr = local_zeros(layout);
 
         //resets all buffers in case the size has changed
-        r = zero_expr;
-        p = zero_expr;
-        q = zero_expr;
-        Ap = zero_expr;
-        r_new = zero_expr;
-        z = zero_expr;
-        z_new = zero_expr;
+        r.zeros(layout);
+        p.zeros(layout);
+        q.zeros(layout);
+        Ap.zeros(layout);
+        r_new.zeros(layout);
+        z.zeros(layout);
+        z_new.zeros(layout);
 
         initialized_ = true;
-        loc_size_ = ls;
+        layout_ = layout;
     }
 
 }

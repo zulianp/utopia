@@ -21,38 +21,39 @@ namespace utopia
     class TRBoxMixConstraints : public MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoxMixConstraints<Matrix, Vector, TRConstraints, BoxConstraints> >
     {
         public:
-            typedef UTOPIA_SCALAR(Vector)                           Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+            using Scalar   = typename Traits<Vector>::Scalar;
+            using SizeType = typename Traits<Vector>::SizeType;
+            using Layout   = typename Traits<Vector>::Layout;
 
-            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoxMixConstraints<Matrix, Vector, TRConstraints, BoxConstraints> > Base; 
+            typedef utopia::MultilevelVariableBoundSolverInterface<Matrix, Vector, TRBoxMixConstraints<Matrix, Vector, TRConstraints, BoxConstraints> > Base;
 
-            TRBoxMixConstraints(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer) : Base(transfer), 
-                                                                                                            tr_bounds_(transfer), 
+            TRBoxMixConstraints(const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> & transfer) : Base(transfer),
+                                                                                                            tr_bounds_(transfer),
                                                                                                             box_bounds_(transfer)
             {
 
             }
 
-            void init_memory_impl(const std::vector<SizeType> & n_dofs_)
+            void init_memory_impl(const std::vector<Layout> &layouts)
             {
-                constraints_memory_.init_memory(n_dofs_); 
-                tr_bounds_.init_memory(n_dofs_); 
-                box_bounds_.init_memory(n_dofs_); 
+                constraints_memory_.init_memory(layouts);
+                tr_bounds_.init_memory(layouts);
+                box_bounds_.init_memory(layouts);
 
-                const SizeType finest_level = n_dofs_.size(); 
+                const SizeType finest_level = layouts.size();
                 if(this->box_constraints_.has_lower_bound()){
                     constraints_memory_.active_lower[finest_level-1] = *(this->box_constraints_.lower_bound());
                 }
 
                 if(this->box_constraints_.has_upper_bound()){
                     constraints_memory_.active_upper[finest_level-1] = *(this->box_constraints_.upper_bound());
-                }                   
+                }
             }
 
             void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
             {
-                tr_bounds_.init_level(level, x_finer_level, x_level, delta_fine);            
-                box_bounds_.init_level(level, x_finer_level, x_level, delta_fine); 
+                tr_bounds_.init_level(level, x_finer_level, x_level, delta_fine);
+                box_bounds_.init_level(level, x_finer_level, x_level, delta_fine);
 
                 // intersect  lower bounds
                 {
@@ -61,9 +62,9 @@ namespace utopia
 
                     parallel_each_write(constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
-                        return device::max(d_tr_lower.get(i), d_box_lower.get(i)); 
-                    });   
-                }  
+                        return device::max(d_tr_lower.get(i), d_box_lower.get(i));
+                    });
+                }
 
                 // intersect  upper bounds
                 {
@@ -72,9 +73,9 @@ namespace utopia
 
                     parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar
                     {
-                        return device::min(d_tr_upper.get(i), d_box_upper.get(i)); 
-                    });   
-                }                         
+                        return device::min(d_tr_upper.get(i), d_box_upper.get(i));
+                    });
+                }
 
             }
 
@@ -85,17 +86,17 @@ namespace utopia
 
             const Vector & active_lower(const SizeType & level)
             {
-                return constraints_memory_.active_lower[level]; 
-            }                      
+                return constraints_memory_.active_lower[level];
+            }
 
         private:
-            ConstraintsLevelMemory<Vector> constraints_memory_; 
-            TRConstraints tr_bounds_; 
-            BoxConstraints box_bounds_; 
+            ConstraintsLevelMemory<Vector> constraints_memory_;
+            TRConstraints tr_bounds_;
+            BoxConstraints box_bounds_;
     };
 
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
     template<class Matrix, class Vector>
     using TRGrattonBoxGelmanMandel = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, BoxGelmanMandel<Matrix, Vector> >;
 
@@ -114,7 +115,7 @@ namespace utopia
     using TRGelmanMandelBoxGelmanMandel = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, BoxGelmanMandel<Matrix, Vector> >;
 
     template<class Matrix, class Vector>
-    using TRGelmanMandelBoxKornhuber = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, BoxKornhuber<Matrix, Vector> >;    
+    using TRGelmanMandelBoxKornhuber = utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, BoxKornhuber<Matrix, Vector> >;
 
 
 

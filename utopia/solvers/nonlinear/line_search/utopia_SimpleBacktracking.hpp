@@ -18,8 +18,9 @@ namespace utopia
     template<class Vector>
     class SimpleBacktracking final : public LSStrategy<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Scalar   = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout   = typename Traits<Vector>::Layout;
 
     public:
         SimpleBacktracking():  LSStrategy<Vector>()
@@ -76,19 +77,19 @@ namespace utopia
         }
 
     public:
-        void init_memory(const SizeType & ls) override
+        void init_memory(const Layout &layout) override
         {
             if(empty(x_k)){
-                x_k = local_zeros(ls);
+                x_k.zeros(layout);
             }
-            else if(!x_k.comm().conjunction(ls == local_size(x_k).get(0))){
-                x_k  = local_zeros(ls); 
-            }   
+            else if(!x_k.comm().conjunction(layout.local_size() == local_size(x_k).get(0))){
+                x_k.zeros(layout);
+            }
         }
 
 
     private:
-        Vector x_k; 
+        Vector x_k;
 
     };
 
