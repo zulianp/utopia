@@ -10,23 +10,29 @@ namespace utopia {
 
     template<class Matrix, class Vector>
     class TestFunctionND_1 final : public Function<Matrix, Vector> {
-
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
     public:
 
-        TestFunctionND_1(SizeType N = 10) : N(N), b(values(N, 3.0)), A(identity(N, N)), a(1.0) {
-
-            help_ = make_unique<Vector>(values(N, 0.0));
+        TestFunctionND_1(const Comm &comm = Comm(), SizeType N = 10)
+        : N(N),
+          b(layout(comm, Traits::decide(), N), 3.0),
+          A(layout(comm, Traits::decide(), Traits::decide(), N, N)),
+          a(1.0)
+          {
+            A.identity();
+            help_ = make_unique<Vector>(layout(b), 0.0);
 
             static_assert(is_dense_or_polymorphic<Matrix>::value, "This function has a dense hessian do not use sparse implementations");
         }
 
         inline bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
         {
-            H = values(N, N, 0.);
-            H_pre = values(N, N, 0.);
+            H.dense(layout(A), 0.0);
+            H_pre.dense(layout(A), 0.0);
             return true;
         }
 
@@ -38,7 +44,7 @@ namespace utopia {
 
         bool gradient(const Vector &point, Vector &result) const override {
             if(empty(result) || size(point) != size(result)) {
-                result = values(point.size(), 0.0);
+                result.zeros(layout(point));
             }
 
             const Scalar s = dot(point, A * point);
@@ -121,9 +127,9 @@ namespace utopia {
     private:
         const SizeType N;
         const Vector b;
-        const Matrix A;
+        Matrix A;
         const Scalar a;
-        std::unique_ptr<Vector>  help_; 
+        std::unique_ptr<Vector>  help_;
     };
 
     template<class Matrix, class Vector>

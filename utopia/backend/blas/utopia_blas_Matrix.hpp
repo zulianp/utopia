@@ -279,27 +279,27 @@ namespace utopia {
             this->values(s.get(0), s.get(1), val);
         }
 
-        void identity(const SizeType rows, const SizeType cols, const Scalar &diag = 1.0)
+        void identity(const Scalar &diag = 1.0)
         {
-            using std::move;
             using std::min;
             using std::fill;
 
-            resize(rows, cols);
             fill(entries_.begin(), entries_.end(), T(0));
 
-            const SizeType n = min(rows, cols);
+            const SizeType n = min(rows(), cols());
             for (SizeType i = 0; i < n; ++i) {
                 set(i, i, diag);
             }
         }
 
+        void identity(const SizeType rows, const SizeType cols, const Scalar &diag = 1.0)
+        {
+            resize(rows, cols);
+            identity(diag);
+        }
+
         void values(const SizeType rows, const SizeType cols, const T &value)
         {
-            using std::move;
-            using std::min;
-            using std::fill;
-
             resize(rows, cols);
             fill(entries_.begin(), entries_.end(), T(value));
         }

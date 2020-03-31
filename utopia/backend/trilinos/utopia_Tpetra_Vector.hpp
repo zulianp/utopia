@@ -65,7 +65,7 @@ namespace utopia {
         using RCPCommType     = Teuchos::RCP<const Teuchos::Comm<int> > ;
         using RCPMapType      = Teuchos::RCP<const MapType>;
         using ExecutionSpace  = VectorType::execution_space;
-        using Layout          = utopia::Layout<TrilinosCommunicator, SizeType, 1>;
+        using Layout          = Traits<TpetraVector>::Layout;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////

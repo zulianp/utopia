@@ -100,7 +100,7 @@ namespace utopia
 
             if(empty(g))
             {
-                g = zeros(n);
+                g.zeros(layout(x));
             }
 
 
@@ -182,9 +182,7 @@ namespace utopia
             Scalar alpha = 0.00001;
             Scalar t1 = - 1.0;
 
-
-            H = zeros(n,n);
-
+            H.dense(square_matrix_layout(layout(x)), 0.0);
 
             {
                 Read<Vector>read1(x);

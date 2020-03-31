@@ -30,13 +30,13 @@ namespace utopia {
 			return local_size_[i];
 		}
 
-		inline SizeType &size(const SizeType i = 0)
+		inline SizeType &size(const int i = 0)
 		{
 			assert(i < Order);
 			return size_[i];
 		}
 
-		inline const SizeType &size(const SizeType i = 0) const
+		inline const SizeType &size(const int i = 0) const
 		{
 			assert(i < Order);
 			return size_[i];
@@ -151,7 +151,7 @@ namespace utopia {
 	template<typename LocalSizeType, typename SizeType, class Comm>
 	inline Layout<Comm, 1, LocalSizeType, SizeType> layout(const Comm &comm, const LocalSizeType &local_size, const SizeType &size)
 	{
-		return Layout<Comm, 1, SizeType>(comm, local_size, size);
+		return Layout<Comm, 1, LocalSizeType, SizeType>(comm, local_size, size);
 	}
 
 	template<typename LocalSizeType, typename SizeType, class Comm>
@@ -189,6 +189,19 @@ namespace utopia {
 			op.local_size(),
 			op.size()
 		);
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	//// UTITLITY ///////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	template<typename LocalSizeType, typename SizeType, class Comm>
+	inline Layout<Comm, 2, LocalSizeType, SizeType> square_matrix_layout(const Layout<Comm, 1, LocalSizeType, SizeType> &in)
+	{
+		LocalSizeType ls[2] = { in.local_size(), in.local_size()  };
+		SizeType gs[2]	    = { in.size(), in.size() };
+		return Layout<Comm, 2, LocalSizeType, SizeType>(in.comm(), ls, gs);
 	}
 
 }

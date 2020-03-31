@@ -176,7 +176,7 @@ namespace utopia {
             using namespace utopia;
 
             int n = 10;
-            Matrix x = identity(n, n);
+            Matrix x; x.identity(serial_layout(n, n));
 
             // double r = trace(x);
             //disp(r);

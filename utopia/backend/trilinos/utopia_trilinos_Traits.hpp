@@ -9,6 +9,7 @@
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Device.hpp"
 #include "utopia_Layout.hpp"
+#include <Tpetra_ConfigDefs.hpp>
 
 #include <vector>
 
@@ -50,9 +51,9 @@ namespace utopia {
         }
 
         //tells tpetra to compute global size automatically
-        static constexpr Tpetra::global_size_t determine()
+        static Tpetra::global_size_t determine()
         {
-            return Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()
+            return Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid();
         }
     };
 

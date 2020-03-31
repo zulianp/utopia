@@ -80,8 +80,10 @@ namespace utopia
     {
 
     public:
-        typedef UTOPIA_SCALAR(Vector)       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         MultiLevelTestProblem1D(const SizeType & n_levels,
                                 const SizeType & n_coarse_elements,
@@ -94,7 +96,9 @@ namespace utopia
 
             this->n_dofs(0, n_coarse_elements + 1);
 
-            // std::cout<<"n_coarse_elements: "<< n_coarse_elements << "  \n"; 
+            // std::cout<<"n_coarse_elements: "<< n_coarse_elements << "  \n";
+
+            Comm comm;
 
 
             for(SizeType i = 1; i < n_levels; ++i) {
@@ -109,9 +113,9 @@ namespace utopia
                 const auto n_coarse = this->n_dofs(i);
                 const auto n_fine   = this->n_dofs(i + 1);
 
-                // std::cout<<"n_fine: "<< n_fine << "  n_ccoarse: "<< n_coarse << "  \n"; 
+                // std::cout<<"n_fine: "<< n_fine << "  n_ccoarse: "<< n_coarse << "  \n";
 
-                Matrix I = sparse(n_fine, n_coarse, 2);
+                Matrix I; I.sparse(layout(comm, Traits::decide(), Traits::decide(), n_fine, n_coarse), 2, 2);
                 // std::cout<<"n_coarse: "<< n_coarse << "  n_fine: "<< n_fine << "  \n";
 
                 {
@@ -166,11 +170,11 @@ namespace utopia
                     }
                 }
 
-                // approx of projection ... 
-                auto h_fine     = (1./(this->n_dofs(i+1) - 1)); 
-                auto h_coarse   = (1./(this->n_dofs(i) - 1)); 
-                Matrix P = 1./h_coarse*h_fine*transpose(I); 
-                // disp(P, "P"); 
+                // approx of projection ...
+                auto h_fine     = (1./(this->n_dofs(i+1) - 1));
+                auto h_coarse   = (1./(this->n_dofs(i) - 1));
+                Matrix P = 1./h_coarse*h_fine*transpose(I);
+                // disp(P, "P");
 
                 {
                     Write<Matrix> w_(P, utopia::GLOBAL_INSERT);
@@ -178,11 +182,11 @@ namespace utopia
 
                     auto last_node_H = size(P).get(1) - 1.0;
                     auto last_node_h = size(P).get(0) - 1;
-                    
+
                     if(rP.inside(last_node_h)){
                         P.set(last_node_h, last_node_H-1, 0.0);
                         P.set(last_node_h, last_node_H, 1.0);
-                    } 
+                    }
 
                     if(rP.inside(0)) {
                         P.set(0, 1, 0.);

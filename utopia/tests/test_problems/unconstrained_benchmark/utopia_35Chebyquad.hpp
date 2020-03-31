@@ -83,7 +83,7 @@ namespace utopia
             Vector fvec;
             this->eval_polynomial(x, fvec);
 
-            g = zeros(this->dim());
+            g.zeros(layout(x));
             std::vector<Scalar>g_help(this->dim());
 
             {
@@ -137,7 +137,7 @@ namespace utopia
             Vector fvec;
             this->eval_polynomial(x, fvec);
 
-            H = zeros(n, n);
+            H.dense(square_matrix_layout(layout(x)), 0.0);
             std::vector<std::vector<Scalar> > hess(n, std::vector<Scalar>(n));
             std::vector<Scalar> g(n);
 
@@ -245,7 +245,8 @@ namespace utopia
             void eval_polynomial(const Vector & x, Vector & fvec) const
             {
                 if(empty(fvec)){
-                    fvec=local_zeros(local_size(x).get(0));
+                    // fvec=local_zeros(local_size(x).get(0));
+                    fvec.zeros(layout(x));
                 }
 
                 const SizeType n_global = size(x).get(0);

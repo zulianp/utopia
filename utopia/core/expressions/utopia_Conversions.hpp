@@ -29,7 +29,7 @@ namespace utopia {
         auto nnz = *std::max_element(nnzxrow.begin(), nnzxrow.end());
 
         //FIXME use nnzxrow instead
-        to = local_sparse(ls.get(0), ls.get(1), nnz);
+        to.sparse(layout(from), nnz, nnz);
 
         {
             Write<TTo> w_t(to);
@@ -47,12 +47,12 @@ namespace utopia {
     void backend_convert(const Tensor<TFrom, 1> &t_from, Tensor<TTo, 1> &t_to)
     {
         using SizeType = typename Traits<TFrom>::SizeType;
-        
+
         const auto &from = t_from.derived();
         auto &to = t_to.derived();
 
-        auto ls = local_size(from).get(0);
-        to = local_zeros(ls);
+        // auto ls = local_size(from).get(0);
+        to.zeros(layout(from));
 
         Write<TTo> w_t(to);
         each_read(from, [&to](const SizeType i, const double val) {

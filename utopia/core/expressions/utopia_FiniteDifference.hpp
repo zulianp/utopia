@@ -48,8 +48,12 @@ namespace utopia {
                 assert(x.comm().size() == 1 && "only for serial runs");
 
                 const SizeType n = x.size();
-                H = zeros(n, n);
-                Vector ei = zeros(n);
+
+                auto vec_layout = layout(x);
+                auto mat_layout = square_matrix_layout(vec_layout);
+
+                H.dense(mat_layout, 0.0);
+                Vector ei(vec_layout, 0.0);
                 Vector g_m = ei;
                 Vector g_p = ei;
                 Vector x_m = ei;
@@ -87,10 +91,15 @@ namespace utopia {
 
             template<class Fun, class Vector>
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
+
+                auto vec_layout = layout(x);
+                auto mat_layout = square_matrix_layout(vec_layout);
+
                 const SizeType n = x.size();
-                H = zeros(n, n);
-                Vector ei = zeros(n);
-                Vector ej = zeros(n);
+                H.dense(mat_layout, 0.0);
+
+                Vector ei(vec_layout, n);
+                Vector ej(vec_layout, n);
 
                 const Write <Matrix> wlock(H);
 

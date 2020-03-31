@@ -26,20 +26,20 @@ namespace utopia
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
-        Rastrigin(const SizeType & n) : pi(3.141592), n_(n) 
+        Rastrigin() : pi(3.141592)
         {
-            help_1 = make_unique<Vector>(values(n_, 0.0));
-            help_2 = make_unique<Vector>(values(n_, 0.0));
+            help_1 = make_unique<Vector>();
+            help_2 = make_unique<Vector>();
         }
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
-            // *help_1 = pow2(point) - 10. * cos((2. * pi) * point); 
+            // *help_1 = pow2(point) - 10. * cos((2. * pi) * point);
 
-            *help_1 = pow2(point); 
-            *help_2 = (2. * pi) * point; 
-            *help_2 = cos(*help_2); 
-            *help_1 = *help_1 - 10.* *help_2; 
+            *help_1 = pow2(point);
+            *help_2 = (2. * pi) * point;
+            *help_2 = cos(*help_2);
+            *help_1 = *help_1 - 10.* *help_2;
 
             result = 10. * point.size() + sum(*help_1);
             return true;
@@ -50,7 +50,7 @@ namespace utopia
             using std::sin;
 
             if(empty(gradient)) {
-                gradient = zeros(point.size());
+                gradient.zeros(layout(point));
             }
 
             const Read<Vector> read(point);
@@ -72,7 +72,7 @@ namespace utopia
             const auto n = point.size();
 
             if(empty(hessian)) {
-                hessian = sparse(n, n, 1);
+                hessian.sparse(square_matrix_layout(layout(point)), 1, 0.0);
             }
 
             const Read<Vector> read(point);
@@ -90,9 +90,8 @@ namespace utopia
 
     private:
         Scalar pi;
-        std::unique_ptr<Vector>  help_1; 
-        std::unique_ptr<Vector>  help_2; 
-        Scalar n_;  // global size
+        std::unique_ptr<Vector>  help_1;
+        std::unique_ptr<Vector>  help_2;
     };
 }
 

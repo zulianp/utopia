@@ -115,7 +115,7 @@ namespace utopia
 
             assert(point.size() == 2);
 
-            result.zeros(layout(point));
+            result.dense(square_matrix_layout(layout(point)), 0.0);
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);

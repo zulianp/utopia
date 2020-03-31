@@ -42,15 +42,17 @@ namespace utopia {
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
 
+                auto vl = layout(comm_, n, n * comm_.size());
+
                 //Conjugate gradient method
                 this->register_experiment(
                     "cg_" + std::to_string(i),
-                    [n]() {
+                    [this, n]() {
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                         cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
                         cg.set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
-                        run_linear_solver(n, cg);
+                        run_linear_solver(comm_, n, cg);
                     }
                 );
 
@@ -79,19 +81,19 @@ namespace utopia {
 
                 this->register_experiment(
                     "bicgstab_" + std::to_string(i),
-                    [n]() {
+                    [this, n]() {
                         BiCGStab<Matrix, Vector, HOMEMADE> cg;
                         cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
-                        run_linear_solver(n, cg);
+                        run_linear_solver(comm_, n, cg);
                     }
                 );
 
                 this->register_experiment(
                     "newton_cg_" + std::to_string(i),
-                    [i]() {
-                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
-                        Vector x = local_values(10 * (i+1), 1.);
+                    [vl]() {
+                        Rastrigin<Matrix, Vector> fun;
+                        Vector x(vl, 1.0);
 
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                         cg.max_it(size(x).get(0));
@@ -114,9 +116,9 @@ namespace utopia {
 
                 this->register_experiment(
                     "trust_region_" + std::to_string(i),
-                    [i]() {
-                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
-                        Vector x = local_values(10 * (i+1), 1.);
+                    [vl]() {
+                        Rastrigin<Matrix, Vector> fun;
+                        Vector x(vl, 1.0);
 
                         auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
 
@@ -136,34 +138,34 @@ namespace utopia {
 
                 this->register_experiment(
                     "projected_gradient_" + std::to_string(i),
-                    [i]() {
+                    [this, i]() {
                         ProjectedGradient<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 
                 this->register_experiment(
                     "projected_conjugate_gradient_" + std::to_string(i),
-                    [i]() {
+                    [this, i]() {
                         ProjectedConjugateGradient<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 
                 this->register_experiment(
                     "projected_gauss_seidel_" + std::to_string(i),
-                    [i]() {
+                    [this, i]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 
                 this->register_experiment(
                     "projected_l1_gauss_seidel_" + std::to_string(i),
-                    [i]() {
+                    [this, i]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
                         // pg.l1(true);
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 

@@ -140,7 +140,7 @@ namespace utopia
 
             if(empty(g))
             {
-                g = zeros(n);
+                g.zeros(layout(x));
             }
 
             Scalar xjp1, xjp2, xjp3,f1, f2, f3, f4, f43, f33;
@@ -238,7 +238,7 @@ namespace utopia
             const SizeType n = this->dim();
             assert(size(x).get(0) == n);
 
-            H = sparse(n, n, 3.0);
+            H.sparse(square_matrix_layout(layout(x)), 3, 3);
 
             Scalar xjp1, xjp2, xjp3,f1, f2, f3, f4, f43, f33;
             Scalar df1dxj, df1dxjp1, df2dxjp3, df2dxjp2, df3dxjp1, df3dxjp2, df4dxj, df4dxjp3;

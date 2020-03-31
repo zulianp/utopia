@@ -107,7 +107,7 @@ namespace utopia
             assert(x.size() == this->dim());
 
             if(empty(g)){
-                g = zeros(this->dim());
+                g.zeros(layout(x));
             }
 
             {
@@ -170,7 +170,7 @@ namespace utopia
             assert(x.size() == this->dim());
 
             if(empty(H)){
-                H = zeros(this->dim(), this->dim());
+                H.dense(square_matrix_layout(layout(x)), 0.0);
             }
             else
             {

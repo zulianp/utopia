@@ -12,12 +12,15 @@ namespace utopia
     class ExtendedRosenbrock21 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
-        ExtendedRosenbrock21(const SizeType & n_loc=2): n_loc_(n_loc)
+
+        ExtendedRosenbrock21(const Comm &comm = Comm(), const SizeType & n_loc=2): n_loc_(n_loc)
         {
-            x_init_ = local_values(n_loc_, 1.0);
+            x_init_.values(layout(comm, n_loc, Traits::determine()), 1.0);
 
             {
                 Write<Vector> wx(x_init_);
@@ -28,7 +31,7 @@ namespace utopia
                 }   );
             }
 
-            x_exact_ = local_values(n_loc_, 1.0);
+            x_exact_.values(layout(x_init_), 1.0);
         }
 
         std::string name() const override

@@ -17,13 +17,15 @@ namespace utopia
         using SizeType = typename Traits::SizeType;
         using Comm     = typename Traits::Communicator;
 
-        Trigonometric26(const SizeType & n_loc=10): n_loc_(n_loc)
+        Trigonometric26(const Comm &comm = Comm(), const SizeType & n_loc=10): n_loc_(n_loc)
         {
-            x_exact_ = local_values(n_loc_, 0.0);
-            SizeType n_global = size(x_exact_).get(0);
+            x_exact_.zeros(layout(comm, n_loc, Traits::determine()));
+            auto x_layout = layout(x_exact_);
 
-            x_init_ = local_values(n_loc_, 1./Scalar(n_global));
-            x_inc_ = local_values(n_loc_, 1.0);
+            SizeType n_global = x_layout.size(0);
+
+            x_init_.values(x_layout, 1./Scalar(n_global));
+            x_inc_.values(x_layout, 1.0);
 
             {
                 const Write<Vector> write2(x_inc_);
@@ -78,7 +80,7 @@ namespace utopia
 
 
             Scalar s1 = sum(xcos);
-            Vector t = (n_global- s1) * local_values(local_size(x).get(0), 1.0);
+            Vector t(layout(x), (n_global- s1));
             t = t + x_inc_ - xsin;
             t = t - e_mul(x_inc_, xcos);
 
@@ -112,7 +114,7 @@ namespace utopia
             }
 
             Scalar s1 = sum(xcos);
-            Vector t = (n_global- s1) * local_values(local_size(x).get(0), 1.0);
+            Vector t(layout(x), (n_global- s1));
             t = t + x_inc_ - xsin;
             t = t - e_mul(x_inc_, xcos);
 
@@ -129,13 +131,14 @@ namespace utopia
             assert(local_size(x).get(0) == this->dim());
 
             if(empty(H)){
-                H = local_values(local_size(x).get(0), local_size(x).get(0), 0.0);
+                // H = local_values(local_size(x).get(0), local_size(x).get(0), 0.0);
+                H.dense(square_matrix_layout(layout(x)), 0.0);
             }
 
             SizeType n_global = size(x).get(0);
             Vector xcos = x;
             Vector xsin = x;
-            Vector ones = local_values(local_size(x).get(0), 1.0);
+            Vector ones(layout(x), 1.0);
 
             {
                 const Write<Vector> write1(xcos);

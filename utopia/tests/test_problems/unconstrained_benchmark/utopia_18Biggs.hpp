@@ -112,7 +112,7 @@ namespace utopia
             assert(point.size() == 6);
 
             if(empty(result)){
-                result = zeros(layout(point));
+                result.zeros(layout(point));
             }
 
             {

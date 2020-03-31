@@ -16,11 +16,19 @@ namespace utopia {
     {
 
     public:
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        using Traits   = utopia::Traits<Vector>;
+        using SizeType = typename Traits::SizeType;
+        using Scalar   = typename Traits::Scalar;
+        using Layout   = typename Traits::Layout;
+        using MatrixLayout = typename Traits::MatrixLayout;
 
-        ExpressionTests(const SizeType & n): n_(n)
-        {}
+        using Comm     = typename Traits::Communicator;
+
+        ExpressionTests(const Comm &comm, const SizeType &n)
+        {
+            vec_layout = layout(comm, n, n * comm.size());
+            mat_layout = square_matrix_layout(vec_layout);
+        }
 
         void run()
         {
@@ -48,7 +56,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
             UTOPIA_RUN_TEST(mat_vec_multiply_test);
             //UTOPIA_RUN_TEST(vec_add_add_add_test);
-            // UTOPIA_RUN_TEST(convert_test); 
+            // UTOPIA_RUN_TEST(convert_test);
         //    UTOPIA_RUN_TEST(convert_test);
          //   UTOPIA_RUN_TEST(emul_test);
 
@@ -63,15 +71,15 @@ namespace utopia {
         // {
         //     #ifdef WITH_PETSC
         //         if(Traits<Vector>::Backend == PETSC) {
-        //             Vector ut_vec = local_zeros(10); 
-                    
-        //             Vec x; 
-        //             VecDuplicate(raw_type(ut_vec), &x); 
-        //             convert(ut_vec, x); 
-        //             ut_vec *= 500; 
+        //             Vector ut_vec = local_zeros(10);
+
+        //             Vec x;
+        //             VecDuplicate(raw_type(ut_vec), &x);
+        //             convert(ut_vec, x);
+        //             ut_vec *= 500;
 
         //             UTOPIA_NO_ALLOC_BEGIN("Ellipse::convert_test");
-        //             convert(x, ut_vec); 
+        //             convert(x, ut_vec);
         //             UTOPIA_NO_ALLOC_END();
         //         }
         //     #endif
@@ -93,9 +101,9 @@ namespace utopia {
 
         void vec_add_add_add_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-            Vector z = values(n_, 3.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 2.0);
+            Vector z(vec_layout, 3.0);
 
             UTOPIA_NO_ALLOC_BEGIN("vec_add_add_add_test");
             x += y + z;
@@ -109,7 +117,7 @@ namespace utopia {
 
         void mat_transp_mult_test()
         {
-            Matrix H = sparse(n_, n_, 3);
+            Matrix H; H.sparse(mat_layout, 3, 2);
             assemble_laplacian_1D(H);
             Matrix D = diag(diag(H));
             H = H + transpose(H) - D;
@@ -117,11 +125,11 @@ namespace utopia {
 
         void mat_vec_multiply_test()
         {
-            Matrix H = sparse(n_, n_, 3);
+            Matrix H; H.sparse(mat_layout, 3, 2);
             assemble_laplacian_1D(H);
 
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 1.0);
 
             // UTOPIA_NO_ALLOC_BEGIN("mat_vec_multiply_test1");
             // x = H*x;
@@ -135,9 +143,9 @@ namespace utopia {
 
         void emul_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 10.0);
-            Vector z = values(n_, 10.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 10.0);
+            Vector z(vec_layout, 10.0);
 
             double scaling_param = 10.0;
 
@@ -155,8 +163,8 @@ namespace utopia {
 
         void negate_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 10.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 10.0);
 
             UTOPIA_NO_ALLOC_BEGIN("negate_test");
             x = -x;
@@ -169,11 +177,11 @@ namespace utopia {
 
         void mv_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector b = values(n_, 1.0);
-            Vector p = values(n_, 1.0);
+            Vector x(vec_layout, 1.0);
+            Vector b(vec_layout, 1.0);
+            Vector p(vec_layout, 1.0);
 
-            Matrix A = sparse(n_, n_, 3);
+            Matrix A; A.sparse(mat_layout, 3, 3);
             assemble_laplacian_1D(A);
 
             UTOPIA_NO_ALLOC_BEGIN("mv_test1");
@@ -212,8 +220,8 @@ namespace utopia {
         void mat_copy()
         {
 
-            Matrix I = identity(n_, n_);
-            Matrix D = identity(n_, n_);
+            Matrix I; I.identity(mat_layout);
+            Matrix D; D.identity(mat_layout);
             Vector v = diag(I);
 
             // I do not know how relevant are these tests, as sparsity pattern might be different...
@@ -257,9 +265,9 @@ namespace utopia {
 
         void e_mul_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-            Vector z = values(n_, 0.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 2.0);
+            Vector z(vec_layout, 0.0);
 
 
             Matrix D = diag(z);
@@ -268,69 +276,69 @@ namespace utopia {
             UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
             z = e_mul(x, y);
             UTOPIA_NO_ALLOC_END();
-            utopia_test_assert(approxeq(sum(z), 2*n_));
+            utopia_test_assert(approxeq(sum(z), 2*x.size()));
         }
 
 
         void max_min_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
-            Vector z = values(n_, 0.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 2.0);
+            Vector z(vec_layout, 0.0);
 
             UTOPIA_NO_ALLOC_BEGIN("max_min_test1");
             z = utopia::max(x,y);
             UTOPIA_NO_ALLOC_END();
-            utopia_test_assert(approxeq(sum(z), 2*n_));
+            utopia_test_assert(approxeq(sum(z), 2*x.size()));
 
             UTOPIA_NO_ALLOC_BEGIN("max_min_test2");
             z = utopia::min(x,y);
             UTOPIA_NO_ALLOC_END();
-            utopia_test_assert(approxeq(sum(z), n_));
+            utopia_test_assert(approxeq(sum(z), x.size()));
 
             UTOPIA_NO_ALLOC_BEGIN("max_min_test3");
             z = utopia::max(utopia::min(x,y), y);
             UTOPIA_NO_ALLOC_END();
 
-            utopia_test_assert(approxeq(sum(z), 2*n_));
+            utopia_test_assert(approxeq(sum(z), 2*x.size()));
 
         }
 
 
         void reciprocal_test()
         {
-            Vector x = values(n_, 2.0);
+            Vector x(vec_layout, 2.0);
 
             UTOPIA_NO_ALLOC_BEGIN("reciprocal_test");
             x = 1./x;
             UTOPIA_NO_ALLOC_END();
-            utopia_test_assert(approxeq(sum(x), 0.5*n_));
+            utopia_test_assert(approxeq(sum(x), 0.5*x.size()));
         }
 
         void e_div_test()
         {
-            Vector x = values(n_, 6.0);
-            Vector z = values(n_, 3.0);
+            Vector x(vec_layout, 6.0);
+            Vector z(vec_layout, 3.0);
 
             UTOPIA_NO_ALLOC_BEGIN("e_div_test");
             z = x / z;
 
             Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 2.0*n_));
+            utopia_test_assert(approxeq(sum_z, 2.0*x.size()));
             z = x / x;
             sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0*n_));
+            utopia_test_assert(approxeq(sum_z, 1.0*x.size()));
 
             z = z / x;
             sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0/6.0*n_));
+            utopia_test_assert(approxeq(sum_z, 1.0/6.0*x.size()));
 
             UTOPIA_NO_ALLOC_END();
         }
 
         void transform_test()
         {
-            Vector x = values(n_, 1.0);
+            Vector x(vec_layout, 1.0);
 
             parallel_transform(
                 x,
@@ -338,7 +346,7 @@ namespace utopia {
                     return (i+1)*v;
             });
 
-            Scalar expected = ((n_ + 1) * n_)/2.0;
+            Scalar expected = ((x.size() + 1) * x.size())/2.0;
             Scalar sum_x = sum(x);
 
             utopia_test_assert(approxeq(sum_x, expected, 1e-10));
@@ -346,8 +354,8 @@ namespace utopia {
 
         void negate_alpha_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 1.0);
 
             UTOPIA_NO_ALLOC_BEGIN("negate_alpha_test");
             y = -0.5 * x;
@@ -356,8 +364,8 @@ namespace utopia {
 
         void quad_form_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 2.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 2.0);
 
             auto expr = 0.5 * dot(x, y) - 0.5 * dot(x, y);
 
@@ -368,10 +376,10 @@ namespace utopia {
 
         void residual_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector b = values(n_, 1.0);
-            Matrix A = sparse(n_, n_, 3);
-            Vector r = values(n_, 0.0);
+            Vector x(vec_layout, 1.0);
+            Vector b(vec_layout, 1.0);
+            Matrix A; A.sparse(mat_layout, 3, 3);
+            Vector r(vec_layout, 0.0);
 
             UTOPIA_NO_ALLOC_BEGIN("residual_test");
             r = x - b;
@@ -380,9 +388,9 @@ namespace utopia {
 
         void axpy_test()
         {
-            Vector x = values(n_, 1.0);
-            Vector y = values(n_, 1.0);
-            Vector p = values(n_, 2.0);
+            Vector x(vec_layout, 1.0);
+            Vector y(vec_layout, 1.0);
+            Vector p(vec_layout, 2.0);
 
             UTOPIA_NO_ALLOC_BEGIN("axpy_test0");
             x = x - 0.5 * p;
@@ -394,7 +402,7 @@ namespace utopia {
             x = x + 0.5 * p;
             UTOPIA_NO_ALLOC_END();
             Scalar val = sum(x);
-            utopia_test_assert(approxeq(val, n_*2.0));
+            utopia_test_assert(approxeq(val, x.size()*2.0));
 
             UTOPIA_NO_ALLOC_BEGIN("axpy_test2");
             x.set(2.0);
@@ -402,23 +410,22 @@ namespace utopia {
             x = y + 0.5*x;
             UTOPIA_NO_ALLOC_END();
             val = sum(x);
-            utopia_test_assert(approxeq(val, n_*2.0));
+            utopia_test_assert(approxeq(val, x.size()*2.0));
         }
 
         void for_each_loop_test()
         {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-            Vector z = values(n_, 0.);
+            Vector x(vec_layout, 2.);
+            Vector y(vec_layout, 1.);
+            Vector z(vec_layout, 0.);
 
-            using ForLoop = utopia::ParallelFor<Traits<Vector>::Backend>;
 
            {
                 auto d_x = const_device_view(x);
                 auto d_y = const_device_view(y);
                 auto d_z = device_view(z);
 
-                ForLoop::apply(range(z), UTOPIA_LAMBDA(const SizeType i)
+                parallel_for(z.range_device(), UTOPIA_LAMBDA(const SizeType i)
                 {
                     const Scalar xi = d_x.get(i);
                     const Scalar yi = d_y.get(i);
@@ -427,14 +434,14 @@ namespace utopia {
             }
 
             Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(Scalar(n_), sum_z));
+            utopia_test_assert(approxeq(Scalar(x.size()), sum_z));
         }
 
         void parallel_each_write_test()
         {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
-            Vector z = values(n_, 0.);
+            Vector x(vec_layout, 2.);
+            Vector y(vec_layout, 1.);
+            Vector z(vec_layout, 0.);
 
             {
                 auto d_x = const_device_view(x);
@@ -450,13 +457,13 @@ namespace utopia {
             }
 
             Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(Scalar(n_), sum_z));
+            utopia_test_assert(approxeq(Scalar(x.size()), sum_z));
         }
 
         void multi_reduce_test()
         {
-            Vector x = values(n_, 2.);
-            Vector y = values(n_, 1.);
+            Vector x(vec_layout, 2.);
+            Vector y(vec_layout, 1.);
 
             each_write(x, [](const SizeType &i) -> Scalar {
                 return -(i + 1.0);
@@ -467,16 +474,16 @@ namespace utopia {
             });
 
             const Scalar m = multi_min(x, y);
-            utopia_test_assert(approxeq(m, Scalar(-n_)));
+            utopia_test_assert(approxeq(m, Scalar(-x.size())));
         }
 
         void multi_axpy()
         {
             //Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
-            Vector a = values(n_, 2.);
-            Vector b = values(n_, 2.);
-            Vector c = values(n_, 2.);
-            Vector result = zeros(n_);
+            Vector a(vec_layout, 2.);
+            Vector b(vec_layout, 2.);
+            Vector c(vec_layout, 2.);
+            Vector result(vec_layout, 0.0);
 
             UTOPIA_NO_ALLOC_BEGIN("multi_axpy");
             Scalar alpha = 1.0, beta = 2.0;
@@ -486,8 +493,8 @@ namespace utopia {
 
         void inv_diag()
         {
-            Matrix H = sparse(n_, n_, 3);
-            Vector d = zeros(n_);
+            Matrix H; H.sparse(mat_layout, 3, 2);
+            Vector d(vec_layout, 0.0);
 
             assemble_laplacian_1D(H);
 
@@ -498,12 +505,12 @@ namespace utopia {
 
         void comp_mat()
         {
-            Matrix H1 = identity(n_, n_);
-            Matrix H2 = 2.0 * identity(n_, n_);
-            Matrix H3 = 3.0 * identity(n_, n_);
+            Matrix H1; H1.identity(mat_layout);
+            Matrix H2; H2.identity(mat_layout, 2.0);
+            Matrix H3; H3.identity(mat_layout, 3.0);
             Matrix R = H1;
 
-            if(Traits<Matrix>::Backend == PETSC) {
+            if(Traits::Backend == PETSC) {
                 UTOPIA_NO_ALLOC_BEGIN("comp_mat");
                 R = H3 + H1 * H2;
                 UTOPIA_NO_ALLOC_END();
@@ -512,15 +519,15 @@ namespace utopia {
                 R = H3 + H1 * H2;
             }
 
-            Matrix Id = 5.0 * identity(n_, n_);
+            Matrix Id; Id.identity(mat_layout, 5.0);
 
             utopia_test_assert(approxeq(Id, R));
         }
 
         void bratu_grad()
         {
-            Vector result = zeros(n_);
-            Vector x = zeros(n_);
+            Vector result(vec_layout, 0.0);
+            Vector x(vec_layout, 0.0);
 
             UTOPIA_NO_ALLOC_BEGIN("bratu_grad");
             result = x - (0.5 * exp(x));
@@ -534,17 +541,17 @@ namespace utopia {
         void diag_mult()
         {
             //FIXME
-            if(Traits<Matrix>::Backend == PETSC) {
+            if(Traits::Backend == PETSC) {
 
-                Vector d = values(n_, 2);
-                Matrix B = 2*identity(n_, n_);
-                Matrix T = sparse(n_, n_, 1);
+                Vector d(vec_layout, 2);
+                Matrix B; B.identity(mat_layout, 2);
+                Matrix T; T.sparse(mat_layout, 1, 0);
 
                 // UTOPIA_NO_ALLOC_BEGIN("diag_mult");
                 T = diag(1./d) * B;
                 // UTOPIA_NO_ALLOC_END();
 
-                Matrix Id = identity(n_, n_);
+                Matrix Id; Id.identity(mat_layout);
                 utopia_test_assert(approxeq(Id, T));
 
             }
@@ -552,10 +559,10 @@ namespace utopia {
 
         void rotate_test()
         {
-            Vector x1 = local_values(n_, 1.0);
-            Vector x2 = local_values(n_, 2.0);
-            Vector x3 = local_values(n_, 3.0);
-            Vector x4 = local_values(n_, 3.0);
+            Vector x1(vec_layout, 1.0);
+            Vector x2(vec_layout, 2.0);
+            Vector x3(vec_layout, 3.0);
+            Vector x4(vec_layout, 3.0);
 
 
             std::vector<Vector> vecs(4);
@@ -574,7 +581,7 @@ namespace utopia {
         {
             Vector x1, x2;
 
-            x1 = local_values(n_ * (x1.comm().rank() + 1), 1.0);
+            x1.values(vec_layout, 1.0);
             e_pseudo_inv(x1, x2);
 
             utopia_test_assert(!x2.empty());
@@ -585,19 +592,21 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-    private:
-        SizeType n_;
+        Layout       vec_layout;
+        MatrixLayout mat_layout;
     };
 
     void expr()
     {
         auto n_dofs     = 10;
 #ifdef WITH_PETSC
-        ExpressionTests<PetscMatrix, PetscVector>(n_dofs).run();
+        PetscCommunicator petsc_comm;
+        ExpressionTests<PetscMatrix, PetscVector>(petsc_comm, n_dofs).run();
 #endif
 
 #ifdef WITH_TRILINOS
-        ExpressionTests<TpetraMatrixd, TpetraVectord>(n_dofs).run();
+        TrilinosCommunicator trilinos_comm;
+        ExpressionTests<TpetraMatrixd, TpetraVectord>(trilinos_comm, n_dofs).run();
 #endif
 
     }

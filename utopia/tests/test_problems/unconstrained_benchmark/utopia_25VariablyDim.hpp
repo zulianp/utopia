@@ -17,14 +17,17 @@ namespace utopia
         using SizeType = typename Traits::SizeType;
         using Comm     = typename Traits::Communicator;
 
-        VariablyDim25(const SizeType & n_loc=10): n_loc_(n_loc)
+        VariablyDim25(const Comm &comm = Comm(), const SizeType & n_loc=10): n_loc_(n_loc)
         {
-            x_init_     = local_zeros(n_loc_);
-            x_exact_    = local_values(n_loc_, 1.0);
-            x_inc_      = local_values(n_loc_, 1.0);
+            //determine global size once and reuse everywhere
+            x_init_.zeros(layout(comm, n_loc, Traits::determine()));
+            auto x_layout = layout(x_init_);
 
-            help_ = make_unique<Vector>(local_zeros(n_loc_));
-            ones_ = local_values(n_loc_, 1.0);
+            x_exact_.values(x_layout, 1.0);
+            x_inc_.values(x_layout, 1.0);
+
+            help_ = make_unique<Vector>(x_layout, 0.0);
+            ones_.values(x_layout, 1.0);
 
             SizeType n_global = size(x_exact_).get(0);
 

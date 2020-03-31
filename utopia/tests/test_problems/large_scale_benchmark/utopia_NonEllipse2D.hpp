@@ -95,7 +95,7 @@ namespace utopia
         {
             // initialization of gradient vector...
             if(empty(g)){
-                g  = local_zeros(local_size(x));;
+                g.zeros(layout(x));;
             }
 
             // Vector rhs;
@@ -135,7 +135,8 @@ namespace utopia
 
             hessian = A_no_bc_;
 
-            Vector x_p1     = x + local_values(local_size(x).get(0), 1.0);
+            Vector x_p1 = x;
+            x_p1.shift(1.0);
             // Vector exp_term = exp(x_p1);
             // Vector exp_term = x_p1*exp(x_p1);
 
@@ -305,13 +306,15 @@ namespace utopia
             this->build_init_guess();
             this->build_hessian();
 
-            PetscInt n_loc;
-            VecGetLocalSize(snes_->vec_sol, &n_loc);
+            // PetscInt n_loc;
+            // VecGetLocalSize(snes_->vec_sol, &n_loc);
 
-            exact_sol_ = local_values(n_loc, 0.0);
+            auto vl = layout(snes_->vec_sol);
 
-            Vector bc_markers = local_values(n_loc, 0.0);
-            Vector bc_values  = local_values(n_loc, 0.0);
+            exact_sol_.zeros(vl);
+
+            Vector bc_markers(vl, 0.0);
+            Vector bc_values (vl, 0.0);
 
             this->form_BC_marker(bc_markers, bc_values);
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);
@@ -323,11 +326,11 @@ namespace utopia
             A_no_bc_ = Hessian;
             set_zero_rows(Hessian, index, 1.);
 
-            Vector lb = local_values(n_loc, 0.0);
-            Vector ub = local_values(n_loc, 0.6);
+            Vector lb(vl, 0.0);
+            Vector ub(vl, 0.6);
             form_lb2(lb);
 
-            A_help_ = make_unique<Vector>(local_values(n_loc, 0.0));
+            A_help_ = make_unique<Vector>(vl, 0.0);
 
             // this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(ub));
             this->constraints_ = make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub));

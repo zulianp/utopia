@@ -36,7 +36,7 @@ namespace utopia {
 
         //specialization 1
         res = 0.1 * A * B;
-        BlasMatrixd expected = values(2, 2, 0.4);
+        BlasMatrixd expected; expected.values(2, 2, 0.4);
 
         utopia_test_assert(approxeq(expected, res));
 
@@ -134,7 +134,7 @@ namespace utopia {
         Newton<BlasMatrixd, BlasVectord> newtonSolver(lapackSolver);
         newtonSolver.enable_differentiation_control(false);
 
-        TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(10);
+        TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(x0.comm(), 10);
 
         x0.values(10, 2.0);
         newtonSolver.solve(fun2, x0);
@@ -198,7 +198,7 @@ namespace utopia {
     void blas_set_values_test() {
         using SizeType = Traits<BlasMatrixd>::SizeType;
 
-        BlasMatrixd m1 = identity(3, 3);
+        BlasMatrixd m1; m1.identity(3, 3);
 
         std::vector<SizeType> rows{0, 1, 2};
         std::vector<SizeType> cols{0, 1, 2};
@@ -271,7 +271,7 @@ namespace utopia {
         using SizeType = Traits<MatrixT>::SizeType;
 
         SizeType n = 3;
-        MatrixT mat = zeros(n, n);
+        MatrixT mat; mat.zeros({n, n});
 
         {
             Write<MatrixT> write(mat);
@@ -314,7 +314,7 @@ namespace utopia {
             }
         });
 
-        BlasMatrixd d_mat = values(3, 3, 2.);
+        BlasMatrixd d_mat; d_mat.values(3, 3, 2.);
 
         SizeType n_vals = 0;
         each_read(d_mat, [&n_vals](const SizeType /*i*/, const SizeType /*j*/, const double v) {
@@ -330,7 +330,7 @@ namespace utopia {
         using IndexSet = Traits<BlasMatrixd>::IndexSet;
 
         int n = 30;
-        BlasMatrixd A = zeros(n, n);
+        BlasMatrixd A; A.zeros({n, n});
         double h = 1./n;
 
         assemble_laplacian_1D(A, false);
@@ -342,20 +342,23 @@ namespace utopia {
 
         set_zero_rows(A, index, 1.0);
 
-        BlasVectord rhs = values(n, 0.1);
+        BlasVectord rhs; rhs.values(n, 0.1);
 
         rhs *= h;
 
         rhs.set(0, 0.0);
         rhs.set(n-1, 0.0);
 
-        BlasVectord x = zeros(n);
+        BlasVectord x; x.zeros(n);
 
         ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
 
+        auto ub = std::make_shared<BlasVectord>();
+        ub->values(n, 25);
+
         BoxConstraints<BlasVectord> box(
             nullptr,
-            std::make_shared<BlasVectord>(values(n, 25))
+            ub
         );
 
         pgs.set_box_constraints(box);
@@ -374,7 +377,7 @@ namespace utopia {
     void test_transpose_add()
     {
         int n = 3, m = 4;
-        BlasMatrixd A = zeros(n, n);
+        BlasMatrixd A; A.zeros({n, n});
 
         {
             Write<BlasMatrixd> w_A(A);
@@ -383,15 +386,15 @@ namespace utopia {
             A.set(0, 2, 1);
         }
 
-        BlasMatrixd result = zeros(n, n);
+        BlasMatrixd result; result.zeros({n, n});
 
         UTOPIA_NO_ALLOC_BEGIN("transpose_add_1");
         result = A + transpose(A);
         result += transpose(result);
         UTOPIA_NO_ALLOC_END();
 
-        BlasMatrixd B = zeros(n, m);
-        BlasMatrixd C = zeros(m, n);
+        BlasMatrixd B; B.zeros({n, m});
+        BlasMatrixd C; C.zeros({m, n});
 
         {
             Write<BlasMatrixd> w_B(B), w_C(C);

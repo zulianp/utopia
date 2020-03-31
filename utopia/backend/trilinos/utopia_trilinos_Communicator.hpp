@@ -94,7 +94,7 @@ namespace utopia {
         }
 
         TrilinosCommunicator(const CommPtr &comm) : comm_(comm) {}
-        TrilinosCommunicator(const SelfCommunicator &comm) : comm_(comm.get()) {}
+        TrilinosCommunicator(const SelfCommunicator &comm);
         TrilinosCommunicator();
 
     private:

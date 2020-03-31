@@ -17,10 +17,10 @@ namespace utopia
         using SizeType = typename Traits::SizeType;
         using Comm     = typename Traits::Communicator;
 
-        PenaltyI23(const SizeType & n_loc=10): n_loc_(n_loc)
+        PenaltyI23(const Comm &comm = Comm(), const SizeType & n_loc=10): n_loc_(n_loc)
         {
-            x_init_ = local_zeros(n_loc_);
-            x_exact_ = local_values(n_loc_, 0.15812); // depends on size.. this is valid for n=10
+            x_init_.zeros(layout(comm, n_loc, Traits::determine()));
+            x_exact_.values(layout(x_init_), 0.15812); // depends on size.. this is valid for n=10
 
             {
                 const Write<Vector> write1(x_init_);
@@ -60,7 +60,10 @@ namespace utopia
             Scalar alpha = 0.00001;
             Scalar t1 = -0.25 + dot(x,x);
 
-            Vector help = x - local_values(local_size(x).get(0), 1.0);
+            // Vector help = x - local_values(local_size(x).get(0), 1.0);
+            Vector help = x;
+            help.shift(-1.0);
+
             Scalar t2 = dot(help, help);
 
             result = (alpha * t2) + (t1*t1);
@@ -74,7 +77,9 @@ namespace utopia
 
             Scalar alpha = 0.00001;
             Scalar t1 = -0.25 + dot(x,x);
-            Vector help = x - local_values(local_size(x).get(0), 1.0);
+            // Vector help = x - local_values(local_size(x).get(0), 1.0);
+            Vector help = x;
+            help.shift(-1.0);
 
             g = 2.0* alpha * help;
             g += 4.0 * t1 * x;

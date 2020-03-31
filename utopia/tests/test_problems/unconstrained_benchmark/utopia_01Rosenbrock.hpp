@@ -28,8 +28,8 @@ namespace utopia
         {
             auto v_layout = serial_layout(dim());
 
-            x_init_ = zeros(this->dim());
-            x_exact_ = values(this->dim(), 1.0);
+            x_init_.zeros(v_layout);
+            x_exact_.values(v_layout, 1.0);
 
             {
                 const Write<Vector> write1(x_init_);
@@ -67,7 +67,7 @@ namespace utopia
             assert(point.size() == this->dim());
 
             if(empty(result)){
-                result = zeros(this->dim());
+                result.zeros(layout(point));
             }
 
             const Read<Vector> read(point);
@@ -91,7 +91,7 @@ namespace utopia
             assert(point.size() == this->dim());
 
             if(empty(result)){
-                result = zeros(this->dim(), this->dim());
+                result.dense(square_matrix_layout(layout(point)), 0.0);
             }
 
             const Read<Vector> read(point);
@@ -111,8 +111,7 @@ namespace utopia
         bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
         {
             UTOPIA_UNUSED(H_pre);
-
-            H = zeros(this->dim(), this->dim());
+            H.dense(square_matrix_layout(layout(x_init_)), 0.0);
             return true;
         }
 
