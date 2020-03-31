@@ -17,7 +17,13 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BenchmarkAlgorithms : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
+
+        BenchmarkAlgorithms(const Comm &comm = Comm()) : comm_(comm) {}
+
 
         virtual std::string name() override
         {
@@ -188,9 +194,12 @@ namespace utopia {
     private:
 
         template<class QPSolver>
-        static void run_qp_solver(const SizeType n, QPSolver &qp_solver) {
+        static void run_qp_solver(const Comm &comm, const SizeType n, QPSolver &qp_solver)
+        {
+            auto vl = layout(comm, n, n * comm.size());
+            auto ml = layout(comm, n, n, n * comm.size(), n * comm.size());
 
-            Matrix m = local_sparse(n, n, 3);
+            Matrix m; m.sparse(ml, 3, 2);
             assemble_laplacian_1D(m);
 
             auto N = size(m).get(0);
@@ -209,7 +218,7 @@ namespace utopia {
                 }
             }
 
-            Vector rhs = local_values(n, 1.);
+            Vector rhs(vl, 1.);
             {
                 //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
                 Range r = range(rhs);
@@ -224,9 +233,8 @@ namespace utopia {
                 }
             }
 
-            Vector upper_bound = local_values(n, 100.0);
-            Vector solution    = local_zeros(n);
-
+            Vector upper_bound(vl, 100.0);
+            Vector solution(vl, 0.0);
 
             qp_solver.max_it(N*2);
             // qp_solver.verbose(true);
@@ -236,11 +244,14 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-        static void run_linear_solver(const SizeType n, LinearSolver<Matrix, Vector> &solver)
+        static void run_linear_solver(const Comm &comm, const SizeType n, LinearSolver<Matrix, Vector> &solver)
         {
-            Matrix A = sparse(n, n, 3);
-            Vector b = values(n, 1.);
-            Vector x = values(n, 0.);
+            auto vl = layout(comm, n, n * comm.size());
+            auto ml = layout(comm, n, n, n * comm.size(), n * comm.size());
+
+            Matrix A; A.sparse(ml, 3, 2);
+            Vector b(vl, 1.);
+            Vector x(vl, 0.);
 
             assemble_laplacian_1D(A, true);
 
@@ -316,6 +327,8 @@ namespace utopia {
             utopia_test_assert(rel_diff < 1e-8);
         }
 
+    private:
+        Comm comm_;
     };
 }
 

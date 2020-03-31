@@ -16,14 +16,13 @@ namespace utopia
         DEF_UTOPIA_SCALAR(Matrix);
 
         SmallSingularExample()
-        {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
-        }
+        {}
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
+            assert(x.comm().size() == 1);
             assert(x.size() == 2);
-            Vector g = values(2, 0.0);
+            Vector g;
             gradient(x, g);
             result = 0.5 * norm2(g);
             return true;
@@ -31,8 +30,10 @@ namespace utopia
 
         bool gradient(const Vector &x, Vector &g) const override
         {
+            assert(x.comm().size() == 1);
+
             assert(x.size() == 2);
-            g = zeros(2);
+            g.zeros(layout(x));
 
             auto pi = std::acos(-1.0);
 
@@ -49,9 +50,10 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
+            assert(x.comm().size() == 1);
             assert(x.size() == 2);
 
-            H = zeros(2, 2);
+            H.dense(serial_layout(2, 2));
 
             const Read<Vector> read(x);
             const Write<Matrix> write(H);

@@ -2,6 +2,7 @@
 #define UTOPIA_BRATU2D_HPP
 
 #include "utopia.hpp"
+#include "utopia_petsc_Layout.hpp"
 #include "utopia_TestFunctions.hpp"
 
 
@@ -60,10 +61,7 @@ namespace utopia
             this->setup_application_context();
             setup_ = true;
 
-            PetscInt n_local, n_global;
-            VecGetLocalSize(snes_->vec_sol, &n_local);
-            VecGetSize(snes_->vec_sol, &n_global);
-            auto vl = layout(comm_, n_local, n_global);
+            auto vl = layout(snes_->vec_sol);
 
             this->constraints_ = make_box_constaints(std::make_shared<Vector>(vl, -9e9),
                                                      std::make_shared<Vector>(vl, 0.45));
@@ -88,7 +86,7 @@ namespace utopia
             setup_ = true;
 
             // TODO::find out exact solution - should be possible to compute
-            exact_sol_  = zeros(1, 0);
+            // exact_sol_  = zeros(1, 0); //WHY initialize it at all?
         }
 
         ~Bratu2D()
@@ -104,7 +102,7 @@ namespace utopia
         {
             // initialization of gradient vector...
             if(empty(g)){
-                g  = local_zeros(local_size(x));;
+                g.zeros(layout(x));;
             }
 
             SNESComputeFunction(snes_, raw_type(x), raw_type(g));
@@ -227,10 +225,12 @@ namespace utopia
         {
             DMSetApplicationContext(da_, &application_context_);
 
-            PetscInt n_loc;
-            VecGetLocalSize(snes_->vec_sol, &n_loc);
-            Vector bc_markers = local_values(n_loc, 0.0);
-            Vector bc_values  = local_values(n_loc, 0.0);
+            // PetscInt n_loc;
+            // VecGetLocalSize(snes_->vec_sol, &n_loc);
+
+            auto vl = layout(snes_->vec_sol);
+            Vector bc_markers(vl, 0.0);
+            Vector bc_values (vl, 0.0);
 
             Bratu2DFormBCData(da_, &application_context_, raw_type(bc_markers), raw_type(bc_values));
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values);

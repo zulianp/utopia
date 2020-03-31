@@ -14,7 +14,12 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BenchmarkBlas3 : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
+
+        BenchmarkBlas3(const Comm &comm = Comm()) : comm_(comm) {}
 
         virtual std::string name() override
         {
@@ -31,19 +36,21 @@ namespace utopia {
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
 
+                auto ml = layout(comm_, n, n, n * comm_.size(), n * comm_.size());
+
                 //measure allocation time of two vectors and the matrix
                 this->register_experiment(
                     "allocation_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                     }
                 );
 
                 //measure assembly time of the operator
                 this->register_experiment(
                     "assembly_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
                         //matrix copy
                         Matrix B = A;
@@ -53,8 +60,8 @@ namespace utopia {
                 //matrix-vector mult
                 this->register_experiment(
                     "mat_mat_mult_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
                         //matrix copy
                         Matrix B = A;
@@ -65,6 +72,9 @@ namespace utopia {
                 //...
             }
         }
+
+      private:
+        Comm comm_;
 
     };
 }

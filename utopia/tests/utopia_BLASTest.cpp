@@ -136,7 +136,7 @@ namespace utopia {
 
         TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(10);
 
-        x0 = values(10, 2.0);
+        x0.values(10, 2.0);
         newtonSolver.solve(fun2, x0);
 #endif //WITH_LAPACK
 

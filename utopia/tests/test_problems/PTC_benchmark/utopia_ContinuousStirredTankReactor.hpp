@@ -110,7 +110,7 @@ namespace utopia
             }
 
             assert(x.size() == 4);
-            g.zeros(layout(point));
+            g.zeros(layout(x));
 
             {
                 const Read<Vector> read(x);

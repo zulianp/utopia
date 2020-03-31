@@ -14,7 +14,12 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BenchmarkBlas2 : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
+
+        BenchmarkBlas2(const Comm &comm = Comm()) : comm_(comm) {}
 
         virtual std::string name() override
         {
@@ -31,22 +36,24 @@ namespace utopia {
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
 
+                auto vl = layout(comm_, n, n * comm_.size());
+                auto ml = layout(comm_, n, n, n * comm_.size(), n * comm_.size());
+
                 //measure allocation time of two vectors and the matrix
                 this->register_experiment(
                     "allocation_" + std::to_string(i),
-                    [n]() {
-                        Vector x = local_values(n, 1.);
-                        Vector y = local_values(n, 2.);
-
-                        Matrix A = local_sparse(n, n, 3);
+                    [vl, ml]() {
+                        Vector x(vl, 1.);
+                        Vector y(vl, 2.);
+                        Matrix A; A.sparse(ml, 3, 2);
                     }
                 );
 
                 //measure assembly time of the operator
                 this->register_experiment(
                     "assembly_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [vl, ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
                     }
                 );
@@ -54,10 +61,10 @@ namespace utopia {
                 //matrix-vector mult
                 this->register_experiment(
                     "mv_" + std::to_string(i),
-                    [n]() {
-                        Vector x = local_values(n, 1.);
-                        Vector y = local_values(n, 2.);
-                        Matrix A = local_sparse(n, n, 3);
+                    [vl, ml]() {
+                        Vector x(vl, 1.);
+                        Vector y(vl, 2.);
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
 
                         y = A * x;
@@ -67,6 +74,8 @@ namespace utopia {
                 //...
             }
         }
+
+        Comm comm_;
 
     };
 }
