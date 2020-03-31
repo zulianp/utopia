@@ -19,11 +19,11 @@ namespace utopia
         ExtendedPowell22Constrained()
         {
 
-            assert(mpi_world_size() == 1 && "does not work for parallel matrices");
+            auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
-            ub = zeros(4);
-            lb = zeros(4);
+            ub.zeros(v_layout);
+            lb.zeros(v_layout);
 
             {
                 const Write<Vector> write1(ub);
@@ -32,12 +32,12 @@ namespace utopia
                 lb.set(0, 0.1);
                 lb.set(1, -20.0);
                 lb.set(2, -1.0);
-                lb.set(3, -1.0);                
+                lb.set(3, -1.0);
 
                 ub.set(0, 100.0);
                 ub.set(1, 20.0);
                 ub.set(2, 1.0);
-                ub.set(3, 50.0);                
+                ub.set(3, 50.0);
             }
 
 
@@ -53,27 +53,27 @@ namespace utopia
 
         SizeType dim() const override
         {
-            return unconstrained_.dim(); 
+            return unconstrained_.dim();
         }
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
-            return unconstrained_.value(x, result); 
+            return unconstrained_.value(x, result);
         }
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            return unconstrained_.gradient(x, g); 
+            return unconstrained_.gradient(x, g);
         }
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            return unconstrained_.hessian(x, H); 
+            return unconstrained_.hessian(x, H);
         }
 
         Vector initial_guess() const override
         {
-            return unconstrained_.initial_guess(); 
+            return unconstrained_.initial_guess();
         }
 
         const Vector & exact_sol() const override
@@ -83,11 +83,11 @@ namespace utopia
 
         Scalar min_function_value() const override
         {
-            return  0.1878196e-3; 
+            return  0.1878196e-3;
         }
 
     private:
-        ExtendedPowell22<Matrix, Vector> unconstrained_; 
+        ExtendedPowell22<Matrix, Vector> unconstrained_;
 
     };
 

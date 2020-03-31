@@ -98,7 +98,7 @@ namespace utopia
 
             SizeType d = point.size();
             if(empty(result)){
-                result = zeros(d);
+                result.zeros(layout(point));
             }
             else{
                 result.set(0.0);
@@ -154,7 +154,14 @@ namespace utopia
             Read<Vector> read(point);
 
             SizeType d = point.size();
-            result = zeros(d, d);
+
+            auto vl = layout(point);
+
+            if(empty(result)) {
+                result.dense(layout(vl.comm(), vl.local_size(), vl.local_size(), vl.size(), vl.size()));
+            }
+
+            result.set(0.0);
 
             // for parallel access to Matrix
             Range r_result = row_range(result);
@@ -234,18 +241,18 @@ namespace utopia
 
         void init_perm(const Vector &x)
         {
-            // if(!empty(perm_)) {
-            //     return;
-            // }
+            auto vl = layout(x);
+            auto mat_layout = layout(vl.comm(), 2, vl.local_size(), 2 * vl.comm().size(), vl.size());
 
             auto r = range(x);
             long n = local_size(x).get(0);
             long N = size(x).get(0);
 
             if (is_sparse<Matrix>::value) {
-                perm_ = local_sparse(2, n, 2);
+                perm_.sparse(mat_layout, 2, 2);
             } else {
-                perm_ = local_zeros({2, n});
+                perm_.dense(mat_layout);
+                perm_.set(0.0);
             }
 
             auto r_perm = row_range(perm_);

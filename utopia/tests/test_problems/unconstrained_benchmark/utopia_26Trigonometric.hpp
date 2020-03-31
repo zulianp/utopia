@@ -12,8 +12,10 @@ namespace utopia
     class Trigonometric26 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         Trigonometric26(const SizeType & n_loc=10): n_loc_(n_loc)
         {

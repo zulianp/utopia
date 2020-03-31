@@ -125,7 +125,7 @@ namespace utopia {
             //         expr.expr().operation());
 
 
-            result = 
+            result =
                 Eval<Left,  Traits>::apply(expr.expr().left()).equals(
                 Eval<Right, Traits>::apply(expr.expr().right()),
                 expr.expr().operation().tol()
@@ -188,15 +188,19 @@ namespace utopia {
             SizeType result = 0;
             UTOPIA_TRACE_BEGIN(expr);
 
-            each_read(expr.expr().derived(), [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
+            const auto &mat = expr.expr().derived();
+
+            each_read(mat, [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
                 UTOPIA_UNUSED(i);
                 UTOPIA_UNUSED(j);
 
                 result += op.apply(value);
             });
 
+            const auto &comm = mat.comm();
 
-            Vector v = local_values(1, result);
+            Vector v(layout(comm, 1, comm.size()), result);
+            // Vector v = local_values(1, result);
             result = sum(v);
 
             UTOPIA_TRACE_END(expr);

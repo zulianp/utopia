@@ -57,6 +57,7 @@ namespace utopia {
 
         using BLAS3DenseMatrix<BlasMatrix>::multiply;
         using BLAS3DenseMatrix<BlasMatrix>::transpose_multiply;
+        using MatrixLayout = typename Traits<BlasMatrix>::MatrixLayout;
 
 
         ////////////////////////////////////////////////////////////////////
@@ -144,6 +145,12 @@ namespace utopia {
             copy(args.begin(), args.end(), entries_.begin());
 
             UTOPIA_REPORT_ALLOC("BlasMatrix::BlasMatrix(SizeType, SizeType, std::initializer_list<T>)");
+        }
+
+        BlasMatrix(const MatrixLayout &layout)
+        {
+            resize(get_size(layout));
+            set(0.0);
         }
 
         BlasMatrix(const Entries& e)
@@ -242,6 +249,36 @@ namespace utopia {
             return &entries_[0];
         }
 
+        static Size get_size(const MatrixLayout &lo)
+        {
+            const SizeType rows = ( lo.size(0) == Traits<BlasMatrix>::determine() ) ? lo.local_size(0) : lo.size(0);
+            const SizeType cols = ( lo.size(1) == Traits<BlasMatrix>::determine() ) ? lo.local_size(1) : lo.size(1);
+            return {rows, cols};
+        }
+
+        void identity(const MatrixLayout &lo, const Scalar &diag = 1.0)
+        {
+            auto &&s = get_size(lo);
+            identity(s.get(0), s.get(1), diag);
+        }
+
+        void dense_identity(const MatrixLayout &lo, const Scalar &diag = 1.0)
+        {
+            auto &&s = get_size(lo);
+            identity(s.get(0), s.get(1), diag);
+        }
+
+        void sparse(const MatrixLayout &lo, const SizeType &, const SizeType &)
+        {
+            dense(lo);
+        }
+
+        void dense(const MatrixLayout &lo, const Scalar &val = 0.0)
+        {
+            auto &&s = get_size(lo);
+            this->values(s.get(0), s.get(1), val);
+        }
+
         void identity(const SizeType rows, const SizeType cols, const Scalar &diag = 1.0)
         {
             using std::move;
@@ -257,7 +294,7 @@ namespace utopia {
             }
         }
 
-        void values(const SizeType rows, const SizeType cols, T &value)
+        void values(const SizeType rows, const SizeType cols, const T &value)
         {
             using std::move;
             using std::min;

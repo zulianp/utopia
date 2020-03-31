@@ -12,8 +12,10 @@ namespace utopia
     class ExtendedPowell22 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         ExtendedPowell22(const SizeType & n=4): n_(n)
         {
@@ -25,10 +27,9 @@ namespace utopia
             }
 
 
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
-
-            x_exact_ = values(n_, 0.0);
-            x_init_ = values(n_, 0.0);
+            auto v_layout = serial_layout(dim());
+            x_exact_.zeros(v_layout);
+            x_init_.zeros(v_layout);
 
             {
                 const Write<Vector> write1(x_init_);
@@ -72,7 +73,7 @@ namespace utopia
 
         bool value(const Vector &x, Scalar &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -129,7 +130,7 @@ namespace utopia
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -229,7 +230,7 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }

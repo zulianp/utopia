@@ -3,24 +3,28 @@
 
 #include <utility>
 #include <algorithm>
+#include <cassert>
 
 #include "utopia_Traits.hpp"
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Communicator.hpp"
+#include "utopia_Size.hpp"
 
 namespace utopia {
 
-	template<class Comm, typename SizeType_, int Order>
+	template<class Comm, int Order, typename LocalSizeType_, typename SizeType_ = LocalSizeType_ >
 	class Layout {
 	public:
-		using SizeType = SizeType_;
+		using SizeType 		= SizeType_;
+		using LocalSizeType = LocalSizeType_;
 
-		inline SizeType &local_size(const SizeType i = 0)
+		inline LocalSizeType_ &local_size(const int i = 0)
 		{
 			assert(i < Order);
 			return local_size_[i];
 		}
 
-		inline const SizeType &local_size(const SizeType i = 0) const
+		inline const LocalSizeType_ &local_size(const int i = 0) const
 		{
 			assert(i < Order);
 			return local_size_[i];
@@ -86,20 +90,33 @@ namespace utopia {
 			}
 		}
 
-		template<typename OtherSizeType>
-		Layout(const Layout<Comm, OtherSizeType, Order> &other)
+		template<class OtherComm, typename OtherSizeType, typename OtherLocalSizeType>
+		Layout(const Layout<OtherComm, Order, OtherLocalSizeType, OtherSizeType> &other)
+		: comm_(other.comm())
 		{
 			std::copy(&other.local_size(0),  &other.local_size(0) + Order,  local_size_);
 			std::copy(&other.size(0), &other.size(0) + Order, size_);
 		}
 
-		inline void init(const SizeType local_size[Order], SizeType size[Order])
+		inline void init(const LocalSizeType local_size[Order], SizeType size[Order])
 		{
 			std::copy(local_size,  local_size + Order,  local_size_);
 			std::copy(size, size + Order, size_);
 		}
 
-		inline void init(const SizeType local_size, SizeType size)
+		inline void init(const Size &local, const Size &global)
+		{
+			auto &local_data  = local.data();
+			auto &global_data = global.data();
+
+			assert(int(local_data.size()) <= Order);
+			assert(int(global_data.size()) <= Order);
+
+			std::copy(local_data.begin(),  local_data.end(),    local_size_);
+			std::copy(global_data.begin(),  global_data.end(),  size_);
+		}
+
+		inline void init(const LocalSizeType local_size, SizeType size)
 		{
 			local_size_[0] = local_size;
 			size_[0] = size;
@@ -107,43 +124,71 @@ namespace utopia {
 
 	private:
 		Comm comm_;
-		SizeType local_size_[Order];
+		LocalSizeType local_size_[Order];
 		SizeType size_[Order];
 	};
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	//// SERIAL LAYOUTS //////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	template<typename SizeType, class Comm>
-	inline Layout<Comm, SizeType, 1> layout(const Comm &comm, const SizeType &local_size, const SizeType &size)
+	template<typename SizeType>
+	inline Layout<SelfCommunicator, 1, SizeType> serial_layout(const SizeType &size)
 	{
-		return Layout<Comm, SizeType, 1>(comm, local_size, size);
+		return Layout<SelfCommunicator, 1, SizeType>(SelfCommunicator(), size, size);
 	}
 
-	template<typename SizeType, class Comm>
-	inline Layout<Comm, SizeType, 2> layout(const Comm &comm, const std::pair<SizeType, SizeType> &local_size, const std::pair<SizeType, SizeType> &size)
+	template<typename SizeType>
+	inline Layout<SelfCommunicator, 2, SizeType> serial_layout(const SizeType &rows, const SizeType &cols)
 	{
-		SizeType ls[2] = { local_size.first, local_size.second   };
-		SizeType gs[2] = { size.first, size.second };
-		return Layout<Comm, SizeType, 2>(comm, ls, gs);
+		return Layout<SelfCommunicator, 2, SizeType>(SelfCommunicator(), rows, cols);
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	//// PARALLEL LAYOUTS ////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	template<typename LocalSizeType, typename SizeType, class Comm>
+	inline Layout<Comm, 1, LocalSizeType, SizeType> layout(const Comm &comm, const LocalSizeType &local_size, const SizeType &size)
+	{
+		return Layout<Comm, 1, SizeType>(comm, local_size, size);
+	}
+
+	template<typename LocalSizeType, typename SizeType, class Comm>
+	inline Layout<Comm, 2, LocalSizeType, SizeType> layout(
+		const Comm &comm,
+		const LocalSizeType &local_rows,
+		const LocalSizeType &local_cols,
+		const SizeType &rows,
+		const SizeType &cols)
+	{
+		LocalSizeType ls[2] = { local_rows, local_cols  };
+		SizeType gs[2]	    = { rows, cols };
+
+		return Layout<Comm, 2, LocalSizeType, SizeType>(comm, ls, gs);
 	}
 
 	template<class V>
-	Layout<typename Traits<V>::Communicator, typename Traits<V>::SizeType, 1> layout(const Tensor<V, 1> &t)
+	Layout<typename Traits<V>::Communicator, 1, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType> layout(const Tensor<V, 1> &t)
 	{
 		const auto &vec = t.derived();
-		return Layout<typename Traits<V>::Communicator, typename Traits<V>::SizeType, 1>(vec.comm(), vec.local_size(), vec.size());
+		return Layout<typename Traits<V>::Communicator, 1, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType>(vec.comm(), vec.local_size(), vec.size());
 	}
 
-	// template<class V>
-	// Layout<typename Traits<V>::Communicator, typename Traits<V>::SizeType, 1> row_layout(const Tensor<V, 2> &t)
-	// {
-	// 	const auto &mat = t.derived();
-	// 	return Layout<typename Traits<V>::Communicator, typename Traits<V>::SizeType, 1>(mat.comm(), mat.local_size().get(0), mat.size().get(0));
-	// }
+	template<class V>
+	Layout<typename Traits<V>::Communicator, 1, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType> row_layout(const Operator<V> &op)
+	{
+		return Layout<typename Traits<V>::Communicator, 1, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType>(op.comm(), op.local_size().get(0), op.size().get(0));
+	}
 
 	template<class V>
-	Layout<typename Traits<V>::Communicator, typename Traits<V>::SizeType, 1> row_layout(const Operator<V> &op)
+	Layout<typename Traits<V>::Communicator, 2, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType> layout(const Operator<V> &op)
 	{
-		return Layout<typename Traits<V>::Communicator, typename Traits<V>::SizeType, 1>(op.comm(), op.local_size().get(0), op.size().get(0));
+		return Layout<typename Traits<V>::Communicator, 2, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType>(
+			op.comm(),
+			op.local_size(),
+			op.size()
+		);
 	}
 
 }

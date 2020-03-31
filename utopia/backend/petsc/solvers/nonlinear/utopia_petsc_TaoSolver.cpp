@@ -120,7 +120,7 @@ namespace utopia {
         Vector utopia_x;
         convert(x, utopia_x);
 
-        Vector utopia_g = local_zeros(local_size(utopia_x));
+        Vector utopia_g(layout(utopia_x));
         if(!fun->gradient(utopia_x, utopia_g)) {
             return 1;
         }

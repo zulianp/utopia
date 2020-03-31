@@ -180,6 +180,9 @@ namespace utopia {
 
     template<class V>
     class Operator;
+
+    class Communicator;
+    class SelfCommunicator;
 }
 
 #endif //UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

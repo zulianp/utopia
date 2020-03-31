@@ -96,8 +96,9 @@ namespace utopia {
 
         assert(!empty(b));
 
+        //Cheap consistency check
         if(empty(x) || size(x) != size(b)) {
-            x = local_zeros(local_size(b));
+            x.zeros(layout(b));
         } else {
             assert(local_size(x) == local_size(b));
             if(reset_initial_guess_) {

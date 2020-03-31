@@ -17,11 +17,11 @@ namespace utopia
 
         Gaussian09Constrained()
         {
-            assert(mpi_world_size() == 1 && "does not work for parallel matrices");
+            auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
-            ub = zeros(3);
-            lb = zeros(3);
+            ub.zeros(v_layout);
+            lb.zeros(v_layout);
 
             {
                 const Write<Vector> write1(ub);
@@ -48,27 +48,27 @@ namespace utopia
 
         SizeType dim() const override
         {
-            return unconstrained_.dim(); 
+            return unconstrained_.dim();
         }
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
-            return unconstrained_.value(x, result); 
+            return unconstrained_.value(x, result);
         }
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            return unconstrained_.gradient(x, g); 
+            return unconstrained_.gradient(x, g);
         }
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            return unconstrained_.hessian(x, H); 
+            return unconstrained_.hessian(x, H);
         }
 
         Vector initial_guess() const override
         {
-            return unconstrained_.initial_guess(); 
+            return unconstrained_.initial_guess();
         }
 
         const Vector & exact_sol() const override
@@ -82,7 +82,7 @@ namespace utopia
         }
 
     private:
-        Gaussian09<Matrix, Vector> unconstrained_; 
+        Gaussian09<Matrix, Vector> unconstrained_;
     };
 }
 

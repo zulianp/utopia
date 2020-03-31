@@ -19,12 +19,14 @@ namespace utopia
     class Rosenbrock01 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         Rosenbrock01()
         {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
+            auto v_layout = serial_layout(dim());
 
             x_init_ = zeros(this->dim());
             x_exact_ = values(this->dim(), 1.0);
@@ -39,7 +41,7 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -57,7 +59,7 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -81,7 +83,7 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -142,7 +144,7 @@ namespace utopia
         bool exact_sol_known() const
         {
             return true;
-        }        
+        }
 
 
     private:

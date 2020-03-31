@@ -87,7 +87,7 @@ namespace utopia
             this->init_memory();
 
             memory_.x[n_levels-1] = x_h;
-            memory_.g[n_levels-1] = local_zeros(local_size(memory_.x[n_levels-1]));
+            memory_.g[n_levels-1].zeros(layout(memory_.x[n_levels-1]));
 
 
             this->function(n_levels-1).gradient(memory_.x[n_levels-1], memory_.g[n_levels-1]);
@@ -108,7 +108,7 @@ namespace utopia
 #ifdef CHECK_NUM_PRECISION_mode
                 if(has_nan_or_inf(memory_.x[n_levels-1]) == 1)
                 {
-                    memory_.x[n_levels-1] = local_zeros(local_size(memory_.x[n_levels-1]));
+                    memory_.x[n_levels-1].zeros(layout(memory_.x[n_levels-1]));
                     return true;
                 }
 #endif

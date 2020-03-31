@@ -102,6 +102,11 @@ namespace utopia {
         : comm_(comm)
         {}
 
+         explicit TpetraVector(const Layout &layout, const Scalar &val = 0.0)
+        {
+          values(layout, val);
+        }
+
         ~TpetraVector()
         {}
 

@@ -12,8 +12,10 @@ namespace utopia
     class VariablyDim25 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         VariablyDim25(const SizeType & n_loc=10): n_loc_(n_loc)
         {
@@ -22,7 +24,7 @@ namespace utopia
             x_inc_      = local_values(n_loc_, 1.0);
 
             help_ = make_unique<Vector>(local_zeros(n_loc_));
-            ones_ = local_values(n_loc_, 1.0); 
+            ones_ = local_values(n_loc_, 1.0);
 
             SizeType n_global = size(x_exact_).get(0);
 
@@ -130,8 +132,8 @@ namespace utopia
         Vector x_init_;
         Vector x_exact_;
         Vector x_inc_;
-        Vector ones_; 
-        std::unique_ptr<Vector> help_; 
+        Vector ones_;
+        std::unique_ptr<Vector> help_;
 
     };
 

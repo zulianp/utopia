@@ -27,6 +27,8 @@ namespace utopia {
 		PetscCommunicator(const MPI_Comm comm) : comm_(comm) {}
 		PetscCommunicator();
 
+		PetscCommunicator(const SelfCommunicator &comm) : comm_(comm.get()) {}
+
 	private:
 		MPI_Comm comm_;
 

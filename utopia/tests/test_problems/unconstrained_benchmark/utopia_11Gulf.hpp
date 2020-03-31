@@ -4,6 +4,8 @@
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_TestFunctions.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_Layout.hpp"
 
 
 namespace utopia
@@ -12,15 +14,17 @@ namespace utopia
     class Gulf11 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         Gulf11()
         {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
+            auto v_layout = serial_layout(dim());
 
-            x_init_ = zeros(3);
-            x_exact_ = zeros(3);
+            x_init_.zeros(v_layout);
+            x_exact_.zeros(v_layout);
 
             {
                 const Write<Vector> write1(x_init_);
@@ -55,7 +59,7 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
-            if( mpi_world_size() > 1){
+            if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -84,13 +88,13 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &g) const override
         {
-            if( mpi_world_size() > 1){
+            if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == 3);
-            g = zeros(3);
+            g.zeros(layout(point));
 
             const Read<Vector> read(point);
             const Write<Vector> write(g);
@@ -126,13 +130,13 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override
         {
-            if( mpi_world_size() > 1){
+            if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == 3);
-            result = zeros(3,3);
+            result.dense(serial_layout(3, 3));
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);

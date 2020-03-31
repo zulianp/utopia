@@ -17,11 +17,11 @@ namespace utopia
 
         PenaltyII24Constrained()
         {
-            assert(mpi_world_size() == 1 && "does not work for parallel matrices");
+            auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
-            ub = zeros(10);
-            lb = zeros(10);
+            ub.zeros(v_layout);
+            lb.zeros(v_layout);
 
             {
                 const Write<Vector> write1(ub);
@@ -36,7 +36,7 @@ namespace utopia
                 lb.set(6, 0.0);
                 lb.set(7, 0.2);
                 lb.set(8, 0.0);
-                lb.set(9, 0.0);                                                                
+                lb.set(9, 0.0);
 
                 ub.set(0, 50.0);
                 ub.set(1, 50.0);
@@ -62,27 +62,27 @@ namespace utopia
 
         SizeType dim() const override
         {
-            return unconstrained_.dim(); 
+            return unconstrained_.dim();
         }
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
-            return unconstrained_.value(x, result); 
+            return unconstrained_.value(x, result);
         }
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            return unconstrained_.gradient(x, g); 
+            return unconstrained_.gradient(x, g);
         }
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            return unconstrained_.hessian(x, H); 
+            return unconstrained_.hessian(x, H);
         }
 
         Vector initial_guess() const override
         {
-            return unconstrained_.initial_guess(); 
+            return unconstrained_.initial_guess();
         }
 
         const Vector & exact_sol() const override
@@ -96,7 +96,7 @@ namespace utopia
         }
 
     private:
-        PenaltyII24<Matrix, Vector> unconstrained_; 
+        PenaltyII24<Matrix, Vector> unconstrained_;
 
     };
 

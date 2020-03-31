@@ -84,7 +84,7 @@ namespace utopia {
     bool is_diagonally_dominant(const PetscMatrix &A)
     {
         PetscVector d = diag(A);
-        PetscVector o = local_zeros(local_size(d));
+        PetscVector o(layout(d));
 
         {
             Write<PetscVector> w_o(o);

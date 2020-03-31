@@ -144,6 +144,7 @@ namespace utopia {
         using SizeType = PetscInt;
         using Super    = utopia::Tensor<PetscMatrix, 2>;
         using Super::Super;
+        using MatrixLayout = typename Traits<PetscMatrix>::MatrixLayout;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -156,6 +157,20 @@ namespace utopia {
         PetscMatrix(const PetscCommunicator &comm = PETSC_COMM_WORLD) : comm_(comm)
         {
             init_empty(comm);
+        }
+
+        ///same as sparse
+        PetscMatrix(const MatrixLayout &layout, const SizeType &d_nnz, const SizeType &o_nnz)
+        {
+            init_empty(layout.comm());
+            sparse(layout, d_nnz, o_nnz);
+        }
+
+        ///same as dense(l, 0.0)
+        PetscMatrix(const MatrixLayout &layout)
+        {
+            init_empty(layout.comm());
+            dense(layout, 0.0);
         }
 
         PetscMatrix(PetscMatrix &&other)
@@ -343,6 +358,70 @@ namespace utopia {
          ///////////////////////////////////////////////////////////////////////////
          ////////////// OVERRIDES FOR Constructible ////////////////////////////////
          ///////////////////////////////////////////////////////////////////////////
+
+         inline void sparse(
+            const MatrixLayout &layout,
+            const SizeType nnz_d_block,
+            const SizeType nnz_o_block
+         )
+         {
+            comm_ = layout.comm();
+            matij_init(
+               comm().get(),
+               MATAIJ,
+               layout.local_size(0),
+               layout.local_size(1),
+               layout.size(0),
+               layout.size(1),
+               nnz_d_block,
+               nnz_o_block
+            );
+         }
+
+         inline void dense(
+            const MatrixLayout &layout,
+            const Scalar &val = 0.0
+         )
+         {
+            comm_ = layout.comm();
+            dense_init_values(
+                comm().get(),
+                MATDENSE,
+                layout.local_size(0),
+                layout.local_size(1),
+                layout.size(0),
+                layout.size(1),
+                val
+            );
+         }
+
+         inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0)
+         {
+            comm_ = layout.comm();
+            matij_init_identity(
+                comm().get(),
+                MATAIJ,
+                layout.local_size(0),
+                layout.local_size(1),
+                layout.size(0),
+                layout.size(1),
+                diag
+            );
+         }
+
+         inline void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0)
+         {
+            comm_ = layout.comm();
+            dense_init_identity(
+                comm().get(),
+                MATDENSE,
+                layout.local_size(0),
+                layout.local_size(1),
+                layout.size(0),
+                layout.size(1),
+                diag
+            );
+         }
 
          inline void identity(const Size &s, const Scalar &diag = 1.0) override
          {
@@ -968,6 +1047,10 @@ namespace utopia {
 
 
         void set_zero_rows(const PetscIndexSet &idx, const Scalar &diag = 0.0);
+
+
+        //only for dense
+        void set(const Scalar &value);
 
         void diagonal_block(PetscMatrix &block) const;
 

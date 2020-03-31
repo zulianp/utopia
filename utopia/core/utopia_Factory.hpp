@@ -581,6 +581,8 @@ namespace utopia {
         return expr.size();
     }
 
+#ifdef UTOPIA_DEPRECATED_API
+
 
     /**    @defgroup factory Factory
      *      @brief  Factory methods allow for creating basic tensor in an easy way
@@ -594,11 +596,13 @@ namespace utopia {
      */
 
     /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Identity, 2> identity(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<Identity, 2>(Size({rows, cols}));
     }
     /// Returns identity matrix  \f$ I^{size_0 \times size_1}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Identity, 2> identity(const Size &size)
     {
         return Factory<Identity, 2>(size);
@@ -606,11 +610,13 @@ namespace utopia {
 
 
     /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<DenseIdentity, 2> dense_identity(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<DenseIdentity, 2>(Size({rows, cols}));
     }
     /// Returns denDensese_identity matrix  \f$ I^{size_0 \times size_1}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<DenseIdentity, 2> dense_identity(const Size &size)
     {
         return Factory<DenseIdentity, 2>(size);
@@ -623,31 +629,38 @@ namespace utopia {
     }
 
     /// Returns global \f$ 0^{rows \times rows}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Zeros, 2> zeros(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<Zeros, 2>(Size({rows, cols}));
     }
 
     /// Returns global \f$ 0^{n \times 1}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Zeros, 1> zeros(const Size::SizeType n)
     {
         return Factory<Zeros, 1>(Size({n}));
     }
 
     /// Returns global \f$ 0^{size \times size}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Zeros, utopia::DYNAMIC> zeros(const Size &size)
     {
         return Factory<Zeros, utopia::DYNAMIC>(size);
     }
 
     ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
+
     template<typename T>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
         return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
     }
 
+
     template<typename SizeType>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<NNZXRow<SizeType>, 2> sparse(
         const Size &gs,
         const std::vector<SizeType> &d_nnz,
@@ -656,7 +669,9 @@ namespace utopia {
         return Factory<NNZXRow<SizeType>, 2>(gs, NNZXRow<SizeType>(d_nnz, o_nnz));
     }
 
+
     template<typename _SizeType, typename _IntType, typename _Scalar>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<CRS<_SizeType, _IntType, _Scalar>, 2> crs(const Size::SizeType rows, const Size::SizeType cols, _SizeType &rowPtr, _IntType &crs_columns, _Scalar &values)
     {
         return Factory<CRS<_SizeType, _IntType, _Scalar>, 2>(Size({rows, cols}), CRS<_SizeType, _IntType, _Scalar>(rowPtr, crs_columns, values));
@@ -665,13 +680,16 @@ namespace utopia {
 
     ///  Returns global matrix \f$ value * 1^{rows \times cols}  \f$.
     template<typename T>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Values<T>, 2> values(const Size::SizeType rows, const Size::SizeType cols, T value)
     {
         return Factory<Values<T>, 2>(Size({rows, cols}), Values<T>(value));
     }
 
     ///  Returns global vector \f$ value *1I^{rows \times 1}  \f$.
+
     template<typename T>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Values<T>, 1> values(const Size::SizeType rows, T value)
     {
         return Factory<Values<T>, 1>(Size({rows, 1}), Values<T>(value));
@@ -686,18 +704,21 @@ namespace utopia {
      */
 
     /// Returns local identity matrix  \f$ I^{row \times cols}  \f$ i.e. each processors owns local identity matrix.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalIdentity, 2> local_identity(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<LocalIdentity, 2>(Size({rows, cols}));
     }
 
     /// Returns local identity matrix  \f$ I^{size \times size}  \f$ i.e. each processors owns local identity matrix.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalIdentity, 2> local_identity(const Size &size)
     {
         return Factory<LocalIdentity, 2>(size);
     }
 
     /// Returns local identity matrix  \f$ I^{size \times size}  \f$ i.e. each processors owns local identity matrix.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalDenseIdentity, 2> local_dense_identity(const Size &size)
     {
         return Factory<LocalDenseIdentity, 2>(size);
@@ -706,24 +727,28 @@ namespace utopia {
 
 
     ///  Returns local zero vector \f$ 0^{n \times 1}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalZeros, 1> local_zeros(const Size::SizeType n)
     {
         return Factory<LocalZeros, 1>(Size({n}));
     }
 
     ///  Returns local zero matrices \f$ 0^{size \times size}  \f$ i.e. each processors owns local zero matrix.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalZeros, utopia::DYNAMIC> local_zeros(const Size &size)
     {
         return Factory<LocalZeros, utopia::DYNAMIC>(size);
     }
 
     ///  Returns global matricx \f$ ?^{size_0 \times size_1}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Resize, utopia::DYNAMIC> dense(const Size &size)
     {
         return Factory<Resize, utopia::DYNAMIC>(size);
     }
 
     ///  Returns global matricx \f$ ?^{size \times size}  \f$.
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<Resize, 2> dense(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<Resize, 2>(Size({rows, cols}));
@@ -731,14 +756,19 @@ namespace utopia {
 
 
     ///  Returns local matrices \f$ value * 1^{rows \times cols}  \f$ i.e. each processors owns local matrix.
+
     template<typename T>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalValues<T>, 2> local_values(const Size::SizeType rows, const Size::SizeType cols, T value)
     {
         return Factory<LocalValues<T>, 2>(Size({rows, cols}), LocalValues<T>(value));
     }
 
     ///  Returns local vector \f$ value * 1^{rows \times 1}  \f$ i.e. each processors owns local vector.
+
+
     template<typename T>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalValues<T>, 1> local_values(const Size::SizeType rows, T value)
     {
         return Factory<LocalValues<T>, 1>(Size({rows, 1}), LocalValues<T>(value));
@@ -747,19 +777,26 @@ namespace utopia {
 
 
     ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
+
     template<typename T>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
         return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnz_x_row_or_col));
     }
 
+
     template<typename T>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Factory<LocalNNZ<T>, 2> local_sparse(const Size &s, T nnz_x_row_or_col)
     {
         return Factory<LocalNNZ<T>, 2>(s, LocalNNZ<T>(nnz_x_row_or_col));
     }
 
+
+
     template<typename T, class... Args>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline auto local_sparse(
         const Size::SizeType rows,
         const Size::SizeType cols,
@@ -771,7 +808,9 @@ namespace utopia {
 
      /** @}*/
 
+
     template<class Index>
+    UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Ghosts<Index> ghosted(
         const Size::SizeType &local_size,
         const Size::SizeType &global_size,
@@ -779,6 +818,9 @@ namespace utopia {
     {
         return Ghosts<Index>(local_size, global_size, std::forward<Index>(index));
     }
+
+#endif //UTOPIA_DEPRECATED_API
 }
+
 
 #endif //UTOPIA_UTOPIA_FACTORY_HPP
