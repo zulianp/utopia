@@ -59,6 +59,9 @@ namespace utopia {
         using BLAS3DenseMatrix<BlasMatrix>::transpose_multiply;
         using MatrixLayout = typename Traits<BlasMatrix>::MatrixLayout;
 
+        using Constructible = utopia::Constructible<T, std::size_t, 2>;
+        using Constructible::sparse;
+
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////

@@ -17,7 +17,17 @@ namespace utopia
         using SizeType = typename Traits::SizeType;
         using Comm     = typename Traits::Communicator;
 
-        PenaltyI23(const Comm &comm = Comm(), const SizeType & n_loc=10): n_loc_(n_loc)
+        PenaltyI23(const SizeType &n_loc) : n_loc_(n_loc)
+        {
+            init(Comm::get_default(), n_loc);
+        }
+
+        PenaltyI23(const Comm &comm = Comm::get_default(), const SizeType &n_loc = 10): n_loc_(n_loc)
+        {
+            init(comm, n_loc);
+        }
+
+        void init(const Comm &comm, const SizeType &n_loc)
         {
             x_init_.zeros(layout(comm, n_loc, Traits::determine()));
             x_exact_.values(layout(x_init_), 0.15812); // depends on size.. this is valid for n=10
@@ -28,7 +38,6 @@ namespace utopia
                 {
                     return i+1;
                 }   );
-
             }
         }
 

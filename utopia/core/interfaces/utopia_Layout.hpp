@@ -141,7 +141,9 @@ namespace utopia {
 	template<typename SizeType>
 	inline Layout<SelfCommunicator, 2, SizeType> serial_layout(const SizeType &rows, const SizeType &cols)
 	{
-		return Layout<SelfCommunicator, 2, SizeType>(SelfCommunicator(), rows, cols);
+        SizeType ls[2] = { rows, cols  };
+        SizeType gs[2]      = { rows, cols };
+		return Layout<SelfCommunicator, 2, SizeType>(SelfCommunicator(), ls, gs);
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////

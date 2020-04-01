@@ -851,6 +851,13 @@ namespace utopia {
         // MatShift(raw_type(), scale_factor);
     }
 
+
+    void PetscMatrix::identity(const Scalar &diag)
+    {
+        set(0.0);
+        shift_diag(diag);
+    }
+
     // void PetscMatrix::matij_init(MPI_Comm comm,
     //    PetscInt rows_local,
     //    PetscInt cols_local,

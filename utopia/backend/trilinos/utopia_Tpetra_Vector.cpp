@@ -458,6 +458,18 @@ namespace utopia {
         const Scalar &val
     )
     {
+        comm_ = comm;
+
+        if(n_local == Traits<TpetraVector>::decide()) {
+            values(n_global, val);
+            return;
+        }
+
+        if(Tpetra::global_size_t(n_global) == Traits<TpetraVector>::determine()) {
+            local_values(n_local, val);
+            return;
+        }
+
         assert(n_local <= n_global);
         assert(n_local >= 0);
 
@@ -514,6 +526,15 @@ namespace utopia {
         } else {
             implementation().sumIntoGlobalValue(i, value);
         }
+    }
+
+    void TpetraVector::shift(const Scalar &x)
+    {
+        auto k_res = this->implementation().template getLocalView<ExecutionSpace>();
+        assert(k_res.extent(0) > 0);
+        Kokkos::parallel_for(k_res.extent(0), KOKKOS_LAMBDA(const int i) {
+            k_res(i, 0) += x;
+        });
     }
 
 }

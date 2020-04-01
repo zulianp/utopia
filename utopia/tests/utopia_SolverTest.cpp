@@ -317,7 +317,7 @@ namespace utopia
                 utopia_test_assert(approxeq(expected_woods, x_w2));
 
                 // rastrigin function test - convergence to local minimum
-                Rastrigin<Matrix, Vector> fun_rastrigin(2);
+                Rastrigin<Matrix, Vector> fun_rastrigin;
                 Vector x_r1 = values(2, 1), x_r2 = values(2, 1), expected_rastrigin = values(2, 1);
                 {
                     Write<Vector> w1(x_r1);

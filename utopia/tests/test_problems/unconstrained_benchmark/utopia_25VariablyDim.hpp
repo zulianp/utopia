@@ -17,7 +17,18 @@ namespace utopia
         using SizeType = typename Traits::SizeType;
         using Comm     = typename Traits::Communicator;
 
-        VariablyDim25(const Comm &comm = Comm(), const SizeType & n_loc=10): n_loc_(n_loc)
+        VariablyDim25(const SizeType &n_loc)
+        : n_loc_(n_loc)
+        {
+            init(Comm::get_default(), n_loc);
+        }
+
+        VariablyDim25(const Comm &comm = Comm::get_default(), const SizeType &n_loc = 10): n_loc_(n_loc)
+        {
+            init(comm, n_loc);
+        }
+
+        void init(const Comm &comm, const SizeType &n_loc)
         {
             //determine global size once and reuse everywhere
             x_init_.zeros(layout(comm, n_loc, Traits::determine()));

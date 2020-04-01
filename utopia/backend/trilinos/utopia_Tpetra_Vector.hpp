@@ -302,6 +302,8 @@ namespace utopia {
             describe(std::cout);
         }
 
+        void shift(const Scalar &x);
+
         inline Scalar get(const SizeType &i) const override
         {
             // assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");

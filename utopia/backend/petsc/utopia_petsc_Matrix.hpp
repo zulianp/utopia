@@ -154,7 +154,7 @@ namespace utopia {
             wrapper_ = std::make_shared<PetscMatrixMemory>(comm.get());
         }
 
-        PetscMatrix(const PetscCommunicator &comm = PETSC_COMM_WORLD) : comm_(comm)
+        PetscMatrix(const PetscCommunicator &comm = PetscCommunicator::get_default()) : comm_(comm)
         {
             init_empty(comm);
         }
@@ -408,6 +408,8 @@ namespace utopia {
                 diag
             );
          }
+
+         void identity(const Scalar &diag = 1.0);
 
          inline void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0)
          {

@@ -29,6 +29,10 @@ namespace utopia {
             return comm_->getSize();
         }
 
+#ifdef WITH_MPI
+        MPI_Comm raw_comm() const;
+#endif
+
         inline TrilinosCommunicator * clone() const override
         {
             return new TrilinosCommunicator(get());
@@ -93,8 +97,15 @@ namespace utopia {
             return ret_global;
         }
 
+        inline static TrilinosCommunicator &get_default()
+        {
+            static TrilinosCommunicator instance_;
+            return instance_;
+        }
+
         TrilinosCommunicator(const CommPtr &comm) : comm_(comm) {}
         TrilinosCommunicator(const SelfCommunicator &comm);
+        TrilinosCommunicator(const Communicator &comm);
         TrilinosCommunicator();
 
     private:

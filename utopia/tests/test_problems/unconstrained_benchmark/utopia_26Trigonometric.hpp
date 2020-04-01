@@ -17,7 +17,17 @@ namespace utopia
         using SizeType = typename Traits::SizeType;
         using Comm     = typename Traits::Communicator;
 
-        Trigonometric26(const Comm &comm = Comm(), const SizeType & n_loc=10): n_loc_(n_loc)
+        Trigonometric26(const Comm &comm = Comm::get_default(), const SizeType &n_loc = 10) : n_loc_(n_loc)
+        {
+            init(comm, n_loc);
+        }
+
+        Trigonometric26(const SizeType &n_loc) : n_loc_(n_loc)
+        {
+            init(Comm::get_default(), n_loc);
+        }
+
+        void init(const Comm &comm, const SizeType &n_loc)
         {
             x_exact_.zeros(layout(comm, n_loc, Traits::determine()));
             auto x_layout = layout(x_exact_);

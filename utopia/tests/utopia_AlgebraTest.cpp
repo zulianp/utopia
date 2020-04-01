@@ -180,7 +180,7 @@ namespace utopia {
             actual_min.e_min(1.0);
 
             actual_max = one;
-            actual_min.e_max(2.0);
+            actual_max.e_max(2.0);
 
             utopia_test_assert(approxeq(one, actual_min));
             utopia_test_assert(approxeq(two, actual_max));
@@ -259,9 +259,14 @@ namespace utopia {
 
         static_assert(Traits::Order == 2, "Tensor order of matrix must be 2");
 
-        static const int n = is_dense<Matrix>::value? 600 : 8000;
+
+
+        SparseAlgebraTest()
+        : n(is_dense<Matrix>::value? 600 : 8000)
+        {}
 
         Comm world;
+        const int n;
 
         void sparse_chop_test()
         {
@@ -436,8 +441,8 @@ namespace utopia {
             n = 4;
             m4.dense_identity(serial_layout(n, n), 0.5);
 
-            utopia_test_assert(m.rows() == n);
-            utopia_test_assert(m.cols() == n);
+            utopia_test_assert(m4.rows() == n);
+            utopia_test_assert(m4.cols() == n);
 
             double det4 = det(m4);
 

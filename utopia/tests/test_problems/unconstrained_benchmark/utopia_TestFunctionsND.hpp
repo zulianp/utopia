@@ -17,6 +17,18 @@ namespace utopia {
 
     public:
 
+        TestFunctionND_1(SizeType N)
+        : N(N),
+          b(layout(Comm::get_default(), Traits::decide(), N), 3.0),
+          A(layout(Comm::get_default(), Traits::decide(), Traits::decide(), N, N)),
+          a(1.0)
+          {
+            A.identity();
+            help_ = make_unique<Vector>(layout(b), 0.0);
+
+            static_assert(is_dense_or_polymorphic<Matrix>::value, "This function has a dense hessian do not use sparse implementations");
+        }
+
         TestFunctionND_1(const Comm &comm = Comm(), SizeType N = 10)
         : N(N),
           b(layout(comm, Traits::decide(), N), 3.0),
@@ -28,6 +40,7 @@ namespace utopia {
 
             static_assert(is_dense_or_polymorphic<Matrix>::value, "This function has a dense hessian do not use sparse implementations");
         }
+
 
         inline bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
         {

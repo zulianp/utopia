@@ -18,9 +18,20 @@ namespace utopia
             using SizeType = typename Traits::SizeType;
             using Comm     = typename Traits::Communicator;
 
-
-        Bratu1D(const Comm &comm = Comm(), const SizeType &n = 10): n_(n), lambda_(3.5), lambda_critical_(3.513830719)
+        Bratu1D(const SizeType &n) : n_(n), lambda_(3.5), lambda_critical_(3.513830719)
         {
+            init(Comm::get_default(), n);
+        }
+
+
+        Bratu1D(const Comm &comm = Comm::get_default(), const SizeType &n = 10): n_(n), lambda_(3.5), lambda_critical_(3.513830719)
+        {
+            init(comm, n);
+        }
+
+        void init(const Comm &comm, const SizeType &n)
+        {
+            n_ = n;
             x0_.zeros(layout(comm, Traits::decide(), n));
             auto vec_layout = layout(x0_);
             exact_sol_.values(vec_layout, 0.0);

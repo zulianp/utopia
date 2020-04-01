@@ -214,7 +214,7 @@ namespace utopia
 				const auto num_its = sol_status.iterates;
 				const auto conv_reason = sol_status.reason;
 
-				if(conv_reason > 0) {
+				if(conv_reason <= 0) {
 					std::cerr << "[Error] NewtonLSBenchmark::run_newton [[[[[[ please fix this :) ]]]]]]" << std::endl;
 				}
 

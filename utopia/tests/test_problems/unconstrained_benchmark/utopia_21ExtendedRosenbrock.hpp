@@ -17,8 +17,17 @@ namespace utopia
         using SizeType = typename Traits::SizeType;
         using Comm     = typename Traits::Communicator;
 
+        ExtendedRosenbrock21(const SizeType &n_loc): n_loc_(n_loc)
+        {
+            init(Comm::get_default(), n_loc);
+        }
 
-        ExtendedRosenbrock21(const Comm &comm = Comm(), const SizeType & n_loc=2): n_loc_(n_loc)
+        ExtendedRosenbrock21(const Comm &comm = Comm::get_default(), const SizeType &n_loc = 2): n_loc_(n_loc)
+        {
+            init(comm, n_loc);
+        }
+
+        void init(const Comm &comm, const SizeType &n_loc)
         {
             x_init_.values(layout(comm, n_loc, Traits::determine()), 1.0);
 

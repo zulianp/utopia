@@ -697,7 +697,7 @@ namespace utopia {
                 utopia_test_assert(approxeq(4, value));
         });
 
-        PetscMatrix b(PETSC_COMM_SELF);
+        PetscMatrix b(PetscCommunicator::self());
         b = local_diag_block(a);
         each_read(b, [](const SizeType i, const SizeType j, const double value) {
             if (i == j)
