@@ -198,8 +198,8 @@ namespace utopia {
         template<class QPSolver>
         static void run_qp_solver(const Comm &comm, const SizeType n, QPSolver &qp_solver)
         {
-            auto vl = layout(comm, n, n * comm.size());
-            auto ml = layout(comm, n, n, n * comm.size(), n * comm.size());
+            auto vl = layout(comm, Traits::decide(), n);
+            auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
 
             Matrix m; m.sparse(ml, 3, 2);
             assemble_laplacian_1D(m);
@@ -248,8 +248,8 @@ namespace utopia {
 
         static void run_linear_solver(const Comm &comm, const SizeType n, LinearSolver<Matrix, Vector> &solver)
         {
-            auto vl = layout(comm, n, n * comm.size());
-            auto ml = layout(comm, n, n, n * comm.size(), n * comm.size());
+            auto vl = layout(comm, Traits::decide(), n);
+            auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
 
             Matrix A; A.sparse(ml, 3, 2);
             Vector b(vl, 1.);
