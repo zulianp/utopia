@@ -47,7 +47,7 @@ namespace utopia {
                 //Conjugate gradient method
                 this->register_experiment(
                     "cg_" + std::to_string(i),
-                    [this, n]() {
+                    [=]() {
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                         cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
@@ -81,7 +81,7 @@ namespace utopia {
 
                 this->register_experiment(
                     "bicgstab_" + std::to_string(i),
-                    [this, n]() {
+                    [=]() {
                         BiCGStab<Matrix, Vector, HOMEMADE> cg;
                         cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
