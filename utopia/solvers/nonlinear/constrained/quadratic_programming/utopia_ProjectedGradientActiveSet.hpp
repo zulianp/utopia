@@ -241,7 +241,7 @@ namespace  utopia
         void build_feasible_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & feasible_set) const
         {
             if(empty(feasible_set) || local_size(feasible_set)!=local_size(x))
-                feasible_set = local_zeros(local_size(x));
+                feasible_set.zeros(layout(x));
 
             {
                 Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
@@ -257,7 +257,7 @@ namespace  utopia
         void build_active_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & active_set) const
         {
             if(empty(active_set) || local_size(active_set)!=local_size(x))
-                active_set = local_zeros(local_size(x));
+                active_set.zeros(layout(x));
             {
                 Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
                 each_write(active_set, [&ub, &lb, &x](const SizeType i) -> double {

@@ -61,9 +61,7 @@ namespace utopia
             while(!converged)
             {
                 //find direction step
-                step = local_zeros(local_size(x));
-
-                step = - grad;
+                step = -grad;
                 if(ls_strategy_) {
 
                     ls_strategy_->get_alpha(fun, grad, x, step, alpha_);

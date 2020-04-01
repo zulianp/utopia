@@ -163,11 +163,11 @@ namespace utopia {
 
         inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
         {
-            if(use_dense_hessian_) {
-                H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
-            } else {
+            // if(use_dense_hessian_) {
+            //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+            // } else {
                 space_.create_matrix(H);
-            }
+            // }
             return true;
         }
 
@@ -483,9 +483,9 @@ namespace utopia {
             if(params_.use_crack_set_irreversibiblity){
                 apply_zero_constraints_irreversibiblity(g, x_const);
 
-                // // just a test... 
-                // auto* p_this = const_cast<IsotropicPhaseFieldForBrittleFractures<FunctionSpace> *>(this); 
-                // add_irr_values_markers(p_this->_x_eq_values, p_this->_eq_constrains_flg); 
+                // // just a test...
+                // auto* p_this = const_cast<IsotropicPhaseFieldForBrittleFractures<FunctionSpace> *>(this);
+                // add_irr_values_markers(p_this->_x_eq_values, p_this->_eq_constrains_flg);
             }
 
 
@@ -502,11 +502,11 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::hessian");
 
             if(empty(H)) {
-                if(use_dense_hessian_) {
-                    H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
-                } else {
+                // if(use_dense_hessian_) {
+                //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+                // } else {
                     space_.create_matrix(H);
-                }
+                // }
             } else {
                 H *= 0.0;
             }

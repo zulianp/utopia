@@ -809,6 +809,11 @@ namespace utopia {
      /** @}*/
 
 
+
+#endif //UTOPIA_DEPRECATED_API
+
+
+    //FIXME
     template<class Index>
     UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")
     inline Ghosts<Index> ghosted(
@@ -818,8 +823,6 @@ namespace utopia {
     {
         return Ghosts<Index>(local_size, global_size, std::forward<Index>(index));
     }
-
-#endif //UTOPIA_DEPRECATED_API
 }
 
 

@@ -107,7 +107,7 @@ namespace utopia
         {
             // initialization of gradient vector...
             if(empty(g)){
-                g  = local_zeros(local_size(x));;
+                g.zeros(layout(x));;
             }
 
             MatMultAdd(snes_->jacobian, raw_type(x), snes_->vec_rhs, raw_type(g));

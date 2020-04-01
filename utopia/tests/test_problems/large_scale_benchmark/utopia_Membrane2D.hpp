@@ -76,7 +76,7 @@ namespace utopia
         {
             // initialization of gradient vector...
             if(empty(g)){
-                g  = local_zeros(local_size(x));;
+                g.zeros(layout(x));;
             }
 
             g = A_no_bc_*x + ones_;

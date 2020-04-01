@@ -9,6 +9,11 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BlockTest {
     public:
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using IndexSet = typename Traits::IndexSet;
+        using Comm     = typename Traits::Communicator;
 
         void run() {
             UTOPIA_RUN_TEST(block_test);
@@ -22,9 +27,16 @@ namespace utopia {
             int n3 = 3;
             int n4 = 4;
 
-            auto id_ptr_11 = std::make_shared<Matrix>(identity(n1, n2));
-            auto id_ptr_12 = std::make_shared<Matrix>(2. * identity(n3, n2));
-            auto id_ptr_22 = std::make_shared<Matrix>(3. * identity(n3, n4));
+            auto &&comm = Comm::get_default();
+
+            auto vl1 = layout(comm, Traits::decide(), n1);
+            auto vl2 = layout(comm, Traits::decide(), n2);
+            auto vl3 = layout(comm, Traits::decide(), n3);
+            auto vl4 = layout(comm, Traits::decide(), n4);
+
+            auto id_ptr_11 = std::make_shared<Matrix>(); id_ptr_11->identity(layout(comm, Traits::decide(), Traits::decide(), n1, n2), 1.0);
+            auto id_ptr_12 = std::make_shared<Matrix>(); id_ptr_12->identity(layout(comm, Traits::decide(), Traits::decide(), n3, n2), 2.0);
+            auto id_ptr_22 = std::make_shared<Matrix>(); id_ptr_22->identity(layout(comm, Traits::decide(), Traits::decide(), n3, n4), 3.0);
 
             Blocks<Matrix> b_mat(2, 2, {
                 id_ptr_11, nullptr,
@@ -36,12 +48,12 @@ namespace utopia {
            utopia_test_assert(s.get(1) == (n2 + n4));
 
            Matrix mat = b_mat;
-           Vector twos = values(n2, 2.);            assert(twos.size() == n2);
-           Vector ones = values(n4, 1.);            assert(ones.size() == n4);
+           Vector twos(vl2, 2.);                    assert(twos.size() == n2);
+           Vector ones(vl4, 1.);                    assert(ones.size() == n4);
 
            Vector vec = blocks(twos, ones);         assert(vec.size() == (n2 + n4));
            Vector r = mat * vec;                    assert(r.size() == (n1 + n3));
-           Vector r1 = zeros(n1), r2 = zeros(n3);   assert(r1.size() == n1); assert(r2.size() == n3);
+           Vector r1(vl1, 0.0), r2(vl3, 0.0);       assert(r1.size() == n1); assert(r2.size() == n3);
 
            undo_blocks(r, r1, r2);
 
@@ -71,6 +83,13 @@ namespace utopia {
     template<class Matrix, class Vector>
     class UtilitiesTest {
     private:
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using IndexSet = typename Traits::IndexSet;
+        using Comm     = typename Traits::Communicator;
+
+
         void csv_read_write()
         {
             Path path = Path(Utopia::instance().get("data_path")) / "csv/test.csv";
@@ -90,7 +109,8 @@ namespace utopia {
         }
 
         void factory_test() {
-            Matrix m = identity(2, 2);
+
+            Matrix m; m.identity(serial_layout(2, 2));
             auto size = m.size();
             utopia_test_assert(size.get(0) == 2);
             utopia_test_assert(size.get(1) == 2);
@@ -103,7 +123,7 @@ namespace utopia {
                 }
             });
 
-            Matrix m2 = values(2, 2, -4);
+            Matrix m2; m2.dense(serial_layout(2, 2), -4);
             size = m2.size();
             utopia_test_assert(size.get(0) == 2);
             utopia_test_assert(size.get(1) == 2);
@@ -114,12 +134,12 @@ namespace utopia {
         }
 
         void wrapper_test() {
-            Vector v = values(2, 1.0);
+            Vector v(serial_layout(2), 1.0);
             {
                 Write<Vector> w(v);
                 v.set(1, 2.0);
             }
-            Matrix m = values(2, 2, 0.0);
+            Matrix m; m.dense(serial_layout(2, 2), 0.0);
             {
                 Write<Matrix> w(m);
                 m.set(0, 0, 1.0);
@@ -140,7 +160,7 @@ namespace utopia {
 
         //FIXME
         void range_test() {
-            Matrix m1 = identity(3, 3);
+            Matrix m1; m1.identity(serial_layout(3, 3));
 
             ////////////////////////////////////////////////////////////
 
@@ -184,7 +204,7 @@ namespace utopia {
         void factory_and_operations_test()
         {
             const int n = 3;
-            Matrix m = zeros(n, n);
+            Matrix m; m.dense(serial_layout(n, n), 0.0);
             {
                 Write<Matrix> w(m);
 
@@ -198,17 +218,18 @@ namespace utopia {
                 m.set(2, 1, -1.0);
                 m.set(2, 2, -1.0);
             }
-
+#ifdef UTOPIA_DEPRECATED_API
             Vector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
             utopia_test_assert(c.size() == 3);
+#endif //UTOPIA_DEPRECATED_API
         }
 
         //TODO(eric): move this to AutoDiffTest?
         void simplify_test()
         {
             const int n = 2;
-            Matrix m = 2.*identity(n, n);
-            Vector v = values(n, 1.0);
+            Matrix m; m.identity(serial_layout(n, n), 2.);
+            Vector v(serial_layout(n), 1.0);
 
             // const double ab = 1.0;
             // std::cout << ((ab * m * m + ab * m).get_class()) << std::endl;
@@ -217,6 +238,8 @@ namespace utopia {
             //Useful when applying automatic diff to remove unwanted expressions such as Id and 0
             //For now only works for trees with with certain sub-trees:  Id * (m + 0) * v + 0 *v -> m * v
             //Bug: Id is removed even if it is not in R^(n x n)
+
+#ifdef UTOPIA_DEPRECATED_API
             auto expr   = identity(n, n) * (m + zeros(n, n)) * v + zeros(n, n) * v;
             auto s_expr = simplify(expr);
 
@@ -226,6 +249,7 @@ namespace utopia {
             Vector actual   = s_expr;
 
             utopia_test_assert(approxeq(expected, actual));
+#endif //UTOPIA_DEPRECATED_API
         }
 
         void variable_test()
@@ -233,12 +257,12 @@ namespace utopia {
             using namespace std;
 
             auto v = make_shared<Vector>();
-            *v = values(20, 1.0);
+            v->values(serial_layout(20), 1.0);
 
             auto w = make_shared<Vector>();
-            *w = values(20, 3.0);
+            w->values(serial_layout(20), 3.0);
 
-            Matrix m = identity(20, 20);
+            Matrix m; m.identity(serial_layout(20, 20));
 
             Variable<Vector, 0> var_0(v);
             Variable<Vector, 1> var_1(w);
@@ -252,7 +276,7 @@ namespace utopia {
             utopia_test_assert(w.get() == &var_1_found.expr());
 
             auto q = make_shared<Vector>();
-            *q = values(20, 4.0);
+            q->values(serial_layout(20), 4.0);
 
             var_0_found.set(w);
             var_1_found.set(q);
@@ -289,19 +313,19 @@ namespace utopia {
         void inline_eval_test()
         {
             int n = 10;
-            Vector v = values(n, 1.0);
-            Vector res = zeros(n);
+            Vector v(serial_layout(n), 1.0);
+            Vector res(layout(v), 0.0);
 
             {
                 Read<Vector> r_v(v);
                 inline_eval(0.1 * v + abs(sqrt(v) - v), res);
             }
 
-            Vector v_exp = values(n, 0.1);
+            Vector v_exp(layout(v), 0.1);
             utopia_test_assert(approxeq(v_exp, res));
 
-            Matrix m     = identity(n, n);
-            Matrix m_res = dense(n, n);
+            Matrix m; m.identity(serial_layout(n, n));
+            Matrix m_res; m_res.dense(serial_layout(n, n));
 
             //we will be reading from n to the end of the function
             {
@@ -319,7 +343,7 @@ namespace utopia {
                 inline_eval((m + m) * v + v, res);
             }
 
-            v_exp = values(n, 3.0);
+            v_exp.values(serial_layout(n), 3.0);
             utopia_test_assert(approxeq(v_exp, res));
 
             Number<double> num = 0;
@@ -333,7 +357,7 @@ namespace utopia {
 
 
             utopia_test_assert(approxeq(30.0, num));
-
+#ifdef UTOPIA_DEPRECATED_API
             {
                 Read<Matrix> r_m(m);
                 Read<Vector> r_v(v);
@@ -345,6 +369,8 @@ namespace utopia {
                     );
             }
             utopia_test_assert(approxeq(28.001, num));
+#endif //UTOPIA_DEPRECATED_API
+
         }
 
     public:

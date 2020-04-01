@@ -4,6 +4,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Size.hpp"
 #include "utopia_Temp.hpp"
+#include "utopia_Algorithms.hpp"
 
 #include <vector>
 #include <cmath>
@@ -14,8 +15,10 @@ namespace utopia {
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
     class ZeroRowsToIdentity {
     public:
-        using Scalar   = UTOPIA_SCALAR(Matrix);
-        using SizeType = UTOPIA_SIZE_TYPE(Matrix);
+        using Traits   = utopia::Traits<Matrix>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         static void apply(Matrix &A, const Scalar tol = 0.)
         {
@@ -25,7 +28,7 @@ namespace utopia {
             const std::size_t r_begin = row_range(A).begin();
 
             each_read(A,[&is_zero_row, r_begin, tol](const SizeType i, const SizeType, const double val) {
-                if(std::abs(val) > tol) {
+                if(device::abs(val) > tol) {
                     is_zero_row[i - r_begin] = false;
                 }
             });
@@ -40,7 +43,12 @@ namespace utopia {
             }
 
             //hack in case some rows do not exist (relevant for petsc)
-            A += 0. * local_identity(local_size(A));
+            if(Traits::Backend == PETSC && A.is_sparse()) {
+                Matrix temp;
+                temp.identity(layout(A), 0.0);
+                A += temp;
+            }
+
             set_zero_rows(A, idx, 1.);
         }
     };

@@ -836,7 +836,7 @@ namespace utopia {
         RARt = R * A * transpose(R);
         ABC = R * A * C;
 
-        PetscMatrix expected = identity(m, m);
+        PetscMatrix expected; expected.identity(layout(comm, 3, 3, m, m), 1.0);
         utopia_test_assert(approxeq(expected, RARt));
         utopia_test_assert(approxeq(expected, ABC));
     }
@@ -873,10 +873,11 @@ namespace utopia {
     {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 2;
+        auto vl = layout(comm, 2, n);
 
         double alpha = 0.5;
-        PetscVector x = values(n, 1.0);
-        PetscVector y = values(n, 1.0);
+        PetscVector x(vl, 1.0);
+        PetscVector y(vl, 1.0);
 
         eval(construct(y, alpha * x + y));
         PetscMatrix m;
@@ -892,15 +893,20 @@ namespace utopia {
 
     void petsc_precond()
     {
-        int n = mpi_world_size() * 10;
-        PetscVector d   = values(n, 2.0);
+        auto &&comm = PetscCommunicator::get_default();
+
+        int n = comm.size() * 10;
+        auto vl = layout(comm, 10, n);
+
+        PetscVector d(vl, 2.0);
         PetscMatrix dm = diag(d);
-        PetscVector rhs = values(n, 1.);
-        PetscVector sol = zeros(n);
+        PetscVector rhs(vl, 1.);
+        PetscVector sol(vl, 0.0);
 
         PetscVector v = diag(d) * rhs;
 
-        auto m = std::make_shared<PetscMatrix>(2.*identity(n, n));
+        auto m = std::make_shared<PetscMatrix>();
+        m->identity(square_matrix_layout(vl), 2.0);
 
         auto precond = std::make_shared< InvDiagPreconditioner<PetscMatrix, PetscVector> >();
         precond->update(m);
@@ -909,7 +915,7 @@ namespace utopia {
         cg->set_preconditioner(precond);
         cg->solve(*m, rhs, sol);
 
-        PetscVector expected = values(n, 0.5);
+        PetscVector expected(vl, 0.5);
         utopia_test_assert(approxeq(expected, sol));
 
 
@@ -923,19 +929,22 @@ namespace utopia {
 
     void petsc_tensor_reduction()
     {
-        int n = mpi_world_size() * 10;
-        PetscMatrix mat = identity(n, n);
+        auto &&comm = PetscCommunicator::get_default();
+        int n = comm.size() * 10;
+        auto vl = layout(comm, 10, n);
+
+        PetscMatrix mat; mat.identity(square_matrix_layout(vl), 1.0);
 
         //summing columns
         PetscVector v = sum(mat, 1);
-        PetscVector expected = values(n, 1);
+        PetscVector expected(vl, 1.0);
         utopia_test_assert(approxeq(expected, v));
     }
 
     void petsc_inverse()
     {
         if(mpi_world_size() == 1) {
-            PetscMatrix mat = dense_identity(3, 3);
+            PetscMatrix mat; mat.dense_identity(serial_layout(3, 3));
 
             {
                 Write<PetscMatrix> w(mat);
@@ -945,7 +954,7 @@ namespace utopia {
 
             PetscMatrix inv_mat  = inv(mat);
             PetscMatrix actual   = inv_mat * mat;
-            PetscMatrix expected = dense_identity(3, 3);
+            PetscMatrix expected; expected.dense_identity(layout(mat));
 
             utopia_test_assert( approxeq(actual, expected) );
         }
@@ -956,16 +965,20 @@ namespace utopia {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 2;
 
+        auto vl = layout(comm, 2, n);
+        auto ml = square_matrix_layout(vl);
+
         const int i_max = 2;
         const double eps = 1e-8;
 
-        PetscVector x  = zeros(n);
-        PetscVector b  = values(n, 1.0);
-        PetscMatrix A = identity(n, n);
+        PetscVector x(vl, 0.0);
+        PetscVector b(vl, 1.0);
+
+        PetscMatrix A; A.identity(ml, 1.0);
         PetscMatrix M = diag(diag(A));
 
         /////////////////////
-        PetscVector r = zeros(n), d = zeros(n), q = zeros(n), s = zeros(n);
+        PetscVector r(vl, 0.0), d(vl, 0.0), q(vl, 0.0), s(vl, 0.0);
         double delta_new = 0, delta_0 = 0, delta_old = 0, alpha = 0, beta = 0;
 
         int i = 0;
@@ -1001,7 +1014,8 @@ namespace utopia {
     void petsc_ksp_precond_delegate()
     {
         const int n = 10;
-        if(mpi_world_size() > n) return;
+        auto &&comm = PetscCommunicator::get_default();
+        if(comm.size() > n) return;
 
         TestFunctionND_1<PetscMatrix, PetscVector> fun(n);
 
@@ -1009,15 +1023,15 @@ namespace utopia {
         cg.set_preconditioner(std::make_shared<DelegatePreconditioner<PetscMatrix, PetscVector> >());
         Newton<PetscMatrix, PetscVector> newton(make_ref(cg));
 
-        PetscVector x = zeros(n);
+        PetscVector x(layout(comm, PetscTraits::decide(), n), 0.0);
         newton.solve(fun, x);
         // disp(x);
 
-        PetscVector expected = values(n, 0.468919);
+        PetscVector expected(layout(x), 0.468919);
         utopia_test_assert(approxeq(expected, x));
 
         cg.set_preconditioner(std::make_shared<PointJacobi<PetscMatrix, PetscVector> >());
-        x = zeros(n);
+        x.set(0.0);
 
         newton.solve(fun, x);
         utopia_test_assert(approxeq(expected, x));
@@ -1025,13 +1039,14 @@ namespace utopia {
 
     void petsc_is_nan_or_inf()
     {
-        const int n     = 10;
-        if(mpi_world_size() > n) return;
+        const int n = 10;
+        auto &&comm = PetscCommunicator::get_default();
+        if(comm.size() > n) return;
 
-        PetscVector denom  = zeros(n);
-        PetscVector nom    = values(n, 1.0);
+        PetscVector denom(layout(comm, PetscTraits::decide(), n), 0.0);
+        PetscVector nom(layout(denom), 1.0);
 
-        PetscVector sol    = nom/denom;
+        PetscVector sol = nom/denom;
 
         {
             Write<PetscVector> w(sol);
@@ -1044,22 +1059,26 @@ namespace utopia {
         }
 
         utopia_test_assert(!has_nan_or_inf(denom));
-
     }
 
     void petsc_mat_mul_add()
     {
-        srand(mpi_world_size());
+        auto &&comm = PetscCommunicator::get_default();
 
-        int n = mpi_world_size() * 2;
+        srand(comm.size());
+
+        int n = comm.size() * 2;
         for (size_t i = 0; i < 50; i++) {
             double d1 = rand()/(double)RAND_MAX,
             d2 = rand()/(double)RAND_MAX,
             d3 = rand()/(double)RAND_MAX;
 
-            PetscMatrix m = values(n, n, d1);
-            PetscVector v1 = values(n, d2);
-            PetscVector v2 = values(n, d3);
+            auto vl = layout(comm, PetscTraits::decide(), n);
+            auto ml = layout(comm, PetscTraits::decide(), PetscTraits::decide(), n, n);
+
+            PetscMatrix m; m.dense(ml, d1);
+            PetscVector v1(vl, d2);
+            PetscVector v2(vl, d3);
             PetscVector r1, r2, r3;
 
             r1 = m * v1 + v2;
@@ -1067,12 +1086,12 @@ namespace utopia {
 
             r3 = transpose(m) * v2 + v1;
 
-            PetscVector expected = values(n, n * d1 * d2 + d3);
+            PetscVector expected(vl, n * d1 * d2 + d3);
 
             utopia_test_assert(approxeq(expected, r1));
             utopia_test_assert(approxeq(expected, r2));
 
-            expected = values(n, n * d1 * d3 + d2);
+            expected.set(n * d1 * d3 + d2);
 
             PetscVector diff = expected - r3;
             PetscScalar n_diff = norm1(diff);
@@ -1086,8 +1105,10 @@ namespace utopia {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 2;
 
-        PetscVector v  = values(n, 1.0);
-        PetscMatrix A = identity(n, n);
+        auto vl = layout(comm, 2, n);
+
+        PetscVector v(vl, 1.0);
+        PetscMatrix A; A.identity(square_matrix_layout(vl), 1.0);
 
         double min_v = min(v);
         utopia_test_assert(approxeq(1.0, min_v));
@@ -1096,7 +1117,7 @@ namespace utopia {
         utopia_test_assert(approxeq(0.0, min_A));
 
         PetscVector min_row_A = min(A, 1);
-        PetscVector expected  = values(n, 0.0);
+        PetscVector expected(vl, 0.0);
         utopia_test_assert(approxeq(expected, min_row_A));
     }
 
@@ -1104,9 +1125,10 @@ namespace utopia {
     {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 2;
+        auto vl = layout(comm, 2, n);
 
-        PetscVector v  = values(n, 1.0);
-        PetscMatrix A = identity(n, n);
+        PetscVector v(vl, 1.0);
+        PetscMatrix A; A.identity(square_matrix_layout(vl), 1.0);
 
         double max_v = max(v);
         utopia_test_assert(approxeq(1.0, max_v));
@@ -1115,7 +1137,7 @@ namespace utopia {
         utopia_test_assert(approxeq(1.0, max_A));
 
         PetscVector max_row_A = max(A, 1);
-        PetscVector expected  = values(n, 1.0);
+        PetscVector expected(vl, 1.0);
         utopia_test_assert(approxeq(expected, max_row_A));
     }
 
@@ -1123,9 +1145,11 @@ namespace utopia {
     {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 2;
+        auto vl = layout(comm, 2, n);
 
-        PetscVector one = values(n, 1.);
-        PetscVector two = values(n, 2.);
+
+        PetscVector one(vl, 1.);
+        PetscVector two(vl, 2.);
 
         PetscVector actual_min = min(one, two);
         PetscVector actual_max = max(one, two);
@@ -1133,21 +1157,24 @@ namespace utopia {
         utopia_test_assert(approxeq(one, actual_min));
         utopia_test_assert(approxeq(two, actual_max));
 
+#ifdef UTOPIA_DEPRECATED_API
         actual_min = min(two, values(n, 1.));
         actual_max = max(values(n, 2.), one);
 
         utopia_test_assert(approxeq(one, actual_min));
         utopia_test_assert(approxeq(two, actual_max));
+#endif //UTOPIA_DEPRECATED_API
+
     }
 
     void petsc_ghosted()
     {
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 2;
-
-        const int off = mpi_world_rank() * 2;
+        const int off = comm.rank() * 2;
 
         std::vector<PetscInt> ghosts{ (off + 3) % n };
+
         PetscVector v = ghosted(2, n, ghosts);
 
         auto r = range(v);
@@ -1168,23 +1195,25 @@ namespace utopia {
             v.get(index, values);
             utopia_test_assert(index[0] == PetscInt(values[0]));
         }
-
     }
-
 
     void petsc_block_mat()
     {
-        const SizeType n = mpi_world_size() * 2;
-        PetscMatrix mat = identity(n, n);
+        auto &&comm = PetscCommunicator::get_default();
+
+        const SizeType n = comm.size() * 2;
+        PetscMatrix mat; mat.identity(layout(comm, 2, 2, n, n), 1.0);
         mat.convert_to_mat_baij(2);
     }
-
 
     void petsc_line_search()
     {
         auto n = 10;
-        PetscVector v = local_values(n, 1.);
-        PetscMatrix m = local_identity(n, n);
+        auto &&comm = PetscCommunicator::get_default();
+        auto vl = layout(comm, PetscTraits::decide(), n);
+
+        PetscVector v(vl, 1.);
+        PetscMatrix m; m.identity(square_matrix_layout(vl), 1.0);
 
         auto expr = dot(v, v)/dot(m * v, v);
         // std::cout << tree_format(expr.get_class()) << std::endl;
@@ -1196,14 +1225,17 @@ namespace utopia {
     void petsc_residual()
     {
         auto n = 10;
-        PetscVector x = local_values(n, 1.);
-        PetscMatrix A = local_identity(n, n);
-        PetscVector  b = local_values(n, 2.);
+        auto &&comm = PetscCommunicator::get_default();
+        auto vl = layout(comm, n, n * comm.size());
+
+        PetscVector x(vl, 1.);
+        PetscMatrix A; A.identity(square_matrix_layout(vl), 1.0);
+        PetscVector  b(vl, 2.);
 
         PetscVector res = b - A * x;
         // disp(res);
         double s = sum(res);
-        utopia_test_assert(approxeq(n * mpi_world_size(), s));
+        utopia_test_assert(approxeq(x.size(), s));
     }
 
     void petsc_transform()
@@ -1229,11 +1261,13 @@ namespace utopia {
     void petsc_dot_test()
     {
         auto n = 10;
+        auto &&comm = PetscCommunicator::get_default();
+        auto vl = layout(comm, PetscTraits::decide(), n);
 
-        PetscVector x1 = values(n, 1.);
-        PetscVector x2 = values(n, 2.);
-        PetscVector x3 = values(n, 3.);
-        PetscVector x4 = values(n, 4.);
+        PetscVector x1(layout(comm, PetscTraits::decide(), n), 1.);
+        PetscVector x2(layout(x1), 2.);
+        PetscVector x3(layout(x1), 3.);
+        PetscVector x4(layout(x1), 4.);
 
         std::vector<std::shared_ptr<PetscVector> > vectors_x;
         std::vector<PetscScalar> result_x;
@@ -1268,7 +1302,7 @@ namespace utopia {
         utopia_test_assert(approxeq(result_min1, result_min2));
 
 
-        PetscMatrix B = diag(PetscVector(values(n,1.0)));
+        PetscMatrix B = diag(PetscVector(layout(x1),1.0));
         PetscScalar pred = -1.0 * dot(x1, x2) - 0.5 * dot(B * x3, x4);
 
         PetscScalar pred1 = dot(x1, x2);
@@ -1281,10 +1315,12 @@ namespace utopia {
     void petsc_norm_test()
     {
         auto n = 10;
+        auto &&comm = PetscCommunicator::get_default();
+        auto vl = layout(comm, PetscTraits::decide(), n);
 
-        PetscVector x1 = values(n, 1.);
-        PetscVector x2 = values(n, 2.);
-        PetscVector x3 = values(n, 3.);
+        PetscVector x1(vl, 1.);
+        PetscVector x2(layout(x1), 2.);
+        PetscVector x3(layout(x1), 3.);
 
         PetscScalar x1_norm_original = norm2(x1);
         PetscScalar x2_norm_original = norm2(x2);
@@ -1309,11 +1345,13 @@ namespace utopia {
 
     void petsc_get_col_test()
     {
+        auto &&comm = PetscCommunicator::get_default();
+
         auto n = 10;
         auto m = 5;
         auto col_id = 2;
 
-        PetscMatrix M = values(n, m, 0.0);
+        PetscMatrix M; M.dense(layout(comm, PetscTraits::decide(), PetscTraits::decide(), n, m), 0.0);
         {
             Write<PetscMatrix> w_m(M);
             auto r = row_range(M);
@@ -1328,11 +1366,11 @@ namespace utopia {
             }
         }
 
-        PetscVector col_result = zeros(n);
+        PetscVector col_result(row_layout(M), 0.0);
         // mat_get_col(M, col_result, col_id);
         M.col(col_id, col_result);
 
-        PetscVector col_expected = local_values(local_size(col_result).get(0), col_id);
+        PetscVector col_expected(layout(col_result), col_id);
         utopia_test_assert(approxeq(col_result, col_expected));
     }
 
@@ -1345,12 +1383,16 @@ namespace utopia {
 
     void petsc_dense_mat_mult_test()
     {
-        if(mpi_world_size()>5)
+        auto &&comm = PetscCommunicator::get_default();
+
+        if(comm.size()>5)
             return;
 
-        PetscMatrix A = values(5, 5, 2.0);
-        PetscMatrix B = values(5, 5, 10.0);
-        PetscMatrix C = A*B;
+        auto ml = layout(comm, PetscTraits::decide(), PetscTraits::decide(), 5, 5);
+
+        PetscMatrix A; A.dense(ml, 2.0);
+        PetscMatrix B; B.dense(ml, 10.0);
+        PetscMatrix C = A * B;
 
         utopia_test_assert(approxeq(norm_infty(C), 500));
     }
@@ -1359,7 +1401,10 @@ namespace utopia {
     {
         auto n = 10;
 
-        PetscMatrix M = local_identity(n, n);
+        auto &&comm = PetscCommunicator::get_default();
+        auto ml = layout(comm, n, n, PetscTraits::determine(), PetscTraits::determine());
+
+        PetscMatrix M; M.identity(ml, 1.0);
         {
             Write<PetscMatrix> w_m(M);
             auto r = row_range(M);
@@ -1392,7 +1437,10 @@ namespace utopia {
     {
         SizeType n = 4;
 
-        PetscMatrix m = 2.*local_identity(n, n);
+        auto &&comm = PetscCommunicator::get_default();
+        auto ml = layout(comm, n, n, PetscTraits::determine(), PetscTraits::determine());
+
+        PetscMatrix m; m.identity(ml, 2.0);
         m *= 0.;
 
         zero_rows_to_identity(m, 1e-10);

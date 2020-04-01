@@ -19,7 +19,10 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QPSolverTestProblem {
     public:
-        using SizeType = typename Traits<Vector>::SizeType;
+        using Traits   = utopia::Traits<Matrix>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         template<class QPSolver>
         static void run(
@@ -28,7 +31,10 @@ namespace utopia {
             QPSolver &qp_solver,
             const bool use_constraints = true)
         {
-            Matrix m = sparse(n, n, 3);
+            auto &&comm = Comm::get_default();
+
+            Matrix m; m.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 2);
+
             assemble_laplacian_1D(m);
             {
                 Range r = row_range(m);
@@ -44,7 +50,7 @@ namespace utopia {
                 }
             }
 
-            Vector rhs = values(n, 1.);
+            Vector rhs(row_layout(m), 1.);
             {
                 //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
                 Range r = range(rhs);
@@ -59,8 +65,8 @@ namespace utopia {
                 }
             }
 
-            Vector upper_bound = values(n, 100.0);
-            Vector solution    = zeros(n);
+            Vector upper_bound(row_layout(m), 100.0);
+            Vector solution(row_layout(m), 0.0);
 
             qp_solver.max_it(n*40);
             qp_solver.verbose(verbose);
@@ -85,6 +91,11 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QPSolverTest {
     public:
+
+        using Traits   = utopia::Traits<Matrix>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         static void print_backend_info()
         {
@@ -121,9 +132,10 @@ namespace utopia {
             MPGRP<Matrix, Vector> qp_solver;
             run_qp_solver(qp_solver);
 
+            auto &&comm = Comm::get_default();
 
             SizeType n = 100;
-            Matrix A = sparse(n, n, 3);
+            Matrix A; A.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 2);
             assemble_symmetric_laplacian_1D(A, true);
 
             auto h = 1./(n-1.);
@@ -141,7 +153,7 @@ namespace utopia {
                 }
             }
 
-            Vector  b = local_values(local_size(A).get(0), 50.0);
+            Vector b(row_layout(A), 50.0);
 
             {
                 Range row_range = range(b);
@@ -167,8 +179,8 @@ namespace utopia {
 
             b = h*b;
 
-            Vector lb = local_values(local_size(A).get(0), -0.5);
-            Vector ub = local_values(local_size(A).get(0), 0.5);
+            Vector lb(row_layout(A), -0.5);
+            Vector ub(row_layout(A), 0.5);
 
             Vector x = 0*b;
 
@@ -177,8 +189,6 @@ namespace utopia {
             qp_solver.max_it(n*2);
             qp_solver.set_eig_comp_tol(1e-1);
             qp_solver.solve(A, b, x);
-
-            // disp(x, "x");
         }
 
 
