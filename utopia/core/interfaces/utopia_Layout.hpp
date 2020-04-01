@@ -184,6 +184,13 @@ namespace utopia {
 	}
 
 	template<class V>
+	Layout<typename Traits<V>::Communicator, 1, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType> col_layout(const Operator<V> &op)
+	{
+		return Layout<typename Traits<V>::Communicator, 1, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType>(op.comm(), op.local_size().get(1), op.size().get(1));
+	}
+
+
+	template<class V>
 	Layout<typename Traits<V>::Communicator, 2, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType> layout(const Operator<V> &op)
 	{
 		return Layout<typename Traits<V>::Communicator, 2, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType>(
