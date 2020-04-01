@@ -155,7 +155,7 @@ namespace utopia {
 
         virtual bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
         {
-            H = identity(n_, n_);
+            H.identity(serial_layout(n_, n_), 2.0);
             H_pre = H;
             return true;
         }
@@ -173,8 +173,7 @@ namespace utopia {
 
         virtual bool hessian(const Vector &point, Matrix &result) const override {
             const auto n = point.size();
-            result = identity(n, n);
-            result *= 2;
+            result.identity(square_matrix_layout(layout(point)), 2.0);
             return true;
         }
 

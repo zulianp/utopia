@@ -72,7 +72,7 @@
         g = J_T * r_k;
         fun.value(x_k, E_old);
 
-        Matrix I = local_identity(local_size(r_k).get(0), local_size(r_k).get(0));
+        Matrix I; I.identity(square_matrix_layout(layout(r_k)));
 
         // just to start
         Scalar g0_norm, s_norm, g_norm;

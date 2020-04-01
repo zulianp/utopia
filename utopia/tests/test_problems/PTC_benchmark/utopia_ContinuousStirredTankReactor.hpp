@@ -178,7 +178,7 @@ namespace utopia
 
         void get_initial_guess(Vector & x, const Scalar & value = 0)
         {
-            x = values(4, value);
+            x.values(serial_layout(4), value);
         }
 
 
