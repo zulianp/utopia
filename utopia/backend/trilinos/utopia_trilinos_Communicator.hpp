@@ -30,7 +30,7 @@ namespace utopia {
         }
 
 #ifdef WITH_MPI
-        MPI_Comm raw_comm() const;
+        MPI_Comm raw_comm() const override;
 #endif
 
         inline TrilinosCommunicator * clone() const override

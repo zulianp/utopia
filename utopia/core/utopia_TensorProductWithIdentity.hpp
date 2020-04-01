@@ -12,8 +12,10 @@ namespace utopia {
     template<class Matrix, int Backend = Traits<Matrix>::Backend>
     class TensorProductWithIdentity {
     public:
-        using SizeType = UTOPIA_SIZE_TYPE(Matrix);
-        using Scalar   = UTOPIA_SCALAR(Matrix);
+        using Traits   = utopia::Traits<Matrix>;
+        using SizeType = typename Traits::SizeType;
+        using Scalar   = typename Traits::Scalar;
+        using Comm     = typename Traits::Communicator;
 
         static void apply(const Matrix &in, const SizeType dim, Matrix &out)
         {
@@ -22,7 +24,7 @@ namespace utopia {
             auto gs = size(in);
 
             std::vector<SizeType> nnz(rr.extent(), 0);
-           
+
             each_read(in, [&](const SizeType i, const SizeType j, const Scalar val) {
                 UTOPIA_UNUSED(j);
                 UTOPIA_UNUSED(val);
@@ -36,7 +38,8 @@ namespace utopia {
                 max_nnz_x_row = *std::max_element(nnz.begin(), nnz.end());
             }
 
-            out = local_sparse(ls.get(0) * dim, ls.get(1) * dim, max_nnz_x_row);
+            //FIXME
+            out.sparse(layout(in.comm(), ls.get(0) * dim, ls.get(1) * dim, Traits::determine(), Traits::determine()), max_nnz_x_row, max_nnz_x_row);
 
             Write<Matrix> w(out);
 

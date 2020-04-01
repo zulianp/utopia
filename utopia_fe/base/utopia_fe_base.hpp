@@ -3,6 +3,7 @@
 
 #include "utopia_fe_config.hpp"
 #include "utopia.hpp"
+#include "utopia_CoreDecprecatedHeaders.hpp"
 
 namespace utopia {
 #ifdef WITH_TRILINOS_ALGEBRA
