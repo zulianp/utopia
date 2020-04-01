@@ -138,7 +138,7 @@ namespace utopia {
 
                 this->register_experiment(
                     "projected_gradient_" + std::to_string(i),
-                    [this, i]() {
+                    [=]() {
                         ProjectedGradient<Matrix, Vector, HOMEMADE> pg;
                         run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
@@ -146,7 +146,7 @@ namespace utopia {
 
                 this->register_experiment(
                     "projected_conjugate_gradient_" + std::to_string(i),
-                    [this, i]() {
+                    [=]() {
                         ProjectedConjugateGradient<Matrix, Vector, HOMEMADE> pg;
                         run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
@@ -154,7 +154,7 @@ namespace utopia {
 
                 this->register_experiment(
                     "projected_gauss_seidel_" + std::to_string(i),
-                    [this, i]() {
+                    [=]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
                         run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
@@ -162,7 +162,7 @@ namespace utopia {
 
                 this->register_experiment(
                     "projected_l1_gauss_seidel_" + std::to_string(i),
-                    [this, i]() {
+                    [=]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
                         // pg.l1(true);
                         run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
