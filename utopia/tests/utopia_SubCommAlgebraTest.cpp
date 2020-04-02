@@ -2,6 +2,7 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_ParallelTestRunner.hpp"
+#include "test_problems/utopia_QPSolverTestProblem.hpp"
 
 namespace utopia {
 
@@ -25,9 +26,22 @@ namespace utopia {
             utopia_test_assert(approxeq(norm_v3, this->comm().size() * 3 * 2, device::epsilon<Scalar>()));
         }
 
+        void solve_problem()
+        {
+            MPGRP<Matrix, Vector> solver;
+            QPSolverTestProblem<Matrix, Vector>::run(
+                this->comm(),
+                10,
+                true,
+                solver,
+                true
+            );
+        }
+
         void run()
         {
             sum_vectors();
+            solve_problem();
         }
 
     };

@@ -57,7 +57,7 @@ namespace utopia {
             test.tear_down();
 
             //1) we create sub-comms
-            for(auto &p : parititions_) {
+            for(auto &p : parititions_sizes_) {
                 if(p < comm_size) {
                     Comm sub_comm = comm.split(comm.rank()/p);
 
@@ -72,11 +72,11 @@ namespace utopia {
         }
 
         ParallelTestRunner()
-        : parititions_{{2, 4}}
+        : parititions_sizes_{{2, 4}}
         {}
 
     private:
-        std::vector<int> parititions_;
+        std::vector<int> parititions_sizes_;
     };
 
     template<class Comm>
