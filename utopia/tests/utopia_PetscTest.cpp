@@ -5,6 +5,7 @@
 #include "utopia_Device.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_ZeroRowsToIdentity.hpp"
+#include "utopia_CoreDecprecatedHeaders.hpp"
 
 namespace utopia {
 

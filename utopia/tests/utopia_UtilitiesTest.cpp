@@ -3,6 +3,7 @@
 #include "utopia_Testing.hpp"
 #include "utopia_Blocks.hpp"
 #include "utopia_Eval_Blocks.hpp"
+#include "utopia_CoreDecprecatedHeaders.hpp"
 
 namespace utopia {
 
