@@ -259,7 +259,7 @@ namespace utopia {
         PetscObjectGetComm((PetscObject)raw_type(x), &comm);
 
         // residual
-        Vector residual = local_zeros(local_size(x));
+        Vector residual(layout(x), 0.0);
 
         SNESCreate(comm, &snes);
         fun.data()->init();

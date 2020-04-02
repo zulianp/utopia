@@ -34,15 +34,19 @@ namespace utopia
 #ifdef WITH_PETSC
     class PetscNonlinearSolverTest {
     public:
+        using Traits   = utopia::Traits<PetscVector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
-        using Scalar = Traits<PetscVector>::Scalar;
+        Comm comm_;
 
         void run()
         {
             UTOPIA_RUN_TEST(petsc_ngs_test);
             UTOPIA_RUN_TEST(petsc_gss_newton_test);
             UTOPIA_RUN_TEST(petsc_newton_test);
-            UTOPIA_RUN_TEST(petsc_sparse_newton_test_inexact); 
+            UTOPIA_RUN_TEST(petsc_sparse_newton_test_inexact);
             UTOPIA_RUN_TEST(petsc_newton_rosenbrock_test);
             UTOPIA_RUN_TEST(petsc_sparse_semismooth_newton_test); //petsc 3.11.3 ERROR here
             UTOPIA_RUN_TEST(petsc_sparse_nonlinear_semismooth_newton_test);
@@ -58,10 +62,10 @@ namespace utopia
         void petsc_ngs_test()
         {
             const int n = 50;
-            PetscMatrix m = sparse(n, n, 3);
+            PetscMatrix m; m.sparse(layout(comm_, Traits::decide(), Traits::decide(), n, n), 3, 2);
             assemble_laplacian_1D(n, m);
-            // const double ub = 100.0;
-            const double ub = 1.;
+            // const Scalar ub = 100.0;
+            const Scalar ub = 1.;
             const bool use_line_search = true;
             // const bool use_line_search = false;
             const int max_it = n * 60;
@@ -82,7 +86,7 @@ namespace utopia
                 }
             }
 
-            PetscVector rhs = values(n, 1.);
+            PetscVector rhs(row_layout(m), 1.);
             rhs *= 1./(n-1);
 
             {
@@ -99,8 +103,8 @@ namespace utopia
                 }
             }
 
-            PetscVector upper_bound = values(n, ub);
-            PetscVector solution    = zeros(n);
+            PetscVector upper_bound(layout(rhs), ub);
+            PetscVector solution   (layout(rhs), 0.0);
 
             ProjectedGaussSeidel<PetscMatrix, PetscVector, -1> pgs;
             pgs.max_it(max_it);
@@ -117,7 +121,7 @@ namespace utopia
             // if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
 
-            PetscVector solution_u = zeros(n);
+            PetscVector solution_u(layout(rhs), 0.0);
             ProjectedGaussSeidel<PetscMatrix, PetscVector, -1> pgs_u;
             pgs_u.verbose(verbose);
             pgs_u.n_local_sweeps(n_local_sweeps);
@@ -134,8 +138,8 @@ namespace utopia
             c.stop();
             // if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
-            double diff = norm2(solution_u - solution);
-            // double res_norm = norm2(m * solution_u - rhs);
+            Scalar diff = norm2(solution_u - solution);
+            // Scalar res_norm = norm2(m * solution_u - rhs);
 
             // disp(res_norm);
 
@@ -160,7 +164,7 @@ namespace utopia
 
             // if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
-            // double res_norm_ref = norm2(m * solution - rhs);
+            // Scalar res_norm_ref = norm2(m * solution - rhs);
 
             // // disp(res_norm_ref);
 
@@ -175,11 +179,13 @@ namespace utopia
         {
             typedef std::function<void(const PetscMatrix &, const PetscVector &, const PetscVector &, PetscVector &, PetscVector &)> F;
 
-            const int n = mpi_world_size() * 4;
-            PetscVector sol  = zeros(n);
-            PetscVector upbo = values(n, 1.);
-            PetscMatrix A   = identity(n, n);
-            PetscVector rhs  = values(n, 3.);
+            const int n = comm_.size() * 4;
+
+            auto vl = layout(comm_, 4, n);
+            PetscVector sol(vl, 0.0);
+            PetscVector upbo(vl, 1.);
+            PetscMatrix A; A.identity(square_matrix_layout(vl));
+            PetscVector rhs(vl, 3.);
 
             PetscVector lambda, d;
             F f = [&lambda, &d, &upbo](const PetscMatrix &H, const PetscVector &/*g*/, const PetscVector &x, PetscVector &active, PetscVector &value)
@@ -213,11 +219,11 @@ namespace utopia
         void petsc_tr_rr_test()
         {
             // rosenbrock test
-            if(mpi_world_size() == 1)
+            if(comm_.size() == 1)
             {
-                PetscVector x = values(10, 2);
-                TestFunctionND_1<PetscMatrix, PetscVector> fun2(x.size());
-                PetscVector expected = values(x.size(), 0.468919);
+                PetscVector x(serial_layout(10), 2);
+                TestFunctionND_1<PetscMatrix, PetscVector> fun2(x.comm(), x.size());
+                PetscVector expected (layout(x), 0.468919);
 
                 InputParameters in;
                 in.set("atol", 1e-10);
@@ -229,16 +235,16 @@ namespace utopia
                 tr_solver.read(in);
                 tr_solver.solve(fun2, x);
 
-                x = values(10, 2);
+                x.set(2);
                 trust_region_solve(fun2, x, Solver::steihaug_toint(), in);
 
-                x = values(10, 2);
+                x.set(2);
                 trust_region_solve(fun2, x, Solver::nash(), in);
 
-                x = values(10, 2);
+                x.set(2);
                 trust_region_solve(fun2, x, Solver::lanczos(), in);
 
-                x = values(10, 2);
+                x.set(2);
                 trust_region_solve(fun2, x, Solver::cgne(), in);
             }
         }
@@ -246,24 +252,24 @@ namespace utopia
 
         void petsc_newton_test_out_info()
         {
-            if(mpi_world_size() > 10) return;
+            if(comm_.size() > 10) return;
 
             auto lsolver = std::make_shared< BiCGStab<PetscMatrix, PetscVector> >();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
 
             nlsolver.verbose(false);
 
-            PetscVector x = values(10, 2);
-            TestFunctionND_1<PetscMatrix, PetscVector> fun2(x.size());
+            PetscVector x(layout(comm_, Traits::decide(), 10), 2);
+            TestFunctionND_1<PetscMatrix, PetscVector> fun2(x.comm(), x.size());
 
-            PetscVector expected = values(x.size(), 0.468919);
+            PetscVector expected(layout(x), 0.468919);
             nlsolver.solve(fun2, x);
             utopia_test_assert(approxeq(expected, x));
         }
 
         void petsc_sparse_newton_test()
         {
-            if(mpi_world_size() > 10) return;
+            if(comm_.size() > 10) return;
 
             auto lsolver = std::make_shared< BiCGStab<PetscMatrix, PetscVector> >();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
@@ -273,8 +279,8 @@ namespace utopia
             const SizeType n = 10;
             SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(n, 2.);
-            PetscVector expected = zeros(x.size());
+            PetscVector x(layout(comm_, Traits::decide(), n),  2.);
+            PetscVector expected(layout(x), 0.0);
 
             nlsolver.solve(fun, x);
             utopia_test_assert(approxeq(expected, x));
@@ -283,27 +289,27 @@ namespace utopia
 
         void petsc_sparse_newton_test_inexact()
         {
-            if(mpi_world_size() > 10) return;
+            if(comm_.size() > 10) return;
 
             auto lsolver = std::make_shared< BiCGStab<PetscMatrix, PetscVector> >();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
             nlsolver.verbose(false);
-            nlsolver.forcing_strategy(InexactNewtonForcingStartegies::CAI); 
+            nlsolver.forcing_strategy(InexactNewtonForcingStartegies::CAI);
 
             const SizeType n = 10;
             SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(n, 2.);
-            PetscVector expected = zeros(x.size());
+            PetscVector x(layout(comm_, Traits::decide(), n),  2.);
+            PetscVector expected(layout(x), 0.0);
 
             nlsolver.solve(fun, x);
             utopia_test_assert(approxeq(expected, x));
-        }        
+        }
 
 
         void petsc_newton_test()
         {
-            if(mpi_world_size() > 10) return;
+            if(comm_.size() > 10) return;
 
             auto lsolver = std::make_shared< BiCGStab<PetscMatrix, PetscVector> >();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
@@ -313,16 +319,16 @@ namespace utopia
             const SizeType n = 10;
             SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(n, 2.);
-            PetscVector expected = zeros(x.size());
+            PetscVector x(layout(comm_, Traits::decide(), n),  2.);
+            PetscVector expected(layout(x), 0.0);
 
             nlsolver.solve(fun, x);
             utopia_test_assert(approxeq(expected, x));
 
-            x = values(10, 2.0);
-            TestFunctionND_1<PetscMatrix, PetscVector> fun2(x.size());
+            x.set(2.0);
+            TestFunctionND_1<PetscMatrix, PetscVector> fun2(x.comm(), x.size());
 
-            expected = values(x.size(), 0.468919);
+            expected.set(0.468919);
             nlsolver.solve(fun2, x);
             utopia_test_assert(approxeq(expected, x));
         }
@@ -340,26 +346,26 @@ namespace utopia
             PetscVector expected_rosenbrock;
             PetscVector x0;
 
-            if(mpi_world_size() <= 2) {
-                expected_rosenbrock = values(2, 1.0);
-                ExtendedRosenbrock21<PetscMatrix, PetscVector> r_generic_2d(local_size(expected_rosenbrock));
-                x0 = values(2, 2.0);
+            if(comm_.size() <= 2) {
+                expected_rosenbrock.values(serial_layout(2), 1.0);
+                ExtendedRosenbrock21<PetscMatrix, PetscVector> r_generic_2d(comm_, local_size(expected_rosenbrock));
+                x0.values(serial_layout(2), 2.0);
                 nlsolver.solve(r_generic_2d, x0);
                 utopia_test_assert(approxeq(expected_rosenbrock, x0));
             }
 
-            if(mpi_world_size() <= 3) {
-                expected_rosenbrock = values(3, 1.0);
-                ExtendedRosenbrock21<PetscMatrix, PetscVector> r_generic_3d(local_size(expected_rosenbrock));
-                x0 = values(3, -2.0);
+            if(comm_.size() <= 3) {
+                expected_rosenbrock.values(serial_layout(3), 1.0);
+                ExtendedRosenbrock21<PetscMatrix, PetscVector> r_generic_3d(comm_, local_size(expected_rosenbrock));
+                x0.values(serial_layout(3), -2.0);
                 nlsolver.solve(r_generic_3d, x0);
                 utopia_test_assert(approxeq(expected_rosenbrock, x0));
             }
 
-            if(mpi_world_size() <= 6) {
-                expected_rosenbrock = values(6, 1.0);
-                ExtendedRosenbrock21<PetscMatrix, PetscVector> r_generic_6d(local_size(expected_rosenbrock));
-                x0 = values(6, 2.0);
+            if(comm_.size() <= 6) {
+                expected_rosenbrock.values(serial_layout(6), 1.0);
+                ExtendedRosenbrock21<PetscMatrix, PetscVector> r_generic_6d(comm_, local_size(expected_rosenbrock));
+                x0.values(serial_layout(6), 2.0);
                 nlsolver.solve(r_generic_6d, x0);
                 utopia_test_assert(approxeq(expected_rosenbrock, x0));
             }
@@ -378,13 +384,13 @@ namespace utopia
             // hm_params.set("use-adaptive-tol", true);
             homemade_ss_newton.read(hm_params);
 
-            Poisson1D<PetscMatrix, PetscVector> ex2(_n, 2); 
+            Poisson1D<PetscMatrix, PetscVector> ex2(_n, 2);
             PetscVector x_0 = ex2.initial_guess();
-            ex2.hessian(x_0, A); 
-            ex2.get_rhs(b); 
-            ub = ex2.upper_bound(); 
+            ex2.hessian(x_0, A);
+            ex2.get_rhs(b);
+            ub = ex2.upper_bound();
 
-            const double scale_factor = 1;
+            const Scalar scale_factor = 1;
             A *= scale_factor;
             b *= scale_factor;
             ub *= scale_factor;
@@ -398,7 +404,7 @@ namespace utopia
             petsc_ss_newton.solve(A, b, x_0);
 
 
-            PetscVector hm_x_0 = values(_n, 0.0);
+            PetscVector hm_x_0(layout(b), 0.0);
             homemade_ss_newton.set_box_constraints(box);
             homemade_ss_newton.stol(1e-16);
             // homemade_ss_newton.verbose(true);
@@ -418,7 +424,7 @@ namespace utopia
             if(!approxeq(x_0, hm_x_0, 1e-14)) {
                 PetscVector diff = hm_x_0 - x_0;
             // 	disp(diff);
-                double norm_diff = norm2(diff)/double(norm2(hm_x_0));
+                Scalar norm_diff = norm2(diff)/Scalar(norm2(hm_x_0));
                 // std::cout << "norm_diff: " << std::to_string(norm_diff) << std::endl;
             }
 
@@ -435,9 +441,9 @@ namespace utopia
 
             PetscVector upbo;
 
-            Poisson1D<PetscMatrix, PetscVector> fun(_n, 3); 
+            Poisson1D<PetscMatrix, PetscVector> fun(_n, 3);
             PetscVector x_0 = fun.initial_guess();
-            upbo = fun.upper_bound(); 
+            upbo = fun.upper_bound();
 
             auto box = make_upper_bound_constraints(make_ref(upbo));
             nlsolver.set_box_constraints(make_ref(box));
@@ -458,8 +464,8 @@ namespace utopia
 
             SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(_n);
 
-            PetscVector x = values(_n, 2.);
-            PetscVector expected = zeros(x.size());
+            PetscVector x(layout(comm_, Traits::decide(), _n), 2.);
+            PetscVector expected(layout(x), 0.0);
 
             nlsolver.solve(fun, x);
             utopia_test_assert(approxeq(expected, x));
@@ -467,7 +473,7 @@ namespace utopia
 
             auto lCG = std::make_shared< ConjugateGradient<PetscMatrix, PetscVector> >();
             nlsolver.set_linear_solver(lCG);
-            x = values(_n, 2.);
+            x.set(2.);
             nlsolver.solve(fun, x);
             utopia_test_assert(approxeq(expected, x));
         }
@@ -488,10 +494,10 @@ namespace utopia
             newton_solver.verbose(false);
 
             const int n = 10;
-            PetscVector actual   = values(n, 2.);
-            PetscVector expected = values(n, 0.468919);
+            PetscVector actual  (layout(comm_, Traits::decide(), n), 2.);
+            PetscVector expected(layout(actual), 0.468919);
 
-            TestFunctionND_1<PetscMatrix, PetscVector> fun(n);
+            TestFunctionND_1<PetscMatrix, PetscVector> fun(actual.comm(), n);
 
             newton_solver.solve(fun, actual);
             utopia_test_assert(approxeq(expected, actual));
@@ -505,24 +511,24 @@ namespace utopia
 
             const static bool verbose = false;
 
-            if(mpi_world_size() >= 10) return;
+            if(comm_.size() >= 10) return;
 
             auto linear_solver = make_shared< ConjugateGradient<PetscMatrix, PetscVector> >();
 
             SNESSolver<PetscMatrix, PetscVector, PETSC> nonlinear_solver(linear_solver);
             nonlinear_solver.verbose(verbose);
 
-            if(mpi_world_size() == 1)
+            if(comm_.size() == 1)
             {
                 Rosenbrock01<PetscMatrix, PetscVector> rosenbrock;
-                PetscVector expected_rosenbrock = values(2, 1.0);
-                PetscVector x0_ros   			 = values(2, 1.5);
+                PetscVector expected_rosenbrock(serial_layout(2), 1.0);
+                PetscVector x0_ros(serial_layout(2), 1.5);
 
                 nonlinear_solver.solve(rosenbrock, x0_ros);
 
 
                 expected_rosenbrock -= x0_ros;
-                double diff_rb = norm2(expected_rosenbrock);
+                Scalar diff_rb = norm2(expected_rosenbrock);
                 utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
 
 
@@ -534,8 +540,8 @@ namespace utopia
                 nonlinear_solver2.verbose(verbose);
 
                 // reset IG
-                x0_ros   		    = values(2, 1.5);
-                expected_rosenbrock = values(2, 1.0);
+                x0_ros.values(serial_layout(2), 1.5);
+                expected_rosenbrock.values(serial_layout(2), 1.0);
                 nonlinear_solver2.solve(rosenbrock, x0_ros);
 
 
@@ -558,7 +564,7 @@ namespace utopia
 
         void petsc_sparse_newton_snes_test()
         {
-            if(mpi_world_size() > 1) return;
+            if(comm_.size() > 1) return;
 
             auto lsolver = std::make_shared< BiCGStab<PetscMatrix, PetscVector> >();
             Newton<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL> nlsolver(lsolver);
@@ -567,17 +573,17 @@ namespace utopia
             const SizeType n = 10;
             SimpleQuadraticFunction<PetscMatrix, PetscVector> fun(n);
 
-            PetscVector x = values(n, 2.);
-            PetscVector expected = zeros(x.size());
+            PetscVector x(layout(comm_, Traits::decide(), n),  2.);
+            PetscVector expected(layout(x), 0.0);
 
             nlsolver.solve(fun, x);
             utopia_test_assert(approxeq(expected, x));
 
-            if(mpi_world_size() == 1)
+            if(comm_.size() == 1)
             {
                 Rosenbrock01<PetscMatrix, PetscVector> rosenbrock;
-                PetscVector expected_rosenbrock = values(2, 1.0);
-                PetscVector x0_ros   			 = values(2, 1.5);
+                PetscVector expected_rosenbrock(serial_layout(2), 1.0);
+                PetscVector x0_ros(serial_layout(2), 1.5);
 
                 nlsolver.line_search_type("cp");
                 nlsolver.line_search_order(3);
@@ -585,7 +591,7 @@ namespace utopia
                 nlsolver.solve(rosenbrock, x0_ros);
 
                 expected_rosenbrock -= x0_ros;
-                double diff_rb = norm2(expected_rosenbrock); UTOPIA_UNUSED(diff_rb);
+                Scalar diff_rb = norm2(expected_rosenbrock); UTOPIA_UNUSED(diff_rb);
                 utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
             }
         }

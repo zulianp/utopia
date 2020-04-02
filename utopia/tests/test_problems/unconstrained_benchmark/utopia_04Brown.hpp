@@ -4,30 +4,31 @@
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_TestFunctions.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_Layout.hpp"
 
 
 namespace utopia
 {
     template<class Matrix, class Vector>
-    class Brown04 final: public UnconstrainedTestFunction<Matrix, Vector>
-    {
+    class Brown04 final : public UnconstrainedTestFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         Brown04()
         {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
-
-            x_init_ = values(2, 1.0);
-            x_exact_ = zeros(2);
+            auto v_layout = serial_layout(2);
+            x_init_.values(v_layout, 1.0);
+            x_exact_.zeros(v_layout);
 
             {
                 const Write<Vector> write2(x_exact_);
                 x_exact_.set(0, 1e6);
                 x_exact_.set(1, 2e-6);
             }
-
         }
 
         std::string name() const override
@@ -42,7 +43,7 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
-            if( mpi_world_size() > 1){
+            if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -64,13 +65,13 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override
         {
-            if( mpi_world_size() > 1){
+            if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == 2);
-            result = zeros(2);
+            result.zeros(layout(point));
 
             const Read<Vector> read(point);
             const Write<Vector> write(result);
@@ -89,14 +90,13 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override
         {
-            if( mpi_world_size() > 1){
+            if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == 2);
-
-            result = zeros(2, 2);
+            result.dense(serial_layout(2, 2), 0.0);
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);
@@ -129,7 +129,6 @@ namespace utopia
         {
             return 0;
         }
-
 
     private:
         Vector x_init_;

@@ -502,7 +502,7 @@ namespace utopia {
         return res;
     }
 
-   
+
     PetscMatrix::Scalar PetscMatrix::max() const
     {
         Scalar result = -std::numeric_limits<Scalar>::max();
@@ -849,6 +849,13 @@ namespace utopia {
         write_unlock(utopia::LOCAL);
 
         // MatShift(raw_type(), scale_factor);
+    }
+
+
+    void PetscMatrix::identity(const Scalar &diag)
+    {
+        set(0.0);
+        shift_diag(diag);
     }
 
     // void PetscMatrix::matij_init(MPI_Comm comm,
@@ -1576,6 +1583,25 @@ namespace utopia {
     void PetscMatrix::shift_diag(const PetscVector &d)
     {
         check_error( MatDiagonalSet(raw_type(), d.raw_type(), ADD_VALUES) );
+    }
+
+    void PetscMatrix::set(const Scalar &val)
+    {
+        if(val == 0.0) {
+            scale(0.0);
+            return;
+        }
+
+
+        if(is_sparse()) {
+            assert(false);
+            m_utopia_error("trying to set a sparse matrix to a dense value");
+            Utopia::Abort();
+        } else {
+            transform_values([val](const Scalar &) -> Scalar {
+                return val;
+            });
+        }
     }
 
 }

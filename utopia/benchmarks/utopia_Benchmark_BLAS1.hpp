@@ -15,7 +15,12 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BenchmarkBlas1 : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
+
+        BenchmarkBlas1(const Comm &comm = Comm()) : comm_(comm) {}
 
         virtual std::string name() override
         {
@@ -31,23 +36,26 @@ namespace utopia {
 
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
-                //Vectors
 
+                auto vl = layout(comm_, n, n * comm_.size());
+                auto ml = layout(comm_, n, n, n * comm_.size(), n * comm_.size());
+
+                //Vectors
                 //measure allocation time of two vectors
                 this->register_experiment(
                     "vec_allocation_" + std::to_string(i),
-                    [n]() {
-                        Vector x = local_values(n, 1.);
-                        Vector y = local_values(n, 2.);
+                    [vl]() {
+                        Vector x(vl, 1.);
+                        Vector y(vl, 2.);
                     }
                 );
 
                 //axpy
                 this->register_experiment(
                     "vec_axpy_" + std::to_string(i),
-                    [n]() {
-                        const Vector x = local_values(n, 1.);
-                        Vector y = local_values(n, 2.);
+                    [vl]() {
+                        const Vector x(vl, 1.);
+                        Vector y(vl, 2.);
                         const Scalar alpha = 0.1;
                         y += alpha * x;
                         y = alpha * x + y;
@@ -58,8 +66,8 @@ namespace utopia {
                 //norms
                 this->register_experiment(
                     "vec_norms_" + std::to_string(i),
-                    [n]() {
-                        const Vector x = local_values(n, 1.);
+                    [vl]() {
+                        const Vector x(vl, 1.);
                         const Scalar norm2_x = norm2(x); 		   UTOPIA_UNUSED(norm2_x);
                         const Scalar norm1_x = norm1(x); 		   UTOPIA_UNUSED(norm1_x);
                         const Scalar norm_infty_x = norm_infty(x); UTOPIA_UNUSED(norm_infty_x);
@@ -75,8 +83,8 @@ namespace utopia {
                 //scale
                 this->register_experiment(
                     "vec_scale_" + std::to_string(i),
-                    [n]() {
-                        Vector x = local_values(n, 1.);
+                    [vl]() {
+                        Vector x(vl, 1.);
                         x *= 0.1;
                         // x = x * 0.1;
                     }
@@ -85,9 +93,9 @@ namespace utopia {
                 //dot
                 this->register_experiment(
                     "vec_dot_" + std::to_string(i),
-                    [n]() {
-                        const Vector x = local_values(n, 1.);
-                        const Vector y = local_values(n, 2.);
+                    [vl]() {
+                        const Vector x(vl, 1.);
+                        const Vector y(vl, 2.);
                         const Scalar d = dot(x, y); UTOPIA_UNUSED(d);
 
                         assert(approxeq(d, Scalar(size(x).get(0)*2)));
@@ -97,9 +105,9 @@ namespace utopia {
                 //distance
                 this->register_experiment(
                     "vec_dist_" + std::to_string(i),
-                    [n]() {
-                        const Vector x = local_values(n, 1.);
-                        const Vector y = local_values(n, 2.);
+                    [vl]() {
+                        const Vector x(vl, 1.);
+                        const Vector y(vl, 2.);
                         const Scalar d = norm2(x - y); UTOPIA_UNUSED(d);
 
                         assert(approxeq(d, Scalar(std::sqrt(size(x).get(0)))));
@@ -110,8 +118,8 @@ namespace utopia {
                 //measure allocation time of one matrix
                 this->register_experiment(
                     "mat_allocation_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
                     }
                 );
@@ -119,8 +127,8 @@ namespace utopia {
                 //axpy
                 this->register_experiment(
                     "mat_axpy_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
 
                         Matrix B = A;
@@ -131,6 +139,9 @@ namespace utopia {
                 //...
             }
         }
+
+    private:
+        Comm comm_;
 
     };
 }

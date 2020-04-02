@@ -81,7 +81,8 @@ namespace utopia {
 
             const auto s = size(in);
             if(out.empty() || s != size(out)) {
-                out = local_zeros(local_size(in));
+                // out = local_zeros(local_size(in));
+                out.zeros(layout(in));
             }
 
             assert(range(in) == range(out));

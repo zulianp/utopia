@@ -12,11 +12,17 @@
 #include <cassert>
 
 namespace utopia {
-    
+
     template<class Matrix, class Vector>
     class BenchmarkTransform : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
+
+        BenchmarkTransform(const Comm &comm = Comm()) : comm_(comm) {}
+
 
         virtual std::string name() override
         {
@@ -33,10 +39,13 @@ namespace utopia {
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
 
+                auto vl = layout(comm_, 5 * n, 5 * n * comm_.size());
+                auto ml = layout(comm_, n, n, n * comm_.size(), n * comm_.size());
+
                 this->register_experiment(
                     "vec_transform_" + std::to_string(i),
-                    [n]() {
-                        Vector v = local_values(n*5, -3.0);
+                    [vl]() {
+                        Vector v(vl, -3.0);
 
                         UTOPIA_NO_ALLOC_BEGIN("vec_transform");
 
@@ -49,11 +58,11 @@ namespace utopia {
                         UTOPIA_NO_ALLOC_END();
                     }
                 );
-              
+
                 this->register_experiment(
                     "mat_transform_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
 
                         // UTOPIA_NO_ALLOC_BEGIN("mat_transform");
@@ -70,8 +79,8 @@ namespace utopia {
 
                 this->register_experiment(
                     "mat_chop_" + std::to_string(i),
-                    [n]() {
-                        Matrix A = local_sparse(n, n, 3);
+                    [ml]() {
+                        Matrix A; A.sparse(ml, 3, 2);
                         assemble_laplacian_1D(A);
 
                         chop(A, 0.001);
@@ -81,6 +90,9 @@ namespace utopia {
                 );
             }
         }
+
+    private:
+      Comm comm_;
 
     };
 }

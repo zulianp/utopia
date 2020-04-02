@@ -12,16 +12,17 @@ namespace utopia
     class Chebyquad35 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         Chebyquad35()
         {
+            auto v_layout = serial_layout(dim());
 
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
-
-            x_exact_ = values(8, 0.0);
-            x_init_ = values(8, 0.0);
+            x_exact_.zeros(v_layout);
+            x_init_.zeros(v_layout);
             SizeType n_global = 8.0;
 
             {
@@ -56,7 +57,7 @@ namespace utopia
 
         bool value(const Vector &x, Scalar &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -72,7 +73,7 @@ namespace utopia
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -82,7 +83,7 @@ namespace utopia
             Vector fvec;
             this->eval_polynomial(x, fvec);
 
-            g = zeros(this->dim());
+            g.zeros(layout(x));
             std::vector<Scalar>g_help(this->dim());
 
             {
@@ -125,7 +126,7 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -136,7 +137,7 @@ namespace utopia
             Vector fvec;
             this->eval_polynomial(x, fvec);
 
-            H = zeros(n, n);
+            H.dense(square_matrix_layout(layout(x)), 0.0);
             std::vector<std::vector<Scalar> > hess(n, std::vector<Scalar>(n));
             std::vector<Scalar> g(n);
 
@@ -244,7 +245,8 @@ namespace utopia
             void eval_polynomial(const Vector & x, Vector & fvec) const
             {
                 if(empty(fvec)){
-                    fvec=local_zeros(local_size(x).get(0));
+                    // fvec=local_zeros(local_size(x).get(0));
+                    fvec.zeros(layout(x));
                 }
 
                 const SizeType n_global = size(x).get(0);

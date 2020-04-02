@@ -15,8 +15,10 @@ namespace utopia
     class TestFunctionInterface
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         virtual ~TestFunctionInterface() { }
 
@@ -37,12 +39,12 @@ namespace utopia
             return false;
         }
 
-        virtual void describe() const 
+        virtual void describe() const
         {
 
             if(mpi_world_rank() == 0){
-                std::cout<< name() <<",   Globalsize:";  
-                
+                std::cout<< name() <<",   Globalsize:";
+
                 std::string numWithCommas = std::to_string(dim());
                 int insertPosition = numWithCommas.length() - 3;
                 while (insertPosition > 0) {
@@ -50,7 +52,7 @@ namespace utopia
                     insertPosition-=3;
                 }
 
-                std::cout<<numWithCommas << ",   parallel:  " << parallel() <<  ",   sol. known:"<< exact_sol_known() << "  \n"; 
+                std::cout<<numWithCommas << ",   parallel:  " << parallel() <<  ",   sol. known:"<< exact_sol_known() << "  \n";
             }
         }
     };
@@ -76,7 +78,7 @@ namespace utopia
         virtual ~UnconstrainedExtendedTestFunction() { }
 
         virtual Vector initial_guess() const override= 0;
-    };  
+    };
 
     template<class Matrix, class Vector>
     class ConstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>, virtual public Function<Matrix, Vector>
@@ -96,7 +98,7 @@ namespace utopia
         virtual void set_box_constraints(const BoxConstraints & box)
         {
             constraints_ = box;
-        }        
+        }
 
         virtual const Vector & upper_bound() const
         {
@@ -126,21 +128,21 @@ namespace utopia
           return constraints_.has_upper_bound();
         }
 
-        virtual bool is_feasible(Vector & x) 
+        virtual bool is_feasible(Vector & x)
         {
             if(!constraints_.has_upper_bound() && !constraints_.has_lower_bound())
                 return true;
 
             if(empty(help_) || size(help_)!=size(x))
             {
-                help_ = 0.0*x; 
+                help_ = 0.0*x;
             }
 
             if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
             {
                 const auto &ub = *constraints_.upper_bound();
                 const auto &lb = *constraints_.lower_bound();
-                
+
                 {
                     auto d_lb   = const_device_view(lb);
                     auto d_ub   = const_device_view(ub);
@@ -152,11 +154,11 @@ namespace utopia
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
 
-                        return (xi < li || xi > ui) ? 1.0: 0.0; 
+                        return (xi < li || xi > ui) ? 1.0: 0.0;
                     });
                 }
 
-                return (sum(help_) > 0.0)? false : true; 
+                return (sum(help_) > 0.0)? false : true;
             }
             else if(constraints_.has_upper_bound() && !constraints_.has_lower_bound())
             {
@@ -171,11 +173,11 @@ namespace utopia
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
 
-                        return (xi > ui)? 1.0: 0.0; 
+                        return (xi > ui)? 1.0: 0.0;
                     });
                 }
 
-                return (sum(help_) > 0.0)? false : true; 
+                return (sum(help_) > 0.0)? false : true;
             }
             else
             {
@@ -190,19 +192,19 @@ namespace utopia
                         Scalar li = d_lb.get(i);
                         Scalar xi = d_x.get(i);
 
-                        return (xi < li)? 1.0: 0.0; 
+                        return (xi < li)? 1.0: 0.0;
                     });
                 }
 
-                return (sum(help_) > 0.0)? false : true; 
+                return (sum(help_) > 0.0)? false : true;
             }
         }
 
 
 
         protected:
-            BoxConstraints  constraints_;  
-            Vector          help_;   
+            BoxConstraints  constraints_;
+            Vector          help_;
 
     };
 
@@ -224,7 +226,7 @@ namespace utopia
         virtual void set_box_constraints(const BoxConstraints & box)
         {
             constraints_ = box;
-        }        
+        }
 
         virtual const Vector & upper_bound() const
         {
@@ -256,21 +258,21 @@ namespace utopia
 
         virtual Vector initial_guess() const override= 0;
 
-        virtual bool is_feasible(Vector & x) 
+        virtual bool is_feasible(Vector & x)
         {
             if(!constraints_.has_upper_bound() && !constraints_.has_lower_bound())
                 return true;
 
             if(empty(help_) || size(help_)!=size(x))
             {
-                help_ = 0.0*x; 
+                help_ = 0.0*x;
             }
 
             if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
             {
                 const auto &ub = *constraints_.upper_bound();
                 const auto &lb = *constraints_.lower_bound();
-                
+
                 {
                     auto d_lb   = const_device_view(lb);
                     auto d_ub   = const_device_view(ub);
@@ -282,11 +284,11 @@ namespace utopia
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
 
-                        return (xi < li || xi > ui) ? 1.0: 0.0; 
+                        return (xi < li || xi > ui) ? 1.0: 0.0;
                     });
                 }
 
-                return (sum(help_) > 0.0)? false : true; 
+                return (sum(help_) > 0.0)? false : true;
             }
             else if(constraints_.has_upper_bound() && !constraints_.has_lower_bound())
             {
@@ -301,11 +303,11 @@ namespace utopia
                         Scalar ui = d_ub.get(i);
                         Scalar xi = d_x.get(i);
 
-                        return (xi > ui)? 1.0: 0.0; 
+                        return (xi > ui)? 1.0: 0.0;
                     });
                 }
 
-                return (sum(help_) > 0.0)? false : true; 
+                return (sum(help_) > 0.0)? false : true;
             }
             else
             {
@@ -320,18 +322,18 @@ namespace utopia
                         Scalar li = d_lb.get(i);
                         Scalar xi = d_x.get(i);
 
-                        return (xi < li)? 1.0: 0.0; 
+                        return (xi < li)? 1.0: 0.0;
                     });
                 }
 
-                return (sum(help_) > 0.0)? false : true; 
+                return (sum(help_) > 0.0)? false : true;
             }
         }
 
         protected:
-            BoxConstraints  constraints_;  
-            Vector          help_;                
-    };      
+            BoxConstraints  constraints_;
+            Vector          help_;
+    };
 
 }
 #endif //UTOPIA_UNCONSTRAINED_TEST_FUNCTIONS

@@ -58,9 +58,9 @@ namespace utopia {
     {
         using namespace utopia;
         using SizeType = Traits<BlasMatrixd>::SizeType;
-        
+
         const int n = 9;
-        BlasMatrixd A = zeros(n, n);
+        BlasMatrixd A; A.zeros({n, n});
         std::vector<SizeType> is{0, 1, 2, 3, 4, 5, 6, 7, 8};
 
         {
@@ -78,7 +78,7 @@ namespace utopia {
             });
         }
 
-        BlasMatrixd B = zeros(n, n);
+        BlasMatrixd B; B.zeros({n, n});
         {
             Write<BlasMatrixd> w_B(B);
             B.set_matrix(is, is, {

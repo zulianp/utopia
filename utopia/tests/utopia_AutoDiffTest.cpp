@@ -2,6 +2,7 @@
 #include "test_problems/utopia_TestProblems.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Testing.hpp"
+#include "utopia_Layout.hpp"
 
 namespace utopia {
 
@@ -21,14 +22,18 @@ namespace utopia {
             using namespace utopia;
 
             const int n = 10;
+            auto v_layout = serial_layout(n);
+            auto m_layout = serial_layout(n, n);
+
         //some example vectors
-            Vector x = values(n, 25.0);
-            Vector b = values(n, 1.0);
+            Vector x(v_layout, 25.0);
+            Vector b(v_layout, 1.0);
 
         //some example matrices
-            Matrix A = zeros(n, n);
-            Matrix B = 0.5 * identity(n, n);
-            Matrix C = identity(n, n);
+            Matrix A, B, C;
+            A.zeros(m_layout);
+            B.identity(m_layout, 0.5);
+            C.identity(m_layout);
 
             {
                 Write<Matrix> w(A);
@@ -86,7 +91,7 @@ namespace utopia {
             {
                 //To be worked on
                 auto f = auto_diff_fun<Matrix, Vector>(ExampleDiffFun());
-                Vector sol = values(n, 1.0);
+                Vector sol(v_layout, 1.0);
 
                 Newton<Matrix, Vector> newton(std::make_shared<ConjugateGradient<Matrix, Vector>>(A));
                 newton.solve(f, sol);
@@ -100,14 +105,18 @@ namespace utopia {
             using namespace utopia;
 
             const int n = 100;
+
+            auto v_layout = serial_layout(n);
+            auto m_layout = serial_layout(n, n);
             //some example vectors
-            Vector x = values(n, 25.0);
-            Vector b = values(n, 1.0);
+            Vector x(v_layout, 25.0);
+            Vector b(v_layout, 1.0);
 
             //some example matrices
-            Matrix A = sparse(n, n, 3);
-            Matrix B = 0.5 * identity(n, n);
-            Matrix C = identity(n, n);
+            Matrix  A, B, C;
+            A.sparse(m_layout, 3);
+            B.identity(m_layout, 0.5);
+            C.identity(m_layout);
 
             {
                 Write<Matrix> w(A);
@@ -167,7 +176,7 @@ namespace utopia {
             using namespace utopia;
 
             int n = 10;
-            Matrix x = identity(n, n);
+            Matrix x; x.identity(serial_layout(n, n));
 
             // double r = trace(x);
             //disp(r);
@@ -190,7 +199,7 @@ namespace utopia {
 
     void autodiff()
     {
-        
+
 #ifdef WITH_BLAS
         AutoDiffTest<BlasMatrixd, BlasVectord>().run();
 #endif //WITH_BLAS

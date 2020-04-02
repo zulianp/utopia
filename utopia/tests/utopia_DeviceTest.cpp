@@ -15,6 +15,8 @@ namespace utopia {
         using Traits   = utopia::Traits<Vector>;
         using SizeType = typename Traits::SizeType;
         using Scalar   = typename Traits::Scalar;
+        using Comm     = typename Traits::Communicator;
+
 
         static void print_backend_info()
         {
@@ -25,9 +27,12 @@ namespace utopia {
 
         static void test_range_device()
         {
+            Comm world;
             //host context
-            SizeType n = 10;
-            Vector v = values(n, 1.);
+            const SizeType n_local = 2;
+            const SizeType n = n_local * world.size();
+
+            Vector v(layout(world, n_local, n), 1.);
 
             {
                 //device context

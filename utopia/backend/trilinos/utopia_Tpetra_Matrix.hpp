@@ -53,6 +53,7 @@ namespace utopia {
         using IndexSet      = Traits<TpetraMatrix>::IndexSet;
         using IndexArray    = Traits<TpetraMatrix>::IndexArray;
         using ScalarArray   = Traits<TpetraMatrix>::ScalarArray;
+        using MatrixLayout  = Traits<TpetraMatrix>::MatrixLayout;
 
         //types of Trilinos Objects
         using CrsMatrixType    = Tpetra::CrsMatrix<Scalar, LocalSizeType, SizeType, Node>;
@@ -255,6 +256,35 @@ namespace utopia {
         /////////////////////////////////////////////////////////////
         //OVERRIDES for SparseConstructible
         /////////////////////////////////////////////////////////////
+
+        inline void sparse(
+           const MatrixLayout &layout,
+           const SizeType nnz_d_block,
+           const SizeType nnz_o_block
+        )
+        {
+           comm_ = layout.comm();
+           crs_init(
+                comm_.get(),
+                layout.local_size(0),
+                layout.local_size(1),
+                layout.size(0),
+                layout.size(1),
+                std::max(nnz_d_block, nnz_o_block)
+            );
+        }
+
+        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0)
+        {
+           comm_ = layout.comm();
+           crs_identity( comm_.get(),
+                layout.local_size(0),
+                layout.local_size(1),
+                layout.size(0),
+                layout.size(1),
+                diag
+            );
+        }
 
         void identity(const Size &s, const Scalar &diag = 1.0) override;
 

@@ -12,15 +12,16 @@ namespace utopia
     class PenaltyII24 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         PenaltyII24()
         {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
-
-            x_exact_ = values(10, 0.0); // not known
-            x_init_ = values(10, 0.5);
+            auto v_layout = serial_layout(dim());
+            x_exact_.zeros(v_layout); // not known
+            x_init_.values(v_layout, 0.5);
         }
 
         std::string name() const override
@@ -41,7 +42,7 @@ namespace utopia
 
         bool value(const Vector &x, Scalar &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -89,7 +90,7 @@ namespace utopia
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -99,7 +100,7 @@ namespace utopia
 
             if(empty(g))
             {
-                g = zeros(n);
+                g.zeros(layout(x));
             }
 
 
@@ -170,7 +171,7 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            if( mpi_world_size() > 1){
+           if( x.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -181,9 +182,7 @@ namespace utopia
             Scalar alpha = 0.00001;
             Scalar t1 = - 1.0;
 
-
-            H = zeros(n,n);
-
+            H.dense(square_matrix_layout(layout(x)), 0.0);
 
             {
                 Read<Vector>read1(x);

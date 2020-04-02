@@ -86,7 +86,7 @@ namespace utopia {
             auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
             tao->tao_type("tron");
             tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
-            qp_solver_ = tao;            
+            qp_solver_ = tao;
         }
 
         virtual void read(Input &is) override {
@@ -95,7 +95,7 @@ namespace utopia {
             is.get("discretization", discretization);
 
             if(discretization != "legacy") {
-                
+
                 if(discretization == "bug") {
                     contact_ = utopia::make_unique<ContactAssembler>();
                 } else {
@@ -173,7 +173,7 @@ namespace utopia {
                 write("normals"    + std::to_string(n_out) + ".e", V_->subspace(0), normals);
                 write("gap_vec"    + std::to_string(n_out) + ".e", V_->subspace(0), gap_vec);
                 write("nx"         + std::to_string(n_out) + ".e", V_->subspace(0), nx);
-                
+
                 if(!empty(is_glue_node)) {
                     write("is_glue_node" + std::to_string(n_out) + ".e", V_->subspace(0), is_glue_node);
                 }
@@ -394,15 +394,15 @@ namespace utopia {
 
             if(!first_ || material_->is_linear()) {
                 apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
-            } 
+            }
 
             std::cout << "done" << std::endl;
 
             inc_c_ *= 0.;
 
-            if(contact_->has_glue()) {  
+            if(contact_->has_glue()) {
                 auto constr = make_upper_bound_constraints(std::make_shared<Vector>(contact_->gap() - xc_));
-                constr.fill_empty_bounds(local_size(xc_));
+                constr.fill_empty_bounds(layout(xc_));
 
                 auto &u = *constr.upper_bound();
                 auto &l = *constr.lower_bound();
@@ -412,7 +412,7 @@ namespace utopia {
                     if(val > 1e-8) {
                         u.set(i, 0.0);
                         l.set(i, 0.0);
-                    }   
+                    }
                 });
 
                 qp_solve(Hc_, gc_, constr, inc_c_);
@@ -443,7 +443,7 @@ namespace utopia {
 
             Traits<UVector>::IndexArray ghost_nodes;
             convert(dof_map.get_send_list(), ghost_nodes);
-            
+
             x_ = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
             inc_c_ = local_zeros(local_size(x_));
             xc_  = local_zeros(local_size(x_));
@@ -599,7 +599,7 @@ namespace utopia {
         void update_aux_system(UVector &x)
         {
             // synchronize(x);
-            
+
             UVector s, unscaled_s;
             if(contact_stress_) {
                 contact_stress_->assemble(x, unscaled_s);

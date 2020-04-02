@@ -14,23 +14,27 @@ namespace utopia {
         static_assert(!utopia::is_sparse<Matrix>::value || utopia::is_polymorhic<Matrix>::value, "utopia::MildStiffExample does not support sparse matrices as Hessian is dense matrix.");
 
     public:
-        typedef UTOPIA_SCALAR(Vector)      Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)   SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         MildStiffExample(const SizeType & n): n_(n)
         {
-            x_init_ = values(n_, 1.0);
+            auto x_layout = layout(Comm::get_default(), Traits::decide(), n);
+            auto mat_layout = square_matrix_layout(x_layout);
 
-            const SizeType n_local = local_size(x_init_);
-            b_ = local_values(n_local, 1.0);
-            Vector u = local_values(n_local, 1.0);
+            x_init_.values(x_layout, 1.0);
+
+            b_.values(x_layout, 1.0);
+            Vector u(x_layout, 1.0);
 
             Matrix U = outer(u, u);
             Scalar udot = 2./dot(u,u);
-            Matrix I = local_identity(n_local, n_local);
+            Matrix I; I.identity(mat_layout, 1.0);
             U = I - (udot * U);
 
-            Matrix D = local_identity(n_local, n_local);
+            Matrix D; D.identity(mat_layout, 1.0);
 
             {
                 Write<Matrix> re(D);

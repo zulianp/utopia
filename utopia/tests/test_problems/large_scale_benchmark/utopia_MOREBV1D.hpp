@@ -18,8 +18,13 @@ namespace utopia
     class Morebv1D final:   virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
                             virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
-        public: typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
-                typedef UTOPIA_SCALAR(Vector)       Scalar;
+
+    public:
+
+        using Traits   = utopia::Traits<Matrix>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         Morebv1D(const SizeType & n): n_(n)
         {
@@ -85,7 +90,7 @@ namespace utopia
         bool gradient(const Vector &x, Vector &g) const override
         {
             if(empty(g)){
-                g = local_zeros(local_size(x));
+                g.zeros(layout(x));
             }
             else{
                 g.set(0.0);
@@ -307,16 +312,22 @@ namespace utopia
 
         void init_memory()
         {
-            H_ = sparse(n_, n_, 3);
-            assemble_laplacian_1D(H_);
+            //FIXME this should be passed from outside
+            auto &&comm = Comm::get_default();
 
-            coords_     = values(n_, 0.0);
-            ones_       = values(n_, 1.0);
-            twos_       = values(n_, 2.0);
-            x0_         = values(n_, 0.0);
-            exact_sol_  = values(n_, 0.0);
-            A_help1_    = make_unique<Vector>(values(n_, 0.0));
-            A_help2_    = make_unique<Vector>(values(n_, 0.0));
+            coords_.zeros(layout(comm, Traits::decide(), n_));
+            auto vl = layout(coords_);
+
+            ones_.values(vl, 1.0);
+            twos_.values(vl, 2.0);
+            x0_.zeros(vl);
+            exact_sol_.zeros(vl);
+
+            A_help1_ = make_unique<Vector>(vl,  0.0);
+            A_help2_ = make_unique<Vector>(vl, 0.0);
+
+            H_.sparse(square_matrix_layout(vl), 3, 2);
+            assemble_laplacian_1D(H_);
         }
 
         public: //made public because of nvcc
@@ -353,7 +364,7 @@ namespace utopia
 
             }
 
-            Vector bc_markers = values(n_, 0.0);
+            Vector bc_markers(layout(x0_), 0.0);
             {
                 Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);

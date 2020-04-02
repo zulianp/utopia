@@ -37,8 +37,8 @@ namespace utopia
 			// ml_problems_[3] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > > (2, n_levels_, n_);
 
 			ml_problems_.resize(1);
-			ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);	
-			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);		
+			ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);
+			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
 		}
 
 		~RMTR_test()
@@ -168,7 +168,7 @@ namespace utopia
 				[this]() {
 		           	auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 		           	// auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
-		           	// tr_strategy_fine->use_symmetric_sweep(false); 
+		           	// tr_strategy_fine->use_symmetric_sweep(false);
 		            tr_strategy_fine->atol(1e-12);
 		            // tr_strategy_fine->verbose(true);
 
@@ -188,7 +188,7 @@ namespace utopia
 
 		            run_test(this->ml_problems_, rmtr, "RMTR_first_order_infty", this->verbose_);
 				}
-			);			
+			);
 
 		}
 
@@ -241,9 +241,9 @@ namespace utopia
 
 				auto sol_status = solver->solution_status();
 
-				// std::cout<<"it: "<< sol_status.iterates << "  \n"; 
-				// std::cout<<"gradient_norm: "<< sol_status.gradient_norm << "  \n"; 
-				// std::cout<<"reason: "<< sol_status.reason << "  \n"; 
+				// std::cout<<"it: "<< sol_status.iterates << "  \n";
+				// std::cout<<"gradient_norm: "<< sol_status.gradient_norm << "  \n";
+				// std::cout<<"reason: "<< sol_status.reason << "  \n";
 
 
 				if(exp_verbose && mpi_world_rank()==0)
@@ -255,7 +255,7 @@ namespace utopia
 						// const auto num_its = sol_status.iterates;
 						// const auto conv_reason = sol_status.reason;
 
-						std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_fun->name() << "   \n"; 
+						std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_fun->name() << "   \n";
 
 						// if(conv_reason< 0)
 						// {
@@ -308,7 +308,7 @@ namespace utopia
 
 		 //           	auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 		 //            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-		 //            tr_strategy_fine->atol(1e-12); 
+		 //            tr_strategy_fine->atol(1e-12);
 
 			// 		auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 			// 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
@@ -323,7 +323,7 @@ namespace utopia
 
    //          		const SizeType memory_size = 5;
    //              	auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
-   //          		rmtr->set_hessian_approximation_strategy(hess_approx);		      
+   //          		rmtr->set_hessian_approximation_strategy(hess_approx);
 
 
 		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -339,7 +339,7 @@ namespace utopia
 
 		           	auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 		            // tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-		            tr_strategy_fine->atol(1e-12); 
+		            tr_strategy_fine->atol(1e-12);
 
 					auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 					// tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
@@ -354,7 +354,7 @@ namespace utopia
 
             		const SizeType memory_size = 5;
                 	auto hess_approx   = std::make_shared<LBFGS<Vector> >(memory_size);
-            		rmtr->set_hessian_approximation_strategy(hess_approx);		      
+            		rmtr->set_hessian_approximation_strategy(hess_approx);
 
 
 		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -362,7 +362,7 @@ namespace utopia
 
 		            run_test(this->ml_problems_, rmtr, "RMTR_quasi_LBFGS_test", this->verbose_);
 				}
-			);			
+			);
 
 
 			// this->register_experiment("RMTR_quasi_LSR1_test",
@@ -370,7 +370,7 @@ namespace utopia
 
 		 //           	auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 		 //            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-		 //            tr_strategy_fine->atol(1e-12); 
+		 //            tr_strategy_fine->atol(1e-12);
 
 			// 		auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 			// 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
@@ -383,7 +383,7 @@ namespace utopia
 		 //            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
    //              	auto hess_approx   = std::make_shared<LSR1<Vector> >(5);
-   //          		rmtr->set_hessian_approximation_strategy(hess_approx);		      
+   //          		rmtr->set_hessian_approximation_strategy(hess_approx);
 
 
 		 //            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -407,7 +407,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
 			in.set("max-it", 50);
-			in.set("verbose", true);
+			in.set("verbose", false);
 
             // RMTR specific parameters
             in.set("max_coarse_it", 10);
@@ -474,13 +474,14 @@ namespace utopia
 
 	static void rmtr()
 	{
-		int verbosity_level = 1;
+		int verbosity_level = 0;
 		const int n_global = 10;
 		bool alg_verbose = false;
 
-		if(Utopia::instance().verbose()) {
-			verbosity_level = 2;
-		}
+		//FIXME create a special purpose flag only for these
+		// if(Utopia::instance().verbose()) {
+		// 	verbosity_level = 2;
+		// }
 
 		#ifdef WITH_PETSC
 			RMTR_test<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
@@ -492,13 +493,14 @@ namespace utopia
 
 	static void quasi_rmtr()
 	{
-		int verbosity_level = 1;
+		int verbosity_level = 0;
 		const int n_global = 10;
 		bool alg_verbose = false;
 
-		if(Utopia::instance().verbose()) {
-			verbosity_level = 2;
-		}
+		//FIXME create a special purpose flag only for these
+		// if(Utopia::instance().verbose()) {
+		// 	verbosity_level = 2;
+		// }
 
 		#ifdef WITH_PETSC
 			QuasiRMTR_test<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
@@ -509,7 +511,7 @@ namespace utopia
 	}
 
 
-	
+
 	UTOPIA_REGISTER_TEST_FUNCTION(rmtr);
 	UTOPIA_REGISTER_TEST_FUNCTION(quasi_rmtr);
 }

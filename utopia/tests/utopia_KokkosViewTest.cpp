@@ -104,12 +104,15 @@ namespace utopia {
 
     static void device_matrix_view()
     {
-        using Dev      = utopia::Traits<TpetraVector>::Device;
-        using SizeType = utopia::Traits<TpetraVector>::SizeType;
+        using Traits   = utopia::Traits<TpetraVector>;
+        using Dev      = Traits::Device;
+        using SizeType = Traits::SizeType;
 
         SizeType n = 5;
 
-        TpetraMatrix L = sparse(n, n, 3);
+        TrilinosCommunicator comm;
+
+        TpetraMatrix L; L.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 3);
         assemble_periodic_laplacian_1D(L);
 
         auto device_L = device_view(L);

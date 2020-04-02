@@ -78,7 +78,7 @@ namespace utopia
             Scalar scaling_factor_mat = 1.0 - std::sqrt(2.0)/2.0;
             Scalar scaling_factor_vec = (std::sqrt(2.0)-1.0)/2.0;
 
-            Vector g = local_zeros(local_size(x)), eigenvector_min, s, x_trial;
+            Vector g(layout(x), 0.0), eigenvector_min, s, x_trial;
             Matrix H, H_damped;
 
             fun.gradient(x, g);
@@ -90,7 +90,7 @@ namespace utopia
             fun.hessian(x, H);
             H_norm = norm2(H);
 
-            Matrix I = local_identity(local_size(H).get(0), local_size(H).get(1));
+            Matrix I; I.identity(square_matrix_layout(layout(x)));
 
             // tau = 1.0/g_norm;
             // lambda = g_norm;
@@ -106,7 +106,7 @@ namespace utopia
                 // H_damped += (scaling_factor_mat * H);
                 H_damped = (scaling_factor_mat * H);
                 // H_damped += (lambda * I);
-                H_damped.shift_diag(lambda); 
+                H_damped.shift_diag(lambda);
 
                 eigen_solver_->portion_of_spectrum("smallest_real");
                 eigen_solver_->number_of_eigenvalues(1);
@@ -122,7 +122,7 @@ namespace utopia
                     s = 0 * x;
                     this->linear_solve(H_damped, -1.0 * g, s);
                     Vector x_temp = x + scaling_factor_vec * s;
-                    Vector g_temp = local_zeros(local_size(g).get(0));
+                    Vector g_temp(layout(g), 0.0);
                     fun.gradient(x_temp, g_temp);
                     s = 0 * x;
                     this->linear_solve(H_damped, -1.0 * g_temp, s);

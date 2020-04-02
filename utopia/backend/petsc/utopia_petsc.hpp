@@ -31,6 +31,7 @@
 #include "utopia_petsc_debug.hpp"
 
 #include "utopia_petsc_Eval.hpp"
+#include "utopia_petsc_Layout.hpp"
 
 namespace utopia {
     void optimize_nnz(PetscMatrix &A);

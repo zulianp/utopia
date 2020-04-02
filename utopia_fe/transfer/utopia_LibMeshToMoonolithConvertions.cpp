@@ -60,7 +60,7 @@ namespace utopia {
 
 	template<int Dim>
 	void ConvertFunctionSpace<LibMeshFunctionSpace, moonolith::FunctionSpace<moonolith::Mesh<double, Dim>> >
-	::apply(const LibMeshFunctionSpace &in_space, 
+	::apply(const LibMeshFunctionSpace &in_space,
 			   moonolith::FunctionSpace<moonolith::Mesh<double, Dim>> &out)
 	{
 		int var_num = in_space.subspace_id();
@@ -94,7 +94,7 @@ namespace utopia {
 		const long n_elem = in.n_active_local_elem();
 		out_dof_map.resize(n_elem);
 
-		
+
 
 		long idx = 0;
 		long n_local_elems = in.n_active_local_elem();
@@ -110,7 +110,7 @@ namespace utopia {
 		//     std::cout << std::flush;
 		// }
 
-		assert(idx < n_elem);
+		// assert(idx < n_elem);
 
 		// if(n_elem > 0) {
 

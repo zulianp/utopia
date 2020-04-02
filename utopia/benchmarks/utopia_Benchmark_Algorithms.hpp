@@ -17,7 +17,13 @@ namespace utopia {
     template<class Matrix, class Vector>
     class BenchmarkAlgorithms : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
+
+        BenchmarkAlgorithms(const Comm &comm = Comm()) : comm_(comm) {}
+
 
         virtual std::string name() override
         {
@@ -36,15 +42,17 @@ namespace utopia {
             for(SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
 
+                auto vl = layout(comm_, n, n * comm_.size());
+
                 //Conjugate gradient method
                 this->register_experiment(
                     "cg_" + std::to_string(i),
-                    [n]() {
+                    [=]() {
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                         cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
                         cg.set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
-                        run_linear_solver(n, cg);
+                        run_linear_solver(comm_, n, cg);
                     }
                 );
 
@@ -73,19 +81,19 @@ namespace utopia {
 
                 this->register_experiment(
                     "bicgstab_" + std::to_string(i),
-                    [n]() {
+                    [=]() {
                         BiCGStab<Matrix, Vector, HOMEMADE> cg;
                         cg.verbose(verbose);
                         cg.max_it(n * mpi_world_size());
-                        run_linear_solver(n, cg);
+                        run_linear_solver(comm_, n, cg);
                     }
                 );
 
                 this->register_experiment(
                     "newton_cg_" + std::to_string(i),
-                    [i]() {
-                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
-                        Vector x = local_values(10 * (i+1), 1.);
+                    [vl]() {
+                        Rastrigin<Matrix, Vector> fun;
+                        Vector x(vl, 1.0);
 
                         ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                         cg.max_it(size(x).get(0));
@@ -108,9 +116,9 @@ namespace utopia {
 
                 this->register_experiment(
                     "trust_region_" + std::to_string(i),
-                    [i]() {
-                        Rastrigin<Matrix, Vector> fun(10 * (i+1));
-                        Vector x = local_values(10 * (i+1), 1.);
+                    [vl]() {
+                        Rastrigin<Matrix, Vector> fun;
+                        Vector x(vl, 1.0);
 
                         auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
 
@@ -130,34 +138,34 @@ namespace utopia {
 
                 this->register_experiment(
                     "projected_gradient_" + std::to_string(i),
-                    [i]() {
+                    [=]() {
                         ProjectedGradient<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 
                 this->register_experiment(
                     "projected_conjugate_gradient_" + std::to_string(i),
-                    [i]() {
+                    [=]() {
                         ProjectedConjugateGradient<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 
                 this->register_experiment(
                     "projected_gauss_seidel_" + std::to_string(i),
-                    [i]() {
+                    [=]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 
                 this->register_experiment(
                     "projected_l1_gauss_seidel_" + std::to_string(i),
-                    [i]() {
+                    [=]() {
                         ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
                         // pg.l1(true);
-                        run_qp_solver((base_n/2) * (i + 1), pg);
+                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
                     }
                 );
 
@@ -188,9 +196,12 @@ namespace utopia {
     private:
 
         template<class QPSolver>
-        static void run_qp_solver(const SizeType n, QPSolver &qp_solver) {
+        static void run_qp_solver(const Comm &comm, const SizeType n, QPSolver &qp_solver)
+        {
+            auto vl = layout(comm, Traits::decide(), n);
+            auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
 
-            Matrix m = local_sparse(n, n, 3);
+            Matrix m; m.sparse(ml, 3, 2);
             assemble_laplacian_1D(m);
 
             auto N = size(m).get(0);
@@ -209,7 +220,7 @@ namespace utopia {
                 }
             }
 
-            Vector rhs = local_values(n, 1.);
+            Vector rhs(vl, 1.);
             {
                 //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
                 Range r = range(rhs);
@@ -224,9 +235,8 @@ namespace utopia {
                 }
             }
 
-            Vector upper_bound = local_values(n, 100.0);
-            Vector solution    = local_zeros(n);
-
+            Vector upper_bound(vl, 100.0);
+            Vector solution(vl, 0.0);
 
             qp_solver.max_it(N*2);
             // qp_solver.verbose(true);
@@ -236,11 +246,14 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-        static void run_linear_solver(const SizeType n, LinearSolver<Matrix, Vector> &solver)
+        static void run_linear_solver(const Comm &comm, const SizeType n, LinearSolver<Matrix, Vector> &solver)
         {
-            Matrix A = sparse(n, n, 3);
-            Vector b = values(n, 1.);
-            Vector x = values(n, 0.);
+            auto vl = layout(comm, Traits::decide(), n);
+            auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
+
+            Matrix A; A.sparse(ml, 3, 2);
+            Vector b(vl, 1.);
+            Vector x(vl, 0.);
 
             assemble_laplacian_1D(A, true);
 
@@ -316,6 +329,8 @@ namespace utopia {
             utopia_test_assert(rel_diff < 1e-8);
         }
 
+    private:
+        Comm comm_;
     };
 }
 

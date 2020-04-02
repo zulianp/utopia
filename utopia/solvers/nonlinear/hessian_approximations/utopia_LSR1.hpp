@@ -33,7 +33,7 @@ namespace utopia
 
             void initialize(const Vector & x_k, const Vector &  g) override
             {
-                HessianApproximation<Vector>::initialize(x_k, g); 
+                HessianApproximation<Vector>::initialize(x_k, g);
 
                 theta_      = 1.0;
                 gamma_      = 1.0;
@@ -45,15 +45,15 @@ namespace utopia
                 p_.resize(m_);
                 p_inv_.resize(m_);
 
-                auto zero_expr = local_zeros(local_size(x_k));
+                auto x_layout = layout(x_k);
 
                 for(auto i=0; i < m_; i++)
                 {
-                    Y_[i]       = zero_expr; 
-                    S_[i]       = zero_expr; 
-                    p_[i]       = zero_expr; 
-                    p_inv_[i]   = zero_expr; 
-                }                
+                    Y_[i].zeros(x_layout);
+                    S_[i].zeros(x_layout);
+                    p_[i].zeros(x_layout);
+                    p_inv_[i].zeros(x_layout);
+                }
 
                 this->initialized(true);
             }
@@ -66,7 +66,7 @@ namespace utopia
                 // p_.clear();
                 // p_inv_.clear();
 
-                // Vector x, g; 
+                // Vector x, g;
                 // this->initialize(x, g);
 
                 theta_      = 1.0;
@@ -85,9 +85,9 @@ namespace utopia
                     S_[i].set(0.0);
                     p_[i].set(0.0);
                     p_inv_[i].set(0.0);
-                }                
+                }
 
-                this->initialized(true);                
+                this->initialized(true);
             }
 
             inline LSR1<Vector> * clone() const override
@@ -111,11 +111,11 @@ namespace utopia
                 // Scalar nom = std::abs(dot(s, diff_));
                 // Scalar denom = norm2(s) * norm2(diff);
 
-                Scalar nom, denom, denom2; 
-                dots(s, diff_, nom, s, s, denom, diff_, diff_, denom2); 
+                Scalar nom, denom, denom2;
+                dots(s, diff_, nom, s, s, denom, diff_, diff_, denom2);
 
-                nom = std::abs(nom); 
-                denom = denom*denom2; 
+                nom = std::abs(nom);
+                denom = denom*denom2;
 
                 if(nom/denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom))
                 {
@@ -124,7 +124,7 @@ namespace utopia
                     // }
 
                     return false;
-                } 
+                }
 
 
                 if(current_m_ < m_)
@@ -258,7 +258,7 @@ namespace utopia
             {
                 this->apply_H(u, diff_);
                 return dot(u, diff_);
-            }            
+            }
 
             Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) override
             {
@@ -285,7 +285,7 @@ namespace utopia
             std::vector<Vector> p_;
             std::vector<Vector> p_inv_;
 
-            Vector diff_; 
+            Vector diff_;
 
         };
 

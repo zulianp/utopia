@@ -136,6 +136,7 @@ DERIVED_CRT(Derived)
 #define UTOPIA_MATRIX(Tensor) typename utopia::Traits<Tensor>::Matrix
 #define UTOPIA_VECTOR(Tensor) typename utopia::Traits<Tensor>::Vector
 #define UTOPIA_UNUSED(macro_var_) (void) macro_var_
+#define utopia_assert(macro_expr__) assert((macro_expr__))
 
 #ifndef NDEBUG
 #define utopia_test_assert(macro_expr_) assert((macro_expr_))

@@ -520,9 +520,9 @@ namespace utopia {
 
             actual = Id * C;
 
-            disp(actual);
-            disp("----------");
-            disp(C);
+            // disp(actual);
+            // disp("----------");
+            // disp(C);
 
             utopia_test_assert(approxeq(actual, C, 1e-10));
         }

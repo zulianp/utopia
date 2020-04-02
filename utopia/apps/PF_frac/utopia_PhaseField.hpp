@@ -95,11 +95,11 @@ namespace utopia {
 
         inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
         {
-            if(use_dense_hessian_) {
-                H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
-            } else {
+            // if(use_dense_hessian_) {
+            //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+            // } else {
                 space_.create_matrix(H);
-            }
+            // }
             return true;
         }
 
@@ -327,11 +327,11 @@ namespace utopia {
         bool hessian(const Vector &x_const, Matrix &H) const override
         {
             if(empty(H)) {
-                if(use_dense_hessian_) {
-                    H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
-                } else {
+                // if(use_dense_hessian_) {
+                //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+                // } else {
                     space_.create_matrix(H);
-                }
+                // }
             } else {
                 H *= 0.0;
             }

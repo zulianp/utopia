@@ -6,6 +6,7 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_Layout.hpp"
 
 #include <iostream>
 
@@ -295,13 +296,13 @@ namespace utopia {
             buff_s = (*D_t) * p;
 
             if(empty(solved_m) || size(buff_m) != size(solved_m)) {
-                solved_m = local_zeros(local_size(buff_m));
+                solved_m.zeros(layout(buff_m));
             } else {
                 solved_m.set(0.);
             }
 
             if(empty(solved_s) || size(buff_s) != size(solved_s)) {
-                solved_s = local_zeros(local_size(buff_s));
+                solved_s.zeros(layout(buff_s));
             } else {
                 solved_s.set(0.);
             }
@@ -322,13 +323,13 @@ namespace utopia {
             buff_s = rhs_s - (*D_t) * p;
 
             if(empty(solved_m) || size(buff_m) != size(solved_m)) {
-                solved_m = local_zeros(local_size(buff_m));
+                solved_m.zeros(layout(buff_m));
             } else {
                 solved_m.set(0.);
             }
 
             if(empty(solved_s) || size(buff_s) != size(solved_s)) {
-                solved_s = local_zeros(local_size(buff_s));
+                solved_s.zeros(layout(buff_s));
             } else {
                 solved_s.set(0.);
             }
@@ -348,7 +349,7 @@ namespace utopia {
         {
 
             if(empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
-                lagr = local_zeros(local_size(*B).get(0));
+                lagr.zeros(row_layout(*B));
             }
 
             this->residual(
@@ -363,8 +364,8 @@ namespace utopia {
 
             Vector lagr_old = lagr;
 
-            z = local_zeros(local_size(r));
-            z_new = local_zeros(local_size(r));
+            z.zeros(layout(r));
+            z_new.zeros(layout(r));
 
             this->apply_preconditioner(
                 r,
@@ -416,11 +417,11 @@ namespace utopia {
             }
 
             if(empty(sol_m) || size(sol_m) != size(rhs_m)) {
-                sol_m = local_zeros(local_size(rhs_m));
+                sol_m.zeros(layout(rhs_m));
             }
 
             if(empty(sol_s) || size(sol_s) != size(rhs_s)) {
-                sol_s = local_zeros(local_size(rhs_s));
+                sol_s.zeros(layout(rhs_s));
             }
 
             op_m->apply(rhs_m - (*B_t) * lagr, sol_m);
@@ -437,7 +438,7 @@ namespace utopia {
             Vector &lagr)
         {
             if(empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
-                lagr = local_zeros(local_size(*B).get(0));
+                lagr.zeros(row_layout(*B));
             }
 
             this->residual(
@@ -498,11 +499,11 @@ namespace utopia {
             }
 
             if(empty(sol_m) || size(sol_m) != size(rhs_m)) {
-                sol_m = local_zeros(local_size(rhs_m));
+                sol_m.zeros(layout(rhs_m));
             }
 
             if(empty(sol_s) || size(sol_s) != size(rhs_s)) {
-                sol_s = local_zeros(local_size(rhs_s));
+                sol_s.zeros(layout(rhs_s));
             }
 
 

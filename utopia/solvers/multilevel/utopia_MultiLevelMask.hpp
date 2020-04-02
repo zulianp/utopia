@@ -99,7 +99,9 @@ namespace utopia
             }
 
             for(auto &m : masks_) {
-                m = local_values(local_size(m).get(0), 1.) - m;
+                // m = local_values(local_size(m).get(0), 1.) - m;
+                m.shift(-1);
+                m = abs(m);
                 // UTOPIA_RECORD_VALUE("mask", m);
             }
         }
@@ -115,8 +117,8 @@ namespace utopia
             {
                 const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
 
-                auto ls = local_size(A);
-                mask = local_values(ls.get(0), off_value);
+                // auto ls = local_size(A);
+                mask.values(row_layout(A), off_value);
 
                 {
                     Write<Vector> w_(mask);

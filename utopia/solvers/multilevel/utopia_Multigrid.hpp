@@ -261,7 +261,7 @@ namespace utopia
             Vector &r_R = memory.r_R[l];
 
             if(empty(c) || size(c) != size(r)) {
-                c = local_zeros(local_size(r).get(0));
+                c.zeros(layout(r));
             } else {
                 c.set(0.);
             }

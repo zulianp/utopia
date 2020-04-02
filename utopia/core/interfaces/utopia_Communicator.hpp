@@ -23,6 +23,9 @@ namespace utopia {
 			return size() == other.size();
 		}
 
+#ifdef WITH_MPI
+		virtual MPI_Comm raw_comm() const = 0;
+#endif
 
 		virtual bool conjunction(const bool &val) const = 0;
 		virtual bool disjunction(const bool &val) const = 0;
@@ -82,6 +85,12 @@ namespace utopia {
 			return new SelfCommunicator();
 		}
 
+		inline static SelfCommunicator &get_default()
+		{
+			static SelfCommunicator instance_;
+			return instance_;
+		}
+
 		inline bool conjunction(const bool &val) const override {
 			return val;
 		}
@@ -110,6 +119,12 @@ namespace utopia {
 		{
 			return MPI_COMM_SELF;
 		}
+
+		inline MPI_Comm raw_comm() const override
+		{
+			return MPI_COMM_SELF;
+		}
+
 #endif //WITH_MPI
 	};
 

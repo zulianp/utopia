@@ -169,7 +169,7 @@ namespace  utopia
         {
 
             if(empty(break_points) || local_size(break_points)!=local_size(d))
-                break_points = local_values(local_size(d).get(0), 0);
+                break_points.zeros(layout(d));
 
             {
               Read<Vector> r_ub(ub), r_lb(lb), r_d(d);
@@ -191,7 +191,7 @@ namespace  utopia
         {
 
             if(empty(active_set) || local_size(active_set) != local_size(break_points))
-                active_set = local_values(local_size(break_points).get(0), 0.0);
+                active_set.zeros(layout(break_points));
 
             {
                 Read<Vector> ab(break_points);

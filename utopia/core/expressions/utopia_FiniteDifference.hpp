@@ -3,6 +3,7 @@
 
 #include <limits>
 #include "utopia_Traits.hpp"
+#include "utopia_Layout.hpp"
 
 namespace utopia {
 
@@ -47,8 +48,12 @@ namespace utopia {
                 assert(x.comm().size() == 1 && "only for serial runs");
 
                 const SizeType n = x.size();
-                H = zeros(n, n);
-                Vector ei = zeros(n);
+
+                auto vec_layout = layout(x);
+                auto mat_layout = square_matrix_layout(vec_layout);
+
+                H.dense(mat_layout, 0.0);
+                Vector ei(vec_layout, 0.0);
                 Vector g_m = ei;
                 Vector g_p = ei;
                 Vector x_m = ei;
@@ -86,10 +91,15 @@ namespace utopia {
 
             template<class Fun, class Vector>
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
+
+                auto vec_layout = layout(x);
+                auto mat_layout = square_matrix_layout(vec_layout);
+
                 const SizeType n = x.size();
-                H = zeros(n, n);
-                Vector ei = zeros(n);
-                Vector ej = zeros(n);
+                H.dense(mat_layout, 0.0);
+
+                Vector ei(vec_layout, n);
+                Vector ej(vec_layout, n);
 
                 const Write <Matrix> wlock(H);
 
@@ -144,8 +154,10 @@ namespace utopia {
             static bool apply_from_grad(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
                assert(x.comm().size() == 1 && "only for serial runs");
 
-               const SizeType n = x.size();
-               Vector ei = zeros(n);
+               // const SizeType n = x.size();
+               // Vector ei = zeros(n);
+               Vector ei(layout(x), 0.0);
+
                Vector g_m = ei;
                Vector g_p = ei;
                Vector x_m = ei;
@@ -195,8 +207,9 @@ namespace utopia {
             static bool apply(Fun &fun, const Vector &x, const Scalar h, Matrix &H) {
                 const SizeType n = x.size();
                 assert(!empty(H) && "H has to be allocated with the sparsity pattern before calling this method");
-                Vector ei = zeros(n);
-                Vector ej = zeros(n);
+
+                Vector ei(layout(x), 0.0);
+                Vector ej(layout(x), 0.0);
 
                 const Write <Matrix> wlock(H);
 
@@ -262,12 +275,11 @@ namespace utopia {
             }
         }
 
-
         template<class Fun, class Vector>
         void grad(Fun &fun, const Vector &x, Vector &g) {
             const SizeType n = x.size();
-            g = values(n, 1, 0.0);
-            Vector d = zeros(n);
+            g.values(layout(x), 0.0);
+            Vector d(layout(x), 0.0);
 
             const Write <Vector> wlock(g);
             const Range r = range(x);
