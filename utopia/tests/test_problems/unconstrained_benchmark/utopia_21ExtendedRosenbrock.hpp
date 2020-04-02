@@ -12,12 +12,24 @@ namespace utopia
     class ExtendedRosenbrock21 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
-        ExtendedRosenbrock21(const SizeType & n_loc=2): n_loc_(n_loc)
+        ExtendedRosenbrock21(const SizeType &n_loc): n_loc_(n_loc)
         {
-            x_init_ = local_values(n_loc_, 1.0);
+            init(Comm::get_default(), n_loc);
+        }
+
+        ExtendedRosenbrock21(const Comm &comm = Comm::get_default(), const SizeType &n_loc = 2): n_loc_(n_loc)
+        {
+            init(comm, n_loc);
+        }
+
+        void init(const Comm &comm, const SizeType &n_loc)
+        {
+            x_init_.values(layout(comm, n_loc, Traits::determine()), 1.0);
 
             {
                 Write<Vector> wx(x_init_);
@@ -28,7 +40,7 @@ namespace utopia
                 }   );
             }
 
-            x_exact_ = local_values(n_loc_, 1.0);
+            x_exact_.values(layout(x_init_), 1.0);
         }
 
         std::string name() const override
@@ -98,7 +110,7 @@ namespace utopia
 
             SizeType d = point.size();
             if(empty(result)){
-                result = zeros(d);
+                result.zeros(layout(point));
             }
             else{
                 result.set(0.0);
@@ -154,7 +166,14 @@ namespace utopia
             Read<Vector> read(point);
 
             SizeType d = point.size();
-            result = zeros(d, d);
+
+            auto vl = layout(point);
+
+            if(empty(result)) {
+                result.dense(layout(vl.comm(), vl.local_size(), vl.local_size(), vl.size(), vl.size()));
+            }
+
+            result.set(0.0);
 
             // for parallel access to Matrix
             Range r_result = row_range(result);
@@ -234,18 +253,18 @@ namespace utopia
 
         void init_perm(const Vector &x)
         {
-            // if(!empty(perm_)) {
-            //     return;
-            // }
+            auto vl = layout(x);
+            auto mat_layout = layout(vl.comm(), 2, vl.local_size(), 2 * vl.comm().size(), vl.size());
 
             auto r = range(x);
             long n = local_size(x).get(0);
             long N = size(x).get(0);
 
             if (is_sparse<Matrix>::value) {
-                perm_ = local_sparse(2, n, 2);
+                perm_.sparse(mat_layout, 2, 2);
             } else {
-                perm_ = local_zeros({2, n});
+                perm_.dense(mat_layout);
+                perm_.set(0.0);
             }
 
             auto r_perm = row_range(perm_);

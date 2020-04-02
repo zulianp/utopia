@@ -8,6 +8,10 @@ namespace utopia
     template<class Matrix, class Vector, class ApproxType>
     class QuasiNewtonTest
     {
+        using Traits   = utopia::Traits<Matrix>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         public:
             static void print_backend_info()
@@ -29,23 +33,23 @@ namespace utopia
                 UTOPIA_RUN_TEST(quasi_newton_test_sparse);
 
                 UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
-                UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+                UTOPIA_RUN_TEST(Quasi_TR_MPRGP);
                 UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
 
-                
+
                 UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
                 UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
-                UTOPIA_RUN_TEST(Quasi_TR_MPRGP); 
+                UTOPIA_RUN_TEST(Quasi_TR_MPRGP);
                 UTOPIA_RUN_TEST(TR_constraint_GCP_test);
                 UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
-                UTOPIA_RUN_TEST(MPRGP_test); 
+                UTOPIA_RUN_TEST(MPRGP_test);
             }
 
             void run_multilevel()
             {
                 // UTOPIA_RUN_TEST(Quasi_RMTR_test);
                 // UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
-                std::cout<<"Fix quasi-Newton tests... \n"; 
+                std::cout<<"Fix quasi-Newton tests... \n";
             }
 
             void quasi_newton_test()
@@ -72,7 +76,7 @@ namespace utopia
 
                 SimpleQuadraticFunction<Matrix, Vector> fun(_n);
 
-                Vector x = values(_n, 2.);
+                Vector x(serial_layout(_n), 2.);
                 Vector expected_1 = zeros(x.size());
 
 
@@ -80,16 +84,16 @@ namespace utopia
                 utopia_test_assert(approxeq(expected_1, x));
 
                 TestFunctionND_1<Matrix, Vector> fun2(x.size());
-                x = values(_n, 2.0);
+                x.set(2.0);
                 Vector expected_2 = values(x.size(), 0.468919);
 
                 nlsolver.solve(fun2, x);
                 utopia_test_assert(approxeq(expected_2, x));
 
                 Rosenbrock01<Matrix, Vector> rosenbrock;
-                Vector x0 = values(2, 0.5);
+                Vector x0(serial_layout(2), 0.5);
                 nlsolver.solve(rosenbrock, x0);
-                Vector expected_rosenbrock = values(2, 1.0);
+                Vector expected_rosenbrock(layout(x0), 1.0);
 
                 utopia_test_assert(approxeq(x0, expected_rosenbrock));
             }
@@ -100,13 +104,13 @@ namespace utopia
                 if(mpi_world_size() == 1)
                 {
                     Rosenbrock01<Matrix, Vector> rosenbrock;
-                    Vector expected_rosenbrock = values(2, 1);
+                    Vector expected_rosenbrock(serial_layout(2), 1);
 
                     auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
                     subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
                     subproblem->atol(1e-10);
 
-                    Vector x0 = values(2, 2.0);
+                    Vector x0(serial_layout(2), 2.0);
 
                     auto hes_approx   = std::make_shared<ApproxType >();
                     hes_approx->update_hessian(true);
@@ -128,8 +132,10 @@ namespace utopia
             {
                 auto memory_size = 7;
 
+                auto &&comm = Comm::get_default();
+
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 1.0);
+                Vector x(layout(comm, Traits::decide(), _n), 1.0);
                 fun.apply_bc_to_initial_guess(x);
 
                 auto hess_approx = std::make_shared<ApproxType >(memory_size);
@@ -151,6 +157,8 @@ namespace utopia
 
             void quasi_newton_test_sparse()
             {
+                auto &&comm = Comm::get_default();
+
                 SizeType memory_size = 5;
 
                 auto hess_approx   = std::make_shared<ApproxType >(memory_size);
@@ -173,15 +181,15 @@ namespace utopia
 
                 SimpleQuadraticFunction<Matrix, Vector> fun(_n);
 
-                Vector x = values(_n, 2.);
-                Vector expected_1 = zeros(x.size());
+                Vector x(layout(comm, Traits::decide(), _n), 2.0);
+                Vector expected_1(layout(x), 0.0);
 
                 nlsolver.solve(fun, x);
                 utopia_test_assert(approxeq(expected_1, x));
 
 
                 Bratu1D<Matrix, Vector> fun2(_n);
-                Vector x2 = values(_n, 1.0);
+                Vector x2(layout(x), 2.0);
                 fun2.apply_bc_to_initial_guess(x2);
                 nlsolver.solve(fun2, x2);
 
@@ -190,8 +198,10 @@ namespace utopia
 
             void TR_constraint_GCP_test()
             {
+                auto &&comm = Comm::get_default();
+
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 1.0);
+                Vector x(layout(comm, Traits::decide(), _n), 1.0);
                 fun.apply_bc_to_initial_guess(x);
 
                 Vector ub, lb;
@@ -211,12 +221,14 @@ namespace utopia
 
             void QuasiTR_constraint_GCP_test()
             {
+                auto &&comm = Comm::get_default();
+
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 1.0);
+                Vector x(layout(comm, Traits::decide(), _n), 1.0);
                 fun.apply_bc_to_initial_guess(x);
 
-                Vector lb   = local_values(local_size(x).get(0), -0.01);
-                Vector ub   = local_values(local_size(x).get(0), 0.01);
+                Vector lb(layout(x), -0.01);
+                Vector ub(layout(x), 0.01);
                 auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
                 SizeType memory_size = 5;
@@ -240,12 +252,14 @@ namespace utopia
 
             void Gradient_projection_active_set_test()
             {
+                auto &&comm = Comm::get_default();
+
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 0.0);
+                Vector x(layout(comm, Traits::decide(), _n), 0.0);
                 fun.apply_bc_to_initial_guess(x);
 
-                Vector lb   = local_values(local_size(x).get(0), -0.01);
-                Vector ub   = local_values(local_size(x).get(0), 0.01);
+                Vector lb(layout(x), -0.01);
+                Vector ub(layout(x), 0.01);
                 auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
                 auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
@@ -270,17 +284,19 @@ namespace utopia
 
             void MPRGP_test()
             {
+                auto &&comm = Comm::get_default();
+
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 0.0);
+                Vector x(layout(comm, Traits::decide(), _n), 0.0);
                 fun.apply_bc_to_initial_guess(x);
 
-                Vector lb   = local_values(local_size(x).get(0), -0.01);
-                Vector ub   = local_values(local_size(x).get(0), 0.01);
+                Vector lb(layout(x), -0.01);
+                Vector ub(layout(x), 0.01);
                 auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
                 auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
                 qp_solver->verbose(false);
-                qp_solver->max_it(_n); 
+                qp_solver->max_it(_n);
                 qp_solver->atol(1e-14);
 
 
@@ -294,20 +310,22 @@ namespace utopia
                 tr_solver.delta0(1);
                 tr_solver.solve(fun, x);
 
-            }            
+            }
 
 
 
             void Quasi_TR_Gradient_projection_active_set_test()
             {
+                auto &&comm = Comm::get_default();
+
                 SizeType memory_size = 5;
 
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 0.0);
+                Vector x(layout(comm, Traits::decide(), _n), 0.0);
                 fun.apply_bc_to_initial_guess(x);
 
-                Vector lb   = local_values(local_size(x).get(0), -0.01);
-                Vector ub   = local_values(local_size(x).get(0), 0.01);
+                Vector lb(layout(x), -0.01);
+                Vector ub(layout(x), 0.01);
                 auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
                 auto hess_approx   = std::make_shared<ApproxType >(memory_size);
@@ -330,32 +348,34 @@ namespace utopia
 
             void Quasi_TR_MPRGP()
             {
+                auto &&comm = Comm::get_default();
+
                 SizeType memory_size = 5;
 
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 0.0);
+                Vector x(layout(comm, Traits::decide(), _n), 0.0);
                 fun.apply_bc_to_initial_guess(x);
 
-                Vector lb   = local_values(local_size(x).get(0), -0.01);
-                Vector ub   = local_values(local_size(x).get(0), 0.01);
+                Vector lb(layout(x), -0.01);
+                Vector ub(layout(x), 0.01);
                 auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
                 auto hess_approx   = std::make_shared<ApproxType >(memory_size);
-                hess_approx->theta_min(1e-10); 
+                hess_approx->theta_min(1e-10);
 
                                                                     // BAALI
                                                                     // NOCEDAL
-                hess_approx->damping_tech(utopia::LBFGSDampingTechnique::POWEL); 
+                hess_approx->damping_tech(utopia::LBFGSDampingTechnique::POWEL);
 
-                hess_approx->scaling_tech(utopia::LBFGSScalingTechnique::FORBENIUS); 
+                hess_approx->scaling_tech(utopia::LBFGSScalingTechnique::FORBENIUS);
 
-                // auto hess_approx = std::make_shared<JFNK<Vector>>(fun); 
+                // auto hess_approx = std::make_shared<JFNK<Vector>>(fun);
 
                 auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
-                qp_solver->max_it(_n); 
-                qp_solver->atol(1e-14); 
+                qp_solver->max_it(_n);
+                qp_solver->atol(1e-14);
 
-                // qp_solver->verbose(true); 
+                // qp_solver->verbose(true);
 
                 QuasiTrustRegionVariableBound<Vector>  tr_solver(hess_approx, qp_solver);
                 tr_solver.set_box_constraints(box);
@@ -372,18 +392,20 @@ namespace utopia
 
             void QuasiNewtonBoundTest()
             {
+                auto &&comm = Comm::get_default();
+
                 auto memory_size = 5;
 
                 Bratu1D<Matrix, Vector> fun(_n);
-                Vector x = values(_n, 0.0);
-                Vector lb   = local_values(local_size(x).get(0), -0.01);
-                Vector ub   = local_values(local_size(x).get(0), 0.01);
+                Vector x(layout(comm, Traits::decide(), _n), 0.0);
+                Vector lb(layout(x), -0.01);
+                Vector ub(layout(x), 0.01);
                 fun.apply_bc_to_initial_guess(x);
 
                 auto hess_approx   = std::make_shared<ApproxType >(memory_size);
                 // auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
                 auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
-                qp_solver->max_it(_n);                 
+                qp_solver->max_it(_n);
 
                 QuasiNewtonBound<Vector> solver(hess_approx, qp_solver);
 
@@ -557,7 +579,7 @@ namespace utopia
         // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
 
         QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
-        
+
         // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector> >().run_sparse();
         // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
 #endif

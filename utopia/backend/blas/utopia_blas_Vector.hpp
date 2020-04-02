@@ -49,7 +49,7 @@ namespace utopia {
 
         using iterator = typename Entries::iterator;
         using const_iterator = typename Entries::iterator;
-        using Layout = utopia::Layout<SelfCommunicator, SizeType, 1>;
+        using Layout = typename Traits<BlasVector>::Layout;
        ////////////////////////////////////////////////////////////////////
        ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
        ////////////////////////////////////////////////////////////////////
@@ -88,6 +88,11 @@ namespace utopia {
 
         BlasVector()
         {}
+
+        explicit BlasVector(const Layout &layout, const Scalar &val = 0.0)
+        {
+            values(layout, val);
+        }
 
         BlasVector(std::initializer_list<T> args)
         : entries_(args)

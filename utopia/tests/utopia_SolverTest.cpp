@@ -11,9 +11,18 @@
 namespace utopia
 {
 
-    template<class Matrix, class Vector, class Scalar>
+    template<class Matrix, class Vector>
     class SolverTest {
     public:
+
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using IndexSet = typename Traits::IndexSet;
+        using Comm     = typename Traits::Communicator;
+
+
+
         static void print_backend_info()
         {
             if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
@@ -60,7 +69,7 @@ namespace utopia
             // Rastrigin<Matrix, Vector> fun;
             // Woods14<Matrix, Vector> fun;
 
-            Vector x = values(n, 2.0);
+            Vector x(layout(comm_, Traits::decide(), n), 2.0);
 
             MSSolver<Matrix, Vector> solver(std::make_shared<ConjugateGradient<Matrix, Vector>>());
             solver.set_norm_type(MSSolver<Matrix, Vector>::A_SQUARED_NORM);
@@ -89,10 +98,10 @@ namespace utopia
             cg.max_it(_n);
             cg.verbose(false);
 
-            Matrix A = sparse(_n, _n, 3);
+            Matrix A; A.sparse(layout(comm_, Traits::decide(), Traits::decide(), _n, _n), 3, 3);
             assemble_symmetric_laplacian_1D(A, true);
 
-            Vector rhs = values(_n, 975.9);
+            Vector rhs(row_layout(A), 975.9);
 
             {
                 auto r = range(rhs);
@@ -101,7 +110,7 @@ namespace utopia
                 if(r.inside(_n - 1)) rhs.set(_n-1, 0.0);
             }
 
-            Vector x = zeros(size(rhs));
+            Vector x(layout(rhs), 0.0);
 
             cg.solve(A, rhs, x);
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
@@ -118,10 +127,10 @@ namespace utopia
             // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
 
 
-            Matrix A = sparse(_n, _n, 3);
+            Matrix A; A.sparse(layout(comm_, Traits::decide(), Traits::decide(), _n, _n), 3, 3);
             assemble_symmetric_laplacian_1D(A, true);
 
-            Vector rhs = values(_n, 975.9);
+            Vector rhs(row_layout(A), 975.9);
 
             {
                 auto r = range(rhs);
@@ -130,7 +139,7 @@ namespace utopia
                 if(r.inside(_n-1)) rhs.set(_n-1, 0.0);
             }
 
-            Vector x = zeros(size(rhs));
+            Vector x(layout(rhs), 0.0);
 
             cg.solve(A, rhs, x);
             utopia_test_assert(approxeq(rhs, A * x, 1e-5));
@@ -142,7 +151,7 @@ namespace utopia
 
             //set-up problem
             int n = 10;
-            Vector actual = values(n, 2.);
+            Vector actual(layout(comm_, Traits::decide(), n), 2.);
             TestFunctionND_1<Matrix, Vector> fun(n);
 
             InputParameters in;
@@ -154,7 +163,7 @@ namespace utopia
             line_search_solve(fun, actual, Solver::backtracking(), in);
 
             //test outcome...
-            Vector expected = values(n, 0.468919);
+            Vector expected(layout(actual), 0.468919);
             utopia_test_assert(approxeq(expected, actual));
             //! [NL solve example]
         }
@@ -163,7 +172,7 @@ namespace utopia
         {
             //set-up problem
             int n = 10;
-            Vector actual = values(n, 1.0);
+            Vector actual(layout(comm_, Traits::decide(), n), 1.0);
             TestFunctionND_1<Matrix, Vector> fun(n);
 
             auto solver = GradientDescent<Vector>();
@@ -171,7 +180,7 @@ namespace utopia
             solver.solve(fun, actual);
 
             //test outcome...
-            Vector expected = values(n, 0.468919);
+            Vector expected(layout(actual), 0.468919);
             utopia_test_assert(approxeq(expected, actual));
         }
 
@@ -190,8 +199,8 @@ namespace utopia
             Newton<Matrix, Vector> newton_solver(linear_solver);
 
             const int n = 10;
-            Vector actual   = values(n, 2.);
-            Vector expected = values(n, 0.468919);
+            Vector actual(layout(comm_, Traits::decide(), n), 2.);
+            Vector expected(layout(actual), 0.468919);
 
             TestFunctionND_1<Matrix, Vector> fun(n);
 
@@ -207,12 +216,12 @@ namespace utopia
             // rosenbrock test
             if(mpi_world_size() == 1)
             {
-                Vector x = values(10, 2);
+                Vector x (serial_layout(10), 2);
                 TestFunctionND_1<Matrix, Vector> fun2(x.size());
-                Vector expected = values(x.size(), 0.468919);
+                Vector expected(layout(x), 0.468919);
 
-                Vector x_w1  = values(4, 10);
-                Vector expected_woods = values(4, 1);
+                Vector x_w1(serial_layout(4), 10);
+                Vector expected_woods(serial_layout(4), 1);
                 Woods14<Matrix, Vector> fun_woods;
                 {
                     Write<Vector> w1(x_w1);
@@ -228,23 +237,23 @@ namespace utopia
                 in.set("stol", 1e-10);
                 in.set("verbose", false);
 
-                x = values(10, 2);
+                x.set(2);
                 trust_region_solve(fun2, x, Solver::steihaug_toint(), in);
                 utopia_test_assert(approxeq(expected, x));
 
-                x = values(10, 2);
+                x.set(2);
                 trust_region_solve(fun2, x, Solver::dogleg(), in);
                 utopia_test_assert(approxeq(expected, x));
 
-                x = values(10, 2);
+                x.set(2);
                 trust_region_solve(fun2, x, Solver::cauchypoint(), in);
                 utopia_test_assert(approxeq(expected, x));
 
-                Vector expected_rosenbrock = values(2, 1.0);
+                Vector expected_rosenbrock(serial_layout(2), 1.0);
                 Rosenbrock01<Matrix, Vector> rosenbrock;
-                Vector x0 = values(2, 2.0);
+                Vector x0(serial_layout(2), 2.0);
 
-                x0 = values(2, 2.0);
+                x0.values(serial_layout(2), 2.0);
                 in.set("atol", 1e-13);
                 in.set("rtol", 1e-17);
                 trust_region_solve(rosenbrock, x0, Solver::steihaug_toint(), in);
@@ -261,11 +270,11 @@ namespace utopia
         void ls_test()
         {
             if(mpi_world_size() == 1) {
-                Vector x1 = values(10, 2);
-                Vector x2 = values(10, 2);
+                Vector x1(serial_layout(10), 2);
+                Vector x2(serial_layout(10), 2);
                 TestFunctionND_1<Matrix, Vector> fun2(x1.size());
 
-                Vector expected = values(x1.size(), 0.468919);
+                Vector expected(layout(x1), 0.468919);
 
                 InputParameters params;
                 params.set("atol", 1e-11);
@@ -296,9 +305,9 @@ namespace utopia
 
 
                 // Woods function test
-                Vector x_w1  = values(4, 10);
-                Vector x_w2  = values(4, 10);
-                Vector expected_woods = values(4, 1);
+                Vector x_w1(serial_layout(4), 10);
+                Vector x_w2(serial_layout(4), 10);
+                Vector expected_woods(serial_layout(4), 1);
                 {
                     Write<Vector> w1(x_w1);
                     Write<Vector> w2(x_w2);
@@ -317,8 +326,8 @@ namespace utopia
                 utopia_test_assert(approxeq(expected_woods, x_w2));
 
                 // rastrigin function test - convergence to local minimum
-                Rastrigin<Matrix, Vector> fun_rastrigin(2);
-                Vector x_r1 = values(2, 1), x_r2 = values(2, 1), expected_rastrigin = values(2, 1);
+                Rastrigin<Matrix, Vector> fun_rastrigin;
+                Vector x_r1(serial_layout(2), 1), x_r2(serial_layout(2), 1), expected_rastrigin(serial_layout(2), 1);
                 {
                     Write<Vector> w1(x_r1);
                     Write<Vector> w2(x_r2);
@@ -331,10 +340,10 @@ namespace utopia
                 nlsolver2.solve(fun_rastrigin, x_r2);
 
                 // rosenbrock test
-                Vector expected_rosenbrock = values(2, 1);
+                Vector expected_rosenbrock(serial_layout(2), 1);
                 Rosenbrock01<Matrix, Vector> rosenbrock_fun;
 
-                Vector x01 = values(2, 2.0), x02 = values(2, 2.0);
+                Vector x01(serial_layout(2), 2.0), x02(serial_layout(2), 2.0);
                 nlsolver1.solve(rosenbrock_fun, x01);
                 nlsolver2.solve(rosenbrock_fun, x02);
 
@@ -351,12 +360,12 @@ namespace utopia
             if(mpi_world_size() == 1)
             {
                 Rosenbrock01<Matrix, Vector> rosenbrock;
-                Vector expected_rosenbrock = values(2, 1);
+                Vector expected_rosenbrock(serial_layout(2), 1);
 
                 auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
                 auto dogleg = std::make_shared<Dogleg<Matrix, Vector> >(cg);
 
-                Vector x0 = values(2, 2.0);
+                Vector x0(serial_layout(2), 2.0);
 
                 TrustRegion<Matrix, Vector> tr_solver(dogleg);
                 tr_solver.verbose(false);
@@ -372,7 +381,7 @@ namespace utopia
             Newton<Matrix, Vector> newton_solver;
             newton_solver.enable_differentiation_control(true);
 
-            Vector x = values(10, 2);
+            Vector x(layout(comm_, Traits::decide(), 10), 2);
             TestFunctionND_1<Matrix, Vector> fun1(x.size());
             newton_solver.solve(fun1, x);
 
@@ -381,9 +390,10 @@ namespace utopia
         }
 
         SolverTest()
-        : _n(10) { }
+        : comm_(Comm::get_default()), _n(10) { }
 
     private:
+        Comm comm_;
         int _n;
 
     };
@@ -391,6 +401,11 @@ namespace utopia
     template<class GlobalMatrix, class GlobalVector, class LocalMatrix, class LocalVector>
     class MSSolverTest {
     public:
+        using Traits   = utopia::Traits<GlobalVector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using IndexSet = typename Traits::IndexSet;
+        using Comm     = typename Traits::Communicator;
 
         void run()
         {
@@ -450,7 +465,7 @@ namespace utopia
         {
             using ConvexHullSolver = utopia::MSConvexHullSolver<GlobalMatrix, GlobalVector, LocalMatrix, LocalVector>;
 
-            GlobalVector x = values(n, 2.0);
+            GlobalVector x(layout(comm_, Traits::decide(), n), 2.0);
 
             MSSolver<GlobalMatrix, GlobalVector> solver(std::make_shared<ConjugateGradient<GlobalMatrix, GlobalVector, HOMEMADE>>());
             // solver.set_norm_type(MSSolver<GlobalMatrix, GlobalVector>::A_SQUARED_NORM);
@@ -463,6 +478,14 @@ namespace utopia
             // solver.atol(1e-10);
             solver.solve(fun, x);
         }
+
+
+       MSSolverTest()
+        : comm_(Comm::get_default())
+        {}
+
+    private:
+        Comm comm_;
 
     };
 
@@ -477,7 +500,7 @@ namespace utopia
 
 
 #ifdef WITH_PETSC
-        SolverTest<PetscMatrix, PetscVector, PetscScalar>().run();
+        SolverTest<PetscMatrix, PetscVector>().run();
 
 #ifdef WITH_BLAS
         //FIXME this fails for some reason

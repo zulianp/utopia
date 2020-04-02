@@ -123,7 +123,7 @@ namespace utopia
             Scalar alpha, g_norm, d_B_d, z, z1;
             SizeType it = 1;
 
-            corr = local_zeros(local_size(g));
+            corr.zeros(layout(g));
             g_norm = norm2(g);
             z = g_norm * g_norm;
 
@@ -185,7 +185,7 @@ namespace utopia
             SizeType it=0;
 
             if(empty(s_k))
-                s_k = local_zeros(local_size(g));
+                s_k.zeros(layout(g));
             else
                 s_k.set(0.0);
 
@@ -202,7 +202,7 @@ namespace utopia
             it++;
 
             if(empty(v_k))
-                v_k = local_zeros(local_size(g));
+                v_k.zeros(layout(g));
             else
                 v_k.set(0.0);
 
@@ -352,7 +352,7 @@ namespace utopia
 
                 // apply preconditioner
                 if(empty(v_k))
-                    v_k = local_zeros(local_size(r));
+                    v_k.zeros(layout(r));
                 else
                     v_k.set(0.0);
 

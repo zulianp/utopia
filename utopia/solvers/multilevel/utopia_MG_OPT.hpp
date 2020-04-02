@@ -103,7 +103,7 @@ namespace utopia
 
             this->init_memory();
 
-            Vector g = local_zeros(local_size(x_h));
+            Vector g(layout(x_h), 0.0);
             fine_fun.gradient(x_h, g);
             r0_norm = norm2(g);
             r_norm = r0_norm;
@@ -123,7 +123,7 @@ namespace utopia
 #ifdef CHECK_NUM_PRECISION_mode
                 if(has_nan_or_inf(x_h) == 1)
                 {
-                    x_h = local_zeros(local_size(x_h));
+                    x_h.zeros(layout(x_h));
                     return true;
                 }
 #endif
@@ -230,9 +230,9 @@ namespace utopia
         {
             _smoother->max_it(1);
             _smoother->verbose(true);
-            // This should be done way much more efficient 
+            // This should be done way much more efficient
             std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
-            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
             _smoother->solve(fun_rhs, x, rhs);
             return true;
         }
@@ -250,9 +250,9 @@ namespace utopia
         bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs)
         {
             _coarse_solver->verbose(true);
-            // This should be done way much more efficient 
+            // This should be done way much more efficient
             std::shared_ptr<Fun> fun_ptr(&fun, [](Fun*){});
-            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr); 
+            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
             _coarse_solver->solve(fun_rhs, x, rhs);
             return true;
         }

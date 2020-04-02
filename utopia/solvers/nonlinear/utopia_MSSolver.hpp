@@ -2,6 +2,7 @@
 #define UTOPIA_MS_SOLVER_HPP
 
 #include "utopia_Core.hpp"
+#include "utopia_Layout.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_NewtonBase.hpp"
@@ -47,7 +48,8 @@ namespace utopia
     template<class GlobalMatrix, class GlobalVector, class Matrix, class Vector>
     class MSConvexHullSolver final : public IMSConvexHullSolver<GlobalMatrix, GlobalVector> {
     public:
-        using Scalar = UTOPIA_SCALAR(Vector);
+        using Scalar       = typename Traits<Vector>::Scalar;
+        using SerialLayout = typename Traits<Vector>::Layout;
 
         void solve(HilbertFunction<GlobalMatrix, GlobalVector> &normed,
                    const Scalar a_norm2,
@@ -60,8 +62,10 @@ namespace utopia
             const std::size_t n_2gp2 = 2 * n_gradients + 2;
             const auto m_g = n_gradients * 2 + 3;
 
+            SelfCommunicator serial_comm;
+
             //Create Matrix (A e Id// e^T 0 0// 0 0 0), where the symmetric matrix A= (A_ij )is defined by A_ij = <gradients[i],gradients[j]> with gradients[n_gradients]:= b_g, Id is the Identity and e^T=(1,...,1)
-            Matrix C = sparse(m_g , m_g , m_g); // C well be an element of the generalized gradient \partial F (\lambda). Note that the first n+2 rows are fixed.
+            Matrix C(serial_layout(m_g , m_g), 0.0); // C well be an element of the generalized gradient \partial F (\lambda). Note that the first n+2 rows are fixed.
             Scalar valb_gb_g = normed.dot(in_out_b_g, in_out_b_g);
             C.set(n_gradients, n_gradients, valb_gb_g/a_norm2);
             C.set(n_gp1,n_gradients, 1);
@@ -85,14 +89,16 @@ namespace utopia
                 }
             }
 
-            auto lb = std::make_shared<Vector>(zeros(m_g));
 
-            Vector lambda = zeros(m_g),
-            r_k = zeros(m_g),
-            p_k = zeros(m_g),
-            Cp_k = zeros(m_g),
-            val_newton_func = zeros(m_g),
-            desc_dir = zeros(m_g);
+            SerialLayout vec_layout = serial_layout(m_g);
+            auto lb = std::make_shared<Vector>(vec_layout, 0.0);
+
+            Vector lambda(vec_layout, 0.0),
+                   r_k(vec_layout, 0),
+                   p_k(vec_layout, 0),
+                   Cp_k(vec_layout, 0),
+                   val_newton_func(vec_layout, 0),
+                   desc_dir(vec_layout, 0);
 
             // compute a useful initial lambda. This lambda represents the smallest element of conv{b_g , gradients[0] }.
             lambda.set(n_gradients-1 , std::min(1.,std:: max(0.,  (C.get(n_gradients,n_gradients)-C.get(n_gradients-1,n_gradients))/( C.get(n_gradients-1,n_gradients-1)-2*C.get(n_gradients-1,n_gradients)+C.get(n_gradients,n_gradients)))));

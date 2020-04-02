@@ -12,8 +12,10 @@ namespace utopia {
     template<class Left, class Right, int Backend>
     class EvalBlocks<Left, Right, 1, Backend> {
     public:
-        using SizeType = typename Traits<Left>::SizeType;
-        using Scalar   = typename Traits<Left>::Scalar;
+        using Traits   = utopia::Traits<Left>;
+        using SizeType = typename Traits::SizeType;
+        using Scalar   = typename Traits::Scalar;
+        using Comm     = typename Traits::Communicator;
 
         static void apply(Left &l, const Blocks<Right> &blocks)
         {
@@ -27,7 +29,9 @@ namespace utopia {
                 n += local_size(*b_ptr).get(0);
             }
 
-            l = local_zeros(n);
+            auto &&comm = b[0]->comm();
+
+            l.zeros(layout(comm, n, Traits::determine()));
             auto r = range(l);
 
             SizeType index = 0;
@@ -51,8 +55,11 @@ namespace utopia {
     template<class Left, class Right, int Backend>
     class EvalBlocks<Left, Right, 2, Backend> {
     public:
-        using SizeType = typename Traits<Left>::SizeType;
-        using Scalar   = typename Traits<Left>::Scalar;
+        using Traits   = utopia::Traits<Left>;
+        using SizeType = typename Traits::SizeType;
+        using Scalar   = typename Traits::Scalar;
+        using Comm     = typename Traits::Communicator;
+
 
         static void apply(Left &l, const Blocks<Right> &r)
         {
@@ -64,11 +71,15 @@ namespace utopia {
             std::vector<SizeType> row_offset(r.rows()+1, 0);
             std::vector<SizeType> col_offset(r.cols()+1, 0);
 
+            Comm comm;
+
             for(SizeType i = 0; i < r.rows(); ++i) {
                 for(SizeType j = 0; j < r.cols(); ++j) {
                     if(!r.block_is_null(i, j)) {
                         rows += local_size(r.block(i, j)).get(0);
                         row_offset[i+1] = rows;
+
+                        comm = r.block(i, j).comm();
                         break;
                     }
                 }
@@ -112,7 +123,7 @@ namespace utopia {
                 max_nnz = std::max(max_nnz, block_row_nnz);
             }
 
-            l = local_sparse(rows, local_cols, max_nnz);
+            l.sparse(layout(comm, rows, local_cols, Traits::determine(), Traits::determine()), max_nnz, max_nnz);
 
             {
                 Write<Left> w_(l);

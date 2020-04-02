@@ -9,6 +9,7 @@
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Device.hpp"
 #include "utopia_Layout.hpp"
+#include <Tpetra_ConfigDefs.hpp>
 
 #include <vector>
 
@@ -30,7 +31,8 @@ namespace utopia {
         using Communicator  = utopia::TrilinosCommunicator;
         using Node          = utopia::DefaultKokkosNode;
         using Device        = utopia::Device<TRILINOS>;
-        using Layout        = utopia::Layout<TrilinosCommunicator, SizeType, 1>;
+        using Layout        = utopia::Layout<TrilinosCommunicator, 1, LocalSizeType, SizeType>;
+        using MatrixLayout  = utopia::Layout<TrilinosCommunicator, 2, LocalSizeType, SizeType>;
 
         enum {
             Backend = TRILINOS
@@ -40,6 +42,18 @@ namespace utopia {
         {
             static BackendInfo instance_("trilinos");
             return instance_;
+        }
+
+        //tells tpetra to device local size automatically
+        static constexpr std::size_t decide()
+        {
+            return static_cast<std::size_t>(INVALID_INDEX);
+        }
+
+        //tells tpetra to compute global size automatically
+        static Tpetra::global_size_t determine()
+        {
+            return Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid();
         }
     };
 

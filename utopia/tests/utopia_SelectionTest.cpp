@@ -10,11 +10,15 @@ namespace utopia {
          using Scalar   = typename utopia::Traits<Vector>::Scalar;
          using SizeType = typename utopia::Traits<Vector>::SizeType;
          using IndexSet = typename utopia::Traits<Vector>::IndexSet;
+         using Comm     = typename utopia::Traits<Vector>::Communicator;
 
         void vector_selection_test()
         {
-            const int n = mpi_world_size() * 3;
-            Vector v = zeros(n);
+
+            auto &&comm = Comm::get_default();
+            const int n = comm.size() * 3;
+            Vector v(layout(comm, 3, n), 0.);
+
             auto r = range(v);
 
             {
@@ -77,7 +81,7 @@ namespace utopia {
                 c_s[1] = 2;
             }
 
-           
+
             Matrix selection = select(m, r_s, c_s);
 
             {

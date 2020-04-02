@@ -12,16 +12,30 @@ namespace utopia
     class Trigonometric26 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
-        Trigonometric26(const SizeType & n_loc=10): n_loc_(n_loc)
+        Trigonometric26(const Comm &comm = Comm::get_default(), const SizeType &n_loc = 10) : n_loc_(n_loc)
         {
-            x_exact_ = local_values(n_loc_, 0.0);
-            SizeType n_global = size(x_exact_).get(0);
+            init(comm, n_loc);
+        }
 
-            x_init_ = local_values(n_loc_, 1./Scalar(n_global));
-            x_inc_ = local_values(n_loc_, 1.0);
+        Trigonometric26(const SizeType &n_loc) : n_loc_(n_loc)
+        {
+            init(Comm::get_default(), n_loc);
+        }
+
+        void init(const Comm &comm, const SizeType &n_loc)
+        {
+            x_exact_.zeros(layout(comm, n_loc, Traits::determine()));
+            auto x_layout = layout(x_exact_);
+
+            SizeType n_global = x_layout.size(0);
+
+            x_init_.values(x_layout, 1./Scalar(n_global));
+            x_inc_.values(x_layout, 1.0);
 
             {
                 const Write<Vector> write2(x_inc_);
@@ -76,7 +90,7 @@ namespace utopia
 
 
             Scalar s1 = sum(xcos);
-            Vector t = (n_global- s1) * local_values(local_size(x).get(0), 1.0);
+            Vector t(layout(x), (n_global- s1));
             t = t + x_inc_ - xsin;
             t = t - e_mul(x_inc_, xcos);
 
@@ -110,7 +124,7 @@ namespace utopia
             }
 
             Scalar s1 = sum(xcos);
-            Vector t = (n_global- s1) * local_values(local_size(x).get(0), 1.0);
+            Vector t(layout(x), (n_global- s1));
             t = t + x_inc_ - xsin;
             t = t - e_mul(x_inc_, xcos);
 
@@ -127,13 +141,14 @@ namespace utopia
             assert(local_size(x).get(0) == this->dim());
 
             if(empty(H)){
-                H = local_values(local_size(x).get(0), local_size(x).get(0), 0.0);
+                // H = local_values(local_size(x).get(0), local_size(x).get(0), 0.0);
+                H.dense(square_matrix_layout(layout(x)), 0.0);
             }
 
             SizeType n_global = size(x).get(0);
             Vector xcos = x;
             Vector xsin = x;
-            Vector ones = local_values(local_size(x).get(0), 1.0);
+            Vector ones(layout(x), 1.0);
 
             {
                 const Write<Vector> write1(xcos);

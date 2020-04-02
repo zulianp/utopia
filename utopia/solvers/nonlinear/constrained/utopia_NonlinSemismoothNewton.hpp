@@ -36,7 +36,7 @@ namespace utopia
 
         }
 
-        bool solve(Function<Matrix, Vector> & fun, Vector & x_new) override
+        bool solve(Function<Matrix, Vector> &fun, Vector &x_new) override
         {
 
          using namespace utopia;
@@ -44,13 +44,16 @@ namespace utopia
          Scalar c = 1;
          SizeType iterations = 1;
 
-         const SizeType local_N = local_size(x_new).get(0);
-         Vector lambda = local_zeros(local_N);
+         // const SizeType local_N = local_size(x_new).get(0);
+         auto vec_layout = layout(x_new);
+         auto mat_layout = square_matrix_layout(vec_layout);
+
+         Vector lambda(vec_layout, 0.0);
          Vector Ginvg, d, g;
          Vector x_old = x_new;
 
          Matrix Ac, Ic, M;
-         Matrix G = local_identity(local_N, local_N);
+         Matrix G; G.identity(mat_layout, 1.0);
 
          Matrix Hessian;
          Vector grad;
@@ -73,11 +76,11 @@ namespace utopia
 
             //! active, inactive constraints
             if(is_sparse<Matrix>::value) {
-                Ac = local_sparse(local_N, local_N, 1);
-                Ic = local_sparse(local_N, local_N, 1);
+                Ac.sparse(mat_layout, 1, 0);
+                Ic.sparse(mat_layout, 1, 0);
             } else {
-                Ac = local_zeros({ local_N, local_N });
-                Ic = local_zeros({ local_N, local_N });
+                Ac.dense(mat_layout, 0.0);
+                Ic.dense(mat_layout, 0.0);
             }
 
             {

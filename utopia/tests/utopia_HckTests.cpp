@@ -111,8 +111,8 @@ namespace utopia
             if(dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get()))
             {
                 QPSolver<Matrix, Vector> * qp_box = dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get());
-                Vector lb = local_values(local_size(x_working).get(0), -9e9);
-                Vector ub = local_values(local_size(x_working).get(0), 9e9);
+                Vector lb(layout(x_working), -9e9);
+                Vector ub(layout(x_working), 9e9);
                 qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
                 qp_box->solve(H_working, -1.0*g_working, x_working);
             }
@@ -587,8 +587,8 @@ namespace utopia
                 empty_rhs = 0.0*x;
 
 
-                PetscVector lb = local_values(local_size(x), -9e9);
-                PetscVector ub = local_values(local_size(x), 9e9);
+                PetscVector lb(layout(x), -9e9);
+                PetscVector ub(layout(x), 9e9);
 
                 QuadraticExtendedFunction<PetscMatrix, PetscVector> fun_QP(H, g, x_eq, x_bc_marker, empty_rhs);
 
@@ -602,8 +602,8 @@ namespace utopia
 
                     auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
 
-                    Vector lb_tril = local_values(local_size(x_tril).get(0), -9e9);
-                    Vector ub_tril = local_values(local_size(x_tril).get(0), 9e9);
+                    Vector lb_tril(layout(x_tril), -9e9);
+                    Vector ub_tril(layout(x_tril), 9e9);
 
                     empty_rhs_tril = 0.0*x_tril;
                     backend_convert(x_eq, x_eq_tril);

@@ -18,11 +18,11 @@ namespace utopia
 
         Watson20Constrained()
         {
-            assert(mpi_world_size() == 1 && "does not work for parallel matrices");
+            auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
-            ub = zeros(9);
-            lb = zeros(9);
+            ub.zeros(v_layout);
+            lb.zeros(v_layout);
 
             {
                 const Write<Vector> write2(ub);
@@ -46,7 +46,7 @@ namespace utopia
                 ub.set(5, 0.0);
                 ub.set(6, 4.0);
                 ub.set(7, 0.0);
-                ub.set(8, 2.0);                
+                ub.set(8, 2.0);
             }
 
             this->set_box_constraints(make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub)));
@@ -59,27 +59,27 @@ namespace utopia
 
         SizeType dim() const override
         {
-            return unconstrained_.dim(); 
+            return unconstrained_.dim();
         }
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
-            return unconstrained_.value(x, result); 
+            return unconstrained_.value(x, result);
         }
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            return unconstrained_.gradient(x, g); 
+            return unconstrained_.gradient(x, g);
         }
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            return unconstrained_.hessian(x, H); 
+            return unconstrained_.hessian(x, H);
         }
 
         Vector initial_guess() const override
         {
-            return unconstrained_.initial_guess(); 
+            return unconstrained_.initial_guess();
         }
 
         const Vector & exact_sol() const override
@@ -89,11 +89,11 @@ namespace utopia
 
         Scalar min_function_value() const override
         {
-            return 0.37401397e-1; 
+            return 0.37401397e-1;
         }
 
     private:
-        Watson20<Matrix, Vector> unconstrained_; 
+        Watson20<Matrix, Vector> unconstrained_;
     };
 
 }

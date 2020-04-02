@@ -65,7 +65,7 @@ namespace utopia {
         using RCPCommType     = Teuchos::RCP<const Teuchos::Comm<int> > ;
         using RCPMapType      = Teuchos::RCP<const MapType>;
         using ExecutionSpace  = VectorType::execution_space;
-        using Layout          = utopia::Layout<TrilinosCommunicator, SizeType, 1>;
+        using Layout          = Traits<TpetraVector>::Layout;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -101,6 +101,11 @@ namespace utopia {
         TpetraVector(const TrilinosCommunicator &comm = Tpetra::getDefaultComm())
         : comm_(comm)
         {}
+
+         explicit TpetraVector(const Layout &layout, const Scalar &val = 0.0)
+        {
+          values(layout, val);
+        }
 
         ~TpetraVector()
         {}
@@ -296,6 +301,8 @@ namespace utopia {
         {
             describe(std::cout);
         }
+
+        void shift(const Scalar &x);
 
         inline Scalar get(const SizeType &i) const override
         {

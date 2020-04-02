@@ -27,7 +27,8 @@ namespace utopia {
         using Scalar = Scalar_;
         using SizeType = SizeType_;
         using Communicator = utopia::Communicator;
-        using Layout       = utopia::Layout<Communicator, SizeType, 1>;
+        using Layout       = utopia::Layout<Communicator, 1, SizeType>;
+        using MatrixLayout = utopia::Layout<Communicator, 2, SizeType>;
     };
 
     //parallel types, collective operations

@@ -18,15 +18,17 @@ namespace utopia
 
         BrownDennis16Constrained()
         {
-            assert(mpi_world_size() == 1 && "does not work for parallel matrices");
+            auto v_layout = serial_layout(dim());
 
-            Vector ub = zeros(4);
-            Vector lb = zeros(4);
+            Vector ub, lb;
+
+            ub.zeros(v_layout);
+            lb.zeros(v_layout);
 
             {
                 const Write<Vector> write1(ub);
                 const Write<Vector> write2(lb);
-                
+
 
                 lb.set(0, -10.0);
                 lb.set(1, 0.0);
@@ -49,27 +51,27 @@ namespace utopia
 
         SizeType dim() const override
         {
-            return unconstrained_.dim(); 
+            return unconstrained_.dim();
         }
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {
-            return unconstrained_.value(x, result); 
+            return unconstrained_.value(x, result);
         }
 
         bool gradient(const Vector &x, Vector &g) const override
         {
-            return unconstrained_.gradient(x, g); 
+            return unconstrained_.gradient(x, g);
         }
 
         bool hessian(const Vector &x, Matrix &H) const override
         {
-            return unconstrained_.hessian(x, H); 
+            return unconstrained_.hessian(x, H);
         }
 
         Vector initial_guess() const override
         {
-            return unconstrained_.initial_guess(); 
+            return unconstrained_.initial_guess();
         }
 
         const Vector & exact_sol() const override
@@ -83,7 +85,7 @@ namespace utopia
         }
 
     private:
-        BrownDennis16<Matrix, Vector> unconstrained_; 
+        BrownDennis16<Matrix, Vector> unconstrained_;
 
     };
 }

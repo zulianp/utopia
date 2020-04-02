@@ -9,4 +9,10 @@ namespace utopia {
 	{
 
 	}
+
+    PetscCommunicator PetscCommunicator::self()
+    {
+        return PetscCommunicator(PETSC_COMM_SELF);
+    }
+
 }

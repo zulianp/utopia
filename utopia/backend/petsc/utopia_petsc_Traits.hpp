@@ -19,8 +19,9 @@ namespace utopia {
 
     class PetscTraits {
     public:
-        using Scalar   = PetscScalar;
-        using SizeType = PetscInt;
+        using Scalar        = PetscScalar;
+        using SizeType      = PetscInt;
+        using LocalSizeType = SizeType;
 
         using Matrix            = utopia::PetscMatrix;
         using SparseMatrix      = utopia::PetscMatrix;
@@ -32,8 +33,9 @@ namespace utopia {
         using ScalarArray = utopia::PetscArray<Scalar>;
 
         using Communicator = utopia::PetscCommunicator;
-        using Device = utopia::Device<PETSC>;
-        using Layout = utopia::Layout<PetscCommunicator, SizeType, 1>;
+        using Device       = utopia::Device<PETSC>;
+        using Layout       = utopia::Layout<PetscCommunicator, 1, SizeType>;
+        using MatrixLayout = utopia::Layout<PetscCommunicator, 2, SizeType>;
 
         enum
         {
@@ -44,6 +46,18 @@ namespace utopia {
         {
             static BackendInfo instance_("petsc");
             return instance_;
+        }
+
+        //tells petsc to device local size automatically
+        static constexpr SizeType decide()
+        {
+            return PETSC_DECIDE;
+        }
+
+        //tells petsc to compute global size automatically
+        static constexpr SizeType determine()
+        {
+            return PETSC_DETERMINE;
         }
     };
 

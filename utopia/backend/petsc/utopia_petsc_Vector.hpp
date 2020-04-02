@@ -58,7 +58,7 @@ namespace utopia {
             using Constructible::local_values;
             using Constructible::local_zeros;
             using Constructible::zeros;
-            using Layout = utopia::Layout<PetscCommunicator, SizeType, 1>;
+            using Layout = typename Traits<PetscVector>::Layout;
 
     private:
         class GhostValues {
@@ -510,7 +510,12 @@ namespace utopia {
       bool equals(const PetscVector &other, const Scalar &tol = 0.0) const override;
 
       ///////////////////////////////////////////////////////////////////////////
-
+      explicit PetscVector(const Layout &layout, const Scalar &val = 0.0)
+      : vec_(nullptr), initialized_(false)
+      {
+          immutable_ = false;
+          values(layout, val);
+      }
 
         inline PetscVector()
         : vec_(nullptr), initialized_(false)

@@ -17,16 +17,18 @@ namespace utopia {
     template<typename T>
     class BLASTraits {
     public:
-        using Scalar       = T;
-        using Matrix       = utopia::BlasMatrix<T>;
-        using Vector       = utopia::BlasVector<T>;
-        using SizeType     = std::size_t;
-        using IndexSet     = utopia::BlasIndexSet;
-        using ScalarArray  = utopia::BlasArray<T>;
-        using IndexArray   = utopia::BlasArray<int>;
-        using Communicator = utopia::SelfCommunicator;
-        using Device       = utopia::Device<BLAS>;
-        using Layout       = utopia::Layout<SelfCommunicator, SizeType, 1>;
+        using Scalar        = T;
+        using Matrix        = utopia::BlasMatrix<T>;
+        using Vector        = utopia::BlasVector<T>;
+        using SizeType      = std::size_t;
+        using LocalSizeType = std::size_t;
+        using IndexSet      = utopia::BlasIndexSet;
+        using ScalarArray   = utopia::BlasArray<T>;
+        using IndexArray    = utopia::BlasArray<int>;
+        using Communicator  = utopia::SelfCommunicator;
+        using Device        = utopia::Device<BLAS>;
+        using Layout        = utopia::Layout<SelfCommunicator, 1, SizeType>;
+        using MatrixLayout  = utopia::Layout<SelfCommunicator, 2, SizeType>;
 
         enum {
             Backend = BLAS
@@ -36,6 +38,19 @@ namespace utopia {
         {
             static BackendInfo instance_("blas");
             return instance_;
+        }
+
+
+        //tells petsc to device local size automatically
+        static constexpr SizeType decide()
+        {
+            return 0;
+        }
+
+        //tells petsc to compute global size automatically
+        static constexpr SizeType determine()
+        {
+            return 0;
         }
     };
 

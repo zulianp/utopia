@@ -106,9 +106,9 @@ namespace utopia
 
         static void fix_semidefinite_operator(Matrix &A)
         {
-            Vector d;
-            Size s = local_size(A);
-            d = local_values(s.get(0), 0.);
+            Vector d(row_layout(A), 0.0);
+            // Size s = local_size(A);
+            // d = local_values(s.get(0), 0.);
 
             {
                 Write<Vector> w_d(d);

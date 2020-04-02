@@ -22,13 +22,15 @@ namespace utopia
     {
     public:
 
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
-        QPTestFunction_2D() 
+        QPTestFunction_2D()
         {
-            x_init_ = zeros(2);
-            x_exact_ = zeros(2);
+            x_init_.zeros(serial_layout(2));
+            x_exact_.zeros(serial_layout(2));
         }
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
@@ -43,7 +45,7 @@ namespace utopia
         bool gradient(const Vector &point, Vector &result) const override {
 
             if(empty(result)){
-                result = zeros(2);
+                result.zeros(layout(point));
             }
 
             const Read<Vector> read(point);
@@ -57,11 +59,11 @@ namespace utopia
         bool hessian(const Vector &/*point*/, Matrix &result) const override {
 
             if(empty(result)){
-                result = zeros(2, 2);
+                result.dense(serial_layout(2, 2));
             }
             else
             {
-                result *= 0.0; 
+                result *= 0.0;
             }
 
             const Write<Matrix> write(result);
@@ -100,12 +102,12 @@ namespace utopia
         bool exact_sol_known() const
         {
             return false;
-        }        
+        }
 
 
     private:
         Vector x_init_;
-        Vector x_exact_;        
+        Vector x_exact_;
     };
 
 }

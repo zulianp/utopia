@@ -19,12 +19,12 @@ namespace utopia {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        ProjectedGaussSeidelQR() 
+        ProjectedGaussSeidelQR()
         {
             ProjectedGaussSeidel<Matrix, Vector>::use_line_search(false);
 
             if(mpi_world_size() > 1 ){
-                utopia_error("ProjectedGaussSeidelQR does not support parallel computations. \n"); 
+                utopia_error("ProjectedGaussSeidelQR does not support parallel computations. \n");
             }
         }
 
@@ -34,13 +34,13 @@ namespace utopia {
         {
             auto ptr = new ProjectedGaussSeidelQR(*this);
             ptr->set_box_constraints(this->get_box_constraints());
-            // ptr->set_R(this->get_R()); 
+            // ptr->set_R(this->get_R());
             return ptr;
         }
 
         void read(Input &in) override
         {
-            ProjectedGaussSeidel<Matrix, Vector>::read(in); 
+            ProjectedGaussSeidel<Matrix, Vector>::read(in);
         }
 
         void set_R(const Matrix &R)
@@ -51,7 +51,7 @@ namespace utopia {
         const Matrix & get_R()
         {
             return R_;
-        }        
+        }
 
         bool smooth(const Vector &b, Vector &x) override
         {
@@ -65,11 +65,11 @@ namespace utopia {
                 }
             } else {
                 while(it++ < n_sweeps) {
-                    ProjectedGaussSeidel<Matrix, Vector>::unconstrained_step(A, b, x); 
+                    ProjectedGaussSeidel<Matrix, Vector>::unconstrained_step(A, b, x);
                 }
             }
             return it == SizeType(this->sweeps() - 1);
-        } 
+        }
 
         bool apply(const Vector &b, Vector &x) override
         {
@@ -102,13 +102,13 @@ namespace utopia {
 
                 ++iteration;
 
-                if(converged) 
+                if(converged)
                     break;
 
                 x_old = x;
             }
             return converged;
-        }        
+        }
 
 
         void print_usage(std::ostream &os) const override
@@ -125,9 +125,9 @@ namespace utopia {
 
             const Vector & g = this->get_upper_bound();
             const Vector & l = this->get_lower_bound();
-            
+
             Scalar g_i, l_i;
-            
+
             Range rr = row_range(A);
             {
                 Write<Vector> w_a(active_set_);
@@ -135,23 +135,23 @@ namespace utopia {
                 Read<Vector> r_d_inv(d_inv), r_g(g), r_l(l);
                 Read<Matrix> r_A(A);
                 Read<Vector> r_b(b);
-                Read<Matrix> r_R(R_);           
-                SizeType n_rows = local_size(R_).get(0); 
+                Read<Matrix> r_R(R_);
+                SizeType n_rows = local_size(R_).get(0);
 
 
-                for(auto i = rr.begin(); i != rr.end(); ++i) 
+                for(auto i = rr.begin(); i != rr.end(); ++i)
                 {
                     RowView<const Matrix> row_view(A, i);
                     decltype(i) n_values = row_view.n_values();
 
                     Scalar s = 0;//x.get(i);
-                    
-                    for(auto index = 0; index < n_values; ++index) 
+
+                    for(auto index = 0; index < n_values; ++index)
                     {
                         const decltype(i) j = row_view.col(index);
                         const auto a_ij = row_view.get(index);
 
-                        if(rr.inside(j))// && j != i) 
+                        if(rr.inside(j))// && j != i)
                         {
                             s += a_ij * x.get(j);
                         }
@@ -162,15 +162,15 @@ namespace utopia {
 
                     if  (i < n_rows)
                     {
-                        RowView<const Matrix> row_viewR(R_, i);     
+                        RowView<const Matrix> row_viewR(R_, i);
                         decltype(i) nnz_R = row_viewR.n_values();
 
                         Scalar r_sum_c = 0.0;
                         Scalar r_ii = 0.0;
 
-                        for(auto index = 0; index < nnz_R; ++index) 
+                        for(auto index = 0; index < nnz_R; ++index)
                         {
-                            // r_ii = 0.0; 
+                            // r_ii = 0.0;
                             const decltype(i) j = row_viewR.col(index);
                             const auto r_ij = row_viewR.get(index);
 
@@ -186,17 +186,17 @@ namespace utopia {
 
                         if (r_ii > 0)
                         {
-                            g_i = (g.get(i) - r_sum_c)/r_ii; 
-                            l_i = (l.get(i) - r_sum_c)/r_ii; 
+                            g_i = (g.get(i) - r_sum_c)/r_ii;
+                            l_i = (l.get(i) - r_sum_c)/r_ii;
                         }
                         else if (r_ii < 0)
                         {
-                            l_i = (g.get(i) - r_sum_c)/r_ii; 
-                            g_i = (l.get(i) - r_sum_c)/r_ii; 
+                            l_i = (g.get(i) - r_sum_c)/r_ii;
+                            g_i = (l.get(i) - r_sum_c)/r_ii;
                         }
                         else
                         {
-                            std::cerr<<"--------- ProjectedGaussSeidelQR::PGSQR......... \n"; 
+                            std::cerr<<"--------- ProjectedGaussSeidelQR::PGSQR......... \n";
                         }
 
                         //update correction
@@ -220,7 +220,7 @@ namespace utopia {
         {
             d_inv = diag(A);
             d_inv = 1./d_inv;
-            active_set_ = local_zeros(local_size(d_inv));
+            active_set_.zeros(layout(d_inv));
         }
 
 

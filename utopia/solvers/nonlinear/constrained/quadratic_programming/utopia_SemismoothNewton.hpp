@@ -48,7 +48,7 @@ namespace utopia {
                 return tol_;
             }
 
-            virtual void set_range(const Range &r) 
+            virtual void set_range(const Range &r)
             {
                 UTOPIA_UNUSED(r);
             }
@@ -64,7 +64,7 @@ namespace utopia {
 
         private:
             Scalar tol_;
-        };  
+        };
 
         class AdaptiveActiveTol final : public ActiveTol {
         public:
@@ -116,7 +116,7 @@ namespace utopia {
             std::vector<Scalar> adaptive_tol_;
             std::vector<bool> is_active_;
             SizeType r_begin_;
-        };  
+        };
 
         SemismoothNewton(const std::shared_ptr <Solver> &linear_solver) :
         linear_solver_(linear_solver),
@@ -278,7 +278,7 @@ namespace utopia {
 
             return ret;
         }
-    
+
 
         // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
         bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
@@ -294,13 +294,16 @@ namespace utopia {
 
             active_set_tol_->set_range(range(g));
 
-            const SizeType local_N = local_size(x_new).get(0);
+            auto A_layout = layout(A);
+            auto v_layout = layout(b);
+
+            // const SizeType local_N = local_size(x_new).get(0);
 
             SizeType iterations = 0;
             bool converged = false;
 
-            Vector lambda = local_zeros(local_N);
-            Vector active = local_zeros(local_N);
+            Vector lambda(v_layout, 0.0);
+            Vector active(v_layout, 0.0);
 
             Vector x_old = x_new;
             Vector d, prev_active;
@@ -310,11 +313,11 @@ namespace utopia {
             Matrix I_c;
 
             if(is_sparse<Matrix>::value) {
-                A_c = local_sparse(local_N, local_N, 1);
-                I_c = local_sparse(local_N, local_N, 1);
+                A_c.sparse(A_layout, 1, 1);
+                I_c.sparse(A_layout, 1, 1);
             } else {
-                A_c = local_zeros({local_N, local_N});
-                I_c = local_zeros({local_N, local_N});
+                A_c.dense(A_layout, 0.0);
+                I_c.dense(A_layout, 0.0);
             }
 
             Scalar f_norm = 9e9;
@@ -453,9 +456,13 @@ namespace utopia {
         {
             using namespace utopia;
 
-            const Size s_A = local_size(A);
-            const SizeType n = s_A.get(0);
-            const SizeType m = s_A.get(1);
+
+            auto A_layout = layout(A);
+            auto v_layout = row_layout(A);
+
+            // const Size s_A = local_size(A);
+            // const SizeType n = s_A.get(0);
+            // const SizeType m = s_A.get(1);
             Scalar x_diff_norm = 0.0;
 
             SizeType it = 0;
@@ -466,11 +473,11 @@ namespace utopia {
 
             active_set_tol_->set_range(range(ub));
 
-            Vector lambda_p = local_zeros(n);
-            Vector lambda_m = local_zeros(n);
+            Vector lambda_p(v_layout, 0);
+            Vector lambda_m(v_layout, 0);
 
-            Vector active_m = local_zeros(n);
-            Vector active_p = local_zeros(n);
+            Vector active_m(v_layout, 0);
+            Vector active_p(v_layout, 0);
 
             Vector x_old = x;
             Vector d_p, d_m;
@@ -486,13 +493,13 @@ namespace utopia {
             }
 
             if(is_sparse<Matrix>::value) {
-                A_c_p = 0. * local_identity(n, m);
-                A_c_m = 0. * local_identity(n, m);
-                I_c = local_identity(n, m);
+                A_c_p.identity(A_layout, 0.0);
+                A_c_m.identity(A_layout, 0.0);
+                I_c.identity(A_layout, 1.0);
             } else {
-                A_c_p = local_zeros(n);
-                A_c_m = local_zeros(n);
-                I_c   = local_identity(n, m);
+                A_c_p.dense(A_layout, 0.0);
+                A_c_m.dense(A_layout, 0.0);
+                I_c.identity(A_layout, 1.0);
             }
 
             while(!converged) {
@@ -542,7 +549,9 @@ namespace utopia {
 
                 active = active_m + active_p;
                 A_s = diag(active);
-                I_c = local_identity(n, m);
+                // I_c = local_identity(n, m);
+                I_c *= 0.0;
+                I_c.shift_diag(1.0);
                 I_c -= A_s;
 
                 if (it > 0) {

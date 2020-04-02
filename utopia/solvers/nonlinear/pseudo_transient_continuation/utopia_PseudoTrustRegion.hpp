@@ -52,7 +52,7 @@ namespace utopia
             Scalar g_norm, s_norm=9e9, tau, lambda_min;
             Scalar ared, pred, rho;
 
-            Vector g = local_zeros(local_size(x)), eigenvector_min, x_trial;
+            Vector g(layout(x), 0.0), eigenvector_min, x_trial;
             Vector s = 0 * x;
             Matrix H, H_damped;
 
@@ -75,7 +75,9 @@ namespace utopia
             while(!converged)
             {
                 // H_damped = H + 1./tau * I;
-                H_damped = H + (1./tau) * local_identity(local_size(H));
+                // H_damped = H + (1./tau) * local_identity(local_size(H));
+                H_damped = H;
+                H_damped.shift_diag( (1./tau) );
 
                 eigen_solver_->portion_of_spectrum("smallest_real");
                 eigen_solver_->number_of_eigenvalues(1);

@@ -55,6 +55,7 @@ option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
+option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the futre" ON)
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
@@ -93,6 +94,10 @@ set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
 include_directories(${CMAKE_SOURCE_DIR}/external/GSL/include)
+
+if(ENABLE_DEPRECATED_API)
+    set(UTOPIA_DEPRECATED_API ON)
+endif()
 
 
 if(UNIX AND NOT APPLE)

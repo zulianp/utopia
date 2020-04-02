@@ -21,17 +21,16 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)    Scalar;
 
         public:
-            PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector & rhs = local_zeros(1)) :
+            // PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector & rhs = local_zeros(1)) :
+            PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = Vector(), const Vector & bc_marker = Vector(), const Vector & rhs = Vector()) :
                 ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), snes_(snes)
-            {
-
-            }
+            {}
 
             virtual bool gradient(const Vector &x, Vector &g) const override
             {
                 // initialization of gradient vector...
                 if(empty(g)){
-                    g  = local_zeros(local_size(x));;
+                    g.zeros(layout(x));
                 }
 
                 SNESComputeFunction(snes_, raw_type(x), raw_type(g));

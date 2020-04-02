@@ -48,14 +48,17 @@ namespace utopia {
 
         bool solve(const Matrix &A, const Vector &b, Vector &x_new) override
         {
-            const SizeType local_N = local_size(x_new).get(0);
+            // const SizeType local_N = local_size(x_new).get(0);
+
+            auto vec_layout = layout(b);
+            auto mat_layout = square_matrix_layout(vec_layout);
 
             SizeType iterations = 0;
             bool converged = false;
 
-            Vector active = local_zeros(local_N);
-            Vector g = local_zeros(local_N);
-            Vector prev_active = local_zeros(local_N);
+            Vector active(vec_layout, 0.0);
+            Vector g(vec_layout, 0.0);
+            Vector prev_active(vec_layout, 0.0);
             Vector x_old = x_new;
 
             // active/inactive constraints
@@ -63,11 +66,11 @@ namespace utopia {
             Matrix I_c;
 
             if(is_sparse<Matrix>::value) {
-                A_c = local_sparse(local_N, local_N, 1);
-                I_c = local_sparse(local_N, local_N, 1);
+                A_c.sparse(mat_layout, 1, 0.0);
+                I_c.sparse(mat_layout, 1, 0.0);
             } else {
-                A_c = local_zeros({local_N, local_N});
-                I_c = local_zeros({local_N, local_N});
+                A_c.dense(mat_layout, 0.0);
+                I_c.dense(mat_layout, 0.0);
             }
 
             Scalar f_norm = 9e9;

@@ -2,6 +2,7 @@
 #define UTOPIA_EVAL_INVERSE_HPP
 
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_Layout.hpp"
 
 namespace utopia {
 
@@ -22,10 +23,10 @@ namespace utopia {
             const Scalar d =  det(m);
 
             if(result.rows() != n || result.cols() != n) {
-                result = zeros(s);
-            } else {
-                result.set(0.0);
+                result.dense(serial_layout(n, n));
             }
+
+            result.set(0.0);
 
             const bool failed = d == 0.;
 

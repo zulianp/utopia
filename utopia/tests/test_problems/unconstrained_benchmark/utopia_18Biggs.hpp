@@ -13,15 +13,16 @@ namespace utopia
     class Biggs18 final: public UnconstrainedTestFunction<Matrix, Vector>
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits   = utopia::Traits<Vector>;
+        using Scalar   = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm     = typename Traits::Communicator;
 
         Biggs18()
         {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
 
-            x_init_ = zeros(6);
-            x_exact_ = zeros(6);
+            x_init_.zeros(serial_layout(dim()));
+            x_exact_.zeros(serial_layout(dim()));
 
             {
                 const Write<Vector> write1(x_init_);
@@ -70,7 +71,7 @@ namespace utopia
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -103,7 +104,7 @@ namespace utopia
 
         bool gradient(const Vector &point, Vector &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -111,7 +112,7 @@ namespace utopia
             assert(point.size() == 6);
 
             if(empty(result)){
-                result = zeros(6);
+                result.zeros(layout(point));
             }
 
             {
@@ -159,15 +160,15 @@ namespace utopia
 
         bool hessian(const Vector &point, Matrix &result) const override
         {
-            if( mpi_world_size() > 1){
+           if( point.comm().size() > 1){
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == 6);
-            // result = zeros(6, 6);
+            // result.dense(serial_layout(6, 6));
             if(empty(result)){
-                result = zeros(6, 6);
+                result.dense(serial_layout(6, 6));
             }
 
             const Read<Vector> read(point);

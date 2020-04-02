@@ -16,9 +16,7 @@ namespace utopia
         public:
 
             BFGS(): HessianApproximation<Vector>(), update_hessian_(false), current_it_(0)
-            {
-
-            }
+            {}
 
             inline BFGS<Matrix, Vector> * clone() const override
             {
@@ -37,10 +35,10 @@ namespace utopia
             void reset() override
             {
                 if(!empty(H_prev_))
-                    H_prev_ = local_identity(local_size(H_prev_));
+                    H_prev_.identity(layout(H_prev_));
 
                 if(!empty(H_prev_inv_))
-                    H_prev_inv_ = local_identity(local_size(H_prev_inv_));
+                    H_prev_inv_.identity(layout(H_prev_inv_));
             }
 
             bool update(const Vector & s_in, const Vector & y_in, const Vector &  /* x */ , const Vector &  /* g */  ) override
@@ -54,14 +52,16 @@ namespace utopia
 
                 if(current_it_ == 0)
                 {
-                    SizeType n = local_size(s_in).get(0);
+                    // SizeType n = local_size(s_in).get(0);
+
+                    auto mat_layout = square_matrix_layout(layout(s_in));
 
                     if(update_hessian_)
                     {
-                        H_prev_ = local_identity(n, n);
+                        H_prev_.identity(mat_layout, 1.0);
                     }
 
-                    H_prev_inv_ = local_identity(n, n);
+                    H_prev_inv_.identity(mat_layout, 1.0);
                 }
 
 
@@ -210,7 +210,7 @@ namespace utopia
                 UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:4");
                 Hy_  = H_prev_inv_ * y_;
                 UTOPIA_NO_ALLOC_END();
-                
+
                 UTOPIA_NO_ALLOC_BEGIN("Quasi BFGS:5");
                 Hys_ = outer(Hy_, s_);
                 UTOPIA_NO_ALLOC_END();
@@ -263,9 +263,9 @@ namespace utopia
             bool update_hessian_;
             SizeType current_it_;
 
-            // help mats/vecs 
+            // help mats/vecs
             Matrix ss_, Hys_, sy_outerH_;
-            Vector Hy_; 
+            Vector Hy_;
 
         };
 

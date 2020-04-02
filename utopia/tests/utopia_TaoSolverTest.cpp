@@ -13,11 +13,11 @@ namespace utopia {
     {
         TestFunctionND_1<PetscMatrix, PetscVector> fun(10);
         TaoSolver<PetscMatrix, PetscVector> tao(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
-        PetscVector x = zeros(10);
+        PetscVector x(layout(PetscCommunicator::get_default(), PetscTraits::decide(), 10), 0.0);
         tao.set_type("blmvm");
         tao.solve(fun, x);
 
-        PetscVector expected = values(10, 0.468919);
+        PetscVector expected(layout(x), 0.468919);
         utopia_test_assert(approxeq(x, expected));
     }
 
@@ -27,11 +27,11 @@ namespace utopia {
 
         PetscMatrix m;
         PetscVector rhs, upper_bound;
-        Poisson1D<PetscMatrix, PetscVector> ex2(n, 2); 
+        Poisson1D<PetscMatrix, PetscVector> ex2(n, 2);
         PetscVector x = ex2.initial_guess();
-        ex2.hessian(x, m); 
-        ex2.get_rhs(rhs); 
-        upper_bound = ex2.upper_bound(); 
+        ex2.hessian(x, m);
+        ex2.get_rhs(rhs);
+        upper_bound = ex2.upper_bound();
 
         auto lsolver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
 
@@ -51,7 +51,7 @@ namespace utopia {
 
         x *= 1./scale_factor;
 
-        PetscVector xssn = zeros(n);
+        PetscVector xssn(layout(PetscCommunicator::get_default(), PetscTraits::decide(), n), 0.0);
         SemismoothNewton<PetscMatrix, PetscVector, HOMEMADE> ssnewton(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
         ssnewton.set_box_constraints(box);
         ssnewton.stol(1e-18);
@@ -87,7 +87,7 @@ namespace utopia {
         auto linear_solver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
         Multigrid<PetscMatrix, PetscVector> multigrid(smoother, linear_solver);
         multigrid.set_transfer_operators(std::move(interpolation_operators));
-        PetscVector x = zeros(A.size().get(0));
+        PetscVector x(row_layout(A), 0.0);
         // PetscVector upper_bound = values(A.size().get(0), 0.003);
         // auto box = make_upper_bound_constraints(make_ref(upper_bound));
 
@@ -110,11 +110,11 @@ namespace utopia {
 
         PetscMatrix m;
         PetscVector rhs, upper_bound;
-        Poisson1D<PetscMatrix, PetscVector> ex2(n, 2); 
+        Poisson1D<PetscMatrix, PetscVector> ex2(n, 2);
         PetscVector x = ex2.initial_guess();
-        ex2.hessian(x, m); 
-        ex2.get_rhs(rhs); 
-        upper_bound = ex2.upper_bound();         
+        ex2.hessian(x, m);
+        ex2.get_rhs(rhs);
+        upper_bound = ex2.upper_bound();
 
         const double scale_factor = 10e-10;
         rhs *= scale_factor;
@@ -143,7 +143,7 @@ namespace utopia {
 
         x *= 1./scale_factor;
 
-        PetscVector xssn = zeros(n);
+        PetscVector xssn(layout(rhs), 0.0);
         SemismoothNewton<PetscMatrix, PetscVector, HOMEMADE> ssnewton(std::make_shared<Factorization<PetscMatrix, PetscVector>>());
         ssnewton.set_box_constraints(box);
         ssnewton.stol(1e-17);

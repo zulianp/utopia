@@ -714,15 +714,13 @@ namespace utopia {
             bool apply(const Vector &b, Vector &x)
             {
                 PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
-                auto ls = local_size(b).get(0);
-                auto gs = size(b).get(0);
 
-                if(gs != size(x).get(0))
+                if(empty(x) || (size(b).get(0) != size(x).get(0)))
                 {
-                    x = local_zeros(ls);
+                    x.zeros(layout(b));
                 }
 
-                assert(ls == local_size(x).get(0));
+                assert(local_size(b).get(0) == local_size(x).get(0));
 
                 KSPConvergedReason  reason;
                 ierr = KSPSolve(ksp_, raw_type(b), raw_type(x)); assert(ierr == 0);

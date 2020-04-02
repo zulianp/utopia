@@ -13,8 +13,10 @@ namespace utopia
                             virtual public ConstrainedExtendedTestFunction<Matrix, Vector>
     {
         public:
-            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-            typedef UTOPIA_SCALAR(Vector) Scalar;
+            using Traits   = utopia::Traits<Vector>;
+            using Scalar   = typename Traits::Scalar;
+            using SizeType = typename Traits::SizeType;
+            using Comm     = typename Traits::Communicator;
 
 
         Poisson1D(const SizeType & n, const SizeType & problem_type=2):     pi_(3.14159265358979323846),
@@ -170,13 +172,18 @@ namespace utopia
 
         void init_memory()
         {
-            H_ = sparse(n_, n_, 3);
-            assemble_laplacian_1D(H_);
+            //FIXME pass from outside?
+            Comm comm;
+            rhs_.values(layout(comm, Traits::decide(), n_), 0.0);
 
-            rhs_ = values(n_, 0.0);
-            x0_ = values(n_, 0.0);
-            exact_sol_ = values(n_, 0.0);
-            A_help_ = make_unique<Vector>(values(n_, 0.0));
+            auto v_lo = layout(rhs_);
+            x0_.zeros(v_lo);
+            exact_sol_.zeros(v_lo);
+            A_help_ = make_unique<Vector>(v_lo, 0.0);
+
+
+            H_.sparse(square_matrix_layout(v_lo), 3, 2);
+            assemble_laplacian_1D(H_);
         }
 
 
@@ -233,7 +240,10 @@ namespace utopia
             }
 
 
-            Vector bc_markers = values(n_, 0.0);
+
+            auto vec_layout = layout(rhs_);
+            // Vector bc_markers = values(n_, 0.0);
+            Vector bc_markers(vec_layout, 0.0);
             {
                 Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
@@ -251,8 +261,8 @@ namespace utopia
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
 
-            this->constraints_ = make_box_constaints(std::make_shared<Vector>(values(n_, -9e9)),
-                                                     std::make_shared<Vector>(values(n_, 9e9)));
+            this->constraints_ = make_box_constaints(std::make_shared<Vector>(vec_layout, -9e9),
+                                                     std::make_shared<Vector>(vec_layout, 9e9));
         }
 
         void assembly_problem_type2()
@@ -305,7 +315,7 @@ namespace utopia
             }
 
 
-            Vector bc_markers = values(n_, 0.0);
+            Vector bc_markers(layout(rhs_), 0.0);
             {
                 Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
@@ -323,7 +333,7 @@ namespace utopia
 
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
-            Vector upper_bound = values(n_, 0.0);
+            Vector upper_bound(layout(rhs_), 0.0);
             {
                 parallel_each_write(upper_bound, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
@@ -388,7 +398,7 @@ namespace utopia
             }
 
 
-            Vector bc_markers = values(n_, 0.0);
+            Vector bc_markers(layout(rhs_), 0.0);
             {
                 Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
@@ -406,7 +416,7 @@ namespace utopia
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
 
-            Vector upper_bound = values(n_, 0.0);
+            Vector upper_bound(layout(rhs_), 0.0);
             {
                 parallel_each_write(upper_bound, UTOPIA_LAMBDA(const SizeType i) -> Scalar
                 {
@@ -479,7 +489,8 @@ namespace utopia
             }
 
 
-            Vector bc_markers = values(n_, 0.0);
+            auto v_lo = layout(rhs_);
+            Vector bc_markers(v_lo, 0.0);
             {
                 Write<Vector> wv(bc_markers);
                 Range r = range(bc_markers);
@@ -497,8 +508,8 @@ namespace utopia
 
             ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, x0_);
 
-            this->constraints_ = make_box_constaints(std::make_shared<Vector>(values(n_, -0.5)),
-                                                     std::make_shared<Vector>(values(n_, 0.3)));
+            this->constraints_ = make_box_constaints(std::make_shared<Vector>(v_lo, -0.5),
+                                                     std::make_shared<Vector>(v_lo, 0.3));
         }
 
 
