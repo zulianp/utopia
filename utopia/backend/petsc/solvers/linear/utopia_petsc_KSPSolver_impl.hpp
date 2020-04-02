@@ -814,7 +814,7 @@ namespace utopia {
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-
+    //FIXME defaults to PETSC_COMM_WORLD
     template<typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver()
     : ksp_(utopia::make_unique<Impl>(PETSC_COMM_WORLD))

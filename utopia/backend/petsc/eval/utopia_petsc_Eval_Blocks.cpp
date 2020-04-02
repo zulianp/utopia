@@ -10,7 +10,7 @@ namespace utopia {
 	void build_blocks(PetscMatrix &left, const Blocks<PetscMatrix> &blocks)
 	{
 	    std::vector<Mat> matrices;
-	    
+
 	    MPI_Comm comm = PETSC_COMM_WORLD;
 	    for(auto b_ptr : blocks.blocks()) {
 
@@ -22,6 +22,7 @@ namespace utopia {
 	        }
 	    }
 
+        //FIXME the comm might be a sub-comm and needs managed memory
 	    left.nest(comm, blocks.rows(), nullptr, blocks.cols(), nullptr, &matrices[0]);
 	}
 
@@ -40,6 +41,7 @@ namespace utopia {
             }
         }
 
+        //FIXME the comm might be a sub-comm and needs managed memory
         left.nest(comm, blocks.size(), nullptr, &vectors[0]);
     }
 

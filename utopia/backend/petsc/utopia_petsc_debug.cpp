@@ -73,12 +73,12 @@ namespace utopia {
         PetscLogDouble space;
         ierr = PetscMemoryGetCurrentUsage(&space); assert(ierr == 0); (void) ierr;
 
-        
+
         space /= 1024; //to KB
         space /= 1024; //to MB
         space /= 1000; //to GB
 
-        PetscCommunicator comm(PETSC_COMM_WORLD);
+        auto &&comm = PetscCommunicator::world();
         space = comm.sum(space);
         comm.root_print("[Memory Usage] " + std::to_string(space) + " GB\t(" + marker + ")" );
     }
