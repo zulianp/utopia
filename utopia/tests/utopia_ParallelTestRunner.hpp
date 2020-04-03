@@ -72,7 +72,7 @@ namespace utopia {
         }
 
         ParallelTestRunner()
-        : parititions_sizes_{{2, 4}}
+        : parititions_sizes_{{1, 2, 4}}
         {}
 
     private:
