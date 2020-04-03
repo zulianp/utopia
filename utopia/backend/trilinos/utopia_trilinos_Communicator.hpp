@@ -103,6 +103,8 @@ namespace utopia {
             return instance_;
         }
 
+        TrilinosCommunicator split(const int color) const;
+
         TrilinosCommunicator(const CommPtr &comm) : comm_(comm) {}
         TrilinosCommunicator(const SelfCommunicator &comm);
         TrilinosCommunicator(const Communicator &comm);
