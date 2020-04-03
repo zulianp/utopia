@@ -28,60 +28,53 @@ namespace utopia {
             utopia_test_assert(approxeq(norm_v3, this->comm().size() * 3 * 2, device::epsilon<Scalar>()));
         }
 
+        void mat_vec_mult()
+        {
+            Vector x(layout(this->comm(), 2, this->comm().size() * 2), 1.0);
+            Vector b;
+
+            Matrix A; A.sparse(square_matrix_layout(layout(x)), 3, 2);
+            assemble_laplacian_1D(A);
+
+            b = A * x;
+            utopia_test_assert(b.size() == this->comm().size() * 2);
+        }
+
         void redundant_test()
         {
             int sub_comms = this->comm().size() > 1 ? 2 : 1;
 
             if(sub_comms == 1) return;
 
+            Matrix A, A_sub;
+            Vector v1, v1_sub, v2_sub;
+
             auto v_lo = layout(this->comm(), 2, this->comm().size() * 2);
             auto m_lo = square_matrix_layout(v_lo);
 
-            Matrix A_sub, A; A.sparse(m_lo, 3, 2);
+            A.sparse(m_lo, 3, 2);
             assemble_laplacian_1D(A);
 
-            Vector v1(v_lo, 1.0), v1_sub;
-
+            v1.zeros(v_lo);
             each_write(v1, [](const SizeType &i) -> Scalar {
                 return Scalar(i);
             });
 
-            //FIXME
+            //creating subcommunicators, indices, and scatters
             Redundant<Matrix, Vector> red;
             red.init(v_lo, sub_comms);
 
-            PetscVecScatter sup_to_sub, sub_to_sup;
-
-            red.create_sub_vector(
-                        v1,
-                        v1_sub,
-                        sup_to_sub,
-                        sub_to_sup
-                    );
-
+            red.create_sub_vector(v1_sub);
             red.create_sub_matrix(A, A_sub);
+            red.super_to_sub(v1, v1_sub);
 
-            disp(A);
-            disp(A_sub);
+            v2_sub = A_sub * v1_sub;
+            const Scalar sub_norm = norm2(v2_sub);
 
-            red.super_to_sub(v1, sup_to_sub, v1_sub);
+            red.sub_to_super(v2_sub, v1);
+            const Scalar super_norm = norm2(v1);
 
-            // red.super_to_sub(A, A_sub);
-
-            disp(v1);
-            disp(v1_sub);
-
-            Vector v2_sub = A_sub * v1_sub;
-
-            // each_write(v1_sub, [](const SizeType &i) -> Scalar {
-            //     return Scalar(i);
-            // });
-
-            red.super_to_sub(v2_sub, sub_to_sup, v1);
-
-            disp(v1);
-            disp(v2_sub);
-
+            utopia_test_assert(approxeq(sub_norm, super_norm));
         }
 
         void solve_problem()
@@ -99,8 +92,9 @@ namespace utopia {
         void run()
         {
             UTOPIA_RUN_TEST(sum_vectors);
+            UTOPIA_RUN_TEST(mat_vec_mult);
             UTOPIA_RUN_TEST(solve_problem);
-            // UTOPIA_RUN_TEST(redundant_test);
+            UTOPIA_RUN_TEST(redundant_test);
         }
 
     };

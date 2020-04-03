@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Range.hpp"
+#include "utopia_Wrapper.hpp"
 
 namespace utopia {
 

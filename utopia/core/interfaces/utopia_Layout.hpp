@@ -122,6 +122,15 @@ namespace utopia {
 			size_[0] = size;
 		}
 
+		friend void disp(const Layout &layout, std::ostream &os = std::cout)
+		{
+			os << "comm: " << layout.comm_.rank() << "/" << layout.comm_.size() << "\n";
+
+			for(int i = 0; i < Order; ++i) {
+				os << layout.local_size_[i] << " " << layout.size_[i] << "\n";
+			}
+		}
+
 	private:
 		Comm comm_;
 		LocalSizeType local_size_[Order];

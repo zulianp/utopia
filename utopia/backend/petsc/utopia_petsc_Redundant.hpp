@@ -40,33 +40,28 @@ namespace utopia {
         // Redundant * clone() const override;
         void init(const Layout &lo, const SizeType n_sub_comm);
 
-        void create_sub_vector(
-            const PetscVector &vec,
-            PetscVector &vec_sub,
-            PetscVecScatter &scatter_to_sub,
-            PetscVecScatter &scatter_to_super
-        );
+        void create_sub_vector(PetscVector &vec_sub);
 
         void create_sub_matrix(const PetscMatrix &mat, PetscMatrix &mat_sub);
         void super_to_sub(const PetscMatrix &mat, PetscMatrix &mat_sub);
 
         // void super_to_sub(const PetscMatrix &mat, PetscMatrix &mat_sub);
 
-        void super_to_sub(const PetscVector &vec,     const PetscVecScatter &scatter, PetscVector &vec_sub);
-        void sub_to_super(const PetscVector &vec_sub, const PetscVecScatter &scatter, PetscVector &vec);
+        void super_to_sub(const PetscVector &vec,     PetscVector &vec_sub);
+        void sub_to_super(const PetscVector &vec_sub, PetscVector &vec);
 
     private:
         PetscSubcomm   psubcomm;
-        // PetscMatrix    pmats;  // check for update
-        // PetscVector    sol_sub, rhs_sub, sol_dup, rhs_dup;
-        // VecScatter     scatterin, scatterout;
+        PetscVector buff_, empty_;
+
         int n_sub_comm_;
-        Layout sub_layout_;
+        Layout sub_layout_, child_layout_;
 
         std::unique_ptr<PetscIS> is_super_to_sub_from, is_super_to_sub_to;
         std::unique_ptr<PetscIS> is_sub_to_super_from, is_sub_to_super_to;
+        PetscVecScatter scatter_to_sub;
+        PetscVecScatter scatter_to_super;
     };
-
 }
-#endif //UTOPIA_PETSC_REDUNDANT_HPP
 
+#endif //UTOPIA_PETSC_REDUNDANT_HPP

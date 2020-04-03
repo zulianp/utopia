@@ -2,6 +2,7 @@
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_DeviceView.hpp"
 
 namespace utopia {
 
@@ -73,17 +74,10 @@ namespace utopia {
 
     Redundant<PetscMatrix, PetscVector>::~Redundant()
     {
-        // VecScatterDestroy(&scatterout);
-        // VecScatterDestroy(&scatterin);
         PetscSubcommDestroy(&psubcomm);
     }
 
-    // Redundant<PetscMatrix, PetscVector> * Redundant<PetscMatrix, PetscVector>::clone() const
-    // {
-    //     return new Redundant(*this);
-    // }
-
-    // construct idx sets and paritions
+    // construct idx sets and partitions
     void Redundant<PetscMatrix, PetscVector>::init(const Layout &lo, const SizeType n_sub_comm)
     {
         n_sub_comm_ = n_sub_comm;
@@ -98,9 +92,6 @@ namespace utopia {
         PetscSubcommSetType(psubcomm, PETSC_SUBCOMM_CONTIGUOUS);
         MPI_Comm subcomm = PetscSubcommChild(psubcomm);
 
-
-
-
         //create paritioning
         PetscInt start_sub = 0, end_sub = 0, local_size_sub = PETSC_DECIDE, size = lo.size();
         PetscSplitOwnership(subcomm, &local_size_sub, &size);
@@ -109,7 +100,14 @@ namespace utopia {
 
         PetscInt size_sub = n_sub_comm * size;
 
-        sub_layout_ = layout(PetscCommunicator(PetscSubcommContiguousParent(psubcomm)), local_size_sub, size_sub);
+        sub_layout_   = layout(PetscCommunicator(PetscSubcommContiguousParent(psubcomm)), local_size_sub, size_sub);
+        child_layout_ = layout(PetscCommunicator(subcomm), PetscTraits::decide(), lo.size());
+
+        // disp("------------------");
+        // disp(lo);
+        // disp(sub_layout_);
+        // disp(child_layout_);
+        // disp("------------------");
 
         int mpi_compare;
         MPI_Comm_compare(comm, sub_layout_.comm().get(), &mpi_compare);
@@ -145,30 +143,52 @@ namespace utopia {
             is_sub_to_super_from = utopia::make_unique<PetscIS>(is1);
             is_sub_to_super_to   = utopia::make_unique<PetscIS>(is2);
         }
-    }
 
-    void Redundant<PetscMatrix, PetscVector>::create_sub_vector(
-        const PetscVector &vec,
-        PetscVector &vec_sub,
-        PetscVecScatter &scatter_to_sub,
-        PetscVecScatter &scatter_to_super)
-    {
-        //create vec_sub
-        vec_sub.zeros(sub_layout_);
+        //buffer for storing scatters
+        buff_.zeros(sub_layout_);
+
+        //dummy vector with no data for solution
+        empty_.destroy();
+        empty_.comm() = lo.comm();
+        VecCreateMPIWithArray(lo.comm().get(), 1, lo.local_size(), lo.size(), nullptr, &empty_.raw_type());
 
         //create scatters
-        scatter_to_sub.create(vec,       *is_super_to_sub_from, vec_sub, *is_super_to_sub_to);
-        scatter_to_super.create(vec_sub, *is_sub_to_super_from, vec,     *is_sub_to_super_to);
+        scatter_to_sub.create(empty_,  *is_super_to_sub_from, buff_,  *is_super_to_sub_to);
+        scatter_to_super.create(buff_, *is_sub_to_super_from, empty_, *is_sub_to_super_to);
     }
 
-    void Redundant<PetscMatrix, PetscVector>::super_to_sub(const PetscVector &vec, const PetscVecScatter &scatter, PetscVector &vec_sub)
+    void Redundant<PetscMatrix, PetscVector>::create_sub_vector(PetscVector &vec_sub)
     {
-        scatter.apply(vec, vec_sub);
+        vec_sub.zeros(child_layout_);
     }
 
-    void Redundant<PetscMatrix, PetscVector>::sub_to_super(const PetscVector &vec_sub, const PetscVecScatter &scatter, PetscVector &vec)
+    void Redundant<PetscMatrix, PetscVector>::super_to_sub(const PetscVector &vec, PetscVector &vec_sub)
     {
-        scatter.apply(vec_sub, vec);
+        scatter_to_sub.apply(vec, buff_);
+
+        // disp(vec);
+        // disp(buff_);
+
+        auto buff_view    = const_local_view_device(buff_);
+
+        // vec_sub.set(-6.0);
+        auto vec_sub_view = local_view_device(vec_sub);
+
+        parallel_for(local_range_device(vec_sub), UTOPIA_LAMBDA(const SizeType &i) {
+            vec_sub_view.set(i, buff_view.get(i));
+        });
+    }
+
+    void Redundant<PetscMatrix, PetscVector>::sub_to_super(const PetscVector &vec_sub, PetscVector &vec)
+    {
+        auto buff_view    = local_view_device(buff_);
+        auto vec_sub_view = const_local_view_device(vec_sub);
+
+        parallel_for(local_range_device(vec_sub), UTOPIA_LAMBDA(const SizeType &i) {
+            buff_view.set(i, vec_sub_view.get(i));
+        });
+
+        scatter_to_super.apply(buff_, vec);
     }
 
     void Redundant<PetscMatrix, PetscVector>::create_sub_matrix(const PetscMatrix &mat, PetscMatrix &mat_sub)
@@ -191,5 +211,4 @@ namespace utopia {
     {
         MatCreateRedundantMatrix(mat.raw_type(), psubcomm->n, PetscSubcommChild(psubcomm), MAT_REUSE_MATRIX, &mat_sub.raw_type());
     }
-
 }
