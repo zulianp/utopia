@@ -19,7 +19,10 @@ namespace utopia {
         assert(comm.rank() == this->rank());
     }
 
-
+    TrilinosCommunicator TrilinosCommunicator::split(const int color) const
+    {
+        return TrilinosCommunicator(get()->split(color, rank()));
+    }
 
 #ifdef WITH_MPI
         MPI_Comm TrilinosCommunicator::raw_comm() const

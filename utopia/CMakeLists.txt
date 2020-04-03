@@ -76,8 +76,12 @@ include(CodeCoverage)
 #################################################################################
 set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" #-Werror=uninitialized
-
 )
+
+if(APPLE)
+    set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=nonportable-include-path")
+endif()
+
 if(CMAKE_CXX_COMPILER MATCHES "nvcc")
     string(REPLACE "-Werror=reorder" "" UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS}")
     message(STATUS "Using nvcc so we remove the -Werror-reorder flag due to a bug in nvcc")

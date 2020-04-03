@@ -11,7 +11,7 @@ namespace utopia {
         const std::vector<std::string> problem_types,
         const std::vector<std::string> portions_of_spectrum,
         const std::vector<std::string> solver_types
-        ) : 
+        ) :
         initialized_(false),
         solved_(false),
         problem_types_(problem_types),
@@ -32,7 +32,7 @@ namespace utopia {
     }
 
     template<typename Matrix, typename Vector>
-    SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> * SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL>::clone() const 
+    SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> * SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL>::clone() const
     {
         return new SlepcSolver(*this);
     }
@@ -168,7 +168,7 @@ namespace utopia {
             EPSGetEigenpair(eps_, i, &kr, &ki ,raw_type(xr), raw_type(xi));
             PrintInfo::print_iter_status(i, {kr, ki});
           }
-          PetscPrintf(PETSC_COMM_WORLD,"\n");
+          PetscPrintf(xr.comm().get(),"\n");
         }
 
         return true;
@@ -240,7 +240,7 @@ namespace utopia {
 
         if (i >= nconv) {
             std::cerr << "[Warning] requested eigen pair was not resolved up to required accuracy\n";
-            
+
         } else {
             EPSGetEigenpair(eps_, i, &iegr, nullptr, raw_type(vr), nullptr);
         }

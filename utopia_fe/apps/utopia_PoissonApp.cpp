@@ -71,11 +71,12 @@ namespace utopia {
         } else {
 
              auto f = ctx_fun(lambda_fun([](const std::vector<double> &p) -> double {
-                    if(p[1] < 0.5) {
-                        return 10.0;
-                    } else {
-                        return 0.001;
-                    }
+                    // if(p[1] < 0.5) {
+                    //     return 10.0;
+                    // } else {
+                    //     return 0.001;
+                    // }
+                return 0.003325;
              }));
 
 

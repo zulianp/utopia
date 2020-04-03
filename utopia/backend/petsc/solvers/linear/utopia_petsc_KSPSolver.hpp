@@ -15,6 +15,8 @@
 
 namespace utopia {
 
+
+    //FIXME this whole wrapper needs fixing
     template<class Matrix, class Vector>
     class KSPWrapper;
 
@@ -96,7 +98,7 @@ namespace utopia {
         /**
          * @brief      Set norm type
          */
-        void norm_type(const std::string & norm_type);        
+        void norm_type(const std::string & norm_type);
 
         /**
          * @brief      Setter for overlap used inside of Additive Schwarz method

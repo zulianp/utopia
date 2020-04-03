@@ -36,6 +36,8 @@ namespace utopia {
 
         KSPBuildSolution(ksp, NULL, &x);
 
+        MPI_Comm comm = PetscObjectComm((PetscObject) x);
+
         if(!logger->initialized()) {
           logger->init_from(x);
         }
@@ -77,18 +79,18 @@ namespace utopia {
         if(compute_cond_number)
         {
             if(it == 0)
-                PetscPrintf(PETSC_COMM_WORLD,"it           ||r||                   rho                  cond. number \n");
+                PetscPrintf(comm,"it           ||r||                   rho                  cond. number \n");
 
             PetscReal emax, emin;
             KSPComputeExtremeSingularValues(ksp, &emax, &emin);
-            PetscPrintf(PETSC_COMM_WORLD,"%D     %14.12e         %14.12e        %14.12e \n", it, rnorm, conv_rate, std::abs(emax)/std::abs(emin));
+            PetscPrintf(comm,"%D     %14.12e         %14.12e        %14.12e \n", it, rnorm, conv_rate, std::abs(emax)/std::abs(emin));
         }
         else
         {
             if(it == 0)
-                PetscPrintf(PETSC_COMM_WORLD,"it           ||r||                   rho      \n");
+                PetscPrintf(comm,"it           ||r||                   rho      \n");
 
-            PetscPrintf(PETSC_COMM_WORLD,"%D     %14.12e         %14.12e \n", it, rnorm, conv_rate);
+            PetscPrintf(comm,"%D     %14.12e         %14.12e \n", it, rnorm, conv_rate);
         }
 
         return 0;
