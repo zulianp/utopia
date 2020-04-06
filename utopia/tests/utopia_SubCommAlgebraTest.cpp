@@ -93,12 +93,13 @@ namespace utopia {
         void redundant_qp_solver()
         {
             auto qp = std::make_shared<MPGRP<Matrix, Vector>>();
+            // qp->verbose(true);
             RedundantQPSolver<Matrix, Vector> redqp(qp, 2);
 
             QPSolverTestProblem<Matrix, Vector>::run(
                 this->comm(),
                 10,
-                true,
+                false,
                 redqp,
                 true
             );
