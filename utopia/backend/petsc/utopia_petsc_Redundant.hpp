@@ -67,7 +67,7 @@ namespace utopia {
 
         bool empty() const
         {
-            return static_cast<bool>(is_super_to_sub_from);
+            return !static_cast<bool>(psubcomm);
         }
 
     private:
@@ -81,6 +81,15 @@ namespace utopia {
         std::unique_ptr<PetscIS> is_sub_to_super_from, is_sub_to_super_to;
         PetscVecScatter scatter_to_sub;
         PetscVecScatter scatter_to_super;
+
+        inline Redundant(const Redundant &) {
+            assert(false);
+        }
+
+        inline Redundant &operator=(const Redundant &) {
+            assert(false);
+            return *this;
+        }
     };
 }
 

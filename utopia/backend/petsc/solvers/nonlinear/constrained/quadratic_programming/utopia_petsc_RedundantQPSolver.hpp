@@ -30,6 +30,8 @@ namespace utopia {
             red_.n_sub_comm(n_sub_comm);
         }
 
+        void read(Input &in) override;
+
         ~RedundantQPSolver() {}
         RedundantQPSolver(const RedundantQPSolver &other);
 
@@ -40,6 +42,7 @@ namespace utopia {
 
         void update(const Operator<PetscVector> &A) override;
         bool solve(const Operator<PetscVector> &A, const PetscVector &rhs, PetscVector &sol) override;
+        bool valid() const;
 
      private:
         std::shared_ptr<OperatorBasedQPSolver> qp_solver_;
