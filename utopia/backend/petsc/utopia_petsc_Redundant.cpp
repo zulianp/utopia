@@ -69,12 +69,14 @@ namespace utopia {
     }
 
     Redundant<PetscMatrix, PetscVector>::Redundant()
-    : n_sub_comm_(2)
+    : psubcomm(nullptr), n_sub_comm_(2)
     {}
 
     Redundant<PetscMatrix, PetscVector>::~Redundant()
     {
-        PetscSubcommDestroy(&psubcomm);
+        if(psubcomm) {
+            PetscSubcommDestroy(&psubcomm);
+        }
     }
 
     // construct idx sets and partitions
@@ -82,9 +84,14 @@ namespace utopia {
     {
         n_sub_comm_ = n_sub_comm;
 
+        if(lo.comm().size() == 1) {
+            sub_layout_ = lo;
+            return;
+        }
+
         assert(n_sub_comm > 1);
 
-        auto comm = lo.comm().get();
+        auto &&comm = lo.comm().get();
 
         //create sub-comm
         PetscSubcommCreate(comm, &psubcomm);
@@ -159,56 +166,77 @@ namespace utopia {
 
     void Redundant<PetscMatrix, PetscVector>::create_sub_vector(PetscVector &vec_sub)
     {
-        vec_sub.zeros(child_layout_);
+        if(empty()) {
+            //sub_layout_ is just initial layout
+            vec_sub.zeros(sub_layout_);
+        } else {
+            vec_sub.zeros(child_layout_);
+        }
     }
 
     void Redundant<PetscMatrix, PetscVector>::super_to_sub(const PetscVector &vec, PetscVector &vec_sub)
     {
-        scatter_to_sub.apply(vec, buff_);
+        if(empty()) {
+            vec_sub = vec;
+        } else {
+            scatter_to_sub.apply(vec, buff_);
 
-        // disp(vec);
-        // disp(buff_);
+            // disp(vec);
+            // disp(buff_);
 
-        auto buff_view    = const_local_view_device(buff_);
+            auto buff_view    = const_local_view_device(buff_);
 
-        // vec_sub.set(-6.0);
-        auto vec_sub_view = local_view_device(vec_sub);
+            // vec_sub.set(-6.0);
+            auto vec_sub_view = local_view_device(vec_sub);
 
-        parallel_for(local_range_device(vec_sub), UTOPIA_LAMBDA(const SizeType &i) {
-            vec_sub_view.set(i, buff_view.get(i));
-        });
+            parallel_for(local_range_device(vec_sub), UTOPIA_LAMBDA(const SizeType &i) {
+                vec_sub_view.set(i, buff_view.get(i));
+            });
+        }
     }
 
     void Redundant<PetscMatrix, PetscVector>::sub_to_super(const PetscVector &vec_sub, PetscVector &vec)
     {
-        auto buff_view    = local_view_device(buff_);
-        auto vec_sub_view = const_local_view_device(vec_sub);
+        if(empty()) {
+            vec = vec_sub;
+        } else {
+            auto buff_view    = local_view_device(buff_);
+            auto vec_sub_view = const_local_view_device(vec_sub);
 
-        parallel_for(local_range_device(vec_sub), UTOPIA_LAMBDA(const SizeType &i) {
-            buff_view.set(i, vec_sub_view.get(i));
-        });
+            parallel_for(local_range_device(vec_sub), UTOPIA_LAMBDA(const SizeType &i) {
+                buff_view.set(i, vec_sub_view.get(i));
+            });
 
-        scatter_to_super.apply(buff_, vec);
+            scatter_to_super.apply(buff_, vec);
+        }
     }
 
     void Redundant<PetscMatrix, PetscVector>::create_sub_matrix(const PetscMatrix &mat, PetscMatrix &mat_sub)
     {
-        MPI_Comm subcomm = PetscSubcommChild(psubcomm);
+        if(empty()) {
+            mat_sub = mat;
+        } else {
+            MPI_Comm subcomm = PetscSubcommChild(psubcomm);
 
-        mat_sub.destroy();
-        mat_sub.comm().set(subcomm);
+            mat_sub.destroy();
+            mat_sub.comm().set(subcomm);
 
-        MatCreateRedundantMatrix(
-            mat.raw_type(),
-            psubcomm->n,
-            subcomm,
-            MAT_INITIAL_MATRIX,
-            &mat_sub.raw_type()
-        );
+            MatCreateRedundantMatrix(
+                mat.raw_type(),
+                psubcomm->n,
+                subcomm,
+                MAT_INITIAL_MATRIX,
+                &mat_sub.raw_type()
+            );
+            }
     }
 
     void Redundant<PetscMatrix, PetscVector>::super_to_sub(const PetscMatrix &mat, PetscMatrix &mat_sub)
     {
-        MatCreateRedundantMatrix(mat.raw_type(), psubcomm->n, PetscSubcommChild(psubcomm), MAT_REUSE_MATRIX, &mat_sub.raw_type());
+        if(empty()) {
+            MatCopy(mat.raw_type(), mat_sub.raw_type(), SAME_NONZERO_PATTERN);
+        } else {
+            MatCreateRedundantMatrix(mat.raw_type(), psubcomm->n, PetscSubcommChild(psubcomm), MAT_REUSE_MATRIX, &mat_sub.raw_type());
+        }
     }
 }

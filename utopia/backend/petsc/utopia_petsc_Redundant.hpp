@@ -40,6 +40,21 @@ namespace utopia {
         // Redundant * clone() const override;
         void init(const Layout &lo, const SizeType n_sub_comm);
 
+        inline void init(const Layout &lo)
+        {
+            init(lo, n_sub_comm_);
+        }
+
+        inline void n_sub_comm(const int n_sub_comm)
+        {
+            n_sub_comm_ = n_sub_comm;
+        }
+
+       inline int n_sub_comm() const
+        {
+            return n_sub_comm_;
+        }
+
         void create_sub_vector(PetscVector &vec_sub);
 
         void create_sub_matrix(const PetscMatrix &mat, PetscMatrix &mat_sub);
@@ -49,6 +64,11 @@ namespace utopia {
 
         void super_to_sub(const PetscVector &vec,     PetscVector &vec_sub);
         void sub_to_super(const PetscVector &vec_sub, PetscVector &vec);
+
+        bool empty() const
+        {
+            return !static_cast<bool>(psubcomm);
+        }
 
     private:
         PetscSubcomm   psubcomm;
@@ -61,6 +81,15 @@ namespace utopia {
         std::unique_ptr<PetscIS> is_sub_to_super_from, is_sub_to_super_to;
         PetscVecScatter scatter_to_sub;
         PetscVecScatter scatter_to_super;
+
+        inline Redundant(const Redundant &) {
+            assert(false);
+        }
+
+        inline Redundant &operator=(const Redundant &) {
+            assert(false);
+            return *this;
+        }
     };
 }
 
