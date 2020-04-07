@@ -103,6 +103,15 @@ namespace utopia {
                 redqp,
                 true
             );
+
+            //second time should reuse all pre-allocated data
+            QPSolverTestProblem<Matrix, Vector>::run(
+                this->comm(),
+                10,
+                false,
+                redqp,
+                true
+            );
         }
 
         void run()
