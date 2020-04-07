@@ -92,6 +92,12 @@ namespace utopia {
             return *this;
         }
 
+        UTOPIA_FUNCTION void set(T *data, Size_t size)
+        {
+            data_ = data;
+            size_ = size;
+        }
+
         UTOPIA_FUNCTION ArrayView &operator=(const ArrayView &other) = default;
         UTOPIA_FUNCTION ArrayView(const ArrayView &other)            = default;
     private:

@@ -8,7 +8,9 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_RowView.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
+#include "utopia_ProjectedGaussSeidelSweep.hpp"
 #include "utopia_Algorithms.hpp"
+#include "utopia_make_unique.hpp"
 
 #include <cmath>
 
@@ -33,10 +35,16 @@ namespace utopia {
         using Super    = utopia::QPSolver<Matrix, Vector>;
 
         ProjectedGaussSeidel()
-        : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3)
+        : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3), use_sweeper_(true)
         {}
 
-        ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
+        ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
+        :   use_line_search_(other.use_line_search_),
+            use_symmetric_sweep_(other.use_symmetric_sweep_),
+            l1_(other.l1_),
+            n_local_sweeps_(other.n_local_sweeps_),
+            use_sweeper_(other.use_sweeper_)
+        {}
 
         inline ProjectedGaussSeidel * clone() const override
         {
@@ -53,6 +61,7 @@ namespace utopia {
             in.get("use_symmetric_sweep", use_symmetric_sweep_);
             in.get("n_local_sweeps", n_local_sweeps_);
             in.get("l1", l1_);
+            in.get("use_sweeper", use_sweeper_);
         }
 
         void print_usage(std::ostream &os) const override
@@ -138,63 +147,76 @@ namespace utopia {
         }
 
         ///residual must be computed outside
-        void apply_local_sweeps(const Matrix &A, const Vector &r, Vector &c) const
+        void apply_local_sweeps_unconstrained(const Matrix &A, const Vector &r, Vector &c) const
         {
             //reset correction
             c.set(0.0);
 
-            //FIXME (use sytax as for the vectors)
-            Matrix A_view;
-            local_block_view(A, A_view);
+            if(use_sweeper_) {
 
-            auto &&r_view     = const_local_view_device(r);
-            auto &&d_inv_view = const_local_view_device(d_inv);
+                auto &&r_view     = const_local_view_device(r);
+                auto &&c_view     = local_view_device(c);
 
-            auto &&c_view     = local_view_device(c);
+                sweeper_->set_residual_view(r_view.array());
+                sweeper_->set_correction_view(c_view.array());
+                sweeper_->apply_unconstrained(this->n_local_sweeps());
 
-            //WARNING THIS DOES NOT WORK IN PARALLEL (i.e., no OpenMP no Cuda)
-            SizeType prev_i = 0;
-            Scalar val = 0.0;
+            } else {
 
-            /////////////////////////////////////////////
-            auto sweeper = [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-                if(i != prev_i) {
-                    //next
-                    const Scalar temp = d_inv_view.get(prev_i) * val;
+                //FIXME (use sytax as for the vectors)
+                Matrix A_view;
+                local_block_view(A, A_view);
 
-                    c_view.set(prev_i, temp );
-                    val = r_view.get(i);
+                auto &&r_view     = const_local_view_device(r);
+                auto &&d_inv_view = const_local_view_device(d_inv);
 
-                    prev_i = i;
-                }
+                auto &&c_view     = local_view_device(c);
 
-                val -= Scalar(i != j) * a_ij * c_view.get(j);
-            };
+                //WARNING THIS DOES NOT WORK IN PARALLEL (i.e., no OpenMP no Cuda)
+                SizeType prev_i = 0;
+                Scalar val = 0.0;
 
-            /////////////////////////////////////////////
+                /////////////////////////////////////////////
+                auto sweeper = [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
+                    if(i != prev_i) {
+                        //next
+                        const Scalar temp = d_inv_view.get(prev_i) * val;
 
-            for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
-                prev_i = 0;
-                val = r_view.get(0);
+                        c_view.set(prev_i, temp );
+                        val = r_view.get(i);
 
-                A_view.read(sweeper);
+                        prev_i = i;
+                    }
 
-                //complete for last entry
-                c_view.set(prev_i, d_inv_view.get(prev_i) * val );
+                    val -= Scalar(i != j) * a_ij * c_view.get(j);
+                };
 
-                if(use_symmetric_sweep_) {
-                    val = r_view.get(prev_i);
+                /////////////////////////////////////////////
 
-                    A_view.read_reverse(sweeper);
+                for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
+                    prev_i = 0;
+                    val = r_view.get(0);
+
+                    A_view.read(sweeper);
 
                     //complete for last entry
                     c_view.set(prev_i, d_inv_view.get(prev_i) * val );
+
+                    if(use_symmetric_sweep_) {
+                        val = r_view.get(prev_i);
+
+                        A_view.read_reverse(sweeper);
+
+                        //complete for last entry
+                        c_view.set(prev_i, d_inv_view.get(prev_i) * val );
+                    }
                 }
+
             }
         }
 
         ///residual must be computed outside
-        void apply_local_sweeps_constrained(
+        void apply_local_sweeps(
             const Matrix &A,
             const Vector &r,
             const Vector &lb,
@@ -208,56 +230,71 @@ namespace utopia {
             Matrix A_view;
             local_block_view(A, A_view);
 
-            auto &&r_view     = const_local_view_device(r);
-            auto &&lb_view    = const_local_view_device(lb);
-            auto &&ub_view    = const_local_view_device(ub);
-            auto &&d_inv_view = const_local_view_device(d_inv);
 
-            auto &&c_view     = local_view_device(c);
-            //WARNING THIS DOES NOT WORK IN PARALLEL
-            SizeType prev_i = 0;
-            Scalar val = 0.0;
+            if(use_sweeper_) {
 
-            /////////////////////////////////////////////
-            auto sweeper = [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-                if(i != prev_i) {
-                    //next
-                    const Scalar temp = device::max(
-                        lb_view.get(prev_i),
-                        device::min(
-                            d_inv_view.get(prev_i) * val,
-                            ub_view.get(prev_i)
-                            )
-                        );
+                auto &&r_view     = const_local_view_device(r);
+                auto &&lb_view    = const_local_view_device(lb);
+                auto &&ub_view    = const_local_view_device(ub);
+                auto &&c_view     = local_view_device(c);
+
+                sweeper_->set_residual_view(r_view.array());
+                sweeper_->set_bounds(lb_view.array(), ub_view.array());
+                sweeper_->set_correction_view(c_view.array());
+                sweeper_->apply(this->n_local_sweeps());
+
+            } else {
+                auto &&r_view     = const_local_view_device(r);
+                auto &&lb_view    = const_local_view_device(lb);
+                auto &&ub_view    = const_local_view_device(ub);
+                auto &&d_inv_view = const_local_view_device(d_inv);
+
+                auto &&c_view     = local_view_device(c);
+                //WARNING THIS DOES NOT WORK IN PARALLEL
+                SizeType prev_i = 0;
+                Scalar val = 0.0;
+
+                /////////////////////////////////////////////
+                auto sweeper = [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
+                    if(i != prev_i) {
+                        //next
+                        const Scalar temp = device::max(
+                            lb_view.get(prev_i),
+                            device::min(
+                                d_inv_view.get(prev_i) * val,
+                                ub_view.get(prev_i)
+                                )
+                            );
 
 
-                    c_view.set(prev_i, temp );
-                    val = r_view.get(i);
+                        c_view.set(prev_i, temp );
+                        val = r_view.get(i);
 
-                    prev_i = i;
-                }
+                        prev_i = i;
+                    }
 
-                val -= Scalar(i != j) * a_ij * c_view.get(j);
-            };
+                    val -= Scalar(i != j) * a_ij * c_view.get(j);
+                };
 
-            /////////////////////////////////////////////
+                /////////////////////////////////////////////
 
-            for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
-                prev_i = 0;
-                val = r_view.get(0);
+                for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
+                    prev_i = 0;
+                    val = r_view.get(0);
 
-                A_view.read(sweeper);
-
-                //complete for last entry
-                c_view.set(prev_i, d_inv_view.get(prev_i) * val );
-
-                if(use_symmetric_sweep_) {
-                    val = r_view.get(prev_i);
-
-                    A_view.read_reverse(sweeper);
+                    A_view.read(sweeper);
 
                     //complete for last entry
                     c_view.set(prev_i, d_inv_view.get(prev_i) * val );
+
+                    if(use_symmetric_sweep_) {
+                        val = r_view.get(prev_i);
+
+                        A_view.read_reverse(sweeper);
+
+                        //complete for last entry
+                        c_view.set(prev_i, d_inv_view.get(prev_i) * val );
+                    }
                 }
             }
         }
@@ -267,7 +304,7 @@ namespace utopia {
             r = A * x;
             r = b - r;
 
-            apply_local_sweeps(A, r, c);
+            apply_local_sweeps_unconstrained(A, r, c);
 
             Scalar alpha = 1.;
 
@@ -305,7 +342,7 @@ namespace utopia {
             ub_loc = this->get_upper_bound() - x;
             lb_loc = this->get_lower_bound() - x;
 
-            apply_local_sweeps_constrained(A, r, lb_loc, ub_loc, c);
+            apply_local_sweeps(A, r, lb_loc, ub_loc, c);
 
             if(use_line_search_)
             {
@@ -378,7 +415,11 @@ namespace utopia {
         void init_memory(const Layout &layout)  override
         {
             Super::init_memory(layout);
-            d.zeros(layout);
+
+            if(!use_sweeper_) {
+                d.zeros(layout);
+            }
+
             c.zeros(layout);
 
             if(use_line_search_) {
@@ -403,19 +444,38 @@ namespace utopia {
                 }
             }
 
-            d = diag(A);
+            if(use_sweeper_) {
+                if(!sweeper_) {
+                    sweeper_ = utopia::make_unique< ProjectedGaussSeidelSweep<Scalar, SizeType> >();
+                }
 
-            if(l1_) {
-                auto &&d_view = local_view_device(d);
+                sweeper_->symmetric(use_symmetric_sweep_);
+                sweeper_->l1(l1_);
 
-                A.read(
-                    UTOPIA_LAMBDA(const SizeType &i, const SizeType &, const Scalar &value) {
-                         d_view.atomic_add(i, device::abs(value));
-                    }
-                );
+                Matrix A_local;
+                local_block_view(A, A_local);
+
+                if(reset) {
+                    sweeper_->init_from_local_matrix(A_local);
+                } else {
+                    sweeper_->update_from_local_matrix(A_local);
+                }
+
+            } else {
+                d = diag(A);
+
+                if(l1_) {
+                    auto &&d_view = local_view_device(d);
+
+                    A.read(
+                        UTOPIA_LAMBDA(const SizeType &i, const SizeType &, const Scalar &value) {
+                             d_view.atomic_add(i, device::abs(value));
+                        }
+                    );
+                }
+
+                d_inv = 1./d;
             }
-
-            d_inv = 1./d;
         }
 
         virtual void update(const std::shared_ptr<const Matrix> &op) override
@@ -453,11 +513,15 @@ namespace utopia {
         bool use_line_search_;
         bool use_symmetric_sweep_;
         bool l1_;
+
         SizeType n_local_sweeps_;
 
         Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
         Vector inactive_set_;
         Vector is_c_;
+
+        bool use_sweeper_;
+        std::unique_ptr< ProjectedGaussSeidelSweep<Scalar, SizeType> > sweeper_;
     };
 }
 
