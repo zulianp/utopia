@@ -42,8 +42,8 @@ namespace utopia {
                         ++row_ptr_[i+1];
                         ++n_off_diag_entries;
                     }
-            });
-
+                }
+            );
 
             for(SizeType i = 0; i < n_rows; ++i) {
                 row_ptr_[i+1] += row_ptr_[i];
@@ -57,58 +57,22 @@ namespace utopia {
                 col_idx_.resize(n_off_diag_entries);
             }
 
-
             n_off_diag_entries = 0;
             mat.read(
-            [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-                    if(i != j) {
-                        col_idx_[n_off_diag_entries] = j;
-                        values_[n_off_diag_entries] = a_ij;
-                        ++n_off_diag_entries;
-                    }
-            });
+                [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
+                        if(i != j) {
+                            col_idx_[n_off_diag_entries] = j;
+                            values_[n_off_diag_entries] = a_ij;
+                            ++n_off_diag_entries;
+                        }
+                }
+            );
         }
-
 
         template<class Derived>
         void update_from_local_matrix(const Tensor<Derived, 2> &local_diag_block)
         {
             init_from_local_matrix(local_diag_block);
-
-            // const auto &mat = local_diag_block.derived();
-            // const SizeType n_rows = local_diag_block.rows();
-
-            // d_inv_.resize(n_rows);
-            // row_ptr_.resize(n_rows + 1);
-
-            // row_ptr_[0] = 0;
-            // SizeType n_off_diag_entries = 0;
-
-            // local_diag_block.read(
-            //     [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-            //         if(i == j) {
-            //             d_inv_[i] = (device::abs(a_ij) > 0.0)? (1/a_ij) : Scalar(0.0);
-            //         } else {
-            //             ++row_ptr_[i+1];
-            //             ++n_off_diag_entries;
-            //         }
-            // });
-
-            // values_.resize(n_off_diag_entries);
-            // col_idx_.resize(n_off_diag_entries);
-
-            // SizeType n_off_diag_entries = 0;
-            // mat.read(
-            // [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-            //         if(i == j) {
-            //             d_inv_[i] = (device::abs(a_ij) > 0.0)? (1/a_ij) : Scalar(0.0);
-            //         } else {
-                        // col_idx_[n_off_diag_entries] = j;
-            //             assert(n_off_diag_entries < SizeType(values_.size()));
-            //             values_[n_off_diag_entries] = a_ij;
-            //             ++n_off_diag_entries;
-            //         }
-            // });
         }
 
         void apply(const SizeType &times)
