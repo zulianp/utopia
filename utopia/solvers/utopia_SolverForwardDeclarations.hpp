@@ -1,6 +1,7 @@
 #ifndef UTOPIA_SOLVERFORWARDDECLARATIONS_HPP
 #define UTOPIA_SOLVERFORWARDDECLARATIONS_HPP
 
+
 namespace utopia {
 
     template<class Matrix, class Vector>
@@ -32,6 +33,9 @@ namespace utopia {
 
     template<class Matrix, class Vector>
     class MatrixTransfer;
+
+    template<typename Scalar, typename SizeType>
+    class ProjectedGaussSeidelSweep;
 
 }
 

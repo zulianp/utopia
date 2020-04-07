@@ -11,8 +11,9 @@
 #include <cmath>
 
 namespace utopia {
+    //FIXME use composition instead of inheritance once we fix all the abstract interfaces
     template<class Matrix, class Vector>
-    class ProjectedGaussSeidelQR final: public ProjectedGaussSeidel<Matrix, Vector>
+    class ProjectedGaussSeidelQR final : public ProjectedGaussSeidel<Matrix, Vector>
     {
     public:
 

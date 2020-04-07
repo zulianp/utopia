@@ -1,4 +1,4 @@
-// #include "utopia_ProjectedGaussSeidelNew.hpp"
+#include "utopia_ProjectedGaussSeidel_impl.hpp"
 
 // namespace utopia {
 

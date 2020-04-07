@@ -45,6 +45,15 @@ namespace utopia {
                 }
             );
 
+
+            if(l1_) {
+                mat.read(
+                  [&](const SizeType &i, const SizeType &, const Scalar &a_ij) {
+                      d_inv_[i] += device::abs(a_ij);
+                  }
+                );
+            }
+
             for(SizeType i = 0; i < n_rows; ++i) {
                 row_ptr_[i+1] += row_ptr_[i];
             }
