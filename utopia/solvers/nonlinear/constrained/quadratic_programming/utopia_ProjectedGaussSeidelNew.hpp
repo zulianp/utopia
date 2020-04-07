@@ -13,11 +13,11 @@
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
-    inline void local_block_view(const Matrix &mat, Vector &block)
+    template<class Matrix, class LocalMat>
+    inline void local_block_view(const Matrix &, LocalMat &)
     {
-        static_assert(Traits<Vector>::Backend != PETSC,    "IMPLEMENT ME");
-        static_assert(Traits<Vector>::Backend == HOMEMADE, "IMPLEMENT ME");
+        static_assert(Traits<LocalMat>::Backend != PETSC,    "IMPLEMENT ME");
+        static_assert(Traits<LocalMat>::Backend == HOMEMADE, "IMPLEMENT ME");
     }
 
     //FIXME make it work for all other backends
@@ -66,6 +66,10 @@ namespace utopia {
             l1_ = val;
         }
 
+    protected:
+        virtual bool step(const Matrix &A, const Vector &b, Vector &x);
+        virtual bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x);
+
     private:
         bool use_line_search_;
         bool use_symmetric_sweep_;
@@ -81,8 +85,8 @@ namespace utopia {
         std::unique_ptr< ProjectedGaussSeidelSweep<Scalar, SizeType> > sweeper_;
 
         void init(const Matrix &A);
-        bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x);
-        bool step(const Matrix &A, const Vector &b, Vector &x);
+
+
 
 
         ///residual must be computed outside
