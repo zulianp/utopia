@@ -9,6 +9,7 @@
 #include "utopia_Multilevel.hpp"
 #include "utopia_MLIncrementalLoading.hpp"
 #include "utopia_PFMassMatrix.hpp"
+#include "utopia_RedundantQPSolver.hpp"
 
 #include <memory>
 
@@ -22,15 +23,24 @@ namespace utopia {
         using Vector   = typename FunctionSpace::Vector;
         using Scalar   = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
+        using Super    = utopia::IncrementalLoadingBase<FunctionSpace>;
+        using Super::init;
 
 
-        MLIncrementalLoading(FunctionSpace &space_coarse, const SizeType & n_levels) : n_levels_(n_levels), log_output_path_("rmtr_log_file.csv"){
+        MLIncrementalLoading(FunctionSpace &space_coarse, const SizeType & n_levels) : n_levels_(n_levels), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv"){
             init_ml_setup(space_coarse);
         }
+
+        MLIncrementalLoading() : n_levels_(2), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv") {}
+
 
         void read(Input &in) override {
 
             IncrementalLoadingBase<FunctionSpace>::read(in);
+
+            in.get("log_output_path", log_output_path_);
+            in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
+            in.get("n_levels", n_levels_);
 
             for (auto l=0; l < level_functions_.size(); l++){
                 level_functions_[l]->read(in);
@@ -38,9 +48,18 @@ namespace utopia {
             }
 
             IC_->read(in);
-            in.get("log_output_path", log_output_path_);
-            in.get("solver", *rmtr_);
 
+            //FIXME
+            if(!rmtr_) {
+                rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            }
+
+            in.get("solver", *rmtr_);
+        }
+
+        bool init(FunctionSpace &space)
+        {
+            return init_ml_setup(make_ref(space));
         }
 
 
@@ -95,7 +114,7 @@ namespace utopia {
                 assert(!empty(*I));
 
                 Matrix Iu; // = *I;
-                Iu.destroy(); 
+                Iu.destroy();
                 MatConvert(raw_type(*I),  I->type_override(), MAT_INITIAL_MATRIX, &raw_type(Iu));
                 Matrix R = transpose(Iu);
 
@@ -122,15 +141,29 @@ namespace utopia {
             //////////////////////////////////////////////// init solver ////////////////////////////////////////////////
             // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
             // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            
-            rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+
+            if(!rmtr_) {
+                rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
+            }
+
             auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
-            // tr_strategy_fine->l1(true); 
-            
-            
-            auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            // auto ls = std::make_shared<GMRES<Matrix, Vector> >(); 
-            // ls->pc_type("bjacobi"); 
+            // tr_strategy_fine->l1(true);
+
+
+            std::shared_ptr<QPSolver<Matrix,  Vector>> tr_strategy_coarse;
+            if(n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= space->comm().size()) {
+                space->comm().root_print("using redundant qp solver");
+                auto qp = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                qp->verbose(true);
+                tr_strategy_coarse = std::make_shared< RedundantQPSolver<Matrix, Vector> >(qp, n_coarse_sub_comm_);
+                // tr_strategy_coarse->verbose(true);
+            } else {
+                tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            }
+
+
+            // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
+            // ls->pc_type("bjacobi");
             // auto tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
 
 
@@ -221,8 +254,8 @@ namespace utopia {
             //     Vector & sol  = fun->old_solution();
             //     rename("X", sol);
 
-            //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr", sol);     
-            // }        
+            //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr", sol);
+            // }
 
             Utopia::instance().set("log_output_path", log_output_path_);
 
@@ -349,8 +382,8 @@ namespace utopia {
         }
 
 
-
-        void run(Input &in) override{
+        //FIXME remove Input from interface. Use read(...), init(...), run() instead
+        void run(Input &in) override {
 
             // init fine level spaces
             this->init(in, *spaces_[n_levels_ - 1]);
@@ -379,6 +412,7 @@ namespace utopia {
 
     private:
         SizeType n_levels_;
+        SizeType n_coarse_sub_comm_;
 
         std::vector<std::shared_ptr<FunctionSpace>> spaces_;
         std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > transfers_;
