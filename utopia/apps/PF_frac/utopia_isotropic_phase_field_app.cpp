@@ -42,6 +42,7 @@
 #include "utopia_BCSetup.hpp"
 
 #include "utopia_ProjectedGaussSeidelNew.hpp"
+#include "utopia_petsc_RedundantQPSolver.hpp"
 
 
 #include "utopia_petsc_DMDA.hpp"

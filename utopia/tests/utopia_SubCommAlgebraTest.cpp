@@ -5,6 +5,7 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "utopia_petsc_Redundant.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
+#include "utopia_petsc_RedundantQPSolver.hpp"
 
 namespace utopia {
 
@@ -89,12 +90,37 @@ namespace utopia {
             );
         }
 
+        void redundant_qp_solver()
+        {
+            auto qp = std::make_shared<MPGRP<Matrix, Vector>>();
+            // qp->verbose(true);
+            RedundantQPSolver<Matrix, Vector> redqp(qp, 2);
+
+            QPSolverTestProblem<Matrix, Vector>::run(
+                this->comm(),
+                10,
+                false,
+                redqp,
+                true
+            );
+
+            //second time should reuse all pre-allocated data
+            QPSolverTestProblem<Matrix, Vector>::run(
+                this->comm(),
+                10,
+                false,
+                redqp,
+                true
+            );
+        }
+
         void run()
         {
             UTOPIA_RUN_TEST(sum_vectors);
             UTOPIA_RUN_TEST(mat_vec_mult);
             UTOPIA_RUN_TEST(solve_problem);
             UTOPIA_RUN_TEST(redundant_test);
+            UTOPIA_RUN_TEST(redundant_qp_solver);
         }
 
     };

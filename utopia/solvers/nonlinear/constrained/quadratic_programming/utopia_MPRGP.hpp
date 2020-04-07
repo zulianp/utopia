@@ -86,7 +86,7 @@ namespace  utopia
                 const auto &lb = constraints.lower_bound();
 
                 if(this->verbose()){
-                    this->init_solver("MPGRP", {"it", "|| g ||"});
+                    this->init_solver("MPGRP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
                 }
 
                 const Scalar gamma = 1.0;
