@@ -3,6 +3,7 @@
 
 #include "utopia_Traits.hpp"
 #include "utopia_Readable.hpp"
+#include "utopia_ArrayView.hpp"
 #include <memory>
 
 namespace utopia {
@@ -91,6 +92,11 @@ namespace utopia {
             return tensor_.l_get(idx);
         }
 
+        inline ArrayView<const Scalar> array() const
+        {
+            return tensor_.array_view_read();
+        }
+
         LocalViewDevice(const T &tensor) : tensor_(tensor), lock_(std::make_shared<Read<T>>(tensor)) {}
 
     private:
@@ -123,6 +129,12 @@ namespace utopia {
         inline void atomic_add(const SizeType &idx, const Scalar &val) const
         {
             return tensor_.l_add(idx, val);
+        }
+
+
+        inline ArrayView<Scalar> array() const
+        {
+            return tensor_.array_view_write();
         }
 
         LocalViewDevice(T &tensor) : tensor_(tensor), lock_(std::make_shared<ReadAndWrite<T>>(tensor)) {}

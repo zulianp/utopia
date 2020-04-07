@@ -17,6 +17,7 @@
 #include "utopia_Allocations.hpp"
 #include "utopia_Select.hpp"
 #include "utopia_Layout.hpp"
+#include "utopia_ArrayView.hpp"
 
 #include "utopia_petsc_Base.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -265,6 +266,19 @@ namespace utopia {
             return readable_->data[index];
         }
 
+        //DANGER
+        inline ArrayView<Scalar> array_view_write()
+        {
+            assert(writeable_);
+            return ArrayView<Scalar>(&writeable_->data[0], local_size());
+        }
+
+        //DANGER
+        inline ArrayView<const Scalar> array_view_read() const
+        {
+            assert(readable_);
+            return ArrayView<const Scalar>(&readable_->data[0], local_size());
+        }
 
         //print function
         void describe() const override;
