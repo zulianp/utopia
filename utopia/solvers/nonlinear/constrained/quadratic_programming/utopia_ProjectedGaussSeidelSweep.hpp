@@ -4,6 +4,7 @@
 #include "utopia_Views.hpp"
 #include "utopia_VectorView.hpp"
 #include "utopia_Algorithms.hpp"
+#include "utopia_Trace.hpp"
 
 #include <vector>
 #include <type_traits>
@@ -21,6 +22,8 @@ namespace utopia {
         template<class Derived>
         void init_from_local_matrix(const Tensor<Derived, 2> &local_diag_block)
         {
+            // UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidelSweep::init_from_local_matrix");
+
             const auto &mat = local_diag_block.derived();
 
             const SizeType n_rows = mat.rows();
@@ -76,6 +79,8 @@ namespace utopia {
                         }
                 }
             );
+
+            // UTOPIA_TRACE_REGION_END("ProjectedGaussSeidelSweep::init_from_local_matrix");
         }
 
         template<class Derived>
@@ -86,9 +91,13 @@ namespace utopia {
 
         void apply(const SizeType &times)
         {
+            // UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidelSweep::apply(...)");
+
             for(SizeType t = 0; t < times; ++t) {
                 apply();
             }
+
+            // UTOPIA_TRACE_REGION_END("ProjectedGaussSeidelSweep::apply(...)");
         }
 
         void apply_unconstrained(const SizeType &times)

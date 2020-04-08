@@ -152,6 +152,8 @@ namespace utopia {
                     }
                 );
 
+                ////////////////////////////////////////////////////////////////////////////////////
+
                  this->register_experiment(
                     "projected_gauss_seidel_hm_" + std::to_string(i),
                     [=]() {
