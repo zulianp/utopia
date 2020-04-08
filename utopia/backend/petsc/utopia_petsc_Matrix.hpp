@@ -17,6 +17,7 @@
 #include "utopia_Operator.hpp"
 #include "utopia_Allocations.hpp"
 #include "utopia_Select.hpp"
+#include "utopia_Tracer.hpp"
 
 //Backend includes
 #include "utopia_petsc_Base.hpp"
@@ -824,8 +825,12 @@ namespace utopia {
         inline void write_lock(WriteMode) override { }
 
         inline void write_unlock(WriteMode) override {
+            UTOPIA_TRACE_REGION_BEGIN("PetscMatrix::write_unlock(...)");
+
             check_error( MatAssemblyBegin(implementation(), MAT_FINAL_ASSEMBLY) );
             check_error( MatAssemblyEnd(implementation(),   MAT_FINAL_ASSEMBLY) );
+
+            UTOPIA_TRACE_REGION_END("PetscMatrix::write_unlock(...)");
         }
 
         inline void read_lock() override { }
