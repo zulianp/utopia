@@ -478,8 +478,10 @@ namespace utopia {
     template<class Matrix, class Vector>
     void ProjectedGaussSeidel<Matrix, Vector, PETSC>::update(const std::shared_ptr<const Matrix> &op)
     {
+        UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::update");
         IterativeSolver<Matrix, Vector>::update(op);
         init(*op);
+        UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::update");
     }
 
 }

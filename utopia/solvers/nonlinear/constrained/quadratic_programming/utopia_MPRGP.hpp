@@ -45,10 +45,14 @@ namespace  utopia
 
             void update(const Operator<Vector> &A) override
             {
+                UTOPIA_TRACE_REGION_BEGIN("MPGRP::update");
+
                 const auto layout_rhs = row_layout(A);
                 if(!initialized_ || !layout_rhs.same(layout_)) {
                     init_memory(layout_rhs);
                 }
+
+                UTOPIA_TRACE_REGION_END("MPGRP::update");
             }
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
