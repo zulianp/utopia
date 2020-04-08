@@ -79,6 +79,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     bool ProjectedGaussSeidel<Matrix, Vector, PETSC>::apply(const Vector &b, Vector &x)
     {
+        UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::apply");
+
         if(this->verbose()) {
             if(l1_) {
                 this->init_solver("utopia ProjectedL1GaussSeidelNew", {" it. ", "|| u - u_old ||"});
@@ -119,6 +121,8 @@ namespace utopia {
 
             x_old = x;
         }
+
+        UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::apply");
         return converged;
     }
 
@@ -208,6 +212,8 @@ namespace utopia {
         const Vector &ub,
         Vector &c) const
     {
+        // UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::apply_local_sweeps");
+
         //reset correction
         c.set(0.0);
 
@@ -282,6 +288,8 @@ namespace utopia {
                 }
             }
         }
+
+        // UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::apply_local_sweeps");
     }
 
     template<class Matrix, class Vector>
