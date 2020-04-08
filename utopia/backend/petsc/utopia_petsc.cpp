@@ -14,14 +14,16 @@
 #include "utopia_ConjugateGradient_impl.hpp"
 #include "utopia_RMTRVcycleImpl.hpp"
 #include "utopia_TRBoundsGratton.hpp"
-// #include "utopia_ProjectedGaussSeidelNew.hpp"
+#include "utopia_ProjectedGaussSeidel_impl.hpp"
+#include "utopia_petsc_Matrix_impl.hpp"
 
 //explicit instantiations
 namespace utopia {
 
     template class ConjugateGradient<PetscMatrix, PetscVector>;
     template class ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>;
-    template class GaussSeidel<PetscMatrix, PetscVector>;
+    template class GaussSeidel<PetscMatrix, PetscVector, PETSC>;
+    template class ProjectedGaussSeidel<PetscMatrix, PetscVector>;
     template class SPBlockConjugateGradient<PetscMatrix, PetscVector>;
     template class BiCGStab<PetscMatrix, PetscVector, HOMEMADE>;
 
@@ -98,6 +100,13 @@ namespace utopia {
         PetscVector diff = d - o;
         PetscScalar m = min(diff);
         return m > 0.;
+    }
+
+    void local_block_view(const PetscMatrix &mat, PetscMatrix &block)
+    {
+        Mat M;
+        auto ierr = MatGetDiagonalBlock(mat.raw_type(), &M); assert(ierr==0);
+        block.wrap(M);
     }
 }
 

@@ -45,14 +45,20 @@ namespace  utopia
 
             void update(const Operator<Vector> &A) override
             {
+                UTOPIA_TRACE_REGION_BEGIN("MPGRP::update");
+
                 const auto layout_rhs = row_layout(A);
                 if(!initialized_ || !layout_rhs.same(layout_)) {
                     init_memory(layout_rhs);
                 }
+
+                UTOPIA_TRACE_REGION_END("MPGRP::update");
             }
 
             bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
             {
+                UTOPIA_TRACE_REGION_BEGIN("MPRGP::solve(...)");
+
                 this->fill_empty_bounds(layout(rhs));
                 auto &box = this->get_box_constraints();
 
@@ -66,7 +72,10 @@ namespace  utopia
                     this->make_iterate_feasible(sol);
                 }
 
-                return aux_solve(A, rhs, sol, box);
+                bool ok = aux_solve(A, rhs, sol, box);
+
+                UTOPIA_TRACE_REGION_END("MPRGP::solve(...)");
+                return ok;
             }
 
             void set_eig_comp_tol(const Scalar & eps_eig_est)

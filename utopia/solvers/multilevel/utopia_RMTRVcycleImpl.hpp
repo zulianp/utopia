@@ -34,7 +34,9 @@ namespace utopia
         //----------------------------------------------
         if(this->verbosity_level() >= VERBOSITY_LEVEL_NORMAL && this->verbose()==true && mpi_world_rank() == 0){
             std::cout << this->red_;
-            std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1)  + "   \n Fine level local dofs: " + std::to_string(this->local_level_layouts_.back().local_size());
+            std::string name_id =
+                this->name() + "     Number of levels: " + std::to_string(fine_level+1)  +
+                               "   \n Fine level local dofs: " + std::to_string(this->local_level_layouts_.back().local_size()) + "/" + std::to_string(x_h.size());
             this->init_solver(name_id, {" it. ", "|| g ||", "   E "});
 
             PrintInfo::print_iter_status(this->_it_global, {this->memory_.gnorm[fine_level], this->memory_.energy[fine_level]});

@@ -36,6 +36,7 @@
 namespace utopia {
     void optimize_nnz(PetscMatrix &A);
     bool is_diagonally_dominant(const PetscMatrix &A);
+    void local_block_view(const PetscMatrix &mat, PetscMatrix &block);
 }
 
 

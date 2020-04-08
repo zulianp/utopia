@@ -3,7 +3,7 @@
 
 #include "utopia_Input.hpp"
 #include "utopia_make_unique.hpp"
-
+#include "utopia_Tracer.hpp"
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_Path.hpp"
 #include "utopia_petsc_Vector.hpp"
@@ -76,54 +76,81 @@ namespace utopia {
 
         void create_matrix(PetscMatrix &mat) const
         {
+            UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::create_matrix(...)");
+
             mat.destroy();
             DMCreateMatrix(raw_type(), &mat.raw_type());
+
+            UTOPIA_TRACE_REGION_END("PetscDMbase::create_matrix(...)");
         }
 
         void create_vector(PetscVector &vec) const
         {
+            UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::create_vector(...)");
+
             vec.destroy();
             DMCreateGlobalVector(raw_type(), &vec.raw_type());
+
+            UTOPIA_TRACE_REGION_END("PetscDMbase::create_vector(...)");
         }
 
         void create_local_vector(PetscVector &vec) const
         {
+            UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::create_local_vector(...)");
+
             vec.destroy();
             auto err = DMCreateLocalVector(raw_type(), &vec.raw_type()); assert(err == 0);
+
+            UTOPIA_TRACE_REGION_END("PetscDMbase::create_local_vector(...)");
         }
 
         void create_interpolation(const PetscDMBase &target, PetscMatrix &I) const
         {
+            UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::create_interpolation(...)");
+
             I.destroy();
             auto ierr = DMCreateInterpolation(raw_type(), target.raw_type(), &I.raw_type(), nullptr); assert(ierr == 0);
+
+            UTOPIA_TRACE_REGION_END("PetscDMbase::create_interpolation(...)");
         }
 
         void local_to_global(const PetscVector &local,  PetscVector &global) const
         {
+            UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::local_to_global(...)");
+
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DM-INCOMPLETE
             DMLocalToGlobal(raw_type(), local.raw_type(), ADD_VALUES, global.raw_type());
 #else
             DMLocalToGlobalBegin(raw_type(), local.raw_type(), ADD_VALUES, global.raw_type());
             DMLocalToGlobalEnd(raw_type(), local.raw_type(), ADD_VALUES, global.raw_type());
 #endif
+
+            UTOPIA_TRACE_REGION_END("PetscDMbase::local_to_global(...)");
         }
 
         void global_to_local(const PetscVector &global, PetscVector &local) const
         {
+            UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::global_to_local(...)");
+
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DM-INCOMPLETE
             DMGlobalToLocal(raw_type(), global.raw_type(), INSERT_VALUES, local.raw_type());
 #else
             DMGlobalToLocalBegin(raw_type(), global.raw_type(), INSERT_VALUES, local.raw_type());
             DMGlobalToLocalEnd(raw_type(), global.raw_type(), INSERT_VALUES, local.raw_type());
 #endif
+
+            UTOPIA_TRACE_REGION_END("PetscDMbase::global_to_local(...)");
         }
 
         bool write(const Path &path, const PetscVector &x) const
         {
+            // UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::write(...)");
             PetscIO io;
             if(!io.open(comm(), path)) { return false; }
             if(!io.write(*this))       { return false; }
             if(!io.write(x))           { return false; }
+
+            // UTOPIA_TRACE_REGION_END("PetscDMbase::write(...)");
             return true;
         }
 
