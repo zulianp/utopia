@@ -25,7 +25,7 @@
     "mu":100,
     "n_coarse_sub_comm": 1,
     "num_fracs" : 100,
-    "n_levels": 4,
+    "n_levels": 3,
     "fracture_toughness":1e-3,
     "pressure0" : 0.1,
     "pressure_increase_factor" : 0.05,
@@ -45,12 +45,18 @@
         "max_sucessful_smoothing_it": 1,
         "max_QP_smoothing_it": 40,
         "max_QP_coarse_it": 1000,
-        "deltaH_lagging" : false, 
-        "Hpost_lagging": false, 
+        "deltaH_lagging" : false,
+        "Hpost_lagging": false,
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
             "max-it": 1000
+        },
+        "fine-QPSolver" : {
+            "verbose" : true,
+            "check_s_norm_each" : 5,
+            "n_local_sweeps" : 3,
+            "stol" : 1e-8
         }
     }
 }

@@ -11,7 +11,7 @@ namespace utopia {
 
     template<class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel()
-    : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3), use_sweeper_(true)
+    : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3), check_s_norm_each_(1), use_sweeper_(true)
     {}
 
     template<class Matrix, class Vector>
@@ -41,6 +41,7 @@ namespace utopia {
         in.get("n_local_sweeps", n_local_sweeps_);
         in.get("l1", l1_);
         in.get("use_sweeper", use_sweeper_);
+        in.get("check_s_norm_each", check_s_norm_each_);
     }
 
     template<class Matrix, class Vector>
@@ -94,7 +95,7 @@ namespace utopia {
 
         x_old = x;
         bool converged = false;
-        const SizeType check_s_norm_each = 1;
+
 
         int iteration = 0;
         while(!converged) {
@@ -104,7 +105,7 @@ namespace utopia {
                 unconstrained_step(A, b, x);
             }
 
-            if(iteration % check_s_norm_each == 0) {
+            if(iteration % check_s_norm_each_ == 0) {
                 c = x - x_old;
                 const Scalar diff = norm2(c);
 
