@@ -76,6 +76,7 @@ namespace utopia {
         bool l1_;
 
         SizeType n_local_sweeps_;
+        SizeType check_s_norm_each_;
 
         Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
         Vector inactive_set_;
