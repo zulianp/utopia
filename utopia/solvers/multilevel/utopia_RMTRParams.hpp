@@ -30,6 +30,8 @@ namespace utopia
                     _hessian_update_eta(0.5),
                     _verbosity_level(VERBOSITY_LEVEL_NORMAL),
                     _norm_schedule(ALWAYS), 
+                    _deltaH_lagging(false),
+                    _Hpost_lagging(false),
                     red_(FG_LIGHT_MAGENTA),
                     def_(FG_DEFAULT),
                     yellow_(FG_LIGHT_YELLOW),
@@ -58,6 +60,9 @@ namespace utopia
 
             in.get("hessian_update_delta", _hessian_update_delta);
             in.get("hessian_update_eta", _hessian_update_eta);
+
+            in.get("deltaH_lagging", _deltaH_lagging); 
+            in.get("Hpost_lagging", _Hpost_lagging); 
         }
 
         virtual void print_usage(std::ostream &os) const override
@@ -79,8 +84,31 @@ namespace utopia
             this->print_param_usage(os, "hessian_update_delta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.15");
             this->print_param_usage(os, "hessian_update_eta", "real", "Constant used for deciding whether to assemble fresh hessian or no.", "0.5");
             this->print_param_usage(os, "verbosity_level", "VerbosityLevel", "Specifies level of verbosity.", "VERBOSITY_LEVEL_NORMAL");
+
+            this->print_param_usage(os, "deltaH_lagging", "deltaH_lagging", "Use lagging of delta H term. Applies only for Second order consistent models.", "False");
+            this->print_param_usage(os, "Hpost_lagging", "Hpost_lagging", "Use lagging of Hessian for post-smoothing.", "False");
         }
 
+
+        virtual bool deltaH_lagging() const 
+        {
+            return _deltaH_lagging; 
+        }
+
+        virtual void deltaH_lagging(const bool & deltaH_lagging) 
+        {
+            _deltaH_lagging = deltaH_lagging; 
+        }
+
+        virtual bool Hpost_lagging() const 
+        {
+            return _Hpost_lagging; 
+        }
+
+        virtual void Hpost_lagging(const bool & flg) 
+        {
+            _Hpost_lagging = flg; 
+        }        
 
         virtual VerbosityLevel verbosity_level() const
         {
@@ -239,6 +267,10 @@ namespace utopia
 
         VerbosityLevel                  _verbosity_level;
         MultilevelNormSchedule          _norm_schedule; 
+
+
+        bool                            _deltaH_lagging;
+        bool                            _Hpost_lagging; 
 
         ColorModifier red_;
         ColorModifier def_;
