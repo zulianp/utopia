@@ -20,6 +20,7 @@ namespace utopia {
         use_symmetric_sweep_(other.use_symmetric_sweep_),
         l1_(other.l1_),
         n_local_sweeps_(other.n_local_sweeps_),
+        check_s_norm_each_(other.check_s_norm_each_),
         use_sweeper_(other.use_sweeper_)
     {}
 
