@@ -311,7 +311,10 @@ namespace utopia
         {
             UTOPIA_NO_ALLOC_BEGIN("RMTR::hessian_eval1");
             if(make_hess_updates){
-                this->get_multilevel_hessian(this->function(level), level);
+                bool update_h = (this->Hpost_lagging() && solve_type == POST_SMOOTHING) ? false : true; 
+                if(update_h){
+                    this->get_multilevel_hessian(this->function(level), level);
+                }
             }
             UTOPIA_NO_ALLOC_END();
 
