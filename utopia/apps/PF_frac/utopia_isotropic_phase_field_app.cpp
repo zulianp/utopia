@@ -79,10 +79,6 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        // space.mesh().set_field_name(0, "c");
-        // space.mesh().set_field_name(1, "disp_x");
-        // space.mesh().set_field_name(2, "disp_y");
-
         stats.stop_and_collect("space-creation");
 
         stats.start();
@@ -91,7 +87,8 @@ namespace utopia {
         PFFracTension2D<FunctionSpace> BC_setup(space);
         IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(space, IC_setup, BC_setup);
 
-        time_stepper.run(in);
+        time_stepper.read(in); 
+        time_stepper.run();
 
 
         stats.stop_collect_and_restart("end");
@@ -126,11 +123,6 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
-
-        // space.mesh().set_field_name(0, "c");
-        // space.mesh().set_field_name(1, "disp_x");
-        // space.mesh().set_field_name(2, "disp_y");
-
         stats.stop_and_collect("space-creation");
 
         stats.start();
@@ -139,7 +131,8 @@ namespace utopia {
         PFFracFixAllDisp<FunctionSpace> BC_setup(space);
         IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(space, IC_setup, BC_setup);
 
-        time_stepper.run(in);
+        time_stepper.read(in); 
+        time_stepper.run();
 
 
         stats.stop_collect_and_restart("end");
@@ -173,32 +166,15 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
-
-        // space.mesh().set_field_name(0, "c");
-        // space.mesh().set_field_name(1, "disp_x");
-        // space.mesh().set_field_name(2, "disp_y");
-
         stats.stop_and_collect("space-creation");
 
         stats.start();
 
-        // InitialCondidtionPFTbar<FunctionSpace> IC_setup(space, 0.0);
-        // PFFracFixAllDisp<FunctionSpace> BC_setup(space);
+        MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                            PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFFracNet<FunctionSpace> > time_stepper(space);
 
-        // const auto n_levels = 3;
-        // MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-        //                     PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFTbar<FunctionSpace> > time_stepper(space, n_levels);
-
-
-        auto n_levels = 2;
-        in.get("n_levels", n_levels);
-
-       MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-                            PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFFracNet<FunctionSpace> > time_stepper(space, n_levels);
-
-
-
-        time_stepper.run(in);
+        time_stepper.read(in); 
+        time_stepper.run();
 
 
         stats.stop_collect_and_restart("end");
@@ -236,26 +212,18 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
-        // space.mesh().set_field_name(0, "c");
-        // space.mesh().set_field_name(1, "disp_x");
-        // space.mesh().set_field_name(2, "disp_y");
-
         stats.stop_and_collect("space-creation");
 
         stats.start();
 
-        auto n_levels = 2;
-        in.get("n_levels", n_levels);
-
 
         MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-                            PFFracTension2D<FunctionSpace>, InitialCondidtionPFTension<FunctionSpace> > time_stepper(space, n_levels);
+                            PFFracTension2D<FunctionSpace>, InitialCondidtionPFTension<FunctionSpace> > time_stepper(space);
 
 
 
-
-
-        time_stepper.run(in);
+        time_stepper.read(in); 
+        time_stepper.run();
 
 
         stats.stop_collect_and_restart("end");
@@ -292,9 +260,6 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        // space.mesh().set_field_name(0, "c");
-        // space.mesh().set_field_name(1, "disp_x");
-        // space.mesh().set_field_name(2, "disp_y");
 
         stats.stop_and_collect("space-creation");
         stats.start();
@@ -303,7 +268,8 @@ namespace utopia {
         PFFracFixAllDisp<FunctionSpace> BC_setup(space);
 
         IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(space, IC_setup, BC_setup);
-        time_stepper.run(in);
+        time_stepper.read(in); 
+        time_stepper.run();
 
         stats.stop_collect_and_restart("end");
 
@@ -336,24 +302,12 @@ namespace utopia {
         space.read(in);
 
 
-        // space.mesh().set_field_name(0, "c");
-        // space.mesh().set_field_name(1, "disp_x");
-        // space.mesh().set_field_name(2, "disp_y");
-        // space.mesh().set_field_name(3, "disp_z");
-
-
-        auto n_levels = 2;
-        in.get("n_levels", n_levels);
-
-        // MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-        //             PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFSneddon<FunctionSpace> > time_stepper(space, n_levels);
-
-
         MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-                    PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFFracNet3D<FunctionSpace> > time_stepper(space, n_levels);
+                    PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFFracNet3D<FunctionSpace> > time_stepper(space);
 
 
-        time_stepper.run(in);
+        time_stepper.read(in); 
+        time_stepper.run();
 
 
         stats.stop_collect_and_restart("end");
