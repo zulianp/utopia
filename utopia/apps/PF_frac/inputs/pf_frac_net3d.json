@@ -45,16 +45,16 @@
         "max_sucessful_smoothing_it": 1,
         "max_QP_smoothing_it": 40,
         "max_QP_coarse_it": 1000,
-        "deltaH_lagging" : false,
-        "Hpost_lagging": false,
+        "deltaH_lagging" : true,
+        "Hpost_lagging": true,
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
             "max-it": 1000
         },
         "fine-QPSolver" : {
-            "verbose" : true,
-            "check_s_norm_each" : 5,
+            "verbose" : false,
+            "check_s_norm_each" : 10,
             "n_local_sweeps" : 3,
             "stol" : 1e-8
         }
