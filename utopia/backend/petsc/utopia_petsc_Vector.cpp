@@ -1,6 +1,6 @@
+#include "utopia_Tracer.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #include "utopia_petsc_quirks.hpp"
-
 
 #include <set>
 #include <cstring>
@@ -517,6 +517,8 @@ namespace utopia {
 
     void PetscVector::write_unlock(WriteMode mode)
     {
+        UTOPIA_TRACE_REGION_BEGIN("PetscVector::write_unlock");
+
         switch(mode) {
             case GLOBAL_INSERT:
             case GLOBAL_ADD:
@@ -546,6 +548,8 @@ namespace utopia {
                 break;
             }
         }
+
+        UTOPIA_TRACE_REGION_END("PetscVector::write_unlock");
     }
 
     void PetscVector::read_and_write_lock(WriteMode mode) { write_lock(mode); }

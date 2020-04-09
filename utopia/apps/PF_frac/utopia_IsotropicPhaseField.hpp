@@ -532,7 +532,7 @@ namespace utopia {
             auto u_val  = u_fun.value(q);
             auto differential = C.differential(q);
 
-            auto v_grad_shape = U.shape_grad(q);
+            // auto v_grad_shape = U.shape_grad(q);
             auto c_shape      = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
@@ -558,7 +558,7 @@ namespace utopia {
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
 
-                auto v_grad_shape_view = v_grad_shape.view_device();
+                // auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
@@ -584,7 +584,7 @@ namespace utopia {
                         UElem u_e;
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
-                        auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                        // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
                         auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
 
@@ -645,23 +645,14 @@ namespace utopia {
                             // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
                             // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
                             for(SizeType l = 0; l < U_NDofs; ++l) {
-                                auto &&u_grad_l = u_grad_shape_el(l, qp);
-
-                                // for(SizeType j = 0; j < U_NDofs; ++j) {
-                                //     el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
-                                //         params_,
-                                //         c[qp],
-                                //         p_stress_view.stress(j, qp),
-                                //         u_grad_l
-                                //         ) * dx(qp);
-                                // }
+                                auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
                                 //SYMMETRIC VERSION
                                 el_mat(C_NDofs + l, C_NDofs + l)  += bilinear_uu(
                                         params_,
                                         c[qp],
                                         p_stress_view.stress(l, qp),
-                                        u_grad_l
+                                        u_strain_shape_l
                                     ) * dx(qp);
 
 
@@ -670,7 +661,7 @@ namespace utopia {
                                         params_,
                                         c[qp],
                                         p_stress_view.stress(j, qp),
-                                        u_grad_l
+                                        u_strain_shape_l
                                     ) * dx(qp);
 
                                     el_mat(C_NDofs + l, C_NDofs + j) += v;
@@ -780,16 +771,28 @@ namespace utopia {
             return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress, full_strain);
         }
 
+        // template<class StressShape, class Grad>
+        // UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
+        //     const Parameters &params,
+        //     const Scalar &phase_field_value,
+        //     const StressShape &stress,
+        //     const Grad &g_test)
+        // {
+        //     const Scalar gc = ((1.0 - params.regularization) * quadratic_degradation(params, phase_field_value) + params.regularization);
+        //     auto C_test  = 0.5 * (g_test  + transpose(g_test));
+        //     return inner(gc * stress, C_test);
+        // }
+
         template<class StressShape, class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
             const Parameters &params,
             const Scalar &phase_field_value,
             const StressShape &stress,
-            const Grad &g_test)
+            const Grad &strain_test)
         {
             const Scalar gc = ((1.0 - params.regularization) * quadratic_degradation(params, phase_field_value) + params.regularization);
-            auto C_test  = 0.5 * (g_test  + transpose(g_test));
-            return inner(gc * stress, C_test);
+            // auto C_test  = 0.5 * (g_test  + transpose(g_test));
+            return inner(gc * stress, strain_test);
         }
 
 

@@ -10,6 +10,7 @@
     "check_derivatives" : false,
     "tension_test" : true,
     "num_time_steps" : 80,
+    "n_levels" : 4,
     "dt" : 0.1,
     "use_mprgp" : true,
     "adjust_dt_on_failure": false,
@@ -26,6 +27,7 @@
         "verbose" : true,
         "max-it" : 300,
         "atol": 1e-6,
+        "max_QP_smoothing_it": 200,
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,

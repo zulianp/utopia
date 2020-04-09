@@ -4,6 +4,10 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Algorithms.hpp"
 
+#include <cstdlib>
+#include <climits>
+#include <cmath>
+
 namespace utopia {
 
 	template<class Matrix, int Backend = Traits<Matrix>::Backend>

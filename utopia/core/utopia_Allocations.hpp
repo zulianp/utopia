@@ -44,7 +44,7 @@ namespace utopia {
             if(abort_on_violation_ || verbose_) {
                 std::cerr << "[VIOLATION] allocation (" << name << ") in region (" << region_name_.top() << ") at " << file << ":" << line_number << std::endl;
             }
-            
+
             if(abort_on_violation_) {
                 assert(false);
                 abort();
@@ -69,7 +69,9 @@ namespace utopia {
                 std::cerr << "[Error] incorrect regions are present in the code. number of open regions is " << region_name_.size() << std::endl;
             }
 
-            std::cout << "[Status] total allocations " << count_ << ", " << n_violations_ <<  " violations " << std::endl;
+            if(count_ > 0) {
+                std::cout << "[Status] total allocations " << count_ << ", " << n_violations_ <<  " violations " << std::endl;
+            }
         }
 
         inline void abort_on_violation(const bool val)
