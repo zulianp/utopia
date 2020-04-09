@@ -417,6 +417,10 @@ namespace utopia {
         }
 
         c.zeros(layout);
+        x_old.zeros(layout);
+        r.zeros(layout);
+        lb_loc.zeros(layout);
+        ub_loc.zeros(layout);
 
         if(use_line_search_) {
             inactive_set_.zeros(layout);
