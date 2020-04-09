@@ -167,6 +167,7 @@ namespace utopia {
             //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
             // } else {
                 space_.create_matrix(H);
+                std::cout<<"------- mat initi-hess \n"; 
             // }
             return true;
         }

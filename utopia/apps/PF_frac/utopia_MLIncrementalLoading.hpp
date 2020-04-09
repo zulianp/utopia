@@ -373,8 +373,6 @@ namespace utopia {
                 }
         }
 
-
-        //FIXME remove Input from interface. Use read(...), init(...), run() instead
         void run() override 
         {
 
