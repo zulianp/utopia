@@ -248,7 +248,7 @@ namespace utopia {
 
 
         MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-                            PFFracTension2D<FunctionSpace>, InitialCondidtionPFTension<FunctionSpace> > time_stepper(space, n_levels);
+                            PFFracTension2D<FunctionSpace>, InitialCondidtionPFTbar <FunctionSpace> > time_stepper(space, n_levels);
 
 
 
