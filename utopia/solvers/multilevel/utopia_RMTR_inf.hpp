@@ -139,19 +139,22 @@ namespace utopia
     private:
         void init_memory() override
         {
-            RMTR::init_memory();
+            if(! this->init_){
+                RMTR::init_memory();
 
-            const auto &layouts = this->local_level_layouts();
-            MLConstraints::init_memory(layouts);
+                const auto &layouts = this->local_level_layouts();
+                MLConstraints::init_memory(layouts);
 
-            const SizeType fine_level = this->n_levels()-1;
+                const SizeType fine_level = this->n_levels()-1;
 
-            for(Scalar l = 0; l < this->n_levels(); l ++){
-                _tr_subproblems[l]->init_memory(layouts[l]);
-            }
+                for(Scalar l = 0; l < this->n_levels(); l ++){
+                    _tr_subproblems[l]->init_memory(layouts[l]);
+                }
 
-            for(auto l = 0; l < fine_level; l++){
-                this->transfer(l).init_memory();
+                for(auto l = 0; l < fine_level; l++){
+                    this->transfer(l).init_memory();
+                }
+                this->init_ = true; 
             }
         }
 

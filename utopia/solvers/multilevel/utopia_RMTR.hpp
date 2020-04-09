@@ -136,12 +136,16 @@ namespace utopia
     private:
         void init_memory() override
         {
-            RMTRBase::init_memory();
-            const auto &layouts = this->local_level_layouts();
+            if(! this->init_){
+                RMTRBase::init_memory();
+                const auto &layouts = this->local_level_layouts();
 
-            // init deltas to some default value...
-            for(Scalar l = 0; l < this->n_levels(); l ++){
-                this->_tr_subproblems[l]->init_memory(layouts[l]);
+                // init deltas to some default value...
+                for(Scalar l = 0; l < this->n_levels(); l ++){
+                    this->_tr_subproblems[l]->init_memory(layouts[l]);
+                }
+
+                this->init_ = true; 
             }
         }
 

@@ -89,16 +89,14 @@ namespace utopia {
                 in.get("use_constant_pressure", use_constant_pressure_);
             }
 
-            // allow passing solver
-            virtual void run(Input &in) = 0;
+        
+            virtual void run() =0; 
             virtual void init_solution() = 0;
             virtual void prepare_for_solve() = 0;
             virtual void update_time_step(const SizeType & conv_reason) = 0;
 
-
-            void init(Input &in, FunctionSpace & space)
+            void init(FunctionSpace & space)
             {
-                read(in);
                 init_solution();
 
                 if(pressure0_ != 0.0){
@@ -110,7 +108,7 @@ namespace utopia {
 
                 dt0_ = dt_;
                 time_ = dt_;
-            }
+            }            
 
 
         protected:
@@ -153,6 +151,7 @@ namespace utopia {
             using SizeType       = typename FunctionSpace::SizeType;
             using Scalar         = typename FunctionSpace::Scalar;
             using Vector         = typename FunctionSpace::Vector;
+            using Matrix   = typename FunctionSpace::Matrix;
 
             IncrementalLoading(FunctionSpace & space, InitialCondition<FunctionSpace> & IC, BCSetup<FunctionSpace> & BC):
             space_(space),
@@ -169,7 +168,34 @@ namespace utopia {
                 IC_.read(in);
                 BC_.read(in);
                 fe_problem_->read(in);
+
+                init_solver(); 
+
+                in.get("solver", *tr_solver_);
             }
+
+
+            void init_solver()
+            {
+                if(tr_solver_)
+                    return; 
+
+                std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
+                if(this->use_mprgp_) {
+                    // MPRGP sucks as a solver, as it can not be preconditioned easily ...
+                    qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+                } else {
+                    // tao seems to be faster until it stalls ...
+                    // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+                    auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+                    linear_solver->max_it(200);
+                    linear_solver->pc_type("bjacobi");
+                    qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
+                }
+
+                tr_solver_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector> >(qp_solver);
+            }
+
 
             void init_solution() override
             {
@@ -242,10 +268,10 @@ namespace utopia {
 
 
             // allow passing solver
-            void run(Input &in) override
+            void run() override
             {
                 fe_problem_ = std::make_shared<ProblemType>(space_);
-                this->init(in, space_);
+                this->init(space_);
 
 
                 for (auto t=1; t < this->num_time_steps_; t++)
@@ -261,36 +287,17 @@ namespace utopia {
 
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
-                    if(this->use_mprgp_) {
-                        // MPRGP sucks as a solver, as it can not be preconditioned easily ...
-                        qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
-                    } else {
-                        // tao seems to be faster until it stalls ...
-                        // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-                        auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-                        linear_solver->max_it(200);
-                        linear_solver->pc_type("bjacobi");
-                        qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(linear_solver);
-                    }
-
-                    qp_solver->max_it(1000);
-                    TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
                     auto box = make_lower_bound_constraints(make_ref(this->lb_));
-                    solver.set_box_constraints(box);
-                    in.get("solver", solver);
-                    solver.solve(*fe_problem_, this->solution_);
-                    auto sol_status = solver.solution_status();
-
+                    tr_solver_->set_box_constraints(box);
+                    tr_solver_->solve(*fe_problem_, this->solution_);
+                    auto sol_status = tr_solver_->solution_status();
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                     const auto conv_reason = sol_status.reason;
                     update_time_step(conv_reason);
 
                 }
-
             }
-
 
 
     public: //made public because of nvcc
@@ -311,6 +318,7 @@ namespace utopia {
             BCSetup<FunctionSpace> & BC_;
 
             std::shared_ptr<ProblemType > fe_problem_;
+            std::shared_ptr<TrustRegionVariableBound<Matrix, Vector> > tr_solver_;
     };
 
 

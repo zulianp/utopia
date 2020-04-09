@@ -27,11 +27,13 @@ namespace utopia {
         using Super::init;
 
 
-        MLIncrementalLoading(FunctionSpace &space_coarse, const SizeType & n_levels) : n_levels_(n_levels), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv"){
-            init_ml_setup(space_coarse);
+        MLIncrementalLoading(FunctionSpace &space_coarse) : 
+        init_(false), n_levels_(2), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv")
+        {
+            spaces_.resize(2);
+            spaces_[0] = make_ref(space_coarse);
         }
 
-        MLIncrementalLoading() : n_levels_(2), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv") {}
 
 
         void read(Input &in) override {
@@ -42,6 +44,8 @@ namespace utopia {
             in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
             in.get("n_levels", n_levels_);
 
+            init_ml_setup();
+
             for (auto l=0; l < level_functions_.size(); l++){
                 level_functions_[l]->read(in);
                 BC_conditions_[l]->read(in);
@@ -49,25 +53,11 @@ namespace utopia {
 
             IC_->read(in);
 
-            //FIXME
-            if(!rmtr_) {
-                rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
-            }
 
             in.get("solver", *rmtr_);
         }
 
-        bool init(FunctionSpace &space)
-        {
-            return init_ml_setup(make_ref(space));
-        }
-
-
-        bool init_ml_setup(FunctionSpace &space){
-            return init_ml_setup(make_ref(space));
-        }
-
-        bool init_ml_setup(const std::shared_ptr<FunctionSpace> &space)
+        bool init_ml_setup()
         {
             if(n_levels_ < 2) {
                 std::cerr << "n_levels must be at least 2" << std::endl;
@@ -75,13 +65,11 @@ namespace utopia {
             }
 
             spaces_.resize(n_levels_);
-            spaces_[0] = space;
 
             level_functions_.resize(n_levels_);
             auto fun = std::make_shared<ProblemType>(*spaces_[0]);
             fun->use_crack_set_irreversibiblity(false);
             level_functions_[0] = fun;
-
 
 
             BC_conditions_.resize(n_levels_);
@@ -151,8 +139,9 @@ namespace utopia {
 
 
             std::shared_ptr<QPSolver<Matrix,  Vector>> tr_strategy_coarse;
-            if(n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= space->comm().size()) {
-                space->comm().root_print("using redundant qp solver");
+
+            if(n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
+                spaces_[0]->comm().root_print("using redundant qp solver");
                 auto qp = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
                 qp->verbose(true);
                 tr_strategy_coarse = std::make_shared< RedundantQPSolver<Matrix, Vector> >(qp, n_coarse_sub_comm_);
@@ -176,6 +165,9 @@ namespace utopia {
             rmtr_->set_transfer_operators(transfers_);
             rmtr_->set_functions(level_functions_);
             rmtr_->verbose(true);
+
+
+            init_ = true; 
 
             return true;
         }
@@ -381,12 +373,15 @@ namespace utopia {
                 }
         }
 
+        void run() override 
+        {
 
-        //FIXME remove Input from interface. Use read(...), init(...), run() instead
-        void run(Input &in) override {
+            if(!init_){
+                init_ml_setup();
+            }
 
             // init fine level spaces
-            this->init(in, *spaces_[n_levels_ - 1]);
+            this->init(*spaces_[n_levels_ - 1]);
 
             for (auto t=1; t < this->num_time_steps_; t++)
             {
@@ -411,6 +406,7 @@ namespace utopia {
 
 
     private:
+        bool init_; 
         SizeType n_levels_;
         SizeType n_coarse_sub_comm_;
 

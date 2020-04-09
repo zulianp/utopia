@@ -151,14 +151,16 @@ namespace utopia
     protected:
         void init_memory() override
         {
-            RMTRBase::init_memory();
-            const auto & layouts =  this->local_level_layouts();
+            if(! this->init_){
+                RMTRBase::init_memory();
+                const auto & layouts =  this->local_level_layouts();
 
-            for(Scalar l = 0; l < this->n_levels(); l ++){
-                tr_subproblems_[l]->init_memory(layouts[l]);
-                hessian_approxs_[l]->initialize(this->memory_.x[l],this->ml_derivs_.g[l]);
+                for(Scalar l = 0; l < this->n_levels(); l ++){
+                    tr_subproblems_[l]->init_memory(layouts[l]);
+                    hessian_approxs_[l]->initialize(this->memory_.x[l],this->ml_derivs_.g[l]);
+                }
+                this->init_ = true;   
             }
-
         }
 
         bool check_initialization() override
