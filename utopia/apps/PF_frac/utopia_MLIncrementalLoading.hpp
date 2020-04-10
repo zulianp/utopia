@@ -27,7 +27,7 @@ namespace utopia {
         using Super::init;
 
 
-        MLIncrementalLoading(FunctionSpace &space_coarse) : 
+        MLIncrementalLoading(FunctionSpace &space_coarse) :
         init_(false), n_levels_(2), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv")
         {
             spaces_.resize(2);
@@ -167,7 +167,7 @@ namespace utopia {
             rmtr_->verbose(true);
 
 
-            init_ = true; 
+            init_ = true;
 
             return true;
         }
@@ -327,7 +327,10 @@ namespace utopia {
 
                         ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
                         Vector & coarse_sol  = fun_coarse->old_solution();
-                        spaces_[l]->create_vector(coarse_sol);
+
+                        if(empty(coarse_sol)) {
+                            spaces_[l]->create_vector(coarse_sol);
+                        }
 
                         transfers_[l-1]->project_down(fine_sol, coarse_sol);
                         spaces_[l]->apply_constraints(coarse_sol);
@@ -354,7 +357,10 @@ namespace utopia {
 
                         ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
                         Vector & coarse_sol  = fun_coarse->old_solution();
-                        spaces_[l]->create_vector(coarse_sol);
+
+                        if(empty(coarse_sol)) {
+                            spaces_[l]->create_vector(coarse_sol);
+                        }
 
                         transfers_[l-1]->project_down(fine_sol, coarse_sol);
                         spaces_[l]->apply_constraints(coarse_sol);
@@ -373,7 +379,7 @@ namespace utopia {
                 }
         }
 
-        void run() override 
+        void run() override
         {
 
             if(!init_){
@@ -406,7 +412,7 @@ namespace utopia {
 
 
     private:
-        bool init_; 
+        bool init_;
         SizeType n_levels_;
         SizeType n_coarse_sub_comm_;
 

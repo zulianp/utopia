@@ -16,13 +16,13 @@
     "use_dense_hessian" : false,
     "check_derivatives" : false,
     "num_time_steps" : 30,
-    "dt" : 0.5,
-    "adjust_dt_on_failure": false,
+    "dt" : 1.0,
+    "adjust_dt_on_failure": true,
     "shrinking_factor" : 0.5,
     "use_pressure": true,
     "use_constant_pressure": true,
     "lambda": 100,
-    "mu":100,
+    "mu": 100,
     "n_coarse_sub_comm": 1,
     "num_fracs" : 100,
     "n_levels": 3,
@@ -35,7 +35,7 @@
     },
     "solver" : {
         "verbose" : true,
-        "max-it" : 100,
+        "max-it" : 11,
         "atol": 1e-5,
         "max_coarse_it": 1,
         "max_sucessful_coarse_it": 1,
@@ -45,8 +45,8 @@
         "max_sucessful_smoothing_it": 1,
         "max_QP_smoothing_it": 40,
         "max_QP_coarse_it": 1000,
-        "deltaH_lagging" : true,
-        "Hpost_lagging": true,
+        "deltaH_lagging" : false,
+        "Hpost_lagging": false,
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
@@ -54,9 +54,9 @@
         },
         "fine-QPSolver" : {
             "verbose" : false,
-            "check_s_norm_each" : 10,
-            "n_local_sweeps" : 3,
-            "stol" : 1e-8
+            "check_s_norm_each" : 20,
+            "n_local_sweeps" : 2,
+            "stol" : 1e-7
         }
     }
 }

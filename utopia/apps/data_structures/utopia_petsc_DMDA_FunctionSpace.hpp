@@ -235,6 +235,16 @@ namespace utopia {
             mesh_->create_vector(vec);
         }
 
+        void create_local_vector(PetscVector &vec) const
+        {
+            mesh_->create_local_vector(vec);
+        }
+
+        void global_to_local(const PetscVector &global, PetscVector &local) const
+        {
+            mesh_->global_to_local(global, local);
+        }
+
         const Mesh &mesh() const
         {
             return *mesh_;

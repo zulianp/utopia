@@ -33,82 +33,56 @@ namespace utopia {
 
         using VectorViewDevice        = utopia::DeviceView<Vector, 1>;
         using ViewDevice              = utopia::FEFunctionView<FunctionSpaceViewDevice, VectorViewDevice, 1>;
+        using Coefficient             = utopia::Coefficient<FunctionSpace>;
 
-
+        FEFunction(
+            const std::shared_ptr<Coefficient> &coeff)
+        : space_(make_ref(coeff->space())), coeff_(coeff)
+        {}
 
         FEFunction(
             const std::shared_ptr<FunctionSpace> &space,
-            const std::shared_ptr<Vector> &data)
-        : space_(space), data_(data)
+            Vector &global_vector)
+        : space_(space), coeff_(std::make_shared<Coefficient>(*space_, global_vector))
         {}
 
         FEFunction(
-            FunctionSpace &space,
-            Vector &data)
-        : space_(make_ref(space)), data_(make_ref(data))
+            const std::shared_ptr<FunctionSpace> &space
+        )
+        : space_(space), coeff_(std::make_shared<Coefficient>(*space_))
         {}
 
         FEFunction(
-            const std::shared_ptr<FunctionSpace> &space)
-        : space_(space), data_(std::make_shared<Vector>())
+            const FunctionSpace &space,
+            Vector &global_vector)
+        : space_(make_ref(space)), coeff_(std::make_shared<Coefficient>(*space_, global_vector))
+        {}
+
+        std::shared_ptr<Coefficient> coefficient()
         {
-            space_->create_vector(*data_);
+            return coeff_;
         }
 
-        FEFunction(
-            FunctionSpace &space)
-        : space_(make_ref(space)), data_(std::make_shared<Vector>())
+        void update(const Vector &x)
         {
-            space_->create_vector(*data_);
-        }
-
-        inline DeviceView<Vector, 1> view_device()
-        {
-            return space_->assembly_view_device(*data_);
-        }
-
-        Coefficient<FunctionSpace> coefficient()
-        {
-            if(data_) {
-                return Coefficient<FunctionSpace>(*space_, *data_);
-            } else {
-                return Coefficient<FunctionSpace>(*space_);
-            }
+            coeff_->update(x);
         }
 
         template<class Quadrature>
         NodalInterpolate<FunctionSpace, Quadrature> value(const Quadrature &q)
         {
-            if(data_) {
-                NodalInterpolate<FunctionSpace, Quadrature> ret(*space_, q);
-                ret.update(*data_);
-                return ret;
-            } else {
-                return NodalInterpolate<FunctionSpace, Quadrature>(*space_, q);
-            }
+            return NodalInterpolate<FunctionSpace, Quadrature>(coeff_, q);
         }
 
         template<class Quadrature>
         GradInterpolate<FunctionSpace, Quadrature> gradient(const Quadrature &q)
         {
-            if(data_) {
-                GradInterpolate<FunctionSpace, Quadrature> ret(*space_, q);
-                ret.update(*data_);
-                return ret;
-            } else {
-                return GradInterpolate<FunctionSpace, Quadrature>(*space_, q);
-            }
+            return GradInterpolate<FunctionSpace, Quadrature>(coeff_, q);
         }
 
-        // template<class Quadrature>
-        // ShapeFunction<FunctionSpace, Quadrature> shape_function(const Quadrature &q)
-        // {
-        //     return ShapeFunction<FunctionSpace, Quadrature>(*space_, q);
-        // }
-
     private:
-        std::shared_ptr<FunctionSpace> space_;
-        std::shared_ptr<Vector> data_;
+        std::shared_ptr<const FunctionSpace> space_;
+        std::shared_ptr<Coefficient> coeff_;
     };
 }
 

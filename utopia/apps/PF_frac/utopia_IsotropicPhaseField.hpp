@@ -150,11 +150,31 @@ namespace utopia {
             // needed for ML setup
             space_.create_vector(this->_x_eq_values);
             space_.create_vector(this->_eq_constrains_flg);
+
+            this->local_x_ = std::make_shared<Vector>();
+            space_.create_local_vector(*this->local_x_);
+
+
+            this->local_pressure_field_ = std::make_shared<Vector>();
+            space_.create_local_vector(*this->local_pressure_field_);
+
+            this->local_c_old_ = std::make_shared<Vector>();
+            space_.create_local_vector(*this->local_c_old_);
+
         }
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
         : space_(space), params_(params), use_dense_hessian_(false), check_derivatives_(false)
-        {}
+        {
+            this->local_x_ = std::make_shared<Vector>();
+            space_.create_local_vector(*this->local_x_);
+
+            this->local_pressure_field_ = std::make_shared<Vector>();
+            space_.create_local_vector(*this->local_pressure_field_);
+
+            this->local_c_old_ = std::make_shared<Vector>();
+            space_.create_local_vector(*this->local_c_old_);
+        }
 
         void use_dense_hessian(const bool val)
         {
@@ -184,18 +204,39 @@ namespace utopia {
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
 
-            auto &x = const_cast<Vector &>(x_const);
+            // auto &x = const_cast<Vector &>(x_const);
 
-            auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);
-
-
-            auto &press = const_cast<Vector &>(pressure_field_);
-            FEFunction<CSpace> press_fun(C, press);
+            // auto &x_old = const_cast<Vector &>(x_old_);
+            // FEFunction<CSpace> c_old_fun(C, x_old);
 
 
-            FEFunction<CSpace> c_fun(C, x);
-            FEFunction<USpace> u_fun(U, x);
+            // auto &press = const_cast<Vector &>(pressure_field_);
+            // FEFunction<CSpace> press_fun(C, press);
+
+
+            // FEFunction<CSpace> c_fun(C, x);
+            // FEFunction<USpace> u_fun(U, x);
+
+            ///////////////////////////////////////////////////////////////////////////
+
+            //update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+
+            //udpate local pressure field
+            space_.global_to_local(pressure_field_, *local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+
+            //update c_old
+            space_.global_to_local(x_old_, *local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+
+            FEFunction<CSpace> c_old_fun(c_old_coeff);
+            FEFunction<CSpace> press_fun(p_coeff);
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+            ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
 
@@ -209,8 +250,9 @@ namespace utopia {
 
             val = 0.0;
 
-            PrincipalStrains<USpace, Quadrature> strain(U, q);
-            strain.update(x);
+            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
+            // PrincipalStrains<USpace, Quadrature> strain(U, q);
+            // strain.update(x);
 
             {
                 auto U_view = U.view_device();
@@ -279,7 +321,7 @@ namespace utopia {
                 );
             }
 
-            val = x.comm().sum(val);
+            val = x_const.comm().sum(val);
 
             assert(val == val);
 
@@ -306,17 +348,39 @@ namespace utopia {
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
 
-            auto &x = const_cast<Vector &>(x_const);
+               ///////////////////////////////////////////////////////////////////////////
 
-            auto &x_old = const_cast<Vector &>(x_old_);
-            FEFunction<CSpace> c_old_fun(C, x_old);
+            //update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
 
-            auto &press = const_cast<Vector &>(pressure_field_);
-            FEFunction<CSpace> press_fun(C, press);
+            //udpate local pressure field
+            space_.global_to_local(pressure_field_, *local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+
+            //update c_old
+            space_.global_to_local(x_old_, *local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+
+            FEFunction<CSpace> c_old_fun(c_old_coeff);
+            FEFunction<CSpace> press_fun(p_coeff);
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+
+            ////////////////////////////////////////////////////////////////////////////
+
+            // auto &x = const_cast<Vector &>(x_const);
+
+            // auto &x_old = const_cast<Vector &>(x_old_);
+            // FEFunction<CSpace> c_old_fun(C, x_old);
+
+            // auto &press = const_cast<Vector &>(pressure_field_);
+            // FEFunction<CSpace> press_fun(C, press);
 
 
-            FEFunction<CSpace> c_fun(C, x);
-            FEFunction<USpace> u_fun(U, x);
+            // FEFunction<CSpace> c_fun(C, x);
+            // FEFunction<USpace> u_fun(U, x);
 
             Quadrature q;
 
@@ -332,8 +396,11 @@ namespace utopia {
             auto c_shape      = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-            PrincipalStrains<USpace, Quadrature> strain(U, q);
-            strain.update(x);
+            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
+
+
+            // PrincipalStrains<USpace, Quadrature> strain(U, q);
+            // strain.update(x);
 
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
@@ -516,12 +583,30 @@ namespace utopia {
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
 
-            auto &x     = const_cast<Vector &>(x_const);
-            auto &press = const_cast<Vector &>(pressure_field_);
+            // auto &x     = const_cast<Vector &>(x_const);t
+            // auto &press = const_cast<Vector &>(pressure_field_);
 
-            FEFunction<CSpace> c_fun(C, x);
-            FEFunction<CSpace> press_fun(C, press);
-            FEFunction<USpace> u_fun(U, x);
+            ////////////////////////////////////////////////////////////////////////////
+
+            //update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+
+            //udpate local pressure field
+            space_.global_to_local(pressure_field_, *local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+
+            //update c_old
+            space_.global_to_local(x_old_, *local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+
+            FEFunction<CSpace> c_old_fun(c_old_coeff);
+            FEFunction<CSpace> press_fun(p_coeff);
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+
+            ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
 
@@ -537,8 +622,8 @@ namespace utopia {
             auto c_grad_shape = C.shape_grad(q);
 
             //value based
-            PrincipalStrains<USpace, Quadrature> strain(U, q);
-            strain.update(x);
+            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
+            // strain.update(x);
 
             //reference based
             PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, params_.mu, params_.lambda);
@@ -1157,6 +1242,10 @@ namespace utopia {
 
 
         Vector force_field_;
+
+        std::shared_ptr<Vector> local_x_;
+        std::shared_ptr<Vector> local_pressure_field_;
+        std::shared_ptr<Vector> local_c_old_;
     };
 
 }
