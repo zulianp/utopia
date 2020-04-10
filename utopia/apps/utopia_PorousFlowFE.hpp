@@ -259,6 +259,8 @@ namespace utopia {
 
             PhysicalGradient<FunctionSpace, Quadrature> grad_temp(*space_, quadrature_);
             Differential<FunctionSpace, Quadrature> differential_temp(*space_, quadrature_);
+
+            permeability_field_fun_->update(*permeability_field_);
             auto p_val = permeability_field_fun_->value(quadrature_);
 
            {
@@ -1037,7 +1039,7 @@ namespace utopia {
             permeability_field_ = std::make_shared<Vector>();
             space_->create_vector(*permeability_field_);
             permeability_field_->set(1.0);
-            permeability_field_fun_ = utopia::make_unique<FEFunction<FunctionSpace>>(space_, permeability_field_);
+            permeability_field_fun_ = utopia::make_unique<FEFunction<FunctionSpace>>(space_);
         }
     };
 

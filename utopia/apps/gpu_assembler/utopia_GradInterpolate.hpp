@@ -91,22 +91,25 @@ namespace utopia {
                                         typename PhysicalGradient::ViewDevice,
                                         typename Quadrature::ViewDevice
                                         >;
+
+        using Coefficient = utopia::Coefficient<FunctionSpace>;
+
         GradInterpolate(
-            const FunctionSpace &space,
-            const Quadrature &q) : coeff_(space), grad_(space, q) {}
+            const std::shared_ptr<Coefficient> &coeff,
+            const Quadrature &q) : coeff_(coeff), grad_(coeff->space(), q) {}
 
         ViewDevice view_device() const
         {
-            return ViewDevice(coeff_.view_device(), grad_.view_device());
+            return ViewDevice(coeff_->view_device(), grad_.view_device());
         }
 
         void update(const Vector &vec)
         {
-            coeff_.update(vec);
+            coeff_->update(vec);
         }
 
     private:
-        Coefficient<FunctionSpace> coeff_;
+        std::shared_ptr<Coefficient> coeff_;
         PhysicalGradient grad_;
     };
 }
