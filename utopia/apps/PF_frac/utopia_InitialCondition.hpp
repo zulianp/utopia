@@ -918,19 +918,19 @@ namespace utopia {
 
                 std::vector<Rectangle<Scalar>> rectangles;
 
-                
-                Point2D<Scalar> A; 
+
+                Point2D<Scalar> A;
                 A.x = 38.1;
                 A.y = 82.55;
                 rectangles.push_back(Rectangle<Scalar>(A, -12.7, width, -45));
 
 
-                Point2D<Scalar> B; 
+                Point2D<Scalar> B;
                 B.x = 38.1;
                 B.y = 69.85;
-                rectangles.push_back(Rectangle<Scalar>(B, 12.7, width, -45));                
-                
-                
+                rectangles.push_back(Rectangle<Scalar>(B, 12.7, width, -45));
+
+
 
                 auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
 
@@ -963,6 +963,92 @@ namespace utopia {
             SizeType num_fracs_;
             Scalar pressure0_;
 
+    };
+    
+    
+    
+    template<class FunctionSpace>
+    class AsphaltTension: public InitialCondition<FunctionSpace>
+    {
+    public:
+        
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh           = typename FunctionSpace::Mesh;
+        using Elem           = typename FunctionSpace::Shape;
+        using ElemView       = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType       = typename FunctionSpace::SizeType;
+        using Scalar         = typename FunctionSpace::Scalar;
+        using Dev            = typename FunctionSpace::Device;
+        using Point          = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+        
+        AsphaltTension(FunctionSpace &space, const SizeType & PF_component):
+        InitialCondition<FunctionSpace>(space), PF_component_(PF_component), pressure0_(1.0)
+        {
+            
+        }
+        
+        void init(PetscVector &x) override
+        {
+            using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+            // un-hard-code
+            auto C = this->space_.subspace(PF_component_);
+            
+            auto width =  3.0 * this->space_.mesh().min_spacing();
+            // auto width = 0.1;
+            
+            if(mpi_world_rank()==0){
+                std::cout<<"width: "<< width << "  \n";
+            }
+            
+            std::vector<Rectangle<Scalar>> rectangles;
+            
+            
+            Point2D<Scalar> A;
+            A.x = 12.00;
+            A.y = 21.50;
+            rectangles.push_back(Rectangle<Scalar>(A, -3.5355, width, 45));
+            
+            
+            Point2D<Scalar> B;
+            B.x = 15;
+            B.y = 20.00;
+            rectangles.push_back(Rectangle<Scalar>(B, 5.000, width, 0.0));
+            
+            
+            
+            auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
+                
+                for(auto r=0; r < rectangles.size(); r++){
+                    if(rectangles[r].belongs_to_rectangle(x[0], x[1]))
+                        return 1.0;
+                }
+                return 0.0;
+            });
+            
+            {
+                auto C_view       = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view       = this->space_.assembly_view_device(x);
+                
+                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    ElemViewScalar e;
+                    C_view.elem(i, e);
+                    
+                    CoeffVector s;
+                    sampler_view.assemble(e, s);
+                    C_view.set_vector(e, s, x_view);
+                });
+            }
+        }
+        
+        
+    private:
+        SizeType PF_component_;
+        SizeType num_fracs_;
+        Scalar pressure0_;
+        
     };
 
 
