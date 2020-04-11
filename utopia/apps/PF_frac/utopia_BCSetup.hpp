@@ -265,7 +265,114 @@ namespace utopia {
 
             private:
                 Scalar disp_y_; 
-    };            
+    };   
+
+
+
+    template<class FunctionSpace>
+    class FracPlateBC : public BCSetup<FunctionSpace>
+    {
+        public:
+            using Scalar    = typename FunctionSpace::Scalar;
+            using Vector    = typename FunctionSpace::Vector;
+
+            FracPlateBC(FunctionSpace & space, const Scalar & disp_x=1.0, const Scalar & disp_y=1.0): 
+            BCSetup<FunctionSpace>(space), 
+            disp_x_(disp_x),            
+            disp_y_(disp_y) 
+            {
+
+            }
+
+            void read(Input &in) override
+            {
+                in.get("disp_x", disp_x_);   
+                in.get("disp_y", disp_y_);   
+            }               
+
+            void emplace_time_dependent_BC(const Scalar & time) override
+            {
+                static const int Dim   = FunctionSpace::Dim;
+
+                using Point          = typename FunctionSpace::Point;
+                this->space_.reset_bc(); 
+
+                // this->space_.emplace_dirichlet_condition(
+                //     SideSet::bottom(),
+                //     UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                //         return 0.0;
+                //     },
+                //     1 // disp_x
+                //     );
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::bottom(),
+                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                        return 0.0;
+                    },
+                    2 // disp_y
+                    );                
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(),
+                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                        return 0.0;
+                    },
+                    1 // disp_x
+                    );
+
+                // this->space_.emplace_dirichlet_condition(
+                //     SideSet::left(),
+                //     UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                //         return 0.0;
+                //     },
+                //     2 // disp_y
+                //     );                
+
+        /////////////////////////////////////////////////////////////////
+
+                // this->space_.emplace_dirichlet_condition(
+                //     SideSet::top(),
+                //     UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                //         return 0.0;
+                //     },
+                //     1 // disp_x
+                //     );                
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(),
+                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                        return disp_y_ * time;
+                    },
+                    2 // disp_y
+                    );
+
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(),
+                    UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                        return disp_x_ * time;
+                    },
+                    1 // disp_x
+                    );                
+
+                // this->space_.emplace_dirichlet_condition(
+                //     SideSet::right(),
+                //     UTOPIA_LAMBDA(const Point &p) -> Scalar {
+                //         return 0.0; 
+                //     },
+                //     2 // disp_y
+                //     );                
+
+
+            }
+
+            private:
+                Scalar disp_x_; 
+                Scalar disp_y_; 
+    };   
+
+
 }
 
 

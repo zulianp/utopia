@@ -258,7 +258,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
         stats.stop_and_collect("space-creation");
-
+ 
         stats.start();
 
         MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
@@ -277,6 +277,46 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(mixed2d_rmtr);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    static void frac_plate_rmtr(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformQuad4;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType       = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+ 
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                            FracPlateBC<FunctionSpace>, FracPlateIC<FunctionSpace> > time_stepper(space);
+
+        time_stepper.read(in); 
+        time_stepper.run();
+
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+
+    }
+
+    UTOPIA_REGISTER_APP(frac_plate_rmtr);    
 
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //

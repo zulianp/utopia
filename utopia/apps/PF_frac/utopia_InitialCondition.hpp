@@ -262,6 +262,31 @@ namespace utopia {
                 this->generate_rectangle(length, width, theta);
             }
 
+            // generate from line 
+            Rectangle(const Point2D<T> & p1, const Point2D<T> & p2, const T & width)
+            {
+                Point2D<T>  V, P, N; 
+                V.x = p2.x - p1.x;
+                V.y = p2.y - p1.y;
+
+                P.x = V.y; 
+                P.y = -V.x; 
+
+                auto length = std::sqrt(P.x * P.x + P.y * P.y); 
+                N.x = P.x /length;
+                N.y = P.y /length;                 
+
+                A_.x = p1.x + N.x * width / 2.0;
+                A_.y = p1.y + N.y * width / 2.0;
+                B_.x = p1.x - N.x * width / 2.0;
+                B_.y = p1.y - N.y * width / 2.0;
+                C_.x = p2.x + N.x * width / 2.0;
+                C_.y = p2.y + N.y * width / 2.0;
+                D_.x = p2.x - N.x * width / 2.0;
+                D_.y = p2.y - N.y * width / 2.0;                 
+            }
+
+
             bool belongs_to_rectangle(const T & x_coord, const T & y_coord)
             {
                 Point2D<T> M;
@@ -939,6 +964,91 @@ namespace utopia {
             Scalar pressure0_;
 
     };
+
+
+
+    template<class FunctionSpace>
+    class FracPlateIC: public InitialCondition<FunctionSpace>
+    {
+        public:
+
+            // using Comm           = typename FunctionSpace::Comm;
+            using Mesh           = typename FunctionSpace::Mesh;
+            using Elem           = typename FunctionSpace::Shape;
+            using ElemView       = typename FunctionSpace::ViewDevice::Elem;
+            using SizeType       = typename FunctionSpace::SizeType;
+            using Scalar         = typename FunctionSpace::Scalar;
+            using Dev            = typename FunctionSpace::Device;
+            using Point          = typename FunctionSpace::Point;
+            using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+            static const int NNodes = Elem::NNodes;
+
+            typedef Point2D<Scalar> Coord;
+
+
+            FracPlateIC(FunctionSpace &space, const SizeType & PF_component):
+            InitialCondition<FunctionSpace>(space), PF_component_(PF_component)
+            {
+
+            }
+
+            void init(PetscVector &x) override
+            {
+                using CoeffVector = utopia::StaticVector<Scalar, NNodes>;
+                // un-hard-code
+                auto C = this->space_.subspace(PF_component_);
+
+                auto width =  3.0 * this->space_.mesh().min_spacing();
+                // auto width = 0.1;
+
+                if(mpi_world_rank()==0){
+                    std::cout<<"width: "<< width << "  \n";
+                }
+
+                std::vector<Rectangle<Scalar>> rectangles;
+
+                rectangles.push_back(Rectangle<Scalar>(Coord(0.308514, 1.531184), Coord(0.488788, 1.711458), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(0.605291, 1.511563), Coord(0.713210, 1.332516), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(1.128942, 1.518921), Coord(1.359495, 1.694289), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(1.517694, 1.412228), Coord(1.673441, 1.229502), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(0.268045, 0.819902), Coord(0.411528, 0.991591), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(0.829713, 0.903294), Coord(1.087246, 0.957253), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(1.456377, 0.994043), Coord(1.592502, 0.819902), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(0.326910, 0.368605), Coord(0.482656, 0.520673), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(0.908199, 0.465487), Coord(1.090925, 0.346531), width));
+                rectangles.push_back(Rectangle<Scalar>(Coord(1.436755, 0.364926), Coord(1.624387, 0.493693), width));
+
+
+                auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
+
+                    for(auto r=0; r < rectangles.size(); r++){
+                        if(rectangles[r].belongs_to_rectangle(x[0], x[1]))
+                            return 1.0;
+                    }
+                    return 0.0;
+                });
+
+                {
+                    auto C_view       = C.view_device();
+                    auto sampler_view = sampler.view_device();
+                    auto x_view       = this->space_.assembly_view_device(x);
+
+                    Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+                }
+            }
+
+
+        private:
+            SizeType PF_component_;
+    };
+
 
 
 
