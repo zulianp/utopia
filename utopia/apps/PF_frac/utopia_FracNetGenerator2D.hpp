@@ -74,7 +74,7 @@ namespace utopia {
             y_max(1.0),
             alpha_min(0.0), 
             alpha_max(180), 
-            pow_dist_coef(2.8), 
+            pow_dist_coef_length(2.8), 
             min_length(0.0), 
             seed(3)
             {
@@ -92,7 +92,7 @@ namespace utopia {
                 in.get("alpha_min", alpha_min);
                 in.get("alpha_max", alpha_max);
 
-                in.get("pow_dist_coef", pow_dist_coef);
+                in.get("pow_dist_coef_length", pow_dist_coef_length);
                 in.get("min_length", min_length);
 
                 in.get("seed", seed); 
@@ -108,7 +108,7 @@ namespace utopia {
             T alpha_min; 
             T alpha_max; 
 
-            T pow_dist_coef;     
+            T pow_dist_coef_length;     
             T min_length;    
 
             T seed;                          
@@ -224,7 +224,7 @@ namespace utopia {
 
                 const T x_min = (params.min_length==0)? 3.0*width : params.min_length; 
                 const T r = distr_length(generator);
-                T length = x_min * std::pow( (1.-r), (-1./(params.pow_dist_coef - 1.)));
+                T length = x_min * std::pow( (1.-r), (-1./(params.pow_dist_coef_length - 1.)));
 
                 generate_rectangle(length, width, theta);
             }

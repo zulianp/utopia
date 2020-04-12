@@ -38,6 +38,7 @@
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 #include "utopia_InitialCondition.hpp"
 #include "utopia_FracNetGenerator2D.hpp"
+#include "utopia_FracNetGenerator3D.hpp"
 #include "utopia_IncrementalLoading.hpp"
 #include "utopia_MLIncrementalLoading.hpp"
 #include "utopia_BCSetup.hpp"
