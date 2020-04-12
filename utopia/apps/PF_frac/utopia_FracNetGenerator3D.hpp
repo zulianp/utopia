@@ -184,7 +184,6 @@ namespace utopia {
         private:
             void randomly_generate(const T & depth, const FracNetSamplerParams3D<T> & params)
             {
-
                 static std::default_random_engine generator (params.seed);
 
                 std::uniform_real_distribution<> distr_point_x(params.x_min, params.x_max);
@@ -227,7 +226,6 @@ namespace utopia {
                 else{
                     width = params.uniform_width; 
                 }
-
 
                 std::uniform_int_distribution<> distr_dir(0.0, 6);
                 const int i = distr_dir(generator);
