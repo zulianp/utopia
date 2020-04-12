@@ -4,6 +4,7 @@
 #include "utopia_LaplacianView.hpp"
 #include "utopia_Utils.hpp"
 #include "utopia_GradInterpolate.hpp"
+#include "utopia_Coefficient.hpp"
 
 namespace utopia {
 
@@ -118,8 +119,8 @@ namespace utopia {
         using ViewDevice              = utopia::PrincipalStrainsView<FunctionSpaceViewDevice, GradInterpolateViewDevice>;
 
 
-        PrincipalStrains(const FunctionSpace &space, const Quadrature &q)
-        : grad_(space, q)
+        PrincipalStrains(const std::shared_ptr<Coefficient<FunctionSpace>> &coeff, const Quadrature &q)
+        : grad_(coeff, q)
         {}
 
         inline ViewDevice view_device() const

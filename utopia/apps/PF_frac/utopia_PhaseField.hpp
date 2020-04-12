@@ -131,8 +131,12 @@ namespace utopia {
 
             val = 0.0;
 
-            PrincipalStrains<USpace, Quadrature> strain(U, q);
-            strain.update(x);
+            // PrincipalStrains<USpace, Quadrature> strain(U, q);
+            // strain.update(x);
+
+            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            // strain.update(x);
+
 
             {
                 auto U_view = U.view_device();
@@ -215,8 +219,10 @@ namespace utopia {
             auto c_shape      = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-            PrincipalStrains<USpace, Quadrature> strain(U, q);
-            strain.update(x);
+            // PrincipalStrains<USpace, Quadrature> strain(U, q);
+            // strain.update(x);
+
+            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
 
             {
                 auto U_view      = U.view_device();
@@ -357,8 +363,10 @@ namespace utopia {
             auto c_shape      = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-            PrincipalStrains<USpace, Quadrature> strain(U, q);
-            strain.update(x);
+            // PrincipalStrains<USpace, Quadrature> strain(U, q);
+            // strain.update(x);
+
+            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
 
 
             PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, params_.mu, params_.lambda);

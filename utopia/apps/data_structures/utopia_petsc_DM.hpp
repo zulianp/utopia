@@ -80,6 +80,7 @@ namespace utopia {
 
             mat.destroy();
             DMCreateMatrix(raw_type(), &mat.raw_type());
+            UTOPIA_REPORT_ALLOC("PetscDMbase::create_matrix");
 
             UTOPIA_TRACE_REGION_END("PetscDMbase::create_matrix(...)");
         }
@@ -90,6 +91,7 @@ namespace utopia {
 
             vec.destroy();
             DMCreateGlobalVector(raw_type(), &vec.raw_type());
+            UTOPIA_REPORT_ALLOC("PetscDMbase::create_vector");
 
             UTOPIA_TRACE_REGION_END("PetscDMbase::create_vector(...)");
         }
@@ -100,6 +102,7 @@ namespace utopia {
 
             vec.destroy();
             auto err = DMCreateLocalVector(raw_type(), &vec.raw_type()); assert(err == 0);
+            UTOPIA_REPORT_ALLOC("PetscDMbase::create_local_vector");
 
             UTOPIA_TRACE_REGION_END("PetscDMbase::create_local_vector(...)");
         }
@@ -110,6 +113,7 @@ namespace utopia {
 
             I.destroy();
             auto ierr = DMCreateInterpolation(raw_type(), target.raw_type(), &I.raw_type(), nullptr); assert(ierr == 0);
+            UTOPIA_REPORT_ALLOC("PetscDMbase::create_local_vector");
 
             UTOPIA_TRACE_REGION_END("PetscDMbase::create_interpolation(...)");
         }

@@ -471,11 +471,11 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        FEFunction fun(space);
+        PetscVector x;
+        space.create_vector(x);
+        FEFunction fun(space, x);
 
         Quadrature q;
-
-        auto coeff = fun.coefficient();
 
         auto f = fun.value(q);
         auto g = fun.gradient(q);
@@ -491,7 +491,6 @@ namespace utopia {
         {
             //BEGIN: Device context
             auto space_view = space.view_device();
-            auto coeff_view = coeff.view_device();
             auto f_view     = f.view_device();
             auto g_view     = g.view_device();
 

@@ -81,6 +81,7 @@ namespace utopia {
         using Vector     = typename FunctionSpace::Vector;
         using CoefficientViewDevice = typename utopia::Coefficient<FunctionSpace>::ViewDevice;
         using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
+        using Coefficient             = utopia::Coefficient<FunctionSpace>;
 
         using ViewDevice = utopia::NodalInterpolateView<
                                         FunctionSpaceViewDevice,
@@ -90,20 +91,24 @@ namespace utopia {
                                         >;
         NodalInterpolate(
             const FunctionSpace &space,
-            const Quadrature &q) : coeff_(space), shape_fun_(space, q) {}
+            const Quadrature &q) : coeff_(std::make_shared<Coefficient>(space)), shape_fun_(space, q) {}
+
+        NodalInterpolate(const std::shared_ptr<Coefficient> &coeff, const Quadrature &q)
+        : coeff_(coeff), shape_fun_(coeff->space(), q)
+        {}
 
         ViewDevice view_device() const
         {
-            return ViewDevice(coeff_.view_device(), shape_fun_.view_device());
+            return ViewDevice(coeff_->view_device(), shape_fun_.view_device());
         }
 
         void update(const Vector &vec)
         {
-            coeff_.update(vec);
+            coeff_->update(vec);
         }
 
     private:
-        Coefficient<FunctionSpace> coeff_;
+        std::shared_ptr<Coefficient> coeff_;
         ShapeFunction shape_fun_;
     };
 
