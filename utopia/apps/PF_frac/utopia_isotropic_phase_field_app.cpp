@@ -37,6 +37,8 @@
 #include "utopia_LBFGS.hpp"
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 #include "utopia_InitialCondition.hpp"
+#include "utopia_FracNetGenerator2D.hpp"
+#include "utopia_FracNetGenerator3D.hpp"
 #include "utopia_IncrementalLoading.hpp"
 #include "utopia_MLIncrementalLoading.hpp"
 #include "utopia_BCSetup.hpp"
@@ -148,7 +150,7 @@ namespace utopia {
 
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
-    static void petsc_pressure_Tbar_isotropic_phase_field_2_rmtr(Input &in)
+    static void petsc_pressure_net_2_rmtr(Input &in)
     {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -171,7 +173,7 @@ namespace utopia {
         stats.start();
 
         MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-                            PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFFracNet<FunctionSpace> > time_stepper(space);
+                            PFFracFixAllDisp<FunctionSpace>, InitialCondidtionPFFracNet2D<FunctionSpace> > time_stepper(space);
 
         time_stepper.read(in); 
         time_stepper.run();
@@ -185,7 +187,7 @@ namespace utopia {
 
     }
 
-    UTOPIA_REGISTER_APP(petsc_pressure_Tbar_isotropic_phase_field_2_rmtr);
+    UTOPIA_REGISTER_APP(petsc_pressure_net_2_rmtr);
 
 
 
@@ -236,7 +238,125 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_tension_phase_field_2_rmtr);
 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    static void AsphaltTension2d_rmtr(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+        
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformQuad4;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType       = FunctionSpace::SizeType;
+        
+        Comm world;
+        
+        MPITimeStatistics stats(world);
+        stats.start();
+        
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+        
+        stats.start();
+        
+        MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+        AsphaltTension2D<FunctionSpace>, AsphaltTension<FunctionSpace> > time_stepper(space);
+        
+        time_stepper.read(in);
+        time_stepper.run();
+        
+        
+        stats.stop_collect_and_restart("end");
+        
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+        
+    }
+    
+    UTOPIA_REGISTER_APP(AsphaltTension2d_rmtr);
+    
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    static void mixed2d_rmtr(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
 
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformQuad4;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType       = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+ 
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                            PFMixed2D<FunctionSpace>, Mixed<FunctionSpace> > time_stepper(space);
+
+        time_stepper.read(in); 
+        time_stepper.run();
+
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+
+    }
+
+    UTOPIA_REGISTER_APP(mixed2d_rmtr);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    static void frac_plate_rmtr(Input &in)
+    {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm           = utopia::PetscCommunicator;
+        using Mesh           = utopia::PetscDM<Dim>;
+        using Elem           = utopia::PetscUniformQuad4;
+        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType       = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+ 
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                            FracPlateBC<FunctionSpace>, FracPlateIC<FunctionSpace> > time_stepper(space);
+
+        time_stepper.read(in); 
+        time_stepper.run();
+
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+
+    }
+
+    UTOPIA_REGISTER_APP(frac_plate_rmtr);    
 
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -264,7 +384,7 @@ namespace utopia {
         stats.stop_and_collect("space-creation");
         stats.start();
 
-        InitialCondidtionPFFracNet<FunctionSpace> IC_setup(space, 0.0);
+        InitialCondidtionPFFracNet2D<FunctionSpace> IC_setup(space, 0.0);
         PFFracFixAllDisp<FunctionSpace> BC_setup(space);
 
         IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(space, IC_setup, BC_setup);

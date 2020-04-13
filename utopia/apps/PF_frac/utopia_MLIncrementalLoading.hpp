@@ -376,6 +376,7 @@ namespace utopia {
 
                     // increment time step
                     this->time_ += this->dt_;
+                    this->time_step_counter_ += 1; 
                 }
         }
 
@@ -389,11 +390,12 @@ namespace utopia {
             // init fine level spaces
             this->init(*spaces_[n_levels_ - 1]);
 
-            for (auto t=1; t < this->num_time_steps_; t++)
+            this->time_step_counter_=0; 
+            while(this->time_ < this->final_time_)
             {
                 if(mpi_world_rank()==0){
                     std::cout<<"###################################################################### \n";
-                    std::cout<<"Time-step: "<< t << "  time:  "<< this->time_ << "  dt:  "<< this->dt_ << " \n";
+                    std::cout<<"Time-step: "<< this->time_step_counter_ << "  time:  "<< this->time_ << "  dt:  "<< this->dt_ << " \n";
                     std::cout<<"###################################################################### \n";
                 }
 
