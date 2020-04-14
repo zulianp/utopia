@@ -431,7 +431,7 @@ namespace utopia {
 
 
         stats.stop_collect_and_restart("end");
-        space.comm().root_print(std::to_string(space.n_dofs()) + " corase dofs");
+        space.comm().root_print(std::to_string(space.n_dofs()) + " coarse dofs");
         stats.stop_and_collect("space-creation");
 
     }
