@@ -28,7 +28,7 @@ namespace utopia {
 
 
         MLIncrementalLoading(FunctionSpace &space_coarse) :
-        init_(false), n_levels_(2), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv")
+        init_(false), n_levels_(2), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv"), save_output_(true)
         {
             spaces_.resize(2);
             spaces_[0] = make_ref(space_coarse);
@@ -43,6 +43,7 @@ namespace utopia {
             in.get("log_output_path", log_output_path_);
             in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
             in.get("n_levels", n_levels_);
+            in.get("save_output", save_output_);
 
             init_ml_setup();
 
@@ -236,21 +237,23 @@ namespace utopia {
 
         void write_to_file(FunctionSpace & space, const Scalar & time) override
         {
-            // only finest level
-            IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
 
-            // all levels
-            // for(auto l=0; l < spaces_.size(); l++){
+            if(save_output_){
+                // only finest level
+                IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
 
-            //     ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
-            //     Vector & sol  = fun->old_solution();
-            //     rename("X", sol);
+                // all levels
+                // for(auto l=0; l < spaces_.size(); l++){
 
-            //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr", sol);
-            // }
+                //     ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                //     Vector & sol  = fun->old_solution();
+                //     rename("X", sol);
 
-            Utopia::instance().set("log_output_path", log_output_path_);
+                //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr", sol);
+                // }
 
+                Utopia::instance().set("log_output_path", log_output_path_);
+            }
         }
 
 
@@ -429,6 +432,7 @@ namespace utopia {
 
         std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> > rmtr_;
 
+        bool save_output_; 
 
     };
 

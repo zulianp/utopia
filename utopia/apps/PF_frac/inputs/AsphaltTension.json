@@ -1,6 +1,6 @@
 {
     "app" : "AsphaltTension2d_rmtr",
-    "output-path" : "AsphaltTension2d_rmtr",
+    "output-path" : "AsphaltTension2d",
     "nx" : 20,
     "ny" : 20,
     "nz" : 2,
@@ -24,6 +24,7 @@
     "fracture_toughness":0.3680,
     "pressure0" : 0.0,
     "pressure_increase_factor" : 0.0,
+    "save_output": false, 
     "diff_controller" : {
         "spacing" : 1e-6,
         "hessian_from_grad" : false
