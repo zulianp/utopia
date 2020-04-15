@@ -19,6 +19,7 @@ namespace utopia {
         using VectorView = utopia::VectorView<ArrayView>;
         using ConstVectorView = utopia::VectorView<ConstArrayView>;
 
+
         template<class Derived>
         void init_from_local_matrix(const Tensor<Derived, 2> &local_diag_block)
         {
@@ -42,8 +43,10 @@ namespace utopia {
                     if(i == j) {
                         d_inv_[i] = (device::abs(a_ij) > 0.0)? (1/a_ij) : Scalar(0.0);
                     } else {
-                        ++row_ptr_[i+1];
-                        ++n_off_diag_entries;
+                        if(a_ij != 0.0) { //remove zeros
+                            ++row_ptr_[i+1];
+                            ++n_off_diag_entries;
+                        }
                     }
                 }
             );
@@ -72,7 +75,7 @@ namespace utopia {
             n_off_diag_entries = 0;
             mat.read(
                 [&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-                        if(i != j) {
+                        if(i != j && a_ij != 0.0) { //remove zeros
                             col_idx_[n_off_diag_entries] = j;
                             values_[n_off_diag_entries] = a_ij;
                             ++n_off_diag_entries;
