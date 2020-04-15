@@ -154,7 +154,6 @@ namespace utopia {
             this->local_x_ = std::make_shared<Vector>();
             space_.create_local_vector(*this->local_x_);
 
-
             this->local_pressure_field_ = std::make_shared<Vector>();
             space_.create_local_vector(*this->local_pressure_field_);
 

@@ -434,6 +434,7 @@ namespace utopia
 	    	for(size_t i =0; i < ml_problems.size(); i++)
 	    	{
 				Vector x = ml_problems[i]->get_functions().back()->initial_guess();
+				assert(!empty(x));
 
 				// x.set(20);
 
