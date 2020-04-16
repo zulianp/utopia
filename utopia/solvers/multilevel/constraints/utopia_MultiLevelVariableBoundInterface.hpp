@@ -103,8 +103,14 @@ namespace utopia
         }
 
 
-      void get_projection(const Vector &lb, const Vector &ub, Vector & x)
+      void get_projection(const Vector &lb, const Vector &ub, Vector &x)
       {
+        assert(!empty(lb));
+        assert(!empty(ub));
+        assert(!empty(x));
+        assert(lb.size() == ub.size());
+        assert(x.size() == ub.size());
+
         {
             auto d_lb = const_device_view(lb);
             auto d_ub = const_device_view(ub);

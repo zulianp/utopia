@@ -189,8 +189,8 @@ namespace utopia
                 for(auto l = 0; l < fine_level; l++){
                     this->transfer(l).init_memory();
                 }
-                
-                this->init_ = true; 
+
+                this->init_ = true;
             }
         }
 
