@@ -56,6 +56,7 @@ namespace utopia {
 
 
             in.get("solver", *rmtr_);
+            in.get("second_phase_ts", second_phase_time_stepper_); 
         }
 
         bool init_ml_setup()
@@ -377,9 +378,15 @@ namespace utopia {
                         this->write_to_file(*spaces_.back(), this->time_);
                     }
 
-                    // increment time step
-                    this->time_ += this->dt_;
-                    this->time_step_counter_ += 1; 
+                    if(this->time_ < second_phase_time_stepper_.start_time_){
+                        // increment time step
+                        this->time_ += this->dt_;
+                        this->time_step_counter_ += 1; 
+                    }
+                    else{
+                        this->time_ += second_phase_time_stepper_.dt_; 
+                        this->time_step_counter_ += 1; 
+                    }
                 }
         }
 
@@ -433,6 +440,9 @@ namespace utopia {
         std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> > rmtr_;
 
         bool save_output_; 
+
+        TimeStepperInfo<Scalar> second_phase_time_stepper_; 
+
 
     };
 
