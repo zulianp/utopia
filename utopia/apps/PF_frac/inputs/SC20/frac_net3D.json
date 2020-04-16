@@ -40,7 +40,7 @@
     "pow_dist_coef_length" : 2.7,
     "min_length" : 0.1,
     "uniform_width" : 0.1,
-    "n_levels": 3,
+    "n_levels": 4,
     "n_coarse_sub_comm": 1,    
     "solver" : {
         "verbose" : true,
@@ -52,10 +52,10 @@
         "post_smoothing_steps": 2,
         "grad_smoothess_termination" : 1e-6,
         "max_sucessful_smoothing_it": 1,
-        "max_QP_smoothing_it": 80,
+        "max_QP_smoothing_it": 40,
         "max_QP_coarse_it": 1000,
-        "deltaH_lagging" : false, 
-        "Hpost_lagging": false, 
+        "deltaH_lagging" : true, 
+        "Hpost_lagging": true, 
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
