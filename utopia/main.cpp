@@ -1,8 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_AppRunner.hpp"
 
-int main(const int argc, char *argv[])
-{
+int main(const int argc, char *argv[]) {
     using namespace utopia;
 
     Utopia::Init(argc, argv);
