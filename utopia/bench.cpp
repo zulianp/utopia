@@ -8,7 +8,7 @@ int main(const int argc, char *argv[]) {
 
     Utopia::Init(argc, argv);
 
-    { run_benchmarks(); }
+    run_benchmarks();
 
     return Utopia::Finalize();
 }
