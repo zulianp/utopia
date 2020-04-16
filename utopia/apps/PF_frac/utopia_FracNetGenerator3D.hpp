@@ -53,7 +53,7 @@ namespace utopia {
             uniform_width(0.0), 
             uniform_length(0.0), 
             pow_dist_coef_width(2.8), 
-            min_width(0.0)             
+            min_width(0.1)             
             {
 
             }                  
