@@ -1,29 +1,30 @@
 {
     "app" : "AsphaltTension2d_rmtr",
-    "output-path" : "AsphaltTension2d_rmtr",
-    "nx" : 20,
-    "ny" : 20,
+    "output-path" : "AsphaltTension2d_rmtr_finest_e4",
+    "nx" : 500,
+    "ny" : 1000,
     "nz" : 2,
     "x_min" : 0, 
     "x_max" : 20,
     "y_min" : 0,
     "y_max" : 40,
-    "disp_y": 0.068,
+    "disp_y": 3.0,
     "with_damage" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
-    "num_time_steps" : 500,
-    "dt" : 1.25,
+    "num_time_steps" : 1e6,
+    "dt" : 1.0e-4,
     "adjust_dt_on_failure": false,
     "shrinking_factor" : 0.5,
     "use_pressure": false,
     "use_constant_pressure": false,
-    "mu": 2.23,
-    "lambda":3.35,
+    "mu": 2.2308,
+    "lambda":3.3462,
     "n_levels": 3,
     "fracture_toughness":0.3680,
     "pressure0" : 0.0,
     "pressure_increase_factor" : 0.0,
+    "save_output": false, 
     "diff_controller" : {
         "spacing" : 1e-6,
         "hessian_from_grad" : false
@@ -44,7 +45,7 @@
         "max_QP_coarse_it": 1000,
         "linear-solver" : {
             "verbose" : false,
-            "atol": 1e-9,
+            "atol": 1e-7,
             "max-it": 1000
         }
     }
