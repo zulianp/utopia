@@ -37,7 +37,7 @@
     "pow_dist_coef_length" : 2.7,
     "min_length" : 0.1,
     "uniform_width" : 0.1,
-    "n_levels": 4,
+    "n_levels": 3,
     "n_coarse_sub_comm": 1,    
     "solver" : {
         "verbose" : true,
