@@ -109,7 +109,7 @@ if(TRILINOS_FOUND)
     target_link_libraries(utopia_trilinos "-L${Trilinos_LIBRARY_DIRS}")
     set_target_properties(utopia_trilinos PROPERTIES COMPILE_FLAG ${Trilinos_CXX_COMPILER_FLAGS})
     add_definitions(${TRILINOS_DEFINITIONS})
-    add_definitions(${Kokkos_CXX_FLAGS})
+    # add_definitions(${Kokkos_CXX_FLAGS})
 
     # message(STATUS "Trilinos_CXX_COMPILER_FLAGS=${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS}")
 
