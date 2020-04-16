@@ -49,11 +49,14 @@ namespace utopia {
             z_min(0.0), 
             z_max(1.0),
             beta_min(0.0), 
-            beta_max(180), 
-            uniform_width(0.0), 
-            uniform_length(0.0), 
+            beta_max(180),
+            uni_min(0.0),
+            uni_max(0.0),
+            uniform_width(0.0),
+            uniform_length(0.0),
+            linear_relation(0.0),
             pow_dist_coef_width(2.8), 
-            min_width(0.0)             
+            min_width(0.1)             
             {
 
             }                  
@@ -68,9 +71,14 @@ namespace utopia {
 
                 in.get("beta_min", beta_min);
                 in.get("beta_max", beta_max);
+                
+                in.get("uni_min", uni_min);
+                in.get("uni_max", uni_max);
 
                 in.get("uniform_width", uniform_width);
-                in.get("uniform_length", uniform_length);        
+                in.get("uniform_length", uniform_length);
+                
+                in.get("linear_relation", linear_relation);
 
                 in.get("pow_dist_coef_width", pow_dist_coef_width);
                 in.get("min_width", min_width);                                
@@ -81,10 +89,15 @@ namespace utopia {
             T z_max;    
 
             T beta_min;                   
-            T beta_max; 
+            T beta_max;
+        
+            T uni_min;
+            T uni_max;
 
             T uniform_width;
             T uniform_length;
+        
+            T linear_relation;
 
             T pow_dist_coef_width; 
             T min_width; 
@@ -186,9 +199,9 @@ namespace utopia {
             {
                 static std::default_random_engine generator (params.seed);
 
-                std::uniform_real_distribution<> distr_point_x(params.x_min, params.x_max);
-                std::uniform_real_distribution<> distr_point_y(params.y_min, params.y_max);
-                std::uniform_real_distribution<> distr_point_z(params.z_min, params.z_max);
+                std::uniform_real_distribution<> distr_point_x(params.uni_min, params.uni_max);
+                std::uniform_real_distribution<> distr_point_y(params.uni_min, params.uni_max);
+                std::uniform_real_distribution<> distr_point_z(params.uni_min, params.uni_max);
 
                 std::uniform_int_distribution<> distr_angle_alpha(params.alpha_min, params.alpha_max);
                 std::uniform_int_distribution<> distr_angle_beta(params.beta_min, params.beta_max);
@@ -218,10 +231,16 @@ namespace utopia {
                 }
 
                 T width; 
-                if(params.uniform_width==0){
+                if(params.uniform_width==0 && params.linear_relation==0){
                     const T x_min = (params.min_width==0)? 3.0*depth : params.min_width; 
                     const T r = distr_length(generator);
                     width = x_min * std::pow( (1.-r), (-1./(params.pow_dist_coef_width - 1.)));
+                }
+                else if(params.linear_relation!=0){
+                   
+                    std::cout<<"linear_relation"<<params.linear_relation<<std::endl;
+                    
+                    width = params.linear_relation * length;
                 }
                 else{
                     width = params.uniform_width; 
