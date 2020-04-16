@@ -218,11 +218,12 @@ namespace utopia {
                 // std::uniform_real_distribution<> distr_length(3.0*width, 0.15);
 
                 // length should be driven from power distribution
-                std::uniform_real_distribution<> distr_length(std::max(params.x_min, params.y_min), std::min(params.x_max, params.y_max));
+                // std::uniform_real_distribution<> distr_length(std::max(params.x_min, params.y_min), std::min(params.x_max, params.y_max));
                 // const T x_min = 3.0*width > 0.04 ? 3.0*width : 0.04;
                 
 
                 const T x_min = (params.min_length==0)? 3.0*width : params.min_length; 
+                std::uniform_real_distribution<> distr_length(0,  1);
                 const T r = distr_length(generator);
                 T length = x_min * std::pow( (1.-r), (-1./(params.pow_dist_coef_length - 1.)));
 

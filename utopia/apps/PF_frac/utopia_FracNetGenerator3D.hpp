@@ -218,7 +218,8 @@ namespace utopia {
                 auto max_l = std::max(std::max(params.x_min, params.y_min), params.z_min); 
                 auto min_l = std::min(std::min(params.x_max, params.y_max), params.z_max);
 
-                std::uniform_real_distribution<> distr_length(max_l, min_l);
+                // std::uniform_real_distribution<> distr_length(max_l, min_l);
+                std::uniform_real_distribution<> distr_length(0, 1);
 
                 T length; 
                 if(params.uniform_length==0){
