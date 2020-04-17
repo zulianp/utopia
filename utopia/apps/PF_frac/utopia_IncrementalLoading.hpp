@@ -44,6 +44,32 @@
 
 namespace utopia {
 
+    template<class Scalar>
+    class TimeStepperInfo : public Configurable
+    {
+        public: 
+            TimeStepperInfo(): 
+            dt_(1e-5), 
+            start_time_(9e9), 
+            final_time_(9e9)
+            {
+
+            }
+
+            virtual void read(Input &in) override
+            {
+                in.get("dt", dt_);
+                in.get("start_time", start_time_);
+                in.get("final_time", final_time_);
+            }
+
+        public: 
+            Scalar dt_; 
+            Scalar start_time_; 
+            Scalar final_time_; 
+    }; 
+
+
     template<class FunctionSpace>
     class IncrementalLoadingBase : public Configurable
     {
@@ -135,6 +161,7 @@ namespace utopia {
             SizeType time_step_counter_; 
             std::string output_path_;
             bool use_mprgp_;
+
             bool adjust_dt_on_failure_;
             Scalar shrinking_factor_;
             Scalar pressure0_;
