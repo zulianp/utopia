@@ -63,6 +63,12 @@ namespace utopia {
 
         bool converged = false;
 
+        // global to local
+
+        // solve
+
+        // local to global
+
         // TODO
         UTOPIA_TRACE_REGION_END("BlockQPSolver::apply");
         return converged;
@@ -92,13 +98,27 @@ namespace utopia {
     template <class Matrix, class Vector>
     void BlockQPSolver<Matrix, Vector, PETSC>::global_to_local(const Vector &g, Vector &l) {
         if (empty(l)) {
+            l.zeros(serial_layout(g.local_size()));
         }
+
+        auto g_view = const_local_view_device(g);
+        auto l_view = local_view_device(l);
+
+        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { l_view.set(i, g_view.get(i)); });
     }
 
     template <class Matrix, class Vector>
     void BlockQPSolver<Matrix, Vector, PETSC>::local_to_global(const Vector &l, Vector &g) {
-        if (empty(l)) {
+        if (empty(g)) {
+            assert(false);
+            m_utopia_error("g must be initialized outside");
+            return;
         }
+
+        auto g_view = local_view_device(g);
+        auto l_view = const_local_view_device(l);
+
+        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.set(i, l_view.get(i)); });
     }
 
 }  // namespace utopia
