@@ -28,7 +28,12 @@ namespace utopia {
 
 
         MLIncrementalLoading(FunctionSpace &space_coarse) :
-        init_(false), n_levels_(2), n_coarse_sub_comm_(1), log_output_path_("rmtr_log_file.csv"), save_output_(true)
+        init_(false), 
+        n_levels_(2), 
+        n_coarse_sub_comm_(1), 
+        log_output_path_("rmtr_log_file.csv"), 
+        save_output_(true), 
+        mprgp_smoother_(false)
         {
             spaces_.resize(2);
             spaces_[0] = make_ref(space_coarse);
@@ -44,6 +49,7 @@ namespace utopia {
             in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
             in.get("n_levels", n_levels_);
             in.get("save_output", save_output_);
+            in.get("mprgp_smoother", mprgp_smoother_);
 
             init_ml_setup();
 
@@ -56,6 +62,7 @@ namespace utopia {
 
 
             in.get("solver", *rmtr_);
+            in.get("second_phase_ts", second_phase_time_stepper_); 
         }
 
         bool init_ml_setup()
@@ -135,8 +142,17 @@ namespace utopia {
                 rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
             }
 
-            auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            // auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             // tr_strategy_fine->l1(true);
+
+            std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine;
+            
+            if(mprgp_smoother_){
+                tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            }
+            else{
+                tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            }
 
 
             std::shared_ptr<QPSolver<Matrix,  Vector>> tr_strategy_coarse;
@@ -377,9 +393,15 @@ namespace utopia {
                         this->write_to_file(*spaces_.back(), this->time_);
                     }
 
-                    // increment time step
-                    this->time_ += this->dt_;
-                    this->time_step_counter_ += 1; 
+                    if(this->time_ < second_phase_time_stepper_.start_time_){
+                        // increment time step
+                        this->time_ += this->dt_;
+                        this->time_step_counter_ += 1; 
+                    }
+                    else{
+                        this->time_ += second_phase_time_stepper_.dt_; 
+                        this->time_step_counter_ += 1; 
+                    }
                 }
         }
 
@@ -433,6 +455,11 @@ namespace utopia {
         std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> > rmtr_;
 
         bool save_output_; 
+
+        TimeStepperInfo<Scalar> second_phase_time_stepper_; 
+
+        bool mprgp_smoother_; 
+
 
     };
 
