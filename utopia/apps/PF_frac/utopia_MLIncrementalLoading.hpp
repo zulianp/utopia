@@ -154,8 +154,7 @@ namespace utopia {
                 tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
             }
             else if(hjsmn_smoother_){
-                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
-                                std::make_shared<Factorization<Matrix, Vector>>());
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
                 // BlockQPSolver<Matrix, Vector> bqp(qp);
                 tr_strategy_fine   = std::make_shared<utopia::BlockQPSolver<Matrix, Vector> >(qp);   
             }
