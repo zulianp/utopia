@@ -18,18 +18,15 @@ namespace utopia {
     BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(const BlockQPSolver &other) {
         if (other.serial_solver_) {
             serial_solver_ = std::shared_ptr<QPSolver>(other.serial_solver_->clone());
-            local_lb_ = std::make_shared<Vector>(*other.local_lb_);
-            local_ub_ = std::make_shared<Vector>(*other.local_ub_);
-        }
-
-        if (other.has_bound()) {
-            this->set_box_constraints(other.get_box_constraints());
+            *local_lb_ = *other.local_lb_;
+            *local_ub_ = *other.local_ub_;
         }
     }
 
     template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC> *BlockQPSolver<Matrix, Vector, PETSC>::clone() const {
         auto ptr = new BlockQPSolver(*this);
+        ptr->set_box_constraints(this->get_box_constraints());
         return ptr;
     }
 

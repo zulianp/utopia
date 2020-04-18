@@ -10,6 +10,7 @@
 #include "utopia_MLIncrementalLoading.hpp"
 #include "utopia_PFMassMatrix.hpp"
 #include "utopia_RedundantQPSolver.hpp"
+#include "utopia_BlockQPSolver.hpp"
 
 #include <memory>
 
