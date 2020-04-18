@@ -23,6 +23,7 @@ namespace utopia {
         }
 
         SemismoothNewton(const std::shared_ptr<LinearSolver> &linear_solver);
+        ~SemismoothNewton();
         SemismoothNewton *clone() const override;
 
         void read(Input &in) override;
@@ -34,7 +35,10 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override;
 
     private:
+        class Buffers;
+
         std::shared_ptr<LinearSolver> linear_solver_;
+        std::unique_ptr<Buffers> buffers_;
     };
 
 }  // namespace utopia

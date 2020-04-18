@@ -203,14 +203,14 @@ namespace utopia {
         }
 
         void run() {
-            // UTOPIA_RUN_TEST(sum_vectors);
-            // UTOPIA_RUN_TEST(mat_vec_mult);
-            // UTOPIA_RUN_TEST(solve_problem);
-            // UTOPIA_RUN_TEST(redundant_test);
-            // UTOPIA_RUN_TEST(redundant_qp_solver);
-            // UTOPIA_RUN_TEST(qp_solver_with_clone);
+            UTOPIA_RUN_TEST(sum_vectors);
+            UTOPIA_RUN_TEST(mat_vec_mult);
+            UTOPIA_RUN_TEST(solve_problem);
+            UTOPIA_RUN_TEST(redundant_test);
+            UTOPIA_RUN_TEST(redundant_qp_solver);
+            UTOPIA_RUN_TEST(qp_solver_with_clone);
             UTOPIA_RUN_TEST(block_qp_solver);
-            // UTOPIA_RUN_TEST(block_qp_solver_with_clone);
+            UTOPIA_RUN_TEST(block_qp_solver_with_clone);
         }
     };
 
