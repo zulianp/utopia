@@ -90,7 +90,7 @@ namespace utopia {
             }
 
             const Scalar gamma = 1.0;
-            const Scalar alpha_bar = 1.95 / this->get_normA(A, local_size(rhs));
+            const Scalar alpha_bar = 1.95 / this->get_normA(A);
             Scalar pAp, beta_beta, fi_fi, gp_dot;
 
             SizeType it = 0;
@@ -103,6 +103,9 @@ namespace utopia {
 
             assert(lb);
             assert(ub);
+
+            // std::cout << x.comm().size() << " " << rhs.comm().size() << " " << lb->comm().size() << " "
+            //           << ub->comm().size() << std::endl;
 
             this->project(*lb, *ub, x);
             // x = Ax;
@@ -366,15 +369,9 @@ namespace utopia {
         }
 
     private:
-        Scalar get_normA(const Operator<Vector> &A, const SizeType &n_loc) {
+        Scalar get_normA(const Operator<Vector> &A) {
             // Super simple power method to estimate the biggest eigenvalue
-            // Vector y_old;
-            // Vector y = local_values(n_loc, 1.0);
             assert(!empty(help_f2));
-
-            // if(empty(help_f2))
-            //     help_f2 = local_values(n_loc, 1.0);
-            // else
             help_f2.set(1.0);
 
             SizeType it = 0;

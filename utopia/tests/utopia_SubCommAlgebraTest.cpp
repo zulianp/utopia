@@ -90,25 +90,25 @@ namespace utopia {
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, solver, true);
             }
 
-            // {
-            //     SemismoothNewton<Matrix, Vector> solver(std::make_shared<MPGRP<Matrix, Vector>>());
-            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, solver, true);
-            // }
-
             {
                 SemismoothNewton<Matrix, Vector> solver(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>());
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, solver, true);
+            }
+
+            {
+                SemismoothNewton<Matrix, Vector> solver(std::make_shared<MPGRP<Matrix, Vector>>());
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, solver, true);
             }
         }
 
         void block_qp_solver() {
-            // {
-            //     auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
-            //         std::make_shared<Factorization<Matrix, Vector>>());
+            {
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
+                    std::make_shared<Factorization<Matrix, Vector>>());
 
-            //     BlockQPSolver<Matrix, Vector> bqp(qp);
-            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
-            // }
+                BlockQPSolver<Matrix, Vector> bqp(qp);
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
+            }
 
             {
                 auto qp = std::make_shared<MPGRP<Matrix, Vector>>();
@@ -117,27 +117,31 @@ namespace utopia {
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
             }
 
-            // {
-            //     auto qp = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            {
+                auto qp = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
 
-            //     BlockQPSolver<Matrix, Vector> bqp(qp);
-            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
-            // }
+                BlockQPSolver<Matrix, Vector> bqp(qp);
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
+            }
         }
 
         void qp_solver_with_clone() {
-            {
-                MPGRP<Matrix, Vector> temp_qp;
-                auto bqp_ptr = std::shared_ptr<MPGRP<Matrix, Vector>>(temp_qp.clone());
-                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
-            }
+            // {
+            //     MPGRP<Matrix, Vector> temp_qp;
+            //     auto bqp_ptr = std::shared_ptr<MPGRP<Matrix, Vector>>(temp_qp.clone());
+            //     // QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
+            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, false);
+            // }
 
-            {
-                ProjectedGaussSeidel<Matrix, Vector> temp_qp;
-                temp_qp.use_sweeper(this->comm().size() > 1);
-                auto bqp_ptr = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector>>(temp_qp.clone());
-                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
-            }
+            // {
+            //     ProjectedGaussSeidel<Matrix, Vector> temp_qp;
+            //     // temp_qp.use_sweeper(this->comm().size() > 1);
+            //     temp_qp.use_sweeper(false);
+            //     auto bqp_ptr = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector>>(temp_qp.clone());
+
+            //     // QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
+            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, false);
+            // }
 
             // {
             //     auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix,

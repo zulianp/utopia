@@ -118,11 +118,15 @@ namespace utopia {
             init_empty();
             // THIS HAS TO BE HERE IN EVERY UTOPIA TENSOR CLASS
             Super::construct_eval(expr.derived());
+            // FIXME this should be redudant and removed (but lets leave it here for now)
+            update_mirror();
         }
 
         template <class Expr>
         inline PetscVector &operator=(const Expression<Expr> &expr) {
             Super::assign_eval(expr.derived());
+            // FIXME this should be redudant and removed (but lets leave it here for now)
+            update_mirror();
             return *this;
         }
 
@@ -443,6 +447,7 @@ namespace utopia {
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
                 ghost_values_ = other.ghost_values_;
+                comm_ = other.comm_;
             } else {
                 vec_ = nullptr;
                 initialized_ = false;
@@ -517,6 +522,7 @@ namespace utopia {
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
                 immutable_ = other.immutable_;
+                comm_ = other.comm_;
                 return *this;
             }
 
@@ -533,6 +539,8 @@ namespace utopia {
             } else {
                 initialized_ = false;
             }
+
+            comm_ = other.comm_;
 
             return *this;
         }
@@ -551,6 +559,7 @@ namespace utopia {
 
             other.initialized_ = false;
             other.immutable_ = false;
+            comm_ = std::move(other.comm_);
             return *this;
         }
 

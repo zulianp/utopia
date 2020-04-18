@@ -253,9 +253,15 @@ namespace utopia {
         bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new) {
             bool is_upper_bound = this->has_upper_bound();
 
+            assert(x_new.comm().size() == b.comm().size());
+            assert(A.comm().size() == b.comm().size());
+
             Vector g;
             if (is_upper_bound) {
                 g = this->get_upper_bound();
+
+                assert(this->get_upper_bound().comm().size() == b.comm().size());
+                assert(g.comm().size() == b.comm().size());
             } else {
                 g = this->get_lower_bound();
             }
@@ -359,6 +365,9 @@ namespace utopia {
 
                 Matrix H = A_c + I_c * A;
                 Vector sub_g = (I_c * b + A_c * g);
+
+                assert(g.comm().size() == x_new.comm().size());
+                assert(sub_g.comm().size() == x_new.comm().size());
 
                 assert(!has_nan_or_inf(H));
                 assert(!has_nan_or_inf(g));

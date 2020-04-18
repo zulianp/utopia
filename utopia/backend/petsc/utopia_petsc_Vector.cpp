@@ -59,11 +59,13 @@ namespace utopia {
 
         const std::string type_copy = type;
 
+        this->comm().set(comm);
+
         if (is_null()) {
             UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
             VecCreate(comm, &vec_);
         } else {
-            if (comm != PetscObjectComm((PetscObject)vec_) || has_type(type)) {
+            if (comm != PetscObjectComm((PetscObject)vec_) || !has_type(type)) {
                 destroy();
 
                 UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
@@ -80,6 +82,11 @@ namespace utopia {
                            "We do not handle the local consistency. Explicitly set local sizes in the initialization.");
 
                     return;
+                } else {
+                    destroy();
+
+                    UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
+                    check_error(VecCreate(comm, &vec_));
                 }
             }
         }
@@ -105,6 +112,8 @@ namespace utopia {
     void PetscVector::init(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global) {
         assert(vec_ == nullptr);
 
+        this->comm().set(comm);
+
         UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
         check_error(VecCreate(comm, &vec_));
         check_error(VecSetFromOptions(vec_));
@@ -119,6 +128,8 @@ namespace utopia {
     }
 
     void PetscVector::nest(MPI_Comm comm, PetscInt nb, IS is[], Vec x[], const bool use_vec_nest_type) {
+        this->comm().set(comm);
+
         if (use_vec_nest_type) {
             destroy();
             UTOPIA_REPORT_ALLOC("PetscVector::nest");
@@ -186,6 +197,8 @@ namespace utopia {
                               PetscInt global_size,
                               const std::vector<PetscInt> &index) {
         assert(!immutable_);
+
+        this->comm().set(comm);
 
         destroy();
 
@@ -497,7 +510,6 @@ namespace utopia {
     ///< Scalar>COPY - copy other into this
     void PetscVector::copy(const PetscVector &other) {
         if (this == &other) return;
-
         assert(!immutable_);
 
         if (is_compatible(other) && !other.has_ghosts()) {
@@ -511,6 +523,7 @@ namespace utopia {
             PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
             initialized_ = other.initialized_;
             immutable_ = other.immutable_;
+            update_mirror();
             return;
         }
 
@@ -527,6 +540,8 @@ namespace utopia {
         } else {
             initialized_ = false;
         }
+
+        update_mirror();
 
         return;
     }
