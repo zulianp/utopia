@@ -10,7 +10,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     class QPSolverTestProblem {
-       public:
+    public:
         using Traits = utopia::Traits<Matrix>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
@@ -73,7 +73,10 @@ namespace utopia {
 
             if (use_constraints) {
                 qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+                utopia_test_assert(qp_solver.has_bound());
             }
+
+            // std::cout << "Solving..." << std::endl;
 
             Chrono c;
             c.start();
