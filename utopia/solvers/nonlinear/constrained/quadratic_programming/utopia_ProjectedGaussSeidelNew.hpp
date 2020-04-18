@@ -22,7 +22,7 @@ namespace utopia {
     // FIXME make it work for all other backends
     template <class Matrix, class Vector>
     class ProjectedGaussSeidel<Matrix, Vector, PETSC> : public QPSolver<Matrix, Vector> {
-       public:
+    public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -47,14 +47,15 @@ namespace utopia {
         inline void n_local_sweeps(const SizeType n_local_sweeps) { n_local_sweeps_ = n_local_sweeps; }
 
         inline void use_symmetric_sweep(const bool use_symmetric_sweep) { use_symmetric_sweep_ = use_symmetric_sweep; }
+        inline void use_sweeper(const bool val) { use_sweeper_ = val; }
 
         inline void l1(const bool val) { l1_ = val; }
 
-       protected:
+    protected:
         virtual bool step(const Matrix &A, const Vector &b, Vector &x);
         virtual bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x);
 
-       private:
+    private:
         bool use_line_search_;
         bool use_symmetric_sweep_;
         bool l1_;

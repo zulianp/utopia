@@ -100,5 +100,6 @@ namespace utopia {
         assert(ierr == 0);
         block.wrap(M);
         block.update_mirror();
+        // block.comm() = PetscCommunicator::self();
     }
 }  // namespace utopia

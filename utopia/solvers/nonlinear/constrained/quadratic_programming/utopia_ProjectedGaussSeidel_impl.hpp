@@ -22,7 +22,8 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
-        : use_line_search_(other.use_line_search_),
+        : Super(other),
+          use_line_search_(other.use_line_search_),
           use_symmetric_sweep_(other.use_symmetric_sweep_),
           l1_(other.l1_),
           n_local_sweeps_(other.n_local_sweeps_),
@@ -31,9 +32,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC> *ProjectedGaussSeidel<Matrix, Vector, PETSC>::clone() const {
-        auto ptr = new ProjectedGaussSeidel(*this);
-        ptr->set_box_constraints(this->get_box_constraints());
-        return ptr;
+        return new ProjectedGaussSeidel(*this);
     }
 
     template <class Matrix, class Vector>

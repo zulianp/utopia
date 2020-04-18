@@ -35,7 +35,7 @@
 
 namespace utopia {
     class PetscMatrixMemory {
-       public:
+    public:
         PetscMatrixMemory(const MPI_Comm comm = PETSC_COMM_WORLD) : owner_(true) { MatCreate(comm, &_mat); }
 
         PetscMatrixMemory(Mat &mat, const bool owner = false) : _mat(mat), owner_(owner) {}
@@ -95,7 +95,7 @@ namespace utopia {
 
         inline bool is_owner() const { return owner_; }
 
-       private:
+    private:
         Mat _mat;
         bool owner_;
     };
@@ -119,7 +119,7 @@ namespace utopia {
         public Operator<PetscVector>,
         public Tensor<PetscMatrix, 2>,
         public Selectable<PetscMatrix, 2> {
-       public:
+    public:
         using Scalar = PetscScalar;
         using SizeType = PetscInt;
         using Super = utopia::Tensor<PetscMatrix, 2>;
@@ -147,7 +147,7 @@ namespace utopia {
             dense(layout, 0.0);
         }
 
-        PetscMatrix(PetscMatrix &&other) : wrapper_(std::move(other.wrapper_)) {}
+        PetscMatrix(PetscMatrix &&other) : wrapper_(std::move(other.wrapper_)) { this->update_mirror(); }
 
         PetscMatrix(const PetscMatrix &other) {
             using std::make_shared;
@@ -159,6 +159,7 @@ namespace utopia {
 
             wrapper_ = make_shared<PetscMatrixMemory>();
             other.wrapper_->duplicate(*wrapper_);
+            this->update_mirror();
         }
 
         PetscMatrix &operator=(const PetscMatrix &other) {
@@ -171,6 +172,7 @@ namespace utopia {
 
             wrapper_ = std::make_shared<PetscMatrixMemory>();
             other.wrapper_->duplicate(*wrapper_);
+            this->update_mirror();
             return *this;
         }
 
@@ -179,6 +181,7 @@ namespace utopia {
 
             this->wrapper_ = other.wrapper_;
             other.wrapper_ = nullptr;
+            this->update_mirror();
             return *this;
         }
 
@@ -848,7 +851,7 @@ namespace utopia {
 
         void update_mirror();
 
-       private:
+    private:
         PetscCommunicator comm_;
         std::shared_ptr<PetscMatrixMemory> wrapper_;
 

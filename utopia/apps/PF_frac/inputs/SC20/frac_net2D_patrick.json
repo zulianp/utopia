@@ -42,7 +42,7 @@
         "post_smoothing_steps": 2,
         "grad_smoothess_termination" : 1e-6,
         "max_sucessful_smoothing_it": 1,
-        "max_QP_smoothing_it": 80,
+        "max_QP_smoothing_it": 10,
         "max_QP_coarse_it": 1000,
         "deltaH_lagging" : true,
         "Hpost_lagging": true,
