@@ -1,3 +1,6 @@
+#ifndef UTOPIA_PROJECTED_GAUSS_SEIDEL_IMPL_HPP
+#define UTOPIA_PROJECTED_GAUSS_SEIDEL_IMPL_HPP
+
 #include "utopia_Algorithms.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_ProjectedGaussSeidelSweep.hpp"
@@ -467,3 +470,5 @@ namespace utopia {
     }
 
 }  // namespace utopia
+
+#endif  // UTOPIA_PROJECTED_GAUSS_SEIDEL_IMPL_HPP
