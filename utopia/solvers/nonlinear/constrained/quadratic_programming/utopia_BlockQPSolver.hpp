@@ -41,10 +41,15 @@ namespace utopia {
 
        private:
         std::shared_ptr<QPSolver> serial_solver_;
-        Vector local_rhs_, local_x_;
+        Vector residual_, x_old_, c_;
+        Vector local_residual_, local_correction_;
+        std::shared_ptr<Vector> local_lb_, local_ub_;
 
         static void global_to_local(const Vector &g, Vector &l);
         static void local_to_global(const Vector &l, Vector &g);
+        static void local_to_global_add(const Vector &l, Vector &g);
+
+        bool step(const Vector &rhs, Vector &x);
     };
 }  // namespace utopia
 

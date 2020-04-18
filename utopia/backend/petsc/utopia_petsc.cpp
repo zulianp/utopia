@@ -99,5 +99,6 @@ namespace utopia {
         auto ierr = MatGetDiagonalBlock(mat.raw_type(), &M);
         assert(ierr == 0);
         block.wrap(M);
+        block.update_mirror();
     }
 }  // namespace utopia
