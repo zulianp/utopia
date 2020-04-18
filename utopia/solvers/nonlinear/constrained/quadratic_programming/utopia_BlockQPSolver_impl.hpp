@@ -21,7 +21,6 @@ namespace utopia {
             local_lb_ = std::make_shared<Vector>(*other.local_lb_);
             local_ub_ = std::make_shared<Vector>(*other.local_ub_);
         }
-
         if (other.has_bound()) {
             this->set_box_constraints(other.get_box_constraints());
         }

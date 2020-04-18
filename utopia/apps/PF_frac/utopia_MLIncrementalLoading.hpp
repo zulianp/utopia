@@ -10,6 +10,7 @@
 #include "utopia_MLIncrementalLoading.hpp"
 #include "utopia_PFMassMatrix.hpp"
 #include "utopia_RedundantQPSolver.hpp"
+#include "utopia_BlockQPSolver.hpp"
 
 #include <memory>
 
@@ -33,7 +34,8 @@ namespace utopia {
         n_coarse_sub_comm_(1), 
         log_output_path_("rmtr_log_file.csv"), 
         save_output_(true), 
-        mprgp_smoother_(false)
+        mprgp_smoother_(false), 
+        hjsmn_smoother_(false)
         {
             spaces_.resize(2);
             spaces_[0] = make_ref(space_coarse);
@@ -50,6 +52,7 @@ namespace utopia {
             in.get("n_levels", n_levels_);
             in.get("save_output", save_output_);
             in.get("mprgp_smoother", mprgp_smoother_);
+            in.get("hjsmn_smoother", hjsmn_smoother_); 
 
             init_ml_setup();
 
@@ -146,14 +149,18 @@ namespace utopia {
             // tr_strategy_fine->l1(true);
 
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine;
-            
+
             if(mprgp_smoother_){
                 tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            }
+            else if(hjsmn_smoother_){
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
+                // BlockQPSolver<Matrix, Vector> bqp(qp);
+                tr_strategy_fine   = std::make_shared<utopia::BlockQPSolver<Matrix, Vector> >(qp);   
             }
             else{
                 tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             }
-
 
             std::shared_ptr<QPSolver<Matrix,  Vector>> tr_strategy_coarse;
 
@@ -459,6 +466,7 @@ namespace utopia {
         TimeStepperInfo<Scalar> second_phase_time_stepper_; 
 
         bool mprgp_smoother_; 
+        bool hjsmn_smoother_; 
 
 
     };
