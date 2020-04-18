@@ -80,8 +80,6 @@ namespace utopia {
         }
 
         void block_qp_solver() {
-            // auto qp = std::make_shared<MPGRP<Matrix, Vector>>();
-
             {
                 auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
                     std::make_shared<Factorization<Matrix, Vector>>());
