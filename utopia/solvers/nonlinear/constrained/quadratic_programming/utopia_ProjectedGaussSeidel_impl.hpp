@@ -331,7 +331,12 @@ namespace utopia {
         r = b - r;
 
         // localize gap function for correction
-        this->fill_empty_bounds(layout(x));
+        if (this->has_empty_bounds()) {
+            this->fill_empty_bounds(layout(x));
+        } else {
+            assert(this->get_box_constraints().valid(layout(x)));
+        }
+
         ub_loc = this->get_upper_bound() - x;
         lb_loc = this->get_lower_bound() - x;
 

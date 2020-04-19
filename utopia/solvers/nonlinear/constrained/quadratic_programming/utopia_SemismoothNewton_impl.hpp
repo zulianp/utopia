@@ -73,7 +73,11 @@ namespace utopia {
         assert(x.empty() || (x.size() == b.size() && b.comm().size() == x.comm().size()));
         assert(this->has_bound());
 
+        // if (this->has_empty_bounds()) {
         this->fill_empty_bounds(layout(b));
+        // } else {
+        //     assert(this->get_box_constraints().valid(layout(b)));
+        // }
 
         auto &&lb = this->get_lower_bound();
         auto &&ub = this->get_upper_bound();
@@ -144,10 +148,7 @@ namespace utopia {
                                 changed);
             }
 
-            // SizeType n_active = sum(active);
-
-            // disp(n_active);
-            // disp(changed);
+            changed = b.comm().sum(changed);
 
             // maybe there is a more efficent way than copy everything but this is probably ok
             mat.same_nnz_pattern_copy(A);
