@@ -149,7 +149,7 @@ namespace utopia {
                 qp->max_it(2);
                 // BlockQPSolver<Matrix, Vector> bqp(qp);
                 tr_strategy_fine   = std::make_shared<utopia::BlockQPSolver<Matrix, Vector> >(qp);   
-                tr_strategy_fine->verbose(true); 
+                // tr_strategy_fine->verbose(true); 
             }
             else{
                 tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
@@ -171,8 +171,8 @@ namespace utopia {
             // auto tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
 
 
-            rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
             rmtr_->set_coarse_tr_strategy(tr_strategy_coarse);
             rmtr_->set_fine_tr_strategy(tr_strategy_fine);
