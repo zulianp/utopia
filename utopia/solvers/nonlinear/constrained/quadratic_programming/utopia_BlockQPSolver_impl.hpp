@@ -32,9 +32,10 @@ namespace utopia {
         QPSolver::read(in);
 
         if (serial_solver_) {
-            bool verb = serial_solver_->verbose();
-            serial_solver_->read(in);
-            serial_solver_->verbose(verb);
+            // bool verb = serial_solver_->verbose();
+            // serial_solver_->read(in);
+            // serial_solver_->verbose(verb);
+            in.get("block_solver", *serial_solver_);
         }
     }
 

@@ -32,6 +32,7 @@
     },
     "n_coarse_sub_comm": 1,
     "n_levels": 2,
+    "hjsmn_smoother" : true,
     "solver" : {
         "verbose" : true,
         "max-it" : 100,
@@ -42,15 +43,18 @@
         "post_smoothing_steps": 2,
         "grad_smoothess_termination" : 1e-6,
         "max_sucessful_smoothing_it": 1,
-        "max_QP_smoothing_it": 10,
+        "max_QP_smoothing_it": 2,
         "max_QP_coarse_it": 1000,
         "deltaH_lagging" : true,
         "Hpost_lagging": true,
         "fine-QPSolver" : {
-            "verbose" : false,
-            "check_s_norm_each" : 20,
-            "n_local_sweeps" : 3,
-            "stol" : 1e-8
+            "verbose" : true,
+            "check_s_norm_each" : 2,
+            "stol" : 1e-14,
+            "block_solver" : {
+                "verbose" : false,
+                "max-it" : 2
+            }
         }
     }
 }
