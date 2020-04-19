@@ -51,7 +51,12 @@ namespace utopia {
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
             UTOPIA_TRACE_REGION_BEGIN("MPRGP::solve(...)");
 
-            this->fill_empty_bounds(layout(rhs));
+            if (this->has_empty_bounds()) {
+                this->fill_empty_bounds(layout(rhs));
+            } else {
+                assert(this->get_box_constraints().valid(layout(rhs)));
+            }
+
             auto &box = this->get_box_constraints();
 
             this->update(A);
