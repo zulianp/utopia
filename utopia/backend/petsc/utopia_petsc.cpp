@@ -15,6 +15,7 @@
 #include "utopia_RMTRVcycleImpl.hpp"
 #include "utopia_RMTR_inf.hpp"
 #include "utopia_SaddlePoint.hpp"
+#include "utopia_SemismoothNewton_impl.hpp"
 #include "utopia_TRBoundsGratton.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
 
@@ -30,6 +31,8 @@ namespace utopia {
     // qp-solvers
     template class ProjectedGaussSeidel<PetscMatrix, PetscVector>;
     template class BlockQPSolver<PetscMatrix, PetscVector>;
+    template class SemismoothNewton<PetscMatrix, PetscVector, PETSC>;
+    template class SemismoothNewton<PetscMatrix, PetscVector, HOMEMADE>;
 
     // petsc non-linear solvers
     template class NonLinearGaussSeidel<PetscMatrix, PetscVector>;
@@ -100,5 +103,6 @@ namespace utopia {
         assert(ierr == 0);
         block.wrap(M);
         block.update_mirror();
+        // block.comm() = PetscCommunicator::self();
     }
 }  // namespace utopia

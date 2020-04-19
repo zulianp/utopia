@@ -20,9 +20,11 @@ namespace utopia {
           check_s_norm_each_(1),
           use_sweeper_(true) {}
 
+    // FIXME copy constructor creates weird behaviour
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
-        : use_line_search_(other.use_line_search_),
+        : Super(other),
+          use_line_search_(other.use_line_search_),
           use_symmetric_sweep_(other.use_symmetric_sweep_),
           l1_(other.l1_),
           n_local_sweeps_(other.n_local_sweeps_),
@@ -31,9 +33,16 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC> *ProjectedGaussSeidel<Matrix, Vector, PETSC>::clone() const {
-        auto ptr = new ProjectedGaussSeidel(*this);
-        ptr->set_box_constraints(this->get_box_constraints());
-        return ptr;
+        return new ProjectedGaussSeidel(*this);
+        // auto ret = utopia::make_unique<ProjectedGaussSeidel>();
+        // ret->use_line_search_ = this->use_line_search_;
+        // ret->use_symmetric_sweep_ = this->use_symmetric_sweep_;
+        // ret->l1_ = this->l1_;
+        // ret->n_local_sweeps_ = this->n_local_sweeps_;
+        // ret->check_s_norm_each_ = this->check_s_norm_each_;
+        // ret->use_sweeper_ = this->use_sweeper_;
+
+        // return ret.release();
     }
 
     template <class Matrix, class Vector>

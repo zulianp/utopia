@@ -34,6 +34,11 @@ namespace utopia {
         other.wrapper_->duplicate(*wrapper_);
     }
 
+    void PetscMatrix::same_nnz_pattern_copy(const PetscMatrix &other) {
+        assert(!other.empty());
+        MatCopy(other.raw_type(), raw_type(), SAME_NONZERO_PATTERN);
+    }
+
     void PetscMatrix::transform(const Sqrt &op) { op_transform(op); }
 
     void PetscMatrix::transform(const Pow2 &op) { op_transform(op); }
@@ -984,6 +989,7 @@ namespace utopia {
 
         check_error(MatMult(raw_type(), vec.raw_type(), result.raw_type()));
 
+        result.update_mirror();
         result.set_initialized(true);
 
         assert(result.raw_type() != nullptr);
@@ -1014,6 +1020,8 @@ namespace utopia {
 
         check_error(MatMultTranspose(raw_type(), vec.raw_type(), result.raw_type()));
         assert(result.raw_type() != nullptr);
+
+        result.update_mirror();
         result.set_initialized(true);
     }
 
@@ -1027,6 +1035,8 @@ namespace utopia {
             result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultAdd(raw_type(), v1.raw_type(), v2.raw_type(), result.raw_type());
         }
+
+        result.update_mirror();
     }
 
     void PetscMatrix::transpose_multiply_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const {
@@ -1039,6 +1049,8 @@ namespace utopia {
             result.repurpose(v2.communicator(), v2.type(), v2.local_size(), v2.size());
             MatMultTransposeAdd(raw_type(), v1.raw_type(), v2.raw_type(), result.raw_type());
         }
+
+        result.update_mirror();
     }
 
     /// y = alpha * A * x
@@ -1148,6 +1160,7 @@ namespace utopia {
             }
         }
 
+        result.update_mirror();
         assert(result.valid());
     }
 
@@ -1165,6 +1178,8 @@ namespace utopia {
             result.construct(std::move(temp));
             assert(result.valid());
         }
+
+        result.update_mirror();
     }
 
     void PetscMatrix::multiply_transpose(const PetscMatrix &mat, PetscMatrix &result) const {
@@ -1183,6 +1198,8 @@ namespace utopia {
             result = std::move(temp);
             assert(result.valid());
         }
+
+        result.update_mirror();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
