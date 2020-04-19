@@ -148,17 +148,18 @@ namespace utopia {
                     std::make_shared<Factorization<Matrix, Vector>>());
                 qp->max_it(2);
                 // BlockQPSolver<Matrix, Vector> bqp(qp);
-                tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
-            } else {
-                tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+                tr_strategy_fine   = std::make_shared<utopia::BlockQPSolver<Matrix, Vector> >(qp);   
+                // tr_strategy_fine->verbose(true); 
+            }
+            else{
+                tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             }
 
-            std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
 
+            std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
             if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
                 spaces_[0]->comm().root_print("using redundant qp solver");
                 auto qp = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
-                qp->verbose(true);
                 tr_strategy_coarse = std::make_shared<RedundantQPSolver<Matrix, Vector>>(qp, n_coarse_sub_comm_);
                 // tr_strategy_coarse->verbose(true);
             } else {
@@ -169,7 +170,8 @@ namespace utopia {
             // ls->pc_type("bjacobi");
             // auto tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
 
-            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+
+            // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
             rmtr_->set_coarse_tr_strategy(tr_strategy_coarse);

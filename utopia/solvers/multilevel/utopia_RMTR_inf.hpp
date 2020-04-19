@@ -22,6 +22,9 @@
 #include "utopia_IdentityTransfer.hpp"
 #include "utopia_MultiLevelVariableBoundInterface.hpp"
 
+// TODO:: remove in the future -> needed for UTOPIA_PETSC_COLLECTIVE_MEMUSAGE compilation
+#include "utopia_petsc_debug.hpp"
+
 
 namespace utopia
 {
@@ -156,6 +159,8 @@ namespace utopia
                 }
                 this->init_ = true; 
             }
+
+            UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("RMTR_inf_init"); 
         }
 
         bool check_initialization() override
