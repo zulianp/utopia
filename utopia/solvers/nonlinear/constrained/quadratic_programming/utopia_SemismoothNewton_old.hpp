@@ -130,10 +130,7 @@ namespace utopia {
                                     "true");
         }
 
-        inline bool smooth(const Vector &, Vector &) override {
-            assert(false);
-            return false;
-        }
+        inline bool smooth(const Vector &, Vector &) override { assert(false); return false; }
 
         inline bool apply(const Vector &b, Vector &x) override {
             const auto &A = *this->get_operator();
