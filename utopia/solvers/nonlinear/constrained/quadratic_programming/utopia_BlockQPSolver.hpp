@@ -19,7 +19,7 @@ namespace utopia {
     // FIXME make it work for all other backends
     template <class Matrix, class Vector>
     class BlockQPSolver<Matrix, Vector, PETSC> : public QPSolver<Matrix, Vector> {
-       public:
+    public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -39,7 +39,7 @@ namespace utopia {
         virtual void init_memory(const Layout &layout) override;
         virtual void update(const std::shared_ptr<const Matrix> &op) override;
 
-       private:
+    private:
         std::shared_ptr<QPSolver> serial_solver_;
         Vector residual_, x_old_, c_;
         Vector local_residual_, local_correction_;
