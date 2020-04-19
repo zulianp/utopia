@@ -152,9 +152,11 @@ namespace utopia {
                 tr_strategy_fine->verbose(true); 
             }
             else{
-            std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
+                tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             }
 
+
+            std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
             if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
                 spaces_[0]->comm().root_print("using redundant qp solver");
                 auto qp = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
@@ -169,8 +171,8 @@ namespace utopia {
             // auto tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
 
 
-            // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-            rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+            rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+            // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
             rmtr_->set_coarse_tr_strategy(tr_strategy_coarse);
             rmtr_->set_fine_tr_strategy(tr_strategy_fine);
