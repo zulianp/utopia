@@ -6,7 +6,7 @@ ENV CXX clang++
 RUN apk update
 RUN apk upgrade
 RUN apk add --no-cache \
-            clang curl build-base gfortran perl cmake python linux-headers lapack-dev valgrind-dev gdb git
+            clang curl build-base gfortran perl cmake python linux-headers lapack-dev valgrind-dev gdb blas-dev git
 
 #############################################################################
 
