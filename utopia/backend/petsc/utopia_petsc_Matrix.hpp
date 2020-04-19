@@ -486,6 +486,9 @@ namespace utopia {
         ///< Scalar>COPY - copy x into y (this)
         void copy(const PetscMatrix &other) override;
 
+        ///< Scalar>COPY - copy x into y (this)
+        void same_nnz_pattern_copy(const PetscMatrix &other);
+
         ///< Scalar>AXPY - y = a*x + y
         void axpy(const Scalar &a, const PetscMatrix &x) override;
 

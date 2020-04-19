@@ -3,14 +3,15 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_QPSolver.hpp"
+#include "utopia_SemismoothNewton.hpp"
 
 #include <memory>
 #include <vector>
 
 namespace utopia {
 
-    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class SemismoothNewton final : public QPSolver<Matrix, Vector> {
+    template <class Matrix, class Vector>
+    class SemismoothNewton<Matrix, Vector, INVALID_BACKEND> final : public QPSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;

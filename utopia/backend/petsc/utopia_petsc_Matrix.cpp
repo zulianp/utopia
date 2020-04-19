@@ -34,6 +34,11 @@ namespace utopia {
         other.wrapper_->duplicate(*wrapper_);
     }
 
+    void PetscMatrix::same_nnz_pattern_copy(const PetscMatrix &other) {
+        assert(!other.empty());
+        MatCopy(other.raw_type(), raw_type(), SAME_NONZERO_PATTERN);
+    }
+
     void PetscMatrix::transform(const Sqrt &op) { op_transform(op); }
 
     void PetscMatrix::transform(const Pow2 &op) { op_transform(op); }

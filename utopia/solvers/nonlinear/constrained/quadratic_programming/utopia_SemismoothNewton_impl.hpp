@@ -10,16 +10,24 @@ namespace utopia {
     class SemismoothNewton<Matrix, Vector, Backend>::Buffers {
     public:
         void init(const Layout &layout) {
-            x_old.zeros(layout);
+            correction.zeros(layout);
+            residual.zeros(layout);
+
             d_lb.zeros(layout);
             d_ub.zeros(layout);
+
             lambda_lb.zeros(layout);
             lambda_ub.zeros(layout);
+
+            active.zeros(layout);
         }
 
-        Vector x_old;
+        Vector correction, residual;
         Vector d_lb, d_ub;
         Vector lambda_lb, lambda_ub;
+        Vector active;
+
+        Matrix mat;
     };
 
     template <class Matrix, class Vector, int Backend>
@@ -71,11 +79,18 @@ namespace utopia {
         auto &&lb = this->get_lower_bound();
         auto &&ub = this->get_upper_bound();
 
-        auto &x_old = buffers_->x_old;
+        auto &correction = buffers_->correction;
+        auto &residual = buffers_->residual;
+
         auto &d_lb = buffers_->d_lb;
         auto &d_ub = buffers_->d_ub;
+
         auto &lambda_lb = buffers_->lambda_lb;
         auto &lambda_ub = buffers_->lambda_ub;
+
+        auto &mat = buffers_->mat;
+
+        auto &active = buffers_->active;
 
         lambda_lb.set(0.0);
         lambda_ub.set(0.0);
@@ -84,17 +99,64 @@ namespace utopia {
 
         auto r = local_range_device(b);
 
+        if (this->verbose()) {
+            this->init_solver("SemismoothNewton comm.size = " + std::to_string(b.comm().size()),
+                              {" it. ", "      || x_k - x_{k-1} ||"});
+        }
+
+        SizeType it = 0;
+
         while (!converged) {
             d_lb = lambda_lb + x - lb;
             d_ub = lambda_ub + x - ub;
 
             auto d_lb_view = const_local_view_device(d_lb);
             auto d_ub_view = const_local_view_device(d_ub);
+            auto active_view = local_view_device(active);
 
-            parallel_for(r,
-                         UTOPIA_LAMBDA(const SizeType &i){
+            SizeType changed = 0;
+            parallel_reduce(r,
+                            UTOPIA_LAMBDA(const SizeType &i)->SizeType {
+                                const bool prev_active = active_view.get(i);
 
-                         });
+                                const Scalar d_lb_i = d_lb_view.get(i);
+                                const Scalar d_ub_i = d_ub_view.get(i);
+
+                                const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
+                                const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
+                                const bool active_i = active_lb || active_ub;
+
+                                active_view.set(i, active_i);
+                                return prev_active != active_i;
+                            },
+                            changed);
+
+            residual = A * x;
+            residual = b - residual;
+
+            residual -= e_mul(active, residual);
+
+            // maybe there is a more efficent way than copy everything but this is probably ok
+            mat.same_nnz_pattern_copy(A);
+            set_zero_rows(mat, active, 1.0);
+
+            linear_solver_->solve(mat, residual, correction);
+
+            x += correction;
+
+            Scalar norm_c = norm2(correction);
+            ++it;
+
+            if (this->verbose()) {
+                PrintInfo::print_iter_status(it, {norm_c});
+            }
+
+            if (it > 1 && !changed) {
+                // we converged
+                converged = true;
+            } else {
+                converged = this->check_convergence(it, 1, 1, norm_c);
+            }
         }
 
         return converged;
@@ -114,6 +176,9 @@ namespace utopia {
     void SemismoothNewton<Matrix, Vector, Backend>::update(const std::shared_ptr<const Matrix> &op) {
         Super::update(op);
         init_memory(row_layout(*op));
+
+        // copy the matrix
+        buffers_->mat = *op;
     }
 
 }  // namespace utopia

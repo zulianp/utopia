@@ -2,6 +2,7 @@
 #include "utopia.hpp"
 #include "utopia_BlockQPSolver.hpp"
 #include "utopia_ParallelTestRunner.hpp"
+#include "utopia_SemismoothNewton_old.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_petsc_Redundant.hpp"
@@ -99,6 +100,11 @@ namespace utopia {
                 SemismoothNewton<Matrix, Vector> solver(std::make_shared<MPGRP<Matrix, Vector>>());
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, solver, true);
             }
+
+            // {
+            //     SemismoothNewton<Matrix, Vector, INVALID_BACKEND> solver(std::make_shared<MPGRP<Matrix, Vector>>());
+            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, true, solver, true);
+            // }
         }
 
         void qp_solver_with_clone() {
@@ -148,8 +154,17 @@ namespace utopia {
 
             {
                 auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());
+                // qp->verbose(true);
                 BlockQPSolver<Matrix, Vector> bqp(qp);
-                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, true, bqp, true);
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
+            }
+
+            {
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
+                    std::make_shared<Factorization<Matrix, Vector>>());
+                // qp->verbose(true);
+                BlockQPSolver<Matrix, Vector> bqp(qp);
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
             }
         }
 
@@ -184,6 +199,15 @@ namespace utopia {
 
             {
                 auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());
+
+                BlockQPSolver<Matrix, Vector> temp_qp(qp);
+                auto bqp_ptr = std::shared_ptr<BlockQPSolver<Matrix, Vector>>(temp_qp.clone());
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *bqp_ptr, true);
+            }
+
+            {
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
+                    std::make_shared<Factorization<Matrix, Vector>>());
 
                 BlockQPSolver<Matrix, Vector> temp_qp(qp);
                 auto bqp_ptr = std::shared_ptr<BlockQPSolver<Matrix, Vector>>(temp_qp.clone());
