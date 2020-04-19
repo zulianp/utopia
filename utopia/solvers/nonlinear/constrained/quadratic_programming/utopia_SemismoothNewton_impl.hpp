@@ -16,15 +16,14 @@ namespace utopia {
             d_lb.zeros(layout);
             d_ub.zeros(layout);
 
-            lambda_lb.zeros(layout);
-            lambda_ub.zeros(layout);
+            lambda.zeros(layout);
 
             active.zeros(layout);
         }
 
         Vector correction, residual;
         Vector d_lb, d_ub;
-        Vector lambda_lb, lambda_ub;
+        Vector lambda;
         Vector active;
 
         Matrix mat;
@@ -85,15 +84,13 @@ namespace utopia {
         auto &d_lb = buffers_->d_lb;
         auto &d_ub = buffers_->d_ub;
 
-        auto &lambda_lb = buffers_->lambda_lb;
-        auto &lambda_ub = buffers_->lambda_ub;
+        auto &lambda = buffers_->lambda;
 
         auto &mat = buffers_->mat;
 
         auto &active = buffers_->active;
 
-        lambda_lb.set(0.0);
-        lambda_ub.set(0.0);
+        lambda.set(0.0);
 
         bool converged = false;
 
@@ -104,37 +101,53 @@ namespace utopia {
                               {" it. ", "      || x_k - x_{k-1} ||"});
         }
 
+        residual = A * x;
+        residual = b - residual;
+
         SizeType it = 0;
 
         while (!converged) {
-            d_lb = lambda_lb + x - lb;
-            d_ub = lambda_ub + x - ub;
-
-            auto d_lb_view = const_local_view_device(d_lb);
-            auto d_ub_view = const_local_view_device(d_ub);
-            auto active_view = local_view_device(active);
+            d_lb = x + lambda - lb;
+            d_ub = x + lambda - ub;
 
             SizeType changed = 0;
-            parallel_reduce(r,
-                            UTOPIA_LAMBDA(const SizeType &i)->SizeType {
-                                const bool prev_active = active_view.get(i);
+            {
+                auto lb_view = const_local_view_device(lb);
+                auto ub_view = const_local_view_device(ub);
 
-                                const Scalar d_lb_i = d_lb_view.get(i);
-                                const Scalar d_ub_i = d_ub_view.get(i);
+                auto d_lb_view = const_local_view_device(d_lb);
+                auto d_ub_view = const_local_view_device(d_ub);
+                auto active_view = local_view_device(active);
+                auto residual_view = local_view_device(residual);
+                auto x_view = local_view_device(x);
 
-                                const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
-                                const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
-                                const bool active_i = active_lb || active_ub;
+                parallel_reduce(r,
+                                UTOPIA_LAMBDA(const SizeType &i)->SizeType {
+                                    const bool prev_active_i = active_view.get(i);
 
-                                active_view.set(i, active_i);
-                                return prev_active != active_i;
-                            },
-                            changed);
+                                    const Scalar d_lb_i = d_lb_view.get(i);
+                                    const Scalar d_ub_i = d_ub_view.get(i);
+                                    const Scalar x_i = x_view.get(i);
 
-            residual = A * x;
-            residual = b - residual;
+                                    const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
+                                    const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
+                                    const bool active_i = active_lb || active_ub;
 
-            residual -= e_mul(active, residual);
+                                    const Scalar val =
+                                        active_lb ? (lb_view.get(i) - x_i)
+                                                  : (active_ub ? (ub_view.get(i) - x_i) : residual_view.get(i));
+
+                                    residual_view.set(i, val);
+                                    active_view.set(i, active_i);
+                                    return prev_active_i != active_i;
+                                },
+                                changed);
+            }
+
+            // SizeType n_active = sum(active);
+
+            // disp(n_active);
+            // disp(changed);
 
             // maybe there is a more efficent way than copy everything but this is probably ok
             mat.same_nnz_pattern_copy(A);
@@ -157,6 +170,11 @@ namespace utopia {
             } else {
                 converged = this->check_convergence(it, 1, 1, norm_c);
             }
+
+            residual = A * x;
+            residual = b - residual;
+
+            lambda = e_mul(active, residual);
         }
 
         return converged;
