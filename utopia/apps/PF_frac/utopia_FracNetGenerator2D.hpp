@@ -72,6 +72,10 @@ namespace utopia {
             x_max(1.0), 
             y_min(0.0), 
             y_max(1.0),
+            uni_x_min(0.0),
+            uni_x_max(1.0),
+            uni_y_min(0.0),
+            uni_y_max(1.0),
             alpha_min(0.0), 
             alpha_max(180), 
             pow_dist_coef_length(2.8), 
@@ -88,6 +92,12 @@ namespace utopia {
 
                 in.get("y_min", y_min);
                 in.get("y_max", y_max);
+           
+                in.get("uni_x_min", uni_x_min);
+                in.get("uni_x_max", uni_x_max);
+
+                in.get("uni_y_min", uni_y_min);
+                in.get("uni_y_max", uni_y_max);
 
                 in.get("alpha_min", alpha_min);
                 in.get("alpha_max", alpha_max);
@@ -103,7 +113,13 @@ namespace utopia {
             T x_max; 
 
             T y_min; 
-            T y_max;                 
+            T y_max;
+                 
+            T uni_x_min;
+            T uni_x_max;
+
+            T uni_y_min;
+            T uni_y_max;
 
             T alpha_min; 
             T alpha_max; 
@@ -204,8 +220,8 @@ namespace utopia {
                 static std::default_random_engine generator (params.seed);
 
                 // this one needs to be replaced
-                std::uniform_real_distribution<> distr_point_xdir(params.x_min, params.x_max);
-                std::uniform_real_distribution<> distr_point_ydir(params.y_min, params.y_max);
+                std::uniform_real_distribution<> distr_point_xdir(params.uni_x_min, params.uni_x_max);
+                std::uniform_real_distribution<> distr_point_ydir(params.uni_y_min, params.uni_y_max);
 
                 std::uniform_int_distribution<> distr_angle(params.alpha_min, params.alpha_max);
 
