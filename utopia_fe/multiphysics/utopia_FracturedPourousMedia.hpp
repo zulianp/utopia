@@ -477,10 +477,10 @@ namespace utopia {
             std::string solver_type;
             in.get("solver-type", solver_type);
 
-            if (solver_type == "amg") {
+            if (solver_type == "ksp") {
                 auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
-                ksp->ksp_type("preonly");
-                ksp->pc_type("hypre");
+                ksp->ksp_type("bcgs");
+                ksp->pc_type("bjacobi");
                 solver_ptr = ksp;
             }
 
