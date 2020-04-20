@@ -2,8 +2,10 @@
 #define UTOPIA_BOX_CONSTRAINTS_HPP
 
 #include "utopia_Base.hpp"
+
 #include "utopia_Clonable.hpp"
 #include "utopia_Factory.hpp"
+#include "utopia_Layout.hpp"
 #include "utopia_Traits.hpp"
 
 #include <limits>
@@ -108,6 +110,12 @@ namespace utopia {
         inline bool has_bound() const { return has_lower_bound() || has_upper_bound(); }
 
         inline bool has_bounds() const { return has_lower_bound() && has_upper_bound(); }
+
+        inline bool has_empty_bounds() const { return !has_lower_bound() || !has_upper_bound(); }
+
+        inline bool valid(const Layout &lo) {
+            return !has_empty_bounds() && lo.same(layout(*lower_bound())) && lo.same(layout(*upper_bound()));
+        }
 
         inline void fill_empty_bounds(const Layout &lo) {
             if (this->has_bounds()) {

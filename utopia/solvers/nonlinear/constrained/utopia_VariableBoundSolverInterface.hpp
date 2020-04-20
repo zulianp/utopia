@@ -34,7 +34,8 @@ namespace utopia {
             return true;
         }
 
-        virtual const BoxConstraints &get_box_constraints() const { return constraints_; }
+        const BoxConstraints &get_box_constraints() const { return constraints_; }
+        BoxConstraints &get_box_constraints() { return constraints_; }
 
         virtual const Vector &get_upper_bound() const {
             if (!constraints_.has_upper_bound()) {
@@ -61,6 +62,8 @@ namespace utopia {
         virtual bool has_lower_bound() const { return constraints_.has_lower_bound(); }
 
         virtual bool has_upper_bound() const { return constraints_.has_upper_bound(); }
+
+        virtual bool has_empty_bounds() const { return constraints_.has_empty_bounds(); }
 
         virtual void fill_empty_bounds(const Layout &layout) { return constraints_.fill_empty_bounds(layout); }
 

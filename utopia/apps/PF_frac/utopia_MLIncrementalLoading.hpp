@@ -144,17 +144,18 @@ namespace utopia {
             if (mprgp_smoother_) {
                 tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
             } else if (hjsmn_smoother_) {
-                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
-                    std::make_shared<Factorization<Matrix, Vector>>());
+                // auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
+                //     std::make_shared<Factorization<Matrix, Vector>>());
+
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());
+
                 qp->max_it(2);
                 // BlockQPSolver<Matrix, Vector> bqp(qp);
-                tr_strategy_fine   = std::make_shared<utopia::BlockQPSolver<Matrix, Vector> >(qp);   
-                // tr_strategy_fine->verbose(true); 
+                tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
+                // tr_strategy_fine->verbose(true);
+            } else {
+                tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
             }
-            else{
-                tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
-            }
-
 
             std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
             if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
@@ -169,7 +170,6 @@ namespace utopia {
             // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
             // ls->pc_type("bjacobi");
             // auto tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
-
 
             // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
