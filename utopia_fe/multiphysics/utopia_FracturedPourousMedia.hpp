@@ -479,6 +479,7 @@ namespace utopia {
 
             if (solver_type == "ksp") {
                 auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
+                ksp->max_it(6000);
                 ksp->ksp_type("bcgs");
                 ksp->pc_type("bjacobi");
                 solver_ptr = ksp;
@@ -553,7 +554,7 @@ namespace utopia {
             // solver_ptr->describe(std::cout);
             if (!solver_ptr->solve(A, rhs, x)) {
                 std::cerr << "[Error] failed to solve" << std::endl;
-                return false;
+                // return false;
             }
 
             disassemble_flow(x);
