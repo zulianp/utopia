@@ -13,9 +13,9 @@
     "check_derivatives" : false,
     "num_time_steps" : 500,
     "adjust_dt_on_failure": false,
-    "dt" : 200,
+    "dt" : 100,
     "second_phase_ts" : {
-        "dt" : 0.1,
+        "dt" : 1.0,
         "start_time" : 500.0
     },
     "shrinking_factor" : 0.5,
@@ -25,15 +25,15 @@
     "lambda":11.0400e3,
     "fracture_toughness":1.5,    
     "num_fracs" : 1000,
-    "uni_x_min": 2,
-    "uni_x_max": 18,
-    "uni_y_min": 2,
-    "uni_y_max": 4,
+    "uni_x_min": 1,
+    "uni_x_max": 19,
+    "uni_y_min": 1,
+    "uni_y_max": 5,
     "pow_dist_coef_length" : 2.8,
     "min_length" : 0.1, 
     "seed" : 3,
     "pressure0" : 10.0,
-    "pressure_increase_factor" : 1.0,
+    "pressure_increase_factor" : 2.5,
     "diff_controller" : {
         "spacing" : 1e-6,
         "hessian_from_grad" : false

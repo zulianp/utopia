@@ -24,10 +24,10 @@
     "fracture_toughness":1.5,
     "pressure0" : 10,
     "pressure_increase_factor" : 1,
-    "dt" : 500,
+    "dt" : 200,
     "second_phase_ts" : {
         "dt" :1.0,
-        "start_time" : 2500.0
+        "start_time" : 1000.0
     }, 
     "pressure_increase_factor" : 1.0,
     "diff_controller" : {
