@@ -1,6 +1,7 @@
 #include "utopia_FESpaceAdapter.hpp"
 
 #include "libmesh/elem.h"
+#include "libmesh/boundary_info.h"
 
 #include <numeric>
 #include <cmath>
