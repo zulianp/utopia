@@ -151,9 +151,16 @@ namespace utopia
     protected:
         void init_memory() override
         {
-            if(! this->init_){
+            const auto &layouts = this->local_level_layouts();
+            bool same_fine_lo =  this->init_ ; 
+
+            if(this->init_){
+                same_fine_lo = layouts.back().same(layout(this->memory_.x.back())); 
+            }
+
+            if(!same_fine_lo){
                 RMTRBase::init_memory();
-                const auto & layouts =  this->local_level_layouts();
+                // const auto & layouts =  this->local_level_layouts();
 
                 for(Scalar l = 0; l < this->n_levels(); l ++){
                     tr_subproblems_[l]->init_memory(layouts[l]);
