@@ -33,9 +33,12 @@ namespace utopia
             {
 
             }
+         
 
             void init_memory_impl(const std::vector<Layout> &layouts)
             {
+                box_bounds_.set_box_constraints(this->get_box_constraints()); 
+
                 constraints_memory_.init_memory(layouts);
                 tr_bounds_.init_memory(layouts);
                 box_bounds_.init_memory(layouts);
