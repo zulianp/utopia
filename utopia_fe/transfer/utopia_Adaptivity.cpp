@@ -202,7 +202,7 @@ void Adaptivity::constraint_matrix(const libMesh::MeshBase &mesh,
 
         if (pos == dof_constraints_.end()) {
 
-          M.c_set(dof, dof, 1.0);
+          //M.c_set(dof, dof, 1.0);
 
           continue;
         }
@@ -302,9 +302,9 @@ void Adaptivity::compute_constraints(libMesh::DofConstraints &constraints,
         const auto *parent = elem->parent();
         libmesh_assert(parent);
 
-        elem->build_side_ptr(my_side, s);
+        //elem->build_side_ptr(my_side, s);
 
-        parent->build_side_ptr(parent_side, s);
+        //parent->build_side_ptr(parent_side, s);
 
         my_dof_indices.reserve(my_side->n_nodes());
 
@@ -472,7 +472,7 @@ void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh,
 
   std::cout << "Adaptivity::compute_boundary_nodes::Begin " << std::endl;
 
-  auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
+  //auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
   std::vector<int> dirichlet_id, index_local;
 
@@ -514,15 +514,15 @@ void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh,
       const libMesh::dof_id_type node_dof =
           node->dof_number(sys_number, var_number, 0);
 
-      if (on_boundary.count(node->id()) &&
-          dof_map.is_constrained_dof(node_dof)) {
+      // if (on_boundary.count(node->id()) &&
+      //     dof_map.is_constrained_dof(node_dof)) {
 
-        index_local.push_back(node_dof);
+      //   index_local.push_back(node_dof);
 
-        index.push_back(node_dof);
+      //   index.push_back(node_dof);
 
-        // std::cout<<node_dof<<std::endl;
-      }
+      //   // std::cout<<node_dof<<std::endl;
+      // }
 
       // }
 
@@ -625,9 +625,9 @@ void Adaptivity::compute_boundary_nodes(const libMesh::MeshBase &mesh,
             const libMesh::dof_id_type node_dof =
                 node->dof_number(sys_number, var_number, 0);
 
-            if (on_boundary.count(node->id()) &&
-                dof_map.is_constrained_dof(node_dof))
-              index.push_back(node_dof);
+          //   if (on_boundary.count(node->id()) &&
+          //       dof_map.is_constrained_dof(node_dof))
+          //     index.push_back(node_dof);
           }
         }
       }
@@ -691,13 +691,13 @@ void Adaptivity::compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh,
           const auto *parent = elem->parent();
           libmesh_assert(parent);
 
-          elem->build_side_ptr(my_side, s);
+          // elem->build_side_ptr(my_side, s);
 
-          parent->build_side_ptr(parent_side, s);
+          // parent->build_side_ptr(parent_side, s);
 
-          my_dof_indices.reserve(my_side->n_nodes());
+          //my_dof_indices.reserve(my_side->n_nodes());
 
-          parent_dof_indices.reserve(parent_side->n_nodes());
+          //parent_dof_indices.reserve(parent_side->n_nodes());
 
           dof_map.dof_indices(my_side.get(), my_dof_indices, var_num);
 
@@ -750,7 +750,7 @@ void Adaptivity::compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh,
   }
   // std::cout<<"Adaptivity::compute_boundary_nodes::Begin "<<std::endl;
 
-  auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
+  // auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
   std::vector<int> dirichlet_id, index_local, tmp;
 
@@ -840,17 +840,17 @@ void Adaptivity::compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh,
               const libMesh::dof_id_type node_dof =
                   node->dof_number(sys_number, var_number, 0);
 
-              if (on_boundary.count(node->id()) &&
-                  dof_map.is_constrained_dof(node_dof)) {
+              // if (on_boundary.count(node->id()) &&
+              //     dof_map.is_constrained_dof(node_dof)) {
 
-                auto check_2 =
-                    (std::find(tmp.begin(), tmp.end(), node_dof) != tmp.end());
+              //   auto check_2 =
+              //       (std::find(tmp.begin(), tmp.end(), node_dof) != tmp.end());
 
-                if (!check_2) {
-                  tmp.push_back(node_dof);
-                }
-                // std::cout<<"tmp"<<node_dof<<std::endl;
-              }
+              //   if (!check_2) {
+              //     tmp.push_back(node_dof);
+              //   }
+              //   // std::cout<<"tmp"<<node_dof<<std::endl;
+              // }
             }
           }
         }
