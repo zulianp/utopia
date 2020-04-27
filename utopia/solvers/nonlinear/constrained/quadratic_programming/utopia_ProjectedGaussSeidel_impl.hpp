@@ -2,6 +2,7 @@
 #define UTOPIA_PROJECTED_GAUSS_SEIDEL_IMPL_HPP
 
 #include "utopia_Algorithms.hpp"
+#include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_ProjectedGaussSeidelSweep.hpp"
 #include "utopia_make_unique.hpp"
@@ -79,8 +80,8 @@ namespace utopia {
         if (this->has_bound()) {
             while (it++ < n_sweeps) {
                 step(A, b, x);
-                std::cout << "--------------------------------------------- sweep "
-                             "--------------------------------- \n";
+                // std::cout << "--------------------------------------------- sweep "
+                //              "--------------------------------- \n";
             }
         } else {
             while (unconstrained_step(A, b, x) && it++ < n_sweeps) {
@@ -471,7 +472,9 @@ namespace utopia {
                 });
             }
 
-            d_inv = 1. / d;
+            // d_inv = 1. / d;
+
+            e_pseudo_inv(d, d_inv, 0.0);
         }
     }
 

@@ -483,6 +483,23 @@ namespace utopia {
                 ksp->ksp_type("bcgs");
                 ksp->pc_type("bjacobi");
                 solver_ptr = ksp;
+            } else if (solver_type == "mg") {
+                int n_levels = 2;
+                in.get("n_levels", n_levels);
+
+                auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>();
+                auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+
+                auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
+                mg->algebraic().fix_semidefinite_operators(true);
+
+                mg->init(pourous_matrix_.space(), n_levels);
+                mg->max_it(1);
+
+                auto cg = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+                cg->verbose(true);
+                cg->set_preconditioner(mg);
+                solver_ptr = cg;
             }
 
             in.get("solver", *solver_ptr);
