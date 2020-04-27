@@ -142,10 +142,15 @@ namespace utopia
     private:
         void init_memory() override
         {
-            if(! this->init_){
-                RMTR::init_memory();
+            const auto &layouts = this->local_level_layouts();
+            bool same_fine_lo =  this->init_ ; 
 
-                const auto &layouts = this->local_level_layouts();
+            if(this->init_){
+                same_fine_lo = layouts.back().same(layout(this->memory_.x.back())); 
+            }
+
+            if(!same_fine_lo){
+                RMTR::init_memory();
                 MLConstraints::init_memory(layouts);
 
                 const SizeType fine_level = this->n_levels()-1;

@@ -44,7 +44,7 @@ namespace utopia
                 }
             }
 
-            void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
+            void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & /*delta_fine*/)
             {
                 auto finer_level = level + 1;
                 Scalar I_inf_norm = this->transfer_[level]->projection_inf_norm();
@@ -70,6 +70,7 @@ namespace utopia
                 this->help_[finer_level] = constraints_memory_.active_upper[finer_level] - x_finer_level;
                 Scalar min_val = min(this->help_[finer_level]);
                 Scalar upper_multiplier = 1.0/I_inf_norm * min_val;
+
                 {
                     auto d_x      = const_device_view(x_level);
                     parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i) -> Scalar

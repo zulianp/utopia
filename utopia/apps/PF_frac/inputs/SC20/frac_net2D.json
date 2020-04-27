@@ -19,6 +19,7 @@
     "use_constant_pressure": true,
     "lambda":5.52e3,
     "mu":11.0400e3,
+    "length_scale": 0.04, 
     "fracture_toughness":1.5,    
     "num_fracs" : 100,
     "pow_dist_coef_length" : 2.7,
