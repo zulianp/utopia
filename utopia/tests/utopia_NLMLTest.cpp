@@ -180,7 +180,7 @@ namespace utopia
 		            auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER> >(n_levels_);
 
 		            // Set TR-QP strategies
-		            rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 		            // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
 		            rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -203,7 +203,7 @@ namespace utopia
 			in.set("stol", 1e-14);
 			in.set("delta_min", 1e-13);
 			in.set("max-it", 20);
-			in.set("verbose", true);
+			in.set("verbose", false);
 
 
             // RMTR specific parameters

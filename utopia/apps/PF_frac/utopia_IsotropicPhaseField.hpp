@@ -53,7 +53,6 @@ namespace utopia {
 
         class Parameters : public Configurable {
         public:
-
             void read(Input &in) override
             {
                 in.get("a", a);
@@ -130,8 +129,10 @@ namespace utopia {
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space)
         : space_(space), use_dense_hessian_(false), check_derivatives_(false)
         {
+            if(params_.length_scale==0){
+                params_.length_scale = 2.0 * space.mesh().min_spacing();
+            }
 
-            params_.length_scale = 2.0 * space.mesh().min_spacing();
 
             // this computation follows eq. 50 from "On penalization in variational phase-field models of britlle fracture, Gerasimov, Lorenzis"
             if(params_.use_penalty_irreversibility)

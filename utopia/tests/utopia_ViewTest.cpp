@@ -479,7 +479,7 @@ namespace utopia {
 
             //t_{ijkl} = m_{ij} * m_{kl}
             t = tensor_product<0, 1, 2, 3>(m1, m1);
-            disp(t);
+            // disp(t);
 
             // t_{ijkl} = m_{ik} * m_{jl} ==
             // t_{ikjl} = m_{ij} * m_{kl}
@@ -487,10 +487,10 @@ namespace utopia {
 
             // m2_{ij} = t_{ijkl} * m_{kl}
             m2 = contraction(t, m1);
-            disp(m2);
+            // disp(m2);
 
             Scalar val = inner(m1, contraction(tensor_product<0, 2, 1, 3>(m1, m1), m1));
-            disp(val);
+            // disp(val);
 
             Tensor3x3x3x3<Scalar> t_mult = t * t;
 
