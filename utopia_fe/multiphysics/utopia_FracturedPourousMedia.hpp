@@ -501,6 +501,14 @@ namespace utopia {
                 cg->verbose(true);
                 cg->set_preconditioner(mg);
                 solver_ptr = cg;
+            } else if (solver_type == "cggs") {
+                auto cg = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+                cg->max_it(20000);
+                auto pgs = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                pgs->max_it(40);
+
+                cg->set_preconditioner(pgs);
+                solver_ptr = cg;
             }
 
             in.get("solver", *solver_ptr);
