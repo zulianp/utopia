@@ -6,6 +6,7 @@ list(APPEND APPS_MODULES
     gpu_assembler
     cpu_assembler
     PF_frac
+    fe
 )
 
 set(LOCAL_HEADERS "")

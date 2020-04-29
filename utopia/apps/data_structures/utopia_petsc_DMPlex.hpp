@@ -1,29 +1,27 @@
 #ifndef UTOPIA_PETSC_DM_PLEX_HPP
 #define UTOPIA_PETSC_DM_PLEX_HPP
 
-
 #include "utopia_StructuredGrid.hpp"
-#include "utopia_petsc_DM.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_petsc_DM.hpp"
 
 #include "utopia_Algorithms.hpp"
 
-#include <cassert>
 #include <petscdmplex.h>
-
+#include <cassert>
 
 namespace utopia {
 
-    template<class Point, class IntArray>
+    template <class Point, class IntArray>
     class PetscDMPlex;
 
-    template<class Point, class IntArray>
+    template <class Point, class IntArray>
     class PetscDMPlex : public PetscDMBase {
     public:
         // using Super = utopia::StructuredGrid<Point, IntArray>;
 
-        using SizeType  = typename Traits<IntArray>::ValueType;
-        using Scalar    = typename Traits<Point>::Scalar;
+        using SizeType = typename Traits<IntArray>::ValueType;
+        using Scalar = typename Traits<Point>::Scalar;
         using NodeIndex = utopia::ArrayView<SizeType>;
 
         // class Elements {
@@ -63,31 +61,26 @@ namespace utopia {
         //     return utopia::make_unique<Elements>(this->raw_type());
         // }
 
-        void wrap(DM &dm, const bool delegate_ownership) override
-        {
+        void wrap(DM &dm, const bool delegate_ownership) override {
             PetscDMBase::wrap(dm, delegate_ownership);
             init_from_dm(dm);
         }
 
-        PetscDMPlex(const PetscCommunicator &comm)
-        : PetscDMBase(comm) {}
+        PetscDMPlex(const PetscCommunicator &comm) : PetscDMBase(comm) {}
 
-        PetscDMPlex(DM &dm, const bool delegate_ownership)
-        {
-            wrap(dm, delegate_ownership);
-        }
+        PetscDMPlex(DM &dm, const bool delegate_ownership) { wrap(dm, delegate_ownership); }
 
-        bool read(const Path &path, const bool interpolate = false)
-        {
+        bool read(const Path &path, const bool interpolate = false) {
             PetscErrorCode ierr = 0;
 
             const auto ext = path.extension();
 
-            if(ext == "e") {
+            if (ext == "e") {
                 this->destroy_dm();
 
-                PetscBool p_inter = interpolate? PETSC_TRUE : PETSC_FALSE;
-                ierr = DMPlexCreateExodusFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type()); assert(ierr == 0);
+                PetscBool p_inter = interpolate ? PETSC_TRUE : PETSC_FALSE;
+                ierr = DMPlexCreateExodusFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type());
+                assert(ierr == 0);
             } else {
                 return false;
             }
@@ -95,58 +88,113 @@ namespace utopia {
             return ierr == 0;
         }
 
-        void read(Input &in) override
-        {
+        void read(Input &in) override {
+            this->destroy_dm();
+
             init_default();
 
-            // const SizeType n = this->dims().size();
-            // assert(n > 0); //IMPLEMENT ME for dynamically sized arrays
+            PetscErrorCode ierr = 0;
+            std::string type = "box";
+            SizeType dim = 2;
+            bool simplex = false;
+            bool interpolate = false;
+            Scalar lower[3] = {0, 0, 0};
+            Scalar upper[3] = {1, 1, 1};
+            SizeType faces[3] = {2, 2, 2};
+            Scalar refinement_limit = 0.0;
 
-            // const char coord_names[3] = {'x', 'y', 'z'};
+            in.get("type", type);
+            in.get("dim", dim);
+            in.get("simplex", simplex);
 
-            // std::string n_str   = "n?";
-            // std::string min_str = "?_min";
-            // std::string max_str = "?_max";
+            in.get("x_min", lower[0]);
+            in.get("y_min", lower[1]);
+            in.get("z_min", lower[2]);
 
-            // for(SizeType d = 0; d < n; ++d) {
-            //     const char coord = coord_names[d];
+            in.get("x_max", upper[0]);
+            in.get("y_max", upper[1]);
+            in.get("z_max", upper[2]);
 
-            //     n_str[1]   = coord;
-            //     min_str[0] = coord;
-            //     max_str[0] = coord;
+            in.get("nx", faces[0]);
+            in.get("ny", faces[1]);
+            in.get("nz", faces[2]);
+            in.get("refinement_limit", refinement_limit);
 
-            //     in.get(n_str,   this->dims()[d]);
-            //     in.get(min_str, this->box_min()[d]);
-            //     in.get(max_str, this->box_max()[d]);
-            // }
+            if (type == "box") {
+                ierr = DMPlexCreateBoxMesh(this->comm().get(),
+                                           dim,
+                                           simplex ? PETSC_TRUE : PETSC_FALSE,
+                                           faces,
+                                           lower,
+                                           upper,
+                                           nullptr,
+                                           interpolate ? PETSC_TRUE : PETSC_FALSE,
+                                           &this->raw_type());
+                assert(ierr == 0);
+            } else if (type == "file") {
+                std::string path;
+                in.get("path", path);
 
-            // this->destroy_dm();
-            // create_uniform(
-            //     comm().get(),
-            //     this->dims(),
-            //     this->box_min(),
-            //     this->box_max(),
-            //     type_override_,
-            //     this->n_components(),
-            //     this->raw_type()
-            // );
+                if (path.empty()) {
+                    std::cerr << "[Error] empty path" << std::endl;
+                    return;
+                }
 
-            ///re-initialize mirror just to be safe (it is cheap anyway)
-            update_mirror();
+                if (!this->read(path.c_str())) {
+                    std::cerr << "[Error] bad path: " << path << std::endl;
+                    return;
+                }
+            }
+
+            ierr = PetscObjectSetName((PetscObject)raw_type(), "Mesh");
+
+            partition(refinement_limit);
         }
 
-        void update_mirror()
-        {
-            init_from_dm(raw_type());
-        }
+        // const SizeType n = this->dims().size();
+        // assert(n > 0); //IMPLEMENT ME for dynamically sized arrays
+
+        // const char coord_names[3] = {'x', 'y', 'z'};
+
+        // std::string n_str   = "n?";
+        // std::string min_str = "?_min";
+        // std::string max_str = "?_max";
+
+        // for(SizeType d = 0; d < n; ++d) {
+        //     const char coord = coord_names[d];
+
+        //     n_str[1]   = coord;
+        //     min_str[0] = coord;
+        //     max_str[0] = coord;
+
+        //     in.get(n_str,   this->dims()[d]);
+        //     in.get(min_str, this->box_min()[d]);
+        //     in.get(max_str, this->box_max()[d]);
+        // }
+
+        // this->destroy_dm();
+        // create_uniform(
+        //     comm().get(),
+        //     this->dims(),
+        //     this->box_min(),
+        //     this->box_max(),
+        //     type_override_,
+        //     this->n_components(),
+        //     this->raw_type()
+        // );
+
+        /// re-initialize mirror just to be safe (it is cheap anyway)
+        //     update_mirror();
+        // }
+
+        void update_mirror() { init_from_dm(raw_type()); }
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        std::unique_ptr<PetscDMPlex> uniform_refine() const
-        {
+        std::unique_ptr<PetscDMPlex> uniform_refine() const {
             auto fine = utopia::make_unique<PetscDMPlex>(comm());
             PetscDMBase::refine(raw_type(), comm().get(), fine->raw_type());
 
-            //This does not transfer automatically for some reason
+            // This does not transfer automatically for some reason
             // DMPlexElementType elem_type;
             // DMPlexGetElementType(raw_type(), &elem_type);
             // DMPlexSetElementType(fine->raw_type(), elem_type);
@@ -216,16 +264,14 @@ namespace utopia {
     private:
         // DMPlexElementType type_override_;
 
-        void init_default()
-        {
+        void init_default() {
             // device::fill(10, this->dims());
             // device::fill(0,  this->box_min());
             // device::fill(1,  this->box_max());
             // this->set_n_components(1);
         }
 
-        void init_from_mirror()
-        {
+        void init_from_mirror() {
             // this->destroy_dm();
             // create_uniform(
             //     comm().get(),
@@ -238,9 +284,8 @@ namespace utopia {
             // );
         }
 
-        void init_from_dm(DM dm)
-        {
-            MPI_Comm mpi_comm = PetscObjectComm((PetscObject) dm);
+        void init_from_dm(DM dm) {
+            MPI_Comm mpi_comm = PetscObjectComm((PetscObject)dm);
             comm().set(mpi_comm);
 
             PetscInt dof_range_begin, dof_range_end;
@@ -271,8 +316,48 @@ namespace utopia {
             // }
         }
 
-    };
+        void partition(const Scalar &refinement_limit) {
+            PetscErrorCode ierr = 0;
+            PetscPartitioner part;
+            DM refined_mesh = NULL;
+            DM distributed_mesh = NULL;
 
-}
+            auto *dm = &raw_type();
 
-#endif //UTOPIA_PETSC_DM_PLEX_HPP
+            /* Refine mesh using a volume constraint */
+            if (refinement_limit > 0.0) {
+                ierr = DMPlexSetRefinementLimit(*dm, refinement_limit);
+                assert(ierr == 0);
+                ierr = DMRefine(*dm, this->comm().get(), &refined_mesh);
+                assert(ierr == 0);
+                if (refined_mesh) {
+                    const char *name;
+
+                    ierr = PetscObjectGetName((PetscObject)*dm, &name);
+                    assert(ierr == 0);
+                    ierr = PetscObjectSetName((PetscObject)refined_mesh, name);
+                    assert(ierr == 0);
+                    ierr = DMDestroy(dm);
+                    assert(ierr == 0);
+                    *dm = refined_mesh;
+                }
+            }
+            /* Distribute mesh over processes */
+
+            ierr = DMPlexGetPartitioner(*dm, &part);
+            assert(ierr == 0);
+            ierr = PetscPartitionerSetFromOptions(part);
+            assert(ierr == 0);
+            ierr = DMPlexDistribute(*dm, 0, NULL, &distributed_mesh);
+            assert(ierr == 0);
+            if (distributed_mesh) {
+                ierr = DMDestroy(dm);
+                assert(ierr == 0);
+                *dm = distributed_mesh;
+            }
+        }
+    };  // namespace utopia
+
+}  // namespace utopia
+
+#endif  // UTOPIA_PETSC_DM_PLEX_HPP
