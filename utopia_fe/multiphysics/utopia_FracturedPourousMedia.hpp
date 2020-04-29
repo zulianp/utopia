@@ -481,7 +481,8 @@ namespace utopia {
                 auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
                 ksp->max_it(6000);
                 ksp->ksp_type("bcgs");
-                ksp->pc_type("bjacobi");
+                // ksp->pc_type("bjacobi");
+                ksp->set_preconditioner(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>());
                 solver_ptr = ksp;
             } else if (solver_type == "mg") {
                 int n_levels = 2;
@@ -499,6 +500,14 @@ namespace utopia {
                 auto cg = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
                 cg->verbose(true);
                 cg->set_preconditioner(mg);
+                solver_ptr = cg;
+            } else if (solver_type == "cggs") {
+                auto cg = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+                cg->max_it(20000);
+                auto pgs = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                pgs->max_it(40);
+
+                cg->set_preconditioner(pgs);
                 solver_ptr = cg;
             }
 
