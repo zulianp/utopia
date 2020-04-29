@@ -481,8 +481,8 @@ namespace utopia {
                 auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
                 ksp->max_it(6000);
                 ksp->ksp_type("bcgs");
-                // ksp->pc_type("bjacobi");
-                ksp->set_preconditioner(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>());
+                ksp->pc_type("bjacobi");
+                // ksp->set_preconditioner(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>());
                 solver_ptr = ksp;
             } else if (solver_type == "mg") {
                 int n_levels = 2;
