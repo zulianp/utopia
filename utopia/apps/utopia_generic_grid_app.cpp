@@ -4,6 +4,7 @@
 #include "petscfe.h"
 #include "utopia_Algorithms.hpp"
 #include "utopia_AppRunner.hpp"
+#include "utopia_MPITimeStatistics.hpp"
 #include "utopia_Rename.hpp"
 #include "utopia_StructuredGrid.hpp"
 #include "utopia_Views.hpp"
@@ -86,9 +87,19 @@ namespace utopia {
 
     void dmplex_test(Input &in) {
         PetscCommunicator comm;
+        MPITimeStatistics stats(comm);
+
+        stats.start();
+
         PetscDMPlex<V, I> dmplex(comm);
         dmplex.read(in);
+
+        stats.stop_collect_and_restart("dmplex-setup");
+
         dmplex.write("mesh.vtu");
+
+        stats.stop_and_collect("vtu-write");
+        stats.describe(std::cout);
 
         // return;
 
