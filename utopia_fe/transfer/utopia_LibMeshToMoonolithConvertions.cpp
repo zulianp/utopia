@@ -33,7 +33,7 @@ namespace utopia {
             }
         }
 
-        auto lo = layout(out.comm(), n_local_rows, n_local_cols, rows, cols);
+        auto lo = layout(comm, n_local_rows, n_local_cols, rows, cols);
         out.sparse(lo, d_nnz, o_nnz);
 
         {
