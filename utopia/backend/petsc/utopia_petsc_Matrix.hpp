@@ -125,6 +125,7 @@ namespace utopia {
         using Super = utopia::Tensor<PetscMatrix, 2>;
         using Super::Super;
         using MatrixLayout = typename Traits<PetscMatrix>::MatrixLayout;
+        using IndexArray = typename Traits<PetscMatrix>::IndexArray;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -318,6 +319,18 @@ namespace utopia {
                        layout.size(1),
                        nnz_d_block,
                        nnz_o_block);
+        }
+
+        inline void sparse(const MatrixLayout &layout, const IndexArray &d_nnz, const IndexArray &o_nnz) {
+            comm_ = layout.comm();
+            matij_init(comm().get(),
+                       MATAIJ,
+                       layout.local_size(0),
+                       layout.local_size(1),
+                       layout.size(0),
+                       layout.size(1),
+                       d_nnz,
+                       o_nnz);
         }
 
         inline void dense(const MatrixLayout &layout, const Scalar &val = 0.0) {
@@ -762,8 +775,8 @@ namespace utopia {
                         SizeType cols_local,
                         SizeType rows_global,
                         SizeType cols_global,
-                        const std::vector<SizeType> &d_nnz,
-                        const std::vector<SizeType> &o_nnz);
+                        const IndexArray &d_nnz,
+                        const IndexArray &o_nnz);
 
         template <class Int>
         void matij_init(MPI_Comm comm,

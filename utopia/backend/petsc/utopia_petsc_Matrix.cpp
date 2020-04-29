@@ -771,8 +771,8 @@ namespace utopia {
                                  PetscInt cols_local,
                                  PetscInt rows_global,
                                  PetscInt cols_global,
-                                 const std::vector<PetscInt> &d_nnz,
-                                 const std::vector<PetscInt> &o_nnz) {
+                                 const IndexArray &d_nnz,
+                                 const IndexArray &o_nnz) {
         destroy();
 
         check_error(MatCreate(comm, &raw_type()));
