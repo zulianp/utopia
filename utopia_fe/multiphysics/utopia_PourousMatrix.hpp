@@ -67,6 +67,12 @@ namespace utopia {
                 }
             });
 
+            const SizeType n_constrained_dofs = sum(is_constrained_);
+
+            if (is_constrained_.comm().rank() == 0) {
+                std::cout << "[Mortar] n_constrained_dofs " << n_constrained_dofs << std::endl;
+            }
+
             if (export_constrained_) {
                 write("constrained.e", space, is_constrained_);
                 write("unconstrained.e", space, is_unconstrained_);
