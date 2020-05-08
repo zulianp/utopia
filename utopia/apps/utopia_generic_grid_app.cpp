@@ -11,6 +11,7 @@
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DMPlex.hpp"
+#include "utopia_petsc_DMPlex_FunctionSpace.hpp"
 #include "utopia_ui.hpp"
 
 namespace utopia {
@@ -108,12 +109,27 @@ namespace utopia {
 
         DMSetNumFields(dmplex.raw_type(), num_fields);
 
-        PetscFE fe;
-        PetscFECreateDefault(dmplex.comm().get(), dim, 1, PETSC_TRUE, nullptr, qorder, &fe);
-        PetscFESetName(fe, "c");
-        DMSetField(dmplex.raw_type(), 0, nullptr, (PetscObject)fe);
-        DMCreateDS(dmplex.raw_type());
-        PetscFEDestroy(&fe);
+        // Important to specifiy all mesh dim 0, 1, 2, 3
+        PetscInt num_comp[4] = {1, 0, 0, 0};
+        PetscInt num_dofs[4] = {1, 0, 0, 0};
+
+        PetscSection section = nullptr;
+        DMPlexCreateSection(
+            dmplex.raw_type(), nullptr, num_comp, num_dofs, 0, nullptr, nullptr, nullptr, nullptr, &section);
+
+        PetscSectionSetFieldName(section, 0, "u");
+        DMSetLocalSection(dmplex.raw_type(), section);
+        PetscSectionDestroy(&section);
+        DMSetUp(dmplex.raw_type());
+
+        // v.comm().root_print("dofs = " + std::to_string(dmplex.n_dofs()));
+
+        // PetscFE fe;
+        // PetscFECreateDefault(dmplex.comm().get(), dim, 1, PETSC_TRUE, nullptr, qorder, &fe);
+        // PetscFESetName(fe, "c");
+        // DMSetField(dmplex.raw_type(), 0, nullptr, (PetscObject)fe);
+        // DMCreateDS(dmplex.raw_type());
+        // PetscFEDestroy(&fe);
 
         // DMPlexCreateClosureIndex(dmplex.raw_type(), nullptr);
 
@@ -169,14 +185,12 @@ namespace utopia {
         dmplex.create_vector(v);
         v.set(1.0);
 
-        v.comm().root_print(v.size());
+        v.comm().root_print("dofs = " + std::to_string(v.size()));
 
         utopia::rename("X", v);
 
         // dmplex.write("prova.vtu");//, v);
         dmplex.write("prova.vtu", v);
-
-        // PetscSectionDestroy(&section);
     }
 
     UTOPIA_REGISTER_APP(dmplex_test);

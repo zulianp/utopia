@@ -24,6 +24,9 @@ namespace utopia {
         using Scalar = typename Traits<Point>::Scalar;
         using NodeIndex = utopia::ArrayView<SizeType>;
 
+        using Device = utopia::Device<PETSC>;
+        using Comm = utopia::PetscCommunicator;
+
         // class Elements {
         // public:
         //     Elements(DM dm)
