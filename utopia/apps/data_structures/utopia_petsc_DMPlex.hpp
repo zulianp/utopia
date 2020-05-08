@@ -160,6 +160,30 @@ namespace utopia {
                 }
             }
 
+            bool extrude = false;
+            in.get("extrude", extrude);
+
+            if (extrude) {
+                SizeType extrude_layers = 1;
+                Scalar extrude_height = 1;
+                bool extrude_sort = false;
+
+                in.get("extrude_layers", extrude_layers);
+                in.get("extrude_height", extrude_height);
+                in.get("extrude_sort", extrude_sort);
+
+                DM extrude_dm = nullptr;
+                DMPlexExtrude(raw_type(),
+                              extrude_layers,
+                              extrude_height,
+                              extrude_sort ? PETSC_TRUE : PETSC_FALSE,
+                              interpolate ? PETSC_TRUE : PETSC_FALSE,
+                              &extrude_dm);
+
+                this->destroy_dm();
+                this->raw_type() = extrude_dm;
+            }
+
             ierr = PetscObjectSetName((PetscObject)raw_type(), "Mesh");
 
             partition(refinement_limit);

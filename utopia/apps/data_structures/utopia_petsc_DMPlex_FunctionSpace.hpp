@@ -12,8 +12,8 @@
 
 namespace utopia {
 
-    template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
-    class FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_, UniVarElem_> : public Configurable {
+    template <class Point_, class IntArray_, int NComponents_>
+    class FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_> : public Configurable {
     public:
         // concrete types
         using Vector = utopia::PetscVector;
@@ -23,14 +23,11 @@ namespace utopia {
         // from template arg list
         using Point = Point_;
         using Mesh = utopia::PetscDMPlex<Point_, IntArray_>;
-        using Shape = UniVarElem_;
-        using Elem = MultiVariateElem<UniVarElem_, NComponents_>;
         static const int NComponents = NComponents_;
         // static const int Dim = Mesh::StaticDim;
 
         using NodeIndex = typename Mesh::NodeIndex;
 
-        using MemType = typename Elem::MemType;
         using Scalar = typename Mesh::Scalar;
         using SizeType = typename Mesh::SizeType;
 
@@ -38,11 +35,9 @@ namespace utopia {
         using Device = typename Mesh::Device;
 
         using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
-        using DofMapping = utopia::DofMapping<Mesh, UniVarElem_, NComponents_>;
-        static const int NDofs = DofMapping::NDofs;
 
         template <int NSubVars>
-        using Subspace = FunctionSpace<Mesh, NSubVars, UniVarElem_>;
+        using Subspace = FunctionSpace<Mesh, NSubVars>;
 
         //////////////////////////////////////////
 
@@ -198,8 +193,8 @@ namespace utopia {
 
         const ViewDevice &view_device() const { return *this; }
 
-        FunctionSpace<Mesh, 1, UniVarElem_> subspace(const SizeType &i) const {
-            FunctionSpace<Mesh, 1, UniVarElem_> space(mesh_, subspace_id_ + i);
+        FunctionSpace<Mesh, 1> subspace(const SizeType &i) const {
+            FunctionSpace<Mesh, 1> space(mesh_, subspace_id_ + i);
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i < NComponents);
 
@@ -210,14 +205,14 @@ namespace utopia {
         }
 
         template <int NVars>
-        void subspace(const SizeType &i, FunctionSpace<Mesh, NVars, UniVarElem_> &space) const {
+        void subspace(const SizeType &i, FunctionSpace<Mesh, NVars> &space) const {
             space.set_mesh(mesh_);
             space.set_subspace_id(subspace_id_ + i);
         }
 
         template <int NVars>
-        FunctionSpace<Mesh, NVars, UniVarElem_> vector_subspace(const SizeType &i) const {
-            FunctionSpace<Mesh, NVars, UniVarElem_> space(mesh_, subspace_id_ + i);
+        FunctionSpace<Mesh, NVars> vector_subspace(const SizeType &i) const {
+            FunctionSpace<Mesh, NVars> space(mesh_, subspace_id_ + i);
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i + NVars < NComponents);
             // assert(subspace_id_ + i < mesh_->n_components());
@@ -238,61 +233,17 @@ namespace utopia {
             return std::move(fine_space);
         }
 
-        // template<class F>
-        // void sample(Vector &v, F f, const int c = 0)
-        // {
-        //     auto r = v.range();
-        //     // auto n = r.extent() * NComponents;
-        //     assert(!v.empty());
-
-        //     // Write<Vector> w(v, utopia::AUTO);
-
-        //     // Point p;
-        //     // for(auto i = r.begin(); i < r.end(); ++i) {
-        //     //     this->mesh().node(i/NComponents, p);
-        //     //     v.set(i, f(p));
-        //     // }
-
-        //     //FIXME
-        //     {
-        //         auto space_view = view_device();
-        //         auto v_view = utopia::view_device(v);
-
-        //         Device::parallel_for(
-        //             this->element_range(),
-        //             UTOPIA_LAMBDA(const SizeType &i)
-        //         {
-        //             Elem e;
-        //             space_view.elem(i, e);
-
-        //             NodeIndex nodes;
-        //             space_view.mesh().nodes(i, nodes);
-        //             const SizeType n_nodes = nodes.size();
-
-        //             Point p;
-        //             for(SizeType i = 0; i < n_nodes; ++i) {
-        //                 auto idx = nodes[i] * mesh_->n_components() + subspace_id_;
-        //                 e.node(i, p);
-
-        //                 if(r.inside(idx)) {
-        //                     v_view.set(idx, f(p));
-        //                 }
-        //             }
-        //         });
-        //     }
-        // }
-
         inline void create_interpolation(const FunctionSpace &target, PetscMatrix &I) const {
             mesh_->create_interpolation(target.mesh(), I);
         }
 
         void read(Input &in) override {
-            // PetscCommunicator comm;
-            // if(!mesh_) {
-            //     allocate_mesh(comm);
-            // }
+            PetscCommunicator comm;
+            if (!mesh_) {
+                allocate_mesh(comm);
+            }
 
-            // mesh_->read(in);
+            mesh_->read(in);
             // elements_ = mesh_->elements_ptr();
         }
 
@@ -325,13 +276,15 @@ namespace utopia {
         // std::shared_ptr<typename Mesh::Elements> elements_;
         // std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
         SizeType subspace_id_;
+
+        void allocate_mesh(const Comm &comm) { mesh_ = std::make_shared<Mesh>(comm); }
     };
 
-    template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
-    using PetscDMPlexFunctionSpace = FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_, UniVarElem_>;
+    template <class Point_, class IntArray_, int NComponents_>
+    using PetscDMPlexFunctionSpace = FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_>;
 
-    template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
-    const int FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_, UniVarElem_>::NComponents;
+    template <class Point_, class IntArray_, int NComponents_>
+    const int FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_>::NComponents;
 
 }  // namespace utopia
 
