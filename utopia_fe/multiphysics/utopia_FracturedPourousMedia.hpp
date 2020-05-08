@@ -724,7 +724,8 @@ namespace utopia {
                       *x_f_[i]);
             }
 
-            if (report_) {
+            // FIXME (check for rank inside save)
+            if (report_ && x_m_->comm().rank() == 0) {
                 report_->save();
             }
 

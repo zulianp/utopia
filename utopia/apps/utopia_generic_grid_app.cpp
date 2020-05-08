@@ -101,7 +101,23 @@ namespace utopia {
         stats.stop_and_collect("vtu-write");
         stats.describe(std::cout);
 
-        // return;
+        PetscInt num_fields = 1;
+        PetscInt dim = dmplex.dim(), qorder = PETSC_DEFAULT;
+        in.get("dim", dim);
+        in.get("qorder", qorder);
+
+        DMSetNumFields(dmplex.raw_type(), num_fields);
+
+        PetscFE fe;
+        PetscFECreateDefault(dmplex.comm().get(), dim, 1, PETSC_TRUE, nullptr, qorder, &fe);
+        PetscFESetName(fe, "c");
+        DMSetField(dmplex.raw_type(), 0, nullptr, (PetscObject)fe);
+        DMCreateDS(dmplex.raw_type());
+        PetscFEDestroy(&fe);
+
+        // DMPlexCreateClosureIndex(dmplex.raw_type(), nullptr);
+
+        ///////////////////////////////////////////////////////////////////////////
 
         // // DMLabel *label = nullptr;
         // PetscInt num_fields = 2;
@@ -133,6 +149,11 @@ namespace utopia {
 
         // DMSetUp(dmplex.raw_type());
 
+        // PetscReal vert[3], J[3 * 3], invJ[3 * 3], detJ;
+        // DMPlexComputeCellGeometryFEM(dmplex.raw_type(), 0, nullptr, vert, J, invJ, &detJ);
+
+        // std::cout << "detJ: " << detJ << std::endl;
+
         // // PetscSection section;
         // // DMPlexCreateSection(dmplex.raw_type(), label, num_comp, num_dof, num_bc, bc_field, bc_comps, bc_points,
         // perm,
@@ -142,14 +163,18 @@ namespace utopia {
 
         // // dmplex.create_section()
 
-        // PetscVector v;
-        // dmplex.create_vector(v);
-        // v.set(1.0);
+        ///////////////////////////////////////////////////////////////////////////
 
-        // utopia::rename("X", v);
+        PetscVector v;
+        dmplex.create_vector(v);
+        v.set(1.0);
 
-        // // dmplex.write("prova.vtu");//, v);
-        // dmplex.write("prova.vtu", v);
+        v.comm().root_print(v.size());
+
+        utopia::rename("X", v);
+
+        // dmplex.write("prova.vtu");//, v);
+        dmplex.write("prova.vtu", v);
 
         // PetscSectionDestroy(&section);
     }
