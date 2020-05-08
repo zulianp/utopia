@@ -1,6 +1,10 @@
 
 #include "utopia_Base.hpp"
 
+#include "utopia_petsc_Base.hpp"
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)
+
 #include "petscfe.h"
 #include "utopia_Algorithms.hpp"
 #include "utopia_AppRunner.hpp"
@@ -137,6 +141,8 @@ namespace utopia {
         PetscReal real_coords[3] = {0.0, 0.0, 0.0};
         DMPlexReferenceToCoordinates(dmplex.raw_type(), 0, 1, ref_coords, real_coords);
 
+        // ref element is center in 0 with -1, 1 range
+
         std::cout << real_coords[0] << " " << real_coords[1] << " " << real_coords[2] << std::endl;
 
         PetscReal vert[3], J[3 * 3], invJ[3 * 3], detJ;
@@ -173,7 +179,7 @@ namespace utopia {
 
         std::cout << "num_points: " << num_points << std::endl;
 
-        for (PetscInt i = 0; i < num_points; ++i) {
+        for (PetscInt i = 1; i < num_points; ++i) {
             std::cout << points[i * 2] << " ";
         }
 
@@ -192,3 +198,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(dmplex_test);
 }  // namespace utopia
+
+#endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)
