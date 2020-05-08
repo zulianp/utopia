@@ -106,6 +106,7 @@ namespace utopia {
             in.get("type", type);
             in.get("dim", dim);
             in.get("simplex", simplex);
+            in.get("interpolate", interpolate);
 
             in.get("x_min", lower[0]);
             in.get("y_min", lower[1]);
@@ -143,6 +144,16 @@ namespace utopia {
                 if (!this->read(path.c_str())) {
                     std::cerr << "[Error] bad path: " << path << std::endl;
                     return;
+                }
+
+                if (interpolate) {
+                    DMPlexInterpolate(this->raw_type(), &this->raw_type());
+
+                    // DM dm = nullptr;
+                    // DMPlexInterpolate(this->raw_type(), &dm);
+                    // DMPlexCopyCoordinates(this->raw_type(), dm);
+                    // this->destroy_dm();
+                    // this->raw_type() = dm;
                 }
             }
 
@@ -213,53 +224,7 @@ namespace utopia {
         //     return std::move(cloned);
         // }
 
-        // static void get_corners(DM dm, IntArray &start, IntArray &extent)
-        // {
-        //     PetscErrorCode ierr;
-
-        //     utopia::ArrayView<PetscInt, 3> start_buff;
-        //     utopia::ArrayView<PetscInt, 3> extent_buff;
-
-        //     ierr = DMPlexGetCorners(dm,
-        //         &start_buff[0],  &start_buff[1],  &start_buff[2],
-        //         &extent_buff[0], &extent_buff[1], &extent_buff[2]
-        //     ); assert(ierr == 0);
-
-        //     const SizeType n = start.size();
-        //     for(SizeType d = 0; d < n; ++d) {
-        //         start[d]  = start_buff[d];
-        //         extent[d] = extent_buff[d];
-        //     }
-        // }
-
-        // static void get_ghost_corners(DM dm, IntArray &start, IntArray &extent)
-        // {
-        //     PetscErrorCode ierr;
-
-        //     utopia::ArrayView<PetscInt, 3> start_buff;
-        //     utopia::ArrayView<PetscInt, 3> extent_buff;
-
-        //     ierr = DMPlexGetGhostCorners(dm,
-        //         &start_buff[0],  &start_buff[1],  &start_buff[2],
-        //         &extent_buff[0], &extent_buff[1], &extent_buff[2]
-        //     ); assert(ierr == 0);
-
-        //     const SizeType n = start.size();
-
-        //     for(SizeType d = 0; d < n; ++d) {
-        //         start[d]  = start_buff[d];
-        //         extent[d] = extent_buff[d];
-        //     }
-        // }
-
-        // static SizeType get_dof(DM dm)
-        // {
-        //     PetscErrorCode ierr;
-
-        //     SizeType ret;
-        //     ierr = DMPlexGetDof(dm, &ret); assert(ierr == 0);
-        //     return ret;
-        // }
+        inline SizeType dim() const { return PetscDMBase::get_dimension(this->raw_type()); }
 
     private:
         // DMPlexElementType type_override_;
