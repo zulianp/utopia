@@ -91,6 +91,8 @@ namespace utopia {
     UTOPIA_REGISTER_APP(dmda_test);
 
     void dmplex_test(Input &in) {
+        using I = utopia::ArrayView<PetscInt, 4>;
+
         PetscCommunicator comm;
         MPITimeStatistics stats(comm);
 
@@ -111,7 +113,7 @@ namespace utopia {
         in.get("dim", dim);
         in.get("qorder", qorder);
 
-        DMSetNumFields(dmplex.raw_type(), num_fields);
+        dmplex.set_num_fields(num_fields);
 
         // Important to specifiy for all num_fields
         PetscInt num_comp[1] = {1};
@@ -119,14 +121,9 @@ namespace utopia {
         // Important to specifiy all mesh dim 0, 1, 2, 3
         PetscInt num_dofs[4] = {1, 1, 0, 0};
 
-        PetscSection section = nullptr;
-        DMPlexCreateSection(
-            dmplex.raw_type(), nullptr, num_comp, num_dofs, 0, nullptr, nullptr, nullptr, nullptr, &section);
-
-        PetscSectionSetFieldName(section, 0, "u");
-        DMSetLocalSection(dmplex.raw_type(), section);
-        PetscSectionDestroy(&section);
-        DMSetUp(dmplex.raw_type());
+        dmplex.create_section(num_comp, num_dofs);
+        dmplex.set_field_name(0, "u");
+        dmplex.set_up();
 
         PetscVector v;
         dmplex.create_vector(v);
@@ -141,20 +138,22 @@ namespace utopia {
         PetscReal real_coords[3] = {0.0, 0.0, 0.0};
         DMPlexReferenceToCoordinates(dmplex.raw_type(), 0, 1, ref_coords, real_coords);
 
-        // ref element is center in 0 with -1, 1 range
+        V ref({0.0, 0.0});
+        V physical;
+        dmplex.transform(0, ref, physical);
 
-        std::cout << real_coords[0] << " " << real_coords[1] << " " << real_coords[2] << std::endl;
+        disp(physical);
 
-        PetscReal vert[3], J[3 * 3], invJ[3 * 3], detJ;
-        DMPlexComputeCellGeometryFEM(dmplex.raw_type(), 0, nullptr, vert, J, invJ, &detJ);
+        // PetscReal vert[3], J[3 * 3], invJ[3 * 3], detJ;
+        // DMPlexComputeCellGeometryFEM(dmplex.raw_type(), 0, nullptr, vert, J, invJ, &detJ);
 
-        std::cout << "detJ: " << detJ << std::endl;
+        // std::cout << "detJ: " << detJ << std::endl;
 
-        DMPlexComputeCellGeometryAffineFEM(dmplex.raw_type(), 0, vert, J, invJ, &detJ);
+        // DMPlexComputeCellGeometryAffineFEM(dmplex.raw_type(), 0, vert, J, invJ, &detJ);
 
-        std::cout << "detJ: " << detJ << std::endl;
+        // std::cout << "detJ: " << detJ << std::endl;
 
-        comm.barrier();
+        // comm.barrier();
 
         // PetscVector coords;
         // coords.destroy();
@@ -170,30 +169,15 @@ namespace utopia {
 
         // VecView()
 
-        PetscInt num_points = 0;
-        PetscInt *points = nullptr;
+        // PetscInt num_points = 0;
+        // PetscInt *points = nullptr;
 
         PetscInt cell_num = 0;
         in.get("cell_num", cell_num);
-        DMPlexGetTransitiveClosure(dmplex.raw_type(), cell_num, PETSC_TRUE, &num_points, &points);
 
-        std::cout << "num_points: " << num_points << std::endl;
-
-        for (PetscInt i = 1; i < num_points; ++i) {
-            std::cout << points[i * 2] << " ";
-        }
-
-        std::cout << std::endl;
-
-        DMPlexRestoreTransitiveClosure(dmplex.raw_type(), 0, PETSC_TRUE, &num_points, &points);
-
-        PetscInt s, e;
-
-        PetscInt point = 4;
-        in.get("point", point);
-        DMPlexGetPointLocal(dmplex.raw_type(), point, &s, &e);
-
-        std::cout << "[" << s << ", " << e << ")" << std::endl;
+        ArrayView<PetscInt, 4> nodes;
+        dmplex.nodes_local(cell_num, nodes);
+        disp(nodes);
     }
 
     UTOPIA_REGISTER_APP(dmplex_test);
