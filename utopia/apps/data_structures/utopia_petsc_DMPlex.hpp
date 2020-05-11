@@ -15,54 +15,18 @@ namespace utopia {
     template <class Point, class IntArray>
     class PetscDMPlex;
 
-    template <class Point, class IntArray>
+    template <class Point_, class IntArray>
     class PetscDMPlex : public PetscDMBase {
     public:
         // using Super = utopia::StructuredGrid<Point, IntArray>;
 
+        using Point = Point_;
         using SizeType = typename Traits<IntArray>::ValueType;
         using Scalar = typename Traits<Point>::Scalar;
         using NodeIndex = utopia::ArrayView<SizeType>;
 
         using Device = utopia::Device<PETSC>;
         using Comm = utopia::PetscCommunicator;
-
-        // class Elements {
-        // public:
-        //     Elements(DM dm)
-        //     : dm_(dm)
-        //     {
-        //         DMPlexGetElements(dm_, &n_local_elem_, &n_nodes_x_elem_, &local_elem_);
-        //     }
-
-        //     ~Elements()
-        //     {
-        //         DMPlexRestoreElements(dm_, &n_local_elem_, &n_nodes_x_elem_, &local_elem_);
-        //     }
-
-        //     inline SizeType local_size() const
-        //     {
-        //         return n_local_elem_;
-        //     }
-
-        //     inline NodeIndex nodes_local(const SizeType &local_elem_idx) const
-        //     {
-        //         return NodeIndex(
-        //             &local_elem_[local_elem_idx * n_nodes_x_elem_],
-        //             n_nodes_x_elem_
-        //         );
-        //     }
-
-        // private:
-        //     DM dm_;
-        //     SizeType n_local_elem_, n_nodes_x_elem_;
-        //     const SizeType *local_elem_;
-        // };
-
-        // std::unique_ptr<Elements> make_elements() const
-        // {
-        //     return utopia::make_unique<Elements>(this->raw_type());
-        // }
 
         void wrap(DM &dm, const bool delegate_ownership) override {
             PetscDMBase::wrap(dm, delegate_ownership);

@@ -24,6 +24,7 @@ namespace utopia {
         using Point = Point_;
         using Mesh = utopia::PetscDMPlex<Point_, IntArray_>;
         static const int NComponents = NComponents_;
+        using Elem = MultiVariateElem<UniVarElem_, NComponents_>;
         // static const int Dim = Mesh::StaticDim;
 
         using NodeIndex = typename Mesh::NodeIndex;
@@ -126,6 +127,28 @@ namespace utopia {
             // elements_ = mesh_->elements_ptr();
         }
 
+        inline void elem(const SizeType &idx, Elem &e) const {
+            // FIXME
+            e.univar_elem().idx(idx);
+
+            ArrayView<SizeType, 3> nodes;
+            mesh_->nodes_local(idx, nodes);
+
+            const SizeType n = nodes.size();
+
+            Point p0, p1, p2;
+
+            if (n == 3) {
+                // mesh_->point(nodes[0], p0);
+                // mesh_->point(nodes[1], p1);
+                // mesh_->point(nodes[2], p2);
+
+                e.set(p0, p1, p2);
+            } else {
+                assert(false);
+            }
+        }
+
         bool write(const Path &path, const PetscVector &x) const { return mesh_->write(path, x); }
 
         inline bool empty() const { return static_cast<bool>(mesh_); }
@@ -153,7 +176,7 @@ namespace utopia {
         SizeType subspace_id_;
 
         void allocate_mesh(const Comm &comm) { mesh_ = std::make_shared<Mesh>(comm); }
-    };
+    };  // namespace utopia
 
     template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
     using PetscDMPlexFunctionSpace = FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_, UniVarElem_>;
