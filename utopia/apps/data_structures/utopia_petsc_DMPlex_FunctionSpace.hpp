@@ -12,8 +12,8 @@
 
 namespace utopia {
 
-    template <class Point_, class IntArray_, int NComponents_>
-    class FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_> : public Configurable {
+    template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
+    class FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_, UniVarElem_> : public Configurable {
     public:
         // concrete types
         using Vector = utopia::PetscVector;
@@ -37,112 +37,11 @@ namespace utopia {
         using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
 
         template <int NSubVars>
-        using Subspace = FunctionSpace<Mesh, NSubVars>;
+        using Subspace = FunctionSpace<Mesh, NSubVars, UniVarElem_>;
 
         //////////////////////////////////////////
 
         inline static constexpr int n_components() { return NComponents; }
-
-        // template<class DofIndex>
-        // void dofs(const SizeType &idx, DofIndex &dofs) const
-        // {
-        //     DofMapping::dofs(*mesh_, subspace_id_, idx, dofs);
-        // }
-
-        // template<class DofIndex>
-        // void dofs_local(const SizeType &idx, DofIndex &dofs) const
-        // {
-        //    DofMapping::dofs_local(*mesh_, subspace_id_, idx, dofs);
-        // }
-
-        // template<class ElementMatrix, class MatView>
-        // void add_matrix(
-        //     const Elem &e,
-        //     const ElementMatrix &el_mat,
-        //     MatView &mat) const
-        // {
-        //     DofMapping::add_matrix(*mesh_, subspace_id_, e, el_mat, mat);
-        // }
-
-        // template<class ElementVector, class VecView>
-        // void add_vector(
-        //     const Elem &e,
-        //     const ElementVector &el_vec,
-        //     VecView &vec) const
-        // {
-        //     DofMapping::add_vector(*mesh_, subspace_id_, e, el_vec, vec);
-        // }
-
-        // template<class ElementVector, class VecView>
-        // void set_vector(
-        //     const Elem &e,
-        //     const ElementVector &el_vec,
-        //     VecView &vec) const
-        // {
-        //     DofMapping::set_vector(*mesh_, subspace_id_, e, el_vec, vec);
-        // }
-
-        // template<class VectorView, class Values>
-        // void local_coefficients(
-        //     const Elem &e,
-        //     const VectorView &vec,
-        //     Values &values) const
-        // {
-        //     DofMapping::local_coefficients(*mesh_, subspace_id_, e, vec, values);
-        // }
-
-        // template<class VectorView, class Values>
-        // void local_coefficients(
-        //     const Elem &e,
-        //     const VectorView &vec,
-        //     const SizeType &var,
-        //     Values &values) const
-        // {
-        //     DofMapping::local_coefficients_for_var(*mesh_, e, vec, subspace_id_ +var, values);
-        // }
-
-        // bool on_boundary(const SizeType &elem_idx) const { return mesh_->on_boundary(elem_idx); }
-
-        // template <class... Args>
-        // void emplace_dirichlet_condition(Args &&... args) {
-        //     dirichlet_bcs_.push_back(utopia::make_unique<DirichletBC>(*this, std::forward<Args>(args)...));
-        // }
-
-        // void apply_constraints(PetscMatrix &mat, PetscVector &vec) const {
-        //     for (const auto &bc : dirichlet_bcs_) {
-        //         bc->apply(mat, vec);
-        //     }
-        // }
-
-        // void apply_constraints(PetscMatrix &mat) const {
-        //     for (const auto &bc : dirichlet_bcs_) {
-        //         bc->apply(mat);
-        //     }
-        // }
-
-        // void apply_constraints(PetscVector &vec) const {
-        //     for (const auto &bc : dirichlet_bcs_) {
-        //         bc->apply(vec);
-        //     }
-        // }
-
-        // void copy_at_constrained_dofs(const PetscVector &in, PetscVector &vec) const {
-        //     for (const auto &bc : dirichlet_bcs_) {
-        //         bc->copy(in, vec);
-        //     }
-        // }
-
-        // void apply_zero_constraints(PetscVector &vec) const {
-        //     for (const auto &bc : dirichlet_bcs_) {
-        //         bc->apply_zero(vec);
-        //     }
-        // }
-
-        // void build_constraints_markers(PetscVector &vec) const {
-        //     for (const auto &bc : dirichlet_bcs_) {
-        //         bc->apply_val(vec, 1.0);
-        //     }
-        // }
 
         //////////////////////////////////////////
 
@@ -164,12 +63,6 @@ namespace utopia {
 
         const PetscCommunicator &comm() const { return mesh_->comm(); }
 
-        // Range dof_range() const { return mesh_->dof_range(); }
-
-        // SizeType n_dofs() const { return mesh_->n_nodes() * NComponents; }
-
-        // UTOPIA_INLINE_FUNCTION constexpr SizeType n_local_dofs() const { return mesh_->n_local_dofs(); }
-
         void set_mesh(const std::shared_ptr<Mesh> &mesh) {
             mesh_ = mesh;
             // elements_ = mesh_->elements_ptr();
@@ -177,24 +70,10 @@ namespace utopia {
 
         void set_subspace_id(const SizeType &i) { subspace_id_ = i; }
 
-        // void set_dirichlet_conditions(const std::vector<std::shared_ptr<DirichletBC>> &conds)
-        // {
-        //     dirichlet_bcs_ = conds;
-        // }
-
-        // void reset_bc() { dirichlet_bcs_.clear(); }
-
-        // inline Range element_range() const {
-        //     assert(elements_);
-        //     return elements_->range();
-        // }
-
-        // inline void elem(const SizeType &idx, Elem &e) const { MakeElem<FunctionSpace, Elem>::apply(*this, idx, e); }
-
         const ViewDevice &view_device() const { return *this; }
 
-        FunctionSpace<Mesh, 1> subspace(const SizeType &i) const {
-            FunctionSpace<Mesh, 1> space(mesh_, subspace_id_ + i);
+        FunctionSpace<Mesh, 1, UniVarElem_> subspace(const SizeType &i) const {
+            FunctionSpace<Mesh, 1, UniVarElem_> space(mesh_, subspace_id_ + i);
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i < NComponents);
 
@@ -205,14 +84,14 @@ namespace utopia {
         }
 
         template <int NVars>
-        void subspace(const SizeType &i, FunctionSpace<Mesh, NVars> &space) const {
+        void subspace(const SizeType &i, FunctionSpace<Mesh, NVars, UniVarElem_> &space) const {
             space.set_mesh(mesh_);
             space.set_subspace_id(subspace_id_ + i);
         }
 
         template <int NVars>
-        FunctionSpace<Mesh, NVars> vector_subspace(const SizeType &i) const {
-            FunctionSpace<Mesh, NVars> space(mesh_, subspace_id_ + i);
+        FunctionSpace<Mesh, NVars, UniVarElem_> vector_subspace(const SizeType &i) const {
+            FunctionSpace<Mesh, NVars, UniVarElem_> space(mesh_, subspace_id_ + i);
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i + NVars < NComponents);
             // assert(subspace_id_ + i < mesh_->n_components());
@@ -251,10 +130,6 @@ namespace utopia {
 
         inline bool empty() const { return static_cast<bool>(mesh_); }
 
-        // inline SizeType component(const SizeType &idx) const {
-        //     return mesh_->n_components() == 1 ? 0 : idx % mesh_->n_components();
-        // }
-
         FunctionSpace() : subspace_id_(0) {}
 
         FunctionSpace(const PetscCommunicator &comm, const SizeType subspace_id = 0) : subspace_id_(subspace_id) {
@@ -280,11 +155,11 @@ namespace utopia {
         void allocate_mesh(const Comm &comm) { mesh_ = std::make_shared<Mesh>(comm); }
     };
 
-    template <class Point_, class IntArray_, int NComponents_>
-    using PetscDMPlexFunctionSpace = FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_>;
+    template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
+    using PetscDMPlexFunctionSpace = FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_, UniVarElem_>;
 
-    template <class Point_, class IntArray_, int NComponents_>
-    const int FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_>::NComponents;
+    template <class Point_, class IntArray_, int NComponents_, class UniVarElem_>
+    const int FunctionSpace<PetscDMPlex<Point_, IntArray_>, NComponents_, UniVarElem_>::NComponents;
 
 }  // namespace utopia
 
