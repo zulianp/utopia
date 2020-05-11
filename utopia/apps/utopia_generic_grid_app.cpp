@@ -16,6 +16,7 @@
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DMPlex.hpp"
 #include "utopia_petsc_DMPlex_FunctionSpace.hpp"
+// #include "utopia_petsc_FE.hpp"
 #include "utopia_ui.hpp"
 
 namespace utopia {
@@ -134,10 +135,6 @@ namespace utopia {
         utopia::rename("X", v);
         dmplex.write("prova.vtu", v);
 
-        PetscReal ref_coords[3] = {0.0, 0.0, 0.0};
-        PetscReal real_coords[3] = {0.0, 0.0, 0.0};
-        DMPlexReferenceToCoordinates(dmplex.raw_type(), 0, 1, ref_coords, real_coords);
-
         V ref({0.0, 0.0});
         V physical;
         dmplex.transform(0, ref, physical);
@@ -178,6 +175,8 @@ namespace utopia {
         ArrayView<PetscInt, 4> nodes;
         dmplex.nodes_local(cell_num, nodes);
         disp(nodes);
+
+        // PetscFiniteElement elem(dmplex.raw_type(), )
     }
 
     UTOPIA_REGISTER_APP(dmplex_test);
