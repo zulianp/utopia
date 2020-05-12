@@ -1,6 +1,10 @@
 
 #include "utopia_Base.hpp"
 
+#include "utopia_petsc_Base.hpp"
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)
+
 #include "petscfe.h"
 #include "utopia_Algorithms.hpp"
 #include "utopia_AppRunner.hpp"
@@ -11,6 +15,8 @@
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DMPlex.hpp"
+#include "utopia_petsc_DMPlex_FunctionSpace.hpp"
+// #include "utopia_petsc_FE.hpp"
 #include "utopia_ui.hpp"
 
 namespace utopia {
@@ -86,6 +92,8 @@ namespace utopia {
     UTOPIA_REGISTER_APP(dmda_test);
 
     void dmplex_test(Input &in) {
+        using I = utopia::ArrayView<PetscInt, 4>;
+
         PetscCommunicator comm;
         MPITimeStatistics stats(comm);
 
@@ -106,78 +114,72 @@ namespace utopia {
         in.get("dim", dim);
         in.get("qorder", qorder);
 
-        DMSetNumFields(dmplex.raw_type(), num_fields);
+        dmplex.set_num_fields(num_fields);
 
-        PetscFE fe;
-        PetscFECreateDefault(dmplex.comm().get(), dim, 1, PETSC_TRUE, nullptr, qorder, &fe);
-        PetscFESetName(fe, "c");
-        DMSetField(dmplex.raw_type(), 0, nullptr, (PetscObject)fe);
-        DMCreateDS(dmplex.raw_type());
-        PetscFEDestroy(&fe);
+        // Important to specifiy for all num_fields
+        PetscInt num_comp[1] = {1};
 
-        // DMPlexCreateClosureIndex(dmplex.raw_type(), nullptr);
+        // Important to specifiy all mesh dim 0, 1, 2, 3
+        PetscInt num_dofs[4] = {1, 1, 0, 0};
 
-        ///////////////////////////////////////////////////////////////////////////
+        dmplex.create_section(num_comp, num_dofs);
+        dmplex.set_field_name(0, "u");
+        dmplex.set_up();
 
-        // // DMLabel *label = nullptr;
-        // PetscInt num_fields = 2;
-        // // PetscInt num_comp[1] = {1};
-        // // PetscInt num_dof[1]  = {1};
-        // // PetscInt num_bc = 0;
-        // // PetscInt *bc_field = nullptr;
-        // // IS *bc_comps = nullptr,* bc_points = nullptr, perm = nullptr;
+        PetscVector v;
+        dmplex.create_vector(v);
+        v.set(1.0);
 
-        // // DMGetStratumIS(dm, "marker", 1, &bcPointIS[0]);
+        v.comm().root_print("dofs = " + std::to_string(v.size()));
 
-        // DMSetNumFields(dmplex.raw_type(), num_fields);
+        utopia::rename("X", v);
+        dmplex.write("prova.vtu", v);
 
-        // PetscFE fe[2];
-        // PetscFECreateDefault(dmplex.comm().get(), 2, 1, PETSC_TRUE, nullptr, PETSC_DEFAULT, &fe[0]);
-        // PetscFESetName(fe[0], "c");
-        // DMSetField(dmplex.raw_type(), 0, nullptr, (PetscObject)fe[0]);
+        V ref({0.0, 0.0});
+        V physical;
+        dmplex.transform(0, ref, physical);
 
-        // PetscFECreateDefault(dmplex.comm().get(), 2, 2, PETSC_TRUE, nullptr, PETSC_DEFAULT, &fe[1]);
-        // PetscFESetName(fe[1], "u");
-
-        // DMSetField(dmplex.raw_type(), 1, nullptr, (PetscObject)fe[1]);
-        // DMCreateDS(dmplex.raw_type());
-
-        // PetscFEDestroy(&fe[0]);
-        // PetscFEDestroy(&fe[1]);
-
-        // // DMPlexCreateClosureIndex(dmplex.raw_type(), nullptr);
-
-        // DMSetUp(dmplex.raw_type());
+        disp(physical);
 
         // PetscReal vert[3], J[3 * 3], invJ[3 * 3], detJ;
         // DMPlexComputeCellGeometryFEM(dmplex.raw_type(), 0, nullptr, vert, J, invJ, &detJ);
 
         // std::cout << "detJ: " << detJ << std::endl;
 
-        // // PetscSection section;
-        // // DMPlexCreateSection(dmplex.raw_type(), label, num_comp, num_dof, num_bc, bc_field, bc_comps, bc_points,
-        // perm,
-        // // &section); PetscSectionSetFieldName(section, 0, "u");
-        // // // DMSetLocalSection(dmplex.raw_type(), section);
-        // // DMSetGlobalSection(dmplex.raw_type(), section);
+        // DMPlexComputeCellGeometryAffineFEM(dmplex.raw_type(), 0, vert, J, invJ, &detJ);
 
-        // // dmplex.create_section()
+        // std::cout << "detJ: " << detJ << std::endl;
 
-        ///////////////////////////////////////////////////////////////////////////
+        // comm.barrier();
 
-        PetscVector v;
-        dmplex.create_vector(v);
-        v.set(1.0);
+        // PetscVector coords;
+        // coords.destroy();
+        // DMGetCoordinates(dmplex.raw_type(), &coords.raw_type());
 
-        v.comm().root_print(v.size());
+        // DMGetCoordinatesLocal(dmplex.raw_type(), &coords.raw_type());
 
-        utopia::rename("X", v);
+        // if (comm.rank() == 0) disp(coords);
+        // comm.barrier();
+        // if (comm.rank() == 1) disp(coords);
 
-        // dmplex.write("prova.vtu");//, v);
-        dmplex.write("prova.vtu", v);
+        // coords.raw_type() = nullptr;
 
-        // PetscSectionDestroy(&section);
+        // VecView()
+
+        // PetscInt num_points = 0;
+        // PetscInt *points = nullptr;
+
+        PetscInt cell_num = 0;
+        in.get("cell_num", cell_num);
+
+        ArrayView<PetscInt, 4> nodes;
+        dmplex.nodes_local(cell_num, nodes);
+        disp(nodes);
+
+        // PetscFiniteElement elem(dmplex.raw_type(), )
     }
 
     UTOPIA_REGISTER_APP(dmplex_test);
 }  // namespace utopia
+
+#endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)

@@ -5,6 +5,7 @@ list(APPEND APPS_MODULES
     data_structures
     gpu_assembler
     cpu_assembler
+    cpu_assembler/dmplex
     PF_frac
     fe
 )

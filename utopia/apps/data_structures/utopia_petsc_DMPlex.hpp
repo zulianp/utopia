@@ -15,60 +15,28 @@ namespace utopia {
     template <class Point, class IntArray>
     class PetscDMPlex;
 
-    template <class Point, class IntArray>
+    template <class Point_, class IntArray>
     class PetscDMPlex : public PetscDMBase {
     public:
         // using Super = utopia::StructuredGrid<Point, IntArray>;
 
+        using Point = Point_;
         using SizeType = typename Traits<IntArray>::ValueType;
         using Scalar = typename Traits<Point>::Scalar;
         using NodeIndex = utopia::ArrayView<SizeType>;
 
-        // class Elements {
-        // public:
-        //     Elements(DM dm)
-        //     : dm_(dm)
-        //     {
-        //         DMPlexGetElements(dm_, &n_local_elem_, &n_nodes_x_elem_, &local_elem_);
-        //     }
-
-        //     ~Elements()
-        //     {
-        //         DMPlexRestoreElements(dm_, &n_local_elem_, &n_nodes_x_elem_, &local_elem_);
-        //     }
-
-        //     inline SizeType local_size() const
-        //     {
-        //         return n_local_elem_;
-        //     }
-
-        //     inline NodeIndex nodes_local(const SizeType &local_elem_idx) const
-        //     {
-        //         return NodeIndex(
-        //             &local_elem_[local_elem_idx * n_nodes_x_elem_],
-        //             n_nodes_x_elem_
-        //         );
-        //     }
-
-        // private:
-        //     DM dm_;
-        //     SizeType n_local_elem_, n_nodes_x_elem_;
-        //     const SizeType *local_elem_;
-        // };
-
-        // std::unique_ptr<Elements> make_elements() const
-        // {
-        //     return utopia::make_unique<Elements>(this->raw_type());
-        // }
+        using Device = utopia::Device<PETSC>;
+        using Comm = utopia::PetscCommunicator;
 
         void wrap(DM &dm, const bool delegate_ownership) override {
             PetscDMBase::wrap(dm, delegate_ownership);
             init_from_dm(dm);
         }
 
-        PetscDMPlex(const PetscCommunicator &comm) : PetscDMBase(comm) {}
+        PetscDMPlex(const PetscCommunicator &comm) : PetscDMBase(comm), interpolated_(false) {}
 
-        PetscDMPlex(DM &dm, const bool delegate_ownership) { wrap(dm, delegate_ownership); }
+        // FIXME interpolated_
+        PetscDMPlex(DM &dm, const bool delegate_ownership) : interpolated_(false) { wrap(dm, delegate_ownership); }
 
         bool read(const Path &path, const bool interpolate = false) {
             PetscErrorCode ierr = 0;
@@ -97,7 +65,6 @@ namespace utopia {
             std::string type = "box";
             SizeType dim = 2;
             bool simplex = false;
-            bool interpolate = false;
             Scalar lower[3] = {0, 0, 0};
             Scalar upper[3] = {1, 1, 1};
             SizeType faces[3] = {2, 2, 2};
@@ -106,7 +73,7 @@ namespace utopia {
             in.get("type", type);
             in.get("dim", dim);
             in.get("simplex", simplex);
-            in.get("interpolate", interpolate);
+            in.get("interpolate", interpolated_);
 
             in.get("x_min", lower[0]);
             in.get("y_min", lower[1]);
@@ -129,7 +96,7 @@ namespace utopia {
                                            lower,
                                            upper,
                                            nullptr,
-                                           interpolate ? PETSC_TRUE : PETSC_FALSE,
+                                           interpolated_ ? PETSC_TRUE : PETSC_FALSE,
                                            &this->raw_type());
                 assert(ierr == 0);
             } else if (type == "file") {
@@ -146,7 +113,7 @@ namespace utopia {
                     return;
                 }
 
-                if (interpolate) {
+                if (interpolated_) {
                     DMPlexInterpolate(this->raw_type(), &this->raw_type());
 
                     // DM dm = nullptr;
@@ -155,6 +122,30 @@ namespace utopia {
                     // this->destroy_dm();
                     // this->raw_type() = dm;
                 }
+            }
+
+            bool extrude = false;
+            in.get("extrude", extrude);
+
+            if (extrude) {
+                SizeType extrude_layers = 1;
+                Scalar extrude_height = 1;
+                bool extrude_sort = false;
+
+                in.get("extrude_layers", extrude_layers);
+                in.get("extrude_height", extrude_height);
+                in.get("extrude_sort", extrude_sort);
+
+                DM extrude_dm = nullptr;
+                DMPlexExtrude(raw_type(),
+                              extrude_layers,
+                              extrude_height,
+                              extrude_sort ? PETSC_TRUE : PETSC_FALSE,
+                              interpolated_ ? PETSC_TRUE : PETSC_FALSE,
+                              &extrude_dm);
+
+                this->destroy_dm();
+                this->raw_type() = extrude_dm;
             }
 
             ierr = PetscObjectSetName((PetscObject)raw_type(), "Mesh");
@@ -226,8 +217,81 @@ namespace utopia {
 
         inline SizeType dim() const { return PetscDMBase::get_dimension(this->raw_type()); }
 
+        inline bool interpolated() const {
+            // DMPlexInterpolatedFlag ret;
+            // DMPlexIsInterpolated(this->raw_type(), &ret);
+            // return DMPLEX_INTERPOLATED_INVALID != ret;
+            return interpolated_;
+        }
+
+        inline void set_num_fields(const SizeType &num) { DMSetNumFields(this->raw_type(), num); }
+
+        void create_section(const SizeType *num_comp, const SizeType *num_dofs) {
+            PetscSection section = nullptr;
+            DMPlexCreateSection(
+                this->raw_type(), nullptr, num_comp, num_dofs, 0, nullptr, nullptr, nullptr, nullptr, &section);
+
+            DMSetLocalSection(this->raw_type(), section);
+            PetscSectionDestroy(&section);
+        }
+
+        void set_field_name(const SizeType &field, const std::string &name) {
+            PetscSection section = nullptr;
+            DMGetLocalSection(this->raw_type(), &section);
+            PetscSectionSetFieldName(section, field, name.c_str());
+        }
+
+        inline void set_up() { DMSetUp(this->raw_type()); }
+
+        inline void transform(const SizeType &cell, const Point &ref, Point &physical) const {
+            DMPlexReferenceToCoordinates(this->raw_type(), cell, 1, &ref[0], &physical[0]);
+        }
+
+        template <typename IntArrayT>
+        inline void nodes(const SizeType &cell, IntArrayT &nodes) {
+            SizeType num_points = 0;
+            SizeType *points = nullptr;
+
+            DMPlexGetTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+
+            for (SizeType i = 1; i < num_points; ++i) {
+                nodes[i - 1] = points[i * 2];
+            }
+
+            DMPlexRestoreTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+        }
+
+        template <typename IntArrayT>
+        inline void nodes_local(const SizeType &cell, IntArrayT &nodes) {
+            SizeType num_points = 0;
+            SizeType *points = nullptr;
+
+            DMPlexGetTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+
+            SizeType end_dummy;
+            for (SizeType i = 1; i < num_points; ++i) {
+                DMPlexGetPointLocal(this->raw_type(), points[i * 2], &nodes[i - 1], &end_dummy);
+            }
+
+            DMPlexRestoreTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+        }
+
+        template <typename IntArrayT>
+        inline void cone(const SizeType &cell, IntArrayT &nodes) {
+            const SizeType *cone = nullptr;
+            DMPlexGetCone(this->raw_type(), cell, &cone);
+
+            SizeType num_faces = 0;
+            DMPlexGetConeSize(this->raw_type(), cell, &num_faces);
+
+            for (SizeType i = 0; i < num_faces; ++i) {
+                nodes[i] = cone[i];
+            }
+        }
+
     private:
         // DMPlexElementType type_override_;
+        bool interpolated_;
 
         void init_default() {
             // device::fill(10, this->dims());

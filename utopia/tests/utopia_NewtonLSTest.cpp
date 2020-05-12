@@ -239,5 +239,5 @@ namespace utopia {
 #endif  // WITH_PETSC
     }
 
-    UTOPIA_REGISTER_TEST_FUNCTION(newton_ls);
+    UTOPIA_REGISTER_TEST_FUNCTION_OPTIONAL(newton_ls);
 }  // namespace utopia

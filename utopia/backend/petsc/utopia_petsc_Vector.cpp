@@ -64,6 +64,7 @@ namespace utopia {
         if (is_null()) {
             UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
             VecCreate(comm, &vec_);
+            owned_ = true;
         } else {
             if (comm != PetscObjectComm((PetscObject)vec_) || !has_type(type)) {
                 destroy();
@@ -123,6 +124,7 @@ namespace utopia {
 
         assert(vec_ != nullptr);
         initialized_ = true;
+        owned_ = true;
 
         assert(is_consistent());
     }
@@ -214,6 +216,7 @@ namespace utopia {
 
         assert(vec_ != nullptr);
         initialized_ = true;
+        owned_ = true;
     }
 
     bool PetscVector::is_mpi() const {
@@ -288,6 +291,7 @@ namespace utopia {
         assert(vec_ != nullptr);
         set_initialized(true);
         assert(is_consistent());
+        update_mirror();
     }
 
     void PetscVector::convert_from(const Vec &vec) { copy_from(vec); }
@@ -562,4 +566,16 @@ namespace utopia {
     }
 
     void PetscVector::update_mirror() { comm_.set(communicator()); }
+
+    void PetscVector::wrap(Vec &v) {
+        assert(v);
+        vec_ = v;
+        owned_ = false;
+        // has to be
+        initialized_ = true;
+        immutable_ = false;
+
+        update_mirror();
+    }
+
 }  // namespace utopia
