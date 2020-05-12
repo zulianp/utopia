@@ -36,6 +36,7 @@ namespace utopia {
         using Device = typename Mesh::Device;
 
         using DirichletBC = utopia::DirichletBoundaryCondition<FunctionSpace>;
+        using MemType = utopia::Varying<>;
 
         template <int NSubVars>
         using Subspace = FunctionSpace<Mesh, NSubVars, UniVarElem_>;
@@ -51,6 +52,18 @@ namespace utopia {
         void create_vector(PetscVector &vec) const { mesh_->create_vector(vec); }
 
         void create_local_vector(PetscVector &vec) const { mesh_->create_local_vector(vec); }
+
+        static DeviceView<PetscMatrix, 2> assembly_view_device(PetscMatrix &mat) {
+            return DeviceView<PetscMatrix, 2>(mat, utopia::GLOBAL_ADD);
+        }
+
+        static DeviceView<PetscVector, 1> assembly_view_device(PetscVector &vec) {
+            return DeviceView<PetscVector, 1>(vec, utopia::GLOBAL_ADD);
+        }
+
+        static DeviceView<const PetscVector, 1> assembly_view_device(const PetscVector &vec) {
+            return DeviceView<const PetscVector, 1>(vec);
+        }
 
         void global_to_local(const PetscVector &global, PetscVector &local) const {
             mesh_->global_to_local(global, local);
@@ -129,17 +142,17 @@ namespace utopia {
             mesh_->read(in);
             mesh_->set_num_fields(1);
 
-            // Important to specifiy for all num_fields
-            SizeType num_comp[1] = {NComponents_};
+            // FIXME Important to specifiy for all num_fields (What does this field do exactly?)
+            SizeType num_comp[1] = {1};
 
             // int order = 1;
             // in.get("order", order);
 
             // Important to specifiy all mesh dim 0, 1, 2, 3
-            SizeType num_dofs[4] = {1, 0, 0, 0};
+            SizeType num_dofs[4] = {NComponents_, 0, 0, 0};
 
             if (Elem::Order == 2) {
-                num_dofs[1] = 1;
+                num_dofs[1] = NComponents_;
             }
 
             mesh_->create_section(num_comp, num_dofs);
@@ -172,6 +185,13 @@ namespace utopia {
             e.measure() *= 2.0;
         }
 
+        // inline SizeType component(const SizeType &idx) const {
+        //     const SizeType nc = mesh_->n_components();
+        //     return nc == 1 ? 0 : idx % nc;
+        // }
+
+        inline Range element_range() const { return mesh_->element_range(); }
+
         bool write(const Path &path, const PetscVector &x) const { return mesh_->write(path, x); }
 
         inline bool empty() const { return static_cast<bool>(mesh_); }
@@ -190,6 +210,44 @@ namespace utopia {
         void describe() const {
             assert(mesh_);
             mesh_->describe();
+        }
+
+        template <class Quadrature>
+        ShapeFunction<FunctionSpace, Quadrature> shape(const Quadrature &q) {
+            return ShapeFunction<FunctionSpace, Quadrature>(*this, q);
+        }
+
+        template <class Quadrature>
+        PhysicalGradient<FunctionSpace, Quadrature> shape_grad(const Quadrature &q) {
+            return PhysicalGradient<FunctionSpace, Quadrature>(*this, q);
+        }
+
+        template <class Quadrature>
+        PhysicalPoint<FunctionSpace, Quadrature> points(const Quadrature &q) {
+            return PhysicalPoint<FunctionSpace, Quadrature>(*this, q);
+        }
+
+        template <class Quadrature>
+        ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_shape_device(
+            const Quadrature &q) {
+            return ShapeFunction<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
+
+        template <class Quadrature>
+        PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_points_device(
+            const Quadrature &q) {
+            return PhysicalPoint<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
+
+        template <class Quadrature>
+        Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice> side_differential_device(
+            const Quadrature &q) {
+            return Differential<typename ViewDevice::Elem::Side, typename Quadrature::ViewDevice>(q.view_device());
+        }
+
+        template <class Quadrature>
+        Differential<FunctionSpace, Quadrature> differential(const Quadrature &q) {
+            return Differential<FunctionSpace, Quadrature>(*this, q);
         }
 
     private:

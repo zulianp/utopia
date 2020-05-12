@@ -219,6 +219,14 @@ namespace utopia {
 
         inline SizeType dim() const { return PetscDMBase::get_dimension(this->raw_type()); }
 
+        inline SizeType n_local_elements() const {
+            SizeType ret;
+            DMPlexGetHeightStratum(this->raw_type(), 0, nullptr, &ret);
+            return ret;
+        }
+
+        inline Range element_range() const { return Range(0, n_local_elements()); }
+
         inline bool interpolated() const {
             // DMPlexInterpolatedFlag ret;
             // DMPlexIsInterpolated(this->raw_type(), &ret);

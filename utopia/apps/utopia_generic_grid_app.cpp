@@ -94,8 +94,12 @@ namespace utopia {
     void dmplex_test(Input &in) {
         using I = utopia::ArrayView<PetscInt, 4>;
         using Mesh = utopia::PetscDMPlex<V, I>;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, 1, utopia::Tri3<PetscReal>>;
-        using Elem = typename FunctionSpace::Elem;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, 2, utopia::Tri3<PetscReal>>;
+        using Elem = FunctionSpace::Elem;
+        using Quadrature = utopia::Quadrature<Elem, 2>;
+        using Device = FunctionSpace::Device;
+        using ElementMatrix = utopia::StaticMatrix<PetscScalar, 3, 3>;
+        // using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
 
         PetscCommunicator comm;
         MPITimeStatistics stats(comm);
@@ -145,6 +149,51 @@ namespace utopia {
         disp("-------------");
         disp(p2);
         disp("-------------");
+
+        Quadrature q;
+        auto grad = space.shape_grad(q);
+        auto fun = space.shape(q);
+        auto dx = space.differential(q);
+
+        PetscMatrix H;
+        space.create_matrix(H);
+
+        // Laplacian laplacian;
+
+        {
+            auto space_view = space.view_device();
+            auto H_view = space.assembly_view_device(H);
+            auto grad_view = grad.view_device();
+            auto fun_view = fun.view_device();
+            auto dx_view = dx.view_device();
+
+            Device::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                Elem e;
+                space_view.elem(i, e);
+
+                auto g = grad_view.make(e);
+                auto dx = dx_view.make(e);
+
+                ElementMatrix el_mat;
+                el_mat.set(0.0);
+
+                for (PetscInt qp = 0; qp < Quadrature::NPoints; ++qp) {
+                    for (PetscInt i = 0; i < 3; ++i) {
+                        for (PetscInt j = 0; j < 3; ++j) {
+                            el_mat(i, j) += inner(g(i, qp), g(j, qp)) * dx(qp);
+                        }
+                    }
+                }
+
+                // disp(g(0, 0));
+                disp("-------------");
+                disp(el_mat);
+                // space_view.add_matrix(e, el_mat, H_view);
+            });
+        }
+
+        stats.stop_and_collect("assembly");
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         stats.describe(std::cout);
     }
