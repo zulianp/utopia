@@ -110,6 +110,7 @@ namespace utopia {
         void init_empty() {
             vec_ = nullptr;
             initialized_ = false;
+            owned_ = true;
             immutable_ = false;
         }
 
@@ -136,6 +137,7 @@ namespace utopia {
             comm_ = std::move(other.comm_);
             vec_ = std::move(other.vec_);
             initialized_ = std::move(other.initialized_);
+            owned_ = std::move(other.owned_);
             ghost_values_ = std::move(other.ghost_values_);
             immutable_ = std::move(other.immutable_);
         }
@@ -431,12 +433,13 @@ namespace utopia {
         bool equals(const PetscVector &other, const Scalar &tol = 0.0) const override;
 
         ///////////////////////////////////////////////////////////////////////////
-        explicit PetscVector(const Layout &layout, const Scalar &val = 0.0) : vec_(nullptr), initialized_(false) {
+        explicit PetscVector(const Layout &layout, const Scalar &val = 0.0)
+            : vec_(nullptr), initialized_(false), owned_(true) {
             immutable_ = false;
             values(layout, val);
         }
 
-        inline PetscVector() : vec_(nullptr), initialized_(false) { immutable_ = false; }
+        inline PetscVector() : vec_(nullptr), initialized_(false), owned_(true) { immutable_ = false; }
 
         inline ~PetscVector() { destroy(); }
 
@@ -447,10 +450,12 @@ namespace utopia {
                 PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
                 ghost_values_ = other.ghost_values_;
+                owned_ = true;
                 comm_ = other.comm_;
             } else {
                 vec_ = nullptr;
                 initialized_ = false;
+                owned_ = true;
             }
 
             immutable_ = other.immutable_;
@@ -460,6 +465,7 @@ namespace utopia {
             : comm_(std::move(other.comm_)),
               vec_(std::move(other.vec_)),
               initialized_(std::move(other.initialized_)),
+              owned_(std::move(other.owned_)),
               ghost_values_(std::move(other.ghost_values_)),
               immutable_(std::move(other.immutable_)) {
             other.vec_ = nullptr;
@@ -526,6 +532,8 @@ namespace utopia {
                 return *this;
             }
 
+            assert(owned_);
+
             destroy();
 
             if (other.vec_) {
@@ -536,8 +544,10 @@ namespace utopia {
 
                 initialized_ = other.initialized_;
                 immutable_ = other.immutable_;
+                owned_ = true;
             } else {
                 initialized_ = false;
+                owned_ = true;
             }
 
             comm_ = other.comm_;
@@ -552,12 +562,14 @@ namespace utopia {
             destroy();
 
             initialized_ = other.initialized_;
+            owned_ = other.owned_;
             immutable_ = other.immutable_;
             vec_ = other.vec_;
             other.vec_ = nullptr;
             ghost_values_ = std::move(other.ghost_values_);
 
             other.initialized_ = false;
+            other.owned_ = false;
             other.immutable_ = false;
             comm_ = std::move(other.comm_);
             return *this;
@@ -565,11 +577,15 @@ namespace utopia {
 
         inline void destroy() {
             if (vec_) {
-                VecDestroy(&vec_);
+                if (owned_) {
+                    VecDestroy(&vec_);
+                }
+
                 vec_ = nullptr;
             }
 
             initialized_ = false;
+            owned_ = true;
             ghost_values_.clear();
         }
 
@@ -785,7 +801,7 @@ namespace utopia {
         void copy_data_to(Vec vec) const;
         void copy_data_from(Vec vec);
 
-        void wrap(Vec &mat);
+        void wrap(Vec &v);
 
         inline void ghosted(const SizeType &local_size,
                             const SizeType &global_size,
@@ -806,6 +822,7 @@ namespace utopia {
 
         Vec vec_;
         bool initialized_;
+        bool owned_;
 
         GhostValues ghost_values_;
 
