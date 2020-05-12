@@ -568,6 +568,8 @@ namespace utopia {
     void PetscVector::update_mirror() { comm_.set(communicator()); }
 
     void PetscVector::wrap(Vec &v) {
+        destroy();
+
         assert(v);
         vec_ = v;
         owned_ = false;

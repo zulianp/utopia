@@ -124,29 +124,42 @@ namespace utopia {
             }
 
             mesh_->read(in);
-            // elements_ = mesh_->elements_ptr();
+            mesh_->set_num_fields(1);
+
+            // Important to specifiy for all num_fields
+            SizeType num_comp[1] = {NComponents_};
+
+            // Important to specifiy all mesh dim 0, 1, 2, 3
+            SizeType num_dofs[4] = {1, 0, 0, 0};
+
+            mesh_->create_section(num_comp, num_dofs);
+
+            // dmplex.set_field_name(0, "u");
+
+            mesh_->set_up();
         }
 
-        inline void elem(const SizeType &idx, Elem &e) const {
-            // FIXME
-            e.univar_elem().idx(idx);
+        inline void elem(const SizeType &idx, Elem &mve) const {
+            // FIXME (make it for all elem types)
+            auto &e = mve.univar_elem();
+            e.idx(idx);
 
-            ArrayView<SizeType, 3> nodes;
-            mesh_->nodes_local(idx, nodes);
+            // DMPolytopeType ct;
+            // DMPlexGetCellType(mesh_->raw_type(), idx, &ct);
 
-            const SizeType n = nodes.size();
+            // std::cout << " DMPolytopeType: " << ct << std::endl;
 
-            Point p0, p1, p2;
+            DMPlexComputeCellGeometryAffineFEM(mesh_->raw_type(),
+                                               idx,
+                                               &e.translation()[0],
+                                               &e.jacobian().raw_type()[0],
+                                               &e.jacobian_inverse().raw_type()[0],
+                                               &e.measure());
 
-            if (n == 3) {
-                // mesh_->point(nodes[0], p0);
-                // mesh_->point(nodes[1], p1);
-                // mesh_->point(nodes[2], p2);
-
-                e.set(p0, p1, p2);
-            } else {
-                assert(false);
-            }
+            // reference size is changed from 2 to 1
+            e.jacobian() *= 2.0;
+            e.jacobian_inverse() *= 0.5;
+            e.measure() *= 2.0;
         }
 
         bool write(const Path &path, const PetscVector &x) const { return mesh_->write(path, x); }

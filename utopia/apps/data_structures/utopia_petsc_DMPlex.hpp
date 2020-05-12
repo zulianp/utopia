@@ -241,7 +241,10 @@ namespace utopia {
             PetscSectionSetFieldName(section, field, name.c_str());
         }
 
-        inline void set_up() { DMSetUp(this->raw_type()); }
+        inline void set_up() {
+            DMSetUp(this->raw_type());
+            init_coords();
+        }
 
         inline void transform(const SizeType &cell, const Point &ref, Point &physical) const {
             DMPlexReferenceToCoordinates(this->raw_type(), cell, 1, &ref[0], &physical[0]);
@@ -292,6 +295,7 @@ namespace utopia {
     private:
         // DMPlexElementType type_override_;
         bool interpolated_;
+        PetscVector coords_;
 
         void init_default() {
             // device::fill(10, this->dims());
@@ -311,6 +315,14 @@ namespace utopia {
             //     this->n_components(),
             //     this->raw_type()
             // );
+        }
+
+        void init_coords() {
+            Vec coords;
+            // DMGetCoordinates(dmplex.raw_type(), &coords.raw_type());
+            DMGetCoordinatesLocal(this->raw_type(), &coords);
+            // We do not need to delete the memory
+            coords_.wrap(coords);
         }
 
         void init_from_dm(DM dm) {

@@ -93,38 +93,24 @@ namespace utopia {
 
     void dmplex_test(Input &in) {
         using I = utopia::ArrayView<PetscInt, 4>;
+        using Mesh = utopia::PetscDMPlex<V, I>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, 1, utopia::Tri3<PetscReal>>;
+        using Elem = typename FunctionSpace::Elem;
 
         PetscCommunicator comm;
         MPITimeStatistics stats(comm);
 
+        ////////////////////////////////////////////////////////////
+
         stats.start();
 
-        PetscDMPlex<V, I> dmplex(comm);
-        dmplex.read(in);
+        FunctionSpace space(comm);
+        space.read(in);
+        auto &dmplex = space.mesh();
 
         stats.stop_collect_and_restart("dmplex-setup");
 
-        dmplex.write("mesh.vtu");
-
-        stats.stop_and_collect("vtu-write");
-        stats.describe(std::cout);
-
-        PetscInt num_fields = 1;
-        PetscInt dim = dmplex.dim(), qorder = PETSC_DEFAULT;
-        in.get("dim", dim);
-        in.get("qorder", qorder);
-
-        dmplex.set_num_fields(num_fields);
-
-        // Important to specifiy for all num_fields
-        PetscInt num_comp[1] = {1};
-
-        // Important to specifiy all mesh dim 0, 1, 2, 3
-        PetscInt num_dofs[4] = {1, 1, 0, 0};
-
-        dmplex.create_section(num_comp, num_dofs);
-        dmplex.set_field_name(0, "u");
-        dmplex.set_up();
+        ////////////////////////////////////////////////////////////
 
         PetscVector v;
         dmplex.create_vector(v);
@@ -132,51 +118,35 @@ namespace utopia {
 
         v.comm().root_print("dofs = " + std::to_string(v.size()));
 
+        stats.stop_collect_and_restart("create-vector");
+        ////////////////////////////////////////////////////////////
+
         utopia::rename("X", v);
         dmplex.write("prova.vtu", v);
 
-        V ref({0.0, 0.0});
-        V physical;
-        dmplex.transform(0, ref, physical);
+        stats.stop_and_collect("vtu-write");
 
-        disp(physical);
-
-        // PetscReal vert[3], J[3 * 3], invJ[3 * 3], detJ;
-        // DMPlexComputeCellGeometryFEM(dmplex.raw_type(), 0, nullptr, vert, J, invJ, &detJ);
-
-        // std::cout << "detJ: " << detJ << std::endl;
-
-        // DMPlexComputeCellGeometryAffineFEM(dmplex.raw_type(), 0, vert, J, invJ, &detJ);
-
-        // std::cout << "detJ: " << detJ << std::endl;
-
-        // comm.barrier();
-
-        // PetscVector coords;
-        // coords.destroy();
-        // DMGetCoordinates(dmplex.raw_type(), &coords.raw_type());
-
-        // DMGetCoordinatesLocal(dmplex.raw_type(), &coords.raw_type());
-
-        // if (comm.rank() == 0) disp(coords);
-        // comm.barrier();
-        // if (comm.rank() == 1) disp(coords);
-
-        // coords.raw_type() = nullptr;
-
-        // VecView()
-
-        // PetscInt num_points = 0;
-        // PetscInt *points = nullptr;
-
-        PetscInt cell_num = 0;
+        int cell_num = 0;
         in.get("cell_num", cell_num);
 
-        ArrayView<PetscInt, 4> nodes;
-        dmplex.nodes_local(cell_num, nodes);
-        disp(nodes);
+        Elem e;
+        space.elem(cell_num, e);
+        std::cout << e.measure() << std::endl;
 
-        // PetscFiniteElement elem(dmplex.raw_type(), )
+        V p0, p1, p2;
+        e.node(0, p0);
+        e.node(1, p1);
+        e.node(2, p2);
+
+        disp("-------------");
+        disp(p0);
+        disp("-------------");
+        disp(p1);
+        disp("-------------");
+        disp(p2);
+        disp("-------------");
+
+        stats.describe(std::cout);
     }
 
     UTOPIA_REGISTER_APP(dmplex_test);
