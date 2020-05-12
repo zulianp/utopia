@@ -123,14 +123,24 @@ namespace utopia {
                 allocate_mesh(comm);
             }
 
+            // FIXME
+            mesh_->simplex(true);
+
             mesh_->read(in);
             mesh_->set_num_fields(1);
 
             // Important to specifiy for all num_fields
             SizeType num_comp[1] = {NComponents_};
 
+            // int order = 1;
+            // in.get("order", order);
+
             // Important to specifiy all mesh dim 0, 1, 2, 3
             SizeType num_dofs[4] = {1, 0, 0, 0};
+
+            if (Elem::Order == 2) {
+                num_dofs[1] = 1;
+            }
 
             mesh_->create_section(num_comp, num_dofs);
 

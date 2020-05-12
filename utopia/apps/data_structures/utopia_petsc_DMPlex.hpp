@@ -33,10 +33,12 @@ namespace utopia {
             init_from_dm(dm);
         }
 
-        PetscDMPlex(const PetscCommunicator &comm) : PetscDMBase(comm), interpolated_(false) {}
+        PetscDMPlex(const PetscCommunicator &comm) : PetscDMBase(comm), interpolated_(false), simplex_(false) {}
 
         // FIXME interpolated_
-        PetscDMPlex(DM &dm, const bool delegate_ownership) : interpolated_(false) { wrap(dm, delegate_ownership); }
+        PetscDMPlex(DM &dm, const bool delegate_ownership) : interpolated_(false), simplex_(false) {
+            wrap(dm, delegate_ownership);
+        }
 
         bool read(const Path &path, const bool interpolate = false) {
             PetscErrorCode ierr = 0;
@@ -64,7 +66,7 @@ namespace utopia {
             PetscErrorCode ierr = 0;
             std::string type = "box";
             SizeType dim = 2;
-            bool simplex = false;
+
             Scalar lower[3] = {0, 0, 0};
             Scalar upper[3] = {1, 1, 1};
             SizeType faces[3] = {2, 2, 2};
@@ -72,7 +74,7 @@ namespace utopia {
 
             in.get("type", type);
             in.get("dim", dim);
-            in.get("simplex", simplex);
+            in.get("simplex", simplex_);
             in.get("interpolate", interpolated_);
 
             in.get("x_min", lower[0]);
@@ -91,7 +93,7 @@ namespace utopia {
             if (type == "box") {
                 ierr = DMPlexCreateBoxMesh(this->comm().get(),
                                            dim,
-                                           simplex ? PETSC_TRUE : PETSC_FALSE,
+                                           simplex_ ? PETSC_TRUE : PETSC_FALSE,
                                            faces,
                                            lower,
                                            upper,
@@ -292,9 +294,12 @@ namespace utopia {
             }
         }
 
+        inline void simplex(const bool simplex) { simplex_ = simplex; }
+
     private:
         // DMPlexElementType type_override_;
         bool interpolated_;
+        bool simplex_;
         PetscVector coords_;
 
         void init_default() {
