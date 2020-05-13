@@ -20,10 +20,13 @@ namespace utopia {
         using Matrix = utopia::PetscMatrix;
         using Comm = utopia::PetscCommunicator;
 
+        static const int Dim = UniVarElem_::Dim;
+
         // from template arg list
         using Point = Point_;
         using Mesh = utopia::PetscDMPlex<Point_, IntArray_>;
         static const int NComponents = NComponents_;
+        using Shape = UniVarElem_;
         using Elem = MultiVariateElem<UniVarElem_, NComponents_>;
         // static const int Dim = Mesh::StaticDim;
 
@@ -52,6 +55,27 @@ namespace utopia {
         void create_vector(PetscVector &vec) const { mesh_->create_vector(vec); }
 
         void create_local_vector(PetscVector &vec) const { mesh_->create_local_vector(vec); }
+
+        template <class ElementMatrix, class MatView>
+        void add_matrix(const Elem &e, const ElementMatrix &el_mat, MatView &mat) const {
+            ArrayView<SizeType, Elem::NFunctions> dofs;
+
+            // FIXME
+            mesh_->fields_local(e.idx(), 0, dofs);
+
+            disp(dofs);
+
+            if (NComponents > 1) {
+                for (SizeType c = NComponents_ - 1; c >= 0; --c) {
+                    for (SizeType i = 0; i < Elem::NNodes; ++i) {
+                        dofs[c * Elem::NNodes + i] = dofs[i] + c;
+                    }
+                }
+            }
+
+            disp(dofs);
+            mat.atomic_add_matrix(dofs, dofs, &el_mat(0, 0));
+        }
 
         static DeviceView<PetscMatrix, 2> assembly_view_device(PetscMatrix &mat) {
             return DeviceView<PetscMatrix, 2>(mat, utopia::GLOBAL_ADD);
@@ -143,7 +167,7 @@ namespace utopia {
             mesh_->set_num_fields(1);
 
             // FIXME Important to specifiy for all num_fields (What does this field do exactly?)
-            SizeType num_comp[1] = {1};
+            SizeType num_comp[1] = {NComponents_};
 
             // int order = 1;
             // in.get("order", order);

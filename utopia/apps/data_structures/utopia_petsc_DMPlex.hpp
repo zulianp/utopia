@@ -290,6 +290,21 @@ namespace utopia {
         }
 
         template <typename IntArrayT>
+        inline void fields_local(const SizeType &cell, const SizeType &field, IntArrayT &nodes) {
+            SizeType num_points = 0;
+            SizeType *points = nullptr;
+
+            DMPlexGetTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+
+            SizeType end_dummy;
+            for (SizeType i = 1; i < num_points; ++i) {
+                DMPlexGetPointLocalField(this->raw_type(), points[i * 2], field, &nodes[i - 1], &end_dummy);
+            }
+
+            DMPlexRestoreTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+        }
+
+        template <typename IntArrayT>
         inline void cone(const SizeType &cell, IntArrayT &nodes) {
             const SizeType *cone = nullptr;
             DMPlexGetCone(this->raw_type(), cell, &cone);

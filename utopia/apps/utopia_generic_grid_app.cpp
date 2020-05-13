@@ -94,11 +94,12 @@ namespace utopia {
     void dmplex_test(Input &in) {
         using I = utopia::ArrayView<PetscInt, 4>;
         using Mesh = utopia::PetscDMPlex<V, I>;
-        using FunctionSpace = utopia::FunctionSpace<Mesh, 2, utopia::Tri3<PetscReal>>;
+        static const int NVar = 2;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVar, utopia::Tri3<PetscReal>>;
         using Elem = FunctionSpace::Elem;
         using Quadrature = utopia::Quadrature<Elem, 2>;
         using Device = FunctionSpace::Device;
-        using ElementMatrix = utopia::StaticMatrix<PetscScalar, 3, 3>;
+        using ElementMatrix = utopia::StaticMatrix<PetscScalar, 3 * NVar, 3 * NVar>;
         // using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
 
         PetscCommunicator comm;
@@ -155,8 +156,12 @@ namespace utopia {
         auto fun = space.shape(q);
         auto dx = space.differential(q);
 
+        DirichletBoundaryCondition<FunctionSpace> bc(space);
+
         PetscMatrix H;
         space.create_matrix(H);
+
+        // disp(H);
 
         // Laplacian laplacian;
 
@@ -178,19 +183,21 @@ namespace utopia {
                 el_mat.set(0.0);
 
                 for (PetscInt qp = 0; qp < Quadrature::NPoints; ++qp) {
-                    for (PetscInt i = 0; i < 3; ++i) {
-                        for (PetscInt j = 0; j < 3; ++j) {
+                    for (PetscInt i = 0; i < Elem::NFunctions; ++i) {
+                        for (PetscInt j = 0; j < Elem::NFunctions; ++j) {
                             el_mat(i, j) += inner(g(i, qp), g(j, qp)) * dx(qp);
                         }
                     }
                 }
 
                 // disp(g(0, 0));
-                disp("-------------");
-                disp(el_mat);
-                // space_view.add_matrix(e, el_mat, H_view);
+                // disp("-------------");
+                // disp(el_mat);
+                space_view.add_matrix(e, el_mat, H_view);
             });
         }
+
+        disp(H);
 
         stats.stop_and_collect("assembly");
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
