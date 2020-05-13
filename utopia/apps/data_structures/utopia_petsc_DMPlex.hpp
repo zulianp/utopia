@@ -217,6 +217,25 @@ namespace utopia {
         //     return std::move(cloned);
         // }
 
+        inline SizeType n_components() const {
+            PetscSection section = nullptr;
+            DMGetLocalSection(this->raw_type(), &section);
+            SizeType num_comp;
+            PetscSectionGetFieldComponents(section, 0, &num_comp);
+            return num_comp;
+        }
+
+        inline SizeType component(const SizeType &idx) const {
+            const SizeType nc = n_components();
+            return nc == 1 ? 0 : idx % nc;
+        }
+
+        bool is_node_on_boundary(const SizeType &idx, const SideSet::BoundaryIdType b_id) const {
+            // DMLabelGetValue(DMLabel label, PetscInt point, PetscInt * value)
+            assert(false);
+            return false;
+        }
+
         inline SizeType dim() const { return PetscDMBase::get_dimension(this->raw_type()); }
 
         inline SizeType n_local_elements() const {
@@ -261,7 +280,7 @@ namespace utopia {
         }
 
         template <typename IntArrayT>
-        inline void nodes(const SizeType &cell, IntArrayT &nodes) {
+        inline void nodes(const SizeType &cell, IntArrayT &nodes) const {
             SizeType num_points = 0;
             SizeType *points = nullptr;
 
@@ -275,7 +294,7 @@ namespace utopia {
         }
 
         template <typename IntArrayT>
-        inline void nodes_local(const SizeType &cell, IntArrayT &nodes) {
+        inline void nodes_local(const SizeType &cell, IntArrayT &nodes) const {
             SizeType num_points = 0;
             SizeType *points = nullptr;
 
@@ -318,6 +337,65 @@ namespace utopia {
         }
 
         inline void simplex(const bool simplex) { simplex_ = simplex; }
+
+        void describe(std::ostream &os = std::cout) const {
+            SizeType nl, num_cs, num_vs, num_fs, num_marker, num_bd;
+
+            DMGetNumLabels(this->raw_type(), &nl);
+
+            os << "nl:  " << nl << std::endl;
+
+            for (SizeType i = 0; i < nl; ++i) {
+                const char *label_name;
+                DMGetLabelName(this->raw_type(), i, &label_name);
+
+                os << i << ") " << label_name << std::endl;
+            }
+
+            DMGetLabelSize(this->raw_type(), "Cell Sets", &num_cs);
+            DMGetLabelSize(this->raw_type(), "Vertex Sets", &num_vs);
+            DMGetLabelSize(this->raw_type(), "Face Sets", &num_fs);
+            DMGetLabelSize(this->raw_type(), "marker", &num_marker);
+
+            os << "num_cs: " << num_cs << " num_vs: " << num_vs << " num_fs: " << num_fs
+               << " num_marker: " << num_marker << std::endl;
+
+            DMGetNumBoundary(this->raw_type(), &num_bd);
+
+            os << "num_bd: " << num_bd << std::endl;
+
+            DMLabel label;
+            DMGetLabel(this->raw_type(), "marker", &label);
+
+            for (SizeType s = 0; s < 4; ++s) {
+                os << "---------------------------\n";
+                os << "Stratum " << s << std::endl;
+
+                SizeType n;
+                DMLabelGetStratumSize(label, s, &n);
+
+                os << "DMLabelGetStratumSize " << n << std::endl;
+
+                if (n == 0) continue;
+
+                DMLabelGetNumValues(label, &n);
+
+                os << "DMLabelGetNumValues " << n << std::endl;
+
+                SizeType start, end;
+                DMPlexGetHeightStratum(this->raw_type(), s, &start, &end);
+
+                os << "[" << start << ", " << end << ")" << std::endl;
+
+                for (SizeType i = start; i < end; ++i) {
+                    SizeType value;
+                    DMLabelGetValue(label, i, &value);
+                    os << value << " ";
+                }
+
+                os << std::endl;
+            }
+        }
 
     private:
         // DMPlexElementType type_override_;

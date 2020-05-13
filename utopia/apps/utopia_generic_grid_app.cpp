@@ -99,7 +99,9 @@ namespace utopia {
         using Elem = FunctionSpace::Elem;
         using Quadrature = utopia::Quadrature<Elem, 2>;
         using Device = FunctionSpace::Device;
-        using ElementMatrix = utopia::StaticMatrix<PetscScalar, 3 * NVar, 3 * NVar>;
+        using Point = FunctionSpace::Point;
+        using Scalar = FunctionSpace::Scalar;
+        using ElementMatrix = utopia::StaticMatrix<Scalar, 3 * NVar, 3 * NVar>;
         // using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
 
         PetscCommunicator comm;
@@ -112,6 +114,15 @@ namespace utopia {
         FunctionSpace space(comm);
         space.read(in);
         auto &dmplex = space.mesh();
+        dmplex.describe();
+
+        // for (int c = 0; c < space.n_components(); ++c) {
+        //     space.emplace_dirichlet_condition(
+        //         SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return p[1]; }, c);
+
+        //     space.emplace_dirichlet_condition(
+        //         SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return -p[1]; }, c);
+        // }
 
         stats.stop_collect_and_restart("dmplex-setup");
 
@@ -134,29 +145,29 @@ namespace utopia {
         int cell_num = 0;
         in.get("cell_num", cell_num);
 
-        Elem e;
-        space.elem(cell_num, e);
-        std::cout << e.measure() << std::endl;
+        // Elem e;
+        // space.elem(cell_num, e);
+        // std::cout << e.measure() << std::endl;
 
-        V p0, p1, p2;
-        e.node(0, p0);
-        e.node(1, p1);
-        e.node(2, p2);
+        // V p0, p1, p2;
+        // e.node(0, p0);
+        // e.node(1, p1);
+        // e.node(2, p2);
 
-        disp("-------------");
-        disp(p0);
-        disp("-------------");
-        disp(p1);
-        disp("-------------");
-        disp(p2);
-        disp("-------------");
+        // disp("-------------");
+        // disp(p0);
+        // disp("-------------");
+        // disp(p1);
+        // disp("-------------");
+        // disp(p2);
+        // disp("-------------");
 
         Quadrature q;
         auto grad = space.shape_grad(q);
         auto fun = space.shape(q);
         auto dx = space.differential(q);
 
-        DirichletBoundaryCondition<FunctionSpace> bc(space);
+        // DirichletBoundaryCondition<FunctionSpace> bc(space);
 
         PetscMatrix H;
         space.create_matrix(H);
@@ -197,7 +208,7 @@ namespace utopia {
             });
         }
 
-        disp(H);
+        // disp(H);
 
         stats.stop_and_collect("assembly");
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

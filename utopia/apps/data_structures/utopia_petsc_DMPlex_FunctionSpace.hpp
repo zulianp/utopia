@@ -63,7 +63,7 @@ namespace utopia {
             // FIXME
             mesh_->fields_local(e.idx(), 0, dofs);
 
-            disp(dofs);
+            // disp(dofs);
 
             if (NComponents > 1) {
                 for (SizeType c = NComponents_ - 1; c >= 0; --c) {
@@ -73,8 +73,53 @@ namespace utopia {
                 }
             }
 
-            disp(dofs);
+            // https://www.mcs.anl.gov/petsc/petsc-current/src/tao/tutorials/ex3.c.html
+
+            //   for (p = 0, k = 0; p < n; ++p) {
+            // 267:     PetscSectionGetDof(section, points[p], &dof);
+            // 268:     PetscSectionGetOffset(section, points[p], &off);
+            // 269:     for (d = 0; d < dof; ++d) user->bc_indices[k++] = off+d;
+            // 270:   }
+
+            // disp(dofs);
             mat.atomic_add_matrix(dofs, dofs, &el_mat(0, 0));
+        }
+
+        inline SizeType component(const SizeType &idx) const { return mesh_->component(idx); }
+
+        template <class... Args>
+        void emplace_dirichlet_condition(Args &&... args) {
+            dirichlet_bcs_.push_back(utopia::make_unique<DirichletBC>(*this, std::forward<Args>(args)...));
+        }
+
+        void apply_constraints(PetscMatrix &mat, PetscVector &vec) const {
+            for (const auto &bc : dirichlet_bcs_) {
+                bc->apply(mat, vec);
+            }
+        }
+
+        void apply_constraints(PetscMatrix &mat) const {
+            for (const auto &bc : dirichlet_bcs_) {
+                bc->apply(mat);
+            }
+        }
+
+        void apply_constraints(PetscVector &vec) const {
+            for (const auto &bc : dirichlet_bcs_) {
+                bc->apply(vec);
+            }
+        }
+
+        void copy_at_constrained_dofs(const PetscVector &in, PetscVector &vec) const {
+            for (const auto &bc : dirichlet_bcs_) {
+                bc->copy(in, vec);
+            }
+        }
+
+        void apply_zero_constraints(PetscVector &vec) const {
+            for (const auto &bc : dirichlet_bcs_) {
+                bc->apply_zero(vec);
+            }
         }
 
         static DeviceView<PetscMatrix, 2> assembly_view_device(PetscMatrix &mat) {
@@ -277,7 +322,7 @@ namespace utopia {
     private:
         std::shared_ptr<Mesh> mesh_;
         // std::shared_ptr<typename Mesh::Elements> elements_;
-        // std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
+        std::vector<std::shared_ptr<DirichletBC>> dirichlet_bcs_;
         SizeType subspace_id_;
 
         void allocate_mesh(const Comm &comm) { mesh_ = std::make_shared<Mesh>(comm); }
