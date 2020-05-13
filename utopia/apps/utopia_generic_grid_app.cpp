@@ -148,36 +148,13 @@ namespace utopia {
         int cell_num = 0;
         in.get("cell_num", cell_num);
 
-        // Elem e;
-        // space.elem(cell_num, e);
-        // std::cout << e.measure() << std::endl;
-
-        // V p0, p1, p2;
-        // e.node(0, p0);
-        // e.node(1, p1);
-        // e.node(2, p2);
-
-        // disp("-------------");
-        // disp(p0);
-        // disp("-------------");
-        // disp(p1);
-        // disp("-------------");
-        // disp(p2);
-        // disp("-------------");
-
         Quadrature q;
         auto grad = space.shape_grad(q);
         auto fun = space.shape(q);
         auto dx = space.differential(q);
 
-        // DirichletBoundaryCondition<FunctionSpace> bc(space);
-
         PetscMatrix H;
         space.create_matrix(H);
-
-        // disp(H);
-
-        // Laplacian laplacian;
 
         {
             auto space_view = space.view_device();
@@ -204,14 +181,9 @@ namespace utopia {
                     }
                 }
 
-                // disp(g(0, 0));
-                // disp("-------------");
-                // disp(el_mat);
                 space_view.add_matrix(e, el_mat, H_view);
             });
         }
-
-        // disp(H);
 
         stats.stop_and_collect("assembly");
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

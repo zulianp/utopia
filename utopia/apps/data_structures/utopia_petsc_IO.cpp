@@ -5,8 +5,14 @@
 #include "utopia_petsc_Communicator.hpp"
 #include "utopia_petsc_DM.hpp"
 
+#if defined(PETSC_HAVE_EXODUSII)
 #include <petscviewerexodusii.h>
+#endif
+
+#if defined(PETSC_HAVE_HDF5)
 #include <petscviewerhdf5.h>
+#endif
+
 #include <iostream>
 
 namespace utopia {
