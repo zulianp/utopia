@@ -114,7 +114,7 @@ namespace utopia {
         FunctionSpace space(comm);
         space.read(in);
         auto &dmplex = space.mesh();
-        dmplex.describe();
+        // dmplex.describe();
 
         // for (int c = 0; c < space.n_components(); ++c) {
         //     space.emplace_dirichlet_condition(
@@ -137,8 +137,11 @@ namespace utopia {
         stats.stop_collect_and_restart("create-vector");
         ////////////////////////////////////////////////////////////
 
+        std::string output_path = "prova.vtu";
+        in.get("output_path", output_path);
+
         utopia::rename("X", v);
-        dmplex.write("prova.vtu", v);
+        dmplex.write(output_path, v);
 
         stats.stop_and_collect("vtu-write");
 
