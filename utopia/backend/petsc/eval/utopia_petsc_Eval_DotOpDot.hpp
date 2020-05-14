@@ -29,7 +29,7 @@ namespace utopia {
                         Dot<FunOfX, Tensor<X, 1> >,
                         Op> Expr;
 
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         template<typename T>
         inline static void apply(const Expr &expr, Number<T> &num)

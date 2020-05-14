@@ -81,7 +81,7 @@ namespace utopia {
             PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
         }
 
-        PetscMatrixMemory(const PetscMatrixMemory &other) : owner_(true) {
+        PetscMatrixMemory(const PetscMatrixMemory &other) {
             PetscErrorHandler::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
         }
 

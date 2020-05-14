@@ -20,7 +20,7 @@ namespace utopia {
     public:
         MultiLevelMask()
 
-        {}
+            = default;
 
         ~MultiLevelMask() = default;
 

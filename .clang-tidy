@@ -1,5 +1,5 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,cppcoreguidelines-*'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*'
 WarningsAsErrors: ''
 HeaderFilterRegex: ./utopia/*utopia_*
 AnalyzeTemporaryDtors: false
@@ -59,7 +59,7 @@ CheckOptions:
   - key:             modernize-pass-by-value.IncludeStyle
     value:           llvm
   - key:             modernize-pass-by-value.ValuesOnly
-    value:           '0'
+    value:           '1'
   - key:             modernize-raw-string-literal.ReplaceShorterLiterals
     value:           '0'
   - key:             modernize-replace-auto-ptr.IncludeStyle

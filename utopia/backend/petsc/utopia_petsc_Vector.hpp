@@ -62,7 +62,7 @@ namespace utopia {
     private:
         class GhostValues {
         public:
-            GhostValues() {}
+            GhostValues() = default;
 
             void update(Vec &vec) {
                 if (!has_ghosts()) return;
@@ -433,8 +433,7 @@ namespace utopia {
         bool equals(const PetscVector &other, const Scalar &tol = 0.0) const override;
 
         ///////////////////////////////////////////////////////////////////////////
-        explicit PetscVector(const Layout &layout, const Scalar &val = 0.0)
-            : vec_(nullptr), initialized_(false), owned_(true) {
+        explicit PetscVector(const Layout &layout, const Scalar &val = 0.0) : vec_(nullptr) {
             immutable_ = false;
             values(layout, val);
         }
