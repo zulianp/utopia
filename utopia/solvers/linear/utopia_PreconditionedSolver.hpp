@@ -8,9 +8,9 @@ namespace utopia {
     template<class Matrix, class Vector>
     class PreconditionedSolver : public IterativeSolver<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::Preconditioner<Vector> Preconditioner;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Preconditioner = utopia::Preconditioner<Vector>;
         typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
 

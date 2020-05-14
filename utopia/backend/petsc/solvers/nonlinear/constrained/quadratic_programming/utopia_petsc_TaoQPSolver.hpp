@@ -11,11 +11,11 @@ namespace utopia {
 
     template<class Matrix, class Vector>
     class TaoQPSolver final : public QPSolver<Matrix, Vector> {
-        typedef UTOPIA_SCALAR(Vector)    			 Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) 			 SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::QPSolver<Matrix, Vector> 	 Super;
-        typedef utopia::BoxConstraints<Vector>       BoxConstraints;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
 
     public:
 

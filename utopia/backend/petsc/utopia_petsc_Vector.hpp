@@ -62,7 +62,7 @@ namespace utopia {
     private:
         class GhostValues {
         public:
-            GhostValues() : has_ghosts_(false) {}
+            GhostValues() {}
 
             void update(Vec &vec) {
                 if (!has_ghosts()) return;
@@ -100,7 +100,7 @@ namespace utopia {
             }
 
             std::map<SizeType, SizeType> ghost_index_;
-            bool has_ghosts_;
+            bool has_ghosts_{false};
         };
 
     public:
@@ -439,7 +439,7 @@ namespace utopia {
             values(layout, val);
         }
 
-        inline PetscVector() : vec_(nullptr), initialized_(false), owned_(true) { immutable_ = false; }
+        inline PetscVector() { immutable_ = false; }
 
         inline ~PetscVector() override { destroy(); }
 
@@ -820,21 +820,21 @@ namespace utopia {
     private:
         PetscCommunicator comm_;
 
-        Vec vec_;
-        bool initialized_;
-        bool owned_;
+        Vec vec_{nullptr};
+        bool initialized_{false};
+        bool owned_{true};
 
         GhostValues ghost_values_;
 
         // debug
-        bool immutable_;
+        bool immutable_{false};
 
         class LocalView {
         public:
-            Vec v;
-            SizeType range_begin, range_end;
-            Scalar *data;
-            PetscErrorCode ierr;
+            Vec v{nullptr};
+            SizeType range_begin{0}, range_end{0};
+            Scalar *data{nullptr};
+            PetscErrorCode ierr{0};
 
             LocalView(Vec v_in) : v(v_in) {
                 ierr = VecGetArray(v, &data);
@@ -851,10 +851,10 @@ namespace utopia {
 
         class ConstLocalView {
         public:
-            const Vec v;
-            const Scalar *data;
-            SizeType range_begin, range_end;
-            PetscErrorCode ierr;
+            const Vec v{nullptr};
+            const Scalar *data{nullptr};
+            SizeType range_begin{0}, range_end{0};
+            PetscErrorCode ierr{0};
 
             ConstLocalView(const LocalView &view)
                 : v(nullptr), data(view.data), range_begin(view.range_begin), range_end(view.range_end) {}
@@ -886,11 +886,11 @@ namespace utopia {
         bool is_root() const;
 
         inline static PetscVector &down_cast(DistributedVector<Scalar, SizeType> &super) {
-            return static_cast<PetscVector &>(super);
+            return dynamic_cast<PetscVector &>(super);
         }
 
         inline static const PetscVector &down_cast(const DistributedVector<Scalar, SizeType> &super) {
-            return static_cast<const PetscVector &>(super);
+            return dynamic_cast<const PetscVector &>(super);
         }
     };
 

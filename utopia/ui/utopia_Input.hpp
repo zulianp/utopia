@@ -29,7 +29,7 @@ namespace utopia {
 
     class Configurable {
     public:
-        virtual ~Configurable() {}
+        virtual ~Configurable() = default;
         virtual void read(Input &is) = 0;
         virtual void print_usage(std::ostream &os = std::cout) const;
         virtual void print_param_usage(std::ostream &os, const std::string & name, const std::string & type, const std::string & description, const std::string & default_settings) const;
@@ -41,8 +41,8 @@ namespace utopia {
 
     class Input  /* : public Clonable */ {
     public:
-        Input() {}
-        virtual ~Input() {}
+        Input() = default;
+        virtual ~Input() = default;
 
         virtual SizeType size() const = 0;
         virtual void get(std::vector<std::shared_ptr<IConvertible>> &values) = 0;
@@ -64,10 +64,8 @@ namespace utopia {
         virtual bool good() const = 0;
 
     private:
-        Input(const Input &) {}
-        Input &operator=(const Input &) {
-            return *this;
-        }
+        Input(const Input &) = default;
+        Input &operator=(const Input &) = default;
     };
 }
 

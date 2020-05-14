@@ -1,6 +1,8 @@
 #ifndef UTOPIA_UTOPIA_FACTORY_HPP
 #define UTOPIA_UTOPIA_FACTORY_HPP
 
+#include <utility>
+
 #include "utopia_Expression.hpp"
 #include "utopia_Optional.hpp"
 #include "utopia_Size.hpp"
@@ -11,7 +13,7 @@ namespace utopia {
     template <class Type>
     class FactoryTraits {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "TODO"; }
 
@@ -24,7 +26,7 @@ namespace utopia {
     template <>
     class FactoryTraits<Identity> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "Identity"; }
 
@@ -34,7 +36,7 @@ namespace utopia {
     template <>
     class FactoryTraits<DenseIdentity> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "DenseIdentity"; }
 
@@ -49,7 +51,7 @@ namespace utopia {
     template <>
     class FactoryTraits<LocalIdentity> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "LocalIdentity"; }
 
@@ -59,7 +61,7 @@ namespace utopia {
     template <>
     class FactoryTraits<LocalZeros> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "LocalZeros"; }
 
@@ -69,7 +71,7 @@ namespace utopia {
     template <>
     class FactoryTraits<Zeros> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "Zeros"; }
 
@@ -79,7 +81,8 @@ namespace utopia {
     template <typename T>
     class Values {
     public:
-        Values(){};
+        Values() = default;
+        ;
         Values(T value) : _value(value){};
         template <typename OtherT>
         Values(const Values<OtherT> &other) {
@@ -96,7 +99,7 @@ namespace utopia {
     template <typename _Scalar>
     class FactoryTraits<Values<_Scalar>> {
     public:
-        typedef _Scalar Scalar;
+        using Scalar = _Scalar;
 
         static constexpr const char *get_class() { return "Values"; }
 
@@ -106,7 +109,8 @@ namespace utopia {
     template <typename T>
     class LocalValues {
     public:
-        LocalValues(){};
+        LocalValues() = default;
+        ;
         LocalValues(T value) : _value(value){};
         template <typename OtherT>
         LocalValues(const LocalValues<OtherT> &other) {
@@ -123,7 +127,7 @@ namespace utopia {
     template <typename _Scalar>
     class FactoryTraits<LocalValues<_Scalar>> {
     public:
-        typedef _Scalar Scalar;
+        using Scalar = _Scalar;
 
         static constexpr const char *get_class() { return "LocalValues"; }
 
@@ -133,7 +137,8 @@ namespace utopia {
     template <typename T>
     class NNZ {
     public:
-        NNZ(){};
+        NNZ() = default;
+        ;
         NNZ(T nnz) : _nnz(nnz){};
         template <typename OtherT>
         NNZ(const NNZ<OtherT> &other) {
@@ -150,7 +155,7 @@ namespace utopia {
     template <typename _Scalar>
     class FactoryTraits<NNZ<_Scalar>> {
     public:
-        typedef _Scalar Scalar;
+        using Scalar = _Scalar;
 
         static constexpr const char *get_class() { return "NNZ"; }
 
@@ -183,7 +188,7 @@ namespace utopia {
     template <typename SizeType>
     class FactoryTraits<NNZXRow<SizeType>> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "NNZXRow"; }
 
@@ -193,7 +198,8 @@ namespace utopia {
     template <typename T>
     class LocalNNZ {
     public:
-        LocalNNZ(){};
+        LocalNNZ() = default;
+        ;
         LocalNNZ(T nnz) : _nnz(nnz){};
         template <typename OtherT>
         LocalNNZ(const LocalNNZ<OtherT> &other) {
@@ -210,7 +216,7 @@ namespace utopia {
     template <typename _Scalar>
     class FactoryTraits<LocalNNZ<_Scalar>> {
     public:
-        typedef _Scalar Scalar;
+        using Scalar = _Scalar;
 
         static constexpr const char *get_class() { return "LocalNNZ"; }
 
@@ -222,7 +228,7 @@ namespace utopia {
     template <>
     class FactoryTraits<Resize> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static constexpr const char *get_class() { return "Resize"; }
 
@@ -236,18 +242,18 @@ namespace utopia {
 
         enum { StoreAs = UTOPIA_BY_VALUE };
 
-        typedef typename FactoryTraits<Type>::Scalar Scalar;
+        using Scalar = typename FactoryTraits<LocalDenseIdentity>::Scalar;
 
         inline const Size &size() const { return _size; }
 
         inline const Type &type() const { return _type; }
-        Factory(const Size &size, const Type type = Type()) : _size(size), _type(type) {}
+        Factory(Size size, const Type type = Type()) : _size(std::move(size)), _type(type) {}
 
         inline std::string get_class() const override {
             return "Factory(" + std::string(FactoryTraits<Type>::get_class()) + ")";
         }
 
-        virtual ~Factory() {}
+        virtual ~Factory() = default;
 
     private:
         Size _size;
@@ -257,13 +263,13 @@ namespace utopia {
     template <class SType, int Order, class Right>
     class MostDescriptive<Factory<SType, Order>, Right> {
     public:
-        typedef Right Type;
+        using Type = Right;
     };
 
     template <class Left, class SType, int Order>
     class MostDescriptive<Left, Factory<SType, Order>> {
     public:
-        typedef Left Type;
+        using Type = Left;
     };
 
     template <class SType, int Order, class Right>
@@ -285,13 +291,13 @@ namespace utopia {
 
         enum { StoreAs = UTOPIA_BY_VALUE };
 
-        typedef typename Factory::Scalar Scalar;
+        using Scalar = typename Factory::Scalar;
 
         Build(const Factory &factory, const Options &opts) : factory_(factory), opts_(opts) {}
 
         inline std::string get_class() const override { return factory_.get_class(); }
 
-        virtual ~Build() {}
+        virtual ~Build() = default;
 
         const Options &opts() const { return opts_; }
 
@@ -309,7 +315,7 @@ namespace utopia {
 
         enum { StoreAs = UTOPIA_BY_VALUE };
 
-        typedef typename FactoryTraits<Type>::Scalar Scalar;
+        using Scalar = typename FactoryTraits<Type>::Scalar;
 
         static inline Type type() { return Type(); }
 
@@ -321,13 +327,13 @@ namespace utopia {
     template <class SType, int Order, class Right>
     class MostDescriptive<SymbolicTensor<SType, Order>, Right> {
     public:
-        typedef Right Type;
+        using Type = Right;
     };
 
     template <class Left, class SType, int Order>
     class MostDescriptive<Left, SymbolicTensor<SType, Order>> {
     public:
-        typedef Left Type;
+        using Type = Left;
     };
 
     template <class SType, int Order, class Right>
@@ -345,25 +351,25 @@ namespace utopia {
     template <class SType, int Order, class Right, class Default, int SparsityLeft, int SparsityRight>
     class ChooseType<SymbolicTensor<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
     public:
-        typedef Right Type;
+        using Type = Right;
     };
 
     template <class SType, int Order, class Left, class Default, int SparsityLeft, int SparsityRight>
     class ChooseType<Left, SymbolicTensor<SType, Order>, Default, SparsityLeft, SparsityRight> {
     public:
-        typedef Left Type;
+        using Type = Left;
     };
 
     template <class SType, int Order, class Right, class Default, int SparsityLeft, int SparsityRight>
     class ChooseType<Factory<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
     public:
-        typedef Right Type;
+        using Type = Right;
     };
 
     template <class SType, int Order, class Left, class Default, int SparsityLeft, int SparsityRight>
     class ChooseType<Left, Factory<SType, Order>, Default, SparsityLeft, SparsityRight> {
     public:
-        typedef Left Type;
+        using Type = Left;
     };
 
     template <class Index>
@@ -393,7 +399,7 @@ namespace utopia {
     template <class Index>
     class Traits<Ghosts<Index>> {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         enum { FILL_TYPE = FillType::DENSE };
     };
@@ -401,7 +407,7 @@ namespace utopia {
     template <class Type, int Order>
     class Traits<SymbolicTensor<Type, Order>> {
     public:
-        typedef typename utopia::FactoryTraits<Type>::Scalar Scalar;
+        using Scalar = typename utopia::FactoryTraits<Type>::Scalar;
 
         enum { FILL_TYPE = FactoryTraits<Type>::FILL_TYPE };
     };
@@ -409,7 +415,7 @@ namespace utopia {
     template <class Type, int Order>
     class Traits<Factory<Type, Order>> {
     public:
-        typedef typename utopia::FactoryTraits<Type>::Scalar Scalar;
+        using Scalar = typename utopia::FactoryTraits<Type>::Scalar;
 
         enum { FILL_TYPE = FactoryTraits<Type>::FILL_TYPE };
     };

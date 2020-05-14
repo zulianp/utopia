@@ -103,13 +103,11 @@ namespace utopia {
             return instance_;
         }
 
-        Recorder(std::ostream &os = std::cout)
-        : os_(os), expr_num_(0), n_nested_scopes_(0)
-        {}
+        Recorder(std::ostream &os = std::cout) : os_(os) {}
 
         std::ostream &os_;
-        long expr_num_;
-        long n_nested_scopes_;
+        long expr_num_{0};
+        long n_nested_scopes_{0};
     };
 }
 

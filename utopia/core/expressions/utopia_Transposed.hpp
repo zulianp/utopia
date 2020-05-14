@@ -11,15 +11,15 @@ namespace utopia {
     template<class _Expr>
     class Transposed : public Expression< Transposed<_Expr> > {
     public:
-        typedef _Expr Expr;
-        typedef typename Expr::Scalar Scalar;
+        using Expr = _Expr;
+        using Scalar = typename Expr::Scalar;
 
         static const int Order = Expr::Order;
 
         Transposed(const Expr &expr) : _expr(expr) { }
         inline const Expr &expr() const { return _expr; }
 
-        virtual ~Transposed() { }
+        virtual ~Transposed() = default;
 
         std::string get_class() const override { return "Transposed<" + _expr.get_class() + ">"; }
 

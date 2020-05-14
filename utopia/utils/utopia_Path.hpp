@@ -42,7 +42,7 @@ namespace utopia {
         static void resolve_path_separators(std::string &path);
 
     public:
-        typedef PathIterator Iterator;
+        using Iterator = PathIterator;
 
         Path(std::string path = "");
         Path(const char *path);

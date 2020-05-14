@@ -9,17 +9,15 @@ namespace utopia {
     template<typename Matrix, typename Vector>
     class RedundantLinearSolver<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> 
     {
-        typedef UTOPIA_SCALAR(Vector)       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        public:
-            RedundantLinearSolver(const std::string &sub_preconditioner = "lu")
-            : KSPSolver<Matrix, Vector, PETSC>()
-            {
-                KSPSolver<Matrix, Vector, PETSC>::pc_type("redundant");
-                KSPSolver<Matrix, Vector, PETSC>::ksp_type("preonly");
+    public:
+        RedundantLinearSolver(const std::string &sub_preconditioner = "lu") : KSPSolver<Matrix, Vector, PETSC>() {
+            KSPSolver<Matrix, Vector, PETSC>::pc_type("redundant");
+            KSPSolver<Matrix, Vector, PETSC>::ksp_type("preonly");
 
-                this->pc_type(sub_preconditioner); 
+            this->pc_type(sub_preconditioner); 
             }
 
             RedundantLinearSolver * clone() const override

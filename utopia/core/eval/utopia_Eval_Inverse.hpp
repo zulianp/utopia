@@ -208,10 +208,10 @@ namespace utopia {
     template<class Derived, class Traits, int Backend>
     class Eval<Inverse< Tensor<Derived, 2> >, Traits, Backend> {
     public:
-        typedef Derived Tensor2;
+        using Tensor2 = Derived;
         typedef utopia::Inverse< Tensor<Derived, 2> > Expr;
 
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         inline static Derived apply(const Expr &expr)
         {

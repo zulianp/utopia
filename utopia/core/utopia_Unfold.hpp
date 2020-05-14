@@ -5,13 +5,13 @@ namespace utopia {
     template<class Expr>
     class Unfold {
     public:
-        typedef Expr Type;
+        using Type = Expr;
     };
 
 
     template<class Expr>
     class Fold {
-        typedef Expr Type;
+        using Type = Expr;
     };
 }
 

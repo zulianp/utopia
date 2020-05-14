@@ -23,7 +23,7 @@ namespace utopia
 
     }
 
-    ~TrustRegionParams() override {}
+    ~TrustRegionParams() override = default;
 
     Scalar delta_max()  const  { return delta_max_; }
     Scalar delta_min()  const  { return delta_min_; }
@@ -108,7 +108,7 @@ namespace utopia
 
     }
 
-    ~TrustRegionBase() override {}
+    ~TrustRegionBase() override = default;
 
 protected:
     virtual void print_statistics(const SizeType & it, const SizeType & it_successful)
@@ -118,7 +118,7 @@ protected:
 
         if(!non_data_path.empty())
         {
-            CSVWriter writer;
+            CSVWriter writer{};
             if (mpi_world_rank() == 0)
             {
                 if(!writer.file_exists(non_data_path))

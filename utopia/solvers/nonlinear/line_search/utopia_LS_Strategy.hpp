@@ -21,16 +21,15 @@ namespace  utopia
         using Layout   = typename Traits<Vector>::Layout;
 
     public:
-        ~LSStrategy() override {}
+        ~LSStrategy() override = default;
 
-        LSStrategy():   verbose_(false),
-                        c1_(1e-4),
-                        max_it_(50),
-                        rho_(0.75),
-                        alpha_min_(1e-9)
-        {
+        LSStrategy()
+            : c1_(1e-4),
+              max_it_(50),
+              rho_(0.75),
+              alpha_min_(1e-9){
 
-        };
+              };
 
         /**
          * @brief      Gets the alpha = step-size. Function needs to be provided by actual LS strategies.
@@ -121,7 +120,7 @@ namespace  utopia
         virtual void init_memory(const Layout &layout) = 0;
 
     private:
-        bool verbose_;      /*!< Verbose inside of LS strategy.  */
+        bool verbose_{false}; /*!< Verbose inside of LS strategy.  */
         Scalar c1_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
         SizeType max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */
         Scalar rho_;        /*!< Contraction factor.   */

@@ -12,9 +12,9 @@
 
 namespace utopia {
 
-    template<class Matrix, class Vector, int Backend>
+    template <class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient()
-    : reset_initial_guess_(false), initialized_(false), apply_gradient_descent_step_(false)
+
     {}
 
     template<class Matrix, class Vector, int Backend>

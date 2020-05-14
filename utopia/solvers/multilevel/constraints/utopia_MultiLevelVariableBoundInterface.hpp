@@ -21,7 +21,7 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
 
-        typedef utopia::BoxConstraints<Vector> BoxConstraints;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
 
         using Device = typename Traits<Vector>::Device;
 

@@ -16,7 +16,7 @@ namespace utopia {
         SizeType begin_, end_, extent_;
 
     public:
-        UTOPIA_INLINE_FUNCTION Range() {}
+        UTOPIA_INLINE_FUNCTION Range() = default;
         UTOPIA_INLINE_FUNCTION constexpr Range(const SizeType begin, const SizeType to)
                 : begin_(begin), end_(to), extent_(to - begin) { }
 

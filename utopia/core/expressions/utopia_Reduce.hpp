@@ -16,8 +16,8 @@ namespace utopia {
     template<class Expr_, class Operation>
     class Reduce : public Expression< Reduce<Expr_, Operation> > {
     public:
-        typedef Expr_ Expr;
-        typedef typename Expr::Scalar Scalar;
+        using Expr = Expr_;
+        using Scalar = typename Expr::Scalar;
 
         static const int Order = 0;
 

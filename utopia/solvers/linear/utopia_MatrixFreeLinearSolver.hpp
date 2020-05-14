@@ -14,7 +14,7 @@ namespace utopia {
         public:
             using Preconditioner<Vector>::init_memory;
 
-            ~MatrixFreeLinearSolver() override {}
+            ~MatrixFreeLinearSolver() override = default;
             virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
             /*! @brief if overriden the subclass has to also call this one first
@@ -36,7 +36,7 @@ namespace utopia {
         using PreconditionedSolver<Matrix, Vector>::update;
         using MatrixFreeLinearSolver<Vector>::solve;
 
-        ~OperatorBasedLinearSolver() override {}
+        ~OperatorBasedLinearSolver() override = default;
 
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));

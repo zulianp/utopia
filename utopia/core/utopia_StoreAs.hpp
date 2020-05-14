@@ -22,22 +22,22 @@ namespace utopia {
 
     template<typename _Expr>
     struct StoreAs<_Expr, UTOPIA_BY_REFERENCE, !UTOPIA_CONST> {
-        typedef _Expr &Expr;
+        using Expr = _Expr &;
     };
 
     template<typename _Expr>
     struct StoreAs<_Expr, UTOPIA_BY_VALUE, !UTOPIA_CONST> {
-        typedef _Expr Expr;
+        using Expr = _Expr;
     };
 
     template<typename _Expr>
     struct StoreAs<_Expr, UTOPIA_BY_REFERENCE, UTOPIA_CONST> {
-        typedef const _Expr &Expr;
+        using Expr = const _Expr &;
     };
 
     template<typename _Expr>
     struct StoreAs<_Expr, UTOPIA_BY_VALUE, UTOPIA_CONST> {
-        typedef const _Expr Expr;
+        using Expr = const _Expr;
     };
 
     // static const int UTOPIA_DEFAULT_EXPRESSION_STORAGE = UTOPIA_BY_REFERENCE;

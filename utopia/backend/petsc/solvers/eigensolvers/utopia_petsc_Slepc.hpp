@@ -20,8 +20,8 @@ namespace utopia {
     template<typename Matrix, typename Vector>
     class SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> final : public EigenSolver<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         SlepcSolver(const std::vector<std::string> problem_types = {"hermitian", "non_hermitian", "generalized_hermitian", "generalized_non_hermitian", "generalized_hermitian_SPD_B", "generalized_hermitian_indefinite"},
                     const std::vector<std::string> portions_of_spectrum = {"largest_magnitude", "smallest_magnitude", "largest_real", "smallest_real", "largest_imaginary", "smallest_imaginary", "closest_to_target", "closest_to_target_real", "closest_to_target_imaginary", "all_in_region"},

@@ -8,9 +8,9 @@ namespace utopia {
     template<class Expr>
     class ExprInliner {
     public:
-        typedef utopia::Traits<Expr> Traits;
-        typedef typename Traits::SizeType SizeType;
-        typedef typename Traits::Scalar Scalar;
+        using Traits = utopia::Traits<Expr>;
+        using SizeType = typename Traits::SizeType;
+        using Scalar = typename Traits::Scalar;
 
         inline static Scalar eval_at(const Factory<Identity, 2> &, const SizeType i, const SizeType j)
         {

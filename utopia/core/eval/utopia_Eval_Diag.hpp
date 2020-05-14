@@ -197,8 +197,8 @@ namespace utopia {
     class Eval< Diag<Tensor<T, 2> >, Traits, Backend> {
     public:
         typedef utopia::Tensor<T, 2> WT;
-        typedef utopia::Diag<WT> Expr;
-        typedef typename Traits::Vector Result;
+        using Expr = utopia::Diag<WT>;
+        using Result = typename Traits::Vector;
 
         inline static Result apply(const Expr &expr)
         {

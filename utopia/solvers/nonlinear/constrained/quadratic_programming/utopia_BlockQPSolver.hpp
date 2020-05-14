@@ -28,7 +28,7 @@ namespace utopia {
         using Super = utopia::QPSolver<Matrix, Vector>;
 
         ~BlockQPSolver() override;
-        BlockQPSolver(const std::shared_ptr<QPSolver> &serial_solver);
+        BlockQPSolver(std::shared_ptr<QPSolver> serial_solver);
         BlockQPSolver(const BlockQPSolver &other);
 
         BlockQPSolver *clone() const override;

@@ -49,19 +49,19 @@ namespace utopia {
     template<class Left>
     class MostDescriptive<Left, SymbolicFunction > {
     public:
-        typedef Left Type;
+        using Type = Left;
     };
 
     template<class Right>
     class MostDescriptive<SymbolicFunction, Right > {
     public:
-        typedef Right Type;
+        using Type = Right;
     };
 
     template<>
     class MostDescriptive<SymbolicFunction, SymbolicFunction> {
     public:
-        typedef double Type;
+        using Type = double;
     };
 
 }

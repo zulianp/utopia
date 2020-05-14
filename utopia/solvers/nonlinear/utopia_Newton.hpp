@@ -34,7 +34,7 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
 
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
-        typedef utopia::LSStrategy<Vector> LSStrategy;
+        using LSStrategy = utopia::LSStrategy<Vector>;
 
     public:
         Newton(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >())
@@ -74,7 +74,7 @@ namespace utopia {
 
                 // setting up adaptive stopping criterium for linear solver
                 if (this->has_forcing_strategy()) {
-                    if (IterativeSolver<Matrix, Vector> *iterative_solver =
+                    if (auto *iterative_solver =
                             dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->linear_solver_.get())) {
                         iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
                     } else {

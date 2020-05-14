@@ -26,8 +26,8 @@ namespace utopia
     class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>, public RMTRParams<Vector>
     {
         public:
-            typedef UTOPIA_SCALAR(Vector)                       Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+            using Scalar = typename utopia::Traits<Vector>::Scalar;
+            using SizeType = typename utopia::Traits<Vector>::SizeType;
             typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
         RMTRBase(const SizeType & n_levels):    NonlinearMultiLevelBase<Matrix,Vector>(n_levels),
@@ -38,7 +38,7 @@ namespace utopia
 
         }
 
-        ~RMTRBase() override {}
+        ~RMTRBase() override = default;
 
         void read(Input &in) override {
             NonlinearMultiLevelBase<Matrix, Vector>::read(in);

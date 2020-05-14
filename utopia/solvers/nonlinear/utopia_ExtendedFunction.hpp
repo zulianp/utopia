@@ -1,6 +1,8 @@
 #ifndef UTOPIA_EXTENDED_FUNCTION_HPP
 #define UTOPIA_EXTENDED_FUNCTION_HPP
 
+#include <utility>
+
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Layout.hpp"
@@ -23,9 +25,9 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        ~ExtendedFunction() override {}
+        ~ExtendedFunction() override = default;
 
-        ExtendedFunction() {}
+        ExtendedFunction() = default;
 
         ExtendedFunction(const Vector & x_init, const Vector & bc_marker)
         {
@@ -154,14 +156,11 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::ExtendedFunction<Matrix, Vector>    Fun;
 
-        Function_rhs(const std::shared_ptr<Fun> & fun): fun_(fun)
-        {
-
-        }
+        Function_rhs(std::shared_ptr<Fun> fun) : fun_(std::move(fun)) {}
 
         bool value(const Vector &x, Scalar &value) const override
         {

@@ -13,7 +13,7 @@ namespace utopia {
 
     template <typename Scalar, typename SizeType>
     class ProjectedGaussSeidelSweep {
-       public:
+    public:
         using ArrayView = utopia::ArrayView<Scalar>;
         using ConstArrayView = utopia::ArrayView<const Scalar>;
         using VectorView = utopia::VectorView<ArrayView>;
@@ -181,9 +181,9 @@ namespace utopia {
 
         void l1(const bool l1) { l1_ = l1; }
 
-        ProjectedGaussSeidelSweep() : symmetric_(true) {}
+        ProjectedGaussSeidelSweep() = default;
 
-       private:
+    private:
         VectorView c_;
         ConstVectorView r_, lb_, ub_;
 
@@ -192,8 +192,8 @@ namespace utopia {
         std::vector<SizeType> row_ptr_;
         std::vector<SizeType> col_idx_;
 
-        bool symmetric_;
-        bool l1_;
+        bool symmetric_{true};
+        bool l1_{false};
     };
 }  // namespace utopia
 

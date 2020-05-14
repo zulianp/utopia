@@ -23,9 +23,9 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-		virtual ~VectorBase() {}
+                virtual ~VectorBase() = default;
 
-		//locks
+                //locks
 		virtual void read_lock() 			 	= 0;
 		virtual void write_lock(WriteMode mode) = 0;
 
@@ -56,7 +56,7 @@ namespace utopia {
 	public:
 		using SizeType = SizeType_;
 
-                ~Vector() override {}
+                ~Vector() override = default;
 
                 // facade functions for treating a node vector and distributed vector in the same way
 		inline Range range() const { return Range(0, this->size()); }
@@ -91,7 +91,7 @@ namespace utopia {
 
 		virtual SizeType local_size() const = 0;
 
-                ~DistributedVector() override {}
+                ~DistributedVector() override = default;
         };
 
 }

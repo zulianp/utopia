@@ -17,7 +17,7 @@ namespace utopia {
         TensorReduce(const Expr &expr, const int dim, const Operation op = Operation()) : expr_(expr), dim_(dim), op_(op)
         {}
 
-        typedef typename Expr::Scalar Scalar;
+        using Scalar = typename Expr::Scalar;
 
         static_assert(Expr::Order == 2, "only supported for matrices");
 

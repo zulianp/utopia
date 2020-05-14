@@ -17,7 +17,7 @@ namespace utopia {
              StoreAs = UTOPIA_BY_VALUE
         };
 
-        typedef _Scalar Scalar;
+        using Scalar = _Scalar;
 
         UTOPIA_INLINE_FUNCTION operator Scalar &()
         {

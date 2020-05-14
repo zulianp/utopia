@@ -20,8 +20,8 @@ namespace utopia {
     template<class Implementation, class Derived>
     class Writeable<Implementation, Derived, 2> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
-        typedef typename Traits<Implementation>::SizeType SizeType;
+        using Scalar = typename Traits<Implementation>::Scalar;
+        using SizeType = typename Traits<Implementation>::SizeType;
 
         /** @defgroup read_write Read/Write
          *  @brief Reading and writing from/to and object
@@ -202,7 +202,7 @@ namespace utopia {
     template<class Implementation, class Derived>
     class Writeable<Implementation, Derived, 1> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
+        using Scalar = typename Traits<Implementation>::Scalar;
 
         /**
          * @ingroup     element_acess

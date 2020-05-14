@@ -28,10 +28,10 @@ namespace utopia {
         using Scalar = UTOPIA_SCALAR(Vector);
 
         SPBlockConjugateGradient()
-        : op_m(std::make_shared<Factorization<Matrix, Vector>>()),
-        op_s(std::make_shared<Factorization<Matrix, Vector>>()),
-        verbose_(false), atol_(1e-8), rtol_(1e-8), max_it_(1000), master_sweeps_(-1), master_max_it_(-1)
-        {}
+            : op_m(std::make_shared<Factorization<Matrix, Vector>>()),
+              op_s(std::make_shared<Factorization<Matrix, Vector>>()),
+              atol_(1e-8),
+              rtol_(1e-8) {}
 
         void set_master_solver(const std::shared_ptr< LinearSolver<Matrix, Vector> > &op_m)
         {
@@ -158,7 +158,7 @@ namespace utopia {
 
         class BlockPreconditioner {
         public:
-            virtual ~BlockPreconditioner() {}
+            virtual ~BlockPreconditioner() = default;
             virtual bool apply(const Vector &r, Vector &z) const = 0;
             virtual void update(SPBlockConjugateGradient &solver) = 0;
             virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) = 0;
@@ -270,13 +270,12 @@ namespace utopia {
 
         Vector buff_m, solved_m, buff_s, solved_s, r;
 
-        bool verbose_;
+        bool verbose_{false};
         Scalar atol_, rtol_;
-        int max_it_;
+        int max_it_{1000};
 
-        int master_sweeps_;
-        int master_max_it_;
-
+        int master_sweeps_{-1};
+        int master_max_it_{-1};
 
         std::shared_ptr<BlockPreconditioner> prec_;
 

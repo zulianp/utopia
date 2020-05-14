@@ -15,7 +15,7 @@ namespace utopia {
      * solve back into FEM packages.
      */
     class ConvergenceReason {
-        typedef double Scalar;
+        using Scalar = double;
 
     public:
         // TODO:  put all reasons here ...
@@ -120,7 +120,7 @@ namespace utopia {
         }
 
     private:
-        ConvergenceReason() {}
+        ConvergenceReason() = default;
     };
 
 }  // namespace utopia

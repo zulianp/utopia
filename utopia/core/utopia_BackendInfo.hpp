@@ -2,6 +2,7 @@
 #define UTOPIA_UTOPIA_BACKENDINFO_HPP
 
 #include <string>
+#include <utility>
 #include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
@@ -15,9 +16,7 @@ namespace utopia {
             this->name_ = name;
         }
 
-        BackendInfo(const std::string &name = "undefined")
-        : name_(name)
-        {}
+        BackendInfo(std::string name = "undefined") : name_(std::move(name)) {}
 
     private:
         std::string name_;

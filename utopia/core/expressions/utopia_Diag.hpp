@@ -16,7 +16,7 @@ namespace utopia {
         Diag(const Expr &expr) : expr_(expr)
         {}
 
-        typedef typename Expr::Scalar Scalar;
+        using Scalar = typename Expr::Scalar;
 
         static const int Order = (Expr::Order == 1) ? 2 : 1;
 

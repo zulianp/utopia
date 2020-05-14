@@ -13,54 +13,48 @@ namespace utopia
     class RMTRParams : public TrustRegionParams<Vector>
     {
         public:
-            typedef UTOPIA_SCALAR(Vector)                       Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+            using Scalar = typename utopia::Traits<Vector>::Scalar;
+            using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        RMTRParams(): _it_global(0),
-                    _skip_BC_checks(false),
-                    _max_coarse_it(2),
-                    _max_sucessful_smoothing_it(1),
-                    _max_sucessful_coarse_it(1),
-                    _max_QP_smoothing_it(5),
-                    _max_QP_coarse_it(50),
-                    _eps_delta_termination(0.001),
-                    _grad_smoothess_termination(1./8.), // default could be 1./4.
-                    _check_gradient_smoothness(true),
-                    _hessian_update_delta(0.15),
-                    _hessian_update_eta(0.5),
-                    _verbosity_level(VERBOSITY_LEVEL_NORMAL),
-                    _norm_schedule(ALWAYS), 
-                    _deltaH_lagging(false),
-                    _Hpost_lagging(false),
-                    red_(FG_LIGHT_MAGENTA),
-                    def_(FG_DEFAULT),
-                    yellow_(FG_LIGHT_YELLOW),
-                    green_(FG_LIGHT_GREEN)
-        {
+            RMTRParams()
+                : _it_global(0),
 
-        }
+                  _max_coarse_it(2),
+                  _max_sucessful_smoothing_it(1),
+                  _max_sucessful_coarse_it(1),
+                  _max_QP_smoothing_it(5),
+                  _max_QP_coarse_it(50),
+                  _eps_delta_termination(0.001),
+                  _grad_smoothess_termination(1. / 8.),
+                  _hessian_update_delta(0.15),
+                  _hessian_update_eta(0.5),
 
-        ~RMTRParams() override {}
+                  red_(FG_LIGHT_MAGENTA),
+                  def_(FG_DEFAULT),
+                  yellow_(FG_LIGHT_YELLOW),
+                  green_(FG_LIGHT_GREEN) {}
 
-        void read(Input &in) override {
-            TrustRegionParams<Vector>::read(in); 
+            ~RMTRParams() override = default;
 
-            in.get("skip_BC_checks", _skip_BC_checks);
-            in.get("max_coarse_it", _max_coarse_it);
-            in.get("max_sucessful_smoothing_it", _max_sucessful_smoothing_it);
-            in.get("max_sucessful_coarse_it", _max_sucessful_coarse_it);
-            in.get("max_QP_smoothing_it", _max_QP_smoothing_it);
-            in.get("max_QP_coarse_it", _max_QP_coarse_it);
+            void read(Input &in) override {
+                TrustRegionParams<Vector>::read(in);
 
-            in.get("eps_delta_termination", _eps_delta_termination);
-            in.get("grad_smoothess_termination", _grad_smoothess_termination);
-            in.get("check_gradient_smoothness", _check_gradient_smoothness);
+                in.get("skip_BC_checks", _skip_BC_checks);
+                in.get("max_coarse_it", _max_coarse_it);
+                in.get("max_sucessful_smoothing_it", _max_sucessful_smoothing_it);
+                in.get("max_sucessful_coarse_it", _max_sucessful_coarse_it);
+                in.get("max_QP_smoothing_it", _max_QP_smoothing_it);
+                in.get("max_QP_coarse_it", _max_QP_coarse_it);
 
-            in.get("hessian_update_delta", _hessian_update_delta);
-            in.get("hessian_update_eta", _hessian_update_eta);
+                in.get("eps_delta_termination", _eps_delta_termination);
+                in.get("grad_smoothess_termination", _grad_smoothess_termination);
+                in.get("check_gradient_smoothness", _check_gradient_smoothness);
 
-            in.get("deltaH_lagging", _deltaH_lagging); 
-            in.get("Hpost_lagging", _Hpost_lagging);
+                in.get("hessian_update_delta", _hessian_update_delta);
+                in.get("hessian_update_eta", _hessian_update_eta);
+
+                in.get("deltaH_lagging", _deltaH_lagging);
+                in.get("Hpost_lagging", _Hpost_lagging);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -244,8 +238,8 @@ namespace utopia
 
     protected:
         SizeType                         _it_global;                 /** * global iterate counter  */
-        
-        bool                            _skip_BC_checks;
+
+        bool _skip_BC_checks{false};
 
         SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
         SizeType                        _max_sucessful_smoothing_it;          /** * max smoothing iterations  */
@@ -256,17 +250,16 @@ namespace utopia
 
         Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
         Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
-        bool                           _check_gradient_smoothness;
+        bool _check_gradient_smoothness{true};
 
         Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
         Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
 
-        VerbosityLevel                  _verbosity_level;
-        MultilevelNormSchedule          _norm_schedule; 
+        VerbosityLevel _verbosity_level{VERBOSITY_LEVEL_NORMAL};
+        MultilevelNormSchedule _norm_schedule{ALWAYS};
 
-
-        bool                            _deltaH_lagging;
-        bool                            _Hpost_lagging; 
+        bool _deltaH_lagging{false};
+        bool _Hpost_lagging{false};
 
         ColorModifier red_;
         ColorModifier def_;

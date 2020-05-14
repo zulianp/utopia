@@ -53,16 +53,13 @@ namespace utopia
     const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const SolverType & solve_type, Input & in)
     {
         // TODO:: check options proper options for normal eq.
-        if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))
-        {
+        if (auto *fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector> *>(&fun)) {
             auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type);
             LeastSquaresTrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(in);
             tr_solver.solve(*fun_ne_ptr, x);
             return tr_solver.solution_status();
-        }
-        else
-        {
+        } else {
             auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type);
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(in);
@@ -75,21 +72,17 @@ namespace utopia
     const SolutionStatus & trust_region_solve(Function<Matrix, Vector> &fun, Vector &x, const SolverType & solve_type = Solver::automatic())
     {
         // TODO:: check options proper options for normal eq.
-        if(LeastSquaresFunction<Matrix, Vector> * fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector>* >(&fun))
-        {
+        if (auto *fun_ne_ptr = dynamic_cast<LeastSquaresFunction<Matrix, Vector> *>(&fun)) {
             auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type);
             LeastSquaresTrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.solve(*fun_ne_ptr, x);
             return tr_solver.solution_status();
-        }
-        else
-        {
+        } else {
             auto subproblem = trust_region_strategy<Matrix, Vector>(solve_type);
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.solve(fun, x);
             return tr_solver.solution_status();
         }
-
     }
 
 }

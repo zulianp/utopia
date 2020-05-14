@@ -92,14 +92,11 @@ namespace utopia {
     StandardLogger::StandardLogger(std::ostream &status_stream,
                                    std::ostream &warning_stream,
                                    std::ostream &error_stream)
-    :
-    status_stream_(status_stream),
-    warning_stream_(warning_stream),
-    error_stream_(error_stream),
-    status_direct_output_(true),
-    warning_direct_output_(true),
-    error_direct_output_(true)
-    { }
+        : status_stream_(status_stream),
+          warning_stream_(warning_stream),
+          error_stream_(error_stream)
+
+    {}
 
     StandardLogger::~StandardLogger() = default;
 }

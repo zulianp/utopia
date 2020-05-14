@@ -16,7 +16,7 @@ namespace utopia {
     template <class Expr, class Operation, class Traits, int Backend>
     class Eval<Reduce<Expr, Operation>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         inline static Number<Scalar> apply(const Reduce<Expr, Operation> &expr)
         {
@@ -33,7 +33,7 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Dot<Left, Right>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         inline static Number<Scalar> apply(const Dot<Left, Right> &expr)
         {
@@ -58,7 +58,7 @@ namespace utopia {
     template<class Expr, class Traits, int Backend>
     class Eval<Norm<Expr, 2>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         inline static Number<Scalar> apply(const Norm<Expr, 2> &expr)
         {
@@ -75,7 +75,7 @@ namespace utopia {
     template<class Expr, class Traits, int Backend>
     class Eval<Norm<Expr, 1>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         inline static Number<Scalar> apply(const Norm<Expr, 1> &expr) {
             Scalar result;
@@ -95,7 +95,7 @@ namespace utopia {
     template<class Expr, class Traits, int Backend>
     class Eval<Norm<Expr, INFINITY_NORM_TAG>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         inline static Number<Scalar> apply(const Norm<Expr, INFINITY_NORM_TAG> &expr) {
             Scalar result;
@@ -158,7 +158,7 @@ namespace utopia {
     template<class Expr, class Traits, int Backend>
     class Eval<Trace<Expr>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
         inline static Number<Scalar> apply(const Trace<Expr> &expr)
         {
@@ -179,8 +179,8 @@ namespace utopia {
         using Expr = utopia::Reduce<Tensor<Derived, 2>, PlusIsNonZero<T>>;
         using Vector = UTOPIA_VECTOR(Derived);
 
-        typedef typename Traits::Scalar Scalar;
-        typedef typename Traits::SizeType SizeType;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
 
         inline static SizeType apply(const Expr &expr)
         {

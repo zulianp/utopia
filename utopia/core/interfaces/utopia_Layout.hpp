@@ -75,14 +75,12 @@ namespace utopia {
 
 		const Comm &comm() const { return comm_; }
 
-		template<typename...Args>
-		Layout(const Comm &comm, Args &&... args)
-		: comm_(comm)
-		{
-			init(std::forward<Args>(args)...);
-		}
+                template <typename... Args>
+                Layout(Comm comm, Args &&... args) : comm_(std::move(comm)) {
+                    init(std::forward<Args>(args)...);
+                }
 
-		Layout()
+                Layout()
 		{
 			for(int i = 0; i < Order; ++i) {
 				local_size_[i] = 0;

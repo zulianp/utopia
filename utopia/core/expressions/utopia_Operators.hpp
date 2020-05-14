@@ -358,7 +358,7 @@ namespace utopia {
     template<typename  T>
     class Reciprocal {
     public:
-        typedef T Scalar;
+        using Scalar = T;
 
         std::string get_class() const { return "Reciprocal"; }
 

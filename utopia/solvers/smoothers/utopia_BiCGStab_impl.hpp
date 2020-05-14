@@ -5,9 +5,8 @@
 
 namespace utopia {
 
-    template<typename Matrix, typename Vector, int Backend>
-    BiCGStab<Matrix, Vector, Backend>::BiCGStab(): initialized_(false)
-    {}
+    template <typename Matrix, typename Vector, int Backend>
+    BiCGStab<Matrix, Vector, Backend>::BiCGStab() {}
 
     template<typename Matrix, typename Vector, int Backend>
     BiCGStab<Matrix, Vector, Backend> * BiCGStab<Matrix, Vector, Backend>::clone() const

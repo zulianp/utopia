@@ -36,7 +36,7 @@
 namespace utopia {
     class PetscMatrixMemory {
     public:
-        PetscMatrixMemory(const MPI_Comm comm = PETSC_COMM_WORLD) : owner_(true) { MatCreate(comm, &_mat); }
+        PetscMatrixMemory(const MPI_Comm comm = PETSC_COMM_WORLD) { MatCreate(comm, &_mat); }
 
         PetscMatrixMemory(Mat &mat, const bool owner = false) : _mat(mat), owner_(owner) {}
 
@@ -96,8 +96,8 @@ namespace utopia {
         inline bool is_owner() const { return owner_; }
 
     private:
-        Mat _mat;
-        bool owner_;
+        Mat _mat{nullptr};
+        bool owner_{true};
     };
 
     class PetscMatrix :

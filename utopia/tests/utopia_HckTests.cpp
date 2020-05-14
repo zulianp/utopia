@@ -15,8 +15,8 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     class HckTests {
     public:
-        using SizeType = typename utopia::Traits<PetscVector>::SizeType;
-        using Scalar = typename utopia::Traits<TpetraVector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
         explicit HckTests(const SizeType &n,
                           const SizeType &n_levels,

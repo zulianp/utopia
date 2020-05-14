@@ -25,8 +25,8 @@ namespace utopia
      */
     template<class Matrix, class Vector>
     class LinearMultiLevel : public MultiLevelBase<Matrix, Vector>, public IterativeSolver<Matrix, Vector> {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::Level<Matrix, Vector> Level;
         typedef utopia::Transfer<Matrix, Vector> Transfer;
         typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
@@ -54,7 +54,7 @@ namespace utopia
             this->print_param_usage(os, "must_generate_masks", "bool", "Flag deciding if masks should be generated.", "-");
         }
 
-        ~LinearMultiLevel() override {}
+        ~LinearMultiLevel() override = default;
 
         /**
          * @brief

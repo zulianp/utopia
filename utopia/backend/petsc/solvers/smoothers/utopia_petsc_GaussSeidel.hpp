@@ -25,8 +25,8 @@ namespace utopia {
      */
     template <class Matrix, class Vector>
     class GaussSeidel<Matrix, Vector, PETSC> : public IterativeSolver<Matrix, Vector> {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
 
     public:

@@ -14,7 +14,7 @@ namespace utopia
         using Communicator = typename Traits<Vector>::Communicator;
         using Layout       = typename Traits<Vector>::Layout;
 
-        virtual ~MemoryInterface() {}
+        virtual ~MemoryInterface() = default;
 
         virtual void init_memory(const Layout &l) = 0;
     };

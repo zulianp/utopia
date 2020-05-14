@@ -25,13 +25,13 @@ namespace utopia
     template<typename Matrix, typename Vector>
     class KSP_TR<Matrix, Vector, PETSC>: public TRSubproblem<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::KSPSolver<Matrix, Vector>           KSPSolver;
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem;
 
-        typedef utopia::Preconditioner<Vector>              Preconditioner;
+        using Preconditioner = utopia::Preconditioner<Vector>;
         typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
 
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
@@ -50,7 +50,7 @@ namespace utopia
             this->ksp_type(t);
         }
 
-        ~KSP_TR() override {}
+        ~KSP_TR() override = default;
 
         void read(Input &in) override {
             TRSubproblem::read(in);

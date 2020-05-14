@@ -37,7 +37,7 @@ namespace utopia {
         typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
 
         typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
-        typedef std::shared_ptr<Fun> FunPtr;
+        using FunPtr = std::shared_ptr<Fun>;
 
         using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
@@ -46,7 +46,7 @@ namespace utopia {
             this->n_levels(n_levels);
         }
 
-        ~NonlinearMultiLevelBase() override {}
+        ~NonlinearMultiLevelBase() override = default;
 
         void read(Input &in) override {
             MultiLevelBase<Matrix, Vector>::read(in);
@@ -246,7 +246,7 @@ namespace utopia {
 
             if(!non_data_path.empty())
             {
-                CSVWriter writer;
+                CSVWriter writer{};
                 if (mpi_world_rank() == 0)
                 {
                     if(!writer.file_exists(non_data_path))

@@ -25,8 +25,7 @@ namespace utopia
 
         using Preconditioner = utopia::Preconditioner<Vector>;
 
-        SteihaugToint(): OperatorBasedTRSubproblem<Matrix, Vector>(), use_precond_direction_(false), initialized_(false)
-        {}
+        SteihaugToint() : OperatorBasedTRSubproblem<Matrix, Vector>() {}
 
         void read(Input &in) override
         {
@@ -433,8 +432,8 @@ namespace utopia
 
         Vector v_k, r, p_k, B_p_k, minus_rhs;
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
-        bool use_precond_direction_;
-        bool initialized_;
+        bool use_precond_direction_{false};
+        bool initialized_{false};
         Layout layout_;
 
     };

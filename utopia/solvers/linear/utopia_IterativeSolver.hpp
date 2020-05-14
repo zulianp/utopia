@@ -19,12 +19,12 @@ namespace utopia {
     template <class Matrix, class Vector>
     class IterativeSolver : public LinearSolver<Matrix, Vector>, public Monitor<Vector> {
     public:
-        typedef UTOPIA_SCALAR(Matrix) Scalar;
-        typedef UTOPIA_SIZE_TYPE(Matrix) SizeType;
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
-        IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), verbose_(false), norm_freq_(1.0) {}
+        IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), norm_freq_(1.0) {}
 
-        ~IterativeSolver() override {}
+        ~IterativeSolver() override = default;
 
         void read(Input &in) override {
             LinearSolver<Matrix, Vector>::read(in);
@@ -91,7 +91,7 @@ namespace utopia {
             auto non_data_path = Utopia::instance().get(path);
 
             if (!non_data_path.empty()) {
-                CSVWriter writer;
+                CSVWriter writer{};
                 if (mpi_world_rank() == 0) {
                     if (!writer.file_exists(non_data_path)) {
                         writer.open_file(non_data_path);
@@ -219,7 +219,7 @@ namespace utopia {
         Scalar stol_; /*!< Step tolerance. */
 
         SizeType max_it_; /*!< Maximum number of iterations. */
-        bool verbose_;    /*!< Verbose enable? . */
+        bool verbose_{false}; /*!< Verbose enable? . */
 
         Chrono _time; /*!<Timing of solver. */
         SizeType norm_freq_;

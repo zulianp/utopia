@@ -56,9 +56,9 @@ namespace utopia {
         virtual bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x);
 
     private:
-        bool use_line_search_;
-        bool use_symmetric_sweep_;
-        bool l1_;
+        bool use_line_search_{false};
+        bool use_symmetric_sweep_{true};
+        bool l1_{false};
 
         SizeType n_local_sweeps_;
         SizeType check_s_norm_each_;
@@ -67,7 +67,7 @@ namespace utopia {
         Vector inactive_set_;
         Vector is_c_;
 
-        bool use_sweeper_;
+        bool use_sweeper_{true};
         std::unique_ptr<ProjectedGaussSeidelSweep<Scalar, SizeType> > sweeper_;
 
         void init(const Matrix &A);

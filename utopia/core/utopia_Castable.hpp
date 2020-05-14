@@ -12,7 +12,7 @@ namespace utopia {
     template <class Derived>
     class Castable<Derived, 0> {
     public:
-        typedef typename utopia::Traits<Derived>::Scalar Scalar;
+        using Scalar = typename utopia::Traits<Derived>::Scalar;
 
         // virtual ~Castable() {}
 

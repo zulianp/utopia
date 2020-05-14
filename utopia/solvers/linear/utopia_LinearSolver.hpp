@@ -21,9 +21,9 @@ namespace utopia {
     template <class Matrix, class Vector>
     class LinearSolver : virtual public Preconditioner<Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-        ~LinearSolver() override {}
+        ~LinearSolver() override = default;
 
         LinearSolver() = default;
         LinearSolver(const LinearSolver &other) { assert((!other.op_) && "cannot be copied once initialized"); }

@@ -14,11 +14,11 @@
     class TrustRegion final:  public NewtonBase<Matrix, Vector>,
                               public TrustRegionBase<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
-        typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
+        using TrustRegionBase = utopia::TrustRegionBase<Vector>;
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolver;
 
          public:
@@ -103,8 +103,7 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
-          {
+          if (auto *tr_subproblem = dynamic_cast<TRSubproblem *>(this->linear_solver().get())) {
               if(empty(p_k)){
                 p_k = 0.0*x_k;
               }
@@ -118,10 +117,8 @@
               tr_subproblem->solve(H, g_minus_, p_k);
               this->solution_status_.num_linear_solves++;
               // UTOPIA_NO_ALLOC_END();
-          }
-          else
-          {
-            utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
+          } else {
+              utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
           }
 
           // UTOPIA_NO_ALLOC_BEGIN("TR:2");

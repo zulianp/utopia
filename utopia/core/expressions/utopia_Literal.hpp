@@ -35,7 +35,7 @@ namespace utopia {
              StoreAs = UTOPIA_BY_VALUE
         };
 
-        typedef _Scalar Scalar;
+        using Scalar = _Scalar;
 
         inline operator Scalar &()
         {
@@ -229,7 +229,7 @@ namespace utopia {
     template<typename _Scalar, _Scalar Value = 0>
     class Literal : public Expression< Literal<_Scalar> > {
     public:
-        typedef _Scalar Scalar;
+        using Scalar = _Scalar;
 
         static const int Order = 0;
 

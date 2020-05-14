@@ -11,8 +11,9 @@
 #include "utopia_Communicator.hpp"
 #include "utopia_Memory.hpp"
 
-#include <memory>
 #include <cassert>
+#include <memory>
+#include <utility>
 
 // #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
 
@@ -23,16 +24,8 @@ namespace utopia {
     public:
         using Communicator = typename Traits<Vector>::Communicator;
 
-        LambdaOperator(
-            Communicator &comm,
-            const Size &size,
-            const Size &local_size,
-            Fun fun) :
-        comm_(comm),
-        size_(size),
-        local_size_(local_size),
-        fun_(fun)
-        {}
+        LambdaOperator(Communicator &comm, Size size, Size local_size, Fun fun)
+            : comm_(comm), size_(std::move(size)), local_size_(std::move(local_size)), fun_(fun) {}
 
         inline bool apply(const Vector &rhs, Vector &sol) const override
         {
@@ -88,7 +81,7 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        ~Preconditioner() override {}
+        ~Preconditioner() override = default;
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
 
         void read(Input & /*in*/) override {}

@@ -14,7 +14,7 @@ namespace utopia {
     public:
         using Count = long;
 
-        typedef void (*RunTest)();
+        using RunTest = void (*)();
 
         static char add_test_unit(const std::string &unit_name, RunTest run_test);
         static char add_optional_test_unit(const std::string &unit_name, RunTest run_test);

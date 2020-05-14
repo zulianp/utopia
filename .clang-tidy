@@ -1,11 +1,11 @@
 ---
 Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,cppcoreguidelines-*'
 WarningsAsErrors: ''
-HeaderFilterRegex: ''
+HeaderFilterRegex: ./utopia/*utopia_*
 AnalyzeTemporaryDtors: false
 FormatStyle:     file
 User:            zulianp
-CheckOptions:    
+CheckOptions:
   - key:             cppcoreguidelines-no-malloc.Allocations
     value:           '::malloc;::calloc'
   - key:             cppcoreguidelines-no-malloc.Deallocations

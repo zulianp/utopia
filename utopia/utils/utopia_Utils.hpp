@@ -1,14 +1,14 @@
 #ifndef UTOPIA_UTILS_HPP
 #define UTOPIA_UTILS_HPP
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <algorithm>
-#include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "utopia_MPI.hpp"
 #include "utopia_Chrono.hpp"
@@ -89,8 +89,7 @@ namespace utopia
     struct EmptyDeleter
     {
         EmptyDeleter() /* noexcept */
-        {
-        }
+            = default;
 
         template <typename U>
         EmptyDeleter(const EmptyDeleter<U>&,
@@ -189,15 +188,14 @@ namespace utopia
 
              void close_file()
              {
-                 if (pFile!=NULL && mpi_world_rank() == 0)
-                    fclose (pFile);
+                 if (pFile != nullptr && mpi_world_rank() == 0) fclose(pFile);
              }
 
 
              inline bool file_exists(const std::string& file_name)
              {
-              struct stat buffer;
-              return (stat (file_name.c_str(), &buffer) == 0);
+                 struct stat buffer {};
+                 return (stat(file_name.c_str(), &buffer) == 0);
             }
 
 

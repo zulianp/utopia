@@ -87,15 +87,14 @@ namespace utopia {
         inline void verbose(const bool val) { verbose_ = val; }
 
     private:
-        int is_no_allocation_region_;
-        Counter count_;
-        Counter n_violations_;
+        int is_no_allocation_region_{0};
+        Counter count_{0};
+        Counter n_violations_{0};
         std::stack<std::string> region_name_;
-        bool abort_on_violation_;
-        bool verbose_;
+        bool abort_on_violation_{false};
+        bool verbose_{true};
 
-        inline Allocations() : is_no_allocation_region_(0), count_(0), n_violations_(0), abort_on_violation_(false), verbose_(true)
-        {}
+        inline Allocations() = default;
     };
 
 }

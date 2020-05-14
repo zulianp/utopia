@@ -4,8 +4,8 @@
 #include "utopia_Base.hpp"
 
 namespace utopia {
-    typedef const char * SolverType;
-    typedef const char * SolverPackage;
+    using SolverType = const char *;
+    using SolverPackage = const char *;
 
     // class SolverPackage {
     // public:

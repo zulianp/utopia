@@ -121,31 +121,31 @@ namespace utopia {
     template<class Traits, int Sparsity>
     class TensorQuery<Traits, 0, Sparsity> {
     public:
-        typedef utopia::Number<typename Traits::Scalar> Type;
+        using Type = utopia::Number<typename Traits::Scalar>;
     };
 
     template<class Traits, int Sparsity>
     class TensorQuery<Traits, 1, Sparsity> {
     public:
-        typedef typename Traits::Vector Type;
+        using Type = typename Traits::Vector;
     };
 
     template<class Traits>
     class TensorQuery<Traits, 2, FillType::DENSE> {
     public:
-        typedef typename Traits::Matrix Type;
+        using Type = typename Traits::Matrix;
     };
 
     template<class Traits>
     class TensorQuery<Traits, 2, FillType::SPARSE> {
     public:
-        typedef typename Traits::SparseMatrix Type;
+        using Type = typename Traits::SparseMatrix;
     };
 
     template<class Traits>
     class TensorQuery<Traits, 2, FillType::POLYMORPHIC> {
     public:
-        typedef typename Traits::PolymorphicMatrix Type;
+        using Type = typename Traits::PolymorphicMatrix;
     };
 
 
@@ -243,7 +243,7 @@ namespace utopia {
     template<>
     class Traits<double>  {
     public:
-        typedef double Scalar;
+        using Scalar = double;
 
         static const int Backend = INVALID_BACKEND;
         static const int Order = 0;
@@ -256,7 +256,7 @@ namespace utopia {
     template<>
     class Traits<float>  {
     public:
-        typedef float Scalar;
+        using Scalar = float;
 
         static const int Backend = INVALID_BACKEND;
         static const int Order = 0;
@@ -269,7 +269,7 @@ namespace utopia {
     template<>
     class Traits<int>  {
     public:
-        typedef int Scalar;
+        using Scalar = int;
 
         static const int Backend = INVALID_BACKEND;
         static const int Order = 0;

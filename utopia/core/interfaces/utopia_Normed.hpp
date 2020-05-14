@@ -8,8 +8,8 @@ namespace utopia {
 	public:
 		using Scalar = Scalar_;
 
-		virtual ~Normed() {}
-		virtual Scalar norm_infty() const = 0;
+                virtual ~Normed() = default;
+                virtual Scalar norm_infty() const = 0;
 		virtual Scalar norm1() const = 0;
 		virtual Scalar norm2() const = 0;
 	};

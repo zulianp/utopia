@@ -109,9 +109,9 @@ namespace utopia {
         std::ostream &warning_stream_;
         std::ostream &error_stream_;
 
-        bool status_direct_output_;
-        bool warning_direct_output_;
-        bool error_direct_output_;
+        bool status_direct_output_{true};
+        bool warning_direct_output_{true};
+        bool error_direct_output_{true};
 
         std::vector<std::shared_ptr<Logger::Entry>> status_entries_;
         std::vector<std::shared_ptr<Logger::Entry>> warning_entries_;

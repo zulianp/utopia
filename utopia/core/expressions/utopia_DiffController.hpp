@@ -13,9 +13,7 @@ namespace utopia {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
 
-        DiffController(const Scalar spacing = 1e-5)
-        : spacing_(spacing), hessian_from_grad_(true)
-        {}
+        DiffController(const Scalar spacing = 1e-5) : spacing_(spacing) {}
 
         inline void hessian_from_grad(const bool val) {
             hessian_from_grad_ = val;
@@ -115,7 +113,7 @@ namespace utopia {
 
     private:
         Scalar spacing_;
-        bool hessian_from_grad_;
+        bool hessian_from_grad_{true};
     };
 }
 

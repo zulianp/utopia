@@ -12,7 +12,7 @@ namespace utopia {
 
     class Communicator : public Clonable {
     public:
-        ~Communicator() override {}
+        ~Communicator() override = default;
         virtual int rank() const = 0;
         virtual int size() const = 0;
         Communicator *clone() const override = 0;
@@ -147,7 +147,7 @@ namespace utopia {
 
     class MPICommunicator : public Communicator {
     public:
-        ~MPICommunicator() override {}
+        ~MPICommunicator() override = default;
 
         virtual MPI_Comm get() const = 0;
 

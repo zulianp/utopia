@@ -26,8 +26,8 @@ namespace utopia {
     class LinearSolverFactory<Matrix, Vector, PETSC> {
     public:
         typedef utopia::LinearSolver<Matrix, Vector>  LinearSolverT;
-        typedef std::unique_ptr<LinearSolverT>        LinearSolverPtr;
-        typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
+        using LinearSolverPtr = std::unique_ptr<LinearSolverT>;
+        using FactoryMethodT = utopia::IFactoryMethod<LinearSolverT>;
 
         template<class Alg>
         using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;

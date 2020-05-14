@@ -45,7 +45,7 @@ namespace utopia {
             return "MatrixView";
         }
 
-        UTOPIA_FUNCTION TensorView() {}
+        UTOPIA_FUNCTION TensorView() = default;
         UTOPIA_FUNCTION TensorView(ArrayView2D &&view) : view_(std::move(view)) {}
         UTOPIA_FUNCTION TensorView(const ArrayView2D &view) : view_(view) {}
 
