@@ -139,7 +139,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     class SimpleQuadraticFunction : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
 
         SimpleQuadraticFunction(const SizeType &n) : n_(n) {}

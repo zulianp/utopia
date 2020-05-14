@@ -53,7 +53,7 @@ namespace utopia {
     class UnconstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                       virtual public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         ~UnconstrainedTestFunction() override = default;
@@ -63,7 +63,7 @@ namespace utopia {
     class UnconstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                               virtual public ExtendedFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         ~UnconstrainedExtendedTestFunction() override = default;
@@ -75,7 +75,7 @@ namespace utopia {
     class ConstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                     virtual public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
 
@@ -175,7 +175,7 @@ namespace utopia {
     class ConstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                             virtual public ExtendedFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
 

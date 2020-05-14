@@ -2,6 +2,8 @@
 #define UTOPIA_AUTO_DIFF_EXPR_HPP
 
 #include "utopia_Differentiable.hpp"
+#include "utopia_Factory.hpp"
+#include "utopia_Operators.hpp"
 #include "utopia_Simplify.hpp"
 
 namespace utopia {

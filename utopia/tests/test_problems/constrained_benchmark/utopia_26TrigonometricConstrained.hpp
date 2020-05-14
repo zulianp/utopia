@@ -5,17 +5,14 @@
 #include <vector>
 #include "utopia_UnconstrainedBenchmark.hpp"
 
-namespace utopia
-{
-    template<class Matrix, class Vector>
-    class Trigonometric26Constrained final: public ConstrainedTestFunction<Matrix, Vector>
-    {
+namespace utopia {
+    template <class Matrix, class Vector>
+    class Trigonometric26Constrained final : public ConstrainedTestFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        Trigonometric26Constrained()
-        {
+        Trigonometric26Constrained() {
             auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
@@ -49,55 +46,31 @@ namespace utopia
                 ub.set(9, 100.0);
             }
 
-
             this->set_box_constraints(make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub)));
-
         }
 
-        std::string name() const override
-        {
-            return "Trigonometric, bound constrained";
-        }
+        std::string name() const override { return "Trigonometric, bound constrained"; }
 
-        SizeType dim() const override
-        {
-            return unconstrained_.dim();
-        }
+        SizeType dim() const override { return unconstrained_.dim(); }
 
-        bool value(const Vector &x, typename Vector::Scalar &result) const override
-        {
+        bool value(const Vector &x, typename Vector::Scalar &result) const override {
             return unconstrained_.value(x, result);
         }
 
-        bool gradient(const Vector &x, Vector &g) const override
-        {
-            return unconstrained_.gradient(x, g);
-        }
+        bool gradient(const Vector &x, Vector &g) const override { return unconstrained_.gradient(x, g); }
 
-        bool hessian(const Vector &x, Matrix &H) const override
-        {
-            return unconstrained_.hessian(x, H);
-        }
+        bool hessian(const Vector &x, Matrix &H) const override { return unconstrained_.hessian(x, H); }
 
-        Vector initial_guess() const override
-        {
-            return unconstrained_.initial_guess();
-        }
+        Vector initial_guess() const override { return unconstrained_.initial_guess(); }
 
-        const Vector & exact_sol() const override
-        {
-            return unconstrained_.exact_sol();
-        }
+        const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override
-        {
-            return 0.0;
-        }
+        Scalar min_function_value() const override { return 0.0; }
 
     private:
         Trigonometric26<Matrix, Vector> unconstrained_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_SOLVER_TRIGONOMETRIC_26_CONSTRAINED_HPP
+#endif  // UTOPIA_SOLVER_TRIGONOMETRIC_26_CONSTRAINED_HPP

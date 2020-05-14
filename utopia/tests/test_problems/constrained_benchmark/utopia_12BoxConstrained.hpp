@@ -5,18 +5,14 @@
 #include "utopia_Core.hpp"
 #include "utopia_UnconstrainedBenchmark.hpp"
 
-
-namespace utopia
-{
-    template<class Matrix, class Vector>
-    class Box12Constrained final: public ConstrainedTestFunction<Matrix, Vector>
-    {
+namespace utopia {
+    template <class Matrix, class Vector>
+    class Box12Constrained final : public ConstrainedTestFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        Box12Constrained()
-        {
+        Box12Constrained() {
             auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
@@ -36,55 +32,30 @@ namespace utopia
                 ub.set(2, 20.0);
             }
 
-
             this->set_box_constraints(make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub)));
-
         }
 
-        std::string name() const override
-        {
-            return "Box three-dimensional, bound constrained";
-        }
+        std::string name() const override { return "Box three-dimensional, bound constrained"; }
 
-        SizeType dim() const override
-        {
-            return unconstrained_.dim();
-        }
+        SizeType dim() const override { return unconstrained_.dim(); }
 
-        bool value(const Vector &x, typename Vector::Scalar &result) const override
-        {
+        bool value(const Vector &x, typename Vector::Scalar &result) const override {
             return unconstrained_.value(x, result);
         }
 
-        bool gradient(const Vector &x, Vector &g) const override
-        {
-            return unconstrained_.gradient(x, g);
-        }
+        bool gradient(const Vector &x, Vector &g) const override { return unconstrained_.gradient(x, g); }
 
-        bool hessian(const Vector &x, Matrix &H) const override
-        {
-            return unconstrained_.hessian(x, H);
-        }
+        bool hessian(const Vector &x, Matrix &H) const override { return unconstrained_.hessian(x, H); }
 
-        Vector initial_guess() const override
-        {
-            return unconstrained_.initial_guess();
-        }
+        Vector initial_guess() const override { return unconstrained_.initial_guess(); }
 
-        const Vector & exact_sol() const override
-        {
-            return unconstrained_.exact_sol();
-        }
+        const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override
-        {
-            return 0.30998153e-5;
-        }
+        Scalar min_function_value() const override { return 0.30998153e-5; }
 
     private:
         Box12<Matrix, Vector> unconstrained_;
-
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_BOX_12_CONSTRAINED
+#endif  // UTOPIA_BOX_12_CONSTRAINED
