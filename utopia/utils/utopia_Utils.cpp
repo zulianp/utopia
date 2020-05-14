@@ -109,24 +109,21 @@ namespace utopia
     template<>
      void CSVWriter::write_table_row(const std::vector<double> vars)
      {
-         if (pFile!=NULL && mpi_world_rank() == 0)
-         {
-             for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
-             {
-                 if(i < vars.size() -1)
-                     fprintf (pFile,"%g,", vars[i]);
-                 else
-                     fprintf (pFile,"%g", vars[i]);
-             }
-             fprintf (pFile, "\n");
-         }
+        if (pFile != nullptr && mpi_world_rank() == 0) {
+            for (std::vector<double>::size_type i = 0; i < vars.size(); i++) {
+                if (i < vars.size() - 1)
+                    fprintf(pFile, "%g,", vars[i]);
+                else
+                    fprintf(pFile, "%g", vars[i]);
+            }
+            fprintf(pFile, "\n");
+        }
      }
 
      template<>
      void CSVWriter::write_table_row(const std::vector<int> vars)
      {
-         if (pFile!=NULL && mpi_world_rank() == 0)
-         {
+         if (pFile != nullptr && mpi_world_rank() == 0) {
              for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
              {
                  if(i < vars.size() -1)
@@ -141,8 +138,7 @@ namespace utopia
      template<>
      void CSVWriter::write_table_row(const std::vector<unsigned long> vars)
      {
-         if (pFile!=NULL && mpi_world_rank() == 0)
-         {
+         if (pFile != nullptr && mpi_world_rank() == 0) {
              for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
              {
                  if(i < vars.size() -1)
@@ -157,8 +153,7 @@ namespace utopia
      template<>
      void CSVWriter::write_table_row(const std::vector<char> vars)
      {
-             if (pFile!=NULL && mpi_world_rank() == 0)
-         {
+         if (pFile != nullptr && mpi_world_rank() == 0) {
              for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
              {
                  if(i < vars.size() -1)
@@ -168,14 +163,12 @@ namespace utopia
              }
              fprintf (pFile, "\n");
          }
-
      }
 
      template<>
      void CSVWriter::write_table_row(const std::vector<std::string> vars)
      {
-             if (pFile!=NULL && mpi_world_rank() == 0)
-         {
+         if (pFile != nullptr && mpi_world_rank() == 0) {
              for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
              {
                  if(i < vars.size() -1)
@@ -185,7 +178,6 @@ namespace utopia
              }
              fprintf (pFile, "\n");
          }
-
      }
 
 

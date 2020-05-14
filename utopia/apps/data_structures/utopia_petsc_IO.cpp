@@ -19,7 +19,7 @@ namespace utopia {
 
     class PetscIO::Wrapper {
     public:
-        Wrapper() {}
+        Wrapper() = default;
 
         ~Wrapper() { destroy(); }
 

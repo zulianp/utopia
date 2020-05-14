@@ -7,11 +7,9 @@
 
 namespace utopia {
 
-    TestRunner::TestRunner()
-    {}
+    TestRunner::TestRunner() = default;
 
-    TestRunner::~TestRunner()
-    {}
+    TestRunner::~TestRunner() = default;
 
     void TestRunner::verbose(const bool val)
     {

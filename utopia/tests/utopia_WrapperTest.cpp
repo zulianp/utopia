@@ -122,7 +122,7 @@ namespace utopia {
             }
         }
 
-        WrapperTest() {}
+        WrapperTest() = default;
 
     private:
         int n_dofs{100};

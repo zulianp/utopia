@@ -44,7 +44,7 @@ namespace utopia {
     public:
         typedef PathIterator Iterator;
 
-        Path(const std::string &path = "");
+        Path(std::string path = "");
         Path(const char *path);
 
         Path operator+(const Path &other) const;

@@ -12,11 +12,9 @@ namespace utopia {
 
     template class NaryActionRegistry<Input &>;
 
-    AppRunner::AppRunner()
-    {}
+    AppRunner::AppRunner() = default;
 
-    AppRunner::~AppRunner()
-    {}
+    AppRunner::~AppRunner() = default;
 
     void AppRunner::verbose(const bool val)
     {

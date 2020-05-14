@@ -5,27 +5,26 @@
 #include "tinyexpr.h"
 #include "utopia_make_unique.hpp"
 
+#include <utility>
 #include <vector>
 
 namespace utopia {
     class SymbolicFunction::Impl {
     public:
-        Impl(const std::string &expr)
-        :
-        x_(0.),
-        y_(0.),
-        z_(0.),
-        t_(0.),
-        expr_(expr),
-        vars_({
-            {"x", &x_, TE_VARIABLE, nullptr},
-            {"y", &y_, TE_VARIABLE, nullptr},
-            {"z", &z_, TE_VARIABLE, nullptr},
-            {"t", &t_, TE_VARIABLE, nullptr},
-        }),
-        err_(0)
-        {
-             /* Compile the expression with variables. */
+        Impl(std::string expr)
+            : x_(0.),
+              y_(0.),
+              z_(0.),
+              t_(0.),
+              expr_(std::move(expr)),
+              vars_({
+                  {"x", &x_, TE_VARIABLE, nullptr},
+                  {"y", &y_, TE_VARIABLE, nullptr},
+                  {"z", &z_, TE_VARIABLE, nullptr},
+                  {"t", &t_, TE_VARIABLE, nullptr},
+              }),
+              err_(0) {
+            /* Compile the expression with variables. */
             e_ = te_compile(expr_.c_str(), &vars_[0], vars_.size(), &err_);
         }
 
@@ -61,7 +60,7 @@ namespace utopia {
         te_expr * e_;
     };
 
-    SymbolicFunction::~SymbolicFunction() {}
+    SymbolicFunction::~SymbolicFunction() = default;
 
     SymbolicFunction::SymbolicFunction(const std::string &expr)
     {

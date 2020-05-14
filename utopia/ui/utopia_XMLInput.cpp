@@ -87,9 +87,9 @@ namespace utopia {
         return impl_->valid();
     }
 
-    XMLInput::~XMLInput() {}
+    XMLInput::~XMLInput() = default;
 
-    XMLInput::XMLInput() {}
+    XMLInput::XMLInput() = default;
 
     bool XMLInput::object_begin(const std::string &name)
     {

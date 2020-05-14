@@ -394,7 +394,7 @@ namespace utopia {
             multigrid.fix_semidefinite_operators(true);
             multigrid.must_generate_masks(true);
             multigrid.max_it(1);
-            multigrid.mg_type(1);
+            multigrid.mg_type(true);
             multigrid.verbose(verbose);
             // multigrid.set_use_line_search(true);
 
@@ -515,7 +515,7 @@ namespace utopia {
             multigrid.update(make_ref(A));
 
             multigrid.max_it(1);
-            multigrid.mg_type(2);
+            multigrid.mg_type(true);
 
             PetscVector x_0(row_layout(A), 0.0);
 
@@ -532,7 +532,7 @@ namespace utopia {
 
             multigrid.verbose(verbose);
             multigrid.max_it(1);
-            multigrid.mg_type(1);
+            multigrid.mg_type(true);
             multigrid.pre_smoothing_steps(1);
             multigrid.post_smoothing_steps(1);
             utopia_ksp.set_preconditioner(make_ref(multigrid));
@@ -622,7 +622,7 @@ namespace utopia {
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(1);
-            multigrid.mg_type(1);
+            multigrid.mg_type(true);
             multigrid.verbose(verbose);
             // multigrid.set_use_line_search(true);
 

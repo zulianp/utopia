@@ -279,7 +279,7 @@ namespace utopia {
         }
 
         UTOPIA_REPORT_ALLOC("TpetraVector::ghosted");
-        ghosted_vec_ = Teuchos::rcp(new VectorType(ghost_map, 1));
+        ghosted_vec_ = Teuchos::rcp(new VectorType(ghost_map, true));
         vec_ = ghosted_vec_->offsetViewNonConst(map, 0);
 
         assert(!vec_.is_null());
@@ -318,7 +318,7 @@ namespace utopia {
 
         //FIXME can we avoid this?
         //UTOPIA_REPORT_ALLOC(TpetraVector::export_ghosts_add)
-        RCPVectorType y(new VectorType(map, 1));
+        RCPVectorType y(new VectorType(map, true));
 
         y->doExport(*ghosted_vec_, exporter, Tpetra::ADD);
 
@@ -346,7 +346,7 @@ namespace utopia {
 
         if(other.has_ghosts()) {
             UTOPIA_REPORT_ALLOC("TpetraVector::copy");
-            ghosted_vec_ = Teuchos::rcp(new VectorType(other.ghosted_vec_->getMap(), 1));
+            ghosted_vec_ = Teuchos::rcp(new VectorType(other.ghosted_vec_->getMap(), true));
             ghosted_vec_->assign(*other.ghosted_vec_);
             vec_ = ghosted_vec_->offsetViewNonConst(other.vec_->getMap(), 0);
         } else {

@@ -1,17 +1,17 @@
 #include "utopia_JSONInput.hpp"
 
 #ifdef WITH_JSON
+#include <fstream>
+#include <utility>
 #include "json.hpp"
-#include "utopia_make_unique.hpp"
 #include "utopia_Path.hpp"
 #include "utopia_Utils.hpp"
-#include <fstream>
+#include "utopia_make_unique.hpp"
 
 namespace utopia {
     class JSONInput::Impl {
     public:
-        Impl()
-        {}
+        Impl() = default;
 
         void init(const nlohmann::json &j)
         {
@@ -23,9 +23,7 @@ namespace utopia {
             this->j = j;
         }
 
-        Impl(const std::shared_ptr<const nlohmann::json> &j)
-        : j(j)
-        {}
+        Impl(std::shared_ptr<const nlohmann::json> j) : j(std::move(j)) {}
 
         Impl(const Path &path)
         {
@@ -224,11 +222,9 @@ namespace utopia {
         }
     };
 
-    JSONInput::JSONInput()
-    {}
+    JSONInput::JSONInput() = default;
 
-    JSONInput::~JSONInput()
-    {}
+    JSONInput::~JSONInput() = default;
 
     bool JSONInput::open(const Path &path)
     {
@@ -243,19 +239,19 @@ namespace utopia {
 
     void JSONInput::get(std::vector<std::shared_ptr<IConvertible>> &values)
     {
-        for(auto it = impl_->json().begin(); it != impl_->json().end(); ++it) {
-            if(it->is_object()) continue; //FIXME?
-            values.push_back(std::make_shared<Convertible<std::string>>(it->get<std::string>()));
+        for (const auto &it : impl_->json()) {
+            if (it.is_object()) continue;  // FIXME?
+            values.push_back(std::make_shared<Convertible<std::string>>(it.get<std::string>()));
         }
     }
 
     void JSONInput::get_all(std::function<void(Input &)> lambda)
     {
-        for(auto it = impl_->json().begin(); it != impl_->json().end(); ++it) {
-            if(!it->is_object()) continue; //FIXME?
+        for (const auto &it : impl_->json()) {
+            if (!it.is_object()) continue;  // FIXME?
 
             JSONInput child;
-            child.impl_ = utopia::make_unique<Impl>(make_ref(*it));
+            child.impl_ = utopia::make_unique<Impl>(make_ref(it));
             lambda(child);
         }
     }

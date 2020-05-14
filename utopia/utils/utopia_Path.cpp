@@ -2,10 +2,11 @@
 #include "utopia_Path.hpp"
 
 #include <algorithm>
-#include <vector>
-#include <string>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 //for windows looks for windows/dirent.h
 #include <dirent.h>
@@ -19,11 +20,7 @@ static const char PATH_SEPARATOR='/';
 
 namespace utopia {
 
-    Path::Path(const std::string &path)
-        : path_(path)
-    {
-        resolve_path_separators(path_);
-    }
+    Path::Path(std::string path) : path_(std::move(path)) { resolve_path_separators(path_); }
 
     Path::Path(const char *path)
         : path_(path)
@@ -31,7 +28,7 @@ namespace utopia {
         resolve_path_separators(path_);
     }
 
-    Path::~Path() {}
+    Path::~Path() = default;
 
     void Path::resolve_path_separators(std::string &path)
     {
@@ -157,20 +154,15 @@ namespace utopia {
     {
         if(dir)
             return readdir((DIR *)dir);
-        return NULL;
+        return nullptr;
     }
 
-
     PathIterator::PathIterator(const Path &path)
-        : path_(path), dir_(new DirHandle(path.to_string())), it_(NULL), skip_hidden_(true)
-    {
+        : path_(path), dir_(new DirHandle(path.to_string())), it_(nullptr), skip_hidden_(true) {
         ++(*this); //init and skip hidden
     }
 
-    PathIterator::operator bool() const
-    {
-        return it_ != NULL;
-    }
+    PathIterator::operator bool() const { return it_ != nullptr; }
 
     PathIterator & PathIterator::operator ++()
     {
