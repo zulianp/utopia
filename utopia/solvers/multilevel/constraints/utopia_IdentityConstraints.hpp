@@ -54,8 +54,10 @@ namespace utopia
                 }
             }
 
-            void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
-            {
+            void init_level_impl(const SizeType& level,
+                                 const Vector& x_finer_level,
+                                 const Vector& /*x_level*/,
+                                 const Scalar& delta_fine) {
                 auto finer_level = level + 1;
 
                 {
@@ -79,7 +81,6 @@ namespace utopia
                         return device::max(val1, val2);
                     });
                 }
-
             }
 
             const Vector & active_upper(const SizeType & level)

@@ -38,8 +38,9 @@ namespace utopia
             }
 
             // s_global is assummed to be zero
-            inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
-            {
+            inline Scalar compute_energy(const SizeType & /*level*/,
+                                         const ExtendedFunction<Matrix, Vector> &fun,
+                                         const Vector &x) {
                 Scalar energy = 0.0;
                 fun.value(x, energy);
                 return energy;
@@ -83,8 +84,9 @@ namespace utopia
                 return energy;
             }
 
-            void init_memory(const std::vector<Layout> &layouts, const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & level_functions)
-            {
+            void init_memory(
+                const std::vector<Layout> &layouts,
+                const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & /*level_functions*/) {
                 g_diff.resize(n_levels_);
                 g.resize(n_levels_);
                 y.resize(n_levels_);

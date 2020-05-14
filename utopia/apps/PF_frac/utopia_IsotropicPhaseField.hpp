@@ -199,7 +199,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool update(const Vector &x) override {
+        inline bool update(const Vector & /*x*/) override {
             // x_coeff_.update(x);
             return true;
         }

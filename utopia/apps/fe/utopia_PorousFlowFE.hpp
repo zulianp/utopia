@@ -98,17 +98,11 @@ namespace utopia {
            return false;
         }
 
-        inline bool update(const Vector &x) override {
-            return true;
-        }
+        inline bool update(const Vector & /*x*/) override { return true; }
 
-        inline bool gradient(const Vector &x, Vector &g) const override
-        {
-            return false;
-        }
+        inline bool gradient(const Vector & /*x*/, Vector & /*g*/) const override { return false; }
 
-         inline bool hessian(const Vector &x, Matrix &H) const override
-        {
+        inline bool hessian(const Vector &x, Matrix &H) const override {
             // if(!use_lagrange_mult_method_) {
                 return hessian_from_field(x, H);
             // }

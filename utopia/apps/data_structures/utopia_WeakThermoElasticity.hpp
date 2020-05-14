@@ -66,24 +66,18 @@ namespace utopia {
 
         }
 
-        inline bool update(const Vector &x) override {
+        inline bool update(const Vector & /*x*/) override {
             // x_coeff_.update(x);
             return true;
         }
 
-        bool value(
-            const Vector &x_const,
-            Scalar &val
-        ) const override
-        {
+        bool value(const Vector & /*x_const*/, Scalar & /*val*/
+                   ) const override {
             assert(false);
             return false;
         }
 
-        bool gradient(const Vector &x_const, Vector &g) const override
-        {
-            return false;
-        }
+        bool gradient(const Vector & /*x_const*/, Vector & /*g*/) const override { return false; }
 
         inline Size size() const override {
             const SizeType n_dofs = space_.n_dofs();

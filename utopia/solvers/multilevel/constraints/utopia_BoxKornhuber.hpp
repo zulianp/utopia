@@ -53,8 +53,10 @@ namespace utopia
                 }
             }
 
-            void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
-            {
+            void init_level_impl(const SizeType& level,
+                                 const Vector& x_finer_level,
+                                 const Vector& x_level,
+                                 const Scalar& /*delta_fine*/) {
                 auto finer_level = level + 1;
 
                 if (auto* mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector>*>(this->transfer_[level].get()))

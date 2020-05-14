@@ -42,10 +42,7 @@ namespace utopia {
             return NFunctions;
         }
 
-        UTOPIA_INLINE_FUNCTION const StrainView & make(const Elem &elem) const
-        {
-            return *this;
-        }
+        UTOPIA_INLINE_FUNCTION const StrainView &make(const Elem & /*elem*/) const { return *this; }
 
     private:
         const ArrayView<GradValue, NQPoints, NFunctions> &values_;

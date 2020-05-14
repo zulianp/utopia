@@ -177,8 +177,11 @@ namespace utopia {
                 assemble_aux(fun, dx, interpolate, acc);
             }
 
-            template<typename SizeType, class Elem, class Function, class Accumulator>
-            UTOPIA_INLINE_FUNCTION void assemble(const SizeType &i, const Elem &e, Function f, Accumulator &acc) const {
+            template <typename SizeType, class Elem, class Function, class Accumulator>
+            UTOPIA_INLINE_FUNCTION void assemble(const SizeType & /*i*/,
+                                                 const Elem &e,
+                                                 Function f,
+                                                 Accumulator &acc) const {
                 auto dx          = dx_.make(e);
                 auto interpolate = interpolate_.make(e);
                 auto fun         = interpolate_.fun().make(e);

@@ -49,7 +49,7 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
-    bool BlockQPSolver<Matrix, Vector, PETSC>::smooth(const Vector &b, Vector &x) {
+    bool BlockQPSolver<Matrix, Vector, PETSC>::smooth(const Vector & /*b*/, Vector & /*x*/) {
         UTOPIA_TRACE_REGION_BEGIN("BlockQPSolver::smooth");
         const Matrix &A = *this->get_operator();
 

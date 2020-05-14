@@ -69,7 +69,7 @@ namespace utopia {
             return true;
         }
 
-        bool hessian(const Vector &x, Matrix &H) const override {
+        bool hessian(const Vector & /*x*/, Matrix &H) const override {
             H = H_;
             set_zero_rows(H, bc_indices_, 1.);
             return true;

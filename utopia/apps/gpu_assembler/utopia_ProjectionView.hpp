@@ -33,8 +33,8 @@ namespace utopia {
             using ShapeFunctionView  = typename ShapeFunction::ViewDevice;
             using DifferentialView   = typename Differential::ViewDevice;
 
-            template<typename SizeType, class Elem, class Accumulator>
-            UTOPIA_INLINE_FUNCTION void assemble(const SizeType &i, const Elem &e, Accumulator &acc) const {
+            template <typename SizeType, class Elem, class Accumulator>
+            UTOPIA_INLINE_FUNCTION void assemble(const SizeType & /*i*/, const Elem &e, Accumulator &acc) const {
                 auto dx     = dx_.make(e);
                 auto shape  = shape_fun_.make(e);
                 auto points = point_.make(e);

@@ -275,7 +275,7 @@ namespace utopia {
                 for (SizeType j = 0; j < N1; ++j) {
                     for (SizeType k = 0; k < N2; ++k) {
                         for (SizeType l = 0; l < N3; ++l) {
-                            set(i, j, k, l, (i == l) * (j == k));
+                            set(i, j, k, l, (i == l) * (j == k) * diag_val);
                         }
                     }
                 }

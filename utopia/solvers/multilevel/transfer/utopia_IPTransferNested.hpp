@@ -103,8 +103,7 @@
              * @param      x_new
              *
              */
-             bool boolean_restrict_or(const Vector &x, Vector &x_new) override
-            {
+            bool boolean_restrict_or(const Vector & /*x*/, Vector & /*x_new*/) override {
                 assert(false && "implement me");
                 return true;
             }
@@ -152,10 +151,9 @@
                 return true;
             }
 
-            bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override
-            {
+            bool project_down_positive_negative(const Vector &x_pos, const Vector & /*x_neg*/, Vector &x_new) override {
                 x_new = *_Pr*x_pos;
-                return true; 
+                return true;
             }
 
             const Matrix &I() const

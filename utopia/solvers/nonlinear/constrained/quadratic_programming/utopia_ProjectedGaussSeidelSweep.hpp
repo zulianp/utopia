@@ -177,7 +177,7 @@ namespace utopia {
             ub_.raw_type().set(&ub[0], ub.size());
         }
 
-        void symmetric(const bool symmetric) { symmetric_ = symmetric_; }
+        void symmetric(const bool value) { symmetric_ = value; }
 
         void l1(const bool l1) { l1_ = l1; }
 
