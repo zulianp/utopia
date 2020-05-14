@@ -25,7 +25,7 @@ namespace utopia {
 
         inline std::string get_class() const override { return "TensorView4"; }
 
-        UTOPIA_FUNCTION TensorView() {}
+        UTOPIA_FUNCTION TensorView() = default;
         UTOPIA_FUNCTION TensorView(ArrayView4D &&view) : view_(std::move(view)) {}
         UTOPIA_FUNCTION TensorView(const ArrayView4D &view) : view_(view) {}
 
@@ -297,7 +297,7 @@ namespace utopia {
         }
 
     private:
-        ArrayView4D view_;
+        ArrayView4D view_{};
 
         UTOPIA_FUNCTION TensorView(const TensorView &) { UTOPIA_DEVICE_ASSERT(false); }
     };

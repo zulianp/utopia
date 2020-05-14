@@ -8,7 +8,7 @@ namespace utopia {
     template<class Expr>
     class AutoDiffExpr<Transposed<Expr>, 1> {
     public:
-        typedef utopia::Transposed< typename AutoDiffExpr<Expr>::Type > Type;
+        using Type = utopia::Transposed<typename AutoDiffExpr<Expr>::Type>;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Transposed<Expr> &expr)
         {
@@ -42,7 +42,7 @@ namespace utopia {
     template<class Expr>
     class Simplify< Transposed< Transposed<Expr> > > {
     public:
-        typedef typename Simplify<Expr>::Type Type;
+        using Type = typename Simplify<Expr>::Type;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Transposed< Transposed<Expr> > &expr)
         {

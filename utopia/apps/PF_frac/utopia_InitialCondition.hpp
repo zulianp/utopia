@@ -270,14 +270,12 @@ namespace utopia {
 
                 std::vector<Rectangle<Scalar>> rectangles;
 
-
-                Point2D<Scalar> A;
+                Point2D<Scalar> A{};
                 A.x = 38.1;
                 A.y = 82.55;
                 rectangles.push_back(Rectangle<Scalar>(A, -12.7, width, -45));
 
-
-                Point2D<Scalar> B;
+                Point2D<Scalar> B{};
                 B.x = 38.1;
                 B.y = 69.85;
                 rectangles.push_back(Rectangle<Scalar>(B, 12.7, width, -45));
@@ -355,15 +353,13 @@ namespace utopia {
             }
             
             std::vector<Rectangle<Scalar>> rectangles;
-            
-            
-            Point2D<Scalar> A;
+
+            Point2D<Scalar> A{};
             A.x = 12.00;
             A.y = 21.50;
             rectangles.push_back(Rectangle<Scalar>(A, -3.5355, width, 45));
-            
-            
-            Point2D<Scalar> B;
+
+            Point2D<Scalar> B{};
             B.x = 15;
             B.y = 20.00;
             rectangles.push_back(Rectangle<Scalar>(B, 5.000, width, 0.0));
@@ -421,8 +417,7 @@ namespace utopia {
             using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
             static const int NNodes = Elem::NNodes;
 
-            typedef Point2D<Scalar> Coord;
-
+            using Coord = Point2D<Scalar>;
 
             FracPlateIC(FunctionSpace &space, const SizeType & PF_component):
             InitialCondition<FunctionSpace>(space), PF_component_(PF_component)

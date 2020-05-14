@@ -58,7 +58,7 @@ namespace utopia {
             return weights_[qp_idx];
         }
 
-        UTOPIA_INLINE_FUNCTION QuadratureView() {}
+        UTOPIA_INLINE_FUNCTION QuadratureView() = default;
 
         UTOPIA_INLINE_FUNCTION QuadratureView(
             const PointView &points,

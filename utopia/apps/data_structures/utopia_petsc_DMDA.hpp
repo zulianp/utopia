@@ -337,7 +337,7 @@ namespace utopia {
         {
             PetscErrorCode ierr;
 
-            utopia::ArrayView<PetscInt, 3> dims_buff;
+            utopia::ArrayView<PetscInt, 3> dims_buff{};
             ierr = DMDAGetInfo(dm, nullptr, &dims_buff[0], &dims_buff[1], &dims_buff[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
 
             const SizeType n = dims.size();
@@ -382,8 +382,8 @@ namespace utopia {
         {
             PetscErrorCode ierr;
 
-            utopia::ArrayView<PetscInt, 3> start_buff;
-            utopia::ArrayView<PetscInt, 3> extent_buff;
+            utopia::ArrayView<PetscInt, 3> start_buff{};
+            utopia::ArrayView<PetscInt, 3> extent_buff{};
 
             ierr = DMDAGetCorners(dm,
                 &start_buff[0],  &start_buff[1],  &start_buff[2],
@@ -401,8 +401,8 @@ namespace utopia {
         {
             PetscErrorCode ierr;
 
-            utopia::ArrayView<PetscInt, 3> start_buff;
-            utopia::ArrayView<PetscInt, 3> extent_buff;
+            utopia::ArrayView<PetscInt, 3> start_buff{};
+            utopia::ArrayView<PetscInt, 3> extent_buff{};
 
             ierr = DMDAGetGhostCorners(dm,
                 &start_buff[0],  &start_buff[1],  &start_buff[2],

@@ -9,12 +9,12 @@ namespace utopia {
     template<class Comm>
     class UnitTest {
     public:
-        virtual ~UnitTest() {}
+        virtual ~UnitTest() = default;
         virtual void set_up() {}
         virtual void tear_down() {}
         virtual void run() = 0;
 
-        UnitTest() {}
+        UnitTest() = default;
 
         void set_comm(const Comm &comm)
         {
@@ -38,13 +38,13 @@ namespace utopia {
     template<class Tensor>
     class AlgebraUnitTest : public UnitTest<typename Traits<Tensor>::Communicator>{
     public:
-        ~AlgebraUnitTest() override {}
+        ~AlgebraUnitTest() override = default;
     };
 
     template<class Comm>
     class ParallelTestRunner {
     public:
-        virtual ~ParallelTestRunner() {}
+        virtual ~ParallelTestRunner() = default;
 
         void run(UnitTest<Comm> &test, const Comm &comm)
         {

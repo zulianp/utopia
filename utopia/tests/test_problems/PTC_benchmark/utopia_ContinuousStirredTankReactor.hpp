@@ -1,12 +1,10 @@
 #ifndef UTOPIA_CSR_EXAMPLE_HPP
 #define UTOPIA_CSR_EXAMPLE_HPP
 
-#include <vector>
-#include <assert.h>
+#include <cassert>
 #include <cmath>
+#include <vector>
 #include "utopia_Function.hpp"
-
-
 
 namespace utopia
 {

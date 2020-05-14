@@ -19,7 +19,7 @@ namespace utopia {
 
         }
 
-        ~TRQuadraticFunction() { }
+        ~TRQuadraticFunction() = default;
 
         bool value(const Vector &x, Scalar &value) const override
         {

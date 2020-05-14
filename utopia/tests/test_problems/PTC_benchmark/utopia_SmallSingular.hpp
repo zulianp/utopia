@@ -1,11 +1,10 @@
 #ifndef UTOPIA_SMALL_SINGULAR_EXAMPLE_HPP
 #define UTOPIA_SMALL_SINGULAR_EXAMPLE_HPP
 
-#include <vector>
-#include <assert.h>
+#include <cassert>
 #include <cmath>
+#include <vector>
 #include "utopia_Function.hpp"
-
 
 namespace utopia
 {
@@ -15,8 +14,7 @@ namespace utopia
     public:
         DEF_UTOPIA_SCALAR(Matrix);
 
-        SmallSingularExample()
-        {}
+        SmallSingularExample() = default;
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override
         {

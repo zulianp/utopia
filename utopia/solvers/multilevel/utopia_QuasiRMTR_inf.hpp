@@ -26,23 +26,22 @@ namespace utopia
     template<class Matrix, class Vector, class MLConstraints>
     class QuasiRMTR_inf  final:   public RMTRBase<Matrix, Vector, FIRST_ORDER_DF>, public MLConstraints
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::RMTRBase<Matrix, Vector, FIRST_ORDER_DF>     RMTRBase;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun   Fun;
 
-        typedef utopia::MatrixFreeQPSolver<Vector>  	TRSubproblem;
-        typedef std::shared_ptr<TRSubproblem>           TRSubproblemPtr;
+        using TRSubproblem = utopia::MatrixFreeQPSolver<Vector>;
+        using TRSubproblemPtr = std::shared_ptr<TRSubproblem>;
 
-        typedef utopia::HessianApproximation<Vector>    HessianApproximation;
-        typedef std::shared_ptr<HessianApproximation>   HessianApproxPtr;
-
+        using HessianApproximation = utopia::HessianApproximation<Vector>;
+        using HessianApproxPtr = std::shared_ptr<HessianApproximation>;
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
-        typedef utopia::BoxConstraints<Vector>                          BoxConstraints;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
         typedef utopia::RMTRBase<Matrix, Vector, FIRST_ORDER_DF>        RMTR;
 
         using MLConstraints::check_feasibility;
@@ -55,7 +54,7 @@ namespace utopia
             hessian_approxs_.resize(n_levels);
         }
 
-        ~QuasiRMTR_inf() override {}
+        ~QuasiRMTR_inf() override = default;
 
         void read(Input &in) override
         {
@@ -332,8 +331,7 @@ namespace utopia
             }
 
             Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]);
-            if(IterativeSolver<Matrix, Vector>* tr_solver =  dynamic_cast<IterativeSolver<Matrix, Vector>* > (tr_subproblems_[level].get()))
-            {
+            if (auto *tr_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(tr_subproblems_[level].get())) {
                 if(tr_solver->atol() > atol_level){
                     tr_solver->atol(atol_level);
                 }
@@ -344,11 +342,9 @@ namespace utopia
                 else{
                     tr_solver->max_it(this->max_QP_smoothing_it());
                 }
-            }
-            else{
+            } else {
                 assert("QuasiRMTR_inf:: dynamic cas failed. \n");
             }
-
 
             this->ml_derivs_.g[level] *= - 1.0;
             this->memory_.s[level].set(0.0);

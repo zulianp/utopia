@@ -19,7 +19,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::Function<Matrix, Vector>    Fun;
 
@@ -57,32 +57,28 @@ namespace utopia
     template<class Matrix, class Vector>
     class ASTRUM : public NewtonBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
-        typedef utopia::LSStrategy<Vector>                  LSStrategy;
+        using LSStrategy = utopia::LSStrategy<Vector>;
 
         using NewtonBase<Matrix, Vector>::print_statistics;
 
 
     public:
-       ASTRUM(  const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
-                NewtonBase<Matrix, Vector>(linear_solver),
-                tau_max_(1e14),
-                tau_min_(1e-9),
-                tau_zero_user_(-1),
-                alpha_treshold_(1.0),
-                // alpha_treshold_(1e-10),
-                max_inner_it_(5),
-                reset_mass_matrix_(false),
-                is_identity_(false),
-                scaling_user_provided_(false),
-                scaling_(true)
-                {
-                    verbosity_level_ =  VERBOSITY_LEVEL_NORMAL;
-                }
+        ASTRUM(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >())
+            : NewtonBase<Matrix, Vector>(linear_solver),
+              tau_max_(1e14),
+              tau_min_(1e-9),
+              tau_zero_user_(-1),
+              alpha_treshold_(1.0),
+              // alpha_treshold_(1e-10),
+              max_inner_it_(5)
 
+        {
+            verbosity_level_ = VERBOSITY_LEVEL_NORMAL;
+        }
 
         void read(Input &in) override
         {
@@ -369,7 +365,7 @@ namespace utopia
             auto rmtr_data_path = Utopia::instance().get("af_data_path");
             if(!rmtr_data_path.empty())
             {
-                CSVWriter writer;
+                CSVWriter writer{};
                 if (mpi_world_rank() == 0)
                 {
                     if(!writer.file_exists(rmtr_data_path))
@@ -575,14 +571,13 @@ namespace utopia
         SizeType max_inner_it_;
 
         Matrix I_;
-        bool reset_mass_matrix_;
-        bool is_identity_;
+        bool reset_mass_matrix_{false};
+        bool is_identity_{false};
 
         Matrix D_;
         Matrix D_inv_;
-        bool scaling_user_provided_;
-        bool scaling_;
-
+        bool scaling_user_provided_{false};
+        bool scaling_{true};
     };
 
 }

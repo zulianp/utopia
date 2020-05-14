@@ -1,10 +1,9 @@
 #ifndef UTOPIA_SOLVER_PENALTY_II_CONSTRAINED
 #define UTOPIA_SOLVER_PENALTY_II_CONSTRAINED
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_UnconstrainedBenchmark.hpp"
-
 
 namespace utopia
 {
@@ -13,7 +12,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         PenaltyII24Constrained()
         {

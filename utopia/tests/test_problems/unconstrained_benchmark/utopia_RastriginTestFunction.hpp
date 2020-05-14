@@ -23,8 +23,8 @@ namespace utopia
     class Rastrigin : public Function<Matrix, Vector>
     {
     public:
-        typedef typename utopia::Traits<Vector>::Scalar Scalar;
-        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         Rastrigin() : pi(3.141592)
         {

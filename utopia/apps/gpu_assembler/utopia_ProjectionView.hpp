@@ -1,6 +1,8 @@
 #ifndef UTOPIA_PROJECTION_VIEW_HPP
 #define UTOPIA_PROJECTION_VIEW_HPP
 
+#include <utility>
+
 #include "utopia_AssemblyView.hpp"
 #include "utopia_LaplacianView.hpp"
 
@@ -47,9 +49,11 @@ namespace utopia {
                 }
             }
 
-            ViewDevice(Function fun, const PhysicalPointView &points, const ShapeFunctionView &shape_fun, const DifferentialView &dx)
-            : fun_(fun), point_(points), shape_fun_(shape_fun), dx_(dx)
-            {}
+            ViewDevice(Function fun,
+                       const PhysicalPointView &points,
+                       const ShapeFunctionView &shape_fun,
+                       const DifferentialView &dx)
+                : fun_(std::move(fun)), point_(points), shape_fun_(shape_fun), dx_(dx) {}
 
             Function fun_;
             PhysicalPointView point_;
@@ -58,8 +62,7 @@ namespace utopia {
         };
 
         Projection(const FunctionSpace &space, const Quadrature &q, Function fun)
-        : fun_(fun), point_(space, q), shape_fun_(space, q), dx_(space, q)
-        {}
+            : fun_(std::move(fun)), point_(space, q), shape_fun_(space, q), dx_(space, q) {}
 
         ViewDevice view_device() const
         {

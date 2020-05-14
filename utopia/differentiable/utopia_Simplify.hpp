@@ -6,7 +6,7 @@ namespace utopia {
     template<class Expr>
     class Simplify {
     public:
-        typedef Expr Type;
+        using Type = Expr;
 
         inline static const Expr &make(const Expr &expr)
         {

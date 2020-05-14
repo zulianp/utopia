@@ -15,7 +15,7 @@ namespace utopia {
         using Elem = utopia::Edge2<Scalar, Dim>;
         using Point = typename Elem::Point;
 
-        UTOPIA_INLINE_FUNCTION DualElem() {}
+        UTOPIA_INLINE_FUNCTION DualElem() = default;
 
         UTOPIA_INLINE_FUNCTION DualElem(const Elem &elem, const Point &q)
         {
@@ -58,7 +58,7 @@ namespace utopia {
         using Elem = utopia::UniformQuad4<Scalar>;
         using Point = typename Elem::Point;
 
-        UTOPIA_INLINE_FUNCTION DualElem() {}
+        UTOPIA_INLINE_FUNCTION DualElem() = default;
 
         UTOPIA_INLINE_FUNCTION DualElem(const Elem &elem, const Point &q)
         {
@@ -108,9 +108,7 @@ namespace utopia {
         using Point  = typename Quadrature::Point;
         using Scalar = typename Quadrature::Scalar;
 
-        MassMatrixDual()
-        {
-        }
+        MassMatrixDual() = default;
 
         template<class Elem, class Dx>
         void init(const Elem &elem, DualElem &dual_elem, const Quadrature &q, const Dx &dx)

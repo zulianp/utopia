@@ -20,16 +20,13 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonLinearJacobi final : public NonLinearSmoother<Matrix, Vector>
     {
-            typedef UTOPIA_SCALAR(Vector)                           Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
-            typedef utopia::NonLinearSmoother<Matrix, Vector>       Smoother;
-            typedef utopia::Function<Matrix, Vector>                Function;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        typedef utopia::NonLinearSmoother<Matrix, Vector> Smoother;
+        typedef utopia::Function<Matrix, Vector> Function;
 
-        public:
-        NonLinearJacobi()
-        {
-
-        }
+    public:
+        NonLinearJacobi() = default;
 
         bool smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {

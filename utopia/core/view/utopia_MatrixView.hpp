@@ -331,7 +331,7 @@ namespace utopia {
         }
 
     private:
-        ArrayView2D view_;
+        ArrayView2D view_{};
 
         UTOPIA_FUNCTION TensorView(const TensorView &) {
             UTOPIA_DEVICE_ASSERT(false);

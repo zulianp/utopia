@@ -11,10 +11,10 @@ namespace utopia {
     class Benchmark {
     public:
         Benchmark()
-        : initialized_(false), verbosity_level_(1)
-        {}
 
-        virtual ~Benchmark() {}
+            = default;
+
+        virtual ~Benchmark() = default;
         virtual void initialize() = 0;
         virtual std::string name() = 0;
 
@@ -102,8 +102,8 @@ namespace utopia {
         std::map<std::string, double> measurements_;
 
         std::map<std::string, std::function<void()> > experiments_;
-        bool initialized_;
-        int verbosity_level_;
+        bool initialized_{false};
+        int verbosity_level_{1};
     };
 
 

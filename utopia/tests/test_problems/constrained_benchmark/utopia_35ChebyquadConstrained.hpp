@@ -1,12 +1,11 @@
 #ifndef UTOPIA_SOLVER_CHEBYQUAD_35_CONSTRAINED_HPP
 #define UTOPIA_SOLVER_CHEBYQUAD_35_CONSTRAINED_HPP
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
-#include "utopia_UnconstrainedBenchmark.hpp"
 #include "utopia_Layout.hpp"
-
+#include "utopia_UnconstrainedBenchmark.hpp"
 
 namespace utopia
 {
@@ -15,7 +14,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         Chebyquad35Constrained()
         {

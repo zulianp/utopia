@@ -79,15 +79,24 @@ namespace utopia {
             }
 
             Parameters()
-            :   a(1.0), b(1.0), d(1.0), f(1.0), length_scale(0.0), fracture_toughness(0.001),
-                mu(80.0), lambda(120.0), regularization(1e-10), pressure(0.0), penalty_param(0.0),
-                crack_set_tol(0.95), use_penalty_irreversibility(false), use_crack_set_irreversibiblity(false),
-                use_pressure(false)
+                : a(1.0),
+                  b(1.0),
+                  d(1.0),
+                  f(1.0),
+                  length_scale(0.0),
+                  fracture_toughness(0.001),
+                  mu(80.0),
+                  lambda(120.0),
+                  regularization(1e-10),
+                  pressure(0.0),
+                  penalty_param(0.0),
+                  crack_set_tol(0.95)
+
             {}
 
             Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda;
             Scalar regularization, pressure, penalty_param, crack_set_tol;
-            bool use_penalty_irreversibility, use_crack_set_irreversibiblity, use_pressure;
+            bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         };
 
         void read(Input &in) override

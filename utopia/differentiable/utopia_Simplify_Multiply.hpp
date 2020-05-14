@@ -19,7 +19,7 @@ namespace utopia {
     template<class Expr, int Order>
     class MultiplySimplify<Expr, Factory<Identity, Order> > {
     public:
-        typedef typename Simplify<Expr>::Type Type;
+        using Type = typename Simplify<Expr>::Type;
 
         static UTOPIA_STORE_CONST(Type) make(const Multiply<Expr, Factory<Identity, Order> > &expr)
         {
@@ -30,7 +30,7 @@ namespace utopia {
     template<class Expr, int Order>
     class MultiplySimplify< Factory<Identity, Order>, Expr > {
     public:
-        typedef typename Simplify<Expr>::Type Type;
+        using Type = typename Simplify<Expr>::Type;
 
         static UTOPIA_STORE_CONST(Type) make(const Multiply<Factory<Identity, Order>, Expr>  &expr)
         {
@@ -63,11 +63,11 @@ namespace utopia {
     template<class Left, class Right>
     class Simplify< Multiply<Left, Right> > {
     public:
-        typedef typename utopia::Simplify<Left>::Type  SLeft;
-        typedef typename utopia::Simplify<Right>::Type SRight;
+        using SLeft = typename utopia::Simplify<Left>::Type;
+        using SRight = typename utopia::Simplify<Right>::Type;
 
         typedef utopia::MultiplySimplify<SLeft, SRight> Sim;
-        typedef typename Sim::Type Type;
+        using Type = typename Sim::Type;
 
         static UTOPIA_STORE_CONST(Type) make(const Multiply<Left, Right> &expr)
         {

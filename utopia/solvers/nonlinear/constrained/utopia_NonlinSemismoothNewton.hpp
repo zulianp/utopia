@@ -24,10 +24,10 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonlinSemismoothNewton : public NewtonBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
-        typedef utopia::BoxConstraints<Vector>      BoxConstraints;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
 
     public:
        NonlinSemismoothNewton(  const std::shared_ptr <Solver> &linear_solver):

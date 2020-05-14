@@ -22,10 +22,10 @@ namespace utopia
     template<class Vector>
     class GradientDescent final: public MatrixFreeNonLinearSolver<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        typedef utopia::LSStrategy<Vector> LSStrategy;
+        using LSStrategy = utopia::LSStrategy<Vector>;
 
     public:
        GradientDescent( ): MatrixFreeNonLinearSolver<Vector>(), alpha_(1.0)

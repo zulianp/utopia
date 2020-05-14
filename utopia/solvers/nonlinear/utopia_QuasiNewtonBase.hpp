@@ -22,10 +22,10 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::HessianApproximation<Vector>                HessianApproximation;
-        typedef utopia::MatrixFreeLinearSolver<Vector>              MFSolver;
+        using HessianApproximation = utopia::HessianApproximation<Vector>;
+        using MFSolver = utopia::MatrixFreeLinearSolver<Vector>;
 
-        typedef utopia::LSStrategy<Vector>                          LSStrategy;
+        using LSStrategy = utopia::LSStrategy<Vector>;
 
     public:
 
@@ -37,7 +37,7 @@ namespace utopia
 
         }
 
-        ~QuasiNewtonBase() override {}
+        ~QuasiNewtonBase() override = default;
 
         void read(Input &in) override {
             MatrixFreeNonLinearSolver<Vector>::read(in);

@@ -1,7 +1,7 @@
 #ifndef UTOPIA_SOLVER_VARIABLY_DIMENSIONED_25
 #define UTOPIA_SOLVER_VARIABLY_DIMENSIONED_25
 
-#include <assert.h>
+#include <cassert>
 #include <vector>
 #include "utopia_Function.hpp"
 #include "utopia_make_unique.hpp"

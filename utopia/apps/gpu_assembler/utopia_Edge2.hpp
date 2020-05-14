@@ -65,7 +65,7 @@ namespace utopia {
         using MemType   = utopia::Varying<>;
         using Side      = utopia::Node1<Scalar, Dim>;
 
-        ~Edge2() override {}
+        ~Edge2() override = default;
 
         template<typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> decltype(RefEdge2::fun(i, p))
@@ -149,7 +149,7 @@ namespace utopia {
             out = in[0] * nodes_[1] + nodes_[0];
         }
 
-        UTOPIA_INLINE_FUNCTION Edge2() {}
+        UTOPIA_INLINE_FUNCTION Edge2() = default;
 
         UTOPIA_INLINE_FUNCTION Edge2(const Point &p1, const Point &p2)
         {

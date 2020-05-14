@@ -9,7 +9,7 @@ namespace utopia {
     template<class Expr>
     class Differentiable : public Expression< Differentiable<Expr> > {
     public:
-        typedef typename Expr::Scalar Scalar;
+        using Scalar = typename Expr::Scalar;
 
         static const int Order = Expr::Order;
 

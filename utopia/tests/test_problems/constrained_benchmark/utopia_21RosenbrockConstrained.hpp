@@ -13,7 +13,7 @@ namespace utopia
     class Rosenbrock21Constrained final: public ConstrainedTestFunction<Matrix, Vector>
     {
     public:
-        typedef typename utopia::Traits<Vector>::SizeType SizeType;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         DEF_UTOPIA_SCALAR(Matrix);
 
         Rosenbrock21Constrained()

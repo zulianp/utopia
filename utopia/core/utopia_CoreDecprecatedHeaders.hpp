@@ -47,10 +47,7 @@ namespace utopia {
     }
 
     /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
-    inline constexpr SymbolicTensor<Identity, 2> identity()
-    {
-        return SymbolicTensor<Identity, 2>();
-    }
+    inline constexpr SymbolicTensor<Identity, 2> identity() { return {}; }
 
     /// Returns global \f$ 0^{rows \times rows}  \f$.
     UTOPIA_DEPRECATED_MSG("Use the object variant with 1st argument as the communicator.")

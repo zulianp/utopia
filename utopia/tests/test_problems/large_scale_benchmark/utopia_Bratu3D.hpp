@@ -11,8 +11,8 @@ namespace utopia
     class Bratu3D : public ExtendedFunction<Matrix, Vector> 
     {
     public:
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
         Bratu3D(    const Matrix & H, 
                     const Vector & x_0, 

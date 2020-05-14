@@ -628,12 +628,12 @@ namespace rapidxml
             return result;
         }
 
-        char *m_begin;                                      // Start of raw memory making up current pool
-        char *m_ptr;                                        // First free byte in current pool
-        char *m_end;                                        // One past last available byte in current pool
-        char m_static_memory[RAPIDXML_STATIC_POOL_SIZE];    // Static raw memory
-        alloc_func *m_alloc_func{0};                        // Allocator function, or 0 if default is to be used
-        free_func *m_free_func{0};                          // Free function, or 0 if default is to be used
+        char *m_begin{};                                    // Start of raw memory making up current pool
+        char *m_ptr{};                                      // First free byte in current pool
+        char *m_end{};                                      // One past last available byte in current pool
+        char m_static_memory[RAPIDXML_STATIC_POOL_SIZE]{};  // Static raw memory
+        alloc_func *m_alloc_func{nullptr};                  // Allocator function, or 0 if default is to be used
+        free_func *m_free_func{nullptr};                    // Free function, or 0 if default is to be used
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -776,8 +776,8 @@ namespace rapidxml
 
         Ch *m_name;                         // Name of node, or 0 if no name
         Ch *m_value;                        // Value of node, or 0 if no value
-        std::size_t m_name_size;            // Length of node name, or undefined of no name
-        std::size_t m_value_size;           // Length of node value, or undefined if no value
+        std::size_t m_name_size{};          // Length of node name, or undefined of no name
+        std::size_t m_value_size{};         // Length of node value, or undefined if no value
         xml_node<Ch> *m_parent;             // Pointer to parent node, or 0 if none
 
     };
@@ -860,10 +860,10 @@ namespace rapidxml
         }
 
     private:
-
-        xml_attribute<Ch> *m_prev_attribute;        // Pointer to previous sibling of attribute, or 0 if none; only valid if parent is non-zero
-        xml_attribute<Ch> *m_next_attribute;        // Pointer to next sibling of attribute, or 0 if none; only valid if parent is non-zero
-
+        xml_attribute<Ch> *m_prev_attribute{};  // Pointer to previous sibling of attribute, or 0 if none; only valid if
+                                                // parent is non-zero
+        xml_attribute<Ch> *
+            m_next_attribute{};  // Pointer to next sibling of attribute, or 0 if none; only valid if parent is non-zero
     };
 
     ///////////////////////////////////////////////////////////////////////////

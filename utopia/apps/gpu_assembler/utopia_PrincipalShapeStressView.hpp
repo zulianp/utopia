@@ -36,8 +36,8 @@ namespace utopia {
         class ViewDevice {
         public:
             ArrayView<GradValue, NFunctions, Quadrature::NPoints> stress;
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> C; 
-            ViewDevice(){}
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> C;
+            ViewDevice() = default;
 
             ViewDevice(const ViewDevice &other)
             {

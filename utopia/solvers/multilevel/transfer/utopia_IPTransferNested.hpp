@@ -20,9 +20,8 @@
         template<class Matrix, class Vector>
         class IPTransferNested final : public Transfer<Matrix, Vector> {
         public:
-            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-            typedef UTOPIA_SCALAR(Vector)    Scalar;
-
+            using SizeType = typename utopia::Traits<Vector>::SizeType;
+            using Scalar = typename utopia::Traits<Vector>::Scalar;
 
             IPTransferNested(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                     _I(I),
@@ -37,7 +36,7 @@
 
             }
 
-            ~IPTransferNested() override {}
+            ~IPTransferNested() override = default;
 
             /*=====================================================
                                 initialization

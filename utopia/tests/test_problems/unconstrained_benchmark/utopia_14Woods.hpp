@@ -1,10 +1,9 @@
 #ifndef UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP
 #define UTOPIA_SOLVER_WOODS_TESTFUNCTION_HPP
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
-
 
 namespace utopia
 {

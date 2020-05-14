@@ -12,7 +12,7 @@ namespace utopia {
 											AbstractMatrix<Scalar, SizeType>,
 											AbstractVector<Scalar, SizeType> > {
 	public:
-            ~AbstractLinearSolver() override {}
+            ~AbstractLinearSolver() override = default;
         };
 
 

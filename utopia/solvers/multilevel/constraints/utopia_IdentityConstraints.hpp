@@ -31,11 +31,9 @@ namespace utopia
             {
                 // TODO:: move to checck innitialization
                 for (auto l=0; l < transfer.size(); l++){
-                    if(IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (transfer[l].get())){
+                    if (auto* id_transfer = dynamic_cast<IdentityTransfer<Matrix, Vector>*>(transfer[l].get())) {
                         // utopia_error("IdentityConstraints, termination due to incorrect setup. ");
-                    }
-                    else
-                    {
+                    } else {
                         utopia_error("IdentityConstraints, termination due to incorrect setup. ");
                     }
                 }

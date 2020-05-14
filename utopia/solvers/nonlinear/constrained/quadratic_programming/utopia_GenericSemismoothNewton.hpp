@@ -17,8 +17,8 @@ namespace utopia {
     template<class Matrix, class Vector, class Constraint, int Backend = Traits<Vector>::Backend>
     class GenericSemismoothNewton : public IterativeSolver<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
         GenericSemismoothNewton(const Constraint &constraint, const std::shared_ptr<Solver> &linear_solver)

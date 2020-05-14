@@ -19,9 +19,7 @@ namespace  utopia
         using Solver   = utopia::LinearSolver<Matrix, Vector>;
 
     public:
-
-        ProjectedGradientActiveSet(): initialized_(false)
-        {}
+        ProjectedGradientActiveSet() = default;
 
         void read(Input &in) override
         {
@@ -111,8 +109,7 @@ namespace  utopia
                 Vector local_corr;
                 local_corr.zeros(layout(s));
 
-                if(const Matrix * H_matrix = dynamic_cast<const Matrix *>(&H))
-                {
+                if (const auto *H_matrix = dynamic_cast<const Matrix *>(&H)) {
                     if(linear_solver_)
                     {
                         auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >();
@@ -120,9 +117,7 @@ namespace  utopia
                     }
                     else if(precond_)
                         precond_->apply(-1.0 * grad_qp_fun, local_corr);
-                }
-                else
-                {
+                } else {
                     if(precond_)
                         precond_->apply(-1.0 * grad_qp_fun, local_corr);
                 }
@@ -323,7 +318,7 @@ namespace  utopia
 
         Vector r, q, d, Hd;
 
-        bool initialized_;
+        bool initialized_{false};
         Layout layout_;
     };
 }

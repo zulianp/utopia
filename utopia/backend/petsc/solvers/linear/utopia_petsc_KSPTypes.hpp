@@ -28,7 +28,7 @@ namespace utopia {
 
         inline bool is_solver_package_valid(const std::string &type) const { return in_array(type, package_); }
 
-    private:
+        // private:
         KSPTypes();
         std::vector<std::string> ksp_; /*!< Valid options for direct solver types. */
         std::vector<std::string> pc_;

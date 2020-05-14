@@ -54,7 +54,7 @@ namespace utopia {
         void static_array_view_test()
         {
             ArrayView<Scalar, 2> a{};
-            ArrayView<Scalar, 2, 2> b;
+            ArrayView<Scalar, 2, 2> b{};
 
             device::fill(2.0, a);
             device::fill(3.0, b);

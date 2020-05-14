@@ -12,8 +12,8 @@
         template<class Matrix, class Vector>
         class LevenbergMarquardt final: public NonLinearLeastSquaresSolver<Matrix, Vector>
         {
-            typedef typename utopia::Traits<Vector>::Scalar Scalar;
-            typedef typename utopia::Traits<Vector>::SizeType SizeType;
+            using Scalar = typename utopia::Traits<Vector>::Scalar;
+            using SizeType = typename utopia::Traits<Vector>::SizeType;
 
             typedef utopia::LinearSolver<Matrix, Vector> Solver;
             typedef utopia::NonLinearLeastSquaresSolver<Matrix, Vector> NonLinearLeastSquaresSolver;

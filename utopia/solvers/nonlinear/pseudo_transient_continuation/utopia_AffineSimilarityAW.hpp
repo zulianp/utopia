@@ -20,7 +20,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::Function<Matrix, Vector>    Fun;
 
@@ -59,11 +59,11 @@ namespace utopia
     template<class Matrix, class Vector>
     class AffineSimilarityAW : public NewtonBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
-        typedef utopia::LSStrategy<Vector>                  LSStrategy; 
+        using LSStrategy = utopia::LSStrategy<Vector>;
 
         using NewtonBase<Matrix, Vector>::print_statistics; 
 
@@ -293,7 +293,7 @@ namespace utopia
             auto rmtr_data_path = Utopia::instance().get("af_data_path");
             if(!rmtr_data_path.empty())
             {
-                CSVWriter writer; 
+                CSVWriter writer{};
                 if (mpi_world_rank() == 0)
                 {
                     if(!writer.file_exists(rmtr_data_path))

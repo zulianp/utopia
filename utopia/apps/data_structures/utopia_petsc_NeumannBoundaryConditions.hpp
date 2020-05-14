@@ -174,7 +174,7 @@ namespace utopia {
                     return;
                 }
 
-                ArrayView<SizeType, Side::NFunctions> idx;
+                ArrayView<SizeType, Side::NFunctions> idx{};
                 StaticVector<Scalar, NFunctions> vec; vec.set(0.0);
                 ElemView vol_e;
                 SideView e;

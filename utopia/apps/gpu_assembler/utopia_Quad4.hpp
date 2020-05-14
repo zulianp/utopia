@@ -27,7 +27,7 @@ namespace utopia {
 
         //IMPLEMENT ME
 
-        virtual ~Quad4() {}
+        virtual ~Quad4() = default;
 
         template<typename RefPointT>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const RefPointT &p) -> decltype(RefQuad4::fun(i, p))

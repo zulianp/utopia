@@ -230,7 +230,7 @@ namespace utopia {
         }
 
     // private:
-        ArrayView view_;
+        ArrayView view_{};
     };
 
     template<class View>

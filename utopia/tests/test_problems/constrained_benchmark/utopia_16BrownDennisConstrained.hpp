@@ -14,7 +14,7 @@ namespace utopia
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         BrownDennis16Constrained()
         {
