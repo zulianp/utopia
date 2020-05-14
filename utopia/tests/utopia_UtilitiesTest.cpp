@@ -1,9 +1,9 @@
 #include "utopia.hpp"
 #include "utopia_AutoDiff.hpp" //simplify_test
-#include "utopia_Testing.hpp"
 #include "utopia_Blocks.hpp"
-#include "utopia_Eval_Blocks.hpp"
 #include "utopia_CoreDecprecatedHeaders.hpp"
+#include "utopia_Eval_Blocks.hpp"
+#include "utopia_Testing.hpp"
 
 namespace utopia {
 
@@ -175,8 +175,10 @@ namespace utopia {
 
             #ifdef WITH_PETSC
                 //NOTE(eric): range assignment is NYI in Petsc backend
-            if (std::is_same<Matrix, PetscMatrix>::value) return;
-            #endif
+            if (std::is_same<Matrix, PetscMatrix>::value) {
+                return;
+            }
+#endif
 
             ////////////////////////////////////////////////////////////
 
@@ -423,4 +425,4 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(utilities);
-}
+}  // namespace utopia

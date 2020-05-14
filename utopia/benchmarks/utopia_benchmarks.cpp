@@ -1,9 +1,9 @@
 #include "utopia_benchmarks.hpp"
+#include "utopia_Benchmark_Access.hpp"
+#include "utopia_Benchmark_Algorithms.hpp"
 #include "utopia_Benchmark_BLAS1.hpp"
 #include "utopia_Benchmark_BLAS2.hpp"
 #include "utopia_Benchmark_BLAS3.hpp"
-#include "utopia_Benchmark_Algorithms.hpp"
-#include "utopia_Benchmark_Access.hpp"
 #include "utopia_Benchmark_Transform.hpp"
 
 namespace utopia {
@@ -73,4 +73,4 @@ namespace utopia {
             std::cout << "[End benchmark]" << std::endl;
         }
     }
-}
+}  // namespace utopia

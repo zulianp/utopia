@@ -2,5 +2,4 @@
 
 namespace utopia {
     template class TaoQPSolver<PetscMatrix, PetscVector>;
-}
-
+}  // namespace utopia

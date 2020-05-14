@@ -1,3 +1,7 @@
+#include "utopia_Base.hpp"
+
+#ifdef WITH_TRILINOS
+
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "utopia.hpp"
@@ -11,14 +15,14 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     class HckTests {
     public:
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        using SizeType = typename utopia::Traits<PetscVector>::SizeType;
+        using Scalar = typename utopia::Traits<TpetraVector>::Scalar;
 
-        HckTests(const SizeType &n,
-                 const SizeType &n_levels = 2,
-                 const Scalar &lambda = 1.0,
-                 const bool verbose = false,
-                 const bool output_flg = false)
+        explicit HckTests(const SizeType &n,
+                          const SizeType &n_levels,
+                          const Scalar &lambda,
+                          const bool verbose,
+                          const bool output_flg)
             : n_(n), n_levels_(n_levels), lambda_(lambda), verbose_(verbose), output_vtk_(output_flg) {
             input_params_.set("atol", 1e-5);
             input_params_.set("rtol", 1e-10);
@@ -97,7 +101,7 @@ namespace utopia {
             // monitor(0, g, "gradient.m", "g");
 
             if (dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get())) {
-                QPSolver<Matrix, Vector> *qp_box = dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get());
+                auto *qp_box = dynamic_cast<QPSolver<Matrix, Vector> *>(qp_solver.get());
                 Vector lb(layout(x_working), -9e9);
                 Vector ub(layout(x_working), 9e9);
                 qp_box->set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
@@ -175,7 +179,9 @@ namespace utopia {
             Matrix H;
             Vector x = fun.initial_guess();
 
-            if (verbose_) fun.describe();
+            if (verbose_) {
+                fun.describe();
+            }
 
 #ifdef WITH_PETSC
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
@@ -199,7 +205,7 @@ namespace utopia {
             auto funs = multilevel_problem.get_functions();
             auto fun1 = funs.back();
 
-            Poisson3D<Matrix, Vector> *fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
+            auto *fun_Laplace = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun1.get());
 
             x = fun_Laplace->initial_guess();
             fun_Laplace->gradient(x, b);
@@ -219,7 +225,9 @@ namespace utopia {
             multigrid.read(input_params_);
             multigrid.apply(b, x);
 
-            if (output_vtk_) fun.output_to_VTK(x);
+            if (output_vtk_) {
+                fun.output_to_VTK(x);
+            }
 #endif  // WITH_PETSC
         }
 
@@ -234,7 +242,9 @@ namespace utopia {
             Bratu2D<Matrix, Vector> fun(100, 5.0);
             Vector x = fun.initial_guess();
 
-            if (verbose_) fun.describe();
+            if (verbose_) {
+                fun.describe();
+            }
 
 #ifdef WITH_PETSC
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
@@ -261,14 +271,18 @@ namespace utopia {
             tr_solver.verbose(verbose_);
             tr_solver.solve(fun, x);
 
-            if (output_vtk_) fun.output_to_VTK(x);
+            if (output_vtk_) {
+                fun.output_to_VTK(x);
+            }
         }
 
         void newton_test() {
             Bratu2D<Matrix, Vector> fun(n_, 5.0);
             Vector x = fun.initial_guess();
 
-            if (verbose_) fun.describe();
+            if (verbose_) {
+                fun.describe();
+            }
 
             // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
             // lsolver->pc_type("bjacobi");
@@ -284,7 +298,9 @@ namespace utopia {
 
             solver.solve(fun, x);
 
-            if (output_vtk_) fun.output_to_VTK(x);
+            if (output_vtk_) {
+                fun.output_to_VTK(x);
+            }
         }
 
         void QuasiTR_unconstrained() {
@@ -319,14 +335,18 @@ namespace utopia {
             tr_solver.read(input_params_);
             tr_solver.solve(fun, x);
 
-            if (output_vtk_) fun.output_to_VTK(x, "QuasiTRUnstrained.vtk");
+            if (output_vtk_) {
+                fun.output_to_VTK(x, "QuasiTRUnstrained.vtk");
+            }
         }
 
         void TR_constrained() {
             Bratu2D<Matrix, Vector> fun(n_, 5.0);
             Vector x = fun.initial_guess();
 
-            if (verbose_) fun.describe();
+            if (verbose_) {
+                fun.describe();
+            }
 
             auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
             // auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
@@ -348,7 +368,9 @@ namespace utopia {
             tr_solver.delta0(1e-2);
             tr_solver.solve(fun, x);
 
-            if (output_vtk_) fun.output_to_VTK(x);
+            if (output_vtk_) {
+                fun.output_to_VTK(x);
+            }
         }
 
         void QuasiTR_constrained() {
@@ -375,7 +397,9 @@ namespace utopia {
             tr_solver.delta0(0.01);
             tr_solver.solve(fun, x);
 
-            if (output_vtk_) fun.output_to_VTK(x, "QuasiTRConstrained.vtk");
+            if (output_vtk_) {
+                fun.output_to_VTK(x, "QuasiTRConstrained.vtk");
+            }
         }
 
         void RMTR_unconstrained() {
@@ -384,10 +408,12 @@ namespace utopia {
             PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector>> multilevel_problem(2, n_levels_, n_);
 
             auto fun = multilevel_problem.get_functions().back();
-            Bratu2D<Matrix, Vector> *fun_Bratu2D = dynamic_cast<Bratu2D<Matrix, Vector> *>(fun.get());
+            auto *fun_Bratu2D = dynamic_cast<Bratu2D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Bratu2D->initial_guess();
 
-            if (verbose_) fun_Bratu2D->describe();
+            if (verbose_) {
+                fun_Bratu2D->describe();
+            }
 
 #ifdef WITH_PETSC
             auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", true);
@@ -415,7 +441,9 @@ namespace utopia {
             // Solve
             rmtr->solve(x);
 
-            if (output_vtk_) fun_Bratu2D->output_to_VTK(x, "RMTR_output.vtk");
+            if (output_vtk_) {
+                fun_Bratu2D->output_to_VTK(x, "RMTR_output.vtk");
+            }
 #endif  // WITH_PETSC
         }
 
@@ -425,10 +453,12 @@ namespace utopia {
 
             // auto fun = multilevel_problem.level_functions_[n_levels_-1];
             auto fun = multilevel_problem.get_functions().back();
-            Poisson3D<Matrix, Vector> *fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
+            auto *fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Poisson3D->initial_guess();
 
-            if (verbose_) fun_Poisson3D->describe();
+            if (verbose_) {
+                fun_Poisson3D->describe();
+            }
 
             auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", true);
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector>>("sor");
@@ -453,7 +483,9 @@ namespace utopia {
             // Solve
             rmtr->solve(x);
 
-            if (output_vtk_) fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");
+            if (output_vtk_) {
+                fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");
+            }
 #endif  // WITH_PETSC
         }
 
@@ -464,10 +496,12 @@ namespace utopia {
             auto funs = multilevel_problem.get_functions();
             auto fun = funs.back();
 
-            Poisson3D<Matrix, Vector> *fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
+            auto *fun_Poisson3D = dynamic_cast<Poisson3D<Matrix, Vector> *>(fun.get());
             Vector x = fun_Poisson3D->initial_guess();
 
-            if (verbose_) fun_Poisson3D->describe();
+            if (verbose_) {
+                fun_Poisson3D->describe();
+            }
 
             // ---------------------- TODO:: investigate why we get negative alpha --------------
             // auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
@@ -495,7 +529,9 @@ namespace utopia {
             // // Solve
             // rmtr->solve(x);
 
-            if (output_vtk_) fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");
+            if (output_vtk_) {
+                fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");
+            }
 #endif  // WITH_PETSC
         }
 
@@ -573,7 +609,7 @@ namespace utopia {
 
         template <class Matrix1, class Vector1, class Matrix2, class Vector2>
         std::shared_ptr<Bratu3D<Matrix2, Vector2>> copy_Bratufun_to_tril(const Poisson3D<Matrix1, Vector1> &fun,
-                                                                         const Scalar &lambda = 2.1) {
+                                                                         const Scalar &lambda) {
             Matrix1 H;
             Vector1 g, x_eq, x_bc_marker;
 
@@ -605,19 +641,19 @@ namespace utopia {
 
             auto funs = multilevel_problem.get_functions();
             auto fun = funs.back();
-            Poisson3D<PetscMatrix, PetscVector> *fun_Poisson3D =
-                dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
+            auto *fun_Poisson3D = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
             PetscVector x = fun_Poisson3D->initial_guess();
 
-            if (verbose_) fun_Poisson3D->describe();
+            if (verbose_) {
+                fun_Poisson3D->describe();
+            }
 
             backend_convert(x, x_fine);
 
             auto transfers = multilevel_problem.get_transfer();
 
             for (auto i = 0; i < multilevel_problem.n_levels(); i++) {
-                MatrixTransfer<PetscMatrix, PetscVector> *mat_transfer =
-                    dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(transfers[i].get());
+                auto *mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(transfers[i].get());
 
                 Matrix I_tril;
                 backend_convert_sparse(mat_transfer->I(), I_tril);
@@ -627,8 +663,7 @@ namespace utopia {
 
             level_functions_tril.resize(multilevel_problem.n_levels());
             for (auto i = 0; i < multilevel_problem.n_levels(); i++) {
-                Poisson3D<PetscMatrix, PetscVector> *fun_Laplace =
-                    dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
+                auto *fun_Laplace = dynamic_cast<Poisson3D<PetscMatrix, PetscVector> *>(fun.get());
 
                 if (std::is_same<ProblemType, Bratu3D<Matrix1, Vector1>>::value) {
                     level_functions_tril[i] =
@@ -864,3 +899,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(hck);
 }  // namespace utopia
+
+#endif

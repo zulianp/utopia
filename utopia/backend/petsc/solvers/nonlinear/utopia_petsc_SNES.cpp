@@ -5,4 +5,4 @@ namespace utopia {
     template class SNESSolver<PetscMatrix, PetscVector, PETSC>;
     //FIXME
     // template class SNESSolver<PetscMatrix, PetscVector, PETSC>;
-}
+}  // namespace utopia

@@ -450,9 +450,9 @@ namespace utopia {
         void transform(const Minus &) override;
 
         void transform(const Pow &p) override;
-        void transform(const Reciprocal<Scalar> &f) override;
+        void transform(const Reciprocal<Scalar> &op) override;
 
-        void transform(std::function<Scalar(const Scalar &)> f);
+        void transform(std::function<Scalar(const Scalar &)> op);
 
         // helper
         template <class F>
@@ -543,10 +543,10 @@ namespace utopia {
         //////////////////
 
         /// y = A * x
-        void multiply(const PetscVector &x, PetscVector &y) const override;
+        void multiply(const PetscVector &vec, PetscVector &result) const override;
 
         /// y = A * x
-        void transpose_multiply(const PetscVector &x, PetscVector &y) const override;
+        void transpose_multiply(const PetscVector &vec, PetscVector &result) const override;
 
         /// y = alpha * A * x
         void multiply(const Scalar &alpha, const PetscVector &x, PetscVector &y) const override;
@@ -574,18 +574,18 @@ namespace utopia {
         ///////////////////////////////////////////////////////////////////////////
 
         void transpose();
-        void transpose(PetscMatrix &C) const override;
+        void transpose(PetscMatrix &result) const override;
 
-        void multiply(const PetscMatrix &B, PetscMatrix &C) const override;
+        void multiply(const PetscMatrix &mat, PetscMatrix &result) const override;
 
         /// C := alpha * A * B
         void multiply(const Scalar &alpha, const PetscMatrix &B, PetscMatrix &C) const override;
 
         /// C := alpha * A^T * B
-        void transpose_multiply(const PetscMatrix &B, PetscMatrix &C) const override;
+        void transpose_multiply(const PetscMatrix &mat, PetscMatrix &result) const override;
 
         /// C := alpha * A * B^T
-        void multiply_transpose(const PetscMatrix &B, PetscMatrix &C) const override;
+        void multiply_transpose(const PetscMatrix &mat, PetscMatrix &result) const override;
 
         /// C := alpha * op(A) * op(B)
         void multiply(const bool transpose_A,
@@ -847,7 +847,7 @@ namespace utopia {
         // only for dense
         void set(const Scalar &value);
 
-        void diagonal_block(PetscMatrix &block) const;
+        void diagonal_block(PetscMatrix &other) const;
 
         void diag_scale_right(const PetscVector &diag);
         void diag_scale_left(const PetscVector &diag);

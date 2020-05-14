@@ -4,10 +4,10 @@
 #ifdef WITH_BLAS
 
 #include "utopia.hpp"
-#include "utopia_Testing.hpp"
 #include "utopia_TestProblems.hpp"
+#include "utopia_Testing.hpp"
 
-typedef double Real;
+using Real = double;
 
 namespace utopia {
 
@@ -134,7 +134,7 @@ namespace utopia {
         Newton<BlasMatrixd, BlasVectord> newtonSolver(lapackSolver);
         newtonSolver.enable_differentiation_control(false);
 
-        TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(x0.comm(), 10);
+        TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(utopia::BlasVectord::comm(), 10);
 
         x0.values(10, 2.0);
         newtonSolver.solve(fun2, x0);
@@ -431,6 +431,6 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(blas);
-}
+}  // namespace utopia
 
 #endif // WITH_BLAS

@@ -1,12 +1,12 @@
-#include "utopia_Testing.hpp"
-#include "utopia_Chrono.hpp"
-#include "utopia_MPI.hpp"
+#include <cassert>
+#include <string>
 #include "utopia.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Benchmark.hpp"
+#include "utopia_Chrono.hpp"
 #include "utopia_LargeScaleIncludes.hpp"
-#include <string>
-#include <cassert>
+#include "utopia_MPI.hpp"
+#include "utopia_Testing.hpp"
 
 namespace utopia
 {
@@ -17,37 +17,39 @@ namespace utopia
 	public:
 		DEF_UTOPIA_SCALAR(Vector);
 
-		virtual std::string name() override
-		{
-			return "RMTR_test benchmark.";
-		}
+                std::string name() override { return "RMTR_test benchmark."; }
 
-		RMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(3), verbose_(verbose)
-		{
-			// ml_problems_.resize(4);
-			// // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
-			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > > (3, n_levels_, n_);
-			// // ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);
+                explicit RMTR_test(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
+                    // ml_problems_.resize(4);
+                    // // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector,
+                    // Poisson2D<Matrix, Vector> > > (2, n_levels_, n_); ml_problems_[0] =
+                    // std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector> > > (3,
+                    // n_levels_, n_);
+                    // // ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix,
+                    // Vector> > > (n_levels_, n_);
 
-			// ml_problems_[1] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Morebv1D<Matrix, Vector> > > (n_levels_, n_);
+                    // ml_problems_[1] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Morebv1D<Matrix,
+                    // Vector> > > (n_levels_, n_);
 
-			// ml_problems_[2] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > > (n_levels_, n_);
-			// // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector> > > (2, n_levels_, n_);
+                    // ml_problems_[2] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix,
+                    // Vector> > > (n_levels_, n_);
+                    // // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix,
+                    // Vector> > > (2, n_levels_, n_);
 
-			// ml_problems_[3] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > > (2, n_levels_, n_);
+                    // ml_problems_[3] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector,
+                    // NonEllipse2D<Matrix, Vector> > > (2, n_levels_, n_);
 
-			ml_problems_.resize(1);
-			ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);
-			// ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix, Vector> > > (2, n_levels_, n_);
-		}
+                    ml_problems_.resize(1);
+                    ml_problems_[0] =
+                        std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > >(
+                            n_levels_, n_);
+                    // ml_problems_[0] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, Poisson2D<Matrix,
+                    // Vector> > > (2, n_levels_, n_);
+                }
 
-		~RMTR_test()
-		{
-			ml_problems_.clear();
-		}
+                ~RMTR_test() override { ml_problems_.clear(); }
 
-
-		void initialize() override
+                void initialize() override
 		{
 			// this->register_experiment("RMTR_first_order_test",
 			// 	[this]() {
@@ -193,39 +195,39 @@ namespace utopia
 		}
 
 	private:
-		template<class Problem, class NonlinearSolver>
-		static void run_test(std::vector<std::shared_ptr<Problem> > & ml_problems, NonlinearSolver &solver, const std::string & solv_name,  const bool & exp_verbose = false)
-		{
-			InputParameters in;
-			in.set("atol", 1e-6);
-			in.set("rtol", 1e-11);
-			in.set("stol", 1e-14);
-			in.set("stol", 1e-14);
-			in.set("delta_min", 1e-13);
-			in.set("max-it", 20);
-			in.set("verbose", false);
+            template <class Problem, class NonlinearSolver>
+            static void run_test(std::vector<std::shared_ptr<Problem> > &ml_problems,
+                                 NonlinearSolver &solver,
+                                 const std::string &solv_name,
+                                 const bool &exp_verbose) {
+                InputParameters in;
+                in.set("atol", 1e-6);
+                in.set("rtol", 1e-11);
+                in.set("stol", 1e-14);
+                in.set("stol", 1e-14);
+                in.set("delta_min", 1e-13);
+                in.set("max-it", 20);
+                in.set("verbose", false);
 
+                // RMTR specific parameters
+                in.set("max_coarse_it", 2);
+                in.set("max_sucessful_coarse_it", 1);
+                in.set("max_QP_coarse_it", 1000);
+                in.set("pre_smoothing_steps", 2);
+                in.set("post_smoothing_steps", 2);
+                in.set("max_sucessful_smoothing_it", 1);
+                in.set("max_QP_smoothing_it", 8);
+                // in.set("delta0", 0.001);
+                in.set("delta0", 1e10);
+                in.set("grad_smoothess_termination", 1e-8);
 
-            // RMTR specific parameters
-            in.set("max_coarse_it", 2);
-            in.set("max_sucessful_coarse_it", 1);
-            in.set("max_QP_coarse_it", 1000);
-            in.set("pre_smoothing_steps", 2);
-            in.set("post_smoothing_steps", 2);
-            in.set("max_sucessful_smoothing_it", 1);
-            in.set("max_QP_smoothing_it", 8);
-            // in.set("delta0", 0.001);
-            in.set("delta0", 1e10);
-            in.set("grad_smoothess_termination", 1e-8);
+                solver->read(in);
 
-			solver->read(in);
-
-			if(exp_verbose && mpi_world_rank()==0)
-			{
-				std::cout<<"--------------------------------------------------------- \n";
-				std::cout<<"				" << solv_name << "				\n";
-				std::cout<<"--------------------------------------------------------- \n";
-			}
+                if (exp_verbose && mpi_world_rank() == 0) {
+                    std::cout << "--------------------------------------------------------- \n";
+                    std::cout << "				" << solv_name << "				\n";
+                    std::cout << "--------------------------------------------------------- \n";
+                }
 
 	    	for(size_t i =0; i < ml_problems.size(); i++)
 	    	{
@@ -248,28 +250,29 @@ namespace utopia
 
 				if(exp_verbose && mpi_world_rank()==0)
 				{
+                                    if (auto *test_fun =
+                                            dynamic_cast<UnconstrainedExtendedTestFunction<Matrix, Vector> *>(
+                                                ml_problems[i]->get_functions().back().get())) {
+                                        const auto dim = test_fun->dim();
+                                        // const auto num_its = sol_status.iterates;
+                                        // const auto conv_reason = sol_status.reason;
 
-		            if(UnconstrainedExtendedTestFunction<Matrix, Vector> * test_fun = dynamic_cast<UnconstrainedExtendedTestFunction<Matrix, Vector> *>(ml_problems[i]->get_functions().back().get()))
-		            {
-		            	const auto dim = test_fun->dim();
-						// const auto num_its = sol_status.iterates;
-						// const auto conv_reason = sol_status.reason;
+                                        std::cout << i << std::setw(5 - std::to_string(i).size()) << " : "
+                                                  << test_fun->name() << "   \n";
 
-						std::cout<< i <<std::setw(5-std::to_string(i).size()) <<" : "<< test_fun->name() << "   \n";
-
-						// if(conv_reason< 0)
-						// {
-						// 	sol_status.describe(std::cout);
-						// }
-		            }
-				}
+                                        // if(conv_reason< 0)
+                                        // {
+                                        // 	sol_status.describe(std::cout);
+                                        // }
+                                    }
+                                }
 			}
-		}
+            }
 
-	private:
+        private:
 		SizeType n_;
-		SizeType n_levels_;
-		bool verbose_;
+                SizeType n_levels_{3};
+                bool verbose_;
 		std::vector<std::shared_ptr<MultilevelTestProblemBase<Matrix, Vector> > > ml_problems_;
 	};
 
@@ -282,26 +285,24 @@ namespace utopia
 	public:
 		DEF_UTOPIA_SCALAR(Vector);
 
-		virtual std::string name() override
-		{
-			return "NLML_test benchmark.";
-		}
+                std::string name() override { return "NLML_test benchmark."; }
 
-		QuasiRMTR_test(const SizeType & n = 6, const bool verbose = false): n_(n), n_levels_(4), verbose_(verbose)
-		{
-			ml_problems_.resize(3);
-			ml_problems_[0] = std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > > (n_levels_, n_);
-			ml_problems_[1] =  std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > > (n_levels_, n_);
-			ml_problems_[2] =  std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > > (2, n_levels_, n_);
-		}
+                explicit QuasiRMTR_test(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
+                    ml_problems_.resize(3);
+                    ml_problems_[0] =
+                        std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > >(
+                            n_levels_, n_);
+                    ml_problems_[1] =
+                        std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > >(n_levels_,
+                                                                                                             n_);
+                    ml_problems_[2] =
+                        std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > >(
+                            2, n_levels_, n_);
+                }
 
-		~QuasiRMTR_test()
-		{
-			ml_problems_.clear();
-		}
+                ~QuasiRMTR_test() override { ml_problems_.clear(); }
 
-
-		void initialize() override
+                void initialize() override
 		{
 			// this->register_experiment("RMTR_quasi_LBFGS_test",
 			// 	[this]() {
@@ -397,39 +398,40 @@ namespace utopia
 		}
 
 	private:
-		template<class Problem, class NonlinearSolver>
-		static void run_test(std::vector<std::shared_ptr<Problem> > & ml_problems, NonlinearSolver &solver, const std::string & solv_name,  const bool & exp_verbose = false)
-		{
-			InputParameters in;
-			in.set("atol", 1e-6);
-			in.set("rtol", 1e-11);
-			in.set("stol", 1e-14);
-			in.set("stol", 1e-14);
-			in.set("delta_min", 1e-13);
-			in.set("max-it", 50);
-			in.set("verbose", false);
+            template <class Problem, class NonlinearSolver>
+            static void run_test(std::vector<std::shared_ptr<Problem> > &ml_problems,
+                                 NonlinearSolver &solver,
+                                 const std::string &solv_name,
+                                 const bool &exp_verbose) {
+                InputParameters in;
+                in.set("atol", 1e-6);
+                in.set("rtol", 1e-11);
+                in.set("stol", 1e-14);
+                in.set("stol", 1e-14);
+                in.set("delta_min", 1e-13);
+                in.set("max-it", 50);
+                in.set("verbose", false);
 
-            // RMTR specific parameters
-            in.set("max_coarse_it", 10);
-            in.set("max_sucessful_coarse_it", 5);
-            in.set("max_QP_coarse_it", 1000);
-            in.set("pre_smoothing_steps", 10);
-            in.set("post_smoothing_steps", 10);
-            in.set("max_sucessful_smoothing_it", 5);
-            // in.set("max_QP_smoothing_it", 10);
-            in.set("max_QP_smoothing_it", 1000);
-            // in.set("delta0", 1.0e10);
-            in.set("grad_smoothess_termination", 1e-8);
-            // in.set("skip_BC_checks", true);
+                // RMTR specific parameters
+                in.set("max_coarse_it", 10);
+                in.set("max_sucessful_coarse_it", 5);
+                in.set("max_QP_coarse_it", 1000);
+                in.set("pre_smoothing_steps", 10);
+                in.set("post_smoothing_steps", 10);
+                in.set("max_sucessful_smoothing_it", 5);
+                // in.set("max_QP_smoothing_it", 10);
+                in.set("max_QP_smoothing_it", 1000);
+                // in.set("delta0", 1.0e10);
+                in.set("grad_smoothess_termination", 1e-8);
+                // in.set("skip_BC_checks", true);
 
-			solver->read(in);
+                solver->read(in);
 
-			if(exp_verbose && mpi_world_rank()==0)
-			{
-				std::cout<<"--------------------------------------------------------- \n";
-				std::cout<<"				" << solv_name << "				\n";
-				std::cout<<"--------------------------------------------------------- \n";
-			}
+                if (exp_verbose && mpi_world_rank() == 0) {
+                    std::cout << "--------------------------------------------------------- \n";
+                    std::cout << "				" << solv_name << "				\n";
+                    std::cout << "--------------------------------------------------------- \n";
+                }
 
 	    	for(size_t i =0; i < ml_problems.size(); i++)
 	    	{
@@ -462,12 +464,12 @@ namespace utopia
 
 				// }
 			}
-		}
+            }
 
-	private:
+        private:
 		SizeType n_;
-		SizeType n_levels_;
-		bool verbose_;
+                SizeType n_levels_{4};
+                bool verbose_;
 		std::vector<std::shared_ptr<MultilevelTestProblemBase<Matrix, Vector> > > ml_problems_;
 	};
 
@@ -515,5 +517,4 @@ namespace utopia
 
 	UTOPIA_REGISTER_TEST_FUNCTION(rmtr);
 	UTOPIA_REGISTER_TEST_FUNCTION(quasi_rmtr);
-}
-
+}  // namespace utopia

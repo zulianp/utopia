@@ -1,11 +1,11 @@
 #include "utopia.hpp"
-#include "utopia_Testing.hpp"
 #include "utopia_TestProblems.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
+#include "utopia_MSSolver.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGradient.hpp"
-#include "utopia_MSSolver.hpp"
 #include "utopia_SPStaticCondensationKrylov.hpp"
 
 namespace utopia
@@ -51,10 +51,10 @@ namespace utopia
 
         class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
         public:
-            bool residual(const Vector &, Vector &) const { return true; }
-            bool jacobian(const Vector &, Matrix &) const { return true; }
-            bool value(const Vector &, Scalar &) const { return true; }
-            bool update(const Vector &) { return true; }
+            bool residual(const Vector & /*unused*/, Vector & /*unused*/) const { return true; }
+            bool jacobian(const Vector & /*unused*/, Matrix & /*unused*/) const { return true; }
+            bool value(const Vector & /*unused*/, Scalar & /*unused*/) const { return true; }
+            bool update(const Vector & /*unused*/) { return true; }
         };
 
 
@@ -106,8 +106,12 @@ namespace utopia
             {
                 auto r = range(rhs);
                 Write<Vector> w(rhs);
-                if(r.inside(0)) rhs.set(0, 0.0);
-                if(r.inside(_n - 1)) rhs.set(_n-1, 0.0);
+                if (r.inside(0)) {
+                    rhs.set(0, 0.0);
+                }
+                if (r.inside(_n - 1)) {
+                    rhs.set(_n - 1, 0.0);
+                }
             }
 
             Vector x(layout(rhs), 0.0);
@@ -135,8 +139,12 @@ namespace utopia
             {
                 auto r = range(rhs);
                 Write<Vector> w(rhs);
-                if(r.inside(0)) rhs.set(0, 0.0);
-                if(r.inside(_n-1)) rhs.set(_n-1, 0.0);
+                if (r.inside(0)) {
+                    rhs.set(0, 0.0);
+                }
+                if (r.inside(_n - 1)) {
+                    rhs.set(_n - 1, 0.0);
+                }
             }
 
             Vector x(layout(rhs), 0.0);
@@ -389,13 +397,11 @@ namespace utopia
             newton_solver.solve(fun2, x);
         }
 
-        SolverTest()
-        : comm_(Comm::get_default()), _n(10) { }
+        SolverTest() : comm_(Comm::get_default()) {}
 
     private:
         Comm comm_;
-        int _n;
-
+        int _n{10};
     };
 
     template<class GlobalMatrix, class GlobalVector, class LocalMatrix, class LocalVector>
@@ -510,4 +516,4 @@ namespace utopia
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(solvers);
-}
+}  // namespace utopia

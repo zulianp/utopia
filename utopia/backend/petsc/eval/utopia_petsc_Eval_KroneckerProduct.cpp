@@ -1,13 +1,12 @@
 #include "utopia_petsc_Eval_KroneckerProduct.hpp"
 
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Wrapper.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
-#include "utopia_Wrapper.hpp"
 
-#include <vector>
 #include <mpi.h>
-
+#include <vector>
 
 namespace utopia {
 
@@ -43,10 +42,10 @@ namespace utopia {
         std::vector<Scalar> recvbuf(n, 0);
 
         //not very efficient but good enough for the moment
-        int is_evenly_distributed = n == r_range.extent() * n_procs;
+        int is_evenly_distributed = static_cast<int>(n == r_range.extent() * n_procs);
         MPI_Allreduce(MPI_IN_PLACE, &is_evenly_distributed, 1, MPI_INT, MPI_MIN, comm);
 
-        if(is_evenly_distributed) {
+        if (is_evenly_distributed != 0) {
             MPI_Allgather(right_array, r_range.extent(), MPIU_SCALAR, &recvbuf[0], r_range.extent(), MPIU_SCALAR, comm);
         } else {
             const long n_values = r_range.extent();
@@ -66,7 +65,9 @@ namespace utopia {
 
             SizeType req_index = 0;
             for(int r = 0; r < n_procs; ++r) {
-                if(r == rank) continue;
+                if (r == rank) {
+                    continue;
+                }
 
                 MPI_Isend(right_array,  r_range.extent(), MPIU_SCALAR, r, r, comm, &requests[req_index++]);
                 MPI_Irecv(&recvbuf[offsets[r]], n_values_x_proc[r], MPIU_SCALAR, r, rank, comm, &requests[req_index++]);
@@ -104,4 +105,4 @@ namespace utopia {
 	}
 
 	template class EvalKroneckerProduct<PetscMatrix, PetscVector, PETSC>;
-}
+}  // namespace utopia

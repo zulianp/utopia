@@ -1,4 +1,6 @@
 #include "utopia_kokkos_Eval_MultiReduce.hpp"
+
+#include <utility>
 #include "utopia_Tpetra_Vector.hpp"
 
 #include "KokkosBlas1_dot.hpp"
@@ -73,7 +75,7 @@ namespace utopia {
     struct MultiOpReducer {
     public:
         //Required
-        typedef MultiOpReducer reducer;
+        using reducer = MultiOpReducer<T, Data, Space, Op, N>;
         typedef utopia::Tuple<T,N> TupleT;
         typedef Kokkos::View<TupleT*, Space, Kokkos::MemoryUnmanaged> result_view_type;
 
@@ -85,11 +87,8 @@ namespace utopia {
     public:
 
         KOKKOS_INLINE_FUNCTION
-        MultiOpReducer(
-                       const Op &op,
-                       Tuple<Data, N> data,
-                       const T &init_val) : op_(op), data_(data), init_val_(init_val) {}
-
+        MultiOpReducer(const Op &op, Tuple<Data, N> data, const T &init_val)
+            : op_(op), data_(std::move(data)), init_val_(init_val) {}
 
         KOKKOS_INLINE_FUNCTION
         void join(volatile TupleT  &val, const volatile TupleT &other) const {
@@ -104,7 +103,9 @@ namespace utopia {
         }
 
         KOKKOS_INLINE_FUNCTION void operator()(const int& i, TupleT &val) const {
-            for (int valIdx=0; valIdx<N; ++valIdx) val[valIdx] = op_.apply(val[valIdx], data_[valIdx](i, 0));
+            for (int valIdx = 0; valIdx < N; ++valIdx) {
+                val[valIdx] = op_.apply(val[valIdx], data_[valIdx](i, 0));
+            }
         }
 
         KOKKOS_INLINE_FUNCTION
@@ -152,7 +153,7 @@ namespace utopia {
 
         Scalar max_val = std::numeric_limits<Scalar>::max();
 
-        Tuple<Scalar, 2> result;
+        Tuple<Scalar, 2> result{};
 
         KokkosEvalMultiReduce<TpetraVector, Min>::eval(t1,
                                                        t2,
@@ -186,9 +187,9 @@ namespace utopia {
         Data d21 = v21.raw_type()->template getLocalView<ExecutionSpaceT>();
         Data d22 = v22.raw_type()->template getLocalView<ExecutionSpaceT>();
 
-        std::array<Scalar, 2> result;
+        std::array<Scalar, 2> result{};
         if(v11.local_size() == v21.local_size()) {
-            Tuple<Scalar, 2> tuple_result;
+            Tuple<Scalar, 2> tuple_result{};
             tuple_result.init(0.0);
 
             Kokkos::parallel_reduce(d11.extent(0),
@@ -244,10 +245,10 @@ namespace utopia {
         Data d31 = v31.raw_type()->template getLocalView<ExecutionSpaceT>();
         Data d32 = v32.raw_type()->template getLocalView<ExecutionSpaceT>();
 
-        std::array<Scalar, 3> result;
+        std::array<Scalar, 3> result{};
 
         if(v11.local_size() == v21.local_size() && v11.local_size() == v31.local_size()) {
-            Tuple<Scalar, 3> tuple_result;
+            Tuple<Scalar, 3> tuple_result{};
             tuple_result.init(0.0);
 
             Kokkos::parallel_reduce(d11.extent(0),
@@ -285,4 +286,4 @@ namespace utopia {
         result3 = result[2];
     }
 
-}
+}  // namespace utopia

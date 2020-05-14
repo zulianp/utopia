@@ -176,8 +176,8 @@ namespace utopia {
         ////////////// OVERRIDES FOR MatrixBase and DistributedMatrix /////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        void c_set(const SizeType &i, const SizeType &j, const Scalar &value) override;
-        void c_add(const SizeType &i, const SizeType &j, const Scalar &value) override;
+        void c_set(const SizeType &row, const SizeType &col, const Scalar &value) override;
+        void c_add(const SizeType &row, const SizeType &col, const Scalar &value) override;
 
         SizeType rows() const override;
         SizeType cols() const override;
@@ -481,18 +481,17 @@ namespace utopia {
         //result = tranpose(*this) * mat
         void transpose_multiply(const TpetraMatrix &right, TpetraMatrix &result) const override;
 
-        void multiply(
-            const bool transpose_A,
-            const bool transpose_B,
-            const TpetraMatrix &B,
-            TpetraMatrix &C) const override;
+        void multiply(const bool transpose_this,
+                      const bool transpose_right,
+                      const TpetraMatrix &right,
+                      TpetraMatrix &result) const override;
 
         void axpy(const Scalar &alpha, const TpetraMatrix &x) override;
         void transpose(TpetraMatrix &mat) const override;
 
         void build_diag(TpetraVector &d) const;
         void diag(const TpetraVector &d);
-        void diag(const TpetraMatrix &d);
+        void diag(const TpetraMatrix &mat);
 
         void diag_scale_left(const TpetraVector &d);
 
@@ -585,7 +584,7 @@ namespace utopia {
         void transform(const Minus &) override;
 
         void transform(const Pow &p) override;
-        void transform(const Reciprocal<Scalar> &f) override;
+        void transform(const Reciprocal<Scalar> &op) override;
 
         ////////////////////////////////////////////////////////////////////////
         //////////////////////////// Blas1Tensor //////////////////////////////

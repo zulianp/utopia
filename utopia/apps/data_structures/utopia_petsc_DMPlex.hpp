@@ -33,25 +33,27 @@ namespace utopia {
             init_from_dm(dm);
         }
 
-        PetscDMPlex(const PetscCommunicator &comm) : PetscDMBase(comm), interpolated_(false) {}
+        PetscDMPlex(const PetscCommunicator &comm) : PetscDMBase(comm), interpolated_(false), simplex_(false) {}
 
         // FIXME interpolated_
-        PetscDMPlex(DM &dm, const bool delegate_ownership) : interpolated_(false) { wrap(dm, delegate_ownership); }
+        PetscDMPlex(DM &dm, const bool delegate_ownership) : interpolated_(false), simplex_(false) {
+            wrap(dm, delegate_ownership);
+        }
 
         bool read(const Path &path, const bool interpolate = false) {
             PetscErrorCode ierr = 0;
 
             const auto ext = path.extension();
+            PetscBool p_inter = interpolate ? PETSC_TRUE : PETSC_FALSE;
 
-            if (ext == "e") {
-                this->destroy_dm();
-
-                PetscBool p_inter = interpolate ? PETSC_TRUE : PETSC_FALSE;
-                ierr = DMPlexCreateExodusFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type());
-                assert(ierr == 0);
-            } else {
-                return false;
-            }
+            // if (ext == "e") {
+            //     this->destroy_dm();
+            //     ierr = DMPlexCreateExodusFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type());
+            //     assert(ierr == 0);
+            // } else {
+            ierr = DMPlexCreateFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type());
+            assert(ierr == 0);
+            // }
 
             return ierr == 0;
         }
@@ -64,7 +66,7 @@ namespace utopia {
             PetscErrorCode ierr = 0;
             std::string type = "box";
             SizeType dim = 2;
-            bool simplex = false;
+
             Scalar lower[3] = {0, 0, 0};
             Scalar upper[3] = {1, 1, 1};
             SizeType faces[3] = {2, 2, 2};
@@ -72,7 +74,7 @@ namespace utopia {
 
             in.get("type", type);
             in.get("dim", dim);
-            in.get("simplex", simplex);
+            in.get("simplex", simplex_);
             in.get("interpolate", interpolated_);
 
             in.get("x_min", lower[0]);
@@ -91,7 +93,7 @@ namespace utopia {
             if (type == "box") {
                 ierr = DMPlexCreateBoxMesh(this->comm().get(),
                                            dim,
-                                           simplex ? PETSC_TRUE : PETSC_FALSE,
+                                           simplex_ ? PETSC_TRUE : PETSC_FALSE,
                                            faces,
                                            lower,
                                            upper,
@@ -215,7 +217,34 @@ namespace utopia {
         //     return std::move(cloned);
         // }
 
+        inline SizeType n_components() const {
+            PetscSection section = nullptr;
+            DMGetLocalSection(this->raw_type(), &section);
+            SizeType num_comp;
+            PetscSectionGetFieldComponents(section, 0, &num_comp);
+            return num_comp;
+        }
+
+        inline SizeType component(const SizeType &idx) const {
+            const SizeType nc = n_components();
+            return nc == 1 ? 0 : idx % nc;
+        }
+
+        bool is_node_on_boundary(const SizeType &idx, const SideSet::BoundaryIdType b_id) const {
+            // DMLabelGetValue(DMLabel label, PetscInt point, PetscInt * value)
+            assert(false);
+            return false;
+        }
+
         inline SizeType dim() const { return PetscDMBase::get_dimension(this->raw_type()); }
+
+        inline SizeType n_local_elements() const {
+            SizeType ret;
+            DMPlexGetHeightStratum(this->raw_type(), 0, nullptr, &ret);
+            return ret;
+        }
+
+        inline Range element_range() const { return Range(0, n_local_elements()); }
 
         inline bool interpolated() const {
             // DMPlexInterpolatedFlag ret;
@@ -241,14 +270,17 @@ namespace utopia {
             PetscSectionSetFieldName(section, field, name.c_str());
         }
 
-        inline void set_up() { DMSetUp(this->raw_type()); }
+        inline void set_up() {
+            DMSetUp(this->raw_type());
+            init_coords();
+        }
 
         inline void transform(const SizeType &cell, const Point &ref, Point &physical) const {
             DMPlexReferenceToCoordinates(this->raw_type(), cell, 1, &ref[0], &physical[0]);
         }
 
         template <typename IntArrayT>
-        inline void nodes(const SizeType &cell, IntArrayT &nodes) {
+        inline void nodes(const SizeType &cell, IntArrayT &nodes) const {
             SizeType num_points = 0;
             SizeType *points = nullptr;
 
@@ -262,7 +294,7 @@ namespace utopia {
         }
 
         template <typename IntArrayT>
-        inline void nodes_local(const SizeType &cell, IntArrayT &nodes) {
+        inline void nodes_local(const SizeType &cell, IntArrayT &nodes) const {
             SizeType num_points = 0;
             SizeType *points = nullptr;
 
@@ -271,6 +303,21 @@ namespace utopia {
             SizeType end_dummy;
             for (SizeType i = 1; i < num_points; ++i) {
                 DMPlexGetPointLocal(this->raw_type(), points[i * 2], &nodes[i - 1], &end_dummy);
+            }
+
+            DMPlexRestoreTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+        }
+
+        template <typename IntArrayT>
+        inline void fields_local(const SizeType &cell, const SizeType &field, IntArrayT &nodes) {
+            SizeType num_points = 0;
+            SizeType *points = nullptr;
+
+            DMPlexGetTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
+
+            SizeType end_dummy;
+            for (SizeType i = 1; i < num_points; ++i) {
+                DMPlexGetPointLocalField(this->raw_type(), points[i * 2], field, &nodes[i - 1], &end_dummy);
             }
 
             DMPlexRestoreTransitiveClosure(this->raw_type(), cell, PETSC_TRUE, &num_points, &points);
@@ -289,9 +336,79 @@ namespace utopia {
             }
         }
 
+        inline void simplex(const bool simplex) { simplex_ = simplex; }
+
+        void describe(std::ostream &os = std::cout) const {
+            SizeType nl, num_cs, num_vs, num_fs, num_marker, num_bd;
+
+            DMGetNumLabels(this->raw_type(), &nl);
+
+            os << "nl:  " << nl << std::endl;
+
+            for (SizeType i = 0; i < nl; ++i) {
+                const char *label_name;
+                DMGetLabelName(this->raw_type(), i, &label_name);
+
+                os << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
+                os << i << ") " << label_name << std::endl;
+
+                // DMGetLabelSize(this->raw_type(), "Cell Sets", &num_cs);
+                // DMGetLabelSize(this->raw_type(), "Vertex Sets", &num_vs);
+                // DMGetLabelSize(this->raw_type(), "Face Sets", &num_fs);
+                // DMGetLabelSize(this->raw_type(), "marker", &num_marker);
+
+                // os << "num_cs: " << num_cs << " num_vs: " << num_vs << " num_fs: " << num_fs
+                //    << " num_marker: " << num_marker << std::endl;
+
+                // DMGetNumBoundary(this->raw_type(), &num_bd);
+
+                // os << "num_bd: " << num_bd << std::endl;
+
+                DMLabel label;
+                // DMGetLabel(this->raw_type(), "marker", &label);
+                // DMGetLabel(this->raw_type(), "Cell Sets", &label);
+                DMGetLabel(this->raw_type(), label_name, &label);
+
+                if (!label) return;
+
+                for (SizeType s = 0; s < 4; ++s) {
+                    os << "---------------------------\n";
+                    os << "Stratum " << s << std::endl;
+
+                    SizeType n;
+                    DMLabelGetStratumSize(label, s, &n);
+
+                    os << "DMLabelGetStratumSize " << n << std::endl;
+
+                    if (n == 0) continue;
+
+                    DMLabelGetNumValues(label, &n);
+
+                    os << "DMLabelGetNumValues " << n << std::endl;
+
+                    SizeType start, end;
+                    DMPlexGetHeightStratum(this->raw_type(), s, &start, &end);
+
+                    os << "[" << start << ", " << end << ")" << std::endl;
+
+                    for (SizeType i = start; i < end; ++i) {
+                        SizeType value;
+                        DMLabelGetValue(label, i, &value);
+                        os << value << " ";
+                    }
+
+                    os << std::endl;
+                }
+
+                os << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
+            }
+        }
+
     private:
         // DMPlexElementType type_override_;
         bool interpolated_;
+        bool simplex_;
+        PetscVector coords_;
 
         void init_default() {
             // device::fill(10, this->dims());
@@ -311,6 +428,14 @@ namespace utopia {
             //     this->n_components(),
             //     this->raw_type()
             // );
+        }
+
+        void init_coords() {
+            Vec coords;
+            // DMGetCoordinates(dmplex.raw_type(), &coords.raw_type());
+            DMGetCoordinatesLocal(this->raw_type(), &coords);
+            // We do not need to delete the memory
+            coords_.wrap(coords);
         }
 
         void init_from_dm(DM dm) {

@@ -122,13 +122,10 @@ namespace utopia {
             }
         }
 
-
-        WrapperTest()
-                : n_dofs(100) { }
+        WrapperTest() {}
 
     private:
-        int n_dofs;
-
+        int n_dofs{100};
     };
 
     static void wrapper() {
@@ -142,5 +139,4 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(wrapper);
-}
-
+}  // namespace utopia

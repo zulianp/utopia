@@ -1,7 +1,7 @@
 #include "utopia_trilinos_Communicator.hpp"
-#include <Tpetra_Core.hpp>
 #include <Teuchos_DefaultMpiComm.hpp>
 #include <Teuchos_DefaultSerialComm.hpp>
+#include <Tpetra_Core.hpp>
 
 namespace utopia {
     TrilinosCommunicator::TrilinosCommunicator()
@@ -12,7 +12,8 @@ namespace utopia {
 
    // TrilinosCommunicator::TrilinosCommunicator(const SelfCommunicator &comm) : comm_(new Teuchos::MpiComm<int>(comm.get())) {}
 
-    TrilinosCommunicator::TrilinosCommunicator(const SelfCommunicator &comm) : comm_(new Teuchos::SerialComm<int>()) {}
+    TrilinosCommunicator::TrilinosCommunicator(const SelfCommunicator & /*comm*/)
+        : comm_(new Teuchos::SerialComm<int>()) {}
     TrilinosCommunicator::TrilinosCommunicator(const Communicator &comm) : comm_(new Teuchos::MpiComm<int>(comm.raw_comm()))
     {
         assert(comm.size() == this->size());
@@ -28,12 +29,11 @@ namespace utopia {
         MPI_Comm TrilinosCommunicator::raw_comm() const
         {
             auto *mpi_comm = dynamic_cast<const Teuchos::MpiComm<int> *>(comm_.get());
-            if(mpi_comm) {
+            if (mpi_comm != nullptr) {
                 return *mpi_comm->getRawMpiComm();
-            } else {
+            }
                 assert(false);
                 return MPI_COMM_SELF;
-            }
         }
 #endif
-}
+}  // namespace utopia

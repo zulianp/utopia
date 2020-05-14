@@ -1,8 +1,8 @@
-#include "utopia.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "utopia.hpp"
+#include "utopia_Layout.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Testing.hpp"
-#include "utopia_Layout.hpp"
 
 namespace utopia {
 
@@ -211,5 +211,4 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(autodiff);
 
-}
-
+}  // namespace utopia

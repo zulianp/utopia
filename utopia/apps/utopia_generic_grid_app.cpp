@@ -93,38 +93,40 @@ namespace utopia {
 
     void dmplex_test(Input &in) {
         using I = utopia::ArrayView<PetscInt, 4>;
+        using Mesh = utopia::PetscDMPlex<V, I>;
+        static const int NVar = 2;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVar, utopia::Tri3<PetscReal>>;
+        using Elem = FunctionSpace::Elem;
+        using Quadrature = utopia::Quadrature<Elem, 2>;
+        using Device = FunctionSpace::Device;
+        using Point = FunctionSpace::Point;
+        using Scalar = FunctionSpace::Scalar;
+        using ElementMatrix = utopia::StaticMatrix<Scalar, 3 * NVar, 3 * NVar>;
+        // using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
 
         PetscCommunicator comm;
         MPITimeStatistics stats(comm);
 
+        ////////////////////////////////////////////////////////////
+
         stats.start();
 
-        PetscDMPlex<V, I> dmplex(comm);
-        dmplex.read(in);
+        FunctionSpace space(comm);
+        space.read(in);
+        auto &dmplex = space.mesh();
+        dmplex.describe();
+
+        // for (int c = 0; c < space.n_components(); ++c) {
+        //     space.emplace_dirichlet_condition(
+        //         SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return p[1]; }, c);
+
+        //     space.emplace_dirichlet_condition(
+        //         SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return -p[1]; }, c);
+        // }
 
         stats.stop_collect_and_restart("dmplex-setup");
 
-        dmplex.write("mesh.vtu");
-
-        stats.stop_and_collect("vtu-write");
-        stats.describe(std::cout);
-
-        PetscInt num_fields = 1;
-        PetscInt dim = dmplex.dim(), qorder = PETSC_DEFAULT;
-        in.get("dim", dim);
-        in.get("qorder", qorder);
-
-        dmplex.set_num_fields(num_fields);
-
-        // Important to specifiy for all num_fields
-        PetscInt num_comp[1] = {1};
-
-        // Important to specifiy all mesh dim 0, 1, 2, 3
-        PetscInt num_dofs[4] = {1, 1, 0, 0};
-
-        dmplex.create_section(num_comp, num_dofs);
-        dmplex.set_field_name(0, "u");
-        dmplex.set_up();
+        ////////////////////////////////////////////////////////////
 
         PetscVector v;
         dmplex.create_vector(v);
@@ -132,51 +134,61 @@ namespace utopia {
 
         v.comm().root_print("dofs = " + std::to_string(v.size()));
 
+        stats.stop_collect_and_restart("create-vector");
+        ////////////////////////////////////////////////////////////
+
+        std::string output_path = "prova.vtu";
+        in.get("output_path", output_path);
+
         utopia::rename("X", v);
-        dmplex.write("prova.vtu", v);
+        dmplex.write(output_path, v);
 
-        V ref({0.0, 0.0});
-        V physical;
-        dmplex.transform(0, ref, physical);
+        stats.stop_and_collect("vtu-write");
 
-        disp(physical);
-
-        // PetscReal vert[3], J[3 * 3], invJ[3 * 3], detJ;
-        // DMPlexComputeCellGeometryFEM(dmplex.raw_type(), 0, nullptr, vert, J, invJ, &detJ);
-
-        // std::cout << "detJ: " << detJ << std::endl;
-
-        // DMPlexComputeCellGeometryAffineFEM(dmplex.raw_type(), 0, vert, J, invJ, &detJ);
-
-        // std::cout << "detJ: " << detJ << std::endl;
-
-        // comm.barrier();
-
-        // PetscVector coords;
-        // coords.destroy();
-        // DMGetCoordinates(dmplex.raw_type(), &coords.raw_type());
-
-        // DMGetCoordinatesLocal(dmplex.raw_type(), &coords.raw_type());
-
-        // if (comm.rank() == 0) disp(coords);
-        // comm.barrier();
-        // if (comm.rank() == 1) disp(coords);
-
-        // coords.raw_type() = nullptr;
-
-        // VecView()
-
-        // PetscInt num_points = 0;
-        // PetscInt *points = nullptr;
-
-        PetscInt cell_num = 0;
+        int cell_num = 0;
         in.get("cell_num", cell_num);
 
-        ArrayView<PetscInt, 4> nodes;
-        dmplex.nodes_local(cell_num, nodes);
-        disp(nodes);
+        Quadrature q;
+        auto grad = space.shape_grad(q);
+        auto fun = space.shape(q);
+        auto dx = space.differential(q);
 
-        // PetscFiniteElement elem(dmplex.raw_type(), )
+        PetscMatrix H;
+        space.create_matrix(H);
+
+        {
+            auto space_view = space.view_device();
+            auto H_view = space.assembly_view_device(H);
+            auto grad_view = grad.view_device();
+            auto fun_view = fun.view_device();
+            auto dx_view = dx.view_device();
+
+            Device::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                Elem e;
+                space_view.elem(i, e);
+
+                auto g = grad_view.make(e);
+                auto dx = dx_view.make(e);
+
+                ElementMatrix el_mat;
+                el_mat.set(0.0);
+
+                for (PetscInt qp = 0; qp < Quadrature::NPoints; ++qp) {
+                    for (PetscInt i = 0; i < Elem::NFunctions; ++i) {
+                        for (PetscInt j = 0; j < Elem::NFunctions; ++j) {
+                            el_mat(i, j) += inner(g(i, qp), g(j, qp)) * dx(qp);
+                        }
+                    }
+                }
+
+                space_view.add_matrix(e, el_mat, H_view);
+            });
+        }
+
+        stats.stop_and_collect("assembly");
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        stats.describe(std::cout);
     }
 
     UTOPIA_REGISTER_APP(dmplex_test);

@@ -86,7 +86,7 @@ namespace utopia {
         auto smoother      = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
         auto linear_solver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
         Multigrid<PetscMatrix, PetscVector> multigrid(smoother, linear_solver);
-        multigrid.set_transfer_operators(std::move(interpolation_operators));
+        multigrid.set_transfer_operators(interpolation_operators);
         PetscVector x(row_layout(A), 0.0);
         // PetscVector upper_bound = values(A.size().get(0), 0.003);
         // auto box = make_upper_bound_constraints(make_ref(upper_bound));
@@ -172,7 +172,6 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(tao);
-}
-
+}  // namespace utopia
 
 #endif //WITH_PETSC

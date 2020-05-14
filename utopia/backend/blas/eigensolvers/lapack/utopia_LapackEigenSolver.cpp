@@ -117,7 +117,9 @@ namespace utopia {
             }
         }
 
-        if(info == 0) return fix_sizes(m, evalues, evectors);
+        if (info == 0) {
+            return fix_sizes(m, evalues, evectors);
+        }
         return false;
     }
 
@@ -197,7 +199,9 @@ namespace utopia {
             }
         }
 
-        if(info == 0) return fix_sizes(m, evalues, evectors);
+        if (info == 0) {
+            return fix_sizes(m, evalues, evectors);
+        }
         return false;
     }
 
@@ -208,7 +212,8 @@ namespace utopia {
         if(m == 0) {
             std::cerr << "wrong size: " <<  m << std::endl;
             return false;
-        } else if(m != n) {
+        }
+        if (m != n) {
             evalues.resize(m);
 
             BlasMatrixd out;
@@ -263,7 +268,9 @@ namespace utopia {
             &info);
 
         assert(info == 0);
-        if(info != 0) return false;
+        if (info != 0) {
+            return false;
+        }
 
         lwork = work[0];
 
@@ -284,7 +291,9 @@ namespace utopia {
             &info);
 
         assert(info == 0);
-        if(info != 0) return false;
+        if (info != 0) {
+            return false;
+        }
 
         lwork = -1;
         dorgtr_(
@@ -524,4 +533,4 @@ namespace utopia {
 
         return aux_eig(n, A.entries(), evalues.entries(), evector.entries());
     }
-}
+}  // namespace utopia

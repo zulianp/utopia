@@ -21,14 +21,18 @@ int main(const int argc, char *argv[]) {
         std::vector<std::string> tests;
         for (int i = 1; i < argc; i++) {
             if (argv[i] == std::string("-data_path")) {
-                if (++i >= argc) break;
+                if (++i >= argc) {
+                    break;
+                }
                 if (mpi_world_rank() == 0) {
                     std::cout << "data_path: " << argv[i] << std::endl;
                 }
                 Utopia::instance().set("data_path", argv[i]);
             } else if (argv[i] == std::string("-test")) {
-                if (++i >= argc) break;
-                tests.push_back(argv[i]);
+                if (++i >= argc) {
+                    break;
+                }
+                tests.emplace_back(argv[i]);
             } else if (argv[i] == std::string("-skip-tests")) {
                 run_tests = false;
             } else if (argv[i] == std::string("-performance_test_verbose")) {

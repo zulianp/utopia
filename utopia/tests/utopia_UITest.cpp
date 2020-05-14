@@ -3,17 +3,17 @@
 #include "utopia_ui.hpp"
 
 #include "utopia.hpp"
-#include "utopia_ui.hpp"
+#include "utopia_InputParameters.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_SymbolicFunction.hpp"
-#include "utopia_InputParameters.hpp"
+#include "utopia_ui.hpp"
 
 namespace utopia {
 
     void generic_stream(Input &is)
     {
         utopia_test_assert(is.good());
-        //TODO
+        // TODO(zulianp):
     }
 
     void xml_stream()
@@ -23,7 +23,9 @@ namespace utopia {
         auto is_ptr = open_istream(path);
         utopia_test_assert(bool(is_ptr));
 
-        if(!is_ptr) return;
+        if (!is_ptr) {
+            return;
+        }
         generic_stream(*is_ptr);
     }
 
@@ -106,4 +108,4 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(ui);
 
-}
+}  // namespace utopia

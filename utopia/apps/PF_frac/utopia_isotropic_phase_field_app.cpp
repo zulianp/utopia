@@ -9,39 +9,39 @@
 
 //include edsl components
 #include "utopia_AppRunner.hpp"
-#include "utopia_Core.hpp"
-#include "utopia_PetscDM.hpp"
-#include "utopia_petsc_Matrix.hpp"
 #include "utopia_AssemblyView.hpp"
-#include "utopia_DeviceView.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_ConjugateGradient.hpp"
-#include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
-#include "utopia_BratuFE.hpp"
-#include "utopia_PoissonFE.hpp"
-#include "utopia_MassMatrixView.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_LinearElasticityView.hpp"
-#include "utopia_GradInterpolate.hpp"
-#include "utopia_PrincipalStrainsView.hpp"
-#include "utopia_IsotropicPhaseField.hpp"
-#include "utopia_FEFunction.hpp"
-#include "utopia_SampleView.hpp"
-#include "utopia_MPRGP.hpp"
-#include "utopia_TrustRegionVariableBound.hpp"
-#include "utopia_QuasiNewtonBound.hpp"
+#include "utopia_BCSetup.hpp"
 #include "utopia_Backtracking.hpp"
-#include "utopia_LBFGS.hpp"
-#include "utopia_QuasiTrustRegionVariableBound.hpp"
-#include "utopia_InitialCondition.hpp"
+#include "utopia_BratuFE.hpp"
+#include "utopia_ConjugateGradient.hpp"
+#include "utopia_Core.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_FEFunction.hpp"
 #include "utopia_FracNetGenerator2D.hpp"
 #include "utopia_FracNetGenerator3D.hpp"
+#include "utopia_GradInterpolate.hpp"
 #include "utopia_IncrementalLoading.hpp"
+#include "utopia_InitialCondition.hpp"
+#include "utopia_IsotropicPhaseField.hpp"
+#include "utopia_LBFGS.hpp"
+#include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityView.hpp"
 #include "utopia_MLIncrementalLoading.hpp"
-#include "utopia_BCSetup.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_MPRGP.hpp"
+#include "utopia_MassMatrixView.hpp"
+#include "utopia_PetscDM.hpp"
+#include "utopia_PoissonFE.hpp"
+#include "utopia_PrincipalStrainsView.hpp"
+#include "utopia_QuasiNewtonBound.hpp"
+#include "utopia_QuasiTrustRegionVariableBound.hpp"
+#include "utopia_SampleView.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_TrustRegionVariableBound.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 #include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
@@ -54,9 +54,9 @@
 #include "utopia_petsc_Matrix_impl.hpp"
 #endif //WITH_PETSC
 
-#include <random>
-#include <cmath>
 #include <chrono>
+#include <cmath>
+#include <random>
 
 namespace utopia {
 
@@ -437,6 +437,6 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_isotropic_phase_field_3d);
-}
+}  // namespace utopia
 
 #endif

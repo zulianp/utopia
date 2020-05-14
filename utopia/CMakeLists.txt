@@ -56,6 +56,7 @@ option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in t
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the futre" ON)
+option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
@@ -90,6 +91,16 @@ endif()
 # set(CMAKE_CXX_FLAGS "-Wall -Wno-clobbered -Wno-vla -Wno-pragmas -Wno-unknown-pragmas -Wno-unused-local-typedefs -Wno-literal-suffix -Wno-deprecated-declarations -Wno-misleading-indentation -Wno-int-in-bool-context -Wno-maybe-uninitialized -Wno-nonnull-compare -Wno-address -Wno-inline -DTRILINOS_HIDE_DEPRECATED_HEADER_WARNINGS -Werror" CACHE STRING "Warnings as errors settings")
 
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=inconsistent-missing-override")
+
+if(ENABLE_CLANG_TIDY)
+    # FIXME
+    find_program(CLANG_TIDY
+      NAMES clang-tidy-mp-7.0 clang-tidy-7 clang-tidy-6.0 clang-tidy-5.0 clang-tidy-4.0 clang-tidy
+      PATHS /opt/local/bin
+    )
+
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-format-style=file;-fix") #-warnings-as-errors=*; #-header-filter=.
+endif()
 
 # More annoying
 set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
@@ -231,10 +242,10 @@ function(find_project_files rootPath dirPaths headers sources)
     FOREACH(INCLUDE_PATH ${DIR_PATHS})
         INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
 
-        file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
-        file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
-        file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
-        file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
+        file(GLOB TEMP_HPPSRC CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
+        file(GLOB TEMP_SRC CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
+        file(GLOB TEMP_HPPDR CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
+        file(GLOB TEMP_HDR CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
 
         SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
 

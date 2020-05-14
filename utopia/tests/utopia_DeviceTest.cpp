@@ -75,15 +75,15 @@ namespace utopia {
 // #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        DeviceTest<PetscMatrix, PetscVector>().run();
+DeviceTest<utopia::PetscMatrix, utopia::PetscVector>::run();
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS
-        DeviceTest<TpetraMatrix, TpetraVector>().run();
+DeviceTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
 #endif //WITH_TRILINOS
 
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(device_test);
 
-}
+}  // namespace utopia

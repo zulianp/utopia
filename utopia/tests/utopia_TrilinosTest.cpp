@@ -1,29 +1,29 @@
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
-#include "utopia_Testing.hpp"
 #include "utopia.hpp"
+#include "utopia_Jacobi.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_trilinos.hpp"
-#include "utopia_trilinos_solvers.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
-#include "utopia_Jacobi.hpp"
+#include "utopia_trilinos_solvers.hpp"
 
-#include "utopia_assemble_laplacian_1D.hpp"
-#include "utopia_MultilevelTestProblem1D.hpp"
 #include <algorithm>
+#include "utopia_MultilevelTestProblem1D.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
 
-#include "utopia_Structure.hpp"
-#include "utopia_Eval_Structure.hpp"
-#include "utopia_Bratu1D.hpp"
-#include "utopia_Poisson1D.hpp"
-#include "utopia_TestProblems.hpp"
-#include "utopia_IPTransfer.hpp"
 #include <cmath>
+#include "utopia_Bratu1D.hpp"
+#include "utopia_Eval_Structure.hpp"
+#include "utopia_IPTransfer.hpp"
+#include "utopia_Poisson1D.hpp"
+#include "utopia_Structure.hpp"
+#include "utopia_TestProblems.hpp"
 
 namespace utopia {
 
@@ -759,8 +759,12 @@ namespace utopia {
                 auto r = range(rhs);
 
                 Write<Vector> w(rhs);
-                if(r.inside(0))    rhs.set(0, 0.0);
-                if(r.inside(_n-1)) rhs.set(_n-1, 0.0);
+                if (r.inside(0)) {
+                    rhs.set(0, 0.0);
+                }
+                if (r.inside(_n - 1)) {
+                    rhs.set(_n - 1, 0.0);
+                }
             }
 
             Vector x(layout(rhs), 0.0);
@@ -837,7 +841,7 @@ namespace utopia {
             std::vector<std::shared_ptr<MatrixT>> interpolation_operators;
             interpolation_operators.push_back(make_ref(I));
 
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
@@ -1208,12 +1212,11 @@ namespace utopia {
             // A = *ml_problem.interpolators[0];
             auto transfer = ml_problem.get_transfer();
 
-            if(dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get())){
-                MatrixTransfer<TpetraMatrixd, TpetraVectord> * mat_transfer = dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get());
+            if (dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get()) != nullptr) {
+                auto *mat_transfer =
+                    dynamic_cast<MatrixTransfer<TpetraMatrixd, TpetraVectord> *>(transfer.back().get());
                 A = mat_transfer->I();
-            }
-            else
-            {
+            } else {
                 utopia_error("trilinos_copy_write::error...");
             }
 
@@ -1307,8 +1310,9 @@ namespace utopia {
 
         void trilinos_belos()
         {
-            if(true) {
-                m_utopia_warning("TrilinosTest::trilinos_belos commented out because of excpetion. Fix and remove this fallback.");
+            {
+                m_utopia_warning(
+                    "TrilinosTest::trilinos_belos commented out because of excpetion. Fix and remove this fallback.");
                 return;
             }
 
@@ -1575,7 +1579,7 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_specific);
-}
+}  // namespace utopia
 
 #endif //WITH_TRILINOS
 

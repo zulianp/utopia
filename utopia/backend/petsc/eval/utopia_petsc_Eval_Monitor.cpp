@@ -17,12 +17,13 @@ namespace utopia {
         PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
 
         const char *name;
-        PetscObjectGetName((PetscObject)m.raw_type(), &name);
-        PetscObjectSetName((PetscObject)m.raw_type(), (name_of_mat + std::to_string(iteration)).c_str());
+        PetscObjectGetName(reinterpret_cast<PetscObject>(m.raw_type()), &name);
+        PetscObjectSetName(reinterpret_cast<PetscObject>(m.raw_type()),
+                           (name_of_mat + std::to_string(iteration)).c_str());
         MatView(m.raw_type(), viewer);
 
         PetscViewerDestroy(&viewer);
-        PetscObjectSetName((PetscObject)m.raw_type(), name);
+        PetscObjectSetName(reinterpret_cast<PetscObject>(m.raw_type()), name);
     }
 
     void EvalMonitor<PetscVector, PETSC>::apply(
@@ -38,11 +39,12 @@ namespace utopia {
         PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
 
         const char *name;
-        PetscObjectGetName((PetscObject)v.raw_type(), &name);
-        PetscObjectSetName((PetscObject)v.raw_type(), (name_of_vec + std::to_string(iteration)).c_str());
+        PetscObjectGetName(reinterpret_cast<PetscObject>(v.raw_type()), &name);
+        PetscObjectSetName(reinterpret_cast<PetscObject>(v.raw_type()),
+                           (name_of_vec + std::to_string(iteration)).c_str());
         VecView(v.raw_type(), viewer);
         PetscViewerDestroy(&viewer);
-        PetscObjectSetName((PetscObject)v.raw_type(), name);
+        PetscObjectSetName(reinterpret_cast<PetscObject>(v.raw_type()), name);
     }
 
-}
+}  // namespace utopia

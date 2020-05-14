@@ -1,12 +1,12 @@
 #include "utopia_petsc_KSPTypes.hpp"
-#include "utopia_petsc_Types.hpp"
 #include "utopia_petsc_Base.hpp"
+#include "utopia_petsc_Types.hpp"
 
-#include <petscpc.h>
 #include <petscksp.h>
+#include <petscpc.h>
 
 namespace utopia {
-    //TODO check what solvers are available in petsc based on the compilation and version
+    // TODO(zulianp): check what solvers are available in petsc based on the compilation and version
 
     KSPTypes::KSPTypes():
     ksp_({
@@ -137,5 +137,4 @@ namespace utopia {
         " "
         })
     {}
-}
-
+}  // namespace utopia

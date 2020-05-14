@@ -1,6 +1,6 @@
 #include "utopia.hpp"
-#include "utopia_Testing.hpp"
 #include "utopia_TestProblems.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
 namespace utopia {
@@ -63,7 +63,9 @@ namespace utopia {
 
         void petsc_mg_1D()
         {
-            if(comm_.size() > 1) return;
+            if (comm_.size() > 1) {
+                return;
+            }
 
             const static bool verbose = false;
 
@@ -136,7 +138,7 @@ namespace utopia {
             // multigrid.set_default_ksp_type(KSPFGMRES);
 
             // Multigrid<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL> multigrid;
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
@@ -185,8 +187,7 @@ namespace utopia {
             // multigrid.set_use_line_search(true);
             // multigrid.verbose(true);
 
-
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(interpolation_operators);
             // multigrid.set_fix_semidefinite_operators(true);
             multigrid.update(make_ref(A));
 
@@ -293,12 +294,12 @@ namespace utopia {
             utopia_test_assert(approxeq(expected, sol));
         }
 
-
-        template<class MultigridT>
-        void test_block_mg(MultigridT &multigrid, const bool verbose = false)
-        {
+        template <class MultigridT>
+        void test_block_mg(MultigridT &multigrid, const bool verbose) {
             //FiXME USE serial comm
-            if(comm_.size() > 1) return;
+            if (comm_.size() > 1) {
+                return;
+            }
 
             PetscVector rhs;
             PetscMatrix A, I;
@@ -389,7 +390,7 @@ namespace utopia {
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
             // auto smoother = std::make_shared<PointJacobi<PetscMatrix, PetscVector>>();
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.fix_semidefinite_operators(true);
             multigrid.must_generate_masks(true);
             multigrid.max_it(1);
@@ -510,7 +511,7 @@ namespace utopia {
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.update(make_ref(A));
 
             multigrid.max_it(1);
@@ -557,8 +558,9 @@ namespace utopia {
 
         void petsc_factorization()
         {
-            if(comm_.size() > 1)
+            if (comm_.size() > 1) {
                 return;
+            }
 
             PetscVector rhs, x;
             PetscMatrix A; A.dense(serial_layout(n_, n_), 0.0);
@@ -618,7 +620,7 @@ namespace utopia {
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
             // auto smoother = std::make_shared<PointJacobi<PetscMatrix, PetscVector>>();
             Multigrid<PetscMatrix, PetscVector> multigrid(smoother, direct_solver);
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(1);
             multigrid.mg_type(1);
             multigrid.verbose(verbose);
@@ -661,12 +663,10 @@ namespace utopia {
             //! [MG solve example]
         }
 
-
-        PetscLinearSolverTest()
-        : n_(10) { }
+        PetscLinearSolverTest() = default;
 
     private:
-        int n_;
+        int n_{10};
     };
 
 #endif //WITH_PETSC
@@ -679,4 +679,4 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(petsc_linear);
-}
+}  // namespace utopia

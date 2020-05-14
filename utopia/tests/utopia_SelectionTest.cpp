@@ -1,6 +1,6 @@
 #include "utopia.hpp"
-#include "utopia_Testing.hpp"
 #include "utopia_IsSubTree.hpp"
+#include "utopia_Testing.hpp"
 
 namespace utopia {
 
@@ -138,4 +138,4 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(selection);
-}
+}  // namespace utopia

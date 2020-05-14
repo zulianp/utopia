@@ -8,5 +8,5 @@
 namespace utopia
 {
 template class BelosSolver<TpetraMatrixd, TpetraVectord>;
-}
+}  // namespace utopia
 #endif  // WITH_TRILINOS_BELOS

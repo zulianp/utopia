@@ -2,29 +2,29 @@
 
 //include edsl components
 #include "utopia_AppRunner.hpp"
-#include "utopia_Core.hpp"
-#include "utopia_PetscDM.hpp"
-#include "utopia_petsc_Matrix.hpp"
 #include "utopia_AssemblyView.hpp"
-#include "utopia_DeviceView.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_ConjugateGradient.hpp"
-#include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
 #include "utopia_BratuFE.hpp"
-#include "utopia_PoissonFE.hpp"
-#include "utopia_MassMatrixView.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_LinearElasticityView.hpp"
-#include "utopia_GradInterpolate.hpp"
-#include "utopia_PrincipalStrainsView.hpp"
-#include "utopia_PhaseField.hpp"
+#include "utopia_ConjugateGradient.hpp"
+#include "utopia_Core.hpp"
+#include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
+#include "utopia_GradInterpolate.hpp"
+#include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityView.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_MassMatrixView.hpp"
+#include "utopia_PetscDM.hpp"
+#include "utopia_PhaseField.hpp"
+#include "utopia_PoissonFE.hpp"
+#include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_petsc.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 #include "utopia_LinearElasticityFE.hpp"
 
@@ -56,7 +56,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        for(int c = 0; c < space.n_components(); ++c) {
+        for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
                 SideSet::top(),
                 UTOPIA_LAMBDA(const Point &) -> Scalar {
@@ -95,7 +95,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        for(int c = 0; c < space.n_components(); ++c) {
+        for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
                 SideSet::top(),
                 UTOPIA_LAMBDA(const Point &) -> Scalar {
@@ -344,7 +344,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        for(int c = 0; c < space.n_components(); ++c) {
+        for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
                 SideSet::top(),
                 UTOPIA_LAMBDA(const Point &p) -> Scalar {
@@ -467,4 +467,4 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(test_elast_expr);
 
-}
+}  // namespace utopia

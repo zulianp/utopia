@@ -5,11 +5,11 @@
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGradient.hpp"
 
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
+#include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
-#include "utopia_polymorphic_QPSolver.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
+#include "utopia_polymorphic_QPSolver.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -301,10 +301,10 @@ namespace utopia {
 #endif //WITH_TRILINOS
 
 #ifdef WITH_BLAS
-        QPSolverTest<BlasMatrixd, BlasVectord>().run(); // TODO:: because blas is missing min operation ....
+        QPSolverTest<BlasMatrixd, BlasVectord>().run();  // TODO(zulianp): : because blas is missing min operation ....
 #endif //WITH_BLAS
 
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_solver);
-}
+}  // namespace utopia

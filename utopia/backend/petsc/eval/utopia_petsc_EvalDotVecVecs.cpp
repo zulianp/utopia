@@ -1,6 +1,6 @@
-#include "utopia_petsc_Vector.hpp"
 #include "utopia_petsc_EvalDotVecVecs.hpp"
 #include "utopia_Wrapper.hpp"
+#include "utopia_petsc_Vector.hpp"
 
 namespace utopia {
 
@@ -12,13 +12,15 @@ namespace utopia {
         {
             typename utopia::Traits<Vector>::SizeType n =  vectors.size();
 
-            if(n!=static_cast<SizeType>(results.size()))
+            if (n != static_cast<SizeType>(results.size())) {
                 results.resize(n);
+            }
 
             std::vector<Vec> vecs(n);
 
-            for(auto i=0; i < static_cast<SizeType>(vectors.size()); i++)
-                vecs[i]=(raw_type(*vectors[i]));
+            for (auto i = 0; i < static_cast<SizeType>(vectors.size()); i++) {
+                vecs[i] = (raw_type(*vectors[i]));
+            }
 
              VecMDot(raw_type(v1), n, vecs.data(), results.data());
         }
@@ -32,8 +34,9 @@ namespace utopia {
             std::vector<Vec> vecs;
             for(auto i=0; i < static_cast<SizeType>(vectors.size()); i++)
             {
-                if(!empty(vectors[i]))
+                if (!empty(vectors[i])) {
                     vecs.push_back(raw_type(vectors[i]));
+                }
             }
 
             typename utopia::Traits<Vector>::SizeType n =  vecs.size();
@@ -43,13 +46,15 @@ namespace utopia {
                 std::vector<Scalar> result_new(n);
                 VecMDot(raw_type(v1), n, vecs.data(), result_new.data());
 
-                for(auto i=0; i < n; i++)
+                for (auto i = 0; i < n; i++) {
                     results[i] = result_new[i];
+                }
             }
             else
             {
-                if(n!=results.size())
+                if (n != results.size()) {
                     results.resize(n);
+                }
 
                 VecMDot(raw_type(v1), n, vecs.data(), results.data());
             }
@@ -133,4 +138,4 @@ namespace utopia {
         //ecplicit instantiations
         template class EvalDots<PetscVector, PETSC>;
         template class EvalNorm2s<PetscVector, PETSC>;
-}
+}  // namespace utopia

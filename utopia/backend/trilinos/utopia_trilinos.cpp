@@ -1,10 +1,10 @@
 #include "utopia_trilinos.hpp"
-#include "utopia_Wrapper.hpp"
-#include "utopia_Tpetra_Matrix.hpp"
-#include "utopia_Tpetra_Vector.hpp"
-#include "utopia_trilinos_RowView.hpp"
 #include "utopia_BiCGStab_impl.hpp"
 #include "utopia_ConjugateGradient_impl.hpp"
+#include "utopia_Tpetra_Matrix.hpp"
+#include "utopia_Tpetra_Vector.hpp"
+#include "utopia_Wrapper.hpp"
+#include "utopia_trilinos_RowView.hpp"
 
 namespace utopia{
 
@@ -13,4 +13,4 @@ namespace utopia{
     template class ConjugateGradient<TpetraMatrixd, TpetraVectord>;
     template class ConjugateGradient<TpetraMatrixd, TpetraVectord, HOMEMADE>;
 
-}
+}  // namespace utopia

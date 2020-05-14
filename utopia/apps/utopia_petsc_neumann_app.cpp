@@ -5,27 +5,27 @@
 
 //include edsl components
 #include "utopia_AppRunner.hpp"
-#include "utopia_Core.hpp"
-#include "utopia_PetscDM.hpp"
-#include "utopia_petsc_Matrix.hpp"
 #include "utopia_AssemblyView.hpp"
-#include "utopia_DeviceView.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_ConjugateGradient.hpp"
-#include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
 #include "utopia_BratuFE.hpp"
-#include "utopia_PoissonFE.hpp"
-#include "utopia_MassMatrixView.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_LinearElasticityView.hpp"
-#include "utopia_GradInterpolate.hpp"
-#include "utopia_PrincipalStrainsView.hpp"
-#include "utopia_PhaseField.hpp"
+#include "utopia_ConjugateGradient.hpp"
+#include "utopia_Core.hpp"
+#include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
+#include "utopia_GradInterpolate.hpp"
+#include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityView.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_MassMatrixView.hpp"
+#include "utopia_PetscDM.hpp"
+#include "utopia_PhaseField.hpp"
+#include "utopia_PoissonFE.hpp"
+#include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 #include "utopia_LinearElasticityFE.hpp"
 
@@ -40,9 +40,8 @@
 
 namespace utopia {
 
-    template<class FunctionSpace>
-    void neumman_test(FunctionSpace &space, Input &in)
-    {
+    template <class FunctionSpace>
+    void neumman_test(FunctionSpace &space, Input & /*in*/) {
         using Point  = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
         using Vector = typename FunctionSpace::Vector;
@@ -132,4 +131,4 @@ namespace utopia {
 
 
     UTOPIA_REGISTER_APP(neumann_example_3);
-}
+}  // namespace utopia

@@ -174,4 +174,4 @@ namespace utopia {
 
 	//explicit instantiation for double
 	template class BLASAlgorithms<double>;
-}
+}  // namespace utopia

@@ -1,7 +1,7 @@
-#include "utopia.hpp"
-#include "utopia_Testing.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "utopia.hpp"
 #include "utopia_InputParameters.hpp"
+#include "utopia_Testing.hpp"
 
 namespace utopia
 {
@@ -109,10 +109,11 @@ namespace utopia
 
 	    void tr_more_sorensen_eigen_test()
 	    {
-	    	if(comm_.size() != 1)
-	    		return;
+                if (comm_.size() != 1) {
+                    return;
+                }
 
-	       	PetscVector x_w1(serial_layout(4), 10);
+                PetscVector x_w1(serial_layout(4), 10);
 			PetscVector expected_wood(serial_layout(4), 1);
 			Woods14<PetscMatrix, PetscVector> fun_woods;
 
@@ -171,10 +172,11 @@ namespace utopia
 
 		void pseudo_tr_test()
 		{
-	    	if(comm_.size() != 1)
-	    		return;
+                    if (comm_.size() != 1) {
+                        return;
+                    }
 
-			PetscVector x(serial_layout(4), 10);
+                        PetscVector x(serial_layout(4), 10);
 			PetscVector expected_woods(serial_layout(4), 1);
 			Woods14<PetscMatrix, PetscVector> fun;
 
@@ -231,10 +233,11 @@ namespace utopia
 
 		void pseudo_cont_test()
 		{
-			if(comm_.size() != 1)
-	    		return;
+                    if (comm_.size() != 1) {
+                        return;
+                    }
 
-			PetscVector x(serial_layout(4), 10);
+                        PetscVector x(serial_layout(4), 10);
 			PetscVector expected_woods(serial_layout(4), 1);
 			Woods14<PetscMatrix, PetscVector> fun;
 
@@ -323,10 +326,11 @@ namespace utopia
 
 			solver.solve(fun_stiff, x_stiff);
 
-			if(comm_.size() != 1)
-	  		  		return;
+                        if (comm_.size() != 1) {
+                            return;
+                        }
 
-			PetscVector x(serial_layout(4), 10);
+                        PetscVector x(serial_layout(4), 10);
 			PetscVector expected_woods(serial_layout(4), 1);
 			Woods14<PetscMatrix, PetscVector> fun;
 
@@ -334,12 +338,11 @@ namespace utopia
 
 		}
 
-		SlepcsSolverTest()
-		: _n(10) { }
+                SlepcsSolverTest() = default;
 
-	private:
-		int _n;
-	};
+            private:
+                int _n{10};
+        };
 
 #endif //WITH_SLEPC
 
@@ -352,4 +355,4 @@ namespace utopia
 	}
 
 	UTOPIA_REGISTER_TEST_FUNCTION(slepc_es);
-}
+}  // namespace utopia

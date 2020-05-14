@@ -15,9 +15,9 @@ namespace utopia {
     public:
         DEF_UTOPIA_SCALAR(Vector);
 
-        virtual std::string name() override { return "NewtonLSBenchmark benchmark."; }
+        std::string name() override { return "NewtonLSBenchmark benchmark."; }
 
-        NewtonLSBenchmark(const SizeType &n = 10, const bool verbose = false) : n_(n), verbose_(verbose) {
+        explicit NewtonLSBenchmark(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
             if (mpi_world_size() == 1) {
                 test_functions_parallel_.resize(2);
                 test_functions_parallel_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
@@ -34,7 +34,7 @@ namespace utopia {
             }
         }
 
-        ~NewtonLSBenchmark() { test_functions_.clear(); }
+        ~NewtonLSBenchmark() override { test_functions_.clear(); }
 
         void initialize() override {
             // As not all backends have factorization
@@ -87,7 +87,7 @@ namespace utopia {
                 run_newton(this->test_functions_, solver, "NewtonTest_STCG_BACKEND_GS", this->verbose_);
             });
 
-            // TODO:: BiCGSTAB seems to have problem
+            // TODO(zulianp): : BiCGSTAB seems to have problem
             // this->register_experiment("NewtonTest_BiCGSTAB_HOMEMADE_Jacobi",
             // 	[this]() {
             //            auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector, HOMEMADE> >();
@@ -154,7 +154,7 @@ namespace utopia {
         static void run_newton(std::vector<std::shared_ptr<Fun> > &test_functions,
                                NonlinearSolver &solver,
                                const std::string &solv_name,
-                               const bool &exp_verbose = false) {
+                               const bool &exp_verbose) {
             InputParameters in;
             in.set("atol", 1e-6);
             in.set("rtol", 1e-11);
