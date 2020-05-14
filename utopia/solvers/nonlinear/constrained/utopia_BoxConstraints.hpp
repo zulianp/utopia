@@ -10,6 +10,7 @@
 
 #include <limits>
 #include <memory>
+#include <utility>
 
 namespace utopia {
 
@@ -20,12 +21,11 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
 
-        BoxConstraints(const std::shared_ptr<Vector> &lower_bound, const std::shared_ptr<Vector> &upper_bound)
-            : lower_bound_(lower_bound),
-              upper_bound_(upper_bound),
+        BoxConstraints(std::shared_ptr<Vector> lower_bound, std::shared_ptr<Vector> upper_bound)
+            : lower_bound_(std::move(lower_bound)),
+              upper_bound_(std::move(upper_bound)),
               min_val_(-std::numeric_limits<Scalar>::max()),
-              max_val_(std::numeric_limits<Scalar>::max()),
-              uniform_(false) {}
+              max_val_(std::numeric_limits<Scalar>::max()) {}
 
         BoxConstraints()
             : min_val_(-std::numeric_limits<Scalar>::max()), max_val_(std::numeric_limits<Scalar>::max()) {}
@@ -93,7 +93,7 @@ namespace utopia {
 
         BoxConstraints *clone() const override { return new BoxConstraints(*this); }
 
-        ~BoxConstraints() override {}
+        ~BoxConstraints() override = default;
 
         inline std::shared_ptr<Vector> &upper_bound() { return upper_bound_; }
 
@@ -159,7 +159,7 @@ namespace utopia {
         std::shared_ptr<Vector> upper_bound_;
         Scalar min_val_ = -9e9;
         Scalar max_val_ = 9e9;
-        bool uniform_;
+        bool uniform_{false};
     };
 
     template <class Vector>

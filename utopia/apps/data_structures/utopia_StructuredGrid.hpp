@@ -225,7 +225,7 @@ namespace utopia {
         }
 
         ///////////////////////////////// non-constexpr methods ////////////////////////
-        UTOPIA_INLINE_FUNCTION StructuredGrid() {}
+        UTOPIA_INLINE_FUNCTION StructuredGrid() = default;
         // UTOPIA_FUNCTION virtual ~StructuredGrid() {}
 
         UTOPIA_INLINE_FUNCTION bool is_node_on_boundary(const SizeType &idx,

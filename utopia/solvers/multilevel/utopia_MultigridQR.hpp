@@ -32,12 +32,12 @@ namespace utopia
 
         typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::IterativeSolver<Matrix, Vector>     Smoother;
-        typedef std::shared_ptr<Smoother>                   SmootherPtr;
+        using SmootherPtr = std::shared_ptr<Smoother>;
 
         typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
-        typedef utopia::VariableBoundSolverInterface<Vector> VariableBoundSolverInterface;
+        using VariableBoundSolverInterface = utopia::VariableBoundSolverInterface<Vector>;
 
         using Super  = utopia::LinearMultiLevel<Matrix, Vector>;
 
@@ -96,7 +96,7 @@ namespace utopia
             }
         }
 
-        ~MultigridQR() override {}
+        ~MultigridQR() override = default;
 
         void read(Input &in) override
         {
@@ -341,34 +341,33 @@ namespace utopia
         {
             assert(l != this->n_levels()-2);
 
-            if(ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get())){
-              GS_smoother->set_R(R_);
-              GS_smoother->sweeps(nu);
-              GS_smoother->set_box_constraints(this->get_box_constraints());
-              GS_smoother->smooth(rhs, x);
-            }
-            else{
-              utopia_error("MG_QR: requires ProjectedGaussSeidelQR to be the fine level smoother ");
+            if (auto *GS_smoother = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(smoothers_[l].get())) {
+                GS_smoother->set_R(R_);
+                GS_smoother->sweeps(nu);
+                GS_smoother->set_box_constraints(this->get_box_constraints());
+                GS_smoother->smooth(rhs, x);
+            } else {
+                utopia_error("MG_QR: requires ProjectedGaussSeidelQR to be the fine level smoother ");
             }
 
             if(pre_sm){
+                if (auto *trunc_transfer =
+                        dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
+                    auto *GS_smoother = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(smoothers_[l].get());
+                    const Vector &active_set = GS_smoother->get_active_set();
 
-              if(MatrixTruncatedTransfer<Matrix, Vector>* trunc_transfer =  dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector>* > (this->transfers_[l-1].get())){
-                ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get());
-                const Vector & active_set = GS_smoother->get_active_set();
+                    trunc_transfer->truncate_interpolation(active_set);
+                    this->galerkin_assembly(this->get_operator());
 
-                trunc_transfer->truncate_interpolation(active_set);
-                this->galerkin_assembly(this->get_operator());
-
-                for(std::size_t l = 1; l != smoothers_.size()-1; ++l) {
-                    smoothers_[l]->update(level(l).A_ptr());
+                    for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
+                        smoothers_[l]->update(level(l).A_ptr());
+                    }
+                    coarse_solver_->update(level(0).A_ptr());
                 }
-                coarse_solver_->update(level(0).A_ptr());
-              }
 
-            else{
-              utopia_error("MG_QR: requires MatrixTruncatedTransfer for the finest level.");
-            }
+                else {
+                    utopia_error("MG_QR: requires MatrixTruncatedTransfer for the finest level.");
+                }
           }
             return true;
         }

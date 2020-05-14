@@ -78,14 +78,9 @@ namespace utopia {
            return false;
         }
 
-        inline bool update(const Vector &x) override {
-            return true;
-        }
+        inline bool update(const Vector & /*x*/) override { return true; }
 
-        inline bool gradient(const Vector &x, Vector &g) const override
-        {
-            return false;
-        }
+        inline bool gradient(const Vector & /*x*/, Vector & /*g*/) const override { return false; }
 
         template<class Fun>
         inline bool space_time_linear_form(

@@ -24,7 +24,7 @@ namespace utopia
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
 
-        virtual ~HilbertFunction() {}
+        virtual ~HilbertFunction() = default;
         virtual void gradient(Function<Matrix, Vector> &function, const Vector &x, Vector &gradient) = 0;
         virtual Scalar norm(const Vector &x) const = 0;
         virtual Scalar dot(const Vector &left, const Vector &right) const = 0;
@@ -37,7 +37,7 @@ namespace utopia
     class IMSConvexHullSolver {
     public:
         using Scalar = UTOPIA_SCALAR(GlobalVector);
-        virtual ~IMSConvexHullSolver() {}
+        virtual ~IMSConvexHullSolver() = default;
 
         virtual void solve(HilbertFunction<GlobalMatrix, GlobalVector> &normed,
                    const Scalar a_norm2,
@@ -199,8 +199,8 @@ namespace utopia
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class MSSolver final : public NewtonBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         using LinearSolverT = LinearSolver<Matrix, Vector>;
 
     public:

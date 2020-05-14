@@ -3,13 +3,14 @@
 
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include "utopia_Clonable.hpp"
 
 namespace utopia {
     class IConvertible : public Clonable {
     public:
-        ~IConvertible() override {}
+        ~IConvertible() override = default;
         virtual void get(double &) const = 0;
         virtual void get(float &) const = 0;
         virtual void get(int &) const = 0;
@@ -164,7 +165,7 @@ namespace utopia {
     template<typename T>
     class Convertible final : public IConvertible {
     public:
-        Convertible(const T &value) : value_(value) {}
+        Convertible(T value) : value_(std::move(value)) {}
 
         inline void get(double &in_out) const override
         {

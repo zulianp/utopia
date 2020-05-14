@@ -17,21 +17,16 @@
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::MatrixFreeTRSubproblem<Vector>  TRSubproblem;
-        typedef utopia::HessianApproximation<Vector>    HessianApproximation;
-        typedef utopia::QuasiNewtonBase<Vector>         NonLinearSolver;
+        using TRSubproblem = utopia::MatrixFreeTRSubproblem<Vector>;
+        using HessianApproximation = utopia::HessianApproximation<Vector>;
+        using NonLinearSolver = utopia::QuasiNewtonBase<Vector>;
 
-        public:
-          QuasiTrustRegion( const std::shared_ptr <HessianApproximation> &hessian_approx,
-                            const std::shared_ptr<TRSubproblem> &tr_subproblem):
-                            NonLinearSolver(hessian_approx, tr_subproblem),
-                            initialized_(false)
-          {
+    public:
+        QuasiTrustRegion(const std::shared_ptr<HessianApproximation> &hessian_approx,
+                         const std::shared_ptr<TRSubproblem> &tr_subproblem)
+            : NonLinearSolver(hessian_approx, tr_subproblem), initialized_(false) {}
 
-          }
-
-          void read(Input &in) override
-          {
+        void read(Input &in) override {
             TrustRegionBase<Vector>::read(in);
             QuasiNewtonBase<Vector>::read(in);
           }
@@ -118,17 +113,14 @@
           //----------------------------------------------------------------------------
           //     new step p_k w.r. ||p_k|| <= delta
           //----------------------------------------------------------------------------
-          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver().get()))
-          {
-            p_k.set(0);
-            tr_subproblem->current_radius(delta);
-            g_help = -1.0*g;
-            tr_subproblem->solve(*multiplication_action, g_help, p_k);
-            this->solution_status_.num_linear_solves++;
-          }
-          else
-          {
-            utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
+          if (auto *tr_subproblem = dynamic_cast<TRSubproblem *>(this->linear_solver().get())) {
+              p_k.set(0);
+              tr_subproblem->current_radius(delta);
+              g_help = -1.0 * g;
+              tr_subproblem->solve(*multiplication_action, g_help, p_k);
+              this->solution_status_.num_linear_solves++;
+          } else {
+              utopia_warning("TrustRegion::Set suitable TR subproblem.... \n ");
           }
 
           x_trial = x_k + p_k;

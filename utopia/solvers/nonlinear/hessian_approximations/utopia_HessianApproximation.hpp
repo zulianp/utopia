@@ -11,8 +11,8 @@ namespace utopia
 template<class Vector>
 class HessianApproximation : public virtual Clonable, public virtual Configurable
 {
-    typedef UTOPIA_SCALAR(Vector)    Scalar;
-    typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    using Scalar = typename utopia::Traits<Vector>::Scalar;
+    using SizeType = typename utopia::Traits<Vector>::SizeType;
 
     using Communicator = typename Traits<Vector>::Communicator;
 
@@ -59,10 +59,9 @@ public:
             std::function< void(const Vector &, Vector &) > operator_action_;
     };
 
-    HessianApproximation(): num_tol_(1e-12), initialized_(false)
-    {}
+    HessianApproximation() : num_tol_(1e-12) {}
 
-    ~HessianApproximation() override {}
+    ~HessianApproximation() override = default;
 
     virtual void initialize(const Vector &x_k, const Vector & /* g */)
     {
@@ -226,7 +225,7 @@ public:
 private:
     std::shared_ptr<Communicator> comm_;
     Scalar num_tol_;
-    bool initialized_;
+    bool initialized_{false};
     Size size_, local_size_;
 };
 }

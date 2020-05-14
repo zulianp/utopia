@@ -102,7 +102,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool update(const Vector &x) override {
+        inline bool update(const Vector & /*x*/) override {
             // x_coeff_.update(x);
             return true;
         }
@@ -748,15 +748,12 @@ namespace utopia {
             }
         }
 
-        template<class EigenValues, class EigenMatrix, class Stress>
-        UTOPIA_INLINE_FUNCTION static void stress_positive(
-            const Parameters &params,
-            const Scalar &phase_field_value,
-            const EigenValues &values,
-            const EigenMatrix &mat,
-            Stress &stress_positive
-            )
-        {
+        template <class EigenValues, class EigenMatrix, class Stress>
+        UTOPIA_INLINE_FUNCTION static void stress_positive(const Parameters &params,
+                                                           const Scalar & /*phase_field_value*/,
+                                                           const EigenValues &values,
+                                                           const EigenMatrix &mat,
+                                                           Stress &stress_positive) {
             Scalar tr = sum(values);
             const Scalar tr_p = split_p(tr);
             StaticVector<Scalar, Dim> v;

@@ -19,7 +19,7 @@ namespace utopia {
         using Layout   = typename Traits<Vector>::Layout;
 
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
-        typedef utopia::Preconditioner<Vector> Preconditioner;
+        using Preconditioner = utopia::Preconditioner<Vector>;
 
     public:
         using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
@@ -62,9 +62,9 @@ namespace utopia {
                 Vector &x
         );
 
-        bool reset_initial_guess_;
-        bool initialized_;
-        bool apply_gradient_descent_step_;
+        bool reset_initial_guess_{false};
+        bool initialized_{false};
+        bool apply_gradient_descent_step_{false};
         Layout layout_;
 
         //This fields are not to be copied anywhere

@@ -7,7 +7,7 @@ namespace utopia {
 
     class Describable {
     public:
-        virtual ~Describable() {}
+        virtual ~Describable() = default;
         virtual void describe(std::ostream &os = std::cout) const
         {
             os << "Implement me!!!" << std::endl;

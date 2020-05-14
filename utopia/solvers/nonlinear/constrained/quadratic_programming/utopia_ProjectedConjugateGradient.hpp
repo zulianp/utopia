@@ -18,7 +18,7 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        ProjectedConjugateGradient() {}
+        ProjectedConjugateGradient() = default;
 
         ProjectedConjugateGradient(const ProjectedConjugateGradient &) = default;
 

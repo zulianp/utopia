@@ -206,7 +206,7 @@ namespace utopia {
             }
         }
 
-        UTOPIA_FUNCTION constexpr TensorView() {}
+        UTOPIA_FUNCTION constexpr TensorView() = default;
         UTOPIA_FUNCTION constexpr TensorView(ArrayView &&view) : view_(std::move(view)) {}
         UTOPIA_FUNCTION constexpr TensorView(const ArrayView &view) : view_(view) {}
         UTOPIA_FUNCTION constexpr TensorView(TensorView &&other) : view_(std::move(other.view_)) {}
@@ -230,7 +230,7 @@ namespace utopia {
         }
 
     // private:
-        ArrayView view_;
+        ArrayView view_{};
     };
 
     template<class View>

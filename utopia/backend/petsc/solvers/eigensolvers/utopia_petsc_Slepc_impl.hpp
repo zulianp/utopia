@@ -10,9 +10,7 @@ namespace utopia {
     SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL>::SlepcSolver(const std::vector<std::string> problem_types,
                                                                  const std::vector<std::string> portions_of_spectrum,
                                                                  const std::vector<std::string> solver_types)
-        : initialized_(false),
-          solved_(false),
-          problem_types_(problem_types),
+        : problem_types_(problem_types),
           portions_of_spectrum_(portions_of_spectrum),
           solver_types_(solver_types)
 
@@ -67,7 +65,7 @@ namespace utopia {
         else
             initialize(comm);
 
-        EPSSetOperators(eps_, raw_type(A), NULL);
+        EPSSetOperators(eps_, raw_type(A), nullptr);
 
         EPSSolve(eps_);
 
@@ -134,10 +132,10 @@ namespace utopia {
 
         Mat A;
 
-        EPSGetOperators(eps_, &A, NULL);
+        EPSGetOperators(eps_, &A, nullptr);
 
-        MatCreateVecs(A, NULL, &raw_type(xr));
-        MatCreateVecs(A, NULL, &raw_type(xi));
+        MatCreateVecs(A, nullptr, &raw_type(xr));
+        MatCreateVecs(A, nullptr, &raw_type(xi));
 
         EPSGetConverged(eps_, &nconv);
         std::string method = "EIGEN_PAIRS  \n Number of converged eigenpairs: " + std::to_string(nconv);
@@ -170,7 +168,7 @@ namespace utopia {
 
         Mat A;
 
-        EPSGetOperators(eps_, &A, NULL);
+        EPSGetOperators(eps_, &A, nullptr);
 
         if (!empty(vr)) {
             vr.destroy();
@@ -179,8 +177,8 @@ namespace utopia {
             vi.destroy();
         }
 
-        MatCreateVecs(A, NULL, &raw_type(vr));
-        MatCreateVecs(A, NULL, &raw_type(vi));
+        MatCreateVecs(A, nullptr, &raw_type(vr));
+        MatCreateVecs(A, nullptr, &raw_type(vi));
 
         vr.set_initialized(true);
         vi.set_initialized(true);

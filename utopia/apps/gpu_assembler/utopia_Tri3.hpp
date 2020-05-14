@@ -163,7 +163,7 @@ namespace utopia {
             out = jacobian_inverse_ * (in - translation_);
         }
 
-        UTOPIA_INLINE_FUNCTION Tri3() {}
+        UTOPIA_INLINE_FUNCTION Tri3() = default;
 
         template <class P0, class P1, class P2>
         UTOPIA_INLINE_FUNCTION void set(const P0 &p0, const P1 &p1, const P2 &p2) {

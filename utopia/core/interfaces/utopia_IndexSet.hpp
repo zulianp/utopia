@@ -14,9 +14,9 @@ namespace utopia {
 		using Index    = Index_;
 		using SizeType = SizeType_;
 
-		virtual ~IndexSet() {}
+                virtual ~IndexSet() = default;
 
-		//locks
+                //locks
 		virtual void read_lock()  = 0;
 		virtual void write_lock(WriteMode) = 0;
 

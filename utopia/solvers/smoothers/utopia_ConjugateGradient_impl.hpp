@@ -12,10 +12,10 @@
 
 namespace utopia {
 
-    template<class Matrix, class Vector, int Backend>
+    template <class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient()
-    : reset_initial_guess_(false), initialized_(false), apply_gradient_descent_step_(false)
-    {}
+
+        = default;
 
     template<class Matrix, class Vector, int Backend>
     void ConjugateGradient<Matrix, Vector, Backend>::copy(const ConjugateGradient &other)
@@ -24,10 +24,11 @@ namespace utopia {
         reset_initial_guess_ = other.reset_initial_guess_;
     }
 
-    template<class Matrix, class Vector, int Backend>
+    template <class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient(const ConjugateGradient &other)
-    : Super(other), reset_initial_guess_(other.reset_initial_guess_), initialized_(false), apply_gradient_descent_step_(other.apply_gradient_descent_step_)
-    {}
+        : Super(other),
+          reset_initial_guess_(other.reset_initial_guess_),
+          apply_gradient_descent_step_(other.apply_gradient_descent_step_) {}
 
     template<class Matrix, class Vector, int Backend>
     void ConjugateGradient<Matrix, Vector, Backend>::reset_initial_guess(const bool val)

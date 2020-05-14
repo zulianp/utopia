@@ -28,9 +28,9 @@ namespace utopia {
 		CONST_DERIVED_CRT(Derived);
 		DERIVED_CRT(Derived);
 
-		Tensor() {}
+                Tensor() = default;
 
-		virtual void construct(const Derived &other) { assign(other); }
+                virtual void construct(const Derived &other) { assign(other); }
 		virtual void construct(Derived &&other) { assign(other); }
 
 		virtual void assign(const Derived &other) = 0;

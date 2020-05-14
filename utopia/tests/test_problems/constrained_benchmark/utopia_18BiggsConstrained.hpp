@@ -1,24 +1,20 @@
 #ifndef UTOPIA_SOLVER_BIGGS_18_CONSTRAINED_HPP
 #define UTOPIA_SOLVER_BIGGS_18_CONSTRAINED_HPP
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
 #include "utopia_UnconstrainedBenchmark.hpp"
 
+namespace utopia {
 
-namespace utopia
-{
-
-    template<class Matrix, class Vector>
-    class Biggs18Constrained final: public ConstrainedTestFunction<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class Biggs18Constrained final : public ConstrainedTestFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        Biggs18Constrained()
-        {
+        Biggs18Constrained() {
             auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
@@ -47,55 +43,28 @@ namespace utopia
             this->set_box_constraints(make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub)));
         }
 
-        std::string name() const override
-        {
-            return "Biggs Exp6, bound constrained";
-        }
+        std::string name() const override { return "Biggs Exp6, bound constrained"; }
 
-        SizeType dim() const override
-        {
-            return unconstrained_.dim();
-        }
+        SizeType dim() const override { return unconstrained_.dim(); }
 
-        bool value(const Vector &x, typename Vector::Scalar &result) const override
-        {
+        bool value(const Vector &x, typename Vector::Scalar &result) const override {
             return unconstrained_.value(x, result);
         }
 
-        bool gradient(const Vector &x, Vector &g) const override
-        {
-            return unconstrained_.gradient(x, g);
-        }
+        bool gradient(const Vector &x, Vector &g) const override { return unconstrained_.gradient(x, g); }
 
-        bool hessian(const Vector &x, Matrix &H) const override
-        {
-            return unconstrained_.hessian(x, H);
-        }
+        bool hessian(const Vector &x, Matrix &H) const override { return unconstrained_.hessian(x, H); }
 
-        Vector initial_guess() const override
-        {
-            return unconstrained_.initial_guess();
-        }
+        Vector initial_guess() const override { return unconstrained_.initial_guess(); }
 
-        const Vector & exact_sol() const override
-        {
-            return unconstrained_.exact_sol();
-        }
+        const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Scalar min_function_value() const override
-        {
-            return 0.5320986e-3;
-        }
-
+        Scalar min_function_value() const override { return 0.5320986e-3; }
 
     private:
         Biggs18<Matrix, Vector> unconstrained_;
-
-
     };
 
+}  // namespace utopia
 
-
-}
-
-#endif //UTOPIA_SOLVER_BIGGS_18_CONSTRAINED_HPP
+#endif  // UTOPIA_SOLVER_BIGGS_18_CONSTRAINED_HPP

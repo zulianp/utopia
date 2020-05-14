@@ -21,7 +21,7 @@ namespace utopia {
     public:
         class ActiveTol {
         public:
-            virtual ~ActiveTol() {}
+            virtual ~ActiveTol() = default;
 
             ActiveTol(const Scalar tol) : tol_(tol) {}
 

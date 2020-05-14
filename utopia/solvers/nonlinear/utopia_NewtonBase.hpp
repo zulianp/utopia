@@ -1,6 +1,8 @@
 #ifndef UTOPIA_NEWTON_BASED_NONLINEAR_SOLVER_HPP
 #define UTOPIA_NEWTON_BASED_NONLINEAR_SOLVER_HPP
 
+#include <utility>
+
 #include "utopia_Function.hpp"
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_ConvergenceReason.hpp"
@@ -31,11 +33,13 @@ namespace utopia {
         using Solver         = utopia::LinearSolver<Matrix, Vector>;
         using DiffController = utopia::DiffController<Matrix, Vector>;
 
-        NewtonBase(const std::shared_ptr<Solver> &linear_solver)
-        : NonLinearSolver<Vector>(), linear_solver_(linear_solver), check_diff_(false), forcing_strategy_(InexactNewtonForcingStartegies::ZERO)
-        { }
+        NewtonBase(std::shared_ptr<Solver> linear_solver)
+            : NonLinearSolver<Vector>(),
+              linear_solver_(std::move(linear_solver)),
+              check_diff_(false),
+              forcing_strategy_(InexactNewtonForcingStartegies::ZERO) {}
 
-        ~NewtonBase() override {}
+        ~NewtonBase() override = default;
 
         virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
 

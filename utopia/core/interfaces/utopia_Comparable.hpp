@@ -7,10 +7,10 @@ namespace utopia {
 	template<class T>
 	class Comparable {
 	public:
-		virtual ~Comparable() {}
+            virtual ~Comparable() = default;
 
-		using Scalar = typename utopia::Traits<T>::Scalar;
-		virtual bool equals(const T &other, const Scalar &tol = 0.0) const = 0;
+            using Scalar = typename utopia::Traits<T>::Scalar;
+            virtual bool equals(const T &other, const Scalar &tol = 0.0) const = 0;
 
 	};
 }

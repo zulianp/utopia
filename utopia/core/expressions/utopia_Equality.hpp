@@ -12,7 +12,7 @@ namespace utopia {
 
         static const int Order = Left::Order;
 
-        typedef typename Left::Scalar Scalar;
+        using Scalar = typename Left::Scalar;
 
         Equality(const Left &left, const Right &right)
         : left_(left), right_(right)

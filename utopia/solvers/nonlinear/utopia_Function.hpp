@@ -20,7 +20,7 @@ namespace utopia
     public:
         DEF_UTOPIA_SCALAR(Vector);
 
-        ~FunctionBase() override {}
+        ~FunctionBase() override = default;
 
         void read(Input &in) override {}
 
@@ -37,7 +37,7 @@ namespace utopia
     public:
         DEF_UTOPIA_SCALAR(Vector);
 
-        ~Function() override {}
+        ~Function() override = default;
 
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;
         virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const

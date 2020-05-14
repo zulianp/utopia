@@ -79,16 +79,13 @@ namespace utopia
 
             while(!converged)
             {
-                if(QPSolver * qp_solver = dynamic_cast<QPSolver*>(this->linear_solver().get()))
-                {
+                if (auto *qp_solver = dynamic_cast<QPSolver *>(this->linear_solver().get())) {
                     auto box = this->build_correction_constraints(x);
                     qp_solver->set_box_constraints(box);
                     s.set(0.0);
                     g_minus = -1.0 * g;
                     qp_solver->solve(*multiplication_action, g_minus, s);
-                }
-                else
-                {
+                } else {
                     utopia_error("utopia::QuasiNewtonBound: MF solver which is not QPSolver is not suported at the moment... \n");
                 }
 

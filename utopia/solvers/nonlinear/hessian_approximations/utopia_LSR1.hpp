@@ -10,24 +10,18 @@ namespace utopia
     template<class Vector>
     class LSR1 final: public HessianApproximation<Vector>
     {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    public:
+        LSR1(const SizeType &m) : m_(m), current_m_(0), theta_(1.0), gamma_(1.0) {}
 
+        ~LSR1() override {
+            Y_.clear();
+            S_.clear();
 
-        public:
-
-            LSR1(const SizeType & m): m_(m), current_m_(0), theta_(1.0), gamma_(1.0)
-            {
-
-            }
-
-            ~LSR1() override {
-                Y_.clear();
-                S_.clear();
-
-                p_.clear();
-                p_inv_.clear();
+            p_.clear();
+            p_inv_.clear();
             }
 
             void initialize(const Vector & x_k, const Vector &  g) override

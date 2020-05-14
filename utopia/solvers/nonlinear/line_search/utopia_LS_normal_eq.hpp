@@ -14,11 +14,11 @@ namespace utopia
   class LeastSquaresNewton final: public NonLinearLeastSquaresSolver<Matrix, Vector>
   {
     typedef typename NonLinearLeastSquaresSolver<Matrix, Vector>::Solver Solver;
-    typedef utopia::LSStrategy<Vector> LSStrategy;
-    typedef UTOPIA_SCALAR(Vector)    Scalar;
-    typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    using LSStrategy = utopia::LSStrategy<Vector>;
+    using Scalar = typename utopia::Traits<Vector>::Scalar;
+    using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-  public:
+public:
 
     LeastSquaresNewton( const std::shared_ptr<Solver> &linear_solver= std::make_shared<ConjugateGradient<Matrix, Vector> >()):
                         NonLinearLeastSquaresSolver<Matrix, Vector>(linear_solver)

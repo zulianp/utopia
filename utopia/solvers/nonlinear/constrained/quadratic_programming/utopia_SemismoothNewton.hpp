@@ -22,7 +22,7 @@ namespace utopia {
             linear_solver_ = linear_solver;
         }
 
-        SemismoothNewton(const std::shared_ptr<LinearSolver> &linear_solver);
+        explicit SemismoothNewton(std::shared_ptr<LinearSolver> linear_solver);
         ~SemismoothNewton() override;
         SemismoothNewton *clone() const override;
 

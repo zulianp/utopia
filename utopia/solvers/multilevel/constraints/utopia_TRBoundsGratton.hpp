@@ -41,8 +41,10 @@ namespace utopia
 
             }
 
-            void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
-            {
+            void init_level_impl(const SizeType &level,
+                                 const Vector &x_finer_level,
+                                 const Vector & /*x_level*/,
+                                 const Scalar &delta_fine) {
                 auto finer_level = level + 1;
                 {
                     auto d_x_finer      = const_device_view(x_finer_level);

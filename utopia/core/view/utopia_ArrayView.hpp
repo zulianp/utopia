@@ -18,7 +18,7 @@ namespace utopia {
     public:
         using SizeType = Size_t;
 
-        virtual ~ArrayView() {}
+        virtual ~ArrayView() = default;
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType size() const
         {
@@ -60,7 +60,7 @@ namespace utopia {
             return data_ == nullptr;
         }
 
-        UTOPIA_FUNCTION ArrayView() : data_(nullptr), size_(0) {}
+        UTOPIA_FUNCTION ArrayView() : data_(nullptr) {}
         UTOPIA_FUNCTION ArrayView(T * data, const T &size) : data_(data), size_(size) {}
 
 
@@ -102,7 +102,7 @@ namespace utopia {
         UTOPIA_FUNCTION ArrayView(const ArrayView &other)            = default;
     private:
         T *data_;
-        Size_t size_;
+        Size_t size_{0};
     };
 
     template<typename T>
@@ -273,7 +273,7 @@ namespace utopia {
         : data_(std::move(other.data_))
         {}
 
-        ArrayView() {}
+        ArrayView() = default;
 
     private:
         ArrayView<T, Size> data_;
@@ -352,9 +352,7 @@ namespace utopia {
         : data_(data), rows_(rows), cols_(cols)
         {}
 
-        UTOPIA_FUNCTION ArrayView()
-        : data_(nullptr), rows_(0), cols_(0)
-        {}
+        UTOPIA_FUNCTION ArrayView() : data_(nullptr) {}
 
         UTOPIA_INLINE_FUNCTION bool is_null() const
         {
@@ -363,7 +361,7 @@ namespace utopia {
 
     private:
         ArrayView<T> data_;
-        SizeType rows_, cols_;
+        SizeType rows_{0}, cols_{0};
     };
 
 

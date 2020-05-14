@@ -14,7 +14,7 @@ namespace utopia {
     public:
         using Count = long;
 
-        typedef void (*RunApp)();
+        using RunApp = void (*)();
 
         static char add_app(const std::string &app_name, RunApp run_app);
 

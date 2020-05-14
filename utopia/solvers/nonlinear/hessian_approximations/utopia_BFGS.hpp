@@ -10,26 +10,20 @@ namespace utopia
     template<class Matrix, class Vector>
     class BFGS final: public HessianApproximation<Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        public:
+    public:
+        BFGS() : HessianApproximation<Vector>(), current_it_(0) {}
 
-            BFGS(): HessianApproximation<Vector>(), update_hessian_(false), current_it_(0)
-            {}
+        inline BFGS<Matrix, Vector> *clone() const override { return new BFGS<Matrix, Vector>(*this); }
 
-            inline BFGS<Matrix, Vector> * clone() const override
-            {
-                return new BFGS<Matrix, Vector>(*this);
-            }
+        void initialize(const Vector & /* x */, const Vector & /* g */) override {
+            current_it_ = 0;
+            this->initialized(true);
 
-            void initialize(const Vector &  /* x */ , const Vector &  /* g */ ) override
-            {
-                current_it_ = 0;
-                this->initialized(true);
-
-                H_prev_ = Matrix();
-                H_prev_inv_ = Matrix();
+            H_prev_ = Matrix();
+            H_prev_inv_ = Matrix();
             }
 
             void reset() override
@@ -260,7 +254,7 @@ namespace utopia
             Matrix H_prev_inv_;     // H^{-1}_{k}
             Matrix H_prev_;         // H^{1}_{k}
 
-            bool update_hessian_;
+            bool update_hessian_{false};
             SizeType current_it_;
 
             // help mats/vecs

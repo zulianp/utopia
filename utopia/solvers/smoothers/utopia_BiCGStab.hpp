@@ -17,7 +17,7 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::Preconditioner<Vector> Preconditioner;
+        using Preconditioner = utopia::Preconditioner<Vector>;
 
         using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
 
@@ -67,7 +67,7 @@ namespace utopia {
         Vector z_;
         Vector K_inv_t_;
 
-        bool initialized_;
+        bool initialized_{false};
         Layout layout_;
 
     };

@@ -14,18 +14,17 @@ namespace utopia
     template<class Matrix, class Vector>
     class QuasiRMTR final:   public RMTRBase<Matrix, Vector, FIRST_ORDER_DF>
     {
-        typedef UTOPIA_SCALAR(Vector)      Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)   SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::RMTRBase<Matrix, Vector, FIRST_ORDER_DF>     RMTRBase;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun   Fun;
 
-        typedef utopia::MatrixFreeTRSubproblem<Vector>  TRSubproblem;
-        typedef std::shared_ptr<TRSubproblem>           TRSubproblemPtr;
+        using TRSubproblem = utopia::MatrixFreeTRSubproblem<Vector>;
+        using TRSubproblemPtr = std::shared_ptr<TRSubproblem>;
 
-        typedef utopia::HessianApproximation<Vector>    HessianApproximation;
-        typedef std::shared_ptr<HessianApproximation>   HessianApproxPtr;
-
+        using HessianApproximation = utopia::HessianApproximation<Vector>;
+        using HessianApproxPtr = std::shared_ptr<HessianApproximation>;
 
     public:
         QuasiRMTR(const SizeType & n_levels): RMTRBase(n_levels)
@@ -33,10 +32,7 @@ namespace utopia
 
         }
 
-        ~QuasiRMTR()
-        {
-
-        }
+        ~QuasiRMTR() = default;
 
         void read(Input &in) override
         {
@@ -254,8 +250,7 @@ namespace utopia
         {
             Scalar atol_level = (level == this->n_levels()-1) ? this->atol() :  std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level+1]);
 
-            if(IterativeSolver<Matrix, Vector>* tr_solver =  dynamic_cast<IterativeSolver<Matrix, Vector>* > (tr_subproblems_[level].get()))
-            {
+            if (auto *tr_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(tr_subproblems_[level].get())) {
                 if(tr_solver->atol() > atol_level){
                     tr_solver->atol(atol_level);
                 }

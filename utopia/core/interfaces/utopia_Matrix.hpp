@@ -26,9 +26,9 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-		virtual ~MatrixBase() {}
+                virtual ~MatrixBase() = default;
 
-		//locks
+                //locks
 		virtual void read_lock() 			 	= 0;
 		virtual void write_lock(WriteMode mode) = 0;
 
@@ -59,7 +59,7 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-                ~Matrix() override {}
+                ~Matrix() override = default;
 
                 //face methods for treaing matrix and distrubed-matrix in the same way
 		void c_set(const SizeType &i, const SizeType &j, const Scalar &value)
@@ -117,20 +117,20 @@ namespace utopia {
 		virtual void read_and_write_lock(WriteMode mode) = 0;
 		virtual void read_and_write_unlock(WriteMode mode) = 0;
 
-                ~DenseMatrix() override {}
+                ~DenseMatrix() override = default;
         };
 
 	template<typename Scalar_, typename SizeType_>
 	class SparseMatrix : public Matrix<Scalar_, SizeType_> {
 	public:
-		virtual ~SparseMatrix() {}
-	};
+            virtual ~SparseMatrix() = default;
+        };
 
 	class PolymorphicMatrix {
 	public:
-		virtual ~PolymorphicMatrix() {}
-		virtual bool is_dense() const { return !is_sparse(); }
-		virtual bool is_sparse() const = 0;
+            virtual ~PolymorphicMatrix() = default;
+            virtual bool is_dense() const { return !is_sparse(); }
+            virtual bool is_sparse() const = 0;
 	};
 
 	//parallel types, collective operations
@@ -179,7 +179,7 @@ namespace utopia {
 
 		virtual Size local_size() const { return {local_rows(), local_cols() }; }
 
-                ~DistributedMatrix() override {}
+                ~DistributedMatrix() override = default;
         };
 
 	template<typename Scalar_, typename SizeType_>
@@ -190,13 +190,13 @@ namespace utopia {
 
 		virtual Scalar get(const SizeType &i, const SizeType &j) const = 0;
 
-		virtual ~DistributedDenseMatrix() {}
-	};
+                virtual ~DistributedDenseMatrix() = default;
+        };
 
 	template<typename Scalar_, typename SizeType_>
 	class DistributedSparseMatrix : public DistributedMatrix<Scalar_, SizeType_> {
 	public:
-            ~DistributedSparseMatrix() override {}
+            ~DistributedSparseMatrix() override = default;
         };
 
 

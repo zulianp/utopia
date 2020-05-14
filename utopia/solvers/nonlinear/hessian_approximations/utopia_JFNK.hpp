@@ -11,27 +11,19 @@ namespace utopia
     template<class Vector>
     class JFNK final: public HessianApproximation<Vector>
     {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    public:
+        JFNK(const FunctionBase<Vector> &fun) : eps_(1e-14), fun_(fun) {}
 
+        void initialize(const Vector &x_k, const Vector &g) override {
+            HessianApproximation<Vector>::initialize(x_k, g);
 
-        public:
+            x_k_ = x_k;
+            g_ = g;
 
-            JFNK(const FunctionBase<Vector> & fun): eps_(1e-14), fun_(fun)
-            {
-
-            }
-
-            void initialize(const Vector & x_k, const Vector & g) override
-            {
-
-                HessianApproximation<Vector>::initialize(x_k, g); 
-                
-                x_k_ = x_k; 
-                g_ = g; 
-
-                this->initialized(true);
+            this->initialized(true);
             }
 
 

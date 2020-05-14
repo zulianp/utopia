@@ -19,7 +19,7 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
-        virtual ~TestFunctionInterface() {}
+        virtual ~TestFunctionInterface() = default;
 
         virtual Vector initial_guess() const = 0;
         virtual const Vector &exact_sol() const = 0;
@@ -53,20 +53,20 @@ namespace utopia {
     class UnconstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                       virtual public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        ~UnconstrainedTestFunction() override {}
+        ~UnconstrainedTestFunction() override = default;
     };
 
     template <class Matrix, class Vector>
     class UnconstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                               virtual public ExtendedFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        ~UnconstrainedExtendedTestFunction() override {}
+        ~UnconstrainedExtendedTestFunction() override = default;
 
         Vector initial_guess() const override = 0;
     };
@@ -75,11 +75,11 @@ namespace utopia {
     class ConstrainedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                     virtual public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::BoxConstraints<Vector> BoxConstraints;
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
 
-        ~ConstrainedTestFunction() override {}
+        ~ConstrainedTestFunction() override = default;
 
         virtual const BoxConstraints &box_constraints() const { return constraints_; }
 
@@ -175,11 +175,11 @@ namespace utopia {
     class ConstrainedExtendedTestFunction : virtual public TestFunctionInterface<Matrix, Vector>,
                                             virtual public ExtendedFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::BoxConstraints<Vector> BoxConstraints;
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
 
-        ~ConstrainedExtendedTestFunction() override {}
+        ~ConstrainedExtendedTestFunction() override = default;
 
         virtual const BoxConstraints &box_constraints() const { return constraints_; }
 

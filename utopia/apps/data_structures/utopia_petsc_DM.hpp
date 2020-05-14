@@ -15,7 +15,7 @@
 namespace utopia {
     class PetscDMBase : public Configurable {
     public:
-        ~PetscDMBase() override {}
+        ~PetscDMBase() override = default;
 
         template<class SizeType>
         static void dof_ownership_range(const DM &dm, SizeType &begin, SizeType &end)
@@ -183,8 +183,8 @@ namespace utopia {
         class Wrapper {
         public:
             Wrapper()
-            : dm(nullptr), owned(true)
-            {}
+
+                = default;
 
             ~Wrapper() {
                 destroy();
@@ -198,8 +198,8 @@ namespace utopia {
                 }
             }
 
-            DM dm;
-            bool owned;
+            DM dm{nullptr};
+            bool owned{true};
         };
 
         std::unique_ptr<Wrapper> wrapper_;

@@ -18,23 +18,26 @@ namespace utopia
     template<class Matrix, class Vector>
     class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC> : public ExtendedFunction<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-        public:
-            // PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector & rhs = local_zeros(1)) :
-            PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = Vector(), const Vector & bc_marker = Vector(), const Vector & rhs = Vector()) :
-                ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), snes_(snes)
-            {}
+    public:
+        // PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker =
+        // local_zeros(1), const Vector & rhs = local_zeros(1)) :
+        PETSCUtopiaNonlinearFunction(SNES snes,
+                                     const Vector &x_init = Vector(),
+                                     const Vector &bc_marker = Vector(),
+                                     const Vector &rhs = Vector())
+            : ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), snes_(snes) {}
 
-            bool gradient(const Vector &x, Vector &g) const override {
-                // initialization of gradient vector...
-                if(empty(g)){
-                    g.zeros(layout(x));
-                }
+        bool gradient(const Vector &x, Vector &g) const override {
+            // initialization of gradient vector...
+            if (empty(g)) {
+                g.zeros(layout(x));
+            }
 
-                SNESComputeFunction(snes_, raw_type(x), raw_type(g));
+            SNESComputeFunction(snes_, raw_type(x), raw_type(g));
 
-                return true;
+            return true;
             }
 
             bool hessian(const Vector &x, Matrix &hessian) const override {

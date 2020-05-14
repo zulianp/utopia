@@ -1,10 +1,9 @@
 #ifndef UTOPIA_SOLVER_WATSON_20
 #define UTOPIA_SOLVER_WATSON_20
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
-
 
 namespace utopia
 {

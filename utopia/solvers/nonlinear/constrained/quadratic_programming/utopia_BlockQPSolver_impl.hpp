@@ -1,6 +1,8 @@
 #ifndef UTOPIA_BLOCK_QP_SOLVER_IMPL_HPP
 #define UTOPIA_BLOCK_QP_SOLVER_IMPL_HPP
 
+#include <utility>
+
 #include "utopia_Algorithms.hpp"
 #include "utopia_BlockQPSolver.hpp"
 #include "utopia_make_unique.hpp"
@@ -8,11 +10,13 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    BlockQPSolver<Matrix, Vector, PETSC>::~BlockQPSolver() {}
+    BlockQPSolver<Matrix, Vector, PETSC>::~BlockQPSolver() = default;
 
     template <class Matrix, class Vector>
-    BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(const std::shared_ptr<QPSolver> &serial_solver)
-        : serial_solver_(serial_solver), local_lb_(std::make_shared<Vector>()), local_ub_(std::make_shared<Vector>()) {}
+    BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(std::shared_ptr<QPSolver> serial_solver)
+        : serial_solver_(std::move(serial_solver)),
+          local_lb_(std::make_shared<Vector>()),
+          local_ub_(std::make_shared<Vector>()) {}
 
     template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(const BlockQPSolver &other)
@@ -45,7 +49,7 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
-    bool BlockQPSolver<Matrix, Vector, PETSC>::smooth(const Vector &b, Vector &x) {
+    bool BlockQPSolver<Matrix, Vector, PETSC>::smooth(const Vector & /*b*/, Vector & /*x*/) {
         UTOPIA_TRACE_REGION_BEGIN("BlockQPSolver::smooth");
         const Matrix &A = *this->get_operator();
 

@@ -1,147 +1,118 @@
 #ifndef TR_SUBPROBLEM_L2NORM_HPP
 #define TR_SUBPROBLEM_L2NORM_HPP
+
 #include <string>
 #include "utopia_IterativeSolver.hpp"
 
-namespace  utopia
-{
+namespace utopia {
 
+    template <class Vector>
+    class TRSubproblemBase : public virtual Configurable {
+    public:
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-    template<class Vector>
-    class TRSubproblemBase : public virtual Configurable
-    {
-        public:
-            typedef UTOPIA_SCALAR(Vector) Scalar;
+        ~TRSubproblemBase() override = default;
 
-            ~TRSubproblemBase() override {}
+        TRSubproblemBase() : current_radius_(1e14) {}
 
-            TRSubproblemBase(): current_radius_(1e14)
-            {
+        void current_radius(const Scalar &radius) { current_radius_ = radius; }
 
-            }
+        Scalar current_radius() { return current_radius_; }
 
-            void current_radius(const Scalar &radius)
-            {
-                current_radius_ = radius;
-            }
+        void read(Input &in) override { in.get("current_radius", current_radius_); }
 
-            Scalar current_radius()
-            {
-                return current_radius_;
-            }
+        void print_usage(std::ostream &os) const override {
+            this->print_param_usage(os, "current_radius", "real", "Value of trust region radius.", "1e14");
+        }
 
-            void read(Input &in) override { in.get("current_radius", current_radius_); }
+    protected:
+        Scalar quad_solver(const Vector &s, const Vector &p_k, const Scalar &delta, Vector &result) {
+            Scalar a, b, c, x1, x2, nom, denom, tau;
 
-            void print_usage(std::ostream &os) const override {
-                this->print_param_usage(os, "current_radius", "real", "Value of trust region radius.", "1e14");
-            }
+            a = dot(p_k, p_k);
+            b = dot(2 * s, p_k);
+            c = dot(s, s) - delta * delta;
 
-        protected:
-            Scalar quad_solver(const Vector &s, const Vector &p_k, const Scalar & delta,  Vector &result)
-            {
-                Scalar a, b, c, x1, x2, nom, denom,tau;
+            nom = b * b - 4 * a * c;
+            nom = std::sqrt(nom);
+            denom = 2 * a;
 
-                a = dot(p_k, p_k);
-                b = dot(2 * s, p_k);
-                c = dot(s, s) - delta * delta;
+            x1 = (-b + nom) / denom;
+            x2 = (-b - nom) / denom;
 
-                nom = b * b - 4 * a * c;
-                nom =  std::sqrt(nom);
-                denom = 2 * a;
+            tau = std::max(x1, x2);
 
-                x1 = (- b + nom)/denom;
-                x2 = (- b - nom)/denom;
+            if (tau != tau) tau = 0;
 
-                tau = std::max(x1, x2);
+            result = s + tau * p_k;
+            return tau;
+        }
 
-                if(tau != tau)
-                    tau = 0;
+        Scalar quadratic_function(const Scalar &a, const Scalar &b, const Scalar &c) {
+            Scalar sqrt_discriminant = std::sqrt(b * b - 4.0 * a * c);
 
-                result = s + tau * p_k;
-                return tau;
-            }
+            Scalar lower = (-b + sqrt_discriminant) / (2.0 * a);
+            Scalar upper = (-b - sqrt_discriminant) / (2.0 * a);
 
+            return std::max(upper, lower);
+        }
 
-
-            Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
-            {
-                Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c);
-
-                Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a);
-                Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a);
-
-                return std::max(upper, lower);
-            }
-
-
-        protected:
-            Scalar current_radius_;
+    protected:
+        Scalar current_radius_;
     };
 
+    template <class Matrix, class Vector>
+    class TRSubproblem : public virtual IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector> {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-    template<class Matrix, class Vector>
-    class TRSubproblem : public virtual IterativeSolver<Matrix, Vector>, public virtual TRSubproblemBase<Vector>
-    {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+    public:
+        TRSubproblem() = default;
 
-        public:
-            TRSubproblem()
-            {
+        ~TRSubproblem() override = default;
+        TRSubproblem *clone() const override = 0;
 
-            }
+        void read(Input &in) override {
+            IterativeSolver<Matrix, Vector>::read(in);
+            TRSubproblemBase<Vector>::read(in);
+        }
 
-            ~TRSubproblem() override {}
-            TRSubproblem *clone() const override = 0;
-
-            void read(Input &in) override {
-                IterativeSolver<Matrix, Vector>::read(in);
-                TRSubproblemBase<Vector>::read(in);
-            }
-
-            void print_usage(std::ostream &os) const override {
-                IterativeSolver<Matrix, Vector>::print_usage(os);
-                TRSubproblemBase<Vector>::print_usage(os);
-            }
+        void print_usage(std::ostream &os) const override {
+            IterativeSolver<Matrix, Vector>::print_usage(os);
+            TRSubproblemBase<Vector>::print_usage(os);
+        }
     };
 
+    template <class Vector>
+    class MatrixFreeTRSubproblem : public virtual MatrixFreeLinearSolver<Vector>,
+                                   public virtual TRSubproblemBase<Vector> {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-    template<class Vector>
-    class MatrixFreeTRSubproblem : public virtual MatrixFreeLinearSolver<Vector>, public virtual TRSubproblemBase<Vector>
-    {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+    public:
+        MatrixFreeTRSubproblem() = default;
 
-        public:
-            MatrixFreeTRSubproblem()
-            {
+        ~MatrixFreeTRSubproblem() override = default;
+        MatrixFreeTRSubproblem *clone() const override = 0;
 
-            }
+        void read(Input &in) override {
+            MatrixFreeLinearSolver<Vector>::read(in);
+            TRSubproblemBase<Vector>::read(in);
+        }
 
-            ~MatrixFreeTRSubproblem() override {}
-            MatrixFreeTRSubproblem *clone() const override = 0;
-
-            void read(Input &in) override {
-                MatrixFreeLinearSolver<Vector>::read(in);
-                TRSubproblemBase<Vector>::read(in);
-            }
-
-            void print_usage(std::ostream &os) const override {
-                MatrixFreeLinearSolver<Vector>::print_usage(os);
-                TRSubproblemBase<Vector>::print_usage(os);
-            }
+        void print_usage(std::ostream &os) const override {
+            MatrixFreeLinearSolver<Vector>::print_usage(os);
+            TRSubproblemBase<Vector>::print_usage(os);
+        }
     };
 
-
-
-    template<class Matrix, class Vector>
-    class OperatorBasedTRSubproblem :   public virtual MatrixFreeTRSubproblem<Vector>,
-                                        public virtual TRSubproblem<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class OperatorBasedTRSubproblem : public virtual MatrixFreeTRSubproblem<Vector>,
+                                      public virtual TRSubproblem<Matrix, Vector> {
     public:
         using MatrixFreeTRSubproblem<Vector>::update;
         using TRSubproblem<Matrix, Vector>::update;
         using MatrixFreeTRSubproblem<Vector>::solve;
 
-        ~OperatorBasedTRSubproblem() override {}
+        ~OperatorBasedTRSubproblem() override = default;
 
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
@@ -161,8 +132,7 @@ namespace  utopia
             return true;
         }
 
-        bool apply(const Vector &b, Vector &x) override
-        {
+        bool apply(const Vector &b, Vector &x) override {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
@@ -179,7 +149,6 @@ namespace  utopia
         }
     };
 
+}  // namespace utopia
 
-}
-
-#endif //TR_SUBPROBLEM_L2NORM_HPP
+#endif  // TR_SUBPROBLEM_L2NORM_HPP

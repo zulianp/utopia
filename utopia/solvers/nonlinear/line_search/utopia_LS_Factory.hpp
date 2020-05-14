@@ -14,7 +14,7 @@
 
 namespace utopia {
 
-    typedef const char * SolverType;
+    using SolverType = const char *;
 
     static SolverType SIMPLE_BACKTRACKING_TAG 	= "SIMPLE_BACKTRACKING";
     static SolverType BACKTRACKING_TAG 			= "BACKTRACKING";
@@ -28,9 +28,8 @@ namespace utopia {
     class LSStrategyFactory
     {
         public:
-            typedef std::shared_ptr< LSStrategy<Vector> > StrategyPtr;
-            typedef utopia::IFactoryMethod<LSStrategy<Vector>> FactoryMethodT;
-            
+            using StrategyPtr = std::shared_ptr<LSStrategy<Vector>>;
+            using FactoryMethodT = utopia::IFactoryMethod<LSStrategy<Vector>>;
 
             template<class Alg>
             using LSFactoryMethodT = FactoryMethod<LSStrategy<Vector>, Alg>;

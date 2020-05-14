@@ -4,10 +4,7 @@
 namespace utopia {
     class Clonable {
     public:
-        virtual ~Clonable()
-        {
-
-        }
+        virtual ~Clonable() = default;
 
         /** @brief This method copies the relevant
          * settings but does not have to copy all the state variables

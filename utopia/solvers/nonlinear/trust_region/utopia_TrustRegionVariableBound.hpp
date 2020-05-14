@@ -12,12 +12,12 @@ namespace utopia {
     class TrustRegionVariableBound final : public VariableBoundSolverInterface<Vector>,
                                            public TrustRegionBase<Vector>,
                                            public NewtonBase<Matrix, Vector> {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::QPSolver<Matrix, Vector> QPSolver;
 
-        typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
+        using TrustRegionBase = utopia::TrustRegionBase<Vector>;
         typedef utopia::NewtonBase<Matrix, Vector> NewtonBase;
 
     public:
@@ -93,7 +93,7 @@ namespace utopia {
                 //----------------------------------------------------------------------------
                 //     new step p_k w.r. ||p_k|| <= delta
                 //----------------------------------------------------------------------------
-                if (QPSolver *tr_subproblem = dynamic_cast<QPSolver *>(this->linear_solver_.get())) {
+                if (auto *tr_subproblem = dynamic_cast<QPSolver *>(this->linear_solver_.get())) {
                     // UTOPIA_NO_ALLOC_BEGIN("TrustRegionVariableBound0");
                     p_k.set(0.0);
                     auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);

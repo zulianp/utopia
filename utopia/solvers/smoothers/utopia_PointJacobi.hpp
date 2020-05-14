@@ -25,10 +25,7 @@ namespace utopia {
          *
          * @param[in]  omega  The relaxation parameter (unused atm).
          */
-        PointJacobi()
-        {
-
-        }
+        PointJacobi() = default;
 
         void read(Input &in) override
         {

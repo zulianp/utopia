@@ -27,25 +27,22 @@ namespace utopia
     template<class Matrix, class Vector>
     class MultiLevelBase : virtual public Configurable
     {
-        typedef UTOPIA_SCALAR(Vector)    			Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) 			SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::Transfer<Matrix, Vector> 	Transfer;
-        typedef std::shared_ptr<Transfer> 			TransferPtr;
+        using TransferPtr = std::shared_ptr<Transfer>;
 
     public:
+        MultiLevelBase()
+            : pre_smoothing_steps_(3),
+              post_smoothing_steps_(3),
+              mg_type_(1),
+              cycle_type_(MULTIPLICATIVE_CYCLE),
+              v_cycle_repetition_(10),
 
-        MultiLevelBase(): 	pre_smoothing_steps_(3),
-                            post_smoothing_steps_(3),
-                            mg_type_(1),
-                            cycle_type_(MULTIPLICATIVE_CYCLE),
-                            v_cycle_repetition_(10),
-                            fix_semidefinite_operators_(false),
-                            num_levels_(-99)
-        {
+              num_levels_(-99) {}
 
-        }
-
-        ~MultiLevelBase() override {}
+        ~MultiLevelBase() override = default;
 
         void read(Input &in) override {
             in.get("pre_smoothing_steps", pre_smoothing_steps_);
@@ -223,7 +220,7 @@ namespace utopia
         SizeType         			cycle_type_;
         SizeType    				v_cycle_repetition_;
 
-        bool 						fix_semidefinite_operators_;
+        bool fix_semidefinite_operators_{false};
         SizeType 					num_levels_;
     };
 

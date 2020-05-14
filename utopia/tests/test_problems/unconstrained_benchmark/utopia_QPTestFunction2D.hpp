@@ -1,12 +1,10 @@
 #ifndef UTOPIA_SOLVER_TESTFUNCTION2D_HPP
 #define UTOPIA_SOLVER_TESTFUNCTION2D_HPP
 
-#include <vector>
-#include <assert.h>
+#include <cassert>
 #include <cmath>
+#include <vector>
 #include "utopia_Function.hpp"
-
-
 
 namespace utopia
 {

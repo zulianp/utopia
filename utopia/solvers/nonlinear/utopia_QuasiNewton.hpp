@@ -24,8 +24,8 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::HessianApproximation<Vector>                HessianApproximation;
-        typedef utopia::MatrixFreeLinearSolver<Vector>              LinSolver;
+        using HessianApproximation = utopia::HessianApproximation<Vector>;
+        using LinSolver = utopia::MatrixFreeLinearSolver<Vector>;
 
     public:
 

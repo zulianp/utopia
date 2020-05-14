@@ -29,9 +29,8 @@ namespace utopia {
     : impl_(utopia::make_unique<Impl>(linear_solver))
     { }
 
-    template<class Matrix, class Vector>
-    TaoQPSolver<Matrix, Vector>::~TaoQPSolver()
-    { }
+    template <class Matrix, class Vector>
+    TaoQPSolver<Matrix, Vector>::~TaoQPSolver() = default;
 
     template<class Matrix, class Vector>
     TaoQPSolver<Matrix, Vector> * TaoQPSolver<Matrix, Vector>::clone() const {

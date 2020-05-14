@@ -1,6 +1,7 @@
 #ifndef UTOPIA_SAMPLE_VIEW_HPP
 #define UTOPIA_SAMPLE_VIEW_HPP
 
+#include <utility>
 
 #include "utopia_AssemblyView.hpp"
 #include "utopia_LaplacianView.hpp"
@@ -37,16 +38,12 @@ namespace utopia {
                 }
             }
 
-            ViewDevice(Function fun)
-            : fun_(fun)
-            {}
+            ViewDevice(Function fun) : fun_(std::move(fun)) {}
 
             Function fun_;
         };
 
-        Sampler(const FunctionSpace &, Function fun)
-        : fun_(fun)
-        {}
+        Sampler(const FunctionSpace &, Function fun) : fun_(std::move(fun)) {}
 
         ViewDevice view_device() const
         {

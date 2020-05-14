@@ -27,9 +27,7 @@ namespace utopia {
 
         using QPSolver<Matrix, Vector>::solve;
 
-        ProjectedGradient()
-        {
-        }
+        ProjectedGradient() = default;
 
         ProjectedGradient(const ProjectedGradient &) = default;
 

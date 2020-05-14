@@ -31,9 +31,9 @@ namespace utopia {
     template<class Implementation, class Derived>
     class Readable<Implementation, Derived, 2> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
+        using Scalar = typename Traits<Implementation>::Scalar;
 
-         /**
+        /**
          * @ingroup     element_acess
          * @brief       Reads value of the element from matrix defined by index (row, column).
          * @warning     Please do not forget to use this function inside of read lock. \n
@@ -66,9 +66,9 @@ namespace utopia {
     template<class Implementation, class Derived>
     class Readable<Implementation, Derived, 1> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
+        using Scalar = typename Traits<Implementation>::Scalar;
 
-         /**
+        /**
          * @ingroup     element_acess
          * @brief       Gets value of the element, which index matches with requested one.
          * @warning     Please do not forget to use this function inside of read lock. \n
@@ -99,8 +99,7 @@ namespace utopia {
     template<class Tensor>
     class Read {
     public:
-        typedef typename Traits<Tensor>::Scalar Scalar;
-
+        using Scalar = typename Traits<Tensor>::Scalar;
 
         /**
          * @ingroup     lock
@@ -151,7 +150,7 @@ namespace utopia {
     template<class Tensor>
     class ReadAndWrite {
     public:
-        typedef typename Traits<Tensor>::Scalar Scalar;
+        using Scalar = typename Traits<Tensor>::Scalar;
 
         /**
          * @ingroup     lock

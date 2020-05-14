@@ -9,8 +9,7 @@ namespace utopia {
     template<class OutInterface>
     class IFactoryMethod {
     public:
-        virtual ~IFactoryMethod()
-        {}
+        virtual ~IFactoryMethod() = default;
 
         virtual std::unique_ptr<OutInterface> make() const = 0;
     };
@@ -19,8 +18,7 @@ namespace utopia {
     template<class OutInterface, class OutObject = OutInterface>
     class FactoryMethod final : public IFactoryMethod<OutInterface> {
     public:
-        FactoryMethod()
-        {}
+        FactoryMethod() = default;
 
         std::unique_ptr<OutInterface> make() const final { return utopia::make_unique<OutObject>(); }
     };

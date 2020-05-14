@@ -23,8 +23,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonLinearGaussSeidel<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)             SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>   SNESSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
@@ -65,8 +65,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonLinearConjugateGradient<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>      SNESSolver;
         typedef utopia::LinearSolver<Matrix, Vector>    LinearSolver;
@@ -150,8 +150,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonLinearGMRES<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)             SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>   SNESSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
@@ -189,8 +189,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonLinearAnderson<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)             SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>   SNESSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
@@ -226,8 +226,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class NonLinearRichardson<Matrix, Vector, PETSC> final: public SNESSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                   Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::SNESSolver<Matrix, Vector>      SNESSolver;
         typedef utopia::LinearSolver<Matrix, Vector>    LinearSolver;

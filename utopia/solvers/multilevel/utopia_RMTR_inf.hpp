@@ -35,18 +35,18 @@ namespace utopia {
      */
     template <class Matrix, class Vector, class MLConstraints, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MLConstraints {
-        typedef UTOPIA_SCALAR(Vector) Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::QPSolver<Matrix, Vector> TRSubproblem;
-        typedef std::shared_ptr<TRSubproblem> TRSubproblemPtr;
+        using TRSubproblemPtr = std::shared_ptr<TRSubproblem>;
 
         typedef utopia::Transfer<Matrix, Vector> Transfer;
         typedef utopia::Level<Matrix, Vector> Level;
 
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
-        typedef utopia::BoxConstraints<Vector> BoxConstraints;
+        using BoxConstraints = utopia::BoxConstraints<Vector>;
         typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> RMTR;
 
         // typedef MultilevelConstrInterface  MLConstraints;
@@ -193,7 +193,7 @@ namespace utopia {
         }
 
         // -------------------------- tr radius managment ---------------------------------------------
-        bool delta_update(const Scalar &rho, const SizeType &level, const Vector &s_global) override {
+        bool delta_update(const Scalar &rho, const SizeType &level, const Vector & /*s_global*/) override {
             Scalar intermediate_delta;
 
             // we could do also more sophisticated options, but lets not care for the moment ...

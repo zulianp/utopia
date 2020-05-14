@@ -92,8 +92,7 @@ namespace utopia {
             return true;
         }
 
-        inline bool gradient(const Vector &x, Vector &g) const override
-        {
+        inline bool gradient(const Vector & /*x*/, Vector &g) const override {
             if(empty(g)) {
                 space_->create_vector(g);
             } else {

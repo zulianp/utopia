@@ -26,7 +26,7 @@ namespace utopia {
         using DistributedMatrix = utopia::DistributedMatrix<Scalar, SizeType>;
         using DistributedVector = utopia::DistributedVector<Scalar, SizeType>;
 
-        virtual ~DynamicTypeDistributedMatrix() {}
+        virtual ~DynamicTypeDistributedMatrix() = default;
 
         //route abstract type methods to concrete methods
         void swap(DistributedMatrix &x) override

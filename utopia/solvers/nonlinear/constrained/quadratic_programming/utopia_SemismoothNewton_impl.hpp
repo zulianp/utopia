@@ -30,11 +30,11 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector, int Backend>
-    SemismoothNewton<Matrix, Vector, Backend>::SemismoothNewton(const std::shared_ptr<LinearSolver> &linear_solver)
-        : linear_solver_(linear_solver), buffers_(utopia::make_unique<Buffers>()) {}
+    SemismoothNewton<Matrix, Vector, Backend>::SemismoothNewton(std::shared_ptr<LinearSolver> linear_solver)
+        : linear_solver_(std::move(linear_solver)), buffers_(utopia::make_unique<Buffers>()) {}
 
     template <class Matrix, class Vector, int Backend>
-    SemismoothNewton<Matrix, Vector, Backend>::~SemismoothNewton() {}
+    SemismoothNewton<Matrix, Vector, Backend>::~SemismoothNewton() = default;
 
     template <class Matrix, class Vector, int Backend>
     SemismoothNewton<Matrix, Vector, Backend> *SemismoothNewton<Matrix, Vector, Backend>::clone() const {

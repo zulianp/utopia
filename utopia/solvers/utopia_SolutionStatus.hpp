@@ -7,24 +7,18 @@ namespace utopia {
 
     class SolutionStatus {
     public:
-        int iterates;
-        int num_linear_solves;
-        double function_value;
-        double gradient_norm;
-        double relative_gradient_norm;
-        double step_norm;
-        int reason;
-        double execution_time;
+        int iterates{0};
+        int num_linear_solves{0};
+        double function_value{-1};
+        double gradient_norm{-1};
+        double relative_gradient_norm{-1};
+        double step_norm{-1};
+        int reason{-1};
+        double execution_time{0};
 
         SolutionStatus()
-            : iterates(0),
-              num_linear_solves(0),
-              function_value(-1),
-              gradient_norm(-1),
-              relative_gradient_norm(-1),
-              step_norm(-1),
-              reason(-1),
-              execution_time(0) {}
+
+            = default;
 
         void clear() {
             iterates = 0;

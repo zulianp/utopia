@@ -111,7 +111,7 @@ namespace utopia {
         : data_(std::move(other.data_))
         {}
 
-        ArrayView() {}
+        ArrayView() = default;
 
     private:
         ArrayView<T, Size> data_;

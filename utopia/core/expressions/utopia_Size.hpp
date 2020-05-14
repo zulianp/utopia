@@ -15,8 +15,7 @@ namespace utopia {
     class Size {
     public:
         // typedef std::vector<SizeType>::size_type SizeType;
-       typedef utopia::SizeType SizeType;
-
+        using SizeType = utopia::SizeType;
 
         /**    @defgroup   size Size
         *      @brief      Manipulation with sizes of objects.
@@ -37,8 +36,7 @@ namespace utopia {
             return _data[index];
         }
 
-        Size()
-        {}
+        Size() = default;
 
         explicit Size(const int n) : _data(n, 0)
         {

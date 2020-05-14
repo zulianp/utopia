@@ -1,10 +1,9 @@
 #ifndef UTOPIA_SOLVER_PENALTY_II
 #define UTOPIA_SOLVER_PENALTY_II
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
-
 
 namespace utopia
 {

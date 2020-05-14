@@ -10,16 +10,10 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    ProjectedGaussSeidel<Matrix, Vector, PETSC>::~ProjectedGaussSeidel() {}
+    ProjectedGaussSeidel<Matrix, Vector, PETSC>::~ProjectedGaussSeidel() = default;
 
     template <class Matrix, class Vector>
-    ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel()
-        : use_line_search_(false),
-          use_symmetric_sweep_(true),
-          l1_(false),
-          n_local_sweeps_(3),
-          check_s_norm_each_(1),
-          use_sweeper_(true) {}
+    ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel() : n_local_sweeps_(3), check_s_norm_each_(1) {}
 
     // FIXME copy constructor creates weird behaviour
     template <class Matrix, class Vector>

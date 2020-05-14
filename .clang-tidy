@@ -1,11 +1,11 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,cppcoreguidelines-*'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,cppcoreguidelines-*,misc-unused-parameters'
 WarningsAsErrors: ''
-HeaderFilterRegex: ''
+HeaderFilterRegex: ./utopia/*utopia_*
 AnalyzeTemporaryDtors: false
 FormatStyle:     file
 User:            zulianp
-CheckOptions:    
+CheckOptions:
   - key:             cppcoreguidelines-no-malloc.Allocations
     value:           '::malloc;::calloc'
   - key:             cppcoreguidelines-no-malloc.Deallocations
@@ -59,7 +59,7 @@ CheckOptions:
   - key:             modernize-pass-by-value.IncludeStyle
     value:           llvm
   - key:             modernize-pass-by-value.ValuesOnly
-    value:           '0'
+    value:           '1'
   - key:             modernize-raw-string-literal.ReplaceShorterLiterals
     value:           '0'
   - key:             modernize-replace-auto-ptr.IncludeStyle

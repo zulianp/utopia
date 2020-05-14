@@ -20,35 +20,31 @@ namespace utopia
     template<class Vector>
     class LBFGS final: public HessianApproximation<Vector>
     {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    public:
+        LBFGS(const SizeType &m)
+            : m_(m),
+              current_m_(0),
+              theta_(1.0),
+              gamma_(1.0),
+              theta_min_(1.0),
+              skip_update_treshold_(1e-12),
+              damping_tech_(NOCEDAL),
+              scaling_tech_(ADAPTIVE) {}
 
+        ~LBFGS() override {
+            Y_.clear();
+            S_.clear();
+            P_.clear();
 
-        public:
-            LBFGS(const SizeType & m):  m_(m),
-                                        current_m_(0),
-                                        theta_(1.0),
-                                        gamma_(1.0),
-                                        theta_min_(1.0),
-                                        skip_update_treshold_(1e-12),
-                                        damping_tech_(NOCEDAL),
-                                        scaling_tech_(ADAPTIVE)
-            {
+            rho_.clear();
+            yts_.clear();
+            stp_.clear();
 
-            }
-
-            ~LBFGS() override {
-                Y_.clear();
-                S_.clear();
-                P_.clear();
-
-                rho_.clear();
-                yts_.clear();
-                stp_.clear();
-
-                SY_point_wise_.clear();
-                YY_point_wise_.clear();
+            SY_point_wise_.clear();
+            YY_point_wise_.clear();
             }
 
             void initialize(const Vector & x_k, const Vector &g) override

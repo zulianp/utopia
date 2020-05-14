@@ -14,7 +14,7 @@ namespace utopia {
     template<class Expr, int Type>
     class Norm : public Expression<Norm<Expr, Type> > {
     public:
-        typedef typename Expr::Scalar Scalar;
+        using Scalar = typename Expr::Scalar;
         static const int Order = 0;
 
         Norm(const Expr &expr)

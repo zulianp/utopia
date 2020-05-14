@@ -55,7 +55,7 @@ namespace utopia {
 
             }
 
-            ~BCSetup() override {}
+            ~BCSetup() override = default;
 
             void read(Input &in) override
             {

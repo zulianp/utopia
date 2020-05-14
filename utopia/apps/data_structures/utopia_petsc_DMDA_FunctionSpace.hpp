@@ -265,7 +265,7 @@ namespace utopia {
         }
 
         template <class F>
-        void sample(Vector &v, F f, const int c = 0) {
+        void sample(Vector &v, F f, const int /*c*/ = 0) {
             auto r = v.range();
             // auto n = r.extent() * NComponents;
             assert(!v.empty());

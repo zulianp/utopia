@@ -56,7 +56,7 @@ namespace utopia {
         std::map<std::string, std::string> settings_;
         std::shared_ptr<Logger> logger_;
         std::shared_ptr<Logger> maintenance_logger_;
-        int exit_code_;
+        int exit_code_{EXIT_SUCCESS};
     };
 }
 

@@ -21,8 +21,8 @@ namespace utopia {
     public:
 
         typedef utopia::NewtonBase<Matrix, Vector> NonLinearSolverT;
-        typedef std::shared_ptr<NonLinearSolverT> NonLinearSolverPtr;
-        typedef utopia::IFactoryMethod<NonLinearSolverT> FactoryMethodT;
+        using NonLinearSolverPtr = std::shared_ptr<NonLinearSolverT>;
+        using FactoryMethodT = utopia::IFactoryMethod<NonLinearSolverT>;
 
         template<class Alg>
         using NLSolverFactoryMethod = FactoryMethod<NonLinearSolverT, Alg>;

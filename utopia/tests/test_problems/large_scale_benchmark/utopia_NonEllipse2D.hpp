@@ -22,8 +22,8 @@ namespace utopia {
     class NonEllipse2D<Matrix, Vector, PETSC> final : virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>,
                                                       virtual public ConstrainedExtendedTestFunction<Matrix, Vector> {
     public:
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
         NonEllipse2D(const SizeType &n, const SizeType &problem_type = 2)
             : n_(n), setup_(false), problem_type_(problem_type), lambda_(10.0), pi_(3.14159265358979323846) {
@@ -45,7 +45,20 @@ namespace utopia {
             : setup_(false), problem_type_(problem_type), lambda_(10.0), pi_(3.14159265358979323846) {
             da_ = dm;
             // necessary to provide reasonable global dimension
-            DMDAGetInfo(da_, 0, &n_, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            DMDAGetInfo(da_,
+                        nullptr,
+                        &n_,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr);
             this->setup_SNES();
             // this->setup_application_context();
 
@@ -194,8 +207,8 @@ namespace utopia {
                          PETSC_DECIDE,
                          1,
                          1,
-                         NULL,
-                         NULL,
+                         nullptr,
+                         nullptr,
                          &da_);
             DMSetUp(da_);
             DMDASetUniformCoordinates(da_, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
@@ -218,7 +231,20 @@ namespace utopia {
     private:
         void setup_problem1() {
             PetscInt M, N;
-            DMDAGetInfo(da_, 0, &M, &N, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            DMDAGetInfo(da_,
+                        nullptr,
+                        &M,
+                        &N,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr);
             PetscScalar Hx = 1.0 / (PetscReal)(M);
             PetscScalar Hy = 1.0 / (PetscReal)(N);
             HxHy_ = Hx * Hy;
@@ -258,7 +284,20 @@ namespace utopia {
 
         void setup_problem2() {
             PetscInt M, N;
-            DMDAGetInfo(da_, 0, &M, &N, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            DMDAGetInfo(da_,
+                        nullptr,
+                        &M,
+                        &N,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr);
             PetscScalar Hx = 1.0 / (PetscReal)(M);
             PetscScalar Hy = 1.0 / (PetscReal)(N);
             HxHy_ = Hx * Hy;
@@ -304,12 +343,25 @@ namespace utopia {
             PetscScalar v[5], Hx, Hy, HydHx, HxdHy;
             MatStencil row, col[5];
 
-            DMDAGetInfo(da_, 0, &M, &N, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            DMDAGetInfo(da_,
+                        nullptr,
+                        &M,
+                        &N,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr);
             Hx = 1.0 / (PetscReal)(M);
             Hy = 1.0 / (PetscReal)(N);
             HxdHy = Hx / Hy;
             HydHx = Hy / Hx;
-            DMDAGetCorners(da_, &xs, &ys, 0, &xm, &ym, 0);
+            DMDAGetCorners(da_, &xs, &ys, nullptr, &xm, &ym, nullptr);
 
             for (j = ys; j < ys + ym; j++) {
                 for (i = xs; i < xs + xm; i++) {
@@ -398,7 +450,7 @@ namespace utopia {
                         PETSC_IGNORE,
                         PETSC_IGNORE,
                         PETSC_IGNORE);
-            DMDAGetCorners(da_, &xs, &ys, NULL, &xm, &ym, NULL);
+            DMDAGetCorners(da_, &xs, &ys, nullptr, &xm, &ym, nullptr);
             DMDAVecGetArray(da_, raw_type(lb), &array_marker);
 
             DM coordDA;
@@ -444,7 +496,7 @@ namespace utopia {
                         PETSC_IGNORE,
                         PETSC_IGNORE,
                         PETSC_IGNORE);
-            DMDAGetCorners(da_, &xs, &ys, NULL, &xm, &ym, NULL);
+            DMDAGetCorners(da_, &xs, &ys, nullptr, &xm, &ym, nullptr);
             DMDAVecGetArray(da_, raw_type(bc_marker), &array_marker);
             DMDAVecGetArray(da_, raw_type(bc_values), &array_values);
 
@@ -493,7 +545,7 @@ namespace utopia {
                         PETSC_IGNORE,
                         PETSC_IGNORE,
                         PETSC_IGNORE);
-            DMDAGetCorners(da_, &xs, &ys, NULL, &xm, &ym, NULL);
+            DMDAGetCorners(da_, &xs, &ys, nullptr, &xm, &ym, nullptr);
             DMDAVecGetArray(da_, snes_->vec_sol, &array);
 
             DM coordDA;
@@ -544,7 +596,7 @@ namespace utopia {
                         PETSC_IGNORE,
                         PETSC_IGNORE);
 
-            DMDAGetCorners(da_, &xs, &ys, NULL, &xm, &ym, NULL);
+            DMDAGetCorners(da_, &xs, &ys, nullptr, &xm, &ym, nullptr);
             Hx = 1.0 / (PetscReal)(mx);
             Hy = 1.0 / (PetscReal)(my);
 
@@ -602,7 +654,7 @@ namespace utopia {
                         PETSC_IGNORE,
                         PETSC_IGNORE,
                         PETSC_IGNORE);
-            DMDAGetCorners(da_, &xs, &ys, NULL, &xm, &ym, NULL);
+            DMDAGetCorners(da_, &xs, &ys, nullptr, &xm, &ym, nullptr);
             DMDAVecGetArray(da_, raw_type(x), &array);
 
             for (j = ys; j < ys + ym; j++) {
@@ -622,8 +674,8 @@ namespace utopia {
         SizeType n_;
         bool setup_;
 
-        DM da_;
-        SNES snes_;
+        DM da_{nullptr};
+        SNES snes_{nullptr};
 
         Vector exact_sol_;
         Matrix A_no_bc_;

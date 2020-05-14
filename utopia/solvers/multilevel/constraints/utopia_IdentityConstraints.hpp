@@ -31,11 +31,9 @@ namespace utopia
             {
                 // TODO:: move to checck innitialization
                 for (auto l=0; l < transfer.size(); l++){
-                    if(IdentityTransfer<Matrix, Vector>* id_transfer =  dynamic_cast<IdentityTransfer<Matrix, Vector>* > (transfer[l].get())){
+                    if (auto* id_transfer = dynamic_cast<IdentityTransfer<Matrix, Vector>*>(transfer[l].get())) {
                         // utopia_error("IdentityConstraints, termination due to incorrect setup. ");
-                    }
-                    else
-                    {
+                    } else {
                         utopia_error("IdentityConstraints, termination due to incorrect setup. ");
                     }
                 }
@@ -56,8 +54,10 @@ namespace utopia
                 }
             }
 
-            void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
-            {
+            void init_level_impl(const SizeType& level,
+                                 const Vector& x_finer_level,
+                                 const Vector& /*x_level*/,
+                                 const Scalar& delta_fine) {
                 auto finer_level = level + 1;
 
                 {
@@ -81,7 +81,6 @@ namespace utopia
                         return device::max(val1, val2);
                     });
                 }
-
             }
 
             const Vector & active_upper(const SizeType & level)

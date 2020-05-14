@@ -12,17 +12,16 @@ namespace utopia {
     template<class _Expr, class _Operation>
     class Unary : public Expression< Unary<_Expr, _Operation> > {
     public:
-        typedef _Expr Expr;
-        typedef _Operation Operation;
-        typedef typename utopia::Traits<Expr>::Scalar Scalar;
-
+        using Expr = _Expr;
+        using Operation = _Operation;
+        using Scalar = typename utopia::Traits<Expr>::Scalar;
 
         static const int Order = Expr::Order;
 
         Unary(const Expr &expr, const Operation operation = Operation()) : _expr(expr), _operation(operation) { }
         inline const Expr &expr() const { return _expr; }
 
-        virtual ~Unary() { }
+        virtual ~Unary() = default;
 
         std::string get_class() const override { return _operation.get_class() + "<" + _expr.get_class() + ">"; }
 

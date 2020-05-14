@@ -14,15 +14,14 @@
      	class LeastSquaresTrustRegion : public NonLinearLeastSquaresSolver<Matrix, Vector>,
                                       public TrustRegionBase<Vector> 
       {
-     		typedef typename utopia::Traits<Vector>::Scalar Scalar;
-     		typedef utopia::LinearSolver<Matrix, Vector> Solver;
-        typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
-        typedef utopia::NonLinearLeastSquaresSolver<Matrix, Vector> NonLinearLeastSquaresSolver;
-     		typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        typedef utopia::TrustRegionBase<Vector> TrustRegionBase;
+            using Scalar = typename utopia::Traits<Vector>::Scalar;
+            typedef utopia::LinearSolver<Matrix, Vector> Solver;
+            typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
+            typedef utopia::NonLinearLeastSquaresSolver<Matrix, Vector> NonLinearLeastSquaresSolver;
+            using SizeType = typename utopia::Traits<Vector>::SizeType;
+            using TrustRegionBase = utopia::TrustRegionBase<Vector>;
 
-
-     	public:
+        public:
       LeastSquaresTrustRegion(const std::shared_ptr<TRSubproblem> &linear_solver): 
                               NonLinearLeastSquaresSolver(linear_solver), 
                               TrustRegionBase()
@@ -114,8 +113,8 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-            tr_subproblem->current_radius(delta);
+          if (auto *tr_subproblem = dynamic_cast<TRSubproblem *>(this->linear_solver_.get()))
+              tr_subproblem->current_radius(delta);
 
           this->linear_solve(J_k, -1.0*r_k, p_k);
           this->solution_status_.num_linear_solves++; 

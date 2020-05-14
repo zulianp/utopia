@@ -12,7 +12,7 @@ namespace utopia {
     public:
         static const int Order = Expr::Order;
 
-        typedef typename Expr::Scalar Scalar;
+        using Scalar = typename Expr::Scalar;
 
         inline Expr &expr()
         {

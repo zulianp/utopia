@@ -23,9 +23,8 @@ namespace utopia {
     : impl_(LinearSolverFactory<Matrix, Vector, PETSC>::default_linear_solver())
     { }
 
-    template<class Matrix, class Vector>
-    PolymorphicLinearSolver<Matrix, Vector>::~PolymorphicLinearSolver()
-    { }
+    template <class Matrix, class Vector>
+    PolymorphicLinearSolver<Matrix, Vector>::~PolymorphicLinearSolver() = default;
 
     template<class Matrix, class Vector>
     PolymorphicLinearSolver<Matrix, Vector> * PolymorphicLinearSolver<Matrix, Vector>::clone() const

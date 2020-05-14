@@ -12,7 +12,7 @@ namespace utopia {
     template<class Implementation, class Derived>
     class Mutable {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
+        using Scalar = typename Traits<Implementation>::Scalar;
 
         template<class OtherDerived>
         Derived &operator*=(const Expression<OtherDerived> &expr)

@@ -9,10 +9,10 @@ namespace utopia
     template<class Vector>
     class Monitor {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        virtual ~Monitor() {}
+        virtual ~Monitor() = default;
 
     public:
 

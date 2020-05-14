@@ -11,7 +11,7 @@ namespace utopia
         public:
             DEF_UTOPIA_SCALAR(Vector);
 
-            virtual ~LeastSquaresFunctionBase() { }
+            virtual ~LeastSquaresFunctionBase() = default;
 
             // abstraction for normal equations
             virtual bool residual(const Vector &/*point*/, Vector &/*result*/) const = 0;
@@ -34,7 +34,7 @@ namespace utopia
         public:
             DEF_UTOPIA_SCALAR(Vector);
 
-            ~LeastSquaresFunction() override {}
+            ~LeastSquaresFunction() override = default;
 
             // abstraction for normal equations
             virtual bool jacobian(const Vector &/*x*/, Matrix &/*hessian*/) const = 0;

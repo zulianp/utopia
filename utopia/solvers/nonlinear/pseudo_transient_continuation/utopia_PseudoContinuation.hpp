@@ -22,8 +22,8 @@ namespace utopia
     template<class Matrix, class Vector>
     class PseudoContinuation final: public NewtonBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
 

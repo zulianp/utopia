@@ -1,50 +1,50 @@
 #ifndef UTOPIA_PETSC_KSP_HPP
 #define UTOPIA_PETSC_KSP_HPP
 
-#include "utopia_Preconditioner.hpp"
-#include "utopia_PreconditionedSolver.hpp"
-#include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_PreconditionedSolver.hpp"
+#include "utopia_Preconditioner.hpp"
+#include "utopia_Smoother.hpp"
+#include "utopia_petsc_Vector.hpp"
 
-
-#include <algorithm>
-#include <petscpc.h>
 #include <petscksp.h>
+#include <petscpc.h>
 #include <petscsys.h>
+#include <algorithm>
 
 namespace utopia {
 
-
-    //FIXME this whole wrapper needs fixing
-    template<class Matrix, class Vector>
+    // FIXME this whole wrapper needs fixing
+    template <class Matrix, class Vector>
     class KSPWrapper;
 
     PetscErrorCode UtopiaPCApplyShell(PC pc, Vec x, Vec y);
-    PetscErrorCode MyKSPMonitor(KSP,PetscInt,PetscReal,void*);
+    PetscErrorCode MyKSPMonitor(KSP, PetscInt, PetscReal, void *);
     std::string converged_str(KSPConvergedReason reason);
 
     /**@ingroup     Linear
      * @brief       Class provides interface to Petsc KSP solvers \n
      *              For setting up basic parameters, one can use classic Petsc runtime options, e.g.
      *              To see all possibilities, please refer to:
-     *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a>
-     *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPType.html#KSPType">solver types</a>
+     *                                                   * <a
+     * href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a>
+     *                                                   * <a
+     * href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPType.html#KSPType">solver types</a>
      *
      *              Setting own/utopia preconditioner, can be done as following:
      *              \snippet tests/utopia_SolverTest.cpp PetscKSPSolver solve example1
      *              Detailed information about preconditioners, can be found in  \ref precondotioners.
      */
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class KSPSolver {};
 
-    template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> :
-        public PreconditionedSolver<Matrix, Vector>{
+    template <typename Matrix, typename Vector>
+    class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::Preconditioner<Vector> Preconditioner;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Preconditioner = utopia::Preconditioner<Vector>;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
@@ -53,7 +53,6 @@ namespace utopia {
         class Impl;
 
         KSPSolver();
-
 
         KSPSolver(std::unique_ptr<Impl> &&w);
 
@@ -71,7 +70,7 @@ namespace utopia {
         /**
          * @brief      Sets KSP type
          */
-        virtual void ksp_type(const std::string & ksp_type);
+        virtual void ksp_type(const std::string &ksp_type);
 
         /**
          * @brief      Sets solver package for choice of direct solver.
@@ -93,17 +92,17 @@ namespace utopia {
         /**
          * @brief      Setter for number of global subdomains
          */
-        void number_of_subdomains(const SizeType & n);
+        void number_of_subdomains(const SizeType &n);
 
         /**
          * @brief      Set norm type
          */
-        void norm_type(const std::string & norm_type);
+        void norm_type(const std::string &norm_type);
 
         /**
          * @brief      Setter for overlap used inside of Additive Schwarz method
          */
-        void overlap(const SizeType & n);
+        void overlap(const SizeType &n);
 
         /**
          * @brief      Sets ksp and pc type for all sub_ksp and all sub_pc
@@ -120,12 +119,10 @@ namespace utopia {
          */
         void sub_pc_type(const std::string type);
 
-
         /**
          * @brief      Sets solver package type for all sub_ksp
          */
         void sub_solver_package(const std::string type);
-
 
         /**
          * @brief      Returns type of solver package.
@@ -143,7 +140,6 @@ namespace utopia {
         bool must_compute_cond_number() const;
 
         void describe(std::ostream &os) const;
-
 
         /**
          * @brief      Sets the default options for PETSC KSP solver. \n
@@ -190,6 +186,6 @@ namespace utopia {
         std::unique_ptr<Impl> ksp_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_PETSC_KSP_HPP
+#endif  // UTOPIA_PETSC_KSP_HPP

@@ -20,7 +20,7 @@ namespace utopia {
 
             }
 
-            ~InitialCondition() override {}
+            ~InitialCondition() override = default;
 
             void read(Input &in) override
             {

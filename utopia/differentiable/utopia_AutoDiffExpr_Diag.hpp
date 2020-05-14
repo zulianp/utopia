@@ -14,7 +14,7 @@ namespace utopia {
     class AutoDiffExprDiag<Inner, 2> {
     public:
         //[new backend concept]
-        typedef utopia::Diag<typename AutoDiffExpr<Inner>::Type> Type;
+        using Type = utopia::Diag<typename AutoDiffExpr<Inner>::Type>;
         // typedef utopia::Unary<typename AutoDiffExpr<Inner>::Type, DiagOp> Type;
 
 
@@ -28,18 +28,17 @@ namespace utopia {
     class AutoDiffExprDiag<Inner, 1> {
     public:
         static_assert(Inner::Order > 1, "not supported");
-        typedef Inner Type;
+        using Type = Inner;
     };
 
     template<class Inner>
     class AutoDiffExpr< Diag<Inner>, 1>  {
     public:
         //[new backend concept]
-        typedef utopia::Diag<Inner> Expr;
+        using Expr = utopia::Diag<Inner>;
         // typedef utopia::Unary<Inner, DiagOp> Expr;
 
-
-        typedef typename AutoDiffExprDiag<Inner>::Type Type;
+        using Type = typename AutoDiffExprDiag<Inner>::Type;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr)
         {

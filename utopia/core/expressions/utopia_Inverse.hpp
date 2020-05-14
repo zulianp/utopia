@@ -8,9 +8,8 @@ namespace utopia {
     template<class Expr_>
     class Inverse : public Expression< Inverse<Expr_> > {
     public:
-
-        typedef Expr_ Expr;
-        typedef typename Expr::Scalar Scalar;
+        using Expr = Expr_;
+        using Scalar = typename Expr::Scalar;
 
         static const int Order = Expr::Order;
 

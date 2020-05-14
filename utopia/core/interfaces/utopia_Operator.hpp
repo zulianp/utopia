@@ -11,7 +11,7 @@ namespace utopia {
     public:
         using Communicator = typename Traits<Vector>::Communicator;
 
-        ~Operator() override {}
+        ~Operator() override = default;
         virtual bool apply(const Vector &rhs, Vector &sol) const = 0;
         virtual Size size() const = 0;
         virtual Size local_size() const = 0;

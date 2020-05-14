@@ -15,11 +15,11 @@
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        typedef utopia::MatrixFreeQPSolver<Vector>    MatrixFreeQPSolver;
-        typedef utopia::TrustRegionBase<Vector>       TrustRegionBase;
-        typedef utopia::QuasiNewtonBase<Vector>       NonLinearSolver;
+        using MatrixFreeQPSolver = utopia::MatrixFreeQPSolver<Vector>;
+        using TrustRegionBase = utopia::TrustRegionBase<Vector>;
+        using NonLinearSolver = utopia::QuasiNewtonBase<Vector>;
 
-        typedef utopia::HessianApproximation<Vector>  HessianApproximation;
+        using HessianApproximation = utopia::HessianApproximation<Vector>;
 
     public:
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx,
@@ -111,18 +111,15 @@
           // ----------------------------------------------------------------------------
           //     new step p_k w.r. ||p_k|| <= delta
           // ----------------------------------------------------------------------------
-          if(MatrixFreeQPSolver * tr_subproblem = dynamic_cast<MatrixFreeQPSolver*>(this->linear_solver().get()))
-          {
-            p_k.set(0.0);
-            auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
-            tr_subproblem->set_box_constraints(box);
-            g_help = -1.0*g;
-            tr_subproblem->solve(*multiplication_action, g_help, p_k);
-            this->solution_status_.num_linear_solves++;
-          }
-          else
-          {
-            utopia_warning("QUasiTrustRegionVariableBound::Set suitable TR subproblem.... \n ");
+          if (auto *tr_subproblem = dynamic_cast<MatrixFreeQPSolver *>(this->linear_solver().get())) {
+              p_k.set(0.0);
+              auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
+              tr_subproblem->set_box_constraints(box);
+              g_help = -1.0 * g;
+              tr_subproblem->solve(*multiplication_action, g_help, p_k);
+              this->solution_status_.num_linear_solves++;
+          } else {
+              utopia_warning("QUasiTrustRegionVariableBound::Set suitable TR subproblem.... \n ");
           }
 
           pred = this->get_pred(g, *multiplication_action, p_k);

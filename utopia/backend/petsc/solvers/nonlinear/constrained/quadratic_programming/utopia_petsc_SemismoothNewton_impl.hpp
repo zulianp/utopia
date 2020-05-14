@@ -28,9 +28,8 @@ namespace utopia {
     : impl_(utopia::make_unique<Impl>(linear_solver))
     { }
 
-    template<class Matrix, class Vector>
-    SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>::~SemismoothNewton()
-    { }
+    template <class Matrix, class Vector>
+    SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>::~SemismoothNewton() = default;
 
     template<class Matrix, class Vector>
     SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> * SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>::clone() const {

@@ -11,10 +11,10 @@ namespace utopia {
 	public:
 		using Scalar   = typename utopia::Traits<Tensor>::Scalar;
 		using SizeType = typename utopia::Traits<Tensor>::SizeType;
-		
-		virtual ~BLAS1Tensor() {}
 
-		///<Scalar>SWAP - swap x and y
+                virtual ~BLAS1Tensor() = default;
+
+                ///<Scalar>SWAP - swap x and y
 		virtual void swap(Tensor &x) = 0;
 
 		///<Scalar>SCAL - x = a*x
@@ -60,9 +60,9 @@ namespace utopia {
 		using Scalar   = typename utopia::Traits<Matrix>::Scalar;
 		using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
-		virtual ~BLAS2Matrix() {}
+                virtual ~BLAS2Matrix() = default;
 
-		/** @brief Original routine is
+                /** @brief Original routine is
 		  * <Scalar>GEMV - matrix vector multiply (y := alpha * A * x + beta * y)
 		  * we separate split it in different methods since in general it is not 
 		  * available in backends
@@ -148,9 +148,9 @@ namespace utopia {
 		using Scalar   = typename utopia::Traits<Matrix>::Scalar;
 		using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
-		virtual ~BLAS3Matrix() {}
+                virtual ~BLAS3Matrix() = default;
 
-		virtual void transpose(Matrix &C) const = 0;
+                virtual void transpose(Matrix &C) const = 0;
 
 		virtual void multiply(const Matrix &B, Matrix &C) const
 		{
@@ -206,7 +206,7 @@ namespace utopia {
 
 		using BLAS3Matrix<Matrix>::multiply;
 
-                ~BLAS3DenseMatrix() override {}
+                ~BLAS3DenseMatrix() override = default;
 
                 /// C := alpha * A * B
                 void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const override {

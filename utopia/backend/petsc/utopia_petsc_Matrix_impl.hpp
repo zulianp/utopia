@@ -83,19 +83,18 @@ namespace utopia {
 			err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done); assert(err == 0);
 		}
 
-		template<class F>
-		void read_petsc_mpiaij_impl(const Mat &mat, F op)
-		{
-			// PetscErrorCode err = 0;
+                template <class F>
+                void read_petsc_mpiaij_impl(const Mat & /*mat*/, F /*op*/) {
+                    // PetscErrorCode err = 0;
 
-			// const PetscInt* cols;
-			// Mat d, o;
-			// err =  MatMPIAIJGetSeqAIJ(mat, &d, &o, &cols); assert(err == 0);
+                    // const PetscInt* cols;
+                    // Mat d, o;
+                    // err =  MatMPIAIJGetSeqAIJ(mat, &d, &o, &cols); assert(err == 0);
 
-			assert(false && "IMPLEMENT ME");
-		}
+                    assert(false && "IMPLEMENT ME");
+                }
 
-		template<class F>
+                template<class F>
 		void transform_petsc_impl(Mat &mat, F op)
 		{
 			PetscInt n;

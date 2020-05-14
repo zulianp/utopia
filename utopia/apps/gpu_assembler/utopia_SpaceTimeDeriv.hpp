@@ -62,10 +62,7 @@ namespace utopia {
             return NFunctions;
         }
 
-        UTOPIA_INLINE_FUNCTION const SpaceTimeDerivView & make(const Elem &elem) const
-        {
-            return *this;
-        }
+        UTOPIA_INLINE_FUNCTION const SpaceTimeDerivView &make(const Elem & /*elem*/) const { return *this; }
 
     private:
         const STGradXValues        &grad_x_;

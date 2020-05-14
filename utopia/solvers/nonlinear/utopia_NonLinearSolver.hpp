@@ -22,16 +22,12 @@ namespace utopia
     class NonLinearSolver : public Monitor<Vector>, virtual public Configurable
     {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
+        NonLinearSolver() : atol_(1e-7), rtol_(1e-8), stol_(1e-9), max_it_(300), time_statistics_(true) {}
 
-        NonLinearSolver(): atol_(1e-7), rtol_(1e-8), stol_(1e-9), max_it_(300), verbose_(false), time_statistics_(true)
-        {
-
-        }
-
-        ~NonLinearSolver() override {}
+        ~NonLinearSolver() override = default;
 
         void read(Input &in) override {
             in.get("atol", atol_);
@@ -61,7 +57,7 @@ protected:
 
             if(!non_data_path.empty())
             {
-                CSVWriter writer;
+                CSVWriter writer{};
                 if (mpi_world_rank() == 0)
                 {
                     if(!writer.file_exists(non_data_path))
@@ -205,7 +201,7 @@ public:
         Scalar stol_;                   /*!< Step tolerance. */
 
         SizeType max_it_;               /*!< Maximum number of iterations. */
-        bool verbose_;                  /*!< Verobse enable? . */
+        bool verbose_{false};           /*!< Verobse enable? . */
         SizeType time_statistics_;      /*!< Perform time stats or not? */
 
         Chrono _time;                 /*!<Timing of solver. */
@@ -224,7 +220,7 @@ public:
 
         }
 
-        ~MatrixFreeNonLinearSolver() override {}
+        ~MatrixFreeNonLinearSolver() override = default;
 
         virtual bool solve(FunctionBase<Vector> &fun, Vector &x) = 0;
     };

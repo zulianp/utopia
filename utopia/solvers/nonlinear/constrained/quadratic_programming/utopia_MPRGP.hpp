@@ -20,7 +20,7 @@ namespace utopia {
         using Super = utopia::OperatorBasedQPSolver<Matrix, Vector>;
 
     public:
-        MPGRP() : eps_eig_est_(1e-1), power_method_max_it_(10), initialized_(false) {}
+        MPGRP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {
             OperatorBasedQPSolver<Matrix, Vector>::read(in);
@@ -440,7 +440,7 @@ namespace utopia {
         Scalar eps_eig_est_;
         SizeType power_method_max_it_;
 
-        bool initialized_;
+        bool initialized_{false};
         Layout layout_;
 
         std::shared_ptr<Preconditioner<Vector> > precond_;

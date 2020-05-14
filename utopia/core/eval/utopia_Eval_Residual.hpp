@@ -12,7 +12,7 @@ namespace utopia {
     class Eval<ResidualExpr<A, X, B>, Traits, Backend> {
     public:
         typedef utopia::ResidualExpr<A, X, B> Expr;
-        typedef X Result;
+        using Result = X;
 
         UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 

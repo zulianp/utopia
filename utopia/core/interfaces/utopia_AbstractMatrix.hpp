@@ -43,7 +43,7 @@ namespace utopia {
     // public Selectable<AbstractMatrix<Scalar_, SizeType_>, 2>
     {
     public:
-        ~AbstractMatrix() override {}
+        ~AbstractMatrix() override = default;
     };
 
     template<class Matrix>

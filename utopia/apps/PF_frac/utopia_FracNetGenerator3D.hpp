@@ -107,11 +107,7 @@ namespace utopia {
 
     template<class T>
     struct Point3D{
-
-        Point3D()
-        {
-
-        }
+        Point3D() = default;
 
         Point3D(const T & xx, const T & yy, const T && zz):
         x(xx), y(yy), z(zz)
@@ -150,7 +146,7 @@ namespace utopia {
 
             bool belongs_to_paralleloid(const T & x_coord, const T & y_coord, const T & z_coord)
             {
-                Point3D<T> M;
+                Point3D<T> M{};
                 M.x = x_coord;
                 M.y = y_coord;
                 M.z = z_coord;
@@ -160,8 +156,7 @@ namespace utopia {
 
             bool belongs_to_paralleloid(Point3D<T> M)
             {
-
-                Point3D<T> u, v, w;
+                Point3D<T> u{}, v{}, w{};
                 build_vector(points_[0], points_[4], u);
                 build_vector(points_[0], points_[1], v);
                 build_vector(points_[0], points_[2], w);

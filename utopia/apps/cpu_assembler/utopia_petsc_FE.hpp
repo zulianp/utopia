@@ -82,8 +82,7 @@ namespace utopia {
             }
         }
 
-        QuadratureBase()
-        {}
+        QuadratureBase() = default;
 
         QuadratureBase(const QuadratureBase &other)
         {
@@ -102,7 +101,7 @@ namespace utopia {
 
     protected:
         std::array<Point, NPoints> points_;
-        std::array<Scalar, NPoints> weights_;
+        std::array<Scalar, NPoints> weights_{};
     };
 
     //FIXME these quadrature defs are redundant
@@ -122,8 +121,8 @@ namespace utopia {
         }
 
         Quadrature(const Quadrature &other)
-        : Super(other)
-        {}
+
+            = default;
 
         void init()
         {
@@ -156,8 +155,8 @@ namespace utopia {
         }
 
         Quadrature(const Quadrature &other)
-        : Super(other)
-        {}
+
+            = default;
 
         void init()
         {
@@ -242,8 +241,8 @@ namespace utopia {
         }
 
         Quadrature(const Quadrature &other)
-        : Super(other)
-        {}
+
+            = default;
 
         inline const ViewDevice &view_device() const
         {
@@ -276,8 +275,8 @@ namespace utopia {
         }
 
         Quadrature(const Quadrature &other)
-        : Super(other)
-        {}
+
+            = default;
 
         inline const ViewDevice &view_device() const
         {

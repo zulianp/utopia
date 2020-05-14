@@ -55,7 +55,7 @@
 //}
 
 namespace utopia {
-    typedef long int SizeType;
+    using SizeType = long;
     static const SizeType INVALID_INDEX = -1;
     static const int DYNAMIC = -1;
     static const int UTOPIA_MAX_TENSOR_ORDER = 2;

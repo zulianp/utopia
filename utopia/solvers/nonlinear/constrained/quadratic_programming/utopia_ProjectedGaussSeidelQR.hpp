@@ -16,9 +16,8 @@ namespace utopia {
     class ProjectedGaussSeidelQR final : public ProjectedGaussSeidel<Matrix, Vector>
     {
     public:
-
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         ProjectedGaussSeidelQR()
         {

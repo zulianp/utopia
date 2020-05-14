@@ -1,10 +1,9 @@
 #ifndef UTOPIA_SOLVER_TRIGONOMETRIC_26
 #define UTOPIA_SOLVER_TRIGONOMETRIC_26
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
-
 
 namespace utopia
 {

@@ -17,8 +17,8 @@ namespace utopia {
     class TRStrategyFactory<Matrix, Vector, PETSC> {
     public:
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblemT;
-        typedef std::shared_ptr<TRSubproblemT> StrategyPtr;
-        typedef utopia::IFactoryMethod<TRSubproblemT> FactoryMethodT;
+        using StrategyPtr = std::shared_ptr<TRSubproblemT>;
+        using FactoryMethodT = utopia::IFactoryMethod<TRSubproblemT>;
 
         template<class Alg>
         using TRFactoryMethod = FactoryMethod<TRSubproblemT, Alg>;

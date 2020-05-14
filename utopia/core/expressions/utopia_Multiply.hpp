@@ -28,9 +28,9 @@ namespace utopia {
                                       TENSOR_ORDER_MULTIPLY(_Left, _Right)>
                     {
     public:
-        typedef _Left Left;
-        typedef _Right Right;
-        typedef decltype(typename Traits<Left>::Scalar() * typename Traits<Right>::Scalar()) Scalar;
+        using Left = _Left;
+        using Right = _Right;
+        using Scalar = decltype(typename Traits<Left>::Scalar() * typename Traits<Right>::Scalar());
 
         static const int Order = TENSOR_ORDER_MULTIPLY(_Left, _Right);
 
@@ -45,7 +45,7 @@ namespace utopia {
             return  "Multiply<" + _left.get_class() + ", " + _right.get_class() + ">";
         }
 
-        virtual ~Multiply() { }
+        virtual ~Multiply() = default;
 
     private:
         UTOPIA_STORE_CONST(Left) _left;

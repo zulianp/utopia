@@ -27,15 +27,15 @@ namespace utopia
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Multigrid final : public LinearMultiLevel<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
         typedef utopia::IterativeSolver<Matrix, Vector>     Smoother;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
-        typedef std::shared_ptr<Smoother>                   SmootherPtr;
+        using SmootherPtr = std::shared_ptr<Smoother>;
 
         using Super = utopia::LinearMultiLevel<Matrix, Vector>;
 
@@ -84,7 +84,7 @@ namespace utopia
             this->must_generate_masks(true);
         }
 
-        ~Multigrid() override {}
+        ~Multigrid() override = default;
 
         void read(Input &in) override
         {

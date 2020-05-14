@@ -86,9 +86,8 @@ namespace utopia {
         }
 
         //space-time mixed derivative
-        template<typename Point, typename Deriv>
-        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int i, const Point &, Deriv &dst)
-        {
+        template <typename Point, typename Deriv>
+        UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int /*i*/, const Point &, Deriv &dst) {
             //project t coordinates to 0
             UTOPIA_DEVICE_ASSERT_CXX14(dst.size() == 1);
             dst[0] = 0;

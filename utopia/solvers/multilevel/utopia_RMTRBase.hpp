@@ -26,8 +26,8 @@ namespace utopia
     class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>, public RMTRParams<Vector>
     {
         public:
-            typedef UTOPIA_SCALAR(Vector)                       Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+            using Scalar = typename utopia::Traits<Vector>::Scalar;
+            using SizeType = typename utopia::Traits<Vector>::SizeType;
             typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
         RMTRBase(const SizeType & n_levels):    NonlinearMultiLevelBase<Matrix,Vector>(n_levels),
@@ -38,7 +38,7 @@ namespace utopia
 
         }
 
-        ~RMTRBase() override {}
+        ~RMTRBase() override = default;
 
         void read(Input &in) override {
             NonlinearMultiLevelBase<Matrix, Vector>::read(in);
@@ -70,9 +70,8 @@ namespace utopia
             return  ml_derivs_.compute_hessian(level, fun, memory_.x[level]);
         }
 
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER_DF>::value, int> = 0 >
-        bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
-        {
+        template <MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER_DF>::value, int> = 0>
+        bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) {
             return  false;
         }
 
@@ -233,9 +232,9 @@ namespace utopia
         }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF, FIRST_ORDER_MGOPT>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
-        {
+        template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+                  enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF, FIRST_ORDER_MGOPT>::value, int> = 0>
+        bool init_deriv_loc_solve(const Fun & /*fun*/, const SizeType &level, const LocalSolveType &solve_type) {
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)){
 
                 if(solve_type==PRE_SMOOTHING || solve_type == COARSE_SOLVE){
@@ -247,9 +246,8 @@ namespace utopia
             return true;
         }
 
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
-        {
+        template <MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0>
+        bool init_deriv_loc_solve(const Fun & /*fun*/, const SizeType &level, const LocalSolveType &solve_type) {
             bool make_hess_updates = true;
 
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1))
@@ -267,9 +265,8 @@ namespace utopia
             return make_hess_updates;
         }
 
-        template<MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0 >
-        bool  init_deriv_loc_solve(const Fun & fun, const SizeType & level, const LocalSolveType & solve_type)
-        {
+        template <MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0>
+        bool init_deriv_loc_solve(const Fun & /*fun*/, const SizeType &level, const LocalSolveType &solve_type) {
             if(!(solve_type==PRE_SMOOTHING && level==this->n_levels()-1)){
 
                 if( (solve_type==PRE_SMOOTHING && level < this->n_levels()-1) || (solve_type == COARSE_SOLVE)){

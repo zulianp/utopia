@@ -21,13 +21,10 @@ namespace utopia {
     // typedef utopia::NewtonBase<Matrix, Vector>           NonLinearSolver;
     // typedef utopia::Function<Matrix, Vector>             Function;
 
-    template<typename Matrix, typename Vector>
+    template <typename Matrix, typename Vector>
     SNESSolver<Matrix, Vector, PETSC>::SNESSolver(const std::shared_ptr<LinearSolver> &linear_solver,
                                                   const std::vector<std::string> snes_types)
-    : NonLinearSolver(linear_solver),
-    SNES_types(snes_types),
-    line_search_type_(SNESLINESEARCHBT) //SNESLINESEARCHBASIC)
-    {
+        : NonLinearSolver(linear_solver), SNES_types(snes_types) {
         SNES_type_ = SNES_types.at(0);
     }
 
@@ -41,9 +38,8 @@ namespace utopia {
         return cloned.release();
     }
 
-    template<typename Matrix, typename Vector>
-    SNESSolver<Matrix, Vector, PETSC>::~SNESSolver()
-    {}
+    template <typename Matrix, typename Vector>
+    SNESSolver<Matrix, Vector, PETSC>::~SNESSolver() = default;
 
     template<typename Matrix, typename Vector>
     void SNESSolver<Matrix, Vector, PETSC>::read(Input &in)
@@ -85,7 +81,7 @@ namespace utopia {
 
 
         if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr) {
-            PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
+            auto *fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
             fun_petsc->getSNES(snes);
         } else {
             setup_assembly_routines(snes, fun, x);
@@ -95,8 +91,7 @@ namespace utopia {
         set_ksp(snes);
         set_variable_bounds(snes, layout(x));
 
-
-        SNESSolve(snes, NULL, raw_type(x));
+        SNESSolve(snes, nullptr, raw_type(x));
 
         // exit solver
         PetscInt nonl_its;
@@ -122,7 +117,7 @@ namespace utopia {
 
         if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr)
         {
-            PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
+            auto *fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
             fun_petsc->getSNES(snes);
         }
         else
@@ -137,7 +132,7 @@ namespace utopia {
 
         // needs to be reseted for use on other levels ...
         VecDestroy(&snes->vec_rhs);
-        snes->vec_rhs =  NULL;
+        snes->vec_rhs = nullptr;
 
         if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
         {
@@ -281,39 +276,33 @@ namespace utopia {
         }
 
         // energy
-        SNESSetObjective(
-            snes,
-             // FormObjective,
-             [](SNES /*snes*/, Vec x, PetscReal * energy, void * ctx) -> PetscErrorCode
-             {
-                 Function * fun = static_cast<Function*>(ctx);
-                 Vector x_ut;
+        SNESSetObjective(snes,
+                         // FormObjective,
+                         [](SNES /*snes*/, Vec x, PetscReal *energy, void *ctx) -> PetscErrorCode {
+                             auto *fun = static_cast<Function *>(ctx);
+                             Vector x_ut;
 
-                 utopia::convert(x, x_ut);
-                 fun->value(x_ut, *energy);
-                 return 0;
-             },
-             &fun
-        );
+                             utopia::convert(x, x_ut);
+                             fun->value(x_ut, *energy);
+                             return 0;
+                         },
+                         &fun);
 
         // gradient
-        SNESSetFunction(
-            snes,
-            raw_type(residual),
-            // FormGradient,
-            [](SNES /*snes*/, Vec x, Vec res, void *ctx)-> PetscErrorCode
-            {
-                Function * fun = static_cast<Function *>(ctx);
+        SNESSetFunction(snes,
+                        raw_type(residual),
+                        // FormGradient,
+                        [](SNES /*snes*/, Vec x, Vec res, void *ctx) -> PetscErrorCode {
+                            auto *fun = static_cast<Function *>(ctx);
 
-                Vector x_ut, res_ut;
-                utopia::convert(x, x_ut);
-                fun->gradient(x_ut, res_ut);
-                utopia::convert(res_ut, res);
+                            Vector x_ut, res_ut;
+                            utopia::convert(x, x_ut);
+                            fun->gradient(x_ut, res_ut);
+                            utopia::convert(res_ut, res);
 
-                return 0;
-            },
-            &fun
-        );
+                            return 0;
+                        },
+                        &fun);
 
         // hessian
         SNESSetJacobian(
@@ -321,9 +310,8 @@ namespace utopia {
             raw_type(*mat),
             raw_type(*prec_mat),
             // FormHessian,
-            [](SNES snes, Vec x, Mat /*jac*/, Mat /*prec*/, void *ctx)-> PetscErrorCode
-            {
-                Function * fun = static_cast<Function *>(ctx);
+            [](SNES snes, Vec x, Mat /*jac*/, Mat /*prec*/, void *ctx) -> PetscErrorCode {
+                auto *fun = static_cast<Function *>(ctx);
 
                 Vector x_ut;
                 utopia::convert(x, x_ut);
@@ -336,7 +324,7 @@ namespace utopia {
                     fun->hessian(x_ut, *fun->data()->H);
 
                     // if(jac != raw_type(*fun->data()->H)) {
-                        SNESSetJacobian(snes, raw_type(*fun->data()->H), raw_type(*fun->data()->H), nullptr, nullptr);
+                    SNESSetJacobian(snes, raw_type(*fun->data()->H), raw_type(*fun->data()->H), nullptr, nullptr);
                     // }
 
                 } else {
@@ -345,8 +333,7 @@ namespace utopia {
 
                 return 0;
             },
-            &fun
-        );
+            &fun);
     }
 
     //OLD IMPLEMENTATION

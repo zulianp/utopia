@@ -18,8 +18,8 @@ namespace utopia
     class NonLinearLeastSquaresSolver : public NonLinearSolver<Vector>
     {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
@@ -29,7 +29,7 @@ namespace utopia
 
         }
 
-        ~NonLinearLeastSquaresSolver() override {}
+        ~NonLinearLeastSquaresSolver() override = default;
 
         virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x) = 0;
 

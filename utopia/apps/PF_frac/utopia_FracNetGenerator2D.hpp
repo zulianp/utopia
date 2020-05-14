@@ -40,11 +40,7 @@ namespace utopia {
 
     template<class T>
     struct Point2D{
-
-        Point2D()
-        {
-
-        }
+        Point2D() = default;
 
         Point2D(const T & xx, const T & yy):
         x(xx), y(yy)
@@ -154,7 +150,7 @@ namespace utopia {
             // generate from line 
             Rectangle(const Point2D<T> & p1, const Point2D<T> & p2, const T & width)
             {
-                Point2D<T>  V, P, N; 
+                Point2D<T> V{}, P{}, N{};
                 V.x = p2.x - p1.x;
                 V.y = p2.y - p1.y;
 
@@ -178,7 +174,7 @@ namespace utopia {
 
             bool belongs_to_rectangle(const T & x_coord, const T & y_coord)
             {
-                Point2D<T> M;
+                Point2D<T> M{};
                 M.x = x_coord;
                 M.y = y_coord;
 
@@ -187,7 +183,7 @@ namespace utopia {
 
             bool belongs_to_rectangle(Point2D<T> M)
             {
-                Point2D<T> AB, AM, BD, BM;
+                Point2D<T> AB{}, AM{}, BD{}, BM{};
                 build_vector(A_, B_, AB);
                 build_vector(A_, M, AM);
                 build_vector(B_, D_, BD);

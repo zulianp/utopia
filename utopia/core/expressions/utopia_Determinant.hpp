@@ -10,7 +10,7 @@ namespace utopia {
     class Determinant : public Expression< Determinant<Expr> > {
     public:
         static_assert(Expr::Order >= 2, "must be a 2nd order tensor or greater");
-        typedef typename Traits<Determinant>::Scalar Scalar;
+        using Scalar = typename Traits<Determinant<Expr> >::Scalar;
 
         static const int Order = 0;
         // typedef utopia::Traits<Expr>::Scalar Scalar;

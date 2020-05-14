@@ -10,10 +10,8 @@
 
 namespace utopia {
 
-    template<class... Args>
-    NaryActionRegistry<Args...>::NaryActionRegistry()
-    : verbose_(false), error_code_(0), n_action_applied_(0), type_("action"), rank_(0)
-    {
+    template <class... Args>
+    NaryActionRegistry<Args...>::NaryActionRegistry() : type_("action") {
         // rank_ = utopia::mpi_world_rank();
     }
 

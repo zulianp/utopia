@@ -14,18 +14,18 @@ namespace utopia {
     public:
         typedef utopia::Reduce< Binary<Left, Right, EMultiplies>, Plus> Expr;
 
-        typedef utopia::AutoDiffExpr<Left>  DiffLeft;
-        typedef utopia::AutoDiffExpr<Right> DiffRight;
+        using DiffLeft = utopia::AutoDiffExpr<Left>;
+        using DiffRight = utopia::AutoDiffExpr<Right>;
 
-        typedef typename DiffLeft::Type DLeft;
-        typedef typename DiffRight::Type DRight;
+        using DLeft = typename DiffLeft::Type;
+        using DRight = typename DiffRight::Type;
 
         typedef utopia::Binary<Multiply<Transposed<DLeft>,  Right>,
                                Multiply<Transposed<DRight>, Left>,
                                Plus> ComplexType;
 
-        typedef utopia::Simplify<ComplexType> Sim;
-        typedef typename Sim::Type Type;
+        using Sim = utopia::Simplify<ComplexType>;
+        using Type = typename Sim::Type;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr)
         {

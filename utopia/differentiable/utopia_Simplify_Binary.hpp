@@ -24,7 +24,7 @@ namespace utopia {
     template<class Left, int Order>
     class BinarySimplify<Left, Factory<Zeros, Order>, Plus> {
     public:
-        typedef Left Type;
+        using Type = Left;
 
         static UTOPIA_STORE_CONST(Type) make(const Left &left, const Factory<Zeros, Order> &, const Plus &)
         {
@@ -58,7 +58,7 @@ namespace utopia {
     template< int Order, class Right>
     class BinarySimplify<Factory<Zeros, Order>, Right, Plus> {
     public:
-        typedef Right Type;
+        using Type = Right;
 
         static UTOPIA_STORE_CONST(Type) make(const Factory<Zeros, Order> &, const Right &right, const Plus &)
         {
@@ -74,7 +74,7 @@ namespace utopia {
     template<class Expr, int Order>
     class BinarySimplify<Expr, Factory<Identity, Order>, EMultiplies> {
     public:
-        typedef typename Simplify<Expr>::Type Type;
+        using Type = typename Simplify<Expr>::Type;
 
         static const UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Identity, Order> &/*right*/, const EMultiplies &)
         {
@@ -85,7 +85,7 @@ namespace utopia {
     template<class Expr, int Order>
     class BinarySimplify< Factory<Identity, Order>, Expr, EMultiplies> {
     public:
-        typedef typename Simplify<Expr>::Type Type;
+        using Type = typename Simplify<Expr>::Type;
 
         static UTOPIA_STORE_CONST(Type) make(const Factory<Identity, Order> &/*left*/, const Expr &right, const EMultiplies &)
         {
@@ -123,7 +123,7 @@ namespace utopia {
     template<class Expr, int Order>
     class BinarySimplify<Expr, Factory<Identity, Order>, Multiplies> {
     public:
-        typedef typename Simplify<Expr>::Type Type;
+        using Type = typename Simplify<Expr>::Type;
 
         static const UTOPIA_STORE_CONST(Type) make(const Expr &left, const Factory<Identity, Order> &/*right*/, const Multiplies &)
         {
@@ -134,7 +134,7 @@ namespace utopia {
     template<class Expr, int Order>
     class BinarySimplify< Factory<Identity, Order>, Expr, Multiplies> {
     public:
-        typedef typename Simplify<Expr>::Type Type;
+        using Type = typename Simplify<Expr>::Type;
 
         static UTOPIA_STORE_CONST(Type) make(const Factory<Identity, Order> &/*left*/, const Expr &right, const Multiplies &)
         {
@@ -170,11 +170,11 @@ namespace utopia {
     template<class Left, class Right, class Operation>
     class Simplify< Binary<Left, Right, Operation> >{
     public:
-        typedef typename Simplify<Left>::Type  SLeft;
-        typedef typename Simplify<Right>::Type SRight;
+        using SLeft = typename Simplify<Left>::Type;
+        using SRight = typename Simplify<Right>::Type;
 
         typedef typename utopia::BinarySimplify<SLeft, SRight, Operation> Sim;
-        typedef typename Sim::Type Type;
+        using Type = typename Sim::Type;
 
         static UTOPIA_STORE_CONST(Type) make(const Binary<Left, Right, Operation> &expr)
         {

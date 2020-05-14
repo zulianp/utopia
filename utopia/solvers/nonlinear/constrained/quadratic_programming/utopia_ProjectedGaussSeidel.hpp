@@ -20,7 +20,7 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
 
-        ProjectedGaussSeidel() : use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(3) {}
+        ProjectedGaussSeidel() : n_local_sweeps_(3) {}
 
         ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
 
@@ -368,14 +368,14 @@ namespace utopia {
         inline void l1(const bool val) { l1_ = val; }
 
        private:
-        bool use_line_search_;
-        bool use_symmetric_sweep_;
-        bool l1_;
-        SizeType n_local_sweeps_;
+           bool use_line_search_{false};
+           bool use_symmetric_sweep_{true};
+           bool l1_{false};
+           SizeType n_local_sweeps_;
 
-        Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
-        Vector inactive_set_;
-        Vector is_c_;
+           Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
+           Vector inactive_set_;
+           Vector is_c_;
     };
 }  // namespace utopia
 

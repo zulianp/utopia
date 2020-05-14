@@ -25,8 +25,7 @@ namespace utopia {
         typedef utopia::IterativeSolver<Matrix, Vector> Solver;
 
     public:
-        GaussSeidel(): use_line_search_(false), use_symmetric_sweep_(true), l1_(false), n_local_sweeps_(1), check_convergence_each_(10)
-        {}
+        GaussSeidel() : n_local_sweeps_(1), check_convergence_each_(10) {}
 
         void read(Input &in) override
         {
@@ -266,9 +265,9 @@ namespace utopia {
 
 
     private:
-        bool use_line_search_;
-        bool use_symmetric_sweep_;
-        bool l1_;
+        bool use_line_search_{false};
+        bool use_symmetric_sweep_{true};
+        bool l1_{false};
         SizeType n_local_sweeps_;
         SizeType check_convergence_each_;
 

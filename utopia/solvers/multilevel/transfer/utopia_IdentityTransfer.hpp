@@ -21,19 +21,14 @@
         template<class Matrix, class Vector>
         class IdentityTransfer final : public Transfer<Matrix, Vector>
         {
-            typedef UTOPIA_SCALAR(Vector)    Scalar;
+            using Scalar = typename utopia::Traits<Vector>::Scalar;
 
         public:
+            IdentityTransfer() = default;
 
-        IdentityTransfer()
-        {
-
-        }
-
-        bool interpolate(const Vector &x, Vector &x_new) const override
-        {
-            x_new = x;
-            return true;
+            bool interpolate(const Vector &x, Vector &x_new) const override {
+                x_new = x;
+                return true;
         }
 
 

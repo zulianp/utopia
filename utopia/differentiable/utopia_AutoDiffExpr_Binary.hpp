@@ -10,17 +10,17 @@ namespace utopia {
     template<class Left, class Right>
     class AutoDiffBinary<Left, Right, EMultiplies> {
     public:
-        typedef utopia::AutoDiffExpr<Left>  DiffLeft;
-        typedef utopia::AutoDiffExpr<Right> DiffRight;
+        using DiffLeft = utopia::AutoDiffExpr<Left>;
+        using DiffRight = utopia::AutoDiffExpr<Right>;
 
-        typedef typename DiffLeft::Type  DLeft;
-        typedef typename DiffRight::Type DRight;
+        using DLeft = typename DiffLeft::Type;
+        using DRight = typename DiffRight::Type;
 
         typedef utopia::Binary< Binary<DLeft, Right, EMultiplies>,
                                 Binary<Left, DRight, EMultiplies>,
                                 Plus> ComplexType;
 
-        typedef typename utopia::Simplify<ComplexType>::Type Type;
+        using Type = typename utopia::Simplify<ComplexType>::Type;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Left &left, const Right &right, const EMultiplies &)
         {
@@ -37,15 +37,14 @@ namespace utopia {
     template<class Left, class Right>
     class AutoDiffBinary<Left, Right, Plus> {
     public:
-        typedef utopia::AutoDiffExpr<Left>  DiffLeft;
-        typedef utopia::AutoDiffExpr<Right> DiffRight;
+        using DiffLeft = utopia::AutoDiffExpr<Left>;
+        using DiffRight = utopia::AutoDiffExpr<Right>;
 
-        typedef typename DiffLeft::Type  DLeft;
-        typedef typename DiffRight::Type DRight;
+        using DLeft = typename DiffLeft::Type;
+        using DRight = typename DiffRight::Type;
 
         typedef utopia::Binary<DLeft, DRight, Plus> ComplexType;
-        typedef typename utopia::Simplify<ComplexType>::Type Type;
-
+        using Type = typename utopia::Simplify<ComplexType>::Type;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Left &left, const Right &right, const Plus &)
         {
@@ -61,7 +60,7 @@ namespace utopia {
     public:
 
         typedef utopia::AutoDiffBinary<Left, Right, Operation> Diff;
-        typedef typename Diff::Type Type;
+        using Type = typename Diff::Type;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Binary<Left, Right, Operation> &expr)
         {
@@ -73,11 +72,11 @@ namespace utopia {
     template<class Left, class Right>
     class AutoDiffBinary<Number<Left>, Right, Multiplies> {
     public:
-        typedef utopia::AutoDiffExpr<Right> DiffRight;
-        typedef typename DiffRight::Type DRight;
+        using DiffRight = utopia::AutoDiffExpr<Right>;
+        using DRight = typename DiffRight::Type;
 
         typedef utopia::Binary<Number<Left>, DRight, Multiplies> ComplexType;
-        typedef typename utopia::Simplify<ComplexType>::Type Type;
+        using Type = typename utopia::Simplify<ComplexType>::Type;
 
         inline static UTOPIA_STORE_CONST(Type) make(const Left &left, const Right &right, const Multiplies &)
         {

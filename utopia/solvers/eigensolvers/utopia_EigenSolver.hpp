@@ -14,21 +14,18 @@ namespace utopia
     {
 
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
+        EigenSolver()
+            : number_of_eigenvalues_(1),
+              portion_of_spectrum_("smallest_real"),
+              max_it_(40000),
+              tol_(1e-12)
 
-        EigenSolver( ): number_of_eigenvalues_(1),
-                        portion_of_spectrum_("smallest_real"),
-                        max_it_(40000),
-                        tol_(1e-12),
-                        verbose_(false)
+        {}
 
-        {
-
-        }
-
-        ~EigenSolver() override {}
+        ~EigenSolver() override = default;
 
         virtual void number_of_eigenvalues(const SizeType & number_of_eigenvalues)
         {
@@ -112,7 +109,7 @@ namespace utopia
 
         SizeType max_it_;
         Scalar tol_;
-        bool verbose_;
+        bool verbose_{false};
     };
 
 }

@@ -36,8 +36,9 @@ namespace utopia
         }
 
         // s_global is assummed to be zero
-        inline Scalar compute_energy(const SizeType & level, const ExtendedFunction<Matrix, Vector> & fun, const Vector & x)
-        {
+        inline Scalar compute_energy(const SizeType & /*level*/,
+                                     const ExtendedFunction<Matrix, Vector> &fun,
+                                     const Vector &x) {
             Scalar energy = 0.0;
             fun.value(x, energy);
             return energy;

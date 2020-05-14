@@ -4,35 +4,29 @@
 #include "utopia_Core.hpp"
 #include "utopia_Path.hpp"
 
+#include <cassert>
 #include <memory>
-#include <assert.h>
+#include <utility>
 
-     namespace utopia
-     {
-        /**
-         * @brief      Class keeps track on operators.
-         *
-         *
-         * @tparam     Matrix
-         * @tparam     Vector
-         */
-        template<class Matrix, class Vector>
-        class Level
-        {
-            typedef UTOPIA_SCALAR(Vector)    Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+namespace utopia {
+    /**
+     * @brief      Class keeps track on operators.
+     *
+     *
+     * @tparam     Matrix
+     * @tparam     Vector
+     */
+    template <class Matrix, class Vector>
+    class Level {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        public:
+    public:
 
         Level() : _A(std::make_shared<const Matrix>()) {}
-        Level(const std::shared_ptr <const Matrix> & A): _A(A)
-        {
-            assert(_A);
-        }
+        Level(std::shared_ptr<const Matrix> A) : _A(std::move(A)) { assert(_A); }
 
-
-        virtual ~Level(){}
-
+        virtual ~Level() = default;
 
         /**
          * @brief      Setter of stifness matrix.

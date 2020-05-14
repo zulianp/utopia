@@ -19,8 +19,8 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        QPSolver() {}
-        ~QPSolver() override {}
+        QPSolver() = default;
+        ~QPSolver() override = default;
         QPSolver *clone() const override = 0;
 
         void init_memory(const Layout &layout) override {
@@ -38,10 +38,9 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        MatrixFreeQPSolver()
-        {}
+        MatrixFreeQPSolver() = default;
 
-        ~MatrixFreeQPSolver() override {}
+        ~MatrixFreeQPSolver() override = default;
 
         MatrixFreeQPSolver *clone() const override = 0;
 
@@ -65,7 +64,7 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        ~OperatorBasedQPSolver() override {}
+        ~OperatorBasedQPSolver() override = default;
 
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));

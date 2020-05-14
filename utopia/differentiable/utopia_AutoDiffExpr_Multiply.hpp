@@ -10,16 +10,16 @@ namespace utopia {
     template<class Left, class Right>
     class AutoDiffExpr< Multiply<Left, Right>, 1> {
     public:
-        typedef typename utopia::AutoDiffExpr<Left>  DiffLeft;
-        typedef typename utopia::AutoDiffExpr<Right> DiffRight;
+        using DiffLeft = typename utopia::AutoDiffExpr<Left>;
+        using DiffRight = typename utopia::AutoDiffExpr<Right>;
 
-        typedef typename DiffLeft::Type  DLeft;
-        typedef typename DiffRight::Type DRight;
+        using DLeft = typename DiffLeft::Type;
+        using DRight = typename DiffRight::Type;
 
         typedef utopia::Binary< utopia::Multiply<DLeft, Right>,
                                 utopia::Multiply<Left, DRight>, Plus > ComplexType;
 
-        typedef typename utopia::Simplify<ComplexType>::Type Type;
+        using Type = typename utopia::Simplify<ComplexType>::Type;
 
         static UTOPIA_STORE_CONST(Type) make(const Multiply<Left, Right> &expr)
         {

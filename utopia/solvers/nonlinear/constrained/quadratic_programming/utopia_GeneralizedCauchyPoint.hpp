@@ -18,11 +18,9 @@ namespace  utopia
         using Layout   = typename Traits<Vector>::Layout;
 
     public:
+        GeneralizedCauchyPoint() : cp_memory_(5) {}
 
-        GeneralizedCauchyPoint() : cp_memory_(5), initialized_(false)
-        {}
-
-        ~GeneralizedCauchyPoint() override {}
+        ~GeneralizedCauchyPoint() override = default;
 
         GeneralizedCauchyPoint * clone() const override
         {
@@ -257,7 +255,7 @@ namespace  utopia
         SizeType cp_memory_;    // memory size
         Vector t_help_, break_points_, sorted_break_points_, active_set_, e_, Hd_, d_, rhs_minus_;
 
-        bool initialized_;
+        bool initialized_{false};
         Layout layout_;
 
     };

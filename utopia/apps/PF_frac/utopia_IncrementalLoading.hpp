@@ -77,25 +77,22 @@ namespace utopia {
             using Scalar         = typename FunctionSpace::Scalar;
             using Vector         = typename FunctionSpace::Vector;
 
-            IncrementalLoadingBase():
-            dt_(1e-5),
-            dt0_(1e-5),
-            num_time_steps_(100),
-            time_(0.0),
-            final_time_(0.0),
-            time_step_counter_(0.0), 
-            output_path_("out.vtr"), 
-            adjust_dt_on_failure_(true), 
-            shrinking_factor_(0.5), 
-            pressure0_(0.0),
-            pressure_increase_factor_(0.0),
-            use_pressure_(false),
-            use_constant_pressure_(false)
-            {
+            IncrementalLoadingBase()
+                : dt_(1e-5),
+                  dt0_(1e-5),
+                  num_time_steps_(100),
+                  time_(0.0),
+                  final_time_(0.0),
+                  time_step_counter_(0.0),
+                  output_path_("out.vtr"),
 
-            }
+                  shrinking_factor_(0.5),
+                  pressure0_(0.0),
+                  pressure_increase_factor_(0.0)
 
-            ~IncrementalLoadingBase() override {}
+            {}
+
+            ~IncrementalLoadingBase() override = default;
 
             void read(Input &in) override {
                 in.get("dt", dt_);
@@ -152,14 +149,14 @@ namespace utopia {
             Scalar final_time_; 
             SizeType time_step_counter_; 
             std::string output_path_;
-            bool use_mprgp_;
+            bool use_mprgp_{};
 
-            bool adjust_dt_on_failure_;
+            bool adjust_dt_on_failure_{true};
             Scalar shrinking_factor_;
             Scalar pressure0_;
             Scalar pressure_increase_factor_;
-            bool use_pressure_;
-            bool use_constant_pressure_;
+            bool use_pressure_{false};
+            bool use_constant_pressure_{false};
 
             Vector solution_;
             Vector lb_; // this is quite particular for PF-frac

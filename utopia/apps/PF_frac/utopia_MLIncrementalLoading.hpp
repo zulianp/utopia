@@ -211,16 +211,16 @@ namespace utopia {
 
             spaces_.back()->apply_constraints(this->solution_);
 
-            if (ProblemType *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+            if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                 fun_finest->old_solution(this->solution_);
             }
 
             // adding sol to all levels
             for (auto l = n_levels_ - 1; l > 0; l--) {
-                ProblemType *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                auto *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
                 Vector &fine_sol = fun_fine->old_solution();
 
-                ProblemType *fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l - 1].get());
+                auto *fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l - 1].get());
                 Vector &coarse_sol = fun_coarse->old_solution();
                 spaces_[l]->create_vector(coarse_sol);
 
@@ -259,7 +259,7 @@ namespace utopia {
             // update fine level solution  and constraint
             spaces_.back()->apply_constraints(this->solution_);
 
-            if (ProblemType *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+            if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                 fun_finest->build_irreversility_constraint(this->lb_);
             }
 
@@ -272,7 +272,7 @@ namespace utopia {
 
                 // only on the finest level
                 if (l == (BC_conditions_.size() - 1)) {
-                    if (ProblemType *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                         fun_finest->add_irr_values_markers(bc_values, bc_flgs);
                     }
                 }
@@ -290,7 +290,7 @@ namespace utopia {
             // std::cout<<"----- yes, constant pressure, "<< press_ts << " ......... \n";
 
             for (auto l = 0; l < n_levels_; l++) {
-                ProblemType *fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                auto *fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
                 fun->setup_constant_pressure_field(press_ts);
                 fun->set_pressure(press_ts);
             }
@@ -306,16 +306,16 @@ namespace utopia {
 
         void update_time_step(const SizeType &conv_reason) override {
             if (this->adjust_dt_on_failure_ && conv_reason < 0) {
-                if (ProblemType *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->get_old_solution(this->solution_);
                 }
 
                 // reset sol on all levels - important for BC conditions mostly s
                 for (auto l = n_levels_ - 1; l > 0; l--) {
-                    ProblemType *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                    auto *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
                     Vector &fine_sol = fun_fine->old_solution();
 
-                    ProblemType *fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l - 1].get());
+                    auto *fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l - 1].get());
                     Vector &coarse_sol = fun_coarse->old_solution();
 
                     if (empty(coarse_sol)) {
@@ -333,16 +333,16 @@ namespace utopia {
             } else {
                 // std::cout<<"------- yes, updating...  \n";
 
-                if (ProblemType *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->set_old_solution(this->solution_);
                 }
 
                 // update sol on all levels
                 for (auto l = n_levels_ - 1; l > 0; l--) {
-                    ProblemType *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
+                    auto *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
                     Vector &fine_sol = fun_fine->old_solution();
 
-                    ProblemType *fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l - 1].get());
+                    auto *fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l - 1].get());
                     Vector &coarse_sol = fun_coarse->old_solution();
 
                     if (empty(coarse_sol)) {

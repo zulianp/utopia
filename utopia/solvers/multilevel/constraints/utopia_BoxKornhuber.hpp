@@ -53,12 +53,15 @@ namespace utopia
                 }
             }
 
-            void init_level_impl(const SizeType & level, const Vector & x_finer_level,  const Vector & x_level, const Scalar & delta_fine)
-            {
+            void init_level_impl(const SizeType& level,
+                                 const Vector& x_finer_level,
+                                 const Vector& x_level,
+                                 const Scalar& /*delta_fine*/) {
                 auto finer_level = level + 1;
 
-                if(MatrixTransfer<Matrix, Vector>* mat_transfer =  dynamic_cast<MatrixTransfer<Matrix, Vector>* > (this->transfer_[level].get()))
-                // if(IPTransferNested<Matrix, Vector>* mat_transfer =  dynamic_cast<IPTransferNested<Matrix, Vector>* > (this->transfer_[level].get()))
+                if (auto* mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector>*>(this->transfer_[level].get()))
+                // if(IPTransferNested<Matrix, Vector>* mat_transfer =  dynamic_cast<IPTransferNested<Matrix, Vector>* >
+                // (this->transfer_[level].get()))
                 {
                     this->help_[finer_level]  = constraints_memory_.active_lower[finer_level] - x_finer_level;
                     this->help_loc_[finer_level]  = constraints_memory_.active_upper[finer_level] - x_finer_level;
@@ -105,12 +108,11 @@ namespace utopia
                     constraints_memory_.active_lower[level] += x_level;
                     constraints_memory_.active_upper[level] += x_level;
 
-                } // dynamic cast test
-                else{
+                }  // dynamic cast test
+                else {
                     utopia_error("TRBoundsKornhuber:: box - box - transfer operators not supported. \n ");
                     std::cout<<"--------- error ---------- \n";
                 }
-
             }
 
             const Vector & active_upper(const SizeType & level)

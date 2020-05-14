@@ -21,10 +21,10 @@ namespace utopia {
 
     class KSPLog {
     public:
-        Vec x_k_1;
-        Vec x_k_2;
+        Vec x_k_1{nullptr};
+        Vec x_k_2{nullptr};
 
-        KSPLog() : x_k_1(nullptr), x_k_2(nullptr) {}
+        KSPLog() = default;
 
         inline bool initialized() const { return x_k_1 != nullptr; }
 
@@ -406,7 +406,7 @@ namespace utopia {
             assert(ierr == 0);
             ierr = KSPSetNormType(ksp_, KSP_NORM_NONE);
             assert(ierr == 0);
-            ierr = KSPSetConvergenceTest(ksp_, KSPConvergedSkip, NULL, NULL);
+            ierr = KSPSetConvergenceTest(ksp_, KSPConvergedSkip, nullptr, nullptr);
             assert(ierr == 0);
 
             // perform smoothing
@@ -788,7 +788,7 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    KSPSolver<Matrix, Vector, PETSC>::~KSPSolver() {}
+    KSPSolver<Matrix, Vector, PETSC>::~KSPSolver() = default;
 
     template <typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::set_initial_guess_non_zero(const bool val) {
