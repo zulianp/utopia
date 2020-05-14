@@ -17,7 +17,7 @@ namespace utopia {
 		: index_(std::forward<Args>(args)...)
 		{}
 
-                ~BlasIndexSet() override {}
+                ~BlasIndexSet() override = default;
 
                 //locks
 		inline void read_lock() override {}

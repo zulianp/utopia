@@ -77,8 +77,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QuadraticExtendedFunction final : public ExtendedFunction<Matrix, Vector> {
     public:
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef UTOPIA_SCALAR(Vector) Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
 
         QuadraticExtendedFunction(  const Matrix &H,
                                     const Vector &rhs,

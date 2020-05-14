@@ -59,7 +59,7 @@ namespace utopia {
 
         std::string SNES_type_;                                  /*!< Choice of snes types. */
         const std::vector<std::string> SNES_types;              /*!< Valid options for SNES solver types. */
-        SNESLineSearchType line_search_type_;
+        SNESLineSearchType line_search_type_{SNESLINESEARCHBT};
 
         virtual void set_snes_options(SNES & snes,
                                       const Scalar & atol,

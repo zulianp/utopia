@@ -9,14 +9,14 @@ namespace utopia {
     template<class Tensor>
     class RowView<Tensor, 2, FillType::DENSE, utopia::BLAS> {
     public:
-        typedef typename utopia::Traits<Tensor>::SizeType SizeType;
-        typedef typename utopia::Traits<Tensor>::Scalar Scalar;
+        using SizeType = typename utopia::Traits<Tensor>::SizeType;
+        using Scalar = typename utopia::Traits<Tensor>::Scalar;
 
         inline RowView(Tensor &t, const SizeType row)
         : t_(t), row_(row)
         {}
 
-        inline ~RowView() {}
+        inline ~RowView() = default;
 
         inline SizeType n_values() const
         {

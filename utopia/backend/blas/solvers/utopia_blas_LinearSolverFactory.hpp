@@ -27,8 +27,8 @@ namespace utopia {
         class LinearSolverFactory<Matrix, Vector, BLAS> {
             public:
                 typedef utopia::LinearSolver<Matrix, Vector> LinearSolverT;
-                typedef std::shared_ptr<LinearSolverT>  LinearSolverPtr;
-                typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
+                using LinearSolverPtr = std::shared_ptr<LinearSolverT>;
+                using FactoryMethodT = utopia::IFactoryMethod<LinearSolverT>;
 
                 template<class Alg>
                 using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;

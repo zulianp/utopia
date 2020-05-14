@@ -16,10 +16,10 @@ namespace utopia {
     class Binary : public Expression<Binary<_Left, _Right, _Operation> >,
                    public Castable<Binary<_Left, _Right, _Operation>, TENSOR_ORDER_BINARY(_Left, _Right)> {
     public:
-        typedef _Left Left;
-        typedef _Right Right;
-        typedef _Operation Operation;
-        typedef decltype(typename Left::Scalar() + typename Right::Scalar()) Scalar;
+        using Left = _Left;
+        using Right = _Right;
+        using Operation = _Operation;
+        using Scalar = decltype(typename Left::Scalar() + typename Right::Scalar());
 
         static const int Order = TENSOR_ORDER_BINARY(_Left, _Right);
 
@@ -34,7 +34,7 @@ namespace utopia {
             return GetClass<Operation>() + "<" + _left.get_class() + ", " + _right.get_class() + ">";
         }
 
-        ~Binary() {}
+        ~Binary() = default;
 
     private:
         UTOPIA_STORE_CONST(Left) _left;

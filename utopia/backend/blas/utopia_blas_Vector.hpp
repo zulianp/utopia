@@ -39,7 +39,7 @@ namespace utopia {
         public ElementWiseOperand<BlasVector<T>>
     {
     public:
-        typedef std::vector<T> Entries;
+        using Entries = std::vector<double>;
 
         using Scalar = T;
         using SizeType = std::size_t;
@@ -84,10 +84,7 @@ namespace utopia {
 
         ////////////////////////////////////////////////////////////////////
 
-
-
-        BlasVector()
-        {}
+        BlasVector() = default;
 
         explicit BlasVector(const Layout &layout, const Scalar &val = 0.0)
         {

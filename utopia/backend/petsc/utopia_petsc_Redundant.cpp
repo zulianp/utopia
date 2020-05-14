@@ -68,8 +68,8 @@ namespace utopia {
     }
 
     Redundant<PetscMatrix, PetscVector>::Redundant()
-    : psubcomm(nullptr), n_sub_comm_(2)
-    {}
+
+        = default;
 
     Redundant<PetscMatrix, PetscVector>::~Redundant()
     {

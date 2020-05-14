@@ -1,6 +1,8 @@
 #ifndef UTOPIA_PETSC_IS_HPP
 #define UTOPIA_PETSC_IS_HPP
 
+#include <utility>
+
 #include "utopia_Traits.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Vector.hpp"
@@ -12,13 +14,10 @@ namespace utopia {
         using SizeType = Traits<PetscVector>::SizeType;
         using Destroy = std::function<PetscErrorCode(IS *)>;
 
-        PetscIS(Destroy destroy_impl = ISDestroy)
-        : is_(nullptr), destroy_impl_(destroy_impl), inds_(nullptr)
-        {}
+        PetscIS(Destroy destroy_impl = ISDestroy) : destroy_impl_(std::move(destroy_impl)) {}
 
         PetscIS(IS is, Destroy destroy_impl = ISDestroy)
-        : is_(is), destroy_impl_(destroy_impl), inds_(nullptr)
-        {}
+            : is_(is), destroy_impl_(std::move(destroy_impl)), inds_(nullptr) {}
 
         const IS &raw_type() const
         {
@@ -70,9 +69,9 @@ namespace utopia {
         }
 
     private:
-        IS is_;
+        IS is_{nullptr};
         Destroy destroy_impl_;
-        const SizeType *inds_;
+        const SizeType *inds_{nullptr};
     };
 
     template<>

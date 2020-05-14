@@ -103,7 +103,7 @@ namespace utopia {
     }
 
     Utopia::Utopia()
-    : exit_code_(EXIT_SUCCESS)
+
     {
         set("data_path", "../data");
         set("opencl_templates_path", "../backend/opencl/templates");
@@ -118,7 +118,6 @@ namespace utopia {
         temp->set_direct_output(false, false, false);
         maintenance_logger_ = temp;
 #endif
-
     }
 
     bool Utopia::verbose() const

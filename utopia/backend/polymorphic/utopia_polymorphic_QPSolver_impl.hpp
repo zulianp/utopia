@@ -154,9 +154,8 @@ namespace utopia {
 
     }
 
-    template<class Matrix, class Vector>
-    PolymorphicQPSolver<Matrix, Vector>::~PolymorphicQPSolver()
-    { }
+    template <class Matrix, class Vector>
+    PolymorphicQPSolver<Matrix, Vector>::~PolymorphicQPSolver() = default;
 
     template<class Matrix, class Vector>
     PolymorphicQPSolver<Matrix, Vector> *  PolymorphicQPSolver<Matrix, Vector>::clone() const

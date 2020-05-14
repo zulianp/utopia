@@ -10,8 +10,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class PolymorphicLinearSolver : public LinearSolver<Matrix, Vector>  {
     public:
-        typedef UTOPIA_SCALAR(Vector)    			 Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) 			 SizeType;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> Super;
 
     public:
