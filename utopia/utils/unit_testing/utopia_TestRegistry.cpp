@@ -12,7 +12,7 @@ namespace utopia {
         optional_tests_.set_type("test");
     }
 
-    TestRegistry::~TestRegistry() {}
+    TestRegistry::~TestRegistry() = default;
 
     bool TestRegistry::verbose() const { return tests_.verbose(); }
     void TestRegistry::verbose(const bool val)

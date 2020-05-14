@@ -11,7 +11,7 @@ namespace utopia {
         apps_.set_type("app");
     }
 
-    AppRegistry::~AppRegistry() {}
+    AppRegistry::~AppRegistry() = default;
 
     bool AppRegistry::verbose() const { return apps_.verbose(); }
     void AppRegistry::verbose(const bool val)

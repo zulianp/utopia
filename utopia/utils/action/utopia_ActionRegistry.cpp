@@ -6,9 +6,7 @@
 
 namespace utopia {
 
-    ActionRegistry::ActionRegistry()
-    : verbose_(false), error_code_(0), n_action_applied_(0), type_("action"), rank_(0)
-    {
+    ActionRegistry::ActionRegistry() : verbose_(false), n_action_applied_(0), type_("action"), rank_(0) {
         // rank_ = utopia::mpi_world_rank();
     }
 

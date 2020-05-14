@@ -1,19 +1,15 @@
 #include "utopia_Logger.hpp"
 
+#include <utility>
 
 namespace utopia {
-    Logger::Logger() {}
-    Logger::~Logger() {}
+    Logger::Logger() = default;
+    Logger::~Logger() = default;
 
     class Logger::Entry final {
     public:
-        inline explicit Entry(const std::string &file,
-                              const int line,
-                              const std::string &message)
-        : file(file),
-        line(line),
-        message(message)
-        {}
+        inline explicit Entry(std::string file, const int line, std::string message)
+            : file(std::move(file)), line(line), message(std::move(message)) {}
 
         inline friend std::ostream &operator<<(std::ostream &os, const Entry &e)
         {
@@ -105,5 +101,5 @@ namespace utopia {
     error_direct_output_(true)
     { }
 
-    StandardLogger::~StandardLogger() {}
+    StandardLogger::~StandardLogger() = default;
 }
