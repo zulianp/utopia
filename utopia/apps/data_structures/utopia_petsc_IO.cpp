@@ -19,19 +19,19 @@ namespace utopia {
 
     class PetscIO::Wrapper {
     public:
-        Wrapper() : viewer(nullptr) {}
+        Wrapper() {}
 
         ~Wrapper() { destroy(); }
 
         void destroy() {
-            if (viewer) {
+            if (viewer != nullptr) {
                 auto ierr = PetscViewerDestroy(&viewer);
                 assert(ierr == 0);
                 viewer = nullptr;
             }
         }
 
-        PetscViewer viewer;
+        PetscViewer viewer{nullptr};
     };
 
     bool PetscIO::open(const PetscCommunicator &comm, const Path &path) {
@@ -124,6 +124,6 @@ namespace utopia {
 
     PetscIO::PetscIO() : wrapper_(utopia::make_unique<Wrapper>()) {}
 
-    PetscIO::~PetscIO() {}
+    PetscIO::~PetscIO() = default;
 
 }  // namespace utopia

@@ -1,13 +1,13 @@
-#include "utopia_Testing.hpp"
-#include "utopia.hpp"
-#include <string>
 #include <cassert>
+#include <string>
+#include "utopia.hpp"
+#include "utopia_Testing.hpp"
 
-#include "utopia_petsc.hpp"
-#include "utopia_AbstractVector.hpp"
 #include "utopia_AbstractLinearSolver.hpp"
+#include "utopia_AbstractVector.hpp"
 #include "utopia_ObjectFactory.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_petsc.hpp"
 
 namespace utopia {
 
@@ -107,4 +107,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(polymorphic);
 
 #endif //WITH_PETSC
-}
+}  // namespace utopia

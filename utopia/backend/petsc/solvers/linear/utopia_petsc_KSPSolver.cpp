@@ -14,9 +14,9 @@ namespace utopia {
     PetscErrorCode UtopiaPCApplyShell(PC pc, Vec x, Vec y)
     {
         Preconditioner<PetscVector> *shell;
-        PCShellGetContext(pc, (void**)&shell);
+        PCShellGetContext(pc, reinterpret_cast<void **>(&shell));
 
-        // TODO: ref would be nicer here
+        // TODO(zulianp): ref would be nicer here
         PetscVector x_u, y_u;
         convert(x, x_u);
         convert(y, y_u);
@@ -29,14 +29,14 @@ namespace utopia {
 
     PetscErrorCode MyKSPMonitor(KSP ksp, PetscInt it, PetscReal rnorm, void *ctx)
     {
-        KSPLog * logger = (KSPLog *) ctx;
+        auto *logger = static_cast<KSPLog *>(ctx);
 
         Vec            x;
         PetscReal     conv_rate=0.0;
 
-        KSPBuildSolution(ksp, NULL, &x);
+        KSPBuildSolution(ksp, nullptr, &x);
 
-        MPI_Comm comm = PetscObjectComm((PetscObject) x);
+        MPI_Comm comm = PetscObjectComm(reinterpret_cast<PetscObject>(x));
 
         if(!logger->initialized()) {
           logger->init_from(x);
@@ -76,19 +76,18 @@ namespace utopia {
         PetscBool compute_cond_number;
         KSPGetComputeSingularValues(ksp, &compute_cond_number);
 
-        if(compute_cond_number)
-        {
-            if(it == 0)
-                PetscPrintf(comm,"it           ||r||                   rho                  cond. number \n");
+        if (compute_cond_number != 0u) {
+            if (it == 0) {
+                PetscPrintf(comm, "it           ||r||                   rho                  cond. number \n");
+            }
 
             PetscReal emax, emin;
             KSPComputeExtremeSingularValues(ksp, &emax, &emin);
             PetscPrintf(comm,"%D     %14.12e         %14.12e        %14.12e \n", it, rnorm, conv_rate, std::abs(emax)/std::abs(emin));
-        }
-        else
-        {
-            if(it == 0)
-                PetscPrintf(comm,"it           ||r||                   rho      \n");
+        } else {
+            if (it == 0) {
+                PetscPrintf(comm, "it           ||r||                   rho      \n");
+            }
 
             PetscPrintf(comm,"%D     %14.12e         %14.12e \n", it, rnorm, conv_rate);
         }
@@ -136,4 +135,4 @@ namespace utopia {
     template class KSPSolver<PetscMatrix, PetscVector, PETSC>;
     //FIXME
     // template class KSPSolver<PetscMatrix, PetscVector, PETSC>;
-}
+}  // namespace utopia

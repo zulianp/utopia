@@ -222,7 +222,7 @@ namespace utopia {
         void transform(const Abs &)  override;
         void transform(const Minus &) override;
         void transform(const Pow &p)  override;
-        void transform(const Reciprocal<TpetraScalar> &f) override;
+        void transform(const Reciprocal<TpetraScalar> &op) override;
 
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Comparable ////////////////////

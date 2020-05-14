@@ -341,7 +341,7 @@ namespace utopia {
         void transform(const Minus &op) override;
 
         void transform(const Pow &p) override;
-        void transform(const Reciprocal<Scalar> &f) override;
+        void transform(const Reciprocal<Scalar> &op) override;
 
         template <class Operation>
         void op_transform(const Operation &op);
@@ -796,8 +796,8 @@ namespace utopia {
 
         bool is_consistent() const;
 
-        void convert_from(const Vec &mat);
-        void convert_to(Vec &mat) const;
+        void convert_from(const Vec &vec);
+        void convert_to(Vec &vec) const;
         void copy_data_to(Vec vec) const;
         void copy_data_from(Vec vec);
 

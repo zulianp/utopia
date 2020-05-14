@@ -1,7 +1,7 @@
+#include "test_problems/utopia_TestProblems.hpp"
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
-#include "test_problems/utopia_TestProblems.hpp"
 
 namespace utopia
 {
@@ -117,26 +117,21 @@ namespace utopia
 
             std::vector<double> vec_tau = {1e-4};
 
-
-
-            for(size_t i=0; i < vec_tau.size(); i++)
-            {
+            for (double i : vec_tau) {
                 x = x0;
-                solver.tau_init(vec_tau[i]);
-                std::cout<<"---- Solve with tau: "<< vec_tau[i] << " \n \n";
+                solver.tau_init(i);
+                std::cout << "---- Solve with tau: " << i << " \n \n";
                 solver.solve(fun, x);
             }
-
 
             // utopia_test_assert(approxeq(x, fun.exact_sol(), 1e-4));
         }
 
-        PseudoTransientContinuationTest()
-        : _n(100), verbose_(true) { }
+        PseudoTransientContinuationTest() = default;
 
     private:
-        int _n;
-        bool verbose_;
+        int _n{100};
+        bool verbose_{true};
     };
 
 #endif //WITH_PETSC
@@ -150,4 +145,4 @@ namespace utopia
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(pseudo_transient_continuation);
-}
+}  // namespace utopia

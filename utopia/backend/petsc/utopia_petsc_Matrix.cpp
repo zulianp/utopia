@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <set>
+#include <utility>
 
 // PetscObjectTypeCompare((PetscObject)mat,newtype,&sametype);
 // Experts: Mark Hoemmen, Chris Siefert
@@ -59,7 +60,7 @@ namespace utopia {
 
     void PetscMatrix::transform(const Reciprocal<Scalar> &op) { op_transform(op); }
 
-    void PetscMatrix::transform(std::function<Scalar(const Scalar &)> op) { transform_values(op); }
+    void PetscMatrix::transform(std::function<Scalar(const Scalar &)> op) { transform_values(std::move(op)); }
 
     MatType PetscMatrix::type_override() const {
         return MATAIJ;
@@ -134,9 +135,8 @@ namespace utopia {
     bool PetscMatrix::write(const std::string &path) const {
         if (is_matlab_file(path)) {
             return write_matlab(path);
-        } else {
-            return write_binary(path);
         }
+        return write_binary(path);
     }
 
     bool PetscMatrix::write_binary(const std::string &path) const {
@@ -233,10 +233,10 @@ namespace utopia {
         // Mat r = raw_type();
         MPI_Comm comm = communicator();
 
-        PetscInt min_col = col_index[0], max_col = col_index[1];
-        for (std::size_t i = 0; i < col_index.size(); ++i) {
-            min_col = std::min(min_col, col_index[i]);
-            max_col = std::max(max_col, col_index[i]);
+        SizeType min_col = col_index[0], max_col = col_index[1];
+        for (SizeType i : col_index) {
+            min_col = std::min(min_col, i);
+            max_col = std::max(max_col, i);
         }
 
         static_assert(std::is_signed<PetscInt>::value, "petsc int must be signed for this to work");
@@ -290,7 +290,7 @@ namespace utopia {
         IS iscol;
         ierr = ISCreateGeneral(comm, remote_cols.size(), &remote_cols[0], PETSC_USE_POINTER, &iscol);
 
-        // TODO maybe make it with collective comms for finiding out if there are off proc entries
+        // TODO(zulianp): maybe make it with collective comms for finiding out if there are off proc entries
         bool has_off_proc_entries = size > 1;
 
         if (has_off_proc_entries) {
@@ -377,13 +377,13 @@ namespace utopia {
         PetscInt global_cols = global_col_range.extent();
         PetscInt local_cols = PETSC_DECIDE;
 
-        MPI_Comm comm = PetscObjectComm((PetscObject)r);
+        MPI_Comm comm = PetscObjectComm(reinterpret_cast<PetscObject>(r));
         PetscSplitOwnership(comm, &local_rows, &global_rows);
         PetscSplitOwnership(comm, &local_cols, &global_cols);
 
-        unsigned long offsets_in[2] = {(unsigned long)local_rows, (unsigned long)local_cols};
+        unsigned long offsets_in[2] = {static_cast<unsigned long>(local_rows), static_cast<unsigned long>(local_cols)};
 
-        unsigned long offset_out[2] = {(unsigned long)0, (unsigned long)0};
+        unsigned long offset_out[2] = {static_cast<unsigned long>(0), static_cast<unsigned long>(0)};
 
         MPI_Exscan(&offsets_in, &offset_out, 2, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
@@ -581,12 +581,11 @@ namespace utopia {
 
     bool PetscMatrix::empty() const {
         Size s = size();
-        if (s.get(0) <= 0) return true;
-        return false;
+        return s.get(0) <= 0;
     }
 
-    bool PetscMatrix::is_initialized_as(MPI_Comm comm,
-                                        MatType dense_type,
+    bool PetscMatrix::is_initialized_as(MPI_Comm /*comm*/,
+                                        MatType /*dense_type*/,
                                         PetscInt local_rows,
                                         PetscInt local_cols,
                                         PetscInt global_rows,
@@ -595,18 +594,18 @@ namespace utopia {
             return false;
         }
 
-        // TODO:: check type and comm
+        // TODO(zulianp): : check type and comm
 
         PetscBool initialized;
         MatAssembled(raw_type(), &initialized);
 
-        if (initialized && (local_rows > 0 && global_cols > 0)) {
+        if ((initialized != 0u) && (local_rows > 0 && global_cols > 0)) {
             PetscInt m, n;
             MatGetLocalSize(raw_type(), &m, &n);
             initialized = (m == local_rows && n == local_cols) ? PETSC_TRUE : PETSC_FALSE;
         }
 
-        if (initialized) {
+        if (initialized != 0u) {
             PetscInt m, n;
             MatGetSize(raw_type(), &m, &n);
             initialized = (m == global_rows && n == global_cols) ? PETSC_TRUE : PETSC_FALSE;
@@ -689,8 +688,9 @@ namespace utopia {
                                           PetscInt global_rows,
                                           PetscInt global_cols,
                                           Scalar scale_factor) {
-        if (!is_initialized_as(comm, sparse_type, local_rows, local_cols, global_rows, global_cols))
+        if (!is_initialized_as(comm, sparse_type, local_rows, local_cols, global_rows, global_cols)) {
             matij_init(comm, sparse_type, local_rows, local_cols, global_rows, global_cols, 1, 0);
+        }
 
         MatZeroEntries(raw_type());
 
@@ -847,12 +847,16 @@ namespace utopia {
             MatGetRow(raw_type(), row, &n_values, &cols, &values);
 
             for (PetscInt i = 0; i < n_values; ++i) {
-                has_nan = (PetscIsInfOrNanScalar(values[i]) ? 1 : 0);
-                if (has_nan) break;
+                has_nan = (PetscIsInfOrNanScalar(values[i]) != PetscErrorCode(0) ? 1 : 0);
+                if (has_nan != 0) {
+                    break;
+                }
             }
 
             MatRestoreRow(raw_type(), row, &n_values, &cols, &values);
-            if (has_nan) break;
+            if (has_nan != 0) {
+                break;
+            }
         }
 
         if (is_mpi()) {
@@ -959,7 +963,8 @@ namespace utopia {
     void PetscMatrix::multiply(const PetscVector &vec, PetscVector &result) const {
         // handle alias
         if (result.is_alias(vec)) {
-            PetscVector x = vec;
+            PetscVector x;
+            x.copy(vec);
             multiply(x, result);
             return;
         }
@@ -1105,8 +1110,8 @@ namespace utopia {
             }
 
             return;
-
-        } else if (beta == 0.0) {
+        }
+        if (beta == 0.0) {
             if (alpha == 0.0) {
                 y.set(0.0);
             } else if (transpose_A) {
@@ -1116,13 +1121,14 @@ namespace utopia {
             }
 
             return;
-        } else {
-            PetscVector temp;
-            temp.scale(beta);
-
-            multiply(alpha, x, y);
-            y.axpy(-1.0, temp);
         }
+
+        PetscVector temp;
+        temp.copy(y);
+        temp.scale(beta);
+
+        multiply(alpha, x, y);
+        y.axpy(-1.0, temp);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1130,8 +1136,8 @@ namespace utopia {
     void PetscMatrix::multiply(const PetscMatrix &mat, PetscMatrix &result) const {
         PetscBool flg;
         // this is very unefficient hack, but still better than fail...
-        PetscObjectTypeCompareAny((PetscObject)mat.raw_type(), &flg, MATMPIDENSE, NULL);
-        if (flg) {
+        PetscObjectTypeCompareAny(reinterpret_cast<PetscObject>(mat.raw_type()), &flg, MATMPIDENSE, NULL);
+        if (flg != 0u) {
             if (mat.raw_type() != result.raw_type() && raw_type() != result.raw_type()) {
                 result.destroy();
                 Mat temp;
@@ -1229,22 +1235,23 @@ namespace utopia {
     // testing MATAIJCUSPARSE,MATSEQAIJCUSPARSE
     bool PetscMatrix::PetscMatrix::is_cuda() const {
         PetscBool match = PETSC_FALSE;
-        PetscObjectTypeCompare((PetscObject)raw_type(), MATAIJCUSPARSE, &match);
-        if (match == PETSC_TRUE) return true;
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(raw_type()), MATAIJCUSPARSE, &match);
+        if (match == PETSC_TRUE) {
+            return true;
+        }
 
-        PetscObjectTypeCompare((PetscObject)raw_type(), MATSEQAIJCUSPARSE, &match);
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(raw_type()), MATSEQAIJCUSPARSE, &match);
         return match == PETSC_TRUE;
     }
 
     VecType PetscMatrix::compatible_cuda_vec_type() const {
         PetscBool match = PETSC_FALSE;
-        PetscObjectTypeCompare((PetscObject)raw_type(), MATAIJCUSPARSE, &match);
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(raw_type()), MATAIJCUSPARSE, &match);
 
-        if (match) {
+        if (match != 0u) {
             return VECMPICUDA;
-        } else {
-            return VECSEQCUDA;
         }
+        return VECSEQCUDA;
     }
 
     bool PetscMatrix::create_vecs(Vec *x, Vec *y) const {
@@ -1254,7 +1261,7 @@ namespace utopia {
 
     bool PetscMatrix::has_type(MatType type) const {
         PetscBool match = PETSC_FALSE;
-        PetscObjectTypeCompare((PetscObject)raw_type(), type, &match);
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(raw_type()), type, &match);
         return match == PETSC_TRUE;
     }
 
@@ -1333,15 +1340,17 @@ namespace utopia {
         // MatValid(mat,(PetscTruth*)&flg);
         PetscBool flg;
         MatAssembled(raw_type(), &flg);
-        return flg && type();
+        return (flg != 0u) && (type() != nullptr);
     }
 
-    void PetscMatrix::assign(const Range &row_range, const Range &col_range, const PetscMatrix &block) {
+    void PetscMatrix::assign(const Range & /*row_range*/, const Range & /*col_range*/, const PetscMatrix & /*block*/) {
         assert(false && "IMPLEMENT ME");
     }
 
     PetscMatrix::SizeType PetscMatrix::global_nnz() const {
-        if (empty()) return 0;
+        if (empty()) {
+            return 0;
+        }
 
         MatInfo info;
         MatGetInfo(raw_type(), MAT_GLOBAL_SUM, &info);
@@ -1349,7 +1358,9 @@ namespace utopia {
     }
 
     PetscMatrix::SizeType PetscMatrix::local_nnz() const {
-        if (empty()) return 0;
+        if (empty()) {
+            return 0;
+        }
 
         MatInfo info;
         MatGetInfo(raw_type(), MAT_LOCAL, &info);
@@ -1357,7 +1368,9 @@ namespace utopia {
     }
 
     PetscMatrix::SizeType PetscMatrix::nnz(const Scalar tol) const {
-        if (empty()) return 0;
+        if (empty()) {
+            return 0;
+        }
 
         SizeType ret = 0;
         each_read(*this,
@@ -1389,7 +1402,7 @@ namespace utopia {
 
 }  // namespace utopia
 
-// TODO
+// TODO(zulianp):
 // class CompatibleMatPair {
 // public:
 //     CompatibleMatPair(const MPI_Comm comm, const Mat &left, const Mat &right)

@@ -20,12 +20,10 @@ namespace utopia {
             apply(it, t, "H_log.m", "H");
         }
 
-        static void apply(
-            const SizeType &it,
-            const PetscMatrix &t,
-            const std::string &name_of_file,
-            const std::string &name_of_instance
-        );
+        static void apply(const SizeType &it,
+                          const PetscMatrix &m,
+                          const std::string &name_of_file,
+                          const std::string &name_of_mat);
     };
 
 
@@ -42,12 +40,10 @@ namespace utopia {
             apply(it, t, "g_log.m", "g");
         }
 
-        static void apply(
-            const SizeType &it,
-            const PetscVector &t,
-            const std::string &name_of_file,
-            const std::string &name_of_instance
-        );
+        static void apply(const SizeType &it,
+                          const PetscVector &v,
+                          const std::string &name_of_file,
+                          const std::string &name_of_vec);
     };
 
 }

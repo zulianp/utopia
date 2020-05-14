@@ -1,19 +1,18 @@
 #include "utopia_petsc_Redundant.hpp"
-#include "utopia_petsc_Vector.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_make_unique.hpp"
 #include "utopia_DeviceView.hpp"
+#include "utopia_make_unique.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_Vector.hpp"
 
 namespace utopia {
 
     class PetscVecScatter::Wrapper {
     public:
-        Wrapper() : scatter(nullptr), owned_(true) {}
+        Wrapper() = default;
 
         void destroy()
         {
-            if(owned_ && scatter)
-            {
+            if (owned_ && (scatter != nullptr)) {
                 VecScatterDestroy(&scatter);
                 scatter = nullptr;
                 owned_  = true;
@@ -31,12 +30,12 @@ namespace utopia {
         }
 
     private:
-        VecScatter scatter;
-        bool owned_;
+        VecScatter scatter{nullptr};
+        bool owned_{true};
     };
 
-    PetscVecScatter::PetscVecScatter() {}
-    PetscVecScatter::~PetscVecScatter() {}
+    PetscVecScatter::PetscVecScatter() = default;
+    PetscVecScatter::~PetscVecScatter() = default;
 
     void PetscVecScatter::create(
         const PetscVector &from, const PetscIS &from_is,
@@ -74,7 +73,7 @@ namespace utopia {
 
     Redundant<PetscMatrix, PetscVector>::~Redundant()
     {
-        if(psubcomm) {
+        if (psubcomm != nullptr) {
             PetscSubcommDestroy(&psubcomm);
         }
     }
@@ -239,4 +238,4 @@ namespace utopia {
             MatCreateRedundantMatrix(mat.raw_type(), psubcomm->n, PetscSubcommChild(psubcomm), MAT_REUSE_MATRIX, &mat_sub.raw_type());
         }
     }
-}
+}  // namespace utopia

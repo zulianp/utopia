@@ -3,4 +3,4 @@
 
 namespace utopia {
     template class Amesos2Solver<TpetraMatrixd, TpetraVectord>;
-}
+}  // namespace utopia

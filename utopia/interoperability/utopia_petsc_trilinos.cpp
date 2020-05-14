@@ -10,7 +10,7 @@ namespace utopia {
     template class Factorization<TpetraMatrixd, TpetraVectord, TRILINOS>;
     template class BiCGStab<TpetraMatrixd, TpetraVectord, TRILINOS>;
     template class GaussSeidel<TpetraMatrixd, TpetraVectord, TRILINOS>;
-}
+}  // namespace utopia
 
 #endif //WITH_PETSC
 #endif //WITH_TRILINOS

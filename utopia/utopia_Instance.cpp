@@ -1,9 +1,9 @@
 #include "utopia_Instance.hpp"
+#include "utopia_Allocations.hpp"
 #include "utopia_Base.hpp"
-#include "utopia_Tracer.hpp"
 #include "utopia_Config.hpp"
 #include "utopia_MPI.hpp"
-#include "utopia_Allocations.hpp"
+#include "utopia_Tracer.hpp"
 
 #ifdef WITH_TRILINOS
 #include <Tpetra_Core.hpp>
@@ -35,8 +35,8 @@ namespace utopia {
         PetscOptionsSetValue(nullptr, "-on_error_abort", nullptr);
 
     #ifdef WITH_SLEPC
-        SlepcInitialize(&argc,&argv,(char*)0, help); // calls PetscInitialize inside
-    #else
+        SlepcInitialize(&argc, &argv, (char *)nullptr, help);  // calls PetscInitialize inside
+#else
         PetscInitialize(&argc, &argv, (char *) 0, help);
     #endif    //WITH_SLEPC
 
@@ -203,4 +203,4 @@ namespace utopia {
         }
     }
 
-}
+}  // namespace utopia

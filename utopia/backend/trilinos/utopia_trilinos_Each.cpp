@@ -4,7 +4,7 @@ namespace utopia {
 
     void TpetraVectorEach::apply_read(const TpetraVector &v, std::function<void(const Scalar &)> &fun)
     {
-        auto impl = raw_type(v);
+        const auto &impl = raw_type(v);
         auto view = impl->getLocalViewHost();
 
         const auto r = range(v);
@@ -32,4 +32,4 @@ namespace utopia {
     template class Each<TpetraMatrix, 2, FillType::SPARSE>; 
     template class Each<TpetraVector, 1, FillType::DENSE>; 
     template class Each<TpetraVector, 1, FillType::DELEGATE>;
-}
+}  // namespace utopia

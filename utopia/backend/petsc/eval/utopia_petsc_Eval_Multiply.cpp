@@ -1,7 +1,7 @@
 #include "utopia_petsc_Eval_Multiply.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_Logger.hpp"
+#include "utopia_petsc_Matrix.hpp"
 
 namespace utopia {
 
@@ -70,4 +70,4 @@ namespace utopia {
         assert(result.same_type(A));
     }
 
-}
+}  // namespace utopia

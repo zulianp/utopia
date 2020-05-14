@@ -2,10 +2,10 @@
 #include "utopia_make_unique.hpp"
 #include "utopia_petsc_Communicator.hpp"
 
-#include "petscsys.h"
-#include <stack>
-#include <iostream>
 #include <cassert>
+#include <iostream>
+#include <stack>
+#include "petscsys.h"
 
 namespace utopia {
 
@@ -19,10 +19,7 @@ namespace utopia {
     : impl_(utopia::make_unique<Impl>())
     {}
 
-    PetscDebugger::~PetscDebugger()
-    {
-
-    }
+    PetscDebugger::~PetscDebugger() = default;
 
     PetscDebugger &PetscDebugger::instance()
     {
@@ -67,8 +64,7 @@ namespace utopia {
         os << "[Memory Usage]  " << (space/1024) << "KB" << "\n";
     }
 
-    void PetscDebugger::print_current_collective_usage(const std::string &marker, std::ostream &os) const
-    {
+    void PetscDebugger::print_current_collective_usage(const std::string &marker, std::ostream & /*os*/) const {
         PetscErrorCode ierr;
         PetscLogDouble space;
         ierr = PetscMemoryGetCurrentUsage(&space); assert(ierr == 0); (void) ierr;
@@ -85,7 +81,7 @@ namespace utopia {
 
     void PetscDebugger::describe(std::ostream &os) const
     {
-        //TODO
+        // TODO(zulianp):
     }
 
-}
+}  // namespace utopia

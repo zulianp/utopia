@@ -173,9 +173,8 @@ namespace utopia {
         }
 
         void petsc_gss_newton_test() {
-            typedef std::function<void(
-                const PetscMatrix &, const PetscVector &, const PetscVector &, PetscVector &, PetscVector &)>
-                F;
+            using F = std::function<void(
+                const PetscMatrix &, const PetscVector &, const PetscVector &, PetscVector &, PetscVector &)>;
 
             const int n = comm_.size() * 4;
 
@@ -250,7 +249,9 @@ namespace utopia {
         }
 
         void petsc_newton_test_out_info() {
-            if (comm_.size() > 10) return;
+            if (comm_.size() > 10) {
+                return;
+            }
 
             auto lsolver = std::make_shared<BiCGStab<PetscMatrix, PetscVector>>();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
@@ -266,7 +267,9 @@ namespace utopia {
         }
 
         void petsc_sparse_newton_test() {
-            if (comm_.size() > 10) return;
+            if (comm_.size() > 10) {
+                return;
+            }
 
             auto lsolver = std::make_shared<BiCGStab<PetscMatrix, PetscVector>>();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
@@ -284,7 +287,9 @@ namespace utopia {
         }
 
         void petsc_sparse_newton_test_inexact() {
-            if (comm_.size() > 10) return;
+            if (comm_.size() > 10) {
+                return;
+            }
 
             auto lsolver = std::make_shared<BiCGStab<PetscMatrix, PetscVector>>();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
@@ -302,7 +307,9 @@ namespace utopia {
         }
 
         void petsc_newton_test() {
-            if (comm_.size() > 10) return;
+            if (comm_.size() > 10) {
+                return;
+            }
 
             auto lsolver = std::make_shared<BiCGStab<PetscMatrix, PetscVector>>();
             Newton<PetscMatrix, PetscVector> nlsolver(lsolver);
@@ -497,7 +504,9 @@ namespace utopia {
 
             const static bool verbose = false;
 
-            if (comm_.size() >= 10) return;
+            if (comm_.size() >= 10) {
+                return;
+            }
 
             auto linear_solver = make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
 
@@ -542,7 +551,9 @@ namespace utopia {
         }
 
         void petsc_sparse_newton_snes_test() {
-            if (comm_.size() > 1) return;
+            if (comm_.size() > 1) {
+                return;
+            }
 
             auto lsolver = std::make_shared<BiCGStab<PetscMatrix, PetscVector>>();
             Newton<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL> nlsolver(lsolver);
@@ -574,10 +585,10 @@ namespace utopia {
             }
         }
 
-        PetscNonlinearSolverTest() : _n(100) {}
+        PetscNonlinearSolverTest() = default;
 
     private:
-        int _n;
+        int _n{100};
     };
 
 #endif  // WITH_PETSC

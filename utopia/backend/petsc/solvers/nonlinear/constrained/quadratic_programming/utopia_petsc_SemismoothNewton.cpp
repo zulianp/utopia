@@ -3,5 +3,4 @@
 
 namespace utopia {
     template class SemismoothNewton<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL>;
-}
-
+}  // namespace utopia

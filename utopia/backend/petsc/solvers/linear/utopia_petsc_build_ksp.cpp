@@ -1,4 +1,6 @@
 #include "utopia_petsc_build_ksp.hpp"
+
+#include <utility>
 #include "utopia_Instance.hpp"
 
 #undef __FUNCT__
@@ -23,7 +25,7 @@ static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
 
   PCGetOperators(ksp->pc, &Amat, &Pmat);
 
-  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
+  auto *utopia_ls = static_cast<KSP_UTOPIA *>(ksp->data);
 
   utopia_ls->utopia_set_tolerances(ksp->rtol, ksp->abstol, ksp->divtol, ksp->max_it);
   utopia_ls->utopia_solve_routine(Amat, Pmat,  ksp->vec_rhs, ksp->vec_sol);
@@ -40,8 +42,8 @@ PetscErrorCode  KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat
 {
   PetscFunctionBegin;
 
-  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
-  utopia_ls->utopia_solve_routine = solve_routine;
+  auto *utopia_ls = static_cast<KSP_UTOPIA *>(ksp->data);
+  utopia_ls->utopia_solve_routine = std::move(solve_routine);
 
   PetscFunctionReturn(0);
 }
@@ -52,8 +54,8 @@ PetscErrorCode KSPSetTolerances_UTOPIA(KSP ksp, std::function< void(const PetscR
 {
   PetscFunctionBegin;
 
-  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
-  utopia_ls->utopia_set_tolerances = set_tolerances;
+  auto *utopia_ls = static_cast<KSP_UTOPIA *>(ksp->data);
+  utopia_ls->utopia_set_tolerances = std::move(set_tolerances);
 
   PetscFunctionReturn(0);
 }
@@ -64,8 +66,8 @@ PetscErrorCode KSPSetGetConvergenceReason_UTOPIA(KSP ksp, std::function< void(Pe
 {
   PetscFunctionBegin;
 
-  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
-  utopia_ls->get_convergence_reason = convergence_reason;
+  auto *utopia_ls = static_cast<KSP_UTOPIA *>(ksp->data);
+  utopia_ls->get_convergence_reason = std::move(convergence_reason);
 
   PetscFunctionReturn(0);
 }
@@ -96,7 +98,7 @@ PetscErrorCode KSPView_UTOPIA(KSP /*ksp*/,PetscViewer viewer)
 
 
   PetscBool      iascii;
-  PetscObjectTypeCompare((PetscObject)viewer,PETSCVIEWERASCII,&iascii);
+  PetscObjectTypeCompare(reinterpret_cast<PetscObject>(viewer), PETSCVIEWERASCII, &iascii);
   // KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
 
   // maybe som future printouts ...

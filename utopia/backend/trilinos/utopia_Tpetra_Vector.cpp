@@ -1,11 +1,11 @@
 #include "utopia_Tpetra_Vector.hpp"
-#include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
-#include "utopia_trilinos_Utils.hpp"
+#include "utopia_Logger.hpp"
 #include "utopia_kokkos_Eval_Reduce.hpp"
+#include "utopia_trilinos_Utils.hpp"
 
-#include <Tpetra_CrsMatrix_decl.hpp>
 #include <MatrixMarket_Tpetra.hpp>
+#include <Tpetra_CrsMatrix_decl.hpp>
 
 #include <Kokkos_Core.hpp>
 
@@ -184,7 +184,9 @@ namespace utopia {
     bool TpetraVector::write(const std::string &path) const {
         using CrsMatrixType = Tpetra::CrsMatrix<Scalar, LocalSizeType, SizeType, Node>;
 
-        if(vec_.is_null()) return false;
+        if (vec_.is_null()) {
+            return false;
+        }
 
         try {
             Tpetra::MatrixMarket::Writer<CrsMatrixType>::writeDenseFile(path, vec_, "vec", "");
@@ -230,7 +232,7 @@ namespace utopia {
         int ret_global = 0;
 
         Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
-        return ret_global;
+        return ret_global != 0;
     }
 
     void TpetraVector::ghosted(
@@ -285,7 +287,9 @@ namespace utopia {
 
     void TpetraVector::update_ghosts()
     {
-        if(!has_ghosts()) return;
+        if (!has_ghosts()) {
+            return;
+        }
 
         auto map = vec_->getMap();
         auto ghost_map = ghosted_vec_->getMap();
@@ -300,7 +304,9 @@ namespace utopia {
 
     void TpetraVector::export_ghosts_add()
     {
-        if(!has_ghosts()) return;
+        if (!has_ghosts()) {
+            return;
+        }
 
         auto map = vec_->getMap();
         auto ghost_map = ghosted_vec_->getMap();
@@ -330,7 +336,9 @@ namespace utopia {
 
     void TpetraVector::copy(const TpetraVector &other)
     {
-        if(&other == this) return;
+        if (&other == this) {
+            return;
+        }
         if(other.empty()) {
             clear();
             return;
@@ -353,7 +361,9 @@ namespace utopia {
 
     void TpetraVector::assign(const TpetraVector &other)
     {
-        if(this == &other) return;
+        if (this == &other) {
+            return;
+        }
 
         if(other.is_null()) {
             vec_.reset();
@@ -361,20 +371,23 @@ namespace utopia {
         }
 
         copy(other);
-        return;
     }
 
     void TpetraVector::assign(TpetraVector &&other)
     {
-        if(this == &other) return;
+        if (this == &other) {
+            return;
+        }
         comm_ = std::move(other.comm_);
-        vec_ = std::move(other.vec_);
-        ghosted_vec_ = std::move(other.ghosted_vec_);
+        vec_ = other.vec_;
+        ghosted_vec_ = other.ghosted_vec_;
     }
 
     TpetraVector &TpetraVector::operator=(const TpetraVector &other)
     {
-        if(this == &other) return *this;
+        if (this == &other) {
+            return *this;
+        }
 
         if(other.is_null()) {
             vec_.reset();
@@ -537,4 +550,4 @@ namespace utopia {
         });
     }
 
-}
+}  // namespace utopia

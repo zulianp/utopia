@@ -19,7 +19,7 @@ namespace utopia {
 
         std::string name() override { return "QPConstrainedBenchmark benchmark."; }
 
-        QPConstrainedBenchmark(const SizeType &n = 10, const bool verbose = false) : n_(n), verbose_(verbose) {
+        explicit QPConstrainedBenchmark(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
             test_functions_.resize(7);
             test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_ * mpi_world_size(), 1);
             test_functions_[1] = std::make_shared<Poisson1D<Matrix, Vector> >(n_ * mpi_world_size(), 2);
@@ -32,7 +32,7 @@ namespace utopia {
             test_functions_[6] = std::make_shared<Membrane2D<PetscMatrix, PetscVector> >(n_ * mpi_world_size());
         }
 
-        ~QPConstrainedBenchmark() { test_functions_.clear(); }
+        ~QPConstrainedBenchmark() override { test_functions_.clear(); }
 
         void initialize() override {
             this->register_experiment("MPGRP_Test", [this]() {
@@ -82,7 +82,7 @@ namespace utopia {
         static void run_test(std::vector<std::shared_ptr<Fun> > &test_functions,
                              NonlinearSolver &solver,
                              const std::string &solv_name,
-                             const bool &exp_verbose = false) {
+                             const bool &exp_verbose) {
             if (exp_verbose && mpi_world_rank() == 0) {
                 std::cout << "--------------------------------------------------------- \n";
                 std::cout << "				" << solv_name << "				\n";

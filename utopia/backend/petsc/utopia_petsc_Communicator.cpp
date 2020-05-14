@@ -28,4 +28,4 @@ namespace utopia {
         return ret;
     }
 
-}
+}  // namespace utopia

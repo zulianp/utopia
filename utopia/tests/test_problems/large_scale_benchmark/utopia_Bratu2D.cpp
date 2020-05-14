@@ -17,8 +17,8 @@ namespace utopia
 
       PetscFunctionBeginUser;
       lambda = user->lambda;
-      hx     = 1.0/(PetscReal)(info->mx-1);
-      hy     = 1.0/(PetscReal)(info->my-1);
+      hx = 1.0 / static_cast<PetscReal>(info->mx - 1);
+      hy = 1.0 / static_cast<PetscReal>(info->my - 1);
       hxdhy  = hx/hy;
       hydhx  = hy/hx;
       /*
@@ -151,10 +151,11 @@ PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,Pet
 
   PetscFunctionBeginUser;
   *obj   = 0;
-  ierr = PetscObjectGetComm((PetscObject)info->da,&comm);CHKERRQ(ierr);
+  ierr = PetscObjectGetComm(reinterpret_cast<PetscObject>(info->da), &comm);
+  CHKERRQ(ierr);
   lambda = user->lambda;
-  hx     = 1.0/(PetscReal)(info->mx-1);
-  hy     = 1.0/(PetscReal)(info->my-1);
+  hx = 1.0 / static_cast<PetscReal>(info->mx - 1);
+  hy = 1.0 / static_cast<PetscReal>(info->my - 1);
   sc     = hx*hy*lambda;
   hxdhy  = hx/hy;
   hydhx  = hy/hx;
@@ -176,10 +177,18 @@ PetscErrorCode Bratu2DFormObjectiveLocal(DMDALocalInfo *info,PetscScalar **x,Pet
         un = x[j-1][i];
         us = x[j+1][i];
 
-        if (i-1 == 0) uw = 0.;
-        if (i+1 == info->mx-1) ue = 0.;
-        if (j-1 == 0) un = 0.;
-        if (j+1 == info->my-1) us = 0.;
+        if (i - 1 == 0) {
+            uw = 0.;
+        }
+        if (i + 1 == info->mx - 1) {
+            ue = 0.;
+        }
+        if (j - 1 == 0) {
+            un = 0.;
+        }
+        if (j + 1 == info->my - 1) {
+            us = 0.;
+        }
 
         /* F[u] = 1/2\int_{\omega}\nabla^2u(x)*u(x)*dx */
         uxux = u*(2.*u - ue - uw)*hydhx;
@@ -202,62 +211,75 @@ PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D * /*user*/,const DMDACoor2d *c,P
     return 0;
 }
 
+PetscErrorCode Bratu2DFormBCData(DM da, ParamsBratu2D * /*user*/, Vec BC_flag, Vec BC_value) {
+    PetscInt i, j, Mx, My, xs, ys, xm, ym;
+    PetscErrorCode ierr;
+    PetscScalar **BC_value_w;
+    PetscScalar **BC_flag_w;
+    DM coordDA;
+    Vec coordinates;
+    DMDACoor2d **coords;
 
-PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user, Vec BC_flag, Vec BC_value)
-{
-  PetscInt       i,j,Mx,My,xs,ys,xm,ym;
-  PetscErrorCode ierr;
-  PetscScalar    **BC_value_w;
-  PetscScalar    **BC_flag_w;
-  DM             coordDA;
-  Vec            coordinates;
-  DMDACoor2d   **coords;
+    PetscFunctionBeginUser;
+    ierr = DMDAGetInfo(da,
+                       PETSC_IGNORE,
+                       &Mx,
+                       &My,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE,
+                       PETSC_IGNORE);
+    CHKERRQ(ierr);
 
-  PetscFunctionBeginUser;
-  ierr = DMDAGetInfo(da,PETSC_IGNORE,&Mx,&My,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE);CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da, BC_value, &BC_value_w);
+    CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(da, BC_flag, &BC_flag_w);
+    CHKERRQ(ierr);
 
-  ierr = DMDAVecGetArray(da,BC_value, &BC_value_w);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(da,BC_flag, &BC_flag_w);CHKERRQ(ierr);
+    ierr = DMDAGetCorners(da, &xs, &ys, nullptr, &xm, &ym, nullptr);
+    CHKERRQ(ierr);
 
-  ierr = DMDAGetCorners(da,&xs,&ys,NULL,&xm,&ym,NULL);CHKERRQ(ierr);
+    ierr = DMGetCoordinateDM(da, &coordDA);
+    CHKERRQ(ierr);
+    ierr = DMGetCoordinates(da, &coordinates);
+    CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(coordDA, coordinates, &coords);
+    CHKERRQ(ierr);
 
+    /*
+       Compute initial guess over the locally owned part of the grid
+    */
+    for (j = ys; j < ys + ym; j++) {
+        for (i = xs; i < xs + xm; i++) {
+            if (i == 0 || j == 0 || i == Mx - 1 || j == My - 1) {
+                /* boundary conditions are all zero Dirichlet */
+                BC_flag_w[j][i] = 1.0;
+                BC_value_w[j][i] = 0.0;
 
-  ierr = DMGetCoordinateDM(da, &coordDA);CHKERRQ(ierr);
-  ierr = DMGetCoordinates(da, &coordinates);CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(coordDA, coordinates, &coords);CHKERRQ(ierr);
-
-
-  /*
-     Compute initial guess over the locally owned part of the grid
-  */
-  for (j=ys; j<ys+ym; j++) 
-  {
-    for (i=xs; i<xs+xm; i++) 
-    {
-      if (i == 0 || j == 0 || i == Mx-1 || j == My-1) 
-      {
-        /* boundary conditions are all zero Dirichlet */
-        BC_flag_w[j][i] = 1.0;
-        BC_value_w[j][i] = 0.0; 
-
-      }
-      else
-      {
-        BC_flag_w[j][i] = 0.0;
-        BC_value_w[j][i] = 0.0;
-      } 
+            } else {
+                BC_flag_w[j][i] = 0.0;
+                BC_value_w[j][i] = 0.0;
+            }
+        }
     }
-  }
 
-  /*
-     Restore vector
-  */
-  ierr = DMDAVecRestoreArray(da,BC_value, &BC_value_w);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(da,BC_flag, &BC_flag_w);CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords);CHKERRQ(ierr);
-  PetscFunctionReturn(0);
+    /*
+       Restore vector
+    */
+    ierr = DMDAVecRestoreArray(da, BC_value, &BC_value_w);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(da, BC_flag, &BC_flag_w);
+    CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
-
 
 PetscErrorCode Bratu2DFormInitialGuess(DM da,ParamsBratu2D *user,Vec X)
 {
@@ -270,8 +292,8 @@ PetscErrorCode Bratu2DFormInitialGuess(DM da,ParamsBratu2D *user,Vec X)
   ierr = DMDAGetInfo(da,PETSC_IGNORE,&Mx,&My,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE);CHKERRQ(ierr);
 
   lambda = user->lambda;
-  hx     = 1.0/(PetscReal)(Mx-1);
-  hy     = 1.0/(PetscReal)(My-1);
+  hx = 1.0 / static_cast<PetscReal>(Mx - 1);
+  hy = 1.0 / static_cast<PetscReal>(My - 1);
   temp1  = lambda/(lambda + 1.0);
 
   /*
@@ -289,20 +311,21 @@ PetscErrorCode Bratu2DFormInitialGuess(DM da,ParamsBratu2D *user,Vec X)
        xm, ym   - widths of local grid (no ghost points)
 
   */
-  ierr = DMDAGetCorners(da,&xs,&ys,NULL,&xm,&ym,NULL);CHKERRQ(ierr);
+  ierr = DMDAGetCorners(da, &xs, &ys, nullptr, &xm, &ym, nullptr);
+  CHKERRQ(ierr);
 
   /*
      Compute initial guess over the locally owned part of the grid
   */
   for (j=ys; j<ys+ym; j++) {
-    temp = (PetscReal)(PetscMin(j,My-j-1))*hy;
-    for (i=xs; i<xs+xm; i++) {
-      if (i == 0 || j == 0 || i == Mx-1 || j == My-1) {
-        /* boundary conditions are all zero Dirichlet */
-        x[j][i] = 0.0;
-      } else {
-        x[j][i] = temp1*std::sqrt(PetscMin((PetscReal)(PetscMin(i,Mx-i-1))*hx,temp));
-      }
+      temp = static_cast<PetscReal>(PetscMin(j, My - j - 1)) * hy;
+      for (i = xs; i < xs + xm; i++) {
+          if (i == 0 || j == 0 || i == Mx - 1 || j == My - 1) {
+              /* boundary conditions are all zero Dirichlet */
+              x[j][i] = 0.0;
+          } else {
+              x[j][i] = temp1 * std::sqrt(PetscMin((PetscReal)(PetscMin(i, Mx - i - 1)) * hx, temp));
+          }
     }
   }
 
@@ -317,6 +340,6 @@ PetscErrorCode Bratu2DFormInitialGuess(DM da,ParamsBratu2D *user,Vec X)
 
     //explicit
     template class Bratu2D<PetscMatrix, PetscVector, PETSC>;
-}
+}  // namespace utopia
 
 #endif //WITH_PETSC

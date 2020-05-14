@@ -38,8 +38,7 @@ namespace utopia
     PetscErrorCode Bratu2DFormInitialGuess(DM,ParamsBratu2D*,Vec);
     PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D*,const DMDACoor2d*,PetscScalar*);
 
-    PetscErrorCode Bratu2DFormBCData(DM da,ParamsBratu2D *user,Vec BC_marker, Vec BC_flag);
-
+    PetscErrorCode Bratu2DFormBCData(DM da, ParamsBratu2D *user, Vec BC_flag, Vec BC_value);
 
     template<typename Matrix, typename Vector>
     class Bratu2D<Matrix, Vector, PETSC> final: virtual public UnconstrainedExtendedTestFunction<Matrix, Vector>, virtual public ConstrainedExtendedTestFunction<Matrix, Vector>

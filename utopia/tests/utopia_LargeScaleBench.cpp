@@ -14,10 +14,9 @@ namespace utopia {
     public:
         DEF_UTOPIA_SCALAR(Vector);
 
-        virtual std::string name() override { return "LargeScaleUnconstrainedBenchmark benchmark."; }
+        std::string name() override { return "LargeScaleUnconstrainedBenchmark benchmark."; }
 
-        LargeScaleUnconstrainedBenchmark(const SizeType &n = 10, const bool verbose = false)
-            : n_(n), verbose_(verbose) {
+        explicit LargeScaleUnconstrainedBenchmark(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
             test_functions_.resize(1);
             // test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
 
@@ -34,7 +33,7 @@ namespace utopia {
             // auto fun = Poisson1D<Matrix, Vector>(n_);
         }
 
-        ~LargeScaleUnconstrainedBenchmark() { test_functions_.clear(); }
+        ~LargeScaleUnconstrainedBenchmark() override { test_functions_.clear(); }
 
         void initialize() override {
             this->register_experiment("NewtonTest_FACTORIZATION", [this]() {
@@ -166,7 +165,7 @@ namespace utopia {
             std::vector<std::shared_ptr<UnconstrainedExtendedTestFunction<Matrix, Vector> > > &test_functions,
             NonlinearSolver &solver,
             const std::string &solv_name,
-            const bool &exp_verbose = false) {
+            const bool &exp_verbose) {
             InputParameters in;
             in.set("atol", 1e-7);
             in.set("rtol", 1e-11);

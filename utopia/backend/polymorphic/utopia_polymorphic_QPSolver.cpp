@@ -13,4 +13,4 @@ namespace utopia {
         template class PolymorphicQPSolver<PetscMatrix, PetscVector>;
 #endif //WITH_PETSC
 
-}
+}  // namespace utopia

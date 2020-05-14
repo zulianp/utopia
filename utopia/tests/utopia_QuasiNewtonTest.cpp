@@ -1,7 +1,7 @@
 #include "utopia.hpp"
+#include "utopia_TestProblems.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
-#include "utopia_TestProblems.hpp"
 
 namespace utopia
 {
@@ -55,8 +55,9 @@ namespace utopia
             void quasi_newton_test()
             {
                 // because dense matrices can not be sum-up in parallel
-                if(mpi_world_size() > 1) return;
-
+                if (mpi_world_size() > 1) {
+                    return;
+                }
 
                 auto hessian_approx   = std::make_shared<ApproxType >();
                 auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >();
@@ -561,13 +562,11 @@ namespace utopia
 
         // }
 
+            QuasiNewtonTest() = default;
 
-        QuasiNewtonTest()
-        : _n(10), _verbose(false) { }
-
-    private:
-        int _n;
-        bool _verbose;
+        private:
+            int _n{10};
+            bool _verbose{false};
     };
 
 
@@ -596,4 +595,4 @@ namespace utopia
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(quasi_newton);
-}
+}  // namespace utopia

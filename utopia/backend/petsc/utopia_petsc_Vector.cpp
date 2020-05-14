@@ -34,7 +34,7 @@ namespace utopia {
 
     bool PetscVector::has_type(VecType type) const {
         PetscBool match = PETSC_FALSE;
-        PetscObjectTypeCompare((PetscObject)implementation(), type, &match);
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(implementation()), type, &match);
         return match == PETSC_TRUE;
     }
 
@@ -66,7 +66,7 @@ namespace utopia {
             VecCreate(comm, &vec_);
             owned_ = true;
         } else {
-            if (comm != PetscObjectComm((PetscObject)vec_) || !has_type(type)) {
+            if (comm != PetscObjectComm(reinterpret_cast<PetscObject>(vec_)) || !has_type(type)) {
                 destroy();
 
                 UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
@@ -83,12 +83,11 @@ namespace utopia {
                            "We do not handle the local consistency. Explicitly set local sizes in the initialization.");
 
                     return;
-                } else {
+                }
                     destroy();
 
                     UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
                     check_error(VecCreate(comm, &vec_));
-                }
             }
         }
 
@@ -175,7 +174,7 @@ namespace utopia {
     }
 
     void PetscVector::copy_data_from(Vec vec) {
-        MPI_Comm comm = PetscObjectComm((PetscObject)vec);
+        MPI_Comm comm = PetscObjectComm(reinterpret_cast<PetscObject>(vec));
 
         PetscInt n_global;
         check_error(VecGetSize(vec, &n_global));
@@ -235,11 +234,13 @@ namespace utopia {
 
         for (PetscInt i = 0; i < m; i++) {
             has_nan = PetscIsInfOrNanScalar(x[i]);
-            if (has_nan == 1) break;
+            if (has_nan == 1) {
+                break;
+            }
         }
 
         VecRestoreArrayRead(implementation(), &x);
-        MPI_Comm comm = PetscObjectComm((PetscObject)implementation());
+        MPI_Comm comm = PetscObjectComm(reinterpret_cast<PetscObject>(implementation()));
 
         if (is_mpi()) {
             MPI_Allreduce(MPI_IN_PLACE, &has_nan, 1, MPI_INT, MPI_MAX, comm);
@@ -320,9 +321,8 @@ namespace utopia {
     bool PetscVector::write(const std::string &path) const {
         if (is_matlab_file(path)) {
             return write_matlab(path);
-        } else {
-            return write_binary(path);
         }
+            return write_binary(path);
     }
 
     bool PetscVector::write_binary(const std::string &path) const {
@@ -366,10 +366,12 @@ namespace utopia {
     // testing VECSEQCUDA,VECMPICUDA
     bool PetscVector::is_cuda() const {
         PetscBool match = PETSC_FALSE;
-        PetscObjectTypeCompare((PetscObject)implementation(), VECSEQCUDA, &match);
-        if (match == PETSC_TRUE) return true;
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(implementation()), VECSEQCUDA, &match);
+        if (match == PETSC_TRUE) {
+            return true;
+        }
 
-        PetscObjectTypeCompare((PetscObject)implementation(), VECMPICUDA, &match);
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(implementation()), VECMPICUDA, &match);
         return match == PETSC_TRUE;
     }
 
@@ -379,7 +381,9 @@ namespace utopia {
             std::cout << "initialized: " << initialized() << "\n";
         }
 
-        if (is_null()) return;
+        if (is_null()) {
+            return;
+        }
 
         VecView(implementation(), PETSC_VIEWER_STDOUT_(communicator()));
     }
@@ -404,7 +408,7 @@ namespace utopia {
             return true;
         }
 
-        // TODO add additional checks
+        // TODO(zulianp): add additional checks
         return true;
     }
 
@@ -463,7 +467,9 @@ namespace utopia {
     void PetscVector::read_and_write_unlock(WriteMode mode) { write_unlock(mode); }
 
     bool PetscVector::equals(const PetscVector &other, const Scalar &tol) const {
-        if (this->is_alias(other)) return true;
+        if (this->is_alias(other)) {
+            return true;
+        }
 
         PetscVector diff = other;
         diff.axpy(-1.0, *this);
@@ -513,7 +519,9 @@ namespace utopia {
 
     ///< Scalar>COPY - copy other into this
     void PetscVector::copy(const PetscVector &other) {
-        if (this == &other) return;
+        if (this == &other) {
+            return;
+        }
         assert(!immutable_);
 
         if (is_compatible(other) && !other.has_ghosts()) {
@@ -533,7 +541,7 @@ namespace utopia {
 
         destroy();
 
-        if (other.vec_) {
+        if (other.vec_ != nullptr) {
             UTOPIA_REPORT_ALLOC("PetscVector::copy");
             PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
             PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
@@ -546,8 +554,6 @@ namespace utopia {
         }
 
         update_mirror();
-
-        return;
     }
 
     ///< Scalar>AXPY - y = a*x + y

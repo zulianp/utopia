@@ -28,6 +28,5 @@ namespace utopia {
             dgesv_(&n, &nrhs, Atmp.ptr(), &lda, ipiv, x.ptr(), &ldb, &info);
             return true;
         }
-    }
-}
-
+    }  // namespace internals
+}  // namespace utopia

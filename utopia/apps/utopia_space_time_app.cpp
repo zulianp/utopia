@@ -4,28 +4,28 @@
 
 //include edsl components
 #include "utopia_AppRunner.hpp"
-#include "utopia_Core.hpp"
-#include "utopia_PetscDM.hpp"
-#include "utopia_petsc_Matrix.hpp"
 #include "utopia_AssemblyView.hpp"
-#include "utopia_DeviceView.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_ConjugateGradient.hpp"
-#include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
 #include "utopia_BratuFE.hpp"
-#include "utopia_PoissonFE.hpp"
-#include "utopia_MassMatrixView.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_LinearElasticityView.hpp"
+#include "utopia_ConjugateGradient.hpp"
+#include "utopia_Core.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
+#include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityView.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_MassMatrixView.hpp"
+#include "utopia_PetscDM.hpp"
+#include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_STHeatEquation.hpp"
-#include "utopia_FEFunction.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_Tri3.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 #include "utopia_app_utils.hpp"
 
@@ -192,16 +192,14 @@ namespace utopia {
             }
         );
 
-        space_time(
-            space,
-            UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                static const Scalar pi = device::pi<Scalar>();
-                const Scalar x = p[0];
-                const Scalar y = p[1];
-                return pi * device::sin(pi*x) * (device::cos(pi*y) + pi * device::sin(pi*y));
-            },
-            in
-        );
+        space_time(space,
+                   UTOPIA_LAMBDA(const Point &p)->Scalar {
+                       static const auto pi = device::pi<Scalar>();
+                       const Scalar x = p[0];
+                       const Scalar y = p[1];
+                       return pi * device::sin(pi * x) * (device::cos(pi * y) + pi * device::sin(pi * y));
+                   },
+                   in);
     }
 
     UTOPIA_REGISTER_APP(space_time_2);
@@ -281,7 +279,4 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(space_time_3);
 
-
-
-}
-
+}  // namespace utopia

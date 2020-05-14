@@ -1,14 +1,14 @@
 #include "utopia_Tpetra_Matrix.hpp"
-#include "utopia_Logger.hpp"
+#include "utopia_Allocations.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_Logger.hpp"
+#include "utopia_kokkos_ParallelEach.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
-#include "utopia_kokkos_ParallelEach.hpp"
-#include "utopia_Allocations.hpp"
 
+#include <MatrixMarket_Tpetra.hpp>
 #include <TpetraExt_MatrixMatrix_def.hpp>
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
-#include <MatrixMarket_Tpetra.hpp>
 
 #include <iterator>
 
@@ -537,7 +537,9 @@ namespace utopia {
 
     bool TpetraMatrix::write(const std::string &path) const
     {
-        if(mat_.is_null()) return false;
+        if (mat_.is_null()) {
+            return false;
+        }
 
         try {
             Tpetra::MatrixMarket::Writer<CrsMatrixType>::writeSparseFile(path, mat_, "mat", "", false);
@@ -626,10 +628,9 @@ namespace utopia {
 
         if(implementation().isFillComplete()) {
             return implementation().getGlobalNumRows();
-        } else {
+        }
             assert(!implementation().getRowMap().is_null());
             return implementation().getRowMap()->getGlobalNumElements();
-        }
     }
 
     TpetraMatrix::SizeType TpetraMatrix::cols() const
@@ -640,14 +641,12 @@ namespace utopia {
 
         if(implementation().isFillComplete()) {
             return implementation().getGlobalNumCols();
-        } else {
+        }
             if(implementation().getDomainMap().is_null()) {
                 assert(!init_->domain_map.is_null());
                 return init_->domain_map->getGlobalNumElements();
-            } else {
-                return implementation().getDomainMap()->getGlobalNumElements();
             }
-        }
+                return implementation().getDomainMap()->getGlobalNumElements();
     }
 
     TpetraMatrix::SizeType TpetraMatrix::local_rows() const
@@ -670,9 +669,8 @@ namespace utopia {
         if(implementation().getDomainMap().is_null()) {
             assert(!init_->domain_map.is_null());
             return init_->domain_map->getNodeNumElements();
-        } else {
-            return implementation().getDomainMap()->getNodeNumElements();
         }
+            return implementation().getDomainMap()->getNodeNumElements();
     }
 
     void TpetraMatrix::clear()
@@ -717,11 +715,9 @@ namespace utopia {
         }
     }
 
-    void TpetraMatrix::select(
-        const IndexSet &row_index,
-        const IndexSet &col_index,
-        TpetraMatrix &result) const
-    {
+    void TpetraMatrix::select(const IndexSet & /*row_index*/,
+                              const IndexSet & /*col_index*/,
+                              TpetraMatrix & /*result*/) const {
         assert(false && "IMPLEMENT ME");
     }
 
@@ -905,7 +901,9 @@ namespace utopia {
             return true;
         }
 
-        if(rows() != other.rows() || cols() != other.cols()) return false;
+        if (rows() != other.rows() || cols() != other.cols()) {
+            return false;
+        }
 
         TpetraMatrix diff = *this;
         diff.axpy(-1.0, other);
@@ -915,7 +913,7 @@ namespace utopia {
     void TpetraMatrix::build_from_structure(const TpetraMatrix &rhs)
     {
         UTOPIA_REPORT_ALLOC("TpetraMatrix::build_from_structure");
-        auto rhs_ptr = rhs.raw_type();
+        const auto &rhs_ptr = rhs.raw_type();
         owner_ = true;
            mat_.reset(
             new CrsMatrixType(rhs_ptr->getCrsGraph())
@@ -934,9 +932,6 @@ namespace utopia {
         }
     }
 
-    void TpetraMatrix::diag_scale_left(const TpetraVector &d)
-    {
-        assert(false && "IMPLEMENT ME");
-    }
+    void TpetraMatrix::diag_scale_left(const TpetraVector & /*d*/) { assert(false && "IMPLEMENT ME"); }
 
-}
+}  // namespace utopia

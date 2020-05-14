@@ -38,4 +38,4 @@ namespace utopia {
 
 	}
 
-}
+}  // namespace utopia

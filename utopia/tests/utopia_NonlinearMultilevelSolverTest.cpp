@@ -1,7 +1,6 @@
 #include "utopia.hpp"
-#include "utopia_Testing.hpp"
 #include "utopia_TestProblems.hpp"
-
+#include "utopia_Testing.hpp"
 
 namespace utopia
 {
@@ -9,14 +8,12 @@ namespace utopia
 #ifdef  WITH_PETSC
     class NonlinearBratuSolverTest {
     public:
+        using SizeType = typename utopia::Traits<PetscVector>::SizeType;
+        using Scalar = typename utopia::Traits<PetscVector>::Scalar;
 
-        typedef UTOPIA_SIZE_TYPE(PetscVector) SizeType;
-        typedef UTOPIA_SCALAR(PetscVector) Scalar;
-
-        NonlinearBratuSolverTest(const SizeType & n_levels = 2, bool remove_BC_contributions = false, bool verbose = false): 
-        verbose_(verbose)
-        {
-            problem = MultiLevelTestProblem1D<PetscMatrix, PetscVector, Bratu1D<PetscMatrix, PetscVector> >(n_levels, 10, remove_BC_contributions); 
+        explicit NonlinearBratuSolverTest(const SizeType& n_levels, bool remove_BC_contributions, bool verbose)
+            : verbose_(verbose) {
+            problem = MultiLevelTestProblem1D<PetscMatrix, PetscVector, Bratu1D<PetscMatrix, PetscVector> >(n_levels, 10, remove_BC_contributions);
         }
 
         void run()
@@ -368,4 +365,4 @@ namespace utopia
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(non_linear_multilevel);
-}
+}  // namespace utopia

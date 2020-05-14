@@ -101,14 +101,22 @@ namespace utopia {
             {
                 auto r = range(v1);
                 Write<Vector> w(v1);
-                if(r.inside(0)) v1.set(0, 0.0);
-                if(r.inside(1)) v1.set(1, 1.0);
+                if (r.inside(0)) {
+                    v1.set(0, 0.0);
+                }
+                if (r.inside(1)) {
+                    v1.set(1, 1.0);
+                }
             }
             {
                 auto r = range(v2);
                 Write<Vector> w(v2);
-                if(r.inside(0)) v2.set(0, 1.0);
-                if(r.inside(1)) v2.set(1, 0.0);
+                if (r.inside(0)) {
+                    v2.set(0, 1.0);
+                }
+                if (r.inside(1)) {
+                    v2.set(1, 0.0);
+                }
             }
 
             double v = dot(v1, v2 * 0.1);
@@ -123,8 +131,12 @@ namespace utopia {
             {
                 auto r = range(v);
                 Write<Vector> w(v);
-                if(r.inside(0)) v.set(0, 1.0);
-                if(r.inside(1)) v.set(1, 10.0);
+                if (r.inside(0)) {
+                    v.set(0, 1.0);
+                }
+                if (r.inside(1)) {
+                    v.set(1, 10.0);
+                }
             }
 
             double one = norm2(v) * norm2(v) / dot(v, v);
@@ -543,9 +555,9 @@ namespace utopia {
                 if(i == 0){
                     return 1e-14;
                 }
-                else{
+                
                     return  (i < n/2.0) ? -i : i ;
-                }
+                
             });
 
             Matrix M = outer(x, y);
@@ -594,4 +606,4 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(algebra);
 
-}
+}  // namespace utopia

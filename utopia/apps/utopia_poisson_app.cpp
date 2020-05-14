@@ -45,7 +45,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        for (int c = 0; c < space.n_components(); ++c) {
+        for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
                 SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return p[1]; }, c);
 
@@ -72,7 +72,7 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        for (int c = 0; c < space.n_components(); ++c) {
+        for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
                 SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return p[1]; }, c);
 
@@ -277,7 +277,9 @@ namespace utopia {
         stats.stop_and_collect("write");
         //////////////////////////////////////////
 
-        if (comm.rank() == 0) std::cout << "n_dofs: " << space.n_dofs() << std::endl;
+        if (comm.rank() == 0) {
+            std::cout << "n_dofs: " << space.n_dofs() << std::endl;
+        }
         stats.describe(std::cout);
     }
 

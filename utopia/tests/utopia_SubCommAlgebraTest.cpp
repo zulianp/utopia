@@ -44,7 +44,9 @@ namespace utopia {
         void redundant_test() {
             int sub_comms = this->comm().size() > 1 ? 2 : 1;
 
-            if (sub_comms == 1) return;
+            if (sub_comms == 1) {
+                return;
+            }
 
             Matrix A, A_sub;
             Vector v1, v1_sub, v2_sub;
@@ -226,7 +228,7 @@ namespace utopia {
             QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, redqp, true);
         }
 
-        void run() {
+        void run() override {
             UTOPIA_RUN_TEST(sum_vectors);
             UTOPIA_RUN_TEST(mat_vec_mult);
             UTOPIA_RUN_TEST(solve_problem);
