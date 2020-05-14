@@ -82,6 +82,9 @@ namespace utopia {
                 return false;
             }
         }
+        // else if(ext == "gmsh") {
+
+        // }
 #if defined(PETSC_HAVE_HDF5)
         else if (ext == "h5") {
             PetscViewerHDF5Open(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);

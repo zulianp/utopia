@@ -114,7 +114,7 @@ namespace utopia {
         FunctionSpace space(comm);
         space.read(in);
         auto &dmplex = space.mesh();
-        // dmplex.describe();
+        dmplex.describe();
 
         // for (int c = 0; c < space.n_components(); ++c) {
         //     space.emplace_dirichlet_condition(

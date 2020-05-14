@@ -54,7 +54,13 @@ if(NOT PETSC_FOUND)
     set(PETSC_MPI_BASE_DIR   $ENV{MPI_DIR})
     set(MAKE_COMMAND "make")
 
+    # set(PETSC_CONFIG_ARGS "$ENV{PETSC_CONFIG_ARGS} ${PETSC_CONFIG_ARGS}")
     set(PETSC_CONFIG_ARGS "$ENV{PETSC_CONFIG_ARGS}")
+
+    if(UTOPIA_ENABLE_CGNS)
+        set(PETSC_CONFIG_ARGS "--with-cgns=yes --with-cgns-dir=/opt/local")
+        message(STATUS "USING CGNS")
+    endif()
 
     ExternalProject_Add(
         petsc
@@ -67,7 +73,7 @@ if(NOT PETSC_FOUND)
         INSTALL_DIR         ${PETSC_INSTALL_DIR}
         LOG_CONFIGURE       1
         LOG_BUILD           1
-        CONFIGURE_COMMAND   <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-mpi=1 --download-scalapack=yes --download-hypre=yes --with-cxx-dialect=C++11 -download-superlu_dist=yes --download-superlu=yes --download-mumps=yes --download-hdf5 --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen -with-debugging=0 ${PETSC_CONFIG_ARGS} #-with-mpi-include=${MPI_INCLUDE_PATH} --with-mpi-lib=${MPI_LIBRARIES} -
+        CONFIGURE_COMMAND   <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-mpi=1 --download-scalapack=yes --download-hypre=yes --with-cxx-dialect=C++11 -download-superlu_dist=yes --download-superlu=yes --download-mumps=yes --download-hdf5 --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen -with-debugging=0 ${PETSC_CONFIG_ARGS}  #-with-mpi-include=${MPI_INCLUDE_PATH} --with-mpi-lib=${MPI_LIBRARIES} -
         BUILD_COMMAND       ${MAKE_COMMAND}
         INSTALL_COMMAND     make install
         # COMMAND       ${MAKE_COMMAND}

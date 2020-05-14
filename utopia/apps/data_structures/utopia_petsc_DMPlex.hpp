@@ -44,16 +44,16 @@ namespace utopia {
             PetscErrorCode ierr = 0;
 
             const auto ext = path.extension();
+            PetscBool p_inter = interpolate ? PETSC_TRUE : PETSC_FALSE;
 
-            if (ext == "e") {
-                this->destroy_dm();
-
-                PetscBool p_inter = interpolate ? PETSC_TRUE : PETSC_FALSE;
-                ierr = DMPlexCreateExodusFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type());
-                assert(ierr == 0);
-            } else {
-                return false;
-            }
+            // if (ext == "e") {
+            //     this->destroy_dm();
+            //     ierr = DMPlexCreateExodusFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type());
+            //     assert(ierr == 0);
+            // } else {
+            ierr = DMPlexCreateFromFile(comm().get(), path.c_str(), p_inter, &this->raw_type());
+            assert(ierr == 0);
+            // }
 
             return ierr == 0;
         }
@@ -349,51 +349,58 @@ namespace utopia {
                 const char *label_name;
                 DMGetLabelName(this->raw_type(), i, &label_name);
 
+                os << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
                 os << i << ") " << label_name << std::endl;
-            }
 
-            DMGetLabelSize(this->raw_type(), "Cell Sets", &num_cs);
-            DMGetLabelSize(this->raw_type(), "Vertex Sets", &num_vs);
-            DMGetLabelSize(this->raw_type(), "Face Sets", &num_fs);
-            DMGetLabelSize(this->raw_type(), "marker", &num_marker);
+                // DMGetLabelSize(this->raw_type(), "Cell Sets", &num_cs);
+                // DMGetLabelSize(this->raw_type(), "Vertex Sets", &num_vs);
+                // DMGetLabelSize(this->raw_type(), "Face Sets", &num_fs);
+                // DMGetLabelSize(this->raw_type(), "marker", &num_marker);
 
-            os << "num_cs: " << num_cs << " num_vs: " << num_vs << " num_fs: " << num_fs
-               << " num_marker: " << num_marker << std::endl;
+                // os << "num_cs: " << num_cs << " num_vs: " << num_vs << " num_fs: " << num_fs
+                //    << " num_marker: " << num_marker << std::endl;
 
-            DMGetNumBoundary(this->raw_type(), &num_bd);
+                // DMGetNumBoundary(this->raw_type(), &num_bd);
 
-            os << "num_bd: " << num_bd << std::endl;
+                // os << "num_bd: " << num_bd << std::endl;
 
-            DMLabel label;
-            DMGetLabel(this->raw_type(), "marker", &label);
+                DMLabel label;
+                // DMGetLabel(this->raw_type(), "marker", &label);
+                // DMGetLabel(this->raw_type(), "Cell Sets", &label);
+                DMGetLabel(this->raw_type(), label_name, &label);
 
-            for (SizeType s = 0; s < 4; ++s) {
-                os << "---------------------------\n";
-                os << "Stratum " << s << std::endl;
+                if (!label) return;
 
-                SizeType n;
-                DMLabelGetStratumSize(label, s, &n);
+                for (SizeType s = 0; s < 4; ++s) {
+                    os << "---------------------------\n";
+                    os << "Stratum " << s << std::endl;
 
-                os << "DMLabelGetStratumSize " << n << std::endl;
+                    SizeType n;
+                    DMLabelGetStratumSize(label, s, &n);
 
-                if (n == 0) continue;
+                    os << "DMLabelGetStratumSize " << n << std::endl;
 
-                DMLabelGetNumValues(label, &n);
+                    if (n == 0) continue;
 
-                os << "DMLabelGetNumValues " << n << std::endl;
+                    DMLabelGetNumValues(label, &n);
 
-                SizeType start, end;
-                DMPlexGetHeightStratum(this->raw_type(), s, &start, &end);
+                    os << "DMLabelGetNumValues " << n << std::endl;
 
-                os << "[" << start << ", " << end << ")" << std::endl;
+                    SizeType start, end;
+                    DMPlexGetHeightStratum(this->raw_type(), s, &start, &end);
 
-                for (SizeType i = start; i < end; ++i) {
-                    SizeType value;
-                    DMLabelGetValue(label, i, &value);
-                    os << value << " ";
+                    os << "[" << start << ", " << end << ")" << std::endl;
+
+                    for (SizeType i = start; i < end; ++i) {
+                        SizeType value;
+                        DMLabelGetValue(label, i, &value);
+                        os << value << " ";
+                    }
+
+                    os << std::endl;
                 }
 
-                os << std::endl;
+                os << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n";
             }
         }
 
