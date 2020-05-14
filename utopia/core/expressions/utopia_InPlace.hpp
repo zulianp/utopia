@@ -18,7 +18,7 @@ namespace utopia {
         inline Left &left() const { return _left; }
         inline const Right &right() const { return _right; }
 
-        inline std::string get_class() const {
+        inline std::string get_class() const override {
             return "InPlace<" + _left.get_class() + ", " + _right.get_class() + ", " + _operation.get_class() +  ">";
         }
 

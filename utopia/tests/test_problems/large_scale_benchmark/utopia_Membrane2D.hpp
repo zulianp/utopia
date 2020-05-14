@@ -57,15 +57,13 @@ namespace utopia
             setup_ = true;
         }
 
-        ~Membrane2D()
-        {
+        ~Membrane2D() override {
             if(setup_)
             {
                 DMDestroy(&da_);
                 SNESDestroy(&snes_);
             }
         }
-
 
         void get_A_rhs(Matrix & A) const
         {

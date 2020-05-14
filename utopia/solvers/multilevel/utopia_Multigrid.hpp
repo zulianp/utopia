@@ -84,7 +84,7 @@ namespace utopia
             this->must_generate_masks(true);
         }
 
-        ~Multigrid(){}
+        ~Multigrid() override {}
 
         void read(Input &in) override
         {

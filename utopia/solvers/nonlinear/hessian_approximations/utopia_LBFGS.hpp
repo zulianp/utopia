@@ -38,8 +38,7 @@ namespace utopia
 
             }
 
-            ~LBFGS()
-            {
+            ~LBFGS() override {
                 Y_.clear();
                 S_.clear();
                 P_.clear();

@@ -27,7 +27,7 @@ namespace utopia {
                     const std::vector<std::string> portions_of_spectrum = {"largest_magnitude", "smallest_magnitude", "largest_real", "smallest_real", "largest_imaginary", "smallest_imaginary", "closest_to_target", "closest_to_target_real", "closest_to_target_imaginary", "all_in_region"},
                     const std::vector<std::string> solver_types = {"krylovschur", "power", "subspace", "arnoldi", "lanczos", "gd", "jd", "rqcg", "lobpcg", "ciss", "lapack", "arpack", "blzpack", "trlan", "blopex", "primme", "feast"});
 
-        ~SlepcSolver();
+        ~SlepcSolver() override;
 
         SlepcSolver * clone() const override;
 

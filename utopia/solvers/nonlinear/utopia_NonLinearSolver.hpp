@@ -31,10 +31,9 @@ namespace utopia
 
         }
 
-        virtual ~NonLinearSolver() {}
+        ~NonLinearSolver() override {}
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             in.get("atol", atol_);
             in.get("rtol", rtol_);
             in.get("stol", stol_);
@@ -44,8 +43,7 @@ namespace utopia
             in.get("time-statistics", time_statistics_);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             this->print_param_usage(os, "atol", "real", "Absolute tolerance.",  std::to_string(atol()));
             this->print_param_usage(os, "rtol", "real", "Relative tolerance.",  std::to_string(rtol()));
             this->print_param_usage(os, "stol", "real", "Step size tolerance.", std::to_string(stol()));
@@ -54,7 +52,6 @@ namespace utopia
             this->print_param_usage(os, "verbose", "bool", "Turn on/off output.", std::to_string(verbose_));
             this->print_param_usage(os, "time-statistics", "bool", "Collect time-statistics.", std::to_string(time_statistics_));
         }
-
 
 protected:
         virtual void print_statistics(const SizeType & it_global)
@@ -87,8 +84,7 @@ protected:
          * @param[in]  method            The method.
          * @param[in]  status_variables  The status variables.
          */
-        virtual void init_solver(const std::string &method, const std::vector<std::string> status_variables) override
-        {
+        void init_solver(const std::string &method, const std::vector<std::string> status_variables) override {
             if(mpi_world_rank() == 0 && verbose_){
                 this->print_init_message(method, status_variables);
             }
@@ -112,8 +108,7 @@ protected:
          * @param[in]  num_it              The number iterator
          * @param[in]  convergence_reason  The convergence reason
          */
-        virtual void exit_solver(const SizeType &num_it, const Scalar & convergence_reason) override
-         {
+        void exit_solver(const SizeType &num_it, const Scalar &convergence_reason) override {
             _time.stop();
 
             if(mpi_world_rank() == 0 && verbose_)
@@ -124,11 +119,8 @@ protected:
 
             this->solution_status_.execution_time = _time.get_seconds();
             this->solution_status_.iterates = num_it; 
-            this->solution_status_.reason = convergence_reason; 
-
-         }
-
-
+            this->solution_status_.reason = convergence_reason;
+        }
 
          /**
           * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of gradient
@@ -139,8 +131,10 @@ protected:
           * @param[in]  s_norm  The size of step.
           * @param[in]  it      The number of iterations.
           */
-        virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm) override
-        {
+        bool check_convergence(const SizeType &it,
+                               const Scalar &g_norm,
+                               const Scalar &r_norm,
+                               const Scalar &s_norm) override {
             bool converged = false;
 
             // termination because norm of grad is down
@@ -186,7 +180,6 @@ protected:
             return converged;
         }
 
-
 public:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
@@ -231,7 +224,7 @@ public:
 
         }
 
-        virtual ~MatrixFreeNonLinearSolver() {}
+        ~MatrixFreeNonLinearSolver() override {}
 
         virtual bool solve(FunctionBase<Vector> &fun, Vector &x) = 0;
     };

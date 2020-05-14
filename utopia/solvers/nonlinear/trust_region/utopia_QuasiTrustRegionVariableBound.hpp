@@ -207,8 +207,7 @@
 
 
     private:
-        void init_memory(const Layout &layout)
-        {
+        void init_memory(const Layout &layout) override {
             p_k.zeros(layout);
             g.zeros(layout);
             g_help.zeros(layout);

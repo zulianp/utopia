@@ -56,11 +56,9 @@ namespace utopia {
 	public:
 		using SizeType = SizeType_;
 
-		virtual ~Vector() {}
+                ~Vector() override {}
 
-
-
-		// facade functions for treating a node vector and distributed vector in the same way
+                // facade functions for treating a node vector and distributed vector in the same way
 		inline Range range() const { return Range(0, this->size()); }
 
 		// inline void layout(Layout<SizeType, 1> &l) const
@@ -93,8 +91,8 @@ namespace utopia {
 
 		virtual SizeType local_size() const = 0;
 
-		virtual ~DistributedVector() {}
-	};
+                ~DistributedVector() override {}
+        };
 
 }
 

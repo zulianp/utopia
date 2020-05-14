@@ -128,8 +128,7 @@ namespace utopia {
             return new GaussSeidel(*this);
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             Solver::update(op);
             init(*op);
         }

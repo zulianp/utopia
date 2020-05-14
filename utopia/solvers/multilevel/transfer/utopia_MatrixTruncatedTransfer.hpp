@@ -60,8 +60,7 @@
                 assert(P);
             }
 
-
-            virtual ~MatrixTruncatedTransfer(){}
+            ~MatrixTruncatedTransfer() override {}
 
             /*=====================================================
                                 initialization

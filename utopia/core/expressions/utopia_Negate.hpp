@@ -19,7 +19,7 @@ namespace utopia {
             return "Negate<" + this->expr().get_class() + ">";
         }
 
-        virtual ~Negate() { }
+        ~Negate() override {}
     };
 }
 #endif //SIMMOD_utopia_NEGATE_HPP

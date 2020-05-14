@@ -11,13 +11,13 @@ namespace utopia {
     public:
         using Communicator = typename Traits<Vector>::Communicator;
 
-        virtual ~Operator() {}
+        ~Operator() override {}
         virtual bool apply(const Vector &rhs, Vector &sol) const = 0;
         virtual Size size() const = 0;
         virtual Size local_size() const = 0;
 
-        virtual Communicator &comm() override = 0;
-        virtual const Communicator &comm() const override = 0;
+        Communicator &comm() override = 0;
+        const Communicator &comm() const override = 0;
     };
 
     template<class Vector, class T>

@@ -51,8 +51,7 @@ namespace  utopia
             return new ProjectedGradientActiveSet(*this);
         }
 
-        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
-        {
+        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override {
             precond_ = precond;
         }
 

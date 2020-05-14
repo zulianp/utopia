@@ -39,19 +39,19 @@ namespace utopia {
         SNESSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
                    const std::vector<std::string> snes_types    = {"newtonls", "newtontr", "nrichardson", "ksponly", "vinewtonrsls", "vinewtonssls", "ngmres", "qn", "shell", "ngs", "ncg", "fas", "ms", "anderson"});
 
-        virtual SNESSolver * clone() const override;
+        SNESSolver *clone() const override;
 
-        virtual ~SNESSolver();
+        ~SNESSolver() override;
 
-        virtual void read(Input &in) override;
+        void read(Input &in) override;
 
-        virtual void print_usage(std::ostream &os) const override;
+        void print_usage(std::ostream &os) const override;
 
         virtual void set_snes_type(const std::string & type);
 
-        virtual bool solve(Function &fun, Vector &x) override;
+        bool solve(Function &fun, Vector &x) override;
 
-        virtual bool smooth(Function & fun,  Vector &x, const Vector &rhs) override;
+        bool smooth(Function &fun, Vector &x, const Vector &rhs) override;
 
         void set_line_search_type(const SNESLineSearchType ls_type);
 

@@ -48,7 +48,7 @@ namespace utopia {
     public:
         using Scalar   = Scalar_;
         using SizeType = SizeType_;
-        virtual ~AbstractVector() {}
+        ~AbstractVector() override {}
     };
 
 

@@ -17,7 +17,7 @@ namespace utopia {
     public:
 
         PolymorphicLinearSolver();
-        ~PolymorphicLinearSolver();
+        ~PolymorphicLinearSolver() override;
         PolymorphicLinearSolver * clone() const override;
         bool apply(const Vector &rhs, Vector &sol) override;
         void update(const std::shared_ptr<const Matrix> &mat) override;

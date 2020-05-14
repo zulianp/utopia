@@ -15,7 +15,7 @@
 namespace utopia {
     class PetscDMBase : public Configurable {
     public:
-        virtual ~PetscDMBase() {}
+        ~PetscDMBase() override {}
 
         template<class SizeType>
         static void dof_ownership_range(const DM &dm, SizeType &begin, SizeType &end)

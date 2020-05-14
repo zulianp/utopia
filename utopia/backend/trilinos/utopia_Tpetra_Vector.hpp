@@ -107,34 +107,24 @@ namespace utopia {
           values(layout, val);
         }
 
-        ~TpetraVector()
-        {}
+         ~TpetraVector() override {}
 
-        TpetraVector(const TpetraVector &other);
+         TpetraVector(const TpetraVector &other);
 
-        TpetraVector(TpetraVector &&other)
-        : vec_(std::move(other.vec_))
-        { }
+         TpetraVector(TpetraVector &&other) : vec_(std::move(other.vec_)) {}
 
-        RCPCommType communicator()
-        {
-            return implementation().getMap()->getComm();
-        }
+         RCPCommType communicator() { return implementation().getMap()->getComm(); }
 
-        const RCPCommType communicator() const
-        {
-            return implementation().getMap()->getComm();
-        }
+         const RCPCommType communicator() const { return implementation().getMap()->getComm(); }
 
-        TpetraVector &operator=(const TpetraVector &other);
+         TpetraVector &operator=(const TpetraVector &other);
 
-        TpetraVector &operator=(TpetraVector &&other)
-        {
-            if(this == &other) return *this;
-            comm_ = std::move(other.comm_);
-            vec_ = std::move(other.vec_);
-            ghosted_vec_ = std::move(other.ghosted_vec_);
-            return *this;
+         TpetraVector &operator=(TpetraVector &&other) {
+             if (this == &other) return *this;
+             comm_ = std::move(other.comm_);
+             vec_ = std::move(other.vec_);
+             ghosted_vec_ = std::move(other.ghosted_vec_);
+             return *this;
         }
 
         void select(const IndexSet &index, TpetraVector &result) const override;

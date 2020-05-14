@@ -22,10 +22,7 @@ namespace utopia {
 
         BenchmarkAccess(const Comm &comm = Comm()) : comm_(comm) {}
 
-        virtual std::string name() override
-        {
-            return "Access";
-        }
+        std::string name() override { return "Access"; }
 
         void initialize() override
         {

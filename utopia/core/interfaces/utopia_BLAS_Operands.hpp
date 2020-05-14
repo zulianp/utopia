@@ -206,25 +206,22 @@ namespace utopia {
 
 		using BLAS3Matrix<Matrix>::multiply;
 
-		virtual ~BLAS3DenseMatrix() {}
+                ~BLAS3DenseMatrix() override {}
 
-		/// C := alpha * A * B
-		virtual void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const override
-		{
-			gemm(false, alpha, false, B, 0.0, C);
-		}
+                /// C := alpha * A * B
+                void multiply(const Scalar &alpha, const Matrix &B, Matrix &C) const override {
+                    gemm(false, alpha, false, B, 0.0, C);
+                }
 
-		/// C := alpha * op(A) * op(B)
-		virtual void multiply(
-			const bool transpose_A,
-			const bool transpose_B,
-			const Matrix &B,
-			Matrix &C) const override
-		{
-			gemm(transpose_A, 1.0, transpose_B, B, 0.0, C);
-		}
+                /// C := alpha * op(A) * op(B)
+                void multiply(const bool transpose_A,
+                              const bool transpose_B,
+                              const Matrix &B,
+                              Matrix &C) const override {
+                    gemm(transpose_A, 1.0, transpose_B, B, 0.0, C);
+                }
 
-		// <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
+                // <Scalar>GEMM - matrix matrix multiply  C := alpha*op( A )*op( B ) + beta*C
 		virtual void gemm(
 			const bool transpose_A,
 			const Scalar alpha,

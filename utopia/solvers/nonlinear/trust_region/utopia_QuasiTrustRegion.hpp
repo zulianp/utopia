@@ -225,19 +225,18 @@
 
 
   private:
-    void init_memory(const Layout &layout)
-    {
-      y.zeros(layout);
-      p_k.zeros(layout);
-      x_trial.zeros(layout);
-      g_help.zeros(layout);
-      g.zeros(layout);
+      void init_memory(const Layout &layout) override {
+          y.zeros(layout);
+          p_k.zeros(layout);
+          x_trial.zeros(layout);
+          g_help.zeros(layout);
+          g.zeros(layout);
 
-      TrustRegionBase<Vector>::init_memory(layout);
+          TrustRegionBase<Vector>::init_memory(layout);
 
-      initialized_ = true;
-      layout_ = layout;
-    }
+          initialized_ = true;
+          layout_ = layout;
+      }
 
     private:
       Vector g, g_help,  y, p_k, x_trial;

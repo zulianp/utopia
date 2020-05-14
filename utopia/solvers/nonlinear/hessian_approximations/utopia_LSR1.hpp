@@ -22,8 +22,7 @@ namespace utopia
 
             }
 
-            ~LSR1()
-            {
+            ~LSR1() override {
                 Y_.clear();
                 S_.clear();
 

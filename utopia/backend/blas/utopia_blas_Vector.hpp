@@ -203,10 +203,7 @@ namespace utopia {
             entries_[i] += value;
         }
 
-        virtual void set(const T &val) override
-        {
-            std::fill(std::begin(entries_), std::end(entries_), val);
-        }
+        void set(const T &val) override { std::fill(std::begin(entries_), std::end(entries_), val); }
 
         inline void add(const SizeType &i, const T &value) override
         {

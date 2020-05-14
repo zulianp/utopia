@@ -108,7 +108,7 @@ namespace utopia {
 
         inline GaussSeidel *clone() const override { return new GaussSeidel(*this); }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override { Solver::update(op); }
+        void update(const std::shared_ptr<const Matrix> &op) override { Solver::update(op); }
 
     private:
         SizeType n_local_sweeps_;

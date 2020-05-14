@@ -20,12 +20,9 @@ namespace utopia
     public:
         DEF_UTOPIA_SCALAR(Vector);
 
-        virtual ~FunctionBase() { }
+        ~FunctionBase() override {}
 
-        virtual void read(Input &in) override
-        {
-
-        }
+        void read(Input &in) override {}
 
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const = 0;
         virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;
@@ -40,7 +37,7 @@ namespace utopia
     public:
         DEF_UTOPIA_SCALAR(Vector);
 
-        virtual ~Function() { }
+        ~Function() override {}
 
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;
         virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const

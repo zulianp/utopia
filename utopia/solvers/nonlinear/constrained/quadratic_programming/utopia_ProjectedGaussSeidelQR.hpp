@@ -224,9 +224,7 @@ namespace utopia {
             active_set_.zeros(layout(d_inv));
         }
 
-
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             ProjectedGaussSeidel<Matrix, Vector>::update(op);
             init(*op);
         }

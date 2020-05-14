@@ -32,7 +32,7 @@ namespace utopia {
 
         void read(Input &in) override;
 
-        ~RedundantQPSolver() {}
+        ~RedundantQPSolver() override {}
         RedundantQPSolver(const RedundantQPSolver &other);
 
         RedundantQPSolver * clone() const override

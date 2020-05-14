@@ -88,26 +88,20 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        virtual ~Preconditioner() {}
+        ~Preconditioner() override {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
 
-        virtual void read(Input &/*in*/) override
-        {
+        void read(Input & /*in*/) override {}
 
-        }
-
-        virtual void print_usage(std::ostream & /*os*/) const override
-        {
-
-        }
+        void print_usage(std::ostream & /*os*/) const override {}
 
         // this should be left as virtual once all solvers allocations improve
-        virtual void init_memory(const Layout & /*ls*/) override { }
+        void init_memory(const Layout & /*ls*/) override {}
 
         // TODO
         virtual void update(const Operator<Vector> & A) { UTOPIA_UNUSED(A); }
 
-        virtual Preconditioner * clone() const override = 0;
+        Preconditioner *clone() const override = 0;
     };
 
 
@@ -125,10 +119,7 @@ namespace utopia {
         : expr_(expr)
         {}
 
-        virtual ExprPreconditioner * clone() const override
-        {
-            return new ExprPreconditioner(*this);
-        }
+        ExprPreconditioner *clone() const override { return new ExprPreconditioner(*this); }
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
@@ -161,10 +152,7 @@ namespace utopia {
             return op_;
         }
 
-        virtual DelegatePreconditioner * clone() const override
-        {
-            return new DelegatePreconditioner(*this);
-        }
+        DelegatePreconditioner *clone() const override { return new DelegatePreconditioner(*this); }
 
     private:
         std::shared_ptr<const Matrix> op_;

@@ -13,7 +13,7 @@ namespace  utopia
         public:
             typedef UTOPIA_SCALAR(Vector) Scalar;
 
-            virtual ~TRSubproblemBase( ){}
+            ~TRSubproblemBase() override {}
 
             TRSubproblemBase(): current_radius_(1e14)
             {
@@ -30,13 +30,9 @@ namespace  utopia
                 return current_radius_;
             }
 
-            virtual void read(Input &in) override
-            {
-                in.get("current_radius", current_radius_);
-            }
+            void read(Input &in) override { in.get("current_radius", current_radius_); }
 
-            virtual void print_usage(std::ostream &os) const override
-            {
+            void print_usage(std::ostream &os) const override {
                 this->print_param_usage(os, "current_radius", "real", "Value of trust region radius.", "1e14");
             }
 
@@ -94,17 +90,15 @@ namespace  utopia
 
             }
 
-            virtual ~TRSubproblem( ){}
-            virtual TRSubproblem * clone() const override = 0;
+            ~TRSubproblem() override {}
+            TRSubproblem *clone() const override = 0;
 
-            virtual void read(Input &in) override
-            {
+            void read(Input &in) override {
                 IterativeSolver<Matrix, Vector>::read(in);
                 TRSubproblemBase<Vector>::read(in);
             }
 
-            virtual void print_usage(std::ostream &os) const override
-            {
+            void print_usage(std::ostream &os) const override {
                 IterativeSolver<Matrix, Vector>::print_usage(os);
                 TRSubproblemBase<Vector>::print_usage(os);
             }
@@ -122,17 +116,15 @@ namespace  utopia
 
             }
 
-            virtual ~MatrixFreeTRSubproblem( ){}
-            virtual MatrixFreeTRSubproblem * clone() const override= 0;
+            ~MatrixFreeTRSubproblem() override {}
+            MatrixFreeTRSubproblem *clone() const override = 0;
 
-            virtual void read(Input &in) override
-            {
+            void read(Input &in) override {
                 MatrixFreeLinearSolver<Vector>::read(in);
                 TRSubproblemBase<Vector>::read(in);
             }
 
-            virtual void print_usage(std::ostream &os) const override
-            {
+            void print_usage(std::ostream &os) const override {
                 MatrixFreeLinearSolver<Vector>::print_usage(os);
                 TRSubproblemBase<Vector>::print_usage(os);
             }
@@ -149,22 +141,19 @@ namespace  utopia
         using TRSubproblem<Matrix, Vector>::update;
         using MatrixFreeTRSubproblem<Vector>::solve;
 
-        virtual ~OperatorBasedTRSubproblem() {}
+        ~OperatorBasedTRSubproblem() override {}
 
-        virtual bool solve(const Matrix &A, const Vector &b, Vector &x) override
-        {
+        bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
             return solve(operator_cast<Vector>(A), b, x);
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             TRSubproblem<Matrix, Vector>::update(op);
             update(operator_cast<Vector>(*op));
         }
 
-        virtual bool smooth(const Vector &rhs, Vector &x) override
-        {
+        bool smooth(const Vector &rhs, Vector &x) override {
             SizeType temp = this->max_it();
             this->max_it(this->sweeps());
             solve(operator_cast<Vector>(*this->get_operator()), rhs, x);
@@ -177,16 +166,14 @@ namespace  utopia
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedTRSubproblem * clone() const override = 0;
+        OperatorBasedTRSubproblem *clone() const override = 0;
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             MatrixFreeTRSubproblem<Vector>::read(in);
             TRSubproblem<Matrix, Vector>::read(in);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             MatrixFreeTRSubproblem<Vector>::print_usage(os);
             TRSubproblem<Matrix, Vector>::print_usage(os);
         }

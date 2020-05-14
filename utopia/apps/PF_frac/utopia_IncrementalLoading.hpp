@@ -56,8 +56,7 @@ namespace utopia {
 
             }
 
-            virtual void read(Input &in) override
-            {
+            void read(Input &in) override {
                 in.get("dt", dt_);
                 in.get("start_time", start_time_);
                 in.get("final_time", final_time_);
@@ -96,15 +95,9 @@ namespace utopia {
 
             }
 
+            ~IncrementalLoadingBase() override {}
 
-            virtual ~IncrementalLoadingBase()
-            {
-
-            }
-
-
-            virtual void read(Input &in) override
-            {
+            void read(Input &in) override {
                 in.get("dt", dt_);
                 in.get("num_time_steps", num_time_steps_);
                 in.get("final_time", final_time_);
@@ -118,7 +111,6 @@ namespace utopia {
                 in.get("use_constant_pressure", use_constant_pressure_);
             }
 
-        
             virtual void run() =0; 
             virtual void init_solution() = 0;
             virtual void prepare_for_solve() = 0;

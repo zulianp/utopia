@@ -20,11 +20,10 @@ namespace utopia
         using Layout   = typename Traits<Vector>::Layout;
 
         QPSolver() {}
-        virtual ~QPSolver() {}
-        virtual QPSolver * clone() const override = 0;
+        ~QPSolver() override {}
+        QPSolver *clone() const override = 0;
 
-        virtual void init_memory(const Layout &layout)  override
-        {
+        void init_memory(const Layout &layout) override {
             VariableBoundSolverInterface<Vector>::init_memory(layout);
             PreconditionedSolver<Matrix, Vector>::init_memory(layout);
         }
@@ -42,13 +41,11 @@ namespace utopia
         MatrixFreeQPSolver()
         {}
 
-        virtual ~MatrixFreeQPSolver()
-        {}
+        ~MatrixFreeQPSolver() override {}
 
-        virtual MatrixFreeQPSolver * clone() const override = 0;
+        MatrixFreeQPSolver *clone() const override = 0;
 
-        virtual void init_memory(const Layout &layout)  override
-        {
+        void init_memory(const Layout &layout) override {
             VariableBoundSolverInterface<Vector>::init_memory(layout);
             MatrixFreeLinearSolver<Vector>::init_memory(layout);
         }
@@ -68,16 +65,14 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        virtual ~OperatorBasedQPSolver() {}
+        ~OperatorBasedQPSolver() override {}
 
-        virtual bool solve(const Matrix &A, const Vector &b, Vector &x) override
-        {
+        bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
             return solve(operator_cast<Vector>(A), b, x);
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             QPSolver<Matrix, Vector>::update(op);
             update(operator_cast<Vector>(*op));
         }
@@ -87,22 +82,19 @@ namespace utopia
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedQPSolver * clone() const override = 0;
+        OperatorBasedQPSolver *clone() const override = 0;
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             MatrixFreeQPSolver<Vector>::read(in);
             QPSolver<Matrix, Vector>::read(in);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             MatrixFreeQPSolver<Vector>::print_usage(os);
             QPSolver<Matrix, Vector>::print_usage(os);
         }
 
-        virtual void init_memory(const Layout &layout)  override
-        {
+        void init_memory(const Layout &layout) override {
             MatrixFreeQPSolver<Vector>::init_memory(layout);
             QPSolver<Matrix, Vector>::init_memory(layout);
         }

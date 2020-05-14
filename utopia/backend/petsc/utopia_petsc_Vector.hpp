@@ -441,7 +441,7 @@ namespace utopia {
 
         inline PetscVector() : vec_(nullptr), initialized_(false), owned_(true) { immutable_ = false; }
 
-        inline ~PetscVector() { destroy(); }
+        inline ~PetscVector() override { destroy(); }
 
         PetscVector(const PetscVector &other) {
             if (other.vec_) {

@@ -55,10 +55,7 @@ namespace utopia
             hessian_approxs_.resize(n_levels);
         }
 
-        ~QuasiRMTR_inf()
-        {
-
-        }
+        ~QuasiRMTR_inf() override {}
 
         void read(Input &in) override
         {
@@ -79,15 +76,13 @@ namespace utopia
             }
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             RMTRBase::print_usage(os);
 
             this->print_param_usage(os, "coarse-QPSolver", "MatrixFreeQPSolver", "Input parameters for fine level QP solvers.", "-");
             this->print_param_usage(os, "fine-QPSolver", "MatrixFreeQPSolver", "Input parameters for coarse level QP solver.", "-");
             this->print_param_usage(os, "hessian-approx-strategy", "HessianApproximation", "Input parameters for hessian approximation strategies.", "-");
         }
-
 
         std::string name() override
         {

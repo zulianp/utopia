@@ -28,21 +28,15 @@ namespace utopia {
 
         }
 
-
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             in.get("relaxation_parameter", _relaxation_parameter);
             in.get("sweeps", _sweeps);
-
         }
 
-
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             this->print_param_usage(os, "relaxation_parameter", "double", "Relaxation parameter.", "1");
             this->print_param_usage(os, "sweeps", "int", "Number of smoothing steps.", "1");
         }
-
 
         virtual bool smooth(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs) = 0;
 

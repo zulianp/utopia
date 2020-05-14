@@ -34,7 +34,7 @@ namespace utopia
         public:
             DEF_UTOPIA_SCALAR(Vector);
 
-            virtual ~LeastSquaresFunction() { }
+            ~LeastSquaresFunction() override {}
 
             // abstraction for normal equations
             virtual bool jacobian(const Vector &/*x*/, Matrix &/*hessian*/) const = 0;

@@ -59,7 +59,7 @@ namespace utopia {
 
         void wrap(KSP &ksp);
 
-        virtual ~KSPSolver();
+        ~KSPSolver() override;
 
         /* @brief      Sets the choice of direct solver.
          *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings.
@@ -155,15 +155,15 @@ namespace utopia {
 
         virtual void attach_preconditioner(KSP &ksp) const;
 
-        virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
+        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
 
         virtual void set_monitor_options(KSP &ksp) const;
 
         void handle_reset(const Matrix &op);
 
-        virtual void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
+        void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override;
+        void update(const std::shared_ptr<const Matrix> &op) override;
 
         KSPSolver &operator=(const KSPSolver &other);
 
@@ -173,7 +173,7 @@ namespace utopia {
 
         KSPSolver(KSPSolver &&other);
 
-        virtual KSPSolver * clone() const override;
+        KSPSolver *clone() const override;
 
         Impl &ksp();
 
@@ -183,9 +183,8 @@ namespace utopia {
 
         KSP &implementation();
 
-        virtual void read(Input &is) override;
-        virtual void print_usage(std::ostream &os = std::cout) const override;
-
+        void read(Input &is) override;
+        void print_usage(std::ostream &os = std::cout) const override;
 
     protected:
         std::unique_ptr<Impl> ksp_;

@@ -29,7 +29,7 @@ namespace utopia
 
         }
 
-        virtual ~NonLinearLeastSquaresSolver() {}
+        ~NonLinearLeastSquaresSolver() override {}
 
         virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x) = 0;
 
@@ -39,8 +39,7 @@ namespace utopia
             linear_solver_ = linear_solver;
         }
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             NonLinearSolver<Vector>::read(in);
 
             if(linear_solver_) {
@@ -48,12 +47,10 @@ namespace utopia
             }
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             NonLinearSolver<Vector>::print_usage(os);
             this->print_param_usage(os, "linear-solver", "LinearSolver", "Linear solver to detrmine Newton step.", "-");
         }
-
 
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)

@@ -21,10 +21,7 @@ namespace utopia {
 
         BenchmarkBlas2(const Comm &comm = Comm()) : comm_(comm) {}
 
-        virtual std::string name() override
-        {
-            return "BLAS 2";
-        }
+        std::string name() override { return "BLAS 2"; }
 
         void initialize() override
         {

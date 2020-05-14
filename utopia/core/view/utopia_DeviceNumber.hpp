@@ -70,7 +70,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION constexpr DeviceNumber(const Scalar &value = Zero<Scalar>::value())  : value_(value)
         {}
 
-        inline std::string get_class() const /*override*/
+        inline std::string get_class() const override /*override*/
         {
             return "DeviceNumber";
         }

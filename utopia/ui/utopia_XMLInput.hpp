@@ -12,7 +12,7 @@ namespace utopia {
     class XMLInput final : public Input {
     public:
         XMLInput();
-        ~XMLInput();
+        ~XMLInput() override;
 
         bool open(const Path &path);// override;
 

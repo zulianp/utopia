@@ -42,9 +42,7 @@
             assert(P);
         }
 
-
-         ~IPTransfer(){}
-
+        ~IPTransfer() override {}
 
         /*=====================================================
                                 actions

@@ -91,9 +91,9 @@ namespace utopia {
             return *this;
         }
 
-        virtual BoxConstraints *clone() const override { return new BoxConstraints(*this); }
+        BoxConstraints *clone() const override { return new BoxConstraints(*this); }
 
-        virtual ~BoxConstraints() {}
+        ~BoxConstraints() override {}
 
         inline std::shared_ptr<Vector> &upper_bound() { return upper_bound_; }
 

@@ -27,17 +27,17 @@ namespace utopia {
         using QPSolver = utopia::QPSolver<Matrix, Vector>;
         using Super = utopia::QPSolver<Matrix, Vector>;
 
-        ~BlockQPSolver();
+        ~BlockQPSolver() override;
         BlockQPSolver(const std::shared_ptr<QPSolver> &serial_solver);
         BlockQPSolver(const BlockQPSolver &other);
 
-        virtual BlockQPSolver *clone() const override;
-        virtual void read(Input &in) override;
-        virtual void print_usage(std::ostream &os) const override;
-        virtual bool smooth(const Vector &b, Vector &x) override;
-        virtual bool apply(const Vector &b, Vector &x) override;
-        virtual void init_memory(const Layout &layout) override;
-        virtual void update(const std::shared_ptr<const Matrix> &op) override;
+        BlockQPSolver *clone() const override;
+        void read(Input &in) override;
+        void print_usage(std::ostream &os) const override;
+        bool smooth(const Vector &b, Vector &x) override;
+        bool apply(const Vector &b, Vector &x) override;
+        void init_memory(const Layout &layout) override;
+        void update(const std::shared_ptr<const Matrix> &op) override;
 
     private:
         std::shared_ptr<QPSolver> serial_solver_;

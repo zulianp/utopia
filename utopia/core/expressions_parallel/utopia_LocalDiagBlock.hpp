@@ -19,9 +19,7 @@ namespace utopia  {
 
         inline const Expr &expr() const { return expr_; }
 
-        inline std::string get_class() const {
-            return  "LocalDiagBlock<" + expr_.get_class() + ">";
-        }
+        inline std::string get_class() const override { return "LocalDiagBlock<" + expr_.get_class() + ">"; }
 
     private:
         const Expr &expr_;

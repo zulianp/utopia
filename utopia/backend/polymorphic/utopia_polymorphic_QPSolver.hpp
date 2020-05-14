@@ -20,7 +20,7 @@ namespace utopia {
         public:
 
             PolymorphicQPSolver();
-            ~PolymorphicQPSolver();
+            ~PolymorphicQPSolver() override;
             PolymorphicQPSolver * clone() const override;
             bool apply(const Vector &rhs, Vector &sol) override;
             void read(Input &in) override;         

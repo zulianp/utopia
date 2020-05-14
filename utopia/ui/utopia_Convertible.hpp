@@ -9,7 +9,7 @@
 namespace utopia {
     class IConvertible : public Clonable {
     public:
-        virtual ~IConvertible() {}
+        ~IConvertible() override {}
         virtual void get(double &) const = 0;
         virtual void get(float &) const = 0;
         virtual void get(int &) const = 0;
@@ -29,7 +29,7 @@ namespace utopia {
         virtual bool is_bool() const { return false; }
         virtual bool is_string() const { return false; }
         virtual bool is_long_long_int() const { return false; }
-        virtual IConvertible * clone() const = 0;
+        IConvertible *clone() const override = 0;
     };
 
     //does not do anything (no defaults)

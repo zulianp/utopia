@@ -181,8 +181,7 @@ namespace utopia {
             use_dense_hessian_ = val;
         }
 
-        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
-        {
+        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
             // if(use_dense_hessian_) {
             //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
             // } else {

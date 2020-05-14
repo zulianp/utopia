@@ -85,14 +85,12 @@ namespace utopia {
             return false;
         }
 
-        inline Size size() const
-        {
+        inline Size size() const override {
             const SizeType n_dofs = space_.n_dofs();
             return {n_dofs, n_dofs};
         }
 
-        inline Size local_size() const
-        {
+        inline Size local_size() const override {
             const SizeType n_dofs = space_.n_local_dofs();
             return {n_dofs, n_dofs};
         }

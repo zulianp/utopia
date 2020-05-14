@@ -37,8 +37,7 @@
 
             }
 
-
-            ~IPTransferNested(){}
+            ~IPTransferNested() override {}
 
             /*=====================================================
                                 initialization

@@ -37,8 +37,7 @@ namespace utopia
         LinearMultiLevel(): MultiLevelBase<Matrix, Vector>()
         { }
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             IterativeSolver<Matrix, Vector>::read(in);
             MultiLevelBase<Matrix, Vector>::read(in);
 
@@ -47,17 +46,15 @@ namespace utopia
             mask_.active(flg_masks);
         }
 
-        virtual LinearMultiLevel * clone() const override = 0;
+        LinearMultiLevel *clone() const override = 0;
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             IterativeSolver<Matrix, Vector>::print_usage(os);
             MultiLevelBase<Matrix, Vector>::print_usage(os);
             this->print_param_usage(os, "must_generate_masks", "bool", "Flag deciding if masks should be generated.", "-");
         }
 
-
-        virtual ~LinearMultiLevel(){}
+        ~LinearMultiLevel() override {}
 
         /**
          * @brief
@@ -150,8 +147,7 @@ namespace utopia
             return levels_[l];
         }
 
-        virtual void describe(std::ostream &os = std::cout) const override
-        {
+        void describe(std::ostream &os = std::cout) const override {
             if(levels_.empty()) {
                 return;
             }

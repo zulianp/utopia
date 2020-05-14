@@ -52,25 +52,21 @@
        *
        * @return     true
        */
-      virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) override
-      {
+      bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) override {
+          using namespace utopia;
+          bool converged = false;
 
-         using namespace utopia;
-         bool converged = false; 
+          NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-         NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
-         
+          Scalar it = 0;
+          bool rad_flg = false;
+          Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
 
-         Scalar it = 0;
-         bool rad_flg = false; 
-         Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity(); 
+          Vector r_k, p_CP = x_k, dx = x_k, p_N = x_k, p_k = x_k, x_k1 = x_k, g;
+          Matrix J_k, J_T, H;
 
-         Vector r_k , p_CP = x_k, dx = x_k, p_N = x_k, p_k = x_k, x_k1 = x_k, g;
-         Matrix J_k, J_T, H;
-
-
-         fun.jacobian(x_k, J_k); 
-         fun.residual(x_k, r_k);
+          fun.jacobian(x_k, J_k);
+          fun.residual(x_k, r_k);
 
 
         #define DEBUG_mode
@@ -179,7 +175,7 @@
           it++; 
         }
         return false;
-      }
+             }
 
   protected: 
       /**
@@ -192,21 +188,15 @@
       *
       * @return    
       */
-    virtual void delta_update(const Scalar &rho, const Vector &/*p_k*/, Scalar &delta, const bool /*flg=false*/) override
-    {
-        if(rho < this->eta1())
-        {
-          // Scalar dx_norm = norm2(p_k); 
-          // delta = this->gamma1() * dx_norm;   // this is fine for L2 norm 
-          delta = this->gamma1() * delta;   // this is fine for L2 norm 
-        }
-        else if (rho > this->eta2())
-        {
-          delta = std::min(this->gamma2() * delta, this->delta_max()); 
-        }      
-    }
-
-
+      void delta_update(const Scalar &rho, const Vector & /*p_k*/, Scalar &delta, const bool /*flg=false*/) override {
+          if (rho < this->eta1()) {
+              // Scalar dx_norm = norm2(p_k);
+              // delta = this->gamma1() * dx_norm;   // this is fine for L2 norm
+              delta = this->gamma1() * delta;  // this is fine for L2 norm
+          } else if (rho > this->eta2()) {
+              delta = std::min(this->gamma2() * delta, this->delta_max());
+          }
+      }
 
     virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
     {

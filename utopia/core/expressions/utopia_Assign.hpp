@@ -26,10 +26,9 @@ namespace utopia {
 //        inline Left &left() const { return _left; }
         inline const Right &right() const { return _right; }
 
-        std::string get_class() const {
+        std::string get_class() const override {
             return "Assign<" + left().get_class() + ", " + right().get_class() + ">";
         }
-
 
     private:
         Left &_left;

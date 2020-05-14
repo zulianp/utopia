@@ -21,9 +21,7 @@ namespace utopia {
 
         virtual ~Transposed() { }
 
-        std::string get_class() const {
-            return "Transposed<" + _expr.get_class() + ">";
-        }
+        std::string get_class() const override { return "Transposed<" + _expr.get_class() + ">"; }
 
     private:
         UTOPIA_STORE_CONST(Expr) _expr;
