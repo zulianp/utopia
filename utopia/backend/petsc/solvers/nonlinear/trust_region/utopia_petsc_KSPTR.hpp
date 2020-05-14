@@ -50,11 +50,9 @@ namespace utopia
             this->ksp_type(t);
         }
 
+        ~KSP_TR() override {}
 
-        virtual ~KSP_TR(){}
-
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             TRSubproblem::read(in);
 
             std::string pc_type_aux;
@@ -66,7 +64,6 @@ namespace utopia
 
             ksp_.pc_type(pc_type_aux);
             ksp_.ksp_type(ksp_type_aux);
-
         }
 
         virtual void ksp_type(const std::string & ksp_type_name)
@@ -113,9 +110,7 @@ namespace utopia
             }
         }
 
-
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             TRSubproblem::print_usage(os);
 
             this->print_param_usage(os, "pc_type", "string", "Type of petsc preconditioner.", "jacobi");
@@ -158,12 +153,9 @@ namespace utopia
 
 
     public:
-        virtual KSP_TR<Matrix, Vector, PETSC>* clone() const override {
-            return new KSP_TR<Matrix, Vector, PETSC>(*this);
-        }
+        KSP_TR<Matrix, Vector, PETSC> *clone() const override { return new KSP_TR<Matrix, Vector, PETSC>(*this); }
 
-        virtual bool apply(const Vector &b, Vector &x) override
-        {
+        bool apply(const Vector &b, Vector &x) override {
             ksp_.apply(b, x);
             return true;
         }
@@ -171,12 +163,10 @@ namespace utopia
         /**
          * @brief      Update function.
          */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             ksp_.update(op);
             set_ksp_options();
         }
-
 
         virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
         {
@@ -191,36 +181,30 @@ namespace utopia
         }
 
         // necessary, as ksp_ is resetting options with every apply...
-        virtual void atol(const Scalar & atol_in) override
-        {
+        void atol(const Scalar &atol_in) override {
             TRSubproblem::atol(atol_in);
             ksp_.atol(atol_in);
         }
 
-        virtual void stol(const Scalar & stol_in)  override
-        {
+        void stol(const Scalar &stol_in) override {
             TRSubproblem::stol(stol_in);
             ksp_.stol(stol_in);
         }
 
-        virtual void rtol(const Scalar & rtol_in) override
-        {
+        void rtol(const Scalar &rtol_in) override {
             TRSubproblem::rtol(rtol_in);
             ksp_.rtol(rtol_in);
         }
 
-        virtual void max_it(const SizeType & max_it_in) override
-        {
+        void max_it(const SizeType &max_it_in) override {
             TRSubproblem::max_it(max_it_in);
             ksp_.max_it(max_it_in);
         }
 
-        virtual void verbose(const bool & verbose_in) override
-        {
+        void verbose(const bool &verbose_in) override {
             TRSubproblem::verbose(verbose_in);
             ksp_.verbose(verbose_in);
         }
-
 
     private:
 

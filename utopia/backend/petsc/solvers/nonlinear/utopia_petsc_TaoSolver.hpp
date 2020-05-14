@@ -23,7 +23,7 @@ namespace utopia {
     public:
         TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver);
         TaoSolver();
-        ~TaoSolver();
+        ~TaoSolver() override;
 
         void set_type(const std::string &type);
         void read(Input &in) override;

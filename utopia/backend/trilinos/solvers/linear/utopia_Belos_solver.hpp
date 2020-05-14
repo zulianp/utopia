@@ -34,7 +34,7 @@ namespace utopia {
 
         BelosSolver();
         BelosSolver(const BelosSolver &other);
-        ~BelosSolver();
+        ~BelosSolver() override;
 
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
         void update(const std::shared_ptr<const Matrix> &op) override;

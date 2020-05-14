@@ -37,11 +37,9 @@ namespace utopia
 
         }
 
+        ~QuasiNewtonBase() override {}
 
-        virtual ~QuasiNewtonBase() {}
-
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             MatrixFreeNonLinearSolver<Vector>::read(in);
             in.get("dumping", alpha_);
 
@@ -56,8 +54,7 @@ namespace utopia
             }
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             MatrixFreeNonLinearSolver<Vector>::print_usage(os);
             this->print_param_usage(os, "dumping", "double", "Default step size.", "1.0");
             this->print_param_usage(os, "line-search", "LSStrategy", "Input parameters for line-search strategy.", "-");

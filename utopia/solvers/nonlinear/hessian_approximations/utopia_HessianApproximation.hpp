@@ -62,7 +62,7 @@ public:
     HessianApproximation(): num_tol_(1e-12), initialized_(false)
     {}
 
-    virtual ~HessianApproximation() { }
+    ~HessianApproximation() override {}
 
     virtual void initialize(const Vector &x_k, const Vector & /* g */)
     {
@@ -80,25 +80,17 @@ public:
     virtual bool update(const Vector & /* s  */, const Vector &  /* y */ , const Vector &  /* x */ , const Vector &  /* g */ ) = 0;
     virtual void reset() = 0;
 
-    virtual HessianApproximation<Vector> * clone() const override = 0;
+    HessianApproximation<Vector> *clone() const override = 0;
 
     // applications of inverse of Hessian
     virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */)  = 0;
     virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */)  = 0;
 
+    void read(Input &in) override { in.get("num_tol", num_tol_); }
 
-
-    virtual void read(Input &in) override
-    {
-        in.get("num_tol", num_tol_);
-    }
-
-
-    virtual  void print_usage(std::ostream &os) const override
-    {
+    void print_usage(std::ostream &os) const override {
         this->print_param_usage(os, "num_tol", "double", "Numerical tolerance.", "1e-12");
     }
-
 
     Scalar num_tol()const
     {

@@ -29,8 +29,7 @@ namespace utopia
             return ptr;
         }
 
-        virtual bool apply(const Vector &b, Vector &x) override
-        {
+        bool apply(const Vector &b, Vector &x) override {
             if(this->verbose()) {
                 this->init_solver("ProjectedConjugateGradient", {" it. ", "|| u - u_old ||"});
             }
@@ -113,7 +112,6 @@ namespace utopia
             return converged;
         }
 
-
         void init_memory(const Layout &layout) override
         {
             QPSolver<Matrix, Vector>::init_memory(layout);
@@ -124,12 +122,10 @@ namespace utopia
             pk.zeros(layout);
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             QPSolver<Matrix, Vector>::update(op);
             init_memory(row_layout(*op));
         }
-
 
     private:
         //buffers

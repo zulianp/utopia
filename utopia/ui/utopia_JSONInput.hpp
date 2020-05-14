@@ -14,7 +14,7 @@ namespace utopia {
     class JSONInput final : public Input {
     public:
         JSONInput();
-        ~JSONInput();
+        ~JSONInput() override;
 
         bool open(const Path &path);
 

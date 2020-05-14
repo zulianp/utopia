@@ -65,8 +65,7 @@
                 assert(P);
             }
 
-
-            virtual ~MatrixTransfer(){}
+            ~MatrixTransfer() override {}
 
             /*=====================================================
                                 initialization

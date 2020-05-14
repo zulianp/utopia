@@ -88,8 +88,7 @@ namespace utopia
             // exact_sol_  = zeros(1, 0); //WHY initialize it at all?
         }
 
-        ~Bratu2D()
-        {
+        ~Bratu2D() override {
             if(setup_)
             {
                 DMDestroy(&da_);

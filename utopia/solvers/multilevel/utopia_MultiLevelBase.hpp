@@ -45,11 +45,9 @@ namespace utopia
 
         }
 
-        virtual ~MultiLevelBase(){}
+        ~MultiLevelBase() override {}
 
-
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             in.get("pre_smoothing_steps", pre_smoothing_steps_);
             in.get("post_smoothing_steps", post_smoothing_steps_);
             in.get("mg_type", mg_type_);
@@ -59,9 +57,7 @@ namespace utopia
             in.get("num_levels", num_levels_);
         }
 
-
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             this->print_param_usage(os, "pre_smoothing_steps", "int", "Number of pre-smoothing steps.", "3");
             this->print_param_usage(os, "post_smoothing_steps", "int", "Number of post-smoothing steps.", "3");
             this->print_param_usage(os, "mg_type", "int", "Multigrid type.", "1");
@@ -71,8 +67,6 @@ namespace utopia
             this->print_param_usage(os, "num_levels", "int", "Number of levels in ML hierarchy.", "-");
         }
 
-
-        
         /**
          * @brief Returns number of levels in hierarchy.
          */

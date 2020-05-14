@@ -49,14 +49,12 @@ namespace utopia {
 
         }
 
-        inline Size size() const
-        {
+        inline Size size() const override {
             const SizeType n_dofs = space_->n_dofs();
             return {n_dofs, n_dofs};
         }
 
-        inline Size local_size() const
-        {
+        inline Size local_size() const override {
             const SizeType n_dofs = space_->n_local_dofs();
             return {n_dofs, n_dofs};
         }
@@ -244,8 +242,7 @@ namespace utopia {
             return false;
         }
 
-        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
-        {
+        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
             space_->create_matrix(H);
             return true;
         }

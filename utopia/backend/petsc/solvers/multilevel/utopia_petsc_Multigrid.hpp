@@ -50,8 +50,7 @@ namespace utopia {
             }
         }
 
-        virtual bool apply(const Vector &rhs, Vector &x) override
-        {
+        bool apply(const Vector &rhs, Vector &x) override {
             if(this->verbose())
                 this->init_solver("utopia/petsc Multigrid",  {"it.", "|| Au - b||"});
 
@@ -85,13 +84,10 @@ namespace utopia {
             default_pc_type_ = pc_type;
         }
 
-
-        virtual void update_transfer(const SizeType level, const std::shared_ptr<Transfer> &t) override
-        {
+        void update_transfer(const SizeType level, const std::shared_ptr<Transfer> &t) override {
             LinearMultiLevel<Matrix, Vector>::update_transfer(level, t);
             aux_update_transfer(level);
         }
-
 
         inline void block_size(const PetscInt size)
         {

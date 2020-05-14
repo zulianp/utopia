@@ -27,7 +27,7 @@ namespace utopia {
 
         Amesos2Solver();
         Amesos2Solver(const Amesos2Solver &other);
-        ~Amesos2Solver();
+        ~Amesos2Solver() override;
 
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;

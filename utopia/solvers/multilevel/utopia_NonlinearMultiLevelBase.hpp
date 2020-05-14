@@ -46,21 +46,17 @@ namespace utopia {
             this->n_levels(n_levels);
         }
 
-        virtual ~NonlinearMultiLevelBase(){}
+        ~NonlinearMultiLevelBase() override {}
 
-
-        virtual void read(Input &in) override
-        {
-          MultiLevelBase<Matrix, Vector>::read(in);
-          NonLinearSolver<Vector>::read(in);
+        void read(Input &in) override {
+            MultiLevelBase<Matrix, Vector>::read(in);
+            NonLinearSolver<Vector>::read(in);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
-          MultiLevelBase<Matrix, Vector>::print_usage(os);
-          NonLinearSolver<Vector>::print_usage(os);
+        void print_usage(std::ostream &os) const override {
+            MultiLevelBase<Matrix, Vector>::print_usage(os);
+            NonLinearSolver<Vector>::print_usage(os);
         }
-
 
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
@@ -244,8 +240,7 @@ namespace utopia {
          *
          * @param[in]  it_global  The iterator global
          */
-        virtual void print_statistics(const SizeType & it_global) override
-        {
+        void print_statistics(const SizeType &it_global) override {
             std::string path = "log_output_path";
             auto non_data_path = Utopia::instance().get(path);
 

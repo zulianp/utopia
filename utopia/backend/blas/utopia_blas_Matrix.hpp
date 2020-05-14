@@ -136,7 +136,7 @@ namespace utopia {
             UTOPIA_REPORT_ALLOC("BlasMatrix::BlasMatrix(SizeType, SizeType)");
         }
 
-        ~BlasMatrix() { }
+        ~BlasMatrix() override {}
 
         BlasMatrix() : rows_(0), cols_(0) {}
 

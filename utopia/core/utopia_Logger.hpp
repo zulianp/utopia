@@ -90,7 +90,7 @@ namespace utopia {
             std::ostream &error_stream = std::cerr
             );
 
-        ~StandardLogger();
+        ~StandardLogger() override;
 
         void flush() override;
 

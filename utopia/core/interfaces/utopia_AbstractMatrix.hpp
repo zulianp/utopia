@@ -43,7 +43,7 @@ namespace utopia {
     // public Selectable<AbstractMatrix<Scalar_, SizeType_>, 2>
     {
     public:
-        virtual ~AbstractMatrix() {}
+        ~AbstractMatrix() override {}
     };
 
     template<class Matrix>
@@ -447,8 +447,7 @@ namespace utopia {
 
         /////////////////////////////////////////////
 
-        inline bool apply(const AbstractVector &x, AbstractVector &y) const
-        {
+        inline bool apply(const AbstractVector &x, AbstractVector &y) const override {
             auto &x_w = static_cast<const VectorWrapper &>(x);
             auto &y_w = static_cast<VectorWrapper &>(y);
             return impl_->apply(x_w.get(), y_w.get());

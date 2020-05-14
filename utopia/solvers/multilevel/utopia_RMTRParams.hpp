@@ -40,11 +40,9 @@ namespace utopia
 
         }
 
+        ~RMTRParams() override {}
 
-        virtual ~RMTRParams(){}
-
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             TrustRegionParams<Vector>::read(in); 
 
             in.get("skip_BC_checks", _skip_BC_checks);
@@ -62,11 +60,10 @@ namespace utopia
             in.get("hessian_update_eta", _hessian_update_eta);
 
             in.get("deltaH_lagging", _deltaH_lagging); 
-            in.get("Hpost_lagging", _Hpost_lagging); 
+            in.get("Hpost_lagging", _Hpost_lagging);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             TrustRegionParams<Vector>::print_usage(os); 
 
             this->print_param_usage(os, "skip_BC_checks", "bool", "Skip treatment of BC conditions.", "false");
@@ -88,7 +85,6 @@ namespace utopia
             this->print_param_usage(os, "deltaH_lagging", "deltaH_lagging", "Use lagging of delta H term. Applies only for Second order consistent models.", "False");
             this->print_param_usage(os, "Hpost_lagging", "Hpost_lagging", "Use lagging of Hessian for post-smoothing.", "False");
         }
-
 
         virtual bool deltaH_lagging() const 
         {

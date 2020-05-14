@@ -20,7 +20,7 @@ namespace utopia {
     public:
 
         TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<Factorization<Matrix, Vector>>());
-        ~TaoQPSolver();
+        ~TaoQPSolver() override;
         TaoQPSolver * clone() const override;
         bool apply(const Vector &rhs, Vector &sol) override;
         void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);

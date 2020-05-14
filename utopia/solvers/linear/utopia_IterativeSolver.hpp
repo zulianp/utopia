@@ -24,9 +24,9 @@ namespace utopia {
 
         IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), verbose_(false), norm_freq_(1.0) {}
 
-        virtual ~IterativeSolver() {}
+        ~IterativeSolver() override {}
 
-        virtual void read(Input &in) override {
+        void read(Input &in) override {
             LinearSolver<Matrix, Vector>::read(in);
 
             in.get("atol", atol_);
@@ -36,7 +36,7 @@ namespace utopia {
             in.get("verbose", verbose_);
         }
 
-        virtual void print_usage(std::ostream &os) const override {
+        void print_usage(std::ostream &os) const override {
             LinearSolver<Matrix, Vector>::print_usage(os);
 
             this->print_param_usage(os, "atol", "real", "Absolute tolerance.", std::to_string(atol_));
@@ -46,9 +46,7 @@ namespace utopia {
             this->print_param_usage(os, "verbose", "bool", "Turn on/off verbose.", "false");
         }
 
-        virtual bool apply(const Vector &rhs, Vector &sol) override {
-            return this->solve(*this->get_operator(), rhs, sol);
-        }
+        bool apply(const Vector &rhs, Vector &sol) override { return this->solve(*this->get_operator(), rhs, sol); }
 
         virtual bool smooth(const Vector &rhs, Vector &x) {
             SizeType temp = this->max_it();
@@ -64,7 +62,7 @@ namespace utopia {
 
         Scalar get_time() { return _time.get_seconds(); }
 
-        virtual IterativeSolver<Matrix, Vector> *clone() const override = 0;
+        IterativeSolver<Matrix, Vector> *clone() const override = 0;
 
     protected:
         /**
@@ -74,7 +72,7 @@ namespace utopia {
          * @param[in]  method            The method.
          * @param[in]  status_variables  The status variables.
          */
-        virtual void init_solver(const std::string &method, const std::vector<std::string> status_variables) override {
+        void init_solver(const std::string &method, const std::vector<std::string> status_variables) override {
             if (mpi_world_rank() == 0 && verbose_) {
                 PrintInfo::print_init(method, status_variables);
             }
@@ -113,7 +111,7 @@ namespace utopia {
          * @param[in]  num_it              The number iterator
          * @param[in]  convergence_reason  The convergence reason
          */
-        virtual void exit_solver(const SizeType &num_it, const Scalar &convergence_reason) override {
+        void exit_solver(const SizeType &num_it, const Scalar &convergence_reason) override {
             _time.stop();
 
             if (verbose_ && mpi_world_rank() == 0) {
@@ -134,10 +132,10 @@ namespace utopia {
          * @param[in]  s_norm  The size of step.
          * @param[in]  it      The number of iterations.
          */
-        virtual bool check_convergence(const SizeType &it,
-                                       const Scalar &g_norm,
-                                       const Scalar &r_norm,
-                                       const Scalar &s_norm) override {
+        bool check_convergence(const SizeType &it,
+                               const Scalar &g_norm,
+                               const Scalar &r_norm,
+                               const Scalar &s_norm) override {
             bool converged = false;
             if (compute_norm(it)) {
                 // termination because norm of grad is down

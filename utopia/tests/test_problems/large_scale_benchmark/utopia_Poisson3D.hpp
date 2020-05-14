@@ -64,8 +64,7 @@ namespace utopia
             setup_ = true;
         }
 
-        ~Poisson3D()
-        {
+        ~Poisson3D() override {
             if(setup_)
             {
                 DMDestroy(&da_);

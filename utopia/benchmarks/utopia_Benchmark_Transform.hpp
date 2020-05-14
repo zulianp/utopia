@@ -23,11 +23,7 @@ namespace utopia {
 
         BenchmarkTransform(const Comm &comm = Comm()) : comm_(comm) {}
 
-
-        virtual std::string name() override
-        {
-            return "Transform";
-        }
+        std::string name() override { return "Transform"; }
 
         void initialize() override
         {

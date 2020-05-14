@@ -140,11 +140,7 @@ namespace utopia
             return 2;
         }
 
-        bool exact_sol_known() const
-        {
-            return true;
-        }
-
+        bool exact_sol_known() const override { return true; }
 
     private:
         Vector x_init_;

@@ -41,8 +41,7 @@ namespace utopia {
         const Left &left() const { return _left; }
         const Right &right() const { return _right; }
 
-        virtual std::string get_class() const
-        {
+        std::string get_class() const override {
             return  "Multiply<" + _left.get_class() + ", " + _right.get_class() + ">";
         }
 

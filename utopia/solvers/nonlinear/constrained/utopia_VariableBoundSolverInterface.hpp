@@ -25,7 +25,7 @@ namespace utopia {
 
     public:
         VariableBoundSolverInterface() = default;
-        virtual ~VariableBoundSolverInterface() = default;
+        ~VariableBoundSolverInterface() override = default;
 
         VariableBoundSolverInterface(const VariableBoundSolverInterface &other) : constraints_(other.constraints_) {}
 
@@ -264,7 +264,7 @@ namespace utopia {
             return correction_constraints_;
         }
 
-        virtual void init_memory(const Layout &layout) override {
+        void init_memory(const Layout &layout) override {
             help_.zeros(layout);
             constraints_.fill_empty_bounds(layout);
             correction_constraints_.fill_empty_bounds(layout);

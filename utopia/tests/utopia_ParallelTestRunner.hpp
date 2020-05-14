@@ -38,7 +38,7 @@ namespace utopia {
     template<class Tensor>
     class AlgebraUnitTest : public UnitTest<typename Traits<Tensor>::Communicator>{
     public:
-        virtual ~AlgebraUnitTest() {}
+        ~AlgebraUnitTest() override {}
     };
 
     template<class Comm>

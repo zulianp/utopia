@@ -23,7 +23,7 @@ namespace utopia
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout   = typename Traits<Vector>::Layout;
 
-        virtual ~ExtendedFunction() { }
+        ~ExtendedFunction() override {}
 
         ExtendedFunction() {}
 
@@ -32,7 +32,7 @@ namespace utopia
             this->set_equality_constrains(bc_marker, x_init);
         }
 
-        virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const override = 0;
+        bool value(const Vector & /*point*/, Scalar & /*value*/) const override = 0;
 
         // Copy of vec...
         Vector initial_guess() const
@@ -45,21 +45,14 @@ namespace utopia
             return utopia::layout(_x_eq_values);
         }
 
-        virtual bool hessian(const Vector &x, Matrix &H) const override = 0;
-        virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const  override
-        {
+        bool hessian(const Vector &x, Matrix &H) const override = 0;
+        bool hessian(const Vector & /*point*/, Matrix & /*result*/, Matrix & /*preconditioner*/) const override {
             return false;
         }
 
-        virtual bool has_preconditioner() const override
-        {
-            return false;
-        }
+        bool has_preconditioner() const override { return false; }
 
-        virtual bool update(const Vector &/*point*/)  override
-        {
-            return true;
-        }
+        bool update(const Vector & /*point*/) override { return true; }
 
         virtual bool get_eq_constrains_values(Vector & x) const
         {

@@ -38,16 +38,14 @@ namespace utopia
 
         }
 
-        virtual ~RMTRBase(){}
+        ~RMTRBase() override {}
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             NonlinearMultiLevelBase<Matrix, Vector>::read(in);
             RMTRParams<Vector>::read(in);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
             RMTRParams<Vector>::print_usage(os);
         }
@@ -57,8 +55,8 @@ namespace utopia
         }
 
 
-    public: 
-        virtual bool solve(Vector &x_h) override;
+    public:
+        bool solve(Vector &x_h) override;
 
     protected:
         virtual bool multiplicative_cycle(const SizeType & level);
@@ -350,8 +348,7 @@ namespace utopia
 
     ///////////////////////////////////////////// INITIALIZATIONS ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // to overwrite
-        virtual void init_memory() override
-        {
+        void init_memory() override {
             const auto &layouts =  this->local_level_layouts();
             const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > & funs =  this->level_functions();
 

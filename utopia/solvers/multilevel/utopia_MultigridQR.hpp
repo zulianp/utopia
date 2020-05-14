@@ -96,7 +96,7 @@ namespace utopia
             }
         }
 
-        ~MultigridQR(){}
+        ~MultigridQR() override {}
 
         void read(Input &in) override
         {

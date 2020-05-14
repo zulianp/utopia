@@ -59,10 +59,9 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
+                ~Matrix() override {}
 
-		virtual ~Matrix() {}
-
-		//face methods for treaing matrix and distrubed-matrix in the same way
+                //face methods for treaing matrix and distrubed-matrix in the same way
 		void c_set(const SizeType &i, const SizeType &j, const Scalar &value)
 		{
 			this->set(i, j, value);
@@ -118,8 +117,8 @@ namespace utopia {
 		virtual void read_and_write_lock(WriteMode mode) = 0;
 		virtual void read_and_write_unlock(WriteMode mode) = 0;
 
-		virtual ~DenseMatrix() {}
-	};
+                ~DenseMatrix() override {}
+        };
 
 	template<typename Scalar_, typename SizeType_>
 	class SparseMatrix : public Matrix<Scalar_, SizeType_> {
@@ -180,8 +179,8 @@ namespace utopia {
 
 		virtual Size local_size() const { return {local_rows(), local_cols() }; }
 
-		virtual ~DistributedMatrix() {}
-	};
+                ~DistributedMatrix() override {}
+        };
 
 	template<typename Scalar_, typename SizeType_>
 	class DistributedDenseMatrix : public DistributedMatrix<Scalar_, SizeType_> {
@@ -197,8 +196,8 @@ namespace utopia {
 	template<typename Scalar_, typename SizeType_>
 	class DistributedSparseMatrix : public DistributedMatrix<Scalar_, SizeType_> {
 	public:
-		virtual ~DistributedSparseMatrix() {}
-	};
+            ~DistributedSparseMatrix() override {}
+        };
 
 
 

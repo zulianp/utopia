@@ -56,7 +56,7 @@ namespace utopia {
         DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        virtual ~UnconstrainedTestFunction() {}
+        ~UnconstrainedTestFunction() override {}
     };
 
     template <class Matrix, class Vector>
@@ -66,9 +66,9 @@ namespace utopia {
         DEF_UTOPIA_SCALAR(Matrix);
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        virtual ~UnconstrainedExtendedTestFunction() {}
+        ~UnconstrainedExtendedTestFunction() override {}
 
-        virtual Vector initial_guess() const override = 0;
+        Vector initial_guess() const override = 0;
     };
 
     template <class Matrix, class Vector>
@@ -79,7 +79,7 @@ namespace utopia {
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::BoxConstraints<Vector> BoxConstraints;
 
-        virtual ~ConstrainedTestFunction() {}
+        ~ConstrainedTestFunction() override {}
 
         virtual const BoxConstraints &box_constraints() const { return constraints_; }
 
@@ -179,7 +179,7 @@ namespace utopia {
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::BoxConstraints<Vector> BoxConstraints;
 
-        virtual ~ConstrainedExtendedTestFunction() {}
+        ~ConstrainedExtendedTestFunction() override {}
 
         virtual const BoxConstraints &box_constraints() const { return constraints_; }
 
@@ -205,7 +205,7 @@ namespace utopia {
 
         virtual bool has_upper_bound() const { return constraints_.has_upper_bound(); }
 
-        virtual Vector initial_guess() const override = 0;
+        Vector initial_guess() const override = 0;
 
         virtual bool is_feasible(Vector &x) {
             if (!constraints_.has_upper_bound() && !constraints_.has_lower_bound()) return true;

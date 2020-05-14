@@ -22,10 +22,7 @@ namespace utopia {
         FactoryMethod()
         {}
 
-        std::unique_ptr<OutInterface> make() const final override
-        {
-            return utopia::make_unique<OutObject>();
-        }
+        std::unique_ptr<OutInterface> make() const final { return utopia::make_unique<OutObject>(); }
     };
 
     template<class OutInterface, class ArgIn, class OutObject = OutInterface>
@@ -35,10 +32,7 @@ namespace utopia {
         : arg_(arg)
         {}
 
-        std::unique_ptr<OutInterface> make() const final override
-        {
-            return utopia::make_unique<OutObject>(arg_);
-        }
+        std::unique_ptr<OutInterface> make() const final { return utopia::make_unique<OutObject>(arg_); }
 
     private:
         ArgIn arg_;

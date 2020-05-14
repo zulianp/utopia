@@ -99,11 +99,7 @@ namespace utopia
             return 2;
         }
 
-        bool exact_sol_known() const
-        {
-            return false;
-        }
-
+        bool exact_sol_known() const override { return false; }
 
     private:
         Vector x_init_;

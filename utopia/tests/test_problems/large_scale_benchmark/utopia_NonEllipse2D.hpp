@@ -60,7 +60,7 @@ namespace utopia {
             setup_ = true;
         }
 
-        ~NonEllipse2D() {
+        ~NonEllipse2D() override {
             if (setup_) {
                 DMDestroy(&da_);
                 SNESDestroy(&snes_);

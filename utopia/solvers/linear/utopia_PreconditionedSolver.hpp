@@ -42,10 +42,7 @@ namespace utopia {
             return static_cast<bool>(precond_);
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
-            update(op, op);
-        }
+        void update(const std::shared_ptr<const Matrix> &op) override { update(op, op); }
 
         virtual void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec)
         {
@@ -64,16 +61,14 @@ namespace utopia {
             }
         }
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             IterativeSolver::read(in);
             if(precond_) {
                 in.get("precond", *precond_);
             }
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             IterativeSolver::print_usage(os);
             this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-");
         }

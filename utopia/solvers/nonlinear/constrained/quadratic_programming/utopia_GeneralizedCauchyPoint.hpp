@@ -22,7 +22,7 @@ namespace  utopia
         GeneralizedCauchyPoint() : cp_memory_(5), initialized_(false)
         {}
 
-        ~GeneralizedCauchyPoint( ){}
+        ~GeneralizedCauchyPoint() override {}
 
         GeneralizedCauchyPoint * clone() const override
         {

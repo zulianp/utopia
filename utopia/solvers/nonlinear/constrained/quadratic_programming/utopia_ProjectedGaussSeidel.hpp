@@ -48,7 +48,7 @@ namespace utopia {
             this->print_param_usage(os, "n_local_sweeps", "int", "Number of local sweeps.", "3");
         }
 
-        virtual bool smooth(const Vector &b, Vector &x) override {
+        bool smooth(const Vector &b, Vector &x) override {
             const Matrix &A = *this->get_operator();
 
             // init(A);
@@ -352,7 +352,7 @@ namespace utopia {
             d_inv = 1. / d;
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             IterativeSolver<Matrix, Vector>::update(op);
             init(*op);
         }

@@ -22,9 +22,7 @@ namespace utopia {
 
         inline const Expr &expr() const { return expr_; }
 
-        std::string get_class() const {
-            return  "Diag<" + expr_.get_class() + ">";
-        }
+        std::string get_class() const override { return "Diag<" + expr_.get_class() + ">"; }
 
     private:
        UTOPIA_STORE_CONST(Expr) expr_;

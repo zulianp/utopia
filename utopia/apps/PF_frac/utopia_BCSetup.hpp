@@ -55,10 +55,7 @@ namespace utopia {
 
             }
 
-            virtual ~BCSetup()
-            {
-
-            }
+            ~BCSetup() override {}
 
             void read(Input &in) override
             {

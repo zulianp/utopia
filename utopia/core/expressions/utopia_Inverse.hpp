@@ -24,9 +24,7 @@ namespace utopia {
             return expr_;
         }
 
-        std::string get_class() const {
-            return "Inverse<" + expr_.get_class() + ">";
-        }
+        std::string get_class() const override { return "Inverse<" + expr_.get_class() + ">"; }
 
     private:
          UTOPIA_STORE_CONST(Expr) expr_;

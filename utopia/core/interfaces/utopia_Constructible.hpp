@@ -49,33 +49,25 @@ namespace utopia {
 		using Scalar   = Scalar_;
 		using SizeType = SizeType_;
 
-		virtual ~Constructible() {}
-		// virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
+                ~Constructible() override {}
+                // virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
 
 		///Specialize for sparse matrices
-		virtual void sparse(const Size &s, const SizeType &/*nnz*/) override
-		{
-			zeros(s);
-		}
+                void sparse(const Size &s, const SizeType & /*nnz*/) override { zeros(s); }
 
-		///Specialize for sparse matrices
-		virtual void local_sparse(const Size &s, const SizeType &/*nnz*/) override
-		{
-			local_zeros(s);
-		}
+                ///Specialize for sparse matrices
+                void local_sparse(const Size &s, const SizeType & /*nnz*/) override { local_zeros(s); }
 
-		virtual void local_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
+                void local_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
 
+                void zeros(const Size &s) override { this->values(s, 0.0); }
+                // virtual void values(const Size &s, const Scalar &val) = 0;
+                void dense_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
 
-
-		virtual void zeros(const Size &s) override { this->values(s, 0.0); }
-		// virtual void values(const Size &s, const Scalar &val) = 0;
-		virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
-
-		virtual void local_zeros(const Size &s) override { local_values(s, 0.0); }
-		virtual void local_values(const Size &s, const Scalar &val) override { this->values(s, val); }
-		virtual void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override { dense_identity(s, diag); }
-	};
+                void local_zeros(const Size &s) override { local_values(s, 0.0); }
+                void local_values(const Size &s, const Scalar &val) override { this->values(s, val); }
+                void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override { dense_identity(s, diag); }
+        };
 
 	template<typename Scalar_, typename SizeType_>
 	class Constructible<Scalar_, SizeType_, 1> {

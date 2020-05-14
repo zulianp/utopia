@@ -144,24 +144,24 @@ namespace utopia {
 
         SimpleQuadraticFunction(const SizeType &n) : n_(n) {}
 
-        virtual bool initialize_hessian(Matrix &H, Matrix &H_pre) const override {
+        bool initialize_hessian(Matrix &H, Matrix &H_pre) const override {
             H.identity(serial_layout(n_, n_), 2.0);
             H_pre = H;
             return true;
         }
 
-        virtual bool value(const Vector &point, Scalar &result) const override {
+        bool value(const Vector &point, Scalar &result) const override {
             const Scalar val = norm2(point);
             result = val * val;
             return true;
         }
 
-        virtual bool gradient(const Vector &point, Vector &result) const override {
+        bool gradient(const Vector &point, Vector &result) const override {
             result = 2.0 * point;
             return true;
         }
 
-        virtual bool hessian(const Vector &point, Matrix &result) const override {
+        bool hessian(const Vector &point, Matrix &result) const override {
             // const auto n = point.size();
             result.identity(square_matrix_layout(layout(point)), 2.0);
             return true;

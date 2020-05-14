@@ -133,9 +133,7 @@ namespace utopia
         }
 
     private:
-
-        void init_memory(const Layout &layout)
-        {
+        void init_memory(const Layout &layout) override {
             s.zeros(layout);
             g.zeros(layout);
             y.zeros(layout);

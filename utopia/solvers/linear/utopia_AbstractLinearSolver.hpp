@@ -12,10 +12,8 @@ namespace utopia {
 											AbstractMatrix<Scalar, SizeType>,
 											AbstractVector<Scalar, SizeType> > {
 	public:
-
-		virtual ~AbstractLinearSolver() {}
-
-	};
+            ~AbstractLinearSolver() override {}
+        };
 
 
 	template<class Solver>

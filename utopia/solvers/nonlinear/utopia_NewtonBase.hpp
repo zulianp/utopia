@@ -35,8 +35,7 @@ namespace utopia {
         : NonLinearSolver<Vector>(), linear_solver_(linear_solver), check_diff_(false), forcing_strategy_(InexactNewtonForcingStartegies::ZERO)
         { }
 
-        virtual ~NewtonBase() {}
-
+        ~NewtonBase() override {}
 
         virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
 
@@ -89,8 +88,7 @@ namespace utopia {
             return true;
         }
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             NonLinearSolver<Vector>::read(in);
             in.get("check-diff", check_diff_);
 
@@ -103,8 +101,7 @@ namespace utopia {
             }
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             NonLinearSolver<Vector>::print_usage(os);
             this->print_param_usage(os, "check_diff", "bool", "Enables finite difference controller", std::to_string(check_diff_));
 

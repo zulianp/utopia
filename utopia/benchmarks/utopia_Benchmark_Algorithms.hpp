@@ -24,11 +24,7 @@ namespace utopia {
 
         BenchmarkAlgorithms(const Comm &comm = Comm()) : comm_(comm) {}
 
-
-        virtual std::string name() override
-        {
-            return "Algorithms";
-        }
+        std::string name() override { return "Algorithms"; }
 
         void initialize() override
         {

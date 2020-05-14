@@ -19,7 +19,7 @@ namespace utopia {
     public:
 
         SemismoothNewton(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<Factorization<Matrix, Vector>>());
-        ~SemismoothNewton();
+        ~SemismoothNewton() override;
         SemismoothNewton * clone() const override;
         bool apply(const Vector &rhs, Vector &sol) override;
         void read(Input &in) override;

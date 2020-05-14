@@ -457,8 +457,7 @@ namespace utopia {
             return false;
         }
 
-        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const
-        {
+        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
             space_->create_matrix(H);
             return true;
         }

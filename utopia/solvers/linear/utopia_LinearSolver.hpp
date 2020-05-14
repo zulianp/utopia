@@ -23,16 +23,16 @@ namespace utopia {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
-        virtual ~LinearSolver() {}
+        ~LinearSolver() override {}
 
         LinearSolver() = default;
         LinearSolver(const LinearSolver &other) { assert((!other.op_) && "cannot be copied once initialized"); }
 
-        virtual bool apply(const Vector &rhs, Vector &sol) override = 0;
+        bool apply(const Vector &rhs, Vector &sol) override = 0;
 
-        virtual void read(Input &in) override { Preconditioner<Vector>::read(in); }
+        void read(Input &in) override { Preconditioner<Vector>::read(in); }
 
-        virtual void print_usage(std::ostream &os) const override { Preconditioner<Vector>::print_usage(os); }
+        void print_usage(std::ostream &os) const override { Preconditioner<Vector>::print_usage(os); }
 
         /**
          * @brief      Solve routine.
@@ -61,7 +61,7 @@ namespace utopia {
 
         inline bool has_operator() const { return static_cast<bool>(op_); }
 
-        virtual LinearSolver *clone() const override = 0;
+        LinearSolver *clone() const override = 0;
 
     private:
         std::shared_ptr<const Matrix> op_;

@@ -23,7 +23,7 @@ namespace utopia
 
     }
 
-    virtual ~TrustRegionParams(){}
+    ~TrustRegionParams() override {}
 
     Scalar delta_max()  const  { return delta_max_; }
     Scalar delta_min()  const  { return delta_min_; }
@@ -108,9 +108,9 @@ namespace utopia
 
     }
 
-    virtual ~TrustRegionBase(){}
+    ~TrustRegionBase() override {}
 
-  protected:
+protected:
     virtual void print_statistics(const SizeType & it, const SizeType & it_successful)
     {
         std::string path = "log_output_path";

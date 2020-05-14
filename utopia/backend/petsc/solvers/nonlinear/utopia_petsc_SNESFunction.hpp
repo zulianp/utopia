@@ -26,8 +26,7 @@ namespace utopia
                 ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), snes_(snes)
             {}
 
-            virtual bool gradient(const Vector &x, Vector &g) const override
-            {
+            bool gradient(const Vector &x, Vector &g) const override {
                 // initialization of gradient vector...
                 if(empty(g)){
                     g.zeros(layout(x));
@@ -38,15 +37,13 @@ namespace utopia
                 return true;
             }
 
-            virtual bool hessian(const Vector &x, Matrix &hessian) const override
-            {
+            bool hessian(const Vector &x, Matrix &hessian) const override {
                 SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,  snes_->jacobian_pre);
                 wrap(snes_->jacobian, hessian);
                 return true;
             }
 
-            virtual bool value(const Vector &x, typename Vector::Scalar &result) const override
-            {
+            bool value(const Vector &x, typename Vector::Scalar &result) const override {
                 // hack to have fresh energy (MOOSE post-processor does things in strange way )
                 Vector grad = 0 * x;
                 this->gradient(x, grad);

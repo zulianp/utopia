@@ -85,7 +85,7 @@ namespace utopia {
                 os, "fine-QPSolver", "QPSolver", "Input parameters for coarse level QP solver.", "-");
         }
 
-        ~RMTR_inf() {
+        ~RMTR_inf() override {
             // do we need to destroy some memory or no???
         }
 

@@ -430,7 +430,9 @@ namespace utopia {
             layout_ = layout;
         }
 
-        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) { precond_ = precond; }
+        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override {
+            precond_ = precond;
+        }
 
     private:
         Vector fi, beta, gp, p, y, Ap, Abeta, Ax, g, help_f1, help_f2;

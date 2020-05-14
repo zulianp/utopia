@@ -21,7 +21,7 @@ namespace  utopia
         using Layout   = typename Traits<Vector>::Layout;
 
     public:
-        virtual ~LSStrategy() {}
+        ~LSStrategy() override {}
 
         LSStrategy():   verbose_(false),
                         c1_(1e-4),
@@ -102,8 +102,7 @@ namespace  utopia
             return max_it_;
         }
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             in.get("verbose", verbose_);
             in.get("c1", c1_);
             in.get("max_it", max_it_);
@@ -111,8 +110,7 @@ namespace  utopia
             in.get("alpha_min", alpha_min_);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             this->print_param_usage(os, "verbose", "bool", "Verbose.", "false");
             this->print_param_usage(os, "c1", "double", "Constant used for Wolfe conditions.", "1e-4");
             this->print_param_usage(os, "max_it", "int", "Maximum number of iterations.", "50");

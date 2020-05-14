@@ -49,7 +49,7 @@ namespace utopia
 
         }
 
-         ~RMTR_l2(){}
+        ~RMTR_l2() override {}
 
         void read(Input &in) override
         {
@@ -176,8 +176,7 @@ namespace utopia
          * @param[in]  s_global   Sum of all corrections on given level
          * @param      converged  convergence flag
          */
-        bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global)
-        {
+        bool delta_update(const Scalar &rho, const SizeType &level, const Vector &s_global) override {
             Scalar intermediate_delta;
 
             if(rho < this->eta1())

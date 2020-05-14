@@ -28,10 +28,7 @@ namespace utopia
 
         }
 
-        virtual ~EigenSolver()
-        {
-
-        }
+        ~EigenSolver() override {}
 
         virtual void number_of_eigenvalues(const SizeType & number_of_eigenvalues)
         {
@@ -80,9 +77,7 @@ namespace utopia
           return portion_of_spectrum_;
         }
 
-
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             in.get("max_it", max_it_);
             in.get("tol", tol_);
             in.get("verbose", verbose_);
@@ -91,9 +86,7 @@ namespace utopia
             in.get("portion_of_spectrum", portion_of_spectrum_);
         }
 
-
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             this->print_param_usage(os, "max_it", "int", "Maximum number of iterations.", "1000");
             this->print_param_usage(os, "tol", "real", "Absolute tolerance.", "0.25");
             this->print_param_usage(os, "verbose", "bool", "Verbose flag.", "false");
@@ -101,7 +94,6 @@ namespace utopia
             this->print_param_usage(os, "number_of_eigenvalues", "int", "Number of eigenvalues to be computed.", "1");
             this->print_param_usage(os, "portion_of_spectrum", "string", "Define portion of spectrum of interest.", "smallest_real");
         }
-
 
         virtual void portion_of_spectrum(const std::string & type) = 0;
 
@@ -112,7 +104,7 @@ namespace utopia
         virtual void get_eigenpairs(const SizeType & i, Scalar & iegr, Scalar & eigi, Vector & vr, Vector & vi) = 0;
         virtual void get_real_eigenpair(const SizeType & i, Scalar & iegr, Vector & vr) = 0;
 
-        virtual EigenSolver * clone() const override= 0;
+        EigenSolver *clone() const override = 0;
 
     private:
         SizeType number_of_eigenvalues_;
