@@ -47,7 +47,7 @@ namespace utopia {
         using Constructible<T, std::size_t, 1>::zeros;
 
         using iterator = typename Entries::iterator;
-        using const_iterator = typename Entries::iterator;
+        using const_iterator = typename Entries::const_iterator;
         using Layout = typename Traits<BlasVector>::Layout;
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
