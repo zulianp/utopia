@@ -16,7 +16,7 @@ namespace utopia {
         virtual bool is_linear() const { return false; }
 
         virtual void clear() {}
-        virtual void read(Input &in) override { UTOPIA_UNUSED(in); }
+        void read(Input &in) override { UTOPIA_UNUSED(in); }
     };
 
 }  // namespace utopia

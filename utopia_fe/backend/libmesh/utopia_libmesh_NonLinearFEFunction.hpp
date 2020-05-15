@@ -289,12 +289,12 @@ namespace utopia {
 
         virtual ~NonLinearFEFunction() {}
 
-        virtual bool value(const Vector &x, Scalar &value) const override {
+        bool value(const Vector &x, Scalar &value) const override {
             value = dot(x, buff_mat * x) - dot(x, buff_vec);
             return true;
         }
 
-        virtual bool gradient(const Vector &x, Vector &result) const override {
+        bool gradient(const Vector &x, Vector &result) const override {
             if (compute_linear_residual_) {
                 result = buff_mat * x - buff_vec;
             } else {
@@ -304,12 +304,12 @@ namespace utopia {
             return true;
         }
 
-        virtual bool hessian(const Vector &, Matrix &H) const override {
+        bool hessian(const Vector &, Matrix &H) const override {
             H = buff_mat;
             return true;
         }
 
-        virtual bool update(const Vector &x) override {
+        bool update(const Vector &x) override {
             typedef decltype(eqs_.template get<0>()) Eq1;
             typedef typename FindFunctionSpace<Eq1>::Type FunctionSpaceT;
             auto &space = find_space<FunctionSpaceT>(eqs_);

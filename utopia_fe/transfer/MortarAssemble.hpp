@@ -48,7 +48,7 @@ namespace utopia {
         QMortar(const unsigned int dim, const libMesh::Order order = libMesh::INVALID_ORDER)
             : libMesh::QBase(dim, order) {}
 
-        virtual libMesh::QuadratureType type() const override { return libMesh::QGAUSS; }
+        libMesh::QuadratureType type() const override { return libMesh::QGAUSS; }
 
         void init_1D(const libMesh::ElemType type = libMesh::INVALID_ELEM, unsigned int p_level = 0) override {
             // assert(false);

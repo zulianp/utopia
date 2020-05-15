@@ -100,7 +100,7 @@ namespace utopia {
             return true;
         }
 
-        virtual bool stress(const Vector &x, Vector &result) override {
+        bool stress(const Vector &x, Vector &result) override {
             if (!material_->stress(x, result)) {
                 return false;
             }

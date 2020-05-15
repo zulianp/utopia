@@ -54,7 +54,7 @@ namespace utopia {
             return assemble(test_r, ctx, result);
         }
 
-        virtual std::string get_class() const override { return "LinearIntegrator"; }
+        std::string get_class() const override { return "LinearIntegrator"; }
     };
 
     template <class FunctionSpace>

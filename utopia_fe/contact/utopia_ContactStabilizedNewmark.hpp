@@ -30,7 +30,7 @@ namespace utopia {
         }
 
         // virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-        virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
+        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             if (!this->material().assemble_hessian_and_gradient(x, stiffness_matrix_, internal_force_)) {
                 return false;
             }
@@ -52,13 +52,13 @@ namespace utopia {
             return true;
         }
 
-        virtual bool stress(const Vector &x, Vector &result) override {
+        bool stress(const Vector &x, Vector &result) override {
             result =
                 ((dt_ * dt_ * density_) / 4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
             return true;
         }
 
-        virtual void initialize() override { ContactSolver<Matrix, Vector>::initialize(); }
+        void initialize() override { ContactSolver<Matrix, Vector>::initialize(); }
 
         void initial_condition(const Scalar density, const UVector &initial_velocity = UVector()) {
             auto &V = this->space();
@@ -164,7 +164,7 @@ namespace utopia {
             c_sys_->update(state, this->contact(), dt_);
         }
 
-        virtual void finalize() override {}
+        void finalize() override {}
 
         void set_dt_and_update(const Scalar dt) {
             if (approxeq(dt, dt_)) {

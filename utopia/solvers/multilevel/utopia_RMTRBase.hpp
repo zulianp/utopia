@@ -67,25 +67,23 @@ namespace utopia {
             return false;
         }
 
-        virtual bool get_multilevel_gradient(const Fun &fun, const SizeType &level, const Vector &s_global) final {
+        bool get_multilevel_gradient(const Fun &fun, const SizeType &level, const Vector &s_global) {
             return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global);
         }
 
-        virtual bool get_multilevel_gradient(const Fun &fun, const SizeType &level) final {
+        bool get_multilevel_gradient(const Fun &fun, const SizeType &level) {
             return ml_derivs_.compute_gradient(level, fun, memory_.x[level]);
         }
 
-        virtual Scalar get_multilevel_energy(const Fun &fun, const SizeType &level, const Vector &s_global) final {
+        Scalar get_multilevel_energy(const Fun &fun, const SizeType &level, const Vector &s_global) {
             return ml_derivs_.compute_energy(level, fun, memory_.x[level], s_global);
         }
 
-        virtual Scalar get_multilevel_energy(const Fun &fun, const SizeType &level) final {
+        Scalar get_multilevel_energy(const Fun &fun, const SizeType &level) {
             return ml_derivs_.compute_energy(level, fun, memory_.x[level]);
         }
 
-        virtual Scalar get_multilevel_gradient_energy(const Fun &fun,
-                                                      const SizeType &level,
-                                                      const Vector &s_global) final {
+        Scalar get_multilevel_gradient_energy(const Fun &fun, const SizeType &level, const Vector &s_global) {
             return ml_derivs_.compute_gradient_energy(level, fun, memory_.x[level], s_global);
         }
 
@@ -277,7 +275,7 @@ namespace utopia {
         ///////////////////////////////////////////////////////////// HELPERS
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        virtual void print_level_info(const SizeType &level) final {
+        void print_level_info(const SizeType &level) {
             if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0) {
                 if (level == 0) {
                     std::cout << this->yellow_;
@@ -324,7 +322,7 @@ namespace utopia {
 
         virtual bool update_level(const SizeType & /*level*/) { return false; }
 
-        virtual void compute_s_global(const SizeType &level, Vector &s_global) final {
+        void compute_s_global(const SizeType &level, Vector &s_global) {
             if (empty(this->memory_.x_0[level])) {
                 utopia_error("this should not happen, remove when done testing... \n");
             } else if (level < this->n_levels() - 1) {

@@ -43,7 +43,7 @@ namespace utopia {
         IContact() {}
         virtual ~IContact() {}
 
-        virtual void read(Input &) override {}
+        void read(Input &) override {}
 
         virtual bool init_no_contact(const std::shared_ptr<libMesh::MeshBase> &mesh,
                                      const std::shared_ptr<libMesh::DofMap> &dof_map) = 0;

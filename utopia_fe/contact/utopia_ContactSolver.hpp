@@ -86,7 +86,7 @@ namespace utopia {
             qp_solver_ = tao;
         }
 
-        virtual void read(Input &is) override {
+        void read(Input &is) override {
             std::string discretization = "legacy";
             is.get("discretization", discretization);
 
