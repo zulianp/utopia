@@ -179,7 +179,7 @@ namespace utopia {
 
         virtual ~PostProcessable() {}
 
-        virtual void read(Input &in) override {
+        void read(Input &in) override {
             in.get("post-processors", [this](Input &in) {
                 in.get_all([this](Input &in) {
                     std::string type;

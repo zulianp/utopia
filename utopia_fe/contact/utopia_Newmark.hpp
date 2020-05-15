@@ -18,7 +18,7 @@ namespace utopia {
             : ContactSolver<Matrix, Vector>(V, material, params), dt_(dt) {}
 
         // virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-        virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
+        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             if (!this->material().assemble_hessian_and_gradient(x, stiffness_matrix_, internal_force_)) {
                 return false;
             }
@@ -32,7 +32,7 @@ namespace utopia {
             return true;
         }
 
-        virtual void initialize() override { ContactSolver<Matrix, Vector>::initialize(); }
+        void initialize() override { ContactSolver<Matrix, Vector>::initialize(); }
 
         void initial_condition() {
             auto &V = this->space();
@@ -70,7 +70,7 @@ namespace utopia {
                             2. * internal_force_old_ - internal_force_older_ + (4. * external_force_);
         }
 
-        virtual void finalize() override {}
+        void finalize() override {}
 
     private:
         Scalar dt_;

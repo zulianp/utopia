@@ -289,7 +289,7 @@ namespace utopia {
     public:
         SimulationInput() : wear_coefficient(7e-3), extrapolation_factor(10.) {}
 
-        virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override {
+        bool init(libMesh::Parallel::Communicator &comm, Input &is) override {
             if (!ContactSimulation::init(comm, is)) return false;
 
             is.get("wear", [this](Input &is) {
@@ -307,7 +307,7 @@ namespace utopia {
         int n_cycles;
         double wear_coefficient, extrapolation_factor;
 
-        virtual void describe(std::ostream &os) const override {
+        void describe(std::ostream &os) const override {
             ContactSimulation::describe(os);
             contact_params.describe(os);
 
