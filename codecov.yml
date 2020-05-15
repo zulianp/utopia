@@ -1,0 +1,14 @@
+codecov:
+  token: "c754a0a2-6280-4ce4-9756-b65d1f910144"
+  bot: "codecov-io"
+  # ci:
+  #   - "travis.org"
+  strict_yaml_branch: "yaml-config"
+  max_report_age: 24
+  disable_default_path_fixes: yes
+  require_ci_to_pass: no
+  notify:
+    after_n_builds: 2
+    wait_for_ci: no
+  fixes:
+    - "*/utopia/utopia/::/utopia/utopia/"
