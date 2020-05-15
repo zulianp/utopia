@@ -5,9 +5,9 @@
 
 #ifdef HAVE_AMESOS2_KOKKOS
 
+#include "utopia_DirectSolver.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_trilinos_LinearSolverFactory.hpp"
-#include "utopia_DirectSolver.hpp"
 
 namespace utopia {
     /**@ingroup     Linear
@@ -35,15 +35,14 @@ namespace utopia {
         void read(Input &is) override;
         void print_usage(std::ostream &os) const override;
 
-
-        int get_nnzLU () const;
-        int get_num_preorder () const;
-        int get_num_sym_fact () const;
-        int get_num_numeric_fact () const;
-        int get_num_solve () const;
-        bool get_preordering_done () const;
-        bool get_sym_factorization_done () const;
-        bool get_num_factorization_done () const;
+        int get_nnzLU() const;
+        int get_num_preorder() const;
+        int get_num_sym_fact() const;
+        int get_num_numeric_fact() const;
+        int get_num_solve() const;
+        bool get_preordering_done() const;
+        bool get_sym_factorization_done() const;
+        bool get_num_factorization_done() const;
 
         /**
          * @brief      Reads the xml file based on different layout than read
@@ -52,27 +51,25 @@ namespace utopia {
          */
         void read_xml(const std::string &path);
 
-
-         /**
-          * @brief      Sets the parameters.
+        /**
+         * @brief      Sets the parameters.
          */
-        void check_parameters(); //override;
+        void check_parameters();  // override;
 
-        Amesos2Solver * clone() const override;
+        Amesos2Solver *clone() const override;
 
-        private:
+    private:
+        class Impl;
+        std::unique_ptr<Impl> impl_;
 
-            class Impl;
-            std::unique_ptr<Impl> impl_;
-
-            // bool set_problem();
-            // bool set_problem(Matrix &A);
-            bool preordering();
-            bool num_factorization();
-            bool sym_factorization();
+        // bool set_problem();
+        // bool set_problem(Matrix &A);
+        bool preordering();
+        bool num_factorization();
+        bool sym_factorization();
     };
 
 }  // namespace utopia
 
-#endif //HAVE_AMESOS2_KOKKOS
-#endif //UTOPIA_AMESOS2_SOLVERS_HPP
+#endif  // HAVE_AMESOS2_KOKKOS
+#endif  // UTOPIA_AMESOS2_SOLVERS_HPP

@@ -2,27 +2,23 @@
 #define UTOPIA_POWELL_03
 
 #include "utopia_Base.hpp"
+#include "utopia_Communicator.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_TestFunctions.hpp"
-#include "utopia_Communicator.hpp"
 
 #include <cassert>
 
+namespace utopia {
 
-namespace utopia
-{
-
-    template<class Matrix, class Vector>
-    class Powell03 final: public UnconstrainedTestFunction<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class Powell03 final : public UnconstrainedTestFunction<Matrix, Vector> {
     public:
-        using Traits   = utopia::Traits<Vector>;
-        using Scalar   = typename Traits::Scalar;
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
-        using Comm     = typename Traits::Communicator;
+        using Comm = typename Traits::Communicator;
 
-        Powell03()
-        {
+        Powell03() {
             auto v_layout = serial_layout(2);
 
             x_init_.zeros(v_layout);
@@ -38,23 +34,14 @@ namespace utopia
                 x_exact_.set(0, 1.09815933e-5);
                 x_exact_.set(1, 9.106146738);
             }
-
         }
 
-        std::string name() const override
-        {
-            return "Powell badly scaled";
-        }
+        std::string name() const override { return "Powell badly scaled"; }
 
-        SizeType dim() const override
-        {
-            return 2.0;
-        }
+        SizeType dim() const override { return 2.0; }
 
-
-        bool value(const Vector &point, typename Vector::Scalar &result) const override
-        {
-            if(point.comm().size() > 1){
+        bool value(const Vector &point, typename Vector::Scalar &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -66,16 +53,15 @@ namespace utopia
             const Scalar x = point.get(0);
             const Scalar y = point.get(1);
 
-            Scalar a = ((10000.0 * x * y) -1.0);
+            Scalar a = ((10000.0 * x * y) - 1.0);
             Scalar b = std::exp(-x) + std::exp(-y) - 1.0001;
 
-            result = a*a + b*b;
+            result = a * a + b * b;
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &result) const override
-        {
-            if(point.comm().size() > 1){
+        bool gradient(const Vector &point, Vector &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -106,9 +92,8 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override
-        {
-            if(point.comm().size() > 1){
+        bool hessian(const Vector &point, Matrix &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -146,26 +131,16 @@ namespace utopia
             return true;
         }
 
-        Vector initial_guess() const override
-        {
-            return x_init_;
-        }
+        Vector initial_guess() const override { return x_init_; }
 
-        const Vector & exact_sol() const override
-        {
-            return x_exact_;
-        }
+        const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override
-        {
-            return 0;
-        }
-
+        Scalar min_function_value() const override { return 0; }
 
     private:
         Vector x_init_;
         Vector x_exact_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_POWELL_03
+#endif  // UTOPIA_POWELL_03

@@ -29,7 +29,7 @@ namespace utopia {
 
         bool valid() const;
 
-        SymbolicFunction & operator=(const SymbolicFunction &other);
+        SymbolicFunction &operator=(const SymbolicFunction &other);
         SymbolicFunction(const std::string &expr);
         SymbolicFunction(const SymbolicFunction &other);
         ~SymbolicFunction();
@@ -38,34 +38,31 @@ namespace utopia {
         std::unique_ptr<Impl> impl_;
     };
 
-    inline SymbolicFunction symbolic(const std::string &expr)
-    {
-        return SymbolicFunction(expr);
-    }
+    inline SymbolicFunction symbolic(const std::string &expr) { return SymbolicFunction(expr); }
 
-    template<>
+    template <>
     class Traits<SymbolicFunction> : public Traits<double> {};
 
-    template<class Left>
-    class MostDescriptive<Left, SymbolicFunction > {
+    template <class Left>
+    class MostDescriptive<Left, SymbolicFunction> {
     public:
         using Type = Left;
     };
 
-    template<class Right>
-    class MostDescriptive<SymbolicFunction, Right > {
+    template <class Right>
+    class MostDescriptive<SymbolicFunction, Right> {
     public:
         using Type = Right;
     };
 
-    template<>
+    template <>
     class MostDescriptive<SymbolicFunction, SymbolicFunction> {
     public:
         using Type = double;
     };
 
-}
+}  // namespace utopia
 
-#endif //WITH_TINY_EXPR
+#endif  // WITH_TINY_EXPR
 
-#endif //UTOPIA_SYMBOLIC_FUNCTION_HPP
+#endif  // UTOPIA_SYMBOLIC_FUNCTION_HPP

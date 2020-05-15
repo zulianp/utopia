@@ -117,5 +117,4 @@ namespace utopia {
     **********************************************************************************************/
 }
 
-
-#endif //UTOPIA_FILL_TYPE_QUERY_HPP
+#endif  // UTOPIA_FILL_TYPE_QUERY_HPP

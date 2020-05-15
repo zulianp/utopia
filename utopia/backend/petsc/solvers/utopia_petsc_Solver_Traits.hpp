@@ -6,8 +6,8 @@
 
 namespace utopia {
 
-	template<typename Matrix, typename Vector, int Backend>
-	class Traits<KSPSolver<Matrix, Vector, Backend> > : public Traits<Matrix> {};
-}
+    template <typename Matrix, typename Vector, int Backend>
+    class Traits<KSPSolver<Matrix, Vector, Backend> > : public Traits<Matrix> {};
+}  // namespace utopia
 
-#endif //UTOPIA_PETSC_SOLVER_TRAITS_HPP
+#endif  // UTOPIA_PETSC_SOLVER_TRAITS_HPP

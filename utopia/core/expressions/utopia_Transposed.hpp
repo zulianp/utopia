@@ -8,15 +8,15 @@
 #include "utopia_Expression.hpp"
 
 namespace utopia {
-    template<class _Expr>
-    class Transposed : public Expression< Transposed<_Expr> > {
+    template <class _Expr>
+    class Transposed : public Expression<Transposed<_Expr> > {
     public:
         using Expr = _Expr;
         using Scalar = typename Expr::Scalar;
 
         static const int Order = Expr::Order;
 
-        Transposed(const Expr &expr) : _expr(expr) { }
+        Transposed(const Expr &expr) : _expr(expr) {}
         inline const Expr &expr() const { return _expr; }
 
         virtual ~Transposed() = default;
@@ -27,8 +27,8 @@ namespace utopia {
         UTOPIA_STORE_CONST(Expr) _expr;
     };
 
-    template<class Expr>
-    class Traits< Transposed<Expr> > : public Traits<Expr> {};
+    template <class Expr>
+    class Traits<Transposed<Expr> > : public Traits<Expr> {};
 
     /**     @defgroup   permutation Permutations
      *      @ingroup    algebra
@@ -38,28 +38,25 @@ namespace utopia {
      * @ingroup     permutation
      * @brief       \f$ A^T \f$
      */
-    template<class Derived>
+    template <class Derived>
     Transposed<Derived> transpose(const Expression<Derived> &expr) {
         return Transposed<Derived>(expr.derived());
     }
 
-    template<class Derived>
-    bool is_transposed(const Expression<Derived> &)
-    {
+    template <class Derived>
+    bool is_transposed(const Expression<Derived> &) {
         return false;
     }
 
-    template<class Expr>
-    bool is_transposed(const Transposed<Expr> &)
-    {
+    template <class Expr>
+    bool is_transposed(const Transposed<Expr> &) {
         return true;
     }
 
-    template<class Expr>
-    Size size(const Transposed<Expr> &expr)
-    {
+    template <class Expr>
+    Size size(const Transposed<Expr> &expr) {
         auto s = size(expr.expr());
-        if(Expr::Order == 1) {
+        if (Expr::Order == 1) {
             return s;
         }
 
@@ -69,7 +66,6 @@ namespace utopia {
         return ret;
     }
 
+}  // namespace utopia
 
-}
-
-#endif //UTOPIA_UTOPIA_TRANSPOSE_HPP
+#endif  // UTOPIA_UTOPIA_TRANSPOSE_HPP

@@ -6,17 +6,14 @@
 
 namespace utopia {
 
-	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend> 
-	class EvalKroneckerProduct {
-	public:
+    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    class EvalKroneckerProduct {
+    public:
+        static void apply(const Vector &, const Vector &, Matrix &) {
+            static_assert(Backend < HOMEMADE, "implement in backend");
+        }
+    };
 
-		static void apply(const Vector &, const Vector &, Matrix &)
-		{
-			static_assert(Backend < HOMEMADE, "implement in backend");
-		}
+}  // namespace utopia
 
-	};
-
-}
-
-#endif //UTOPIA_EVAL_KRONECKER_PRODUCT_HPP
+#endif  // UTOPIA_EVAL_KRONECKER_PRODUCT_HPP

@@ -1,20 +1,19 @@
 #ifndef UTOPIA_GENERIC_SEMISMOOTH_NEWTON_HPP
 #define UTOPIA_GENERIC_SEMISMOOTH_NEWTON_HPP
 
+#include "utopia_BoxConstraints.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_BoxConstraints.hpp"
 
-#include "utopia_Wrapper.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_Wrapper.hpp"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace utopia {
 
-
-    template<class Matrix, class Vector, class Constraint, int Backend = Traits<Vector>::Backend>
+    template <class Matrix, class Vector, class Constraint, int Backend = Traits<Vector>::Backend>
     class GenericSemismoothNewton : public IterativeSolver<Matrix, Vector> {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
@@ -22,32 +21,26 @@ namespace utopia {
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
         GenericSemismoothNewton(const Constraint &constraint, const std::shared_ptr<Solver> &linear_solver)
-        : constraint_(constraint), linear_solver_(linear_solver)
-        {}
+            : constraint_(constraint), linear_solver_(linear_solver) {}
 
-        GenericSemismoothNewton * clone() const override
-        {
+        GenericSemismoothNewton *clone() const override {
             return new GenericSemismoothNewton(constraint_, std::shared_ptr<Solver>(linear_solver_->clone()));
         }
 
-        void read(Input &in) override
-        {
+        void read(Input &in) override {
             IterativeSolver<Matrix, Vector>::read(in);
 
-            if(linear_solver_){
+            if (linear_solver_) {
                 in.get("linear-solver", *linear_solver_);
             }
-
         }
 
-        void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             IterativeSolver<Matrix, Vector>::print_usage(os);
             this->print_param_usage(os, "linear-solver", "LinearSolver", "Input parameters for linear solver.", "-");
         }
 
-        bool solve(const Matrix &A, const Vector &b, Vector &x_new) override
-        {
+        bool solve(const Matrix &A, const Vector &b, Vector &x_new) override {
             // const SizeType local_N = local_size(x_new).get(0);
 
             auto vec_layout = layout(b);
@@ -65,7 +58,7 @@ namespace utopia {
             Matrix A_c;
             Matrix I_c;
 
-            if(is_sparse<Matrix>::value) {
+            if (is_sparse<Matrix>::value) {
                 A_c.sparse(mat_layout, 1, 0.0);
                 I_c.sparse(mat_layout, 1, 0.0);
             } else {
@@ -75,12 +68,10 @@ namespace utopia {
 
             Scalar f_norm = 9e9;
 
-            if(this->verbose())
-                this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
+            if (this->verbose()) this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
 
-            while(!converged)
-            {
-                //reminder: complementarity-condition
+            while (!converged) {
+                // reminder: complementarity-condition
                 constraint_(A, b, x_new, active, g);
 
                 {
@@ -120,23 +111,22 @@ namespace utopia {
                 assert(!has_nan_or_inf(H));
                 assert(!has_nan_or_inf(g));
 
-                if(!linear_solver_->solve(H, sub_g, x_new)) {
+                if (!linear_solver_->solve(H, sub_g, x_new)) {
                     std::cerr << "[Error] linear solver did not manage to solve the linear system" << std::endl;
                     break;
                 }
 
-                if(has_nan_or_inf(x_new)) {
+                if (has_nan_or_inf(x_new)) {
                     assert(!has_nan_or_inf(x_new));
                     std::cerr << "[Error] nan/inf entries in the solution vector" << std::endl;
                     converged = false;
                     break;
                 }
 
-
                 f_norm = norm2(x_new - x_old);
 
                 // print iteration status on every iteration
-                if(this->verbose()) {
+                if (this->verbose()) {
                     PrintInfo::print_iter_status(iterations, {f_norm});
                 }
 
@@ -150,8 +140,8 @@ namespace utopia {
         }
 
         Constraint constraint_;
-        std::shared_ptr <Solver> linear_solver_;
+        std::shared_ptr<Solver> linear_solver_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_GENERIC_SEMISMOOTH_NEWTON_HPP
+#endif  // UTOPIA_GENERIC_SEMISMOOTH_NEWTON_HPP

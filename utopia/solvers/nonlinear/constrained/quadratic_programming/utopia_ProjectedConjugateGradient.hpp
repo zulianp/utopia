@@ -3,34 +3,30 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 
-
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
-namespace utopia
-{
-    //slow and innefficient implementation just for testing
-    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+namespace utopia {
+    // slow and innefficient implementation just for testing
+    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class ProjectedConjugateGradient : public QPSolver<Matrix, Vector> {
     public:
-
-        using Scalar   = typename Traits<Vector>::Scalar;
+        using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Layout   = typename Traits<Vector>::Layout;
+        using Layout = typename Traits<Vector>::Layout;
 
         ProjectedConjugateGradient() = default;
 
         ProjectedConjugateGradient(const ProjectedConjugateGradient &) = default;
 
-        inline ProjectedConjugateGradient * clone() const override
-        {
+        inline ProjectedConjugateGradient *clone() const override {
             auto ptr = new ProjectedConjugateGradient(*this);
             ptr->set_box_constraints(this->get_box_constraints());
             return ptr;
         }
 
         bool apply(const Vector &b, Vector &x) override {
-            if(this->verbose()) {
+            if (this->verbose()) {
                 this->init_solver("ProjectedConjugateGradient", {" it. ", "|| u - u_old ||"});
             }
 
@@ -50,13 +46,12 @@ namespace utopia
             pk = -uk;
 
             int iteration = 0;
-            while(!converged) {
-
+            while (!converged) {
                 // START step
 
-                Scalar alpha = dot(uk, pk)/dot(pk, A * pk);
+                Scalar alpha = dot(uk, pk) / dot(pk, A * pk);
                 assert(alpha != 0.);
-                if(alpha == 0. || std::isinf(alpha) || std::isnan(alpha)) break;
+                if (alpha == 0. || std::isinf(alpha) || std::isnan(alpha)) break;
 
                 x_half = x_old + alpha * pk;
 
@@ -70,32 +65,32 @@ namespace utopia
                     Read<Vector> r_uk(uk), r_ub(ub), r_lb(lb), r_p(pk);
 
                     each_read(x, [&](SizeType i, Scalar elem) {
-                            Scalar val = 0.;
-                            if (approxeq(elem, ub.get(i)) || approxeq(elem, lb.get(i))) {
-                                val = std::max(uk.get(i), Scalar(0));
-                            } else {
-                                val = uk.get(i);
-                            }
+                        Scalar val = 0.;
+                        if (approxeq(elem, ub.get(i)) || approxeq(elem, lb.get(i))) {
+                            val = std::max(uk.get(i), Scalar(0));
+                        } else {
+                            val = uk.get(i);
+                        }
 
-                            if (val == 0) {
-                                zk.set(i, std::max(pk.get(i), Scalar(0)));
-                            } else {
-                                zk.set(i, pk.get(i));
-                            }
+                        if (val == 0) {
+                            zk.set(i, std::max(pk.get(i), Scalar(0)));
+                        } else {
+                            zk.set(i, pk.get(i));
+                        }
 
-                            wk.set(i, val);
+                        wk.set(i, val);
                     });
                 }
 
-                const Scalar beta = dot(wk, A * pk)/dot(pk, A * pk);
+                const Scalar beta = dot(wk, A * pk) / dot(pk, A * pk);
                 pk = wk + beta * zk;
 
                 // END step
 
-                if(iteration % check_s_norm_each == 0 || std::isinf(beta) || std::isnan(beta)) {
+                if (iteration % check_s_norm_each == 0 || std::isinf(beta) || std::isnan(beta)) {
                     const Scalar diff = norm2(x_old - x);
 
-                    if(this->verbose()) {
+                    if (this->verbose()) {
                         PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
                     }
 
@@ -104,7 +99,7 @@ namespace utopia
 
                 ++iteration;
 
-                if(converged) break;
+                if (converged) break;
 
                 x_old = x;
             }
@@ -112,8 +107,7 @@ namespace utopia
             return converged;
         }
 
-        void init_memory(const Layout &layout) override
-        {
+        void init_memory(const Layout &layout) override {
             QPSolver<Matrix, Vector>::init_memory(layout);
             r.zeros(layout);
             uk.zeros(layout);
@@ -128,9 +122,9 @@ namespace utopia
         }
 
     private:
-        //buffers
+        // buffers
         Vector x_old, x_half, r, uk, wk, zk, pk;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_PROJECTED_CONJUGATE_GRADIENT_HPP
+#endif  // UTOPIA_PROJECTED_CONJUGATE_GRADIENT_HPP

@@ -8,12 +8,9 @@ namespace utopia {
     class Describable {
     public:
         virtual ~Describable() = default;
-        virtual void describe(std::ostream &os = std::cout) const
-        {
-            os << "Implement me!!!" << std::endl;
-        }
+        virtual void describe(std::ostream &os = std::cout) const { os << "Implement me!!!" << std::endl; }
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_DESCRIBABLE_HPP
+#endif  // UTOPIA_DESCRIBABLE_HPP

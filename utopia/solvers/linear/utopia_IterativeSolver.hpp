@@ -218,7 +218,7 @@ namespace utopia {
         Scalar rtol_; /*!< Relative tolerance. */
         Scalar stol_; /*!< Step tolerance. */
 
-        SizeType max_it_; /*!< Maximum number of iterations. */
+        SizeType max_it_;     /*!< Maximum number of iterations. */
         bool verbose_{false}; /*!< Verbose enable? . */
 
         Chrono _time; /*!<Timing of solver. */

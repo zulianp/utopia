@@ -1,14 +1,14 @@
 #ifndef UTOPIA_EVAL_RESIDUAL_HPP
-#define UTOPIA_EVAL_RESIDUAL_HPP 
+#define UTOPIA_EVAL_RESIDUAL_HPP
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
-    template<class A, class X, class B>
+    template <class A, class X, class B>
     using ResidualExpr = Binary<Tensor<B, 1>, Multiply<Tensor<A, 2>, Tensor<X, 1>>, Minus>;
 
-    template<class A, class X, class B, class Traits, int Backend>
+    template <class A, class X, class B, class Traits, int Backend>
     class Eval<ResidualExpr<A, X, B>, Traits, Backend> {
     public:
         typedef utopia::ResidualExpr<A, X, B> Expr;
@@ -23,11 +23,11 @@ namespace utopia {
             const auto &x = expr.right().right().derived();
             const auto &b = expr.left().derived();
 
-            if(result.is_alias(x) || result.is_alias(b)) {
+            if (result.is_alias(x) || result.is_alias(b)) {
                 X temp;
                 a.multiply(x, temp);
 
-                if(result.is_alias(b)) {
+                if (result.is_alias(b)) {
                     result.axpy(-1.0, temp);
                 } else {
                     result = b;
@@ -77,9 +77,6 @@ namespace utopia {
     //         UTOPIA_TRACE_END(assign_expr);
     //     }
     // };
-}
+}  // namespace utopia
 
-
-
-
-#endif //UTOPIA_EVAL_RESIDUAL_HPP
+#endif  // UTOPIA_EVAL_RESIDUAL_HPP

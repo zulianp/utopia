@@ -22,7 +22,8 @@
 //         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
 
 //         public:
-//             TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"))
+//             TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix,
+//             Vector>>("gmres"))
 //             {
 //               tao_solver_ = TaoSolver<Matrix, Vector>(linear_solver);
 //             }
@@ -31,7 +32,6 @@
 //             {
 //                 return new TaoQPSolver(*this);
 //             }
-
 
 //             bool solve(const Matrix &H, const Vector &g, Vector &p_k) override
 //             {
@@ -54,7 +54,6 @@
 //                 tao_solver_.set_pc_type(pc_type);
 //             }
 
-
 //         private:
 //             void configure_tao()
 //             {
@@ -70,12 +69,9 @@
 //                 tao_solver_.max_it(this->max_it());
 //                 tao_solver_.verbose(this->verbose());
 
-
 //                 auto &box = this->get_box_constraints();
 //                 tao_solver_.set_box_constraints(box);
 //             }
-
-
 
 //         protected:
 //             TaoSolver<Matrix, Vector> tao_solver_;

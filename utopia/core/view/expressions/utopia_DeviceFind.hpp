@@ -1,63 +1,55 @@
 #ifndef UTOPIA_DEVICE_REDUCE_FIND_HPP
 #define UTOPIA_DEVICE_REDUCE_FIND_HPP
 
-
-#include "utopia_Base.hpp"
 #include "utopia_Algorithms.hpp"
+#include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {
 
-    template<class Expr, int Order = Traits<Expr>::Order>
+    template <class Expr, int Order = Traits<Expr>::Order>
     class DeviceFind;
 
-    template<class Expr>
+    template <class Expr>
     class DeviceFind<Expr, 1> {
     public:
-        using Scalar   = typename Traits<Expr>::Scalar;
+        using Scalar = typename Traits<Expr>::Scalar;
         using SizeType = typename Traits<Expr>::SizeType;
 
-        template<class Predicate>
-        UTOPIA_INLINE_FUNCTION static void apply(
-        	const Expr &expr,
-        	Predicate pred,
-        	//OUTPUT
-        	SizeType &idx,
-        	Scalar &value)
-        {
+        template <class Predicate>
+        UTOPIA_INLINE_FUNCTION static void apply(const Expr &expr,
+                                                 Predicate pred,
+                                                 // OUTPUT
+                                                 SizeType &idx,
+                                                 Scalar &value) {
             const SizeType n = expr.size();
-            
+
             value = expr(0);
             idx = 0;
 
-            for(SizeType i = 1; i < n; ++i) {
-            	const Scalar val_i = expr(i);
-                if(pred(val_i, value)) {
-                	value = val_i;
-                	idx = i;
+            for (SizeType i = 1; i < n; ++i) {
+                const Scalar val_i = expr(i);
+                if (pred(val_i, value)) {
+                    value = val_i;
+                    idx = i;
                 }
             }
         }
     };
 
-    template<class Expr>
-    typename DeviceFind<Expr, 1>::SizeType imax(const DeviceExpression<Expr> &expr)
-    {
-    	using Scalar   = typename Traits<Expr>::Scalar;
-    	using SizeType = typename Traits<Expr>::SizeType;
+    template <class Expr>
+    typename DeviceFind<Expr, 1>::SizeType imax(const DeviceExpression<Expr> &expr) {
+        using Scalar = typename Traits<Expr>::Scalar;
+        using SizeType = typename Traits<Expr>::SizeType;
 
-    	Scalar val = 0.0;
-    	SizeType idx = 0;
+        Scalar val = 0.0;
+        SizeType idx = 0;
 
-    	DeviceFind<Expr, 1>::apply(
-    		expr.derived(),
-    		UTOPIA_LAMBDA(const Scalar &l, const Scalar &r) -> bool {
-    			return l > r;
-    		}, idx, val);
-    	
-    	return idx;
+        DeviceFind<Expr, 1>::apply(
+            expr.derived(), UTOPIA_LAMBDA(const Scalar &l, const Scalar &r)->bool { return l > r; }, idx, val);
+
+        return idx;
     }
-
 
     // template<class Expr, class Predicate>
     // class DeviceFind<Expr, Predicate, 2> {
@@ -103,5 +95,5 @@ namespace utopia {
     //     }
     // };
 
-}
-#endif //UTOPIA_DEVICE_REDUCE_FIND_HPP
+}  // namespace utopia
+#endif  // UTOPIA_DEVICE_REDUCE_FIND_HPP

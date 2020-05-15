@@ -1,10 +1,10 @@
 #ifndef UTOPIA_ACTION_REGISTRY_H
 #define UTOPIA_ACTION_REGISTRY_H
 
-#include <map>
-#include <string>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <string>
 
 namespace utopia {
 
@@ -25,15 +25,9 @@ namespace utopia {
         inline bool empty() const { return actions_.empty(); }
         inline std::size_t size() const { return actions_.size(); }
 
-        inline void set_type(const std::string &type)
-        {
-            type_ = type;
-        }
+        inline void set_type(const std::string &type) { type_ = type; }
 
-        inline const std::string &type() const
-        {
-            return type_;
-        }
+        inline const std::string &type() const { return type_; }
 
         ActionRegistry();
         virtual ~ActionRegistry();
@@ -50,7 +44,6 @@ namespace utopia {
         int apply_aux(const std::map<std::string, ExecuteAction> &actions, const std::string &action_name);
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_ACTION_REGISTRY_H
-
+#endif  // UTOPIA_ACTION_REGISTRY_H

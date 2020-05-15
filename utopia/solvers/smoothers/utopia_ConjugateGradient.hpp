@@ -1,8 +1,8 @@
 #ifndef UTOPIA_CONJUGATE_GRADIENT_HPP
 #define UTOPIA_CONJUGATE_GRADIENT_HPP
 
-#include "utopia_MatrixFreeLinearSolver.hpp"
 #include <memory>
+#include "utopia_MatrixFreeLinearSolver.hpp"
 
 namespace utopia {
 
@@ -11,12 +11,11 @@ namespace utopia {
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class ConjugateGradient final : public OperatorBasedLinearSolver<Matrix, Vector>
-    {
-        using Scalar   = typename Traits<Vector>::Scalar;
+    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    class ConjugateGradient final : public OperatorBasedLinearSolver<Matrix, Vector> {
+        using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Layout   = typename Traits<Vector>::Layout;
+        using Layout = typename Traits<Vector>::Layout;
 
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
         using Preconditioner = utopia::Preconditioner<Vector>;
@@ -29,10 +28,7 @@ namespace utopia {
         ConjugateGradient();
 
         void reset_initial_guess(const bool val);
-        inline void apply_gradient_descent_step(const bool val)
-        {
-            apply_gradient_descent_step_ = val;
-        }
+        inline void apply_gradient_descent_step(const bool val) { apply_gradient_descent_step_ = val; }
 
         void read(Input &in) override;
 
@@ -44,7 +40,7 @@ namespace utopia {
 
         void update(const Operator<Vector> &A) override;
 
-        ConjugateGradient * clone() const override;
+        ConjugateGradient *clone() const override;
 
         void copy(const ConjugateGradient &other);
         ConjugateGradient(const ConjugateGradient &other);
@@ -56,22 +52,16 @@ namespace utopia {
 
         bool check_solution(const Operator<Vector> &A, const Vector &x, const Vector &b) const;
 
-        void gradient_descent_step(
-                const Operator<Vector> &A,
-                const Vector &b,
-                Vector &x
-        );
+        void gradient_descent_step(const Operator<Vector> &A, const Vector &b, Vector &x);
 
         bool reset_initial_guess_{false};
         bool initialized_{false};
         bool apply_gradient_descent_step_{false};
         Layout layout_;
 
-        //This fields are not to be copied anywhere
+        // This fields are not to be copied anywhere
         Vector r, p, q, Ap, r_new, z, z_new;
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_CONJUGATE_GRADIENT_HPP
-
+#endif  // UTOPIA_CONJUGATE_GRADIENT_HPP

@@ -4,22 +4,22 @@
 // #include "utopia_AbstractVector.hpp"
 
 namespace utopia {
-    //Forward declarations
-    template<typename Scalar, typename SizeType>
+    // Forward declarations
+    template <typename Scalar, typename SizeType>
     class AbstractVector;
 
-    template<typename Scalar, typename SizeType>
+    template <typename Scalar, typename SizeType>
     class AbstractMatrix;
 
-    template<typename Scalar, typename SizeType>
+    template <typename Scalar, typename SizeType>
     class AlgebraFactory;
-}
+}  // namespace utopia
 
 namespace scripting {
-    
-    using Scalar   = double;
+
+    using Scalar = double;
     using SizeType = int;
-    using Factory  = utopia::AlgebraFactory<Scalar, SizeType>;
+    using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
 
     void init();
     void finalize();
@@ -32,8 +32,9 @@ namespace scripting {
         SparseMatrix();
         ~SparseMatrix();
         void print_info();
+
     private:
-        MatrixImpl * impl_;
+        MatrixImpl* impl_;
     };
 
     class Vector {
@@ -43,10 +44,11 @@ namespace scripting {
         Vector();
         ~Vector();
         void print_info();
+
     private:
-        VectorImpl * impl_;
+        VectorImpl* impl_;
     };
 
-}
+}  // namespace scripting
 
-#endif //UTOPIA_SCRIPT_HPP
+#endif  // UTOPIA_SCRIPT_HPP

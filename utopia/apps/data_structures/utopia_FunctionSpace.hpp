@@ -2,8 +2,8 @@
 #define UTOPIA_FUNCTION_SPACE_HPP
 
 namespace utopia {
-    template<class Mesh, int NComponents, typename ...>
+    template <class Mesh, int NComponents, typename...>
     class FunctionSpace {};
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FUNCTION_SPACE_HPP
+#endif  // UTOPIA_FUNCTION_SPACE_HPP

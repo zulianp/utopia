@@ -6,24 +6,22 @@
 
 namespace utopia {
 
-    template<int Backend, typename... TParams>
+    template <int Backend, typename... TParams>
     class Device {
     public:
-        template<typename... Args>
-        inline static void parallel_for(Args&&... args)
-        {
+        template <typename... Args>
+        inline static void parallel_for(Args &&... args) {
             using ParallelFor = utopia::ParallelFor<Backend>;
             ParallelFor::apply(std::forward<Args>(args)...);
         }
 
-        template<typename... Args>
-        inline static void parallel_reduce(Args &&...args)
-        {
+        template <typename... Args>
+        inline static void parallel_reduce(Args &&... args) {
             using ParallelReduce = utopia::ParallelReduce<Backend>;
             ParallelReduce::apply(std::forward<Args>(args)...);
         }
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_DEVICE_HPP
+#endif  // UTOPIA_DEVICE_HPP

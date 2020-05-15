@@ -1,21 +1,21 @@
 #ifndef UTOPIA_GENERIC_ACTION_REGISTRY_H
 #define UTOPIA_GENERIC_ACTION_REGISTRY_H
 
-#include <map>
-#include <string>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <string>
 
 namespace utopia {
 
-    template<class... Args>
+    template <class... Args>
     class NaryActionRegistry {
     public:
         using Count = long;
         using ExecuteAction = void (*)(Input &);
 
         char add_action(const std::string &action_name, ExecuteAction apply_test);
-        int apply(const std::string &action_name, Args &&...args);
+        int apply(const std::string &action_name, Args &&... args);
 
         void describe(std::ostream &os = std::cout) const;
 
@@ -26,22 +26,14 @@ namespace utopia {
         inline bool empty() const { return actions_.empty(); }
         inline std::size_t size() const { return actions_.size(); }
 
-
-        inline static NaryActionRegistry &instance()
-        {
+        inline static NaryActionRegistry &instance() {
             static NaryActionRegistry instance_;
             return instance_;
         }
 
-        inline void set_type(const std::string &type)
-        {
-            type_ = type;
-        }
+        inline void set_type(const std::string &type) { type_ = type; }
 
-        inline const std::string &type() const
-        {
-            return type_;
-        }
+        inline const std::string &type() const { return type_; }
 
         NaryActionRegistry();
         virtual ~NaryActionRegistry();
@@ -55,7 +47,6 @@ namespace utopia {
         int rank_{0};
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_GENERIC_ACTION_REGISTRY_H
-
+#endif  // UTOPIA_GENERIC_ACTION_REGISTRY_H

@@ -1,30 +1,30 @@
 #ifndef UTOPIA_PETSC_DM_OLD_HPP
 #define UTOPIA_PETSC_DM_OLD_HPP
 
+#include "utopia_ArrayView.hpp"
+#include "utopia_Box.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_FunctionSpace.hpp"
+#include "utopia_Quadrature.hpp"
+#include "utopia_SideSets.hpp"
+#include "utopia_Temp.hpp"
+#include "utopia_UniformHex8.hpp"
+#include "utopia_UniformQuad4.hpp"
+#include "utopia_VectorView.hpp"
+#include "utopia_Writable.hpp"
+#include "utopia_petsc_Communicator.hpp"
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_FE.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
-#include "utopia_petsc_Communicator.hpp"
-#include "utopia_petsc_ForwardDeclarations.hpp"
-#include "utopia_Box.hpp"
-#include "utopia_FunctionSpace.hpp"
-#include "utopia_ArrayView.hpp"
-#include "utopia_VectorView.hpp"
-#include "utopia_Quadrature.hpp"
-#include "utopia_UniformQuad4.hpp"
-#include "utopia_UniformHex8.hpp"
-#include "utopia_Temp.hpp"
-#include "utopia_Writable.hpp"
-#include "utopia_petsc_FE.hpp"
-#include "utopia_DeviceView.hpp"
-#include "utopia_SideSets.hpp"
-#include "utopia_petsc_DMDA.hpp"
 
 #include <array>
-#include <memory>
 #include <functional>
+#include <memory>
 
 namespace utopia {
-    template<int Dim>
+    template <int Dim>
     using PetscDM = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
     // template<int Dim>
@@ -179,6 +179,6 @@ namespace utopia {
     // private:
     //     std::unique_ptr<Impl> impl_;
     // };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_PETSC_DM_OLD_HPP
+#endif  // UTOPIA_PETSC_DM_OLD_HPP

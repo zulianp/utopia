@@ -7,16 +7,12 @@
 // #include "utopia_NonLinearSolver.hpp"
 // #include "utopia_Newton.hpp"
 
-
 // //// NOX headers
-
 
 // ////
 
-
 // #include <iomanip>
 // #include <limits>
-
 
 // namespace utopia
 // {
@@ -30,7 +26,6 @@
 //         typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
 //         typedef utopia::LSStrategy<Matrix, Vector>                  LSStrategy;
 //         typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
-
 
 //         public:
 //         Newton( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
@@ -53,7 +48,6 @@
 //             SNESSolver::set_parameters(params);
 //         }
 
-
 //         virtual void set_line_search_type(const std::string & ls_type)
 //         {
 //             line_search_type_ = in_array(ls_type, line_search_types_) ? ls_type : line_search_types_.at(0);;
@@ -63,7 +57,6 @@
 //         {
 //             line_search_order_ = (order < 4 && order > 0) ?  order : 3;
 //         }
-
 
 //     protected:
 //         virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(),
@@ -80,7 +73,6 @@
 //             SNESLineSearchSetDamping(linesearch, alpha_);
 //         }
 
-
 //     private:
 //         Scalar alpha_;
 //         const std::vector<std::string> line_search_types_;
@@ -88,8 +80,6 @@
 //         SizeType line_search_order_;
 
 //     };
-
-
 
 // }
 // #endif //UTOPIA_NOX_NEWTON_HPP

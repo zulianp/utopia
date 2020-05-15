@@ -1,56 +1,51 @@
 #ifndef UTOPIA_BENCHMARK_ALGORITHMS_HPP
 #define UTOPIA_BENCHMARK_ALGORITHMS_HPP
 
-#include "utopia_Chrono.hpp"
-#include "utopia_MPI.hpp"
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
-#include "utopia_assemble_laplacian_1D.hpp"
-#include "utopia_TestProblems.hpp"
 #include "utopia_BiCGStab.hpp"
+#include "utopia_Chrono.hpp"
+#include "utopia_MPI.hpp"
+#include "utopia_TestProblems.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 
-#include <string>
 #include <cassert>
+#include <string>
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
+    template <class Matrix, class Vector>
     class BenchmarkAlgorithms : public Benchmark {
     public:
-        using Traits   = utopia::Traits<Vector>;
-        using Scalar   = typename Traits::Scalar;
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
-        using Comm     = typename Traits::Communicator;
+        using Comm = typename Traits::Communicator;
 
         BenchmarkAlgorithms(const Comm &comm = Comm()) : comm_(comm) {}
 
         std::string name() override { return "Algorithms"; }
 
-        void initialize() override
-        {
+        void initialize() override {
             static const bool is_sparse = utopia::is_sparse<Matrix>::value;
             static const bool verbose = false;
 
-            const SizeType base_n = is_sparse? 1000 : 10;
+            const SizeType base_n = is_sparse ? 1000 : 10;
             const SizeType n_instances = 5;
 
-
-            for(SizeType i = 0; i < n_instances; ++i) {
+            for (SizeType i = 0; i < n_instances; ++i) {
                 const SizeType n = base_n * (i + 1);
 
                 auto vl = layout(comm_, n, n * comm_.size());
 
-                //Conjugate gradient method
-                this->register_experiment(
-                    "cg_" + std::to_string(i),
-                    [=]() {
-                        ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-                        cg.verbose(verbose);
-                        cg.max_it(n * mpi_world_size());
-                        cg.set_preconditioner(std::make_shared< InvDiagPreconditioner<Matrix, Vector> >());
-                        run_linear_solver(comm_, n, cg);
-                    }
-                );
+                // Conjugate gradient method
+                this->register_experiment("cg_" + std::to_string(i), [=]() {
+                    ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+                    cg.verbose(verbose);
+                    cg.max_it(n * mpi_world_size());
+                    cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+                    run_linear_solver(comm_, n, cg);
+                });
 
                 // this->register_experiment(
                 //     "gs_" + std::to_string(i),
@@ -75,118 +70,90 @@ namespace utopia {
                 //     }
                 // );
 
-                this->register_experiment(
-                    "bicgstab_" + std::to_string(i),
-                    [=]() {
-                        BiCGStab<Matrix, Vector, HOMEMADE> cg;
-                        cg.verbose(verbose);
-                        cg.max_it(n * mpi_world_size());
-                        run_linear_solver(comm_, n, cg);
-                    }
-                );
+                this->register_experiment("bicgstab_" + std::to_string(i), [=]() {
+                    BiCGStab<Matrix, Vector, HOMEMADE> cg;
+                    cg.verbose(verbose);
+                    cg.max_it(n * mpi_world_size());
+                    run_linear_solver(comm_, n, cg);
+                });
 
-                this->register_experiment(
-                    "newton_cg_" + std::to_string(i),
-                    [vl]() {
-                        Rastrigin<Matrix, Vector> fun;
-                        Vector x(vl, 1.0);
+                this->register_experiment("newton_cg_" + std::to_string(i), [vl]() {
+                    Rastrigin<Matrix, Vector> fun;
+                    Vector x(vl, 1.0);
 
-                        ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-                        cg.max_it(size(x).get(0));
+                    ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+                    cg.max_it(size(x).get(0));
 
-                        auto backtracking = std::make_shared<utopia::Backtracking<Vector> >();
+                    auto backtracking = std::make_shared<utopia::Backtracking<Vector> >();
 
-                        Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
-                        newton.set_line_search_strategy(backtracking);
+                    Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
+                    newton.set_line_search_strategy(backtracking);
 
-                        double mag_x0 = -1;
-                        fun.value(x, mag_x0);
+                    double mag_x0 = -1;
+                    fun.value(x, mag_x0);
 
-                        newton.solve(fun, x);
+                    newton.solve(fun, x);
 
-                        double mag_x = -1.;
-                        fun.value(x, mag_x);
-                        utopia_test_assert(mag_x <= mag_x0);
-                    }
-                );
+                    double mag_x = -1.;
+                    fun.value(x, mag_x);
+                    utopia_test_assert(mag_x <= mag_x0);
+                });
 
-                this->register_experiment(
-                    "trust_region_" + std::to_string(i),
-                    [vl]() {
-                        Rastrigin<Matrix, Vector> fun;
-                        Vector x(vl, 1.0);
+                this->register_experiment("trust_region_" + std::to_string(i), [vl]() {
+                    Rastrigin<Matrix, Vector> fun;
+                    Vector x(vl, 1.0);
 
-                        auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
+                    auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
 
-                        TrustRegion<Matrix, Vector> trust_region(st_cg);
-                        trust_region.verbose(false);
+                    TrustRegion<Matrix, Vector> trust_region(st_cg);
+                    trust_region.verbose(false);
 
-                        double mag_x0 = -1;
-                        fun.value(x, mag_x0);
+                    double mag_x0 = -1;
+                    fun.value(x, mag_x0);
 
-                        trust_region.solve(fun, x);
+                    trust_region.solve(fun, x);
 
-                        double mag_x = -1.;
-                        fun.value(x, mag_x);
-                        utopia_test_assert(mag_x <= mag_x0);
-                    }
-                );
+                    double mag_x = -1.;
+                    fun.value(x, mag_x);
+                    utopia_test_assert(mag_x <= mag_x0);
+                });
 
-                this->register_experiment(
-                    "projected_gradient_" + std::to_string(i),
-                    [=]() {
-                        ProjectedGradient<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
-                    }
-                );
+                this->register_experiment("projected_gradient_" + std::to_string(i), [=]() {
+                    ProjectedGradient<Matrix, Vector, HOMEMADE> pg;
+                    run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
+                });
 
-                this->register_experiment(
-                    "projected_conjugate_gradient_" + std::to_string(i),
-                    [=]() {
-                        ProjectedConjugateGradient<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
-                    }
-                );
+                this->register_experiment("projected_conjugate_gradient_" + std::to_string(i), [=]() {
+                    ProjectedConjugateGradient<Matrix, Vector, HOMEMADE> pg;
+                    run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
+                });
 
                 ////////////////////////////////////////////////////////////////////////////////////
 
-                 this->register_experiment(
-                    "projected_gauss_seidel_hm_" + std::to_string(i),
-                    [=]() {
-                        ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
-                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
-                    }
-                );
+                this->register_experiment("projected_gauss_seidel_hm_" + std::to_string(i), [=]() {
+                    ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
+                    run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
+                });
 
-                this->register_experiment(
-                    "projected_gauss_seidel_" + std::to_string(i),
-                    [=]() {
-                        ProjectedGaussSeidel<Matrix, Vector> pg;
-                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
-                    }
-                );
+                this->register_experiment("projected_gauss_seidel_" + std::to_string(i), [=]() {
+                    ProjectedGaussSeidel<Matrix, Vector> pg;
+                    run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
+                });
 
-                //REMOVE ME once both pgs are the same
-                this->register_experiment(
-                    "projected_l1_gauss_seidel_hm_" + std::to_string(i),
-                    [=]() {
-                        ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
-                        pg.l1(true);
-                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
-                    }
-                );
+                // REMOVE ME once both pgs are the same
+                this->register_experiment("projected_l1_gauss_seidel_hm_" + std::to_string(i), [=]() {
+                    ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
+                    pg.l1(true);
+                    run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
+                });
 
+                this->register_experiment("projected_l1_gauss_seidel_" + std::to_string(i), [=]() {
+                    ProjectedGaussSeidel<Matrix, Vector> pg;
+                    pg.l1(true);
+                    run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
+                });
 
-                this->register_experiment(
-                    "projected_l1_gauss_seidel_" + std::to_string(i),
-                    [=]() {
-                        ProjectedGaussSeidel<Matrix, Vector> pg;
-                        pg.l1(true);
-                        run_qp_solver(comm_, (base_n/2) * (i + 1), pg);
-                    }
-                );
-
-                //FIXME
+                // FIXME
                 // this->register_experiment("multigrid_" + std::to_string(i), [n]() {
 
                 // 	auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
@@ -206,19 +173,17 @@ namespace utopia {
 
                 // 	run_multigrid(n, multigrid);
                 // });
-
             }
         }
 
     private:
-
-        template<class QPSolver>
-        static void run_qp_solver(const Comm &comm, const SizeType n, QPSolver &qp_solver)
-        {
+        template <class QPSolver>
+        static void run_qp_solver(const Comm &comm, const SizeType n, QPSolver &qp_solver) {
             auto vl = layout(comm, Traits::decide(), n);
             auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
 
-            Matrix m; m.sparse(ml, 3, 2);
+            Matrix m;
+            m.sparse(ml, 3, 2);
             assemble_laplacian_1D(m);
 
             auto N = size(m).get(0);
@@ -226,36 +191,37 @@ namespace utopia {
             {
                 Range r = row_range(m);
                 Write<Matrix> w(m);
-                if(r.inside(0)) {
+                if (r.inside(0)) {
                     m.set(0, 0, 1.);
                     m.set(0, 1, 0);
                 }
 
-                if(r.inside(N)) {
-                    m.set(N-1, N-1, 1.);
-                    m.set(N-1, N-2, 0);
+                if (r.inside(N)) {
+                    m.set(N - 1, N - 1, 1.);
+                    m.set(N - 1, N - 2, 0);
                 }
             }
 
             Vector rhs(vl, 1.);
             {
-                //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
+                // Creating test vector (alternative way see [assemble vector alternative], which might be easier for
+                // beginners)
                 Range r = range(rhs);
                 Write<Vector> w(rhs);
 
-                if(r.inside(0)) {
+                if (r.inside(0)) {
                     rhs.set(0, 0);
                 }
 
-                if(r.inside(N-1)) {
-                    rhs.set(N-1, 0.);
+                if (r.inside(N - 1)) {
+                    rhs.set(N - 1, 0.);
                 }
             }
 
             Vector upper_bound(vl, 100.0);
             Vector solution(vl, 0.0);
 
-            qp_solver.max_it(N*2);
+            qp_solver.max_it(N * 2);
             // qp_solver.verbose(true);
             qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
@@ -263,12 +229,12 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-        static void run_linear_solver(const Comm &comm, const SizeType n, LinearSolver<Matrix, Vector> &solver)
-        {
+        static void run_linear_solver(const Comm &comm, const SizeType n, LinearSolver<Matrix, Vector> &solver) {
             auto vl = layout(comm, Traits::decide(), n);
             auto ml = layout(comm, Traits::decide(), Traits::decide(), n, n);
 
-            Matrix A; A.sparse(ml, 3, 2);
+            Matrix A;
+            A.sparse(ml, 3, 2);
             Vector b(vl, 1.);
             Vector x(vl, 0.);
 
@@ -279,12 +245,12 @@ namespace utopia {
                 Range r = row_range(A);
                 Write<Vector> w_b(b);
 
-                if(r.inside(0)) {
+                if (r.inside(0)) {
                     b.set(0, 0.);
                 }
 
-                if(r.inside(N-1)) {
-                    b.set(N-1, 0.);
+                if (r.inside(N - 1)) {
+                    b.set(N - 1, 0.);
                 }
             }
 
@@ -296,18 +262,18 @@ namespace utopia {
             utopia_test_assert(approxeq(Ax, b, 1e-6));
         }
 
-        template<class MultigridSolver>
-        static void run_multigrid(const SizeType n, MultigridSolver &multigrid)
-        {
-            using TransferT       = utopia::Transfer<Matrix, Vector>;
-            using IPTransferT     = utopia::IPTransfer<Matrix, Vector>;
+        template <class MultigridSolver>
+        static void run_multigrid(const SizeType n, MultigridSolver &multigrid) {
+            using TransferT = utopia::Transfer<Matrix, Vector>;
+            using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
             using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
 
-            const static bool verbose   = false;
+            const static bool verbose = false;
             const static bool use_masks = true;
             const SizeType n_levels = 5;
 
-            MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > ml_problem(n/pow(2, n_levels-1), n_levels, !use_masks);
+            MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > ml_problem(
+                n / pow(2, n_levels - 1), n_levels, !use_masks);
 
             multigrid.max_it(50);
             multigrid.atol(1e-13);
@@ -316,7 +282,8 @@ namespace utopia {
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
             multigrid.set_fix_semidefinite_operators(true);
-            multigrid.must_generate_masks(use_masks);;
+            multigrid.must_generate_masks(use_masks);
+            ;
             multigrid.verbose(verbose);
 
             auto transfers = ml_problem.get_transfer();
@@ -332,7 +299,7 @@ namespace utopia {
             funs[n_levels - 1]->gradient(x, g);
             multigrid.update(std::make_shared<Matrix>(A));
 
-            if(verbose) {
+            if (verbose) {
                 multigrid.describe();
             }
 
@@ -340,8 +307,8 @@ namespace utopia {
             multigrid.apply(g, x);
 
             double diff0 = norm2(A * x);
-            double diff  = norm2(g - A * x);
-            double rel_diff = diff/diff0;
+            double diff = norm2(g - A * x);
+            double rel_diff = diff / diff0;
 
             utopia_test_assert(rel_diff < 1e-8);
         }
@@ -349,6 +316,6 @@ namespace utopia {
     private:
         Comm comm_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_BENCHMARK_ALGORITHMS_HPP
+#endif  // UTOPIA_BENCHMARK_ALGORITHMS_HPP

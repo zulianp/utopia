@@ -8,8 +8,8 @@
 #include "Belos_config.h"
 
 #include "utopia_PreconditionedSolver.hpp"
-#include "utopia_trilinos_LinearSolverFactory.hpp"
 #include "utopia_Smoother.hpp"
+#include "utopia_trilinos_LinearSolverFactory.hpp"
 
 namespace utopia {
     /**@ingroup     Linear
@@ -21,12 +21,11 @@ namespace utopia {
     class BelosSolver {};
 
     template <typename Matrix, typename Vector>
-    class BelosSolver<Matrix, Vector, TRILINOS> final : public PreconditionedSolver<Matrix, Vector>
-    {
+    class BelosSolver<Matrix, Vector, TRILINOS> final : public PreconditionedSolver<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        
+
         typedef utopia::Preconditioner<Vector> Preconditioner;
         typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
@@ -58,18 +57,18 @@ namespace utopia {
          *
          * @param[in]  in  The parameters
          */
-        void read(Input &in) override;/* {
-          Smoother<Matrix, Vector>::read(in); 
-          PreconditionedSolver::read(in);
-          //TODO
-          atol_(1e-9);
-          rtol_(1e-9),;
-          stol_(1e-11);
-          max_it_(300);
-          verbose_(false);
+        void read(Input &in) override; /* {
+           Smoother<Matrix, Vector>::read(in);
+           PreconditionedSolver::read(in);
+           //TODO
+           atol_(1e-9);
+           rtol_(1e-9),;
+           stol_(1e-11);
+           max_it_(300);
+           verbose_(false);
 
-          m_utopia_warning_once("not implemented");
-        }*/
+           m_utopia_warning_once("not implemented");
+         }*/
 
         /**
          * @brief      Prints the parameters used.
@@ -77,34 +76,32 @@ namespace utopia {
          * @param[os]  os The std::ostream parameters
          */
         void print_usage(std::ostream &os = std::cout) const override;
-   /*     {
-          Smoother<Matrix, Vector>::print_usage(os); 
-          PreconditionedSolver::print_usage(os);
-          //TODO
-          m_utopia_warning_once("not implemented");
+        /*     {
+               Smoother<Matrix, Vector>::print_usage(os);
+               PreconditionedSolver::print_usage(os);
+               //TODO
+               m_utopia_warning_once("not implemented");
 
-        }*/
+             }*/
 
         /**
          * @brief      Clone the object.
          *
          */
-        BelosSolver * clone() const override;
-        
+        BelosSolver *clone() const override;
 
-        private:
+    private:
+        class Impl;
+        std::unique_ptr<Impl> impl_;
 
-            class Impl;
-            std::unique_ptr<Impl> impl_;
-
-            bool set_problem();
-            bool set_problem(Matrix &A);
-            void set_preconditioner();
+        bool set_problem();
+        bool set_problem(Matrix &A);
+        void set_preconditioner();
     };
 
 }  // namespace utopia
 
 #else  // WITH_TRILINOS_BELOS
-  #error "Trilinos was not configured with Belos, hence you cannot use the utopia::BelosSolver."
-#endif //WITH_TRILINOS_BELOS
-#endif //UTOPIA_BELOS_SOLVERS_HPP
+#error "Trilinos was not configured with Belos, hence you cannot use the utopia::BelosSolver."
+#endif  // WITH_TRILINOS_BELOS
+#endif  // UTOPIA_BELOS_SOLVERS_HPP

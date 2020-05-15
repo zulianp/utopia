@@ -5,24 +5,20 @@
 #include "utopia_Core.hpp"
 #include "utopia_TestFunctions.hpp"
 
-
-namespace utopia
-{
-    template<class Matrix, class Vector>
-    class BrownDennis16 final: public UnconstrainedTestFunction<Matrix, Vector>
-    {
+namespace utopia {
+    template <class Matrix, class Vector>
+    class BrownDennis16 final : public UnconstrainedTestFunction<Matrix, Vector> {
     public:
-        using Traits   = utopia::Traits<Vector>;
-        using Scalar   = typename Traits::Scalar;
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
-        using Comm     = typename Traits::Communicator;
+        using Comm = typename Traits::Communicator;
 
-        BrownDennis16()
-        {
+        BrownDennis16() {
             auto v_layout = serial_layout(dim());
 
-           x_init_.zeros(v_layout);
-           x_exact_.zeros(v_layout);
+            x_init_.zeros(v_layout);
+            x_exact_.zeros(v_layout);
 
             {
                 const Write<Vector> write1(x_init_);
@@ -43,29 +39,18 @@ namespace utopia
                 x_exact_.set(2, -0.406200);
                 x_exact_.set(3, 0.240998);
             }
-
         }
 
-        std::string name() const override
-        {
-            return "Brown and Dennis";
-        }
+        std::string name() const override { return "Brown and Dennis"; }
 
-        SizeType dim() const override
-        {
-            return 4;
-        }
+        SizeType dim() const override { return 4; }
 
-
-        bool exact_sol_known() const override
-        {
+        bool exact_sol_known() const override {
             return false;  // just because we can not fit into precision
         }
 
-
-        bool value(const Vector &point, typename Vector::Scalar &result) const override
-        {
-           if( point.comm().size() > 1){
+        bool value(const Vector &point, typename Vector::Scalar &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -80,27 +65,25 @@ namespace utopia
             const Scalar w = point.get(3);
 
             result = 0.0;
-            for(SizeType i = 1; i <=20; i++)
-            {
-                Scalar c = i*0.2;
+            for (SizeType i = 1; i <= 20; i++) {
+                Scalar c = i * 0.2;
                 Scalar f1 = x + (c * y) - std::exp(c);
                 Scalar f2 = z + (std::sin(c) * w) - std::cos(c);
 
-                result += std::pow(f1, 4.) + (2.0 * f1*f1 * f2*f2) + std::pow(f2, 4.);
+                result += std::pow(f1, 4.) + (2.0 * f1 * f1 * f2 * f2) + std::pow(f2, 4.);
             }
 
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &g) const override
-        {
-           if( point.comm().size() > 1){
+        bool gradient(const Vector &point, Vector &g) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == 4);
-           g.zeros(layout(point));
+            g.zeros(layout(point));
 
             const Read<Vector> read(point);
             const Write<Vector> write(g);
@@ -115,18 +98,17 @@ namespace utopia
             Scalar g3 = 0.0;
             Scalar g4 = 0.0;
 
-            for(SizeType i =1; i <=20; i++)
-            {
-                Scalar c = i*0.2;
+            for (SizeType i = 1; i <= 20; i++) {
+                Scalar c = i * 0.2;
                 Scalar f1 = x + (c * y) - std::exp(c);
                 Scalar f2 = z + (std::sin(c) * w) - std::cos(c);
 
-                Scalar  df2dx4 = std::sin (c);
+                Scalar df2dx4 = std::sin(c);
 
-                g1 += 4.0 * ((std::pow(f1,3)) + (f1 * f2 * f2));
-                g2 += 4.0 * ((std::pow(f1,3)* c) + (f1 * f2 * f2 * c));
-                g3 += 4.0 * ((f1 * f1 * f2 ) + (std::pow(f2,3)));
-                g4 += 4.0 * ((f1 * f1 * f2 * df2dx4) + (std::pow(f2,3) * df2dx4));
+                g1 += 4.0 * ((std::pow(f1, 3)) + (f1 * f2 * f2));
+                g2 += 4.0 * ((std::pow(f1, 3) * c) + (f1 * f2 * f2 * c));
+                g3 += 4.0 * ((f1 * f1 * f2) + (std::pow(f2, 3)));
+                g4 += 4.0 * ((f1 * f1 * f2 * df2dx4) + (std::pow(f2, 3) * df2dx4));
             }
 
             g.set(0, g1);
@@ -137,15 +119,14 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override
-        {
-           if( point.comm().size() > 1){
+        bool hessian(const Vector &point, Matrix &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == 4);
-           result.dense(serial_layout(4,4));
+            result.dense(serial_layout(4, 4));
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);
@@ -166,18 +147,17 @@ namespace utopia
             Scalar term34 = 0.0;
             Scalar term44 = 0.0;
 
-            for(SizeType i =1; i <=20; i++)
-            {
-                Scalar c = i*0.2;
+            for (SizeType i = 1; i <= 20; i++) {
+                Scalar c = i * 0.2;
                 Scalar f1 = x + (c * y) - std::exp(c);
                 Scalar f2 = z + (std::sin(c) * w) - std::cos(c);
 
-                Scalar  df2dx4 = std::sin (c);
+                Scalar df2dx4 = std::sin(c);
 
-                term11 += (12.0 * f1 * f1) +  (4.0 * f2 * f2);
-                term22 += (12.0 * f1 * f1 * c * c) +  (4.0 * f2 * f2 * c);
-                term33 += (4.0 * f1 * f1) +  (12.0 * f2 * f2);
-                term21 += (12.0 * f1 * f1 * c) +  (4.0 * f2 * f2 * c);
+                term11 += (12.0 * f1 * f1) + (4.0 * f2 * f2);
+                term22 += (12.0 * f1 * f1 * c * c) + (4.0 * f2 * f2 * c);
+                term33 += (4.0 * f1 * f1) + (12.0 * f2 * f2);
+                term21 += (12.0 * f1 * f1 * c) + (4.0 * f2 * f2 * c);
                 term31 += 8.0 * f1 * f2;
                 term32 += 8.0 * f1 * f2 * c;
                 term41 += 8.0 * f1 * f2 * df2dx4;
@@ -209,26 +189,16 @@ namespace utopia
             return true;
         }
 
-        Vector initial_guess() const override
-        {
-            return x_init_;
-        }
+        Vector initial_guess() const override { return x_init_; }
 
-        const Vector & exact_sol() const override
-        {
-            return x_exact_;
-        }
+        const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override
-        {
-            return 85822.2;
-        }
+        Scalar min_function_value() const override { return 85822.2; }
 
     private:
         Vector x_init_;
         Vector x_exact_;
-
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_BROWN_DENNIS_16
+#endif  // UTOPIA_BROWN_DENNIS_16

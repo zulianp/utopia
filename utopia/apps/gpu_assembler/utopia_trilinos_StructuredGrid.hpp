@@ -1,14 +1,13 @@
 #ifndef UTOPIA_TRILINOS_STRUCTURED_GRID_HPP
 #define UTOPIA_TRILINOS_STRUCTURED_GRID_HPP
 
+#include "utopia_StaticMath.hpp"
+#include "utopia_Views.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_FECrsGraph.hpp"
-#include "utopia_Views.hpp"
-#include "utopia_StaticMath.hpp"
 
 #include "utopia_FunctionSpaceView.hpp"
 #include "utopia_QuadratureView.hpp"
-
 
 namespace utopia {
 
@@ -339,7 +338,6 @@ namespace utopia {
     // template<int Dim>
     // class CellToNodeIndex {};
 
-
     // template<>
     // class CellToNodeIndex<2> {
     // public:
@@ -394,7 +392,6 @@ namespace utopia {
     //     using IndexView1      = Kokkos::View<SizeType *, ExecutionSpace>;
     //     using ScalarView1     = Kokkos::View<Scalar   *, ExecutionSpace>;
     //     using Dev             = utopia::TpetraTraits::Device;
-
 
     //     template<class Array>
     //     UTOPIA_INLINE_FUNCTION void nodes(
@@ -867,7 +864,6 @@ namespace utopia {
     //     Vector element_wise_values_;
     // };
 
-
     // template<typename ...>
     // class NodeAdjacencyGraph {
     // public:
@@ -906,6 +902,6 @@ namespace utopia {
     // public:
 
     // };
-}
+}  // namespace utopia
 
 #endif

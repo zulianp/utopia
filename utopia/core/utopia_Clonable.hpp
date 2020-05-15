@@ -11,9 +11,8 @@ namespace utopia {
          * such as buffers. Maybe we should change its name to somthing
          * more suitable ...
          */
-        virtual Clonable * clone() const = 0;
-
+        virtual Clonable* clone() const = 0;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_CLONABLE_HPP
+#endif  // UTOPIA_CLONABLE_HPP
