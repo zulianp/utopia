@@ -2,22 +2,18 @@
 #define UTOPIA_INCOMPRESSIBLE_NEOHOOKEAN_HPP
 
 #include "utopia.hpp"
-#include "utopia_fe_core.hpp"
 #include "utopia_HyperElasticMaterial.hpp"
+#include "utopia_fe_core.hpp"
 #include "utopia_libmesh_FormEval.hpp"
 
 namespace utopia {
 
-    template<class FunctionSpace, class Matrix, class Vector>
+    template <class FunctionSpace, class Matrix, class Vector>
     class IncompressibleNeoHookean : public HyperElasticMaterial<Matrix, Vector> {
     public:
+        IncompressibleNeoHookean(FunctionSpace &V, const LameeParameters &params) : V_(V), params_(params) {}
 
-        IncompressibleNeoHookean(FunctionSpace &V, const LameeParameters &params)
-        : V_(V), params_(params)
-        {}
-
-        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-        {
+        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             // int mesh_dimension = V_.subspace(0).mesh().mesh_dimension();
 
             // auto mu = params_.var_mu();
@@ -36,7 +32,6 @@ namespace utopia {
             // auto C_inv   = inv(C);
 
             // auto S_bar = mu * identity(mesh_dimension, mesh_dimension);
-
 
             // double d = mesh_dimension;
 
@@ -64,12 +59,10 @@ namespace utopia {
             return false;
         }
 
-
     private:
         FunctionSpace &V_;
         LameeParameters params_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_INC_NEOOHOOKEAN_HPP
-
+#endif  // UTOPIA_INC_NEOOHOOKEAN_HPP

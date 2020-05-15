@@ -2,13 +2,11 @@
 #define UTOPIA_GRID_2_MESH_TRANSFER_APP
 
 #include "utopia_FEApp.hpp"
-#include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_libmesh.hpp"
 
-#include <string>
 #include <memory>
-
+#include <string>
 
 namespace utopia {
     class LocalAssembler;
@@ -26,7 +24,6 @@ namespace utopia {
 
         static std::string command() { return "-g2m_transfer"; }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_GRID_2_MESH_TRANSFER_APP
+#endif  // UTOPIA_GRID_2_MESH_TRANSFER_APP

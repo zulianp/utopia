@@ -1,9 +1,9 @@
 #ifndef UTOPIA_DIFFERENCE_APP
 #define UTOPIA_DIFFERENCE_APP
 
-#include "utopia_FEApp.hpp"
-#include <string>
 #include <memory>
+#include <string>
+#include "utopia_FEApp.hpp"
 
 namespace utopia {
 
@@ -11,10 +11,7 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-diff";
-        }
+        inline static std::string command() { return "-diff"; }
 
         DifferenceApp();
         ~DifferenceApp();
@@ -22,7 +19,6 @@ namespace utopia {
     private:
         class Impl;
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_DIFFERENCE_APP
+#endif  // UTOPIA_DIFFERENCE_APP

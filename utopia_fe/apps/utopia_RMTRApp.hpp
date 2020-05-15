@@ -9,20 +9,14 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-
-
-        inline static std::string command()
-        {
-            return "-rmtr";
-        }
+        inline static std::string command() { return "-rmtr"; }
 
         class SimulationInput;
 
     private:
-
         void solve_newton(const SimulationInput &in);
         void solve_rmtr(const SimulationInput &in);
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_RMTR_APP_HPP
+#endif  // UTOPIA_RMTR_APP_HPP

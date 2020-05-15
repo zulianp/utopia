@@ -10,12 +10,8 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-helmholtz";
-        }
+        inline static std::string command() { return "-helmholtz"; }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_LEAST_SQUARES_HELMHOLTZ_HPP
+#endif  // UTOPIA_LEAST_SQUARES_HELMHOLTZ_HPP

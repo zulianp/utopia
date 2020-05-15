@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 
+#include <cmath>
 #include <limits>
 
 namespace utopia {

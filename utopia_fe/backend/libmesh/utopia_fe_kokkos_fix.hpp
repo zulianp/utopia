@@ -7,6 +7,6 @@
 // bug in Kokkos-Kernels, this has to be included first (https://github.com/kokkos/kokkos-kernels/issues/309)
 #include <Eigen/Core>
 
-#endif //WITH_TRILINOS
+#endif  // WITH_TRILINOS
 
-#endif //UTOPIA_FE_KOKKOS_FIX_HPP
+#endif  // UTOPIA_FE_KOKKOS_FIX_HPP

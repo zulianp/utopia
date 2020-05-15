@@ -22,14 +22,10 @@
 //         std::size_t n_nodes() const;
 //         std::size_t n_elements() const;
 
-
 //         Mesh();
 //         ~Mesh();
 
-
 //         void *mesh_impl_ptr() const;
-
-
 
 //         //memory
 //         std::vector<int> el_ptr;

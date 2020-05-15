@@ -1,17 +1,15 @@
 #ifndef UTOPIA_CURVATURE_BASED_EDGE_PROJECTION_HPP
 #define UTOPIA_CURVATURE_BASED_EDGE_PROJECTION_HPP
 
-
-#include "utopia_ui.hpp"
 #include "utopia_libmesh.hpp"
+#include "utopia_ui.hpp"
 
 #include <vector>
 
 namespace utopia {
 
-    class CurvatureBasedEdgeProjection final : public Configurable   {
+    class CurvatureBasedEdgeProjection final : public Configurable {
     public:
-
         void read(Input &is) override;
         void apply(libMesh::MeshBase &mesh);
 
@@ -28,6 +26,6 @@ namespace utopia {
         //     libMesh::MeshBase &mesh);
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_CURVATURE_BASED_EDGE_PROJECTION_HPP
+#endif  // UTOPIA_CURVATURE_BASED_EDGE_PROJECTION_HPP

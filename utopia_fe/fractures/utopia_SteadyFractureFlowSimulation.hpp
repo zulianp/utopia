@@ -2,9 +2,9 @@
 #define UTOPIA_STATIC_FRACTURE_FLOW_SIMULATION_HPP
 
 #include "libmesh/parallel_mesh.h"
+#include "utopia_Describable.hpp"
 #include "utopia_FractureFlow.hpp"
 #include "utopia_fe_base.hpp"
-#include "utopia_Describable.hpp"
 
 #include <memory>
 
@@ -45,7 +45,6 @@ namespace utopia {
 
         void describe(std::ostream &os) const override;
 
-
     private:
         bool solve_cg_dual();
         bool solve_monolithic();
@@ -53,9 +52,9 @@ namespace utopia {
         bool solve_staggered();
         bool solve_monolithic_static_condenstation();
 
-        template<class IO>
+        template <class IO>
         void write_output_generic();
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_STATIC_FRACTURE_FLOW_SIMULATION_HPP
+#endif  // UTOPIA_STATIC_FRACTURE_FLOW_SIMULATION_HPP

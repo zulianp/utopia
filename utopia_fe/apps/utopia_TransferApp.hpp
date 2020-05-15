@@ -2,13 +2,11 @@
 #define UTOPIA_TRANSFER_APP
 
 #include "utopia_FEApp.hpp"
-#include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_libmesh.hpp"
 
-#include <string>
 #include <memory>
-
+#include <string>
 
 namespace utopia {
     class LocalAssembler;
@@ -26,18 +24,15 @@ namespace utopia {
         static std::string command() { return "-transfer"; }
 
     private:
-
 #ifdef WITH_TINY_EXPR
         std::shared_ptr<SymbolicFunction> fun;
 #else
-        std::shared_ptr<ConstantCoefficient<double, 0>> fun;
-#endif //WITH_TINY_EXPR
+        std::shared_ptr<ConstantCoefficient<double, 0> > fun;
+#endif  // WITH_TINY_EXPR
 
         bool fun_is_constant;
         bool write_operators_to_disk;
-
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_TRANSFER_APP
+#endif  // UTOPIA_TRANSFER_APP

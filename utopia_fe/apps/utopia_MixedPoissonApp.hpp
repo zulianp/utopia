@@ -9,12 +9,8 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-mixed_poisson";
-        }
+        inline static std::string command() { return "-mixed_poisson"; }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_MIXED_POISSON_APP_HPP
+#endif  // UTOPIA_MIXED_POISSON_APP_HPP

@@ -1,49 +1,42 @@
 #include "utopia_Contact.hpp"
 
-#include "utopia_assemble_contact.hpp"
-#include "libmesh/parallel.h"
-#include "libmesh/mesh_base.h"
 #include "libmesh/dof_map.h"
+#include "libmesh/mesh_base.h"
+#include "libmesh/parallel.h"
 #include "moonolith_communicator.hpp"
 #include "moonolith_synched_describable.hpp"
+#include "utopia_assemble_contact.hpp"
 
 #include <sstream>
 
 namespace utopia {
 
-    bool Contact::init(
-        const std::shared_ptr<libMesh::MeshBase> &mesh,
-        const std::shared_ptr<libMesh::DofMap> &dof_map,
-        const double search_radius,
-        const std::vector<std::pair<int, int> > &contact_pair_tags,
-        unsigned int variable_number,
-        const bool use_biorthogonal_basis)
-    {
-
+    bool Contact::init(const std::shared_ptr<libMesh::MeshBase> &mesh,
+                       const std::shared_ptr<libMesh::DofMap> &dof_map,
+                       const double search_radius,
+                       const std::vector<std::pair<int, int> > &contact_pair_tags,
+                       unsigned int variable_number,
+                       const bool use_biorthogonal_basis) {
         moonolith::Communicator comm(mesh->comm().get());
 
-        if(!assemble_contact(
-            comm,
-            mesh,
-            dof_map,
-            variable_number,
-            coupling_,
-            orthogonal_trafo_,
-            weighted_gap_,
-            normals_,
-            is_contact_node_,
-            search_radius,
-            contact_pair_tags,
-            use_biorthogonal_basis,
-            false))
-        {
-
-             //something failed
+        if (!assemble_contact(comm,
+                              mesh,
+                              dof_map,
+                              variable_number,
+                              coupling_,
+                              orthogonal_trafo_,
+                              weighted_gap_,
+                              normals_,
+                              is_contact_node_,
+                              search_radius,
+                              contact_pair_tags,
+                              use_biorthogonal_basis,
+                              false)) {
+            // something failed
             return false;
         }
 
-        if(use_biorthogonal_basis) {
-
+        if (use_biorthogonal_basis) {
             UVector d = sum(coupling_, 1);
 
             inv_mass_vector_ = local_zeros(local_size(d));
@@ -52,18 +45,17 @@ namespace utopia {
                 Write<UVector> w_(inv_mass_vector_);
 
                 each_read(d, [this](const SizeType i, const double value) {
-                    if(value < -1e-8) {
+                    if (value < -1e-8) {
                         std::cerr << "negative el for " << i << std::endl;
                     }
 
-                    if(std::abs(value) > 1e-15) {
-                        this->inv_mass_vector_.set(i, 1./value);
+                    if (std::abs(value) > 1e-15) {
+                        this->inv_mass_vector_.set(i, 1. / value);
                     } else {
                         this->inv_mass_vector_.set(i, 1.);
                     }
                 });
             }
-
 
             inv_mass_matrix_ = diag(inv_mass_vector_);
         } else {
@@ -75,7 +67,6 @@ namespace utopia {
         // write("B.m", coupling);
         // write("D_inv.m", inv_mass_matrix);
         // exit(0);
-
 
         transfer_operator_ = inv_mass_matrix_ * coupling_;
 
@@ -89,10 +80,8 @@ namespace utopia {
         return true;
     }
 
-    bool Contact::init_no_contact(
-        const std::shared_ptr<libMesh::MeshBase> &mesh,
-        const std::shared_ptr<libMesh::DofMap> &dof_map)
-    {
+    bool Contact::init_no_contact(const std::shared_ptr<libMesh::MeshBase> &mesh,
+                                  const std::shared_ptr<libMesh::DofMap> &dof_map) {
         auto n_local_dofs = dof_map->n_local_dofs();
 
         gap_ = local_values(n_local_dofs, 100000000);
@@ -105,26 +94,25 @@ namespace utopia {
         coupling_ = local_identity(n_local_dofs, n_local_dofs);
         inv_mass_matrix_ = local_identity(n_local_dofs, n_local_dofs);
         transfer_operator_ = local_identity(n_local_dofs, n_local_dofs);
-        orthogonal_trafo_  = local_identity(n_local_dofs, n_local_dofs);
+        orthogonal_trafo_ = local_identity(n_local_dofs, n_local_dofs);
         complete_transformation_ = local_identity(n_local_dofs, n_local_dofs);
         initialized_ = true;
         has_contact_ = false;
         return true;
     }
 
-    void Contact::print_debug_info()
-    {
-        const double sum_T  = sum(transfer_operator_);
-        const double norm_g  = norm2(gap_);
-        const double norm_B  = norm2(coupling_);
-        const double norm_O  = norm2(orthogonal_trafo_);
+    void Contact::print_debug_info() {
+        const double sum_T = sum(transfer_operator_);
+        const double norm_g = norm2(gap_);
+        const double norm_B = norm2(coupling_);
+        const double norm_O = norm2(orthogonal_trafo_);
         const double norm_im = norm2(inv_mass_vector_);
 
         std::stringstream ss;
-        ss << "sum_T:   " << sum_T   << "\n";
-        ss << "norm_g:  " << norm_g  << "\n";
-        ss << "norm_B:  " << norm_B  << "\n";
-        ss << "norm_O:  " << norm_O  << "\n";
+        ss << "sum_T:   " << sum_T << "\n";
+        ss << "norm_g:  " << norm_g << "\n";
+        ss << "norm_B:  " << norm_B << "\n";
+        ss << "norm_O:  " << norm_O << "\n";
         ss << "norm_im: " << norm_im << "\n";
 
         // static bool is_first = true;
@@ -139,18 +127,11 @@ namespace utopia {
         moonolith::root_describe(ss.str(), comm, std::cout);
     }
 
-    void Contact::couple(const UVector &in, UVector &out) const
-    {
-        out = transpose(complete_transformation_) * in;
-    }
-    
-    void Contact::uncouple(const UVector &in, UVector &out) const
-    {
-        out = complete_transformation_ * in;
-    }
-    
-    void Contact::couple(const USparseMatrix &in, USparseMatrix &out) const
-    {
+    void Contact::couple(const UVector &in, UVector &out) const { out = transpose(complete_transformation_) * in; }
+
+    void Contact::uncouple(const UVector &in, UVector &out) const { out = complete_transformation_ * in; }
+
+    void Contact::couple(const USparseMatrix &in, USparseMatrix &out) const {
         out = transpose(complete_transformation_) * in * complete_transformation_;
     }
-}
+}  // namespace utopia

@@ -5,7 +5,7 @@
 
 namespace utopia {
 
-    template<class FunctionSpace, class Matrix, class Vector>
+    template <class FunctionSpace, class Matrix, class Vector>
     class FEModel : public Model<Matrix, Vector> {
     public:
         virtual ~FEModel() {}
@@ -13,6 +13,6 @@ namespace utopia {
         virtual FunctionSpace &space() = 0;
         virtual const FunctionSpace &space() const = 0;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FE_MODEL_HPP
+#endif  // UTOPIA_FE_MODEL_HPP

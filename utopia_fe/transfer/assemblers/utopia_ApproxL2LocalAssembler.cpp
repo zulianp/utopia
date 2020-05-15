@@ -4,8 +4,7 @@
 namespace utopia {
 
     using Vector2 = Intersector::Vector2;
-    inline static bool inside_half_plane(const Vector2 &e1, const Vector2 &e2, const Vector2 &point, const double tol)
-    {
+    inline static bool inside_half_plane(const Vector2 &e1, const Vector2 &e2, const Vector2 &point, const double tol) {
         const Vector2 u = e1 - e2;
         const Vector2 v = point - e2;
 
@@ -13,10 +12,9 @@ namespace utopia {
         return dist <= tol;
     }
 
-    std::shared_ptr<Transform> ApproxL2LocalAssembler::get_trafo(const Elem &elem) const
-    {
+    std::shared_ptr<Transform> ApproxL2LocalAssembler::get_trafo(const Elem &elem) const {
         std::shared_ptr<Transform> elem_trafo;
-        //FIXME
+        // FIXME
         // if(elem.has_affine_map()) {
         // 	if(dim == 2) {
         // 		if(elem.dim() == 1) {
@@ -34,34 +32,31 @@ namespace utopia {
         // 		}
         // 	}
         // } else {
-            if(elem.dim() == 1) {
-                elem_trafo = std::make_shared<Transform1>(elem);
-            } else if(dim == 2) {
-                assert(elem.dim() == 2);
+        if (elem.dim() == 1) {
+            elem_trafo = std::make_shared<Transform1>(elem);
+        } else if (dim == 2) {
+            assert(elem.dim() == 2);
+            elem_trafo = std::make_shared<Transform2>(elem);
+        } else {
+            assert(dim == 3);
+
+            if (elem.dim() == 2) {
                 elem_trafo = std::make_shared<Transform2>(elem);
             } else {
-                assert(dim == 3);
-
-                if(elem.dim() == 2) {
-                    elem_trafo = std::make_shared<Transform2>(elem);
-                } else {
-                    elem_trafo = std::make_shared<Transform3>(elem);
-                }
+                elem_trafo = std::make_shared<Transform3>(elem);
             }
+        }
         // }
 
         return elem_trafo;
     }
 
-    bool ApproxL2LocalAssembler::assemble(
-        const Elem &trial,
-        FEType trial_type,
-        const Elem &test,
-        FEType test_type,
-        Matrix &mat
-        )
-    {
-        if(!init_q(trial, trial_type, test, test_type)) {
+    bool ApproxL2LocalAssembler::assemble(const Elem &trial,
+                                          FEType trial_type,
+                                          const Elem &test,
+                                          FEType test_type,
+                                          Matrix &mat) {
+        if (!init_q(trial, trial_type, test, test_type)) {
             return false;
         }
 
@@ -82,19 +77,16 @@ namespace utopia {
         return true;
     }
 
-    bool ApproxL2LocalAssembler::assemble(
-        const Elem &trial,
-        FEType trial_type,
-        const Elem &test,
-        FEType test_type,
-        std::vector<Matrix> &mat
-        )
-    {
+    bool ApproxL2LocalAssembler::assemble(const Elem &trial,
+                                          FEType trial_type,
+                                          const Elem &test,
+                                          FEType test_type,
+                                          std::vector<Matrix> &mat) {
         assert(n_forms() == 2);
 
         mat.resize(n_forms());
 
-        if(!init_q(trial, trial_type, test, test_type)) {
+        if (!init_q(trial, trial_type, test, test_type)) {
             return false;
         }
 
@@ -110,22 +102,21 @@ namespace utopia {
         test_fe->reinit(&test);
 
         assemble(*trial_fe, *test_fe, mat[0]);
-        assemble(*test_fe,  *test_fe, mat[1]);
+        assemble(*test_fe, *test_fe, mat[1]);
         return true;
     }
 
-    void ApproxL2LocalAssembler::assemble(libMesh::FEBase &trial, libMesh::FEBase &test, Matrix &mat) const
-    {
+    void ApproxL2LocalAssembler::assemble(libMesh::FEBase &trial, libMesh::FEBase &test, Matrix &mat) const {
         const auto &trial_shape_fun = trial.get_phi();
-        const auto &test_shape_fun  = test.get_phi();
+        const auto &test_shape_fun = test.get_phi();
         auto &JxW = test.get_JxW();
 
         mat.resize(test_shape_fun.size(), trial_shape_fun.size());
 
         std::size_t n_qps = JxW.size();
-        for(std::size_t i = 0; i < test_shape_fun.size(); ++i) {
-            for(std::size_t j = 0; j < trial_shape_fun.size(); ++j) {
-                for(std::size_t k = 0; k < n_qps; ++k) {
+        for (std::size_t i = 0; i < test_shape_fun.size(); ++i) {
+            for (std::size_t j = 0; j < trial_shape_fun.size(); ++j) {
+                for (std::size_t k = 0; k < n_qps; ++k) {
                     auto tf = test_shape_fun.at(i).at(k);
                     mat(i, j) += trial_shape_fun.at(j).at(k) * tf * JxW[k];
                 }
@@ -133,42 +124,34 @@ namespace utopia {
         }
     }
 
-    bool ApproxL2LocalAssembler::check_valid(const Matrix &mat) const
-    {
-        for(int i = 0; i < mat.m(); ++i) {
+    bool ApproxL2LocalAssembler::check_valid(const Matrix &mat) const {
+        for (int i = 0; i < mat.m(); ++i) {
             double row_sum = 0.;
-            for(int j = 0; j < mat.n(); ++j) {
+            for (int j = 0; j < mat.n(); ++j) {
                 row_sum += mat(i, j);
                 assert(mat(i, j) < 1.0001);
             }
 
             assert(row_sum < 1.0001);
-            if(row_sum > 1.001) return false;
+            if (row_sum > 1.001) return false;
         }
 
         return true;
     }
 
-    bool ApproxL2LocalAssembler::init_q(
-        const Elem &trial,
-        FEType trial_type,
-        const Elem &test,
-        FEType test_type)
-    {
+    bool ApproxL2LocalAssembler::init_q(const Elem &trial, FEType trial_type, const Elem &test, FEType test_type) {
         std::shared_ptr<Transform> trial_trafo = get_trafo(trial);
-        std::shared_ptr<Transform> test_trafo  = get_trafo(test);
+        std::shared_ptr<Transform> test_trafo = get_trafo(test);
 
-        if(!q_trial) {
+        if (!q_trial) {
             q_trial = std::make_shared<QMortar>(dim);
-            q_test  = std::make_shared<QMortar>(dim);
+            q_test = std::make_shared<QMortar>(dim);
         }
 
         int order = quadrature_order;
-        if(order < 0) {
-            order = std::max(
-                order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order),
-                order_for_l2_integral(dim, test,  test_type.order,  test, test_type.order)
-            );
+        if (order < 0) {
+            order = std::max(order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order),
+                             order_for_l2_integral(dim, test, test_type.order, test, test_type.order));
         }
 
         libMesh::QGauss q(test.dim(), libMesh::Order(order));
@@ -179,7 +162,7 @@ namespace utopia {
         QMortar q_spatial(dim);
         q_spatial.resize(n_quad_points);
 
-        for(std::size_t i = 0; i < n_quad_points; ++i) {
+        for (std::size_t i = 0; i < n_quad_points; ++i) {
             test_trafo->apply(q.get_points()[i], q_spatial.get_points()[i]);
         }
 
@@ -188,13 +171,13 @@ namespace utopia {
         std::vector<int> index;
         std::vector<libMesh::Point> trial_ref_points;
 
-        if(trial_is_affine) {
+        if (trial_is_affine) {
             contained_points(trial, q_spatial, index);
         } else {
             contained_points_non_affine(trial, q_spatial, index, trial_ref_points);
         }
 
-        if(index.empty()) return false;
+        if (index.empty()) return false;
 
         std::size_t n_isect_qp = index.size();
 
@@ -202,70 +185,65 @@ namespace utopia {
         q_test->resize(n_isect_qp);
 
         std::fill(q_trial->get_weights().begin(), q_trial->get_weights().end(), 0.);
-        std::fill(q_test->get_weights().begin(),  q_test->get_weights().end(), 0.);
+        std::fill(q_test->get_weights().begin(), q_test->get_weights().end(), 0.);
 
-        for(std::size_t qp = 0; qp < n_isect_qp; ++qp) {
+        for (std::size_t qp = 0; qp < n_isect_qp; ++qp) {
             auto ind = index[qp];
             auto p = q_spatial.get_points()[ind];
-           
-            if(trial_is_affine) {
+
+            if (trial_is_affine) {
                 trial_trafo->transform_to_reference(p, q_trial->get_points()[qp]);
             } else {
                 assert(!trial_ref_points.empty());
                 q_trial->get_points()[qp] = trial_ref_points[ind];
             }
 
-            q_test->get_points()[qp]  = q.get_points()[ind];
+            q_test->get_points()[qp] = q.get_points()[ind];
             q_test->get_weights()[qp] = q.get_weights()[ind];
         }
 
         return true;
     }
 
-    static bool point_test(const libMesh::Elem &e, const libMesh::Point &p, libMesh::Point &p_ref, libMesh::Real map_tol)
-    {
+    static bool point_test(const libMesh::Elem &e,
+                           const libMesh::Point &p,
+                           libMesh::Point &p_ref,
+                           libMesh::Real map_tol) {
         using namespace libMesh;
 
         FEType fe_type(e.default_order());
 
-          // To be on the safe side, we converge the inverse_map() iteration
-          // to a slightly tighter tolerance than that requested by the
-          // user...
-          p_ref = FEInterface::inverse_map(e.dim(),
-                                          fe_type,
-                                          &e,
-                                          p,
-                                          0.1*map_tol, // <- this is |dx| tolerance, the Newton residual should be ~ |dx|^2
-                                          /*secure=*/ false);
+        // To be on the safe side, we converge the inverse_map() iteration
+        // to a slightly tighter tolerance than that requested by the
+        // user...
+        p_ref = FEInterface::inverse_map(
+            e.dim(),
+            fe_type,
+            &e,
+            p,
+            0.1 * map_tol,  // <- this is |dx| tolerance, the Newton residual should be ~ |dx|^2
+            /*secure=*/false);
 
-          if (e.dim() < 3)
-            {
-              Point xyz = FEInterface::map(e.dim(),
-                                           fe_type,
-                                           &e,
-                                           p_ref);
+        if (e.dim() < 3) {
+            Point xyz = FEInterface::map(e.dim(), fe_type, &e, p_ref);
 
-              Real dist = (xyz - p).norm();
+            Real dist = (xyz - p).norm();
 
+            // If dist is larger than some fraction of the tolerance, then return false.
+            // This can happen when e.g. a 2D element is living in 3D, and
+            // FEInterface::inverse_map() maps p onto the projection of the element,
+            // effectively "tricking" FEInterface::on_reference_element().
+            if (dist > e.hmax() * map_tol) return false;
+        }
 
-              // If dist is larger than some fraction of the tolerance, then return false.
-              // This can happen when e.g. a 2D element is living in 3D, and
-              // FEInterface::inverse_map() maps p onto the projection of the element,
-              // effectively "tricking" FEInterface::on_reference_element().
-              if (dist > e.hmax() * map_tol)
-                return false;
-            }
-
-          return FEInterface::on_reference_element(p_ref, e.type(), map_tol);
+        return FEInterface::on_reference_element(p_ref, e.type(), map_tol);
     }
 
-    void ApproxL2LocalAssembler::contained_points(const Elem &trial, const libMesh::QBase &q, std::vector<int> &index)
-    {
+    void ApproxL2LocalAssembler::contained_points(const Elem &trial, const libMesh::QBase &q, std::vector<int> &index) {
         int n_potential_nodes = q.get_points().size();
 
         // if(nested_meshes) {
         // 	//check if there is an intersection then...
-
 
         // 	test_dofs.resize(n_potential_nodes);
 
@@ -278,39 +256,36 @@ namespace utopia {
 
         index.reserve(n_potential_nodes);
 
-        if(dim == 2) {
+        if (dim == 2) {
             contained_points_2(trial, q, index);
             return;
-        } else if(dim == 3) {
+        } else if (dim == 3) {
             assert(dim == 3);
             contained_points_3(trial, q, index);
             return;
         }
 
-        for(int i = 0; i < n_potential_nodes; ++i) {
-            auto const & q_node = q.get_points()[i];
-            if(trial.contains_point(q_node, tol)) {
+        for (int i = 0; i < n_potential_nodes; ++i) {
+            auto const &q_node = q.get_points()[i];
+            if (trial.contains_point(q_node, tol)) {
                 index.push_back(i);
             }
         }
     }
 
-    void ApproxL2LocalAssembler::contained_points_non_affine(
-        const Elem &trial,
-        const libMesh::QBase &q,
-        std::vector<int> &index,
-        std::vector<libMesh::Point> &trial_ref_points
-        ) const
-    {
+    void ApproxL2LocalAssembler::contained_points_non_affine(const Elem &trial,
+                                                             const libMesh::QBase &q,
+                                                             std::vector<int> &index,
+                                                             std::vector<libMesh::Point> &trial_ref_points) const {
         int n_potential_nodes = q.get_points().size();
         index.reserve(n_potential_nodes);
         trial_ref_points.resize(n_potential_nodes);
 
         libMesh::Point q_ref;
 
-        for(int i = 0; i < n_potential_nodes; ++i) {
-            auto const & q_node = q.get_points()[i];
-            if(point_test(trial, q_node, q_ref, tol)) {
+        for (int i = 0; i < n_potential_nodes; ++i) {
+            auto const &q_node = q.get_points()[i];
+            if (point_test(trial, q_node, q_ref, tol)) {
                 index.push_back(i);
             }
 
@@ -318,14 +293,15 @@ namespace utopia {
         }
     }
 
-    void ApproxL2LocalAssembler::contained_points_2(const Elem &trial, const libMesh::QBase &q, std::vector<int> &index)
-    {
+    void ApproxL2LocalAssembler::contained_points_2(const Elem &trial,
+                                                    const libMesh::QBase &q,
+                                                    std::vector<int> &index) {
         make_polygon(trial, trial_pts);
         // make_polygon(test,  test_pts);
 
         const auto &trial_poly = trial_pts.get_values();
         const int trial_n_nodes = trial_poly.size() / 2;
-        const int n_qp  = q.get_points().size();
+        const int n_qp = q.get_points().size();
 
         index.clear();
 
@@ -333,32 +309,33 @@ namespace utopia {
 
         std::vector<bool> is_inside(n_qp, true);
 
-        for(int i = 0; i < trial_n_nodes; ++i) {
+        for (int i = 0; i < trial_n_nodes; ++i) {
             const int i2x = i * 2;
             const int i2y = i2x + 1;
 
-            const int i2p1x = 2 * (((i + 1) == trial_n_nodes)? 0 : (i + 1));
+            const int i2p1x = 2 * (((i + 1) == trial_n_nodes) ? 0 : (i + 1));
             const int i2p1y = i2p1x + 1;
 
-            e1 = Vector2(trial_poly[i2x],   trial_poly[i2y]);
+            e1 = Vector2(trial_poly[i2x], trial_poly[i2y]);
             e2 = Vector2(trial_poly[i2p1x], trial_poly[i2p1y]);
 
-            for(int j = 0; j < n_qp; ++j) {
+            for (int j = 0; j < n_qp; ++j) {
                 const auto &q_pt = q.get_points()[j];
                 p = Vector2(q_pt(0), q_pt(1));
                 is_inside[j] = is_inside[j] && inside_half_plane(e1, e2, p, tol);
             }
         }
 
-        for(int i = 0; i < n_qp; ++i) {
-            if(is_inside[i]) {
+        for (int i = 0; i < n_qp; ++i) {
+            if (is_inside[i]) {
                 index.push_back(i);
             }
         }
     }
 
-    void ApproxL2LocalAssembler::contained_points_3(const Elem &trial,  const libMesh::QBase &q, std::vector<int> &index) const
-    {
+    void ApproxL2LocalAssembler::contained_points_3(const Elem &trial,
+                                                    const libMesh::QBase &q,
+                                                    std::vector<int> &index) const {
         Polyhedron poly;
         make_polyhedron(trial, poly);
 
@@ -373,26 +350,26 @@ namespace utopia {
         index.clear();
 
         int n_qp = q.get_points().size();
-        for(int k = 0; k < n_qp; ++k) {
-            const auto & node = q.get_points()[k];
+        for (int k = 0; k < n_qp; ++k) {
+            const auto &node = q.get_points()[k];
             p[0] = node(0);
             p[1] = node(1);
             p[2] = node(2);
 
             bool inside = true;
-            for(int i = 0; i < n_half_spaces; ++i) {
+            for (int i = 0; i < n_half_spaces; ++i) {
                 const int i3 = i * 3;
                 auto d = Intersector::point_plane_distance(3, &plane_normals[i3], plane_dists_from_origin[i], p);
 
-                if(d >= tol) {
+                if (d >= tol) {
                     inside = false;
                     break;
                 }
             }
 
-            if(inside) {
+            if (inside) {
                 index.push_back(k);
             }
         }
     }
-}
+}  // namespace utopia

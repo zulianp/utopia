@@ -6,4 +6,4 @@ namespace utopia {
     template class ContactStabilizedNewmark<USparseMatrix, UVector>;
 }
 
-#endif //WITH_TRILINOS_ALGEBRA
+#endif  // WITH_TRILINOS_ALGEBRA
