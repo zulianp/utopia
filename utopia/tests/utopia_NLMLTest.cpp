@@ -55,8 +55,8 @@ namespace utopia {
 
             // 		auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             // 		// tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>
-            // >()); 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-            // 		tr_strategy_coarse->atol(1e-12);
+            // >()); 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector>
+            // >()); 		tr_strategy_coarse->atol(1e-12);
 
             //            auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             //            tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> > ());
@@ -110,8 +110,8 @@ namespace utopia {
 
             // 		auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             // 		// tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>
-            // >()); 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-            // 		tr_strategy_coarse->atol(1e-12);
+            // >()); 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector>
+            // >()); 		tr_strategy_coarse->atol(1e-12);
 
             //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, SECOND_ORDER> >(n_levels_);
 
@@ -142,8 +142,8 @@ namespace utopia {
 
             // 		auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
             // 		// tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>
-            // >()); 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
-            // 		tr_strategy_coarse->atol(1e-12);
+            // >()); 		tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector>
+            // >()); 		tr_strategy_coarse->atol(1e-12);
 
             //            auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, GALERKIN> >(n_levels_);
 
