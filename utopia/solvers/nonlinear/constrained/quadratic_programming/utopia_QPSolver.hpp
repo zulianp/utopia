@@ -3,21 +3,20 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_IterativeSolver.hpp"
-#include "utopia_VariableBoundSolverInterface.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
+#include "utopia_VariableBoundSolverInterface.hpp"
 
 #include <cmath>
 
-namespace utopia
-{
+namespace utopia {
 
-    template<class Matrix, class Vector>
-    class QPSolver :    public virtual PreconditionedSolver<Matrix, Vector>,
-                        public virtual VariableBoundSolverInterface<Vector> {
+    template <class Matrix, class Vector>
+    class QPSolver : public virtual PreconditionedSolver<Matrix, Vector>,
+                     public virtual VariableBoundSolverInterface<Vector> {
     public:
-        using Scalar   = typename Traits<Vector>::Scalar;
+        using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Layout   = typename Traits<Vector>::Layout;
+        using Layout = typename Traits<Vector>::Layout;
 
         QPSolver() = default;
         ~QPSolver() override = default;
@@ -29,14 +28,13 @@ namespace utopia
         }
     };
 
-
-    template<class Vector>
+    template <class Vector>
     class MatrixFreeQPSolver : public virtual MatrixFreeLinearSolver<Vector>,
                                public virtual VariableBoundSolverInterface<Vector> {
     public:
-        using Scalar   = typename Traits<Vector>::Scalar;
+        using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Layout   = typename Traits<Vector>::Layout;
+        using Layout = typename Traits<Vector>::Layout;
 
         MatrixFreeQPSolver() = default;
 
@@ -50,19 +48,16 @@ namespace utopia
         }
     };
 
-
-    template<class Matrix, class Vector>
-    class OperatorBasedQPSolver :   public virtual MatrixFreeQPSolver<Vector>,
-                                    public virtual QPSolver<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class OperatorBasedQPSolver : public virtual MatrixFreeQPSolver<Vector>, public virtual QPSolver<Matrix, Vector> {
     public:
         using MatrixFreeQPSolver<Vector>::update;
         using QPSolver<Matrix, Vector>::update;
         using MatrixFreeQPSolver<Vector>::solve;
 
-        using Scalar   = typename Traits<Vector>::Scalar;
+        using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Layout   = typename Traits<Vector>::Layout;
+        using Layout = typename Traits<Vector>::Layout;
 
         ~OperatorBasedQPSolver() override = default;
 
@@ -76,8 +71,7 @@ namespace utopia
             update(operator_cast<Vector>(*op));
         }
 
-        bool apply(const Vector &b, Vector &x) override
-        {
+        bool apply(const Vector &b, Vector &x) override {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
@@ -99,6 +93,6 @@ namespace utopia
         }
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_QP_SOLVER_HPP
+#endif  // UTOPIA_QP_SOLVER_HPP

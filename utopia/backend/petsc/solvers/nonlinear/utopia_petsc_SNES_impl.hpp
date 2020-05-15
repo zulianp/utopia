@@ -2,18 +2,18 @@
 #define UTOPIA_SNES_SOLVER_IMPL_HPP
 
 #include "utopia_Core.hpp"
-#include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_LinearSolver.hpp"
 #include "utopia_NonLinearSolver.hpp"
 // #include "utopia_petsc.hpp"
-#include "utopia_petsc_build_ksp.hpp"
 #include "utopia_VariableBoundSolverInterface.hpp"
+#include "utopia_petsc_build_ksp.hpp"
 
-#include <algorithm>
-#include <petscpc.h>
 #include <petscksp.h>
-#include <petscsys.h>
+#include <petscpc.h>
 #include <petscsnes.h>
+#include <petscsys.h>
+#include <algorithm>
 
 namespace utopia {
     // typedef typename NewtonBase<Matrix, Vector>::Solver  LinearSolver;
@@ -28,10 +28,9 @@ namespace utopia {
         SNES_type_ = SNES_types.at(0);
     }
 
-    template<typename Matrix, typename Vector>
-    SNESSolver<Matrix, Vector, PETSC> * SNESSolver<Matrix, Vector, PETSC>::clone() const
-    {
-        //FIXME make complete clone
+    template <typename Matrix, typename Vector>
+    SNESSolver<Matrix, Vector, PETSC> *SNESSolver<Matrix, Vector, PETSC>::clone() const {
+        // FIXME make complete clone
         auto cloned_linear_solver = std::shared_ptr<LinearSolver>(this->linear_solver()->clone());
         auto cloned = utopia::make_unique<SNESSolver>(cloned_linear_solver);
         cloned->set_snes_type(SNES_type_);
@@ -41,9 +40,8 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     SNESSolver<Matrix, Vector, PETSC>::~SNESSolver() = default;
 
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::read(Input &in)
-    {
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::read(Input &in) {
         NonLinearSolver::read(in);
         Smoother::read(in);
 
@@ -54,31 +52,27 @@ namespace utopia {
         this->set_snes_type(SNES_type_aux_);
     }
 
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::print_usage(std::ostream &os) const
-    {
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::print_usage(std::ostream &os) const {
         NonLinearSolver::print_usage(os);
         Smoother::print_usage(os);
 
         this->print_param_usage(os, "SNES_type", "string", "Type of Snes solver.", "newtonls");
     }
 
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::set_snes_type(const std::string & type)
-    {
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::set_snes_type(const std::string &type) {
         SNES_type_ = in_array(type, SNES_types) ? type : SNES_types.at(0);
     }
 
-    template<typename Matrix, typename Vector>
-    bool SNESSolver<Matrix, Vector, PETSC>::solve(Function &fun, Vector &x)
-    {
+    template <typename Matrix, typename Vector>
+    bool SNESSolver<Matrix, Vector, PETSC>::solve(Function &fun, Vector &x) {
         using namespace utopia;
 
-        SNES            snes;
+        SNES snes;
 
         std::string method = "SNES_INTERFACE";
         this->init_solver(method, {"it", "|g|"});
-
 
         if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr) {
             auto *fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
@@ -102,27 +96,22 @@ namespace utopia {
 
         this->exit_solver(nonl_its, reason);
 
-        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
-            SNESDestroy(&snes);
+        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr) SNESDestroy(&snes);
 
         return true;
     }
 
-    template<typename Matrix, typename Vector>
-    bool SNESSolver<Matrix, Vector, PETSC>::smooth(Function & fun,  Vector &x, const Vector &rhs)
-    {
+    template <typename Matrix, typename Vector>
+    bool SNESSolver<Matrix, Vector, PETSC>::smooth(Function &fun, Vector &x, const Vector &rhs) {
         using namespace utopia;
 
-        SNES            snes;
+        SNES snes;
 
-        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr)
-        {
+        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr) {
             auto *fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
             fun_petsc->getSNES(snes);
-        }
-        else
+        } else
             setup_assembly_routines(snes, fun, x);
-
 
         set_snes_options(snes, 0.0, 0.0, 0.0, this->sweeps());
         set_ksp(snes);
@@ -134,45 +123,37 @@ namespace utopia {
         VecDestroy(&snes->vec_rhs);
         snes->vec_rhs = nullptr;
 
-        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
-        {
+        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr) {
             MatDestroy(&snes->jacobian);
             MatDestroy(&snes->jacobian_pre);
 
             SNESDestroy(&snes);
         }
 
-
         return true;
-
     }
 
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::set_line_search_type(const SNESLineSearchType ls_type)
-    {
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::set_line_search_type(const SNESLineSearchType ls_type) {
         line_search_type_ = ls_type;
     }
 
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::set_snes_options(SNES & snes,
-                                                             const Scalar & atol,
-                                                             const Scalar & rtol,
-                                                             const Scalar & stol,
-                                                             const SizeType & max_it)
-    {
-        PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::set_snes_options(SNES &snes,
+                                                             const Scalar &atol,
+                                                             const Scalar &rtol,
+                                                             const Scalar &stol,
+                                                             const SizeType &max_it) {
+        PetscErrorCode ierr;
+        UTOPIA_UNUSED(ierr);
 
         SNESMonitorCancel(snes);
         SNESSetFromOptions(snes);
 
-
-        if(this->verbose()) {
-            SNESMonitorSet(
-                           snes,
-                           [](SNES /*snes*/, PetscInt iter, PetscReal res, void*) -> PetscErrorCode
-                           {
-                               if(mpi_world_rank() == 0)
-                                   std::cout<<iter << "       "<< res << "      \n";
+        if (this->verbose()) {
+            SNESMonitorSet(snes,
+                           [](SNES /*snes*/, PetscInt iter, PetscReal res, void *) -> PetscErrorCode {
+                               if (mpi_world_rank() == 0) std::cout << iter << "       " << res << "      \n";
 
                                return 0;
                            },
@@ -183,18 +164,18 @@ namespace utopia {
         ierr = SNESSetType(snes, SNES_type_.c_str());
         ierr = SNESSetTolerances(snes, atol, rtol, stol, max_it, PETSC_DEFAULT);
 
-
         SNESLineSearch linesearch;
         SNESGetLineSearch(snes, &linesearch);
 
         SNESLineSearchSetFromOptions(linesearch);
         SNESLineSearchSetType(linesearch, line_search_type_);
 
-#if !UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)
+#if !UTOPIA_PETSC_VERSION_LESS_THAN(3, 8, 0)
 
         PetscReal damping = 1.;
         SNESLineSearchGetDamping(linesearch, &damping);
-        SNESLineSearchSetTolerances(linesearch, PETSC_DEFAULT, PETSC_DEFAULT, this->rtol(), this->atol(), PETSC_DEFAULT, 20);
+        SNESLineSearchSetTolerances(
+            linesearch, PETSC_DEFAULT, PETSC_DEFAULT, this->rtol(), this->atol(), PETSC_DEFAULT, 20);
 
         // if(std::string(SNESLINESEARCHBASIC) == line_search_type_ && std::abs(damping - 1.) < 1e-16) {
         //       SNESLineSearchSetComputeNorms(linesearch, PETSC_FALSE);
@@ -202,27 +183,20 @@ namespace utopia {
 #endif
     }
 
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::set_ksp(SNES & snes)
-    {
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::set_ksp(SNES &snes) {
+        if (!snes->usesksp) return;
 
-        if(!snes->usesksp)
-            return;
+        KSP ksp;
+        SNESGetKSP(snes, &ksp);
 
-        KSP            ksp;
-        SNESGetKSP(snes,&ksp);
-
-        if (dynamic_cast<KSPSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
-        {
+        if (dynamic_cast<KSPSolver<Matrix, Vector> *>(this->linear_solver_.get()) != nullptr) {
             auto utopia_ksp = dynamic_cast<KSPSolver<Matrix, Vector> *>(this->linear_solver_.get());
             utopia_ksp->set_ksp_options(ksp);
             utopia_ksp->attach_preconditioner(ksp);
-        }
-        else
-        {
-            if(!this->linear_solver_)
-            {
-                std::cout<<"utopia::SNES:: linear solver missing, setting to DEFAULT... \n";
+        } else {
+            if (!this->linear_solver_) {
+                std::cout << "utopia::SNES:: linear solver missing, setting to DEFAULT... \n";
                 const auto utopia_ksp = std::make_shared<KSPSolver<Matrix, Vector> >();
                 this->set_linear_solver(utopia_ksp);
             }
@@ -231,26 +205,20 @@ namespace utopia {
         }
     }
 
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::set_variable_bounds(SNES &snes, const Layout &layout)
-    {
-        if(this->has_bound()) {
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::set_variable_bounds(SNES &snes, const Layout &layout) {
+        if (this->has_bound()) {
             this->fill_empty_bounds(layout);
 
-            SNESVISetVariableBounds(
-                                    snes,
-                                    raw_type(this->get_lower_bound()),
-                                    raw_type(this->get_upper_bound())
-                                    );
+            SNESVISetVariableBounds(snes, raw_type(this->get_lower_bound()), raw_type(this->get_upper_bound()));
         }
     }
 
     // this function is expensive - wrt to convert
     // however, in utopia is not ready for pure wrap implementation
-    template<typename Matrix, typename Vector>
-    void SNESSolver<Matrix, Vector, PETSC>::setup_assembly_routines(SNES & snes, Function & fun, const Vector &x)
-    {
-        MPI_Comm        comm;
+    template <typename Matrix, typename Vector>
+    void SNESSolver<Matrix, Vector, PETSC>::setup_assembly_routines(SNES &snes, Function &fun, const Vector &x) {
+        MPI_Comm comm;
         PetscObjectGetComm((PetscObject)raw_type(x), &comm);
 
         // residual
@@ -260,18 +228,19 @@ namespace utopia {
         fun.data()->init();
 
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-        if(!fun.initialize_hessian(*fun.data()->H, *fun.data()->H_pre)) {
-            utopia_error("SNESSolver requires Function::initialize_hessian to be implemented, for petsc version >= 3.11.0");
+        if (!fun.initialize_hessian(*fun.data()->H, *fun.data()->H_pre)) {
+            utopia_error(
+                "SNESSolver requires Function::initialize_hessian to be implemented, for petsc version >= 3.11.0");
             assert(false);
             // return false;
         }
 
-#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+#endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
 
-        auto mat      = fun.data()->H;
+        auto mat = fun.data()->H;
         auto prec_mat = fun.data()->H_pre;
 
-        if(!fun.has_preconditioner()) {
+        if (!fun.has_preconditioner()) {
             prec_mat = mat;
         }
 
@@ -319,8 +288,7 @@ namespace utopia {
 
                 bool flg = fun->hessian(x_ut, *fun->data()->H, *fun->data()->H_pre);
 
-                if(!flg)
-                {
+                if (!flg) {
                     fun->hessian(x_ut, *fun->data()->H);
 
                     // if(jac != raw_type(*fun->data()->H)) {
@@ -336,7 +304,7 @@ namespace utopia {
             &fun);
     }
 
-    //OLD IMPLEMENTATION
+    // OLD IMPLEMENTATION
 
     // template<typename Matrix, typename Vector>
     // void SNESSolver<Matrix, Vector, PETSC>::setup_assembly_routines(SNES & snes, Function & fun, const Vector &x)
@@ -410,6 +378,6 @@ namespace utopia {
     //         },
     //         &fun);
     // }
-}
+}  // namespace utopia
 
-#endif // UTOPIA_SNES_SOLVER_IMPL_HPP
+#endif  // UTOPIA_SNES_SOLVER_IMPL_HPP

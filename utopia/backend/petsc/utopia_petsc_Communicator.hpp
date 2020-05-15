@@ -9,79 +9,54 @@
 
 namespace utopia {
 
-	class PetscCommunicator final : public MPICommunicator {
-	public:
+    class PetscCommunicator final : public MPICommunicator {
+    public:
+        class Wrapper {
+        public:
+            Wrapper(const MPI_Comm &comm, const bool owned) : comm(comm), owned(owned) {}
 
-		class Wrapper {
-		public:
-			Wrapper(const MPI_Comm &comm, const bool owned)
-			: comm(comm), owned(owned)
-			{}
+            ~Wrapper() {
+                if (owned) {
+                    MPI_Comm_free(&comm);
+                }
+            }
 
- 			~Wrapper()
- 			{
- 				if(owned) {
- 					MPI_Comm_free(&comm);
- 				}
- 			}
+            MPI_Comm comm;
+            bool owned;
+        };
 
-			MPI_Comm comm;
-			bool owned;
-		};
+        inline PetscCommunicator *clone() const override { return new PetscCommunicator(get()); }
 
-		inline PetscCommunicator * clone() const override
-		{
-			return new PetscCommunicator(get());
-		}
+        inline MPI_Comm get() const override { return wrapper_->comm; }
 
-		inline MPI_Comm get() const override
-		{
-			return wrapper_->comm;
-		}
+        inline MPI_Comm raw_comm() const override { return get(); }
 
-		inline MPI_Comm raw_comm() const override
-		{
-			return get();
-		}
+        inline void set(MPI_Comm comm) { wrapper_ = make_not_owned(comm); }
 
-		inline void set(MPI_Comm comm)
-		{
-			wrapper_ = make_not_owned(comm);
-		}
+        inline void own(MPI_Comm comm) { wrapper_ = std::make_shared<Wrapper>(comm, true); }
 
-		inline void own(MPI_Comm comm)
-		{
-			wrapper_ = std::make_shared<Wrapper>(comm, true);
-		}
+        static PetscCommunicator self();
+        static PetscCommunicator world();
 
-		static PetscCommunicator self();
-		static PetscCommunicator world();
+        inline static PetscCommunicator &get_default() {
+            static PetscCommunicator instance_;
+            return instance_;
+        }
 
-		inline static PetscCommunicator &get_default()
-		{
-			static PetscCommunicator instance_;
-			return instance_;
-		}
+        PetscCommunicator split(const int color) const;
 
-		PetscCommunicator split(const int color) const;
+        explicit PetscCommunicator(const MPI_Comm comm) : wrapper_(make_not_owned(comm)) {}
+        PetscCommunicator();
 
+        PetscCommunicator(const Communicator &comm) : wrapper_(make_not_owned(comm.raw_comm())) {}
 
-		explicit PetscCommunicator(const MPI_Comm comm) : wrapper_(make_not_owned(comm)) {}
-		PetscCommunicator();
+        PetscCommunicator(const PetscCommunicator &other) : wrapper_(other.wrapper_) {}
 
-		PetscCommunicator(const Communicator &comm) : wrapper_(make_not_owned(comm.raw_comm())) {}
+    private:
+        std::shared_ptr<Wrapper> wrapper_;
 
-		PetscCommunicator(const PetscCommunicator &other) : wrapper_(other.wrapper_) {}
+        static std::shared_ptr<Wrapper> make_not_owned(MPI_Comm comm) { return std::make_shared<Wrapper>(comm, false); }
+    };
+}  // namespace utopia
 
-	private:
-		std::shared_ptr<Wrapper> wrapper_;
-
-		static std::shared_ptr<Wrapper> make_not_owned(MPI_Comm comm)
-		{
-			return std::make_shared<Wrapper>(comm, false);
-		}
-
-	};
-}
-
-#endif //UTOPIA_PETSC_COMMUNICATOR_HPP
+#endif  // UTOPIA_PETSC_COMMUNICATOR_HPP

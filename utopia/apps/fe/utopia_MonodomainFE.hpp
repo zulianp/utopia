@@ -1,7 +1,6 @@
 // #ifndef UTOPIA_MONODOMAIN_FE_HPP
 // #define UTOPIA_MONODOMAIN_FE_HPP
 
-
 // #include "utopia_Function.hpp"
 // #include "utopia_LaplacianView.hpp"
 // #include "utopia_MassMatrixView.hpp"
@@ -36,7 +35,6 @@
 //         using ElementMatrix     = utopia::StaticMatrix<Scalar, NNodes, NNodes>;
 //         using ElementVector     = utopia::StaticVector<Scalar, NNodes>;
 //         using Point             = typename FunctionSpace::Point;
-
 
 //         class FitzHughNagumoReactionTerm {
 //         public:
@@ -239,6 +237,5 @@
 //         FitzHughNagumoReactionTerm fhn_;
 //     };
 // }
-
 
 // #endif //UTOPIA_MONODOMAIN_FE_HPP

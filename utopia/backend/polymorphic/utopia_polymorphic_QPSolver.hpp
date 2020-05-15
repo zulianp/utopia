@@ -1,15 +1,15 @@
 #ifndef UTOPIA_POLYMORPHIC_QP_SOLVER_HPP
 #define UTOPIA_POLYMORPHIC_QP_SOLVER_HPP
 
-#include "utopia_QPSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_QPSolver.hpp"
 
 #include <memory>
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
-    class PolymorphicQPSolver : public QPSolver<Matrix, Vector>  {
+    template <class Matrix, class Vector>
+    class PolymorphicQPSolver : public QPSolver<Matrix, Vector> {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
@@ -26,9 +26,8 @@ namespace utopia {
 
     private:
         std::unique_ptr<QPSolver<Matrix, Vector>> impl_;
-
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_POLYMORPHIC_QP_SOLVER_HPP
+#endif  // UTOPIA_POLYMORPHIC_QP_SOLVER_HPP

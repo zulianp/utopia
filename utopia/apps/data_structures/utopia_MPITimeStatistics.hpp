@@ -1,9 +1,9 @@
 #ifndef UTOPIA_MPI_TIME_STATISTICS
 #define UTOPIA_MPI_TIME_STATISTICS
 
-#include <string>
 #include <iostream>
 #include <map>
+#include <string>
 
 #include "utopia_Chrono.hpp"
 #include "utopia_Communicator.hpp"
@@ -12,45 +12,36 @@ namespace utopia {
 
     class MPITimeStatistics {
     public:
-
-        void start()
-        {
+        void start() {
             comm_.barrier();
             c_.start();
         }
 
-        void stop()
-        {
+        void stop() {
             comm_.barrier();
             c_.stop();
         }
 
-        void stop_and_collect(const std::string &collect_name)
-        {
+        void stop_and_collect(const std::string &collect_name) {
             stop();
             times_[std::to_string(counter_++) + ") " + collect_name] = c_.get_seconds();
         }
 
-        void stop_collect_and_restart(const std::string &collect_name)
-        {
+        void stop_collect_and_restart(const std::string &collect_name) {
             stop();
             times_[std::to_string(counter_++) + ") " + collect_name] = c_.get_seconds();
             start();
         }
 
-        void add_stat(const std::string &name, const double &time)
-        {
-            times_[name] += time;
-        }
+        void add_stat(const std::string &name, const double &time) { times_[name] += time; }
 
-        void describe(std::ostream &os) const
-        {
+        void describe(std::ostream &os) const {
             comm_.barrier();
-            if(comm_.rank() == 0) {
+            if (comm_.rank() == 0) {
                 os << "------------------------------------------\n";
                 os << "Timings (seconds), ";
                 os << "comm_size : " << comm_.size() << "\n";
-                for(auto p : times_) {
+                for (auto p : times_) {
                     os << p.first << " : " << p.second << "\n";
                 }
 
@@ -68,6 +59,6 @@ namespace utopia {
         int counter_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_MPI_TIME_STATISTICS
+#endif  // UTOPIA_MPI_TIME_STATISTICS

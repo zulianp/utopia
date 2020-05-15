@@ -6,7 +6,7 @@
 #include "utopia_Wrapper.hpp"
 #include "utopia_trilinos_RowView.hpp"
 
-namespace utopia{
+namespace utopia {
 
     template class RowView<TpetraMatrixd>;
     template class BiCGStab<TpetraMatrixd, TpetraVectord, HOMEMADE>;

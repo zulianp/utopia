@@ -3,4 +3,4 @@
 
 #include "utopia_SPBlockConjugateGradient.hpp"
 
-#endif //UTOPIA_SADDLE_POINT_HPP
+#endif  // UTOPIA_SADDLE_POINT_HPP

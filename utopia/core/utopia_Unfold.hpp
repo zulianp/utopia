@@ -2,17 +2,16 @@
 #define UTOPIA_UNFOLD_HPP
 
 namespace utopia {
-    template<class Expr>
+    template <class Expr>
     class Unfold {
     public:
         using Type = Expr;
     };
 
-
-    template<class Expr>
+    template <class Expr>
     class Fold {
         using Type = Expr;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UNFOLD_HPP
+#endif  // UTOPIA_UNFOLD_HPP

@@ -15,7 +15,7 @@ namespace utopia {
     // slow and innefficient implementation just for testing
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class ProjectedGaussSeidel : public QPSolver<Matrix, Vector> {
-       public:
+    public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -367,15 +367,15 @@ namespace utopia {
 
         inline void l1(const bool val) { l1_ = val; }
 
-       private:
-           bool use_line_search_{false};
-           bool use_symmetric_sweep_{true};
-           bool l1_{false};
-           SizeType n_local_sweeps_;
+    private:
+        bool use_line_search_{false};
+        bool use_symmetric_sweep_{true};
+        bool l1_{false};
+        SizeType n_local_sweeps_;
 
-           Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
-           Vector inactive_set_;
-           Vector is_c_;
+        Vector r, d, ub_loc, lb_loc, c, d_inv, x_old, descent_dir, Ac;
+        Vector inactive_set_;
+        Vector is_c_;
     };
 }  // namespace utopia
 

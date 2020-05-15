@@ -3,6 +3,7 @@
 
 #include <limits>
 #include "utopia_Layout.hpp"
+#include "utopia_Range.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {

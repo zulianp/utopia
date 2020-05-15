@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-//include edsl components
+// include edsl components
 #include "utopia_AppRunner.hpp"
 #include "utopia_AssemblyView.hpp"
 #include "utopia_BratuFE.hpp"
@@ -32,46 +32,34 @@
 
 #include <cmath>
 
-
 namespace utopia {
 
-    template<int Dim>
+    template <int Dim>
     using MeshType = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
     // template<int Dim>
     // using MeshType = utopia::PetscDM<Dim>;
 
-    static void elast_mg_2(Input &in)
-    {
+    static void elast_mg_2(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::MeshType<Dim>;
+        using Mesh = utopia::MeshType<Dim>;
         // using Elem             = utopia::PetscUniformQuad4;
-        using Elem             = utopia::Tri3<PetscScalar, 2>;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using Point            = FunctionSpace::Point;
-        using Scalar           = FunctionSpace::Scalar;
+        using Elem = utopia::Tri3<PetscScalar, 2>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Point = FunctionSpace::Point;
+        using Scalar = FunctionSpace::Scalar;
 
         FunctionSpace space;
         space.read(in);
 
         for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
-                SideSet::top(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return 0.1 * Scalar(c==1);
-                },
-                c
-            );
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1 * Scalar(c == 1); }, c);
 
             space.emplace_dirichlet_condition(
-                SideSet::bottom(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return -0.1*Scalar(c==1);
-                },
-                c
-            );
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1 * Scalar(c == 1); }, c);
         }
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after init");
@@ -81,36 +69,25 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(elast_mg_2);
 
-    static void elast_mg_3(Input &in)
-    {
+    static void elast_mg_3(Input &in) {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::MeshType<Dim>;
-        using Elem             = utopia::PetscUniformHex8;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using Point            = FunctionSpace::Point;
-        using Scalar           = FunctionSpace::Scalar;
+        using Mesh = utopia::MeshType<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Point = FunctionSpace::Point;
+        using Scalar = FunctionSpace::Scalar;
 
         FunctionSpace space;
         space.read(in);
 
         for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
-                SideSet::top(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return 0.1 * Scalar(c==1);
-                },
-                c
-            );
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1 * Scalar(c == 1); }, c);
 
             space.emplace_dirichlet_condition(
-                SideSet::bottom(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return -0.1*Scalar(c==1);
-                },
-                c
-            );
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1 * Scalar(c == 1); }, c);
         }
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after init");
@@ -120,24 +97,22 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(elast_mg_3);
 
+    template <class FunctionSpace>
+    static void linear_elasticity(FunctionSpace &space, Input &in) {
+        using Elem = typename FunctionSpace::Elem;
+        using Dev = typename FunctionSpace::Device;
+        using Vector = typename FunctionSpace::Vector;
+        using Matrix = typename FunctionSpace::Matrix;
+        using Comm = typename FunctionSpace::Comm;
 
-    template<class FunctionSpace>
-    static void linear_elasticity(FunctionSpace &space, Input &in)
-    {
-        using Elem             = typename FunctionSpace::Elem;
-        using Dev              = typename FunctionSpace::Device;
-        using Vector           = typename FunctionSpace::Vector;
-        using Matrix           = typename FunctionSpace::Matrix;
-        using Comm             = typename FunctionSpace::Comm;
-
-        static const int Dim    = Elem::Dim;
+        static const int Dim = Elem::Dim;
         static const int NFunctions = Elem::NFunctions;
 
-        using Point            = typename FunctionSpace::Point;
-        using Scalar           = typename FunctionSpace::Scalar;
-        using SizeType         = typename FunctionSpace::SizeType;
-        using Quadrature       = utopia::Quadrature<Elem, 2>;
-        using ElementMatrix    = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
+        using Point = typename FunctionSpace::Point;
+        using Scalar = typename FunctionSpace::Scalar;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Quadrature = utopia::Quadrature<Elem, 2>;
+        using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
 
         bool use_direct_solver = false;
         bool debug_matrices = false;
@@ -151,7 +126,8 @@ namespace utopia {
 
         Comm &comm = space.comm();
 
-        MPITimeStatistics stats(comm); stats.start();
+        MPITimeStatistics stats(comm);
+        stats.start();
 
         Quadrature quadrature;
         auto &&space_view = space.view_device();
@@ -168,22 +144,12 @@ namespace utopia {
 
         //////////////////////////////////////////////////////////////////
 
-        for(int c = 0; c < space.n_components(); ++c) {
+        for (int c = 0; c < space.n_components(); ++c) {
             space.emplace_dirichlet_condition(
-                SideSet::top(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return 0.1 * Scalar(c==1);
-                },
-                c
-            );
+                SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1 * Scalar(c == 1); }, c);
 
             space.emplace_dirichlet_condition(
-                SideSet::bottom(),
-                UTOPIA_LAMBDA(const Point &) -> Scalar {
-                    return -0.1*Scalar(c==1);
-                },
-                c
-            );
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1 * Scalar(c == 1); }, c);
         }
 
         space.apply_constraints(rhs);
@@ -193,16 +159,15 @@ namespace utopia {
         LinearElasticityFE<FunctionSpace> lin_elast(space);
         lin_elast.read(in);
 
-        const SizeType n_iter = space.n_dofs(); assert(n_iter > 0);
+        const SizeType n_iter = space.n_dofs();
+        assert(n_iter > 0);
 
-        if(matrix_free) {
-
+        if (matrix_free) {
             ConjugateGradient<Matrix, Vector, HOMEMADE> solver;
             solver.apply_gradient_descent_step(true);
 
             UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("after solver allocation");
             solver.verbose(true);
-
 
             solver.max_it(n_iter);
             solver.rtol(1e-6);
@@ -212,7 +177,6 @@ namespace utopia {
             stats.stop_collect_and_restart("matrix-free-solve");
 
         } else {
-
             //////////////////////////////////////////////////////////////////
 
             UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("before-create-matrix");
@@ -235,10 +199,10 @@ namespace utopia {
             stats.stop_collect_and_restart("boundary conditions ");
             comm.root_print("Solving...");
 
-            if(use_direct_solver) {
+            if (use_direct_solver) {
                 Factorization<Matrix, Vector> solver;
                 solver.solve(mat, rhs, x);
-            } else if(x.size() > 1e6) {
+            } else if (x.size() > 1e6) {
                 KSPSolver<Matrix, Vector> solver;
                 solver.verbose(true);
 
@@ -271,20 +235,18 @@ namespace utopia {
         space.write(output_path, x);
         stats.stop_and_collect("write");
 
-
-        comm.root_print( "n_dofs: " + std::to_string(space.n_dofs()) );
+        comm.root_print("n_dofs: " + std::to_string(space.n_dofs()));
         stats.describe(std::cout);
     }
 
-    static void petsc_elasticity_2(Input &in)
-    {
+    static void petsc_elasticity_2(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::MeshType<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType         = Mesh::SizeType;
+        using Mesh = utopia::MeshType<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType = Mesh::SizeType;
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
 
@@ -300,16 +262,14 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_elasticity_2);
 
-
-    static void petsc_elasticity_3(Input &in)
-    {
+    static void petsc_elasticity_3(Input &in) {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::MeshType<Dim>;
-        using Elem             = utopia::PetscUniformHex8;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType         = Mesh::SizeType;
+        using Mesh = utopia::MeshType<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType = Mesh::SizeType;
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
 
@@ -329,37 +289,26 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_elasticity_3);
 
-    static void petsc_matrix_free_test(Input &in)
-    {
+    static void petsc_matrix_free_test(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim;
 
-        using Mesh             = utopia::MeshType<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType         = Mesh::SizeType;
-        using Scalar           = Mesh::Scalar;
-        using Point            = Mesh::Point;
+        using Mesh = utopia::MeshType<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType = Mesh::SizeType;
+        using Scalar = Mesh::Scalar;
+        using Point = Mesh::Point;
 
         FunctionSpace space;
         space.read(in);
 
         for (int c = 0; c < FunctionSpace::n_components(); ++c) {
             space.emplace_dirichlet_condition(
-                SideSet::top(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return c + 1.0 + p[0];
-                },
-                c
-            );
+                SideSet::top(), UTOPIA_LAMBDA(const Point &p)->Scalar { return c + 1.0 + p[0]; }, c);
 
             space.emplace_dirichlet_condition(
-                SideSet::bottom(),
-                UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                    return c + 2.0 + p[1];
-                },
-                c
-            );
+                SideSet::bottom(), UTOPIA_LAMBDA(const Point &p)->Scalar { return c + 2.0 + p[1]; }, c);
         }
 
         LinearElasticityFE<FunctionSpace> lin_elast(space);
@@ -372,13 +321,9 @@ namespace utopia {
         auto space_x = space.subspace(0);
         auto space_y = space.subspace(1);
 
-        space_x.sample(x, UTOPIA_LAMBDA(const Point &x) {
-            return -x[0]*x[0] * 100;
-        });
+        space_x.sample(x, UTOPIA_LAMBDA(const Point &x) { return -x[0] * x[0] * 100; });
 
-        space_y.sample(x, UTOPIA_LAMBDA(const Point &x) {
-            return  x[1]*x[1] * 100;
-        });
+        space_y.sample(x, UTOPIA_LAMBDA(const Point &x) { return x[1] * x[1] * 100; });
 
         space.apply_constraints(x);
 
@@ -398,13 +343,9 @@ namespace utopia {
 
         assert(norm_diff < 1e-10);
 
-        space_x.sample(x, UTOPIA_LAMBDA(const Point &x) {
-            return -x[0]*x[0] * 200;
-        });
+        space_x.sample(x, UTOPIA_LAMBDA(const Point &x) { return -x[0] * x[0] * 200; });
 
-        space_y.sample(x, UTOPIA_LAMBDA(const Point &x) {
-            return  x[1]*x[1] * 200;
-        });
+        space_y.sample(x, UTOPIA_LAMBDA(const Point &x) { return x[1] * x[1] * 200; });
 
         lin_elast.apply(x, y);
 
@@ -420,23 +361,21 @@ namespace utopia {
         assert(norm_diff < 1e-10);
     }
 
-
     UTOPIA_REGISTER_APP(petsc_matrix_free_test);
 
-    static void petsc_strain(Input &in)
-    {
+    static void petsc_strain(Input &in) {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Mesh           = utopia::MeshType<Dim>;
-        using Elem           = utopia::PetscUniformHex8;
-        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView       = FunctionSpace::ViewDevice::Elem;
-        using SizeType       = Mesh::SizeType;
-        using Scalar         = Mesh::Scalar;
-        using Quadrature     = utopia::Quadrature<Elem, 2>;
-        using Dev            = FunctionSpace::Device;
-        using VectorD        = utopia::StaticVector<Scalar, Dim>;
+        using Mesh = utopia::MeshType<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView = FunctionSpace::ViewDevice::Elem;
+        using SizeType = Mesh::SizeType;
+        using Scalar = Mesh::Scalar;
+        using Quadrature = utopia::Quadrature<Elem, 2>;
+        using Dev = FunctionSpace::Device;
+        using VectorD = utopia::StaticVector<Scalar, Dim>;
 
         FunctionSpace space;
         space.read(in);
@@ -450,9 +389,7 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_strain);
 
-
-    static void test_elast_expr()
-    {
+    static void test_elast_expr() {
         using Scalar = double;
         StaticMatrix<Scalar, 3, 3> strain, stress;
         strain.set(0.0);

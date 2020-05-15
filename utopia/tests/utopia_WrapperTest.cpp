@@ -1,22 +1,20 @@
 
-#include "utopia_Testing.hpp"
 #include "utopia.hpp"
+#include "utopia_Testing.hpp"
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
+    template <class Matrix, class Vector>
     class WrapperTest {
     public:
-
-        using Traits   = utopia::Traits<Vector>;
-        using Scalar   = typename Traits::Scalar;
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
         using IndexSet = typename Traits::IndexSet;
-        using Comm     = typename Traits::Communicator;
+        using Comm = typename Traits::Communicator;
 
-        static void print_backend_info()
-        {
-            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
+        static void print_backend_info() {
+            if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
                 std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
@@ -29,17 +27,17 @@ namespace utopia {
         }
 
         void matrix_assembly_test() {
-
             auto &&comm = Comm::get_default();
 
-            Matrix mat; mat.dense(layout(comm, Traits::decide(), Traits::decide(), n_dofs, n_dofs), 0);
+            Matrix mat;
+            mat.dense(layout(comm, Traits::decide(), Traits::decide(), n_dofs, n_dofs), 0);
 
-            //Assemble 1D laplacian with dirichlet nodes at the boundary
+            // Assemble 1D laplacian with dirichlet nodes at the boundary
             {
                 Write<Matrix> write(mat);
                 Range rr = row_range(mat);
 
-                //FIXME assumed row is owned by this proc completely.
+                // FIXME assumed row is owned by this proc completely.
                 int rbegin = rr.begin();
                 int rend = rr.end();
 
@@ -62,7 +60,7 @@ namespace utopia {
 
             Vector expected(row_layout(mat), 0.);
 
-            //Assemble expected result
+            // Assemble expected result
             {
                 Write<Vector> write(expected);
                 Range r = range(expected);
@@ -79,10 +77,10 @@ namespace utopia {
             utopia_test_assert(approxeq(expected, mat * vec));
         }
 
-        void matrix_factory_test()
-        {
+        void matrix_factory_test() {
             auto &&comm = Comm::get_default();
-            Matrix mat; mat.dense(layout(comm, Traits::decide(), Traits::decide(), n_dofs, n_dofs), 0.1);
+            Matrix mat;
+            mat.dense(layout(comm, Traits::decide(), Traits::decide(), n_dofs, n_dofs), 0.1);
             {
                 Read<Matrix> read(mat);
                 Range rr = row_range(mat);
@@ -106,7 +104,6 @@ namespace utopia {
                 }
             }
         }
-
 
         void vector_factory_test() {
             auto &&comm = Comm::get_default();
@@ -135,7 +132,7 @@ namespace utopia {
 
 #ifdef WITH_BLAS
         WrapperTest<BlasMatrixd, BlasVectord>().run();
-#endif //WITH_BLAS
+#endif  // WITH_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(wrapper);

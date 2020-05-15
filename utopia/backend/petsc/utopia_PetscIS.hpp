@@ -19,40 +19,30 @@ namespace utopia {
         PetscIS(IS is, Destroy destroy_impl = ISDestroy)
             : is_(is), destroy_impl_(std::move(destroy_impl)), inds_(nullptr) {}
 
-        const IS &raw_type() const
-        {
-            return is_;
-        }
+        const IS &raw_type() const { return is_; }
 
-        IS &raw_type()
-        {
-            return is_;
-        }
+        IS &raw_type() { return is_; }
 
-        inline void destroy()
-        {
-            if(is_) {
+        inline void destroy() {
+            if (is_) {
                 destroy_impl_(&is_);
                 is_ = nullptr;
             }
         }
 
-        void read_lock()
-        {
-            if(inds_) return;
+        void read_lock() {
+            if (inds_) return;
             ISGetIndices(is_, &inds_);
         }
 
-        void read_unlock()
-        {
-            if(inds_) {
+        void read_unlock() {
+            if (inds_) {
                 ISRestoreIndices(is_, &inds_);
                 inds_ = nullptr;
             }
         }
 
-        inline SizeType size() const
-        {
+        inline SizeType size() const {
             SizeType s;
             ISGetSize(is_, &s);
             return s;
@@ -74,8 +64,8 @@ namespace utopia {
         const SizeType *inds_{nullptr};
     };
 
-    template<>
+    template <>
     class Traits<PetscIS> : public Traits<PetscVector> {};
-}
+}  // namespace utopia
 
-#endif //UTOPIA_PETSC_IS_HPP
+#endif  // UTOPIA_PETSC_IS_HPP

@@ -12,5 +12,5 @@ namespace utopia {
     template class GaussSeidel<TpetraMatrixd, TpetraVectord, TRILINOS>;
 }  // namespace utopia
 
-#endif //WITH_PETSC
-#endif //WITH_TRILINOS
+#endif  // WITH_PETSC
+#endif  // WITH_TRILINOS

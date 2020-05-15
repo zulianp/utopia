@@ -1,7 +1,6 @@
 // #ifndef UTOPIA_PETSC_DM_IMPL_HPP
 // #define UTOPIA_PETSC_DM_IMPL_HPP
 
-
 // #include "utopia_PetscDM.hpp"
 // #include "utopia_make_unique.hpp"
 // #include "utopia_petsc_Vector.hpp"
@@ -80,7 +79,6 @@
 //             get_ghost_corners(dm, ghost_corners_begin, ghost_corners_extent);
 //             n_components = get_dof(dm);
 
-
 //             DMDAElementType elem_type;
 //             DMDAGetElementType(dm, &elem_type);
 
@@ -157,7 +155,8 @@
 //         static void get_dims(DM dm, IntArray &dims)
 //         {
 //             utopia::ArrayView<SizeType, 3> dims_buff;
-//             auto ierr = DMDAGetInfo(dm, nullptr, &dims_buff[0], &dims_buff[1], &dims_buff[2], nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
+//             auto ierr = DMDAGetInfo(dm, nullptr, &dims_buff[0], &dims_buff[1], &dims_buff[2], nullptr, nullptr,
+//             nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); assert(ierr == 0);
 
 //             for(int d = 0; d < Dim; ++d) {
 //                 dims[d] = dims_buff[d];
@@ -607,7 +606,8 @@
 //         PetscErrorCode err = 0;
 //         SizeType dim, M, N, P, m, n, p, dof, s;
 //         DMDAStencilType st;
-//         err = DMDAGetInfo(impl_->dm, &dim, &M, &N, &P, &m, &n, &p, &dof, &s, nullptr, nullptr, nullptr, &st); assert(err == 0);
+//         err = DMDAGetInfo(impl_->dm, &dim, &M, &N, &P, &m, &n, &p, &dof, &s, nullptr, nullptr, nullptr, &st);
+//         assert(err == 0);
 
 //         int size = impl_->comm.size();
 //         int rank = impl_->comm.rank();
@@ -624,7 +624,8 @@
 //         for(int i = 0; i < size; ++i) {
 //             if(i == rank) {
 //                 std::cout << "--------------------------------------------\n";
-//                 std::cout << i << ")\ndim: " << dim << "\nM: " << M << "\nN: " << N << "\nP: " << P << "\nm: " << m << "\nn: " << n << "\np: " << p << "\ndof: " << dof << "\ns: " << s <<  std::endl;
+//                 std::cout << i << ")\ndim: " << dim << "\nM: " << M << "\nN: " << N << "\nP: " << P << "\nm: " << m
+//                 << "\nn: " << n << "\np: " << p << "\ndof: " << dof << "\ns: " << s <<  std::endl;
 
 //                 // DMDANodes<Dim> nodes(*this);
 //                 // nodes.each_with_ghosts([range](const Node &node) {
@@ -857,7 +858,6 @@
 //         DMDASetFieldNames(impl_->dm, &names_copy[0]);
 //     }
 
-
 //     template<int Dim>
 //     std::unique_ptr<PetscDM<Dim>> PetscDM<Dim>::uniform_refine() const
 //     {
@@ -902,7 +902,8 @@
 //     void PetscDM<Dim>::create_interpolation(const PetscDM &target, PetscMatrix &I) const
 //     {
 //         I.destroy();
-//         auto ierr = DMCreateInterpolation(raw_type(*this), raw_type(target), &I.raw_type(), nullptr); assert(ierr == 0);
+//         auto ierr = DMCreateInterpolation(raw_type(*this), raw_type(target), &I.raw_type(), nullptr); assert(ierr ==
+//         0);
 //     }
 
 //     template<int Dim>

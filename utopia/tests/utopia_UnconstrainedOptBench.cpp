@@ -173,8 +173,9 @@ namespace utopia {
             // 				[this]() {
 
             // #ifdef WITH_PETSC
-            // 					auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(MATSOLVERPETSC,
-            // PCLU); #else 					auto linear_solver = std::make_shared<Factorization<Matrix, Vector>>(); #endif //WITH_PETSC
+            // 					auto linear_solver = std::make_shared<Factorization<Matrix, Vector>
+            // >(MATSOLVERPETSC, PCLU); #else 					auto linear_solver =
+            // std::make_shared<Factorization<Matrix, Vector>>(); #endif //WITH_PETSC
 
             // 					ASTRUM<Matrix, Vector> solver(linear_solver);
             // 					solver.reset_mass_matrix(true);

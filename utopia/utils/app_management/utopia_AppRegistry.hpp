@@ -1,10 +1,10 @@
 #ifndef UTOPIA_APP_REGISTRY_H
 #define UTOPIA_APP_REGISTRY_H
 
-#include <map>
-#include <string>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <string>
 
 #include "utopia_ActionRegistry.hpp"
 
@@ -31,7 +31,6 @@ namespace utopia {
         ActionRegistry apps_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_APP_REGISTRY_H
-
+#endif  // UTOPIA_APP_REGISTRY_H

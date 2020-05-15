@@ -6,18 +6,15 @@
 
 #include "utopia_petsc_Types.hpp"
 
-#include <petscsnes.h>
 #include <petsc/private/snesimpl.h>
+#include <petscsnes.h>
 
-namespace utopia
-{
-    template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
+namespace utopia {
+    template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class PETSCUtopiaNonlinearFunction {};
 
-
-    template<class Matrix, class Vector>
-    class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC> : public ExtendedFunction<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC> : public ExtendedFunction<Matrix, Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
 
     public:
@@ -38,46 +35,38 @@ namespace utopia
             SNESComputeFunction(snes_, raw_type(x), raw_type(g));
 
             return true;
-            }
+        }
 
-            bool hessian(const Vector &x, Matrix &hessian) const override {
-                SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,  snes_->jacobian_pre);
-                wrap(snes_->jacobian, hessian);
-                return true;
-            }
+        bool hessian(const Vector &x, Matrix &hessian) const override {
+            SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian, snes_->jacobian_pre);
+            wrap(snes_->jacobian, hessian);
+            return true;
+        }
 
-            bool value(const Vector &x, typename Vector::Scalar &result) const override {
-                // hack to have fresh energy (MOOSE post-processor does things in strange way )
-                Vector grad = 0 * x;
-                this->gradient(x, grad);
+        bool value(const Vector &x, typename Vector::Scalar &result) const override {
+            // hack to have fresh energy (MOOSE post-processor does things in strange way )
+            Vector grad = 0 * x;
+            this->gradient(x, grad);
 
+            DM dm;
+            DMSNES sdm;
 
-                DM dm;
-                DMSNES         sdm;
+            SNESGetDM(snes_, &dm);
+            DMGetDMSNES(dm, &sdm);
+            if (sdm->ops->computeobjective)
+                SNESComputeObjective(snes_, raw_type(x), &result);
+            else
+                result = 0.5 * norm2(grad) * norm2(grad);
 
-                SNESGetDM(snes_,&dm);
-                DMGetDMSNES(dm,&sdm);
-                if (sdm->ops->computeobjective)
-                    SNESComputeObjective(snes_, raw_type(x), &result);
-                else
-                    result = 0.5 * norm2(grad) * norm2(grad);
+            return true;
+        }
 
+        virtual void getSNES(SNES &snes) { snes = snes_; }
 
-                return true;
-            }
+    private:
+        SNES snes_;
+    };
 
-            virtual void  getSNES(SNES &snes)
-            {
-                snes = snes_;
-            }
+}  // namespace utopia
 
-
-        private:
-
-            SNES snes_;
-        };
-
-    }
-
-
-#endif  //PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
+#endif  // PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP

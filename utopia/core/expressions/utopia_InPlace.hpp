@@ -5,21 +5,21 @@
 #ifndef UTOPIA_UTOPIA_INPLACE_HPP
 #define UTOPIA_UTOPIA_INPLACE_HPP
 
-#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Expression.hpp"
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
-    template<class Left, class Right, class Operation>
-    class InPlace : public Expression< InPlace<Left, Right, Operation> > {
+    template <class Left, class Right, class Operation>
+    class InPlace : public Expression<InPlace<Left, Right, Operation> > {
     public:
-        InPlace(Left &left, const Right &right, const Operation operation = Operation()) : _left(left), _right(right), _operation(operation)
-        {}
+        InPlace(Left &left, const Right &right, const Operation operation = Operation())
+            : _left(left), _right(right), _operation(operation) {}
 
         inline Left &left() const { return _left; }
         inline const Right &right() const { return _right; }
 
         inline std::string get_class() const override {
-            return "InPlace<" + _left.get_class() + ", " + _right.get_class() + ", " + _operation.get_class() +  ">";
+            return "InPlace<" + _left.get_class() + ", " + _right.get_class() + ", " + _operation.get_class() + ">";
         }
 
         inline const Operation &operation() const { return _operation; }
@@ -30,9 +30,8 @@ namespace utopia {
         Operation _operation;
     };
 
+    template <class Left, class Right, class Operation>
+    class Traits<InPlace<Left, Right, Operation> > : public Traits<Left> {};
+}  // namespace utopia
 
-    template<class Left, class Right, class Operation>
-    class Traits< InPlace<Left, Right, Operation> > : public Traits<Left> {};
-}
-
-#endif //UTOPIA_UTOPIA_INPLACE_HPP
+#endif  // UTOPIA_UTOPIA_INPLACE_HPP

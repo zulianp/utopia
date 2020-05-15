@@ -112,7 +112,6 @@
 
 // #endif //PETSC_HAVE_CUDA
 
-
 //     void run_petsc_cuda_test() {
 // #ifdef PETSC_HAVE_CUDA
 //         //UTOPIA_UNIT_TEST_BEGIN("PetscCudaTest");

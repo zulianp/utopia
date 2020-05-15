@@ -1,19 +1,18 @@
 #ifndef UTOPIA_ML_BASE_HPP
 #define UTOPIA_ML_BASE_HPP
-#include "utopia_Transfer.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_Transfer.hpp"
 
 #include <algorithm>
 #include <vector>
 
-namespace utopia
-{
+namespace utopia {
     // type of cycles used in Multilevel stuff
     static const int MULTIPLICATIVE_CYCLE = 1;
-    static const int ADDITIVE_CYCLE       = 2;
-    static const int FULL_CYCLE           = 3;
-    static const int NESTED_ITERATION     = 4;
+    static const int ADDITIVE_CYCLE = 2;
+    static const int FULL_CYCLE = 3;
+    static const int NESTED_ITERATION = 4;
 
     /**
      * @brief      Base class for all multilevel solvers. \n
@@ -24,12 +23,11 @@ namespace utopia
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector>
-    class MultiLevelBase : virtual public Configurable
-    {
+    template <class Matrix, class Vector>
+    class MultiLevelBase : virtual public Configurable {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
-        typedef utopia::Transfer<Matrix, Vector> 	Transfer;
+        typedef utopia::Transfer<Matrix, Vector> Transfer;
         using TransferPtr = std::shared_ptr<Transfer>;
 
     public:
@@ -58,31 +56,26 @@ namespace utopia
             this->print_param_usage(os, "pre_smoothing_steps", "int", "Number of pre-smoothing steps.", "3");
             this->print_param_usage(os, "post_smoothing_steps", "int", "Number of post-smoothing steps.", "3");
             this->print_param_usage(os, "mg_type", "int", "Multigrid type.", "1");
-            this->print_param_usage(os, "cycle_type", "int", "Type of cycle used inside of multigrid method.", "MULTIPLICATIVE_CYCLE");
-            this->print_param_usage(os, "v_cycle_repetition", "int", "Number of v-cycles used after one F-cycle.", "10");
-            this->print_param_usage(os, "fix_semidefinite_operators", "bool", "Flag to fix semidefinite operators", "false");
+            this->print_param_usage(
+                os, "cycle_type", "int", "Type of cycle used inside of multigrid method.", "MULTIPLICATIVE_CYCLE");
+            this->print_param_usage(
+                os, "v_cycle_repetition", "int", "Number of v-cycles used after one F-cycle.", "10");
+            this->print_param_usage(
+                os, "fix_semidefinite_operators", "bool", "Flag to fix semidefinite operators", "false");
             this->print_param_usage(os, "num_levels", "int", "Number of levels in ML hierarchy.", "-");
         }
 
         /**
          * @brief Returns number of levels in hierarchy.
          */
-        inline SizeType n_levels() const
-        {
-            return num_levels_;
-        }
+        inline SizeType n_levels() const { return num_levels_; }
 
-        inline void n_levels(const SizeType & n_lev)
-        {
-            num_levels_ = n_lev;
-        }
-
+        inline void n_levels(const SizeType &n_lev) { num_levels_ = n_lev; }
 
         /**
          * @brief      Function sets type of cycle
          */
-        inline bool cycle_type(const int &type_in)
-        {
+        inline bool cycle_type(const int &type_in) {
             cycle_type_ = type_in;
             return true;
         }
@@ -90,8 +83,7 @@ namespace utopia
         /**
          * @brief    Sets amount of V-cycles inside of F-cycle
          */
-        inline bool v_cycle_repetition(const SizeType & v_cycle_repetition_in)
-        {
+        inline bool v_cycle_repetition(const SizeType &v_cycle_repetition_in) {
             v_cycle_repetition_ = v_cycle_repetition_in;
             return true;
         }
@@ -101,8 +93,7 @@ namespace utopia
          *
          * @param[in]  pre_smoothing_steps_in  Number of pre-smoothing steps.
          */
-        inline void pre_smoothing_steps(const SizeType & pre_smoothing_steps_in )
-        {
+        inline void pre_smoothing_steps(const SizeType &pre_smoothing_steps_in) {
             pre_smoothing_steps_ = pre_smoothing_steps_in;
         }
 
@@ -111,8 +102,7 @@ namespace utopia
          *
          * @param[in]  post_smoothing_steps_in  Number of post-smoothing steps.
          */
-        inline void post_smoothing_steps(const SizeType & post_smoothing_steps_in )
-        {
+        inline void post_smoothing_steps(const SizeType &post_smoothing_steps_in) {
             post_smoothing_steps_ = post_smoothing_steps_in;
         }
 
@@ -121,26 +111,17 @@ namespace utopia
          *
          * @param[in]  mg_type_in  Choice of MG cycle.
          */
-        inline void mg_type(const bool mg_type_in)
-        {
-            mg_type_ = mg_type_in;
-        }
+        inline void mg_type(const bool mg_type_in) { mg_type_ = mg_type_in; }
 
         /**
          * @return     Number of pre-smoothing steps.
          */
-        inline SizeType pre_smoothing_steps() const
-        {
-            return pre_smoothing_steps_;
-        }
+        inline SizeType pre_smoothing_steps() const { return pre_smoothing_steps_; }
 
         /**
          * @return     Number of post-smoothing steps.
          */
-        inline SizeType post_smoothing_steps() const
-        {
-            return post_smoothing_steps_;
-        }
+        inline SizeType post_smoothing_steps() const { return post_smoothing_steps_; }
 
         /**
          * @return     Type of MG cycle.
@@ -152,55 +133,39 @@ namespace utopia
          */
         inline int cycle_type() const { return cycle_type_; }
 
-
         /**
          * @brief      Amount of V-cycles on each level during full-cycle
          */
         inline SizeType v_cycle_repetition() const { return v_cycle_repetition_; }
 
-        inline Transfer &transfer(const SizeType level)
-        {
+        inline Transfer &transfer(const SizeType level) {
             assert(level < static_cast<SizeType>(transfers_.size()));
             assert(transfers_[level]);
 
             return *transfers_[level];
         }
 
-        inline const Transfer &transfer(const SizeType level) const
-        {
+        inline const Transfer &transfer(const SizeType level) const {
             assert(level < transfers_.size());
             assert(transfers_[level]);
 
             return *transfers_[level];
         }
 
-        inline const std::vector<TransferPtr> & transfer() const
-        {
-            return transfers_;
-        }        
+        inline const std::vector<TransferPtr> &transfer() const { return transfers_; }
 
-        virtual void describe(std::ostream &os = std::cout) const
-        {
-            (void) os;
-        }
+        virtual void describe(std::ostream &os = std::cout) const { (void)os; }
 
-        inline void fix_semidefinite_operators(const bool val)
-        {
-            fix_semidefinite_operators_ = val;
-        }
+        inline void fix_semidefinite_operators(const bool val) { fix_semidefinite_operators_ = val; }
 
-        inline bool fix_semidefinite_operators() const
-        {
-            return fix_semidefinite_operators_;
-        }
+        inline bool fix_semidefinite_operators() const { return fix_semidefinite_operators_; }
 
-        bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector> > > &transfers)
-        {
-            if(num_levels_ <= 0) {
+        bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector> > > &transfers) {
+            if (num_levels_ <= 0) {
                 num_levels_ = transfers.size() + 1;
             }
 
-            if(num_levels_ != static_cast<SizeType>(transfers.size()) + 1) {
+            if (num_levels_ != static_cast<SizeType>(transfers.size()) + 1) {
                 utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
                 std::cout << num_levels_ << " != " << (transfers.size() + 1);
             }
@@ -209,22 +174,20 @@ namespace utopia
             return true;
         }
 
-
     protected:
-        std::vector<TransferPtr> 	transfers_;   /*!< vector of transfer operators  */
+        std::vector<TransferPtr> transfers_; /*!< vector of transfer operators  */
 
-        SizeType        			pre_smoothing_steps_;
-        SizeType        			post_smoothing_steps_;
-        SizeType        			mg_type_;
+        SizeType pre_smoothing_steps_;
+        SizeType post_smoothing_steps_;
+        SizeType mg_type_;
 
-        SizeType         			cycle_type_;
-        SizeType    				v_cycle_repetition_;
+        SizeType cycle_type_;
+        SizeType v_cycle_repetition_;
 
         bool fix_semidefinite_operators_{false};
-        SizeType 					num_levels_;
+        SizeType num_levels_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_ML_BASE_HPP
-
+#endif  // UTOPIA_ML_BASE_HPP

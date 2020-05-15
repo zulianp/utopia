@@ -12,61 +12,59 @@ namespace utopia {
 
     template <class Expr_>
     class Select<Expr_, 1> : public Expression<Select<Expr_, 1>> {
-       public:
-           using Expr = Expr_;
-           using Scalar = typename utopia::Traits<Expr>::Scalar;
-           using SizeType = typename utopia::Traits<Expr>::SizeType;
-           using IndexSet = typename utopia::Traits<Expr>::IndexSet;
+    public:
+        using Expr = Expr_;
+        using Scalar = typename utopia::Traits<Expr>::Scalar;
+        using SizeType = typename utopia::Traits<Expr>::SizeType;
+        using IndexSet = typename utopia::Traits<Expr>::IndexSet;
 
-           // FIXME use Traits instead
-           static const int Order = 1;
-           static_assert(Expr::Order == Order, "must be same order of the tensor");
+        // FIXME use Traits instead
+        static const int Order = 1;
+        static_assert(Expr::Order == Order, "must be same order of the tensor");
 
-           inline explicit Select(const Expr &expr, const IndexSet &index)
-               : expr_(expr), index_ptr_(utopia::make_ref(index)) {}
+        inline explicit Select(const Expr &expr, const IndexSet &index)
+            : expr_(expr), index_ptr_(utopia::make_ref(index)) {}
 
-           inline explicit Select(const Expr &expr, IndexSet &&index)
-               : expr_(expr), index_ptr_(std::make_shared(std::move(index))) {}
+        inline explicit Select(const Expr &expr, IndexSet &&index)
+            : expr_(expr), index_ptr_(std::make_shared(std::move(index))) {}
 
-           inline const IndexSet &index() const { return *index_ptr_; }
+        inline const IndexSet &index() const { return *index_ptr_; }
 
-           const Expr &expr() const { return expr_; }
+        const Expr &expr() const { return expr_; }
 
-       private:
+    private:
         UTOPIA_STORE_CONST(Expr) expr_;
         std::shared_ptr<const IndexSet> index_ptr_;
     };
 
     template <class Expr_>
     class Select<Expr_, 2> : public Expression<Select<Expr_, 2>> {
-       public:
-           using Expr = Expr_;
+    public:
+        using Expr = Expr_;
 
-           using Scalar = typename utopia::Traits<Expr>::Scalar;
-           using SizeType = typename utopia::Traits<Expr>::SizeType;
-           using IndexSet = typename utopia::Traits<Expr>::IndexSet;
+        using Scalar = typename utopia::Traits<Expr>::Scalar;
+        using SizeType = typename utopia::Traits<Expr>::SizeType;
+        using IndexSet = typename utopia::Traits<Expr>::IndexSet;
 
-           // FIXME use Traits instead
-           static const int Order = 2;
-           static_assert(Traits<Expr>::Order == Order, "must be same order of the tensor");
+        // FIXME use Traits instead
+        static const int Order = 2;
+        static_assert(Traits<Expr>::Order == Order, "must be same order of the tensor");
 
-           inline explicit Select(const Expr &expr, const IndexSet &row_index, const IndexSet &col_index)
-               : expr_(expr),
-                 row_index_ptr_(utopia::make_ref(row_index)),
-                 col_index_ptr_(utopia::make_ref(col_index)) {}
+        inline explicit Select(const Expr &expr, const IndexSet &row_index, const IndexSet &col_index)
+            : expr_(expr), row_index_ptr_(utopia::make_ref(row_index)), col_index_ptr_(utopia::make_ref(col_index)) {}
 
-           inline explicit Select(const Expr &expr, IndexSet &&row_index, IndexSet &&col_index)
-               : expr_(expr),
-                 row_index_ptr_(std::make_shared(std::move(row_index))),
-                 col_index_ptr_(std::make_shared(std::move(col_index))) {}
+        inline explicit Select(const Expr &expr, IndexSet &&row_index, IndexSet &&col_index)
+            : expr_(expr),
+              row_index_ptr_(std::make_shared(std::move(row_index))),
+              col_index_ptr_(std::make_shared(std::move(col_index))) {}
 
-           inline const IndexSet &row_index() const { return *row_index_ptr_; }
+        inline const IndexSet &row_index() const { return *row_index_ptr_; }
 
-           inline const IndexSet &col_index() const { return *col_index_ptr_; }
+        inline const IndexSet &col_index() const { return *col_index_ptr_; }
 
-           const Expr &expr() const { return expr_; }
+        const Expr &expr() const { return expr_; }
 
-       private:
+    private:
         UTOPIA_STORE_CONST(Expr) expr_;
         std::shared_ptr<const IndexSet> row_index_ptr_;
         std::shared_ptr<const IndexSet> col_index_ptr_;
@@ -80,7 +78,7 @@ namespace utopia {
 
     template <class Derived>
     class Selectable<Derived, 1> {
-       public:
+    public:
         using TensorT = utopia::Tensor<Derived, 1>;
         using That = utopia::Selectable<Tensor<Derived, 1>>;
 
@@ -106,7 +104,7 @@ namespace utopia {
 
     template <class Derived>
     class Selectable<Derived, 2> {
-       public:
+    public:
         using TensorT = utopia::Tensor<Derived, 2>;
         using That = utopia::Selectable<Tensor<Derived, 2>>;
 

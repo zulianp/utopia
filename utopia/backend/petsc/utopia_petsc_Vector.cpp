@@ -84,10 +84,10 @@ namespace utopia {
 
                     return;
                 }
-                    destroy();
+                destroy();
 
-                    UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
-                    check_error(VecCreate(comm, &vec_));
+                UTOPIA_REPORT_ALLOC("PetscVector::repurpose");
+                check_error(VecCreate(comm, &vec_));
             }
         }
 
@@ -322,7 +322,7 @@ namespace utopia {
         if (is_matlab_file(path)) {
             return write_matlab(path);
         }
-            return write_binary(path);
+        return write_binary(path);
     }
 
     bool PetscVector::write_binary(const std::string &path) const {

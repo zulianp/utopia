@@ -13,28 +13,23 @@
 
 namespace utopia {
 
-    template<typename T, int Order>
-    int comm_size(const Tensor<T, Order> &)
-    {
+    template <typename T, int Order>
+    int comm_size(const Tensor<T, Order> &) {
         static_assert(Traits<Tensor<T, Order>>::Backend < HOMEMADE, "implement me for your backend");
         return 1;
     }
 
-    template<typename T, int Order>
-    int comm_rank(const Tensor<T, Order> &)
-    {
+    template <typename T, int Order>
+    int comm_rank(const Tensor<T, Order> &) {
         static_assert(Traits<Tensor<T, Order>>::Backend < HOMEMADE, "implement me for your backend");
         return 0;
     }
 
-    template<typename T, int Order>
-    void synchronize(Tensor<T, Order> &)
-    {
+    template <typename T, int Order>
+    void synchronize(Tensor<T, Order> &) {
         static_assert(Traits<Tensor<T, Order>>::Backend < HOMEMADE, "implement me for your backend");
     }
 
-}
+}  // namespace utopia
 
-
-
-#endif //UTOPIA_EXPRESSIONS_PARALLEL_HPP
+#endif  // UTOPIA_EXPRESSIONS_PARALLEL_HPP

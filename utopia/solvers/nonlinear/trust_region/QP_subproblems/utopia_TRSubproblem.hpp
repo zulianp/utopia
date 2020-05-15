@@ -1,8 +1,10 @@
 #ifndef TR_SUBPROBLEM_L2NORM_HPP
 #define TR_SUBPROBLEM_L2NORM_HPP
 
-#include <string>
 #include "utopia_IterativeSolver.hpp"
+#include "utopia_MatrixFreeLinearSolver.hpp"
+
+#include <string>
 
 namespace utopia {
 

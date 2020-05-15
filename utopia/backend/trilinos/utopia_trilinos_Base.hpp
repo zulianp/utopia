@@ -1,10 +1,10 @@
 #ifndef UTOPIA_TRILINOS_BASE_HPP
 #define UTOPIA_TRILINOS_BASE_HPP
 
-#include "utopia_Base.hpp"
-#include <Tpetra_Operator.hpp>
 #include <Kokkos_DefaultNode.hpp>
+#include <Tpetra_Operator.hpp>
 #include <vector>
+#include "utopia_Base.hpp"
 
 namespace utopia {
 
@@ -26,26 +26,26 @@ namespace utopia {
     using TpetraSizeType = Tpetra::Operator<TpetraScalar, TpetraLocalSizeType>::global_ordinal_type;
 #endif
 
-    //FIXME use Kokkos compatible wrapper
-    using TpetraIndexSet      = std::vector<TpetraSizeType>;
-    using TpetraIndexArray    = std::vector<TpetraSizeType>;
-    using TpetraScalarArray   = std::vector<TpetraScalar>;
+    // FIXME use Kokkos compatible wrapper
+    using TpetraIndexSet = std::vector<TpetraSizeType>;
+    using TpetraIndexArray = std::vector<TpetraSizeType>;
+    using TpetraScalarArray = std::vector<TpetraScalar>;
 
     using SerialNode = Kokkos::Compat::KokkosSerialWrapperNode;
 
 #ifdef KOKKOS_ENABLE_CUDA
-        using CudaNode   = Kokkos::Compat::KokkosCudaWrapperNode;
-        using DefaultKokkosNode = utopia::CudaNode;
-#elif defined KOKKOS_ENABLE_ROCM //Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
-        using ROCmNode   = Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm>;
-        using DefaultKokkosNode = utopia::ROCmNode;
+    using CudaNode = Kokkos::Compat::KokkosCudaWrapperNode;
+    using DefaultKokkosNode = utopia::CudaNode;
+#elif defined KOKKOS_ENABLE_ROCM  // Kokkos::Compat::KokkosROCmWrapperNode doesn't exist
+    using ROCmNode = Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::ROCm>;
+    using DefaultKokkosNode = utopia::ROCmNode;
 #elif defined KOKKOS_ENABLE_OPENMP
-        using OpenMPNode = Kokkos::Compat::KokkosOpenMPWrapperNode;
-        using DefaultKokkosNode = utopia::OpenMPNode;
+    using OpenMPNode = Kokkos::Compat::KokkosOpenMPWrapperNode;
+    using DefaultKokkosNode = utopia::OpenMPNode;
 #else
-        using DefaultKokkosNode = utopia::SerialNode;
+    using DefaultKokkosNode = utopia::SerialNode;
 #endif
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_TRILINOS_BASE_HPP
+#endif  // UTOPIA_TRILINOS_BASE_HPP

@@ -1,10 +1,10 @@
 #ifndef UTOPIA_TEST_REGISTRY_H
 #define UTOPIA_TEST_REGISTRY_H
 
-#include <map>
-#include <string>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <string>
 
 #include "utopia_ActionRegistry.hpp"
 
@@ -33,7 +33,6 @@ namespace utopia {
         ActionRegistry tests_, optional_tests_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_TEST_REGISTRY_H
-
+#endif  // UTOPIA_TEST_REGISTRY_H

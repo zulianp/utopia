@@ -2,35 +2,34 @@
 #define UTOPIA_BICG_STAB_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
-#include "utopia_Size.hpp"
 #include "utopia_IterativeSolver.hpp"
-#include "utopia_Smoother.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_PreconditionedSolver.hpp"
+#include "utopia_Size.hpp"
+#include "utopia_Smoother.hpp"
 
 namespace utopia {
 
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    class BiCGStab final : public OperatorBasedLinearSolver<Matrix, Vector>{
+    template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    class BiCGStab final : public OperatorBasedLinearSolver<Matrix, Vector> {
     public:
-        using Scalar   = typename Traits<Vector>::Scalar;
+        using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Layout   = typename Traits<Vector>::Layout;
+        using Layout = typename Traits<Vector>::Layout;
 
         using Preconditioner = utopia::Preconditioner<Vector>;
 
         using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
 
+        using Super::apply;
         using Super::solve;
         using Super::update;
-        using Super::apply;
 
         BiCGStab();
-        BiCGStab * clone() const override;
+        BiCGStab *clone() const override;
 
-        inline bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
-        {
-            if(this->get_preconditioner()) {
+        inline bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
+            if (this->get_preconditioner()) {
                 return solve_preconditioned(A, b, x);
             } else {
                 return solve_unpreconditioned(A, b, x);
@@ -39,14 +38,9 @@ namespace utopia {
 
         void update(const Operator<Vector> &A) override;
 
+        void read(Input &in) override { OperatorBasedLinearSolver<Matrix, Vector>::read(in); }
 
-        void read(Input &in) override
-        {
-            OperatorBasedLinearSolver<Matrix, Vector>::read(in);
-        }
-
-        void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
         }
 
@@ -69,8 +63,7 @@ namespace utopia {
 
         bool initialized_{false};
         Layout layout_;
-
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_BICG_STAB_HPP
+#endif  // UTOPIA_BICG_STAB_HPP

@@ -2,54 +2,44 @@
 #define UTOPIA_SOLVER_QUASI_NEWTON_HPP
 
 #include "utopia_Core.hpp"
-#include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
-#include "utopia_NonLinearSolver.hpp"
-#include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
-#include "utopia_QuasiNewtonBase.hpp"
+#include "utopia_LS_Strategy.hpp"
 #include "utopia_Layout.hpp"
+#include "utopia_LinearSolver.hpp"
+#include "utopia_NonLinearSolver.hpp"
+#include "utopia_QuasiNewtonBase.hpp"
 
 #include <iomanip>
 #include <limits>
 
+namespace utopia {
 
-namespace utopia
-{
-
-    template<class Vector>
-    class QuasiNewton : public QuasiNewtonBase<Vector>
-    {
-        using Scalar   = typename Traits<Vector>::Scalar;
+    template <class Vector>
+    class QuasiNewton : public QuasiNewtonBase<Vector> {
+        using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Layout   = typename Traits<Vector>::Layout;
+        using Layout = typename Traits<Vector>::Layout;
 
         using HessianApproximation = utopia::HessianApproximation<Vector>;
         using LinSolver = utopia::MatrixFreeLinearSolver<Vector>;
 
     public:
+        QuasiNewton(const std::shared_ptr<HessianApproximation> &hessian_approx,
+                    const std::shared_ptr<LinSolver> &linear_solver)
+            : QuasiNewtonBase<Vector>(hessian_approx, linear_solver), initialized_(false) {}
 
-        QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
-                    const std::shared_ptr <LinSolver> &linear_solver):
-                    QuasiNewtonBase<Vector>(hessian_approx, linear_solver),
-                    initialized_(false)
-        {
-
-        }
-
-        bool solve(FunctionBase<Vector> &fun, Vector &x) override
-        {
+        bool solve(FunctionBase<Vector> &fun, Vector &x) override {
             using namespace utopia;
 
-            Scalar g_norm, g0_norm, r_norm=1, s_norm=1;
+            Scalar g_norm, g0_norm, r_norm = 1, s_norm = 1;
             SizeType it = 0;
             Scalar alpha = 1.0;
 
             bool converged = false;
 
             auto x_layout = utopia::layout(x);
-            if(!initialized_ || !x_layout.same(layout_))
-            {
+            if (!initialized_ || !x_layout.same(layout_)) {
                 init_memory(x_layout);
             }
 
@@ -60,16 +50,14 @@ namespace utopia
             // this->initialize_approximation(x, g);
             QuasiNewtonBase<Vector>::init_memory(x, g);
 
-
-            if(this->verbose_) {
+            if (this->verbose_) {
                 this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
                 PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
             }
             it++;
 
             UTOPIA_NO_ALLOC_BEGIN("Quasi_Newton");
-            while(!converged)
-            {
+            while (!converged) {
                 // UTOPIA_NO_ALLOC_BEGIN("Quasi1");
                 g_minus = -1.0 * g;
                 this->linear_solve(g_minus, s);
@@ -92,7 +80,7 @@ namespace utopia
                 // UTOPIA_NO_ALLOC_BEGIN("Quasi Newton:3.1");
                 // norms needed for convergence check
                 norms2(g, s, g_norm, s_norm);
-                r_norm = g_norm/g0_norm;
+                r_norm = g_norm / g0_norm;
 
                 // diff between fresh and old grad...
                 y = g - y;
@@ -103,8 +91,7 @@ namespace utopia
                 // UTOPIA_NO_ALLOC_END();
 
                 // print iteration status on every iteration
-                if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha});
+                if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha});
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
@@ -113,14 +100,12 @@ namespace utopia
             }
             UTOPIA_NO_ALLOC_END();
 
-
             this->print_statistics(it);
             return true;
         }
 
     private:
-        void init_memory(const Layout &layout)
-        {
+        void init_memory(const Layout &layout) {
             s.zeros(layout);
             g.zeros(layout);
             y.zeros(layout);
@@ -133,8 +118,7 @@ namespace utopia
         Vector g, s, y, g_minus;
         bool initialized_;
         Layout layout_;
-
     };
 
-}
-#endif //UTOPIA_SOLVER_QUASI_NEWTON_HPP
+}  // namespace utopia
+#endif  // UTOPIA_SOLVER_QUASI_NEWTON_HPP

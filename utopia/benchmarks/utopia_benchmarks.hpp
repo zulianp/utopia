@@ -5,4 +5,4 @@ namespace utopia {
     void run_benchmarks();
 }
 
-#endif //UTOPIA_BENCHMARKS_HPP
+#endif  // UTOPIA_BENCHMARKS_HPP

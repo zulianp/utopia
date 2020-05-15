@@ -167,7 +167,6 @@
 //             // PetscViewerGetDraw(viewer, &draw);
 //             // PetscDrawSetType(draw, PETSC_DRAW_NULL);
 
-
 //             // PetscDraw draw;
 //             // PetscErrorCode ierr = PetscDrawOpenImage(
 //             //     fine_space_ptr->comm().get(),

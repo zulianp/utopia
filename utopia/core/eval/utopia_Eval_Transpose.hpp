@@ -5,20 +5,19 @@
 
 namespace utopia {
 
-    template<class Tensor, class Traits, int Backend>
+    template <class Tensor, class Traits, int Backend>
     class Eval<Transposed<Tensor>, Traits, Backend> {
     public:
         using Expr = utopia::Transposed<Tensor>;
         using Result = EXPR_TYPE(Traits, Expr);
         UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        inline static void apply(const Expr &t, Result &result)
-        {
+        inline static void apply(const Expr &t, Result &result) {
             UTOPIA_TRACE_BEGIN(t);
             Eval<Tensor, Traits>::apply(t.expr()).transpose(result);
             UTOPIA_TRACE_END(t);
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_EVAL_TRANSPOSE_HPP
+#endif  // UTOPIA_UTOPIA_EVAL_TRANSPOSE_HPP

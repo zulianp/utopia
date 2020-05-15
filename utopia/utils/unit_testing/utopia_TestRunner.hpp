@@ -1,9 +1,9 @@
 #ifndef UTOPIA_TEST_RUNNER_HPP
 #define UTOPIA_TEST_RUNNER_HPP
 
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace utopia {
 
@@ -16,6 +16,6 @@ namespace utopia {
         void describe(std::ostream &os = std::cout) const;
         void verbose(const bool val);
     };
-}
+}  // namespace utopia
 
-#endif // UTOPIA_TEST_RUNNER_HPP
+#endif  // UTOPIA_TEST_RUNNER_HPP
