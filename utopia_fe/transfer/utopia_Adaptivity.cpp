@@ -1,4 +1,5 @@
 #include "utopia_Adaptivity.hpp"
+#include "libmesh/boundary_info.h"
 #include "libmesh/elem.h"
 #include "libmesh/fe_interface.h"
 #include "libmesh/parallel.h"
@@ -785,5 +786,4 @@ namespace utopia {
         std::cout << "Adaptivity::compute_boundary_nodes_to_skip::END " << tmp.size() << " and " << index.size()
                   << std::endl;
     }
-
 }  // namespace utopia
