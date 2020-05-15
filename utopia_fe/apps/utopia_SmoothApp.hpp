@@ -1,9 +1,8 @@
 #ifndef UTOPIA_SMOOTH_APP
 #define UTOPIA_SMOOTH_APP
 
-#include "utopia_FEApp.hpp"
 #include <string>
-
+#include "utopia_FEApp.hpp"
 
 namespace utopia {
 
@@ -11,12 +10,8 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-smooth";
-        }
+        inline static std::string command() { return "-smooth"; }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_SMOOTH_APP
+#endif  // UTOPIA_SMOOTH_APP

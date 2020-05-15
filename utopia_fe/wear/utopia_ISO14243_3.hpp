@@ -1,14 +1,14 @@
 #ifndef UTOPIA_ISO14243_3_HPP
 #define UTOPIA_ISO14243_3_HPP
 
-#include "utopia.hpp"
 #include <array>
+#include "utopia.hpp"
 
-#include "libmesh/mesh.h"
 #include "libmesh/dof_map.h"
+#include "libmesh/mesh.h"
 
-#include "utopia_Input.hpp"
 #include "utopia_AffineTransform.hpp"
+#include "utopia_Input.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 
@@ -27,28 +27,18 @@ namespace utopia {
 
         void read(Input &is) override;
         void update(const int time_step) override;
-        void displacement_and_forces(
-            ProductFunctionSpace<LibMeshFunctionSpace> &space,
-            UVector &displacement,
-            UVector &forces) const override;
+        void displacement_and_forces(ProductFunctionSpace<LibMeshFunctionSpace> &space,
+                                     UVector &displacement,
+                                     UVector &forces) const override;
 
-        inline int n_steps() const override
-        {
-            return file_.n_rows();
-        }
+        inline int n_steps() const override { return file_.n_rows(); }
 
-        inline static std::string name()
-        {
-            return "ISO14243_3";
-        }
+        inline static std::string name() { return "ISO14243_3"; }
 
-        inline double dt() const override {
-            return dt_;
-        }
+        inline double dt() const override { return dt_; }
 
         void describe(std::ostream &os) const override;
         void describe_params(std::ostream &os) const;
-
 
     private:
         char flexion_extension_angle_axis_;
@@ -56,44 +46,36 @@ namespace utopia {
         char tibial_rotation_axis_;
         int axial_force_axis_;
 
-        //blocks and side-sets
+        // blocks and side-sets
         int femural_block_;
         int tibial_block_;
         int axial_force_side_;
 
-
         int normalize_axial_force_by_area_;
-
 
         //////////////////// Values from ISO ////////////////
         //%
         int percentage_of_time_cycle_;
-        //degrees
+        // degrees
         double flexion_extension_angle_;
 
-        //Newton
+        // Newton
         double axial_force_;
 
-
-        //mm
+        // mm
         double ap_motion_;
 
-        //degrees
+        // degrees
         double tibial_int_ext_rotation_;
         double tibial_rotation_offset_;
         int tibial_rotation_offset_axis_;
-
 
         double dt_;
 
         CSV file_;
 
-
-        inline bool read(const Path &path)
-        {
-            return file_.read(path);
-        }
+        inline bool read(const Path &path) { return file_.read(path); }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_ISO14243_3_HPP
+#endif  // UTOPIA_ISO14243_3_HPP

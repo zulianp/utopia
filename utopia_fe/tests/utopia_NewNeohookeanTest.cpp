@@ -1,32 +1,31 @@
 #include "utopia_NewNeohookeanTest.hpp"
 
-#include "utopia_ui.hpp"
 #include "utopia_SymbolicFunction.hpp"
+#include "utopia_ui.hpp"
 
-#include "utopia_UIFunctionSpace.hpp"
+#include "utopia_Flow.hpp"
+#include "utopia_MeshTransferOperator.hpp"
 #include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
-#include "utopia_MeshTransferOperator.hpp"
-#include "utopia_Flow.hpp"
 
 #include "utopia_FEEval_Local.hpp"
 #include "utopia_FEEval_MultiTensor.hpp"
-#include "utopia_libmesh_AssembleLocal.hpp"
-#include "utopia_NewNeoHookean.hpp"
-#include "utopia_NewLinearElasticity.hpp"
 #include "utopia_LinearElasticity.hpp"
+#include "utopia_NewLinearElasticity.hpp"
+#include "utopia_NewNeoHookean.hpp"
+#include "utopia_libmesh_AssembleLocal.hpp"
 
-#include "utopia_libmesh.hpp"
 #include "libmesh/mesh_generation.h"
+#include "utopia_libmesh.hpp"
 
-#include "libmesh/mesh_refinement.h"
 #include "libmesh/boundary_mesh.h"
+#include "libmesh/mesh_refinement.h"
 
 namespace utopia {
 
-    void NewNeohookeanTest::run(Input &in)
-    {
+    void NewNeohookeanTest::run(Input &in) {
         std::cout << "[NewNeohookeanTest]" << std::endl;
         using Space = utopia::LibMeshFunctionSpace;
         using FE = utopia::FiniteElement<Space>;
@@ -42,10 +41,10 @@ namespace utopia {
 
         auto &V = space.space();
 
-        //FIXME
+        // FIXME
         double lambda = 1.0, mu = 1.0, rescaling = 1.0;
 
-        //FIXME use ghosts
+        // FIXME use ghosts
         UVector x = local_zeros(V[0].dof_map().n_local_dofs());
 
         LameeParameters params;
@@ -70,4 +69,4 @@ namespace utopia {
         assert(approxeq(H_lin, H));
     }
 
-}
+}  // namespace utopia

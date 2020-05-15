@@ -1,7 +1,6 @@
 // #ifndef UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP
 // #define UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP
 
-
 // #include "utopia_Base.hpp"
 // #include "utopia_Traits.hpp"
 // #include "utopia_AssemblyContext.hpp"
@@ -9,10 +8,8 @@
 // #include "utopia_Traverse.hpp"
 // #include "utopia_ProductFunctionSpace.hpp"
 
-
 // #include "utopia_homemade_FEForwardDeclarations.hpp"
 // #include "utopia_homemade_FE.hpp"
-
 
 // #include "utopia_fe_core.hpp"
 
@@ -45,7 +42,6 @@
 
 //             auto trial_space_ptr = trial_space<HMFESpace>(expr);
 //             auto test_space_ptr  = test_space<HMFESpace>(expr);
-
 
 //             quadrature_order = functional_order(expr, *this);
 
@@ -97,7 +93,8 @@
 //         template<class Expr>
 //         void init_linear(const Expr &expr)
 //         {
-//             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), 	"could not find test function" );
+//             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), 	"could not find test function"
+//             );
 
 //             test.clear();
 

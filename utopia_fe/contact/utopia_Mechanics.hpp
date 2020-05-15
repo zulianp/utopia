@@ -1,11 +1,11 @@
 #ifndef UTOPIA_MECHANICS_HPP
 #define UTOPIA_MECHANICS_HPP
 
-#include "utopia_libmesh_Types.hpp"
 #include "utopia.hpp"
 #include "utopia_FEForwardDeclarations.hpp"
-#include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_fe_base.hpp"
+#include "utopia_libmesh_FEForwardDeclarations.hpp"
+#include "utopia_libmesh_Types.hpp"
 
 #include <memory>
 
@@ -35,13 +35,13 @@ namespace utopia {
 
     class MechanicsContext {
     public:
-        //stiffness matrix
+        // stiffness matrix
         USparseMatrix stiffness_matrix;
 
         USparseMatrix non_lumped_mass_matrix;
-        //lumped mass matrix
+        // lumped mass matrix
         USparseMatrix mass_matrix;
-        UVector  inverse_mass_vector;
+        UVector inverse_mass_vector;
 
         UVector dirichlet_selector;
 
@@ -50,11 +50,9 @@ namespace utopia {
 
     class Friction {
     public:
-        Friction()
-        : friction_coefficient(0.)
-        {}
+        Friction() : friction_coefficient(0.) {}
 
-        //FIXME
+        // FIXME
         double friction_coefficient;
     };
 
@@ -62,70 +60,58 @@ namespace utopia {
     public:
         virtual ~MechIntegrationScheme() {}
 
-        virtual void apply(
-            const double dt,
-            const MechanicsContext &mech_ctx,
-            const MechanicsState &old,
-            MechanicsState &current) = 0;
+        virtual void apply(const double dt,
+                           const MechanicsContext &mech_ctx,
+                           const MechanicsState &old,
+                           MechanicsState &current) = 0;
     };
 
     class MechWithContactIntegrationScheme {
     public:
         virtual ~MechWithContactIntegrationScheme() {}
 
-        MechWithContactIntegrationScheme(
-            const unsigned int dim,
-            libMesh::DofMap &dof_map);
+        MechWithContactIntegrationScheme(const unsigned int dim, libMesh::DofMap &dof_map);
 
-        void set_linear_solver(const std::shared_ptr< LinearSolver<USparseMatrix, UVector> > &solver)
-        {
+        void set_linear_solver(const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &solver) {
             this->linear_solver = solver;
         }
 
-        virtual void apply(
-            const double dt,
-            const MechanicsContext &mech_ctx,
-            const Contact  &contact,
-            const Friction &friction,
-            const MechanicsState &old,
-            MechanicsState &current) = 0;
+        virtual void apply(const double dt,
+                           const MechanicsContext &mech_ctx,
+                           const Contact &contact,
+                           const Friction &friction,
+                           const MechanicsState &old,
+                           MechanicsState &current) = 0;
 
-        bool solve(
-            const USparseMatrix &K,
-            const UVector &inverse_mass_vector,
-            const UVector &rhs,
-            const UVector &gap,
-            const Friction &friction,
-            UVector &sol);
+        bool solve(const USparseMatrix &K,
+                   const UVector &inverse_mass_vector,
+                   const UVector &rhs,
+                   const UVector &gap,
+                   const Friction &friction,
+                   UVector &sol);
 
-        //FIXME I do not like it
+        // FIXME I do not like it
         unsigned int dim;
         libMesh::DofMap &dof_map;
-        std::shared_ptr< LinearSolver<USparseMatrix, UVector> > linear_solver;
+        std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
     };
 
     class ImplicitEuler : public MechIntegrationScheme, public MechWithContactIntegrationScheme {
     public:
+        ImplicitEuler(const unsigned int dim, libMesh::DofMap &dof_map)
+            : MechWithContactIntegrationScheme(dim, dof_map) {}
 
-        ImplicitEuler(
-            const unsigned int dim,
-            libMesh::DofMap &dof_map)
-        : MechWithContactIntegrationScheme(dim, dof_map)
-        { }
+        void apply(const double dt,
+                   const MechanicsContext &mech_ctx,
+                   const MechanicsState &old,
+                   MechanicsState &current) override;
 
-        void apply(
-            const double dt,
-            const MechanicsContext &mech_ctx,
-            const MechanicsState &old,
-            MechanicsState &current) override;
-
-        void apply(
-            const double dt,
-            const MechanicsContext &mech_ctx,
-            const Contact  &contact,
-            const Friction &friction,
-            const MechanicsState &old,
-            MechanicsState &current) override;
+        void apply(const double dt,
+                   const MechanicsContext &mech_ctx,
+                   const Contact &contact,
+                   const Friction &friction,
+                   const MechanicsState &old,
+                   MechanicsState &current) override;
     };
 
     class ExternalForce {
@@ -136,14 +122,10 @@ namespace utopia {
 
     class ConstantExternalForce : public ExternalForce {
     public:
-        inline void eval(const double, UVector &result) override
-        {
-            result = value;
-        }
+        inline void eval(const double, UVector &result) override { result = value; }
 
-        template<class LinearForm>
-        void init(const LinearForm &linear_form)
-        {
+        template <class LinearForm>
+        void init(const LinearForm &linear_form) {
             assemble(linear_form, value);
         }
 
@@ -154,6 +136,6 @@ namespace utopia {
     // public:
 
     // };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_MECHANICS_HPP
+#endif  // UTOPIA_MECHANICS_HPP

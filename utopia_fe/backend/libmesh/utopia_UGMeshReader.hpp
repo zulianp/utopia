@@ -1,11 +1,11 @@
 #ifndef UG_MESH_READER_HPP
 #define UG_MESH_READER_HPP
 
-#include <vector>
-#include <string>
-#include <fstream>
 #include <stdio.h>
+#include <fstream>
 #include <iostream>
+#include <string>
+#include <vector>
 
 namespace libMesh {
     class MeshBase;
@@ -17,18 +17,15 @@ namespace utopia {
     public:
         typedef std::vector<std::string> StringVector;
 
-
-
-        virtual bool read(const std::string &path, libMesh::MeshBase &mesh)
-        {
+        virtual bool read(const std::string &path, libMesh::MeshBase &mesh) {
             std::ifstream file(path.c_str(), std::ifstream::in);
-            if(!file.good()) {
+            if (!file.good()) {
                 std::cerr << "[Error] unable to open file: " << path << std::endl;
                 file.close();
                 return false;
             }
 
-            if(!read(file, mesh)) {
+            if (!read(file, mesh)) {
                 return false;
             }
 
@@ -38,7 +35,6 @@ namespace utopia {
 
         bool read(std::istream &is, libMesh::MeshBase &mesh);
     };
-}
+}  // namespace utopia
 
-#endif //UG_MESH_READER_HPP
-
+#endif  // UG_MESH_READER_HPP

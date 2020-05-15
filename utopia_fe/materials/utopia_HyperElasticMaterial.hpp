@@ -4,11 +4,11 @@
 #include "utopia_ElasticMaterial.hpp"
 
 namespace utopia {
-    template<class Matrix, class Vector>
+    template <class Matrix, class Vector>
     class HyperElasticMaterial : public ElasticMaterial<Matrix, Vector> {
     public:
         virtual ~HyperElasticMaterial() {}
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_HYPER_ELASTIC_MATERIAL_HPP
+#endif  // UTOPIA_HYPER_ELASTIC_MATERIAL_HPP

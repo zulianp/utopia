@@ -24,9 +24,7 @@
 // #include "libmesh/exodusII_io.h"
 // #include <algorithm>
 
-
 // #include <memory>
-
 
 // namespace utopia {
 
@@ -57,7 +55,6 @@
 // 			solutions.resize(N);
 // 			corrections_.resize(N);
 
-
 // 			for(auto &s : solutions) {
 // 				s = local_zeros(s);
 // 			}
@@ -65,7 +62,6 @@
 // 			for(auto &c : corrections_) {
 // 				c = local_zeros(s);
 // 			}
-
 
 // 			for(std::size_t i = 0; i < max_iter_; ++i) {
 
@@ -96,11 +92,9 @@
 // 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
 // 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("sdc");
 
-
 // 		auto V = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u");
 // 		auto u = trial(V);
 // 		auto v = test(V);
-
 
 // 		const double dt = 0.01;
 // 		const std::size_t n_ts = 40;

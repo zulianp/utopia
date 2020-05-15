@@ -9,12 +9,8 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-eikonal";
-        }
+        inline static std::string command() { return "-eikonal"; }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_EIKONAL_EQUATION_TEST_HPP
+#endif  // UTOPIA_EIKONAL_EQUATION_TEST_HPP

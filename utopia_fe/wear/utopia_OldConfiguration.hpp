@@ -1,15 +1,14 @@
 #ifndef UTOPIA_OLD_CONFIGURATION_HPP
 #define UTOPIA_OLD_CONFIGURATION_HPP
 
-
-#include "utopia.hpp"
 #include <array>
+#include "utopia.hpp"
 
-#include "libmesh/mesh.h"
 #include "libmesh/dof_map.h"
+#include "libmesh/mesh.h"
 
-#include "utopia_Input.hpp"
 #include "utopia_AffineTransform.hpp"
+#include "utopia_Input.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 
@@ -26,20 +25,15 @@ namespace utopia {
         OldConfiguration();
         void read(Input &is) override;
         void update(const int time_step) override;
-        void displacement_and_forces(
-            ProductFunctionSpace<LibMeshFunctionSpace> &space,
-            UVector &displacement,
-            UVector &forces) const override;
+        void displacement_and_forces(ProductFunctionSpace<LibMeshFunctionSpace> &space,
+                                     UVector &displacement,
+                                     UVector &forces) const override;
 
         void init(ProductFunctionSpace<LibMeshFunctionSpace> &space) override;
 
-        inline int n_steps() const override
-        {
-            return n_time_steps;
-        }
+        inline int n_steps() const override { return n_time_steps; }
 
-        void describe(std::ostream &os) const override
-        {
+        void describe(std::ostream &os) const override {
             os << "n_time_steps: " << n_time_steps << std::endl;
             std::cout << dt_ << std::endl;
             std::cout << t << std::endl;
@@ -48,10 +42,7 @@ namespace utopia {
 
         double dt() const override;
 
-        inline static std::string name()
-        {
-            return "old";
-        }
+        inline static std::string name() { return "old"; }
 
         class Rotation {
         public:
@@ -97,7 +88,6 @@ namespace utopia {
             void update(const int step, const double t);
         };
 
-
         int n_time_steps;
         double dt_;
         double t;
@@ -105,8 +95,7 @@ namespace utopia {
 
         std::vector<Rotation> rotations;
         std::vector<Translation> translations;
-
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_OLD_CONFIGURATION_HPP
+#endif  // UTOPIA_OLD_CONFIGURATION_HPP

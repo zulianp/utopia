@@ -1,8 +1,8 @@
 #ifndef UTOPIA_POLYGON_2_HPP
 #define UTOPIA_POLYGON_2_HPP
 
-#include "utopia_Intersect.hpp"
 #include <vector>
+#include "utopia_Intersect.hpp"
 
 namespace utopia {
 
@@ -11,22 +11,19 @@ namespace utopia {
         using Vector = Intersector::Vector2;
         using Scalar = Intersector::Scalar;
 
-        inline std::size_t size() const
-        {
-            return points.size();
-        }
+        inline std::size_t size() const { return points.size(); }
 
-        inline bool empty() const
-        {
-            return points.empty();
-        }
+        inline bool empty() const { return points.empty(); }
 
         Scalar area() const;
 
-        static bool intersect(const Polygon2 &poly1, const Polygon2 &poly2, std::vector<Polygon2> &result, const Scalar tol = DEFAULT_TOLLERANCE);
+        static bool intersect(const Polygon2 &poly1,
+                              const Polygon2 &poly2,
+                              std::vector<Polygon2> &result,
+                              const Scalar tol = DEFAULT_TOLLERANCE);
         std::vector<Vector> points;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_POLYGON_2_HPP
+#endif  // UTOPIA_POLYGON_2_HPP

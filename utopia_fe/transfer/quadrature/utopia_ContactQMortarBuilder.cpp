@@ -75,7 +75,6 @@
 //         const libMesh::Point pp = trial_side->point(0);
 //         const Real plane_offset = trial_n.contract(pp);
 
-
 //         auto n_qps = test_ir.n_points();
 //         gap_.resize(n_qps);
 //         normal_.resize(n_qps);
@@ -112,7 +111,8 @@
 //     ///////////////////////////////////////////////////////////////////
 
 //     WarpedContactQMortarBuilder3::WarpedContactQMortarBuilder3(const Real search_radius)
-//     : trial_ir(3), test_ir(3), trial_box(3), test_box(3), total_intersection_volume(0.), search_radius(search_radius), ref_quad_order_(-1)
+//     : trial_ir(3), test_ir(3), trial_box(3), test_box(3), total_intersection_volume(0.),
+//     search_radius(search_radius), ref_quad_order_(-1)
 //     {}
 
 //     bool WarpedContactQMortarBuilder3::build(

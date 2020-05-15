@@ -1,12 +1,12 @@
 #ifndef UTOPIA_LINEPOST_PROCESSOR_HPP
 #define UTOPIA_LINEPOST_PROCESSOR_HPP
 
-#include "utopia_PostProcessor.hpp"
 #include <memory>
+#include "utopia_PostProcessor.hpp"
 
 namespace utopia {
 
-    template<class FunctionSpace, class Vector>
+    template <class FunctionSpace, class Vector>
     class LinePostProcessor final : public PostProcessor<FunctionSpace, Vector> {
     public:
         LinePostProcessor();
@@ -17,11 +17,11 @@ namespace utopia {
         void export_values() const override;
         void read(Input &in) override;
 
-     private:
+    private:
         class Impl;
         std::unique_ptr<Impl> impl_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_LINEPOST_PROCESSOR_HPP
+#endif  // UTOPIA_LINEPOST_PROCESSOR_HPP

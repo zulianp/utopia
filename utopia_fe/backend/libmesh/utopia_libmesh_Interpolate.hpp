@@ -2,37 +2,36 @@
 #define UTOPIA_LIBMESH_INTERPOLATE_HPP
 
 #include "utopia_Interpolate.hpp"
-#include "utopia_fe_base.hpp"
-#include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
+#include "utopia_fe_base.hpp"
 #include "utopia_libmesh_FEBackend.hpp"
+#include "utopia_libmesh_FunctionSpace.hpp"
 
 #include <vector>
 
 namespace utopia {
 
-    template<class FunSpace>
-    using ProductTrialFunction = utopia::TrialFunction< ProductFunctionSpace<FunSpace> >;
+    template <class FunSpace>
+    using ProductTrialFunction = utopia::TrialFunction<ProductFunctionSpace<FunSpace>>;
 
-    template<>
-    class Interpolate<UVector, ProductTrialFunction<LibMeshFunctionSpace> > : public Expression< Interpolate<UVector, ProductTrialFunction<LibMeshFunctionSpace>> > {
+    template <>
+    class Interpolate<UVector, ProductTrialFunction<LibMeshFunctionSpace>>
+        : public Expression<Interpolate<UVector, ProductTrialFunction<LibMeshFunctionSpace>>> {
     public:
         using Fun = utopia::ProductTrialFunction<LibMeshFunctionSpace>;
-        using FunSpaceT   = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
-        using FETraitsT   = utopia::Traits<LibMeshFunctionSpace>;
-        using Scalar      = Traits<UVector>::Scalar;
+        using FunSpaceT = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
+        using FETraitsT = utopia::Traits<LibMeshFunctionSpace>;
+        using Scalar = Traits<UVector>::Scalar;
         using ElementVector = FETraitsT::Vector;
         using ElementMatrix = FETraitsT::Matrix;
         using JacobianType = FETraitsT::JacobianType;
 
         using DenseVectorT = libMesh::DenseVector<libMesh::Real>;
-        using FEBackend    = utopia::FEBackend<LIBMESH_TAG>;
+        using FEBackend = utopia::FEBackend<LIBMESH_TAG>;
 
         class Data {
         public:
-            Data(const UVector &coeff, Fun &fun)
-            : coeff_(coeff), fun_(fun)
-            {}
+            Data(const UVector &coeff, Fun &fun) : coeff_(coeff), fun_(fun) {}
 
             const UVector &coeff_;
             UTOPIA_STORE(Fun) fun_;
@@ -42,8 +41,7 @@ namespace utopia {
             std::vector<DenseVectorT> fun_values_;
             std::vector<ElementMatrix> grad_values_;
 
-            void fun_aux(std::vector< std::vector<DenseVectorT> > &ret) const
-            {
+            void fun_aux(std::vector<std::vector<DenseVectorT>> &ret) const {
                 assert(!fe_.empty());
 
                 auto &space = *fun_.space_ptr();
@@ -58,31 +56,30 @@ namespace utopia {
                 });
 
                 ret.resize(n_shape_functions);
-                for(std::size_t i = 0; i < n_shape_functions; ++i) {
+                for (std::size_t i = 0; i < n_shape_functions; ++i) {
                     ret[i].resize(n_quad_points);
-                    for(auto &r : ret[i]) {
+                    for (auto &r : ret[i]) {
                         r.resize(space.n_subspaces());
                         r.zero();
                     }
                 }
 
-                for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+                for (std::size_t qp = 0; qp < n_quad_points; ++qp) {
                     int offset = 0;
                     space.each([&offset, this, &ret, qp](const int sub_index, const LibMeshFunctionSpace &s) {
                         const auto &fe = fe_[s.subspace_id()];
                         assert((static_cast<bool>(fe)));
-                        const auto & fun = fe->get_phi();
+                        const auto &fun = fe->get_phi();
                         uint n_shape_i = fe->n_shape_functions();
 
-                        for(uint j = 0; j < n_shape_i; ++j) {
+                        for (uint j = 0; j < n_shape_i; ++j) {
                             ret[offset++][qp](sub_index) = fun[j][qp];
                         }
                     });
                 }
             }
 
-            void grad_aux(JacobianType &ret) const
-            {
+            void grad_aux(JacobianType &ret) const {
                 assert(!fe_.empty());
 
                 auto &space = *fun_.space_ptr();
@@ -97,33 +94,33 @@ namespace utopia {
                 });
 
                 ret.resize(n_shape_functions);
-                for(std::size_t i = 0; i < n_shape_functions; ++i) {
+                for (std::size_t i = 0; i < n_shape_functions; ++i) {
                     ret[i].resize(n_quad_points);
-                    //TensorValue is by default initialized to 0s
+                    // TensorValue is by default initialized to 0s
                 }
 
-                for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+                for (std::size_t qp = 0; qp < n_quad_points; ++qp) {
                     int offset = 0;
-                    space.each([&offset, this, &ret, &space, qp, dim](const int sub_index, const LibMeshFunctionSpace &s) {
-                        const auto &fe = fe_[s.subspace_id()];
-                        const uint n_shape_i = fe->n_shape_functions();
+                    space.each(
+                        [&offset, this, &ret, &space, qp, dim](const int sub_index, const LibMeshFunctionSpace &s) {
+                            const auto &fe = fe_[s.subspace_id()];
+                            const uint n_shape_i = fe->n_shape_functions();
 
-                        for(uint j = 0; j < n_shape_i; ++j, offset++) {
-                            const auto &grad = fe->get_dphi()[j][qp];
+                            for (uint j = 0; j < n_shape_i; ++j, offset++) {
+                                const auto &grad = fe->get_dphi()[j][qp];
 
-                            for(uint d = 0; d < dim; ++d) {
-                                ret[offset][qp](sub_index, d) = grad(d);
+                                for (uint d = 0; d < dim; ++d) {
+                                    ret[offset][qp](sub_index, d) = grad(d);
+                                }
                             }
-                        }
-                    });
+                        });
                 }
             }
 
-            void init_coeffs(const int element_idx)
-            {
-                auto space_ptr      = fun_.space_ptr();
-                const auto &sub_0   = space_ptr->subspace(0);
-                const auto &mesh    = sub_0.mesh();
+            void init_coeffs(const int element_idx) {
+                auto space_ptr = fun_.space_ptr();
+                const auto &sub_0 = space_ptr->subspace(0);
+                const auto &mesh = sub_0.mesh();
                 const auto &dof_map = sub_0.dof_map();
 
                 const auto &elem_ptr = mesh.elem(element_idx);
@@ -140,26 +137,25 @@ namespace utopia {
                 element_coeffs_.resize(n_indices);
 
                 Read<UVector> r(coeff_);
-                assert( coeff_.implementation().has_ghosts() || mpi_world_size() == 1);
+                assert(coeff_.implementation().has_ghosts() || mpi_world_size() == 1);
                 coeff_.get(prod_indices, element_coeffs_);
             }
 
-            void init_function()
-            {
-                std::vector< std::vector<DenseVectorT> > g;
+            void init_function() {
+                std::vector<std::vector<DenseVectorT>> g;
                 fun_aux(g);
 
                 const std::size_t n_shape_functions = g.size();
-                const std::size_t n_quad_points     = g[0].size();
+                const std::size_t n_quad_points = g[0].size();
 
                 fun_values_.resize(n_quad_points);
 
-                for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+                for (std::size_t qp = 0; qp < n_quad_points; ++qp) {
                     fun_values_[qp].resize(fun_.codim());
                     fun_values_[qp].zero();
 
-                    for(std::size_t i = 0; i < n_shape_functions; ++i) {
-                        if(std::is_rvalue_reference<decltype(g)>::value) {
+                    for (std::size_t i = 0; i < n_shape_functions; ++i) {
+                        if (std::is_rvalue_reference<decltype(g)>::value) {
                             g[i][qp] *= element_coeffs_[i];
                             fun_values_[qp] += g[i][qp];
                         } else {
@@ -171,41 +167,22 @@ namespace utopia {
                 }
             }
 
-            void init_gradient()
-            {
+            void init_gradient() {}
 
-            }
-
-            void init_divergence()
-            {
-
-            }
+            void init_divergence() {}
         };
 
-        enum {
-            Order = 1
-        };
+        enum { Order = 1 };
 
-        Interpolate(const UVector &coeff, Fun &fun)
-        : data_(std::make_shared<Data>(coeff, fun))
-        {}
+        Interpolate(const UVector &coeff, Fun &fun) : data_(std::make_shared<Data>(coeff, fun)) {}
 
-        inline const Fun &fun() const
-        {
-            return data_->fun_;
-        }
+        inline const Fun &fun() const { return data_->fun_; }
 
-        inline const UVector &coefficient() const
-        {
-            return data_->coeff_;
-        }
+        inline const UVector &coefficient() const { return data_->coeff_; }
 
-        inline std::string get_class() const override {
-            return "Interpolate";
-        }
+        inline std::string get_class() const override { return "Interpolate"; }
 
-        inline libMesh::FEBase &fe(const uint subspace_id)
-        {
+        inline libMesh::FEBase &fe(const uint subspace_id) {
             assert(data_);
             assert(subspace_id < data_->fe_.size());
             assert(data_->fe_[subspace_id]);
@@ -217,6 +194,6 @@ namespace utopia {
         std::shared_ptr<Data> data_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_LIBMESH_INTERPOLATE_HPP
+#endif  // UTOPIA_LIBMESH_INTERPOLATE_HPP

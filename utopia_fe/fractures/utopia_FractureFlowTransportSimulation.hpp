@@ -24,10 +24,10 @@ namespace utopia {
     private:
         class Transport : public Configurable {
         public:
-            inline void set_steady_state_function_space(UIFunctionSpace<LibMeshFunctionSpace> &V)
-            {
+            inline void set_steady_state_function_space(UIFunctionSpace<LibMeshFunctionSpace> &V) {
                 steady_state_function_space = make_ref(V);
-                space = utopia::make_unique<UIFunctionSpace<LibMeshFunctionSpace>>(V.mesh(), V.subspace(0).equation_systems_ptr());
+                space = utopia::make_unique<UIFunctionSpace<LibMeshFunctionSpace>>(
+                    V.mesh(), V.subspace(0).equation_systems_ptr());
             }
 
             Transport(const std::string &name);
@@ -44,7 +44,6 @@ namespace utopia {
             void assemble_for_stabilized_system(FractureFlow &flow);
 
             void post_process_time_step(const double t, FractureFlow &flow);
-
 
             std::string name;
 
@@ -85,7 +84,6 @@ namespace utopia {
             CSVWriter csv;
 
             std::vector<std::shared_ptr<PostProcessor<LibMeshFunctionSpace, UVector>>> flux;
-
         };
 
         SteadyFractureFlowSimulation steady_flow_;
@@ -99,9 +97,8 @@ namespace utopia {
         bool use_algebraic_stabilization;
 
         std::string transient_solve_strategy;
-
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FRACTURE_FLOW_TRANSPORT_SIMULATION_HPP
+#endif  // UTOPIA_FRACTURE_FLOW_TRANSPORT_SIMULATION_HPP

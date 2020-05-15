@@ -1,21 +1,19 @@
-#include "utopia_libmesh.hpp"
 #include "utopia_GeometryTest.hpp"
+#include "utopia_libmesh.hpp"
 
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
-
 #include <libmesh/const_function.h>
-#include <libmesh/petsc_vector.h>
-#include <libmesh/petsc_matrix.h>
 #include <libmesh/mesh_modification.h>
+#include <libmesh/petsc_matrix.h>
+#include <libmesh/petsc_vector.h>
 #include "libmesh/nemesis_io.h"
 
 #include <memory>
 
 namespace utopia {
 
-    void GeometryTest::run(Input &in)
-    {
+    void GeometryTest::run(Input &in) {
         using namespace libMesh;
         using namespace std;
 
@@ -34,7 +32,7 @@ namespace utopia {
         auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "n_y");
         auto V = Vx * Vy;
 
-        if(dim == 3) {
+        if (dim == 3) {
             V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "n_z");
         }
 
@@ -57,4 +55,4 @@ namespace utopia {
         sys.solution->close();
         io.write_equation_systems("geo-test.e", *equation_systems);
     }
-}
+}  // namespace utopia

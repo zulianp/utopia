@@ -18,4 +18,4 @@
 #include "utopia_block_var.hpp"
 #include "utopia_fe_lang.hpp"
 
-#endif //UTOPIA_FE_CORE_HPP
+#endif  // UTOPIA_FE_CORE_HPP

@@ -2,21 +2,21 @@
 
 #include "utopia_ContactSolver.hpp"
 
-#include "utopia_ElasticityApp.hpp"
-#include "utopia_libmesh_NonLinearFEFunction.hpp"
-#include "utopia_Newmark.hpp"
-#include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStabilizedNewmark.hpp"
-#include "utopia_ui.hpp"
-#include "utopia_UIFunctionSpace.hpp"
-#include "utopia_UIForcingFunction.hpp"
-#include "utopia_UIMesh.hpp"
-#include "utopia_UIContactParams.hpp"
-#include "utopia_UIMaterial.hpp"
-#include "utopia_UIScalarSampler.hpp"
-#include "utopia_InputParameters.hpp"
-#include "utopia_polymorphic_QPSolver.hpp"
 #include "utopia_ContactStress.hpp"
+#include "utopia_ElasticityApp.hpp"
+#include "utopia_InputParameters.hpp"
+#include "utopia_LibMeshBackend.hpp"
+#include "utopia_Newmark.hpp"
+#include "utopia_UIContactParams.hpp"
+#include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIFunctionSpace.hpp"
+#include "utopia_UIMaterial.hpp"
+#include "utopia_UIMesh.hpp"
+#include "utopia_UIScalarSampler.hpp"
+#include "utopia_libmesh_NonLinearFEFunction.hpp"
+#include "utopia_polymorphic_QPSolver.hpp"
+#include "utopia_ui.hpp"
 // #include "utopia_FractureFlowUtils.hpp"
 
 #include "libmesh/mesh_refinement.h"
@@ -25,25 +25,19 @@ namespace utopia {
 
     class ElasticityAppInput : public Configurable {
     public:
-        using ProductSpaceT    = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
-        using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
+        using ProductSpaceT = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
+        using MaterialT = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
         using ForcingFunctionT = utopia::UIForcingFunction<ProductSpaceT, UVector>;
 
-        ElasticityAppInput(libMesh::Parallel::Communicator &comm) :
-        max_it(20),
-        export_operators_(false),
-        mesh_(comm),
-        space_(make_ref(mesh_))
-        {}
+        ElasticityAppInput(libMesh::Parallel::Communicator &comm)
+            : max_it(20), export_operators_(false), mesh_(comm), space_(make_ref(mesh_)) {}
 
-        void read(Input &is) override
-        {
+        void read(Input &is) override {
             try {
-
                 is.get("mesh", mesh_);
                 is.get("space", space_);
 
-                auto model            = make_unique<MaterialT>(space_.space());
+                auto model = make_unique<MaterialT>(space_.space());
                 auto forcing_function = make_unique<ForcingFunctionT>(space_.space());
 
                 is.get("model", *model);
@@ -51,61 +45,44 @@ namespace utopia {
 
                 assert(model->good());
 
-                model_ = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
-                    std::move(model),
-                    std::move(forcing_function)
-                );
+                model_ = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(std::move(model),
+                                                                                  std::move(forcing_function));
 
                 is.get("max-it", max_it);
                 is.get("export-operators", export_operators_);
 
-            } catch(const std::exception &ex) {
+            } catch (const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
             }
         }
 
-        inline bool empty() const
-        {
-            return mesh_.empty();
-        }
+        inline bool empty() const { return mesh_.empty(); }
 
-        inline libMesh::MeshBase &mesh()
-        {
-            return mesh_.mesh();
-        }
+        inline libMesh::MeshBase &mesh() { return mesh_.mesh(); }
 
-        inline ProductSpaceT &space()
-        {
-            return space_.space();
-        }
+        inline ProductSpaceT &space() { return space_.space(); }
 
-        std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model()
-        {
-            return model_;
-        }
+        std::shared_ptr<ElasticMaterial<USparseMatrix, UVector>> model() { return model_; }
 
-        void describe(std::ostream &os = std::cout) const
-        {
-
-        }
+        void describe(std::ostream &os = std::cout) const {}
 
         int max_it;
         bool export_operators_;
+
     private:
         UIMesh<libMesh::DistributedMesh> mesh_;
         UIFunctionSpace<LibMeshFunctionSpace> space_;
-        std::shared_ptr< ElasticMaterial<USparseMatrix, UVector> > model_;
+        std::shared_ptr<ElasticMaterial<USparseMatrix, UVector>> model_;
     };
 
-    void ElasticityApp::run(Input &in)
-    {
+    void ElasticityApp::run(Input &in) {
         ElasticityAppInput sim_in(comm());
         // in.get("elasticity", sim_in);
         sim_in.read(in);
         sim_in.describe(std::cout);
 
-        if(sim_in.empty()) {
+        if (sim_in.empty()) {
             utopia_error("incomplete input");
             return;
         }
@@ -127,7 +104,7 @@ namespace utopia {
         g *= -1.0;
         apply_boundary_conditions(dof_map, H, g);
 
-        if(sim_in.export_operators_) {
+        if (sim_in.export_operators_) {
             write("H.m", H);
             write("g.m", g);
 
@@ -140,7 +117,7 @@ namespace utopia {
         // Factorization<USparseMatrix, UVector> solver;
 
         auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
-        auto smoother      = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
+        auto smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
         // auto smoother = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
         // linear_solver->verbose(true);
@@ -156,7 +133,7 @@ namespace utopia {
         solver.set_preconditioner(make_ref(mg));
         solver.verbose(true);
 
-        if(!solver.solve(H, g, c)) {
+        if (!solver.solve(H, g, c)) {
             write("H.m", H);
             write("g.m", g);
             utopia_error("LinearSolver(0) failed!");
@@ -165,10 +142,8 @@ namespace utopia {
 
         x += c;
 
-        if(!material.is_linear()) {
-
-            for(int i = 0; i < sim_in.max_it; ++i) {
-
+        if (!material.is_linear()) {
+            for (int i = 0; i < sim_in.max_it; ++i) {
                 material.assemble_hessian_and_gradient(x, H, g);
                 g *= -1.0;
 
@@ -177,10 +152,11 @@ namespace utopia {
 
                 c.set(0.0);
 
-                if(!solver.solve(H, g, c)) {
+                if (!solver.solve(H, g, c)) {
                     write("H.m", H);
                     write("g.m", g);
-                    std::cerr << "LinearSolver(" << (i + 1) << ") failed!" << std::endl;;
+                    std::cerr << "LinearSolver(" << (i + 1) << ") failed!" << std::endl;
+                    ;
                     return;
                 }
 
@@ -190,14 +166,12 @@ namespace utopia {
 
                 std::cout << "norm_g(" << i << "): " << norm_g << std::endl;
 
-                if(norm_g < 1e-6) {
+                if (norm_g < 1e-6) {
                     break;
                 }
-
             }
         }
 
         write("elasticity.e", Vx, x);
     }
-}
-
+}  // namespace utopia

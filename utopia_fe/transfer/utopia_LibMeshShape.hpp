@@ -25,7 +25,8 @@
 //         virtual ~LibMeshShape() {}
 
 //         LibMeshShape(const libMesh::Elem &elem, const libMesh::FEType type, const bool use_newton = true)
-//         : elem_(elem), type_(type), q_(Dim), max_iter_(8000), tol_(1e-8), accept_tol_(1e-6), use_newton_(use_newton), verbose_(false)
+//         : elem_(elem), type_(type), q_(Dim), max_iter_(8000), tol_(1e-8), accept_tol_(1e-6), use_newton_(use_newton),
+//         verbose_(false)
 //         {
 //             init();
 //         }
@@ -54,7 +55,7 @@
 //         inline void ref(Point &ref_point) const
 //         {
 //             Read<USerialVector> r_(x_ref_);
-            
+
 //             for(int d = 0; d < Dim-1; ++d) {
 //                 ref_point[d] = x_ref_.get(d);
 //             }
@@ -188,13 +189,12 @@
 //             H_fe_ = zeros(Dim-1, Dim-1);
 //         }
 
-
 //         void set_initial_guess(
 //             const Ray &ray,
 //             Scalar &t
 //             )
 //         {
-//             // if(t != 0.) 
+//             // if(t != 0.)
 //             {
 
 //                 Write<USerialVector> w_x(x_ref_), w_u(u_);
@@ -206,12 +206,11 @@
 //                 }
 
 //                 auto ref = libMesh::FE<Dim-1, libMesh::LAGRANGE>::inverse_map(&elem_, guess, 1e-12);
-  
+
 //                 for(int i = 0; i < Dim - 1; ++i) {
 //                     x_ref_.set(i, ref(i));
 //                     u_.set(i, ref(i));
 //                 }
-
 
 //                 guess = libMesh::FE<Dim-1, libMesh::LAGRANGE>::map(&elem_, ref);
 //                 for(int i = 0; i < Dim; ++i) {
@@ -222,7 +221,7 @@
 //                 t = dot(p - ray.o, ray.dir);
 //                 u_.set(Dim-1, t);
 
-//             } 
+//             }
 
 //             // else {
 
@@ -245,7 +244,6 @@
 //             }
 
 //             set_initial_guess(ray, t);
-            
 
 //             Scalar g_2 = 0.;
 //             Scalar nn = dot(n_, n_);
@@ -431,8 +429,6 @@
 //                     disp(u_);
 //                     disp("----------");
 
-
-
 //                 }
 
 //                 {
@@ -460,7 +456,6 @@
 //             return norm_g_prev < accept_tol_;
 //         }
 
-
 //     protected:
 //         virtual void reinit(const USerialVector &x_ref)
 //         {
@@ -476,8 +471,6 @@
 
 //     };
 
-
 // }
-
 
 // #endif //UTOPIA_LIBMESH_SHAPE_HPP

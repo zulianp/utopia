@@ -1,12 +1,12 @@
 #ifndef UTOPIA_MODEL_HPP
 #define UTOPIA_MODEL_HPP
 
-#include "utopia_libmesh_Types.hpp"
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
+#include "utopia_libmesh_Types.hpp"
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
+    template <class Matrix, class Vector>
     class Model : public Configurable {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
@@ -16,11 +16,9 @@ namespace utopia {
         virtual bool is_linear() const { return false; }
 
         virtual void clear() {}
-        virtual void read(Input &in) override {
-            UTOPIA_UNUSED(in);
-        }
+        virtual void read(Input &in) override { UTOPIA_UNUSED(in); }
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_MODEL_HPP
+#endif  // UTOPIA_MODEL_HPP
