@@ -1,4 +1,6 @@
+
 #include "utopia_Adaptivity.hpp"
+#include "libmesh/boundary_info.h"
 #include "libmesh/elem.h"
 #include "libmesh/fe_interface.h"
 #include "libmesh/parallel.h"
