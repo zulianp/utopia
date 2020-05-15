@@ -11,6 +11,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
 #################################################################################
 
 include(UtopiaGitVersion)
+include(UtopiaClangFormat)
+
 set(UTOPIA_VERSION_MAJOR 0)
 set(UTOPIA_VERSION_MINOR 1)
 set(UTOPIA_VERSION_PATCH 0)
@@ -535,3 +537,6 @@ add_custom_target(complete)
 add_dependencies(complete utopia utopia_test utopia_bench utopia_exec)
 
 ##########################################################################################
+target_format_setup(utopia_test)
+##########################################################################################
+

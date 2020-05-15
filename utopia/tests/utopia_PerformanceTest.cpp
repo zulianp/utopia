@@ -235,9 +235,10 @@
 // 				c.start();
 // 				double checksum = .0;
 // 				Vector res;
-// 				res = 10. * v1 + 5. * v2; 												  checksum
-// += fabs(res.sum()); 				res = (0.1 * v1.cwiseProduct(v1) - v2.cwiseProduct(v2) ) + v3.cwiseAbs(); checksum +=
-// fabs(res.sum()); 				c.stop();
+// 				res = 10. * v1 + 5. * v2;
+// checksum
+// += fabs(res.sum()); 				res = (0.1 * v1.cwiseProduct(v1) - v2.cwiseProduct(v2) ) + v3.cwiseAbs();
+// checksum += fabs(res.sum()); 				c.stop();
 
 // 				if(verbose) {
 // 					if(i == 0) {
@@ -283,10 +284,12 @@
 // 				c.start();
 // 				double checksum = .0;
 // 				Vector res;
-// 				res = (m * v1 + v2 - v3).cwiseAbs(); 							  checksum +=
-// fabs(res.sum()); 				res = (m * v1.cwiseProduct(v1) + v2.cwiseSqrt() - v3).cwiseAbs(); checksum += fabs(res.sum()); 				res =
-// ( (0.1 * (m * m) - m).transpose() * (m) * v3 ).cwiseAbs();  checksum += fabs(res.sum()); 				res = (0.1 * m - m) * v1;
-// checksum += fabs(res.sum()); 				c.stop();
+// 				res = (m * v1 + v2 - v3).cwiseAbs(); 							  checksum
+// +=
+// fabs(res.sum()); 				res = (m * v1.cwiseProduct(v1) + v2.cwiseSqrt() - v3).cwiseAbs(); checksum +=
+// fabs(res.sum()); 				res = ( (0.1 * (m * m) - m).transpose() * (m) * v3 ).cwiseAbs();
+// checksum += fabs(res.sum()); 				res = (0.1 * m - m) * v1; checksum += fabs(res.sum());
+// c.stop();
 
 // 				if(verbose) {
 // 					if(i == 0) {

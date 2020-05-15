@@ -193,8 +193,8 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
 
             // This will always create a copy (A * x needs to put the result somewhere, unless the backend
-            // specialization is used and does not allocate anything) a better way would be to use a third vector p = b -
-            // A * x;
+            // specialization is used and does not allocate anything) a better way would be to use a third vector p = b
+            // - A * x;
             b = b - A * x;
 
             UTOPIA_NO_ALLOC_BEGIN("mv_test7");
