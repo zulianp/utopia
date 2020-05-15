@@ -836,11 +836,13 @@ namespace utopia {
 // 		tree->reserve(n_elements);
 
 // 		auto local_spaces = std::make_shared<FESpacesRAdapter>(master, slave, dof_master, dof_slave,
-// dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r); 		int offset = 0; 		int
-// space_num = 0; 		if(tags.empty()){ 			for(auto s : local_spaces->spaces()) { 				if(s) { 					bool first = true;
-// 					libMesh::dof_id_type local_element_id = 0;
-// 					for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it,
-// ++local_element_id) { 						auto elem = *it; 						Adapter a(*s, elem->id(), offset + local_element_id, space_num);
+// dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r); 		int offset
+// = 0; 		int
+// space_num = 0; 		if(tags.empty()){ 			for(auto s : local_spaces->spaces()) {
+// if(s) { 					bool first = true; 					libMesh::dof_id_type local_element_id = 0; 					for (auto
+// it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it,
+// ++local_element_id) { 						auto elem = *it; 						Adapter a(*s,
+// elem->id(), offset + local_element_id, space_num);
 // 						assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
 // 						assert(!local_spaces->dof_map_reverse(space_num)[local_element_id].empty());
 // 						a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
@@ -860,9 +862,13 @@ namespace utopia {
 // 				if(s) {
 // 					bool first = true;
 // 					libMesh::dof_id_type local_element_id = 0;
-// 					for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it,
-// ++local_element_id) { 						auto elem = *it; 						if (predicate->select(elem->subdomain_id())){ 							Adapter a(*s, elem->id(), offset
-// + local_element_id, elem->subdomain_id()); 							assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
+// 					for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end();
+// ++it,
+// ++local_element_id) { 						auto elem = *it; 						if
+// (predicate->select(elem->subdomain_id())){ 							Adapter a(*s, elem->id(),
+// offset
+// + local_element_id, elem->subdomain_id());
+// assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
 // 							assert(!local_spaces->dof_map_reverse(space_num)[local_element_id].empty());
 // 							a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
 // 							a.set_dof_map_reverse(&local_spaces->dof_map_reverse(space_num)[local_element_id].global);
@@ -1013,8 +1019,10 @@ namespace utopia {
 // 	}
 
 // 	static void assemble_biorth_weights_from_space(const std::shared_ptr<MeshBase> &mesh,
-// 												   const std::shared_ptr<DofMap>
-// &dof_map, 												   const int var_num, 												   libMesh::DenseMatrix<libMesh::Real> &weights)
+// 												   const
+// std::shared_ptr<DofMap>
+// &dof_map, 												   const int var_num,
+// libMesh::DenseMatrix<libMesh::Real> &weights)
 // 	{
 // 		const int dim = mesh->mesh_dimension();
 // 		std::unique_ptr<libMesh::FEBase> biorth_elem =
@@ -1025,7 +1033,8 @@ namespace utopia {
 
 // 		const int order = order_for_l2_integral(dim,
 // 												el,
-// dof_map->variable(var_num).type().order, 												el, dof_map->variable(var_num).type().order);
+// dof_map->variable(var_num).type().order, 												el,
+// dof_map->variable(var_num).type().order);
 
 // 		libMesh::QGauss qg(dim, libMesh::Order(order));
 // 		biorth_elem->attach_quadrature_rule(&qg);
@@ -1256,9 +1265,9 @@ namespace utopia {
 
 // 		};
 
-// 		if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave,
-// from_var_num, to_var_num, from_var_num_r, to_var_num_r, fun, settings, use_biorth_, n_var, n_var_r,tags)) { 			return
-// false;
+// 		if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, dof_reverse_master,
+// dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r, fun, settings, use_biorth_, n_var,
+// n_var_r,tags)) { 			return false;
 // 		}
 
 // 		double volumes[3] = { local_element_matrices_sum,  total_intersection_volume,
@@ -1294,8 +1303,8 @@ namespace utopia {
 // 		comm.all_reduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  moonolith::MPISum());
 
 // 		std::partial_sum(ownershipRangesMaster.begin(), ownershipRangesMaster.end(),
-// ownershipRangesMaster.begin()); 		std::partial_sum(ownershipRangesSlave.begin(), ownershipRangesSlave.end(),
-// ownershipRangesSlave.begin());
+// ownershipRangesMaster.begin()); 		std::partial_sum(ownershipRangesSlave.begin(),
+// ownershipRangesSlave.end(), ownershipRangesSlave.begin());
 
 // 		std::vector<moonolith::Integer>  ownershipRangesMaster_r(comm.size()+1, 0);
 // 		std::vector<moonolith::Integer>  ownershipRangesSlave_r(comm.size()+1, 0);
@@ -1307,8 +1316,8 @@ namespace utopia {
 // 		comm.all_reduce(&ownershipRangesSlave_r[0],  ownershipRangesSlave_r.size(),  moonolith::MPISum());
 
 // 		std::partial_sum(ownershipRangesMaster_r.begin(), ownershipRangesMaster_r.end(),
-// ownershipRangesMaster_r.begin()); 		std::partial_sum(ownershipRangesSlave_r.begin(), ownershipRangesSlave_r.end(),
-// ownershipRangesSlave_r.begin());
+// ownershipRangesMaster_r.begin()); 		std::partial_sum(ownershipRangesSlave_r.begin(),
+// ownershipRangesSlave_r.end(), ownershipRangesSlave_r.begin());
 
 // 		int dim = master->mesh_dimension();
 
@@ -1373,8 +1382,10 @@ namespace utopia {
 // 		});
 
 // 		utopia::Write<USparseMatrix> w_B_reverse(B_reverse);
-// 		utopia::each_read(B_x_reverse, [&](const utopia::SizeType i, const utopia::SizeType j, const double value)
-// { 			for(utopia::SizeType d = 0; d < n_var_r ; ++d) { 				B_reverse.set(i + d, j + d, value);
+// 		utopia::each_read(B_x_reverse, [&](const utopia::SizeType i, const utopia::SizeType j, const double
+// value)
+// { 			for(utopia::SizeType d = 0; d < n_var_r ; ++d) { 				B_reverse.set(i + d, j + d,
+// value);
 // 			}
 // 		});
 
@@ -1387,13 +1398,12 @@ namespace utopia {
 // 									const std::shared_ptr<DofMap> &dof_master,
 // 									const std::shared_ptr<DofMap> &dof_slave,
 // 									const std::shared_ptr<DofMap>
-// &dof_reverse_master, 									const std::shared_ptr<DofMap> &dof_reverse_slave, 									const unsigned int & from_var_num, 									const
-// unsigned int & to_var_num, 									const unsigned int & from_var_num_r, 									const unsigned int & to_var_num_r, 									bool  use_biorth_,
-// 									int n_var,
-// 									int n_var_r,
-// 									USparseMatrix &B,
-// 									USparseMatrix &B_reverse,
-// 									const std::vector< std::pair<int, int> > &tags)
+// &dof_reverse_master, 									const std::shared_ptr<DofMap> &dof_reverse_slave,
+// const unsigned int & from_var_num, 									const unsigned
+// int & to_var_num, 									const unsigned int & from_var_num_r,
+// const unsigned int & to_var_num_r, 									bool
+// use_biorth_, 									int n_var, 									int n_var_r, 									USparseMatrix &B, 									USparseMatrix &B_reverse, 									const std::vector< std::pair<int,
+// int> > &tags)
 // 	{
 
 // 		///////////////////////////

@@ -684,7 +684,7 @@ namespace utopia {
 
                         //						//Maybe remove
                         //						ir_master.get_weights() =
-                        //ir_slave.get_weights();
+                        // ir_slave.get_weights();
 
                         pair_intersected = true;
 
