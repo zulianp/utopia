@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-//include edsl components
+// include edsl components
 #include "utopia_AppRunner.hpp"
 #include "utopia_AssemblyView.hpp"
 #include "utopia_BratuFE.hpp"
@@ -38,16 +38,15 @@
 
 namespace utopia {
 
-    void petsc_tri(Input &in)
-    {
+    void petsc_tri(Input &in) {
         std::cout << "petsc_tri" << std::endl;
         static const int Dim = 2;
 
-        using Mesh     = utopia::PetscDM<Dim>;
-        using Comm     = Mesh::Comm;
+        using Mesh = utopia::PetscDM<Dim>;
+        using Comm = Mesh::Comm;
         using SizeType = Mesh::SizeType;
-        using Scalar   = Mesh::Scalar;
-        using Point    = Mesh::Point;
+        using Scalar = Mesh::Scalar;
+        using Point = Mesh::Point;
 
         using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Tri3<Scalar, 2>>;
 
@@ -60,7 +59,7 @@ namespace utopia {
 
         ArrayView<const SizeType> nodes;
 
-        for(SizeType i = 0; i < mesh.n_elements(); ++i) {
+        for (SizeType i = 0; i < mesh.n_elements(); ++i) {
             mesh.nodes(i, nodes);
             disp(nodes);
         }
@@ -69,9 +68,7 @@ namespace utopia {
 
         space.create_vector(v);
 
-        space.sample(v, UTOPIA_LAMBDA(const Point &p) -> Scalar {
-            return p[0]*p[1];
-        });
+        space.sample(v, UTOPIA_LAMBDA(const Point &p)->Scalar { return p[0] * p[1]; });
 
         rename("f", v);
         space.write("trifun.vtk", v);

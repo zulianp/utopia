@@ -4,13 +4,10 @@
 
 namespace utopia {
 
-    void EvalMonitor<PetscMatrix, PETSC>::apply(
-        const SizeType &iteration,
-        const PetscMatrix &m,
-        const std::string &name_of_file,
-        const std::string &name_of_mat
-        )
-    {
+    void EvalMonitor<PetscMatrix, PETSC>::apply(const SizeType &iteration,
+                                                const PetscMatrix &m,
+                                                const std::string &name_of_file,
+                                                const std::string &name_of_mat) {
         PetscViewer viewer = nullptr;
 
         PetscViewerASCIIOpen(m.communicator(), name_of_file.c_str(), &viewer);
@@ -26,13 +23,10 @@ namespace utopia {
         PetscObjectSetName(reinterpret_cast<PetscObject>(m.raw_type()), name);
     }
 
-    void EvalMonitor<PetscVector, PETSC>::apply(
-        const SizeType &iteration,
-        const PetscVector &v,
-        const std::string &name_of_file,
-        const std::string &name_of_vec
-        )
-    {
+    void EvalMonitor<PetscVector, PETSC>::apply(const SizeType &iteration,
+                                                const PetscVector &v,
+                                                const std::string &name_of_file,
+                                                const std::string &name_of_vec) {
         PetscViewer viewer = nullptr;
 
         PetscViewerASCIIOpen(v.communicator(), name_of_file.c_str(), &viewer);

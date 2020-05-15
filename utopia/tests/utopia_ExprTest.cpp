@@ -10,28 +10,23 @@
 
 namespace utopia {
 
-
-    template<typename Matrix, typename Vector>
-    class ExpressionTests
-    {
-
+    template <typename Matrix, typename Vector>
+    class ExpressionTests {
     public:
-        using Traits   = utopia::Traits<Vector>;
+        using Traits = utopia::Traits<Vector>;
         using SizeType = typename Traits::SizeType;
-        using Scalar   = typename Traits::Scalar;
-        using Layout   = typename Traits::Layout;
+        using Scalar = typename Traits::Scalar;
+        using Layout = typename Traits::Layout;
         using MatrixLayout = typename Traits::MatrixLayout;
 
-        using Comm     = typename Traits::Communicator;
+        using Comm = typename Traits::Communicator;
 
-        ExpressionTests(const Comm &comm, const SizeType &n)
-        {
+        ExpressionTests(const Comm &comm, const SizeType &n) {
             vec_layout = layout(comm, n, n * comm.size());
             mat_layout = square_matrix_layout(vec_layout);
         }
 
-        void run()
-        {
+        void run() {
             UTOPIA_RUN_TEST(axpy_test);
             UTOPIA_RUN_TEST(e_div_test);
             UTOPIA_RUN_TEST(e_mul_test);
@@ -55,17 +50,16 @@ namespace utopia {
             UTOPIA_RUN_TEST(rotate_test);
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
             UTOPIA_RUN_TEST(mat_vec_multiply_test);
-            //UTOPIA_RUN_TEST(vec_add_add_add_test);
+            // UTOPIA_RUN_TEST(vec_add_add_add_test);
             // UTOPIA_RUN_TEST(convert_test);
-        //    UTOPIA_RUN_TEST(convert_test);
-         //   UTOPIA_RUN_TEST(emul_test);
+            //    UTOPIA_RUN_TEST(convert_test);
+            //   UTOPIA_RUN_TEST(emul_test);
 
             // FIXME (mem allocs)
 
             // Seq. fault
             // UTOPIA_RUN_TEST(mat_transp_mult_test);
         }
-
 
         // void convert_test()
         // {
@@ -84,9 +78,8 @@ namespace utopia {
         //         }
         //     #endif
         // }
-        void convert_test()
-        {
-            //FIXME create converts for Trilinos then enable this
+        void convert_test() {
+            // FIXME create converts for Trilinos then enable this
             // Vector old_vec = local_zeros(10);
             // Vector ut_vec  = local_zeros(10);
 
@@ -98,9 +91,7 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_END();
         }
 
-
-        void vec_add_add_add_test()
-        {
+        void vec_add_add_add_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 2.0);
             Vector z(vec_layout, 3.0);
@@ -114,18 +105,17 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-
-        void mat_transp_mult_test()
-        {
-            Matrix H; H.sparse(mat_layout, 3, 2);
+        void mat_transp_mult_test() {
+            Matrix H;
+            H.sparse(mat_layout, 3, 2);
             assemble_laplacian_1D(H);
             Matrix D = diag(diag(H));
             H = H + transpose(H) - D;
         }
 
-        void mat_vec_multiply_test()
-        {
-            Matrix H; H.sparse(mat_layout, 3, 2);
+        void mat_vec_multiply_test() {
+            Matrix H;
+            H.sparse(mat_layout, 3, 2);
             assemble_laplacian_1D(H);
 
             Vector x(vec_layout, 1.0);
@@ -136,13 +126,11 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_END();
 
             UTOPIA_NO_ALLOC_BEGIN("mat_vec_multiply_test2");
-            y = H*x;
+            y = H * x;
             UTOPIA_NO_ALLOC_END();
-
         }
 
-        void emul_test()
-        {
+        void emul_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 10.0);
             Vector z(vec_layout, 10.0);
@@ -153,16 +141,12 @@ namespace utopia {
             z = e_mul(x, y);
             UTOPIA_NO_ALLOC_END();
 
-
             UTOPIA_NO_ALLOC_BEGIN("emul2_test");
             y = scaling_param * e_mul(x, y);
             UTOPIA_NO_ALLOC_END();
         }
 
-
-
-        void negate_test()
-        {
+        void negate_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 10.0);
 
@@ -175,13 +159,13 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-        void mv_test()
-        {
+        void mv_test() {
             Vector x(vec_layout, 1.0);
             Vector b(vec_layout, 1.0);
             Vector p(vec_layout, 1.0);
 
-            Matrix A; A.sparse(mat_layout, 3, 3);
+            Matrix A;
+            A.sparse(mat_layout, 3, 3);
             assemble_laplacian_1D(A);
 
             UTOPIA_NO_ALLOC_BEGIN("mv_test1");
@@ -208,8 +192,9 @@ namespace utopia {
             p = 0.5 * b - A * x;
             UTOPIA_NO_ALLOC_END();
 
-            //This will always create a copy (A * x needs to put the result somewhere, unless the backend specialization is used and does not allocate anything)
-            //a better way would be to use a third vector p = b - A * x;
+            // This will always create a copy (A * x needs to put the result somewhere, unless the backend
+            // specialization is used and does not allocate anything) a better way would be to use a third vector p = b -
+            // A * x;
             b = b - A * x;
 
             UTOPIA_NO_ALLOC_BEGIN("mv_test7");
@@ -217,22 +202,22 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-        void mat_copy()
-        {
-
-            Matrix I; I.identity(mat_layout);
-            Matrix D; D.identity(mat_layout);
+        void mat_copy() {
+            Matrix I;
+            I.identity(mat_layout);
+            Matrix D;
+            D.identity(mat_layout);
             Vector v = diag(I);
 
             // I do not know how relevant are these tests, as sparsity pattern might be different...
-            //create same_sparsity_copy()
+            // create same_sparsity_copy()
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy1");
-            //FIME
+            // FIME
             // D = I;
             // UTOPIA_NO_ALLOC_END();
 
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy2");
-            //FIXME this it is equivalent to making a copy (but it could be treated as an AXPY)
+            // FIXME this it is equivalent to making a copy (but it could be treated as an AXPY)
             D = -1.0 * I;
             D = -I;
             // UTOPIA_NO_ALLOC_END();
@@ -246,77 +231,67 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
 
             UTOPIA_NO_ALLOC_BEGIN("mat_copy5");
-            D += 5.0*D;
+            D += 5.0 * D;
             UTOPIA_NO_ALLOC_END();
 
             D += Matrix(diag(v));
 
-            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");//
-            //https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
-            D += diag(v); //bad way D += Matrix(diag(v));
+            UTOPIA_NO_ALLOC_BEGIN("mat_copy5");  //
+            // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
+            D += diag(v);  // bad way D += Matrix(diag(v));
             UTOPIA_NO_ALLOC_END();
 
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy6");
-            //FIME still creates a temporary (but now it is just a vector)
-            D -= diag(v); //bad way D -= Matrix(diag(v));
+            // FIME still creates a temporary (but now it is just a vector)
+            D -= diag(v);  // bad way D -= Matrix(diag(v));
             // UTOPIA_NO_ALLOC_END();
         }
 
-
-        void e_mul_test()
-        {
+        void e_mul_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 2.0);
             Vector z(vec_layout, 0.0);
 
-
             Matrix D = diag(z);
-
 
             UTOPIA_NO_ALLOC_BEGIN("e_mul_test");
             z = e_mul(x, y);
             UTOPIA_NO_ALLOC_END();
-            utopia_test_assert(approxeq(sum(z), 2*x.size()));
+            utopia_test_assert(approxeq(sum(z), 2 * x.size()));
         }
 
-
-        void max_min_test()
-        {
+        void max_min_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 2.0);
             Vector z(vec_layout, 0.0);
 
             UTOPIA_NO_ALLOC_BEGIN("max_min_test1");
-            z = utopia::max(x,y);
+            z = utopia::max(x, y);
             UTOPIA_NO_ALLOC_END();
-            utopia_test_assert(approxeq(sum(z), 2*x.size()));
+            utopia_test_assert(approxeq(sum(z), 2 * x.size()));
 
             UTOPIA_NO_ALLOC_BEGIN("max_min_test2");
-            z = utopia::min(x,y);
+            z = utopia::min(x, y);
             UTOPIA_NO_ALLOC_END();
             utopia_test_assert(approxeq(sum(z), x.size()));
 
             UTOPIA_NO_ALLOC_BEGIN("max_min_test3");
-            z = utopia::max(utopia::min(x,y), y);
+            z = utopia::max(utopia::min(x, y), y);
             UTOPIA_NO_ALLOC_END();
 
-            utopia_test_assert(approxeq(sum(z), 2*x.size()));
-
+            utopia_test_assert(approxeq(sum(z), 2 * x.size()));
         }
 
-
-        void reciprocal_test()
-        {
+        void reciprocal_test() {
             Vector x(vec_layout, 2.0);
 
             UTOPIA_NO_ALLOC_BEGIN("reciprocal_test");
-            x = 1./x;
+            x = 1. / x;
             UTOPIA_NO_ALLOC_END();
-            utopia_test_assert(approxeq(sum(x), 0.5*x.size()));
+            utopia_test_assert(approxeq(sum(x), 0.5 * x.size()));
         }
 
-        void e_div_test()
-        {
+        void e_div_test() {
             Vector x(vec_layout, 6.0);
             Vector z(vec_layout, 3.0);
 
@@ -324,36 +299,30 @@ namespace utopia {
             z = x / z;
 
             Scalar sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 2.0*x.size()));
+            utopia_test_assert(approxeq(sum_z, 2.0 * x.size()));
             z = x / x;
             sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0*x.size()));
+            utopia_test_assert(approxeq(sum_z, 1.0 * x.size()));
 
             z = z / x;
             sum_z = sum(z);
-            utopia_test_assert(approxeq(sum_z, 1.0/6.0*x.size()));
+            utopia_test_assert(approxeq(sum_z, 1.0 / 6.0 * x.size()));
 
             UTOPIA_NO_ALLOC_END();
         }
 
-        void transform_test()
-        {
+        void transform_test() {
             Vector x(vec_layout, 1.0);
 
-            parallel_transform(
-                x,
-                UTOPIA_LAMBDA(const SizeType &i, const Scalar &v) -> Scalar {
-                    return (i+1)*v;
-            });
+            parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &v)->Scalar { return (i + 1) * v; });
 
-            Scalar expected = ((x.size() + 1) * x.size())/2.0;
+            Scalar expected = ((x.size() + 1) * x.size()) / 2.0;
             Scalar sum_x = sum(x);
 
             utopia_test_assert(approxeq(sum_x, expected, 1e-10));
         }
 
-        void negate_alpha_test()
-        {
+        void negate_alpha_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 1.0);
 
@@ -362,8 +331,7 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-        void quad_form_test()
-        {
+        void quad_form_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 2.0);
 
@@ -374,11 +342,11 @@ namespace utopia {
             utopia_test_assert(approxeq(val, 0.0));
         }
 
-        void residual_test()
-        {
+        void residual_test() {
             Vector x(vec_layout, 1.0);
             Vector b(vec_layout, 1.0);
-            Matrix A; A.sparse(mat_layout, 3, 3);
+            Matrix A;
+            A.sparse(mat_layout, 3, 3);
             Vector r(vec_layout, 0.0);
 
             UTOPIA_NO_ALLOC_BEGIN("residual_test");
@@ -386,8 +354,7 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-        void axpy_test()
-        {
+        void axpy_test() {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, 1.0);
             Vector p(vec_layout, 2.0);
@@ -402,31 +369,28 @@ namespace utopia {
             x = x + 0.5 * p;
             UTOPIA_NO_ALLOC_END();
             Scalar val = sum(x);
-            utopia_test_assert(approxeq(val, x.size()*2.0));
+            utopia_test_assert(approxeq(val, x.size() * 2.0));
 
             UTOPIA_NO_ALLOC_BEGIN("axpy_test2");
             x.set(2.0);
             y.set(1.0);
-            x = y + 0.5*x;
+            x = y + 0.5 * x;
             UTOPIA_NO_ALLOC_END();
             val = sum(x);
-            utopia_test_assert(approxeq(val, x.size()*2.0));
+            utopia_test_assert(approxeq(val, x.size() * 2.0));
         }
 
-        void for_each_loop_test()
-        {
+        void for_each_loop_test() {
             Vector x(vec_layout, 2.);
             Vector y(vec_layout, 1.);
             Vector z(vec_layout, 0.);
 
-
-           {
+            {
                 auto d_x = const_device_view(x);
                 auto d_y = const_device_view(y);
                 auto d_z = device_view(z);
 
-                parallel_for(z.range_device(), UTOPIA_LAMBDA(const SizeType i)
-                {
+                parallel_for(z.range_device(), UTOPIA_LAMBDA(const SizeType i) {
                     const Scalar xi = d_x.get(i);
                     const Scalar yi = d_y.get(i);
                     d_z.set(i, xi - yi);
@@ -437,8 +401,7 @@ namespace utopia {
             utopia_test_assert(approxeq(Scalar(x.size()), sum_z));
         }
 
-        void parallel_each_write_test()
-        {
+        void parallel_each_write_test() {
             Vector x(vec_layout, 2.);
             Vector y(vec_layout, 1.);
             Vector z(vec_layout, 0.);
@@ -448,8 +411,7 @@ namespace utopia {
                 auto d_y = const_device_view(y);
                 auto d_z = device_view(z);
 
-                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-                {
+                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i)->Scalar {
                     const Scalar xi = d_x.get(i);
                     const Scalar yi = d_y.get(i);
                     return xi - yi;
@@ -460,26 +422,20 @@ namespace utopia {
             utopia_test_assert(approxeq(Scalar(x.size()), sum_z));
         }
 
-        void multi_reduce_test()
-        {
+        void multi_reduce_test() {
             Vector x(vec_layout, 2.);
             Vector y(vec_layout, 1.);
 
-            each_write(x, [](const SizeType &i) -> Scalar {
-                return -(i + 1.0);
-            });
+            each_write(x, [](const SizeType &i) -> Scalar { return -(i + 1.0); });
 
-            each_write(y, [](const SizeType &i) -> Scalar {
-                return (i + 1.0);
-            });
+            each_write(y, [](const SizeType &i) -> Scalar { return (i + 1.0); });
 
             const Scalar m = multi_min(x, y);
             utopia_test_assert(approxeq(m, Scalar(-x.size())));
         }
 
-        void multi_axpy()
-        {
-            //Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
+        void multi_axpy() {
+            // Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
             Vector a(vec_layout, 2.);
             Vector b(vec_layout, 2.);
             Vector c(vec_layout, 2.);
@@ -491,41 +447,43 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-        void inv_diag()
-        {
-            Matrix H; H.sparse(mat_layout, 3, 2);
+        void inv_diag() {
+            Matrix H;
+            H.sparse(mat_layout, 3, 2);
             Vector d(vec_layout, 0.0);
 
             assemble_laplacian_1D(H);
 
             UTOPIA_NO_ALLOC_BEGIN("inv_diag");
-            d = 1./diag(H);
+            d = 1. / diag(H);
             UTOPIA_NO_ALLOC_END();
         }
 
-        void comp_mat()
-        {
-            Matrix H1; H1.identity(mat_layout);
-            Matrix H2; H2.identity(mat_layout, 2.0);
-            Matrix H3; H3.identity(mat_layout, 3.0);
+        void comp_mat() {
+            Matrix H1;
+            H1.identity(mat_layout);
+            Matrix H2;
+            H2.identity(mat_layout, 2.0);
+            Matrix H3;
+            H3.identity(mat_layout, 3.0);
             Matrix R = H1;
 
-            if(Traits::Backend == PETSC) {
+            if (Traits::Backend == PETSC) {
                 UTOPIA_NO_ALLOC_BEGIN("comp_mat");
                 R = H3 + H1 * H2;
                 UTOPIA_NO_ALLOC_END();
             } else {
-                //FIXME
+                // FIXME
                 R = H3 + H1 * H2;
             }
 
-            Matrix Id; Id.identity(mat_layout, 5.0);
+            Matrix Id;
+            Id.identity(mat_layout, 5.0);
 
             utopia_test_assert(approxeq(Id, R));
         }
 
-        void bratu_grad()
-        {
+        void bratu_grad() {
             Vector result(vec_layout, 0.0);
             Vector x(vec_layout, 0.0);
 
@@ -534,36 +492,34 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
 
             UTOPIA_NO_ALLOC_BEGIN("bratu_grad2");
-            result = x - (0.5 * 0.2* exp(x));
+            result = x - (0.5 * 0.2 * exp(x));
             UTOPIA_NO_ALLOC_END();
         }
 
-        void diag_mult()
-        {
-            //FIXME
-            if(Traits::Backend == PETSC) {
-
+        void diag_mult() {
+            // FIXME
+            if (Traits::Backend == PETSC) {
                 Vector d(vec_layout, 2);
-                Matrix B; B.identity(mat_layout, 2);
-                Matrix T; T.sparse(mat_layout, 1, 0);
+                Matrix B;
+                B.identity(mat_layout, 2);
+                Matrix T;
+                T.sparse(mat_layout, 1, 0);
 
                 // UTOPIA_NO_ALLOC_BEGIN("diag_mult");
-                T = diag(1./d) * B;
+                T = diag(1. / d) * B;
                 // UTOPIA_NO_ALLOC_END();
 
-                Matrix Id; Id.identity(mat_layout);
+                Matrix Id;
+                Id.identity(mat_layout);
                 utopia_test_assert(approxeq(Id, T));
-
             }
         }
 
-        void rotate_test()
-        {
+        void rotate_test() {
             Vector x1(vec_layout, 1.0);
             Vector x2(vec_layout, 2.0);
             Vector x3(vec_layout, 3.0);
             Vector x4(vec_layout, 3.0);
-
 
             std::vector<Vector> vecs(4);
             vecs[0] = x1;
@@ -571,14 +527,13 @@ namespace utopia {
             vecs[2] = x3;
             vecs[3] = x4;
 
-            //testing that move operations are implemented
+            // testing that move operations are implemented
             UTOPIA_NO_ALLOC_BEGIN("rotate_test");
             std::rotate(vecs.begin(), vecs.begin() + 1, vecs.end());
             UTOPIA_NO_ALLOC_END();
         }
 
-        void e_pseudo_inv_test()
-        {
+        void e_pseudo_inv_test() {
             Vector x1, x2;
 
             x1.values(vec_layout, 1.0);
@@ -592,13 +547,12 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
-        Layout       vec_layout;
+        Layout vec_layout;
         MatrixLayout mat_layout;
     };
 
-    void expr()
-    {
-        auto n_dofs     = 10;
+    void expr() {
+        auto n_dofs = 10;
 #ifdef WITH_PETSC
         PetscCommunicator petsc_comm;
         ExpressionTests<PetscMatrix, PetscVector>(petsc_comm, n_dofs).run();
@@ -608,7 +562,6 @@ namespace utopia {
         TrilinosCommunicator trilinos_comm;
         ExpressionTests<TpetraMatrixd, TpetraVectord>(trilinos_comm, n_dofs).run();
 #endif
-
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(expr);

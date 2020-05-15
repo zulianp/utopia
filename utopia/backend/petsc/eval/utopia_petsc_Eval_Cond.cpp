@@ -10,4 +10,4 @@ namespace utopia {
     template class Cond<PetscMatrix, PETSC>;
 }  // namespace utopia
 
-#endif //WITH_SLEPC
+#endif  // WITH_SLEPC

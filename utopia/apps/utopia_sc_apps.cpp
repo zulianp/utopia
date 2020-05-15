@@ -73,8 +73,6 @@
 // #endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
 // #endif //WITH_PETSC
 
-
-
 // namespace utopia {
 
 //     static void sc_mesh()
@@ -91,7 +89,6 @@
 //         // using Point            = utopia::StaticVector<double, 2>;
 //         // using Grad             = utopia::StaticVector<double, 2>;
 //         using ElementMatrix    = utopia::StaticMatrix<double, 4, 4>;
-
 
 //         TrilinosCommunicator world;
 
@@ -117,7 +114,6 @@
 //         FunctionSpace space(mesh);
 //         auto space_view = space.view_device();
 //         auto q_view     = quadrature.view_device();
-
 
 //         Graph<Mesh> graph;
 //         graph.init(mesh);
@@ -223,7 +219,6 @@
 
 //         rename("Lx", x);
 //         write("LapX.m", x);
-
 
 //         rename("Lr", poisson.rhs());
 //         write("LapR.m", poisson.rhs());

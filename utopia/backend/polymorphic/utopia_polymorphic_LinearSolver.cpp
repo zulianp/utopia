@@ -1,5 +1,5 @@
-#include "utopia_polymorphic_LinearSolver_impl.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_polymorphic_LinearSolver_impl.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_LinearSolverFactory.hpp"

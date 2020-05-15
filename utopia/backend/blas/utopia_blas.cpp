@@ -3,7 +3,7 @@
 #include "utopia_ConjugateGradient_impl.hpp"
 #include "utopia_blas_Vector.hpp"
 
-//explicit instantiations
+// explicit instantiations
 namespace utopia {
     template class BiCGStab<BlasMatrixd, BlasVectord, HOMEMADE>;
     template class ConjugateGradient<BlasMatrixd, BlasVectord>;

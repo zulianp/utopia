@@ -12,7 +12,6 @@
 //     template class FunctionSpace<PetscDM<2>, 3, PetscUniformQuad4>;
 //     template class FunctionSpace<PetscDM<3>, 4, PetscUniformHex8>;
 
-
 //     /////////////////////////////////////////////////////////////////
 
 //     template class FunctionSpace<PetscDM<2>, 1, Tri3<PetscScalar, 2>>;

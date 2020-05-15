@@ -1,12 +1,10 @@
 #include "utopia_MPI.hpp"
 
-
 #ifdef WITH_MPI
 
 #include <mpi.h>
 
-namespace utopia
-{
+namespace utopia {
     /** \addtogroup MPI
      * @brief MPI based routines.
      * @ingroup parallel_expressions
@@ -18,13 +16,11 @@ namespace utopia
      *
      * @return     MPI_COMM_WORLD size.
      */
-    SizeType mpi_world_size()
-    {
+    SizeType mpi_world_size() {
         int size;
         MPI_Comm_size(MPI_COMM_WORLD, &size);
         return size;
     }
-
 
     /**
      * @ingroup 	MPI
@@ -32,46 +28,28 @@ namespace utopia
      *
      * @return     The rank on given processor.
      */
-    SizeType mpi_world_rank()
-    {
+    SizeType mpi_world_rank() {
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         return rank;
     }
-
 
     /**
      * @ingroup 	MPI
      * @brief      	Blocks until all processes in the MPI_COMM_WORLD communicator have reached this routine.
      *
      */
-    void mpi_world_barrier()
-    {
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-}
+    void mpi_world_barrier() { MPI_Barrier(MPI_COMM_WORLD); }
+}  // namespace utopia
 
 #else
-namespace utopia
-{
+namespace utopia {
 
-    SizeType mpi_world_size()
-    {
-        return 1;
-    }
+    SizeType mpi_world_size() { return 1; }
 
-    SizeType mpi_world_rank()
-    {
-        return 0;
-    }
+    SizeType mpi_world_rank() { return 0; }
 
-    void mpi_world_barrier()
-    {
+    void mpi_world_barrier() {}
+}  // namespace utopia
 
-    }
-}
-
-#endif //WITH_MPI
-
-
-
+#endif  // WITH_MPI
