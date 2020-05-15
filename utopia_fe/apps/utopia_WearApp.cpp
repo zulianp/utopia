@@ -211,7 +211,7 @@ namespace utopia {
     public:
         virtual ~ContactSimulation() {}
 
-        virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override {
+        bool init(libMesh::Parallel::Communicator &comm, Input &is) override {
             bool ok = true;
             if (!ElasticitySimulation::init(comm, is)) {
                 ok = false;
@@ -271,7 +271,7 @@ namespace utopia {
             return true;
         }
 
-        virtual void describe(std::ostream &os) const override {
+        void describe(std::ostream &os) const override {
             ElasticitySimulation::describe(os);
             contact_params.describe(os);
         }
