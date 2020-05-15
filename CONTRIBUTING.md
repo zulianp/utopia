@@ -1,6 +1,7 @@
 ### Pull Request Checklist
 
 Before a PR can be merged, it should satisfy the following:
+
 - [ ] Synchronize with target branch.
 - [ ] Resolve all conflicts with target branch.
 - [ ] Code builds using `make complete`.
