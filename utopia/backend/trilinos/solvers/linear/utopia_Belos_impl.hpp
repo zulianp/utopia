@@ -204,8 +204,8 @@ namespace utopia {
         std::string exotic = "";
         in.get("exotic", exotic);
 
-        if (!exotic.empty()) {
-        }
+        // if (!exotic.empty()) {
+        // }
 
         if (impl_->param_list.is_null()) {
             impl_->param_list = Teuchos::parameterList();
