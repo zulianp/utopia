@@ -69,7 +69,9 @@ namespace utopia {
             instance().maintenance_logger().flush();
         }
 
-        CitationsDB::print();
+        if (instance().get("citations") == "true") {
+            CitationsDB::print();
+        }
 
 #ifdef WITH_TRILINOS
         Tpetra::finalize();
@@ -130,11 +132,17 @@ namespace utopia {
     }
 
     void Utopia::read_input(int argc, char *argv[]) {
+        instance().set("citations", "true");
+
         for (int i = 1; i < argc; i++) {
             std::string str(argv[i]);
 
             if (str == "-verbose") {
                 instance().set("verbose", "true");
+            }
+
+            if (str == "--no_citations") {
+                instance().set("citations", "false");
             }
 
 #ifdef ENABLE_NO_ALLOC_REGIONS
