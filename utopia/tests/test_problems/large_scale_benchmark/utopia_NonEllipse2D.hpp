@@ -89,7 +89,6 @@ namespace utopia {
             // initialization of gradient vector...
             if (empty(g)) {
                 g.zeros(layout(x));
-                ;
             }
 
             // Vector rhs;

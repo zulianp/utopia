@@ -586,4 +586,12 @@ namespace utopia {
         update_mirror();
     }
 
+    void PetscVector::unwrap(Vec &v) const {
+        if (this->raw_type() == v) {
+            return;
+        }
+
+        copy_data_to(v);
+    }
+
 }  // namespace utopia
