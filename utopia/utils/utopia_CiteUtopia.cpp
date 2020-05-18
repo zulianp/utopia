@@ -12,7 +12,6 @@ namespace utopia {
             "\t          Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau and Rolf Krause},\n"
             "\ttitle = {{U}topia: {A} {C}++ embedded domain specific language for scientific computing. {G}it "
             "repository},\n"
-            "\turl = {https://bitbucket.org/zulianp/utopia},\n"
             "\thowpublished = {https://bitbucket.org/zulianp/utopia},\n"
             "\tyear = {2016},\n"
             "}\n");

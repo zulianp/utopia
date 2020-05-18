@@ -156,6 +156,11 @@ If you use Utopia for your research please use the following bibtex entry (or eq
 }
 ```
 
+Several components are the outcome of specific authors' research work.  For citing individual components add `--citations` to your run. For instance, 
+```
+./my_app --citations
+```
+
 ## Docker containers
 A docker container based on Alpine-Linux can be be found at https://hub.docker.com/r/utopiadev/utopia and downloaded with `docker pull utopiadev/utopia`. For the moment only `utopia-petsc` is supported for this container. 
 You can use `docker image ls` to find the image and run it with `docker run -v <host_file_directory>:<image_file_directory> -it <image_hash>`, for instance  `docker run -v ~Desktop/my_mesh_files:/my_mesh_files -it <image_hash>`

@@ -14,9 +14,6 @@ int main(const int argc, char *argv[]) {
 
     Utopia::Init(argc, argv);
 
-    // no cite message for tests
-    Utopia::instance().set("citations", "false");
-
     {
         bool run_tests = true;
 

@@ -132,7 +132,7 @@ namespace utopia {
     }
 
     void Utopia::read_input(int argc, char *argv[]) {
-        instance().set("citations", "true");
+        instance().set("citations", "false");
 
         for (int i = 1; i < argc; i++) {
             std::string str(argv[i]);
@@ -143,6 +143,10 @@ namespace utopia {
 
             if (str == "--no_citations") {
                 instance().set("citations", "false");
+            }
+
+            if (str == "--citations") {
+                instance().set("citations", "true");
             }
 
 #ifdef ENABLE_NO_ALLOC_REGIONS
