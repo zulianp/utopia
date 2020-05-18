@@ -452,6 +452,14 @@ namespace utopia {
             //        disp(D);
             //        disp(x);
             utopia_test_assert(approxeq(d, D * x));
+
+            D = diag(A);
+
+            const double val_3 = norm1(D);
+
+            if (!approxeq(val_3, size(A).get(1) * 1.)) {
+                m_utopia_error("diag does not work on for tpetra rectangular matrices in parallel (nor serial)");
+            }
         }
 
         void trilinos_diag_rect_matrix() {
@@ -1408,6 +1416,38 @@ namespace utopia {
             TpetraMatrixd A = utopia::crs(n_rows, n_cols, row_ptr, columns, values);
         }
 
+        void trilinos_swap() {
+            auto n = 10;
+            TpetraVectord x(layout(comm_, n, Traits::determine()), 5.);
+            TpetraMatrixd m;
+            m.sparse(layout(comm_, n, n, Traits::determine(), Traits::determine()), 3, 2);
+            assemble_laplacian_1D(m);
+
+            TpetraVectord y = m * x;
+
+            const double val = norm2(y);
+            utopia_test_assert(approxeq(val, 0.));
+
+            TpetraMatrixd m2;
+            m2.swap(m);
+
+            y = m2 * x;
+
+            const double val_2 = norm2(y);
+            utopia_test_assert(approxeq(val_2, 0.));
+        }
+
+        void trilinos_copy_null() {
+            TpetraVectord v1, v2;
+            TpetraMatrixd m1, m2;
+
+            v1 = v2;
+            m1 = m2;
+
+            utopia_test_assert(empty(v1));
+            utopia_test_assert(empty(m1));
+        }
+
         void run() {
             UTOPIA_RUN_TEST(stcg_pt_test);
             UTOPIA_RUN_TEST(trilinos_structure);
@@ -1466,6 +1506,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_rap_square_mat);
             UTOPIA_RUN_TEST(trilinos_decompose);
             UTOPIA_RUN_TEST(test_global_matrix);
+            UTOPIA_RUN_TEST(trilinos_swap);
+            UTOPIA_RUN_TEST(trilinos_copy_null);
 
 #ifdef HAVE_BELOS_TPETRA
             UTOPIA_RUN_TEST(trilinos_belos);
