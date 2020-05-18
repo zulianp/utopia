@@ -2,16 +2,16 @@
 #define UTOPIA_BLAS_FORWARD_DECLARATIONS_HPP
 
 namespace utopia {
-	template<typename T>
-	class BlasMatrix;
+    template <typename T>
+    class BlasMatrix;
 
-	template<typename T>
-	class BlasVector;
+    template <typename T>
+    class BlasVector;
 
-	template<typename T>
-	class BlasArray;
+    template <typename T>
+    class BlasArray;
 
-	class BlasIndexSet;
-}
+    class BlasIndexSet;
+}  // namespace utopia
 
-#endif //UTOPIA_BLAS_FORWARD_DECLARATIONS_HPP
+#endif  // UTOPIA_BLAS_FORWARD_DECLARATIONS_HPP

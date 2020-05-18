@@ -4,8 +4,7 @@
 
 namespace utopia {
 
-    void MeshParamSmoother::read(Input &is)
-    {
+    void MeshParamSmoother::read(Input &is) {
         is.get("operator-power", operator_power_);
 
         is.get("boundaries", [this](Input &in) {
@@ -18,13 +17,11 @@ namespace utopia {
         });
     }
 
-    static void constrain_p1_nodes_and_zero_out_p2(
-        const libMesh::MeshBase &mesh,
-        const libMesh::DofMap &dof_map,
-        // LibMeshFunctionSpace &V,
-        USparseMatrix &op,
-        std::vector<UVector> &rhs)
-    {
+    static void constrain_p1_nodes_and_zero_out_p2(const libMesh::MeshBase &mesh,
+                                                   const libMesh::DofMap &dof_map,
+                                                   // LibMeshFunctionSpace &V,
+                                                   USparseMatrix &op,
+                                                   std::vector<UVector> &rhs) {
         // auto &mesh = V.mesh();
         // auto &dof_map = V.dof_map();
         const auto spatial_dim = mesh.spatial_dimension();
@@ -37,33 +34,32 @@ namespace utopia {
         {
             Write<UVector> wi(is_constrained);
 
-            for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
+            for (auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
                 auto &e = **e_it;
 
-                for(unsigned int node_i = 0; node_i < e.n_nodes(); node_i++) {
-                    const libMesh::Node * node = e.node_ptr(node_i);
+                for (unsigned int node_i = 0; node_i < e.n_nodes(); node_i++) {
+                    const libMesh::Node *node = e.node_ptr(node_i);
                     const auto dof = node->dof_number(0, 0, 0);
 
                     auto idx = dof - rr.begin();
 
-                    if(e.is_vertex(node_i)) {
+                    if (e.is_vertex(node_i)) {
                         is_constrained.set(dof, 1.);
                     }
                 }
             }
         }
 
-        for(auto &r : rhs) {
+        for (auto &r : rhs) {
             r = e_mul(is_constrained, r);
         }
 
         set_zero_rows(op, is_constrained, 1.0);
     }
 
-    static void assemble_laplacian(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, USparseMatrix &op)
-    {
-        //auto &mesh = V.mesh();
-        //auto &dof_map = V.dof_map();
+    static void assemble_laplacian(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map, USparseMatrix &op) {
+        // auto &mesh = V.mesh();
+        // auto &dof_map = V.dof_map();
         const auto dim = mesh.mesh_dimension();
 
         op = sparse({dof_map.n_dofs(), dof_map.n_dofs()}, dof_map.get_n_nz(), dof_map.get_n_oz());
@@ -76,7 +72,7 @@ namespace utopia {
         libMesh::QGauss q_gauss(dim, libMesh::Order(quadrature_order));
         fe->attach_quadrature_rule(&q_gauss);
         auto &dphi = fe->get_dphi();
-        auto &JxW  = fe->get_JxW();
+        auto &JxW = fe->get_JxW();
 
         LMDenseMatrix mat;
         std::vector<libMesh::dof_id_type> dof_indices;
@@ -84,7 +80,7 @@ namespace utopia {
         {
             Write<USparseMatrix> w_op(op, utopia::GLOBAL_ADD);
 
-            for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
+            for (auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
                 auto &e = **e_it;
                 dof_map.dof_indices(&e, dof_indices);
 
@@ -97,9 +93,9 @@ namespace utopia {
                 auto nqp = JxW.size();
                 auto n_shape_funcions = dphi.size();
 
-                for(uint si = 0; si < n_shape_funcions; ++si) {
-                    for(uint sj = 0; sj < n_shape_funcions; ++sj) {
-                        for(uint k = 0; k < nqp; ++k) {
+                for (uint si = 0; si < n_shape_funcions; ++si) {
+                    for (uint sj = 0; sj < n_shape_funcions; ++sj) {
+                        for (uint k = 0; k < nqp; ++k) {
                             mat.add(si, sj, (dphi[si][k] * dphi[sj][k]) * JxW[k]);
                         }
                     }
@@ -110,45 +106,38 @@ namespace utopia {
         }
     }
 
-    static void assemble_laplacian(LibMeshFunctionSpace &V, USparseMatrix &op)
-    {
+    static void assemble_laplacian(LibMeshFunctionSpace &V, USparseMatrix &op) {
         assemble_laplacian(V.mesh(), V.dof_map(), op);
     }
 
-    static void fill_rhs(
-        const libMesh::MeshBase &mesh,
-        const SizeType n_local_dofs,
-        std::vector<UVector> &rhs)
-    {
+    static void fill_rhs(const libMesh::MeshBase &mesh, const SizeType n_local_dofs, std::vector<UVector> &rhs) {
         rhs.resize(n_local_dofs);
 
-        for(auto &r : rhs) {
-          r = local_zeros(n_local_dofs);
+        for (auto &r : rhs) {
+            r = local_zeros(n_local_dofs);
         }
 
         auto spatial_dim = mesh.spatial_dimension();
 
         Write<std::vector<UVector>> w(rhs);
 
-        for(auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
-            auto * node  = *it;
+        for (auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
+            auto *node = *it;
             const auto dof = node->dof_number(0, 0, 0);
 
-            for(int d = 0; d < spatial_dim; ++d) {
+            for (int d = 0; d < spatial_dim; ++d) {
                 rhs[d].set(dof, (*node)(d));
             }
         }
     }
 
-    static void solve_and_compute_displacement(
-        const libMesh::MeshBase &mesh,
-        const libMesh::DofMap &dof_map,
-        const USparseMatrix &lapl_k,
-        const std::vector<UVector> &coords,
-        const std::vector<UVector> &rhs,
-        const USparseMatrix &permutation,
-        std::vector<UVector> &disp)
-    {
+    static void solve_and_compute_displacement(const libMesh::MeshBase &mesh,
+                                               const libMesh::DofMap &dof_map,
+                                               const USparseMatrix &lapl_k,
+                                               const std::vector<UVector> &coords,
+                                               const std::vector<UVector> &rhs,
+                                               const USparseMatrix &permutation,
+                                               std::vector<UVector> &disp) {
         const auto spatial_dim = mesh.spatial_dimension();
 
         Factorization<USparseMatrix, UVector> solver;
@@ -156,7 +145,7 @@ namespace utopia {
 
         std::vector<UVector> sol(spatial_dim);
         disp.resize(spatial_dim);
-        for(int d = 0; d < spatial_dim; ++d) {
+        for (int d = 0; d < spatial_dim; ++d) {
             sol[d] = rhs[d];
             solver.apply(rhs[d], sol[d]);
             disp[d] = permutation * (sol[d] - coords[d]);
@@ -168,14 +157,11 @@ namespace utopia {
         // write("u.m", sol[0]);
     }
 
-    void MeshParamSmoother::apply_aux(
-        const libMesh::MeshBase &surf_mesh,
-        const libMesh::DofMap &surf_dof_map,
-        const USparseMatrix &permutation,
-        const libMesh::DofMap &dof_map,
-        libMesh::MeshBase &mesh
-        )
-    {
+    void MeshParamSmoother::apply_aux(const libMesh::MeshBase &surf_mesh,
+                                      const libMesh::DofMap &surf_dof_map,
+                                      const USparseMatrix &permutation,
+                                      const libMesh::DofMap &dof_map,
+                                      libMesh::MeshBase &mesh) {
         const auto spatial_dim = surf_mesh.spatial_dimension();
 
         USparseMatrix op, lapl_k;
@@ -190,45 +176,32 @@ namespace utopia {
 
         lapl_k = op;
 
-        for(int i = 1; i < operator_power_; ++i) {
+        for (int i = 1; i < operator_power_; ++i) {
             lapl_k *= op;
         }
 
         // lapl_k *= -1.;
 
-        constrain_p1_nodes_and_zero_out_p2(
-               surf_mesh,
-               surf_dof_map,
-               lapl_k,
-               rhs
-        );
+        constrain_p1_nodes_and_zero_out_p2(surf_mesh, surf_dof_map, lapl_k, rhs);
 
         std::vector<UVector> disp;
-        //compute displacement
-        solve_and_compute_displacement(
-            surf_mesh,
-            surf_dof_map,
-            lapl_k,
-            coords,
-            rhs,
-            permutation,
-            disp);
+        // compute displacement
+        solve_and_compute_displacement(surf_mesh, surf_dof_map, lapl_k, coords, rhs, permutation, disp);
 
-        
         Traits<UVector>::IndexArray ghost_nodes;
         convert(dof_map.get_send_list(), ghost_nodes);
         UVector gx = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
 
-        std::vector<PetscInt>    dofs(1);
+        std::vector<PetscInt> dofs(1);
         std::vector<PetscScalar> vals(1);
 
-        for(int i = 0; i < spatial_dim; ++i) {
+        for (int i = 0; i < spatial_dim; ++i) {
             gx = disp[i];
             synchronize(gx);
 
             Read<UVector> r(gx);
-            for(auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
-                auto * node  = *it;
+            for (auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
+                auto *node = *it;
                 dofs[0] = node->dof_number(0, 0, 0);
 
                 gx.get(dofs, vals);
@@ -237,8 +210,7 @@ namespace utopia {
         }
     }
 
-    void MeshParamSmoother::apply(libMesh::MeshBase &mesh)
-    {
+    void MeshParamSmoother::apply(libMesh::MeshBase &mesh) {
         assert(false && "fixme");
         // const auto spatial_dim = mesh.spatial_dimension();
         // const auto mesh_dim    = mesh.mesh_dimension();
@@ -262,4 +234,4 @@ namespace utopia {
         // apply_aux(surf_mesh, surf_dof_map, *adapter.permutation(), V.dof_map(), mesh);
     }
 
-}
+}  // namespace utopia

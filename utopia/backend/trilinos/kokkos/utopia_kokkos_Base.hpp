@@ -3,4 +3,4 @@
 
 #include "utopia_Base.hpp"
 
-#endif //UTOPIA_KOKKOS_BASE_HPP
+#endif  // UTOPIA_KOKKOS_BASE_HPP

@@ -4,6 +4,6 @@
 namespace utopia {
     class Any {};
     class None {};
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FE_UNIVERSAL_TYPE_HPP
+#endif  // UTOPIA_FE_UNIVERSAL_TYPE_HPP

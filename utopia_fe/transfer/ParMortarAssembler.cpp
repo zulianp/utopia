@@ -38,7 +38,6 @@
 //     class UtopiaMesh {
 //     public:
 
-
 //         explicit UtopiaMesh(const moonolith::Communicator &comm) : comm(comm)
 //         {
 //             must_destroy_attached[0] = false;
@@ -55,15 +54,14 @@
 
 //             const int n_elements = master_slave->mesh().n_elem();
 
-//             copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], 101, 102);
+//             copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0],
+//             side_set_id_[0], side_set_id_tag_[0], 101, 102);
 
 //             copy_var_number(*master_slave, var_number_[0]);
 
 //             copy_var_order(*master_slave, var_order_[0]);
 
 //         }
-
-
 
 //         inline std::vector< std::shared_ptr<LibMeshFESpaceBase> > &utopiamesh()
 //         {
@@ -77,7 +75,6 @@
 
 //         }
 
-
 //         inline long n_elements() const
 //         {
 
@@ -86,7 +83,6 @@
 //             return ret;
 
 //         }
-
 
 //         inline std::vector<ElementDofMap> &dof_map()
 //         {
@@ -106,7 +102,6 @@
 //             must_destroy_attached[index] = value;
 //         }
 
-
 //         inline  std::vector<ElementDofMap> &variable_number()
 //         {
 
@@ -119,15 +114,11 @@
 //             return var_number_[0];
 //         }
 
-
-
 //         inline std::vector<ElementDofMap> &variable_order()
 //         {
 
 //             return var_order_[0];
 //         }
-
-
 
 //         inline const std::vector<ElementDofMap> &variable_order() const
 //         {
@@ -135,14 +126,11 @@
 //             return var_order_[0];
 //         }
 
-
 //         inline std::vector<ElementDofMap> &variable_type()
 //         {
 
 //             return var_type_[0];
 //         }
-
-
 
 //         inline const std::vector<ElementDofMap> &variable_type() const
 //         {
@@ -155,13 +143,10 @@
 //             return subdomain_id_[0];
 //         }
 
-
-
 //         inline const std::vector<ElementDofMap> &subdomain_id() const
 //         {
 //             return subdomain_id_[0];
 //         }
-
 
 //         inline std::vector<ElementDofMap> &side_set_id()
 //         {
@@ -169,21 +154,16 @@
 //             return side_set_id_[0];
 //         }
 
-
-
 //         inline const std::vector<ElementDofMap> & side_set_id() const
 //         {
 //             return side_set_id_[0];
 //         }
-
 
 //         inline std::vector<ElementDofMap> &side_set_id_tag()
 //         {
 
 //             return side_set_id_tag_[0];
 //         }
-
-
 
 //         inline const std::vector<ElementDofMap> & side_set_id_tag() const
 //         {
@@ -202,14 +182,14 @@
 //         std::vector<ElementDofMap> side_set_id_tag_[1];
 //         bool must_destroy_attached[1];
 
-
-//         inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, int tag_1, int tag_2)
+//         inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map,
+//         std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id,
+//         std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, int tag_1, int tag_2)
 //         {
 
 //             auto &mesh = space.mesh();
 //             auto &original_dof_map = space.dof_map();
 //             std::vector<dof_id_type> temp;
-
 
 //             MeshBase::const_element_iterator e_it_s = mesh.active_local_elements_begin();
 //             const MeshBase::const_element_iterator e_end_s = mesh.active_local_elements_end();
@@ -218,7 +198,6 @@
 //             subdomain_id.resize(n_elements);
 //             side_set_id.resize(n_elements);
 //             side_set_id_tag.resize(n_elements);
-
 
 //             variable_type.resize(1);
 
@@ -234,7 +213,6 @@
 //             {
 //                 Elem * elem = *e_it_s;
 
-
 //                 bool  check_side_id_one=true;
 //                 bool  check_side_id_one_tag=true;
 //                 bool  check_side_id_one_check=true;
@@ -249,7 +227,9 @@
 
 //                 if (elem->on_boundary()){
 //                     for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
-//                          if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2)) && check_side_id_one_tag==true){
+//                          if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) ||
+//                          mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2)) &&
+//                          check_side_id_one_tag==true){
 //                             side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end()-1,mesh.get_boundary_info().boundary_id(elem,side_elem));
 //                              check_side_id_one_tag=false;
 //                             jj_side_id_one_tag++;
@@ -257,16 +237,14 @@
 //                     }
 //                 }
 
-
-
 //                 for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
 //                     if (check_side_id_one_check==true){
-// //                        std::cout<<"side_set_id[ "<< elem->id() <<" ] = "<<side_set_id[elem->id()].global.at(0)<<std::endl;
+// //                        std::cout<<"side_set_id[ "<< elem->id() <<" ] =
+// "<<side_set_id[elem->id()].global.at(0)<<std::endl;
 //                         check_side_id_one_check=false;
 //                         jj_side_id_one_check++;
 //                     }
 //                 }
-
 
 //                 subdomain_id[elem->id()].global.insert(subdomain_id[elem->id()].global.end(),elem->subdomain_id());
 //                 original_dof_map.dof_indices(elem, temp, 0);
@@ -288,8 +266,6 @@
 
 //         }
 
-
-
 //         inline static void copy_var_number(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &variable_number)
 //         {
 //             variable_number.resize(1);
@@ -302,9 +278,7 @@
 //             variable_order[0].global.push_back(space.order());
 //         }
 
-
 //     };
-
 
 //     template<class Iterator>
 //     static void write_space(
@@ -335,7 +309,6 @@
 
 //                 nodeIds.insert(elem->node(j));
 
-
 //             }
 //         }
 
@@ -362,8 +335,6 @@
 
 // //        std::cout<<"elem write= "<<n_elements<<std::endl;
 
-
-
 //         for(auto node_id : nodeIds){
 
 //             const Point &p = space.mesh().node(node_id);
@@ -381,8 +352,6 @@
 
 //         std::vector<dof_id_type> indices_vector;
 
-
-
 //         for(Iterator it = begin; it != end; ++it) {
 
 //             const int k = *it;
@@ -396,8 +365,6 @@
 //             //WRITE 7
 //             os << type << e_n_nodes;
 
-
-
 //             for (int i = 0; i != e_n_nodes; ++i) {
 
 //                 auto it = mapping.find(elem->node(i));
@@ -410,8 +377,6 @@
 //                 os << index;
 
 //             }
-
-
 
 //             //WRITE 9
 //             assert(!dof_map.at(elem->id()).empty());
@@ -455,22 +420,17 @@
 
 //     }
 
-
 //     template<class Iterator>
-//     static void write_element_selection(const Iterator &begin, const Iterator &end, const UtopiaMesh &utopiamesh, moonolith::OutputStream &os)
+//     static void write_element_selection(const Iterator &begin, const Iterator &end, const UtopiaMesh &utopiamesh,
+//     moonolith::OutputStream &os)
 //     {
-
 
 //         auto m = utopiamesh.utopiamesh()[0];
 
-//         write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), os, 101, 102);
-
-
-
-
+//         write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(),
+//         utopiamesh.subdomain_id(), utopiamesh.side_set_id(), os, 101, 102);
 
 //     }
-
 
 //     static void read_space(moonolith::InputStream &is,
 //                            std::shared_ptr<LibMeshFESpaceBase> &space,
@@ -485,12 +445,10 @@
 //     {
 //         using namespace std;
 
-
 //         //READ 1
 //         int dim;
 //         is >> dim;
 //         //std::cout<<"I am reading the mesh "<<std::endl;
-
 
 //         //READ 2
 //         long n_nodes;
@@ -520,14 +478,11 @@
 
 //         }
 
-
-
 //         dof_map.resize(n_elements);
 
 //         subdomain_id.resize(n_elements);
 
 //         side_set_id.resize(n_elements);
-
 
 //         for(long i = 0; i !=n_elements; ++i) {
 
@@ -543,7 +498,6 @@
 
 //             //std::cout<<"n_side_read ="<< elem->n_sides()<<std::endl;
 
-
 //             int index;
 
 //             for (int ii = 0; ii != e_n_nodes; ++ii) {
@@ -555,7 +509,6 @@
 
 //             }
 
-
 //             //READ 9
 //             is >> dof_map.at(i);
 //             //std::cout<< "dof_map_read = "<<dof_map[i].global.at(0)<<std::endl;
@@ -565,13 +518,11 @@
 //             bool on_boundary=false;
 //             //std::cout<<"read n_elements = "<<n_elements<<std::endl;
 
-
 //             is >> volume_tag;
 
 //             //std::cout<<" read volume role = "<< volume_tag <<std::endl;
 
 //             subdomain_id[i].global.insert(subdomain_id[i].global.end(),volume_tag);
-
 
 // //            bool check_side_id_two=true;
 // //
@@ -593,7 +544,6 @@
 // //            }
 // //
 
-
 //             mesh_ptr->add_elem(elem);
 
 //             libmesh_assert(elem);
@@ -608,10 +558,6 @@
 //         variable_order.resize(1);
 //         is >> variable_order.at(0);
 
-
-
-
-
 //         //EquationSystems es(*mesh_ptr);
 //         // const System & new_sys = es.get_system(0);
 
@@ -620,8 +566,8 @@
 
 //     }
 
-
-//     static void read_spaces(moonolith::InputStream &is, UtopiaMesh &utopiamesh, const libMesh::Parallel::Communicator &comm_mesh)
+//     static void read_spaces(moonolith::InputStream &is, UtopiaMesh &utopiamesh, const libMesh::Parallel::Communicator
+//     &comm_mesh)
 //     {
 
 //         bool has_master, has_slave;
@@ -629,12 +575,12 @@
 
 //         utopiamesh.utopiamesh().resize(1);
 
-//         read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), comm_mesh, 101, 102);
+//         read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(),
+//         utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), comm_mesh, 101, 102);
 
 //         utopiamesh.set_must_destroy_attached(0,true);
 
 //     }
-
 
 //     template<int Dimensions, class Fun>
 //     static bool Assemble(moonolith::Communicator &comm,
@@ -676,7 +622,6 @@
 
 //             i++;
 
-
 //         }
 
 //         auto predicate = std::make_shared<MasterAndSlave>();
@@ -689,7 +634,8 @@
 
 //         auto local_spaces = std::make_shared<UtopiaMesh>(master_slave);
 
-//         for (auto it = master_slave->mesh().active_local_elements_begin(); it!=master_slave->mesh().active_local_elements_end(); ++it) {
+//         for (auto it = master_slave->mesh().active_local_elements_begin();
+//         it!=master_slave->mesh().active_local_elements_end(); ++it) {
 //             auto elem=*it;
 //             int tag = elem->subdomain_id();
 //             Adapter a(mesh, elem->id(), elem->id() , tag);
@@ -742,8 +688,6 @@
 //             CHECK_STREAM_READ_END("vol_proj", in);
 //         };
 
-
-
 //         auto write = [&local_spaces, &utopiamesh, &comm]
 //         (
 //          const long ownerrank, const long recvrank,
@@ -754,11 +698,8 @@
 
 //             CHECK_STREAM_WRITE_BEGIN("vol_proj", out);
 
-
-
 //             if (ownerrank == comm.rank()) {
 //                 write_element_selection(begin, end, *local_spaces, out);
-
 
 //             } else {
 //                 auto it = utopiamesh.find(ownerrank);
@@ -768,8 +709,6 @@
 //                 write_element_selection(begin, end, *spaceptr, out);
 
 //             }
-
-
 
 //             CHECK_STREAM_WRITE_END("vol_proj", out);
 
@@ -797,7 +736,6 @@
 
 //         long n_total_candidates = n_intersections + n_false_positives;
 
-
 //         long n_collection[3] = {n_intersections, n_total_candidates, n_false_positives};
 //         comm.all_reduce(n_collection, 3, moonolith::MPISum());
 
@@ -809,7 +747,6 @@
 
 //         return true;
 //     }
-
 
 //     template<int Dimensions>
 //     bool Assemble(
@@ -828,25 +765,21 @@
 //         typedef Intersector::Scalar Scalar;
 //         std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
 
-
-
 //         std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
 //         libMesh::DenseMatrix<libMesh::Real> elemmat;
 //         libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
 
-
 //         std::shared_ptr<Transform> src_trans;
 //         std::shared_ptr<Transform> dest_trans;
 
-
 //         int skip_zeros = 1;
-
 
 //         libMesh::Real total_intersection_volume = 0.0;
 //         libMesh::Real local_element_matrices_sum = 0.0;
 
 //         //
-//         //		moonolith::SparseMatrix<double> mat_buffer(slave->dof_map().n_dofs(), master->dof_map().n_dofs());
+//         //		moonolith::SparseMatrix<double> mat_buffer(slave->dof_map().n_dofs(),
+//         master->dof_map().n_dofs());
 
 //         bool intersected = false;
 
@@ -857,15 +790,11 @@
 
 //             bool pair_intersected = false;
 
-
-
 //             // const auto &src  = master.space();
 //             // const auto &dest = slave.space();
 
-
 //             const auto &src_mesh  = master.space();
 //             const auto &dest_mesh = slave.space();
-
 
 //             // const auto &src_mesh  = src.mesh();
 //             // const auto &dest_mesh = dest.mesh();
@@ -878,12 +807,8 @@
 //             auto &src_el  = *src_mesh.elem(src_index);
 //             auto &dest_el = *dest_mesh.elem(dest_index);
 
-
 //             const int dim_src = src_mesh.mesh_dimension();
 //             const int dim_sla = dest_mesh.mesh_dimension();
-
-
-
 
 //             if(dim_src == 2)  {
 //                 make_polygon(src_el,   src_pts);
@@ -911,7 +836,6 @@
 
 //             if(pair_intersected) {
 
-
 //                 return true;
 
 //             } else {
@@ -932,14 +856,12 @@
 
 //         moonolith::SearchSettings settings;
 
-
 //         moonolith::Communicator comm = libmesh_comm_.get();
 
 //         if(master_slave_->mesh().mesh_dimension() == 2) {
 //             //std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
 //             return utopia::Assemble<2>(comm, master_slave_, B, settings);
 //         }
-
 
 //         if(master_slave_->mesh().mesh_dimension() == 3) {
 //             return utopia::Assemble<3>(comm, master_slave_, B, settings);
@@ -948,7 +870,6 @@
 //         assert(false && "Dimension not supported!");
 //         return false;
 //     }
-
 
 //     template<int Dimensions, class Fun>
 //     static bool SurfaceAssemble(moonolith::Communicator &comm,
@@ -1015,8 +936,10 @@
 //             bool check_size=false;
 
 //             for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
-//                 if ((predicate->select(master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem))) && check_size==false){
-//                     SurfaceAdapter a(mesh, elem->id(), elem->id(), master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem), search_radius);
+//                 if ((predicate->select(master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem))) &&
+//                 check_size==false){
+//                     SurfaceAdapter a(mesh, elem->id(), elem->id(),
+//                     master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem), search_radius);
 //                     assert(!local_spaces->dof_map()[elem->id()].empty());
 //                     a.set_dof_map(&local_spaces->dof_map()[elem->id()].global);
 //                     tree->insert(a);
@@ -1034,7 +957,6 @@
 //         //Just to have an indexed-storage
 //         std::map<long, std::shared_ptr<UtopiaMesh> > utopiamesh;
 //         std::map<long, std::vector<std::shared_ptr<UtopiaMesh> > > migrated_meshes;
-
 
 //         auto read = [&utopiamesh, &migrated_meshes, block_id, comm, &libmesh_comm_mesh, search_radius]
 //         (
@@ -1100,7 +1022,8 @@
 
 //         long n_false_positives = 0, n_projections = 0;
 
-//         auto fun = [&n_false_positives, &n_projections, &process_fun](SurfaceAdapter &master, SurfaceAdapter &slave) -> bool {
+//         auto fun = [&n_false_positives, &n_projections, &process_fun](SurfaceAdapter &master, SurfaceAdapter &slave)
+//         -> bool {
 //             bool ok = process_fun(master, slave);
 
 //             if(ok) {
@@ -1112,7 +1035,6 @@
 //             }
 //             return true;
 //         };
-
 
 //         moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
 
@@ -1134,7 +1056,8 @@
 //                          moonolith::Communicator &comm,
 //                          std::shared_ptr<LibMeshFESpaceBase> &master_slave,
 //                          USparseMatrix &B,
-//                          const moonolith::SearchSettings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
+//                          const moonolith::SearchSettings &settings,const libMesh::Real search_radius, const int
+//                          tag_1, const int tag_2)
 //     {
 
 //         assert(false && "never use this!");
@@ -1151,7 +1074,6 @@
 
 //         static const double tol = 1e-8;
 
-
 //         std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
 //         libMesh::DenseMatrix<libMesh::Real> elemmat;
 //         libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
@@ -1163,8 +1085,6 @@
 
 //         Point n1, n2;
 
-
-
 //         int skip_zeros = 1;
 
 //         int slave_dof_n=0;
@@ -1173,14 +1093,12 @@
 
 //         const int dim = master_slave->mesh().mesh_dimension();
 
-
 //         libMesh::Real total_intersection_volume = 0.0;
 //         libMesh::Real local_element_matrices_sum = 0.0;
 
 //         MeshBase::const_element_iterator e_it = master_slave->mesh().active_local_elements_begin();
 
 //         const MeshBase::const_element_iterator e_end = master_slave->mesh().active_local_elements_end();
-
 
 //         for (; e_it != e_end; ++e_it)
 //         {
@@ -1235,20 +1153,15 @@
 //             auto predicate = std::make_shared<MasterAndSlave>();
 //             predicate->add(tag_1, tag_2);
 
-
-
 //             bool pair_intersected = false;
-
 
 //             //  const auto &src  = master.space();
 //             // const auto &dest = slave.space();
 //             // const auto &src_mesh  = src.mesh();
 //             // const auto &dest_mesh = dest.mesh();
 
-
 // 			const auto &src_mesh  = master.space();
 //             const auto &dest_mesh = slave.space();
-
 
 //             libMesh::DenseMatrix<libMesh::Real> elemmat;
 
@@ -1272,8 +1185,6 @@
 //             const int approx_order=src_order[0];
 
 //             std::shared_ptr<ContactAssembly> surface_assemble;
-
-
 
 //             //FIXME This is a hack
 
@@ -1300,8 +1211,6 @@
 //             //
 //             //			int dest_var_new=dest_var_num[0];
 
-
-
 //             std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
 //             //
 //             master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(), FIRST);
@@ -1309,7 +1218,6 @@
 //             //
 
 //             typedef Intersector::Scalar Scalar;
-
 
 //             if(dim_src == 2)  {
 //                 make_polygon(src_el,   src_pts);
@@ -1328,7 +1236,6 @@
 //             }
 
 //             for(uint side_1 = 0; side_1 < src_el.n_sides(); ++side_1) {
-
 
 //                 libMesh::UniquePtr<libMesh::Elem> s_1 = src_el.side(side_1);
 
@@ -1349,8 +1256,6 @@
 //                 } else {
 //                     assert(false);
 //                 }
-
-
 
 //                 for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
 
@@ -1392,7 +1297,8 @@
 //                         const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
 //                         const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
 
-//                         const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+//                         const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el,
+//                         approx_order);
 
 //                         make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, src_ir);
 
@@ -1403,7 +1309,6 @@
 //                         surface_assemble = std::make_shared<ContactAssembly>();
 //                         surface_assemble->isect_area	   = area;
 //                         surface_assemble->relative_area    = weight;
-
 
 //                     } else if(dim_src == 3) {
 //                         make_polygon_3(*side_ptr_2, side_polygon_2);
@@ -1417,11 +1322,13 @@
 //                             continue;
 //                         }
 
-//                         const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-//                         const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-//                         const Scalar weight 	= area/area_slave;
+//                         const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),
+//                         &side_polygon_2.get_values()[0]); const Scalar area   	=
+//                         Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]); const
+//                         Scalar weight 	= area/area_slave;
 
-//                         const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+//                         const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el,
+//                         approx_order);
 
 //                         make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, src_ir);
 //                         make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, dest_ir);
@@ -1442,9 +1349,7 @@
 //                 }
 //             }
 
-
 //             if(pair_intersected) {
-
 
 //                 transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
 //                 transform_to_reference_surf(*dest_trans, dest_el.type(), dest_ir, dest_ir_ref);
@@ -1454,7 +1359,6 @@
 
 //                 slave_fe->attach_quadrature_rule(&dest_ir_ref);
 //                 slave_fe->reinit(&dest_el);
-
 
 //                 surface_assemble->parent_element_master  = src_index;
 
@@ -1468,11 +1372,8 @@
 
 //                 elemmat.zero();
 
-
-
 //                 const auto &master_dofs = master.dof_map();
 //                 const auto &slave_dofs  = slave.dof_map();
-
 
 //                 std::vector<dof_id_type> dof_indices_slave_vec(slave_dofs.size());
 //                 std::vector<dof_id_type> dof_indices_master_vec(master_dofs.size());
@@ -1482,7 +1383,6 @@
 
 //                 std::vector<int> block_id;
 //                 std::vector<int> block_id_def;
-
 
 // //
 // //                std::cout<<"************************************************** "<<std::endl;
@@ -1497,7 +1397,6 @@
 // //                std::cout<<"************************************************** "<<std::endl;
 // //
 
-
 //                 int i=0;
 //                 for (; e_it != e_end; ++e_it)
 //                 {
@@ -1511,7 +1410,6 @@
 //                     }
 
 //                     i++;
-
 
 //                 }
 
@@ -1530,11 +1428,7 @@
 // //                    std::cout<< "************ dof_I_comparison = "<<  slave_dofs[i] << std::endl;
 //                 }
 
-
-
-
 //                 for(uint i = 0; i <  master_dofs.size(); ++i) {
-
 
 //                     Elem *elem_off = *( master_slave->mesh().active_subdomain_elements_begin(block_id_def.at(0)));
 
@@ -1550,10 +1444,7 @@
 
 //                 }
 
-
-
 //                 mortar_assemble(*master_fe, *slave_fe, elemmat);
-
 
 //                 // std::cout << "-----------------------------------------\n";
 //                 // std::cout << src_index << ", " << dest_index << "\n";
@@ -1569,9 +1460,11 @@
 //                 // std::cout << "\n";
 //                 // std::cout << "-----------------------------------------\n";
 
-//                auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
+//                auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(),
+//                libMesh::Real(0.0));
 
-//                // const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
+//                // const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(),
+//                surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
 
 //                local_element_matrices_sum += partial_sum;
 
@@ -1580,7 +1473,6 @@
 
 //                 // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
 //                 // dest_ir.print_info();
-
 
 //                 //std::cout << "elemmat.n =" << elemmat.n() << "\n";
 
@@ -1618,7 +1510,8 @@
 
 // //                std::cout<< "surface_assemble->isect_area = " << surface_assemble->isect_area <<std::endl;
 // //
-// //                std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(surface_assemble->isect_area, dim/(dim-1.)) * dim  <<std::endl;
+// //                std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " <<
+// pow(surface_assemble->isect_area, dim/(dim-1.)) * dim  <<std::endl;
 // //
 // //                std::cout<<" partial sum = " << partial_sum <<std::endl;
 // //
@@ -1626,14 +1519,15 @@
 // //
 // //
 
-//                 assert(fabs(partial_sum - pow(surface_assemble->isect_area, dim/(dim-1.))) < 1e-8 || (!is_quad(dest_el.type()) && !is_hex(dest_el.type())));
+//                 assert(fabs(partial_sum - pow(surface_assemble->isect_area, dim/(dim-1.))) < 1e-8 ||
+//                 (!is_quad(dest_el.type()) && !is_hex(dest_el.type())));
 
 //                 return true;
 
-
 //                 //Assemble p
 //                 //Iteri su elementi
-//                 //calcoli i=dof_map.index(elemen), j=el_id * n_dofs_x_el + local_dof_offset (local_dof_id e.g., triangolo = {0, 1, 2}, quad = {0, 1, 2, 3})
+//                 //calcoli i=dof_map.index(elemen), j=el_id * n_dofs_x_el + local_dof_offset (local_dof_id e.g.,
+//                 triangolo = {0, 1, 2}, quad = {0, 1, 2, 3})
 
 //             } else {
 
@@ -1642,12 +1536,9 @@
 
 //         };
 
-
-
 //         if(!SurfaceAssemble<Dimensions>(comm, master_slave, fun, settings, search_radius, tag_1, tag_2)) {
 //             return false;
 //         }
-
 
 //         // std::cout << mat_buffer << std::endl;
 
@@ -1657,11 +1548,13 @@
 
 //         const processor_id_type master_proc_id  = master_slave->mesh().processor_id();
 
-//         const dof_id_type n_dofs_on_proc_master = master_slave->dof_map().n_dofs_on_processor(master_proc_id) * master_slave->mesh().n_local_elem();
+//         const dof_id_type n_dofs_on_proc_master = master_slave->dof_map().n_dofs_on_processor(master_proc_id) *
+//         master_slave->mesh().n_local_elem();
 
 //         const processor_id_type slave_proc_id   = master_slave->mesh().processor_id();
 
-//         const dof_id_type n_dofs_on_proc_slave  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
+//         const dof_id_type n_dofs_on_proc_slave  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) *
+//         master_slave->mesh().n_local_elem();
 
 //         if(comm.is_root()) {
 //             std::cout << "sum(B): " << volumes[0] <<std::endl;
@@ -1682,7 +1575,6 @@
 //         std::partial_sum(ownershipRangesSlave.begin(), ownershipRangesSlave.end(),
 //                          ownershipRangesSlave.begin());
 
-
 //         moonolith::Redistribute< moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
 
 //         redist.apply(ownershipRangesSlave, mat_buffer, moonolith::AddAssign<double>());
@@ -1695,12 +1587,12 @@
 
 //         comm.all_reduce(&mMaxRowEntries, 1, moonolith::MPIMax());
 
-//         const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-//         const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+//         const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave
+//         [comm.rank()]; const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] -
+//         ownershipRangesMaster[comm.rank()];
 
-
-//         USparseMatrix B_tilde = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
-
+//         USparseMatrix B_tilde = utopia::local_sparse(local_range_slave_range, local_range_master_range,
+//         mMaxRowEntries);
 
 //         UVector relAreaVec = zeros(master_slave->dof_map().n_dofs());
 
@@ -1718,14 +1610,13 @@
 //             for (auto it = mat_buffer.iter(); it; ++it) {
 //                 B_tilde.set(it.row(), it.col(), *it);
 
-
 //             }
 //         }
 
-
 //         /*P_tilde*/
 
-//         const dof_id_type n_dofs_on_proc_master_p = master_slave->dof_map().n_dofs_on_processor(master_proc_id) * master_slave->mesh().n_local_elem();
+//         const dof_id_type n_dofs_on_proc_master_p = master_slave->dof_map().n_dofs_on_processor(master_proc_id) *
+//         master_slave->mesh().n_local_elem();
 
 //         const dof_id_type n_dofs_on_proc_slave_p  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id);
 
@@ -1759,10 +1650,12 @@
 
 //         comm.all_reduce(&mMaxRowEntries_p, 1, moonolith::MPIMax());
 
-//         const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p [comm.rank()];
-//         const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] - ownershipRangesMaster_p[comm.rank()];
+//         const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p
+//         [comm.rank()]; const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] -
+//         ownershipRangesMaster_p[comm.rank()];
 
-//         USparseMatrix P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
+//         USparseMatrix P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p,
+//         mMaxRowEntries_p);
 
 //         {
 //             utopia::Write<utopia::USparseMatrix> write(P_tilde);
@@ -1776,16 +1669,15 @@
 
 //         const dof_id_type n_dofs_on_proc_master_q = master_slave->dof_map().n_dofs_on_processor(master_proc_id);
 
-//         const dof_id_type n_dofs_on_proc_slave_q  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
+//         const dof_id_type n_dofs_on_proc_slave_q  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) *
+//         master_slave->mesh().n_local_elem();
 
 //         if(comm.is_root()) {
 //             std::cout << "sum(B): " << volumes[0] <<std::endl;
 //         }
 
-
 //         std::vector<moonolith::Integer>  ownershipRangesMaster_q(comm.size()+1, 0);
 //         std::vector<moonolith::Integer>  ownershipRangesSlave_q(comm.size()+1, 0);
-
 
 //         ownershipRangesMaster_q[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_q);
 
@@ -1811,11 +1703,12 @@
 
 //         comm.all_reduce(&mMaxRowEntries_q, 1, moonolith::MPIMax());
 
-//         const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q [comm.rank()];
-//         const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] - ownershipRangesMaster_q[comm.rank()];
+//         const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q
+//         [comm.rank()]; const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] -
+//         ownershipRangesMaster_q[comm.rank()];
 
-//         USparseMatrix Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
-
+//         USparseMatrix Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q,
+//         mMaxRowEntries);
 
 //         {
 //             utopia::Write<utopia::USparseMatrix> write(Q_transpose);
@@ -1825,20 +1718,17 @@
 //             }
 //         }
 
-
 //        B = P_tilde * B_tilde * Q_transpose;
 
 //        moonolith::root_describe("petsc assembly end", comm, std::cout);
 //       return true;
 //     }
 
-
-
-//     bool ParMortarAssembler::SurfaceAssemble(USparseMatrix &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
+//     bool ParMortarAssembler::SurfaceAssemble(USparseMatrix &B, const libMesh::Real search_radius, const int tag_1,
+//     const int tag_2)
 //     {
 
 //         moonolith::SearchSettings settings;
-
 
 //         moonolith::Communicator comm = libmesh_comm_.get();
 
@@ -1847,7 +1737,6 @@
 //             return utopia::SurfaceAssemble<2>(comm, master_slave_, B, settings, search_radius, tag_1, tag_2);
 //         }
 
-
 //         if(master_slave_->mesh().mesh_dimension() == 3) {
 //             return utopia::SurfaceAssemble<3>(comm, master_slave_, B, settings, search_radius, tag_1, tag_2);
 //         }
@@ -1855,8 +1744,6 @@
 //         assert(false && "Dimension not supported!");
 //         return false;
 //     }
-
-
 
 //     //
 //     //
@@ -1882,7 +1769,8 @@
 // //                         moonolith::Communicator &comm,
 // //                         std::shared_ptr<LibMeshFESpaceBase> &master_slave,
 // //                         USparseMatrix &B,
-// //                         const moonolith::SearchSettings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
+// //                         const moonolith::SearchSettings &settings,const libMesh::Real search_radius, const int
+// tag_1, const int tag_2)
 // //    {
 // //        std::shared_ptr<UtopiaMesh> local_fun_spaces = std::make_shared<UtopiaMesh>(master_slave);
 // //
@@ -1917,7 +1805,8 @@
 // //        libMesh::Real local_element_matrices_sum = 0.0;
 // //
 // //        //
-// //        //		moonolith::SparseMatrix<double> mat_buffer(slave->dof_map().n_dofs(), master->dof_map().n_dofs());
+// //        //		moonolith::SparseMatrix<double> mat_buffer(slave->dof_map().n_dofs(),
+// master->dof_map().n_dofs());
 // //
 // //        bool intersected = false;
 // //
@@ -2005,7 +1894,8 @@
 // //            typedef Intersector::Scalar Scalar;
 // //            //
 // //            //
-// //            //			const int order = order_for_l2_integral(dim, src_el, src_order_new, dest_el, dest_order_new);
+// //            //			const int order = order_for_l2_integral(dim, src_el, src_order_new, dest_el,
+// dest_order_new);
 // //
 // //            //            if(!has_constrained_dofs(src, src_el) &&
 // //            //               !has_constrained_dofs(dest, dest_el))
@@ -2015,11 +1905,14 @@
 // //                    make_polygon(src_el,   src_pts);
 // //                    make_polygon(dest_el,  dest_pts);
 // //                    {
-// //                        //					total_intersection_volume += fabs(Intersector::polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
+// //                        //					total_intersection_volume +=
+// fabs(Intersector::polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
 // //                        //
-// //                        //					const libMesh::Real weight=Intersector::polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
+// //                        //					const libMesh::Real
+// weight=Intersector::polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
 // //                        //
-// //                        //					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
+// //                        //					make_composite_quadrature_2D(intersection2, weight, order,
+// composite_ir);
 // //                        //					pair_intersected = true;
 // //                        //
 // //                        src_trans  = std::make_shared<Transform2>(src_el);
@@ -2032,12 +1925,15 @@
 // //                    make_polyhedron(src_el,  src_poly);
 // //                    make_polyhedron(dest_el, dest_poly);
 // //                    {
-// //                        //					total_intersection_volume += Intersector::p_mesh_volume_3(intersection3);
+// //                        //					total_intersection_volume +=
+// Intersector::p_mesh_volume_3(intersection3);
 // //                        //
-// //                        //					const libMesh::Real weight = Intersector::p_mesh_volume_3(dest_poly);
+// //                        //					const libMesh::Real weight =
+// Intersector::p_mesh_volume_3(dest_poly);
 // //                        //
 // //                        //
-// //                        //					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
+// //                        //					make_composite_quadrature_3D(intersection3, weight, order,
+// composite_ir);
 // //                        src_trans  = std::make_shared<Transform3>(src_el);
 // //                        dest_trans = std::make_shared<Transform3>(dest_el);
 // //                        //pair_intersected = true;
@@ -2073,7 +1969,8 @@
 // //
 // //                        const Real cos_angle = n1.contract(n2);
 // //
-// //                        //if the angle is more than 60 degrees ( cos(60/180*pi) == 0.5 ) or has same orientation skip
+// //                        //if the angle is more than 60 degrees ( cos(60/180*pi) == 0.5 ) or has same orientation
+// skip
 // //                        if(cos_angle >= -0.5) {
 // //                            continue;
 // //                        }
@@ -2099,7 +1996,8 @@
 // //                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
 // //                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
 // //
-// //                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+// //                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el,
+// approx_order);
 // //
 // //                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, src_ir);
 // //                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, dest_ir);
@@ -2125,11 +2023,14 @@
 // //                                continue;
 // //                            }
 // //
-// //                            const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-// //                            const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+// //                            const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),
+// &side_polygon_2.get_values()[0]);
+// //                            const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(),
+// &isect_polygon_2.get_values()[0]);
 // //                            const Scalar weight 	= area/area_slave;
 // //
-// //                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+// //                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el,
+// approx_order);
 // //
 // //                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, src_ir);
 // //                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, dest_ir);
@@ -2161,7 +2062,8 @@
 // //            //                   if(dim == 2) {
 // //            //                            make_polygon(*side_ptr_2, side_polygon_2);
 // //            //
-// //            //                            if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)) {
+// //            //                            if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1,
+// isect_polygon_2)) {
 // //            //                                continue;
 // //            //                            }
 // //            //
@@ -2174,10 +2076,13 @@
 // //            //                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
 // //            //                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
 // //            //
-// //            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
+// //            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2,
+// approx_order);
 // //            //
-// //            //                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, q_1);
-// //            //                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, q_2);
+// //            //                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order,
+// q_1);
+// //            //                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order,
+// q_2);
 // //            //
 // //            //                            pair_intersected = true;
 // //            //                            ++n_projections;
@@ -2200,14 +2105,19 @@
 // //            //                                continue;
 // //            //                            }
 // //            //
-// //            //                            const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-// //            //                            const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+// //            //                            const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),
+// &side_polygon_2.get_values()[0]);
+// //            //                            const Scalar area   	=
+// Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
 // //            //                            const Scalar weight 	= area/area_slave;
 // //            //
-// //            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
+// //            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2,
+// approx_order);
 // //            //
-// //            //                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, q_1);
-// //            //                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, q_2);
+// //            //                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order,
+// q_1);
+// //            //                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order,
+// q_2);
 // //            //
 // //            //                            pair_intersected = true;
 // //            //                            ++n_projections;
@@ -2262,8 +2172,10 @@
 // //                //				// std::cout << "\n";
 // //                //				// std::cout << "-----------------------------------------\n";
 // //                //
-// //                //				auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-// //                //                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
+// //                //				auto partial_sum = std::accumulate(elemmat.get_values().begin(),
+// elemmat.get_values().end(), libMesh::Real(0.0));
+// //                //                // std::cout << src_index << ", " << dest_index << ": " << partial_sum <<
+// std::endl;
 // //                //                // dest_ir.print_info();
 // //                //
 // //                //				local_element_matrices_sum += partial_sum;
@@ -2341,15 +2253,18 @@
 // //        //		moonolith::Redistribute< moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
 // //        //		redist.apply(ownershipRangesSlave, mat_buffer, moonolith::AddAssign<double>());
 // //        //
-// //        //		assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
+// //        //		assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() ||
+// ownershipRangesMaster.empty());
 // //        //
 // //        //		moonolith::root_describe("petsc assembly begin", comm, std::cout);
 // //        //
 // //        //		SizeType  mMaxRowEntries = mat_buffer.local_max_entries_x_col();
 // //        //		comm.all_reduce(&mMaxRowEntries, 1, moonolith::MPIMax());
 // //        //
-// //        //		const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-// //        //		const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+// //        //		const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] -
+// ownershipRangesSlave [comm.rank()];
+// //        //		const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] -
+// ownershipRangesMaster[comm.rank()];
 // //        //
 // //        //		B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
 // //        //
@@ -2375,7 +2290,8 @@
 // //
 // //
 // //
-// //    bool ParMortarAssembler::SurfaceAssemble(USparseMatrix &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
+// //    bool ParMortarAssembler::SurfaceAssemble(USparseMatrix &B, const libMesh::Real search_radius, const int tag_1,
+// const int tag_2)
 // //    {
 // //
 // //        moonolith::SearchSettings settings;
@@ -2417,5 +2333,3 @@
 // //
 // //
 // //
-
-

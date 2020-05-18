@@ -6,22 +6,22 @@
 #define UTOPIA_UTOPIA_WRITABLE_HPP
 
 #include "utopia_Base.hpp"
-#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Config.hpp"
 #include "utopia_Enums.hpp"
+#include "utopia_ForwardDeclarations.hpp"
 
-#include <vector>
 #include <initializer_list>
+#include <vector>
 
 namespace utopia {
-    template<class Implementation, class Derived, int Order>
+    template <class Implementation, class Derived, int Order>
     class Writeable;
 
-    template<class Implementation, class Derived>
+    template <class Implementation, class Derived>
     class Writeable<Implementation, Derived, 2> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
-        typedef typename Traits<Implementation>::SizeType SizeType;
+        using Scalar = typename Traits<Implementation>::Scalar;
+        using SizeType = typename Traits<Implementation>::SizeType;
 
         /** @defgroup read_write Read/Write
          *  @brief Reading and writing from/to and object
@@ -32,7 +32,6 @@ namespace utopia {
          * @ingroup read_write
          *  @brief  Provides synchronized access to a shared object.
          */
-
 
         /**
          *@ingroup element_acess
@@ -45,8 +44,7 @@ namespace utopia {
          * @param[in]  col      The column index.
          * @param[in]  value    The value.
          */
-        inline void set(const SizeType row, const SizeType col, const Scalar value)
-        {
+        inline void set(const SizeType row, const SizeType col, const Scalar value) {
             assert_enabled(is_write_locked());
             assert(row < (SizeType)size(derived()).get(0));
             assert(col < (SizeType)size(derived()).get(1));
@@ -64,15 +62,13 @@ namespace utopia {
          * @param[in]  col      The column index.
          * @param[in]  value    The value.
          */
-        inline void add(const SizeType row, const SizeType col, const Scalar value)
-        {
+        inline void add(const SizeType row, const SizeType col, const Scalar value) {
             assert_enabled(is_write_locked());
             assert(row < (SizeType)size(derived()).get(0));
             assert(col < (SizeType)size(derived()).get(1));
 
             Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), row, col, value);
         }
-
 
         /**
          * @ingroup     element_acess
@@ -84,37 +80,45 @@ namespace utopia {
          * @param[in]  value    The value.
          */
         // template<typename Ordinal>
-        // inline void set(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
+        // inline void set(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const
+        // std::vector<Scalar> &values)
         // {
         //     assert_enabled(is_write_locked());
         //     Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), rows, columns, values);
         // }
 
-        template<typename Ordinal>
-        inline void add_matrix(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
-        {
+        template <typename Ordinal>
+        inline void add_matrix(const std::vector<Ordinal> &rows,
+                               const std::vector<Ordinal> &columns,
+                               const std::vector<Scalar> &values) {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend>::add_matrix(derived().implementation(), rows, columns, values);
+            Backend<Scalar, Traits<Implementation>::Backend>::add_matrix(
+                derived().implementation(), rows, columns, values);
         }
 
-        inline void set_matrix(const std::vector<SizeType> &rows, const std::vector<SizeType> &columns, const std::vector<Scalar> &values)
-        {
+        inline void set_matrix(const std::vector<SizeType> &rows,
+                               const std::vector<SizeType> &columns,
+                               const std::vector<Scalar> &values) {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows, columns, values);
+            Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(
+                derived().implementation(), rows, columns, values);
         }
 
-        template<typename Ordinal>
-        inline void set_matrix(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
-        {
+        template <typename Ordinal>
+        inline void set_matrix(const std::vector<Ordinal> &rows,
+                               const std::vector<Ordinal> &columns,
+                               const std::vector<Scalar> &values) {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows, columns, values);
+            Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(
+                derived().implementation(), rows, columns, values);
         }
 
         // template<class Rows, class Cols, class Values>
         // inline void set_matrix(const Rows &rows, Cols &cols, const Values &values)
         // {
         //     assert_enabled(is_write_locked());
-        //     // Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows, columns, values);
+        //     // Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows,
+        //     columns, values);
 
         //     auto n_rows = rows.size();
         //     auto n_cols = cols.size();
@@ -127,10 +131,8 @@ namespace utopia {
         //     }
         // }
 
-        
-        template<class Rows, class Cols, class Values>
-        inline void set_matrix(const Rows &rows, Cols &cols, const Values &values)
-        {
+        template <class Rows, class Cols, class Values>
+        inline void set_matrix(const Rows &rows, Cols &cols, const Values &values) {
             assert_enabled(is_write_locked());
 
             auto n_rows = rows.size();
@@ -139,26 +141,22 @@ namespace utopia {
             std::vector<SizeType> ir(1), ic(1);
             std::vector<Scalar> v(1);
 
-            for(std::size_t i = 0; i < n_rows; ++i) {
+            for (std::size_t i = 0; i < n_rows; ++i) {
                 const auto i_offset = i * n_cols;
-                for(std::size_t j = 0; j < n_cols; ++j) {
+                for (std::size_t j = 0; j < n_cols; ++j) {
                     ir[0] = rows[i];
                     ic[0] = cols[j];
-                    v[0]  = values[i_offset + j];
-                   
-                    Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(
-                        derived().implementation(),
-                        ir,
-                        ic,
-                        v
-                    );
+                    v[0] = values[i_offset + j];
+
+                    Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), ir, ic, v);
                 }
             }
         }
 
-        template<typename RowT, typename ColT, typename ScalarT>
-        inline void set_matrix(std::initializer_list<RowT> rows, std::initializer_list<ColT> cols, std::initializer_list<ScalarT> values)
-        {
+        template <typename RowT, typename ColT, typename ScalarT>
+        inline void set_matrix(std::initializer_list<RowT> rows,
+                               std::initializer_list<ColT> cols,
+                               std::initializer_list<ScalarT> values) {
             assert_enabled(is_write_locked());
 
             using std::copy;
@@ -172,37 +170,26 @@ namespace utopia {
         }
 
 #ifdef ENABLE_LOCK_CHECK
-        Writeable()
-        : lock_active_(false)
-        { }
+        Writeable() : lock_active_(false) {}
 
-        inline bool is_write_locked() const
-        {
-            return lock_active_;
-        }
+        inline bool is_write_locked() const { return lock_active_; }
 
-        inline void write_lock()
-        {
-            lock_active_ = true;
-        }
+        inline void write_lock() { lock_active_ = true; }
 
-        inline void write_unlock()
-        {
-            lock_active_ = false;
-        }
-#endif //ENABLE_LOCK_CHECK
+        inline void write_unlock() { lock_active_ = false; }
+#endif  // ENABLE_LOCK_CHECK
 
     private:
         DERIVED_CRT(Derived);
 #ifdef ENABLE_LOCK_CHECK
         bool lock_active_;
-#endif //ENABLE_LOCK_CHECK
+#endif  // ENABLE_LOCK_CHECK
     };
 
-    template<class Implementation, class Derived>
+    template <class Implementation, class Derived>
     class Writeable<Implementation, Derived, 1> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
+        using Scalar = typename Traits<Implementation>::Scalar;
 
         /**
          * @ingroup     element_acess
@@ -212,15 +199,13 @@ namespace utopia {
          * @param[in]  index  The index.
          * @param[in]  value  The value.
          */
-        inline void set(const SizeType index, const Scalar value)
-        {
+        inline void set(const SizeType index, const Scalar value) {
             assert_enabled(is_write_locked());
             assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), index, value);
         }
 
-        inline void set(const Scalar value)
-        {
+        inline void set(const Scalar value) {
             Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), value);
         }
 
@@ -232,13 +217,11 @@ namespace utopia {
          * @param[in]  index  The index.
          * @param[in]  value  The value.
          */
-        inline void add(const SizeType index, const Scalar value)
-        {
+        inline void add(const SizeType index, const Scalar value) {
             assert_enabled(is_write_locked());
             assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), index, value);
         }
-
 
         /**
          * @ingroup     element_acess
@@ -248,47 +231,33 @@ namespace utopia {
          * @param[in]  indices  The set of indices.
          * @param[in]  value    The value.
          */
-        template<typename Ordinal>
-        inline void set(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values)
-        {
+        template <typename Ordinal>
+        inline void set(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values) {
             assert_enabled(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), indices, values);
         }
 
-        template<typename Ordinal>
-        inline void add(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values)
-        {
+        template <typename Ordinal>
+        inline void add(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values) {
             assert_enabled(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), indices, values);
         }
 
 #ifdef ENABLE_LOCK_CHECK
-        Writeable()
-        : lock_active_(false)
-        {
-        }
+        Writeable() : lock_active_(false) {}
 
-        inline bool is_write_locked() const
-        {
-            return lock_active_;
-        }
+        inline bool is_write_locked() const { return lock_active_; }
 
-        inline void write_lock()
-        {
-            lock_active_ = true;
-        }
+        inline void write_lock() { lock_active_ = true; }
 
-        inline void write_unlock()
-        {
-            lock_active_ = false;
-        }
-#endif //ENABLE_LOCK_CHECK
+        inline void write_unlock() { lock_active_ = false; }
+#endif  // ENABLE_LOCK_CHECK
 
     private:
         DERIVED_CRT(Derived);
 #ifdef ENABLE_LOCK_CHECK
         bool lock_active_;
-#endif //ENABLE_LOCK_CHECK
+#endif  // ENABLE_LOCK_CHECK
     };
 
     // enum WriteMode {
@@ -298,128 +267,114 @@ namespace utopia {
     //     GLOBAL_ADD    = 3
     // };
 
+    //     template<class Tensor>
+    //     class Write {
+    //     public:
+    //         Tensor &_tensor;
+    //         typedef typename Traits<Tensor>::Scalar Scalar;
 
-//     template<class Tensor>
-//     class Write {
-//     public:
-//         Tensor &_tensor;
-//         typedef typename Traits<Tensor>::Scalar Scalar;
+    //         /**
+    //          * @ingroup     lock
+    //          * @brief       Write lock providing memory access to object. \n
+    //          * @param       tensor  The tensor.
+    //          */
+    //         Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
+    //         : _tensor(tensor), mode_(mode)
+    //         {
+    // #ifdef ENABLE_LOCK_CHECK
+    //             _tensor.write_lock();
+    // #endif //ENABLE_LOCK_CHECK
+    //             Backend<Scalar, Traits<Tensor>::Backend>::write_lock(_tensor.implementation(), mode_);
+    //         }
 
-//         /**
-//          * @ingroup     lock
-//          * @brief       Write lock providing memory access to object. \n
-//          * @param       tensor  The tensor.
-//          */
-//         Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
-//         : _tensor(tensor), mode_(mode)
-//         {
-// #ifdef ENABLE_LOCK_CHECK
-//             _tensor.write_lock();
-// #endif //ENABLE_LOCK_CHECK
-//             Backend<Scalar, Traits<Tensor>::Backend>::write_lock(_tensor.implementation(), mode_);
-//         }
+    //         ~Write()
+    //         {
+    // #ifdef ENABLE_LOCK_CHECK
+    //             _tensor.write_unlock();
+    // #endif //ENABLE_LOCK_CHECK
+    //             Backend<Scalar, Traits<Tensor>::Backend>::write_unlock(_tensor.implementation(), mode_);
+    //         }
 
-//         ~Write()
-//         {
-// #ifdef ENABLE_LOCK_CHECK
-//             _tensor.write_unlock();
-// #endif //ENABLE_LOCK_CHECK
-//             Backend<Scalar, Traits<Tensor>::Backend>::write_unlock(_tensor.implementation(), mode_);
-//         }
+    //         WriteMode mode_;
+    //     };
 
+    //     template<class T, int Order>
+    //     class Write< std::vector<Tensor<T, Order> > > {
+    //     public:
+    //         using Tensors = std::vector<Tensor<T, Order> >;
+    //         using Scalar  = typename Traits<T>::Scalar;
 
-//         WriteMode mode_;
-//     };
+    //         Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
+    //         : tensors_(tensors), mode_(mode)
+    //         {
+    //             for(auto &t : tensors_) {
+    //                 Backend<Scalar, Traits<T>::Backend>::write_lock(t.implementation(), mode_);
+    //             }
+    //         }
 
-//     template<class T, int Order>
-//     class Write< std::vector<Tensor<T, Order> > > {
-//     public:
-//         using Tensors = std::vector<Tensor<T, Order> >;
-//         using Scalar  = typename Traits<T>::Scalar;
-        
+    //         ~Write()
+    //         {
+    //             for(auto &t : tensors_) {
+    //                 Backend<Scalar, Traits<T>::Backend>::write_unlock(t.implementation(), mode_);
+    //             }
+    //         }
 
-//         Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
-//         : tensors_(tensors), mode_(mode)
-//         {
-//             for(auto &t : tensors_) {
-//                 Backend<Scalar, Traits<T>::Backend>::write_lock(t.implementation(), mode_);
-//             }
-//         }
+    //         Tensors &tensors_;
+    //         WriteMode mode_;
+    //     };
 
-//         ~Write()
-//         {
-//             for(auto &t : tensors_) {
-//                 Backend<Scalar, Traits<T>::Backend>::write_unlock(t.implementation(), mode_);
-//             }
-//         }
+    template <class Tensor>
+    class Write {
+    public:
+        Tensor &_tensor;
 
-//         Tensors &tensors_;
-//         WriteMode mode_;
-//     };
+        /**
+         * @ingroup     lock
+         * @brief       Write lock providing memory access to object. \n
+         * @param       tensor  The tensor.
+         */
+        Write(Tensor &tensor, WriteMode mode = utopia::AUTO) : _tensor(tensor), mode_(mode) {
+            _tensor.write_lock(mode_);
+        }
 
+        ~Write() { _tensor.write_unlock(mode_); }
 
+        WriteMode mode_;
+    };
 
-        template<class Tensor>
-        class Write {
-        public:
-            Tensor &_tensor;
+    template <class T>
+    class Write<std::vector<T>> {
+    public:
+        inline Write(const std::vector<T> &) {}
+    };
 
-            /**
-             * @ingroup     lock
-             * @brief       Write lock providing memory access to object. \n
-             * @param       tensor  The tensor.
-             */
-            Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
-            : _tensor(tensor), mode_(mode)
-            {
-                _tensor.write_lock(mode_);
+    template <class T, std::size_t N>
+    class Write<std::array<T, N>> {
+    public:
+        inline Write(const std::array<T, N> &) {}
+    };
+
+    template <class T, int Order>
+    class Write<std::vector<Tensor<T, Order>>> {
+    public:
+        using Tensors = std::vector<Tensor<T, Order>>;
+
+        Write(Tensors &tensors, WriteMode mode = utopia::AUTO) : tensors_(tensors), mode_(mode) {
+            for (auto &t : tensors_) {
+                t.write_lock(mode_);
             }
+        }
 
-            ~Write()
-            {
-                _tensor.write_unlock(mode_);
+        ~Write() {
+            for (auto &t : tensors_) {
+                t.write_unlock(mode_);
             }
+        }
 
+        Tensors &tensors_;
+        WriteMode mode_;
+    };
 
-            WriteMode mode_;
-        };
+}  // namespace utopia
 
-        template<class T>
-        class Write<std::vector<T>> {
-        public:
-            inline Write(const std::vector<T> &) {}
-        };
-
-        template<class T, std::size_t N>
-        class Write<std::array<T, N>> {
-        public:
-            inline Write(const std::array<T, N> &) {}
-        };
-
-        template<class T, int Order>
-        class Write< std::vector<Tensor<T, Order> > > {
-        public:
-            using Tensors = std::vector<Tensor<T, Order> >;            
-
-            Write(Tensors &tensors, WriteMode mode = utopia::AUTO)
-            : tensors_(tensors), mode_(mode)
-            {
-                for(auto &t : tensors_) {
-                    t.write_lock(mode_);
-                }
-            }
-
-            ~Write()
-            {
-                for(auto &t : tensors_) {
-                    t.write_unlock(mode_);
-                }
-            }
-
-            Tensors &tensors_;
-            WriteMode mode_;
-        };
-
-}
-
-#endif //UTOPIA_UTOPIA_WRITABLE_HPP
+#endif  // UTOPIA_UTOPIA_WRITABLE_HPP

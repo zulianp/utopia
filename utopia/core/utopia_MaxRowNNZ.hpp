@@ -1,26 +1,25 @@
 #ifndef UTOPIA_MAX_ROW_NNZ_HPP
 #define UTOPIA_MAX_ROW_NNZ_HPP
 
-#include "utopia_Traits.hpp"
-#include "utopia_Each.hpp"
 #include <vector>
+#include "utopia_Each.hpp"
+#include "utopia_Traits.hpp"
 
 namespace utopia {
 
-    template<class Matrix, int Backend = Traits<Matrix>::Backend>
+    template <class Matrix, int Backend = Traits<Matrix>::Backend>
     class MaxRowNNZ {
     public:
         using SizeType = UTOPIA_SIZE_TYPE(Matrix);
-        using Scalar   = UTOPIA_SCALAR(Matrix);
+        using Scalar = UTOPIA_SCALAR(Matrix);
 
-        static SizeType apply(const Matrix &in)
-        {
+        static SizeType apply(const Matrix &in) {
             auto rr = row_range(in);
             auto ls = local_size(in);
             auto gs = size(in);
 
             std::vector<SizeType> nnz(rr.extent(), 0);
-           
+
             each_read(in, [&](const SizeType i, const SizeType j, const Scalar val) {
                 UTOPIA_UNUSED(j);
                 UTOPIA_UNUSED(val);
@@ -30,7 +29,7 @@ namespace utopia {
 
             SizeType max_nnz_x_row = 0;
 
-            if(!nnz.empty()) {
+            if (!nnz.empty()) {
                 max_nnz_x_row = *std::max_element(nnz.begin(), nnz.end());
             }
 
@@ -38,12 +37,11 @@ namespace utopia {
         }
     };
 
-    template<class Derived> 
-    inline SizeType max_row_nnz(const Tensor<Derived, 2> &mat)
-    {
+    template <class Derived>
+    inline SizeType max_row_nnz(const Tensor<Derived, 2> &mat) {
         return MaxRowNNZ<Tensor<Derived, 2>>::apply(mat.derived());
     }
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_MAX_ROW_NNZ_HPP
+#endif  // UTOPIA_MAX_ROW_NNZ_HPP

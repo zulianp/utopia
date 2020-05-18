@@ -34,6 +34,8 @@ if(TRY_WITH_MPI)
 
         set(WITH_MPI TRUE PARENT_SCOPE)
     endif()
+else()
+    message(WARNING "NO Proper MPI installation")
 endif()
 
 

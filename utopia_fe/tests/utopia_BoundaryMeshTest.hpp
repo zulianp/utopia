@@ -1,10 +1,9 @@
 #ifndef UTOPIA_BOUNDARY_MESH_TEST_HPP
 #define UTOPIA_BOUNDARY_MESH_TEST_HPP
 
-#include "utopia_fe_base.hpp"
-#include "utopia_FETest.hpp"
 #include <string>
-
+#include "utopia_FETest.hpp"
+#include "utopia_fe_base.hpp"
 
 namespace utopia {
 
@@ -12,13 +11,9 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "bit";
-        }
+        inline static std::string command() { return "bit"; }
     };
 
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_BOUNDARY_MESH_TEST_HPP
+#endif  // UTOPIA_BOUNDARY_MESH_TEST_HPP

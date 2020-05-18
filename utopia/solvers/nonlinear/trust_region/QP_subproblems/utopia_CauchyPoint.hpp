@@ -2,9 +2,7 @@
 #define UTOPIA_TR_SUBPROBLEM_CAUCHY_POINT_HPP
 #include "utopia_TRSubproblem.hpp"
 
-
-namespace utopia
-{
+namespace utopia {
 
     /**
      * @brief
@@ -16,50 +14,36 @@ namespace utopia
                 \min(\frac{ ||g_k||^3 }{\Delta_k g_k^T B_k g_k}, 1 )& otherwise
             \end{cases}  \f$
      */
-    template<class Matrix, class Vector>
-    class CauchyPoint final: public TRSubproblem<Matrix, Vector>
-    {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    template <class Matrix, class Vector>
+    class CauchyPoint final : public TRSubproblem<Matrix, Vector> {
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout = typename Traits<Vector>::Layout;
 
     public:
+        CauchyPoint() : TRSubproblem<Matrix, Vector>() {}
 
-        CauchyPoint(): TRSubproblem<Matrix, Vector>() {}
+        bool apply(const Vector &b, Vector &x) override { return aux_solve(*this->get_operator(), b, x); }
 
-        bool apply(const Vector &b, Vector &x) override
-        {
-            return aux_solve(*this->get_operator(), b, x);
-        }
+        inline CauchyPoint *clone() const override { return new CauchyPoint(); }
 
-        inline CauchyPoint * clone() const override
-        {
-            return new CauchyPoint();
-        }
-
-        void init_memory(const SizeType & ls) override
-        {
-            Bg_ = local_zeros(ls);
-        }
+        void init_memory(const Layout &layout) override { Bg_.zeros(layout); }
 
     private:
-        bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k)
-        {
-            Scalar g_norm, g_B_g; 
-            Bg_ = B * g; 
+        bool aux_solve(const Matrix &B, const Vector &g, Vector &p_k) {
+            Scalar g_norm, g_B_g;
+            Bg_ = B * g;
 
-            dots(g,g, g_norm, g, Bg_, g_B_g); 
-            g_norm = std::sqrt(g_norm); 
+            dots(g, g, g_norm, g, Bg_, g_B_g);
+            g_norm = std::sqrt(g_norm);
 
-            Scalar tau = std::min(1.0, pow(g_norm,3.0) / (this->current_radius() * g_B_g));
-            p_k = tau * (this->current_radius() / g_norm) * (g) ;
+            Scalar tau = std::min(1.0, pow(g_norm, 3.0) / (this->current_radius() * g_B_g));
+            p_k = tau * (this->current_radius() / g_norm) * (g);
             return true;
         }
 
-        Vector Bg_; 
-
+        Vector Bg_;
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_TR_SUBPROBLEM_CAUCHY_POINT_HPP
-
+#endif  // UTOPIA_TR_SUBPROBLEM_CAUCHY_POINT_HPP

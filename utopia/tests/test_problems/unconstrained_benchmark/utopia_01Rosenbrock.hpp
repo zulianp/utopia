@@ -6,8 +6,7 @@
 #include "utopia_TestFunctions.hpp"
 #include "utopia_Traits.hpp"
 
-namespace utopia
-{
+namespace utopia {
     /**
      * @brief      Rosenbrock 2D banana function. \n
      *             The floor of the valley follows approximately the parabola \f$ y = x^2 + 1/200 \f$.
@@ -15,31 +14,29 @@ namespace utopia
      *             Stepping method tend to perform at least as well as gradient methods for this function.
      *
      */
-    template<class Matrix, class Vector>
-    class Rosenbrock01 final: public UnconstrainedTestFunction<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class Rosenbrock01 final : public UnconstrainedTestFunction<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)                       Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm = typename Traits::Communicator;
 
-        Rosenbrock01()
-        {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
+        Rosenbrock01() {
+            auto v_layout = serial_layout(dim());
 
-            x_init_ = zeros(this->dim());
-            x_exact_ = values(this->dim(), 1.0);
+            x_init_.zeros(v_layout);
+            x_exact_.values(v_layout, 1.0);
 
             {
                 const Write<Vector> write1(x_init_);
                 x_init_.set(0, -1.2);
                 x_init_.set(1, 1.0);
             }
-
         }
 
-        bool value(const Vector &point, typename Vector::Scalar &result) const override
-        {
-            if( mpi_world_size() > 1){
+        bool value(const Vector &point, typename Vector::Scalar &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
@@ -51,21 +48,20 @@ namespace utopia
             const Scalar x = point.get(0);
             const Scalar y = point.get(1);
 
-            result = 1 + 100.0 * pow(x * x - y , 2.0) + pow(x - 1 , 2.0);
+            result = 1 + 100.0 * pow(x * x - y, 2.0) + pow(x - 1, 2.0);
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &result) const override
-        {
-            if( mpi_world_size() > 1){
+        bool gradient(const Vector &point, Vector &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == this->dim());
 
-            if(empty(result)){
-                result = zeros(this->dim());
+            if (empty(result)) {
+                result.zeros(layout(point));
             }
 
             const Read<Vector> read(point);
@@ -79,17 +75,16 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override
-        {
-            if( mpi_world_size() > 1){
+        bool hessian(const Vector &point, Matrix &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
             assert(point.size() == this->dim());
 
-            if(empty(result)){
-                result = zeros(this->dim(), this->dim());
+            if (empty(result)) {
+                result.dense(square_matrix_layout(layout(point)), 0.0);
             }
 
             const Read<Vector> read(point);
@@ -106,49 +101,27 @@ namespace utopia
             return true;
         }
 
-        bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
-        {
+        bool initialize_hessian(Matrix &H, Matrix &H_pre) const override {
             UTOPIA_UNUSED(H_pre);
-
-            H = zeros(this->dim(), this->dim());
+            H.dense(square_matrix_layout(layout(x_init_)), 0.0);
             return true;
         }
 
-        Vector initial_guess() const override
-        {
-            return x_init_;
-        }
+        Vector initial_guess() const override { return x_init_; }
 
-        const Vector & exact_sol() const override
-        {
-            return x_exact_;
-        }
+        const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override
-        {
-            return 1;
-        }
+        Scalar min_function_value() const override { return 1; }
 
-        std::string name() const override
-        {
-            return "Rosenbrock";
-        }
+        std::string name() const override { return "Rosenbrock"; }
 
-        SizeType dim() const override
-        {
-            return 2;
-        }
+        SizeType dim() const override { return 2; }
 
-        bool exact_sol_known() const
-        {
-            return true;
-        }        
-
+        bool exact_sol_known() const override { return true; }
 
     private:
         Vector x_init_;
         Vector x_exact_;
-
     };
-}
-#endif //UTOPIA_ROSENBROCK_01
+}  // namespace utopia
+#endif  // UTOPIA_ROSENBROCK_01

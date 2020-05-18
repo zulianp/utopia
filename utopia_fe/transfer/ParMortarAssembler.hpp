@@ -22,11 +22,9 @@
 //             libMesh::Parallel::Communicator &libmesh_comm,
 // 			const std::shared_ptr<LibMeshFESpaceBase> &master_slave); //constructor
 
-
 //         bool Assemble(USparseMatrix &B);
 //         bool SurfaceAssemble(USparseMatrix &B, const libMesh::Real search_radius, const int tag_1, const int tag_2);
 //         bool Transfer(USparseMatrix &B,USparseMatrix &T);
-
 
 //     private:
 //         libMesh::Parallel::Communicator &libmesh_comm_;

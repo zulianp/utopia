@@ -5,26 +5,14 @@
 #include "utopia_FEApp.hpp"
 #include "utopia_UIForcingFunction.hpp"
 
-
 namespace utopia {
     class RefineApp final : public FEApp {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-refine";
-        }   
+        inline static std::string command() { return "-refine"; }
     };
 
+}  // namespace utopia
 
-
-
-    
-
-   
-
-}
-
-
-#endif //UTOPIA_POISSON_APP_HPP
+#endif  // UTOPIA_POISSON_APP_HPP

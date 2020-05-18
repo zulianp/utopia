@@ -3,7 +3,6 @@
 
 // #include "utopia_intersector.hpp"
 
-
 // namespace utopia {
 
 //     void HMFESpace::dof_indices(const int element_index, std::vector<int> &indices)
@@ -56,7 +55,6 @@
 //                         break;
 //                     }
 //                 }
-
 
 //             }
 //         } else {

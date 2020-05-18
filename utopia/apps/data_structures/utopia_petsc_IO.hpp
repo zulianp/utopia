@@ -5,7 +5,7 @@
 
 namespace utopia {
 
-    //FIXME move this to file
+    // FIXME move this to file
     class Path;
     class PetscDMBase;
     class PetscVector;
@@ -13,7 +13,6 @@ namespace utopia {
 
     class PetscIO {
     public:
-
         class Wrapper;
 
         bool open(const PetscCommunicator &comm, const Path &path);
@@ -29,6 +28,6 @@ namespace utopia {
         std::unique_ptr<Wrapper> wrapper_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_PETSC_IO_HPP
+#endif  // UTOPIA_PETSC_IO_HPP

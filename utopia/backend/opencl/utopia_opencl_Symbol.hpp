@@ -5,125 +5,73 @@
 
 namespace utopia {
     namespace opencl {
-        template<class Operation>
-        class Symbol{};
+        template <class Operation>
+        class Symbol {};
 
-        template<>
+        template <>
         class Symbol<utopia::Plus> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "plus";
-            }
+            constexpr static const char *fun_str() { return "plus"; }
 
-            constexpr static const char *str()
-            {
-                return "+";
-            }
+            constexpr static const char *str() { return "+"; }
         };
 
-        template<>
+        template <>
         class Symbol<utopia::Minus> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "minus";
-            }
+            constexpr static const char *fun_str() { return "minus"; }
 
-
-            constexpr static const char *str()
-            {
-                return "-";
-            }
+            constexpr static const char *str() { return "-"; }
         };
 
-        template<>
+        template <>
         class Symbol<utopia::Multiplies> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "multiplies";
-            }
+            constexpr static const char *fun_str() { return "multiplies"; }
 
-            constexpr static const char *str()
-            {
-                return "*";
-            }
+            constexpr static const char *str() { return "*"; }
         };
 
-
-        template<>
+        template <>
         class Symbol<utopia::EMultiplies> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "multiplies";
-            }
+            constexpr static const char *fun_str() { return "multiplies"; }
 
-            constexpr static const char *str()
-            {
-                return "*";
-            }
+            constexpr static const char *str() { return "*"; }
         };
 
-
-
-        template<>
+        template <>
         class Symbol<utopia::Divides> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "divides";
-            }
+            constexpr static const char *fun_str() { return "divides"; }
 
-            constexpr static const char *str()
-            {
-                return "/";
-            }
+            constexpr static const char *str() { return "/"; }
         };
 
-        template<>
+        template <>
         class Symbol<utopia::Sqrt> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "sqrt";
-            }
+            constexpr static const char *fun_str() { return "sqrt"; }
 
-            constexpr static const char *str()
-            {
-                return "sqrt";
-            }
+            constexpr static const char *str() { return "sqrt"; }
         };
 
-        template<>
+        template <>
         class Symbol<utopia::Pow2> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "pow2";
-            }
+            constexpr static const char *fun_str() { return "pow2"; }
 
-            constexpr static const char *str()
-            {
-                return "pow2";
-            }
+            constexpr static const char *str() { return "pow2"; }
         };
 
-        template<>
+        template <>
         class Symbol<utopia::Abs> {
         public:
-            constexpr static const char *fun_str()
-            {
-                return "fabs";
-            }
+            constexpr static const char *fun_str() { return "fabs"; }
 
-            constexpr static const char *str()
-            {
-                return "fabs";
-            }
+            constexpr static const char *str() { return "fabs"; }
         };
-    }
-}
+    }  // namespace opencl
+}  // namespace utopia
 
-#endif //UTOPIA_SYMBOL_HPP
+#endif  // UTOPIA_SYMBOL_HPP

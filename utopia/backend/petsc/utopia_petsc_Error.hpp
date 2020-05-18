@@ -2,8 +2,8 @@
 #ifndef UTOPIA_UTOPIA_PETSCERROR_HPP
 #define UTOPIA_UTOPIA_PETSCERROR_HPP
 
-#include "utopia_Base.hpp"
 #include <iostream>
+#include "utopia_Base.hpp"
 
 #include <petscsys.h>
 
@@ -15,6 +15,6 @@ namespace utopia {
             return true;
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_PETSCERROR_HPP
+#endif  // UTOPIA_UTOPIA_PETSCERROR_HPP

@@ -7,27 +7,20 @@
 #include <cmath>
 #include <memory>
 
+namespace utopia {
+    /**
+     * @brief      The class for transfer operators.
+     *
+     * @tparam     Matrix
+     * @tparam     Vector
+     */
+    template <class Matrix, class Vector>
+    class Transfer {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-
-     namespace utopia
-     {
-        /**
-         * @brief      The class for transfer operators.
-         *
-         * @tparam     Matrix
-         * @tparam     Vector
-         */
-        template<class Matrix, class Vector>
-        class Transfer
-        {
-            typedef UTOPIA_SCALAR(Vector)    Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-
-
-        public:
-
-
-        virtual ~Transfer(){}
+    public:
+        virtual ~Transfer() = default;
 
         /*=====================================================
                                 actions
@@ -81,26 +74,24 @@
         virtual bool project_down(const Vector &x, Vector &x_new) const = 0;
 
         /**
-         * @brief      Splits projection operator into positive and negative part and then transfers them separatelly, so we end up with
-         *            \f$  x_{new} = (P_+ * x_+) + (P_- * x_-)  \f$
-         *            
+         * @brief      Splits projection operator into positive and negative part and then transfers them
+         * separatelly, so we end up with \f$  x_{new} = (P_+ * x_+) + (P_- * x_-)  \f$
+         *
          * @param[in]  x
          * @param      x_new
          *
          */
         virtual bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) = 0;
 
-
-        //FIXME
-        virtual void init_memory() {};
+        // FIXME
+        virtual void init_memory(){};
         virtual Scalar interpolation_inf_norm() const = 0;
-        virtual Scalar projection_inf_norm()    const = 0;
-        virtual Scalar restriction_inf_norm()   const = 0;
+        virtual Scalar projection_inf_norm() const = 0;
+        virtual Scalar restriction_inf_norm() const = 0;
 
         virtual void handle_equality_constraints(const Vector &) {}
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_ML_TRANSFER_HPP
-
+#endif  // UTOPIA_ML_TRANSFER_HPP

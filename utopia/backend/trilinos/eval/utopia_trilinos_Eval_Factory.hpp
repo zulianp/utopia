@@ -4,8 +4,8 @@
 #include "utopia_Eval_Empty.hpp"
 
 namespace utopia {
-    template<class Index, class Traits>
-    class Eval< Ghosts<Index>, Traits, TRILINOS> {
+    template <class Index, class Traits>
+    class Eval<Ghosts<Index>, Traits, TRILINOS> {
     public:
         typedef typename TypeAndFill<Traits, Ghosts<Index> >::Type Return;
 
@@ -40,25 +40,21 @@ namespace utopia {
     //     }
     // };
 
-    template<class Left, class Index, class Traits>
-    class Eval< Assign<Left, Ghosts<Index> >, Traits, TRILINOS> {
+    template <class Left, class Index, class Traits>
+    class Eval<Assign<Left, Ghosts<Index> >, Traits, TRILINOS> {
     public:
         typedef utopia::Assign<Left, Ghosts<Index> > Expr;
 
         inline static void apply(const Expr &expr) {
             UTOPIA_TRACE_BEGIN(expr);
-            
+
             auto &&g = expr.right();
 
-            Eval<Left, Traits>::apply(expr.left()).ghosted(
-                g.local_size(),
-                g.global_size(),
-                g.index()
-            );
+            Eval<Left, Traits>::apply(expr.left()).ghosted(g.local_size(), g.global_size(), g.index());
 
             UTOPIA_TRACE_END(expr);
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_TRILINOS_EVAL_FACTORY_HPP
+#endif  // UTOPIA_TRILINOS_EVAL_FACTORY_HPP

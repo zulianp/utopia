@@ -24,4 +24,4 @@
 #include "utopia_TimeDerivative.hpp"
 #include "utopia_TrialFunction.hpp"
 
-#endif //UTOPIA_FORM_EXPRESSIONS_HPP
+#endif  // UTOPIA_FORM_EXPRESSIONS_HPP

@@ -1,10 +1,10 @@
 #ifndef UTOPIA_TEST_REGISTRY_H
 #define UTOPIA_TEST_REGISTRY_H
 
-#include <map>
-#include <string>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <string>
 
 #include "utopia_ActionRegistry.hpp"
 
@@ -14,7 +14,7 @@ namespace utopia {
     public:
         using Count = long;
 
-        typedef void (*RunTest)();
+        using RunTest = void (*)();
 
         static char add_test_unit(const std::string &unit_name, RunTest run_test);
         static char add_optional_test_unit(const std::string &unit_name, RunTest run_test);
@@ -33,7 +33,6 @@ namespace utopia {
         ActionRegistry tests_, optional_tests_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_TEST_REGISTRY_H
-
+#endif  // UTOPIA_TEST_REGISTRY_H

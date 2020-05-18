@@ -12,7 +12,7 @@ if(ENABLE_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       -g         # generate debug info
       --coverage # sets all required flags
       -fprofile-instr-generate
-      -fcoverage-mapping 
+      -fcoverage-mapping
     )
   else()
     target_compile_options(coverage_config INTERFACE
@@ -34,6 +34,9 @@ endif()
 macro(utopia_link_default_targets target)
   target_link_libraries(${target} coverage_config)
 endmacro()
+
+# 1) remove previous gcda files
+# find . -name "*.gcda" -print0 | xargs -0 rm
 
 # install lcov for post-processing the coverage
 # see https://clang.llvm.org/docs/SourceBasedCodeCoverage.html#the-code-coverage-workflow

@@ -1,14 +1,14 @@
 #ifndef UTOPIA_ELASTIC_MATERIAL_HPP
 #define UTOPIA_ELASTIC_MATERIAL_HPP
 
-#include "utopia_libmesh_Types.hpp"
-#include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_LameeParameters.hpp"
 #include "utopia_Model.hpp"
+#include "utopia_libmesh_FEForwardDeclarations.hpp"
+#include "utopia_libmesh_Types.hpp"
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
+    template <class Matrix, class Vector>
     class ElasticMaterial : public Model<Matrix, Vector> {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
@@ -22,14 +22,12 @@ namespace utopia {
             return false;
         }
 
-        virtual bool normal_stress(const UVector &x, UVector &out, const int subspace = 0) 
-        {
+        virtual bool normal_stress(const UVector &x, UVector &out, const int subspace = 0) {
             out = local_values(local_size(x).get(0), -1);
             return false;
         }
 
-        virtual bool von_mises_stress(const UVector &x, UVector &out, const int subspace = 0) 
-        {
+        virtual bool von_mises_stress(const UVector &x, UVector &out, const int subspace = 0) {
             out = local_values(local_size(x).get(0), -1);
             return false;
         }
@@ -37,14 +35,11 @@ namespace utopia {
         // virtual void clear() {}
         // virtual bool is_linear() const { return false; }
 
-        virtual Scalar rescaling() const
-        {
-            return 1.0;
-        }
+        virtual Scalar rescaling() const { return 1.0; }
 
         virtual void rescaling(const Scalar &) {}
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_ELASTIC_MATERIAL_HPP
+#endif  // UTOPIA_ELASTIC_MATERIAL_HPP

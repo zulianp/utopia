@@ -6,4 +6,4 @@ namespace utopia {
     // template class SlepcSolver<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL>;
 
     template class SlepcSolver<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL>;
-}
+}  // namespace utopia

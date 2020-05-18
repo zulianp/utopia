@@ -5,7 +5,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_SolverType.hpp"
 
-namespace utopia  {
+namespace utopia {
 
     /*
      * @brief      Front-end to create linear solver objects.
@@ -14,14 +14,11 @@ namespace utopia  {
      * @tparam     Vector
      * @tparam     Backend
      */
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class LinearSolverFactory {
     public:
-        LinearSolverFactory() {
-            static_assert(Backend < HOMEMADE, "LinearSolverFactory not available for Backend");
-        }
+        LinearSolverFactory() { static_assert(Backend < HOMEMADE, "LinearSolverFactory not available for Backend"); }
     };
-
 
     /**
      * @brief      Returns linear solver based on tag.
@@ -33,10 +30,10 @@ namespace utopia  {
      *
      * @return
      */
-    template<class Matrix, class Vector>
-    typename LinearSolverFactory<Matrix, Vector>::LinearSolverPtr linear_solver(const SolverType &tag = Solver::automatic())
-    {
-         return LinearSolverFactory<Matrix, Vector>::new_linear_solver(tag);
+    template <class Matrix, class Vector>
+    typename LinearSolverFactory<Matrix, Vector>::LinearSolverPtr linear_solver(
+        const SolverType &tag = Solver::automatic()) {
+        return LinearSolverFactory<Matrix, Vector>::new_linear_solver(tag);
     }
 
     /** \addtogroup Linear
@@ -45,9 +42,9 @@ namespace utopia  {
      *  @{
      */
 
-
     /**
-     * @brief      Solves the linear system A * x = rhs. If no params are provided, solver is choosen and set-up by default.
+     * @brief      Solves the linear system A * x = rhs. If no params are provided, solver is choosen and set-up by
+     * default.
      *
      * @param[in]  A       The A.
      * @param[in]  rhs     The right hand side.
@@ -59,9 +56,8 @@ namespace utopia  {
      *
      * @return
      */
-    template<class Matrix, class Vector>
-    bool solve(const Matrix A, const Vector rhs, Vector &x, const SolverType &tag= Solver::automatic())
-    {
+    template <class Matrix, class Vector>
+    bool solve(const Matrix A, const Vector rhs, Vector &x, const SolverType &tag = Solver::automatic()) {
         auto solver = linear_solver<Matrix, Vector>(tag);
         solver->solve(A, rhs, x);
 
@@ -69,6 +65,6 @@ namespace utopia  {
     }
 
     /** @}*/
-}
+}  // namespace utopia
 
-#endif //UTOPIA_LINEAR_SOLVER_FACTORY_HPP
+#endif  // UTOPIA_LINEAR_SOLVER_FACTORY_HPP

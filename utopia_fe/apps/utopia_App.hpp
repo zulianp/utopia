@@ -1,8 +1,8 @@
 #ifndef UTOPIA_APP_HPP
 #define UTOPIA_APP_HPP
 
-#include "utopia_ui.hpp"
 #include <string>
+#include "utopia_ui.hpp"
 
 namespace utopia {
     class App {
@@ -10,6 +10,6 @@ namespace utopia {
         virtual ~App() {}
         virtual void run(Input &in) = 0;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_APP_HPP
+#endif  // UTOPIA_APP_HPP

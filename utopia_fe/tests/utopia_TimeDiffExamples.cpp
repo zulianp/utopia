@@ -60,7 +60,8 @@
 // 	};
 
 // 	template<class Left, class Right, class Context>
-// 	void integrate(const Equality<Left, Right> &eq, const double t0, const double delta_t, const double t_end, Context &context)
+// 	void integrate(const Equality<Left, Right> &eq, const double t0, const double delta_t, const double t_end,
+// Context &context)
 // 	{
 // 		ExplicitIntegratorTransform< Equality<Left, Right> > trafo;
 // 		auto &v = trafo.get_test_fun(eq);
@@ -129,7 +130,6 @@
 
 // 		strong_enforce( boundary_conditions(v == coeff(.0), {1, 2}) );
 
-
 // 		const int dim = mesh->mesh_dimension();
 // 		std::function<Real(const Point &p) > rhs_fun = [dim](const Point &p) -> Real {
 // 			Real center = 0;
@@ -147,10 +147,12 @@
 // 		v.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 
 // 		auto v_k = interpolate(coeff(.5), v, make_ref(*context.system.solution));
-// 		auto eq  = integral(dot(dt(v_k), v)) == integral(dot(coeff(rhs_fun), v) -  0.1 * dot(grad(v_k), grad(v)));
+// 		auto eq  = integral(dot(dt(v_k), v)) == integral(dot(coeff(rhs_fun), v) -  0.1 * dot(grad(v_k),
+// grad(v)));
 
 // 		auto ass = make_assembly([&]() -> void {
-// 			assemble(v, v, integral(dot(v, v)), integral(dot(coeff(0.0), v)), *context.system.matrix, *context.system.rhs);
+// 			assemble(v, v, integral(dot(v, v)), integral(dot(coeff(0.0), v)), *context.system.matrix,
+// *context.system.rhs);
 // 		});
 
 // 		context.system.attach_assemble_object(ass);

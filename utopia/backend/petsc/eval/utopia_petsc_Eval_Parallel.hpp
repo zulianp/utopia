@@ -24,47 +24,36 @@ namespace utopia {
     //     }
     // };
 
-    template<class Left, class Right, class Traits>
+    template <class Left, class Right, class Traits>
     class Eval<Assign<Left, LocalDiagBlock<Right> >, Traits, PETSC> {
     public:
-        inline static void apply(const Assign<Left, LocalDiagBlock<Right> > & expr)
-        {
+        inline static void apply(const Assign<Left, LocalDiagBlock<Right> > &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            Eval<Right, Traits>::apply(expr.right().expr()).diagonal_block(
-            	Eval<Left,  Traits>::apply(expr.left())
-            );
+            Eval<Right, Traits>::apply(expr.right().expr()).diagonal_block(Eval<Left, Traits>::apply(expr.left()));
 
             UTOPIA_TRACE_END(expr);
         }
     };
 
-    void build_local_redistribute(
-        const PetscVector &x_from,
-        const PetscVector &shape_vec,
-        PetscVector &result);
+    void build_local_redistribute(const PetscVector &x_from, const PetscVector &shape_vec, PetscVector &result);
 
-    template<class Left, class Right, class Traits>
+    template <class Left, class Right, class Traits>
     class Eval<LocalRedistribute<Left, Right>, Traits, PETSC> {
     public:
-
-        inline static EXPR_TYPE(Traits, Left) apply(const LocalRedistribute<Left, Right> &expr)
-        {
+        inline static EXPR_TYPE(Traits, Left) apply(const LocalRedistribute<Left, Right> &expr) {
             EXPR_TYPE(Traits, Left) result;
 
             UTOPIA_TRACE_BEGIN(expr);
 
             build_local_redistribute(
-                Eval<Left,  Traits>::apply(expr.left()),
-                Eval<Right, Traits>::apply(expr.right()),
-                result
-            );
+                Eval<Left, Traits>::apply(expr.left()), Eval<Right, Traits>::apply(expr.right()), result);
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_PETSC_EVAL_PARALLEL_HPP
+#endif  // UTOPIA_PETSC_EVAL_PARALLEL_HPP

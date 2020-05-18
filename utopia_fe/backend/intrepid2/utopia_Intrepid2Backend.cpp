@@ -2,10 +2,9 @@
 
 namespace utopia {
 
-    void apply_boundary_conditions(libMesh::DofMap &dof_map, TSUSerialMatrix &mat, TUSerialVector &vec)
-    {
-        if(utopia::Utopia::instance().verbose()) {
-            std::cout << "apply_boundary_conditions begin: "  << std::endl;
+    void apply_boundary_conditions(libMesh::DofMap &dof_map, TSUSerialMatrix &mat, TUSerialVector &vec) {
+        if (utopia::Utopia::instance().verbose()) {
+            std::cout << "apply_boundary_conditions begin: " << std::endl;
         }
 
         Chrono c;
@@ -18,7 +17,6 @@ namespace utopia {
 
         const bool has_constraints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
-
         Size ls = local_size(mat);
         Size s = size(mat);
 
@@ -26,9 +24,9 @@ namespace utopia {
 
         Range rr = range(vec);
 
-        if(has_constraints) {
-            for(SizeType i = rr.begin(); i < rr.end(); ++i) {
-                if( dof_map.is_constrained_dof(i) ) {
+        if (has_constraints) {
+            for (SizeType i = rr.begin(); i < rr.end(); ++i) {
+                if (dof_map.is_constrained_dof(i)) {
                     index.push_back(i);
                 }
             }
@@ -38,12 +36,12 @@ namespace utopia {
 
         Write<TUSerialVector> w_v(vec);
 
-        if(has_constraints) {
+        if (has_constraints) {
             libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
             Range r = range(vec);
-            for(SizeType i = r.begin(); i < r.end(); ++i) {
-                if(dof_map.is_constrained_dof(i)) {
+            for (SizeType i = r.begin(); i < r.end(); ++i) {
+                if (dof_map.is_constrained_dof(i)) {
                     auto valpos = rhs_values.find(i);
                     vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
                 }
@@ -52,30 +50,27 @@ namespace utopia {
 
         c.stop();
 
-        if(utopia::Utopia::instance().verbose()) {
+        if (utopia::Utopia::instance().verbose()) {
             std::cout << "apply_boundary_conditions end: " << c << std::endl;
         }
     }
 
-    void apply_boundary_conditions(libMesh::DofMap &dof_map, TUSerialVector &vec)
-    {
+    void apply_boundary_conditions(libMesh::DofMap &dof_map, TUSerialVector &vec) {
         const bool has_constraints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
         Write<TUSerialVector> w_v(vec);
 
-        if(has_constraints) {
+        if (has_constraints) {
             libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
             Range r = range(vec);
-            for(SizeType i = r.begin(); i < r.end(); ++i) {
-                if(dof_map.is_constrained_dof(i)) {
+            for (SizeType i = r.begin(); i < r.end(); ++i) {
+                if (dof_map.is_constrained_dof(i)) {
                     auto valpos = rhs_values.find(i);
                     vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
                 }
             }
         }
-
     }
 
-}
-
+}  // namespace utopia

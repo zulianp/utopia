@@ -2,7 +2,7 @@
 #define UTOPIA_ASSEMBLY_CONTEXT_HPP
 
 namespace utopia {
-    template<int BAKEND_FLAG>
+    template <int BAKEND_FLAG>
     class AssemblyContext {
     public:
         // template<class Expr>
@@ -11,6 +11,6 @@ namespace utopia {
         // template<class Tensor>
         // void init_tensor(Tensor &, const bool) {}
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_ASSEMBLY_CONTEXT_HPP
+#endif  // UTOPIA_ASSEMBLY_CONTEXT_HPP

@@ -1,19 +1,16 @@
 #include "utopia_FlowWithFractures.hpp"
-#include "utopia_Integral.hpp"
-#include "utopia_UIForcingFunction.hpp"
-#include "utopia_Flow.hpp"
-#include "utopia_LibMeshToMoonolithConvertions.hpp"
-#include "utopia_ElementWisePseudoInverse.hpp"
 #include "moonolith_l2_assembler.hpp"
+#include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_Flow.hpp"
+#include "utopia_Integral.hpp"
+#include "utopia_LibMeshToMoonolithConvertions.hpp"
+#include "utopia_UIForcingFunction.hpp"
 #include "utopia_libmesh.hpp"
-
-
 
 namespace utopia {
 
     class Fracture : public Configurable {
     public:
-
         UScalar angle;
         UScalar aperture;
         UScalar length;
@@ -23,25 +20,19 @@ namespace utopia {
         USerialVector normal;
         USerialMatrix tangents;
 
-        Fracture(const USizeType dim)
-        : angle(1.0), aperture(1.0), length(1.0), permeability(1.0)
-        {
-            center   = zeros(dim);
-            normal   = zeros(dim);
-            tangents = zeros(dim-1, dim);
+        Fracture(const USizeType dim) : angle(1.0), aperture(1.0), length(1.0), permeability(1.0) {
+            center = zeros(dim);
+            normal = zeros(dim);
+            tangents = zeros(dim - 1, dim);
         }
 
-        static std::string coord_str(const USizeType d)
-        {
-            static const std::vector<std::string> str = {
-               "x", "y", "z", "t"
-            };
+        static std::string coord_str(const USizeType d) {
+            static const std::vector<std::string> str = {"x", "y", "z", "t"};
 
             return str[d];
         }
 
-        void read(Input &in)
-        {
+        void read(Input &in) {
             in.get("angle", angle);
             in.get("aperture", aperture);
             in.get("length", length);
@@ -54,11 +45,11 @@ namespace utopia {
 
             const USizeType n = size(center);
 
-            if(type == "line") {
+            if (type == "line") {
                 USerialVector p0 = center;
                 USerialVector p1 = center;
 
-                for(USizeType i = 0; i < n; ++i) {
+                for (USizeType i = 0; i < n; ++i) {
                     UScalar v = 0.0;
                     in.get("p0-" + coord_str(i), v);
                     p0.set(i, v);
@@ -74,34 +65,34 @@ namespace utopia {
 
                 u /= length;
                 normal.set(0, -u.get(1));
-                normal.set(1,  u.get(0));
+                normal.set(1, u.get(0));
 
-                for(USizeType i = 0; i < n; ++i) {
-                    for(USizeType k = 0; k < n-1; ++k) {
+                for (USizeType i = 0; i < n; ++i) {
+                    for (USizeType k = 0; k < n - 1; ++k) {
                         tangents.set(0, 0, u.get(0));
                         tangents.set(0, 1, u.get(1));
                     }
                 }
-            } else if(type_defualt == type) {
-                for(USizeType i = 0; i < n; ++i) {
+            } else if (type_defualt == type) {
+                for (USizeType i = 0; i < n; ++i) {
                     UScalar v = 0.0;
                     in.get("center-" + coord_str(i), v);
                     center.set(i, v);
 
-                    for(USizeType k = 0; k < n-1; ++k) {
+                    for (USizeType k = 0; k < n - 1; ++k) {
                         v = 0.0;
                         in.get("tangent-" + std::to_string(k) + "-" + coord_str(i), v);
                         tangents.set(k, i, v);
                     }
                 }
 
-                if(n == 2) {
+                if (n == 2) {
                     normal.set(0, -tangents.get(0, 1));
-                    normal.set(1,  tangents.get(0, 0));
+                    normal.set(1, tangents.get(0, 0));
                 } else
                 // if(n == 3)
                 {
-                    //TODO
+                    // TODO
                     assert(false);
                     // USerialVector u = zeros(2), v = zeros(2);
 
@@ -129,8 +120,7 @@ namespace utopia {
 
     class FractureSampler final : public UIFunction<double> {
     public:
-        UScalar eval(const std::vector<UScalar> &) const
-        {
+        UScalar eval(const std::vector<UScalar> &) const {
             const auto &f = *fractures[active_fracture];
             return f.aperture * f.permeability;
         }
@@ -141,16 +131,14 @@ namespace utopia {
         moonolith::Storage<std::shared_ptr<Fracture>> fractures;
     };
 
-    class FractureTangentSampler final : public UIFunction<USerialMatrix>  {
+    class FractureTangentSampler final : public UIFunction<USerialMatrix> {
     public:
         static const int Order = 2;
         typedef double Scalar;
 
-        FractureTangentSampler(const FractureSampler &sampler) : sampler_(sampler)
-        {}
+        FractureTangentSampler(const FractureSampler &sampler) : sampler_(sampler) {}
 
-        USerialMatrix eval(const std::vector<Scalar> &x) const
-        {
+        USerialMatrix eval(const std::vector<Scalar> &x) const {
             return sampler_.fractures[sampler_.active_fracture]->tangents;
         }
 
@@ -167,54 +155,45 @@ namespace utopia {
 
         moonolith::Storage<std::shared_ptr<Fracture>> fractures;
 
-
         std::shared_ptr<CellElem> cell_elem;
         std::shared_ptr<SurfElem> surf_elem;
 
-        std::shared_ptr<moonolith::Transform<double, 2, 2>>         cell_trafo;
-        std::shared_ptr<moonolith::AffineTransform<double, 2-1, 2>> surf_trafo;
+        std::shared_ptr<moonolith::Transform<double, 2, 2>> cell_trafo;
+        std::shared_ptr<moonolith::AffineTransform<double, 2 - 1, 2>> surf_trafo;
 
         Algo algo;
 
-        Cut2()
-        {
-           surf_trafo = std::make_shared<moonolith::AffineTransform<double, 2-1, 2>>();
-        }
+        Cut2() { surf_trafo = std::make_shared<moonolith::AffineTransform<double, 2 - 1, 2>>(); }
 
-        bool compute(
-            const int order,
-            const libMesh::Elem &elem,
-            const libMesh::FEType &type,
-            const moonolith::Storage<std::shared_ptr<Fracture>> &fractures,
-            moonolith::Storage<std::shared_ptr<libMesh::QBase>> &quadrature
-        )
-        {
+        bool compute(const int order,
+                     const libMesh::Elem &elem,
+                     const libMesh::FEType &type,
+                     const moonolith::Storage<std::shared_ptr<Fracture>> &fractures,
+                     moonolith::Storage<std::shared_ptr<libMesh::QBase>> &quadrature) {
             moonolith::Gauss::get(order, algo.q_rule);
 
             make(elem, type, cell_elem);
             std::size_t n = fractures.size();
             quadrature.resize(n);
 
-            if(!surf_elem) {
+            if (!surf_elem) {
                 surf_elem = std::make_shared<SurfElem>();
             }
 
             bool intersected = false;
-            for(std::size_t i = 0; i < n; ++i) {
+            for (std::size_t i = 0; i < n; ++i) {
                 make_elem(*fractures[i], *surf_elem);
 
-                if(intersect(*cell_elem, *surf_elem, quadrature[i])) {
+                if (intersect(*cell_elem, *surf_elem, quadrature[i])) {
                     intersected = true;
                 }
-
             }
 
             return intersected;
         }
 
-        void make_elem(const Fracture &f, SurfElem &e) const
-        {
-            auto half_len = (f.length/2.);
+        void make_elem(const Fracture &f, SurfElem &e) const {
+            auto half_len = (f.length / 2.);
             const auto &c = f.center;
             const auto &t = f.tangents;
 
@@ -224,12 +203,11 @@ namespace utopia {
             e.point(1)[0] = c.get(0) + t.get(0, 0) * half_len;
             e.point(1)[1] = c.get(1) + t.get(0, 1) * half_len;
 
-            e.node(0)[0] =  c.get(0);
-            e.node(0)[1] =  c.get(1);
+            e.node(0)[0] = c.get(0);
+            e.node(0)[1] = c.get(1);
         }
 
-        bool intersect(const CellElem &cell, const SurfElem &surf, std::shared_ptr<libMesh::QBase> &q)
-        {
+        bool intersect(const CellElem &cell, const SurfElem &surf, std::shared_ptr<libMesh::QBase> &q) {
             make(cell, algo.master);
             make(surf, algo.slave);
 
@@ -237,20 +215,16 @@ namespace utopia {
             make_transform(surf, *surf_trafo);
 
             algo.trafo_master = cell_trafo;
-            algo.trafo_slave  = surf_trafo;
+            algo.trafo_slave = surf_trafo;
 
-            if(algo.compute()) {
-                if(moonolith::measure(algo.q_master) < 1e-16) {
+            if (algo.compute()) {
+                if (moonolith::measure(algo.q_master) < 1e-16) {
                     return false;
                 }
 
                 auto q_mortar = std::make_shared<QMortar>(2);
 
-                utopia::convert(
-                    algo.q_master,
-                    cell.reference_measure(),
-                    *q_mortar
-                );
+                utopia::convert(algo.q_master, cell.reference_measure(), *q_mortar);
 
                 // moonolith::MatlabScripter script;
                 // script.close_all();
@@ -268,16 +242,12 @@ namespace utopia {
         }
     };
 
-    template<class FunctionSpace, class Matrix, class Vector>
+    template <class FunctionSpace, class Matrix, class Vector>
     class FlowWithFractures<FunctionSpace, Matrix, Vector>::Impl final : public Configurable {
     public:
+        Impl(FunctionSpace &space) : flow_(space), space_(space), rescale_(1.0) {}
 
-        Impl(FunctionSpace &space)
-        : flow_(space), space_(space), rescale_(1.0)
-        {}
-
-        void read(Input &in) override
-        {
+        void read(Input &in) override {
             int dim = space_.mesh().spatial_dimension();
             flow_.read(in);
 
@@ -290,9 +260,8 @@ namespace utopia {
             });
         }
 
-        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
-        {
-            if(!flow_.assemble_hessian_and_gradient(x, hessian, gradient)) {
+        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) {
+            if (!flow_.assemble_hessian_and_gradient(x, hessian, gradient)) {
                 return false;
             }
 
@@ -300,18 +269,10 @@ namespace utopia {
             auto v = test(space_);
 
             auto ts = tangent_sampler();
-            auto bilinear_form = inner(
-                    ctx_fun(ts) * grad(u),
-                    ctx_fun(sampler()) * ctx_fun(ts) * grad(v)
-                ) * dX;
-
+            auto bilinear_form = inner(ctx_fun(ts) * grad(u), ctx_fun(sampler()) * ctx_fun(ts) * grad(v)) * dX;
 
             Vector perm, mass_vector;
-            assemble(
-                inner(ctx_fun(sampler()), v) * dX,
-                perm,
-                false
-            );
+            assemble(inner(ctx_fun(sampler()), v) * dX, perm, false);
 
             assemble(inner(coeff(1.0), v) * dX, mass_vector, true);
             // perm /= mass_vector;
@@ -329,15 +290,14 @@ namespace utopia {
             return assemble(bilinear_form, hessian, true);
         }
 
-        template<class BilinearForm>
-        bool assemble(BilinearForm &&bilinear_form, Matrix &hessian, const bool append_mode)
-        {
+        template <class BilinearForm>
+        bool assemble(BilinearForm &&bilinear_form, Matrix &hessian, const bool append_mode) {
             Chrono c;
             c.start();
 
             const auto &dof_map = space_.dof_map();
 
-            if(!append_mode) {
+            if (!append_mode) {
                 LibMeshAssembler::allocate_matrix(dof_map, hessian);
             }
 
@@ -346,46 +306,41 @@ namespace utopia {
             USerialMatrix el_mat;
             std::vector<libMesh::dof_id_type> dof_indices;
 
-
             Write<Matrix> w(hessian);
 
             AssemblyContext<LIBMESH_TAG> ctx;
             const int order = functional_order(bilinear_form, ctx);
-            for(auto e_it = space_.mesh().active_local_elements_begin(); e_it != space_.mesh().active_local_elements_end(); ++e_it) {
-                if(!cut.compute(
-                    order,
-                    **e_it,
-                    space_.type(),
-                    fracture_sampler_.fractures,
-                    q)) continue;
+            for (auto e_it = space_.mesh().active_local_elements_begin();
+                 e_it != space_.mesh().active_local_elements_end();
+                 ++e_it) {
+                if (!cut.compute(order, **e_it, space_.type(), fracture_sampler_.fractures, q)) continue;
 
                 ctx.set_current_element((*e_it)->id());
 
-                //reset the fracture id
+                // reset the fracture id
                 fracture_sampler_.active_fracture = 0;
-                for(auto q_it = q.begin(); q_it != q.end(); ++q_it)
-                {
-                    if(*q_it) {
+                for (auto q_it = q.begin(); q_it != q.end(); ++q_it) {
+                    if (*q_it) {
                         ctx.set_has_assembled(false);
-                        ctx.init( bilinear_form, *q_it );
+                        ctx.init(bilinear_form, *q_it);
 
                         el_mat.set(0.0);
 
                         FormEvaluator<LIBMESH_TAG> eval;
                         eval.eval(bilinear_form, el_mat, ctx, true);
 
-                        if(ctx.has_assembled()) {
+                        if (ctx.has_assembled()) {
                             dof_map.dof_indices((*e_it), dof_indices);
                             add_matrix(el_mat, dof_indices, dof_indices, hessian);
                         }
                     }
 
-                    //increment the fracture id
+                    // increment the fracture id
                     ++fracture_sampler_.active_fracture;
                 }
             }
 
-            if(rescale_ != 1.0) {
+            if (rescale_ != 1.0) {
                 hessian *= rescale_;
             }
 
@@ -393,15 +348,14 @@ namespace utopia {
             return true;
         }
 
-        template<class LinearForm>
-        bool assemble(LinearForm &&linear_form, Vector &v, const bool append_mode)
-        {
+        template <class LinearForm>
+        bool assemble(LinearForm &&linear_form, Vector &v, const bool append_mode) {
             Chrono c;
             c.start();
 
             const auto &dof_map = space_.dof_map();
 
-            if(empty(v) || !append_mode) {
+            if (empty(v) || !append_mode) {
                 v = local_zeros(dof_map.n_local_dofs());
             }
 
@@ -410,46 +364,41 @@ namespace utopia {
             USerialVector el_vec;
             std::vector<libMesh::dof_id_type> dof_indices;
 
-
             Write<Vector> w(v);
 
             AssemblyContext<LIBMESH_TAG> ctx;
             const int order = functional_order(linear_form, ctx);
-            for(auto e_it = space_.mesh().active_local_elements_begin(); e_it != space_.mesh().active_local_elements_end(); ++e_it) {
-                if(!cut.compute(
-                    order,
-                    **e_it,
-                    space_.type(),
-                    fracture_sampler_.fractures,
-                    q)) continue;
+            for (auto e_it = space_.mesh().active_local_elements_begin();
+                 e_it != space_.mesh().active_local_elements_end();
+                 ++e_it) {
+                if (!cut.compute(order, **e_it, space_.type(), fracture_sampler_.fractures, q)) continue;
 
                 ctx.set_current_element((*e_it)->id());
 
-                //reset the fracture id
+                // reset the fracture id
                 fracture_sampler_.active_fracture = 0;
-                for(auto q_it = q.begin(); q_it != q.end(); ++q_it)
-                {
-                    if(*q_it) {
+                for (auto q_it = q.begin(); q_it != q.end(); ++q_it) {
+                    if (*q_it) {
                         ctx.set_has_assembled(false);
-                        ctx.init( linear_form, *q_it );
+                        ctx.init(linear_form, *q_it);
 
                         el_vec.set(0.0);
 
                         FormEvaluator<LIBMESH_TAG> eval;
                         eval.eval(linear_form, el_vec, ctx, true);
 
-                        if(ctx.has_assembled()) {
+                        if (ctx.has_assembled()) {
                             dof_map.dof_indices((*e_it), dof_indices);
                             add_vector(el_vec, dof_indices, v);
                         }
                     }
 
-                    //increment the fracture id
+                    // increment the fracture id
                     ++fracture_sampler_.active_fracture;
                 }
             }
 
-            if(rescale_ != 1.0) {
+            if (rescale_ != 1.0) {
                 v *= rescale_;
             }
 
@@ -458,9 +407,11 @@ namespace utopia {
         }
 
         std::shared_ptr<UIFunction<Scalar>> sampler() { return make_ref(fracture_sampler_); }
-        std::shared_ptr<UIFunction<USerialMatrix>> tangent_sampler() { return std::make_shared<FractureTangentSampler>(fracture_sampler_); }
+        std::shared_ptr<UIFunction<USerialMatrix>> tangent_sampler() {
+            return std::make_shared<FractureTangentSampler>(fracture_sampler_);
+        }
 
-    // private:
+        // private:
 
         Flow<FunctionSpace, Matrix, Vector> flow_;
         FunctionSpace &space_;
@@ -470,50 +421,48 @@ namespace utopia {
         FractureSampler fracture_sampler_;
     };
 
-    template<class FunctionSpace, class Matrix, class Vector>
+    template <class FunctionSpace, class Matrix, class Vector>
     FlowWithFractures<FunctionSpace, Matrix, Vector>::FlowWithFractures(FunctionSpace &space)
-    : impl_(utopia::make_unique<Impl>(space))
-    {}
+        : impl_(utopia::make_unique<Impl>(space)) {}
 
-    template<class FunctionSpace, class Matrix, class Vector>
-    FlowWithFractures<FunctionSpace, Matrix, Vector>::~FlowWithFractures()
-    {}
+    template <class FunctionSpace, class Matrix, class Vector>
+    FlowWithFractures<FunctionSpace, Matrix, Vector>::~FlowWithFractures() {}
 
-    template<class FunctionSpace, class Matrix, class Vector>
-    bool FlowWithFractures<FunctionSpace, Matrix, Vector>::assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
-    {
+    template <class FunctionSpace, class Matrix, class Vector>
+    bool FlowWithFractures<FunctionSpace, Matrix, Vector>::assemble_hessian_and_gradient(const Vector &x,
+                                                                                         Matrix &hessian,
+                                                                                         Vector &gradient) {
         return impl_->assemble_hessian_and_gradient(x, hessian, gradient);
     }
 
-    template<class FunctionSpace, class Matrix, class Vector>
-    bool FlowWithFractures<FunctionSpace, Matrix, Vector>::is_linear() const { return true; }
+    template <class FunctionSpace, class Matrix, class Vector>
+    bool FlowWithFractures<FunctionSpace, Matrix, Vector>::is_linear() const {
+        return true;
+    }
 
-    template<class FunctionSpace, class Matrix, class Vector>
+    template <class FunctionSpace, class Matrix, class Vector>
     void FlowWithFractures<FunctionSpace, Matrix, Vector>::clear() {}
 
-    template<class FunctionSpace, class Matrix, class Vector>
-    void FlowWithFractures<FunctionSpace, Matrix, Vector>::read(Input &in)
-    {
+    template <class FunctionSpace, class Matrix, class Vector>
+    void FlowWithFractures<FunctionSpace, Matrix, Vector>::read(Input &in) {
         impl_->read(in);
     }
 
-    template<class FunctionSpace, class Matrix, class Vector>
-    void FlowWithFractures<FunctionSpace, Matrix, Vector>::rescale(const Scalar rescale)
-    {
+    template <class FunctionSpace, class Matrix, class Vector>
+    void FlowWithFractures<FunctionSpace, Matrix, Vector>::rescale(const Scalar rescale) {
         impl_->rescale_ = rescale;
     }
 
-    template<class FunctionSpace, class Matrix, class Vector>
-    std::shared_ptr<UIFunction<typename Traits<Vector>::Scalar>> FlowWithFractures<FunctionSpace, Matrix, Vector>::sampler()
-    {
+    template <class FunctionSpace, class Matrix, class Vector>
+    std::shared_ptr<UIFunction<typename Traits<Vector>::Scalar>>
+    FlowWithFractures<FunctionSpace, Matrix, Vector>::sampler() {
         return impl_->sampler();
     }
 
-    template<class FunctionSpace, class Matrix, class Vector>
-    std::shared_ptr<UIFunction<USerialMatrix>> FlowWithFractures<FunctionSpace, Matrix, Vector>::tangent_sampler()
-    {
+    template <class FunctionSpace, class Matrix, class Vector>
+    std::shared_ptr<UIFunction<USerialMatrix>> FlowWithFractures<FunctionSpace, Matrix, Vector>::tangent_sampler() {
         return impl_->tangent_sampler();
     }
 
     template class FlowWithFractures<LibMeshFunctionSpace, USparseMatrix, UVector>;
-}
+}  // namespace utopia

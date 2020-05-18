@@ -31,7 +31,8 @@ namespace utopia {
     // template<class Left, class Right>
     // class HasMatMatMul< Multiply<Left, Right> > {
     // public:
-    // 	enum { value = HasMatMatMul<Left>::value || HasMatMatMul<Right>::value || ( Left::Order == 2 && Right::Order >= 1) };
+    // 	enum { value = HasMatMatMul<Left>::value || HasMatMatMul<Right>::value || ( Left::Order == 2 && Right::Order >=
+    // 1) };
     // };
 
     // template<class InnerExpr>
@@ -45,7 +46,6 @@ namespace utopia {
     // {
     // 	return HasMatMatMul<Derived>::value;
     // }
-}
+}  // namespace utopia
 
-#endif //UTOPIA_HAS_MAT_MAT_MUL_HPP
-
+#endif  // UTOPIA_HAS_MAT_MAT_MUL_HPP

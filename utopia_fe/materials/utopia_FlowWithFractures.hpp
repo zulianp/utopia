@@ -1,15 +1,15 @@
 #ifndef UTOPIA_FLOW_WITH_FRACTURES_HPP
 #define UTOPIA_FLOW_WITH_FRACTURES_HPP
 
+#include "utopia_FEForwardDeclarations.hpp"
 #include "utopia_Model.hpp"
 #include "utopia_UIScalarSampler.hpp"
-#include "utopia_FEForwardDeclarations.hpp"
 
 #include <iostream>
 
 namespace utopia {
 
-    template<class FunctionSpace, class Matrix, class Vector>
+    template <class FunctionSpace, class Matrix, class Vector>
     class FlowWithFractures final : public Model<Matrix, Vector> {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
@@ -38,6 +38,6 @@ namespace utopia {
     private:
         std::unique_ptr<Impl> impl_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FLOW_WITH_FRACTURES_HPP
+#endif  // UTOPIA_FLOW_WITH_FRACTURES_HPP

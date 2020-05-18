@@ -1,13 +1,12 @@
 #ifndef UTOPIA_CODE_TEMPLATE_HPP
 #define UTOPIA_CODE_TEMPLATE_HPP
 
-
-#include <map>
 #include <iostream>
+#include <map>
 #include <vector>
 
 namespace utopia {
-    static const char * TPL_LIST_ATTR = "[list]";
+    static const char *TPL_LIST_ATTR = "[list]";
 
     class CodeTemplate {
     public:
@@ -17,10 +16,9 @@ namespace utopia {
         bool parse(const std::string &tpl, std::ostream &os) const;
         bool parse(const std::string &tpl, std::string &result) const;
 
-
         CodeTemplate();
-    private:
 
+    private:
         typedef std::map<std::string, std::vector<std::string> > ListMap;
 
         std::string _varStart;
@@ -30,7 +28,6 @@ namespace utopia {
 
         bool is_list(const std::string &var) const;
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_CODE_TEMPLATE_HPP
+#endif  // UTOPIA_CODE_TEMPLATE_HPP

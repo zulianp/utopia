@@ -6,38 +6,27 @@
 
 namespace utopia {
 
-    template<class Tensor>
+    template <class Tensor>
     class RowView<Tensor, 2, FillType::DENSE, utopia::BLAS> {
     public:
-        typedef typename utopia::Traits<Tensor>::SizeType SizeType;
-        typedef typename utopia::Traits<Tensor>::Scalar Scalar;
+        using SizeType = typename utopia::Traits<Tensor>::SizeType;
+        using Scalar = typename utopia::Traits<Tensor>::Scalar;
 
-        inline RowView(Tensor &t, const SizeType row)
-        : t_(t), row_(row)
-        {}
+        inline RowView(Tensor &t, const SizeType row) : t_(t), row_(row) {}
 
-        inline ~RowView() {}
+        inline ~RowView() = default;
 
-        inline SizeType n_values() const
-        {
-            return t_.cols();
-        }
+        inline SizeType n_values() const { return t_.cols(); }
 
-        inline SizeType col(const SizeType index) const
-        {
-            return index;
-        }
+        inline SizeType col(const SizeType index) const { return index; }
 
-        inline Scalar get(const SizeType index) const
-        {
-            return t_.get(row_, index);
-        }
+        inline Scalar get(const SizeType index) const { return t_.get(row_, index); }
 
     private:
         Tensor &t_;
         SizeType row_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_BLAS_ROW_VIEW_HPP
+#endif  // UTOPIA_BLAS_ROW_VIEW_HPP

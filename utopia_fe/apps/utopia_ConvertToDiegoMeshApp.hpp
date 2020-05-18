@@ -1,9 +1,8 @@
 #ifndef UTOPIA_CONVERT_TO_DIEGO_MESH_APP_HPP
 #define UTOPIA_CONVERT_TO_DIEGO_MESH_APP_HPP
 
-#include "utopia_FEApp.hpp"
 #include <string>
-
+#include "utopia_FEApp.hpp"
 
 namespace utopia {
 
@@ -11,12 +10,8 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-convert_to_diego";
-        }
+        inline static std::string command() { return "-convert_to_diego"; }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_CONVERT_TO_DIEGO_MESH_APP_HPP
+#endif  // UTOPIA_CONVERT_TO_DIEGO_MESH_APP_HPP

@@ -11,6 +11,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
 #################################################################################
 
 include(UtopiaGitVersion)
+include(UtopiaClangFormat)
+
 set(UTOPIA_VERSION_MAJOR 0)
 set(UTOPIA_VERSION_MINOR 1)
 set(UTOPIA_VERSION_PATCH 0)
@@ -47,12 +49,16 @@ option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
 
-option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
+option(ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
+option(ENABLE_TRACE_EXPR "enables utopia tracing facilities for every expression" OFF)
+
 option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
+option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the futre" ON)
+option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
@@ -72,9 +78,13 @@ include(CodeCoverage)
 #################################################################################
 #################################################################################
 set(UTOPIA_DEV_FLAGS
-    "-Wall -Werror=enum-compare -Werror=uninitialized -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type"
-
+    "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" #-Werror=uninitialized
 )
+
+if(APPLE)
+    set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=nonportable-include-path")
+endif()
+
 if(CMAKE_CXX_COMPILER MATCHES "nvcc")
     string(REPLACE "-Werror=reorder" "" UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS}")
     message(STATUS "Using nvcc so we remove the -Werror-reorder flag due to a bug in nvcc")
@@ -84,6 +94,16 @@ endif()
 
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=inconsistent-missing-override")
 
+if(ENABLE_CLANG_TIDY)
+    # FIXME
+    find_program(CLANG_TIDY
+      NAMES clang-tidy-mp-7.0 clang-tidy-7 clang-tidy-6.0 clang-tidy-5.0 clang-tidy-4.0 clang-tidy
+      PATHS /opt/local/bin
+    )
+
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-format-style=file;-fix") #-warnings-as-errors=*; #-header-filter=.
+endif()
+
 # More annoying
 set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 
@@ -91,6 +111,10 @@ set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
 include_directories(${CMAKE_SOURCE_DIR}/external/GSL/include)
+
+if(ENABLE_DEPRECATED_API)
+    set(UTOPIA_DEPRECATED_API ON)
+endif()
 
 
 if(UNIX AND NOT APPLE)
@@ -111,11 +135,18 @@ if(ENABLE_GPERFTOOLS)
     endif()
 endif()
 
+if(ENABLE_TRACE_EXPR)
+    set(ENABLE_TRACE ON)
+    set(UTOPIA_TRACE_EXPR_ENABLED ON)
+    set(UTOPIA_TRACE_ENABLED ON)
+endif()
 
 
 if(ENABLE_TRACE)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
+
+
 
 if(ENABLE_PASSO_EXTENSIONS)
     set(WITH_PASSO_EXTENSIONS TRUE)
@@ -213,10 +244,10 @@ function(find_project_files rootPath dirPaths headers sources)
     FOREACH(INCLUDE_PATH ${DIR_PATHS})
         INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
 
-        file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
-        file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
-        file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
-        file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
+        file(GLOB TEMP_HPPSRC CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
+        file(GLOB TEMP_SRC CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
+        file(GLOB TEMP_HPPDR CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
+        file(GLOB TEMP_HDR CONFIGURE_DEPENDS "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
 
         SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
 
@@ -311,6 +342,7 @@ if(TRY_WITH_TRILINOS)
     find_package(Trilinos)
     if(Trilinos_FOUND)
         include_directories(${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Kokkos_CXX_FLAGS}")
         set(WITH_TRILINOS ON)
     endif()
 endif()
@@ -505,3 +537,6 @@ add_custom_target(complete)
 add_dependencies(complete utopia utopia_test utopia_bench utopia_exec)
 
 ##########################################################################################
+target_format_setup(utopia_test)
+##########################################################################################
+

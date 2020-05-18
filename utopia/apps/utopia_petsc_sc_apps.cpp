@@ -1,68 +1,56 @@
 
 #include "utopia_Base.hpp"
 
-//include edsl components
+// include edsl components
 #include "utopia_AppRunner.hpp"
-#include "utopia_Core.hpp"
-#include "utopia_PetscDM.hpp"
-#include "utopia_petsc_Matrix.hpp"
 #include "utopia_AssemblyView.hpp"
-#include "utopia_DeviceView.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_ConjugateGradient.hpp"
-#include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
 #include "utopia_BratuFE.hpp"
-#include "utopia_PoissonFE.hpp"
-#include "utopia_MassMatrixView.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_LinearElasticityView.hpp"
-#include "utopia_GradInterpolate.hpp"
-#include "utopia_PrincipalStrainsView.hpp"
-#include "utopia_PhaseField.hpp"
+#include "utopia_ConjugateGradient.hpp"
+#include "utopia_Core.hpp"
+#include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
+#include "utopia_GradInterpolate.hpp"
+#include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityView.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_MassMatrixView.hpp"
+#include "utopia_PetscDM.hpp"
+#include "utopia_PhaseField.hpp"
+#include "utopia_PoissonFE.hpp"
+#include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_dma_FunctionSpace.hpp"
+
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 #include <cmath>
 
 namespace utopia {
 
-    static void petsc_dm_multivar()
-    {
+    static void petsc_dm_multivar(Input &in) {
         std::cout << "excuting: petsc_dm_multivar" << std::endl;
         static const int Dim = 2;
         static const int NVars = 2;
 
-        using DMDA             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformQuad4;
-        using FunctionSpace    = utopia::FunctionSpace<DMDA, NVars, Elem>;
-        using SizeType         = DMDA::SizeType;
-        using Scalar           = DMDA::Scalar;
-        // using Point            = DMDA::Point;
-
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
+        using Mesh = utopia::PetscDM<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using SizeType = Mesh::SizeType;
+        using Scalar = Mesh::Scalar;
+        // using Point            = Mesh::Point;
 
         FunctionSpace space;
-        space.build(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-        );
+        space.read(in);
 
         PetscVector v;
         space.create_vector(v);
 
-        each_write(v, [](const SizeType &i) -> Scalar {
-            return i % NVars;
-        });
-
+        each_write(v, [](const SizeType &i) -> Scalar { return i % NVars; });
 
         disp(space.mesh().n_nodes());
         disp(size(v));
@@ -73,52 +61,36 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_dm_multivar);
 
-    static void petsc_local_vec_view()
-    {
+    static void petsc_local_vec_view(Input &in) {
         static const int Dim = 3;
         static const int NNodes = 8;
 
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformHex8;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
-        using SizeType         = Mesh::SizeType;
+        using Mesh = utopia::PetscDM<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Elem>;
+        using SizeType = Mesh::SizeType;
         // using Scalar           = Mesh::Scalar;
         // using Point            = Mesh::Point;
-
-        PetscCommunicator world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
-        SizeType nz = scale * 2;
-
-        Mesh mesh(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
-
-        FunctionSpace space(mesh);
+        FunctionSpace space;
+        space.read(in);
 
         PetscVector vec;
-        mesh.create_local_vector(vec);
+        space.mesh().create_local_vector(vec);
         LocalViewDevice<const PetscVector, 1> view(vec);
     }
 
     UTOPIA_REGISTER_APP(petsc_local_vec_view);
 
-    static void petsc_bratu(Input &in)
-    {
+    static void petsc_bratu(Input &in) {
         static const int Dim = 3;
         static const int NNodes = 8;
 
-        using Mesh             = utopia::PetscDM<Dim>;
-        using Elem             = utopia::PetscUniformHex8;
-        using FunctionSpace    = utopia::FunctionSpace<Mesh, 1, Elem>;
-        using SizeType         = Mesh::SizeType;
-        using Scalar           = Mesh::Scalar;
-        using Point            = Mesh::Point;
+        using Mesh = utopia::PetscDM<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Elem>;
+        using SizeType = Mesh::SizeType;
+        using Scalar = Mesh::Scalar;
+        using Point = Mesh::Point;
 
         PetscCommunicator world;
 
@@ -137,12 +109,13 @@ namespace utopia {
         Scalar min_y = 0.0, max_y = 1.0;
         Scalar min_z = 0.0, max_z = 1.0;
 
-
         Scalar decay = 50.0;
         Scalar amplitude = 1.0;
 
-        Point c1; c1.set(0.25);
-        Point c2; c2.set(0.75);
+        Point c1;
+        c1.set(0.25);
+        Point c2;
+        c2.set(0.75);
 
         std::string output_path = "./fe.vtk";
         std::string model = "bratu";
@@ -160,7 +133,6 @@ namespace utopia {
         in.get("c2-y", c2[1]);
         in.get("c2-z", c2[2]);
 
-
         in.get("min-x", min_x);
         in.get("min-y", min_y);
         in.get("min-z", min_z);
@@ -171,12 +143,12 @@ namespace utopia {
 
         in.get("model", model);
 
-        Mesh mesh(
-            world,
-            {nx, ny, nz},
-            {min_x, min_y, min_z},
-            {max_x, max_y, max_z}
-        );
+        // Mesh mesh(
+        //     world,
+        //     {nx, ny, nz},
+        //     {min_x, min_y, min_z},
+        //     {max_x, max_y, max_z}
+        // );
 
         stats.stop_and_collect("mesh-gen");
 
@@ -184,22 +156,13 @@ namespace utopia {
 
         stats.start();
 
-        FunctionSpace space(mesh);
+        FunctionSpace space;
+        space.read(in);
 
-        //boundary conditions
-        space.emplace_dirichlet_condition(
-            SideSet::left(),
-            UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return 0.0;
-            }
-        );
+        // boundary conditions
+        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(
-            SideSet::right(),
-            UTOPIA_LAMBDA(const Point &p) -> Scalar {
-                return 0.0;
-            }
-        );
+        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; });
 
         stats.stop_and_collect("space+bc");
         ///////////////////////////////////////
@@ -208,11 +171,10 @@ namespace utopia {
         std::shared_ptr<Function<PetscMatrix, PetscVector>> fun;
 
         auto ff = UTOPIA_LAMBDA(const Point &p) {
-                return amplitude * device::exp(-decay * norm2(c1 - p)) +
-                       amplitude * device::exp(-decay * norm2(c2 - p));
-            };
+            return amplitude * device::exp(-decay * norm2(c1 - p)) + amplitude * device::exp(-decay * norm2(c2 - p));
+        };
 
-        if(model == "poisson") {
+        if (model == "poisson") {
             auto fe_model = std::make_shared<PoissonFE<FunctionSpace>>(space);
             fe_model->init_forcing_function(ff);
             fun = fe_model;
@@ -256,8 +218,7 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_bratu);
 
-    static void petsc_dm_app()
-    {
+    static void petsc_dm_app() {
         // using Mesh = utopia::PetscDM<2>;
         // using SizeType = Mesh::SizeType;
         // SizeType nx = 10;
@@ -306,264 +267,133 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_dm_app);
 
-    template<class FunctionSpace>
-    void compression_only_bc(FunctionSpace &space)
-    {
-        using Point  = typename FunctionSpace::Point;
+    template <class FunctionSpace>
+    void compression_only_bc(FunctionSpace &space) {
+        using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
         ////////////////////////////////////
 
-        //HORIZONTAL
-        space.emplace_dirichlet_condition(
-            SideSet::left(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            1
-        );
+        // HORIZONTAL
+        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
-        space.emplace_dirichlet_condition(
-            SideSet::left(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            2
-        );
+        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
-        space.emplace_dirichlet_condition(
-            SideSet::right(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            1
-        );
+        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
-        space.emplace_dirichlet_condition(
-            SideSet::right(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            2
-        );
+        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
         ////////////////////////////////////
 
-        //VERTICAL
+        // VERTICAL
 
-        space.emplace_dirichlet_condition(
-            SideSet::top(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            0
-        );
+        space.emplace_dirichlet_condition(SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-        space.emplace_dirichlet_condition(
-            SideSet::top(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            2
-        );
+        space.emplace_dirichlet_condition(SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
-        space.emplace_dirichlet_condition(
-            SideSet::bottom(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            0
-        );
+        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-        space.emplace_dirichlet_condition(
-            SideSet::bottom(),
-            UTOPIA_LAMBDA(const Point &) -> Scalar {
-                return 0.0;
-            },
-            2
-        );
+        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
         ////////////////////////////////////
 
+        // DEPTH
+        space.emplace_dirichlet_condition(SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-       //DEPTH
-       space.emplace_dirichlet_condition(
-           SideSet::front(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return 0.0;
-           },
-           0
-       );
+        space.emplace_dirichlet_condition(SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
-       space.emplace_dirichlet_condition(
-           SideSet::front(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return 0.0;
-           },
-           1
-       );
+        space.emplace_dirichlet_condition(SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-       space.emplace_dirichlet_condition(
-           SideSet::back(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return 0.0;
-           },
-           0
-       );
+        space.emplace_dirichlet_condition(SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
-       space.emplace_dirichlet_condition(
-           SideSet::back(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return 0.0;
-           },
-           1
-       );
+        ////////////////////////////////////
 
-       ////////////////////////////////////
+        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 0);
 
+        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 0);
 
-       space.emplace_dirichlet_condition(
-           SideSet::left(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return -0.1;
-           },
-           0
-       );
+        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 1);
 
-       space.emplace_dirichlet_condition(
-           SideSet::right(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return 0.1;
-           },
-           0
-       );
+        space.emplace_dirichlet_condition(SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 1);
 
-       space.emplace_dirichlet_condition(
-           SideSet::bottom(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return -0.1;
-           },
-           1
-       );
+        space.emplace_dirichlet_condition(SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 2);
 
-       space.emplace_dirichlet_condition(
-           SideSet::top(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return 0.1;
-           },
-           1
-       );
-
-
-       space.emplace_dirichlet_condition(
-           SideSet::back(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return -0.1;
-           },
-           2
-       );
-
-       space.emplace_dirichlet_condition(
-           SideSet::front(),
-           UTOPIA_LAMBDA(const Point &) -> Scalar {
-               return 0.1;
-           },
-           2
-       );
+        space.emplace_dirichlet_condition(SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 2);
     }
 
-    static void petsc_fe_function()
-    {
+    static void petsc_fe_function(Input &in) {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Comm           = utopia::PetscCommunicator;
-        using Mesh           = utopia::PetscDM<Dim>;
-        using Elem           = utopia::PetscUniformHex8;
-        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView       = FunctionSpace::ViewDevice::Elem;
-        using SizeType       = FunctionSpace::SizeType;
-        using Scalar         = FunctionSpace::Scalar;
-        using Quadrature     = utopia::Quadrature<Elem, 2>;
-        using Dev            = FunctionSpace::Device;
-        using FEFunction     = utopia::FEFunction<FunctionSpace>;
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscDM<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView = FunctionSpace::ViewDevice::Elem;
+        using SizeType = FunctionSpace::SizeType;
+        using Scalar = FunctionSpace::Scalar;
+        using Quadrature = utopia::Quadrature<Elem, 2>;
+        using Dev = FunctionSpace::Device;
+        using FEFunction = utopia::FEFunction<FunctionSpace>;
 
-        //BEGIN: Host context
-        Comm world;
-
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 2;
-        SizeType ny = scale * 2;
-        SizeType nz = scale * 2;
-
+        // BEGIN: Host context
         FunctionSpace space;
+        space.read(in);
 
-        space.build(
-            world,
-            {nx, ny, nz},
-            {0.0, 0.0, 0.0},
-            {1.0, 1.0, 1.0}
-        );
-
-        FEFunction fun(space);
+        PetscVector x;
+        space.create_vector(x);
+        FEFunction fun(space, x);
 
         Quadrature q;
-
-        auto coeff = fun.coefficient();
 
         auto f = fun.value(q);
         auto g = fun.gradient(q);
 
-        auto shape      = space.shape(q);
+        auto shape = space.shape(q);
         auto shape_grad = space.shape_grad(q);
 
-        //custom operator can be create with factory functions
-        auto lapl       = laplacian(space, q);
+        // custom operator can be create with factory functions
+        auto lapl = laplacian(space, q);
 
-        //END: Host context
+        // END: Host context
 
         {
-            //BEGIN: Device context
-            auto space_view = space.view_device();
-            auto coeff_view = coeff.view_device();
-            auto f_view     = f.view_device();
-            auto g_view     = g.view_device();
+            // BEGIN: Device context
+            auto &&space_view = space.view_device();
+            auto f_view = f.view_device();
+            auto g_view = g.view_device();
 
-            auto shape_view      = shape.view_device();
+            auto shape_view = shape.view_device();
             auto shape_grad_view = shape_grad.view_device();
 
-
             // Device Kernel (GPU or CPU) (this should be hidden better)
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
+            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
                 ElemView e;
                 space_view.elem(idx, e);
 
                 auto s_grad = shape_grad_view.make(e);
-
             });
 
-            //END: Device context
+            // END: Device context
         }
-
     }
 
     UTOPIA_REGISTER_APP(petsc_fe_function);
 
-    static void petsc_sample()
-    {
+    static void petsc_sample(Input &in) {
         static const int Dim = 2;
         static const int NVars = 1;
 
-        using Comm           = utopia::PetscCommunicator;
-        using Mesh           = utopia::PetscDM<Dim>;
-        using Elem           = utopia::PetscUniformQuad4;
-        using FunctionSpace  = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView       = FunctionSpace::ViewDevice::Elem;
-        using SizeType       = FunctionSpace::SizeType;
-        using Scalar         = FunctionSpace::Scalar;
-        using Quadrature     = utopia::Quadrature<Elem, 2>;
-        using Dev            = FunctionSpace::Device;
-        using FEFunction     = utopia::FEFunction<FunctionSpace>;
-        using Point          = typename FunctionSpace::Point;
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscDM<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using ElemView = FunctionSpace::ViewDevice::Elem;
+        using SizeType = FunctionSpace::SizeType;
+        using Scalar = FunctionSpace::Scalar;
+        using Quadrature = utopia::Quadrature<Elem, 2>;
+        using Dev = FunctionSpace::Device;
+        using FEFunction = utopia::FEFunction<FunctionSpace>;
+        using Point = typename FunctionSpace::Point;
 
         Comm world;
 
@@ -572,13 +402,7 @@ namespace utopia {
         SizeType ny = scale * 10;
 
         FunctionSpace space;
-
-        space.build(
-            world,
-            {nx, ny},
-            {0.0, 0.0},
-            {1.0, 1.0}
-        );
+        space.read(in);
 
         PetscVector x;
         space.create_vector(x);
@@ -591,11 +415,11 @@ namespace utopia {
         });
 
         {
-            auto space_view   = space.view_device();
-            auto x_view       = space.assembly_view_device(x);
+            auto &&space_view = space.view_device();
+            auto x_view = FunctionSpace::assembly_view_device(x);
             auto sampler_view = sampler.view_device();
 
-            Dev::parallel_for(space.local_element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                 ElemView e;
                 space_view.elem(i, e);
 
@@ -603,7 +427,6 @@ namespace utopia {
                 sampler_view.assemble(e, s);
                 space_view.set_vector(e, s, x_view);
             });
-
         }
 
         rename("C", x);
@@ -612,5 +435,4 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_sample);
 
-}
-
+}  // namespace utopia

@@ -88,7 +88,8 @@
 //             }
 //         }
 
-//         static HMVectorFEFun fun(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+//         static HMVectorFEFun fun(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun,
+//         AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto space_ptr = fun.space_ptr();
 //             HMVectorFEFun ret;
@@ -97,7 +98,8 @@
 //             return ret;
 //         }
 
-//         static HMVectorFEFun fun(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+//         static HMVectorFEFun fun(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun,
+//         AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto space_ptr = fun.space_ptr();
 //             HMVectorFEFun ret;
@@ -118,7 +120,6 @@
 //         {
 //             return ctx.test[fun.space_ptr()->subspace_id()]->grad;
 //         }
-
 
 //         // vector fe functions
 //         static void grad_aux(
@@ -153,7 +154,8 @@
 //             }
 //         }
 
-//         static HMVectorFEDerivative grad(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+//         static HMVectorFEDerivative grad(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun,
+//         AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto space_ptr = fun.space_ptr();
 //             HMVectorFEDerivative ret;
@@ -161,14 +163,14 @@
 //             return ret;
 //         }
 
-//         static HMVectorFEDerivative grad(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+//         static HMVectorFEDerivative grad(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun,
+//         AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto space_ptr = fun.space_ptr();
 //             HMVectorFEDerivative ret;
 //             grad_aux(*space_ptr, ctx.test, ctx, ret);
 //             return ret;
 //         }
-
 
 //         //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -218,7 +220,6 @@
 //             return ret;
 //         }
 
-
 //         //////////////////////////////////////////////////////////////////////////////////////////
 //         //Curl
 //         static void eval_curl(const USerialMatrix &deriv, USerialVector &result)
@@ -267,7 +268,6 @@
 //         {
 //             ret.resize(fe_object[0]->fun.size());
 
-
 //             HMVectorFEDerivative grads;
 
 //             grad_aux(
@@ -301,8 +301,8 @@
 //             }
 //         }
 
-
-//         static HMDerivative curl(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+//         static HMDerivative curl(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun,
+//         AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto space_ptr = fun.space_ptr();
 //             HMDerivative ret;
@@ -310,14 +310,14 @@
 //             return ret;
 //         }
 
-//         static HMDerivative curl(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+//         static HMDerivative curl(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun,
+//         AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto space_ptr = fun.space_ptr();
 //             HMDerivative ret;
 //             curl_aux(*space_ptr, ctx.test, ctx, ret);
 //             return ret;
 //         }
-
 
 //         //////////////////////////////////////////////////////////////////////////////////////////
 //         //Interpolate
@@ -353,7 +353,8 @@
 //         }
 
 //         template<class Derived, class Space>
-//         static std::vector<double> fun(const Interpolate<Tensor<Derived, 1>, TrialFunction<Space> > &interp, AssemblyContext<HOMEMADE> &ctx)
+//         static std::vector<double> fun(const Interpolate<Tensor<Derived, 1>, TrialFunction<Space> > &interp,
+//         AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto &c  = interp.coefficient().derived();
 //             auto &f  = interp.fun();
@@ -373,7 +374,8 @@
 //         }
 
 //         template<class Derived>
-//         static std::vector<USerialVector> grad(const Interpolate<Tensor<Derived, 1>, TrialFunction<HMFESpace> > &interp, AssemblyContext<HOMEMADE> &ctx)
+//         static std::vector<USerialVector> grad(const Interpolate<Tensor<Derived, 1>, TrialFunction<HMFESpace> >
+//         &interp, AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto &c   = interp.coefficient().derived();
 //             auto &f   = interp.fun();
@@ -396,7 +398,8 @@
 //         }
 
 //         template<class Derived>
-//         static std::vector<USerialMatrix> grad(const Interpolate<Tensor<Derived, 1>, TrialFunction<ProductFunctionSpace<HMFESpace> > > &interp, AssemblyContext<HOMEMADE> &ctx)
+//         static std::vector<USerialMatrix> grad(const Interpolate<Tensor<Derived, 1>,
+//         TrialFunction<ProductFunctionSpace<HMFESpace> > > &interp, AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             auto &c   = interp.coefficient().derived();
 //             auto &f   = interp.fun();
@@ -418,8 +421,6 @@
 //             return ret;
 //         }
 
-
-
 //         template<class Derived>
 //         static void interp_values(
 //             const Interpolate<Tensor<Derived, 1>, TrialFunction<ProductFunctionSpace<HMFESpace>> > &interp,
@@ -433,7 +434,6 @@
 
 //             std::vector<int> indices;
 //             space_ptr->subspace(0).dof_indices(ctx.current_element, indices);
-
 
 //             std::vector<int> prod_indices;
 //             prod_indices.reserve(indices.size() * space_ptr->n_subspaces());
@@ -460,12 +460,11 @@
 //             }
 //         }
 
-
-
 //         //////////////////////////////////////////////////////////////////////////////////////////
 
 //         template<class Space, class Op>
-//         inline static auto apply_binary(const Number<double> &left, const TrialFunction<Space> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+//         inline static auto apply_binary(const Number<double> &left, const TrialFunction<Space> &right, const Op &op,
+//         AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
@@ -480,7 +479,8 @@
 //         }
 
 //         template<class Space, class Op>
-//         inline static auto apply_binary(const Number<double> &left, const TestFunction<Space> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+//         inline static auto apply_binary(const Number<double> &left, const TestFunction<Space> &right, const Op &op,
+//         AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
@@ -496,7 +496,8 @@
 
 //         //alpha * (grad_t + grad)
 //         template<class Left, class Right>
-//         inline static HMVectorFEDerivative grad_t_plus_grad(const double scaling, const Left &left, const Right &right, AssemblyContext<HOMEMADE> &ctx)
+//         inline static HMVectorFEDerivative grad_t_plus_grad(const double scaling, const Left &left, const Right
+//         &right, AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             HMVectorFEDerivative ret = grad(right, ctx);
 //             auto && grad_left = grad(left, ctx);
@@ -511,14 +512,14 @@
 //             return ret;
 //         }
 
-
 //         //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //         template<class Left, class Space>
 //         inline static auto multiply(
 //             const Left &left,
 //             const Gradient<TrialFunction<Space> > &right,
-//             AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type
+//             AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(),
+//             ctx))>::type
 //         {
 //             // HMDerivative ret = ctx.trial[right.expr().space_ptr()->subspace_id()]->grad;
 //             typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
@@ -532,12 +533,12 @@
 //             return ret;
 //         }
 
-
 //         template<class Space>
 //         inline static auto multiply(
 //             const std::vector<double> &left,
 //             const Gradient<TrialFunction<Space> > &right,
-//             AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type
+//             AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(),
+//             ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
@@ -552,15 +553,12 @@
 //             return ret;
 //         }
 
-
-
-
-
 //         template<class Left, class Space>
 //         inline static auto multiply(
 //             const Left &left,
 //             const Gradient<TestFunction<Space> > &right,
-//             AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type
+//             AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(),
+//             ctx))>::type
 //         {
 //             // HMDerivative ret = ctx.trial[right.expr().space_ptr()->subspace_id()]->grad;
 //             typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
@@ -575,7 +573,8 @@
 //         }
 
 //         template<class Space>
-//         inline static auto multiply(const std::vector<double> &left, const TrialFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+//         inline static auto multiply(const std::vector<double> &left, const TrialFunction<Space> &right,
+//         AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
@@ -589,9 +588,10 @@
 //             return ret;
 //         }
 
-
 //         template<class Space>
-//         inline static auto multiply(const std::vector<USerialMatrix> &left, const Gradient<TrialFunction<Space> > &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type
+//         inline static auto multiply(const std::vector<USerialMatrix> &left, const Gradient<TrialFunction<Space> >
+//         &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(),
+//         ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
@@ -606,7 +606,8 @@
 //         }
 
 //         template<class Space>
-//         inline static auto multiply(const std::vector<USerialMatrix> &left, const TrialFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+//         inline static auto multiply(const std::vector<USerialMatrix> &left, const TrialFunction<Space> &right,
+//         AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
@@ -621,7 +622,8 @@
 //         }
 
 //         template<class Left, class Space>
-//         inline static auto multiply(const Left &left, const TrialFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+//         inline static auto multiply(const Left &left, const TrialFunction<Space> &right,  AssemblyContext<HOMEMADE>
+//         &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
@@ -635,7 +637,8 @@
 //         }
 
 //         template<class Left, class Space>
-//         inline static auto multiply(const Left &left, const TestFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+//         inline static auto multiply(const Left &left, const TestFunction<Space> &right,  AssemblyContext<HOMEMADE>
+//         &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
 //         {
 //             typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
@@ -649,7 +652,8 @@
 //         }
 
 //         template<class Op>
-//         inline static HMFun apply_binary(const Number<double> &left, const TestFunction<HMFESpace> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx)
+//         inline static HMFun apply_binary(const Number<double> &left, const TestFunction<HMFESpace> &right, const Op
+//         &op, AssemblyContext<HOMEMADE> &ctx)
 //         {
 //             HMFun ret = ctx.test[right.space_ptr()->subspace_id()]->fun;
 
@@ -676,7 +680,6 @@
 
 //             auto && dx    = ctx.dx();
 
-
 //             uint n_quad_points = dx.size();
 
 //             auto s = size(result);
@@ -685,7 +688,6 @@
 //                 s.set_dims(2);
 //                 s.set(1, 1);
 //             }
-
 
 //             for (uint qp = 0; qp < n_quad_points; qp++) {
 //                 for (uint i = 0; i < s.get(1); i++) {
