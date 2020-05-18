@@ -1,6 +1,8 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_AuthoredWork.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_CiteUtopia.hpp"
 #include "utopia_Config.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
@@ -52,6 +54,8 @@ namespace utopia {
 #endif  // WITH_TRILINOS
 
         instance().read_input(argc, argv);
+
+        CitationsDB::instance().cite(BibTeX(utopia_bib));
     }
 
     int Utopia::Finalize() {
@@ -64,6 +68,8 @@ namespace utopia {
         if (mpi_world_rank() == 0) {
             instance().maintenance_logger().flush();
         }
+
+        CitationsDB::print();
 
 #ifdef WITH_TRILINOS
         Tpetra::finalize();

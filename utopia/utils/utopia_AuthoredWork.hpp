@@ -14,7 +14,7 @@ namespace utopia {
         inline void set_citation(std::string cite) { cite_ = std::move(cite); }
         inline void describe(std::ostream &os) const override { os << cite_; }
 
-        BibTeX(const char *str) : cite_(str) {}
+        explicit BibTeX(const char *str) : cite_(str) {}
 
     private:
         std::string cite_;
@@ -26,17 +26,21 @@ namespace utopia {
             if (authorships_.empty()) return;
 
             if (mpi_world_rank() == 0) {
-                os << "---------------------------------------------------\n";
-                os << "If you use this runs for your articles, journals, presentations, etc. Please cite the following "
+                os << "\n\n";
+                os << "---------------------------------------------------------------------------------------------\n";
+                os << "If you use this run for your articles, journals, presentations, etc. Please cite the following "
                       "work:\n";
 
                 for (const auto &a : authorships_) {
                     a.describe(os);
                 }
 
-                os << "---------------------------------------------------\n";
+                os << "---------------------------------------------------------------------------------------------\n"
+                      "\n";
             }
         }
+
+        inline static void print() { instance().describe(); }
 
         inline static CitationsDB &instance() {
             static CitationsDB instance_;
