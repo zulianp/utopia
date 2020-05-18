@@ -6,7 +6,6 @@
 
 // #include <iomanip>
 
-
 //      namespace utopia
 //      {
 //         template<class Vector>
@@ -15,9 +14,7 @@
 //             typedef UTOPIA_SCALAR(Vector)           Scalar;
 //             typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
 
-
 //         public:
-
 
 //         /**
 //          * @brief      Base class for smoothers.
@@ -38,11 +35,11 @@
 
 //         // virtual void update(const std::shared_ptr<const Operator<Vector> > &) = 0;
 
-
 //         /**
 //          * @brief      Quick interface for smoothing with projecting constraints.
 //          */
-//         // virtual bool nonlinear_smooth(const Matrix &/*A*/, const Vector &/*rhs*/, const Vector& /*ub*/, const Vector& /*lb*/, Vector &/*x*/, std::vector<SizeType>& /*zero_rows*/){ return 0; }
+//         // virtual bool nonlinear_smooth(const Matrix &/*A*/, const Vector &/*rhs*/, const Vector& /*ub*/, const
+//         Vector& /*lb*/, Vector &/*x*/, std::vector<SizeType>& /*zero_rows*/){ return 0; }
 
 //         /**
 //          * @brief      Get number of sweeps.
@@ -53,7 +50,6 @@
 //         {
 //             return _sweeps;
 //         }
-
 
 //         /**
 //          * @brief      Set the sweeps.
@@ -67,7 +63,6 @@
 //             _sweeps = sweeps_in;
 //         }
 
-
 //         /**
 //          * @brief      Set omega.
 //          *
@@ -77,7 +72,6 @@
 //         {
 //             return _relaxation_parameter;
 //         }
-
 
 //         /**
 //          * @brief      Set omega.
@@ -97,14 +91,11 @@
 //             in.get("relaxation_parameter", _relaxation_parameter);
 //         }
 
-
 //         virtual void print_usage(std::ostream &os) const override
 //         {
 //             this->print_param_usage(os, "sweeps", "int", "Number of smoothing steps.", "1.0");
 //             this->print_param_usage(os, "relaxation_parameter", "real", "Relaxation parameter.", "1.0");
 //         }
-
-
 
 //     private:
 //         SizeType     _sweeps;
@@ -114,4 +105,3 @@
 // }
 
 // #endif //UTOPIA_SMOOTHER_HPP
-

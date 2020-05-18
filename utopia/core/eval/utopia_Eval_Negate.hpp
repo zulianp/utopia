@@ -4,7 +4,7 @@
 #include "utopia_Eval_Unary.hpp"
 
 namespace utopia {
-    template<class InnerExpr, class Traits, int Backend>
+    template <class InnerExpr, class Traits, int Backend>
     class Eval<Negate<InnerExpr>, Traits, Backend> {
     public:
         using Expr = utopia::Negate<InnerExpr>;
@@ -12,14 +12,13 @@ namespace utopia {
 
         UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
-        inline static void apply(const Negate<InnerExpr> &expr, Result &result)
-        {
+        inline static void apply(const Negate<InnerExpr> &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
             result = Eval<InnerExpr, Traits>::apply(expr.expr());
             result.transform(Minus());
             UTOPIA_TRACE_END(expr);
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_EVAL_NEGATE_HPP
+#endif  // UTOPIA_EVAL_NEGATE_HPP

@@ -1,46 +1,44 @@
 #ifndef UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP
 #define UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP
 
-#include <vector>
-#include <utility>
 #include <memory>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
-#include "utopia.hpp"
 #include "libmesh/libmesh_common.h"
+#include "utopia.hpp"
 
 #include "moonolith_communicator.hpp"
 
-
 namespace libMesh {
-      class MeshBase;
-      class DofMap;
-}
+    class MeshBase;
+    class DofMap;
+}  // namespace libMesh
 
 namespace utopia {
 
-      bool assemble_volume_transfer_r(
-            moonolith::Communicator &comm,
-            const std::shared_ptr<libMesh::MeshBase> &master,
-            const std::shared_ptr<libMesh::MeshBase> &slave,
-            const std::shared_ptr<libMesh::DofMap> &dof_master,
-            const std::shared_ptr<libMesh::DofMap> &dof_slave,
-            const std::shared_ptr<libMesh::DofMap> &dof_reverse_master,
-            const std::shared_ptr<libMesh::DofMap> &dof_reverse_slave,
-            const unsigned int &from_var_num,
-            const unsigned int &to_var_num,
-            const unsigned int &from_var_num_r,
-            const unsigned int &to_var_num_r,
-            std::unordered_set<utopia::SizeType> &particip_slave_dofs,
-            bool use_biorth,
-            int n_var,
-            int n_var_r,
-            PetscMatrix &B,
-            PetscMatrix &B_reverse);
+    bool assemble_volume_transfer_r(moonolith::Communicator &comm,
+                                    const std::shared_ptr<libMesh::MeshBase> &master,
+                                    const std::shared_ptr<libMesh::MeshBase> &slave,
+                                    const std::shared_ptr<libMesh::DofMap> &dof_master,
+                                    const std::shared_ptr<libMesh::DofMap> &dof_slave,
+                                    const std::shared_ptr<libMesh::DofMap> &dof_reverse_master,
+                                    const std::shared_ptr<libMesh::DofMap> &dof_reverse_slave,
+                                    const unsigned int &from_var_num,
+                                    const unsigned int &to_var_num,
+                                    const unsigned int &from_var_num_r,
+                                    const unsigned int &to_var_num_r,
+                                    std::unordered_set<utopia::SizeType> &particip_slave_dofs,
+                                    bool use_biorth,
+                                    int n_var,
+                                    int n_var_r,
+                                    PetscMatrix &B,
+                                    PetscMatrix &B_reverse);
 
 }
 
-#endif //UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP
+#endif  // UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP
 
 // #ifndef UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP
 // #define UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP
@@ -56,7 +54,6 @@ namespace utopia {
 // #include "libmesh/libmesh_common.h"
 
 // #include "moonolith_communicator.hpp"
-
 
 // namespace libMesh {
 //       class MeshBase;

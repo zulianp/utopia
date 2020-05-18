@@ -57,7 +57,6 @@
 //             }
 //         }
 
-
 //         points.resize(3 * 2);
 //         points[0] = 0.0;
 //         points[1] = 0.0;

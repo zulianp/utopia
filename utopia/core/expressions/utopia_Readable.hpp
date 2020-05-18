@@ -5,9 +5,9 @@
 #ifndef UTOPIA_UTOPIA_READABLE_HPP
 #define UTOPIA_UTOPIA_READABLE_HPP
 
-#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Config.hpp"
 #include "utopia_Enums.hpp"
+#include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
 
@@ -18,7 +18,7 @@ namespace utopia {
      * @tparam Implementation the backend type
      * @tparam Derived the derived expression
      */
-    template<class Implementation, class Derived, int Order>
+    template <class Implementation, class Derived, int Order>
     class Readable;
 
     /*!
@@ -28,12 +28,12 @@ namespace utopia {
      * @tparam Implementation the backend type
      * @tparam Derived the derived expression
      */
-    template<class Implementation, class Derived>
+    template <class Implementation, class Derived>
     class Readable<Implementation, Derived, 2> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
+        using Scalar = typename Traits<Implementation>::Scalar;
 
-         /**
+        /**
          * @ingroup     element_acess
          * @brief       Reads value of the element from matrix defined by index (row, column).
          * @warning     Please do not forget to use this function inside of read lock. \n
@@ -41,19 +41,17 @@ namespace utopia {
          * @param[in]  indices  The set of indices.
          * @param[in]  value    The value.
          */
-        inline Scalar get(const int row, const int col) const
-        {
+        inline Scalar get(const int row, const int col) const {
             assert_enabled(is_read_locked());
             assert(row < size(derived()).get(0));
             assert(col < size(derived()).get(1));
 
-            return Backend<Scalar, Traits<Implementation>::Backend >::get(derived().implementation(), row, col);
+            return Backend<Scalar, Traits<Implementation>::Backend>::get(derived().implementation(), row, col);
             // return derived().implementation().get(row, col);
         }
 
     private:
         CONST_DERIVED_CRT(Derived);
-
     };
 
     /*!
@@ -63,12 +61,12 @@ namespace utopia {
      * @tparam Implementation the backend type
      * @tparam Derived the derived expression
      */
-    template<class Implementation, class Derived>
+    template <class Implementation, class Derived>
     class Readable<Implementation, Derived, 1> {
     public:
-        typedef typename Traits<Implementation>::Scalar Scalar;
+        using Scalar = typename Traits<Implementation>::Scalar;
 
-         /**
+        /**
          * @ingroup     element_acess
          * @brief       Gets value of the element, which index matches with requested one.
          * @warning     Please do not forget to use this function inside of read lock. \n
@@ -76,71 +74,55 @@ namespace utopia {
          * @param[in]  indices  The set of indices.
          * @param[in]  value    The value.
          */
-        inline Scalar get(const int index) const
-        {
+        inline Scalar get(const int index) const {
             assert_enabled(is_read_locked());
             assert(index < size(derived()).get(0));
-            return Backend<Scalar, Traits<Implementation>::Backend >::get(derived().implementation(), index);
+            return Backend<Scalar, Traits<Implementation>::Backend>::get(derived().implementation(), index);
             // return derived().implementation()[index];
-
         }
 
-        template<typename I, typename  T>
-        inline void get(const std::vector<I> &index, std::vector<T> &values) const
-        {
-            Backend<Scalar, Traits<Implementation>::Backend >::get(derived().implementation(), index, values);
+        template <typename I, typename T>
+        inline void get(const std::vector<I> &index, std::vector<T> &values) const {
+            Backend<Scalar, Traits<Implementation>::Backend>::get(derived().implementation(), index, values);
         }
 
     private:
         CONST_DERIVED_CRT(Derived);
-
     };
 
-    template<class Tensor>
+    template <class Tensor>
     class Read {
     public:
-        typedef typename Traits<Tensor>::Scalar Scalar;
-
+        using Scalar = typename Traits<Tensor>::Scalar;
 
         /**
          * @ingroup     lock
          * @brief       Reading lock providing memory access to the object.
          * @param      tensor  The tensor (the const qualifier might be removed internally).
          */
-        Read(const Tensor &tensor)
-        : tensor_(tensor)
-        {
-            const_cast<Tensor &>(tensor_).read_lock();
-        }
+        Read(const Tensor &tensor) : tensor_(tensor) { const_cast<Tensor &>(tensor_).read_lock(); }
 
-        ~Read()
-        {
-            const_cast<Tensor &>(tensor_).read_unlock();
-        }
+        ~Read() { const_cast<Tensor &>(tensor_).read_unlock(); }
 
     private:
         const Tensor &tensor_;
     };
 
-    template<class T, int Order>
-    class Read< std::vector<Tensor<T, Order> > > {
+    template <class T, int Order>
+    class Read<std::vector<Tensor<T, Order> > > {
     public:
         using Tensor = utopia::Tensor<T, Order>;
         using Tensors = std::vector<Tensor>;
-        using Scalar  = typename Traits<T>::Scalar;
-        
+        using Scalar = typename Traits<T>::Scalar;
 
-        Read(const Tensors &tensors)
-        : tensors_(tensors)
-        {
-            for(auto &t : tensors_) {
+        Read(const Tensors &tensors) : tensors_(tensors) {
+            for (auto &t : tensors_) {
                 const_cast<Tensor &>(t).read_lock();
             }
         }
 
-        ~Read()
-        {
-            for(auto &t : tensors_) {
+        ~Read() {
+            for (auto &t : tensors_) {
                 const_cast<Tensor &>(t).read_unlock();
             }
         }
@@ -148,31 +130,26 @@ namespace utopia {
         const Tensors &tensors_;
     };
 
-    template<class Tensor>
+    template <class Tensor>
     class ReadAndWrite {
     public:
-        typedef typename Traits<Tensor>::Scalar Scalar;
+        using Scalar = typename Traits<Tensor>::Scalar;
 
         /**
          * @ingroup     lock
          * @brief       Lock providing both: read and write memory access to the object.
          * @param      tensor  The tensor.
          */
-        ReadAndWrite(Tensor &tensor, WriteMode mode = utopia::LOCAL)
-        : tensor_(tensor), mode_(mode)
-        {
+        ReadAndWrite(Tensor &tensor, WriteMode mode = utopia::LOCAL) : tensor_(tensor), mode_(mode) {
             tensor_.read_and_write_lock(mode_);
         }
 
-        ~ReadAndWrite()
-        {
-            tensor_.read_and_write_unlock(mode_);
-        }
+        ~ReadAndWrite() { tensor_.read_and_write_unlock(mode_); }
 
     private:
-         Tensor &tensor_;
-         WriteMode mode_;
+        Tensor &tensor_;
+        WriteMode mode_;
     };
 
-}
-#endif //UTOPIA_UTOPIA_READABLE_HPP
+}  // namespace utopia
+#endif  // UTOPIA_UTOPIA_READABLE_HPP

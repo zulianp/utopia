@@ -1,14 +1,14 @@
 #ifndef UTOPIA_FE_EVAL_BASIS_FUNCTION_HPP
 #define UTOPIA_FE_EVAL_BASIS_FUNCTION_HPP
 
-#include "utopia_Eval_Empty.hpp"
-#include "utopia_fe_lang.hpp"
 #include "utopia_AssemblyContext.hpp"
+#include "utopia_Eval_Empty.hpp"
 #include "utopia_FEEval_Empty.hpp"
+#include "utopia_fe_lang.hpp"
 
 namespace utopia {
 
-    template<class Derived, class FunctionSpaceT, class Traits, int Backend, int IsQuadData>
+    template <class Derived, class FunctionSpaceT, class Traits, int Backend, int IsQuadData>
     class FEEval<BasisFunction<Derived, FunctionSpaceT>, Traits, Backend, IsQuadData> {
     public:
         typedef BasisFunction<Derived, FunctionSpaceT> Expr;
@@ -19,7 +19,6 @@ namespace utopia {
             return Result();
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FE_EVAL_BASIS_FUNCTION_HPP
-
+#endif  // UTOPIA_FE_EVAL_BASIS_FUNCTION_HPP

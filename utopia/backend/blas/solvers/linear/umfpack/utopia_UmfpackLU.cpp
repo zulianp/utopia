@@ -1,4 +1,4 @@
-//FIXME
+// FIXME
 // #include "utopia_UmfpackLU.hpp"
 // #include <umfpack.h>
 
@@ -59,7 +59,6 @@
 
 //         assert(status == UMFPACK_OK);
 
-
 //         status = umfpack_di_numeric (&mat.implementation().colptr()[0],          //0
 //                                      &mat.implementation().rowindex()[0],        //1
 //                                      &mat.implementation().entries()[0],      //2
@@ -73,8 +72,6 @@
 
 //         return (status == UMFPACK_OK);
 //     }
-
-
 
 //     bool UmfpackLU::solve(const CCSMatrixd &mat, Internal &internal, const double * rhs, double * solution)
 //     {

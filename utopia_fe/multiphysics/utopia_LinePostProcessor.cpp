@@ -1,50 +1,47 @@
 #include "utopia_LinePostProcessor.hpp"
-#include "utopia_make_unique.hpp"
-#include "moonolith_interpolator_impl.hpp"
 #include "moonolith_elem_node1.hpp"
+#include "moonolith_interpolator_impl.hpp"
+#include "utopia_make_unique.hpp"
 
 #include "utopia_fe_base.hpp"
 
-#include "utopia_SideSetAssignment.hpp"
 #include "MortarAssemble.hpp"
+#include "utopia_SideSetAssignment.hpp"
 
 #include "utopia_LibMeshToMoonolithConvertions.hpp"
 
-#include "libmesh/parallel_mesh.h"
 #include "libmesh/elem.h"
+#include "libmesh/parallel_mesh.h"
 #include "libmesh/point.h"
 
 #include <vector>
 
 namespace utopia {
 
-    template<int Dim>
-    void make_element(const libMesh::Point &in, moonolith::Node1<double, Dim> &out)
-    {
-        for(int d = 0; d < Dim; ++d) {
+    template <int Dim>
+    void make_element(const libMesh::Point &in, moonolith::Node1<double, Dim> &out) {
+        for (int d = 0; d < Dim; ++d) {
             out.node(0)[d] = in(d);
         }
     }
 
-    template<int Rows, int Cols>
-    void convert(const moonolith::Matrix<double, Rows, Cols> &in, USerialMatrix &out)
-    {
+    template <int Rows, int Cols>
+    void convert(const moonolith::Matrix<double, Rows, Cols> &in, USerialMatrix &out) {
         const std::size_t rows = in.rows();
         const std::size_t cols = in.cols();
         out.resize(rows, cols);
 
-        for(std::size_t i = 0; i < rows; ++i) {
-            for(std::size_t j = 0; j < cols; ++j) {
+        for (std::size_t i = 0; i < rows; ++i) {
+            for (std::size_t j = 0; j < cols; ++j) {
                 out.set(i, j, in(i, j));
             }
         }
     }
 
-    template<class FunctionSpace, class Vector>
+    template <class FunctionSpace, class Vector>
     class LinePostProcessor<FunctionSpace, Vector>::Impl : public PostProcessor<FunctionSpace, Vector> {
     public:
-        void read(Input &in) override
-        {
+        void read(Input &in) override {
             std::cout << "LinePostProcessor::read(...)" << std::endl;
 
             in.get("p0-x", p0(0));
@@ -72,8 +69,7 @@ namespace utopia {
             generate_points();
         }
 
-        void apply(FunctionSpace &V, const Vector &sol) override
-        {
+        void apply(FunctionSpace &V, const Vector &sol) override {
             using namespace moonolith;
 
             auto &mesh = V.mesh();
@@ -90,8 +86,8 @@ namespace utopia {
             Node1<double, 2> node2;
             Node1<double, 3> node3;
 
-            std::shared_ptr< Elem<double, 2, 2> > elem2;
-            std::shared_ptr< Elem<double, 3, 3> > elem3;
+            std::shared_ptr<Elem<double, 2, 2>> elem2;
+            std::shared_ptr<Elem<double, 3, 3>> elem3;
 
             Interpolator<Elem<double, 2, 2>, Elem<double, 0, 2>> interp2;
             Interpolator<Elem<double, 3, 3>, Elem<double, 0, 3>> interp3;
@@ -107,30 +103,27 @@ namespace utopia {
 
             sample_name[0] = V.var_name();
 
-            //FIXME use AABB to make it faster
+            // FIXME use AABB to make it faster
 
             UIndexSet u_indices;
-            for(const auto &elem_ptr : mesh.active_local_element_ptr_range())
-            {
-
+            for (const auto &elem_ptr : mesh.active_local_element_ptr_range()) {
                 V.dofs(*elem_ptr, indices);
                 convert(indices, u_indices);
 
                 g_sol.get(u_indices, values.entries());
 
-                if(dim == 2) {
+                if (dim == 2) {
                     make<2>(*elem_ptr, fe_type, elem2);
                 } else {
                     make<3>(*elem_ptr, fe_type, elem3);
                 }
 
-                for(std::size_t i = 0; i < n_samples; ++i) {
-
+                for (std::size_t i = 0; i < n_samples; ++i) {
                     bool found = false;
-                    if(dim == 2) {
+                    if (dim == 2) {
                         make_element(points[i], node2);
 
-                        if(interp2.assemble(*elem2, node2)) {
+                        if (interp2.assemble(*elem2, node2)) {
                             convert(interp2.coupling_matrix(), weights);
                             found = true;
                         }
@@ -139,13 +132,13 @@ namespace utopia {
                         assert(dim == 3);
                         make_element(points[i], node3);
 
-                        if(interp3.assemble(*elem3, node3)) {
+                        if (interp3.assemble(*elem3, node3)) {
                             convert(interp3.coupling_matrix(), weights);
                             found = true;
                         }
                     }
 
-                    if(found) {
+                    if (found) {
                         interp_value = weights * values;
                         sample[i].values[0] = interp_value.get(0);
                     }
@@ -155,64 +148,53 @@ namespace utopia {
             export_values();
         }
 
-        void apply(FunctionSpace &V, const Vector &sol, const Vector &other) override
-        {
-            this->apply(V, sol);
-        }
+        void apply(FunctionSpace &V, const Vector &sol, const Vector &other) override { this->apply(V, sol); }
 
-        void describe(std::ostream &os) const override
-        {
+        void describe(std::ostream &os) const override {
             os << "\"arc_length\",\"Points:0\",\"Points:1\",\"Points:2\"";
 
-            for(const auto &sn : sample_name) {
+            for (const auto &sn : sample_name) {
                 os << ",\"" << sn << "\"";
             }
 
             os << "\n";
 
-            double h = 1.0/(n_samples - 1);
+            double h = 1.0 / (n_samples - 1);
             double arch_len = h * (p0 - p1).norm();
 
             std::size_t n_vars = sample_name.size();
-            for(std::size_t i = 0; i < n_samples; ++i) {
-                os << (i*arch_len);
+            for (std::size_t i = 0; i < n_samples; ++i) {
+                os << (i * arch_len);
 
-                for(int d = 0; d <  LIBMESH_DIM; ++d) {
+                for (int d = 0; d < LIBMESH_DIM; ++d) {
                     os << "," << points[i](d);
                 }
 
                 const auto &s = sample[i];
 
-                for(std::size_t k = 0; k < n_vars; ++k) {
+                for (std::size_t k = 0; k < n_vars; ++k) {
                     os << "," << s.values[k];
                 }
 
                 os << std::endl;
             }
-
         }
 
-        void export_values() const override
-        {
+        void export_values() const override {
             std::ofstream os(output_path.c_str());
 
-            if(os.good()) {
+            if (os.good()) {
                 describe(os);
                 os.close();
             }
         }
 
-        Impl()
-        : n_samples(50), output_path("pol.csv") {}
+        Impl() : n_samples(50), output_path("pol.csv") {}
 
         class Sample {
         public:
             std::vector<double> values;
-            explicit Sample(const std::size_t n = 1)
-            : values(n, 0)
-            {
-                assert(n > 0);
-            }
+            explicit Sample(const std::size_t n = 1) : values(n, 0) { assert(n > 0); }
         };
 
     private:
@@ -224,62 +206,51 @@ namespace utopia {
         std::vector<Sample> sample;
         std::string output_path;
 
-
         // moonolith::HPolytope<T, Dim> pol
 
-        void generate_points()
-        {
-            double h = 1.0/(n_samples - 1);
+        void generate_points() {
+            double h = 1.0 / (n_samples - 1);
             libMesh::Point v = h * (p1 - p0);
 
             points.resize(n_samples);
             points[0] = p0;
 
-            for(std::size_t i = 1; i < n_samples; ++i)
-            {
-                points[i] = points[i-1] + v;
+            for (std::size_t i = 1; i < n_samples; ++i) {
+                points[i] = points[i - 1] + v;
             }
         }
     };
 
-    template<class FunctionSpace, class Vector>
-    LinePostProcessor<FunctionSpace, Vector>::LinePostProcessor()
-    : impl_(utopia::make_unique<Impl>())
-    {}
+    template <class FunctionSpace, class Vector>
+    LinePostProcessor<FunctionSpace, Vector>::LinePostProcessor() : impl_(utopia::make_unique<Impl>()) {}
 
-    template<class FunctionSpace, class Vector>
-    LinePostProcessor<FunctionSpace, Vector>::~LinePostProcessor()
-    {}
+    template <class FunctionSpace, class Vector>
+    LinePostProcessor<FunctionSpace, Vector>::~LinePostProcessor() {}
 
-    template<class FunctionSpace, class Vector>
-    void LinePostProcessor<FunctionSpace, Vector>::apply(FunctionSpace &V, const Vector &sol)
-    {
+    template <class FunctionSpace, class Vector>
+    void LinePostProcessor<FunctionSpace, Vector>::apply(FunctionSpace &V, const Vector &sol) {
         impl_->apply(V, sol);
     }
 
-    template<class FunctionSpace, class Vector>
-    void LinePostProcessor<FunctionSpace, Vector>::apply(FunctionSpace &V, const Vector &sol, const Vector &other)
-    {
+    template <class FunctionSpace, class Vector>
+    void LinePostProcessor<FunctionSpace, Vector>::apply(FunctionSpace &V, const Vector &sol, const Vector &other) {
         impl_->apply(V, sol, other);
     }
 
-    template<class FunctionSpace, class Vector>
-    void LinePostProcessor<FunctionSpace, Vector>::describe(std::ostream &os) const
-    {
+    template <class FunctionSpace, class Vector>
+    void LinePostProcessor<FunctionSpace, Vector>::describe(std::ostream &os) const {
         impl_->describe(os);
     }
 
-    template<class FunctionSpace, class Vector>
-    void LinePostProcessor<FunctionSpace, Vector>::export_values() const
-    {
+    template <class FunctionSpace, class Vector>
+    void LinePostProcessor<FunctionSpace, Vector>::export_values() const {
         impl_->export_values();
     }
 
-    template<class FunctionSpace, class Vector>
-    void LinePostProcessor<FunctionSpace, Vector>::read(Input &in)
-    {
+    template <class FunctionSpace, class Vector>
+    void LinePostProcessor<FunctionSpace, Vector>::read(Input &in) {
         impl_->read(in);
     }
 
     template class LinePostProcessor<LibMeshFunctionSpace, UVector>;
-}
+}  // namespace utopia

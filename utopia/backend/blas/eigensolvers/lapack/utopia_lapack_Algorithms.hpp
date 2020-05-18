@@ -4,51 +4,41 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_Operators.hpp"
 
-
 namespace utopia {
-    template<typename T>
+    template <typename T>
     class LapackAlgorithms {
     public:
         static int sygvx(int itype,
-            char jobz,
-            char range,
-            char  uplo,
-            int n,
-            T *a,
-            int lda,
-            T *b,
-            int ldb,
-            T *vl,
-            T *vu,
-            int il,
-            int iu,
-            T abstol,
-            int m,
-            T *w,
-            T *z,
-            int ldz,
-            T *work,
-            int lwork,
-            int iwork,
-            int ifail,
-            int *info);
+                         char jobz,
+                         char range,
+                         char uplo,
+                         int n,
+                         T *a,
+                         int lda,
+                         T *b,
+                         int ldb,
+                         T *vl,
+                         T *vu,
+                         int il,
+                         int iu,
+                         T abstol,
+                         int m,
+                         T *w,
+                         T *z,
+                         int ldz,
+                         T *work,
+                         int lwork,
+                         int iwork,
+                         int ifail,
+                         int *info);
 
         static T lamch(char cmach);
-        static void pteqr(char  compz, int  n, T * D, T * E, T * Z, int  ldz, T * work, int *info);
-        static void sytrd(char uplo, int  n, T *A, int  lda, T * D, T * E, T * TAU, T * work, int lwork, int *info);
-        static void orgtr(char uplo, int  n, T *A, int  lda, T * tau, T * work, int lwork, int *info);
+        static void pteqr(char compz, int n, T *D, T *E, T *Z, int ldz, T *work, int *info);
+        static void sytrd(char uplo, int n, T *A, int lda, T *D, T *E, T *TAU, T *work, int lwork, int *info);
+        static void orgtr(char uplo, int n, T *A, int lda, T *tau, T *work, int lwork, int *info);
 
-        static void syev(
-            char jobz,
-            char uplo,
-            int n,
-            double * a,
-            int lda,
-            double * w,
-            double * work,
-            int lwork,
-            int * info
-        );
+        static void
+        syev(char jobz, char uplo, int n, double *a, int lda, double *w, double *work, int lwork, int *info);
     };
 
     // template<typename T, int Dim>
@@ -69,7 +59,6 @@ namespace utopia {
 
     //         device::copy(A, A + Dim * Dim, v);
 
-
     //         syev(
     //             'V',
     //             char uplo,
@@ -82,12 +71,10 @@ namespace utopia {
     //             int * info
     //         );
 
-
     //     }
 
     // };
 
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_LAPACK_ALGORITHMS_HPP
+#endif  // UTOPIA_LAPACK_ALGORITHMS_HPP

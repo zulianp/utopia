@@ -2,43 +2,37 @@
 #define UTOPIA_UTOPIA_DIFFCONTROLLER_HPP
 
 #include "utopia_FiniteDifference.hpp"
-#include "utopia_Wrapper.hpp"
-#include "utopia_Traits.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_Wrapper.hpp"
 
 namespace utopia {
 
-    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class DiffController : public Configurable {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
 
-        DiffController(const Scalar spacing = 1e-5)
-        : spacing_(spacing), hessian_from_grad_(true)
-        {}
+        DiffController(const Scalar spacing = 1e-5) : spacing_(spacing) {}
 
-        inline void hessian_from_grad(const bool val) {
-            hessian_from_grad_ = val;
-        }
+        inline void hessian_from_grad(const bool val) { hessian_from_grad_ = val; }
 
-        void read(Input &in) override
-        {
+        void read(Input &in) override {
             in.get("spacing", spacing_);
             in.get("hessian_from_grad", hessian_from_grad_);
         }
 
-        template<class Fun>
+        template <class Fun>
         bool check(const Fun &fun, const Vector &x, const Vector &g, const Matrix &H) const {
             return check_grad(fun, x, g) && check_hessian(fun, x, H);
         }
 
-        template<class Fun>
+        template <class Fun>
         bool check_grad(const Fun &fun, const Vector &x, const Vector &g) const {
             FiniteDifference<typename Vector::Scalar> fd(spacing_);
             Vector gfd;
             fd.grad(fun, x, gfd);
             bool ok = approxeq(gfd, g, 1e-7);
-
 
             if (!ok) {
                 std::cout << "------ Failure -------\n";
@@ -60,14 +54,13 @@ namespace utopia {
             return ok;
         }
 
-        template<class Fun>
+        template <class Fun>
         bool check_hessian(const Fun &fun, const Vector &x, const Matrix &H) const {
-
             FiniteDifference<Scalar> fd(spacing_);
             Matrix Hfd = H;
             Hfd *= 0.0;
 
-            if(!fd.hessian(fun, x, Hfd, hessian_from_grad_)) {
+            if (!fd.hessian(fun, x, Hfd, hessian_from_grad_)) {
                 return true;
             }
 
@@ -91,9 +84,8 @@ namespace utopia {
                 rename("H_fd", Hfd);
                 write("Hfd.m", Hfd);
 
-
                 rename("h", const_cast<Matrix &>(H));
-                write("H.m",   H);
+                write("H.m", H);
 
                 // std::cerr << "Expected:\n";
                 // disp(Hfd);
@@ -108,15 +100,12 @@ namespace utopia {
             return ok;
         }
 
-        void spacing(const Scalar &s)
-        {
-            spacing_ = s;
-        }
+        void spacing(const Scalar &s) { spacing_ = s; }
 
     private:
         Scalar spacing_;
-        bool hessian_from_grad_;
+        bool hessian_from_grad_{true};
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_DIFFCONTROLLER_HPP
+#endif  // UTOPIA_UTOPIA_DIFFCONTROLLER_HPP

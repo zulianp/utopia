@@ -14,7 +14,6 @@
 //         using Differential  = utopia::Differential<FunctionSpace, Quadrature>;
 //         using PhysicalPoint = utopia::PhysicalPoint<FunctionSpace, Quadrature>;
 
-
 //         L2Norm(const FunctionSpace &space, const Quadrature &q)
 //         : space_(space), q_(q), differential_(space, q), point_(space, q)
 //         {}
@@ -31,7 +30,7 @@
 //                 auto space_view = space_.view_device();
 
 //                 Device::parallel_reduce(
-//                     space_->local_element_range(),
+//                     space_->element_range(),
 //                     UTOPIA_LAMBDA(const SizeType &i) -> Scalar
 //                 {
 //                     Elem e;

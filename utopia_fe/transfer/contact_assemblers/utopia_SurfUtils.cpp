@@ -3,11 +3,7 @@
 
 namespace utopia {
 
-    void SurfUtils::avg_normal(
-        const libMesh::Elem &trial,
-        const libMesh::FEType &type,
-        libMesh::Point &normal)
-    {
+    void SurfUtils::avg_normal(const libMesh::Elem &trial, const libMesh::FEType &type, libMesh::Point &normal) {
         auto fe = libMesh::FEBase::build(trial.dim(), type);
         auto &n = fe->get_normals();
 
@@ -19,11 +15,11 @@ namespace utopia {
 
         normal.zero();
 
-        for(const auto &n_i : n) {
+        for (const auto &n_i : n) {
             normal += n_i;
         }
 
         normal /= n.size();
     }
 
-}
+}  // namespace utopia

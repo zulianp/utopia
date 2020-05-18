@@ -6,7 +6,7 @@
 #include "utopia_ui.hpp"
 
 namespace utopia {
-    template<class FunctionSpace, class Matrix, class Vector>
+    template <class FunctionSpace, class Matrix, class Vector>
     class UIMaterial final : public ElasticMaterial<Matrix, Vector> {
     public:
         using Scalar = UTOPIA_SCALAR(Vector);
@@ -32,12 +32,12 @@ namespace utopia {
             material_->clear();
         }
 
-        inline bool good() const
-        {
-            return static_cast<bool>(material_);
-        }
+        inline bool good() const { return static_cast<bool>(material_); }
 
-        inline bool is_linear() const override { assert(material_); return material_->is_linear(); }
+        inline bool is_linear() const override {
+            assert(material_);
+            return material_->is_linear();
+        }
 
         LameeParameters params;
 
@@ -45,7 +45,6 @@ namespace utopia {
         FunctionSpace &V_;
         std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_UI_MATERIAL_FUNCTION_HPP
+#endif  // UTOPIA_UI_MATERIAL_FUNCTION_HPP

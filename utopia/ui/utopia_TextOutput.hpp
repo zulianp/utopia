@@ -5,7 +5,6 @@
 // #include "utopia_MPI.hpp"
 // #include "utopia_Path.hpp"
 
-
 // namespace utopia {
 
 //     template<class Matrix>

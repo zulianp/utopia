@@ -1,12 +1,12 @@
 #ifndef UTOPIA_INPUT_STREAM_HPP
 #define UTOPIA_INPUT_STREAM_HPP
 
+#include <functional>
 #include <memory>
+#include <ostream>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
-#include <functional>
-#include <ostream>
 
 #include "utopia_Base.hpp"
 #include "utopia_Convertible.hpp"
@@ -16,33 +16,36 @@ namespace utopia {
     class Path;
     class Input;
 
-    enum VerbosityLevel  {  VERBOSITY_LEVEL_QUIET         =-1,
-                            VERBOSITY_LEVEL_NORMAL        = 0,
-                            VERBOSITY_LEVEL_VERY_VERBOSE  = 1,
-                            VERBOSITY_LEVEL_DEBUG         = 2 };
+    enum VerbosityLevel {
+        VERBOSITY_LEVEL_QUIET = -1,
+        VERBOSITY_LEVEL_NORMAL = 0,
+        VERBOSITY_LEVEL_VERY_VERBOSE = 1,
+        VERBOSITY_LEVEL_DEBUG = 2
+    };
 
     // enum NormSchedule{  EVERY_ITER = 1,
     //                     NEVER = 2};
 
-    enum MultilevelNormSchedule{    ALWAYS = 1,
-                                    OUTER_CYCLE = 2};
+    enum MultilevelNormSchedule { ALWAYS = 1, OUTER_CYCLE = 2 };
 
     class Configurable {
     public:
-        virtual ~Configurable() {}
+        virtual ~Configurable() = default;
         virtual void read(Input &is) = 0;
         virtual void print_usage(std::ostream &os = std::cout) const;
-        virtual void print_param_usage(std::ostream &os, const std::string & name, const std::string & type, const std::string & description, const std::string & default_settings) const;
+        virtual void print_param_usage(std::ostream &os,
+                                       const std::string &name,
+                                       const std::string &type,
+                                       const std::string &description,
+                                       const std::string &default_settings) const;
         virtual bool import(const Path &path);
-        virtual bool import(
-            const std::string &key,
-            const Path &path);
+        virtual bool import(const std::string &key, const Path &path);
     };
 
-    class Input  /* : public Clonable */ {
+    class Input /* : public Clonable */ {
     public:
-        Input() {}
-        virtual ~Input() {}
+        Input() = default;
+        virtual ~Input() = default;
 
         virtual SizeType size() const = 0;
         virtual void get(std::vector<std::shared_ptr<IConvertible>> &values) = 0;
@@ -64,11 +67,9 @@ namespace utopia {
         virtual bool good() const = 0;
 
     private:
-        Input(const Input &) {}
-        Input &operator=(const Input &) {
-            return *this;
-        }
+        Input(const Input &) = default;
+        Input &operator=(const Input &) = default;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_INPUT_STREAM_HPP
+#endif  // UTOPIA_INPUT_STREAM_HPP

@@ -10,7 +10,6 @@
 // #include "utopia_homemade_AssemblyContext.hpp"
 // #include "utopia_homemade_FunctionSpace.hpp"
 
-
 // namespace utopia {
 //     template<class Form>
 //     class FormEval<Form, HOMEMADE> {
@@ -32,7 +31,6 @@
 //             t = r;
 //         }
 
-
 //         template<class Left, class Right, class Matrix, class Vector>
 //         static void apply(
 //                     const Equality<Left, Right> &expr,
@@ -43,7 +41,6 @@
 //             apply(expr.left(),  mat, ctx);
 //             apply(expr.right(), vec, ctx);
 //         }
-
 
 //         template<class Left, class Right, class Tensor>
 //         static void apply(

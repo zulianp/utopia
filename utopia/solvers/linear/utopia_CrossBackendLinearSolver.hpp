@@ -1,26 +1,19 @@
 #ifndef CROSS_BACKEND_LINEAR_SOLVER_HPP
 #define CROSS_BACKEND_LINEAR_SOLVER_HPP
 
-#include "utopia_LinearSolver.hpp"
-#include "utopia_IterativeSolver.hpp"
-#include "utopia_Smoother.hpp"
 #include "utopia_Conversions.hpp"
+#include "utopia_IterativeSolver.hpp"
+#include "utopia_LinearSolver.hpp"
+#include "utopia_Smoother.hpp"
 
 namespace utopia {
 
-    template<
-        class Matrix,
-        class Vector,
-        class WantedMatrix,
-        class WantedVector,
-        class Solver
-    >
+    template <class Matrix, class Vector, class WantedMatrix, class WantedVector, class Solver>
     class CrossBackendLinearSolver : public LinearSolver<Matrix, Vector> {
     public:
-        virtual ~CrossBackendLinearSolver() {}
+        ~CrossBackendLinearSolver() override {}
 
-        virtual bool apply(const Vector &rhs, Vector &sol) override
-        {
+        bool apply(const Vector &rhs, Vector &sol) override {
             backend_convert(rhs, rhs_buff_);
             backend_convert(sol, sol_buff_);
 
@@ -30,8 +23,8 @@ namespace utopia {
             return ok;
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override {
-            if(!mat_buff_) {
+        void update(const std::shared_ptr<const Matrix> &op) override {
+            if (!mat_buff_) {
                 mat_buff_ = std::make_shared<WantedMatrix>();
             }
 
@@ -39,10 +32,7 @@ namespace utopia {
             solver_.update(mat_buff_);
         }
 
-        CrossBackendLinearSolver * clone() const override
-        {
-            return new CrossBackendLinearSolver();
-        }
+        CrossBackendLinearSolver *clone() const override { return new CrossBackendLinearSolver(); }
 
     private:
         Solver solver_;
@@ -51,21 +41,14 @@ namespace utopia {
         WantedVector sol_buff_;
     };
 
-
-    template<
-        class Matrix,
-        class Vector,
-        class WantedMatrix,
-        class WantedVector,
-        class Solver
-    >
-    class CrossBackendLinearSolverAndSmoother : public IterativeSolver<Matrix, Vector>//, public Smoother<Matrix, Vector> 
+    template <class Matrix, class Vector, class WantedMatrix, class WantedVector, class Solver>
+    class CrossBackendLinearSolverAndSmoother
+        : public IterativeSolver<Matrix, Vector>  //, public Smoother<Matrix, Vector>
     {
-        public:
-        virtual ~CrossBackendLinearSolverAndSmoother() {}
+    public:
+        ~CrossBackendLinearSolverAndSmoother() override {}
 
-        virtual bool apply(const Vector &rhs, Vector &sol) override
-        {
+        bool apply(const Vector &rhs, Vector &sol) override {
             backend_convert(rhs, rhs_buff_);
             backend_convert(sol, sol_buff_);
 
@@ -75,8 +58,7 @@ namespace utopia {
             return ok;
         }
 
-        virtual bool smooth(const Vector &rhs, Vector &x) override
-        {
+        bool smooth(const Vector &rhs, Vector &x) override {
             backend_convert(rhs, rhs_buff_);
             backend_convert(x, sol_buff_);
 
@@ -86,8 +68,8 @@ namespace utopia {
             return ok;
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override {
-            if(!mat_buff_) {
+        void update(const std::shared_ptr<const Matrix> &op) override {
+            if (!mat_buff_) {
                 mat_buff_ = std::make_shared<WantedMatrix>();
             }
 
@@ -95,18 +77,13 @@ namespace utopia {
             solver_.update(mat_buff_);
         }
 
-        CrossBackendLinearSolverAndSmoother * clone() const override
-        {
+        CrossBackendLinearSolverAndSmoother *clone() const override {
             return new CrossBackendLinearSolverAndSmoother();
         }
 
-        void read(Input &in) override {
-             solver_.read(in);
-        }
+        void read(Input &in) override { solver_.read(in); }
 
-        void print_usage(std::ostream &os = std::cout) const override {
-              solver_.print_usage(os);
-        }
+        void print_usage(std::ostream &os = std::cout) const override { solver_.print_usage(os); }
 
     private:
         Solver solver_;
@@ -114,6 +91,6 @@ namespace utopia {
         WantedVector rhs_buff_;
         WantedVector sol_buff_;
     };
-}
+}  // namespace utopia
 
-#endif //CROSS_BACKEND_LINEAR_SOLVER_HPP
+#endif  // CROSS_BACKEND_LINEAR_SOLVER_HPP

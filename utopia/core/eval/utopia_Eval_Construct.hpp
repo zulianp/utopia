@@ -6,7 +6,7 @@
 // #include "utopia_Tracer.hpp"
 
 // namespace utopia {
-    
+
 //     template<class Left, class RowPtr, class ColIndex, class Values, class Traits, int Backend>
 //     class Eval< Construct<
 //                         Left,

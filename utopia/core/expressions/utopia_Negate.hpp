@@ -9,17 +9,14 @@
 #include "utopia_Unary.hpp"
 
 namespace utopia {
-    template<class Expr>
+    template <class Expr>
     class Negate : public Unary<Expr, Minus> {
     public:
-        Negate(const Expr &expr) : Unary<Expr, Minus>(expr) { }
+        Negate(const Expr &expr) : Unary<Expr, Minus>(expr) {}
 
-        std::string get_class() const override
-        {
-            return "Negate<" + this->expr().get_class() + ">";
-        }
+        std::string get_class() const override { return "Negate<" + this->expr().get_class() + ">"; }
 
-        virtual ~Negate() { }
+        ~Negate() override = default;
     };
-}
-#endif //SIMMOD_utopia_NEGATE_HPP
+}  // namespace utopia
+#endif  // SIMMOD_utopia_NEGATE_HPP

@@ -3,4 +3,4 @@
 
 #include "utopia_blas_LinearSolverFactory.hpp"
 
-#endif //UTOPIA_BLAS_SOLVERS_HPP
+#endif  // UTOPIA_BLAS_SOLVERS_HPP

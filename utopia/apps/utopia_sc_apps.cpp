@@ -47,7 +47,7 @@
 //         dims[1] -= 1;
 
 //         dm.box(box.min, box.max);
-//         dm.local_element_ranges(local_begin, local_end);
+//         dm.element_ranges(local_begin, local_end);
 
 //         SizeType n_nwg = dm.n_local_nodes_with_ghosts();
 
@@ -64,7 +64,7 @@
 //         Mesh mesh(world, dims, local_begin, local_end, box, ghosted_local_2_global);
 //         mesh.describe();
 
-//         std::cout << mesh.local_element_range() << std::endl;
+//         std::cout << mesh.element_range() << std::endl;
 //     }
 
 //     UTOPIA_REGISTER_APP(petsc_dm_to_kokkos);
@@ -72,8 +72,6 @@
 
 // #endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
 // #endif //WITH_PETSC
-
-
 
 // namespace utopia {
 
@@ -91,7 +89,6 @@
 //         // using Point            = utopia::StaticVector<double, 2>;
 //         // using Grad             = utopia::StaticVector<double, 2>;
 //         using ElementMatrix    = utopia::StaticMatrix<double, 4, 4>;
-
 
 //         TrilinosCommunicator world;
 
@@ -118,7 +115,6 @@
 //         auto space_view = space.view_device();
 //         auto q_view     = quadrature.view_device();
 
-
 //         Graph<Mesh> graph;
 //         graph.init(mesh);
 
@@ -144,7 +140,7 @@
 //         double * op_sum_ptr = &op_sum;
 
 //         Dev::parallel_for(
-//             space.local_element_range(),
+//             space.element_range(),
 //             UTOPIA_LAMBDA(const SizeType &i)
 //         {
 //             Elem e;
@@ -223,7 +219,6 @@
 
 //         rename("Lx", x);
 //         write("LapX.m", x);
-
 
 //         rename("Lr", poisson.rhs());
 //         write("LapR.m", poisson.rhs());

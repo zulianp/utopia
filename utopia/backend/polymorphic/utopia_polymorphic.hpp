@@ -3,4 +3,4 @@
 
 #include "utopia_polymorphic_QPSolver.hpp"
 
-#endif //UTOPIA_POLYMORPHIC_HPP
+#endif  // UTOPIA_POLYMORPHIC_HPP

@@ -1,10 +1,9 @@
 #include "utopia_ui.hpp"
-#include "utopia_Path.hpp"
-#include "utopia_XMLInput.hpp"
-#include "utopia_JSONInput.hpp"
 #include "utopia_Convertible.hpp"
 #include "utopia_InputParameters.hpp"
-
+#include "utopia_JSONInput.hpp"
+#include "utopia_Path.hpp"
+#include "utopia_XMLInput.hpp"
 
 namespace utopia {
     template class Convertible<double>;
@@ -14,15 +13,13 @@ namespace utopia {
     template class Convertible<bool>;
     template class Convertible<std::string>;
 
-
-    std::unique_ptr<Input> open_istream(const Path &path)
-    {
-        if(path.extension() == "xml") {
+    std::unique_ptr<Input> open_istream(const Path &path) {
+        if (path.extension() == "xml") {
             // auto ret = make_unique<XMLInput>();
             // ret->open(path);
             // return ret;
 
-            //portable version when compuling with nvcc
+            // portable version when compuling with nvcc
             auto ret = new XMLInput();
             auto ret_ptr = std::unique_ptr<Input>(ret);
             ret->open(path);
@@ -30,17 +27,17 @@ namespace utopia {
 
         } else
 #ifdef WITH_JSON
-        if(path.extension() == "json") {
+            if (path.extension() == "json") {
 
             auto ret = new JSONInput();
             auto ret_ptr = std::unique_ptr<Input>(ret);
             ret->open(path);
             return ret_ptr;
         } else
-#endif //WITH_JSON
+#endif  // WITH_JSON
         {
             std::cerr << "[Error] format not supported" << std::endl;
             return nullptr;
         }
     }
-}
+}  // namespace utopia

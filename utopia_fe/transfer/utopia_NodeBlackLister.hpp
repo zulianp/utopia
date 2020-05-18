@@ -1,8 +1,8 @@
 #ifndef UTOPIA_NODE_BLACK_LISTER_HPP
 #define UTOPIA_NODE_BLACK_LISTER_HPP
 
-#include "utopia_ui.hpp"
 #include "utopia_libmesh.hpp"
+#include "utopia_ui.hpp"
 
 #include <set>
 #include <vector>
@@ -25,7 +25,6 @@ namespace utopia {
 
     class ElementBlackList : public Configurable {
     public:
-
         void read(Input &in) override;
         void init(const libMesh::MeshBase &mesh);
         bool is_black_listed(const SizeType element_id);
@@ -40,6 +39,6 @@ namespace utopia {
         void init(const NodeSetBlackLister &black_lister, const libMesh::MeshBase &mesh);
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_NODE_BLACK_LISTER_HPP
+#endif  // UTOPIA_NODE_BLACK_LISTER_HPP

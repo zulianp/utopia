@@ -9,23 +9,18 @@
 namespace utopia {
 
     namespace internals {
-        bool lapack_dgesv_solve(const BlasMatrixd &A, const BlasVectord&b, BlasVectord&x);
+        bool lapack_dgesv_solve(const BlasMatrixd &A, const BlasVectord &b, BlasVectord &x);
     }
 
-    template<>
+    template <>
     class LUDecomposition<BlasMatrixd, BlasVectord, BLAS> : public DirectSolver<BlasMatrixd, BlasVectord> {
     public:
-        inline bool apply(const BlasVectord &b, BlasVectord &x) override
-        {
+        inline bool apply(const BlasVectord &b, BlasVectord &x) override {
             return internals::lapack_dgesv_solve(*this->get_operator(), b, x);
         }
 
-        LUDecomposition * clone() const override
-        {
-            return new LUDecomposition();
-        }
-
+        LUDecomposition *clone() const override { return new LUDecomposition(); }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_SOLVER_LAPACK_H
+#endif  // UTOPIA_SOLVER_LAPACK_H

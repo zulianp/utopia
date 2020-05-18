@@ -1,10 +1,10 @@
 #ifndef UTOPIA_Q_MORTAR_BUILDER_HPP
 #define UTOPIA_Q_MORTAR_BUILDER_HPP
 
+#include "MortarAssemble.hpp"
+#include "libmesh/dense_matrix.h"
 #include "libmesh/elem.h"
 #include "libmesh/fe.h"
-#include "libmesh/dense_matrix.h"
-#include "MortarAssemble.hpp"
 
 #include <cassert>
 
@@ -17,39 +17,31 @@ namespace utopia {
 
         virtual ~QMortarBuilder() {}
 
-        virtual bool build(
-            const Elem &trial,
-            FEType trial_type,
-            const Elem &test,
-            FEType test_type,
-            QMortar &q_trial,
-            QMortar &q_test) = 0;
+        virtual bool build(const Elem &trial,
+                           FEType trial_type,
+                           const Elem &test,
+                           FEType test_type,
+                           QMortar &q_trial,
+                           QMortar &q_test) = 0;
 
         virtual double get_total_intersection_volume() const = 0;
     };
-
 
     class QMortarBuilder1 final : public QMortarBuilder {
     public:
         using Matrix = libMesh::DenseMatrix<libMesh::Real>;
         using Real = libMesh::Real;
 
-        QMortarBuilder1()
-        : total_intersection_volume(0), composite_ir(1)
-        {}
+        QMortarBuilder1() : total_intersection_volume(0), composite_ir(1) {}
 
-        bool build(
-            const Elem &trial,
-            FEType trial_type,
-            const Elem &test,
-            FEType test_type,
-            QMortar &q_trial,
-            QMortar &q_test) override;
+        bool build(const Elem &trial,
+                   FEType trial_type,
+                   const Elem &test,
+                   FEType test_type,
+                   QMortar &q_trial,
+                   QMortar &q_test) override;
 
-        inline double get_total_intersection_volume() const override
-        {
-            return total_intersection_volume;
-        }
+        inline double get_total_intersection_volume() const override { return total_intersection_volume; }
 
     private:
         libMesh::Point intersection[2];
@@ -59,28 +51,21 @@ namespace utopia {
         QMortar composite_ir;
     };
 
-
     class QMortarBuilder2 final : public QMortarBuilder {
     public:
         using Matrix = libMesh::DenseMatrix<libMesh::Real>;
         using Real = libMesh::Real;
 
-        QMortarBuilder2()
-        : total_intersection_volume(0), composite_ir(2)
-        {}
+        QMortarBuilder2() : total_intersection_volume(0), composite_ir(2) {}
 
-        bool build(
-            const Elem &trial,
-            FEType trial_type,
-            const Elem &test,
-            FEType test_type,
-            QMortar &q_trial,
-            QMortar &q_test) override;
+        bool build(const Elem &trial,
+                   FEType trial_type,
+                   const Elem &test,
+                   FEType test_type,
+                   QMortar &q_trial,
+                   QMortar &q_test) override;
 
-        inline double get_total_intersection_volume() const override
-        {
-            return total_intersection_volume;
-        }
+        inline double get_total_intersection_volume() const override { return total_intersection_volume; }
 
     private:
         Matrix trial_pts;
@@ -96,22 +81,16 @@ namespace utopia {
         using Matrix = libMesh::DenseMatrix<libMesh::Real>;
         using Real = libMesh::Real;
 
-        QMortarBuilderShell2()
-        : total_intersection_volume(0), composite_ir(2)
-        {}
+        QMortarBuilderShell2() : total_intersection_volume(0), composite_ir(2) {}
 
-        bool build(
-            const Elem &trial,
-            FEType trial_type,
-            const Elem &test,
-            FEType test_type,
-            QMortar &q_trial,
-            QMortar &q_test) override;
+        bool build(const Elem &trial,
+                   FEType trial_type,
+                   const Elem &test,
+                   FEType test_type,
+                   QMortar &q_trial,
+                   QMortar &q_test) override;
 
-        inline double get_total_intersection_volume() const override
-        {
-            return total_intersection_volume;
-        }
+        inline double get_total_intersection_volume() const override { return total_intersection_volume; }
 
     private:
         Matrix trial_pts;
@@ -123,10 +102,10 @@ namespace utopia {
 
         libMesh::Point trial_normal, test_normal;
 
-        //intersector
+        // intersector
         typedef Intersector::Scalar Scalar;
 
-        Scalar A   [3 * 3], b   [3];
+        Scalar A[3 * 3], b[3];
         Scalar Ainv[3 * 3], binv[3];
 
         Matrix ref_trial_pts;
@@ -138,8 +117,7 @@ namespace utopia {
         Matrix ref_intersection_slave;
         Matrix ref_intersection_master;
 
-        inline void compute_normal(const Elem &elem, libMesh::Point &n) const
-        {
+        inline void compute_normal(const Elem &elem, libMesh::Point &n) const {
             using namespace libMesh;
             Point o, u, v;
 
@@ -150,7 +128,7 @@ namespace utopia {
             v -= o;
             n = u.cross(v);
 
-            n *= 1./n.norm();
+            n *= 1. / n.norm();
         }
 
         bool intersect();
@@ -161,22 +139,16 @@ namespace utopia {
         using Matrix = libMesh::DenseMatrix<libMesh::Real>;
         using Real = libMesh::Real;
 
-        QMortarBuilder3()
-        : total_intersection_volume(0.), composite_ir(3)
-        {}
+        QMortarBuilder3() : total_intersection_volume(0.), composite_ir(3) {}
 
-        bool build(
-            const Elem &trial,
-            FEType trial_type,
-            const Elem &test,
-            FEType test_type,
-            QMortar &q_trial,
-            QMortar &q_test) override;
+        bool build(const Elem &trial,
+                   FEType trial_type,
+                   const Elem &test,
+                   FEType test_type,
+                   QMortar &q_trial,
+                   QMortar &q_test) override;
 
-        inline double get_total_intersection_volume() const override
-        {
-            return total_intersection_volume;
-        }
+        inline double get_total_intersection_volume() const override { return total_intersection_volume; }
 
     private:
         Real total_intersection_volume;
@@ -187,15 +159,13 @@ namespace utopia {
 
         Matrix shell_poly;
 
-        bool build_vol_2_surf(
-            const Elem &trial,
-            FEType trial_type,
-            const Elem &test,
-            FEType test_type,
-            QMortar &q_trial,
-            QMortar &q_test);
+        bool build_vol_2_surf(const Elem &trial,
+                              FEType trial_type,
+                              const Elem &test,
+                              FEType test_type,
+                              QMortar &q_trial,
+                              QMortar &q_test);
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_Q_MORTAR_BUILDER_HPP
+#endif  // UTOPIA_Q_MORTAR_BUILDER_HPP

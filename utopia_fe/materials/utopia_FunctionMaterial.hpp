@@ -5,27 +5,24 @@
 #include "utopia_Function.hpp"
 
 namespace utopia {
-    template<class Matrix, class Vector>
+    template <class Matrix, class Vector>
     class FunctionMaterial : public ElasticMaterial<Matrix, Vector> {
     public:
-        FunctionMaterial(const std::shared_ptr< Function<Matrix, Vector> > &fun)
-        : fun_(fun)
-        {}
+        FunctionMaterial(const std::shared_ptr<Function<Matrix, Vector> > &fun) : fun_(fun) {}
 
         virtual ~FunctionMaterial() {}
 
-        virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
-        {
+        virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) {
             bool ok = fun_->gradient(x, gradient);
-            ok 	   &= fun_->hessian(x, hessian);
+            ok &= fun_->hessian(x, hessian);
             return ok;
         }
 
         virtual void clear() {}
 
     private:
-        std::shared_ptr< Function<Matrix, Vector> > fun_;
+        std::shared_ptr<Function<Matrix, Vector> > fun_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FUNCTION_MATERIAL_HPP
+#endif  // UTOPIA_FUNCTION_MATERIAL_HPP

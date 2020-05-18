@@ -5,16 +5,16 @@
 
 #ifdef WITH_JSON
 
-#include "utopia_Path.hpp"
-#include "utopia_Input.hpp"
 #include <memory>
+#include "utopia_Input.hpp"
+#include "utopia_Path.hpp"
 
 namespace utopia {
 
     class JSONInput final : public Input {
     public:
         JSONInput();
-        ~JSONInput();
+        ~JSONInput() override;
 
         bool open(const Path &path);
 
@@ -37,11 +37,10 @@ namespace utopia {
         bool good() const override;
 
     private:
-
         class Impl;
         std::unique_ptr<Impl> impl_;
     };
-}
+}  // namespace utopia
 
-#endif //WITH_JSON
-#endif //UTOPIA_JSON_STREAM_HPP
+#endif  // WITH_JSON
+#endif  // UTOPIA_JSON_STREAM_HPP

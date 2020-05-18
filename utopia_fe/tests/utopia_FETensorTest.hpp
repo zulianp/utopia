@@ -1,9 +1,8 @@
 #ifndef UTOPIA_FE_TENSOR_TEST_HPP
 #define UTOPIA_FE_TENSOR_TEST_HPP
 
-#include "utopia_FETest.hpp"
 #include <string>
-
+#include "utopia_FETest.hpp"
 
 namespace utopia {
 
@@ -11,12 +10,9 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "tensor";
-        }
+        inline static std::string command() { return "tensor"; }
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FE_TENSOR_TEST_HPP
+#endif  // UTOPIA_FE_TENSOR_TEST_HPP

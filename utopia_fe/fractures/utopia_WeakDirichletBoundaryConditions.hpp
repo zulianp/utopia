@@ -6,84 +6,79 @@
 
 namespace utopia {
 
-        template<class FunctionSpace, class Matrix, class Vector>
-        class WeakDirichletBoundaryConditions final : public Configurable {
-        public:
+    template <class FunctionSpace, class Matrix, class Vector>
+    class WeakDirichletBoundaryConditions final : public Configurable {
+    public:
+        WeakDirichletBoundaryConditions(FunctionSpace &V) : V_(V) {}
 
-            WeakDirichletBoundaryConditions(FunctionSpace &V) : V_(V) {}
+        ~WeakDirichletBoundaryConditions() {}
 
-            ~WeakDirichletBoundaryConditions() {}
+        void read(Input &is) override {
+            is.get_all([this](Input &is) {
+                int side = -1;
+                double penalty = 1e8;
+                std::string function_type = "expr";
 
-            void read(Input &is) override {
+                is.get("side", side);
+                is.get("penalty", penalty);
 
+                assert(side != -1);
 
+                if (side == -1) {
+                    std::cerr << "[Error] side not specified" << std::endl;
+                    return;
+                }
 
-                is.get_all([this](Input &is) {
-                    int side = -1;
-                    double penalty = 1e8;
-                    std::string function_type = "expr";
+#ifdef WITH_TINY_EXPR
+                std::string value;
+                is.get("value", value);
+                auto f = symbolic(value);
+#else
+                double value = 0.;
+                is.get("value", value);
+                auto f = coeff(value);
+#endif  // WITH_TINY_EXPR
 
-                    is.get("side", side);
-                    is.get("penalty", penalty);
+                std::cout << "[Status] weak bc side = " << side << ", value = " << value << ", penalty = " << penalty
+                          << std::endl;
 
-                    assert(side != -1);
+                auto u = trial(V_);
+                auto v = test(V_);
 
-                    if(side == -1) {
-                        std::cerr << "[Error] side not specified" << std::endl;
-                        return;
-                    }
+                auto b_form = surface_integral(penalty * inner(u, v), side);
+                auto l_form = surface_integral(penalty * inner(f, v), side);
 
-    #ifdef WITH_TINY_EXPR
-                    std::string value;
-                    is.get("value", value);
-                    auto f = symbolic(value);
-    #else
-                    double value = 0.;
-                    is.get("value", value);
-                    auto f = coeff(value);
-    #endif //WITH_TINY_EXPR
+                Matrix B_temp;
+                Vector Bf_temp;
+                utopia::assemble(b_form == l_form, B_temp, Bf_temp);
 
+                if (empty(B_)) {
+                    B_ = std::move(B_temp);
+                } else {
+                    B_ += B_temp;
+                }
 
-                    std::cout << "[Status] weak bc side = " << side << ", value = " << value << ", penalty = " << penalty << std::endl;
+                if (empty(Bf_)) {
+                    Bf_ = std::move(Bf_temp);
+                } else {
+                    Bf_ += Bf_temp;
+                }
+            });
+        }
 
-                    auto u = trial(V_);
-                    auto v = test(V_);
+        inline void apply(Matrix &A, Vector &b) const {
+            if (empty(B_)) return;
 
-                    auto b_form = surface_integral(penalty * inner(u, v), side);
-                    auto l_form = surface_integral(penalty * inner(f, v), side);
+            A += B_;
+            b += Bf_;
+        }
 
-                    Matrix B_temp;
-                    Vector Bf_temp;
-                    utopia::assemble(b_form == l_form, B_temp, Bf_temp);
+    private:
+        FunctionSpace &V_;
 
-                    if(empty(B_)) {
-                        B_ = std::move(B_temp);
-                    } else {
-                        B_ += B_temp;
-                    }
+        Matrix B_;
+        Vector Bf_;
+    };
+}  // namespace utopia
 
-                    if(empty(Bf_)) {
-                        Bf_ = std::move(Bf_temp);
-                    } else {
-                        Bf_ += Bf_temp;
-                    }
-                });
-            }
-
-            inline void apply(Matrix &A, Vector &b) const
-            {
-                if(empty(B_)) return;
-
-                A += B_;
-                b += Bf_;
-            }
-
-        private:
-            FunctionSpace &V_;
-
-            Matrix B_;
-            Vector Bf_;
-        };
-}
-
-#endif //UTOPIA_WEAK_DIRICHLET_BOUNDARY_CONDITIONS_HPP
+#endif  // UTOPIA_WEAK_DIRICHLET_BOUNDARY_CONDITIONS_HPP

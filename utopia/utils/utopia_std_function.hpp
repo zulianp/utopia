@@ -3,14 +3,13 @@
 
 #include "utopia_Base.hpp"
 
-
 #ifdef KOKKOS_ENABLE_CUDA
 
 #include <nvfunctional>
 
 namespace utopia {
 
-    template<typename T>
+    template <typename T>
     using function = nvstd::function<T>;
 
 }
@@ -21,11 +20,11 @@ namespace utopia {
 
 namespace utopia {
 
-    template<typename T>
+    template <typename T>
     using function = std::function<T>;
 
 }
 
 #endif
 
-#endif //UTOPIA_STD_FUNCTION_HPP
+#endif  // UTOPIA_STD_FUNCTION_HPP

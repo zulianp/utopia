@@ -7,6 +7,6 @@ namespace utopia {
         virtual ~FEExpression() {}
         inline static bool is_fe() { return true; }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FE_EXPRESSION_HPP
+#endif  // UTOPIA_FE_EXPRESSION_HPP

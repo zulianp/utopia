@@ -1,15 +1,15 @@
 #ifndef UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP
 #define UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP
 
-#include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_FunctionSpace.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_Types.hpp"
 
-#include "libmesh/equation_systems.h"
 #include "libmesh/dof_map.h"
-#include "libmesh/reference_counter.h"
+#include "libmesh/equation_systems.h"
 #include "libmesh/linear_implicit_system.h"
+#include "libmesh/reference_counter.h"
 
 #include <memory>
 
@@ -17,39 +17,28 @@ namespace utopia {
 
     class LibMeshFunctionSpace final : public FunctionSpace<LibMeshFunctionSpace> {
     public:
-        inline explicit LibMeshFunctionSpace(
-        libMesh::System &equation_system,
-        const int var_num)
-        : equation_systems_(
-            make_ref(equation_system.get_equation_systems())
-          ),
-         system_num_(equation_system.number())
-         {
-             this->set_subspace_id(var_num);
-         }
-
-
-        inline explicit LibMeshFunctionSpace(
-            const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
-            const int system_num,
-            const int var_num)
-        : equation_systems_(equation_systems), system_num_(system_num)
-        {
+        inline explicit LibMeshFunctionSpace(libMesh::System &equation_system, const int var_num)
+            : equation_systems_(make_ref(equation_system.get_equation_systems())),
+              system_num_(equation_system.number()) {
             this->set_subspace_id(var_num);
         }
 
-        inline explicit LibMeshFunctionSpace(
-            const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
-            const libMesh::FEFamily &type = libMesh::LAGRANGE,
-            const libMesh::Order &order = libMesh::FIRST,
-            const std::string &var_name = "",
-            const int system_num = 0)
-        : equation_systems_(equation_systems),
-          system_num_(system_num)
-        {
+        inline explicit LibMeshFunctionSpace(const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
+                                             const int system_num,
+                                             const int var_num)
+            : equation_systems_(equation_systems), system_num_(system_num) {
+            this->set_subspace_id(var_num);
+        }
+
+        inline explicit LibMeshFunctionSpace(const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
+                                             const libMesh::FEFamily &type = libMesh::LAGRANGE,
+                                             const libMesh::Order &order = libMesh::FIRST,
+                                             const std::string &var_name = "",
+                                             const int system_num = 0)
+            : equation_systems_(equation_systems), system_num_(system_num) {
             std::string var_name_copy = var_name;
 
-            if(var_name_copy.empty()) {
+            if (var_name_copy.empty()) {
                 var_name_copy = "var_" + std::to_string(equation_system().n_vars());
             }
 
@@ -60,19 +49,16 @@ namespace utopia {
             this->set_subspace_id(var_num);
         }
 
-
-        inline explicit LibMeshFunctionSpace(
-            libMesh::MeshBase &mesh,
-            const libMesh::FEFamily &type = libMesh::LAGRANGE,
-            const libMesh::Order &order = libMesh::FIRST,
-            const std::string &var_name = "")
-        : equation_systems_(std::make_shared<libMesh::EquationSystems>(mesh)), system_num_(0)
-        {
+        inline explicit LibMeshFunctionSpace(libMesh::MeshBase &mesh,
+                                             const libMesh::FEFamily &type = libMesh::LAGRANGE,
+                                             const libMesh::Order &order = libMesh::FIRST,
+                                             const std::string &var_name = "")
+            : equation_systems_(std::make_shared<libMesh::EquationSystems>(mesh)), system_num_(0) {
             equation_systems_->add_system<libMesh::LinearImplicitSystem>("main");
 
             std::string var_name_copy = var_name;
 
-            if(var_name_copy.empty()) {
+            if (var_name_copy.empty()) {
                 var_name_copy = "var_" + std::to_string(equation_system().n_vars());
             }
 
@@ -88,86 +74,53 @@ namespace utopia {
         // 	return equation_system().is_initialized();
         // }
 
-        inline void initialize()
-        {
-            if(!equation_system().is_initialized()) {
+        inline void initialize() {
+            if (!equation_system().is_initialized()) {
                 equation_system().init();
                 // equation_systems_->init();
             }
         }
 
-        inline libMesh::Order order(const int) const
-        {
-            return dof_map().variable_order(this->subspace_id());
-        }
+        inline libMesh::Order order(const int) const { return dof_map().variable_order(this->subspace_id()); }
 
-        inline libMesh::Order order() const
-        {
-            return dof_map().variable_order(this->subspace_id());
-        }
+        inline libMesh::Order order() const { return dof_map().variable_order(this->subspace_id()); }
 
+        inline libMesh::FEType type() { return dof_map().variable_type(this->subspace_id()); }
 
-        inline libMesh::FEType type()
-        {
-            return dof_map().variable_type(this->subspace_id());
-        }
+        inline const std::string &var_name() const { return dof_map().variable(this->subspace_id()).name(); }
 
-        inline const std::string &var_name() const
-        {
-            return dof_map().variable(this->subspace_id()).name();
-        }
+        inline libMesh::DofMap &dof_map() { return equation_system().get_dof_map(); }
 
-        inline libMesh::DofMap &dof_map() {
-            return equation_system().get_dof_map();
-        }
+        inline const libMesh::DofMap &dof_map() const { return equation_system().get_dof_map(); }
 
-        inline const libMesh::DofMap &dof_map() const {
-            return equation_system().get_dof_map();
-        }
-
-        inline void dofs(const libMesh::Elem &elem, std::vector<libMesh::dof_id_type> &indices) const
-        {
+        inline void dofs(const libMesh::Elem &elem, std::vector<libMesh::dof_id_type> &indices) const {
             dof_map().dof_indices(&elem, indices, this->subspace_id());
         }
 
-        inline libMesh::System &equation_system()
-        {
-            return equation_systems_->get_system(system_num_);
-        }
+        inline libMesh::System &equation_system() { return equation_systems_->get_system(system_num_); }
 
-        inline const libMesh::System &equation_system() const
-        {
-            return equation_systems_->get_system(system_num_);
-        }
+        inline const libMesh::System &equation_system() const { return equation_systems_->get_system(system_num_); }
 
-        inline libMesh::EquationSystems &equation_systems() {
-            return *equation_systems_;
-        }
+        inline libMesh::EquationSystems &equation_systems() { return *equation_systems_; }
 
-        inline const libMesh::EquationSystems &equation_systems() const
-        {
-            return *equation_systems_;
-        }
+        inline const libMesh::EquationSystems &equation_systems() const { return *equation_systems_; }
 
-        inline const std::shared_ptr<libMesh::EquationSystems> &equation_systems_ptr() const
-        {
+        inline const std::shared_ptr<libMesh::EquationSystems> &equation_systems_ptr() const {
             return equation_systems_;
         }
 
         inline libMesh::MeshBase &mesh() { return equation_systems_->get_mesh(); }
         inline const libMesh::MeshBase &mesh() const { return equation_systems_->get_mesh(); }
 
-        inline std::string get_class() const override {
-            return "LibMeshFunctionSpace";
-        }
+        inline std::string get_class() const override { return "LibMeshFunctionSpace"; }
 
     private:
         std::shared_ptr<libMesh::EquationSystems> equation_systems_;
         int system_num_;
     };
 
-    template<>
-    class Traits<LibMeshFunctionSpace> //: public LibMeshAlgebraTraits<double>
+    template <>
+    class Traits<LibMeshFunctionSpace>  //: public LibMeshAlgebraTraits<double>
     {
     public:
         static const int Backend = LIBMESH_TAG;
@@ -197,21 +150,18 @@ namespace utopia {
 
     typedef utopia::Traits<LibMeshFunctionSpace> LibMeshTraits;
 
-    inline auto elements_begin(const libMesh::MeshBase &m) -> decltype(m.active_local_elements_begin())
-    {
+    inline auto elements_begin(const libMesh::MeshBase &m) -> decltype(m.active_local_elements_begin()) {
         return m.active_local_elements_begin();
     }
 
-    inline auto elements_end(const libMesh::MeshBase &m) -> decltype(m.active_local_elements_end())
-    {
+    inline auto elements_end(const libMesh::MeshBase &m) -> decltype(m.active_local_elements_end()) {
         return m.active_local_elements_end();
     }
-
 
     void write(const Path &path, LibMeshFunctionSpace &space, UVector &x);
 
     std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map);
     std::size_t max_nnz_x_row(const LibMeshFunctionSpace &space);
-}
+}  // namespace utopia
 
-#endif //UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP
+#endif  // UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP

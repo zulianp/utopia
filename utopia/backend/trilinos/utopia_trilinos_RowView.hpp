@@ -2,43 +2,36 @@
 #define UTOPIA_TPETRA_ROW_VIEW_HPP
 #include <Teuchos_ArrayViewDecl.hpp>
 
-#include "utopia_Traits.hpp"
 #include "utopia_RowView.hpp"
+#include "utopia_Traits.hpp"
 
 #include <cassert>
 
 namespace utopia {
 
-    template<class Tensor, int FILL_TYPE>
+    template <class Tensor, int FILL_TYPE>
     class RowView<Tensor, 2, FILL_TYPE, utopia::TRILINOS> {
     public:
         using SizeType = typename Traits<Tensor>::SizeType;
-        using Scalar   = typename Traits<Tensor>::Scalar;
+        using Scalar = typename Traits<Tensor>::Scalar;
         using LocalSizeType = typename Traits<Tensor>::LocalSizeType;
 
         using RCPMapType = typename Tensor::RCPMapType;
 
-        inline RowView(const Tensor &t, const SizeType row, const bool force_local_view = true)
-        : t_(t), offset_(0)
-        {
+        inline RowView(const Tensor &t, const SizeType row, const bool force_local_view = true) : t_(t), offset_(0) {
             auto impl = raw_type(t_);
             assert(impl->isLocallyIndexed());
             auto rr = row_range(t);
             impl->getLocalRowView(row - rr.begin(), cols_, values_);
-            offset_  = impl->getDomainMap()->getMinGlobalIndex();
+            offset_ = impl->getDomainMap()->getMinGlobalIndex();
             col_map_ = impl->getColMap();
         }
 
-        inline ~RowView()
-        {}
+        inline ~RowView() {}
 
-        inline std::size_t n_values() const
-        {
-            return cols_.size();
-        }
+        inline std::size_t n_values() const { return cols_.size(); }
 
-        inline SizeType col(const int index) const
-        {
+        inline SizeType col(const int index) const {
             assert(index < n_values());
 
             auto ret = col_map_->getGlobalElement(cols_[index]);
@@ -46,8 +39,7 @@ namespace utopia {
             return ret;
         }
 
-        inline Scalar get(const int index) const
-        {
+        inline Scalar get(const int index) const {
             assert(index < n_values());
             return values_[index];
         }
@@ -59,6 +51,6 @@ namespace utopia {
         Teuchos::ArrayView<const Scalar> values_;
         RCPMapType col_map_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_TPETRA_ROW_VIEW_HPP
+#endif  // UTOPIA_TPETRA_ROW_VIEW_HPP

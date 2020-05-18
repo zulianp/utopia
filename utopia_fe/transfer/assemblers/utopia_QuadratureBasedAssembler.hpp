@@ -1,8 +1,8 @@
 #ifndef UTOPIA_QUADRATURE_BASED_ASSEMBLER_HPP
 #define UTOPIA_QUADRATURE_BASED_ASSEMBLER_HPP
 
-#include <memory>
 #include <cassert>
+#include <memory>
 
 namespace utopia {
 
@@ -13,8 +13,7 @@ namespace utopia {
         QuadratureBasedAssembler();
         virtual ~QuadratureBasedAssembler();
 
-        inline const QMortarBuilder &get_q_builder() const
-        {
+        inline const QMortarBuilder &get_q_builder() const {
             assert(q_builder);
             return *q_builder;
         }
@@ -25,6 +24,6 @@ namespace utopia {
         std::shared_ptr<QMortarBuilder> q_builder;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_QUADRATURE_BASED_ASSEMBLER_HPP
+#endif  // UTOPIA_QUADRATURE_BASED_ASSEMBLER_HPP

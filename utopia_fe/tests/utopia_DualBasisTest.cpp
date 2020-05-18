@@ -1,26 +1,17 @@
 #include "utopia_DualBasisTest.hpp"
 #include "utopia_DualBasis.hpp"
 
-
 namespace utopia {
 
-    static void test_dual_basis(
-        const libMesh::ElemType e_type,
-        const int dim,
-        const int order,
-        const double alpha)
-    {
-
-
+    static void test_dual_basis(const libMesh::ElemType e_type, const int dim, const int order, const double alpha) {
         libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         DualBasis::build_trafo_and_weights(e_type, order, alpha, trafo, inv_trafo, weights);
 
         double sum_t = 0.0;
-        
-        for(auto t : trafo.get_values()) {
+
+        for (auto t : trafo.get_values()) {
             sum_t += t;
         }
-
 
         auto n_nodes = trafo.m();
         // trafo.print();
@@ -30,8 +21,8 @@ namespace utopia {
         assert(approxeq(n_nodes, sum_t, 1e-10));
 
         double sum_w = 0.0;
-        
-        for(auto w : weights.get_values()) {
+
+        for (auto w : weights.get_values()) {
             sum_w += w;
         }
 
@@ -43,7 +34,7 @@ namespace utopia {
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
 
-        libMesh::QGauss qrule(dim, libMesh::Order(2*order));
+        libMesh::QGauss qrule(dim, libMesh::Order(2 * order));
         qrule.init(e_type);
 
         auto fe = libMesh::FEBase::build(dim, libMesh::Order(order));
@@ -57,14 +48,10 @@ namespace utopia {
         ///////////////////////////////////////////////
 
         libMesh::DenseMatrix<libMesh::Real> mass_mat;
-        mortar_assemble(
-            *fe,
-            *fe, 
-            mass_mat
-        );
+        mortar_assemble(*fe, *fe, mass_mat);
 
         double sum_mm = 0.0;
-        for(auto mm : mass_mat.get_values()) {
+        for (auto mm : mass_mat.get_values()) {
             sum_mm += mm;
         }
 
@@ -73,30 +60,19 @@ namespace utopia {
         ///////////////////////////////////////////////
         libMesh::DenseMatrix<libMesh::Real> coupling;
 
-        mortar_assemble_weighted_biorth(
-            *fe,
-            *fe, 
-            weights,
-            coupling
-        );
+        mortar_assemble_weighted_biorth(*fe, *fe, weights, coupling);
 
         // std::cout << "------------------------\n";
         // coupling.print();
 
         libMesh::DenseMatrix<libMesh::Real> mass_mat_dual, inv_mass_mat_dual;
-        mortar_assemble_weighted_biorth(
-            *fe,
-            trafo,
-            *fe, 
-            weights,
-            mass_mat_dual
-        );
+        mortar_assemble_weighted_biorth(*fe, trafo, *fe, weights, mass_mat_dual);
 
         assert(is_diag(mass_mat_dual));
 
         double sum_mm_dual = 0.0;
-        
-        for(auto mm : mass_mat_dual.get_values()) {
+
+        for (auto mm : mass_mat_dual.get_values()) {
             sum_mm_dual += mm;
         }
 
@@ -106,10 +82,10 @@ namespace utopia {
         inv_mass_mat_dual.resize(mass_mat_dual.m(), mass_mat_dual.n());
         inv_mass_mat_dual.zero();
 
-        for(unsigned int i = 0; i < mass_mat_dual.m(); ++i) {
-            for(int j = 0; j < mass_mat_dual.n(); ++j) {
-                if(i == j) {
-                   inv_mass_mat_dual(i, j) = 1./mass_mat_dual(i, j);
+        for (unsigned int i = 0; i < mass_mat_dual.m(); ++i) {
+            for (int j = 0; j < mass_mat_dual.n(); ++j) {
+                if (i == j) {
+                    inv_mass_mat_dual(i, j) = 1. / mass_mat_dual(i, j);
                 }
             }
         }
@@ -139,15 +115,15 @@ namespace utopia {
         // std::cout << "------------------------\n";
 
         double sum_T = 0.0;
-        for(auto t : T.get_values()) {
+        for (auto t : T.get_values()) {
             sum_T += t;
         }
 
         assert(approxeq(n_nodes, sum_T, 1e-10));
 
-        for(int i = 0; i < n_nodes; ++i) {
+        for (int i = 0; i < n_nodes; ++i) {
             double row_sum = 0.0;
-            for(int j = 0; j < n_nodes; ++j) {
+            for (int j = 0; j < n_nodes; ++j) {
                 row_sum += T(i, j);
             }
 
@@ -155,8 +131,7 @@ namespace utopia {
         }
     }
 
-    void DualBasisTest::run(Input &)
-    {
+    void DualBasisTest::run(Input &) {
         std::cout << "DualBasisTest" << std::endl;
 
         // libMesh::DistributedMesh mesh(comm());
@@ -169,7 +144,7 @@ namespace utopia {
         //     libMesh::TRI6
         // );
 
-        auto alpha = 1./5.;
+        auto alpha = 1. / 5.;
         auto dim = 2;
         auto order = 2;
 
@@ -183,7 +158,6 @@ namespace utopia {
 
         // dim = 3;
         // test_dual_basis(libMesh::TET10, dim, order, alpha);
-
 
         // dim = 3;
         // test_dual_basis(libMesh::HEX27, dim, order, alpha);
@@ -204,8 +178,6 @@ namespace utopia {
         // std::cout << "------------------------\n";
         // trafo.print();
 
-
-
         // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         // DualBasis::build_trafo_and_weights(
         //            libMesh::HEX27,
@@ -224,15 +196,8 @@ namespace utopia {
         // std::cout << "------------------------\n";
         // trafo.print();
 
-
         libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
-        DualBasis::build_trafo_and_weights(
-                   libMesh::PRISM6,
-                   1,
-                   1./5,
-                   trafo,
-                   inv_trafo,
-                   weights);
+        DualBasis::build_trafo_and_weights(libMesh::PRISM6, 1, 1. / 5, trafo, inv_trafo, weights);
 
         weights.print();
         std::cout << "------------------------\n";
@@ -243,5 +208,4 @@ namespace utopia {
         std::cout << "------------------------\n";
         trafo.print();
     }
-}
-
+}  // namespace utopia

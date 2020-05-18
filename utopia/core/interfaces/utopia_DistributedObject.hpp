@@ -5,13 +5,13 @@
 
 namespace utopia {
 
-	class DistributedObject {
-	public:
-		virtual ~DistributedObject() {}
-		virtual Communicator &comm() = 0;
-		virtual const Communicator &comm() const = 0;
-	};
+    class DistributedObject {
+    public:
+        virtual ~DistributedObject() = default;
+        virtual Communicator &comm() = 0;
+        virtual const Communicator &comm() const = 0;
+    };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_DISTRIBUTED_OBJECT_HPP
+#endif  // UTOPIA_DISTRIBUTED_OBJECT_HPP

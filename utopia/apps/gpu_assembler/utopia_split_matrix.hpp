@@ -5,23 +5,21 @@
 
 namespace utopia {
 
-    template<class Scalar>
+    template <class Scalar>
     UTOPIA_INLINE_FUNCTION static constexpr Scalar ramp_fun_positive(const Scalar &x) {
-        return (device::abs(x) + x)/2;
+        return (device::abs(x) + x) / 2;
     }
-    template<class Scalar>
+    template <class Scalar>
     UTOPIA_INLINE_FUNCTION static constexpr Scalar ramp_fun_negative(const Scalar &x) {
-        return (device::abs(x) - x)/2;
+        return (device::abs(x) - x) / 2;
     }
 
-    template<typename Scalar, int Dim>
-    UTOPIA_INLINE_FUNCTION static void split_matrix(
-        const StaticMatrix<Scalar, Dim, Dim> &mat,
-        StaticVector<Scalar, Dim> &values,
-        StaticMatrix<Scalar, Dim, Dim> &vectors,
-        StaticMatrix<Scalar, Dim, Dim> &negative,
-        StaticMatrix<Scalar, Dim, Dim> &positive)
-    {
+    template <typename Scalar, int Dim>
+    UTOPIA_INLINE_FUNCTION static void split_matrix(const StaticMatrix<Scalar, Dim, Dim> &mat,
+                                                    StaticVector<Scalar, Dim> &values,
+                                                    StaticMatrix<Scalar, Dim, Dim> &vectors,
+                                                    StaticMatrix<Scalar, Dim, Dim> &negative,
+                                                    StaticMatrix<Scalar, Dim, Dim> &positive) {
         negative.set(0.0);
         positive.set(0.0);
 
@@ -29,7 +27,7 @@ namespace utopia {
 
         StaticVector<Scalar, Dim> v;
 
-        for(int d = 0; d < Dim; ++d) {
+        for (int d = 0; d < Dim; ++d) {
             vectors.col(d, v);
             auto outer_v = outer(v, v);
 
@@ -40,6 +38,6 @@ namespace utopia {
             positive += eig_p * outer_v;
         }
     }
-}
+}  // namespace utopia
 
-#endif //UTOPIA_SPLIT_MATRIX_HPP
+#endif  // UTOPIA_SPLIT_MATRIX_HPP

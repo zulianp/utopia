@@ -4,19 +4,15 @@
 namespace utopia {
     class Clonable {
     public:
-        virtual ~Clonable()
-        {
-
-        }
+        virtual ~Clonable() = default;
 
         /** @brief This method copies the relevant
          * settings but does not have to copy all the state variables
          * such as buffers. Maybe we should change its name to somthing
          * more suitable ...
          */
-        virtual Clonable * clone() const = 0;
-
+        virtual Clonable* clone() const = 0;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_CLONABLE_HPP
+#endif  // UTOPIA_CLONABLE_HPP

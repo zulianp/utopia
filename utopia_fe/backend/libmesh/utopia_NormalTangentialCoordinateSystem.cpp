@@ -1,16 +1,15 @@
-#include "libmesh/fem_context.h"
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
+#include "libmesh/fem_context.h"
 
-#include "libmesh/mesh_inserter_iterator.h"
+#include "libmesh/dof_map.h"
 #include "libmesh/elem.h"
-#include "libmesh/transient_system.h"
-#include "libmesh/fe.h"
-#include "libmesh/serial_mesh.h"
 #include "libmesh/fe.h"
 #include "libmesh/fe_interface.h"
 #include "libmesh/libmesh.h"
-#include "libmesh/dof_map.h"
+#include "libmesh/mesh_inserter_iterator.h"
 #include "libmesh/quadrature_gauss.h"
+#include "libmesh/serial_mesh.h"
+#include "libmesh/transient_system.h"
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_intersector.hpp"
 
@@ -20,8 +19,7 @@
 #include <cmath>
 
 namespace utopia {
-    void scale_normal_vector_with_gap(const int dim, const UVector &normals, const UVector &gap, UVector &out)
-    {
+    void scale_normal_vector_with_gap(const int dim, const UVector &normals, const UVector &gap, UVector &out) {
         out = local_zeros(local_size(normals));
 
         Read<UVector> r_n(normals), r_g(gap);
@@ -32,37 +30,32 @@ namespace utopia {
         Range r = range(normals);
 
         std::vector<double> n(dim);
-        for(auto i = r.begin(); i < r.end(); i += dim) {
-
+        for (auto i = r.begin(); i < r.end(); i += dim) {
             double len = 0.;
-            for(int d = 0; d < dim; ++d) {
+            for (int d = 0; d < dim; ++d) {
                 n[d] = normals.get(i + d);
                 len += n[d] * n[d];
             }
 
             len = std::sqrt(len);
 
-            if(len < 1e-8) {
+            if (len < 1e-8) {
                 continue;
             }
 
             double g = gap.get(i);
-            for(int d = 0; d < dim; ++d) {
-                out.set(i+d, n[d] * g);
+            for (int d = 0; d < dim; ++d) {
+                out.set(i + d, n[d] * g);
             }
         }
     }
-
-
-
 
     bool assemble_normal_tangential_transformation(const libMesh::MeshBase &mesh,
                                                    const libMesh::DofMap &dof_map,
                                                    const std::vector<int> &boundary_tags,
                                                    UVector &is_normal_component,
                                                    UVector &normals,
-                                                   USparseMatrix &mat)
-    {
+                                                   USparseMatrix &mat) {
         using namespace libMesh;
 
         const uint n_dims = mesh.mesh_dimension();
@@ -71,8 +64,7 @@ namespace utopia {
         fe->get_phi();
         fe->get_JxW();
 
-        QGauss quad(n_dims-1 , FIFTH);
-
+        QGauss quad(n_dims - 1, FIFTH);
 
         const SizeType local_dofs = dof_map.n_local_dofs();
         UVector global_normal_vec = local_zeros(local_dofs);
@@ -84,44 +76,45 @@ namespace utopia {
         DenseVector<Real> vec, local_touched;
 
         SizeType n_detected_side_sets = 0;
-        { //synch-block begin
+        {  // synch-block begin
             Write<UVector> w_n(global_normal_vec), w_t(touched);
 
-            for(auto e_it = mesh.active_local_elements_begin();
-                e_it != mesh.active_local_elements_end(); ++e_it) {
+            for (auto e_it = mesh.active_local_elements_begin(); e_it != mesh.active_local_elements_end(); ++e_it) {
                 const auto &e = **e_it;
 
-                for(uint side = 0; side < e.n_sides(); ++side) {
-                    if(e.neighbor_ptr(side) != nullptr) {continue;}
+                for (uint side = 0; side < e.n_sides(); ++side) {
+                    if (e.neighbor_ptr(side) != nullptr) {
+                        continue;
+                    }
 
-                    //if empty take them all
+                    // if empty take them all
                     bool select = boundary_tags.empty();
-                    for(auto t : boundary_tags) {
-                        if(mesh.get_boundary_info().has_boundary_id(&e, side, t)) {
+                    for (auto t : boundary_tags) {
+                        if (mesh.get_boundary_info().has_boundary_id(&e, side, t)) {
                             select = true;
                             break;
                         }
                     }
 
-                    if(!select) continue;
+                    if (!select) continue;
                     ++n_detected_side_sets;
 
                     fe->attach_quadrature_rule(&quad);
                     fe->reinit(&e, side);
 
                     const auto &fe_normals = fe->get_normals();
-                    const auto &fun        = fe->get_phi();
-                    const auto &JxW        = fe->get_JxW();
+                    const auto &fun = fe->get_phi();
+                    const auto &JxW = fe->get_JxW();
 
                     const uint n_fun = fun.size();
-                    const uint n_qp  = fun[0].size();
+                    const uint n_qp = fun[0].size();
 
                     vec.resize(n_fun * n_dims);
                     vec.zero();
 
-                    for(uint qp = 0; qp < quad.n_points(); ++qp) {
-                        for(uint i = 0; i < fun.size(); ++i){
-                            for(uint d = 0; d < n_dims; ++d) {
+                    for (uint qp = 0; qp < quad.n_points(); ++qp) {
+                        for (uint i = 0; i < fun.size(); ++i) {
+                            for (uint d = 0; d < n_dims; ++d) {
                                 vec(i + d * n_fun) += fun[i][qp] * fe_normals[qp](d) * JxW[qp];
                             }
                         }
@@ -131,39 +124,39 @@ namespace utopia {
 
                     assert(dof_indices.size() == n_fun * n_dims);
 
-                    for(uint i = 0; i < dof_indices.size(); ++i) {
+                    for (uint i = 0; i < dof_indices.size(); ++i) {
                         const uint ind = dof_indices[i];
                         global_normal_vec.add(ind, vec(i));
                         touched.set(ind, std::abs(vec(i)) > 1e-16);
                     }
                 }
             }
-        } //synch-block end
+        }  // synch-block end
 
         // write("v.m", global_normal_vec);
         mat = local_sparse(local_dofs, local_dofs, n_dims);
         auto r = range(global_normal_vec);
 
-        std::vector<Real> H(n_dims*n_dims, 0);
+        std::vector<Real> H(n_dims * n_dims, 0);
 
         is_normal_component = local_zeros(local_dofs);
 
         SizeType n_detecetd_normals = 0;
-        { //synch-block begin
+        {  // synch-block begin
             Read<UVector> r_n(global_normal_vec), r_t(touched);
             Write<USparseMatrix> w_m(mat);
             Write<UVector> w_i(is_normal_component);
             Write<UVector> w_n(normals);
 
-            for(SizeType i = r.begin(); i < r.end(); i += n_dims) {
+            for (SizeType i = r.begin(); i < r.end(); i += n_dims) {
                 bool is_node_touched = false;
-                for(uint j = 0; j < n_dims; ++j) {
-                   is_node_touched = is_node_touched || touched.get(i+j) > 0;
+                for (uint j = 0; j < n_dims; ++j) {
+                    is_node_touched = is_node_touched || touched.get(i + j) > 0;
                 }
 
                 bool use_identity = false;
 
-                if(!is_node_touched) {
+                if (!is_node_touched) {
                     use_identity = true;
                 } else {
                     ++n_detecetd_normals;
@@ -171,60 +164,60 @@ namespace utopia {
                     std::vector<Real> n(n_dims, 0);
                     Real norm = 0.;
 
-                    for(uint j = 0; j < n_dims; ++j) {
+                    for (uint j = 0; j < n_dims; ++j) {
                         n[j] = global_normal_vec.get(i + j);
                         norm += n[j] * n[j];
                     }
-
 
                     is_normal_component.set(i, 1.);
 
                     norm = std::sqrt(norm);
 
-                    for(uint j = 0; j < n_dims; ++j) {
+                    for (uint j = 0; j < n_dims; ++j) {
                         n[j] /= norm;
 
                         normals.set(i + j, n[j]);
                     }
 
-
-
                     n[0] -= 1.;
 
-                    if(std::abs(n[0]) < 1e-16) {
+                    if (std::abs(n[0]) < 1e-16) {
                         use_identity = true;
                     } else {
                         use_identity = false;
 
-                        if(n_dims == 2) {
+                        if (n_dims == 2) {
                             norm = std::sqrt(n[0] * n[0] + n[1] * n[1]);
-                            n[0] /= norm; n[1] /= norm;
+                            n[0] /= norm;
+                            n[1] /= norm;
 
                             Intersector::householder_reflection_2(&n[0], &H[0]);
                         } else {
                             norm = std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-                            n[0] /= norm; n[1] /= norm; n[2] /= norm;
+                            n[0] /= norm;
+                            n[1] /= norm;
+                            n[2] /= norm;
 
                             Intersector::householder_reflection_3(&n[0], &H[0]);
                         }
 
-                        for(uint di = 0; di < n_dims; ++di) {
-                            for(uint dj = 0; dj < n_dims; ++dj) {
+                        for (uint di = 0; di < n_dims; ++di) {
+                            for (uint dj = 0; dj < n_dims; ++dj) {
                                 mat.set((i + di), (i + dj), H[di * n_dims + dj]);
                             }
                         }
                     }
                 }
 
-                if(use_identity) {
-                    for(uint di = 0; di < n_dims; ++di) {
+                if (use_identity) {
+                    for (uint di = 0; di < n_dims; ++di) {
                         mat.set((i + di), (i + di), 1.0);
                     }
                 }
             }
-        } //synch-block end
+        }  // synch-block end
 
         return true;
     }
 
-}
+}  // namespace utopia
