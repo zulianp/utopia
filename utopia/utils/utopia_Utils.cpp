@@ -14,7 +14,7 @@
 
 namespace utopia {
     bool is_matlab_file(const std::string &path) {
-        size_t pos = path.find_last_of(".");
+        size_t pos = path.find_last_of('.');
 
         bool is_matlab = false;
         if (pos != std::string::npos) {

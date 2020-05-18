@@ -7,9 +7,9 @@
 namespace utopia {
 
     template <typename Matrix, typename Vector>
-    SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL>::SlepcSolver(const std::vector<std::string> problem_types,
-                                                                 const std::vector<std::string> portions_of_spectrum,
-                                                                 const std::vector<std::string> solver_types)
+    SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL>::SlepcSolver(const std::vector<std::string>& problem_types,
+                                                                 const std::vector<std::string>& portions_of_spectrum,
+                                                                 const std::vector<std::string>& solver_types)
         : problem_types_(problem_types),
           portions_of_spectrum_(portions_of_spectrum),
           solver_types_(solver_types)

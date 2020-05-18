@@ -59,7 +59,7 @@ namespace utopia {
         }
 
         void get_all(std::function<void(Input &)> lambda) override {
-            for (auto n : nodes_) {
+            for (const auto &n : nodes_) {
                 lambda(*n.second);
             }
 

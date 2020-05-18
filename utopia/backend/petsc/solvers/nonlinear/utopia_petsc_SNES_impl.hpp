@@ -23,7 +23,7 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     SNESSolver<Matrix, Vector, PETSC>::SNESSolver(const std::shared_ptr<LinearSolver> &linear_solver,
-                                                  const std::vector<std::string> snes_types)
+                                                  const std::vector<std::string> &snes_types)
         : NonLinearSolver(linear_solver), SNES_types(snes_types) {
         SNES_type_ = SNES_types.at(0);
     }

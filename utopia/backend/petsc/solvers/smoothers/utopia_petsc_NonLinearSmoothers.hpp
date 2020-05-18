@@ -63,7 +63,7 @@ namespace utopia {
 
     public:
         NonLinearConjugateGradient(const std::shared_ptr<LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
-                                   const std::vector<std::string> update_types = {"FR", "PRP", "HS", "DY", "CD"})
+                                   const std::vector<std::string> &update_types = {"FR", "PRP", "HS", "DY", "CD"})
             : SNESSolver(linear_solver), update_types(update_types) {
             this->set_snes_type("ncg");
             update_type_ = update_types.at(0);
