@@ -787,5 +787,4 @@ namespace utopia {
         std::cout << "Adaptivity::compute_boundary_nodes_to_skip::END " << tmp.size() << " and " << index.size()
                   << std::endl;
     }
-
 }  // namespace utopia
