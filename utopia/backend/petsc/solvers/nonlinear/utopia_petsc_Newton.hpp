@@ -25,7 +25,7 @@ namespace utopia {
         Newton(const std::shared_ptr<LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
                const Scalar &alpha = 1.0,
                const SizeType &order = 3,
-               const std::vector<std::string> ls_types = {"basic", "bt", "l2", "cp", "nleqerr"})
+               const std::vector<std::string> &ls_types = {"basic", "bt", "l2", "cp", "nleqerr"})
             :
 
               SNESSolver(linear_solver),

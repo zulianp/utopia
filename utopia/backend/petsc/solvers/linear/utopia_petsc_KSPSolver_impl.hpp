@@ -493,7 +493,7 @@ namespace utopia {
             }
         }
 
-        void sub_ksp_pc_type(const std::string sub_ksp_type, const std::string sub_pc_type) {
+        void sub_ksp_pc_type(const std::string &sub_ksp_type, const std::string &sub_pc_type) {
             if (!ksp_->setupstage) {
                 // ksp setup has to be called before setting up preconditioner
                 KSPSetUp(ksp_);
@@ -535,7 +535,7 @@ namespace utopia {
             }
         }
 
-        void sub_ksp_type(const std::string sub_ksp_type) {
+        void sub_ksp_type(const std::string &sub_ksp_type) {
             if (!ksp_->setupstage) {
                 utopia_error("sub_ksp_type can be only called after update(). ");
                 return;
@@ -574,7 +574,7 @@ namespace utopia {
             }
         }
 
-        void sub_pc_type(const std::string sub_pc_type) {
+        void sub_pc_type(const std::string &sub_pc_type) {
             if (!ksp_->setupstage) {
                 utopia_error("sub_ksp_pc_type can be only called after update(). ");
                 return;
@@ -615,7 +615,7 @@ namespace utopia {
             }
         }
 
-        void sub_solver_package(const std::string sub_pc_type) {
+        void sub_solver_package(const std::string &sub_pc_type) {
             if (!ksp_->setupstage) {
                 utopia_error("sub_ksp_pc_type can be only called after update(). ");
                 return;

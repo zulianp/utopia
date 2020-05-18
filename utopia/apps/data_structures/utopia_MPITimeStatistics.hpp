@@ -41,7 +41,7 @@ namespace utopia {
                 os << "------------------------------------------\n";
                 os << "Timings (seconds), ";
                 os << "comm_size : " << comm_.size() << "\n";
-                for (auto p : times_) {
+                for (const auto &p : times_) {
                     os << p.first << " : " << p.second << "\n";
                 }
 

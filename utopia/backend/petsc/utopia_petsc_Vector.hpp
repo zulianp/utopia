@@ -801,6 +801,7 @@ namespace utopia {
         void copy_data_from(Vec vec);
 
         void wrap(Vec &v);
+        void unwrap(Vec &v) const;
 
         inline void ghosted(const SizeType &local_size,
                             const SizeType &global_size,

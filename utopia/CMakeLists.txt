@@ -101,7 +101,7 @@ if(ENABLE_CLANG_TIDY)
       PATHS /opt/local/bin
     )
 
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-format-style=file;-fix") #-warnings-as-errors=*; #-header-filter=.
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY};-format-style=file;-fix;-export-fixes=fixes.yaml") #-warnings-as-errors=*; #-header-filter=.
 endif()
 
 # More annoying
