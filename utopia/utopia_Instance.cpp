@@ -55,7 +55,7 @@ namespace utopia {
 
         instance().read_input(argc, argv);
 
-        CitationsDB::instance().cite(BibTeX(utopia_bib));
+        CitationsDB::instance().cite(Cite<Utopia2016Git>::bibtex());
     }
 
     int Utopia::Finalize() {

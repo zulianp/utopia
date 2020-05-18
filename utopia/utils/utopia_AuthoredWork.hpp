@@ -9,15 +9,20 @@
 
 namespace utopia {
 
-    class BibTeX final : public Describable {
+    class BibTeX final {
     public:
-        inline void set_citation(std::string cite) { cite_ = std::move(cite); }
-        inline void describe(std::ostream &os) const override { os << cite_; }
-
-        explicit BibTeX(const char *str) : cite_(str) {}
+        inline void set_citation(const char *cite) { cite_ = cite; }
+        inline void describe(std::ostream &os) const { os << cite_; }
+        explicit constexpr BibTeX(const char *str) : cite_(str) {}
 
     private:
-        std::string cite_;
+        const char *cite_;
+    };
+
+    template <class Algorithm>
+    class Cite {
+    public:
+        static constexpr BibTeX bibtex() { return BibTeX("undefined"); }
     };
 
     class CitationsDB : public Describable {
@@ -28,11 +33,12 @@ namespace utopia {
             if (mpi_world_rank() == 0) {
                 os << "\n\n";
                 os << "---------------------------------------------------------------------------------------------\n";
-                os << "If you use this run for your articles, journals, presentations, etc. Please cite the following "
-                      "work:\n";
+                os << "If you produced results with this run for your article, proceeding, presentation, etc... please "
+                      "cite the following work:\n\n";
 
                 for (const auto &a : authorships_) {
                     a.describe(os);
+                    os << "\n";
                 }
 
                 os << "---------------------------------------------------------------------------------------------\n"
@@ -58,15 +64,17 @@ namespace utopia {
     public:
         static bool cited;
 
-        AuthoredWork() {
+        AuthoredWork() { cite_init(); }
+
+        void cite_init() {
             if (!cited) {
                 cited = true;
-                CitationsDB::instance().cite(std::move(bibtex()));
+                CitationsDB::instance().cite(Cite<Algorithm>::bibtex());
             }
         }
 
-        virtual BibTeX bibtex() const = 0;
-    };
+        // virtual BibTeX bibtex() const = 0;
+    };  // namespace utopia
 
     template <class Algorithm>
     bool AuthoredWork<Algorithm>::cited = false;
