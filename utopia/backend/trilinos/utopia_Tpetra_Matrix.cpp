@@ -1,9 +1,11 @@
 #include "utopia_Tpetra_Matrix.hpp"
+#include "utopia_Tpetra_Matrix_impl.hpp"
+
 #include "utopia_Allocations.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
-#include "utopia_kokkos_ParallelEach.hpp"
-#include "utopia_trilinos_Each_impl.hpp"
+//#include "utopia_kokkos_ParallelEach.hpp"
+// #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 
 #include <MatrixMarket_Tpetra.hpp>
@@ -465,24 +467,29 @@ namespace utopia {
     TpetraMatrix::Scalar TpetraMatrix::norm_infty() const {
         // FIXME (optimize for device)
         Scalar ret = -std::numeric_limits<Scalar>::max();
-        each_read(*this,
-                  [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::max(std::abs(val), ret); });
+        // each_read(*this,
+        //           [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::max(std::abs(val), ret);
+        //           });
 
-        auto &comm = *communicator();
-        Scalar ret_global = 0.;
-        Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
-        return ret_global;
+        // auto &comm = *communicator();
+        // Scalar ret_global = 0.;
+        // Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
+        // return ret_global;
+        return parallel_reduce_values(AbsMax(), ret);
     }
 
     TpetraMatrix::Scalar TpetraMatrix::norm1() const {
         // FIXME (optimize for device)
-        Scalar ret = 0.0;
-        each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::abs(val) + ret; });
+        // Scalar ret = 0.0;
+        // each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::abs(val) + ret;
+        // });
 
-        auto &comm = *communicator();
-        Scalar ret_global = 0.;
-        Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
-        return ret_global;
+        // auto &comm = *communicator();
+        // Scalar ret_global = 0.;
+        // Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
+        // return ret_global;
+
+        return parallel_reduce_values(AbsPlus(), 0);
     }
 
     TpetraMatrix::SizeType TpetraMatrix::rows() const {
@@ -714,6 +721,8 @@ namespace utopia {
     }
 
     void TpetraMatrix::shift_diag(const TpetraVector &d) {
+        // FIXME this should be parallel
+
         const auto r = utopia::range(d);
         assert(r == utopia::row_range(*this));
 

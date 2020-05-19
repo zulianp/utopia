@@ -105,6 +105,29 @@ namespace utopia {
         static const int value = 1;
     };
 
+    class AbsMax {
+    public:
+        std::string get_class() const { return "AbsMax"; }
+
+        template <typename T>
+        inline static T apply(const T &left, const T &right) {
+            using std::abs;
+            return std::max(abs(left), abs(right));
+        }
+    };
+
+    template <>
+    class is_commutative<AbsMax> {
+    public:
+        static const int value = 1;
+    };
+
+    template <>
+    class is_associative<AbsMax> {
+    public:
+        static const int value = 1;
+    };
+
     class And {
     public:
         std::string get_class() const { return "And"; }

@@ -18,7 +18,7 @@
 // #include <Kokkos_Core.hpp>
 
 #include "utopia_trilinos_DeviceView.hpp"
-#include "utopia_trilinos_Each.hpp"
+//#include "utopia_trilinos_Each.hpp"
 #include "utopia_trilinos_Eval_Factory.hpp"
 #include "utopia_trilinos_ForwardDeclarations.hpp"
 #include "utopia_trilinos_RowView.hpp"
@@ -34,7 +34,7 @@
 #include "utopia_kokkos_Eval_MultiReduce.hpp"
 #include "utopia_kokkos_Eval_Reduce.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
-#include "utopia_kokkos_ParallelEach.hpp"
+//#include "utopia_kokkos_ParallelEach.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
 
 // FIXME re-introduce later

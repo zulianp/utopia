@@ -2,10 +2,10 @@
 #define UTOPIA_KOKKOS_PARALLEL_EACH_HPP
 
 #include "utopia_Base.hpp"
-#include "utopia_Each.hpp"
+//#include "utopia_Each.hpp"
 #include "utopia_For.hpp"
 #include "utopia_ForwardDeclarations.hpp"
-#include "utopia_ParallelEach.hpp"
+//#include "utopia_ParallelEach.hpp"
 #include "utopia_trilinos_Types.hpp"
 
 #include <Kokkos_Core.hpp>

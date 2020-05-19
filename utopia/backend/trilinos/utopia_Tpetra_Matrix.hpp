@@ -483,6 +483,9 @@ namespace utopia {
         void transform(const Pow &p) override;
         void transform(const Reciprocal<Scalar> &op) override;
 
+        template <class Op>
+        Scalar parallel_reduce_values(Op op, const Scalar &initial_value) const;
+
         ////////////////////////////////////////////////////////////////////////
         //////////////////////////// Blas1Tensor //////////////////////////////
         ////////////////////////////////////////////////////////////////////////

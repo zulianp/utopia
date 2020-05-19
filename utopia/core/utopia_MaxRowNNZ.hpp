@@ -2,7 +2,7 @@
 #define UTOPIA_MAX_ROW_NNZ_HPP
 
 #include <vector>
-#include "utopia_Each.hpp"
+//#include "utopia_Each.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {

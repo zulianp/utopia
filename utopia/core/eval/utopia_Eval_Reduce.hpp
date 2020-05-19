@@ -5,7 +5,7 @@
 #ifndef UTOPIA_UTOPIA_EVAL_REDUCE_HPP
 #define UTOPIA_UTOPIA_EVAL_REDUCE_HPP
 
-#include "utopia_Each.hpp"
+//#include "utopia_Each.hpp"
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_Operations.hpp"
 #include "utopia_Operators.hpp"
