@@ -1,7 +1,7 @@
 #ifndef UTOPIA_TRILINOS_EACH_HPP
 #define UTOPIA_TRILINOS_EACH_HPP
 
-//#include "utopia_Each.hpp"
+#include "utopia_Each.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_trilinos_ForwardDeclarations.hpp"
 #include "utopia_trilinos_Traits.hpp"

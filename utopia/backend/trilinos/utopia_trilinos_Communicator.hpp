@@ -82,7 +82,7 @@ namespace utopia {
         }
 
         template <class Op, typename T>
-        inline T reduce(Op op, const T &val) const {
+        inline T reduce(const Op & /*op*/, const T &val) const {
             T ret_global = 0.0;
             Teuchos::reduceAll(*get(), MPIReduceOp<Op, TRILINOS>::op(), 1, &val, &ret_global);
             return ret_global;

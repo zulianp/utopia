@@ -2,6 +2,7 @@
 #define UTOPIA_TEUCHOS_MPI_OPERATIONS_HPP
 
 #include "utopia_MPI_Operations.hpp"
+#include "utopia_Traits.hpp"
 #include "utopia_trilinos_Base.hpp"
 
 #include <Teuchos_EReductionType.hpp>

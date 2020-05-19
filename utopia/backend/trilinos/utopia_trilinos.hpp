@@ -35,7 +35,7 @@
 #include "utopia_kokkos_Eval_Reduce.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
 //#include "utopia_kokkos_ParallelEach.hpp"
-#include "utopia_trilinos_Each_impl.hpp"
+// #include "utopia_trilinos_Each_impl.hpp"
 
 // FIXME re-introduce later
 // #include "utopia_trilinos_Eval_Distance.hpp"
