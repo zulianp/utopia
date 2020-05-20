@@ -889,8 +889,8 @@ namespace utopia {
             const SizeType nc = cols();
 
             SizeType idx = 0;
-            for (SizeType i = 0; i < nr; ++i) {
-                for (SizeType j = 0; j < nc; ++j) {
+            for (SizeType j = 0; j < nc; ++j) {
+                for (SizeType i = 0; i < nr; ++i) {
                     f(i, j, entries_[idx++]);
                 }
             }
@@ -903,13 +903,21 @@ namespace utopia {
             }
         }
 
-        template <class Op, class MPIOp>
-        Scalar parallel_reduce_values(const Op &op, const MPIOp &, const Scalar initial_value) const {
-            Scalar ret = initial_value;
+        // template <class Op, class MPIOp>
+        // Scalar parallel_reduce_values(const Op &op, const MPIOp &, const Scalar initial_value) const {
+        //     Scalar ret = initial_value;
+        //     for (const auto &e : entries_) {
+        //         ret = op.apply(ret, e);
+        //     }
+
+        //     return ret;
+        // }
+
+        template <class Map, class Reduce, class MPIOp, typename Accumulator>
+        void map_reduce(const Map &map, const Reduce &reduce, const MPIOp &, Accumulator &accumulator) const {
             for (const auto &e : entries_) {
-                ret = op.apply(ret, e);
+                accumulator = reduce(accumulator, map(e));
             }
-            return ret;
         }
 
     private:

@@ -111,7 +111,7 @@ namespace utopia {
 
         template <typename T>
         inline constexpr bool isfinite(const T &v) {
-            return std::isfinite(v)
+            return std::isfinite(v);
         }
 
         template <typename T>

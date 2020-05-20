@@ -470,6 +470,9 @@ namespace utopia {
         template <class Op, class MPIOp>
         Scalar parallel_reduce_values(const Op &op, const MPIOp &mpi_op, const Scalar &initial_value) const;
 
+        template <class Map, class Reduce, class MPIOp, typename Accumulator>
+        void map_reduce(const Map &map, const Reduce &reduce, const MPIOp &, Accumulator &accumulator) const;
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////
         ///////////////////////////////////////////////////////////////////////////

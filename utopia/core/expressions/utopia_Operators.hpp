@@ -434,8 +434,10 @@ namespace utopia {
         template <typename TOther>
         inline TOther apply(const TOther &x) const {
             using std::abs;
-            return abs(x) > tol_;
+            return (abs(x) > tol_) ? 1 : 0;
         }
+
+        inline T tol() const { return tol_; }
 
     private:
         T tol_;
