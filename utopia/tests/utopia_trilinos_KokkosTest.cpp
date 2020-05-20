@@ -71,7 +71,8 @@ namespace utopia {
 
             auto r = range(v);
 
-            each_write(v, UTOPIA_LAMBDA(const SizeType &i)->Scalar { return i - r.begin(); });
+            auto v_view = view_device(v);
+            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
 
             Scalar z = min(v);
 
@@ -86,7 +87,8 @@ namespace utopia {
 
             auto r = range(v);
 
-            each_write(v, UTOPIA_LAMBDA(const SizeType &i)->Scalar { return i - r.begin(); });
+            auto v_view = view_device(v);
+            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
 
             Scalar z = max(v);
 
@@ -99,7 +101,8 @@ namespace utopia {
 
             TpetraVectord w(vl, -1.);
 
-            parallel_each_write(w, UTOPIA_LAMBDA(const SizeType &i)->Scalar { return i; });
+            auto w_view = view_device(w);
+            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) { w_view.set(i, i); });
 
             {
                 Read<TpetraVectord> r_(w);
@@ -118,10 +121,11 @@ namespace utopia {
             TpetraMatrixd w;
             w.identity(ml, 1.0);
 
-            parallel_each_write(w, UTOPIA_LAMBDA(const SizeType &i, const SizeType &j)->Scalar { return i * n + j; });
+            w.transform_ijv(
+                UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &)->Scalar { return i * n + j; });
 
             // serial implementation for test
-            each_read(w, [=](const SizeType &i, const SizeType &j, const Scalar &val) {
+            w.read([=](const SizeType &i, const SizeType &j, const Scalar &val) {
                 utopia_test_assert(approxeq(Scalar(i * n + j), val));
             });
         }
@@ -132,7 +136,8 @@ namespace utopia {
 
             TpetraVectord w(vl, 50);
 
-            parallel_each_read(w, UTOPIA_LAMBDA(const SizeType &i, const Scalar &entry){});
+            auto w_view = const_view_device(w);
+            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) { auto v = w_view.get(i); });
         }
 
         void kokkos_apply() {
@@ -157,7 +162,7 @@ namespace utopia {
                 }
             }
 
-            parallel_transform(P, UTOPIA_LAMBDA(const Scalar &value)->Scalar { return value * 2.; });
+            P.transform_values(UTOPIA_LAMBDA(const Scalar &value)->Scalar { return value * 2.; });
         }
 
         void run() {

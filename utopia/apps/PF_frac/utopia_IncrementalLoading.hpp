@@ -276,9 +276,7 @@ namespace utopia {
         }
 
     public:  // made public because of nvcc
-        void set_nonzero_elem_to(Vector &v, const Scalar &val) {
-            parallel_transform(v, UTOPIA_LAMBDA(const SizeType &i, const Scalar &vi)->Scalar { return vi + val; });
-        }
+        void set_nonzero_elem_to(Vector &v, const Scalar &val) { v.shift(val); }
 
     private:
         FunctionSpace &space_;

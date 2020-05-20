@@ -18,39 +18,12 @@ namespace utopia {
         using TransferPtr = std::shared_ptr<Transfer>;
 
     public:
-        MultiLevelMask()
-
-            = default;
-
+        MultiLevelMask() = default;
         ~MultiLevelMask() = default;
 
         inline bool active() const { return active_; }
 
         void active(const bool val) { active_ = val; }
-
-        // static void fix_semidefinite_operator(Matrix &A)
-        // {
-
-        // 	Vector d;
-
-        // 	Size s = local_size(A);
-        // 	d = local_values(s.get(0), 1.);
-
-        // 	{
-        // 		Write<Vector> w_d(d);
-
-        // 		each_read(A,[&d](const SizeType i, const SizeType, const double) {
-        // 			d.set(i, 0.);
-        // 		});
-        // 	}
-
-        // 	A += Matrix(diag(d));
-        // }
-
-        // inline void set_fix_semidefinite_operators(const bool val)
-        // {
-        // 	fix_semidefinite_operators_ = val;
-        // }
 
         void describe(std::ostream &os = std::cout) const {
             os << "active: " << active_ << "\n";
@@ -63,7 +36,6 @@ namespace utopia {
         }
 
         void generate_masks(const Matrix &A, const std::vector<TransferPtr> &transfers) {
-            // const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
             if (!active_) return;
 
             const auto L = transfers.size() + 1;
@@ -82,7 +54,6 @@ namespace utopia {
             }
 
             for (auto &m : masks_) {
-                // m = local_values(local_size(m).get(0), 1.) - m;
                 m.shift(-1);
                 m = abs(m);
                 // UTOPIA_RECORD_VALUE("mask", m);
@@ -91,7 +62,6 @@ namespace utopia {
 
     private:
         std::vector<Vector> masks_;
-        // bool fix_semidefinite_operators_;
         bool active_{false};
 
         static void generate_mask_from_matrix(const Matrix &A,
@@ -100,20 +70,22 @@ namespace utopia {
                                               const Scalar off_value) {
             const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
 
-            // auto ls = local_size(A);
-            mask.values(row_layout(A), off_value);
+            // FIXME once atomic_store is avaialable
+            // mask.values(row_layout(A), off_value);
 
             // {
-            //     Write<Vector> w_(mask);
+            //     auto mask_view = view_device(mask);
 
-            //     each_read(A, [&](const SizeType i, const SizeType j, const Scalar value) {
+            //     A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &value) {
             //         if (i == j) return;
 
-            //         if (std::abs(value) > off_diag_tol) {
-            //             mask.set(i, on_value);
+            //         if (device::abs(value) > off_diag_tol) {
+            //             mask_view.atomic_set(i, on_value);
             //         }
             //     });
             // }
+
+            mask.values(row_layout(A), 0.0);
 
             {
                 auto mask_view = view_device(mask);
@@ -122,10 +94,18 @@ namespace utopia {
                     if (i == j) return;
 
                     if (device::abs(value) > off_diag_tol) {
-                        mask_view.atomic_set(i, on_value);
+                        mask_view.atomic_add(i, 1.0);
                     }
                 });
             }
+
+            mask.transform_values(UTOPIA_LAMBDA(const Scalar &v) {
+                if (v >= 1.0) {
+                    return on_value;
+                } else {
+                    return off_value;
+                }
+            });
         }
     };
 

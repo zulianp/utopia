@@ -31,6 +31,11 @@
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
+#ifdef WITH_PETSC
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
+#endif  // WITH_PETSC
+
 #include <cmath>
 #include <random>
 
@@ -121,12 +126,14 @@ namespace utopia {
 
         {
             auto d_x_old = const_device_view(x_old);
+            auto x_new_view = device_view(x_new);
 
-            parallel_transform(x_new, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+            parallel_for(range_device(x_new), UTOPIA_LAMBDA(const SizeType &i) {
                 if (i % (Dim + 1) == comp) {
-                    return d_x_old.get(i);
+                    x_new_view.set(i, d_x_old.get(i));
+                } else {
+                    x_new_view.set(i, -9e15);
                 }
-                { return -9e15; }
             });
         }
     }

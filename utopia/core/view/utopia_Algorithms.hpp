@@ -6,6 +6,8 @@
 
 #ifdef WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
+#include <Kokkos_Atomic.hpp>
+#include <Kokkos_Core.hpp>
 #else
 #include <algorithm>
 #include <cmath>
@@ -59,6 +61,12 @@ namespace utopia {
             return Kokkos::atomic_fetch_add(dest, val);
         }
 
+        // UTOPIA_INLINE_FUNCTION void atomic_set(volatile T *const dest, const T val) {
+        // template <typename T>
+        // UTOPIA_INLINE_FUNCTION void atomic_set(T *dest, const T val) {
+        //     Kokkos::Impl::atomic_store(dest, val);
+        // }
+
         template <typename T>
         UTOPIA_INLINE_FUNCTION T sin(const T &v) {
             return Kokkos::Details::ArithTraits<T>::sin(v);
@@ -89,7 +97,22 @@ namespace utopia {
             return (a < 0) ? true : false;
         }
 
+        // isfinite(NaN) = false
+        // isfinite(Inf) = false
+        // isfinite(0.0) = true
+        // isfinite(exp(800)) = false
+        // isfinite(DBL_MIN/2.0) = true
+        template <typename T>
+        UTOPIA_INLINE_FUNCTION constexpr bool isfinite(const T &v) {
+            return !Kokkos::Details::ArithTraits<T>::isnaninf(v);
+        }
+
 #else
+
+        template <typename T>
+        inline constexpr bool isfinite(const T &v) {
+            return std::isfinite(v)
+        }
 
         template <typename T>
         inline constexpr T isnan(const T &v) {

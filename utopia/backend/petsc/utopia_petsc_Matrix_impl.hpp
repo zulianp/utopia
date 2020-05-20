@@ -16,7 +16,7 @@ namespace utopia {
     namespace internal {
 
         template <class F>
-        PetscScalar local_reduce_petsc_impl(Mat &mat, F op, const PetscScalar &initial_value) {
+        PetscScalar local_reduce_petsc_impl(const Mat &mat, F op, const PetscScalar &initial_value) {
             PetscInt n;
             const PetscInt *ia;
             // const PetscInt *ja;
@@ -292,9 +292,11 @@ namespace utopia {
         if (has_type(MATSEQAIJ)) {
             transform_ijv_seqaij(op);
         } else {
-            each_transform(*this, [op](const SizeType &i, const SizeType &j, const Scalar value) -> Scalar {
-                return op(i, j, value);
-            });
+            assert(false && "IMPLEMENT ME");
+
+            // each_transform(*this, [op](const SizeType &i, const SizeType &j, const Scalar value) -> Scalar {
+            //     return op(i, j, value);
+            // });
         }
     }
 
@@ -415,9 +417,11 @@ namespace utopia {
             Scalar ret = internal::local_reduce_petsc_impl(d, op, initial_value);
             ret = internal::local_reduce_petsc_impl(o, op, ret);
             ret = comm().reduce(mpi_op, ret);
+            return ret;
 
         } else {
             assert(false);
+            return -1.0;
         }
     }
 

@@ -11,6 +11,8 @@
 
 #include "utopia_petsc_Types.hpp"
 
+#include "utopia_petsc_RowView.hpp"
+
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
@@ -31,6 +33,11 @@
 
 #include "utopia_petsc_Eval.hpp"
 #include "utopia_petsc_Layout.hpp"
+
+/// FIXME
+
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
 
 namespace utopia {
     void optimize_nnz(PetscMatrix &A);

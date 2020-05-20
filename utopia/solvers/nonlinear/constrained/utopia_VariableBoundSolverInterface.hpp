@@ -10,6 +10,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_Traits.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -113,15 +114,16 @@ namespace utopia {
             assert(x.comm().size() == Pc.comm().size());
 
             {
-                auto d_lb = const_view_device(lb);
-                auto d_ub = const_view_device(ub);
-                auto d_x = const_view_device(x);
+                auto d_lb = const_local_view_device(lb);
+                auto d_ub = const_local_view_device(ub);
+                auto d_x = const_local_view_device(x);
+                auto Pc_view = local_view_device(Pc);
 
-                parallel_each_write(Pc, UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                parallel_for(local_range_device(Pc), UTOPIA_LAMBDA(const SizeType i) {
                     const Scalar li = d_lb.get(i);
                     const Scalar ui = d_ub.get(i);
                     const Scalar xi = d_x.get(i);
-                    return (li >= xi) ? li : ((ui <= xi) ? ui : xi);
+                    Pc_view.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
                 });
             }
 
@@ -186,7 +188,7 @@ namespace utopia {
                         const Scalar li = d_lb.get(i);
                         const Scalar ui = d_ub.get(i);
                         const Scalar xi = x_view.get(i);
-                        x.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
+                        x_view.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
                     });
                 }
 

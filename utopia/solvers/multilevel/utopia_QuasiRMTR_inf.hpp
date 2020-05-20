@@ -286,13 +286,10 @@ namespace utopia {
             *ub = active_upper - this->memory_.x[level];
 
             {
-                parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
-                    return (xi >= -1.0 * radius) ? xi : -1.0 * radius;
-                });
+                lb->transform_values(
+                    UTOPIA_LAMBDA(const Scalar &xi)->Scalar { return (xi >= -1.0 * radius) ? xi : -1.0 * radius; });
 
-                parallel_transform(*ub, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
-                    return (xi <= radius) ? xi : radius;
-                });
+                ub->transform_values(UTOPIA_LAMBDA(const Scalar &xi)->Scalar { return (xi <= radius) ? xi : radius; });
             }
 
             Scalar atol_level =

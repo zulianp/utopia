@@ -28,6 +28,11 @@
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
+#ifdef WITH_PETSC
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
+#endif  // WITH_PETSC
+
 #include <cmath>
 
 namespace utopia {
@@ -50,7 +55,12 @@ namespace utopia {
         PetscVector v;
         space.create_vector(v);
 
-        each_write(v, [](const SizeType &i) -> Scalar { return i % NVars; });
+        // each_write(v, [](const SizeType &i) -> Scalar { return i % NVars; });
+
+        {
+            auto v_view = view_device(v);
+            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i % NVars); });
+        }
 
         disp(space.mesh().n_nodes());
         disp(size(v));

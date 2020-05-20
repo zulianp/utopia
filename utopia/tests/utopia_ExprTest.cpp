@@ -318,7 +318,8 @@ namespace utopia {
         void transform_test() {
             Vector x(vec_layout, 1.0);
 
-            parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &v)->Scalar { return (i + 1) * v; });
+            auto x_view = view_device(x);
+            parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i + 1) * x_view.get(i)); });
 
             Scalar expected = ((x.size() + 1) * x.size()) / 2.0;
             Scalar sum_x = sum(x);
@@ -390,11 +391,11 @@ namespace utopia {
             Vector z(vec_layout, 0.);
 
             {
-                auto d_x = const_device_view(x);
-                auto d_y = const_device_view(y);
-                auto d_z = device_view(z);
+                auto d_x = const_local_view_device(x);
+                auto d_y = const_local_view_device(y);
+                auto d_z = local_view_device(z);
 
-                parallel_for(z.range_device(), UTOPIA_LAMBDA(const SizeType i) {
+                parallel_for(local_range_device(z), UTOPIA_LAMBDA(const SizeType i) {
                     const Scalar xi = d_x.get(i);
                     const Scalar yi = d_y.get(i);
                     d_z.set(i, xi - yi);
@@ -411,14 +412,14 @@ namespace utopia {
             Vector z(vec_layout, 0.);
 
             {
-                auto d_x = const_device_view(x);
-                auto d_y = const_device_view(y);
-                auto d_z = device_view(z);
+                auto d_x = const_local_view_device(x);
+                auto d_y = const_local_view_device(y);
+                auto d_z = local_view_device(z);
 
-                parallel_each_write(z, UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                parallel_for(local_range_device(z), UTOPIA_LAMBDA(const SizeType i) {
                     const Scalar xi = d_x.get(i);
                     const Scalar yi = d_y.get(i);
-                    return xi - yi;
+                    d_z.set(i, xi - yi);
                 });
             }
 
@@ -430,9 +431,15 @@ namespace utopia {
             Vector x(vec_layout, 2.);
             Vector y(vec_layout, 1.);
 
-            each_write(x, [](const SizeType &i) -> Scalar { return -(i + 1.0); });
+            {
+                auto x_view = view_device(x);
+                auto y_view = view_device(y);
 
-            each_write(y, [](const SizeType &i) -> Scalar { return (i + 1.0); });
+                parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                    x_view.set(i, -(i + 1.0));
+                    y_view.set(i, (i + 1.0));
+                });
+            }
 
             const Scalar m = multi_min(x, y);
             utopia_test_assert(approxeq(m, Scalar(-x.size())));

@@ -926,11 +926,12 @@ namespace utopia {
             {
                 auto d_x_old = const_device_view(x_old_);
 
-                parallel_transform(lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                auto lb_view = view_device(lb);
+                parallel_for(range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
-                        return d_x_old.get(i);
+                        lb_view.set(i, d_x_old.get(i));
                     } else {
-                        return -9e15;
+                        lb_view.set(i, -9e15);
                     }
                 });
             }
@@ -941,15 +942,12 @@ namespace utopia {
             {
                 auto d_x_old = const_device_view(x_old_);
 
-                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                auto g_view = view_device(g);
+                parallel_for(range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol) {
-                            return 0.0;
-                        } else {
-                            return xi;
+                            g_view.set(i, 0.0);
                         }
-                    } else {
-                        return xi;
                     }
                 });
             }
@@ -961,15 +959,12 @@ namespace utopia {
                 auto d_x_old = const_device_view(x_old_);
                 auto d_x = const_device_view(x);
 
-                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                auto g_view = view_device(g);
+                parallel_for(range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol || d_x.get(i) > params_.crack_set_tol) {
-                            return 0.0;
-                        } else {
-                            return xi;
+                            g_view.set(i, 0.0);
                         }
-                    } else {
-                        return xi;
                     }
                 });
             }
@@ -980,27 +975,21 @@ namespace utopia {
             {
                 auto d_x_old = const_device_view(x_old_);
 
-                parallel_transform(val, UTOPIA_LAMBDA(const SizeType &i, const Scalar &vi)->Scalar {
+                auto val_view = view_device(val);
+                parallel_for(range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol) {
-                            return d_x_old.get(i);
-                        } else {
-                            return vi;
+                            val_view.set(i, d_x_old.get(i));
                         }
-                    } else {
-                        return vi;
                     }
                 });
 
-                parallel_transform(flg, UTOPIA_LAMBDA(const SizeType &i, const Scalar &fi)->Scalar {
+                auto flg_view = view_device(flg);
+                parallel_for(range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol) {
-                            return 1.0;
-                        } else {
-                            return fi;
+                            flg_view.set(i, 1.0);
                         }
-                    } else {
-                        return fi;
                     }
                 });
             }
