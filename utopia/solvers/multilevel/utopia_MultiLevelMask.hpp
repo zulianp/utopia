@@ -103,14 +103,26 @@ namespace utopia {
             // auto ls = local_size(A);
             mask.values(row_layout(A), off_value);
 
-            {
-                Write<Vector> w_(mask);
+            // {
+            //     Write<Vector> w_(mask);
 
-                each_read(A, [&](const SizeType i, const SizeType j, const Scalar value) {
+            //     each_read(A, [&](const SizeType i, const SizeType j, const Scalar value) {
+            //         if (i == j) return;
+
+            //         if (std::abs(value) > off_diag_tol) {
+            //             mask.set(i, on_value);
+            //         }
+            //     });
+            // }
+
+            {
+                auto mask_view = view_device(mask);
+
+                A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &value) {
                     if (i == j) return;
 
-                    if (std::abs(value) > off_diag_tol) {
-                        mask.set(i, on_value);
+                    if (device::abs(value) > off_diag_tol) {
+                        mask_view.atomic_set(i, on_value);
                     }
                 });
             }

@@ -1373,8 +1373,8 @@ namespace utopia {
         }
 
         SizeType ret = 0;
-        each_read(*this,
-                  [tol, &ret](const SizeType &, const SizeType &, const Scalar &v) { ret += PetscAbs(v) > tol; });
+        // FIXME reading indices is not necessary
+        this->read([tol, &ret](const SizeType &, const SizeType &, const Scalar &v) { ret += PetscAbs(v) > tol; });
 
         return ret;
     }

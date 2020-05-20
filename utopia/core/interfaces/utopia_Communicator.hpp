@@ -3,6 +3,9 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_Clonable.hpp"
+#include "utopia_Traits.hpp"
+
+#include "utopia_MPI_Operations.hpp"
 
 #ifdef WITH_MPI
 #include <mpi.h>
@@ -214,6 +217,13 @@ namespace utopia {
         template <typename T>
         inline void exscan_sum(const T *input, T *output, const int n) const {
             MPI_Exscan(input, output, n, MPIType<T>::value(), MPI_SUM, get());
+        }
+
+        template <class Op, typename T>
+        inline T reduce(const Op & /*op*/, const T &val) const {
+            T ret = val;
+            MPI_Allreduce(MPI_IN_PLACE, &ret, 1, (MPIType<T>::value()), (MPIReduceOp<Op, HOMEMADE>::op()), get());
+            return ret;
         }
     };
 

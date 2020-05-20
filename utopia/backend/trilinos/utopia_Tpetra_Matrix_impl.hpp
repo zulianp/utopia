@@ -76,6 +76,39 @@ namespace utopia {
             });
     }
 
+    template <class Op>
+    void TpetraMatrix::read(Op op) const {
+        typedef Kokkos::TeamPolicy<> team_policy;
+        typedef Kokkos::TeamPolicy<>::member_type member_type;
+
+        auto r = this->row_range();
+
+        if (r.empty()) {
+            return;
+        }
+
+        auto impl = this->raw_type();
+        auto local_mat = impl->getLocalMatrix();
+
+        auto n = local_mat.numRows();
+
+        auto row_map = impl->getRowMap()->getLocalMap();
+        auto col_map = impl->getColMap()->getLocalMap();
+
+        Kokkos::parallel_for(
+            "TpetraMatrix::read", team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                const int row_ind = team_member.league_rank();
+                auto row = local_mat.row(row_ind);
+                auto n_values = row.length;
+
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
+                    auto &val = row.value(k);
+                    auto col_ind = row.colidx(k);
+                    op(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
+                });
+            });
+    }
+
 }  // namespace utopia
 
 #endif  // UTOPIA_TPETRA_MATRIX_IMPL_HPP

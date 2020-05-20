@@ -85,15 +85,13 @@ namespace utopia {
 
         static void fix_semidefinite_operator(Matrix &A) {
             Vector d(row_layout(A), 0.0);
-            // Size s = local_size(A);
-            // d = local_values(s.get(0), 0.);
 
             {
-                Write<Vector> w_d(d);
+                auto d_view = view_device(d);
 
-                each_read(A, [&d](const SizeType i, const SizeType j, const double &val) {
-                    if (i == j && std::abs(val) < 1e-12) {
-                        d.set(i, 1.0);
+                A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &val) {
+                    if (i == j && device::abs(val) < 1e-12) {
+                        d_view.atomic_set(i, 1.0);
                     }
                 });
             }

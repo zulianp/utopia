@@ -883,6 +883,35 @@ namespace utopia {
             }
         }
 
+        template <class F>
+        void read(const F f) const {
+            const SizeType nr = rows();
+            const SizeType nc = cols();
+
+            SizeType idx = 0;
+            for (SizeType i = 0; i < nr; ++i) {
+                for (SizeType j = 0; j < nc; ++j) {
+                    f(i, j, entries_[idx++]);
+                }
+            }
+        }
+
+        template <class F>
+        void transform_values(const F f) {
+            for (auto &e : entries_) {
+                e = f(e);
+            }
+        }
+
+        template <class Op, class MPIOp>
+        Scalar parallel_reduce_values(const Op &op, const MPIOp &, const Scalar initial_value) const {
+            Scalar ret = initial_value;
+            for (const auto &e : entries_) {
+                ret = op.apply(ret, e);
+            }
+            return ret;
+        }
+
     private:
         Entries entries_;
         SizeType rows_{0};
@@ -906,7 +935,7 @@ namespace utopia {
         inline T &ref(const SizeType i, const SizeType j) { return at(idx(i, j)); }
 
         inline SizeType idx(const SizeType i, const SizeType j) const { return i + rows() * j; }
-    };
+    };  // namespace utopia
 
 }  // namespace utopia
 

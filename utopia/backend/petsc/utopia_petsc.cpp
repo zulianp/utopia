@@ -53,7 +53,7 @@ namespace utopia {
         auto gs = size(A);
 
         std::vector<PetscInt> d_nnz(rr.extent(), 0), o_nnz(rr.extent(), 0);
-        each_read(A, [&](const utopia::SizeType i, const utopia::SizeType j, const PetscScalar val) {
+        A.read([&](const utopia::SizeType i, const utopia::SizeType j, const PetscScalar val) {
             if (std::abs(val) > 1e-18) {
                 if (cr.inside(j)) {
                     ++d_nnz[i - rr.begin()];
@@ -69,7 +69,7 @@ namespace utopia {
 
         {
             Write<PetscMatrix> w_A(A_opt);
-            each_read(A, [&](const SizeType i, const SizeType j, const PetscScalar val) {
+            A.read([&](const SizeType i, const SizeType j, const PetscScalar val) {
                 if (std::abs(val) > 1e-18) {
                     A_opt.set(i, j, val);
                 }
@@ -85,7 +85,7 @@ namespace utopia {
 
         {
             Write<PetscVector> w_o(o);
-            each_read(A, [&o](const SizeType i, const SizeType j, const PetscScalar val) {
+            A.read([&o](const SizeType i, const SizeType j, const PetscScalar val) {
                 if (i != j) {
                     o.add(i, std::abs(val));
                 }

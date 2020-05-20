@@ -390,7 +390,7 @@ namespace utopia {
             m3 = m1 * m3;
             // direct variant:  m1.multiply(m3, m3);
 
-            each_read(m3, [](SizeType i, SizeType /*y*/, double entry) {
+            m3.read([](SizeType i, SizeType /*y*/, double entry) {
                 if (i == 0) {
                     utopia_test_assert(entry == 192);
                 } else {
@@ -512,13 +512,13 @@ namespace utopia {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, -1.0);
 
-            each_write(y, [n](const SizeType &i) -> Scalar {
-                if (i == 0) {
-                    return 1e-14;
-                }
-
-                return (i < n / 2.0) ? -i : i;
-            });
+            {
+                auto y_view = view_device(y);
+                parallel_for(range_device(y), UTOPIA_LAMBDA(const SizeType &i) {
+                    const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
+                    y_view.set(i, val);
+                });
+            }
 
             Matrix M = outer(x, y);
             chop_smaller_than(M, 1e-13);

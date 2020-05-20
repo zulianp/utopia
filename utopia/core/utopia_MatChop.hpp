@@ -17,9 +17,11 @@ namespace utopia {
         using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
         static void apply(Matrix &mat, const Scalar &eps) {
-            each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
-                return device::abs(v) < eps ? 0.0 : v;
-            });
+            // each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
+            //     return device::abs(v) < eps ? 0.0 : v;
+            // });
+
+            mat.transform_values(UTOPIA_LAMBDA(const Scalar &v) { return device::abs(v) < eps ? 0.0 : v; });
         }
     };
 
@@ -35,9 +37,11 @@ namespace utopia {
         using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
         static void apply(Matrix &mat, const Scalar &eps) {
-            each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
-                return v < eps ? 0.0 : v;
-            });
+            // each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
+            //     return v < eps ? 0.0 : v;
+            // });
+
+            mat.transform_values(UTOPIA_LAMBDA(const Scalar &v) { return v < eps ? 0.0 : v; });
         }
     };
 
@@ -48,9 +52,11 @@ namespace utopia {
         using SizeType = typename utopia::Traits<Matrix>::SizeType;
 
         static void apply(Matrix &mat, const Scalar &eps) {
-            each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
-                return v > eps ? 0.0 : v;
-            });
+            // each_transform(mat, [eps](const SizeType &, const SizeType &, const Scalar &v) -> Scalar {
+            //     return v > eps ? 0.0 : v;
+            // });
+
+            mat.transform_values(UTOPIA_LAMBDA(const Scalar &v) { return v > eps ? 0.0 : v; });
         }
     };
 

@@ -345,8 +345,7 @@ namespace utopia {
 
             if (l1_) {
                 Write<Vector> w(d);
-                each_read(
-                    A, [this](const SizeType &i, const SizeType &, const Scalar &value) { d.add(i, std::abs(value)); });
+                A.read([this](const SizeType &i, const SizeType &, const Scalar &value) { d.add(i, std::abs(value)); });
             }
 
             d_inv = 1. / d;

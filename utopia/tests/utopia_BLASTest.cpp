@@ -296,7 +296,7 @@ namespace utopia {
         }
 
         // simple way
-        each_read(mat, [](const SizeType i, const SizeType j, const double v) {
+        mat.read([](const SizeType i, const SizeType j, const double v) {
             if (i == j) {
                 utopia_test_assert(approxeq(2., v));
             } else {
@@ -308,7 +308,7 @@ namespace utopia {
         d_mat.values(3, 3, 2.);
 
         SizeType n_vals = 0;
-        each_read(d_mat, [&n_vals](const SizeType /*i*/, const SizeType /*j*/, const double v) {
+        d_mat.read([&n_vals](const SizeType /*i*/, const SizeType /*j*/, const double v) {
             utopia_test_assert(approxeq(2., v));
             ++n_vals;
         });

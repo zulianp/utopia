@@ -24,9 +24,10 @@ namespace utopia {
             x_init_.values(layout(comm, n_loc, Traits::determine()), 1.0);
 
             {
-                Write<Vector> wx(x_init_);
+                auto x_view = view_device(x_init_);
 
-                each_write(x_init_, [](const SizeType i) -> double { return (i % 2 == 1) ? -1.2 : 1.0; });
+                parallel_for(range_device(x_init_),
+                             UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i % 2 == 1) ? -1.2 : 1.0); });
             }
 
             x_exact_.values(layout(x_init_), 1.0);

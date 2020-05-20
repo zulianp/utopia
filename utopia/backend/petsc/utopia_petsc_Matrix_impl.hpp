@@ -3,6 +3,7 @@
 
 //#include "utopia_petsc_Each.hpp"
 #include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_Vector.hpp"
 
 // Transform calue mpiaij
 // 1)  MatMPIAIJGetSeqAIJ (not MatMPIAIJGetLocalMat)
@@ -13,6 +14,43 @@
 namespace utopia {
 
     namespace internal {
+
+        template <class F>
+        PetscScalar local_reduce_petsc_impl(Mat &mat, F op, const PetscScalar &initial_value) {
+            PetscInt n;
+            const PetscInt *ia;
+            // const PetscInt *ja;
+            PetscBool done;
+            PetscErrorCode err = 0;
+
+            err = MatGetRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done);
+            assert(err == 0);
+            assert(done == PETSC_TRUE);
+
+            if (!done) {
+                std::cerr
+                    << "PetscMatrix::transform_petsc_impl(const Op &op): MatGetRowIJ failed to provide what was asked."
+                    << std::endl;
+                abort();
+            }
+
+            PetscScalar *array;
+            MatSeqAIJGetArray(mat, &array);
+
+            // FIXME is there a better way to get the total number of values???
+            const PetscInt n_values = ia[n] - ia[0];
+
+            PetscScalar ret = initial_value;
+
+            for (PetscInt i = 0; i < n_values; ++i) {
+                ret = op.apply(ret, array[i]);
+            }
+
+            MatSeqAIJRestoreArray(mat, &array);
+            err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done);
+            assert(err == 0);
+            return ret;
+        }
 
         template <class F>
         void read_petsc_seqaij_impl(const Mat &mat, F op) {
@@ -162,8 +200,10 @@ namespace utopia {
         } else if (has_type(MATMPIAIJ)) {
             transform_values_mpiaij(op);
         } else {
-            each_transform(
-                *this, [op](const SizeType &, const SizeType &, const Scalar value) -> Scalar { return op(value); });
+            // each_transform(
+            //     *this, [op](const SizeType &, const SizeType &, const Scalar value) -> Scalar { return op(value); });
+
+            assert(false && "IMPLEMENT ME");
         }
     }
 
@@ -356,6 +396,29 @@ namespace utopia {
         }
 
         result.write_unlock(utopia::LOCAL);
+    }
+
+    template <class Op, class MPIOp>
+    PetscMatrix::Scalar PetscMatrix::parallel_reduce_values(const Op &op,
+                                                            const MPIOp &mpi_op,
+                                                            const Scalar &initial_value) const {
+        if (has_type(MATSEQAIJ)) {
+            return internal::local_reduce_petsc_impl(raw_type(), op, initial_value);
+        } else if (has_type(MATMPIAIJ)) {
+            PetscErrorCode err = 0;
+
+            const PetscInt *cols;
+            Mat d, o;
+            err = MatMPIAIJGetSeqAIJ(raw_type(), &d, &o, &cols);
+            assert(err == 0);
+
+            Scalar ret = internal::local_reduce_petsc_impl(d, op, initial_value);
+            ret = internal::local_reduce_petsc_impl(o, op, ret);
+            ret = comm().reduce(mpi_op, ret);
+
+        } else {
+            assert(false);
+        }
     }
 
 }  // namespace utopia

@@ -171,24 +171,26 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
 
         inline static SizeType apply(const Expr &expr) {
-            const auto &op = expr.operation().is_non_zero();
+            // const auto &op = expr.operation().is_non_zero();
             SizeType result = 0;
             UTOPIA_TRACE_BEGIN(expr);
 
             const auto &mat = expr.expr().derived();
 
-            each_read(mat, [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
-                UTOPIA_UNUSED(i);
-                UTOPIA_UNUSED(j);
+            // each_read(mat, [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
+            //     UTOPIA_UNUSED(i);
+            //     UTOPIA_UNUSED(j);
 
-                result += op.apply(value);
-            });
+            //     result += op.apply(value);
+            // });
 
-            const auto &comm = mat.comm();
+            // const auto &comm = mat.comm();
 
-            Vector v(layout(comm, 1, comm.size()), result);
-            // Vector v = local_values(1, result);
-            result = sum(v);
+            // Vector v(layout(comm, 1, comm.size()), result);
+            // // Vector v = local_values(1, result);
+            // result = sum(v);
+
+            result = mat.parallel_reduce_values(expr.operation(), Plus(), 0.0);
 
             UTOPIA_TRACE_END(expr);
             return result;

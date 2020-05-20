@@ -25,20 +25,21 @@ namespace utopia {
             x_init_.zeros(v_layout);
 
             {
-                const Write<Vector> write1(x_init_);
+                auto x_view = view_device(x_init_);
 
-                each_write(x_init_, [](const SizeType i) -> double {
-                    SizeType m = (i + 1) % 4;
+                parallel_for(range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) {
+                    const SizeType m = (i + 1) % 4;
+                    Scalar v = 1.0;
 
                     if (m == 1) {
-                        return 3.0;
+                        v = 3.0;
                     } else if (m == 2) {
-                        return -1.0;
+                        v = -1.0;
                     } else if (m == 3) {
-                        return 0.0;
-                    } else {
-                        return 1.0;
+                        v = 0.0;
                     }
+
+                    x_view.set(i, v);
                 });
             }
         }

@@ -467,6 +467,9 @@ namespace utopia {
         template <class Op>
         void read_reverse(Op op) const;
 
+        template <class Op, class MPIOp>
+        Scalar parallel_reduce_values(const Op &op, const MPIOp &mpi_op, const Scalar &initial_value) const;
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR ElementWiseOperand //////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
