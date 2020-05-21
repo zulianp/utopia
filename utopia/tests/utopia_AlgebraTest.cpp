@@ -213,6 +213,16 @@ namespace utopia {
             h = x + alpha * y;
             expected.set(635.2);
             utopia_test_assert(approxeq(expected, h));
+
+            h = x + (y * alpha);
+            utopia_test_assert(approxeq(expected, h));
+
+            h.set(1.0);
+            x.set(1.0);
+
+            h = x + (h * alpha);
+            expected.set(1.0 + alpha);
+            utopia_test_assert(approxeq(expected, h));
         }
 
         void divide_dots_test() {

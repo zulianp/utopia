@@ -1,5 +1,5 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,cppcoreguidelines-*,misc-unused-parameters'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,modernize-*,cppcoreguidelines-*,misc-unused-parameters,mpi-*,portability-*'
 WarningsAsErrors: ''
 HeaderFilterRegex: ./utopia/*utopia_*
 AnalyzeTemporaryDtors: false

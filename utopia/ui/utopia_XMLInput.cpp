@@ -222,7 +222,7 @@ namespace utopia {
         impl_->object_end();
     }
 
-    void XMLInput::get(std::function<void(Input &)> lambda) {
+    void XMLInput::get(const std::function<void(Input &)> &lambda) {
         if (impl_->is_invalid_subtree()) return;
 
         lambda(*this);

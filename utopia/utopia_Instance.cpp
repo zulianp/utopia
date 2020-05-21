@@ -1,6 +1,8 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Allocations.hpp"
+#include "utopia_AuthoredWork.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_CiteUtopia.hpp"
 #include "utopia_Config.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
@@ -52,6 +54,8 @@ namespace utopia {
 #endif  // WITH_TRILINOS
 
         instance().read_input(argc, argv);
+
+        CitationsDB::instance().cite(Cite<Utopia2016Git>::bibtex());
     }
 
     int Utopia::Finalize() {
@@ -63,6 +67,10 @@ namespace utopia {
 
         if (mpi_world_rank() == 0) {
             instance().maintenance_logger().flush();
+        }
+
+        if (instance().get("citations") == "true") {
+            CitationsDB::print();
         }
 
 #ifdef WITH_TRILINOS
@@ -124,11 +132,21 @@ namespace utopia {
     }
 
     void Utopia::read_input(int argc, char *argv[]) {
+        instance().set("citations", "false");
+
         for (int i = 1; i < argc; i++) {
             std::string str(argv[i]);
 
             if (str == "-verbose") {
                 instance().set("verbose", "true");
+            }
+
+            if (str == "--no_citations") {
+                instance().set("citations", "false");
+            }
+
+            if (str == "--citations") {
+                instance().set("citations", "true");
             }
 
 #ifdef ENABLE_NO_ALLOC_REGIONS

@@ -103,6 +103,10 @@ namespace utopia {
             UTOPIA_NO_ALLOC_BEGIN("vec_add_add_add_test2");
             x = x + y + z;
             UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("vec_add_add_add_test3");
+            z = x + y + z;
+            UTOPIA_NO_ALLOC_END();
         }
 
         void mat_transp_mult_test() {
@@ -441,9 +445,26 @@ namespace utopia {
             Vector c(vec_layout, 2.);
             Vector result(vec_layout, 0.0);
 
-            UTOPIA_NO_ALLOC_BEGIN("multi_axpy");
-            Scalar alpha = 1.0, beta = 2.0;
+            const Scalar alpha = 1.0, beta = 2.0;
+
+            UTOPIA_NO_ALLOC_BEGIN("multi_axpy_1");
             result = a + (alpha * b) - (beta * c);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("multi_axpy_2");
+            c = a + (alpha * b) - (beta * c);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("multi_axpy_3");
+            b = a + (alpha * b) - (beta * c);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("multi_axpy_4");
+            b = a - (alpha * b) + (beta * c);
+            UTOPIA_NO_ALLOC_END();
+
+            UTOPIA_NO_ALLOC_BEGIN("multi_axpy_5");
+            c = a - (alpha * b) + (beta * c);
             UTOPIA_NO_ALLOC_END();
         }
 

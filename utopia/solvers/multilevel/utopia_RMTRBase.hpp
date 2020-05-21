@@ -1,6 +1,8 @@
 #ifndef UTOPIA_RMTR_BASE_HPP
 #define UTOPIA_RMTR_BASE_HPP
 
+#include "utopia_AuthoredWork.hpp"
+#include "utopia_CiteUtopia.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
@@ -22,15 +24,19 @@
 namespace utopia {
 
     template <class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>, public RMTRParams<Vector> {
+    class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
+                     public RMTRParams<Vector>,
+                     public AuthoredWork<Kopanicakova2020Recursive> {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
+
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
         RMTRBase(const SizeType &n_levels)
             : NonlinearMultiLevelBase<Matrix, Vector>(n_levels),
               RMTRParams<Vector>(),
+              AuthoredWork<Kopanicakova2020Recursive>(),
               ml_derivs_(n_levels),
               init_(false) {}
 
@@ -336,7 +342,7 @@ namespace utopia {
         // to overwrite
         void init_memory() override {
             const auto &layouts = this->local_level_layouts();
-            const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > > &funs = this->level_functions();
+            const std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector>>> &funs = this->level_functions();
 
             ml_derivs_.init_memory(layouts, funs);
             memory_.init_memory(layouts);

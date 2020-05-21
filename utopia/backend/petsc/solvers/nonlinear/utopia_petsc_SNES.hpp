@@ -38,20 +38,20 @@ namespace utopia {
         typedef utopia::Function<Matrix, Vector> Function;
 
         SNESSolver(const std::shared_ptr<LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
-                   const std::vector<std::string> snes_types = {"newtonls",
-                                                                "newtontr",
-                                                                "nrichardson",
-                                                                "ksponly",
-                                                                "vinewtonrsls",
-                                                                "vinewtonssls",
-                                                                "ngmres",
-                                                                "qn",
-                                                                "shell",
-                                                                "ngs",
-                                                                "ncg",
-                                                                "fas",
-                                                                "ms",
-                                                                "anderson"});
+                   const std::vector<std::string> &snes_types = {"newtonls",
+                                                                 "newtontr",
+                                                                 "nrichardson",
+                                                                 "ksponly",
+                                                                 "vinewtonrsls",
+                                                                 "vinewtonssls",
+                                                                 "ngmres",
+                                                                 "qn",
+                                                                 "shell",
+                                                                 "ngs",
+                                                                 "ncg",
+                                                                 "fas",
+                                                                 "ms",
+                                                                 "anderson"});
 
         SNESSolver *clone() const override;
 
