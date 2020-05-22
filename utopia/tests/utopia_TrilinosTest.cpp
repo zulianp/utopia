@@ -851,9 +851,9 @@ namespace utopia {
 
                 double acc = 0.0;
                 petsc_A.read([&acc](const SizeType &, const SizeType &, const Scalar &val) { acc += std::abs(val); });
+                acc = petsc_A.comm().sum(acc);
 
                 utopia_test_asserteq(acc, sum_petsc_A, 1e-16);
-
                 utopia_test_asserteq(sum_A, sum_petsc_A, 1e-16);
 
                 utopia_test_assert(cross_backend_approxeq(petsc_A, A));
