@@ -5,7 +5,7 @@
 
 #ifdef UTOPIA_DEPRECATED_API
 
-#include "utopia_CoreDeprecatedHeaders.hpp"
+#include "utopia_CoreDecprecatedHeaders.hpp"
 
 #endif  // UTOPIA_DEPRECATED_API
 
