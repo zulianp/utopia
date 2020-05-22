@@ -84,9 +84,9 @@ namespace utopia {
                         }
 
                         if (val == 0) {
-                            zk.set(i, device::max(pk_view.get(i), Scalar(0)));
+                            zk_view.set(i, device::max(pk_view.get(i), Scalar(0)));
                         } else {
-                            zk.set(i, pk_view.get(i));
+                            zk_view.set(i, pk_view.get(i));
                         }
 
                         wk_view.set(i, val);

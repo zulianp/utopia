@@ -55,6 +55,7 @@ namespace utopia {
                         element = xi + h_ + 1.0;
                         item = 2. * xi - xi_p + 0.5 * (h_ * h_ * std::pow(element, 3));
                         A_help1_view.set(i, item * item);
+                        return;
                     }
 
                     if (i == n - 1) {
@@ -62,6 +63,7 @@ namespace utopia {
                         element = xi + ti + 1.0;
                         item = 2. * xi - xi_m + 0.5 * (h_ * h_ * std::pow(element, 3));
                         A_help1_view.set(i, item * item);
+                        return;
                     }
 
                     Scalar xi_m = d_x.get(i - 1);

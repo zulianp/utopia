@@ -236,12 +236,23 @@ namespace utopia {
             transform_values_seqaij(op);
         } else if (has_type(MATMPIAIJ)) {
             transform_values_mpiaij(op);
-        } else if (has_type(MATSEQDENSE)) {
-            assert(false && "IMPLEMENT ME");
-        } else {
-            // each_transform(
-            //     *this, [op](const SizeType &, const SizeType &, const Scalar value) -> Scalar { return op(value); });
+        } else if (has_type(MATSEQDENSE) || has_type(MATMPIDENSE)) {
+            PetscScalar *array = nullptr;
+            MatDenseGetArray(raw_type(), &array);
 
+            SizeType rows = this->local_rows();
+            SizeType cols = this->cols();
+
+            for (SizeType j = 0; j < cols; ++j) {
+                const SizeType j_offset = j * rows;
+                for (SizeType i = 0; i < rows; ++i) {
+                    const SizeType idx = i + j_offset;
+                    array[idx] = op(array[idx]);
+                }
+            }
+
+            MatDenseRestoreArray(raw_type(), &array);
+        } else {
             assert(false && "IMPLEMENT ME");
         }
     }
@@ -348,6 +359,23 @@ namespace utopia {
     void PetscMatrix::read(Op op) const {
         if (has_type(MATSEQAIJ)) {
             internal::read_petsc_seqaij_impl(raw_type(), op);
+        } else if (has_type(MATSEQDENSE) || has_type(MATMPIDENSE)) {
+            const PetscScalar *array = nullptr;
+            MatDenseGetArrayRead(raw_type(), &array);
+
+            SizeType rows = this->local_rows();
+            SizeType cols = this->cols();
+
+            for (SizeType j = 0; j < cols; ++j) {
+                const SizeType j_offset = j * rows;
+                for (SizeType i = 0; i < rows; ++i) {
+                    const SizeType idx = i + j_offset;
+                    op(i, j, array[idx]);
+                }
+            }
+
+            MatDenseRestoreArrayRead(raw_type(), &array);
+
         } else {
             assert(false);
         }

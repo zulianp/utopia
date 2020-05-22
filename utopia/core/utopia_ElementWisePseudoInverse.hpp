@@ -34,6 +34,11 @@ namespace utopia {
 
             } else {
                 auto in_view = const_local_view_device(in);
+
+                if (empty(out) || out.size() != in.size()) {
+                    out.zeros(layout(in));
+                }
+
                 auto out_view = local_view_device(out);
 
                 parallel_for(local_range_device(out), UTOPIA_LAMBDA(const SizeType &i) {
@@ -47,16 +52,6 @@ namespace utopia {
                     out_view.set(i, val);
                 });
             }
-
-            // each_transform(in, out, [tol](const SizeType i, const Scalar value) -> Scalar {
-            //     UTOPIA_UNUSED(i);
-
-            //     if (std::abs(value) > tol) {
-            //         return 1. / value;
-            //     } else {
-            //         return 0.0;
-            //     }
-            // });
         }
     };
 
