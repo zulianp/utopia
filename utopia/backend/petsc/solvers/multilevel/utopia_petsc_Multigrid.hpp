@@ -8,6 +8,7 @@
 #include "utopia_Multigrid.hpp"
 #include "utopia_SolverForwardDeclarations.hpp"
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_impl.hpp"
 
 namespace utopia {
 

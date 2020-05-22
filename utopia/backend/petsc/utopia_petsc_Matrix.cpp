@@ -1281,7 +1281,7 @@ namespace utopia {
     bool PetscMatrix::equals(const PetscMatrix &other, const Scalar &tol) const {
         PetscMatrix diff = other;
         diff.axpy(-1.0, *this);
-        return diff.norm2() < tol;
+        return diff.norm2() <= tol;
     }
 
     void PetscMatrix::diagonal_block(PetscMatrix &other) const {

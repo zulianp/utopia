@@ -30,6 +30,7 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_dma_FunctionSpace.hpp"
+#include "utopia_petsc_impl.hpp"
 
 #include <chrono>
 #include <cmath>

@@ -6,6 +6,7 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_Types.hpp"
+#include "utopia_petsc_impl.hpp"
 
 #define KSPUTOPIA "utopia"
 

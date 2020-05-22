@@ -304,9 +304,22 @@ namespace utopia {
             utopia_test_assert(approxeq(M_abs, M_abs_2, 1e-8));
         }
 
+        void transform_ijv_test() {
+            Matrix M;
+
+            M.sparse(layout(world, Traits::decide(), Traits::decide(), n, n), 3, 3);
+            assemble_laplacian_1D(M);
+
+            M.transform_ijv(
+                UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar { return i * j; });
+
+            disp(M);
+        }
+
         void run() {
             UTOPIA_RUN_TEST(sparse_chop_test);
             UTOPIA_RUN_TEST(transform_test);
+            UTOPIA_RUN_TEST(transform_ijv_test);
         }
     };
 

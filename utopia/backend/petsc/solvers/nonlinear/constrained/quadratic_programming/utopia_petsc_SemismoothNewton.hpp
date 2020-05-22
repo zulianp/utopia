@@ -5,6 +5,7 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_SemismoothNewton.hpp"
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_impl.hpp"
 
 namespace utopia {
 

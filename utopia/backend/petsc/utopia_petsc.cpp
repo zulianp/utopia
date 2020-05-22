@@ -18,6 +18,7 @@
 #include "utopia_SemismoothNewton_impl.hpp"
 #include "utopia_TRBoundsGratton.hpp"
 #include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_impl.hpp"
 
 // explicit instantiations
 namespace utopia {

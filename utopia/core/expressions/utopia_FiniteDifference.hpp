@@ -194,7 +194,7 @@ namespace utopia {
                 Vector ei(layout(x), 0.0);
                 Vector ej(layout(x), 0.0);
 
-                const Write<Matrix> wlock(H);
+                // const Write<Matrix> wlock(H);
 
                 const Scalar h2 = h * h;
 

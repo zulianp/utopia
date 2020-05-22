@@ -508,7 +508,7 @@ namespace utopia {
             Matrix Id;
             Id.identity(mat_layout, 5.0);
 
-            utopia_test_assert(approxeq(Id, R));
+            utopia_test_asserteq(Id, R, 0.0);
         }
 
         void bratu_grad() {

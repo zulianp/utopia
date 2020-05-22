@@ -909,6 +909,9 @@ namespace utopia {
         template <class F>
         void transform_values_mpiaij(F op);
 
+        template <class F>
+        void transform_ijv_mpiaij(F f);
+
         // wait for petsc version
         // template<class F>
         // void read_ijv_seqaij(F op);

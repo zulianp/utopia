@@ -467,7 +467,9 @@ namespace utopia {
 
     TpetraMatrix::Scalar TpetraMatrix::norm_infty() const {
         // FIXME (optimize for device)
-        Scalar ret = -std::numeric_limits<Scalar>::max();
+        // Scalar ret = -std::numeric_limits<Scalar>::max();
+
+        Scalar ret = 0;
         // each_read(*this,
         //           [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::max(std::abs(val), ret);
         //           });
@@ -703,7 +705,7 @@ namespace utopia {
 
         TpetraMatrix diff = *this;
         diff.axpy(-1.0, other);
-        return diff.norm_infty() < tol;
+        return diff.norm_infty() <= tol;
     }
 
     void TpetraMatrix::build_from_structure(const TpetraMatrix &rhs) {
