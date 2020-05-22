@@ -198,6 +198,8 @@ namespace utopia {
         }
 
         void run_GS_QR() {
+            if (mpi_world_size() > 1) return;
+
             print_backend_info();
             UTOPIA_RUN_TEST(ProjectedGS_QR);
         }

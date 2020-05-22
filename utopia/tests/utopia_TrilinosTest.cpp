@@ -826,6 +826,8 @@ namespace utopia {
             std::cout << std::flush;
 
             double diff = norm2(rhs - A * x);
+
+            disp(diff);
             utopia_test_assert(approxeq(diff, 0., 1e-6));
 
 #endif  // WITH_PETSC

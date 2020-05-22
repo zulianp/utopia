@@ -13,6 +13,9 @@ namespace utopia {
         if (!expr) {
             utopia::Utopia::instance().set_exit_code(1);
             std::cerr << filename << ": " << line << "\ntest failure: " << expr_string << std::endl;
+#ifndef NDEBUG
+            abort();
+#endif
         }
     }
 }  // namespace utopia

@@ -40,7 +40,7 @@ namespace utopia {
             PetscInt ra_begin = 0, ra_end = 0;
             MatGetOwnershipRange(m, &ra_begin, &ra_end);
 
-            PetscInt n_local_rows = ra_end = ra_begin;
+            PetscInt n_local_rows = ra_end - ra_begin;
             for (PetscInt r = 0; r < n_local_rows; ++r) {
                 const PetscInt row_begin = ia[r];
                 const PetscInt row_end = ia[r + 1];
@@ -48,7 +48,8 @@ namespace utopia {
                 const PetscInt row_global = ra_begin + r;
 
                 for (PetscInt i = row_begin; i < row_end; ++i) {
-                    array[i] = op(row_global, ja[i], array[i]);
+                    // array[i] = op(row_global, ja[i], array[i]);
+                    array[i] = op(r, ja[i], array[i]);
                 }
             }
 
@@ -318,20 +319,18 @@ namespace utopia {
         err = MatMPIAIJGetSeqAIJ(raw_type(), &d, &o, &cols);
         assert(err == 0);
 
+        auto rr = this->row_range();
+
         // Diagonal block
-        {
-            auto cr = this->col_range();
-            internal::transform_ijv_seqaij_impl(d,
-                                                [=](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
-                                                    return op(i, cr.begin() + j, v);
-                                                });
-        }
+        internal::transform_ijv_seqaij_impl(d, [=](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
+            return op(rr.begin() + i, j, v);
+            return op(i, j, v);
+        });
 
         // Off-diagonal block
-        {
-            internal::transform_ijv_seqaij_impl(
-                d, [=](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar { return op(i, cols[j], v); });
-        }
+        internal::transform_ijv_seqaij_impl(o, [=](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
+            return op(rr.begin() + i, cols[j], v);
+        });
     }
 
     template <class F>
@@ -364,18 +363,15 @@ namespace utopia {
             err = MatMPIAIJGetSeqAIJ(raw_type(), &d, &o, &cols);
             assert(err == 0);
 
+            auto rr = this->row_range();
+
             // Diagonal block
-            {
-                auto cr = this->col_range();
-                internal::read_petsc_seqaij_impl(
-                    d, [=](const SizeType &i, const SizeType &j, const Scalar &v) { op(i, cr.begin() + j, v); });
-            }
+            internal::read_petsc_seqaij_impl(
+                d, [=](const SizeType &i, const SizeType &j, const Scalar &v) { op(rr.begin() + i, j, v); });
 
             // Off-diagonal block
-            {
-                internal::read_petsc_seqaij_impl(
-                    d, [=](const SizeType &i, const SizeType &j, const Scalar &v) { op(i, cols[j], v); });
-            }
+            internal::read_petsc_seqaij_impl(
+                o, [=](const SizeType &i, const SizeType &j, const Scalar &v) { op(rr.begin() + i, cols[j], v); });
 
         } else if (has_type(MATSEQDENSE) || has_type(MATMPIDENSE)) {
             const PetscScalar *array = nullptr;
@@ -384,11 +380,13 @@ namespace utopia {
             SizeType rows = this->local_rows();
             SizeType cols = this->cols();
 
+            auto rr = this->row_range();
+
             for (SizeType j = 0; j < cols; ++j) {
                 const SizeType j_offset = j * rows;
                 for (SizeType i = 0; i < rows; ++i) {
                     const SizeType idx = i + j_offset;
-                    op(i, j, array[idx]);
+                    op(rr.begin() + i, j, array[idx]);
                 }
             }
 
