@@ -71,7 +71,7 @@ namespace utopia {
             const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
 
             // FIXME once atomic_store is avaialable
-            // mask.values(row_layout(A), off_value);
+            mask.values(row_layout(A), off_value);
 
             // {
             //     auto mask_view = view_device(mask);
@@ -85,7 +85,7 @@ namespace utopia {
             //     });
             // }
 
-            mask.values(row_layout(A), 0.0);
+            // mask.zeros(row_layout(A));
 
             {
                 auto mask_view = view_device(mask);
@@ -94,18 +94,21 @@ namespace utopia {
                     if (i == j) return;
 
                     if (device::abs(value) > off_diag_tol) {
-                        mask_view.atomic_add(i, 1.0);
+                        // mask_view.atomic_add(i, 1.0);
+                        mask_view.set(i, on_value);
                     }
                 });
             }
 
-            mask.transform_values(UTOPIA_LAMBDA(const Scalar &v) {
-                if (v >= 1.0) {
-                    return on_value;
-                } else {
-                    return off_value;
-                }
-            });
+            // mask.transform_values(UTOPIA_LAMBDA(const Scalar &v) {
+            //     if (v >= 1.0) {
+            //         return on_value;
+            //     } else {
+            //         return off_value;
+            //     }
+            // });
+
+            // disp(mask);
         }
     };
 

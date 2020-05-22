@@ -315,7 +315,7 @@ namespace utopia {
                     std::cout << it << " " << r_norm << " " << diff_norm << std::endl;
                 }
 
-                if (r_norm < atol_) {
+                if (r_norm <= atol_) {
                     converged = true;
                     break;
                 }

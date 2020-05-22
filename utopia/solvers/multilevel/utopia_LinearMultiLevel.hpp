@@ -107,6 +107,20 @@ namespace utopia {
             });
 
             A += Matrix(diag(d));
+
+            // Vector d(row_layout(A), 1.0);
+
+            // {
+            //     auto d_view = view_device(d);
+
+            //     A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &val) {
+            //         if (i == j && device::abs(val) > 1e-12) {
+            //             d_view.set(i, 0.0);
+            //         }
+            //     });
+            // }
+
+            // A += Matrix(diag(d));
         }
 
         /**

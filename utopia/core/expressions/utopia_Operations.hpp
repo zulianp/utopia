@@ -207,13 +207,13 @@ namespace utopia {
     inline bool approxeq(const double left,
                          const double right,
                          const double tol = 10. * std::numeric_limits<double>::epsilon()) {
-        return std::abs(left - right) < tol;
+        return std::abs(left - right) <= tol;
     }
 
     inline bool approxeq(const float left,
                          const float right,
                          const double tol = 10.f * std::numeric_limits<float>::epsilon()) {
-        return std::abs(left - right) < tol;
+        return std::abs(left - right) <= tol;
     }
 
     /**     @defgroup   elementwise Element-wise

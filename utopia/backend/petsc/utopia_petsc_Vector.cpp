@@ -473,7 +473,7 @@ namespace utopia {
 
         PetscVector diff = other;
         diff.axpy(-1.0, *this);
-        return diff.norm_infty() < tol;
+        return diff.norm_infty() <= tol;
     }
 
     void PetscVector::e_mul(const PetscVector &other) {

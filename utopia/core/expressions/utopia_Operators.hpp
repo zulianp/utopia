@@ -221,7 +221,7 @@ namespace utopia {
         template <typename T>
         inline bool operator()(const T &left, const T &right) const {
             using std::abs;
-            return abs(left - right) < _tol;
+            return abs(left - right) <= _tol;
         }
 
         ApproxEqual(const double tol = 1e-8) : _tol(tol) {}
@@ -231,7 +231,7 @@ namespace utopia {
         template <typename T>
         inline bool apply(const T &left, const T &right) const {
             using std::abs;
-            return abs(left - right) < tol();
+            return abs(left - right) <= tol();
         }
 
     private:

@@ -127,32 +127,13 @@ namespace utopia {
         }
     }
 
-    template <class Left, class Right, typename Scalar>
-    void test_assert_approxeq(const Left &left,
-                              const Right &right,
-                              const Scalar &tol,
-                              const std::string &filename,
-                              const int line,
-                              const std::string &expr_string) {
-        if (!approxeq(left, right, tol)) {
-            std::cerr << "assertion failure: " << expr_string << std::endl;
-            std::cerr << "at " << filename << ":" << line << std::endl;
-
-            std::cerr << "====================================================\n";
-
-            std::cerr << "Left: ";
-            disp(left);
-
-            std::cerr << "====================================================\n";
-
-            std::cerr << "Right: ";
-            disp(right);
-
-            std::cerr << "====================================================\n";
-
-            abort();
-        }
-    }
+    // template <class Left, class Right, typename Scalar>
+    // void test_assert_approxeq(const Left &left,
+    //                           const Right &right,
+    //                           const Scalar &tol,
+    //                           const std::string &filename,
+    //                           const int line,
+    //                           const std::string &expr_string);
 }  // namespace utopia
 
 #define CONST_DERIVED_CRT(Derived) \
@@ -172,9 +153,9 @@ namespace utopia {
 #define UTOPIA_UNUSED(macro_var_) (void)macro_var_
 #define utopia_assert(macro_expr__) assert((macro_expr__))
 
-#define utopia_test_asserteq(macro_left_, macro_right_, macro_tol_) \
-    utopia::test_assert_approxeq(                                   \
-        (macro_left_), (macro_right_), (macro_tol_), __FILE__, __LINE__, #macro_left_ " approxeq " #macro_right_)
+// #define utopia_test_asserteq(macro_left_, macro_right_, macro_tol_) \
+//     utopia::test_assert_approxeq(                                   \
+//         (macro_left_), (macro_right_), (macro_tol_), __FILE__, __LINE__, #macro_left_ " approxeq " #macro_right_)
 
 ////////////////////////////////////////////////////////////////////////////////
 

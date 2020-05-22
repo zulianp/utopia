@@ -1,6 +1,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_Instance.hpp"
 
+#include <cmath>
 #include <iostream>
 
 #ifdef NDEBUG
@@ -18,6 +19,34 @@ namespace utopia {
 #endif
         }
     }
+
+    // template <class Left, class Right, typename Scalar>
+    // void test_assert_approxeq(const Left &left,
+    //                           const Right &right,
+    //                           const Scalar &tol,
+    //                           const std::string &filename,
+    //                           const int line,
+    //                           const std::string &expr_string) {
+    //     if (std::abs(left - right) > tol) {
+    //         std::cerr << "assertion failure: " << expr_string << std::endl;
+    //         std::cerr << "at " << filename << ":" << line << std::endl;
+
+    //         std::cerr << "====================================================\n";
+
+    //         std::cerr << "Left: ";
+    //         disp(left);
+
+    //         std::cerr << "====================================================\n";
+
+    //         std::cerr << "Right: ";
+    //         disp(right);
+
+    //         std::cerr << "====================================================\n";
+
+    //         abort();
+    //     }
+    // }
+
 }  // namespace utopia
 
 #endif  // NDEBUG
