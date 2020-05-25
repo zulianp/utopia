@@ -40,7 +40,7 @@ namespace utopia {
             }
 
             std::stringstream ss;
-            mat.read([&](const SizeType &i, const SizeType &j, const Scalar &val) { norm1_read += std::abs(val); });
+            mat.read([&](const SizeType &i, const SizeType &j, const Scalar &val) { norm1_read += device::abs(val); });
 
             // this->comm().synched_print(ss.str(), std::cout);
 
@@ -60,15 +60,16 @@ namespace utopia {
 
     static void loops() {
 #ifdef WITH_BLAS
-        Loops<BlasMatrixd, BlasVectord>().run();
+        // Serial backend
+        run_serial_test<Loops<BlasMatrixd, BlasVectord>>();
 #endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
-        Loops<PetscMatrix, PetscVector>().run();
+        run_parallel_test<Loops<PetscMatrix, PetscVector>>();
 #endif  // WITH_PETSC
 
 #ifdef WITH_TRILINOS
-        Loops<TpetraMatrixd, TpetraVectord>().run();
+        run_parallel_test<Loops<TpetraMatrixd, TpetraVectord>>();
 #endif  // WITH_TRILINOS
     }
 

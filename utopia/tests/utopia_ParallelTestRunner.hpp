@@ -2,6 +2,8 @@
 #define UTOPIA_PARALLEL_TEST_RUNNER_HPP
 
 #include "utopia_Input.hpp"
+#include "utopia_Instance.hpp"
+#include "utopia_MPI.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {
@@ -13,6 +15,7 @@ namespace utopia {
         virtual void set_up() {}
         virtual void tear_down() {}
         virtual void run() = 0;
+        virtual void print_backend_info() const {}
 
         UnitTest() = default;
 
@@ -29,6 +32,12 @@ namespace utopia {
     template <class Tensor>
     class AlgebraUnitTest : public UnitTest<typename Traits<Tensor>::Communicator> {
     public:
+        void print_backend_info() const override {
+            if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << Traits<Tensor>::backend_info().get_name() << std::endl;
+            }
+        }
+
         ~AlgebraUnitTest() override = default;
     };
 
@@ -39,6 +48,11 @@ namespace utopia {
 
         void run(UnitTest<Comm> &test, const Comm &comm) {
             const int comm_size = comm.size();
+            const bool print_info = Utopia::instance().verbose() && mpi_world_rank() == 0;
+
+            if (print_info) {
+                std::cout << "--> [comm size = " << comm_size << "]" << std::endl;
+            }
 
             // 1) we run on comm
             test.set_comm(comm);
@@ -50,6 +64,10 @@ namespace utopia {
             for (auto &p : parititions_sizes_) {
                 if (p < comm_size) {
                     Comm sub_comm = comm.split(comm.rank() / p);
+
+                    if (print_info) {
+                        std::cout << "--> [sub comm(0) size: = " << sub_comm.size() << "]" << std::endl;
+                    }
 
                     test.set_comm(sub_comm);
                     test.set_up();
@@ -69,6 +87,7 @@ namespace utopia {
 
     template <class Comm>
     void run_parallel_test(UnitTest<Comm> &test, const Comm &comm = Comm()) {
+        test.print_backend_info();
         ParallelTestRunner<Comm>().run(test, comm);
     }
 
@@ -76,6 +95,13 @@ namespace utopia {
     void run_parallel_test() {
         Test test;
         run_parallel_test(test);
+    }
+
+    template <class Test>
+    void run_serial_test() {
+        Test test;
+        test.print_backend_info();
+        test.run();
     }
 
 }  // namespace utopia
