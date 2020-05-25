@@ -814,7 +814,7 @@ namespace utopia {
             // using MatrixT = utopia::PetscMatrix;
             // using VectorT = utopia::PetscVector;
 
-            bool verbose = true;
+            bool verbose = false;
 
             VectorT rhs;
             MatrixT A, I;
@@ -846,15 +846,15 @@ namespace utopia {
                 backend_convert_sparse(petsc_A, A);
                 backend_convert(petsc_rhs, rhs);
 
-                const double sum_A = norm1(A);
-                const double sum_petsc_A = norm1(petsc_A);
+                const double sum_A = sum(abs(A));
+                const double sum_petsc_A = sum(abs(petsc_A));
 
                 double acc = 0.0;
                 petsc_A.read([&acc](const SizeType &, const SizeType &, const Scalar &val) { acc += std::abs(val); });
                 acc = petsc_A.comm().sum(acc);
 
-                utopia_test_asserteq(acc, sum_petsc_A, 1e-16);
-                utopia_test_asserteq(sum_A, sum_petsc_A, 1e-16);
+                utopia_test_asserteq(acc, sum_petsc_A, 1e-8);
+                utopia_test_asserteq(sum_A, sum_petsc_A, 1e-8);
 
                 utopia_test_assert(cross_backend_approxeq(petsc_A, A));
                 utopia_test_assert(cross_backend_approxeq(petsc_I, I));

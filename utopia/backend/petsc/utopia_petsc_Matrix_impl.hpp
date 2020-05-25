@@ -320,11 +320,11 @@ namespace utopia {
         assert(err == 0);
 
         auto rr = this->row_range();
+        auto cr = this->col_range();
 
         // Diagonal block
         internal::transform_ijv_seqaij_impl(d, [=](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
-            return op(rr.begin() + i, j, v);
-            return op(i, j, v);
+            return op(rr.begin() + i, cr.begin() + j, v);
         });
 
         // Off-diagonal block
@@ -364,10 +364,12 @@ namespace utopia {
             assert(err == 0);
 
             auto rr = this->row_range();
+            auto cr = this->col_range();
 
             // Diagonal block
-            internal::read_petsc_seqaij_impl(
-                d, [=](const SizeType &i, const SizeType &j, const Scalar &v) { op(rr.begin() + i, j, v); });
+            internal::read_petsc_seqaij_impl(d, [=](const SizeType &i, const SizeType &j, const Scalar &v) {
+                op(rr.begin() + i, cr.begin() + j, v);
+            });
 
             // Off-diagonal block
             internal::read_petsc_seqaij_impl(

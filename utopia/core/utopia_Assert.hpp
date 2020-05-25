@@ -28,6 +28,8 @@ namespace utopia {
                 auto &comm = l.comm();
                 std::stringstream ss;
 
+                ss << std::setprecision(9);
+
                 ss << "assertion failure: "
                    << "left != right" << std::endl;
                 ss << "at " << filename << ":" << line << std::endl;
@@ -76,6 +78,8 @@ namespace utopia {
 
             if (!ok) {
                 auto &out = std::cerr;
+
+                out << std::setprecision(9);
 
                 out << "assertion failure: "
                     << "left != right" << std::endl;
