@@ -59,6 +59,7 @@ namespace utopia {
         using MatrixLayout = typename Traits<BlasMatrix>::MatrixLayout;
 
         using Constructible = utopia::Constructible<T, std::size_t, 2>;
+        using Constructible::dense_identity;
         using Constructible::sparse;
 
         ////////////////////////////////////////////////////////////////////

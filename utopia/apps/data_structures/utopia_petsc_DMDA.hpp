@@ -435,8 +435,12 @@ namespace utopia {
             PetscInt dof_range_begin, dof_range_end;
             PetscDMBase::dof_ownership_range(dm, dof_range_begin, dof_range_end);
 
-            const SizeType dim = PetscDMBase::get_dimension(dm);
-            assert(dim == this->dim());
+#ifndef NDEBUG
+            {
+                const SizeType dim = PetscDMBase::get_dimension(dm);
+                assert(dim == this->dim());
+            }
+#endif  // NDEBUG
 
             this->set_dof_range_begin(dof_range_begin);
             this->set_dof_range_end(dof_range_end);

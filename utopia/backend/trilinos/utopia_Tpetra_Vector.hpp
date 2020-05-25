@@ -352,12 +352,14 @@ namespace utopia {
         void write_unlock(WriteMode mode = utopia::AUTO) override;
 
         inline void read_and_write_lock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
             // write_data_ = implementation().getDataNonConst();
             // read_only_data_ = write_data_;
             make_view();
         }
 
         inline void read_and_write_unlock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
             // write_data_ = Teuchos::ArrayRCP<Scalar>();
             // read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
 

@@ -27,16 +27,18 @@ namespace utopia {
     void EvalDots<Vector, PETSC>::apply(const Vector &v1,
                                         const std::vector<Vector> &vectors,
                                         std::vector<Scalar> &results) {
+        using SizeType = typename Traits<Vector>::SizeType;
+
         std::vector<Vec> vecs;
-        for (auto i = 0; i < static_cast<SizeType>(vectors.size()); i++) {
+        for (SizeType i = 0; i < static_cast<SizeType>(vectors.size()); i++) {
             if (!empty(vectors[i])) {
                 vecs.push_back(raw_type(vectors[i]));
             }
         }
 
-        typename utopia::Traits<Vector>::SizeType n = vecs.size();
+        SizeType n = vecs.size();
 
-        if (n != vectors.size() || n != results.size()) {
+        if (n != SizeType(vectors.size()) || n != SizeType(results.size())) {
             std::vector<Scalar> result_new(n);
             VecMDot(raw_type(v1), n, vecs.data(), result_new.data());
 

@@ -19,7 +19,7 @@ namespace utopia {
 
         ~FunctionBase() override = default;
 
-        void read(Input &in) override {}
+        void read(Input & /*in*/) override {}
 
         virtual bool value(const Vector & /*point*/, Scalar & /*value*/) const = 0;
         virtual bool gradient(const Vector & /*point*/, Vector & /*result*/) const = 0;

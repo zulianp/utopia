@@ -198,8 +198,8 @@ namespace utopia {
 
                 const Scalar h2 = h * h;
 
-                const Range rr = row_range(H);
-                const Range cr = col_range(H);
+                // const Range rr = row_range(H);
+                // const Range cr = col_range(H);
                 const Range vr = range(x);
 
                 H *= 0.0;

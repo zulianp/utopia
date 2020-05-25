@@ -129,7 +129,7 @@ namespace utopia {
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
                 auto g_view = space_.assembly_view_device(y);
-                auto laplacian_view = laplacian.view_device();
+                // auto laplacian_view = laplacian.view_device();
 
                 Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                     StaticVector<Scalar, C_NDofs + U_NDofs> coeff, el_vec;

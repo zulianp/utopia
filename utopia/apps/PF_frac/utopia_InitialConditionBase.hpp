@@ -15,7 +15,7 @@ namespace utopia {
 
         ~InitialCondition() override = default;
 
-        void read(Input &in) override {}
+        void read(Input & /*in*/) override {}
 
         virtual void init(PetscVector &x) = 0;
         virtual void init(PetscVector &sol_vec, PetscVector & /*press_vec*/) { this->init(sol_vec); }

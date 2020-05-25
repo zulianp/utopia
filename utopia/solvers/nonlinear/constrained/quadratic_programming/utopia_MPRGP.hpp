@@ -158,7 +158,7 @@ namespace utopia {
                         this->get_fi(x, g, *lb, *ub, fi);
 
                         help_f1 = x - (alpha_bar * fi);
-                        this->get_projection(help_f1, *lb, *ub, x);
+                        this->project(help_f1, *lb, *ub, x);
 
                         A.apply(x, Ax);
                         g = Ax - rhs;

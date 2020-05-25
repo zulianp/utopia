@@ -65,11 +65,11 @@ namespace utopia {
     public:
         void init_memory(const std::vector<Layout> &layouts) {
             const Scalar inf = std::numeric_limits<Scalar>::infinity();
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
             active_lower.resize(n_levels);
             active_upper.resize(n_levels);
 
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 active_lower[l].values(layouts[l], -inf);
                 active_upper[l].values(layouts[l], inf);
             }

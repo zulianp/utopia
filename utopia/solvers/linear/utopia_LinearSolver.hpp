@@ -21,12 +21,18 @@ namespace utopia {
     template <class Matrix, class Vector>
     class LinearSolver : virtual public Preconditioner<Vector> {
     public:
+        using Super = utopia::Preconditioner<Vector>;
         using Scalar = typename utopia::Traits<Vector>::Scalar;
+
+        // using Super::update;
 
         ~LinearSolver() override = default;
 
         LinearSolver() = default;
-        LinearSolver(const LinearSolver &other) { assert((!other.op_) && "cannot be copied once initialized"); }
+        LinearSolver(const LinearSolver &other) {
+            UTOPIA_UNUSED(other);
+            assert((!other.op_) && "cannot be copied once initialized");
+        }
 
         bool apply(const Vector &rhs, Vector &sol) override = 0;
 

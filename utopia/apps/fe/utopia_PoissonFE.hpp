@@ -42,7 +42,7 @@ namespace utopia {
 
         using LKernel = utopia::LaplacianKernel<Scalar>;
 
-        void read(Input &in) override {}
+        void read(Input & /*in*/) override {}
 
         inline Size size() const override {
             const SizeType n_dofs = space_->n_dofs();
