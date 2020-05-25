@@ -89,20 +89,24 @@ namespace utopia {
                 });
 
                 // measure loop time for vectors
-                // this->register_experiment("vec_each_" + std::to_string(i), [vl]() {
-                //     Vector x(vl, 1.);
+                this->register_experiment("vec_for_" + std::to_string(i), [vl]() {
+                    Vector x(vl, 1.);
 
-                //     each_write(x, [](const SizeType i) -> Scalar { return i; });
+                    {
+                        auto x_view = view_device(x);
+                        parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, i); });
+                    }
 
-                //     Scalar res = 0.0;
+                    Scalar res = sum(x);
 
-                //     each_read(x, [&res](const SizeType /*i*/, const Scalar val) { res += val; });
+                    res /= size(x).get(0);
 
-                //     res /= size(x).get(0);
-
-                //     each_transform(x, x, [res](const SizeType /*i*/, const Scalar val) -> Scalar { return val - res;
-                //     });
-                // });
+                    {
+                        auto x_view = local_view_device(x);
+                        parallel_for(local_range_device(x),
+                                     UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_view.get(i) - res); });
+                    }
+                });
 
                 // Matrices
                 this->register_experiment("mat_assemble_lapl_" + std::to_string(i), [ml]() {

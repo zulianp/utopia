@@ -17,7 +17,7 @@ namespace utopia {
         using IndexSet = typename Traits::IndexSet;
         using Comm = typename Traits::Communicator;
 
-        void vector_loop() {}
+        // void vector_loop() {}
 
         void matrix_loop() {
             SizeType n = 5;
@@ -25,6 +25,7 @@ namespace utopia {
             Matrix mat;
             mat.sparse(layout(this->comm(), Traits::decide(), Traits::decide(), n, n), 3, 3);
 
+            // FIXME this is serial and not really portable
             Scalar norm1_read = 0.0;
             {
                 // n x n matrix with maximum 3 entries x row
@@ -40,7 +41,7 @@ namespace utopia {
             }
 
             std::stringstream ss;
-            mat.read([&](const SizeType &i, const SizeType &j, const Scalar &val) { norm1_read += device::abs(val); });
+            mat.read([&](const SizeType &, const SizeType &, const Scalar &val) { norm1_read += device::abs(val); });
 
             // this->comm().synched_print(ss.str(), std::cout);
 
@@ -53,7 +54,7 @@ namespace utopia {
 
     public:
         void run() override {
-            UTOPIA_RUN_TEST(vector_loop);
+            // UTOPIA_RUN_TEST(vector_loop);
             UTOPIA_RUN_TEST(matrix_loop);
         }
     };
