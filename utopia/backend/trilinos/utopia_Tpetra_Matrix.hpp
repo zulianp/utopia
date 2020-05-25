@@ -483,6 +483,21 @@ namespace utopia {
         void transform(const Pow &p) override;
         void transform(const Reciprocal<Scalar> &op) override;
 
+        template <class Op>
+        Scalar local_parallel_reduce_values(Op op, const Scalar &initial_value) const;
+
+        template <class Op, class MPIOp>
+        Scalar parallel_reduce_values(Op op, MPIOp mpi_op, const Scalar &initial_value) const;
+
+        template <class F>
+        void transform_values(F op);
+
+        template <class Op>
+        void transform_ijv(Op op);
+
+        template <class F>
+        void read(F op) const;
+
         ////////////////////////////////////////////////////////////////////////
         //////////////////////////// Blas1Tensor //////////////////////////////
         ////////////////////////////////////////////////////////////////////////
@@ -524,6 +539,10 @@ namespace utopia {
         } InitStructs;
 
         std::shared_ptr<InitStructs> init_;
+
+        template <class Op>
+        void aux_transform(const Op &op);
+
     };  // TpetraMatrix
 }  // namespace utopia
 

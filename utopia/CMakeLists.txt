@@ -400,6 +400,7 @@ list(APPEND UTOPIA_HEADERS
     utopia.hpp
     utopia_Base.hpp
     utopia_Instance.hpp
+    utopia_DeprecatedHeaders.hpp
     )
 
 list(APPEND UTOPIA_SOURCES

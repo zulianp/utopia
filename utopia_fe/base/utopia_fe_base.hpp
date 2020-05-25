@@ -2,7 +2,7 @@
 #define UTOPIA_FE_BASE_HPP
 
 #include "utopia.hpp"
-#include "utopia_CoreDecprecatedHeaders.hpp"
+#include "utopia_DeprecatedHeaders.hpp"
 #include "utopia_fe_config.hpp"
 
 namespace utopia {

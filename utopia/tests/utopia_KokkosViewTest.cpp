@@ -7,8 +7,10 @@
 #include "utopia_trilinos_FECrsGraph.hpp"
 // include edsl components
 #include "utopia_Core.hpp"
+#include "utopia_Device.hpp"
 #include "utopia_Jacobi.hpp"
 #include "utopia_Views.hpp"
+
 #include "utopia_kokkos_Traits.hpp"
 #include "utopia_trilinos.hpp"
 

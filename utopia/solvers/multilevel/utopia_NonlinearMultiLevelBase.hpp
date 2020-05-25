@@ -159,12 +159,15 @@ namespace utopia {
             const auto &bc_ids = fun.get_eq_constrains_flg();
 
             {
-                auto d_bc_ids = const_device_view(bc_ids);
-                auto d_bc_values = const_device_view(bc_values);
+                auto d_bc_ids = const_local_view_device(bc_ids);
+                auto d_bc_values = const_local_view_device(bc_values);
+                auto x_view = local_view_device(x);
 
-                parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
                     Scalar id = d_bc_ids.get(i);
-                    return (id == 1.0) ? d_bc_values.get(i) : xi;
+                    auto xi = x_view.get(i);
+
+                    x_view.set(i, (id == 1.0) ? d_bc_values.get(i) : xi);
                 });
             }
 

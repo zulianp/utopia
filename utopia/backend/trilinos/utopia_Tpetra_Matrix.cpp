@@ -1,9 +1,12 @@
 #include "utopia_Tpetra_Matrix.hpp"
+#include "utopia_Tpetra_Matrix_impl.hpp"
+
 #include "utopia_Allocations.hpp"
+#include "utopia_DeviceView.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
-#include "utopia_kokkos_ParallelEach.hpp"
-#include "utopia_trilinos_Each_impl.hpp"
+//#include "utopia_kokkos_ParallelEach.hpp"
+// #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 
 #include <MatrixMarket_Tpetra.hpp>
@@ -464,25 +467,32 @@ namespace utopia {
 
     TpetraMatrix::Scalar TpetraMatrix::norm_infty() const {
         // FIXME (optimize for device)
-        Scalar ret = -std::numeric_limits<Scalar>::max();
-        each_read(*this,
-                  [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::max(std::abs(val), ret); });
+        // Scalar ret = -std::numeric_limits<Scalar>::max();
 
-        auto &comm = *communicator();
-        Scalar ret_global = 0.;
-        Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
-        return ret_global;
+        Scalar ret = 0;
+        // each_read(*this,
+        //           [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::max(std::abs(val), ret);
+        //           });
+
+        // auto &comm = *communicator();
+        // Scalar ret_global = 0.;
+        // Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
+        // return ret_global;
+        return parallel_reduce_values(AbsMax(), Max(), ret);
     }
 
     TpetraMatrix::Scalar TpetraMatrix::norm1() const {
         // FIXME (optimize for device)
-        Scalar ret = 0.0;
-        each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::abs(val) + ret; });
+        // Scalar ret = 0.0;
+        // each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::abs(val) + ret;
+        // });
 
-        auto &comm = *communicator();
-        Scalar ret_global = 0.;
-        Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
-        return ret_global;
+        // auto &comm = *communicator();
+        // Scalar ret_global = 0.;
+        // Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
+        // return ret_global;
+
+        return parallel_reduce_values(AbsPlus(), Plus(), 0);
     }
 
     TpetraMatrix::SizeType TpetraMatrix::rows() const {
@@ -604,33 +614,25 @@ namespace utopia {
                      diag);
     }
 
-    template <class Op>
-    inline static void aux_transform(const Op &op, TpetraMatrix &mat) {
-        using Scalar = Traits<TpetraMatrix>::Scalar;
+    void TpetraMatrix::transform(const Sqrt &op) { aux_transform(op); }
 
-        KokkosOp<Scalar, Op> k_op(op);
-        parallel_transform(mat, KOKKOS_LAMBDA(const Scalar value)->Scalar { return k_op.apply(value); });
-    }
+    void TpetraMatrix::transform(const Pow2 &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Sqrt &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Log &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Pow2 &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Exp &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Log &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Cos &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Exp &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Sin &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Cos &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Abs &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Sin &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Minus &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Abs &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Pow &op) { aux_transform(op); }
 
-    void TpetraMatrix::transform(const Minus &op) { aux_transform(op, *this); }
-
-    void TpetraMatrix::transform(const Pow &op) { aux_transform(op, *this); }
-
-    void TpetraMatrix::transform(const Reciprocal<Scalar> &op) { aux_transform(op, *this); }
+    void TpetraMatrix::transform(const Reciprocal<Scalar> &op) { aux_transform(op); }
 
     void TpetraMatrix::swap(TpetraMatrix &x) {
         using std::swap;
@@ -703,7 +705,7 @@ namespace utopia {
 
         TpetraMatrix diff = *this;
         diff.axpy(-1.0, other);
-        return diff.norm_infty() < tol;
+        return diff.norm_infty() <= tol;
     }
 
     void TpetraMatrix::build_from_structure(const TpetraMatrix &rhs) {
@@ -714,14 +716,22 @@ namespace utopia {
     }
 
     void TpetraMatrix::shift_diag(const TpetraVector &d) {
-        const auto r = utopia::range(d);
-        assert(r == utopia::row_range(*this));
+        // FIXME this should be parallel
 
-        Read<TpetraVector> rd(d);
-        Write<TpetraMatrix> w(*this);
-        for (SizeType i = r.begin(); i < r.end(); ++i) {
-            add(i, i, d.get(i));
-        }
+        // const auto r = utopia::range(d);
+        // assert(r == utopia::row_range(*this));
+
+        // Read<TpetraVector> rd(d);
+        // Write<TpetraMatrix> w(*this);
+        // for (SizeType i = r.begin(); i < r.end(); ++i) {
+        //     add(i, i, d.get(i));
+        // }
+
+        auto d_view = const_view_device(d);
+
+        this->transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
+            return (i == j) ? (v + d_view.get(i)) : v;
+        });
     }
 
     void TpetraMatrix::diag_scale_left(const TpetraVector & /*d*/) { assert(false && "IMPLEMENT ME"); }

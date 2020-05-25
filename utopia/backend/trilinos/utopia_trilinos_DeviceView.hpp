@@ -69,6 +69,11 @@ namespace utopia {
             device::atomic_add(&view_(local_idx, 0), value);
         }
 
+        // UTOPIA_INLINE_FUNCTION void atomic_set(const SizeType &idx, const Scalar &value) const {
+        //     auto local_idx = map_.getLocalElement(idx);
+        //     device::atomic_set(&view_(local_idx, 0), value);
+        // }
+
         DeviceView(const TpetraVector &tensor) : view_(tensor.raw_type()->template getLocalView<ExecutionSpaceT>()) {
             assert(!tensor.has_ghosts() && "GHOST HANDLING NOT IMPLEMENTED YET");
             map_ = tensor.raw_type()->getMap()->getLocalMap();

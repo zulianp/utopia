@@ -18,6 +18,17 @@ namespace utopia {
     };
 
     template <class Scalar>
+    class KokkosOp<Scalar, AbsMax> {
+    public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            auto aa = Kokkos::Details::ArithTraits<Scalar>::abs(a);
+            auto ab = Kokkos::Details::ArithTraits<Scalar>::abs(b);
+
+            return (aa > ab) ? aa : ab;
+        }
+    };
+
+    template <class Scalar>
     class KokkosOp<Scalar, Min> {
     public:
         KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &a, const Scalar &b) const { return (a < b) ? a : b; }
@@ -27,6 +38,17 @@ namespace utopia {
     class KokkosOp<Scalar, Plus> {
     public:
         KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) { return a + b; }
+    };
+
+    template <class Scalar>
+    class KokkosOp<Scalar, AbsPlus> {
+    public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
+            auto aa = Kokkos::Details::ArithTraits<Scalar>::abs(a);
+            auto ab = Kokkos::Details::ArithTraits<Scalar>::abs(b);
+
+            return aa + ab;
+        }
     };
 
     template <class Scalar>

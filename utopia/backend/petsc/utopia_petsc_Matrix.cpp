@@ -1281,7 +1281,7 @@ namespace utopia {
     bool PetscMatrix::equals(const PetscMatrix &other, const Scalar &tol) const {
         PetscMatrix diff = other;
         diff.axpy(-1.0, *this);
-        return diff.norm2() < tol;
+        return diff.norm_infty() <= tol;
     }
 
     void PetscMatrix::diagonal_block(PetscMatrix &other) const {
@@ -1373,8 +1373,8 @@ namespace utopia {
         }
 
         SizeType ret = 0;
-        each_read(*this,
-                  [tol, &ret](const SizeType &, const SizeType &, const Scalar &v) { ret += PetscAbs(v) > tol; });
+        // FIXME reading indices is not necessary
+        this->read([tol, &ret](const SizeType &, const SizeType &, const Scalar &v) { ret += PetscAbs(v) > tol; });
 
         return ret;
     }

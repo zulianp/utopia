@@ -181,6 +181,9 @@ namespace utopia {
 
     class Communicator;
     class SelfCommunicator;
+
+    template <class T>
+    class RangeDevice;
 }  // namespace utopia
 
 #endif  // UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

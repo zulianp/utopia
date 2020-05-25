@@ -89,19 +89,20 @@ namespace utopia {
                 });
 
                 // measure loop time for vectors
-                this->register_experiment("vec_each_" + std::to_string(i), [vl]() {
-                    Vector x(vl, 1.);
+                // this->register_experiment("vec_each_" + std::to_string(i), [vl]() {
+                //     Vector x(vl, 1.);
 
-                    each_write(x, [](const SizeType i) -> Scalar { return i; });
+                //     each_write(x, [](const SizeType i) -> Scalar { return i; });
 
-                    Scalar res = 0.0;
+                //     Scalar res = 0.0;
 
-                    each_read(x, [&res](const SizeType /*i*/, const Scalar val) { res += val; });
+                //     each_read(x, [&res](const SizeType /*i*/, const Scalar val) { res += val; });
 
-                    res /= size(x).get(0);
+                //     res /= size(x).get(0);
 
-                    each_transform(x, x, [res](const SizeType /*i*/, const Scalar val) -> Scalar { return val - res; });
-                });
+                //     each_transform(x, x, [res](const SizeType /*i*/, const Scalar val) -> Scalar { return val - res;
+                //     });
+                // });
 
                 // Matrices
                 this->register_experiment("mat_assemble_lapl_" + std::to_string(i), [ml]() {
@@ -118,7 +119,7 @@ namespace utopia {
                     // auto N = size(A).get(0);
                     Scalar res = 0.0;
 
-                    each_read(A, [&res](const SizeType /*i*/, const SizeType /*j*/, const Scalar val) { res += val; });
+                    A.read([&res](const SizeType /*i*/, const SizeType /*j*/, const Scalar val) { res += val; });
 
                     utopia_test_assert(approxeq(res, 0.));
                 });

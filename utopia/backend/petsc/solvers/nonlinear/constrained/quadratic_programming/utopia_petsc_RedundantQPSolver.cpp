@@ -1,4 +1,10 @@
 #include "utopia_petsc_RedundantQPSolver.hpp"
+
+#ifdef WITH_PETSC
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
+#endif  // WITH_PETSC
+
 #include <cassert>
 
 namespace utopia {

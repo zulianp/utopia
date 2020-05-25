@@ -13,6 +13,7 @@
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
 #endif  // WITH_PETSC
 
 namespace utopia {
@@ -197,6 +198,8 @@ namespace utopia {
         }
 
         void run_GS_QR() {
+            if (mpi_world_size() > 1) return;
+
             print_backend_info();
             UTOPIA_RUN_TEST(ProjectedGS_QR);
         }

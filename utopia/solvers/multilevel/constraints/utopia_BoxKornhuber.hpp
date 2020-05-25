@@ -62,6 +62,8 @@ namespace utopia {
                 Scalar ub_min = min(this->help_loc_[finer_level]);
 
                 {
+                    // TODO(Alena) can this be done with a parallel for?
+
                     Read<Matrix> r_A(mat_transfer->R());
                     Write<Vector> rw_c_l(constraints_memory_.active_lower[level]);
                     Read<Vector> rw_f_l(this->help_[finer_level]);

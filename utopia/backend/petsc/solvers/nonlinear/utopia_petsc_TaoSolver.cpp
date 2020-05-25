@@ -4,6 +4,9 @@
 #include "utopia_petsc_Types.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
+
 #include <mpi.h>
 #include <petsc/private/taoimpl.h>
 #include "petsctao.h"

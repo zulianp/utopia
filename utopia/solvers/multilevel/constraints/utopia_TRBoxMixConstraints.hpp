@@ -60,22 +60,25 @@ namespace utopia {
 
             // intersect  lower bounds
             {
-                auto d_tr_lower = const_device_view(tr_bounds_.active_lower(level));
-                auto d_box_lower = const_device_view(box_bounds_.active_lower(level));
+                auto d_tr_lower = const_local_view_device(tr_bounds_.active_lower(level));
+                auto d_box_lower = const_local_view_device(box_bounds_.active_lower(level));
+                auto al = local_view_device(constraints_memory_.active_lower[level]);
 
-                parallel_each_write(constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                    return device::max(d_tr_lower.get(i), d_box_lower.get(i));
-                });
+                parallel_for(
+                    local_range_device(constraints_memory_.active_lower[level]),
+                    UTOPIA_LAMBDA(const SizeType i) { al.set(i, device::max(d_tr_lower.get(i), d_box_lower.get(i))); });
             }
 
             // intersect  upper bounds
             {
-                auto d_tr_upper = const_device_view(tr_bounds_.active_upper(level));
-                auto d_box_upper = const_device_view(box_bounds_.active_upper(level));
+                auto d_tr_upper = const_local_view_device(tr_bounds_.active_upper(level));
+                auto d_box_upper = const_local_view_device(box_bounds_.active_upper(level));
 
-                parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                    return device::min(d_tr_upper.get(i), d_box_upper.get(i));
-                });
+                auto au = local_view_device(constraints_memory_.active_upper[level]);
+
+                parallel_for(
+                    local_range_device(constraints_memory_.active_upper[level]),
+                    UTOPIA_LAMBDA(const SizeType i) { au.set(i, device::min(d_tr_upper.get(i), d_box_upper.get(i))); });
             }
         }
 

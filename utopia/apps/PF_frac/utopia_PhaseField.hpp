@@ -494,7 +494,7 @@ namespace utopia {
 
             // if gc ==1 => c=0, we can just call total linear elastic  (stress(trial), e(test))
             Scalar tol = 1e-14;
-            if (device::abs(gc - 1.0) < tol) {
+            if (device::abs(gc - 1.0) <= tol) {
                 auto C_test = 0.5 * (g_test + transpose(g_test));
                 return inner(stress, C_test);
             }

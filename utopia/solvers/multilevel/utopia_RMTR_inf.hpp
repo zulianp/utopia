@@ -241,13 +241,29 @@ namespace utopia {
             *lb = active_lower - this->memory_.x[level];
             *ub = active_upper - this->memory_.x[level];
 
+            // {
+            //     parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+            //         return (xi >= -1.0 * radius) ? xi : -1.0 * radius;
+            //     });
+
+            //     parallel_transform(*ub, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+            //         return (xi <= radius) ? xi : radius;
+            //     });
+            // }
+
             {
-                parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
-                    return (xi >= -1.0 * radius) ? xi : -1.0 * radius;
+                auto lb_view = local_view_device(*lb);
+
+                parallel_for(local_range_device(*lb), UTOPIA_LAMBDA(const SizeType &i) {
+                    const auto xi = lb_view.get(i);
+                    lb_view.set(i, (xi >= -radius) ? xi : -radius);
                 });
 
-                parallel_transform(*ub, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
-                    return (xi <= radius) ? xi : radius;
+                auto ub_view = local_view_device(*ub);
+
+                parallel_for(local_range_device(*ub), UTOPIA_LAMBDA(const SizeType &i) {
+                    const auto xi = ub_view.get(i);
+                    ub_view.set(i, (xi <= radius) ? xi : radius);
                 });
             }
 

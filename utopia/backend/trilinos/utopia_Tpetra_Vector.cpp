@@ -1,4 +1,6 @@
 #include "utopia_Tpetra_Vector.hpp"
+#include "utopia_Tpetra_Vector_impl.hpp"
+
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_kokkos_Eval_Reduce.hpp"

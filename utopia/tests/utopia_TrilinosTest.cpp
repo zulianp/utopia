@@ -1,29 +1,32 @@
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
+
 #include "utopia.hpp"
+#include "utopia_Assert.hpp"
 #include "utopia_Jacobi.hpp"
+#include "utopia_MultilevelTestProblem1D.hpp"
+#include "utopia_Operations.hpp"
 #include "utopia_Testing.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 #include "utopia_trilinos_solvers.hpp"
 
-#include <algorithm>
-#include "utopia_MultilevelTestProblem1D.hpp"
-#include "utopia_assemble_laplacian_1D.hpp"
-
 #ifdef WITH_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
 
-#include <cmath>
 #include "utopia_Bratu1D.hpp"
 #include "utopia_Eval_Structure.hpp"
 #include "utopia_IPTransfer.hpp"
 #include "utopia_Poisson1D.hpp"
 #include "utopia_Structure.hpp"
 #include "utopia_TestProblems.hpp"
+
+#include <algorithm>
+#include <cmath>
 
 namespace utopia {
 
@@ -677,6 +680,50 @@ namespace utopia {
             }
         }
 
+        void trilinos_test_read() {
+            if (comm_.size() != 2) return;
+
+            TpetraMatrixd m;
+            m.sparse(layout(comm_, 2, 2, 4, 4), 3, 2);
+
+            /*
+                1 0 0 2
+                0 0 3 0
+                ---------
+                4 0 0 5
+                6 0 0 0
+            */
+
+            {
+                Write<TpetraMatrixd> w_m(m);
+
+                if (comm_.rank() == 0) {
+                    m.set(0, 0, 1.0);
+                    m.set(0, 3, 2.0);
+                    m.set(1, 2, 3.0);
+                }
+
+                if (comm_.rank() == 1) {
+                    m.set(2, 0, 4.0);
+                    m.set(2, 3, 5.0);
+                    m.set(3, 0, 6.0);
+                }
+            }
+
+            Scalar val = 0.0;
+            m.read([&](const SizeType &i, const SizeType &j, const Scalar &v) { val += v; });
+
+            comm_.synched_print(val, std::cout);
+
+            if (comm_.rank() == 0) {
+                utopia_test_asserteq(val, 6.0, 0.0);
+            }
+
+            if (comm_.rank() == 1) {
+                utopia_test_asserteq(val, 15.0, 0.0);
+            }
+        }
+
         void trilinos_range() {
             SizeType n = 10, m = 5;
             SizeType gn = mpi_world_size() * n, gm = mpi_world_size() * m;
@@ -767,6 +814,8 @@ namespace utopia {
             // using MatrixT = utopia::PetscMatrix;
             // using VectorT = utopia::PetscVector;
 
+            bool verbose = false;
+
             VectorT rhs;
             MatrixT A, I;
 
@@ -796,19 +845,32 @@ namespace utopia {
                 backend_convert_sparse(petsc_I, I);
                 backend_convert_sparse(petsc_A, A);
                 backend_convert(petsc_rhs, rhs);
+
+                const double sum_A = sum(abs(A));
+                const double sum_petsc_A = sum(abs(petsc_A));
+
+                double acc = 0.0;
+                petsc_A.read([&acc](const SizeType &, const SizeType &, const Scalar &val) { acc += std::abs(val); });
+                acc = petsc_A.comm().sum(acc);
+
+                utopia_test_asserteq(acc, sum_petsc_A, 1e-8);
+                utopia_test_asserteq(sum_A, sum_petsc_A, 1e-8);
+
+                utopia_test_assert(cross_backend_approxeq(petsc_A, A));
+                utopia_test_assert(cross_backend_approxeq(petsc_I, I));
             }
 
-            // write("A.mm", A);
             // write("I.mm", I);
 
             std::vector<std::shared_ptr<MatrixT>> interpolation_operators;
             interpolation_operators.push_back(make_ref(I));
 
             multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.verbose(verbose);
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
-            multigrid.rtol(1e-15);
+            multigrid.rtol(1e-8);
             // multigrid.verbose(true);
             multigrid.fix_semidefinite_operators(true);
             multigrid.must_generate_masks(true);
@@ -825,7 +887,11 @@ namespace utopia {
 
             std::cout << std::flush;
 
+            write("A.mm", multigrid.level(0).A());
+
             double diff = norm2(rhs - A * x);
+
+            disp(diff);
             utopia_test_assert(approxeq(diff, 0., 1e-6));
 
 #endif  // WITH_PETSC
@@ -1508,6 +1574,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(test_global_matrix);
             UTOPIA_RUN_TEST(trilinos_swap);
             UTOPIA_RUN_TEST(trilinos_copy_null);
+            UTOPIA_RUN_TEST(trilinos_test_read);
 
 #ifdef HAVE_BELOS_TPETRA
             UTOPIA_RUN_TEST(trilinos_belos);

@@ -145,21 +145,21 @@ namespace utopia {
             SolutionStatus sol_status;
 
             // termination because norm of grad is down
-            if (g_norm < tol.absolute_tollerance()) {
+            if (g_norm <= tol.absolute_tollerance()) {
                 monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
                 sol_status.reason = ConvergenceReason::CONVERGED_FNORM_ABS;
                 converged = true;
             }
 
             // step size so small that we rather exit than wait for nan's
-            else if (s_norm < tol.step_tollerance()) {
+            else if (s_norm <= tol.step_tollerance()) {
                 monitor.exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
                 sol_status.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE;
                 converged = true;
             }
 
             // step size so small that we rather exit than wait for nan's
-            else if (r_norm < tol.relative_tollerance()) {
+            else if (r_norm <= tol.relative_tollerance()) {
                 monitor.exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
                 sol_status.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE;
                 converged = true;

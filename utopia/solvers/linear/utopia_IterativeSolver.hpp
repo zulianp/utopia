@@ -139,21 +139,21 @@ namespace utopia {
             bool converged = false;
             if (compute_norm(it)) {
                 // termination because norm of grad is down
-                if (g_norm < atol_) {
+                if (g_norm <= atol_) {
                     exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
                     this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS;
                     converged = true;
                 }
 
                 // step size so small that we rather exit than wait for nan's
-                if (s_norm < stol_) {
+                if (s_norm <= stol_) {
                     exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
                     this->solution_status_.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE;
                     converged = true;
                 }
 
                 // step size so small that we rather exit than wait for nan's
-                if (r_norm < rtol_) {
+                if (r_norm <= rtol_) {
                     exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
                     this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE;
                     converged = true;
