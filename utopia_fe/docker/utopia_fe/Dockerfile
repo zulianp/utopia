@@ -17,6 +17,9 @@ RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
 # RUN cd /utopia_cloned && git checkout edsl_refactor && git submodule update --init --recursive && git pull
 RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
 
+RUN echo "Source branch: "
+RUN echo $SOURCE_BRANCH
+
 RUN cd /utopia_cloned && git pull
 
 ##########################################################################
