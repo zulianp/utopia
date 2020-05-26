@@ -100,7 +100,7 @@ if(TRILINOS_FOUND)
         target_include_directories(utopia_trilinos PUBLIC ${MODULE})
     endforeach(MODULE)
 
-    target_include_directories(utopia_trilinos SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    target_include_directories(utopia_trilinos PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
     target_include_directories(utopia_trilinos SYSTEM PUBLIC ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
 
     target_link_libraries(utopia_trilinos utopia_core utopia_utils utopia_solvers)
