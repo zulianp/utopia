@@ -5,6 +5,6 @@
 
 namespace utopia {
     template class Mesh<UniformQuad4<double>, TrilinosCommunicator, TpetraVector::ExecutionSpace, Uniform<>>;
-}
+}  // namespace utopia
 
-#endif //WITH_TRILINOS
+#endif  // WITH_TRILINOS

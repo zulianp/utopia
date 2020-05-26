@@ -20,12 +20,14 @@
 #cmakedefine WITH_UTOPIA_OPENCL
 #cmakedefine WITH_EIGEN_3
 #cmakedefine UTOPIA_TRACE_ENABLED
+#cmakedefine UTOPIA_TRACE_EXPR_ENABLED
 #cmakedefine ENABLE_NO_ALLOC_REGIONS
 #cmakedefine WITH_PASSO_EXTENSIONS
 #cmakedefine WITH_TINY_EXPR
 #cmakedefine WITH_JSON
 #cmakedefine WITH_M3ELINSOL
 #cmakedefine WITH_CPP14
+#cmakedefine UTOPIA_DEPRECATED_API
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR

@@ -1,0 +1,53 @@
+{
+    "app" : "petsc_isotropic_phase_field_3d",
+    "output-path" : "RMTR_3d_net",
+    "log_output_path": "RMTR_3d_net.csv",
+    "nx" : 20,
+    "ny" : 20,
+    "nz" : 20,
+    "x_min" : 0, 
+    "y_min" : 0, 
+    "z_min" : 0, 
+    "x_max" : 10, 
+    "y_max" : 10, 
+    "z_max" : 10, 
+    "disp" : 1,
+    "with_damage" : true,
+    "use_dense_hessian" : false,
+    "check_derivatives" : false,
+    "num_time_steps" : 10,
+    "dt" : 0.1,
+    "adjust_dt_on_failure": false,
+    "shrinking_factor" : 0.5,
+    "use_pressure": true,
+    "use_constant_pressure": true,
+    "lambda":5.52e3,
+    "mu":11.0400e3,
+    "num_fracs" : 100,
+    "n_levels": 2,
+    "fracture_toughness":1.5,
+    "pressure0" : 1.0,
+    "pressure_increase_factor" : 0.05,
+    "diff_controller" : {
+        "spacing" : 1e-6,
+        "hessian_from_grad" : false
+    },
+    "solver" : {
+        "verbose" : true,
+        "max-it" : 100,
+        "atol": 1e-5, 
+        "max_coarse_it": 2,
+        "max_sucessful_coarse_it": 1,
+        "pre_smoothing_steps" : 2,
+        "post_smoothing_steps": 2,
+        "grad_smoothess_termination" : 1e-6,
+        "max_sucessful_smoothing_it": 1,
+        "max_QP_smoothing_it": 10,
+        "max_QP_coarse_it": 1000,
+        "linear-solver" : {
+            "verbose" : false,
+            "atol": 1e-9,
+            "max-it": 1000
+        }
+    }
+}

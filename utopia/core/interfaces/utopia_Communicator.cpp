@@ -3,26 +3,24 @@
 namespace utopia {
 
 #ifdef WITH_MPI
-    bool MPICommunicator::conjunction(const bool &val) const
-    {
+    bool MPICommunicator::conjunction(const bool &val) const {
         int int_val = val;
-        MPI_Allreduce( MPI_IN_PLACE, &int_val, 1, MPI_INT, MPI_SUM, get() );
+        MPI_Allreduce(MPI_IN_PLACE, &int_val, 1, MPI_INT, MPI_SUM, get());
 
         int size;
         MPI_Comm_size(get(), &size);
         return int_val == size;
     }
 
-    bool MPICommunicator::disjunction(const bool &val) const
-    {
+    bool MPICommunicator::disjunction(const bool &val) const {
         int int_val = val;
-        MPI_Allreduce( MPI_IN_PLACE, &int_val, 1, MPI_INT, MPI_SUM, get() );
+        MPI_Allreduce(MPI_IN_PLACE, &int_val, 1, MPI_INT, MPI_SUM, get());
 
         int size;
         MPI_Comm_size(get(), &size);
         return int_val > 0;
     }
 
-#endif //WITH_MPI
+#endif  // WITH_MPI
 
-}
+}  // namespace utopia

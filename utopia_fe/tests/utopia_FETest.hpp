@@ -8,4 +8,4 @@ namespace utopia {
     using FETest = utopia::FEApp;
 }
 
-#endif //UTOPIA_FE_TEST_HPP
+#endif  // UTOPIA_FE_TEST_HPP

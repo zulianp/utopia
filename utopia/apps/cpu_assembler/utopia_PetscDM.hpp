@@ -1,282 +1,184 @@
-#ifndef UTOPIA_PETSC_DM_HPP
-#define UTOPIA_PETSC_DM_HPP
+#ifndef UTOPIA_PETSC_DM_OLD_HPP
+#define UTOPIA_PETSC_DM_OLD_HPP
 
+#include "utopia_ArrayView.hpp"
+#include "utopia_Box.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_FunctionSpace.hpp"
+#include "utopia_Quadrature.hpp"
+#include "utopia_SideSets.hpp"
+#include "utopia_Temp.hpp"
+#include "utopia_UniformHex8.hpp"
+#include "utopia_UniformQuad4.hpp"
+#include "utopia_VectorView.hpp"
+#include "utopia_Writable.hpp"
+#include "utopia_petsc_Communicator.hpp"
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_FE.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
-#include "utopia_petsc_Communicator.hpp"
-#include "utopia_petsc_ForwardDeclarations.hpp"
-#include "utopia_Box.hpp"
-#include "utopia_FunctionSpace.hpp"
-#include "utopia_ArrayView.hpp"
-#include "utopia_VectorView.hpp"
-#include "utopia_Quadrature.hpp"
-#include "utopia_UniformQuad4.hpp"
-#include "utopia_UniformHex8.hpp"
-#include "utopia_Temp.hpp"
-#include "utopia_Writable.hpp"
-#include "utopia_petsc_FE.hpp"
-#include "utopia_DeviceView.hpp"
 
 #include <array>
-#include <memory>
 #include <functional>
+#include <memory>
 
 namespace utopia {
+    template <int Dim>
+    using PetscDM = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
-    class SideSet {
-    public:
-        using BoundaryIdType = int;
-        inline static constexpr BoundaryIdType left() { return 1; }
-        inline static constexpr BoundaryIdType right() { return 2; }
-        inline static constexpr BoundaryIdType bottom() { return 3; }
-        inline static constexpr BoundaryIdType top() { return 4; }
-        inline static constexpr BoundaryIdType front() { return 5; }
-        inline static constexpr BoundaryIdType back() { return 6; }
-        inline static constexpr BoundaryIdType invalid() { return 0; }
-    };
+    // template<int Dim>
+    // class DMDAMirror;
 
-    template<int Dim>
-    class SideSets {};
+    // template<int Dim>
+    // class PetscDMElements;
 
-    template<>
-    class SideSets<1> {
-    public:
-        static const int n_sides = 2;
+    // template<int Dim>
+    // class DMDANodes;
 
-        using Sides = std::array<SideSet::BoundaryIdType, n_sides>;
+    // template<class Space>
+    // class DirichletBoundaryCondition;
 
-        static const Sides &sides()
-        {
-            static const Sides ids_ = { SideSet::left(), SideSet::right() };
-            return ids_;
-        }
-    };
+    // // template<int Dim>
+    // // class PetscNode {
+    // // public:
+    // //     PetscNode(const DMDANodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
+    // //     SizeType idx() const { return idx_; }
+    // //     bool is_ghost() const;
 
-    template<>
-    class SideSets<2> {
-    public:
-        static const int n_sides = 4;
+    // // private:
+    // //     const DMDANodes<Dim> &nodes_;
+    // //     SizeType idx_;
+    // // };
 
-        using Sides = std::array<SideSet::BoundaryIdType, n_sides>;
+    // template<int Dim>
+    // class PetscDM final {
+    // public:
+    //     static const std::size_t UDim = Dim;
+    //     using SizeType  = PetscInt;
+    //     using Scalar    = PetscScalar;
+    //     using Point     = utopia::StaticVector<Scalar, Dim>;
+    //     // using Elem      = utopia::PetscElem<Dim>;
+    //     // using Node      = utopia::PetscNode<Dim>;
+    //     using Device    = utopia::Device<PETSC>;
+    //     using NodeIndex = utopia::ArrayView<const SizeType>;
+    //     using IntArray  = utopia::ArrayView<SizeType, UDim>;
+    //     using ScalarArray = utopia::ArrayView<Scalar, UDim>;
 
-        static const Sides &sides()
-        {
-            static const Sides ids_ =  {
-                SideSet::left(),
-                SideSet::right(),
-                SideSet::bottom(),
-                SideSet::top()
-            };
+    //     using SideSets = utopia::SideSets<Dim>;
+    //     using Comm     = utopia::PetscCommunicator;
 
-            return ids_;
-        }
-    };
+    //     class Impl;
 
-    template<>
-    class SideSets<3> {
-    public:
-        static const int n_sides = 6;
+    //     PetscDM(
+    //         const PetscCommunicator     &comm,
+    //         const std::array<SizeType, UDim> &dims,
+    //         const std::array<Scalar, UDim>   &box_min,
+    //         const std::array<Scalar, UDim>   &box_max,
+    //         const SizeType &n_components = 1
+    //     );
 
-        using Sides = std::array<SideSet::BoundaryIdType, n_sides>;
+    //     void build(
+    //         const PetscCommunicator     &comm,
+    //         const std::array<SizeType, UDim> &dims,
+    //         const std::array<Scalar, UDim>   &box_min,
+    //         const std::array<Scalar, UDim>   &box_max,
+    //         const SizeType &n_components = 1
+    //     );
 
-        static const Sides &sides()
-        {
-            static const Sides ids_ = {
-                SideSet::left(),
-                SideSet::right(),
-                SideSet::bottom(),
-                SideSet::top(),
-                SideSet::front(),
-                SideSet::back()
-            };
+    //     void build_simplicial_complex(
+    //         const PetscCommunicator     &comm,
+    //         const std::array<SizeType, UDim> &dims,
+    //         const std::array<Scalar, UDim>   &box_min,
+    //         const std::array<Scalar, UDim>   &box_max,
+    //         const SizeType &n_components = 1
+    //     );
 
-            return ids_;
-        }
-    };
+    //     PetscDM();
+    //     ~PetscDM();
 
-    template<int Dim>
-    class PetscDMElements;
+    //     PetscCommunicator &comm();
+    //     const PetscCommunicator &comm() const;
 
-    template<int Dim>
-    class PetscDMNodes;
+    //     constexpr static typename SideSets::Sides sides()
+    //     {
+    //         return SideSets::sides();
+    //     }
 
-    template<class Space>
-    class DirichletBoundaryCondition {};
+    //     void point(const SizeType &local_node_idx, Point &p) const;
+    //     void cell_point(const SizeType &idx, Point &translation) const;
+    //     void cell_size(const SizeType &idx, Point &cell_size) const;
 
-    template<int Dim>
-    class PetscNode {
-    public:
-        PetscNode(const PetscDMNodes<Dim> &nodes, const SizeType &idx) : nodes_(nodes), idx_(idx) {}
-        SizeType idx() const { return idx_; }
-        bool is_ghost() const;
+    //     bool is_node_on_boundary(const SizeType &idx) const;
+    //     bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
+    //     void node(const SizeType &idx, Point &node) const;
+    //     void elem(const SizeType &idx, Elem &e) const;
+    //     void nodes(const SizeType &idx, NodeIndex &nodes) const;
+    //     void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
 
-    private:
-        const PetscDMNodes<Dim> &nodes_;
-        SizeType idx_;
-    };
+    //     void create_matrix(PetscMatrix &mat) const;
+    //     void create_vector(PetscVector &vec) const;
 
-    template<int Dim>
-    class PetscDM final {
-    public:
-        static const std::size_t UDim = Dim;
-        using SizeType  = PetscInt;
-        using Scalar    = PetscScalar;
-        using Point     = utopia::StaticVector<Scalar, Dim>;
-        using Elem      = utopia::PetscElem<Dim>;
-        using Node      = utopia::PetscNode<Dim>;
-        using Device    = utopia::Device<PETSC>;
-        using NodeIndex = typename Elem::NodeIndex;
+    //     // void create_local_matrix(PetscMatrix &mat);
+    //     void create_local_vector(PetscVector &vec) const;
+    //     void local_to_global(const PetscVector &local,  PetscVector &global) const;
+    //     void global_to_local(const PetscVector &global, PetscVector &local) const;
 
-        using SideSets = utopia::SideSets<Dim>;
+    //     void describe() const;
 
-        class Impl;
+    //     inline static constexpr SizeType dim() { return Dim; }
+    //     Range local_node_range() const;
+    //     SizeType n_local_nodes_with_ghosts() const;
+    //     Scalar min_spacing() const;
 
-        PetscDM(
-            const PetscCommunicator     &comm,
-            const std::array<SizeType, UDim> &dims,
-            const std::array<Scalar, UDim>   &box_min,
-            const std::array<Scalar, UDim>   &box_max,
-            const SizeType &n_components = 1
-        );
+    //     Range element_range() const;
 
-        void build(
-            const PetscCommunicator     &comm,
-            const std::array<SizeType, UDim> &dims,
-            const std::array<Scalar, UDim>   &box_min,
-            const std::array<Scalar, UDim>   &box_max,
-            const SizeType &n_components = 1
-        );
+    //     const DMDAMirror<Dim> &mirror() const;
 
-        PetscDM();
-        ~PetscDM();
+    //     // const IntArray &local_nodes_begin() const;
+    //     // const IntArray &local_nodes_end() const;
 
-        PetscCommunicator &comm();
-        const PetscCommunicator &comm() const;
+    //     const IntArray &dims() const;
+    //     const Point &box_min() const;
+    //     const Point &box_max() const;
 
-        constexpr typename SideSets::Sides sides()
-        {
-            return SideSets::sides();
-        }
+    //     inline Impl &impl()
+    //     {
+    //         return *impl_;
+    //     }
 
-        void cell_point(const SizeType &idx, Point &translation);
-        void cell_size(const SizeType &idx, Point &cell_size);
+    //     inline const Impl &impl() const
+    //     {
+    //         return *impl_;
+    //     }
 
-        bool is_local_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
-        bool is_node_on_boundary(const SizeType &idx, SideSet::BoundaryIdType b_id) const;
-        void node(const SizeType &idx, Point &node) const;
-        void elem(const SizeType &idx, Elem &e) const;
-        void nodes(const SizeType &idx, NodeIndex &nodes) const;
-        void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
+    //     SizeType n_nodes() const;
+    //     SizeType n_local_nodes() const;
 
-        void create_matrix(PetscMatrix &mat) const;
-        void create_vector(PetscVector &vec) const;
+    //     SizeType n_elements() const;
+    //     SizeType n_components() const;
 
-        // void create_local_matrix(PetscMatrix &mat);
-        void create_local_vector(PetscVector &vec) const;
-        void local_to_global(const PetscVector &local,  PetscVector &global) const;
-        void global_to_local(const PetscVector &global, PetscVector &local) const;
+    //     bool is_ghost(const SizeType &global_node_idx) const;
+    //     bool is_boundary(const SizeType &global_node_idx) const;
 
-        void describe() const;
+    //     bool on_boundary(const SizeType &elem_idx) const;
 
-        void each_element(const std::function<void(const Elem &)> &f);
-        void each_node(const std::function<void(const Node &)> &f);
-        void each_node_with_ghosts(const std::function<void(const Node &)> &f);
+    //     void set_field_name(const SizeType &nf, const std::string &name);
+    //     void set_field_names(const std::vector<std::string> &names);
 
-        inline static constexpr SizeType dim() { return Dim; }
-        Range local_node_range() const;
-        SizeType n_local_nodes_with_ghosts() const;
+    //     std::unique_ptr<PetscDM> uniform_refine() const;
 
-        // void dims(SizeType *arr) const;
-        void box(Scalar *min, Scalar *max) const;
+    //     void dmda_set_interpolation_type_Q0();
+    //     void dmda_set_interpolation_type_Q1();
+    //     void create_interpolation(const PetscDM &target, PetscMatrix &I) const;
 
-        Scalar min_spacing() const;
+    //     void update_mirror();
 
-        void local_node_ranges(SizeType *begin, SizeType *end) const;
+    //     std::unique_ptr<PetscDM> clone(const SizeType &n_components) const;
+    //     std::unique_ptr<PetscDM> clone() const;
+    // private:
+    //     std::unique_ptr<Impl> impl_;
+    // };
+}  // namespace utopia
 
-        Range local_element_range() const;
-
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
-        void local_element_ranges(SizeType *begin, SizeType *end) const;
-
-        template<class Array>
-        void local_element_ranges(Array &begin, Array &end) const
-        {
-            SizeType temp_begin[3], temp_end[3];
-            local_element_ranges(temp_begin, temp_end);
-
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                begin[i] = temp_begin[i];
-                end[i] = temp_end[i];
-            }
-        }
-
-#endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-
-        template<class Array>
-        void local_node_ranges(Array &begin, Array &end) const
-        {
-            SizeType temp_begin[3], temp_end[3];
-            local_node_ranges(temp_begin, temp_end);
-
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                begin[i] = temp_begin[i];
-                end[i] = temp_end[i];
-            }
-        }
-
-        template<class Array>
-        void dims(Array &arr) const
-        {
-            std::array<SizeType, UDim> temp;
-            dims(temp);
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                arr[i] = temp[i];
-            }
-        }
-
-        void dims(std::array<SizeType, UDim> &arr) const;
-
-        template<class Array>
-        void box(Array &min, Array &max) const
-        {
-            Scalar temp_min[3], temp_max[3];
-            box(temp_min, temp_max);
-
-            SizeType d = dim();
-            for(SizeType i = 0; i < d; ++i) {
-                min[i] = temp_min[i];
-                max[i] = temp_max[i];
-            }
-        }
-
-        inline Impl &impl()
-        {
-            return *impl_;
-        }
-
-        inline const Impl &impl() const
-        {
-            return *impl_;
-        }
-
-        SizeType n_nodes() const;
-        SizeType n_local_nodes() const;
-
-        SizeType n_elements() const;
-        SizeType n_components() const;
-
-        bool is_ghost(const SizeType &global_node_idx) const;
-        bool is_boundary(const SizeType &global_node_idx) const;
-        SideSet::BoundaryIdType boundary_id(const SizeType &global_node_idx) const;
-
-        void set_field_name(const SizeType &nf, const std::string &name);
-
-    private:
-        std::unique_ptr<Impl> impl_;
-    };
-}
-
-#endif //UTOPIA_PETSC_DM_HPP
+#endif  // UTOPIA_PETSC_DM_OLD_HPP

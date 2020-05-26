@@ -4,4 +4,4 @@
 #include "mars.hpp"
 #include "utopia_mars_FunctionSpace.hpp"
 
-#endif //UTOPIA_MARS_HPP
+#endif  // UTOPIA_MARS_HPP

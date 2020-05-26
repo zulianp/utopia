@@ -5,14 +5,14 @@
 #include <string>
 
 #include "utopia_Input.hpp"
+#include "utopia_InputParameters.hpp"
 #include "utopia_Path.hpp"
 #include "utopia_make_unique.hpp"
-#include "utopia_InputParameters.hpp"
 
 namespace utopia {
 
     class Path;
     std::unique_ptr<Input> open_istream(const Path &path);
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UI_HPP
+#endif  // UTOPIA_UI_HPP

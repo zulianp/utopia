@@ -6,8 +6,7 @@
 
 namespace utopia {
 
-
-    template<class Mesh>
+    template <class Mesh>
     class SideSetAssignment : public Configurable {
     public:
         void read(Input &in) override;
@@ -20,6 +19,6 @@ namespace utopia {
         class Impl;
         std::unique_ptr<Impl> impl_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_SIDE_SET_ASSIGNMENT_HPP
+#endif  // UTOPIA_SIDE_SET_ASSIGNMENT_HPP

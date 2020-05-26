@@ -5,20 +5,16 @@
 
 namespace utopia {
 
-    template<class FunctionSpaceT>
+    template <class FunctionSpaceT>
     class FunctionSpacePolicyChecker {
     public:
-        using ElemT    = utopia::Traits<FunctionSpaceT>::Elem;
-        using ScalarT  = utopia::Traits<FunctionSpaceT>::Scalar;
+        using ElemT = utopia::Traits<FunctionSpaceT>::Elem;
+        using ScalarT = utopia::Traits<FunctionSpaceT>::Scalar;
         using IntegerT = utopia::Traits<FunctionSpaceT>::Integer;
 
-        static void dofs(const FunctionSpaceT &space, std::vector<Integer> &indices)
-        {
-            space.dofs(indices);
-        }
+        static void dofs(const FunctionSpaceT &space, std::vector<Integer> &indices) { space.dofs(indices); }
 
-        static void dofs(const FunctionSpaceT &space, const Integer var_num, std::vector<Integer> &indices)
-        {
+        static void dofs(const FunctionSpaceT &space, const Integer var_num, std::vector<Integer> &indices) {
             space.dofs(var_num, indices);
         }
 
@@ -30,6 +26,6 @@ namespace utopia {
         // Elem & elem(const Integer id) = 0;
         // const Elem & elem(const Integer id) const = 0;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_I_FUNCTION_SPACE_HPP
+#endif  // UTOPIA_I_FUNCTION_SPACE_HPP

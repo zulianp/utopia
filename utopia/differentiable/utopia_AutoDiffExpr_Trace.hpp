@@ -1,31 +1,29 @@
 #ifndef UTOPIA_AUTO_DIFF_EXPR_TRACE_HPP
 #define UTOPIA_AUTO_DIFF_EXPR_TRACE_HPP
 
-
-#include "utopia_Expressions.hpp"
 #include "utopia_AutoDiffExpr.hpp"
 #include "utopia_AutoDiffExpr_Diag.hpp"
+#include "utopia_Expressions.hpp"
 
 namespace utopia {
 
-    template<class Inner>
-    class AutoDiffExpr< Trace<Inner>, 1>  {
+    template <class Inner>
+    class AutoDiffExpr<Trace<Inner>, 1> {
     public:
-        typedef utopia::Trace<Inner> Expr;
+        using Expr = utopia::Trace<Inner>;
 
-        typedef utopia::AutoDiffExpr< Diag<Inner> > Diff;
-        typedef utopia::Diag<typename Diff::Type> ComplexType;
-        typedef utopia::Simplify<ComplexType> Sim;
+        using Diff = utopia::AutoDiffExpr<Diag<Inner> >;
+        using ComplexType = utopia::Diag<typename Diff::Type>;
+        using Sim = utopia::Simplify<ComplexType>;
 
-        typedef typename Sim::Type Type;
+        using Type = typename Sim::Type;
 
-        inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr)
-        {
+        inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr) {
             // unused
-            //const auto &e = expr.expr();
-            return Sim::make( diag( Diff::make( diag(expr.expr())) ) );
+            // const auto &e = expr.expr();
+            return Sim::make(diag(Diff::make(diag(expr.expr()))));
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_AUTO_DIFF_EXPR_TRACE_HPP
+#endif  // UTOPIA_AUTO_DIFF_EXPR_TRACE_HPP

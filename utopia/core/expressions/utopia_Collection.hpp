@@ -44,7 +44,6 @@
 // 			return *container_;
 // 		}
 
-
 // 	private:
 // 		std::shared_ptr<std::vector<Expr> > container_;
 // 	};

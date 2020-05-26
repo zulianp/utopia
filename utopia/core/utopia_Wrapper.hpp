@@ -12,39 +12,30 @@
 
 namespace utopia {
 
-    template<class ConcreteType, int Order = Traits<ConcreteType>::Order>
+    template <class ConcreteType, int Order = Traits<ConcreteType>::Order>
     class Wrapper {};
 
-    template<class ConcreteType, int Order>
+    template <class ConcreteType, int Order>
     class Traits<Wrapper<ConcreteType, Order> > : public Traits<ConcreteType> {};
 
-
-    template<int Order>
+    template <int Order>
     struct Order2String {
-        static std::string Value() {
-            return "Undefined";
-        }
+        static std::string Value() { return "Undefined"; }
     };
 
-    template<>
+    template <>
     struct Order2String<0> {
-        static std::string Value() {
-            return "Scalar";
-        }
+        static std::string Value() { return "Scalar"; }
     };
 
-    template<>
+    template <>
     struct Order2String<1> {
-        static std::string Value() {
-            return "Vector";
-        }
+        static std::string Value() { return "Vector"; }
     };
 
-    template<>
+    template <>
     struct Order2String<2> {
-        static std::string Value() {
-            return "Matrix";
-        }
+        static std::string Value() { return "Matrix"; }
     };
 
     // template<class Tensor, int Order>
@@ -53,7 +44,6 @@ namespace utopia {
     //     //FIXME
     //     return (long) &t;
     // }
-
 
     /** \addtogroup ranges
      * @ingroup read_write
@@ -69,7 +59,7 @@ namespace utopia {
      * @tparam Tensor the backend type of the 1st order tensor
      * @return the range of the input vector v.
      */
-    template<class Derived>
+    template <class Derived>
     inline Range range(const Tensor<Derived, 1> &v) {
         return v.derived().range();
     }
@@ -81,7 +71,7 @@ namespace utopia {
      * @tparam Tensor the backend type of the 2nd order tensor
      * @return the row range of the input matrix v.
      */
-    template<class Derived>
+    template <class Derived>
     inline Range row_range(const Tensor<Derived, 2> &v) {
         return v.derived().row_range();
     }
@@ -94,7 +84,7 @@ namespace utopia {
      * @return the column range of the input matrix v.
      */
 
-    template<class Derived>
+    template <class Derived>
     inline Range col_range(const Tensor<Derived, 2> &v) {
         return v.derived().col_range();
     }
@@ -112,7 +102,7 @@ namespace utopia {
      * @param[in]  path    The path.
      * @param[in]  t       Tensor to be read and used.
      */
-    template<class Derived, int Order>
+    template <class Derived, int Order>
     inline bool read(const std::string &path, Tensor<Derived, Order> &t) {
         return t.derived().read(path);
     }
@@ -124,11 +114,10 @@ namespace utopia {
      * @param[in]  path    The path.
      * @param[in]  t       Tensor to be saved.
      */
-    template<class Derived, int Order>
+    template <class Derived, int Order>
     inline bool write(const std::string &path, const Tensor<Derived, Order> &t) {
         return t.derived().write(path);
     }
-
 
     /**
      * @ingroup    interoperability
@@ -137,9 +126,9 @@ namespace utopia {
      * @param      t        Utopia tensor(wrapper).
      * @param      rawType  The external library tensor (backend supported).
      */
-    template<class Derived, int Order, class RawType>
-    inline void convert(Tensor<Derived, Order> &/*t*/, RawType &/*rawType*/) {
-       assert(false && "OVERLOAD ME IF NEEDED");
+    template <class Derived, int Order, class RawType>
+    inline void convert(Tensor<Derived, Order> & /*t*/, RawType & /*rawType*/) {
+        assert(false && "OVERLOAD ME IF NEEDED");
     }
 
     /**
@@ -149,10 +138,10 @@ namespace utopia {
      * @param      from  source of copy
      * @param      to    destination of copy
      */
-    template<typename T1, typename T2>
+    template <typename T1, typename T2>
     inline void convert(const std::vector<T1> &from, std::vector<T2> &to) {
-       to.resize(from.size());
-       std::copy(from.begin(), from.end(), to.begin());
+        to.resize(from.size());
+        std::copy(from.begin(), from.end(), to.begin());
     }
 
     /**
@@ -164,16 +153,14 @@ namespace utopia {
      * @tparam     Impl   The tensor implementation.
      * @tparam     Order  The order of the tensor.
      */
-    template<class Derived, int Order>
-    void disp(const Tensor<Derived, Order> &w)
-    {
+    template <class Derived, int Order>
+    void disp(const Tensor<Derived, Order> &w) {
         w.derived().describe();
     }
 
-    template<class T>
-    void disp(const std::vector<T> &w)
-    {
-        for(const auto &wi : w) {
+    template <class T>
+    void disp(const std::vector<T> &w) {
+        for (const auto &wi : w) {
             disp(wi);
             disp("\n");
         }
@@ -190,9 +177,8 @@ namespace utopia {
      *
      * @return     State of assembly.
      */
-    template<class Derived, int Order>
-    bool empty(const Tensor<Derived, Order> &w)
-    {
+    template <class Derived, int Order>
+    bool empty(const Tensor<Derived, Order> &w) {
         return w.derived().empty();
     }
 
@@ -207,18 +193,16 @@ namespace utopia {
      *
      * @return     1 if there is some nan or inf, 0 otherwise
      */
-    
-    template<class Derived, int Order>
-    bool has_nan_or_inf(const Tensor<Derived, Order> &w)
-    {
+
+    template <class Derived, int Order>
+    bool has_nan_or_inf(const Tensor<Derived, Order> &w) {
         return w.derived().has_nan_or_inf();
     }
 
-    template<class Derived>
-    inline constexpr int order(const Expression<Derived> &)
-    {
+    template <class Derived>
+    inline constexpr int order(const Expression<Derived> &) {
         return Derived::Order;
     }
-}
+}  // namespace utopia
 
-#endif //utopia_utopia_MATRIXEXPR_HPP
+#endif  // utopia_utopia_MATRIXEXPR_HPP

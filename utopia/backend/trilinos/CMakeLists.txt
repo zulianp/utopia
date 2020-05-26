@@ -101,13 +101,17 @@ if(TRILINOS_FOUND)
     endforeach(MODULE)
 
     target_include_directories(utopia_trilinos PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    target_include_directories(utopia_trilinos PUBLIC ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
+    target_include_directories(utopia_trilinos SYSTEM PUBLIC ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
 
     target_link_libraries(utopia_trilinos utopia_core utopia_utils utopia_solvers)
     target_link_libraries(utopia_trilinos ${Trilinos_LIBRARIES})
     target_link_libraries(utopia_trilinos ${Trilinos_TPL_LIBRARIES})
     target_link_libraries(utopia_trilinos "-L${Trilinos_LIBRARY_DIRS}")
+    set_target_properties(utopia_trilinos PROPERTIES COMPILE_FLAG ${Trilinos_CXX_COMPILER_FLAGS})
     add_definitions(${TRILINOS_DEFINITIONS})
+    # add_definitions(${Kokkos_CXX_FLAGS})
+
+    # message(STATUS "Trilinos_CXX_COMPILER_FLAGS=${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS}")
 
 
     install(TARGETS utopia_trilinos

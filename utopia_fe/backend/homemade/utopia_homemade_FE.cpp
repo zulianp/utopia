@@ -14,12 +14,9 @@
 //     : impl_ptr(new Impl())
 //     { }
 
-
 //     void FE::init(const int current_element, Mesh &mesh, int quadrature_order)
 //     {
 //         Intersector::Mesh * m_impl = static_cast<Intersector::Mesh *>(mesh.mesh_impl_ptr());
-
-
 
 //         // impl_ptr->fe_backend.make_fe_object_from_quad_2(
 //         // 	*mesh.impl, current_element, 3, quad_points, quad_weights, &fe_);

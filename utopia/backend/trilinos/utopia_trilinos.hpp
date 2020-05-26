@@ -17,30 +17,34 @@
 // #include <Teuchos_RCP.hpp>
 // #include <Kokkos_Core.hpp>
 
-#include "utopia_trilinos_ForwardDeclarations.hpp"
-#include "utopia_trilinos_Traits.hpp"
-#include "utopia_trilinos_Types.hpp"
-#include "utopia_trilinos_RowView.hpp"
-#include "utopia_trilinos_solvers.hpp"
-#include "utopia_trilinos_Each.hpp"
-#include "utopia_trilinos_Eval_Factory.hpp"
+#include "utopia_Kokkos_ParallelFor.hpp"
 #include "utopia_trilinos_DeviceView.hpp"
 
-//optimizations
+//#include "utopia_trilinos_Each.hpp"
+#include "utopia_trilinos_Eval_Factory.hpp"
+#include "utopia_trilinos_ForwardDeclarations.hpp"
+#include "utopia_trilinos_RowView.hpp"
+#include "utopia_trilinos_Traits.hpp"
+#include "utopia_trilinos_Types.hpp"
+#include "utopia_trilinos_solvers.hpp"
+
+// optimizations
 #include "utopia_trilinos_Eval_RAP.hpp"
 
-//FIXME this should not be necessary
-#include "utopia_trilinos_Each_impl.hpp"
-#include "utopia_kokkos_Eval_MultiReduce.hpp"
-#include "utopia_kokkos_ParallelEach.hpp"
-#include "utopia_kokkos_Eval_Reduce.hpp"
+// FIXME this should not be necessary
 #include "utopia_kokkos_Eval_Binary.hpp"
+#include "utopia_kokkos_Eval_MultiReduce.hpp"
+#include "utopia_kokkos_Eval_Reduce.hpp"
 #include "utopia_kokkos_Eval_Unary.hpp"
 
+#include "utopia_Tpetra_Matrix_impl.hpp"
+#include "utopia_Tpetra_Vector_impl.hpp"
 
-//FIXME re-introduce later
+//#include "utopia_kokkos_ParallelEach.hpp"
+// #include "utopia_trilinos_Each_impl.hpp"
+
+// FIXME re-introduce later
 // #include "utopia_trilinos_Eval_Distance.hpp"
 
-
-#endif //WITH_TRILINOS
-#endif //UTOPIA_TRILINOS_HPP
+#endif  // WITH_TRILINOS
+#endif  // UTOPIA_TRILINOS_HPP

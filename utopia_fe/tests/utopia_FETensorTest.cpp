@@ -1,28 +1,27 @@
 #include "utopia_FETensorTest.hpp"
 
-#include "utopia_ui.hpp"
 #include "utopia_SymbolicFunction.hpp"
+#include "utopia_ui.hpp"
 
-#include "utopia_UIFunctionSpace.hpp"
+#include "utopia_Flow.hpp"
+#include "utopia_MeshTransferOperator.hpp"
 #include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
-#include "utopia_MeshTransferOperator.hpp"
-#include "utopia_Flow.hpp"
 
 #include "utopia_FEEval_Local.hpp"
 #include "utopia_libmesh_AssembleLocal.hpp"
 
-#include "utopia_libmesh.hpp"
 #include "libmesh/mesh_generation.h"
+#include "utopia_libmesh.hpp"
 
-#include "libmesh/mesh_refinement.h"
 #include "libmesh/boundary_mesh.h"
+#include "libmesh/mesh_refinement.h"
 
 namespace utopia {
 
-    void FETensorTest::run(Input &in)
-    {
+    void FETensorTest::run(Input &in) {
         std::cout << "[FETensorTest]" << std::endl;
         using Space = utopia::LibMeshFunctionSpace;
         using FE = utopia::FiniteElement<Space>;
@@ -42,11 +41,11 @@ namespace utopia {
         ////////////////////////////////////////////////
         ////////////////////////////////////////////////
 
-        //Global tensors
+        // Global tensors
         USparseMatrix A;
         UVector rhs, x, forcing_term;
 
-        //Local tensors
+        // Local tensors
         FormVectord g;
         FormScalard f;
         FormVectord alpha_g;
@@ -55,45 +54,41 @@ namespace utopia {
         std::cout << "ASSEMBLY begin" << std::endl;
         Chrono c;
         c.start();
-            
-        utopia::assemble(
-            V,
-            //FIXME
-            inner(grad(trial(V)), grad(test(V))) * dX,
-            A,
-            [&](FE &element, USerialMatrix &mat) {
-                //Symbolic
-                auto u = trial(element);
 
-                dx  = measure(element);
-                g   = grad(u);
-                alpha_g = 0.5 * g;
-                mat = form2(alpha_g, g, dx);
-            }
-        );
+        utopia::assemble(V,
+                         // FIXME
+                         inner(grad(trial(V)), grad(test(V))) * dX,
+                         A,
+                         [&](FE &element, USerialMatrix &mat) {
+                             // Symbolic
+                             auto u = trial(element);
 
-        utopia::assemble(
-            V,
-            //FIXME
-            inner(coeff(0.0), test(V)) * dX,
-            rhs,
-            [&](FE &element, USerialVector &vec) {
-                //Symbolic
-                auto u = trial(element);
+                             dx = measure(element);
+                             g = grad(u);
+                             alpha_g = 0.5 * g;
+                             mat = form2(alpha_g, g, dx);
+                         });
 
-                //Symbolic to Numeric conversion
-                f = u;
+        utopia::assemble(V,
+                         // FIXME
+                         inner(coeff(0.0), test(V)) * dX,
+                         rhs,
+                         [&](FE &element, USerialVector &vec) {
+                             // Symbolic
+                             auto u = trial(element);
 
-                f *= 0.0;
-                dx  = measure(element);
-                vec = form1(f, dx);
-            }
-        );
+                             // Symbolic to Numeric conversion
+                             f = u;
+
+                             f *= 0.0;
+                             dx = measure(element);
+                             vec = form1(f, dx);
+                         });
 
         c.stop();
 
         std::cout << "ASSEMBLY end: " << c << std::endl;
-        if(no_solve) return;
+        if (no_solve) return;
 
         x = local_zeros(local_size(A).get(0));
         forcing_term = local_zeros(local_size(x));
@@ -109,4 +104,4 @@ namespace utopia {
         write("rhs.e", V, rhs);
         write("sol.e", V, x);
     }
-}
+}  // namespace utopia

@@ -3,17 +3,13 @@
 
 namespace utopia {
 
-    template<class Expr>
+    template <class Expr>
     class Simplify {
     public:
-        typedef Expr Type;
+        using Type = Expr;
 
-        inline static const Expr &make(const Expr &expr)
-        {
-            return expr;
-        }
+        inline static const Expr &make(const Expr &expr) { return expr; }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_SIMPLIFY_HPP
-
+#endif  // UTOPIA_SIMPLIFY_HPP

@@ -1,10 +1,10 @@
 #ifndef UTOPIA_APP_REGISTRY_H
 #define UTOPIA_APP_REGISTRY_H
 
-#include <map>
-#include <string>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <string>
 
 #include "utopia_ActionRegistry.hpp"
 
@@ -14,7 +14,7 @@ namespace utopia {
     public:
         using Count = long;
 
-        typedef void (*RunApp)();
+        using RunApp = void (*)();
 
         static char add_app(const std::string &app_name, RunApp run_app);
 
@@ -31,7 +31,6 @@ namespace utopia {
         ActionRegistry apps_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_APP_REGISTRY_H
-
+#endif  // UTOPIA_APP_REGISTRY_H

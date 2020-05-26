@@ -7,24 +7,21 @@
 // #include "utopia_Evaluate.hpp"
 // #endif //WITH_OPENCL
 
-
 namespace utopia {
-    template<class Action>
+    template <class Action>
     class TreeNavigator {
     public:
-        template<class Derived>
-        void visit(const Expression<Derived> &expr)
-        {
-        #ifndef NDEBUG
+        template <class Derived>
+        void visit(const Expression<Derived> &expr) {
+#ifndef NDEBUG
             ScopedRecursionCounter src(n_recursions_);
             assert(src.good() && "TreeNavigator: accept method must be implented in Derived class");
-        #endif //NDEBUG
+#endif  // NDEBUG
             visit(expr.derived());
         }
 
-        template<class InnerExpr, class Operation>
-        void visit(const Unary<InnerExpr, Operation> &expr)
-        {
+        template <class InnerExpr, class Operation>
+        void visit(const Unary<InnerExpr, Operation> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -36,9 +33,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class InnerExpr>
-        void visit(const Transposed<InnerExpr> &expr)
-        {
+        template <class InnerExpr>
+        void visit(const Transposed<InnerExpr> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -50,9 +46,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<typename T>
-        void visit(const Number<T> &expr)
-        {
+        template <typename T>
+        void visit(const Number<T> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -61,9 +56,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class Left, class Right, class Operation>
-        void visit(const Binary<Left, Right, Operation> &expr)
-        {
+        template <class Left, class Right, class Operation>
+        void visit(const Binary<Left, Right, Operation> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -79,9 +73,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class Left, class Right>
-        void visit(const Multiply<Left, Right> &expr)
-        {
+        template <class Left, class Right>
+        void visit(const Multiply<Left, Right> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -97,9 +90,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class Derived, int Order>
-        void visit(const Tensor<Derived, Order> &expr)
-        {
+        template <class Derived, int Order>
+        void visit(const Tensor<Derived, Order> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -108,9 +100,8 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        template<class Expr, int Number>
-        void visit(const Variable<Expr, Number> &expr)
-        {
+        template <class Expr, int Number>
+        void visit(const Variable<Expr, Number> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -119,26 +110,24 @@ namespace utopia {
             post_intercept(expr);
         }
 
-// #ifdef WITH_OPENCL
-        template<class Expr, int Order>
-        void visit(const Evaluate<Expr, Order> &expr)
-        {
+        // #ifdef WITH_OPENCL
+        template <class Expr, int Order>
+        void visit(const Evaluate<Expr, Order> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
 
-            //evaluate is a non terminal symbol
-            if(!prune_evaluate_branch_) visit(expr.expr());
+            // evaluate is a non terminal symbol
+            if (!prune_evaluate_branch_) visit(expr.expr());
 
             action_.post_order_visit(expr);
 
             post_intercept(expr);
         }
-// #endif //WITH_OPENCL
+        // #endif //WITH_OPENCL
 
-        template<class InnerExpr, class Operation>
-        void visit(const Reduce<InnerExpr, Operation> &expr)
-        {
+        template <class InnerExpr, class Operation>
+        void visit(const Reduce<InnerExpr, Operation> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -168,9 +157,8 @@ namespace utopia {
         //     post_intercept(expr);
         // }
 
-        template<class Type, int Order>
-        void visit(const Factory<Type, Order> &expr)
-        {
+        template <class Type, int Order>
+        void visit(const Factory<Type, Order> &expr) {
             pre_intercept(expr);
 
             action_.pre_order_visit(expr);
@@ -181,48 +169,29 @@ namespace utopia {
 
         class ScopedRecursionCounter {
         public:
-            inline ScopedRecursionCounter(int &n_recursions)
-            : n_recursions_(n_recursions)
-            {}
+            inline ScopedRecursionCounter(int &n_recursions) : n_recursions_(n_recursions) {}
 
-            inline ~ScopedRecursionCounter()
-            {
-                --n_recursions_;
-            }
+            inline ~ScopedRecursionCounter() { --n_recursions_; }
 
-            inline bool good() const
-            {
-                return n_recursions_ == 1;
-            }
+            inline bool good() const { return n_recursions_ == 1; }
 
         private:
             int &n_recursions_;
         };
 
         TreeNavigator(Action action)
-        : action_(action), n_recursions_(0), verbose_(false), prune_evaluate_branch_(false)
-        {}
+            : action_(action), n_recursions_(0), verbose_(false), prune_evaluate_branch_(false) {}
 
-        void setVerbose(const bool verbose)
-        {
-            verbose_ = verbose;
-        }
+        void setVerbose(const bool verbose) { verbose_ = verbose; }
 
-        void set_prune_evaluate_branch(const bool value)
-        {
-            prune_evaluate_branch_ = value;
-        }
+        void set_prune_evaluate_branch(const bool value) { prune_evaluate_branch_ = value; }
 
-        template<class Expr>
-        void pre_intercept(const Expr &/*expr*/)
-        {
+        template <class Expr>
+        void pre_intercept(const Expr & /*expr*/) {}
 
-        }
-
-        template<class Expr>
-        void post_intercept(const Expr &expr)
-        {
-            if(verbose_) std::cout << "visited " << expr.get_class() << std::endl;
+        template <class Expr>
+        void post_intercept(const Expr &expr) {
+            if (verbose_) std::cout << "visited " << expr.get_class() << std::endl;
         }
 
     private:
@@ -232,17 +201,15 @@ namespace utopia {
         bool prune_evaluate_branch_;
     };
 
-    template<class Action>
-    TreeNavigator<const Action &> make_nav(const Action &action)
-    {
+    template <class Action>
+    TreeNavigator<const Action &> make_nav(const Action &action) {
         return TreeNavigator<const Action &>(action);
     }
 
-    template<class Action>
-    TreeNavigator<Action &> make_nav(Action &action)
-    {
+    template <class Action>
+    TreeNavigator<Action &> make_nav(Action &action) {
         return TreeNavigator<Action &>(action);
     }
-}
+}  // namespace utopia
 
-#endif //UTOPIA_TREE_NAVIGATOR_HPP
+#endif  // UTOPIA_TREE_NAVIGATOR_HPP

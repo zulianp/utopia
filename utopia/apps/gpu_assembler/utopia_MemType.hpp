@@ -3,12 +3,12 @@
 
 namespace utopia {
 
-    template<typename...>
+    template <typename...>
     class Uniform {};
 
-    template<typename...>
+    template <typename...>
     class Varying {};
 
-}
+}  // namespace utopia
 
 #endif

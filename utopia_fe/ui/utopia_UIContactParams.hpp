@@ -1,11 +1,11 @@
 #ifndef UTOPIA_UI_CONTACT_PARAMS_HPP
 #define UTOPIA_UI_CONTACT_PARAMS_HPP
 
-#include "utopia_ui.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_ui.hpp"
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
 namespace utopia {
 
@@ -25,7 +25,6 @@ namespace utopia {
         bool use_pg;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UI_CONTACT_PARAMS_HPP
-
+#endif  // UTOPIA_UI_CONTACT_PARAMS_HPP

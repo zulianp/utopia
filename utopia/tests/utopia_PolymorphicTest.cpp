@@ -1,20 +1,21 @@
-#include "utopia_Testing.hpp"
-#include "utopia.hpp"
-#include <string>
 #include <cassert>
+#include <string>
+#include "utopia.hpp"
+#include "utopia_Testing.hpp"
 
-#include "utopia_petsc.hpp"
-#include "utopia_AbstractVector.hpp"
 #include "utopia_AbstractLinearSolver.hpp"
+#include "utopia_AbstractVector.hpp"
 #include "utopia_ObjectFactory.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_impl.hpp"
 
 namespace utopia {
 
-//Register types
+// Register types
 #ifdef WITH_PETSC
 
-    //FIXME make it so that also includes utopia front-end solvers
+    // FIXME make it so that also includes utopia front-end solvers
     using PetscLinearSolver = utopia::KSPSolver<PetscMatrix, PetscVector>;
 
     UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
@@ -27,56 +28,53 @@ namespace utopia {
 
     class PolymorphicTest final {
     public:
-        using Scalar               = typename Traits<PetscVector>::Scalar;
-        using SizeType             = typename Traits<PetscVector>::SizeType;
+        using Scalar = typename Traits<PetscVector>::Scalar;
+        using SizeType = typename Traits<PetscVector>::SizeType;
 
-        using DefaultFactory       = utopia::AlgebraFactory<Scalar, SizeType>;
+        using DefaultFactory = utopia::AlgebraFactory<Scalar, SizeType>;
 
-        //base classes
-        using AbstractVector       = utopia::AbstractVector<Scalar, SizeType>;
-        using AbstractMatrix       = utopia::AbstractMatrix<Scalar, SizeType>;
+        // base classes
+        using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
+        using AbstractMatrix = utopia::AbstractMatrix<Scalar, SizeType>;
         using AbstractLinearSolver = utopia::AbstractLinearSolver<Scalar, SizeType>;
 
-        void convenience_wrapper()
-        {
+        void convenience_wrapper() {
             const SizeType n = 10;
 
 #ifdef WITH_TRILINOS
 #ifdef UTOPIA_TPETRA_SIZE_TYPE
-            //if types are the same TirlinosFactory == DefaultFactory
+            // if types are the same TirlinosFactory == DefaultFactory
             InputParameters params;
             params.set("default-backend", "trilinos");
             DefaultFactory::init(params);
 
-#endif //UTOPIA_TPETRA_SIZE_TYPE
-#endif //WITH_TRILINOS
+#endif  // UTOPIA_TPETRA_SIZE_TYPE
+#endif  // WITH_TRILINOS
 
             auto x = DefaultFactory::new_vector();
             x->values(n, 2.0);
 
-            auto m = unique_to_shared(
-                DefaultFactory::new_matrix()
-            );
+            auto m = unique_to_shared(DefaultFactory::new_matrix());
 
-            if(m) {
+            if (m) {
                 m->identity({n, n}, 2.0);
 
                 auto y = DefaultFactory::new_vector();
                 m->apply(*x, *y);
 
                 Scalar y_n = y->norm2();
-                utopia_test_assert(approxeq(std::sqrt(n*16.0), y_n, 1e-8));
+                utopia_test_assert(approxeq(std::sqrt(n * 16.0), y_n, 1e-8));
 
                 auto s = DefaultFactory::new_linear_solver();
-                
+
                 // InputParameters sol_params;
                 // sol_params.set("verbose", true);
                 // s->read(sol_params);
 
-                //set initial guess to 0
+                // set initial guess to 0
                 x->set(0.0);
 
-                //or call s->solve(*m, *x, *y); if applied only once for m
+                // or call s->solve(*m, *x, *y); if applied only once for m
                 s->update(m);
                 s->apply(*y, *x);
 
@@ -92,19 +90,12 @@ namespace utopia {
             }
         }
 
-        void run()
-        {
-           UTOPIA_RUN_TEST(convenience_wrapper);
-        }
+        void run() { UTOPIA_RUN_TEST(convenience_wrapper); }
     };
 
-    static void polymorphic()
-    {
-        PolymorphicTest().run();
-
-    }
+    static void polymorphic() { PolymorphicTest().run(); }
 
     UTOPIA_REGISTER_TEST_FUNCTION(polymorphic);
 
-#endif //WITH_PETSC
-}
+#endif  // WITH_PETSC
+}  // namespace utopia

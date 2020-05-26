@@ -6,11 +6,13 @@ ENV CXX clang++
 RUN apk update
 RUN apk upgrade
 RUN apk add --no-cache \
-            clang curl build-base gfortran perl cmake python linux-headers lapack-dev valgrind-dev gdb
+            clang curl build-base gfortran perl cmake python linux-headers lapack-dev valgrind-dev gdb blas-dev git
 
 #############################################################################
 
 RUN cd /tmp/ && curl -L http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.9.tar.gz| tar xz
+
+#RUN cd /tmp/ && git clone -b maint https://gitlab.com/petsc/petsc.git petsc
 
 RUN cd /tmp/ && cd `ls | grep petsc` && \
     ./configure PETSC_ARCH=dorcker-opt \
@@ -23,7 +25,8 @@ RUN cd /tmp/ && cd `ls | grep petsc` && \
                 --download-parmetis \
                 --download-mumps \
                 --download-scalapack \
-                --download-hypre
+                --download-hypre \
+                --with-debugging=0
 
 RUN cd /tmp/ && cd `ls | grep petsc` && \
     make && \

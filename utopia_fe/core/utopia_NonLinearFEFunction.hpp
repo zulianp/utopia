@@ -6,7 +6,8 @@
 // namespace utopia
 // {
 //     /**
-//      * @brief      Base class for Nonlinear NonLinearFEFunction. All application context needed by solver is usually provided inside of this functions.
+//      * @brief      Base class for Nonlinear NonLinearFEFunction. All application context needed by solver is usually
+//      provided inside of this functions.
 //      *             In optimization settings, user needs to supply value(energy), gradient, hessian.
 //      *
 //      * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ...
@@ -17,7 +18,6 @@
 // //     class NonLinearFEFunction  {
 // //     // public:
 // //     //     DEF_UTOPIA_SCALAR(Matrix)
-
 
 // //     //     NonLinearFEFunction(const LHS &lhs, const RHS &rhs)
 // //     //     : lhs_(lhs), rhs_(rhs)
@@ -35,7 +35,6 @@
 // //     //         //assemble rhs
 // //     //         return false;
 // //     //     }
-
 
 // //     //     virtual bool hessian(const Vector &x, Matrix &H) const
 // //     //     {

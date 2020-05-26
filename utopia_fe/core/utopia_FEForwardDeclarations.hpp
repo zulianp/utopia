@@ -8,41 +8,65 @@ namespace utopia {
     class FEExpression;
     class Mesh;
 
-    template<class> class Coefficient;
-    template<class> class Curl;
-    template<class> class DifferentialOperator;
-    template<class> class Divergence;
-    template<class> class FormExpressions;
-    template<class> class FunctionSpace;
-    template<class> class Gradient;
-    template<class> class Integral;
-    template<class> class TestFunction;
-    template<class> class TrialFunction;
-    template<class, class> class BasisFunction;
-    template<class> class BlockVar;
-    template<class> class Dual;
+    template <class>
+    class Coefficient;
+    template <class>
+    class Curl;
+    template <class>
+    class DifferentialOperator;
+    template <class>
+    class Divergence;
+    template <class>
+    class FormExpressions;
+    template <class>
+    class FunctionSpace;
+    template <class>
+    class Gradient;
+    template <class>
+    class Integral;
+    template <class>
+    class TestFunction;
+    template <class>
+    class TrialFunction;
+    template <class, class>
+    class BasisFunction;
+    template <class>
+    class BlockVar;
+    template <class>
+    class Dual;
 
-    template<class, class> class Interpolate;
-    template<class, int> class TimeDerivative;
-    template<class> class ProductFunctionSpace;
+    template <class, class>
+    class Interpolate;
+    template <class, int>
+    class TimeDerivative;
+    template <class>
+    class ProductFunctionSpace;
 
-    template<int> class AssemblyContext;
+    template <int>
+    class AssemblyContext;
 
-    template<class ...> class Equations;
-    template<class ...> class FEConstraints;
-    template<class, class> class ContextFunction;
-    template<typename,int> class ConstantCoefficient;
+    template <class...>
+    class Equations;
+    template <class...>
+    class FEConstraints;
+    template <class, class>
+    class ContextFunction;
+    template <typename, int>
+    class ConstantCoefficient;
 
-    template<class Expr, class Out_, int Order_, class Fun>
+    template <class Expr, class Out_, int Order_, class Fun>
     class Filter;
 
-    template<class> class LinearIntegrator;
-    template<class> class BilinearIntegrator;
-    template<class> class EquationIntegrator;
+    template <class>
+    class LinearIntegrator;
+    template <class>
+    class BilinearIntegrator;
+    template <class>
+    class EquationIntegrator;
 
-    template<class,int> class FiniteElement;
+    template <class, int>
+    class FiniteElement;
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FE_FORWARD_DECLARATIONS_HPP
-
+#endif  // UTOPIA_FE_FORWARD_DECLARATIONS_HPP

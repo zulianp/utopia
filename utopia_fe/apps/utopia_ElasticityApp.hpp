@@ -1,9 +1,8 @@
 #ifndef UTOPIA_ELASTICITY_APP
 #define UTOPIA_ELASTICITY_APP
 
-#include "utopia_FEApp.hpp"
 #include <string>
-
+#include "utopia_FEApp.hpp"
 
 namespace utopia {
 
@@ -11,12 +10,8 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-elasticity";
-        }
+        inline static std::string command() { return "-elasticity"; }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_ELASTICITY_APP
+#endif  // UTOPIA_ELASTICITY_APP

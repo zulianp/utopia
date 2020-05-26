@@ -5,14 +5,11 @@
 
 namespace utopia {
 
-    template<int BackendType>
+    template <int BackendType>
     class FEBackend {
     public:
-        FEBackend()
-        {
-            static_assert(BackendType < HOMEMADE, "No Backend implemented");
-        }
+        FEBackend() { static_assert(BackendType < HOMEMADE, "No Backend implemented"); }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FE_BACKEND_HPP
+#endif  // UTOPIA_FE_BACKEND_HPP

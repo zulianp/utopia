@@ -1,65 +1,60 @@
 #ifndef UTOPIA_MATRIX_FREE_LINEAR_SOLVER_HPP
 #define UTOPIA_MATRIX_FREE_LINEAR_SOLVER_HPP
 
+#include "utopia_Instance.hpp"
+#include "utopia_Logger.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_SolverForwardDeclarations.hpp"
 
 namespace utopia {
 
-    template<class Vector>
-    class MatrixFreeLinearSolver :  virtual public Configurable,
-                                    virtual public Clonable,
-                                    virtual public Preconditioner<Vector>
-    {
-        public:
-            using Preconditioner<Vector>::init_memory;
+    template <class Vector>
+    class MatrixFreeLinearSolver : virtual public Configurable,
+                                   virtual public Clonable,
+                                   virtual public Preconditioner<Vector> {
+    public:
+        using Preconditioner<Vector>::init_memory;
 
-            virtual ~MatrixFreeLinearSolver() {}
-            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
+        ~MatrixFreeLinearSolver() override = default;
+        virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
 
-            /*! @brief if overriden the subclass has to also call this one first
-             */
-            virtual void update(const Operator<Vector> & /*A*/) override = 0; //{ UTOPIA_UNUSED(A); }
+        /*! @brief if overriden the subclass has to also call this one first
+         */
+        void update(const Operator<Vector> & /*A*/) override = 0;  //{ UTOPIA_UNUSED(A); }
 
-            virtual MatrixFreeLinearSolver * clone() const override = 0;
+        MatrixFreeLinearSolver *clone() const override = 0;
 
-            virtual void read(Input &/*in*/) override{ }
-            virtual void print_usage(std::ostream & /*os*/) const override{ }
-
+        void read(Input & /*in*/) override {}
+        void print_usage(std::ostream & /*os*/) const override {}
     };
 
-    template<class Matrix, class Vector>
-    class OperatorBasedLinearSolver :   public MatrixFreeLinearSolver<Vector>,
-                                        public PreconditionedSolver<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class OperatorBasedLinearSolver : public MatrixFreeLinearSolver<Vector>,
+                                      public PreconditionedSolver<Matrix, Vector> {
     public:
         using MatrixFreeLinearSolver<Vector>::update;
         using PreconditionedSolver<Matrix, Vector>::update;
         using MatrixFreeLinearSolver<Vector>::solve;
 
-        virtual ~OperatorBasedLinearSolver() {}
+        ~OperatorBasedLinearSolver() override = default;
 
-        virtual bool solve(const Matrix &A, const Vector &b, Vector &x) override
-        {
+        bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
             return solve(operator_cast<Vector>(A), b, x);
         }
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
+        void update(const std::shared_ptr<const Matrix> &op) override {
             PreconditionedSolver<Matrix, Vector>::update(op);
             update(operator_cast<Vector>(*op));
         }
 
-        virtual bool smooth(const Vector &rhs, Vector &x) override
-        {
+        bool smooth(const Vector &rhs, Vector &x) override {
             SizeType temp = this->max_it();
             this->max_it(this->sweeps());
             solve(operator_cast<Vector>(*this->get_operator()), rhs, x);
             this->max_it(temp);
             return true;
         }
-
 
         /**
          * @brief      Solution routine after update.
@@ -69,84 +64,65 @@ namespace utopia {
          *
          * @return true if the linear system has been solved up to required tollerance. False otherwise
          */
-        bool apply(const Vector &b, Vector &x) override
-        {
+        bool apply(const Vector &b, Vector &x) override {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        virtual OperatorBasedLinearSolver * clone() const override =0;
+        OperatorBasedLinearSolver *clone() const override = 0;
 
-        virtual void read(Input &in) override
-        {
+        void read(Input &in) override {
             MatrixFreeLinearSolver<Vector>::read(in);
             PreconditionedSolver<Matrix, Vector>::read(in);
         }
 
-        virtual void print_usage(std::ostream &os) const override
-        {
+        void print_usage(std::ostream &os) const override {
             MatrixFreeLinearSolver<Vector>::print_usage(os);
             PreconditionedSolver<Matrix, Vector>::print_usage(os);
         }
     };
 
+    template <class Vector>
+    class EmptyPrecondMatrixFreeLinearSolver final : public MatrixFreeLinearSolver<Vector> {
+    public:
+        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) { precond_ = precond; }
 
-    template<class Vector>
-    class EmptyPrecondMatrixFreeLinearSolver final: public MatrixFreeLinearSolver<Vector>
-    {
-        public:
-            void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond)
-            {
-                precond_ = precond;
+        bool solve(const Operator<Vector> & /*A*/, const Vector &rhs, Vector &sol) override { return apply(rhs, sol); }
+
+        bool apply(const Vector &rhs, Vector &sol) override {
+            if (precond_) {
+                precond_->apply(rhs, sol);
+            } else {
+                utopia_warning("EmptyPrecondMatrixFreeLinearSolver: preconditioner is missing \n");
             }
+            return true;
+        }
 
-            bool solve(const Operator<Vector> &/*A*/, const Vector &rhs, Vector &sol) override
-            {
-                return apply(rhs, sol);
+        EmptyPrecondMatrixFreeLinearSolver *clone() const override {
+            return new EmptyPrecondMatrixFreeLinearSolver(*this);
+        }
+
+        void read(Input &in) override {
+            MatrixFreeLinearSolver<Vector>::read(in);
+            if (precond_) {
+                in.get("precond", *precond_);
             }
+        }
 
-            bool apply(const Vector &rhs, Vector &sol) override
-            {
-                if(precond_){
-                    precond_->apply(rhs, sol);
-                }
-                else{
-                    utopia_warning("EmptyPrecondMatrixFreeLinearSolver: preconditioner is missing \n");
-                }
-                return true;
+        void update(const Operator<Vector> &A) override {
+            if (precond_) {
+                precond_->update(A);
             }
+        }
 
-            EmptyPrecondMatrixFreeLinearSolver * clone() const override
-            {
-                return new EmptyPrecondMatrixFreeLinearSolver(*this);
-            }
+        void print_usage(std::ostream &os) const override {
+            MatrixFreeLinearSolver<Vector>::print_usage(os);
+            this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-");
+        }
 
-            void read(Input &in) override
-            {
-                MatrixFreeLinearSolver<Vector>::read(in);
-                if(precond_){
-                    in.get("precond", *precond_);
-                }
-            }
-
-            virtual void update(const Operator<Vector> &A) override
-            {
-                if(precond_)
-                {
-                    precond_->update(A);
-                }
-            }
-
-            void print_usage(std::ostream &os) const override
-            {
-                MatrixFreeLinearSolver<Vector>::print_usage(os);
-                this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-");
-            }
-
-        private:
-            std::shared_ptr<Preconditioner<Vector> > precond_;
-
+    private:
+        std::shared_ptr<Preconditioner<Vector> > precond_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_MATRIX_FREE_LINEAR_SOLVER_HPP
+#endif  // UTOPIA_MATRIX_FREE_LINEAR_SOLVER_HPP

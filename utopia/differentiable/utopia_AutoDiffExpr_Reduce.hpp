@@ -1,40 +1,34 @@
 #ifndef UTOPIA_AUTO_DIFF_REDUCE_HPP
 #define UTOPIA_AUTO_DIFF_REDUCE_HPP
 
-#include "utopia_Expressions.hpp"
 #include "utopia_AutoDiffExpr.hpp"
-
+#include "utopia_Expressions.hpp"
 
 namespace utopia {
 
-    template<class Left, class Right>
-    class AutoDiffExpr< Reduce<
-                             Binary<Left, Right, EMultiplies>,
-                             Plus>, 1>  {
+    template <class Left, class Right>
+    class AutoDiffExpr<Reduce<Binary<Left, Right, EMultiplies>, Plus>, 1> {
     public:
-        typedef utopia::Reduce< Binary<Left, Right, EMultiplies>, Plus> Expr;
+        typedef utopia::Reduce<Binary<Left, Right, EMultiplies>, Plus> Expr;
 
-        typedef utopia::AutoDiffExpr<Left>  DiffLeft;
-        typedef utopia::AutoDiffExpr<Right> DiffRight;
+        using DiffLeft = utopia::AutoDiffExpr<Left>;
+        using DiffRight = utopia::AutoDiffExpr<Right>;
 
-        typedef typename DiffLeft::Type DLeft;
-        typedef typename DiffRight::Type DRight;
+        using DLeft = typename DiffLeft::Type;
+        using DRight = typename DiffRight::Type;
 
-        typedef utopia::Binary<Multiply<Transposed<DLeft>,  Right>,
-                               Multiply<Transposed<DRight>, Left>,
-                               Plus> ComplexType;
+        typedef utopia::Binary<Multiply<Transposed<DLeft>, Right>, Multiply<Transposed<DRight>, Left>, Plus>
+            ComplexType;
 
-        typedef utopia::Simplify<ComplexType> Sim;
-        typedef typename Sim::Type Type;
+        using Sim = utopia::Simplify<ComplexType>;
+        using Type = typename Sim::Type;
 
-        inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr)
-        {
+        inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr) {
             const auto &e = expr.expr();
-            return Sim::make(
-                        transpose(DiffLeft::make(e.left())) * e.right() +
-                        transpose(DiffRight::make(e.right())) * e.left());
+            return Sim::make(transpose(DiffLeft::make(e.left())) * e.right() +
+                             transpose(DiffRight::make(e.right())) * e.left());
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_AUTO_DIFF_REDUCE_HPP
+#endif  // UTOPIA_AUTO_DIFF_REDUCE_HPP

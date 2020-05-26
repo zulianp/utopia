@@ -1,78 +1,87 @@
 #ifndef UTOPIA_KOKKOS_OPERATIONS_HPP
 #define UTOPIA_KOKKOS_OPERATIONS_HPP
 
-#include "utopia_Operators.hpp"
-#include <Kokkos_Core.hpp>
 #include <Kokkos_ArithTraits.hpp>
+#include <Kokkos_Core.hpp>
 #include <iostream>
+#include "utopia_Operators.hpp"
 
 namespace utopia {
 
-    template<class Scalar, class Op> class KokkosOp {};
+    template <class Scalar, class Op>
+    class KokkosOp {};
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Max> {
     public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) { return (a > b) ? a : b; }
+    };
+
+    template <class Scalar>
+    class KokkosOp<Scalar, AbsMax> {
+    public:
         KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
-            return (a > b)? a : b;
+            auto aa = Kokkos::Details::ArithTraits<Scalar>::abs(a);
+            auto ab = Kokkos::Details::ArithTraits<Scalar>::abs(b);
+
+            return (aa > ab) ? aa : ab;
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Min> {
     public:
-        KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &a, const Scalar &b) const {
-            return (a < b)? a : b;
-        }
+        KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &a, const Scalar &b) const { return (a < b) ? a : b; }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Plus> {
     public:
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) { return a + b; }
+    };
+
+    template <class Scalar>
+    class KokkosOp<Scalar, AbsPlus> {
+    public:
         KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
-            return a + b;
+            auto aa = Kokkos::Details::ArithTraits<Scalar>::abs(a);
+            auto ab = Kokkos::Details::ArithTraits<Scalar>::abs(b);
+
+            return aa + ab;
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Minus> {
     public:
-        KokkosOp(){}
+        KokkosOp() {}
         KokkosOp(const Minus &) {}
-        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
-            return a - b;
-        }
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) { return a - b; }
 
-        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-            return -value;
-        }
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) { return -value; }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Divides> {
     public:
-        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
-            return a / b;
-        }
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) { return a / b; }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, IsNaNOrInf> {
     public:
         KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &val) {
-            return
-                Kokkos::Details::ArithTraits<Scalar>::isNan(val) ||
-                Kokkos::Details::ArithTraits<Scalar>::isInf(val);
+            return Kokkos::Details::ArithTraits<Scalar>::isNan(val) || Kokkos::Details::ArithTraits<Scalar>::isInf(val);
         }
 
         KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &a, const Scalar &b) {
             auto apply_a = apply(a);
             auto apply_b = apply(b);
-            return (apply_a > apply_b)? apply_a : apply_b;
+            return (apply_a > apply_b) ? apply_a : apply_b;
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Exp> {
     public:
         KokkosOp(const Exp &) {}
@@ -82,7 +91,7 @@ namespace utopia {
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Sqrt> {
     public:
         KokkosOp(const Sqrt &) {}
@@ -92,7 +101,7 @@ namespace utopia {
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Pow> {
     public:
         KokkosOp(const Pow &in) : a_(in.a_) {}
@@ -104,29 +113,25 @@ namespace utopia {
         Scalar a_;
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Reciprocal<Scalar>> {
     public:
         KokkosOp(const Reciprocal<Scalar> &in) : num_(in.numerator()) {}
 
-        KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &value) const {
-            return num_/value;
-        }
+        KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &value) const { return num_ / value; }
 
         Scalar num_;
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Pow2> {
     public:
         KokkosOp(const Pow2 &) {}
 
-        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) {
-            return value * value;
-        }
+        KOKKOS_INLINE_FUNCTION static Scalar apply(const Scalar &value) { return value * value; }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Abs> {
     public:
         KokkosOp(const Abs &) {}
@@ -136,7 +141,7 @@ namespace utopia {
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Log> {
     public:
         KokkosOp(const Log &) {}
@@ -146,7 +151,7 @@ namespace utopia {
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Sin> {
     public:
         KokkosOp(const Sin &) {}
@@ -156,7 +161,7 @@ namespace utopia {
         }
     };
 
-    template<class Scalar>
+    template <class Scalar>
     class KokkosOp<Scalar, Cos> {
     public:
         KokkosOp(const Cos &) {}
@@ -165,6 +170,6 @@ namespace utopia {
             return Kokkos::Details::ArithTraits<Scalar>::cos(value);
         }
     };
-}
+}  // namespace utopia
 
 #endif

@@ -1,0 +1,22 @@
+{
+    "app" : "petsc_phase_field_3",
+    "output-path" : "out.vts",
+    "nx" : 2,
+    "ny" : 2,
+    "nz" : 2,
+    "disp" : 0.001,
+    "with_damage" : true,
+    "use_dense_hessian" : false,
+    "check_derivatives" : true,
+    "diff_controller" : {
+        "*spacing" : 1e-8,
+        "hessian_from_grad" : false
+    },
+    "solver" : {
+        "verbose" : true,
+        "max-it" : 8,
+        "linear-solver" : {
+            "verbose" : true
+        }
+    }
+}

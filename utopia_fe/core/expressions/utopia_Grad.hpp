@@ -2,53 +2,50 @@
 #define UTOPIA_GRAD_HPP
 
 #include "utopia_DifferentialOperator.hpp"
+#include "utopia_FunctionalTraits.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
-#include "utopia_FunctionalTraits.hpp"
 // #include "utopia_Val.hpp"
 
 namespace utopia {
-    template<class Expr>
-    class Gradient : public DifferentialOperator< Gradient<Expr> >/*, public Val< Gradient<Expr> >*/ {
+    template <class Expr>
+    class Gradient : public DifferentialOperator<Gradient<Expr> > /*, public Val< Gradient<Expr> >*/ {
     public:
         static const int Order = Traits<Expr>::Order + 1;
         typedef typename Expr::Scalar Scalar;
 
         std::string get_class() const override { return "Gradient<" + expr_.get_class() + ">"; }
 
-        inline const Expr &expr() const
-        {
-            return expr_;
-        }
+        inline const Expr &expr() const { return expr_; }
 
-        Gradient(const Expr &expr)
-        : expr_(expr)
-        {}
+        Gradient(const Expr &expr) : expr_(expr) {}
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
     };
 
-    template<class Derived>
+    template <class Derived>
     inline Gradient<Derived> grad(const Expression<Derived> &expr) {
         return Gradient<Derived>(expr.derived());
     }
 
-    template<class Expr>
-    class Traits< Gradient<Expr> > : public Traits<Expr> {
+    template <class Expr>
+    class Traits<Gradient<Expr> > : public Traits<Expr> {
     public:
-        enum {
-            FILL_TYPE = utopia::FillType::DENSE
-        };
+        enum { FILL_TYPE = utopia::FillType::DENSE };
     };
 
-    template<class Expr, class AssemblyContext>
-    class FunctionalTraits<Gradient<Expr>, AssemblyContext>  {
+    template <class Expr, class AssemblyContext>
+    class FunctionalTraits<Gradient<Expr>, AssemblyContext> {
     public:
-        inline static int type(const Gradient<Expr> &expr,  const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::type(expr.expr(), ctx);  }
-        inline static int order(const Gradient<Expr> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::order(expr.expr(), ctx) - 1; }
+        inline static int type(const Gradient<Expr> &expr, const AssemblyContext &ctx) {
+            return FunctionalTraits<Expr, AssemblyContext>::type(expr.expr(), ctx);
+        }
+        inline static int order(const Gradient<Expr> &expr, const AssemblyContext &ctx) {
+            return FunctionalTraits<Expr, AssemblyContext>::order(expr.expr(), ctx) - 1;
+        }
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_GRAD_HPP
+#endif  // UTOPIA_GRAD_HPP

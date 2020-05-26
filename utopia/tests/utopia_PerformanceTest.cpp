@@ -20,13 +20,15 @@
 // 	}
 
 // 	template<class M, class V>
-// 	auto make_test_expr_3(const M &m, const V &v1,  const V &v2, const V &v3) -> decltype( abs(m * pow2(v1) + sqrt(v2) - v3) )
+// 	auto make_test_expr_3(const M &m, const V &v1,  const V &v2, const V &v3) -> decltype( abs(m * pow2(v1) +
+// sqrt(v2) - v3) )
 // 	{
 // 		return abs(m * pow2(v1) + sqrt(v2) - v3);
 // 	}
 
 // 	template<class M, class V>
-// 	auto make_test_expr_4(const M &m, const V &v1,  const V &v2, const V &v3) -> decltype( abs(transpose(0.1 * (m * m) - m) * (m) * v3) )
+// 	auto make_test_expr_4(const M &m, const V &v1,  const V &v2, const V &v3) -> decltype( abs(transpose(0.1 * (m *
+// m) - m) * (m) * v3) )
 // 	{
 // 		return abs(transpose(0.1 * (m * m) - m) * (m) * v3);
 // 	}
@@ -50,7 +52,6 @@
 // 	static const int N[] 	   = { 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000 };
 // 	static const int N_MIXED[] = { 10, 50,  100,  250, 	500,   750,   1000,   2000,   5000    };
 // 	static const int N_RUNS    = 1;
-
 
 // 	static const bool performance_test_verbose()
 // 	{
@@ -191,7 +192,6 @@
 // 				}
 // 			}
 
-
 // 			if(verbose) {
 // 				all_runs.rescale_duration(1./N_RUNS);
 // 				std::cout << experiment_name << ", vectors, " << n << ",\t" << all_runs;
@@ -235,9 +235,10 @@
 // 				c.start();
 // 				double checksum = .0;
 // 				Vector res;
-// 				res = 10. * v1 + 5. * v2; 												  checksum += fabs(res.sum());
-// 				res = (0.1 * v1.cwiseProduct(v1) - v2.cwiseProduct(v2) ) + v3.cwiseAbs(); checksum += fabs(res.sum());
-// 				c.stop();
+// 				res = 10. * v1 + 5. * v2;
+// checksum
+// += fabs(res.sum()); 				res = (0.1 * v1.cwiseProduct(v1) - v2.cwiseProduct(v2) ) +
+// v3.cwiseAbs(); checksum += fabs(res.sum()); 				c.stop();
 
 // 				if(verbose) {
 // 					if(i == 0) {
@@ -278,17 +279,18 @@
 // 			Vector v2 = Vector::Constant(n, 0.2);
 // 			Vector v3 = Vector::Constant(n, 0.3);
 
-
 // 			Chrono c, all_runs;
 // 			for(int i = 0; i < N_RUNS; ++i) {
 // 				c.start();
 // 				double checksum = .0;
 // 				Vector res;
-// 				res = (m * v1 + v2 - v3).cwiseAbs(); 							  checksum += fabs(res.sum());
-// 				res = (m * v1.cwiseProduct(v1) + v2.cwiseSqrt() - v3).cwiseAbs(); checksum += fabs(res.sum());
-// 				res = ( (0.1 * (m * m) - m).transpose() * (m) * v3 ).cwiseAbs();  checksum += fabs(res.sum());
-// 				res = (0.1 * m - m) * v1; 										  checksum += fabs(res.sum());
-// 				c.stop();
+// 				res = (m * v1 + v2 - v3).cwiseAbs();
+// checksum
+// +=
+// fabs(res.sum()); 				res = (m * v1.cwiseProduct(v1) + v2.cwiseSqrt() - v3).cwiseAbs(); checksum
+// += fabs(res.sum()); 				res = ( (0.1 * (m * m) - m).transpose() * (m) * v3 ).cwiseAbs();
+// checksum += fabs(res.sum()); 				res = (0.1 * m - m) * v1; checksum += fabs(res.sum());
+// c.stop();
 
 // 				if(verbose) {
 // 					if(i == 0) {
@@ -315,7 +317,6 @@
 // 		test_program_eigen_3_mixed("eigen3");
 // 	}
 // #endif //WITH_EIGEN_3
-
 
 // 	void run_performance_test()
 // 	{
@@ -367,7 +368,6 @@
 // 		}
 // 		run_performance_test_eigen_3();
 // #endif //WITH_EIGEN_3
-
 
 // 		//UTOPIA_UNIT_TEST_END("PerformanceTest");
 // 	}

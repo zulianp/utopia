@@ -5,13 +5,12 @@
 
 namespace utopia {
 
-    template<class Derived>
+    template <class Derived>
     class DifferentialOperator : public Expression<Derived> {
     public:
         /*virtual*/ ~DifferentialOperator() {}
     };
 
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_FE_DIFFERENTIAL_OPERATOR_HPP
+#endif  // UTOPIA_FE_DIFFERENTIAL_OPERATOR_HPP

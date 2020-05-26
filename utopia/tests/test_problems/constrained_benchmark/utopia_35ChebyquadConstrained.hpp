@@ -1,28 +1,25 @@
 #ifndef UTOPIA_SOLVER_CHEBYQUAD_35_CONSTRAINED_HPP
 #define UTOPIA_SOLVER_CHEBYQUAD_35_CONSTRAINED_HPP
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
+#include "utopia_Layout.hpp"
 #include "utopia_UnconstrainedBenchmark.hpp"
 
-
-namespace utopia
-{
-    template<class Matrix, class Vector>
-    class Chebyquad35Constrained final: public ConstrainedTestFunction<Matrix, Vector>
-    {
+namespace utopia {
+    template <class Matrix, class Vector>
+    class Chebyquad35Constrained final : public ConstrainedTestFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        Chebyquad35Constrained()
-        {
-            assert(mpi_world_size() == 1 && "does not work for parallel matrices");
+        Chebyquad35Constrained() {
+            auto v_layout = serial_layout(dim());
 
             Vector ub, lb;
-            ub = zeros(8);
-            lb = zeros(8);
+            ub.zeros(v_layout);
+            lb.zeros(v_layout);
 
             {
                 const Write<Vector> write1(ub);
@@ -50,50 +47,28 @@ namespace utopia
             this->set_box_constraints(make_box_constaints(std::make_shared<Vector>(lb), std::make_shared<Vector>(ub)));
         }
 
-        std::string name() const override
-        {
-            return "Chebyquad, bound constrained";
+        std::string name() const override { return "Chebyquad, bound constrained"; }
+
+        SizeType dim() const override { return unconstrained_.dim(); }
+
+        bool value(const Vector &x, typename Vector::Scalar &result) const override {
+            return unconstrained_.value(x, result);
         }
 
-        SizeType dim() const override
-        {
-            return unconstrained_.dim(); 
-        }
+        bool gradient(const Vector &x, Vector &g) const override { return unconstrained_.gradient(x, g); }
 
-        bool value(const Vector &x, typename Vector::Scalar &result) const override
-        {
-            return unconstrained_.value(x, result); 
-        }
+        bool hessian(const Vector &x, Matrix &H) const override { return unconstrained_.hessian(x, H); }
 
-        bool gradient(const Vector &x, Vector &g) const override
-        {
-            return unconstrained_.gradient(x, g); 
-        }
+        Vector initial_guess() const override { return unconstrained_.initial_guess(); }
 
-        bool hessian(const Vector &x, Matrix &H) const override
-        {
-            return unconstrained_.hessian(x, H); 
-        }
+        const Vector &exact_sol() const override { return unconstrained_.exact_sol(); }
 
-        Vector initial_guess() const override
-        {
-            return unconstrained_.initial_guess(); 
-        }
-
-        const Vector & exact_sol() const override
-        {
-            return unconstrained_.exact_sol();
-        }
-
-        Scalar min_function_value() const override
-        {
-            return 0.3639985e-2; 
-        }
+        Scalar min_function_value() const override { return 0.3639985e-2; }
 
     private:
-        Chebyquad35<Matrix, Vector> unconstrained_; 
+        Chebyquad35<Matrix, Vector> unconstrained_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_SOLVER_CHEBYQUAD_35_CONSTRAINED_HPP
+#endif  // UTOPIA_SOLVER_CHEBYQUAD_35_CONSTRAINED_HPP

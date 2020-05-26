@@ -1,20 +1,22 @@
 #ifndef UTOPIA_MEMORY_BASE_HPP
 #define UTOPIA_MEMORY_BASE_HPP
 
+#include "utopia_Layout.hpp"
 #include "utopia_SolutionStatus.hpp"
 
-namespace utopia
-{
+namespace utopia {
 
-    template<class Vector>
+    template <class Vector>
     class MemoryInterface {
     public:
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        
-        virtual ~MemoryInterface() {}
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Communicator = typename Traits<Vector>::Communicator;
+        using Layout = typename Traits<Vector>::Layout;
 
-        virtual void init_memory(const SizeType & ls) = 0; 
+        virtual ~MemoryInterface() = default;
+
+        virtual void init_memory(const Layout &l) = 0;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_MEMORY_BASE_HPP
+#endif  // UTOPIA_MEMORY_BASE_HPP

@@ -3,8 +3,8 @@
 // namespace utopia {
 
 // #define CHRONO_START() utopia::Chrono macro_chrono_; macro_chrono_.start();
-// #define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ << std::endl;}
-
+// #define CHRONO_END(macro_name_) { macro_chrono_.stop(); std::cout << macro_name_ << ":"<< macro_chrono_ <<
+// std::endl;}
 
 //     // static std::size_t max_nnz_x_row(const libMesh::DofMap &dof_map)
 //     // {
@@ -33,7 +33,7 @@
 //     {
 //         //scalar dofs
 //         permutation_        = std::make_shared<USparseMatrix>();
-        
+
 //         //vector dofs
 //         vector_permutation_ = std::make_shared<USparseMatrix>();
 
@@ -76,7 +76,7 @@
 //     {
 //         //scalar dofs
 //         permutation_        = std::make_shared<USparseMatrix>();
-        
+
 //         //vector dofs
 //         // vector_permutation_ = std::make_shared<USparseMatrix>();
 
@@ -115,7 +115,7 @@
 //         assert(false);
 //     }
 
-//     //let us assume that the displacement degees of freedom are consecutive 
+//     //let us assume that the displacement degees of freedom are consecutive
 //     //in the volume dofmap
 //     void LibMeshDofMapAdapter::vector_permuation_map_from_map(
 //         const std::size_t spatial_dim,
@@ -129,11 +129,12 @@
 
 //         for(std::size_t i = 0; i < n_mappings; ++i) {
 //             const std::size_t i_offset = i * spatial_dim;
-            
+
 //             for(std::size_t d = 0; d < spatial_dim; ++d) {
 //                 assert(i_offset + d < n_mappings * spatial_dim);
 //                 vector_mapping.idx[i_offset + d] = mapping.idx[i] + d;
-//                 // std::cout << "map[" << (i_offset + d) <<  "] = " << vector_mapping.idx[i_offset + d] << std::endl;;
+//                 // std::cout << "map[" << (i_offset + d) <<  "] = " << vector_mapping.idx[i_offset + d] <<
+//                 std::endl;;
 //             }
 //         }
 
@@ -203,7 +204,7 @@
 
 //             // loop through all nodes in each boundary element.
 //             for (unsigned int node = 0; node < b_elem->n_nodes(); node++) {
-                
+
 //                 // Node in boundary element.
 //                 const libMesh::Node * b_node = b_elem->node_ptr(node);
 
@@ -224,7 +225,7 @@
 //                                                         surf_sys_num,
 //                                                         surf_var_num,
 //                                                         surf_comp);
-                       
+
 //                         if(rr.inside(b_dof)){
 //                             map.idx[b_dof - rr.begin()] = v_dof;
 //                         }
@@ -282,7 +283,7 @@
 
 //             // loop through all nodes in each boundary element.
 //             for (unsigned int node = 0; node < b_elem->n_nodes(); node++) {
-                
+
 //                 // Node in boundary element.
 //                 const libMesh::Node * b_node = b_elem->node_ptr(node);
 
@@ -303,7 +304,7 @@
 //                                                         surf_sys_num,
 //                                                         surf_var_num,
 //                                                         surf_comp);
-                       
+
 //                         auto dof_it = std::find(dof_indices.begin(), dof_indices.end(), b_dof);
 //                         assert(dof_it != dof_indices.end());
 
@@ -373,7 +374,7 @@
 
 //         moonolith::Communicator comm(mesh.comm().get());
 
-//         auto n_local_dof_vol  = map.to_range_end - map.to_range_begin;            
+//         auto n_local_dof_vol  = map.to_range_end - map.to_range_begin;
 //         auto n_local_elems = mesh.n_active_local_elem();
 
 //         mat = local_sparse(n_local_dof_vol, map.from_extent(), max_nnz_);
@@ -386,7 +387,7 @@
 //         SizeType el_idx = 0;
 //         SizeType idx = map.from_range_begin;
 //         Write<USparseMatrix> w(mat);
-       
+
 //         for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it, ++el_idx) {
 //             dof_map.dof_indices(*e_it, dof_indices);
 
@@ -407,6 +408,5 @@
 
 //         CHRONO_END("element_node_dof_map_and_permutation");
 //     }
-
 
 // }

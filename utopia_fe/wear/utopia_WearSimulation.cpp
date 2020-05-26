@@ -1,7 +1,6 @@
 // #include "utopia_libmesh.hpp"
 // #include "utopia_WearSimulation.hpp"
 
-
 // #include "utopia_fe_base.hpp"
 
 // #ifndef WITH_TRILINOS_ALGEBRA
@@ -134,14 +133,16 @@
 //             if(desc_.material_name == "NeoHookean") {
 //                 material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
 //             } else if(desc_.material_name == "SaintVenantKirchoff") {
-//                 material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
+//                 material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V,
+//                 desc_.params);
 //             } else /*if(desc_.material_name == "LinearElasticity")*/ {
 //                 material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
 //             }
 
 //             if(desc_.stabilization != "none") {
-//                 std::cout << "using stabilization: " << desc_.stabilization << " mag: " << desc_.stabilization_mag << std::endl;
-//                 material = std::make_shared<StabilizedMaterial<decltype(V), USparseMatrix, UVector>>(V, desc_.stabilization_mag, material, desc_.stabilization);
+//                 std::cout << "using stabilization: " << desc_.stabilization << " mag: " << desc_.stabilization_mag <<
+//                 std::endl; material = std::make_shared<StabilizedMaterial<decltype(V), USparseMatrix, UVector>>(V,
+//                 desc_.stabilization_mag, material, desc_.stabilization);
 //             }
 
 //             /////////////////////////////////////////////////////////////////////////////
@@ -176,7 +177,6 @@
 //                 });
 //             });
 
-
 //             //This should be moved
 //             V[0].initialize();
 
@@ -188,7 +188,6 @@
 //                 material,
 //                 forcing_function
 //             );
-
 
 //             /////////////////////////////////////////////////////////////////////////////
 //             return true;
@@ -233,7 +232,6 @@
 //             if(!ElasticitySimulation::init(comm, is)) {
 //                 ok = false;
 //             }
-
 
 //             std::set<int> temp;
 //             is.get("contact", [this,&temp](Input &is) {
@@ -326,11 +324,9 @@
 //             return true;
 //         }
 
-
 //         GaitCycle gc;
 //         int n_cycles;
 //         double wear_coefficient, extrapolation_factor;
-
 
 //         virtual void describe(std::ostream &os) const override
 //         {
@@ -358,19 +354,20 @@
 //         in.init_sim(init.comm(), *is_ptr);
 //         in.describe(std::cout);
 
-
 //         auto configuration_forces = std::make_shared<ConstantForcingFunction<UVector>>();
 //         configuration_forces->value() = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
-//         auto configuration_forced_material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(in.material, configuration_forces);
+//         auto configuration_forced_material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(in.material,
+//         configuration_forces);
 
 //         std::shared_ptr<ContactSolverT> solver;
 //         std::shared_ptr<TransientContactSolverT> transient_solver;
 //         if(in.is_steady) {
-//             solver = std::make_shared<ContactSolverT>(make_ref(in.V), configuration_forced_material, in.contact_params);
+//             solver = std::make_shared<ContactSolverT>(make_ref(in.V), configuration_forced_material,
+//             in.contact_params);
 //         } else {
 //             double dt = in.gc.conf().dt() / in.n_transient_steps;
-//             transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), configuration_forced_material, dt, in.contact_params);
-//             solver = transient_solver;
+//             transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V),
+//             configuration_forced_material, dt, in.contact_params); solver = transient_solver;
 //         }
 
 //         std::cout << "n_dofs: " << in.V[0].dof_map().n_dofs() << std::endl;
@@ -385,7 +382,6 @@
 //         solver->set_tol(in.step_tol);
 //         solver->set_max_non_linear_iterations(in.max_nl_iter);
 //         solver->set_max_outer_loops(40);
-
 
 //         if(in.is_steady) {
 //             if(in.use_pg) {
@@ -416,7 +412,6 @@
 //         // solver->set_bypass_contact(true);
 //         // solver->set_max_outer_loops(10);
 
-
 //         Wear wear;
 //         wear.set_params(in.wear_coefficient, in.extrapolation_factor);
 //         wear.init_aux_system(
@@ -426,10 +421,7 @@
 //         UVector overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
 //         UVector wear_displacement = overriden_displacement;
 
-
-
 //         MechanicsState state;
-
 
 //         libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_in.e", *in.equation_systems, (1), (1));
 
@@ -462,7 +454,8 @@
 //                     sys.solution->close();
 
 //                     auto frame = ((i-1) * in.gc.conf().n_steps() + t + 1);
-//                     wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, frame, frame);
+//                     wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, frame,
+//                     frame);
 //                 }
 
 //                 apply_displacement(overriden_displacement + wear_displacement, in.V.subspace(0).dof_map(), *in.mesh);
@@ -499,7 +492,6 @@
 //                 // std::cout << "mag_stress:   " << mag_stress   << std::endl;
 //                 // std::cout << "mag_velocity: " << mag_velocity << std::endl;
 
-
 //                 //FIXME
 //                 state.t = in.gc.conf().dt() * t;
 
@@ -513,7 +505,8 @@
 
 //                 //clean-up experiment
 //                     //transform-back mesh
-//                 apply_displacement(-(overriden_displacement + wear_displacement), in.V.subspace(0).dof_map(), *in.mesh);
+//                 apply_displacement(-(overriden_displacement + wear_displacement), in.V.subspace(0).dof_map(),
+//                 *in.mesh);
 
 //                 auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
 //                 UVector temp = state.displacement + overriden_displacement + wear_displacement;
@@ -563,4 +556,3 @@
 // }
 
 // #endif //WITH_TRILINOS_ALGEBRA
-
