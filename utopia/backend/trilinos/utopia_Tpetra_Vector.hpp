@@ -70,6 +70,7 @@ namespace utopia {
 
         using Super = utopia::Tensor<TpetraVector, 1>;
         using Constructible = utopia::Constructible<Scalar, SizeType, 1>;
+        using Constructible::values;
         using Constructible::zeros;
 
         using Super::Super;

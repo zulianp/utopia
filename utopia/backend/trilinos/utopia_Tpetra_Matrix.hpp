@@ -53,6 +53,9 @@ namespace utopia {
         using ScalarArray = Traits<TpetraMatrix>::ScalarArray;
         using MatrixLayout = Traits<TpetraMatrix>::MatrixLayout;
 
+        using BLAS2Matrix<TpetraMatrix, TpetraVector>::multiply;
+        using BLAS2Matrix<TpetraMatrix, TpetraVector>::transpose_multiply;
+
         // types of Trilinos Objects
         using CrsMatrixType = Tpetra::CrsMatrix<Scalar, LocalSizeType, SizeType, Node>;
         using RCPCrsMatrixType = Teuchos::RCP<CrsMatrixType>;
