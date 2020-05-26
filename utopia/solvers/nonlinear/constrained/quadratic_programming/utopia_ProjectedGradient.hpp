@@ -23,8 +23,10 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
+        using Super = utopia::OperatorBasedQPSolver<Matrix, Vector>;
 
-        using QPSolver<Matrix, Vector>::solve;
+        using Super::solve;
+        using Super::update;
 
         ProjectedGradient() = default;
 

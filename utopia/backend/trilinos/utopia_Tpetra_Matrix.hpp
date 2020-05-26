@@ -328,6 +328,15 @@ namespace utopia {
                           Tpetra::global_size_t cols_global,
                           const Scalar factor);
 
+        void crs(const MatrixLayout &l,
+                 const Teuchos::ArrayRCP<size_t> &rowPtr,
+                 const Teuchos::ArrayRCP<LocalSizeType> &cols,
+                 const Teuchos::ArrayRCP<Scalar> &values) {
+            comm_ = l.comm();
+
+            crs_init(comm_.get(), l.local_size(0), l.local_size(1), l.size(0), l.size(1), rowPtr, cols, values);
+        }
+
         inline void read_lock() override {
             // TODO?
         }

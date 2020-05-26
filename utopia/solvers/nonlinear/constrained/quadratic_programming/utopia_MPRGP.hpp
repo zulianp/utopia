@@ -20,6 +20,9 @@ namespace utopia {
         using Super = utopia::OperatorBasedQPSolver<Matrix, Vector>;
 
     public:
+        using Super::solve;
+        using Super::update;
+
         MPGRP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {

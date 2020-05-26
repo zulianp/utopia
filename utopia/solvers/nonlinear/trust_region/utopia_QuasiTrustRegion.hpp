@@ -19,6 +19,8 @@ namespace utopia {
         using NonLinearSolver = utopia::QuasiNewtonBase<Vector>;
 
     public:
+        using utopia::QuasiNewtonBase<Vector>::init_memory;
+
         QuasiTrustRegion(const std::shared_ptr<HessianApproximation> &hessian_approx,
                          const std::shared_ptr<TRSubproblem> &tr_subproblem)
             : NonLinearSolver(hessian_approx, tr_subproblem), initialized_(false) {}

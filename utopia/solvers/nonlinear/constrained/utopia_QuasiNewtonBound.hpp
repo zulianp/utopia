@@ -30,6 +30,8 @@ namespace utopia {
         using QPSolver = utopia::MatrixFreeQPSolver<Vector>;
 
     public:
+        using utopia::QuasiNewtonBase<Vector>::init_memory;
+
         QuasiNewtonBound(const std::shared_ptr<HessianApproximation> &hessian_approx,
                          const std::shared_ptr<QPSolver> &linear_solver)
             : QuasiNewtonBase<Vector>(hessian_approx, linear_solver), initialized_(false) {}

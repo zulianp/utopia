@@ -121,6 +121,8 @@ namespace utopia {
             return solve(operator_cast<Vector>(A), b, x);
         }
 
+        void update(const Operator<Vector> &) override {}
+
         void update(const std::shared_ptr<const Matrix> &op) override {
             TRSubproblem<Matrix, Vector>::update(op);
             update(operator_cast<Vector>(*op));

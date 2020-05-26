@@ -812,6 +812,11 @@ namespace utopia {
             ghosted(comm().get(), local_size, global_size, index);
         }
 
+        inline void ghosted(const Layout &l, const PetscArray<SizeType> &index) {
+            comm_ = l.comm();
+            this->ghosted(comm_.get(), l.local_size(), l.size(), index);
+        }
+
         inline std::string get_class() const override { return "PetscVector"; }
 
         inline bool is_alias(const PetscVector &other) const {

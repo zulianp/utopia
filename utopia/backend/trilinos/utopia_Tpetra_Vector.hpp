@@ -222,6 +222,11 @@ namespace utopia {
                      const TpetraVector::SizeType &global_size,
                      const std::vector<SizeType> &ghost_index);
 
+        inline void ghosted(const Layout &l, const std::vector<SizeType> &ghost_index) {
+            comm_ = l.comm();
+            this->ghosted(comm_.get(), l.local_size(), l.size(), ghost_index);
+        }
+
         inline void axpy(const Scalar &alpha, const TpetraVector &x) override {
             implementation().update(alpha, *x.vec_, 1.);
         }

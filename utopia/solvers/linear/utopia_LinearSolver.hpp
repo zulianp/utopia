@@ -24,7 +24,7 @@ namespace utopia {
         using Super = utopia::Preconditioner<Vector>;
         using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-        // using Super::update;
+        using Super::update;
 
         ~LinearSolver() override = default;
 

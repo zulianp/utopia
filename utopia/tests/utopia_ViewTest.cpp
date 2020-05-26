@@ -333,7 +333,7 @@ namespace utopia {
             auto expr = transpose(A) + A;
             using E = decltype(expr);
 
-            DeviceNumber<Scalar> num;
+            // DeviceNumber<Scalar> num;
             using T = ChooseType<DeviceNumber<Scalar>, E, E>::Type;
 
             static_assert(Traits<T>::Order == 2, "must be 2nd order tensor");
@@ -425,7 +425,7 @@ namespace utopia {
         }
 
         void inner_test() {
-            StaticMatrix<Scalar, 2, 2> A, E;
+            StaticMatrix<Scalar, 2, 2> A;
             auto expr = 0.5 * (transpose(A) + A);
             utopia_test_assert(rows(expr) == 2);
         }
@@ -474,9 +474,11 @@ namespace utopia {
             // disp(m2);
 
             Scalar val = inner(m1, contraction(tensor_product<0, 2, 1, 3>(m1, m1), m1));
+            utopia_test_assert(val > Scalar(0.0));
             // disp(val);
 
             Tensor3x3x3x3<Scalar> t_mult = t * t;
+            UTOPIA_UNUSED(t_mult);  // FIXME make test
 
             static const int Dim = 2;
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> C, Id, actual;

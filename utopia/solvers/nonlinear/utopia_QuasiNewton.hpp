@@ -25,6 +25,8 @@ namespace utopia {
         using LinSolver = utopia::MatrixFreeLinearSolver<Vector>;
 
     public:
+        using utopia::QuasiNewtonBase<Vector>::init_memory;
+
         QuasiNewton(const std::shared_ptr<HessianApproximation> &hessian_approx,
                     const std::shared_ptr<LinSolver> &linear_solver)
             : QuasiNewtonBase<Vector>(hessian_approx, linear_solver), initialized_(false) {}
