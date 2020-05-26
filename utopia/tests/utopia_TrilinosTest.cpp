@@ -1101,9 +1101,9 @@ namespace utopia {
 
             bool ok = true;
             ok = fun_tpetra->value(x_tpetra, val_tpetra);
-            assert(ok);
+            utopia_test_assert(ok);
             ok = fun_petsc->value(x_petsc, val_petsc);
-            assert(ok);
+            utopia_test_assert(ok);
 
             utopia_test_assert(cross_backend_approxeq(x_petsc, x_tpetra));
 
@@ -1113,9 +1113,9 @@ namespace utopia {
             PetscVector grad_petsc;
 
             ok = fun_tpetra->gradient(x_tpetra, grad_tpetra);
-            assert(ok);
+            utopia_test_assert(ok);
             ok = fun_petsc->gradient(x_petsc, grad_petsc);
-            assert(ok);
+            utopia_test_assert(ok);
 
             utopia_test_assert(cross_backend_approxeq(grad_petsc, grad_tpetra));
 
@@ -1125,9 +1125,9 @@ namespace utopia {
             PetscMatrix H_petsc;
 
             ok = fun_tpetra->hessian(x_tpetra, H_tpetra);
-            assert(ok);
+            utopia_test_assert(ok);
             ok = fun_petsc->hessian(x_petsc, H_petsc);
-            assert(ok);
+            utopia_test_assert(ok);
 
             // write("H_p.m", H_petsc);
             // write("H_t.m", H_tpetra);

@@ -1,7 +1,3 @@
-//
-// Created by Alessandro Rigazzi on 22/05/15.
-//
-
 #include "utopia_Lapack.hpp"
 
 extern "C" {
@@ -22,14 +18,14 @@ namespace utopia {
             const int nrhs = 1;
             const int lda = n;
             const int ldb = n;
-            int ipiv[n];
+            std::vector<int> ipiv(n);
             int info;
 
             x = b;
 
             BlasMatrixd Atmp = A;
 
-            dgesv_(&n, &nrhs, Atmp.ptr(), &lda, ipiv, x.ptr(), &ldb, &info);
+            dgesv_(&n, &nrhs, Atmp.ptr(), &lda, &ipiv[0], x.ptr(), &ldb, &info);
             return true;
         }
     }  // namespace internals

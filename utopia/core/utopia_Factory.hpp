@@ -82,8 +82,8 @@ namespace utopia {
     class Values {
     public:
         Values() = default;
-        ;
-        Values(T value) : _value(value){};
+
+        Values(T value) : _value(value) {}
         template <typename OtherT>
         Values(const Values<OtherT> &other) {
             _value = other.value();
@@ -110,8 +110,8 @@ namespace utopia {
     class LocalValues {
     public:
         LocalValues() = default;
-        ;
-        LocalValues(T value) : _value(value){};
+
+        LocalValues(T value) : _value(value) {}
         template <typename OtherT>
         LocalValues(const LocalValues<OtherT> &other) {
             _value = other.value();
@@ -138,8 +138,8 @@ namespace utopia {
     class NNZ {
     public:
         NNZ() = default;
-        ;
-        NNZ(T nnz) : _nnz(nnz){};
+
+        NNZ(T nnz) : _nnz(nnz) {}
         template <typename OtherT>
         NNZ(const NNZ<OtherT> &other) {
             _nnz = other.nnz();
@@ -199,7 +199,7 @@ namespace utopia {
     class LocalNNZ {
     public:
         LocalNNZ() = default;
-        ;
+
         LocalNNZ(T nnz) : _nnz(nnz){};
         template <typename OtherT>
         LocalNNZ(const LocalNNZ<OtherT> &other) {

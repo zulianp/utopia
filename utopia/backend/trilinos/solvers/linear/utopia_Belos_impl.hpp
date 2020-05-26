@@ -74,7 +74,7 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
-        : impl_(utopia::make_unique<Impl>(*other.impl_)) {
+        : PreconditionedSolver(other), impl_(utopia::make_unique<Impl>(*other.impl_)) {
         // FIXME
     }
 
