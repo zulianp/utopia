@@ -56,6 +56,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(m, &array);
             err = MatRestoreRowIJ(m, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class Map, class Reduce, typename Accumulator>
@@ -93,6 +94,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class F>
@@ -167,6 +169,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class F>
@@ -204,6 +207,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class F>
@@ -331,6 +335,8 @@ namespace utopia {
         internal::transform_ijv_seqaij_impl(o, [=](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
             return op(rr.begin() + i, cols[j], v);
         });
+
+        UTOPIA_UNUSED(err);
     }
 
     template <class F>
