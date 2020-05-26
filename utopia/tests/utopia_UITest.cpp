@@ -1,35 +1,34 @@
 
-#include "utopia_UITest.hpp"
+#include "utopia_Testing.hpp"
 #include "utopia_ui.hpp"
 
 #include "utopia.hpp"
-#include "utopia_ui.hpp"
+#include "utopia_InputParameters.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_SymbolicFunction.hpp"
-#include "utopia_InputParameters.hpp"
+#include "utopia_ui.hpp"
 
 namespace utopia {
 
-    void generic_stream(Input &is)
-    {
+    void generic_stream(Input &is) {
         utopia_test_assert(is.good());
-        //TODO
+        // TODO(zulianp):
     }
 
-    void xml_stream()
-    {
+    void xml_stream() {
         Path path = Utopia::instance().get("data_path") + "/xmlsamples/xml_test.xml";
 
         auto is_ptr = open_istream(path);
         utopia_test_assert(bool(is_ptr));
 
-        if(!is_ptr) return;
+        if (!is_ptr) {
+            return;
+        }
         generic_stream(*is_ptr);
     }
 
 #ifdef WITH_TINY_EXPR
-    void symbolic_expr()
-    {
+    void symbolic_expr() {
         {
             SymbolicFunction f("x + y + z");
             double w = f.eval(1, 2, 3);
@@ -48,11 +47,9 @@ namespace utopia {
         }
     }
 
-#endif //WITH_TINY_EXPR
+#endif  // WITH_TINY_EXPR
 
-
-    void input_parameters()
-    {
+    void input_parameters() {
         InputParameters in;
         in.set("string-key", std::string("value"));
         in.set("double-key", 1.);
@@ -73,37 +70,34 @@ namespace utopia {
         int inexistent_key = -6;
         in.get("inexistent-key", inexistent_key);
         utopia_test_assert(inexistent_key == -6);
-
     }
 
-    void newton_ui()
-    {
+    void newton_ui() {
         const std::string data_path = Utopia::instance().get("data_path");
 
 #ifdef WITH_PETSC
 
-        // auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-        auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        Newton<DSMatrixd, DVectord> newton(cg);
+        // auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>();
+        auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
+        Newton<PetscMatrix, PetscVector> newton(cg);
 
 #ifdef WITH_JSON
         newton.import("Newton", data_path + "/json/default.json");
-#endif //WITH_JSON
+#endif  // WITH_JSON
 
         newton.import("Newton", data_path + "/xml/default.xml");
-#endif //WITH_PETSC
+#endif  // WITH_PETSC
     }
 
-    void run_ui_test()
-    {
-        UTOPIA_UNIT_TEST_BEGIN("UITest");
+    static void ui() {
         UTOPIA_RUN_TEST(xml_stream);
         UTOPIA_RUN_TEST(input_parameters);
         UTOPIA_RUN_TEST(newton_ui);
 #ifdef WITH_TINY_EXPR
         UTOPIA_RUN_TEST(symbolic_expr);
-#endif //WITH_TINY_EXPR
-        UTOPIA_UNIT_TEST_END("UITest");
+#endif  // WITH_TINY_EXPR
     }
 
-}
+    UTOPIA_REGISTER_TEST_FUNCTION(ui);
+
+}  // namespace utopia

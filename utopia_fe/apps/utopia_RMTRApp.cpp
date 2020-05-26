@@ -1,71 +1,59 @@
 #include "utopia_RMTRApp.hpp"
 
-#include "utopia_TransferApp.hpp"
-#include "utopia_TransferAssembler.hpp"
-#include "utopia_L2LocalAssembler.hpp"
 #include "utopia_ApproxL2LocalAssembler.hpp"
 #include "utopia_InterpolationLocalAssembler.hpp"
+#include "utopia_L2LocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
-#include "utopia_ui.hpp"
 #include "utopia_SymbolicFunction.hpp"
+#include "utopia_TransferApp.hpp"
+#include "utopia_TransferAssembler.hpp"
+#include "utopia_ui.hpp"
 
-#include "utopia_MeshTransferOperator.hpp"
-#include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_Blocks.hpp"
-#include "utopia_Eval_Blocks.hpp"
-#include "utopia_MinSurf.hpp"
 #include "utopia_Bratu.hpp"
-#include "utopia_Poisson.hpp"
+#include "utopia_Eval_Blocks.hpp"
 #include "utopia_IPTransfer.hpp"
+#include "utopia_MeshTransferOperator.hpp"
+#include "utopia_MinSurf.hpp"
+#include "utopia_Poisson.hpp"
+#include "utopia_RMTR.hpp"
+#include "utopia_assemble_volume_transfer.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
 
 namespace utopia {
 
-
     typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-
-
-    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T)
-    {
+    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T) {
         auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), true, false);
         auto local2global = std::make_shared<Local2Global>(false);
 
         TransferAssembler transfer_assembler(assembler, local2global);
 
-        std::vector< std::shared_ptr<USparseMatrix> > mats;
-        if(!transfer_assembler.assemble(
-                                        make_ref(from.mesh()),
-                                        make_ref(from.dof_map()),
-                                        make_ref(to.mesh()),
-                                        make_ref(to.dof_map()),
-                                        mats)) {
+        std::vector<std::shared_ptr<USparseMatrix>> mats;
+        if (!transfer_assembler.assemble(
+                make_ref(from.mesh()), make_ref(from.dof_map()), make_ref(to.mesh()), make_ref(to.dof_map()), mats)) {
             return false;
         }
 
         UVector d = sum(*mats[0], 1);
-        T = diag(1./d) * (*mats[0]);
+        T = diag(1. / d) * (*mats[0]);
         double sum_T = sum(T);
         std::cout << sum_T << std::endl;
         return true;
     }
 
-    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T)
-    {
+    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T) {
         auto assembler = std::make_shared<InterpolationLocalAssembler>(from.mesh().mesh_dimension());
         auto local2global = std::make_shared<Local2Global>(true);
 
         TransferAssembler transfer_assembler(assembler, local2global);
 
-        std::vector< std::shared_ptr<USparseMatrix> > mats;
-        if(!transfer_assembler.assemble(
-                                        make_ref(from.mesh()),
-                                        make_ref(from.dof_map()),
-                                        make_ref(to.mesh()),
-                                        make_ref(to.dof_map()),
-                                        mats)) {
+        std::vector<std::shared_ptr<USparseMatrix>> mats;
+        if (!transfer_assembler.assemble(
+                make_ref(from.mesh()), make_ref(from.dof_map()), make_ref(to.mesh()), make_ref(to.dof_map()), mats)) {
             return false;
         }
 
@@ -73,10 +61,8 @@ namespace utopia {
         return true;
     }
 
-
-    static void refine(const int n_refs, libMesh::MeshBase &mesh)
-    {
-        if(n_refs <= 0) return;
+    static void refine(const int n_refs, libMesh::MeshBase &mesh) {
+        if (n_refs <= 0) return;
 
         libMesh::MeshRefinement mesh_refinement(mesh);
         mesh_refinement.make_flags_parallel_consistent();
@@ -85,9 +71,7 @@ namespace utopia {
 
     class RMTRApp::SimulationInput : public Configurable {
     public:
-
-        void read(Input &is) override
-        {
+        void read(Input &is) override {
             try {
                 is.get("mesh", mesh_type);
                 path = "";
@@ -98,7 +82,6 @@ namespace utopia {
                         int side_set = 0;
 
                         is.get("side", side_set);
-
 
                         double value = 0;
                         is.get("value", value);
@@ -113,7 +96,6 @@ namespace utopia {
 
                 order = 1;
                 is.get("order", order);
-
 
                 elem_type = "quad";
                 is.get("elem-type", elem_type);
@@ -130,42 +112,41 @@ namespace utopia {
                 use_newton = false;
                 is.get("use-newton", use_newton);
 
-            } catch(const std::exception &ex) {
+            } catch (const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
             }
         }
 
-        libMesh::ElemType get_type(const int dim) const
-        {
-            if(dim == 3) {
+        libMesh::ElemType get_type(const int dim) const {
+            if (dim == 3) {
                 libMesh::ElemType type = libMesh::HEX8;
 
-                if(elem_type == "tet") {
+                if (elem_type == "tet") {
                     type = libMesh::TET4;
                 }
 
-                if(order == 2) {
+                if (order == 2) {
                     type = libMesh::HEX20;
 
-                    if(elem_type == "tet") {
+                    if (elem_type == "tet") {
                         type = libMesh::TET10;
                     }
                 }
 
                 return type;
 
-            } else if(dim == 2) {
+            } else if (dim == 2) {
                 libMesh::ElemType type = libMesh::QUAD4;
 
-                if(elem_type == "tri") {
+                if (elem_type == "tri") {
                     type = libMesh::TRI3;
                 }
 
-                if(order == 2) {
+                if (order == 2) {
                     type = libMesh::QUAD8;
 
-                    if(elem_type == "tri") {
+                    if (elem_type == "tri") {
                         type = libMesh::TRI6;
                     }
                 }
@@ -176,18 +157,12 @@ namespace utopia {
             return libMesh::TRI3;
         }
 
-        void make_mesh(libMesh::DistributedMesh &mesh) const
-        {
-            if(this->mesh_type == "file") {
+        void make_mesh(libMesh::DistributedMesh &mesh) const {
+            if (this->mesh_type == "file") {
                 mesh.read(path);
-            } else if(this->mesh_type == "unit-square") {
-                libMesh::MeshTools::Generation::build_square(mesh,
-                                                             3, 3,
-                                                             -0., 1.,
-                                                             -0., 1.,
-                                                             get_type(2)
-                                                             );
-            } else if(this->mesh_type == "aabb") {
+            } else if (this->mesh_type == "unit-square") {
+                libMesh::MeshTools::Generation::build_square(mesh, 3, 3, -0., 1., -0., 1., get_type(2));
+            } else if (this->mesh_type == "aabb") {
                 libMesh::DistributedMesh temp_mesh(mesh.comm());
                 temp_mesh.read(path);
 
@@ -197,58 +172,50 @@ namespace utopia {
                 libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(temp_mesh);
 #endif
 
-                if(temp_mesh.spatial_dimension() == 3) {
-
-                    libMesh::MeshTools::Generation::build_cube(
-                        mesh,
-                        n, n, n,
-                        bb.min()(0) - span[0], bb.max()(0) + span[0],
-                        bb.min()(1) - span[1], bb.max()(1) + span[1],
-                        bb.min()(2) - span[2], bb.max()(2) + span[2],
-                        get_type(3)
-                    );
+                if (temp_mesh.spatial_dimension() == 3) {
+                    libMesh::MeshTools::Generation::build_cube(mesh,
+                                                               n,
+                                                               n,
+                                                               n,
+                                                               bb.min()(0) - span[0],
+                                                               bb.max()(0) + span[0],
+                                                               bb.min()(1) - span[1],
+                                                               bb.max()(1) + span[1],
+                                                               bb.min()(2) - span[2],
+                                                               bb.max()(2) + span[2],
+                                                               get_type(3));
 
                 } else {
-
-                    libMesh::MeshTools::Generation::build_square(
-                        mesh,
-                        n, n,
-                        bb.min()(0) - span[0], bb.max()(0) + span[0],
-                        bb.min()(1) - span[1], bb.max()(1) + span[1],
-                        get_type(2)
-                    );
+                    libMesh::MeshTools::Generation::build_square(mesh,
+                                                                 n,
+                                                                 n,
+                                                                 bb.min()(0) - span[0],
+                                                                 bb.max()(0) + span[0],
+                                                                 bb.min()(1) - span[1],
+                                                                 bb.max()(1) + span[1],
+                                                                 get_type(2));
                 }
-
             }
 
             refine(refinements, mesh);
 
-            if(this->mesh_type == "file" && order == 2) {
+            if (this->mesh_type == "file" && order == 2) {
                 mesh.all_second_order();
             }
         }
 
-        void set_up_bc(FunctionSpaceT &V) const
-        {
+        void set_up_bc(FunctionSpaceT &V) const {
             auto u = trial(V);
             std::size_t n = sides.size();
 
-            for(std::size_t i = 0; i < n; ++i) {
-                init_constraints(
-                                 constraints(
-                                             boundary_conditions(u == coeff(values[i]), {sides[i]})
-                                             )
-                                 );
+            for (std::size_t i = 0; i < n; ++i) {
+                init_constraints(constraints(boundary_conditions(u == coeff(values[i]), {sides[i]})));
             }
         }
 
-        inline bool empty() const
-        {
-            return mesh_type.empty();
-        }
+        inline bool empty() const { return mesh_type.empty(); }
 
-        void describe(std::ostream &os = std::cout) const
-        {
+        void describe(std::ostream &os = std::cout) const {
             os << "-----------------------------------\n";
             os << "mesh_type:       " << mesh_type << "\n";
             os << "order:           " << order << "\n";
@@ -256,8 +223,8 @@ namespace utopia {
             os << "side, value\n";
 
             std::size_t n = sides.size();
-            for(std::size_t i = 0; i < n; ++i) {
-                os << sides[i]<< ", " << values[i] << "\n";
+            for (std::size_t i = 0; i < n; ++i) {
+                os << sides[i] << ", " << values[i] << "\n";
             }
 
             os << "-----------------------------------\n";
@@ -277,16 +244,16 @@ namespace utopia {
         bool use_newton;
     };
 
-    static std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> get_function(const RMTRApp::SimulationInput &in, FunctionSpaceT &V)
-    {
+    static std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> get_function(const RMTRApp::SimulationInput &in,
+                                                                                  FunctionSpaceT &V) {
         std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> f;
-        if(in.fun == "bratu") {
+        if (in.fun == "bratu") {
             f = std::make_shared<Bratu<decltype(V), USparseMatrix, UVector>>(V);
-        } else if(in.fun == "min-surf") {
-            f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
-        } else if(in.fun == "matrixpoisson") {
+            // } else if(in.fun == "min-surf") {
+            // f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
+        } else if (in.fun == "matrixpoisson") {
             f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
-        } else if(in.fun == "poisson") {
+        } else if (in.fun == "poisson") {
             f = std::make_shared<FormPoisson<decltype(V), USparseMatrix, UVector>>(V);
         }
 
@@ -298,8 +265,7 @@ namespace utopia {
         return f;
     }
 
-    void RMTRApp::solve_newton(const SimulationInput &in)
-    {
+    void RMTRApp::solve_newton(const SimulationInput &in) {
         Chrono c;
         c.start();
 
@@ -337,74 +303,68 @@ namespace utopia {
         write("rmtr.e", V, x);
     }
 
-
-    void RMTRApp::solve_rmtr(const SimulationInput &in)
-    {
-        using TransferT   = utopia::Transfer<USparseMatrix, UVector>;
+    void RMTRApp::solve_rmtr(const SimulationInput &in) {
+        using TransferT = utopia::Transfer<USparseMatrix, UVector>;
         using IPTransferT = utopia::IPTransfer<USparseMatrix, UVector>;
 
         std::size_t n_levels = in.n_levels;
-        std::vector< std::shared_ptr<libMesh::DistributedMesh> > meshes(n_levels);
-        std::vector< std::shared_ptr<FunctionSpaceT> > spaces(n_levels);
-        std::vector< std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> > functions(n_levels);
+        std::vector<std::shared_ptr<libMesh::DistributedMesh>> meshes(n_levels);
+        std::vector<std::shared_ptr<FunctionSpaceT>> spaces(n_levels);
+        std::vector<std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>>> functions(n_levels);
 
-        auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
-        auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
+        auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE>>();
+        auto smoother = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE>>();
 
         // coarse_solver->verbose(true);
         // smoother->verbose(true);
-        // auto coarse_solver = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+        // auto coarse_solver = std::make_shared<utopia::KSP_TR<PetscMatrix, PetscVector> >("gltr");
         // coarse_solver->atol(1e-12);
         // coarse_solver->rtol(1e-12);
         // coarse_solver->pc_type("lu");
 
-
-
         meshes[0] = std::make_shared<libMesh::DistributedMesh>(comm());
         in.make_mesh(*meshes[0]);
 
-        for(std::size_t i = 1; i < n_levels; ++i) {
-            meshes[i] = std::make_shared<libMesh::DistributedMesh>(*meshes[i-1]);
+        for (std::size_t i = 1; i < n_levels; ++i) {
+            meshes[i] = std::make_shared<libMesh::DistributedMesh>(*meshes[i - 1]);
             refine(1, *meshes[i]);
         }
 
         const auto elem_order = libMesh::Order(in.order);
-        for(std::size_t i = 0; i < n_levels; ++i) {
-            spaces[i]           = std::make_shared<FunctionSpaceT>(*meshes[i], libMesh::LAGRANGE, elem_order, "u");
+        for (std::size_t i = 0; i < n_levels; ++i) {
+            spaces[i] = std::make_shared<FunctionSpaceT>(*meshes[i], libMesh::LAGRANGE, elem_order, "u");
 
             in.set_up_bc(*spaces[i]);
             spaces[i]->initialize();
         }
 
-        std::vector< std::shared_ptr<TransferT> > transfers(n_levels - 1);
+        std::vector<std::shared_ptr<TransferT>> transfers(n_levels - 1);
 
-        for(std::size_t i = 1; i < n_levels; ++i) {
+        for (std::size_t i = 1; i < n_levels; ++i) {
             auto T_cf = std::make_shared<USparseMatrix>();
             auto T_fc = std::make_shared<USparseMatrix>();
-            assemble_interpolation(*spaces[i-1], *spaces[i],   *T_cf); //assemble_projection
-            assemble_interpolation(*spaces[i],   *spaces[i-1], *T_fc); //assemble_projection
-            transfers[i-1] = std::make_shared<IPTransferT>(T_cf, T_fc);
+            assemble_interpolation(*spaces[i - 1], *spaces[i], *T_cf);  // assemble_projection
+            assemble_interpolation(*spaces[i], *spaces[i - 1], *T_fc);  // assemble_projection
+            transfers[i - 1] = std::make_shared<IPTransferT>(T_cf, T_fc);
         }
 
-        for(std::size_t i = 0; i < n_levels; ++i) {
+        for (std::size_t i = 0; i < n_levels; ++i) {
             functions[i] = get_function(in, *spaces[i]);
         }
 
-        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, FIRST_ORDER> >(n_levels);
+        auto rmtr = std::make_shared<RMTR_l2<USparseMatrix, UVector, FIRST_ORDER>>(n_levels);
         rmtr->set_transfer_operators(transfers);
-
 
         rmtr->set_coarse_tr_strategy(coarse_solver);
         rmtr->set_fine_tr_strategy(smoother);
 
         rmtr->max_it(30);
         rmtr->max_coarse_it(3);
-        rmtr->max_smoothing_it(3);
+        rmtr->max_QP_smoothing_it(3);
         rmtr->delta0(1000);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
-        rmtr->set_grad_smoothess_termination(0.000001);
-        rmtr->set_eps_grad_termination(1e-7);
+        rmtr->grad_smoothess_termination(1e-7);
 
         rmtr->verbose(in.verbose);
         // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
@@ -414,30 +374,26 @@ namespace utopia {
         auto &dof_map = spaces.back()->dof_map();
 
         UVector x;
-        rmtr->handle_equality_constraints();
+        // rmtr->handle_equality_constraints();
 
         bool ok = rmtr->solve(x);
 
-        std::cout<<"fine dofs:  "<< size(x).get(0) << "  \n";
+        std::cout << "fine dofs:  " << size(x).get(0) << "  \n";
 
-        //Write solution to disk
+        // Write solution to disk
         write("rmtr.e", *spaces.back(), x);
     }
 
-
-    void RMTRApp::run(Input &in)
-    {
-
+    void RMTRApp::run(Input &in) {
         SimulationInput sim_in;
         in.get("rmtr-app", sim_in);
 
         sim_in.describe();
 
-        if(sim_in.use_newton) {
+        if (sim_in.use_newton) {
             solve_newton(sim_in);
         } else {
             solve_rmtr(sim_in);
         }
     }
-}
-
+}  // namespace utopia

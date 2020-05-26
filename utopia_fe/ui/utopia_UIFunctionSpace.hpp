@@ -1,9 +1,9 @@
 #ifndef UTOPIA_UI_FUNCTION_SPACE_HPP
 #define UTOPIA_UI_FUNCTION_SPACE_HPP
 
-#include "utopia_ui.hpp"
-#include "utopia_libmesh.hpp"
 #include "utopia_UIMesh.hpp"
+#include "utopia_libmesh.hpp"
+#include "utopia_ui.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
@@ -11,11 +11,10 @@
 
 namespace utopia {
 
-    template<class FunctionSpace>
+    template <class FunctionSpace>
     class UIFunctionSpace final : public Configurable {
     public:
-        UIFunctionSpace()
-        {}
+        UIFunctionSpace() {}
 
         void read(Input &is) override {}
 
@@ -23,15 +22,12 @@ namespace utopia {
         std::shared_ptr<FunctionSpace> space_;
     };
 
-
-    template<>
+    template <>
     class UIFunctionSpace<LibMeshFunctionSpace> final : public Configurable {
     public:
-        UIFunctionSpace(
-            const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh,
-            const std::shared_ptr<libMesh::EquationSystems> equation_systems = nullptr)
-        : mesh_(mesh), equation_systems_(equation_systems), verbose_(true)
-        {}
+        UIFunctionSpace(const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh,
+                        const std::shared_ptr<libMesh::EquationSystems> equation_systems = nullptr)
+            : mesh_(mesh), equation_systems_(equation_systems), verbose_(true) {}
 
         void read(Input &is) override {
             int n_vars = 0;
@@ -61,7 +57,7 @@ namespace utopia {
                 });
             });
 
-            if(n_vars == 0) {
+            if (n_vars == 0) {
                 var_names.push_back("u");
                 var_orders.push_back(1);
                 fe_families.push_back(fe_family);
@@ -70,21 +66,20 @@ namespace utopia {
 
             is.get("system-name", system_name);
 
-            if(!equation_systems_) {
+            if (!equation_systems_) {
                 equation_systems_ = std::make_shared<libMesh::EquationSystems>(mesh_->mesh());
             }
 
             auto &sys = equation_systems_->add_system<libMesh::LinearImplicitSystem>(system_name);
             space_ = std::make_shared<ProductFunctionSpace<LibMeshFunctionSpace>>();
 
-            for(int i = 0; i < n_vars; ++i) {
+            for (int i = 0; i < n_vars; ++i) {
                 auto ss = std::make_shared<LibMeshFunctionSpace>(
                     equation_systems_,
                     libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_families[i]),
                     libMesh::Order(var_orders[i]),
                     var_names[i],
-                    sys.number()
-                );
+                    sys.number());
 
                 space_->add_subspace(ss);
             }
@@ -102,79 +97,66 @@ namespace utopia {
 
                     is.get("var", var_num);
 
-
-                    std::string type = "constant"; //expr
+                    std::string type = "constant";  // expr
 
                     is.get("type", type);
 
                     auto u = trial(space_->subspace(var_num));
 
-                    if(type == "expr") {
+                    if (type == "expr") {
 #ifdef WITH_TINY_EXPR
                         std::string expr = "0";
                         is.get("value", expr);
                         auto g = symbolic(expr);
 
-                        init_constraints(constraints(
-                            boundary_conditions(u == g, {side_set})
-                        ));
+                        init_constraints(constraints(boundary_conditions(u == g, {side_set})));
 #else
                         assert(false);
                         std::cerr << "needs tiny expr library" << std::endl;
 #endif
 
                     } else {
-
-                        if(verbose_) {
-                            std::cout <<  "side: " << side_set << " var: " << var_num << " value: " << value << std::endl;
+                        if (verbose_) {
+                            std::cout << "side: " << side_set << " var: " << var_num << " value: " << value
+                                      << std::endl;
                         }
 
-                        init_constraints(
-                            constraints(
-                                boundary_conditions(u == coeff(value), {side_set})
-                                )
-                            );
-
-                        }
-
+                        init_constraints(constraints(boundary_conditions(u == coeff(value), {side_set})));
+                    }
                 });
             });
 
-            for(int i = 0; i < n_vars; ++i) {
+            for (int i = 0; i < n_vars; ++i) {
                 space_->subspace(i).initialize();
             }
         }
 
-        inline ProductFunctionSpace<LibMeshFunctionSpace> &space()
-        {
+        inline ProductFunctionSpace<LibMeshFunctionSpace> &space() {
             assert(space_);
             return *space_;
         }
 
-        inline void set_space(const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace> > &space)
-        {
+        inline const ProductFunctionSpace<LibMeshFunctionSpace> &space() const {
+            assert(space_);
+            return *space_;
+        }
+
+        inline const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> &space_ptr() const {
+            assert(space_);
+            return space_;
+        }
+
+        inline void set_space(const std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> &space) {
             space_ = space;
         }
 
-        inline LibMeshFunctionSpace &subspace(int index)
-        {
-            return space_->subspace(index);
-        }
+        inline LibMeshFunctionSpace &subspace(int index) { return space_->subspace(index); }
 
-        inline std::shared_ptr<LibMeshFunctionSpace> subspace_ptr(int index)
-        {
-            return space_->subspace_ptr(index);
-        }
+        inline std::shared_ptr<LibMeshFunctionSpace> subspace_ptr(int index) { return space_->subspace_ptr(index); }
 
-        std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh()
-        {
-            return mesh_;
-        }
+        std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh() { return mesh_; }
 
-        inline bool initialized() const
-        {
-            return static_cast<bool>(space_);
-        }
+        inline bool initialized() const { return static_cast<bool>(space_); }
 
     private:
         std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh_;
@@ -182,7 +164,6 @@ namespace utopia {
         std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space_;
         bool verbose_;
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_UI_FUNCTION_SPACE_HPP
+#endif  // UTOPIA_UI_FUNCTION_SPACE_HPP

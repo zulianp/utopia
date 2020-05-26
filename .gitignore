@@ -7,3 +7,6 @@ utopia_fe/build/*
 utopia_fe/doc/*
 utopia/doc/*
 *.sublime-workspace
+*.DS_Store
+*.vtk
+*.vtr

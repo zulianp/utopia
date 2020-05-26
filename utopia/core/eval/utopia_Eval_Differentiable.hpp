@@ -8,7 +8,7 @@
 #include "utopia_Eval_Empty.hpp"
 
 namespace utopia {
-    template<class Expr, class Traits, int Backend>
+    template <class Expr, class Traits, int Backend>
     class Eval<Differentiable<Expr>, Traits, Backend> {
     public:
         EXPR_TYPE(Traits, Expr) eval(const Differentiable<Expr> &expr) {
@@ -17,22 +17,21 @@ namespace utopia {
         }
     };
 
-    template<class Tensor, int Order, class Traits, int Backend>
-    class Eval< Differentiable<Wrapper<Tensor, Order> >, Traits, Backend> {
+    template <class Derived, int Order, class Traits, int Backend>
+    class Eval<Differentiable<Tensor<Derived, Order> >, Traits, Backend> {
     public:
-        inline static const Tensor &apply(const Differentiable<Wrapper<Tensor, Order> > &expr) {
-            return Eval<Wrapper<Tensor, Order>, Traits>::apply(expr.expr());
+        inline static const Derived &apply(const Differentiable<Tensor<Derived, Order> > &expr) {
+            return Eval<Tensor<Derived, Order>, Traits>::apply(expr.expr());
         }
     };
 
-    template<class Tensor, int Order, class Traits, int Backend>
-    class Eval<Differentiable<const Wrapper<Tensor, Order> >, Traits, Backend> {
+    template <class Derived, int Order, class Traits, int Backend>
+    class Eval<Differentiable<const Tensor<Derived, Order> >, Traits, Backend> {
     public:
-        inline static const Tensor & apply(const Differentiable<const Wrapper<Tensor, Order> > &expr)
-        {
-            return Eval<Wrapper<Tensor, Order>, Traits>::apply(expr.expr());
+        inline static const Derived &apply(const Differentiable<const Tensor<Derived, Order> > &expr) {
+            return Eval<Tensor<Derived, Order>, Traits>::apply(expr.expr());
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_EVAL_DIFFERENTIABLE_HPP
+#endif  // UTOPIA_UTOPIA_EVAL_DIFFERENTIABLE_HPP

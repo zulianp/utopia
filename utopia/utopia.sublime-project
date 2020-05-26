@@ -15,7 +15,8 @@
 				"doc/api",
 				"build_*",
 				"bin_*",
-				"install"
+				"install",
+				"external"
 			],
 			"path": "."
 		}

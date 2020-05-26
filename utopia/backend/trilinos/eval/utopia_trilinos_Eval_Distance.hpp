@@ -88,7 +88,6 @@
 // 	    }
 // 	};
 
-
 // 	template<class Tensor_, class Traits>
 // 	class Eval<
 // 		Distance<

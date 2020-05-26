@@ -1,0 +1,35 @@
+{
+    "mesh": {
+        "type": "cube",
+        "elem-type" : "hex",
+        "n-x" : 5,
+        "n-y" : 5,
+        "n-z" : 5,
+        "refinements" : 0,
+        "random-refine" : true,
+        "random-refinements": 4
+
+    },
+    "space": {
+        "system-name" : "poisson",
+        "variables" : [
+            {
+                "name" : "u",
+                "order" : 1
+            }
+        ],
+        "boundary-conditions" :[
+                {
+                "side"  : 4,
+                "type"  : "expr",
+                "value" : "2"
+            },
+            {
+                "side"  : 2,
+                "type"  : "expr",
+                "value" : "1"
+            }
+
+        ]
+    }
+}

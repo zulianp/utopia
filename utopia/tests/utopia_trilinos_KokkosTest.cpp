@@ -2,186 +2,191 @@
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
-
-#include "utopia_trilinos_KokkosTest.hpp"
-#include "utopia.hpp"
-#include "utopia_trilinos.hpp"
-#include "utopia_trilinos_solvers.hpp"
-#include "utopia_kokkos_ParallelEach.hpp"
 #include <algorithm>
+#include "utopia.hpp"
+#include "utopia_Testing.hpp"
+//#include "utopia_kokkos_ParallelEach.hpp"
+#include "utopia_trilinos.hpp"
+#include "utopia_trilinos_Each_impl.hpp"
+#include "utopia_trilinos_solvers.hpp"
 
-#include "utopia_Structure.hpp"
-#include "utopia_Eval_Structure.hpp"
-#include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "utopia_Eval_Structure.hpp"
+#include "utopia_Structure.hpp"
 
-#include "utopia_IPTransfer.hpp"
 #include <cmath>
+#include "utopia_IPTransfer.hpp"
 
 namespace utopia {
 
-    void kokkos_max()
-    {
-        auto n = 10;
+    class KokkosTest {
+    public:
+        using Traits = utopia::Traits<TpetraVectord>;
+        using Comm = Traits::Communicator;
+        using SizeType = Traits::SizeType;
+        using Scalar = Traits::Scalar;
 
-        TVectord v = local_values(n, 1.);
+        void kokkos_max() {
+            auto n = 10;
+            auto vl = layout(comm_, n, Traits::determine());
 
-        TVectord w = local_values(n, 10.);
+            TpetraVectord v(vl, 1.);
 
-        TVectord z = max(w, v);
+            TpetraVectord w(vl, 10.);
 
-        utopia_test_assert(approxeq(z, w));
-    }
+            TpetraVectord z = max(w, v);
 
-    void kokkos_min()
-    {
-        auto n = 10;
-
-        TVectord v = local_values(n, 1.);
-
-        TVectord w = local_values(n, 10.);
-
-        TVectord z = min(w , v);
-
-        utopia_test_assert(approxeq(z, v));
-    }
-
-    void kokkos_sum_reduction()
-    {
-        auto n = 10;
-
-        TVectord v = local_values(n, 1.);
-
-        double z = sum(v);
-
-        utopia_test_assert(approxeq(z, size(v).get(0) * 1.));
-    }
-
-    void kokkos_min_reduction()
-    {
-        auto n = 10;
-
-        TVectord v = local_values(n, 1.);
-
-        auto r = range(v);
-
-        each_write(v,  KOKKOS_LAMBDA(const SizeType i) -> double {
-            return i - r.begin();
-        });
-
-        double z = min(v);
-
-        utopia_test_assert(approxeq(0., z));
-    }
-
-    void kokkos_max_reduction()
-    {
-        auto n = 10;
-
-        TVectord v = local_values(n, 1.);
-
-        auto r = range(v);
-
-        each_write(v, KOKKOS_LAMBDA(const SizeType i) -> double {
-            return i - r.begin();
-        });
-
-        double z = max(v);
-
-        utopia_test_assert(approxeq(9., z));
-    }
-
-    void kokkos_write() {
-        auto n = 10;
-
-        TVectord w = local_values(n, -1.);
-
-        parallel_each_write(w, KOKKOS_LAMBDA(const SizeType i) -> double {
-            return i;
-        });
-
-        {
-            Read<TVectord> r_(w);
-            auto r = range(w);
-
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                utopia_test_assert(approxeq(w.get(i), double(i)));
-            }
+            utopia_test_assert(approxeq(z, w));
         }
-    }
 
-    void kokkos_parallel_each_mat() {
-        auto n = 10;
+        void kokkos_min() {
+            auto n = 10;
+            auto vl = layout(comm_, n, Traits::determine());
 
-        TSMatrixd w = local_identity(n, n);
+            TpetraVectord v(vl, 1.);
 
-        parallel_each_write(w, KOKKOS_LAMBDA(const SizeType i, const SizeType j) -> double {
-            return i * n + j;
-        });
+            TpetraVectord w(vl, 10.);
 
-        //serial implementation for test
-        each_read(w, [=](const SizeType i, const SizeType j, const double val) {
-            utopia_test_assert(approxeq(double(i * n + j), val));
-        });
-    }
+            TpetraVectord z = min(w, v);
 
-    void kokkos_read() {
+            utopia_test_assert(approxeq(z, v));
+        }
 
-        auto n = 10;
-        TVectord w = local_values(n, 50);
+        void kokkos_sum_reduction() {
+            auto n = 10;
+            auto vl = layout(comm_, n, Traits::determine());
 
-        parallel_each_read(w, KOKKOS_LAMBDA(const SizeType i, const double entry)
-        { });
-    }
+            TpetraVectord v(vl, 1.);
 
-    void kokkos_apply()
-    {
-        auto nr = 3;
-        auto nc = 3;
+            double z = sum(v);
 
-        TSMatrixd P = local_sparse(nr, nc, 1);
+            utopia_test_assert(approxeq(z, size(v).get(0) * 1.));
+        }
 
-        {
-            Write<TSMatrixd> w_(P);
-            auto r = row_range(P);
-            auto cols = size(P).get(1);
-            for(auto i = r.begin(); i < r.end(); ++i) {
-                if(i >= cols) {
-                    break;
+        void kokkos_min_reduction() {
+            auto n = 10;
+            auto vl = layout(comm_, n, Traits::determine());
+
+            TpetraVectord v(vl, 1.);
+
+            auto r = range(v);
+
+            auto v_view = view_device(v);
+            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
+
+            Scalar z = min(v);
+
+            utopia_test_assert(approxeq(0., z));
+        }
+
+        void kokkos_max_reduction() {
+            auto n = 10;
+            auto vl = layout(comm_, n, Traits::determine());
+
+            TpetraVectord v(vl, 1.);
+
+            auto r = range(v);
+
+            auto v_view = view_device(v);
+            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
+
+            Scalar z = max(v);
+
+            utopia_test_assert(approxeq(9., z));
+        }
+
+        void kokkos_write() {
+            auto n = 10;
+            auto vl = layout(comm_, n, Traits::determine());
+
+            TpetraVectord w(vl, -1.);
+
+            auto w_view = view_device(w);
+            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) { w_view.set(i, i); });
+
+            {
+                Read<TpetraVectord> r_(w);
+                auto r = range(w);
+
+                for (auto i = r.begin(); i < r.end(); ++i) {
+                    utopia_test_assert(approxeq(w.get(i), Scalar(i)));
                 }
-
-                P.set(i, i, 1.);
-
             }
         }
 
-        parallel_each_apply(P, KOKKOS_LAMBDA(const double value) -> double {
-            return value * 2.;
-        });
+        void kokkos_parallel_each_mat() {
+            auto n = 10;
+            auto ml = layout(comm_, n, n, Traits::determine(), Traits::determine());
 
-    }
+            TpetraMatrixd w;
+            w.identity(ml, 1.0);
 
-    void run_kokkos_test()
-    {
-        UTOPIA_UNIT_TEST_BEGIN("KokkosTest");
-        UTOPIA_RUN_TEST(kokkos_max);
-        UTOPIA_RUN_TEST(kokkos_min);
-        UTOPIA_RUN_TEST(kokkos_min_reduction);
-        UTOPIA_RUN_TEST(kokkos_max_reduction);
-        UTOPIA_RUN_TEST(kokkos_sum_reduction);
-        UTOPIA_RUN_TEST(kokkos_write);
-        UTOPIA_RUN_TEST(kokkos_read);
-        UTOPIA_RUN_TEST(kokkos_apply);
-        UTOPIA_RUN_TEST(kokkos_parallel_each_mat);
-        UTOPIA_UNIT_TEST_END("KokkosTest");
-    }
-}
+            w.transform_ijv(
+                UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &)->Scalar { return i * n + j; });
 
-#else //WITH_TRILINOS
+            // serial implementation for test
+            w.read([=](const SizeType &i, const SizeType &j, const Scalar &val) {
+                utopia_test_assert(approxeq(Scalar(i * n + j), val));
+            });
+        }
 
-namespace utopia
-{
-    void run_kokkos_test() {}
-}
+        void kokkos_read() {
+            auto n = 10;
+            auto vl = layout(comm_, n, Traits::determine());
 
-#endif //WITH_TRILINOS
+            TpetraVectord w(vl, 50);
+
+            auto w_view = const_view_device(w);
+            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) {
+                auto v = w_view.get(i);
+                UTOPIA_UNUSED(v);
+            });
+        }
+
+        void kokkos_apply() {
+            auto nr = 3;
+            auto nc = 3;
+
+            auto ml = layout(comm_, nr, nc, Traits::determine(), Traits::determine());
+
+            TpetraMatrixd P;
+            P.sparse(ml, 1, 0);
+
+            {
+                Write<TpetraMatrixd> w_(P);
+                auto r = row_range(P);
+                auto cols = size(P).get(1);
+                for (auto i = r.begin(); i < r.end(); ++i) {
+                    if (i >= cols) {
+                        break;
+                    }
+
+                    P.set(i, i, 1.);
+                }
+            }
+
+            P.transform_values(UTOPIA_LAMBDA(const Scalar &value)->Scalar { return value * 2.; });
+        }
+
+        void run() {
+            UTOPIA_RUN_TEST(kokkos_max);
+            UTOPIA_RUN_TEST(kokkos_min);
+            UTOPIA_RUN_TEST(kokkos_min_reduction);
+            UTOPIA_RUN_TEST(kokkos_max_reduction);
+            UTOPIA_RUN_TEST(kokkos_sum_reduction);
+            UTOPIA_RUN_TEST(kokkos_write);
+            UTOPIA_RUN_TEST(kokkos_read);
+            UTOPIA_RUN_TEST(kokkos_apply);
+            UTOPIA_RUN_TEST(kokkos_parallel_each_mat);
+        }
+
+    private:
+        Comm comm_;
+    };
+
+    static void kokkos() { KokkosTest().run(); }
+
+    UTOPIA_REGISTER_TEST_FUNCTION(kokkos);
+}  // namespace utopia
+
+#endif  // WITH_TRILINOS

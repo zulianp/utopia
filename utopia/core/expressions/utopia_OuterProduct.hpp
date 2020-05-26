@@ -5,39 +5,29 @@
 #ifndef UTOPIA_UTOPIA_OUTERPRODUCT_HPP
 #define UTOPIA_UTOPIA_OUTERPRODUCT_HPP
 
-#include "utopia_StoreAs.hpp"
 #include "utopia_Expression.hpp"
+#include "utopia_StoreAs.hpp"
 
 namespace utopia {
-    template<class Left, class Right>
-    class OuterProduct : public Expression< OuterProduct<Left, Right> > {
+    template <class Left, class Right>
+    class OuterProduct : public Expression<OuterProduct<Left, Right> > {
     public:
-        static const int Order =  Left::Order + Right::Order;
+        static const int Order = Left::Order + Right::Order;
 
-        enum {
-            StoreAs = UTOPIA_BY_VALUE
-        };
+        enum { StoreAs = UTOPIA_BY_VALUE };
 
+        OuterProduct(const Left &left, const Right &right) : _left(left), _right(right) {}
 
-        OuterProduct(const Left &left, const Right &right)
-                : _left(left), _right(right)
-        {}
+        inline const Left &left() const { return _left; }
 
-        inline const Left &left() const {
-            return _left;
-        }
+        inline const Right &right() const { return _right; }
 
-        inline const Right &right() const {
-            return _right;
-        }
-
-        std::string getClass() const override
-        {
-            return "OuterProduct<" + left().getClass() + ", " + right().getClass() + ">";
+        std::string get_class() const override {
+            return "OuterProduct<" + left().get_class() + ", " + right().get_class() + ">";
         }
 
     private:
-        UTOPIA_STORE_CONST(Left)  _left;
+        UTOPIA_STORE_CONST(Left) _left;
         UTOPIA_STORE_CONST(Right) _right;
     };
 
@@ -45,29 +35,24 @@ namespace utopia {
      * @ingroup     tensor_products
      * @brief       \f$  v_1 v_2^T  \f$
      */
-    template<class Left, class Right>
-    inline OuterProduct<Left, Right> outer(const Expression<Left> &left, const Expression<Right> &right)
-    {
+    template <class Left, class Right>
+    inline OuterProduct<Left, Right> outer(const Expression<Left> &left, const Expression<Right> &right) {
         return OuterProduct<Left, Right>(left.derived(), right.derived());
     }
 
-    template<class Left, class Right>
-    class Traits< OuterProduct<Left, Right> > : public Traits<typename ChooseType<Left, Right, Right>::Type > {
+    template <class Left, class Right>
+    class Traits<OuterProduct<Left, Right> > : public Traits<typename ChooseType<Left, Right, Right>::Type> {
     public:
-        enum {
-            FILL_TYPE = FillType::DENSE
-        };
+        enum { FILL_TYPE = FillType::DENSE };
     };
 
-
-    template<class Left, class Right>
-    inline Size size(const OuterProduct<Left, Right> &expr)
-    {
+    template <class Left, class Right>
+    inline Size size(const OuterProduct<Left, Right> &expr) {
         Size result(2);
         result.set(0, size(expr.left()).get(0));
         result.set(1, size(expr.right()).get(0));
         return result;
     }
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_OUTERPRODUCT_HPP
+#endif  // UTOPIA_UTOPIA_OUTERPRODUCT_HPP

@@ -7,8 +7,8 @@
 #include "utopia_opencl_Traits.hpp"
 
 namespace utopia {
-    template<class Expr, int _Order = Expr::Order>
-    class Evaluate : public Expression< Evaluate<Expr, _Order> > {
+    template <class Expr, int _Order = Expr::Order>
+    class Evaluate : public Expression<Evaluate<Expr, _Order> > {
     public:
         typedef void Type;
         typedef typename Expr::Scalar Scalar;
@@ -16,46 +16,26 @@ namespace utopia {
 
         static const int Order = _Order;
 
-        enum {
-            StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE
-        };
+        enum { StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE };
 
-        Evaluate(const Expr &expr)
-        : expr_(expr), backend_tensor_(std::make_shared<TensorT>())
-        {}
+        Evaluate(const Expr &expr) : expr_(expr), backend_tensor_(std::make_shared<TensorT>()) {}
 
-        std::string getClass() const
-        {
-            return "Evaluate<" + expr_.getClass() + ">";
-        }
+        std::string get_class() const { return "Evaluate<" + expr_.get_class() + ">"; }
 
-        inline const Expr &expr() const
-        {
-            return expr_;
-        }
+        inline const Expr &expr() const { return expr_; }
 
-        inline TensorT &backend_tensor()
-        {
-            return *backend_tensor_;
-        }
+        inline TensorT &backend_tensor() { return *backend_tensor_; }
 
-        inline TensorT &backend_tensor() const
-        {
-            return *backend_tensor_;
-        }
+        inline TensorT &backend_tensor() const { return *backend_tensor_; }
 
-        inline const std::shared_ptr<TensorT> &backend_tensor_ptr() const
-        {
-            return backend_tensor_;
-        }
+        inline const std::shared_ptr<TensorT> &backend_tensor_ptr() const { return backend_tensor_; }
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
         std::shared_ptr<TensorT> backend_tensor_;
     };
 
-
-    template<class Expr>
+    template <class Expr>
     class Evaluate<Expr, 0> {
     public:
         typedef void Type;
@@ -64,64 +44,40 @@ namespace utopia {
 
         static const int Order = 0;
 
-        enum {
-            StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE
-        };
+        enum { StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE };
 
-        Evaluate(const Expr &expr)
-        : expr_(expr), value_(std::make_shared<Scalar>(0))
-        {}
+        Evaluate(const Expr &expr) : expr_(expr), value_(std::make_shared<Scalar>(0)) {}
 
-        std::string getClass() const
-        {
-            return "Evaluate<" + expr_.getClass() + ">";
-        }
+        std::string get_class() const { return "Evaluate<" + expr_.get_class() + ">"; }
 
-        inline const Expr &expr() const
-        {
-            return expr_;
-        }
+        inline const Expr &expr() const { return expr_; }
 
-        inline  void set_value(const Scalar value) const
-        {
-            *value_ = value;
-        }
+        inline void set_value(const Scalar value) const { *value_ = value; }
 
-
-        inline Scalar get_value() const
-        {
-            return *value_;
-        }
-
+        inline Scalar get_value() const { return *value_; }
 
     private:
         UTOPIA_STORE_CONST(Expr) expr_;
         std::shared_ptr<Scalar> value_;
     };
 
-    template<class Expr>
-    Evaluate<Expr> make_evaluate(const Expr &expr)
-    {
+    template <class Expr>
+    Evaluate<Expr> make_evaluate(const Expr &expr) {
         return expr;
     }
 
-
-    template<class Tensor, int Order>
-    const Wrapper<Tensor, Order> &make_evaluate(const Wrapper<Tensor, Order> &tensor)
-    {
+    template <class Tensor, int Order>
+    const Wrapper<Tensor, Order> &make_evaluate(const Wrapper<Tensor, Order> &tensor) {
         return tensor;
     }
 
-    template<class Tensor, int Order>
-    Wrapper<Tensor, Order> && make_evaluate(Wrapper<Tensor, Order> &&tensor)
-    {
+    template <class Tensor, int Order>
+    Wrapper<Tensor, Order> &&make_evaluate(Wrapper<Tensor, Order> &&tensor) {
         return tensor;
     }
 
-
-    template<class Expr>
-    cl::Buffer &get_buffer(const Evaluate<Expr> &v)
-    {
+    template <class Expr>
+    cl::Buffer &get_buffer(const Evaluate<Expr> &v) {
         return v.backend_tensor().buffer;
     }
 
@@ -131,26 +87,22 @@ namespace utopia {
     // 	return v.buffer();
     // }
 
-    template<class Expr>
-    auto size(const Evaluate<Expr> &expr) -> decltype(size(expr.expr()))
-    {
+    template <class Expr>
+    auto size(const Evaluate<Expr> &expr) -> decltype(size(expr.expr())) {
         return size(expr.expr());
     }
 
+    template <class Expr, int Order>
+    class Traits<Evaluate<Expr, Order> > : public Traits<Expr> {};
 
-    template<class Expr, int Order>
-    class Traits< Evaluate<Expr, Order> > : public Traits<Expr> {};
-
-
-    template<class InnerExpr>
-    class TreeProperties< Evaluate<InnerExpr> > {
+    template <class InnerExpr>
+    class TreeProperties<Evaluate<InnerExpr> > {
     public:
         enum { greatest_tensor_order = Evaluate<InnerExpr>::Order };
-        enum { smallest_tensor_order = Evaluate<InnerExpr>::Order  };
-        enum { has_mat_mat_mul 		 = TreeProperties<InnerExpr>::has_mat_mat_mul 		};
-        enum { has_differentiable_sub_tree = TreeProperties<InnerExpr>::has_differentiable_sub_tree  };
+        enum { smallest_tensor_order = Evaluate<InnerExpr>::Order };
+        enum { has_mat_mat_mul = TreeProperties<InnerExpr>::has_mat_mat_mul };
+        enum { has_differentiable_sub_tree = TreeProperties<InnerExpr>::has_differentiable_sub_tree };
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_EVALUATE_HPP
-
+#endif  // UTOPIA_EVALUATE_HPP

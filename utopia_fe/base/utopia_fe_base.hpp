@@ -1,17 +1,27 @@
 #ifndef UTOPIA_FE_BASE_HPP
 #define UTOPIA_FE_BASE_HPP
 
-#include "utopia_fe_config.hpp"
 #include "utopia.hpp"
+#include "utopia_DeprecatedHeaders.hpp"
+#include "utopia_fe_config.hpp"
 
 namespace utopia {
 #ifdef WITH_TRILINOS_ALGEBRA
-    using USparseMatrix = TSMatrixd;
-    using UVector  = TVectord;
+    using USparseMatrix = TpetraMatrixd;
+    using UVector = TpetraVectord;
 #else
-    using USparseMatrix = DSMatrixd;
-    using UVector  = DVectord;
-#endif //WITH_TRILINOS_ALGEBRA
-}
+    using USparseMatrix = PetscMatrix;
+    using UVector = PetscVector;
+#endif  // WITH_TRILINOS_ALGEBRA
 
-#endif //UTOPIA_FE_BASE_HPP
+    using UIndexArray = utopia::Traits<UVector>::IndexArray;
+    using UScalarArray = utopia::Traits<UVector>::ScalarArray;
+    using UIndexSet = utopia::Traits<UVector>::IndexSet;
+    using UScalar = utopia::Traits<UVector>::Scalar;
+    using USizeType = utopia::Traits<UVector>::SizeType;
+
+    using USerialMatrix = utopia::BlasMatrix<UScalar>;
+    using USerialVector = utopia::BlasVector<UScalar>;
+}  // namespace utopia
+
+#endif  // UTOPIA_FE_BASE_HPP

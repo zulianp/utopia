@@ -7,12 +7,13 @@
 #if defined(DEBUG)
 #error "DEBUG macro defined when it should not be defined"
 #endif
-#endif //NDEBUG
+#endif  // NDEBUG
 
 static const int LIBMESH_TAG = 1001;
 
 namespace utopia {
     class LibMeshFunctionSpace;
-}
+    class LibMeshAssemblyValues;
+}  // namespace utopia
 
-#endif //UTOPIA_LIBMESH_FE_FORWARD_DECLARATIONS_HPP
+#endif  // UTOPIA_LIBMESH_FE_FORWARD_DECLARATIONS_HPP

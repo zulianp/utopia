@@ -2,5 +2,5 @@
 #include "utopia_trilinos_Types.hpp"
 
 namespace utopia {
-    template class Amesos2Solver<TSMatrixd, TVectord>;
-}
+    template class Amesos2Solver<TpetraMatrixd, TpetraVectord>;
+}  // namespace utopia

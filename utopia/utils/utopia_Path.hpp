@@ -2,12 +2,11 @@
 #ifndef UTOPIA_PATH_HPP
 #define UTOPIA_PATH_HPP
 
-
-#include <string>
-#include <ostream>
 #include <memory>
+#include <ostream>
+#include <string>
 
-//forward declaration of dirent included in cpp
+// forward declaration of dirent included in cpp
 struct dirent;
 
 namespace utopia {
@@ -17,23 +16,23 @@ namespace utopia {
     class PathIterator {
     private:
         struct DirHandle {
-            //DIR * hidden
-            void * dir;
+            // DIR * hidden
+            void *dir;
             DirHandle(const std::string &path);
             ~DirHandle();
-            struct dirent * next();
+            struct dirent *next();
         };
 
         const Path &path_;
         std::shared_ptr<DirHandle> dir_;
         struct dirent *it_;
         bool skip_hidden_;
-    public:
 
+    public:
         PathIterator(const Path &path);
         operator bool() const;
-        PathIterator & operator ++();
-        Path operator *() const;
+        PathIterator &operator++();
+        Path operator*() const;
     };
 
     class Path {
@@ -42,9 +41,9 @@ namespace utopia {
         static void resolve_path_separators(std::string &path);
 
     public:
-        typedef PathIterator Iterator;
+        using Iterator = PathIterator;
 
-        Path(const std::string &path = "");
+        Path(std::string path = "");
         Path(const char *path);
 
         Path operator+(const Path &other) const;
@@ -53,9 +52,9 @@ namespace utopia {
         Path &operator+=(const Path &other);
         Path &operator/=(const Path &other);
 
-        inline const std::string & to_string() const { return path_; }
+        inline const std::string &to_string() const { return path_; }
         inline operator const std::string &() const { return path_; }
-        inline const char * c_str() const { return path_.c_str(); }
+        inline const char *c_str() const { return path_.c_str(); }
         friend std::ostream &operator<<(std::ostream &os, const Path &path) {
             os << path.to_string();
             return os;
@@ -75,7 +74,6 @@ namespace utopia {
         bool make_dir(const int permissions = 0777);
     };
 
+}  // namespace utopia
 
-} /* utopia */
-
-#endif // UTOPIA_PATH_HPP
+#endif  // UTOPIA_PATH_HPP

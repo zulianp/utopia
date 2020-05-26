@@ -55,7 +55,7 @@ find_path(LIBMESH_INCLUDE_DIR libmesh/libmesh.h
 )
 
 find_library(LIBMESH_LIBRARY
-             NAMES  mesh_${METHOD} mesh
+             NAMES  mesh_${METHOD} mesh mesh_opt
              HINTS  ${LIBMESH_DIR}/lib
                     $ENV{LIBMESH_DIR}/lib
                     $ENV{LIBMESH_DIR}
@@ -68,6 +68,17 @@ message(STATUS "HERE: $ENV{LIBMESH_DIR}/lib ${LIBMESH_LIBRARY} -> method: ${METH
 
 set(LIBMESH_LIBRARIES ${LIBMESH_LIBRARY})
 set(LIBMESH_INCLUDE_DIRS ${LIBMESH_INCLUDE_DIR})
+
+get_filename_component(LIBMESH_LIB_DIR ${LIBMESH_LIBRARY} DIRECTORY)
+find_library(TIMPI_LIBRARY
+             NAMES  timpi_${METHOD} timpi timpi_opt
+             HINTS  ${LIBMESH_LIB_DIR}
+            )
+
+if(TIMPI_LIBRARY)
+  message(STATUS "TIMPI_LIBRARY: ${TIMPI_LIBRARY}")
+  list(APPEND LIBMESH_LIBRARIES "${TIMPI_LIBRARY}")
+endif()
 
 find_program(LIBMESH_CONFIG_EXECUTABLE
     NAMES libmesh-config
@@ -92,6 +103,18 @@ set(LIBMESH_INCLUDE_DIRS ${LM_INC})
 if(PC_LIBMESH_VERSION)
   set(LIBMESH_VERSION_STRING ${PC_LIBMESH_VERSION})
 endif()
+
+
+# exec_program( ${LIBMESH_CONFIG_EXECUTABLE}
+#   ARGS --libs
+#   OUTPUT_VARIABLE LMC_LIB_FLAG
+#   RETURN_VALUE LMC_LIB_RET
+# )
+
+# string(REPLACE " " ";" LMC_LIB_LIST ${LMC_LIB_FLAG})
+# set(LIBMESH_LIBRARIES "${LIBMESH_LIBRARIES} ${LMC_LIB_FLAG}")
+
+message(STATUS "LIBMESH_LIBRARIES: ${LIBMESH_LIBRARIES}")
 
 # handle the QUIETLY and REQUIRED arguments and set LIBMESH_FOUND to TRUE if
 # all listed variables are TRUE

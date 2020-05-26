@@ -1,0 +1,57 @@
+{
+    "transfer": {
+        "type": "approx-l2-projection",
+        "function": "1.0",
+        "function-type" : "constant",
+        "write-operators-to-disk" : true,
+        "quad-order-approx" : 24,
+        "*quad-order-approx" : 36,
+        "*normalize" : true,
+        "slave": {
+            "mesh": {
+                "type": "file",
+                "path" : "../data/transfer/coarse_sphere.e",
+                "order" : 2,
+                "morph" : {
+                    "type" : "circle",
+                    "radius" : 1
+                },
+                "refinements" : 0
+            },
+            "space": {
+                "system-name" : "slave",
+                "variables" : [
+                    {
+                        "name" : "u",
+                        "order" : 2
+                    }
+                ]
+            }
+        },
+        "master": {
+            "mesh": {
+                "type": "cube",
+                "order" : 1,
+                "refinements" : 2,
+                "n-x": 10,
+                "n-y": 10,
+                "n-z": 10,
+                "min-x": -1.1,
+                "min-y": -1.1,
+                "min-z": -1.1,
+                "max-x":  1.1,
+                "max-y":  1.1,
+                "max-z":  1.1
+            },
+            "space": {
+                "system-name" : "master",
+                "variables" : [
+                    {
+                        "name" : "u",
+                        "order" : 1
+                    }
+                ]
+            }
+        }
+    }
+}

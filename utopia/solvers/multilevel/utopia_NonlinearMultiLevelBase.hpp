@@ -1,24 +1,19 @@
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
 #define UTOPIA_NONLINEAR_ML_BASE_HPP
-#include "utopia_Level.hpp"
-#include "utopia_Transfer.hpp"
-#include "utopia_MultiLevelBase.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Function.hpp"
-#include "utopia_SolutionStatus.hpp"
+#include "utopia_Level.hpp"
 #include "utopia_MatrixTransfer.hpp"
-
-
+#include "utopia_MultiLevelBase.hpp"
 #include "utopia_MultiLevelEvaluations.hpp"
-
-
+#include "utopia_SolutionStatus.hpp"
+#include "utopia_Transfer.hpp"
 
 #include <algorithm>
 #include <vector>
 
 namespace utopia {
 #define CHECK_NUM_PRECISION_mode
-
 
     /**
      * @brief      Base class for all nonlinear multilevel solvers. \n
@@ -28,42 +23,34 @@ namespace utopia {
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector>
-    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public NonLinearSolver<Vector>
-    {
-
+    template <class Matrix, class Vector>
+    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public NonLinearSolver<Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout = typename Traits<Vector>::Layout;
 
         typedef utopia::Transfer<Matrix, Vector> Transfer;
         typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
 
         typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
-        typedef std::shared_ptr<Fun> FunPtr;
+        using FunPtr = std::shared_ptr<Fun>;
 
         using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
-        NonlinearMultiLevelBase(const SizeType & n_levels)
-        {
-            this->n_levels(n_levels);
+        NonlinearMultiLevelBase(const SizeType &n_levels) { this->n_levels(n_levels); }
+
+        ~NonlinearMultiLevelBase() override = default;
+
+        void read(Input &in) override {
+            MultiLevelBase<Matrix, Vector>::read(in);
+            NonLinearSolver<Vector>::read(in);
         }
 
-        virtual ~NonlinearMultiLevelBase(){}
-
-
-        virtual void read(Input &in) override
-        {
-          MultiLevelBase<Matrix, Vector>::read(in);
-          NonLinearSolver<Vector>::read(in);
+        void print_usage(std::ostream &os) const override {
+            MultiLevelBase<Matrix, Vector>::print_usage(os);
+            NonLinearSolver<Vector>::print_usage(os);
         }
-
-        virtual void print_usage(std::ostream &os) const override
-        {
-          MultiLevelBase<Matrix, Vector>::print_usage(os);
-          NonLinearSolver<Vector>::print_usage(os);
-        }
-
 
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
@@ -72,8 +59,7 @@ namespace utopia {
          * @param      x_h   The initial guess.
          *
          */
-        virtual bool solve( Vector &x_h) = 0;
-
+        virtual bool solve(Vector &x_h) = 0;
 
         /**
          * @brief      Fnction inits functions associated with assemble on each level.
@@ -81,15 +67,20 @@ namespace utopia {
          * @param[in]  level_functions  The level functions
          *
          */
-        virtual bool set_functions(const std::vector<FunPtr> &level_functions)
-        {
+        virtual bool set_functions(const std::vector<FunPtr> &level_functions) {
             level_functions_.clear();
+            local_level_layouts_.clear();
 
-            if(this->n_levels() != level_functions.size()){
+            if (this->n_levels() != static_cast<SizeType>(level_functions.size())) {
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and level_functions do not match. \n");
             }
 
             level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
+
+            for (auto l = 0; l < this->n_levels(); l++) {
+                local_level_layouts_.push_back(level_functions_[l]->layout());
+            }
+
             return true;
         }
 
@@ -102,18 +93,21 @@ namespace utopia {
          *
          */
         virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
-                                            const std::vector<std::shared_ptr<Matrix>> &projection_operators)
-        {
-            if(interpolation_operators.size()!=projection_operators.size()){
-                utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
+                                            const std::vector<std::shared_ptr<Matrix>> &projection_operators) {
+            if (interpolation_operators.size() != projection_operators.size()) {
+                utopia_error(
+                    "utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and "
+                    "projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if (this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1) {
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
             this->transfers_.clear();
-            for(auto I = interpolation_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && P != projection_operators.end(); ++I, ++P )
+            for (auto I = interpolation_operators.begin(), P = projection_operators.begin();
+                 I != interpolation_operators.end() && P != projection_operators.end();
+                 ++I, ++P)
                 this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *P));
 
             return true;
@@ -129,25 +123,29 @@ namespace utopia {
          */
         virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &restriction_operators,
-                                            const std::vector<std::shared_ptr<Matrix>> &projection_operators)
-        {
-
-            if(interpolation_operators.size()!=restriction_operators.size() || interpolation_operators.size()!=projection_operators.size()){
-                utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and projection_operators do not match. \n");
+                                            const std::vector<std::shared_ptr<Matrix>> &projection_operators) {
+            if (interpolation_operators.size() != restriction_operators.size() ||
+                interpolation_operators.size() != projection_operators.size()) {
+                utopia_error(
+                    "utopia::NonlinearMultilevelBase::set_transfer_operators:: Number of interpolation_operators and "
+                    "projection_operators do not match. \n");
             }
 
-            if(this->n_levels() != interpolation_operators.size() + 1){
+            if (this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1) {
                 utopia_error("utopia::NonlinearMultilevelBase:: Number of levels and transfers do not match. \n");
             }
 
             this->transfers_.clear();
-            for(auto I = interpolation_operators.begin(), R = restriction_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && R != restriction_operators.end() &&  P != projection_operators.end(); ++I, ++R, ++P )
+            for (auto I = interpolation_operators.begin(),
+                      R = restriction_operators.begin(),
+                      P = projection_operators.begin();
+                 I != interpolation_operators.end() && R != restriction_operators.end() &&
+                 P != projection_operators.end();
+                 ++I, ++R, ++P)
                 this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *R, *P));
 
             return true;
         }
-
-    protected:
 
         /**
          * @brief      Function looks up for ids, where we should apply Dirichlet BC and set value to required one
@@ -156,63 +154,37 @@ namespace utopia {
          * @param      x
          *
          */
-        virtual bool make_iterate_feasible(Fun & fun, Vector & x)
-        {
-            Vector bc_values;
-            fun.get_eq_constrains_values(bc_values);
-
-            Vector bc_ids;
-            fun.get_eq_constrains_flg(bc_ids);
-
-            if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
-                std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: Local sizes do not match. \n";
-            }
+        virtual bool make_iterate_feasible(Fun &fun, Vector &x) {
+            const auto &bc_values = fun.get_eq_constrains_values();
+            const auto &bc_ids = fun.get_eq_constrains_flg();
 
             {
-                Write<Vector> w(x);
-                Read<Vector>  r_id(bc_ids);
-                Read<Vector>  r_val(bc_values);
+                auto d_bc_ids = const_local_view_device(bc_ids);
+                auto d_bc_values = const_local_view_device(bc_values);
+                auto x_view = local_view_device(x);
 
-                Range range_w = range(x);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    Scalar id = bc_ids.get(i);
-                    Scalar value = bc_values.get(i);
+                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                    Scalar id = d_bc_ids.get(i);
+                    auto xi = x_view.get(i);
 
-                    if(id == 1)
-                        x.set(i, value);
-                }
+                    x_view.set(i, (id == 1.0) ? d_bc_values.get(i) : xi);
+                });
             }
 
             return true;
         }
 
-
+    protected:
         /**
          * @brief      Function zeors correction, where we have Dirichlet BC aplied.
          *
          * @param      fun   The fun
          * @param      c     The correction
          */
-        virtual bool zero_correction_related_to_equality_constrain(Fun & fun, Vector & c)
-        {
-            Vector bc;
-            fun.get_eq_constrains_flg(bc);
-
-            {
-                Write<Vector> w(c);
-                Read<Vector> r(bc);
-
-                Range range_w = range(c);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    if(bc.get(i) == 1)
-                        c.set(i, 0);
-                }
-            }
+        virtual bool zero_correction_related_to_equality_constrain(const Fun &fun, Vector &c) {
+            fun.zero_contribution_to_equality_constrains(c);
             return true;
         }
-
 
         /**
          * @brief      Function zeors correction, where we have Dirichlet BC aplied.
@@ -221,43 +193,12 @@ namespace utopia {
          * @param      M     matrix
          *
          */
-        virtual bool zero_correction_related_to_equality_constrain_mat(Fun & fun, Matrix & M)
-        {
-            Vector bc;
-            fun.get_eq_constrains_flg(bc);
-            std::vector<SizeType> index;
-
-            {
-                Read<Vector> r(bc);
-
-                Range range_w = range(bc);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++)
-                {
-                    if(bc.get(i) == 1)
-                        index.push_back(i);
-                }
-            }
-
+        virtual bool zero_correction_related_to_equality_constrain_mat(const Fun &fun, Matrix &M) {
+            const std::vector<SizeType> &index = fun.get_indices_related_to_BC();
             set_zero_rows(M, index, 1.);
-
-            // horible solution....
-            {
-                ReadAndWrite<Matrix> w(M);
-                Range r = row_range(M);
-
-                //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                {
-                    if(std::abs(M.get(i,i)) < 1e-15)
-                        M.set(i, i, 1.0);
-                }
-            }
-
 
             return true;
         }
-
-
 
         /**
          * @return     Name of solver - to have nice printouts
@@ -269,48 +210,38 @@ namespace utopia {
          *
          * @param[in]  fine_local_size  The local size of fine level problem
          */
-        virtual void init_memory(const SizeType & fine_local_size) = 0;
+        virtual void init_memory() = 0;
 
-
-
-        inline Fun &function(const SizeType level)
-        {
-            assert(level < level_functions_.size());
+        inline Fun &function(const SizeType level) {
+            assert(level < static_cast<SizeType>(level_functions_.size()));
             assert(level_functions_[level]);
 
             return *level_functions_[level];
         }
 
-        inline const Fun &function(const SizeType level) const
-        {
+        inline const Fun &function(const SizeType level) const {
             assert(level < level_functions_.size());
             assert(level_functions_[level]);
 
             return *level_functions_[level];
         }
-
 
         /**
          * @brief      Writes CSV file with iteration info
          *
          * @param[in]  it_global  The iterator global
          */
-        virtual void print_statistics(const SizeType & it_global) override
-        {
+        void print_statistics(const SizeType &it_global) override {
             std::string path = "log_output_path";
             auto non_data_path = Utopia::instance().get(path);
 
-            if(!non_data_path.empty())
-            {
-                CSVWriter writer;
-                if (mpi_world_rank() == 0)
-                {
-                    if(!writer.file_exists(non_data_path))
-                    {
+            if (!non_data_path.empty()) {
+                CSVWriter writer{};
+                if (mpi_world_rank() == 0) {
+                    if (!writer.file_exists(non_data_path)) {
                         writer.open_file(non_data_path);
                         writer.write_table_row<std::string>({"v_cycles", "time"});
-                    }
-                    else
+                    } else
                         writer.open_file(non_data_path);
 
                     writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()});
@@ -319,14 +250,17 @@ namespace utopia {
             }
         }
 
+        const Layout &local_layouts(const SizeType &level) const { return local_level_layouts_[level]; }
 
+        const std::vector<Layout> &local_level_layouts() const { return local_level_layouts_; }
+
+        const std::vector<FunPtr> &level_functions() { return level_functions_; }
 
     protected:
-        std::vector<FunPtr>                      level_functions_;
-
+        std::vector<FunPtr> level_functions_;
+        std::vector<Layout> local_level_layouts_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_NONLINEAR_ML_BASE_HPP
-
+#endif  // UTOPIA_NONLINEAR_ML_BASE_HPP

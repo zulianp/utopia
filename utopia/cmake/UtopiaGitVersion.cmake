@@ -1,0 +1,34 @@
+find_package(Git QUIET REQUIRED)
+
+execute_process(
+    COMMAND "${GIT_EXECUTABLE}" describe --always HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    RESULT_VARIABLE res
+    OUTPUT_VARIABLE UTOPIA_GIT_VERSION
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# execute_process(
+#     COMMAND "${GIT_EXECUTABLE}" branch
+#     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+#     RESULT_VARIABLE res
+#     OUTPUT_VARIABLE UTOPIA_GIT_BRANCH
+#     ERROR_QUIET
+#     OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+set_property(GLOBAL APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/.git/index")
+
+# string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+).*$"
+# "\\1;\\2;\\3" _ver_parts "${UTOPIA_GIT_VERSION}")
+# list(GET _ver_parts 0 UTOPIA_GIT_VERSION_MAJOR)
+# list(GET _ver_parts 1 UTOPIA_GIT_VERSION_MINOR)
+# list(GET _ver_parts 2 UTOPIA_GIT_VERSION_PATCH)
+
+# if("${UTOPIA_GIT_VERSION}" MATCHES "^.*-(.*)-g.*$")
+#     string(REGEX REPLACE "^.*-(.*)-g.*$" "\\1" UTOPIA_GIT_VERSION_MICRO
+# "${UTOPIA_GIT_VERSION}")
+# else()
+#     set(UTOPIA_GIT_VERSION_MICRO "0")
+# endif()

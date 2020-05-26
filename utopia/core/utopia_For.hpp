@@ -2,21 +2,22 @@
 #define UTOPIA_FOR_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Range.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {
 
-    template<std::size_t Unroll = 32>
+    template <std::size_t Unroll = 1>
     class For {
     public:
-        template<typename F>
-        inline static void apply(
-            const std::size_t &begin,
-            const std::size_t &end,
-            F f)
-        {
+        template <typename F>
+        inline static void apply(const Range &r, F f) {
+            apply(r.begin(), r.end(), f);
+        }
 
-            for(auto i = begin; i < end; ++i) {
+        template <typename F>
+        inline static void apply(const std::size_t &begin, const std::size_t &end, F f) {
+            for (auto i = begin; i < end; ++i) {
                 f(i);
             }
 
@@ -45,6 +46,9 @@ namespace utopia {
             // }
         }
     };
-}
 
-#endif //UTOPIA_FOR_HPP
+    template <int Backend>
+    class ParallelFor : public For<1> {};
+}  // namespace utopia
+
+#endif  // UTOPIA_FOR_HPP

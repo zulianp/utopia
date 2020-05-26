@@ -16,11 +16,11 @@ pipelines:
           - mkdir bin
           - cd bin
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Release
-          - make && make install
-          - ./utopia_exec -verbose -bench
+          - make complete && make install
+          - ./utopia_bench -verbose
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build_debug -DCMAKE_BUILD_TYPE=Debug
-          - make && make install
-          - ./utopia_exec -verbose -bench
+          - make utopia_test && make install
+          - ./utopia_test -verbose
     # - step: 
     #     name: Utopia/Trilinos
     #     image: zulianp/utopia-trilinos-env:latest

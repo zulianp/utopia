@@ -1,14 +1,14 @@
 #ifndef UTOPIA_BOUNDING_BOX_COARSENER_HPP
 #define UTOPIA_BOUNDING_BOX_COARSENER_HPP
 
-#include <memory>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 namespace libMesh {
     class MeshBase;
     class UnstructuredMesh;
-}
+}  // namespace libMesh
 
 namespace utopia {
     class BoundingBoxCoarsener {
@@ -21,11 +21,10 @@ namespace utopia {
         void describe(std::ostream &os = std::cout) const;
 
         const std::shared_ptr<libMesh::UnstructuredMesh> &get_mesh() const;
-        const std::vector< std::pair<int, int> > &get_tags() const;
-
+        const std::vector<std::pair<int, int> > &get_tags() const;
 
         std::shared_ptr<Impl> impl_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_BOUNDING_BOX_COARSENER_HPP
+#endif  // UTOPIA_BOUNDING_BOX_COARSENER_HPP

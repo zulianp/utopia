@@ -2,10 +2,10 @@
 #define UTOPIA_SP_STATIC_CONDENSATION_KRYLOV_HPP
 
 #include <memory>
-#include "utopia_LinearSolver.hpp"
 #include "utopia_BiCGStab.hpp"
-#include "utopia_Preconditioner.hpp"
+#include "utopia_LinearSolver.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
+#include "utopia_Preconditioner.hpp"
 
 namespace utopia {
 
@@ -16,89 +16,75 @@ namespace utopia {
     m := master, s := slave
     **/
 
-    template<class Matrix, class Vector>
+    template <class Matrix, class Vector>
     class SPStaticCondensationKrylov {
     public:
-
         SPStaticCondensationKrylov()
-        : linear_solver_(std::make_shared<BiCGStab<Matrix, Vector, HOMEMADE>>()), coupling_op_solver_(std::make_shared<BiCGStab<Matrix, Vector>>())
-        {}
+            : linear_solver_(std::make_shared<BiCGStab<Matrix, Vector, HOMEMADE>>()),
+              coupling_op_solver_(std::make_shared<BiCGStab<Matrix, Vector>>()) {}
 
-        void coupling_op_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver)
-        {
+        void coupling_op_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) {
             coupling_op_solver_ = solver;
         }
 
-        //h
-        void linear_solver(const std::shared_ptr<MatrixFreeLinearSolver<Vector>> &solver)
-        {
-            linear_solver_ = solver;
-        }
+        // h
+        void linear_solver(const std::shared_ptr<MatrixFreeLinearSolver<Vector>> &solver) { linear_solver_ = solver; }
 
-        void update(
-            const std::shared_ptr<Matrix> &A_m,
-            const std::shared_ptr<Matrix> &A_s,
-            const std::shared_ptr<Matrix> &B,
-            const std::shared_ptr<Matrix> &D)
-        {
+        void update(const std::shared_ptr<Matrix> &A_m,
+                    const std::shared_ptr<Matrix> &A_s,
+                    const std::shared_ptr<Matrix> &B,
+                    const std::shared_ptr<Matrix> &D) {
             set_up(B, D);
             update(A_m, A_s);
         }
 
-        void set_up(
-            const std::shared_ptr<Matrix> &B,
-            const std::shared_ptr<Matrix> &D)
-        {
+        void set_up(const std::shared_ptr<Matrix> &B, const std::shared_ptr<Matrix> &D) {
             this->B = B;
             this->D = D;
 
             coupling_op_solver_->update(D);
         }
 
-        void update(
-            const std::shared_ptr<Matrix> &A_m,
-            const std::shared_ptr<Matrix> &A_s)
-        {
+        void update(const std::shared_ptr<Matrix> &A_m, const std::shared_ptr<Matrix> &A_s) {
             this->A_m = A_m;
             this->A_s = A_s;
 
-            S = utopia::op<Vector>([this](const Vector &b, Vector &x) -> bool {
-                apply_T(b, x);
-                Vector x_temp = (*this->A_s) * x;
-                apply_T_transpose(x_temp, x);
-                x_temp = (*this->A_m) * b;
-                x += x_temp;
-                return true;
-            });
+            // S = utopia::op<Vector>(
+            //     A_m->comm(),
+            //     A_m->size(),
+            //     A_m->local_size(),
+            //     [this](const Vector &b, Vector &x) -> bool
+            //     {
+            //         apply_T(b, x);
+            //         Vector x_temp = (*this->A_s) * x;
+            //         apply_T_transpose(x_temp, x);
+            //         x_temp = (*this->A_m) * b;
+            //         x += x_temp;
+            //         return true;
+            //     });
         }
 
-        bool apply(
-            const Vector &rhs_m,
-            const Vector &rhs_s,
-            Vector &sol_m,
-            Vector &sol_s
-        )
-        {
+        bool apply(const Vector &rhs_m, const Vector &rhs_s, Vector &sol_m, Vector &sol_s) {
             assert(!empty(rhs_m));
             assert(!empty(rhs_s));
 
-            if(!empty(rhs)) {
+            if (!empty(rhs)) {
                 rhs.set(0.);
             }
 
-            if(empty(sol_m)) {
+            if (empty(sol_m)) {
                 sol_m = local_zeros(local_size(rhs_m));
             }
 
-            if(empty(sol_s)) {
+            if (empty(sol_s)) {
                 sol_s = local_zeros(local_size(rhs_s));
             }
 
-            if(!apply_T_transpose(rhs_s, rhs)) return false;
+            if (!apply_T_transpose(rhs_s, rhs)) return false;
             rhs += rhs_m;
 
             bool ok = linear_solver_->solve(*S, rhs, sol_m);
-            //even if failed create the slave solution vector
+            // even if failed create the slave solution vector
             return apply_T(sol_m, sol_s) && ok;
         }
 
@@ -110,10 +96,7 @@ namespace utopia {
         std::shared_ptr<Operator<Vector>> S;
         Vector temp;
 
-
-        bool apply_T(const Vector &rhs, Vector &x)
-        {
-
+        bool apply_T(const Vector &rhs, Vector &x) {
             assert(!has_nan_or_inf(rhs));
 
             temp = (*this->B) * rhs;
@@ -127,12 +110,11 @@ namespace utopia {
             return ok;
         }
 
-        bool apply_T_transpose(const Vector &rhs, Vector &x)
-        {
+        bool apply_T_transpose(const Vector &rhs, Vector &x) {
             assert(!has_nan_or_inf(rhs));
 
             temp = local_zeros(local_size(rhs));
-            if(!coupling_op_solver_->apply(rhs, temp)) {
+            if (!coupling_op_solver_->apply(rhs, temp)) {
                 return false;
             }
 
@@ -144,7 +126,6 @@ namespace utopia {
             return true;
         }
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_SP_STATIC_CONDENSATION_KRYLOV_HPP
+#endif  // UTOPIA_SP_STATIC_CONDENSATION_KRYLOV_HPP

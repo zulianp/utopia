@@ -1,28 +1,43 @@
 
-#include "utopia_WrapperTest.hpp"
 #include "utopia.hpp"
+#include "utopia_Testing.hpp"
 
 namespace utopia {
 
-    template<class Matrix, class Vector, class Scalar>
+    template <class Matrix, class Vector>
     class WrapperTest {
     public:
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using IndexSet = typename Traits::IndexSet;
+        using Comm = typename Traits::Communicator;
+
+        static void print_backend_info() {
+            if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
 
         void run() {
+            print_backend_info();
             UTOPIA_RUN_TEST(vector_factory_test);
             UTOPIA_RUN_TEST(matrix_factory_test);
             UTOPIA_RUN_TEST(matrix_assembly_test);
         }
 
         void matrix_assembly_test() {
-            Matrix mat = values(n_dofs, n_dofs, 0);
+            auto &&comm = Comm::get_default();
 
-            //Assemble 1D laplacian with dirichlet nodes at the boundary
+            Matrix mat;
+            mat.dense(layout(comm, Traits::decide(), Traits::decide(), n_dofs, n_dofs), 0);
+
+            // Assemble 1D laplacian with dirichlet nodes at the boundary
             {
                 Write<Matrix> write(mat);
                 Range rr = row_range(mat);
 
-                //FIXME assumed row is owned by this proc completely.
+                // FIXME assumed row is owned by this proc completely.
                 int rbegin = rr.begin();
                 int rend = rr.end();
 
@@ -43,9 +58,9 @@ namespace utopia {
                 }
             }
 
-            Vector expected = values(n_dofs, 0.);
+            Vector expected(row_layout(mat), 0.);
 
-            //Assemble expected result
+            // Assemble expected result
             {
                 Write<Vector> write(expected);
                 Range r = range(expected);
@@ -53,18 +68,19 @@ namespace utopia {
                     expected.set(0, 10);
                 }
 
-                if (r.end() == expected.size().get(0)) {
-                    expected.set(expected.size().get(0) - 1, 10);
+                if (SizeType(r.end()) == SizeType(expected.size())) {
+                    expected.set(expected.size() - 1, 10);
                 }
             }
 
-            Vector vec = values(n_dofs, 10);
+            Vector vec(layout(expected), 10);
             utopia_test_assert(approxeq(expected, mat * vec));
         }
 
         void matrix_factory_test() {
-
-            Matrix mat = values(n_dofs, n_dofs, 0.1);
+            auto &&comm = Comm::get_default();
+            Matrix mat;
+            mat.dense(layout(comm, Traits::decide(), Traits::decide(), n_dofs, n_dofs), 0.1);
             {
                 Read<Matrix> read(mat);
                 Range rr = row_range(mat);
@@ -76,7 +92,7 @@ namespace utopia {
                 }
             }
 
-            mat = identity(n_dofs, n_dofs);
+            mat.identity();
             {
                 Read<Matrix> read(mat);
                 Range rr = row_range(mat);
@@ -89,9 +105,10 @@ namespace utopia {
             }
         }
 
-
         void vector_factory_test() {
-            Vector vec = values(n_dofs, 0.2);
+            auto &&comm = Comm::get_default();
+
+            Vector vec(layout(comm, Traits::decide(), n_dofs), 0.2);
             {
                 Read<Vector> read(vec);
                 Range r = range(vec);
@@ -102,26 +119,21 @@ namespace utopia {
             }
         }
 
-
-        WrapperTest()
-                : n_dofs(100) { }
+        WrapperTest() = default;
 
     private:
-        int n_dofs;
-
+        int n_dofs{100};
     };
 
-
-    void runWrapperTest() {
-        UTOPIA_UNIT_TEST_BEGIN("WrapperTest");
+    static void wrapper() {
 #ifdef WITH_PETSC
-        WrapperTest<DMatrixd, DVectord, PetscScalar>().run();
+        WrapperTest<PetscMatrix, PetscVector>().run();
 #endif
 
 #ifdef WITH_BLAS
-        WrapperTest<Matrixd, Vectord, double>().run();
-#endif //WITH_BLAS
-        UTOPIA_UNIT_TEST_END("WrapperTest");
+        WrapperTest<BlasMatrixd, BlasVectord>().run();
+#endif  // WITH_BLAS
     }
-}
 
+    UTOPIA_REGISTER_TEST_FUNCTION(wrapper);
+}  // namespace utopia

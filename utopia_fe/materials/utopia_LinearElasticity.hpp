@@ -1,26 +1,38 @@
 #ifndef UTOPIA_LINEAR_ELASTICITY_HPP
 #define UTOPIA_LINEAR_ELASTICITY_HPP
 
+#include "utopia_ElasticMaterial.hpp"
+#include "utopia_fe_core.hpp"
+
+#include "utopia_Integrators.hpp"
+#include "utopia_LameeParameters.hpp"
+#include "utopia_libmesh_FormEval.hpp"
+
 namespace utopia {
 
-    template<class FunctionSpaceT, class Matrix, class Vector>
-    class LinearElasticity final : public ElasticMaterial<Matrix, Vector> {
+    template <class FunctionSpaceT, class Matrix, class Vector>
+    class LinearElasticity final
+        : public ElasticMaterial<Matrix, Vector>  //, public ModularEquationIntegrator<FunctionSpaceT>
+    {
     public:
-        LinearElasticity(FunctionSpaceT &V, const LameeParameters &params)
-        : V_(V), params_(params), initialized_(false)
-        {}
+        using Scalar = UTOPIA_SCALAR(Vector);
 
-        bool init(Matrix &hessian)
-        {
-            if(initialized_) return true;
+        LinearElasticity(FunctionSpaceT &V, const LameeParameters &params);
+        ~LinearElasticity();
+
+        bool init(Matrix &hessian) {
+            if (initialized_) return true;
+
             initialized_ = assemble_hessian(hessian);
             return initialized_;
         }
 
-        // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-        {
-            if(!init(hessian)) {
+        void clear() override { initialized_ = false; }
+
+        bool is_linear() const override { return true; }
+
+        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
+            if (!init(hessian)) {
                 return false;
             }
 
@@ -31,42 +43,41 @@ namespace utopia {
         bool stress(const Vector &x, Vector &result) override {
             Matrix hessian;
 
-            if(!assemble_hessian(hessian)) {
+            if (!assemble_hessian(hessian)) {
                 return false;
             }
 
             result = hessian * x;
+            result *= 1. / rescaling_;
             return true;
         }
 
-        void clear() override
-        {
-            initialized_ = false;
-        }
+        bool normal_stress(const UVector &x, UVector &out, const int subspace = 0) override;
 
-        bool is_linear() const override { return true; }
+        bool von_mises_stress(const UVector &x, UVector &out, const int subspace = 0) override;
+
+        inline Scalar rescaling() const override { return rescaling_; }
+
+        inline void rescaling(const Scalar &value) override { rescaling_ = value; }
 
     private:
         FunctionSpaceT &V_;
         LameeParameters params_;
         bool initialized_;
+        Scalar rescaling_;
 
-        bool assemble_hessian(Matrix &hessian)
-        {
-            auto u = trial(V_);
-            auto v = test(V_);
+        // inline void init_integrators(const UVector &x)
+        // {
+        //     init_bilinear_integrator();
+        //     init_linear_integrator(x);
+        // }
 
-            auto mu     = params_.var_mu();
-            auto lambda = params_.var_lambda();
+        // void init_bilinear_integrator();
 
-            auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
-            auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+        // void init_linear_integrator(const UVector &x);
 
-            auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
-
-            return assemble(b_form, hessian);
-        }
+        bool assemble_hessian(Matrix &hessian);
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_LINEAR_ELASTICITY_HPP
+#endif  // UTOPIA_LINEAR_ELASTICITY_HPP

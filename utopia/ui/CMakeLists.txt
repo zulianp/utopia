@@ -2,6 +2,8 @@ list(APPEND UI_MODULES
     .
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR UI_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
@@ -31,12 +33,16 @@ endif()
 
 
 add_library(utopia_ui STATIC ${LOCAL_SOURCES})
+utopia_link_default_targets(utopia_ui)
+
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 #hidden dependencies
-target_include_directories(utopia_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
+target_include_directories(utopia_ui SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
+# target_compile_options(utopia_ui PRIVATE "-Wno-cast-function-type")
+
 # target_include_directories(utopia_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson)
 
 if(WIN32)
@@ -63,7 +69,7 @@ find_path(JSON_DIR
 
 
 if(JSON_DIR)
-    target_include_directories(utopia_ui PRIVATE ${JSON_DIR})
+    target_include_directories(utopia_ui SYSTEM PRIVATE ${JSON_DIR})
     set(WITH_JSON ON PARENT_SCOPE)
 endif()
 

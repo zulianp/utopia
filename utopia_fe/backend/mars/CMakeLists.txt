@@ -2,6 +2,8 @@
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
 
+if(ENABLE_MARS)
+
 find_package(MARS)
 if(MARS_FOUND)
 
@@ -9,6 +11,8 @@ if(MARS_FOUND)
         .
     )
 
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
     find_project_files(CMAKE_CURRENT_SOURCE_DIR MARS_BACKEND_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
     add_library(utopia_fe_mars STATIC ${LOCAL_SOURCES} ${LOCAL_HEADERS})
@@ -45,5 +49,5 @@ else()
     message(WARNING "could not find MARS")
 endif()
 
-
+endif()
 

@@ -1,3 +1,5 @@
+[![CodeFactor](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/badge/edsl_refactor)](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/overview/edsl_refactor)
+
 # Utopia #
 Utopia is a C++ embedded domain specific language designed for parallel non-linear solution strategies and finite element analysis.
 
@@ -152,6 +154,11 @@ If you use Utopia for your research please use the following bibtex entry (or eq
 	howpublished = {https://bitbucket.org/zulianp/utopia},
 	year = {2016}
 }
+```
+
+Several components are the outcome of specific authors' research work.  For citing individual components add `--citations` to your run. For instance, 
+```
+./my_app --citations
 ```
 
 ## Docker containers

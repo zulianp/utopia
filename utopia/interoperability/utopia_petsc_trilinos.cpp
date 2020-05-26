@@ -6,11 +6,11 @@
 #include "utopia_trilinos.hpp"
 
 namespace utopia {
-    template class KSPSolver<TSMatrixd, TVectord, TRILINOS>;
-    template class Factorization<TSMatrixd, TVectord, TRILINOS>;
-    template class BiCGStab<TSMatrixd, TVectord, TRILINOS>;
-    template class GaussSeidel<TSMatrixd, TVectord, TRILINOS>;
-}
+    template class KSPSolver<TpetraMatrixd, TpetraVectord, TRILINOS>;
+    template class Factorization<TpetraMatrixd, TpetraVectord, TRILINOS>;
+    template class BiCGStab<TpetraMatrixd, TpetraVectord, TRILINOS>;
+    template class GaussSeidel<TpetraMatrixd, TpetraVectord, TRILINOS>;
+}  // namespace utopia
 
-#endif //WITH_PETSC
-#endif //WITH_TRILINOS
+#endif  // WITH_PETSC
+#endif  // WITH_TRILINOS

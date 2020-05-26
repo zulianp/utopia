@@ -5,19 +5,19 @@
 #ifndef UTOPIA_UTOPIA_TENSOR_REDUCE_HPP
 #define UTOPIA_UTOPIA_TENSOR_REDUCE_HPP
 
-#include "utopia_Expression.hpp"
-#include "utopia_StoreAs.hpp"
 #include <string>
+#include "utopia_Expression.hpp"
 #include "utopia_Operators.hpp"
+#include "utopia_StoreAs.hpp"
 
 namespace utopia {
-    template<class Expr, class Operation>
-    class TensorReduce : public Expression< TensorReduce<Expr, Operation> > {
+    template <class Expr, class Operation>
+    class TensorReduce : public Expression<TensorReduce<Expr, Operation> > {
     public:
-        TensorReduce(const Expr &expr, const int dim, const Operation op = Operation()) : expr_(expr), dim_(dim), op_(op)
-        {}
+        TensorReduce(const Expr &expr, const int dim, const Operation op = Operation())
+            : expr_(expr), dim_(dim), op_(op) {}
 
-        typedef typename Expr::Scalar Scalar;
+        using Scalar = typename Expr::Scalar;
 
         static_assert(Expr::Order == 2, "only supported for matrices");
 
@@ -25,53 +25,42 @@ namespace utopia {
 
         inline const Expr &expr() const { return expr_; }
 
-        std::string getClass() const {
-            return  "TensorReduce<" + expr_.getClass() + ">";
-        }
+        std::string get_class() const override { return "TensorReduce<" + expr_.get_class() + ">"; }
 
-        inline int dim() const
-        {
-            return dim_;
-        }
+        inline int dim() const { return dim_; }
 
-        inline const Operation &operation() const
-        {
-            return op_;
-        }
+        inline const Operation &operation() const { return op_; }
 
     private:
-       UTOPIA_STORE_CONST(Expr) expr_;
-       int dim_;
-       Operation op_;
+        UTOPIA_STORE_CONST(Expr) expr_;
+        int dim_;
+        Operation op_;
     };
 
-    template<class Expr, class Operation>
-    class Traits< TensorReduce<Expr, Operation> > : public Traits<Expr> {};
+    template <class Expr, class Operation>
+    class Traits<TensorReduce<Expr, Operation> > : public Traits<Expr> {};
 
-
-    template<class Derived>
+    template <class Derived>
     TensorReduce<Derived, Plus> sum(const Expression<Derived> &expr, const int dim) {
         return TensorReduce<Derived, Plus>(expr.derived(), dim);
     }
 
-    template<class Derived>
+    template <class Derived>
     TensorReduce<Derived, Min> min(const Expression<Derived> &expr, const int dim) {
         return TensorReduce<Derived, Min>(expr.derived(), dim);
     }
 
-    template<class Derived>
+    template <class Derived>
     TensorReduce<Derived, Max> max(const Expression<Derived> &expr, const int dim) {
         return TensorReduce<Derived, Max>(expr.derived(), dim);
     }
 
-
-    template<class Expr, class Operation>
-    inline Size size(const TensorReduce<Expr, Operation> &expr)
-    {
+    template <class Expr, class Operation>
+    inline Size size(const TensorReduce<Expr, Operation> &expr) {
         static_assert(Expr::Order == 2, "only supported for matrices");
         Size s = size(expr.expr());
-        return { s.get(!expr.dim()) };
+        return {s.get(!expr.dim())};
     }
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_TENSOR_REDUCE_HPP
+#endif  // UTOPIA_UTOPIA_TENSOR_REDUCE_HPP

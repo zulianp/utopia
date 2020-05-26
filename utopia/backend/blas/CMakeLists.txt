@@ -70,10 +70,13 @@ if(BLAS_FOUND OR OPEN_BLAS_FOUND)
     endif()
 
 
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
     find_project_files(CMAKE_CURRENT_SOURCE_DIR BLAS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 
     add_library(utopia_blas STATIC ${LOCAL_SOURCES})
+    utopia_link_default_targets(utopia_blas)
 
     foreach(MODULE ${BLAS_MODULES})
         target_include_directories(utopia_blas PUBLIC ${MODULE})

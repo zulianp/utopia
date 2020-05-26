@@ -1,74 +1,82 @@
 #ifndef UTOPIA_TRANSFER_ASSEMBLER_HPP
 #define UTOPIA_TRANSFER_ASSEMBLER_HPP
 
-#include "utopia_libmesh.hpp"
-#include "utopia_LocalAssembler.hpp"
-#include "utopia_Local2Global.hpp"
 #include "utopia.hpp"
+#include "utopia_Local2Global.hpp"
+#include "utopia_LocalAssembler.hpp"
 #include "utopia_Path.hpp"
+#include "utopia_libmesh.hpp"
+#include "utopia_ui.hpp"
 
 #include <memory>
 
 namespace utopia {
 
-    class TransferOptions {
+    class TransferOptions : public Configurable {
     public:
-        TransferOptions()
-        : from_var_num(0), to_var_num(0), n_var(1), to_trace_space(false), tags({})
-        {}
+        TransferOptions() : from_var_num(0), to_var_num(0), n_var(1), to_trace_space(false), tags({}) {}
+
+        void read(Input &in) override {
+            in.get("from-var-num", from_var_num);
+            in.get("to-var-num", to_var_num);
+            in.get("n-var", n_var);
+
+            in.get("coupling", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    int master = -1, slave = -1;
+
+                    in.get("master", master);
+                    in.get("slave", slave);
+
+                    assert(master != -1);
+                    assert(slave != -1);
+
+                    tags.emplace_back(master, slave);
+                });
+            });
+        }
 
         int from_var_num;
         int to_var_num;
         int n_var;
         bool to_trace_space;
-        std::vector< std::pair<int, int> > tags;
+        std::vector<std::pair<int, int>> tags;
     };
 
     class TransferAssembler final {
     public:
         using FunctionSpace = utopia::LibMeshFunctionSpace;
-        using SparseMatrix  = utopia::USparseMatrix;
-        using MeshBase      = libMesh::MeshBase;
-        using DofMap        = libMesh::DofMap;
+        using SparseMatrix = utopia::USparseMatrix;
+        using MeshBase = libMesh::MeshBase;
+        using DofMap = libMesh::DofMap;
 
         class Algorithm {
         public:
             virtual ~Algorithm() {}
             // virtual bool assemble(SparseMatrix &B) = 0;
-            virtual bool assemble(std::vector<std::shared_ptr<SparseMatrix> > &B) = 0;
+            virtual bool assemble(std::vector<std::shared_ptr<SparseMatrix>> &B) = 0;
         };
 
-        TransferAssembler(
-            const std::shared_ptr<LocalAssembler> &assembler,
-            const std::shared_ptr<Local2Global>   &local2global);
+        TransferAssembler(const std::shared_ptr<LocalAssembler> &assembler,
+                          const std::shared_ptr<Local2Global> &local2global);
 
-        bool assemble(
-            const std::shared_ptr<MeshBase> &from_mesh,
-            const std::shared_ptr<DofMap>   &from_dofs,
-            const std::shared_ptr<MeshBase> &to_mesh,
-            const std::shared_ptr<DofMap>   &to_dofs,
-            SparseMatrix &B,
-            const TransferOptions &opts = TransferOptions()
-        );
+        bool assemble(const std::shared_ptr<MeshBase> &from_mesh,
+                      const std::shared_ptr<DofMap> &from_dofs,
+                      const std::shared_ptr<MeshBase> &to_mesh,
+                      const std::shared_ptr<DofMap> &to_dofs,
+                      SparseMatrix &B,
+                      const TransferOptions &opts = TransferOptions());
 
-        bool assemble(
-            const std::shared_ptr<MeshBase> &from_mesh,
-            const std::shared_ptr<DofMap>   &from_dofs,
-            const std::shared_ptr<MeshBase> &to_mesh,
-            const std::shared_ptr<DofMap>   &to_dofs,
-            std::vector<std::shared_ptr<SparseMatrix> > &B,
-            const TransferOptions &opts = TransferOptions()
-        );
+        bool assemble(const std::shared_ptr<MeshBase> &from_mesh,
+                      const std::shared_ptr<DofMap> &from_dofs,
+                      const std::shared_ptr<MeshBase> &to_mesh,
+                      const std::shared_ptr<DofMap> &to_dofs,
+                      std::vector<std::shared_ptr<SparseMatrix>> &B,
+                      const TransferOptions &opts = TransferOptions());
 
-        void set_assembler(const std::shared_ptr<LocalAssembler> &assembler)
-        {
-            assembler_ = assembler;
-        }
+        void set_assembler(const std::shared_ptr<LocalAssembler> &assembler) { assembler_ = assembler; }
 
-        void set_local_2_global(const std::shared_ptr<Local2Global> &local2global)
-        {
-            local2global_ = local2global;
-        }
+        void set_local_2_global(const std::shared_ptr<Local2Global> &local2global) { local2global_ = local2global; }
 
         ~TransferAssembler();
 
@@ -87,17 +95,15 @@ namespace utopia {
         virtual bool write(const Path &) const { return false; }
     };
 
-
     /**
      * @brief constructed as (D^-1 * B) * ( . )
      */
     class L2TransferOperator final : public TransferOperator {
     public:
-        inline void apply(const UVector &from, UVector &to) const override
-        {
+        inline void apply(const UVector &from, UVector &to) const override {
             UVector B_from = *B * from;
 
-            if(empty(to)) {
+            if (empty(to)) {
                 to = B_from;
             }
 
@@ -105,8 +111,7 @@ namespace utopia {
         }
 
         ///@brief assumes that D is symmetric
-        void apply_transpose(const UVector &from, UVector &to) const override
-        {
+        void apply_transpose(const UVector &from, UVector &to) const override {
             UVector D_inv_from = local_zeros(local_size(*D).get(0));
             linear_solver->apply(from, D_inv_from);
             to = transpose(*B) * D_inv_from;
@@ -115,10 +120,9 @@ namespace utopia {
         static std::unique_ptr<L2TransferOperator> Make(
             const std::shared_ptr<USparseMatrix> &B,
             const std::shared_ptr<USparseMatrix> &D,
-            const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
-            const double tol = 1e-16
-        )
-        {
+            const std::shared_ptr<LinearSolver<USparseMatrix, UVector>> &linear_solver =
+                std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+            const double tol = 1e-16) {
             auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
             ret->init();
             return ret;
@@ -127,10 +131,9 @@ namespace utopia {
         static std::unique_ptr<L2TransferOperator> make_fixed(
             const std::shared_ptr<USparseMatrix> &B,
             const std::shared_ptr<USparseMatrix> &D,
-            const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
-            const double tol = 1e-16
-        )
-        {
+            const std::shared_ptr<LinearSolver<USparseMatrix, UVector>> &linear_solver =
+                std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+            const double tol = 1e-16) {
             auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
             ret->fix_mass_matrix_operator(tol);
             ret->init();
@@ -140,18 +143,16 @@ namespace utopia {
         static std::unique_ptr<L2TransferOperator> make_restricted(
             const std::shared_ptr<USparseMatrix> &B,
             const std::shared_ptr<USparseMatrix> &D,
-            const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
-            const double tol = 1e-16
-        )
-        {
+            const std::shared_ptr<LinearSolver<USparseMatrix, UVector>> &linear_solver =
+                std::make_shared<BiCGStab<USparseMatrix, UVector>>(),
+            const double tol = 1e-16) {
             auto ret = utopia::make_unique<L2TransferOperator>(B, D, linear_solver);
             ret->restrict_mass_matrix(tol);
             ret->init();
             return ret;
         }
 
-        inline void describe(std::ostream &os) const override
-        {
+        inline void describe(std::ostream &os) const override {
             UVector t_from = local_values(local_size(*B).get(1), 1);
             UVector t_to;
             apply(t_from, t_to);
@@ -169,30 +170,23 @@ namespace utopia {
             os << "------------------------------------------\n";
         }
 
-        bool write(const Path &path) const override
-        {
+        bool write(const Path &path) const override {
             return utopia::write(path / "B.m", *B) && utopia::write(path / "D.m", *D);
         }
 
-        inline L2TransferOperator(
-            const std::shared_ptr<USparseMatrix> &B,
-            const std::shared_ptr<USparseMatrix> &D,
-            const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
-        )
-        : B(B), D(D), linear_solver(linear_solver)
-        {
+        inline L2TransferOperator(const std::shared_ptr<USparseMatrix> &B,
+                                  const std::shared_ptr<USparseMatrix> &D,
+                                  const std::shared_ptr<LinearSolver<USparseMatrix, UVector>> &linear_solver =
+                                      std::make_shared<BiCGStab<USparseMatrix, UVector>>())
+            : B(B), D(D), linear_solver(linear_solver) {
             assert(B);
             assert(D);
             assert(linear_solver);
         }
 
-        inline void init()
-        {
-            linear_solver->update(D);
-        }
+        inline void init() { linear_solver->update(D); }
 
-        void restrict_mass_matrix_old(const double tol = 1e-16)
-        {
+        void restrict_mass_matrix_old(const double tol = 1e-16) {
             auto rr = row_range(*B);
 
             const SizeType n_local = rr.extent();
@@ -201,19 +195,15 @@ namespace utopia {
             std::vector<USparseMatrix::SizeType> indices;
             indices.reserve(n_local);
 
-            utopia::each_read(*B, [&](
-                const utopia::SizeType i,
-                const utopia::SizeType j,
-                const double value) {
-
-                if(std::abs(value) > tol) {
+            utopia::each_read(*B, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
+                if (std::abs(value) > tol) {
                     auto idx = i - rr.begin();
                     exists[idx] = true;
                 }
             });
 
-            for(SizeType i = 0; i < n_local; ++i) {
-                if(!exists[i]) {
+            for (SizeType i = 0; i < n_local; ++i) {
+                if (!exists[i]) {
                     indices.push_back(rr.begin() + i);
                 }
             }
@@ -221,8 +211,7 @@ namespace utopia {
             set_zero_rows(*D, indices, 1.);
         }
 
-        void restrict_mass_matrix(const double tol = 1e-16)
-        {
+        void restrict_mass_matrix(const double tol = 1e-16) {
             auto rr = row_range(*B);
 
             const SizeType n_local = rr.extent();
@@ -236,8 +225,8 @@ namespace utopia {
 
             Read<UVector> r_D(sum_D), r_B(sum_B);
 
-            for(auto i = rr.begin(); i < rr.end(); ++i) {
-                if(!approxeq(sum_D.get(i), sum_B.get(i), tol)) {
+            for (auto i = rr.begin(); i < rr.end(); ++i) {
+                if (!approxeq(sum_D.get(i), sum_B.get(i), tol)) {
                     indices.push_back(rr.begin() + i);
                 }
             }
@@ -245,8 +234,7 @@ namespace utopia {
             set_zero_rows(*D, indices, 1.);
         }
 
-        void fix_mass_matrix_operator(const double tol = 1e-16)
-        {
+        void fix_mass_matrix_operator(const double tol = 1e-16) {
             UVector d;
 
             Size s = local_size(*D);
@@ -256,91 +244,74 @@ namespace utopia {
                 Write<UVector> w_d(d);
 
                 each_read(*D, [&d, tol](const SizeType i, const SizeType, const double val) {
-                    if(std::abs(val) > tol) {
+                    if (std::abs(val) > tol) {
                         d.set(i, 0.);
                     }
-
                 });
             }
 
             (*D) += USparseMatrix(diag(d));
         }
 
-        friend Size local_size(const L2TransferOperator &op)
-        {
-            return local_size(*op.B);
-        }
+        friend Size local_size(const L2TransferOperator &op) { return local_size(*op.B); }
 
-        private:
-            std::shared_ptr<USparseMatrix> B;
-            std::shared_ptr<USparseMatrix> D;
-            std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
-
+    private:
+        std::shared_ptr<USparseMatrix> B;
+        std::shared_ptr<USparseMatrix> D;
+        std::shared_ptr<LinearSolver<USparseMatrix, UVector>> linear_solver;
     };
 
     class PseudoL2TransferOperator final : public TransferOperator {
     public:
-        inline void apply(const UVector &from, UVector &to) const override
-        {
+        inline void apply(const UVector &from, UVector &to) const override {
             assert(T);
             to = *T * from;
         }
 
-        inline void apply_transpose(const UVector &from, UVector &to) const override
-        {
+        inline void apply_transpose(const UVector &from, UVector &to) const override {
             assert(T);
             to = transpose(*T) * from;
         }
 
         PseudoL2TransferOperator() {}
 
-        inline void init_from_coupling_operator(const USparseMatrix &B)
-        {
+        inline void init_from_coupling_operator(const USparseMatrix &B) {
             T = std::make_shared<USparseMatrix>();
             UVector d = sum(B, 1);
 
             {
                 ReadAndWrite<UVector> rw_(d);
                 auto r = range(d);
-                for(auto k = r.begin(); k != r.end(); ++k) {
-                    if(approxeq(d.get(k), 0.0, 1e-14)) {
+                for (auto k = r.begin(); k != r.end(); ++k) {
+                    if (approxeq(d.get(k), 0.0, 1e-14)) {
                         d.set(k, 1.);
                     }
                 }
             }
 
-            *T = diag(1./d) * B;
+            *T = diag(1. / d) * B;
         }
 
-        inline void init_from_coupling_and_mass_operator(
-            const USparseMatrix &B,
-            const USparseMatrix &M
-            )
-        {
+        inline void init_from_coupling_and_mass_operator(const USparseMatrix &B, const USparseMatrix &M) {
             T = std::make_shared<USparseMatrix>();
             UVector d = sum(M, 1);
 
             {
                 ReadAndWrite<UVector> rw_(d);
                 auto r = range(d);
-                for(auto k = r.begin(); k != r.end(); ++k) {
-                    if(approxeq(d.get(k), 0.0, 1e-14)) {
+                for (auto k = r.begin(); k != r.end(); ++k) {
+                    if (approxeq(d.get(k), 0.0, 1e-14)) {
                         d.set(k, 1.);
                     }
                 }
             }
 
-            *T = diag(1./d) * B;
+            *T = diag(1. / d) * B;
         }
 
-        PseudoL2TransferOperator(const std::shared_ptr<USparseMatrix> &T)
-        : T(T)
-        {
-            assert(T);
-        }
+        PseudoL2TransferOperator(const std::shared_ptr<USparseMatrix> &T) : T(T) { assert(T); }
 
-        inline void describe(std::ostream &os) const override
-        {
+        inline void describe(std::ostream &os) const override {
             UVector t = sum(*T, 1);
             double t_max = max(t);
             double t_min = min(t);
@@ -349,18 +320,13 @@ namespace utopia {
             os << "------------------------------------------\n";
             os << "PseudoL2TransferOperator:\n";
             os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
-            os << "sum(T): "  << t_sum << " <= " << size(*T).get(0) << "\n";
+            os << "sum(T): " << t_sum << " <= " << size(*T).get(0) << "\n";
             os << "------------------------------------------\n";
         }
 
-        bool write(const Path &path) const override
-        {
-            return utopia::write(path / "T.m", *T);
-        }
+        bool write(const Path &path) const override { return utopia::write(path / "T.m", *T); }
 
-        inline std::shared_ptr<USparseMatrix> matrix() {
-            return T;
-        }
+        inline std::shared_ptr<USparseMatrix> matrix() { return T; }
 
     private:
         std::shared_ptr<USparseMatrix> T;
@@ -368,19 +334,16 @@ namespace utopia {
 
     class PermutedOperator final : public TransferOperator {
     public:
-        PermutedOperator(
-            const std::shared_ptr<TransferOperator> &op,
-            const std::shared_ptr<USparseMatrix> &from_permutation,
-            const std::shared_ptr<USparseMatrix> &to_permutation)
-        : op_(op), from_permutation_(from_permutation), to_permutation_(to_permutation)
-        {
+        PermutedOperator(const std::shared_ptr<TransferOperator> &op,
+                         const std::shared_ptr<USparseMatrix> &from_permutation,
+                         const std::shared_ptr<USparseMatrix> &to_permutation)
+            : op_(op), from_permutation_(from_permutation), to_permutation_(to_permutation) {
             from_buffer_ = utopia::make_unique<UVector>();
-            to_buffer_   = utopia::make_unique<UVector>();
+            to_buffer_ = utopia::make_unique<UVector>();
         }
 
-        inline void apply(const UVector &from, UVector &to) const
-        {
-            if(from_permutation_) {
+        inline void apply(const UVector &from, UVector &to) const {
+            if (from_permutation_) {
                 *from_buffer_ = *from_permutation_ * from;
             } else {
                 *from_buffer_ = from;
@@ -388,16 +351,15 @@ namespace utopia {
 
             op_->apply(*from_buffer_, *to_buffer_);
 
-            if(to_permutation_) {
+            if (to_permutation_) {
                 to = transpose(*to_permutation_) * (*to_buffer_);
             } else {
                 to = *to_buffer_;
             }
         }
 
-        inline void apply_transpose(const UVector &to, UVector &from) const
-        {
-            if(to_permutation_) {
+        inline void apply_transpose(const UVector &to, UVector &from) const {
+            if (to_permutation_) {
                 *to_buffer_ = *to_permutation_ * to;
             } else {
                 *to_buffer_ = to;
@@ -405,7 +367,7 @@ namespace utopia {
 
             op_->apply_transpose(*to_buffer_, *from_buffer_);
 
-            if(from_permutation_) {
+            if (from_permutation_) {
                 from = transpose(*from_permutation_) * (*from_buffer_);
             } else {
                 from = *from_buffer_;
@@ -423,32 +385,24 @@ namespace utopia {
     public:
         using Scalar = UTOPIA_SCALAR(UVector);
 
-        NormalizedOperator(
-            const Size &op_local_size,
-            const std::shared_ptr<TransferOperator> &op
-            )
-        : op_(op)
-        {
+        NormalizedOperator(const Size &op_local_size, const std::shared_ptr<TransferOperator> &op) : op_(op) {
             UVector ones = local_values(op_local_size.get(1), 1.);
             op->apply(ones, rescale_);
-            inv_rescale_ = 1./rescale_;
+            inv_rescale_ = 1. / rescale_;
             temp_ = utopia::make_unique<UVector>();
         }
 
-        inline void apply(const UVector &from, UVector &to) const
-        {
+        inline void apply(const UVector &from, UVector &to) const {
             op_->apply(from, *temp_);
             to = e_mul(inv_rescale_, *temp_);
         }
 
-        inline void apply_transpose(const UVector &from, UVector &to) const
-        {
+        inline void apply_transpose(const UVector &from, UVector &to) const {
             *temp_ = e_mul(rescale_, from);
             op_->apply_transpose(*temp_, to);
         }
 
-        inline void describe(std::ostream &os) const
-        {
+        inline void describe(std::ostream &os) const {
             os << "non normalized: \n";
             op_->describe(os);
         }
@@ -463,33 +417,27 @@ namespace utopia {
     public:
         using Scalar = UTOPIA_SCALAR(UVector);
 
-        ClampedOperator(const std::shared_ptr<TransferOperator> &op)
-        : op_(op)
-        {}
+        ClampedOperator(const std::shared_ptr<TransferOperator> &op) : op_(op) {}
 
-        inline void apply(const UVector &from, UVector &to) const
-        {
+        inline void apply(const UVector &from, UVector &to) const {
             op_->apply(from, to);
             clamp(from, to);
         }
 
-        inline void apply_transpose(const UVector &from, UVector &to) const
-        {
+        inline void apply_transpose(const UVector &from, UVector &to) const {
             op_->apply_transpose(from, to);
             clamp(from, to);
         }
 
     private:
-
-        static void clamp(const UVector &from, UVector &to)
-        {
+        static void clamp(const UVector &from, UVector &to) {
             const Scalar min_val = min(from);
             const Scalar max_val = max(from);
 
             ReadAndWrite<UVector> rw_(to);
 
             auto r = range(to);
-            for(auto i = r.begin(); i < r.end(); ++i) {
+            for (auto i = r.begin(); i < r.end(); ++i) {
                 const Scalar val = to.get(i);
                 to.set(i, std::min(max_val, std::max(min_val, val)));
             }
@@ -498,43 +446,36 @@ namespace utopia {
         std::shared_ptr<TransferOperator> op_;
     };
 
-
     class ForceZeroExtension final : public TransferOperator {
     public:
         using Scalar = UTOPIA_SCALAR(UVector);
 
-        ForceZeroExtension(const std::shared_ptr<TransferOperator> &op, const double tol)
-        : op_(op), tol_(tol)
-        {}
+        ForceZeroExtension(const std::shared_ptr<TransferOperator> &op, const double tol) : op_(op), tol_(tol) {}
 
-        inline void apply(const UVector &from, UVector &to) const
-        {
+        inline void apply(const UVector &from, UVector &to) const {
             op_->apply(from, to);
             clamp(from, to);
         }
 
-        inline void apply_transpose(const UVector &from, UVector &to) const
-        {
+        inline void apply_transpose(const UVector &from, UVector &to) const {
             op_->apply_transpose(from, to);
             clamp(from, to);
         }
 
     private:
-
-        void clamp(const UVector &from, UVector &to) const
-        {
+        void clamp(const UVector &from, UVector &to) const {
             const Scalar min_val = min(from);
             const Scalar max_val = max(from);
 
             ReadAndWrite<UVector> rw_(to);
 
             auto r = range(to);
-            for(auto i = r.begin(); i < r.end(); ++i) {
+            for (auto i = r.begin(); i < r.end(); ++i) {
                 Scalar val = to.get(i);
 
-                if(val + tol_ < min_val) {
+                if (val + tol_ < min_val) {
                     to.set(i, 0.);
-                } else if(val - tol_ > max_val) {
+                } else if (val - tol_ > max_val) {
                     to.set(i, 0.);
                 } else {
                     to.set(i, val);
@@ -548,24 +489,15 @@ namespace utopia {
 
     class BidirectionalOperator final : public TransferOperator {
     public:
-        BidirectionalOperator(
-            const std::shared_ptr<TransferOperator> &forward,
-            const std::shared_ptr<TransferOperator> &backward
-        ) : forward_(forward), backward_(backward)
-        {}
+        BidirectionalOperator(const std::shared_ptr<TransferOperator> &forward,
+                              const std::shared_ptr<TransferOperator> &backward)
+            : forward_(forward), backward_(backward) {}
 
-        inline void apply(const UVector &from, UVector &to) const
-        {
-            forward_->apply(from, to);
-        }
+        inline void apply(const UVector &from, UVector &to) const { forward_->apply(from, to); }
 
-        inline void apply_transpose(const UVector &from, UVector &to) const
-        {
-            backward_->apply(from, to);
-        }
+        inline void apply_transpose(const UVector &from, UVector &to) const { backward_->apply(from, to); }
 
-        inline void describe(std::ostream &os) const
-        {
+        inline void describe(std::ostream &os) const {
             forward_->describe(os);
             backward_->describe(os);
         }
@@ -579,43 +511,33 @@ namespace utopia {
 
     class Interpolator final : public TransferOperator {
     public:
-        inline void apply(const UVector &from, UVector &to) const override
-        {
-            to = *T * from;
-        }
+        inline void apply(const UVector &from, UVector &to) const override { to = *T * from; }
 
-        void apply_transpose(const UVector &from, UVector &to) const override
-        {
+        void apply_transpose(const UVector &from, UVector &to) const override {
             assert(T);
             to = transpose(*T) * from;
         }
 
-        Interpolator(const std::shared_ptr<USparseMatrix> &T)
-        : T(T)
-        {
-            assert(T);
-        }
+        Interpolator(const std::shared_ptr<USparseMatrix> &T) : T(T) { assert(T); }
 
-        void normalize_rows()
-        {
+        void normalize_rows() {
             UVector d = sum(*T, 1);
 
             auto r = range(d);
 
             {
                 ReadAndWrite<UVector> rw_(d);
-                for(auto k = r.begin(); k != r.end(); ++k) {
-                    if(approxeq(d.get(k), 0.0, 1e-14)) {
+                for (auto k = r.begin(); k != r.end(); ++k) {
+                    if (approxeq(d.get(k), 0.0, 1e-14)) {
                         d.set(k, 1.);
                     }
                 }
             }
 
-            *T = diag(1./d) * (*T);
+            *T = diag(1. / d) * (*T);
         }
 
-        inline void describe(std::ostream &os) const override
-        {
+        inline void describe(std::ostream &os) const override {
             UVector t = sum(*T, 1);
             double t_max = max(t);
             double t_min = min(t);
@@ -628,15 +550,11 @@ namespace utopia {
             os << "------------------------------------------\n";
         }
 
-        bool write(const Path &path) const override
-        {
-            return utopia::write(path / "T.m", *T);
-        }
+        bool write(const Path &path) const override { return utopia::write(path / "T.m", *T); }
 
     private:
         std::shared_ptr<USparseMatrix> T;
     };
-
 
     enum TransferOperatorType {
         INTERPOLATION = 0,
@@ -646,6 +564,6 @@ namespace utopia {
         BIDIRECTIONAL_L2_PROJECTION = 4,
         BIDIRECTIONAL_PSEUDO_L2_PROJECTION = 5,
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_TRANSFER_ASSEMBLER_HPP
+#endif  // UTOPIA_TRANSFER_ASSEMBLER_HPP

@@ -1,0 +1,143 @@
+{
+   "master": {
+      "mesh": {
+         "type": "file",
+         "path": "../data/frac/square-non_conf_split.e",
+         "refinements": 0
+      },
+      "space": {
+         "system-name": "master",
+         "variables": [
+            {
+               "name": "u",
+               "order": "1"
+            }
+         ],
+         "boundary-conditions": [
+            {
+               "side": "2",
+               "value": "1"
+            },
+            {
+               "side": "1",
+               "value": "4"
+            }
+         ]
+      },
+      "diffusivity-blocks": [
+         {
+            "value": 0.1,
+            "block": 1
+         },
+         {
+            "value": 0.1,
+            "block": 2
+         },
+         {
+            "value": 0.1,
+            "block": 3
+         }
+      ],
+      "post-processors" : [
+         {
+            "type" : "flux",
+            "side" : 2
+         }
+      ]
+   },
+   "slave": {
+      "mesh": {
+         "type": "file",
+         "path": "../data/frac/inclined_line.e",
+         "refinements": 0,
+         "scale": 0.90,
+         "shift-x": 0.05
+      },
+      "space": {
+         "system-name": "slave",
+         "variables": [
+            {
+               "name": "u",
+               "order": 1,
+               "fe-family": "LAGRANGE"
+            }
+         ]
+      },
+      "forcing-function": [],
+      "diffusivity-blocks": [
+         {
+            "value": 0.1,
+            "block": 1
+         }
+      ]
+   },
+   "solve-strategy": "monolithic",
+   "use-mg": "true",
+   "mg-sweeps": "1",
+   "mg-levels": "4",
+   "flow-type": "transient",
+   "transport": {
+      "dt": "0.1",
+      "simulation-time": "10",
+      "lump-mass-matrix": "false",
+      "regularization-parameter": "0.5",
+      "use-upwinding": "true",
+      "boundary-factor": "0.",
+      "matrix": {
+         "space": {
+            "system-name": "transport",
+            "variables": [
+               {
+                  "name": "c",
+                  "order": "1",
+                  "fe-family": "LAGRANGE"
+               }
+            ],
+            "boundary-conditions": [
+               {
+                  "side": "1",
+                  "value": "1",
+                  "var": "0"
+               }
+            ]
+         },
+         "outflow": [
+            {
+               "side": "2"
+            }
+         ],
+         "porosity": [
+            {
+               "value": "0.2",
+               "block": "1"
+            },
+            {
+               "value": "0.2",
+               "block": "2"
+            },
+            {
+               "value": "0.2",
+               "block": "3"
+            }
+         ]
+      },
+      "fracture-network": {
+         "space": {
+            "system-name": "transport",
+            "variables": [
+               {
+                  "name": "c",
+                  "order": "1",
+                  "fe-family": "LAGRANGE"
+               }
+            ]
+         },
+         "porosity": [
+            {
+               "value": "2e-5",
+               "block": "1"
+            }
+         ]
+      }
+   }
+}

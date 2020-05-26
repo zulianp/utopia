@@ -1,6 +1,3 @@
 #include "utopia_libmesh_AssemblyValues.hpp"
 
-namespace utopia {
-
-}
-
+namespace utopia {}

@@ -1,45 +1,39 @@
 #include "utopia_BoundaryMeshTest.hpp"
-#include "utopia_libmesh.hpp"
 #include "libmesh/boundary_mesh.h"
 #include "moonolith_synched_describable.hpp"
+#include "utopia_libmesh.hpp"
 
 namespace utopia {
     class BoundaryMeshTestImpl {
     public:
         using FunctionSpaceT = utopia::LibMeshFunctionSpace;
 
-        BoundaryMeshTestImpl(libMesh::Parallel::Communicator &comm)
-        : comm(comm), n(2)
-        {
-            build();
-        }
+        BoundaryMeshTestImpl(libMesh::Parallel::Communicator &comm) : comm(comm), n(2) { build(); }
 
-        void run()
-        {
-            UTOPIA_UNIT_TEST_BEGIN("BounaryMeshTest");
+        void run() {
+            // UTOPIA_UNIT_TEST_BEGIN("BounaryMeshTest");
             UTOPIA_RUN_TEST(dof_relation);
             UTOPIA_RUN_TEST(mass_matrix);
-            UTOPIA_UNIT_TEST_END("BounaryMeshTest");
+            // UTOPIA_UNIT_TEST_END("BounaryMeshTest");
         }
 
-        void dof_relation()
-        {
+        void dof_relation() {
             auto V = FunctionSpaceT(*mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
             V.initialize();
 
-            libMesh::BoundaryMesh b_mesh(comm, mesh->mesh_dimension()-1);
+            libMesh::BoundaryMesh b_mesh(comm, mesh->mesh_dimension() - 1);
             mesh->boundary_info->sync(b_mesh);
 
             auto V_surf = FunctionSpaceT(b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
             V_surf.initialize();
 
-            auto &dof_map      = V.dof_map();
+            auto &dof_map = V.dof_map();
             auto &dof_map_surf = V_surf.dof_map();
 
             std::vector<libMesh::dof_id_type> side_indices, indices, surf_indices;
 
             std::stringstream ss;
-            for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
+            for (auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
                 auto &e = **e_it;
 
                 auto n_sides = e.n_sides();
@@ -51,7 +45,7 @@ namespace utopia {
                 // print_vector(std::begin(indices), std::end(indices), ss);
                 // ss << "....................................\n";
 
-                for(std::size_t i = 0; i < n_sides; ++i) {
+                for (std::size_t i = 0; i < n_sides; ++i) {
                     auto side = e.build_side_ptr(i);
 
                     dof_map.dof_indices(side.get(), side_indices);
@@ -73,12 +67,11 @@ namespace utopia {
             // moonolith::synch_describe(ss.str(), m_comm, std::cout);
         }
 
-        void mass_matrix()
-        {
+        void mass_matrix() {
             auto V_vol = FunctionSpaceT(*mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
             V_vol.initialize();
 
-            auto form_vol  = inner(trial(V_vol), test(V_vol)) * dX;
+            auto form_vol = inner(trial(V_vol), test(V_vol)) * dX;
 
             USparseMatrix mat_vol;
             utopia::assemble(form_vol, mat_vol);
@@ -86,7 +79,7 @@ namespace utopia {
             double volume = sum(mat_vol);
             utopia_test_assert(approxeq(volume, 1.));
 
-            libMesh::BoundaryMesh b_mesh(comm, mesh->mesh_dimension()-1);
+            libMesh::BoundaryMesh b_mesh(comm, mesh->mesh_dimension() - 1);
             mesh->boundary_info->sync(b_mesh);
 
             auto V = FunctionSpaceT(b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
@@ -98,11 +91,10 @@ namespace utopia {
             utopia::assemble(form, mat);
 
             double surface_area = sum(mat);
-            utopia_test_assert(approxeq(surface_area, (mesh->mesh_dimension() == 2? 4. : 6.)));
+            utopia_test_assert(approxeq(surface_area, (mesh->mesh_dimension() == 2 ? 4. : 6.)));
         }
 
-        void build()
-        {
+        void build() {
             mesh = std::make_shared<libMesh::DistributedMesh>(comm);
             // libMesh::MeshTools::Generation::build_square(
             // 	*mesh,
@@ -112,14 +104,7 @@ namespace utopia {
             // 	libMesh::QUAD4
             // );
 
-            libMesh::MeshTools::Generation::build_cube(
-                *mesh,
-                n, n, n,
-                0, 1,
-                0, 1.,
-                0, 1.,
-                libMesh::HEX8
-            );
+            libMesh::MeshTools::Generation::build_cube(*mesh, n, n, n, 0, 1, 0, 1., 0, 1., libMesh::HEX8);
         }
 
     private:
@@ -128,10 +113,8 @@ namespace utopia {
         int n;
     };
 
-
-    void BoundaryMeshTest::run(Input &in)
-    {
+    void BoundaryMeshTest::run(Input &in) {
         BoundaryMeshTestImpl impl(comm());
         impl.run();
     }
-}
+}  // namespace utopia

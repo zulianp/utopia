@@ -1,21 +1,19 @@
 #ifndef UTOPIA_PETSC_KSP_SOLVERS_HPP
 #define UTOPIA_PETSC_KSP_SOLVERS_HPP
 
-#include "utopia_LinearSolverInterfaces.hpp"
-#include "utopia_petsc_KSPSolver.hpp"
-#include "utopia_petsc_ConjugateGradient.hpp"
 #include "utopia_BiCGStab.hpp"
+#include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_petsc_ConjugateGradient.hpp"
+#include "utopia_petsc_KSPSolver.hpp"
 
 namespace utopia {
-    //FIXME use superclass IterativeSolver instead of KSPSolver and compose with it
-    template<typename Matrix, typename Vector>
+    // FIXME use superclass IterativeSolver instead of KSPSolver and compose with it
+    template <typename Matrix, typename Vector>
     class BiCGStab<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
-        BiCGStab(const std::string &preconditioner = "jacobi")
-        : KSPSolver<Matrix, Vector, PETSC>()
-        {
+        BiCGStab(const std::string &preconditioner = "jacobi") : KSPSolver<Matrix, Vector, PETSC>() {
             this->pc_type(preconditioner);
             this->ksp_type("bcgs");
         }
@@ -25,22 +23,16 @@ namespace utopia {
             super::ksp_type("bcgs");
         }
 
-        BiCGStab * clone() const override
-        {
-            return new BiCGStab(*this);
-        }
-
+        BiCGStab *clone() const override { return new BiCGStab(*this); }
     };
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
-    template<typename Matrix, typename Vector>
+    template <typename Matrix, typename Vector>
     class MINRES<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
-        MINRES(const std::string &preconditioner = "jacobi")
-        : KSPSolver<Matrix, Vector, PETSC>()
-        {
+        MINRES(const std::string &preconditioner = "jacobi") : KSPSolver<Matrix, Vector, PETSC>() {
             this->pc_type(preconditioner);
             this->ksp_type("minres");
         }
@@ -50,22 +42,16 @@ namespace utopia {
             super::ksp_type("minres");
         }
 
-        MINRES * clone() const override
-        {
-            return new MINRES(*this);
-        }
+        MINRES *clone() const override { return new MINRES(*this); }
     };
 
-
     //////////////////////////////////////////////////////////////////////////////////////////////////
-    template<typename Matrix, typename Vector>
+    template <typename Matrix, typename Vector>
     class SOR<Matrix, Vector, PETSC> final : public KSPSolver<Matrix, Vector, PETSC> {
     public:
         using super = utopia::KSPSolver<Matrix, Vector, PETSC>;
 
-        SOR()
-        : KSPSolver<Matrix, Vector, PETSC>()
-        {
+        SOR() : KSPSolver<Matrix, Vector, PETSC>() {
             this->pc_type("sor");
             this->ksp_type("richardson");
         }
@@ -76,13 +62,9 @@ namespace utopia {
             super::pc_type("sor");
         }
 
-        SOR * clone() const override
-        {
-            return new SOR(*this);
-        }
-
+        SOR *clone() const override { return new SOR(*this); }
     };
-}
+}  // namespace utopia
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#endif //UTOPIA_PETSC_KSP_SOLVERS_HPP
+#endif  // UTOPIA_PETSC_KSP_SOLVERS_HPP

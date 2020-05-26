@@ -9,11 +9,8 @@ namespace utopia {
     public:
         void run(Input &in) override;
 
-        inline static std::string command()
-        {
-            return "-fracflow";
-        }
+        inline static std::string command() { return "-fracflow"; }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FRACTURE_FLOW_APP_HPP
+#endif  // UTOPIA_FRACTURE_FLOW_APP_HPP

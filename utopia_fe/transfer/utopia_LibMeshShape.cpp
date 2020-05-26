@@ -1,7 +1,6 @@
-#include "utopia_LibMeshShape.hpp"
+// #include "utopia_LibMeshShape.hpp"
 
-
-namespace utopia {
-    template class LibMeshShape<double, 2>;
-    template class LibMeshShape<double, 3>;
-}
+// namespace utopia {
+//     template class LibMeshShape<double, 2>;
+//     template class LibMeshShape<double, 3>;
+// }

@@ -1,174 +1,171 @@
-#ifndef UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP
-#define UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP
+// #ifndef UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP
+// #define UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP
 
+// #include "utopia_Base.hpp"
+// #include "utopia_Traits.hpp"
+// #include "utopia_AssemblyContext.hpp"
+// #include "utopia_FEIsSubTree.hpp"
+// #include "utopia_Traverse.hpp"
+// #include "utopia_ProductFunctionSpace.hpp"
 
-#include "utopia_Base.hpp"
-#include "utopia_Traits.hpp"
-#include "utopia_AssemblyContext.hpp"
-#include "utopia_FEIsSubTree.hpp"
-#include "utopia_Traverse.hpp"
-#include "utopia_ProductFunctionSpace.hpp"
+// #include "utopia_homemade_FEForwardDeclarations.hpp"
+// #include "utopia_homemade_FE.hpp"
 
+// #include "utopia_fe_core.hpp"
 
-#include "utopia_homemade_FEForwardDeclarations.hpp"
-#include "utopia_homemade_FE.hpp"
+// namespace utopia {
 
+//     template<>
+//     class AssemblyContext<HOMEMADE> {
+//     public:
 
-#include "utopia_fe_core.hpp"
+//         std::vector< std::shared_ptr<FE> > trial;
+//         std::vector< std::shared_ptr<FE> > test;
 
-namespace utopia {
+//         long quadrature_order;
+//         long current_element;
+//         int block_id_;
 
-    template<>
-    class AssemblyContext<HOMEMADE> {
-    public:
+//         template<class Expr>
+//         void init_bilinear(const Expr &expr)
+//         {
 
-        std::vector< std::shared_ptr<FE> > trial;
-        std::vector< std::shared_ptr<FE> > test;
+//             static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
+//             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
 
-        long quadrature_order;
-        long current_element;
-        int block_id_;
+//             //clean up previous context
+//             trial.clear();
+//             test.clear();
 
-        template<class Expr>
-        void init_bilinear(const Expr &expr)
-        {
+//             std::shared_ptr<FE> trial_fe;
+//             std::shared_ptr<FE> test_fe;
 
-            static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
-            static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
+//             auto trial_space_ptr = trial_space<HMFESpace>(expr);
+//             auto test_space_ptr  = test_space<HMFESpace>(expr);
 
-            //clean up previous context
-            trial.clear();
-            test.clear();
+//             quadrature_order = functional_order(expr, *this);
 
-            std::shared_ptr<FE> trial_fe;
-            std::shared_ptr<FE> test_fe;
+//             assert(functional_type(expr, *this) == POLYNOMIAL_FUNCTION);
 
-            auto trial_space_ptr = trial_space<HMFESpace>(expr);
-            auto test_space_ptr  = test_space<HMFESpace>(expr);
+//             std::cout << "quadrature_order: " << quadrature_order << std::endl;
 
+//             if(trial_space_ptr) {
+//                 trial_fe = std::make_shared<FE>();
+//                 trial_fe->init(current_element, trial_space_ptr->mesh(), quadrature_order);
+//                 trial.push_back(trial_fe);
+//             } else {
+//                 //product space init
+//                 auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<HMFESpace>>(expr);
+//                 assert(prod_trial_space_ptr);
 
-            quadrature_order = functional_order(expr, *this);
+//                 trial_fe = std::make_shared<FE>();
+//                 trial_fe->init(current_element, prod_trial_space_ptr->subspace(0).mesh(), quadrature_order);
 
-            assert(functional_type(expr, *this) == POLYNOMIAL_FUNCTION);
+//                 //just copy it three times for now
+//                 for(std::size_t i = 0; i < prod_trial_space_ptr->n_subspaces(); ++i) {
+//                     trial.push_back(trial_fe);
+//                 }
+//             }
 
-            std::cout << "quadrature_order: " << quadrature_order << std::endl;
+//             if(test_space_ptr) {
+//                 if(trial_space_ptr != test_space_ptr) {
+//                     test_fe = std::make_shared<FE>();
+//                     test_fe->init(current_element, test_space_ptr->mesh(), quadrature_order);
+//                     test.push_back(test_fe);
+//                 } else if(trial_space_ptr) {
+//                     test_fe = trial_fe;
+//                 }
+//             } else {
+//                 //product space init
+//                 auto prod_test_space_ptr = test_space<ProductFunctionSpace<HMFESpace>>(expr);
+//                 assert(prod_test_space_ptr);
 
-            if(trial_space_ptr) {
-                trial_fe = std::make_shared<FE>();
-                trial_fe->init(current_element, trial_space_ptr->mesh(), quadrature_order);
-                trial.push_back(trial_fe);
-            } else {
-                //product space init
-                auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<HMFESpace>>(expr);
-                assert(prod_trial_space_ptr);
+//                 test_fe = std::make_shared<FE>();
+//                 test_fe->init(current_element, prod_test_space_ptr->subspace(0).mesh(), quadrature_order);
 
-                trial_fe = std::make_shared<FE>();
-                trial_fe->init(current_element, prod_trial_space_ptr->subspace(0).mesh(), quadrature_order);
+//                 //just copy it three times for now
+//                 for(std::size_t i = 0; i < prod_test_space_ptr->n_subspaces(); ++i) {
+//                     test.push_back(test_fe);
+//                 }
+//             }
+//         }
 
-                //just copy it three times for now
-                for(std::size_t i = 0; i < prod_trial_space_ptr->n_subspaces(); ++i) {
-                    trial.push_back(trial_fe);
-                }
-            }
+//         template<class Expr>
+//         void init_linear(const Expr &expr)
+//         {
+//             static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), 	"could not find test function"
+//             );
 
-            if(test_space_ptr) {
-                if(trial_space_ptr != test_space_ptr) {
-                    test_fe = std::make_shared<FE>();
-                    test_fe->init(current_element, test_space_ptr->mesh(), quadrature_order);
-                    test.push_back(test_fe);
-                } else if(trial_space_ptr) {
-                    test_fe = trial_fe;
-                }
-            } else {
-                //product space init
-                auto prod_test_space_ptr = test_space<ProductFunctionSpace<HMFESpace>>(expr);
-                assert(prod_test_space_ptr);
+//             test.clear();
 
-                test_fe = std::make_shared<FE>();
-                test_fe->init(current_element, prod_test_space_ptr->subspace(0).mesh(), quadrature_order);
+//             auto test_space_ptr  = test_space<HMFESpace>(expr);
+//             std::shared_ptr<FE> test_fe;
 
-                //just copy it three times for now
-                for(std::size_t i = 0; i < prod_test_space_ptr->n_subspaces(); ++i) {
-                    test.push_back(test_fe);
-                }
-            }
-        }
+//             if(test_space_ptr) {
+//                 test_fe = std::make_shared<FE>();
+//                 test_fe->init(current_element, test_space_ptr->mesh(), quadrature_order);
+//                 test.push_back(test_fe);
 
-        template<class Expr>
-        void init_linear(const Expr &expr)
-        {
-            static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), 	"could not find test function" );
+//             } else {
+//                 //product space init
+//                 auto prod_test_space_ptr = test_space<ProductFunctionSpace<HMFESpace>>(expr);
+//                 assert(prod_test_space_ptr);
 
-            test.clear();
+//                 test_fe = std::make_shared<FE>();
+//                 test_fe->init(current_element, prod_test_space_ptr->subspace(0).mesh(), quadrature_order);
 
-            auto test_space_ptr  = test_space<HMFESpace>(expr);
-            std::shared_ptr<FE> test_fe;
+//                 //just copy it three times for now
+//                 for(std::size_t i = 0; i < prod_test_space_ptr->n_subspaces(); ++i) {
+//                     test.push_back(test_fe);
+//                 }
+//             }
+//         }
 
-            if(test_space_ptr) {
-                test_fe = std::make_shared<FE>();
-                test_fe->init(current_element, test_space_ptr->mesh(), quadrature_order);
-                test.push_back(test_fe);
+//         void init_tensor(ElementVector &v, const bool reset) {
+//             auto s = size(v);
 
-            } else {
-                //product space init
-                auto prod_test_space_ptr = test_space<ProductFunctionSpace<HMFESpace>>(expr);
-                assert(prod_test_space_ptr);
+//             int n_shape_functions = 0;
+//             for(auto &t : test) {
+//                 n_shape_functions += t->n_shape_functions();
+//             }
 
-                test_fe = std::make_shared<FE>();
-                test_fe->init(current_element, prod_test_space_ptr->subspace(0).mesh(), quadrature_order);
+//             if(reset || s.get(0) != n_shape_functions) {
+//                 v = zeros(n_shape_functions);
+//             }
+//         }
 
-                //just copy it three times for now
-                for(std::size_t i = 0; i < prod_test_space_ptr->n_subspaces(); ++i) {
-                    test.push_back(test_fe);
-                }
-            }
-        }
+//         void init_tensor(ElementMatrix &v, const bool reset) {
+//             auto s = size(v);
 
-        void init_tensor(ElementVector &v, const bool reset) {
-            auto s = size(v);
+//             int n_trial_functions = 0;
+//             for(auto &t : trial) {
+//                 n_trial_functions += t->n_shape_functions();
+//             }
 
-            int n_shape_functions = 0;
-            for(auto &t : test) {
-                n_shape_functions += t->n_shape_functions();
-            }
+//             int n_test_functions = 0;
+//             for(auto &t : test) {
+//                 n_test_functions += t->n_shape_functions();
+//             }
 
-            if(reset || s.get(0) != n_shape_functions) {
-                v = zeros(n_shape_functions);
-            }
-        }
+//             if(reset || s.get(0) != n_test_functions || s.get(1) != n_trial_functions) {
+//                 v = zeros(n_test_functions, n_trial_functions);
+//             }
+//         }
 
-        void init_tensor(ElementMatrix &v, const bool reset) {
-            auto s = size(v);
+//         const HMDx &dx() const
+//         {
+//             return test[0]->dx;
+//         }
 
-            int n_trial_functions = 0;
-            for(auto &t : trial) {
-                n_trial_functions += t->n_shape_functions();
-            }
+//         AssemblyContext()
+//         :  quadrature_order(2), current_element(0), block_id_(0)
+//         {}
 
-            int n_test_functions = 0;
-            for(auto &t : test) {
-                n_test_functions += t->n_shape_functions();
-            }
+//         inline int block_id() const
+//         {
+//             return block_id_;
+//         }
+//     };
+// }
 
-            if(reset || s.get(0) != n_test_functions || s.get(1) != n_trial_functions) {
-                v = zeros(n_test_functions, n_trial_functions);
-            }
-        }
-
-        const HMDx &dx() const
-        {
-            return test[0]->dx;
-        }
-
-        AssemblyContext()
-        :  quadrature_order(2), current_element(0), block_id_(0)
-        {}
-
-        inline int block_id() const
-        {
-            return block_id_;
-        }
-    };
-}
-
-#endif //UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP
+// #endif //UTOPIA_HOMEMADE_ASSEMBLY_CONTEXT_HPP

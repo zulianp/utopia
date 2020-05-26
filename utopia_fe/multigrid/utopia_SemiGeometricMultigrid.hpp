@@ -1,10 +1,10 @@
 #ifndef UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP
 #define UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP
 
-#include "utopia_libmesh_Types.hpp"
-#include "utopia_IterativeSolver.hpp"
 #include "utopia.hpp"
+#include "utopia_IterativeSolver.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_libmesh_Types.hpp"
 
 namespace utopia {
     class Contact;
@@ -13,9 +13,9 @@ namespace utopia {
     public:
         typedef utopia::Multigrid<USparseMatrix, UVector> MultigridT;
         // typedef utopia::Multigrid<USparseMatrix, UVector, PETSC_EXPERIMENTAL> MultigridT;
+        using Super = utopia::IterativeSolver<USparseMatrix, UVector>;
 
-        void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
-        {
+        void init(const LibMeshFunctionSpace &space, const std::size_t n_levels) {
             init(space.equation_system(), n_levels);
         }
 
@@ -25,58 +25,35 @@ namespace utopia {
         void update(const std::shared_ptr<const USparseMatrix> &op) override;
         bool apply(const UVector &rhs, UVector &sol) override;
 
-        SemiGeometricMultigrid * clone() const override
-        {
-            return new SemiGeometricMultigrid();
-        }
+        SemiGeometricMultigrid *clone() const override { return new SemiGeometricMultigrid(); }
 
-        inline void verbose(const bool &val) override
-        {
-            mg.verbose(val);
-        }
+        inline void verbose(const bool &val) override { mg.verbose(val); }
 
-        inline void max_it(const SizeType &it) override {
-            mg.max_it(it);
-        }
+        inline void max_it(const SizeType &it) override { mg.max_it(it); }
 
-        inline SizeType max_it() const override {
-            return mg.max_it();
-        }
+        inline SizeType max_it() const override { return mg.max_it(); }
 
-        inline void atol(const double &tol) override {
-            algebraic().atol(tol);
-        }
+        inline void atol(const double &tol) override { algebraic().atol(tol); }
 
-        void convert_to_block_solver()
-        {
-            is_block_solver_ = true;
-        }
+        void convert_to_block_solver() { is_block_solver_ = true; }
 
-        SemiGeometricMultigrid(
-            const std::shared_ptr<Smoother<USparseMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>(),
-            const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>()
-        );
+        SemiGeometricMultigrid(const std::shared_ptr<IterativeSolver<USparseMatrix, UVector>> &smoother =
+                                   std::make_shared<GaussSeidel<USparseMatrix, UVector>>(),
+                               const std::shared_ptr<LinearSolver<USparseMatrix, UVector>> &linear_solver =
+                                   std::make_shared<Factorization<USparseMatrix, UVector>>());
 
-        inline MultigridT &algebraic()
-        {
-            return mg;
-        }
+        inline MultigridT &algebraic() { return mg; }
 
-        void set_separate_subdomains(const bool val)
-        {
-            separate_subdomains_ = val;
-        }
+        void set_separate_subdomains(const bool val) { separate_subdomains_ = val; }
 
-        void set_use_interpolation(const bool val)
-        {
-            use_interpolation_ = val;
-        }
+        void set_use_interpolation(const bool val) { use_interpolation_ = val; }
 
-        void describe(std::ostream &os) const
-        {
+        void describe(std::ostream &os) const {
             os << "SemiGeometricMultigrid:\n";
             mg.describe(os);
         }
+
+        void read(Input &in) override;
 
     private:
         MultigridT mg;
@@ -90,11 +67,16 @@ namespace utopia {
         bool separate_subdomains_;
         bool use_interpolation_;
         bool use_coarse_interpolators_;
+        Scalar clamp_tol_;
 
-        void generate_coarse_meshes(const libMesh::MeshBase &fine_mesh, const std::size_t n_levels, const int order_fine_level);
-        std::unique_ptr<libMesh::MeshBase> generate_box_mesh(const libMesh::MeshBase &fine_mesh, const std::size_t n_levels);
+        void generate_coarse_meshes(const libMesh::MeshBase &fine_mesh,
+                                    const std::size_t n_levels,
+                                    const int order_fine_level);
+        std::unique_ptr<libMesh::MeshBase> generate_box_mesh(const libMesh::MeshBase &fine_mesh,
+                                                             const std::size_t n_levels);
+
+        void clamp_operator(USparseMatrix &T) const;
     };
-}
+}  // namespace utopia
 
-
-#endif //UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP
+#endif  // UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP

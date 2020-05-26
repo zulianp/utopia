@@ -4,4 +4,4 @@
 #include <vector>
 void triangulate_polygon(const int n_vertices, const double *in_polygon, std::vector<int> &result);
 
-#endif //UTOPIA_TRIANGULATE_H
+#endif  // UTOPIA_TRIANGULATE_H

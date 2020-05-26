@@ -1,17 +1,15 @@
 #ifndef UTOPIA_AUTO_DIFF_PROBLEM_HPP
 #define UTOPIA_AUTO_DIFF_PROBLEM_HPP
 
-
-#include "utopia_Function.hpp"
 #include "utopia_AutoDiff.hpp"
+#include "utopia_Function.hpp"
 
 namespace utopia {
 
-    template<class Matrix, class Vector, class Fun>
+    template <class Matrix, class Vector, class Fun>
     class AutoDiffProblem : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
-
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
 
         inline bool value(const Vector &point, Scalar &result) const override {
             result = scalar_cast<Scalar>(fun_(point));
@@ -28,17 +26,16 @@ namespace utopia {
             return true;
         }
 
-        AutoDiffProblem(Fun fun) : fun_(fun) { }
+        AutoDiffProblem(Fun fun) : fun_(fun) {}
 
     private:
         Fun fun_;
     };
 
-    template<class Matrix, class Vector, class Fun>
-    AutoDiffProblem<Matrix, Vector, Fun> auto_diff_fun(Fun fun)
-    {
+    template <class Matrix, class Vector, class Fun>
+    AutoDiffProblem<Matrix, Vector, Fun> auto_diff_fun(Fun fun) {
         return AutoDiffProblem<Matrix, Vector, Fun>(fun);
     }
-}
+}  // namespace utopia
 
-#endif //UTOPIA_AUTO_DIFF_PROBLEM_HPP
+#endif  // UTOPIA_AUTO_DIFF_PROBLEM_HPP

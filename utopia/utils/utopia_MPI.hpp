@@ -7,6 +7,6 @@ namespace utopia {
     SizeType mpi_world_size();
     SizeType mpi_world_rank();
     void mpi_world_barrier();
-}
+}  // namespace utopia
 
-#endif //UTOPIA_MPI_HPP
+#endif  // UTOPIA_MPI_HPP

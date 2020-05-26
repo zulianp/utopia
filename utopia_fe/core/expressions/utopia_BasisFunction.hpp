@@ -8,66 +8,45 @@
 #include <memory>
 
 namespace utopia {
-    template<class Derived, class FunctionSpaceT>
+    template <class Derived, class FunctionSpaceT>
     class BasisFunction : public Expression<Derived>, public FEExpression {
     public:
-        BasisFunction(const FunctionSpaceT &space)
-        : space_ptr_(std::make_shared<FunctionSpaceT>(space))
-        {}
+        BasisFunction(const FunctionSpaceT &space) : space_ptr_(std::make_shared<FunctionSpaceT>(space)) {}
 
-        BasisFunction(std::shared_ptr<FunctionSpaceT> &space_ptr)
-        : space_ptr_(space_ptr)
-        {}
+        BasisFunction(const std::shared_ptr<FunctionSpaceT> &space_ptr) : space_ptr_(space_ptr) {}
 
-        BasisFunction(FunctionSpaceT &&space)
-        : space_ptr_(std::make_shared<FunctionSpaceT>(std::move(space)))
-        {}
+        BasisFunction(FunctionSpaceT &&space) : space_ptr_(std::make_shared<FunctionSpaceT>(std::move(space))) {}
 
-        inline std::shared_ptr<FunctionSpaceT> space_ptr() const
-        {
-            return space_ptr_;
-        }
+        inline std::shared_ptr<FunctionSpaceT> space_ptr() const { return space_ptr_; }
 
     private:
         std::shared_ptr<FunctionSpaceT> space_ptr_;
     };
 
-
-    template<template<class> class Function, class SubSpace>
-    class BasisFunction<Function< ProductFunctionSpace<SubSpace> >, ProductFunctionSpace<SubSpace> >
-    : public Expression< Function< ProductFunctionSpace<SubSpace> > >, public FEExpression {
+    template <template <class> class Function, class SubSpace>
+    class BasisFunction<Function<ProductFunctionSpace<SubSpace> >, ProductFunctionSpace<SubSpace> >
+        : public Expression<Function<ProductFunctionSpace<SubSpace> > >, public FEExpression {
     public:
         typedef utopia::ProductFunctionSpace<SubSpace> FunctionSpaceT;
 
-        BasisFunction(const FunctionSpaceT &space)
-        : space_ptr_(std::make_shared<FunctionSpaceT>(space))
-        {}
+        BasisFunction(const FunctionSpaceT &space) : space_ptr_(std::make_shared<FunctionSpaceT>(space)) {}
 
-        BasisFunction(std::shared_ptr<FunctionSpaceT> &space_ptr)
-        : space_ptr_(space_ptr)
-        {}
+        BasisFunction(std::shared_ptr<FunctionSpaceT> &space_ptr) : space_ptr_(space_ptr) {}
 
-        BasisFunction(FunctionSpaceT &&space)
-        : space_ptr_(std::make_shared<FunctionSpaceT>(std::move(space)))
-        {}
+        BasisFunction(FunctionSpaceT &&space) : space_ptr_(std::make_shared<FunctionSpaceT>(std::move(space))) {}
 
-        inline std::shared_ptr<FunctionSpaceT> space_ptr() const
-        {
-            return space_ptr_;
-        }
+        inline std::shared_ptr<FunctionSpaceT> space_ptr() const { return space_ptr_; }
 
-        inline Function<SubSpace> operator[](const unsigned int sub_space_index) const
-        {
+        inline Function<SubSpace> operator[](const unsigned int sub_space_index) const {
             return Function<SubSpace>(space_ptr()->subspace_ptr(sub_space_index));
         }
-        std::size_t codim() const
-        {
-            return space_ptr()->n_subspaces();
-        }
+        std::size_t codim() const { return space_ptr()->n_subspaces(); }
+
+        inline bool equals(const BasisFunction &other) const { return space_ptr_ == other.space_ptr_; }
 
     private:
         std::shared_ptr<FunctionSpaceT> space_ptr_;
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_BASIS_FUNCTION_HPP
+#endif  // UTOPIA_BASIS_FUNCTION_HPP

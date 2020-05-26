@@ -4,6 +4,8 @@ list(APPEND SOLVERS_MODULES
     linear
     multilevel
     multilevel/transfer
+    multilevel/constraints
+    multilevel/fun_evals
     smoothers
     nonlinear
     nonlinear/pseudo_transient_continuation
@@ -17,6 +19,8 @@ list(APPEND SOLVERS_MODULES
     saddlepoint
 )
 
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
 find_project_files(CMAKE_CURRENT_SOURCE_DIR SOLVERS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 foreach(MODULE ${SOLVER_MODULES})
@@ -25,6 +29,8 @@ endforeach(MODULE)
 
 list(APPEND LOCAL_SOURCES utopia_solvers.cpp)
 add_library(utopia_solvers STATIC ${LOCAL_SOURCES})
+utopia_link_default_targets(utopia_solvers)
+
 target_include_directories(utopia_solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
 foreach(MODULE ${SOLVERS_MODULES})

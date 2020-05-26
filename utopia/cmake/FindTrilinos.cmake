@@ -25,6 +25,7 @@ FIND_PACKAGE(TRILINOS_CONFIG
   HINTS
     ${TRILINOS_DIR}/lib/cmake/Trilinos
     ${TRILINOS_DIR}
+    ${CMAKE_SOURCE_DIR}/external/Trilinos/
     $ENV{TRILINOS_DIR}
   PATH_SUFFIXES
     lib64/cmake/Trilinos

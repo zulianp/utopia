@@ -5,190 +5,191 @@
 #ifndef UTOPIA_UTOPIA_EVAL_REDUCE_HPP
 #define UTOPIA_UTOPIA_EVAL_REDUCE_HPP
 
+//#include "utopia_Each.hpp"
 #include "utopia_Eval_Empty.hpp"
-#include "utopia_Each.hpp"
+#include "utopia_Operations.hpp"
 #include "utopia_Operators.hpp"
+#include "utopia_Tracer.hpp"
 
 namespace utopia {
 
     template <class Expr, class Operation, class Traits, int Backend>
     class Eval<Reduce<Expr, Operation>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
-        inline static Scalar apply(const Reduce<Expr, Operation> &expr)
-        {
+        inline static Number<Scalar> apply(const Reduce<Expr, Operation> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).reduce(
-                    Eval<Expr, Traits>::apply(expr.expr()),
-                    expr.operation()
-            );
+            result = Eval<Expr, Traits>::apply(expr.expr()).reduce(expr.operation());
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template<class Left, class Right, class Traits, int Backend>
+    template <class Left, class Right, class Traits, int Backend>
     class Eval<Dot<Left, Right>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
-        inline static Scalar apply(const Dot<Left, Right> &expr)
-        {
+        inline static Number<Scalar> apply(const Dot<Left, Right> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).dot(
-                    Eval<Left,  Traits>::apply(expr.expr().left()),
-                    Eval<Right, Traits>::apply(expr.expr().right())
-            );
+            // result = UTOPIA_BACKEND(Traits).dot(
+            //         Eval<Left,  Traits>::apply(expr.expr().left()),
+            //         Eval<Right, Traits>::apply(expr.expr().right())
+            // );
+
+            result = Eval<Left, Traits>::apply(expr.expr().left()).dot(Eval<Right, Traits>::apply(expr.expr().right()));
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template<class Expr, class Traits, int Backend>
+    template <class Expr, class Traits, int Backend>
     class Eval<Norm<Expr, 2>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
-        inline static Scalar apply(const Norm<Expr, 2> &expr)
-        {
+        inline static Number<Scalar> apply(const Norm<Expr, 2> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).norm2(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            result = Eval<Expr, Traits>::apply(expr.expr()).norm2();
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template<class Expr, class Traits, int Backend>
+    template <class Expr, class Traits, int Backend>
     class Eval<Norm<Expr, 1>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
-        inline static Scalar apply(const Norm<Expr, 1> &expr) {
+        inline static Number<Scalar> apply(const Norm<Expr, 1> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).norm1(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            // result = UTOPIA_BACKEND(Traits).norm1(
+            //         Eval<Expr, Traits>::apply(expr.expr())
+            // );
+
+            result = Eval<Expr, Traits>::apply(expr.expr()).norm1();
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template<class Expr, class Traits, int Backend>
+    template <class Expr, class Traits, int Backend>
     class Eval<Norm<Expr, INFINITY_NORM_TAG>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
-        inline static Scalar apply(const Norm<Expr, INFINITY_NORM_TAG> &expr) {
+        inline static Number<Scalar> apply(const Norm<Expr, INFINITY_NORM_TAG> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).norm_infty(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            // result = UTOPIA_BACKEND(Traits).norm_infty(
+            //         Eval<Expr, Traits>::apply(expr.expr())
+            // );
+
+            result = Eval<Expr, Traits>::apply(expr.expr()).norm_infty();
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval<Reduce<Binary<Left, Right, ApproxEqual>, And>, Traits, Backend> {
+    template <class Left, class Right, class Traits, int Backend>
+    class Eval<ReduceApproxEqual<Left, Right>, Traits, Backend> {
     public:
-        inline static bool apply(const Reduce<Binary<Left, Right, ApproxEqual>, And> &expr) {
+        inline static bool apply(const ReduceApproxEqual<Left, Right> &expr) {
             bool result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).compare(
-                    Eval<Left,  Traits>::apply(expr.expr().left()),
-                    Eval<Right, Traits>::apply(expr.expr().right()),
-                    expr.expr().operation());
+            // result = UTOPIA_BACKEND(Traits).compare(
+            //         Eval<Left,  Traits>::apply(expr.expr().left()),
+            //         Eval<Right, Traits>::apply(expr.expr().right()),
+            //         expr.expr().operation());
+
+            result = Eval<Left, Traits>::apply(expr.expr().left())
+                         .equals(Eval<Right, Traits>::apply(expr.expr().right()), expr.expr().operation().tol());
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template<class Expr, class Traits, int Backend>
-    class Eval<Reduce< Diag<Expr>, Plus>, Traits, Backend> {
-    public:
-        typedef typename Traits::Scalar Scalar;
-        inline static Scalar apply(const Reduce< Diag<Expr>, Plus> &expr)
-        {
-            Scalar result;
-            UTOPIA_TRACE_BEGIN(expr);
+    // TODO
+    // template<class Expr, class Traits, int Backend>
+    // class Eval<Reduce< Diag<Expr>, Plus>, Traits, Backend> {
+    // public:
+    //     typedef typename Traits::Scalar Scalar;
+    //     inline static Number<Scalar> apply(const Reduce< Diag<Expr>, Plus> &expr)
+    //     {
+    //         Scalar result;
+    //         UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).trace(
-                    Eval<Expr, Traits>::apply(expr.expr().expr())
-            );
+    //         result = UTOPIA_BACKEND(Traits).trace(
+    //                 Eval<Expr, Traits>::apply(expr.expr().expr())
+    //         );
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+    //         UTOPIA_TRACE_END(expr);
+    //         return result;
+    //     }
+    // };
 
-    template<class Expr, class Traits, int Backend>
+    template <class Expr, class Traits, int Backend>
     class Eval<Trace<Expr>, Traits, Backend> {
     public:
-        typedef typename Traits::Scalar Scalar;
+        using Scalar = typename Traits::Scalar;
 
-        inline static Scalar apply(const Trace<Expr> &expr)
-        {
+        inline static Number<Scalar> apply(const Trace<Expr> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = UTOPIA_BACKEND(Traits).trace(
-                    Eval<Expr, Traits>::apply(expr.expr())
-            );
+            result = Eval<Expr, Traits>::apply(expr.expr()).trace();
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-
-    template<class Tensor, typename T, class Traits, int Backend>
-    class Eval<Reduce<Wrapper<Tensor, 2>, PlusIsNonZero<T>>, Traits, Backend> {
+    template <class Derived, typename T, class Traits, int Backend>
+    class Eval<Reduce<Tensor<Derived, 2>, PlusIsNonZero<T>>, Traits, Backend> {
     public:
-        using Expr = utopia::Reduce<Wrapper<Tensor, 2>, PlusIsNonZero<T>>;
-        typedef typename Traits::Scalar Scalar;
-        typedef typename Traits::SizeType SizeType;
+        using Expr = utopia::Reduce<Tensor<Derived, 2>, PlusIsNonZero<T>>;
+        using Vector = UTOPIA_VECTOR(Derived);
 
-        inline static SizeType apply(const Expr &expr)
-        {
-            const auto &op = expr.operation().is_non_zero();
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+
+        inline static SizeType apply(const Expr &expr) {
             SizeType result = 0;
             UTOPIA_TRACE_BEGIN(expr);
 
-            each_read(expr.expr(), [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
-                UTOPIA_UNUSED(i);
-                UTOPIA_UNUSED(j);
+            const Scalar tol = expr.operation().is_non_zero().tol();
 
-                result += op.apply(value);
-            });
-
-
-            Wrapper<typename Traits::Vector, 1> v = local_values(1, result);
-            result = sum(v);
+            const auto &mat = expr.expr().derived();
+            mat.map_reduce(
+                // map
+                UTOPIA_LAMBDA(const Scalar &x)->SizeType { return static_cast<SizeType>(x > tol); },
+                // reduce
+                UTOPIA_LAMBDA(const SizeType &left, const SizeType &right)->SizeType { return left + right; },
+                // mpi operation
+                Plus(),
+                result);
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_EVAL_REDUCE_HPP
+#endif  // UTOPIA_UTOPIA_EVAL_REDUCE_HPP

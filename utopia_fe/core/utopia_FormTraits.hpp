@@ -4,8 +4,8 @@
 #include "utopia_Traits.hpp"
 
 namespace utopia {
-    template<class T>
+    template <class T>
     class FormTraits : public Traits<T> {};
-}
+}  // namespace utopia
 
-#endif //UTOPIA_FORM_TRAITS_HPP
+#endif  // UTOPIA_FORM_TRAITS_HPP

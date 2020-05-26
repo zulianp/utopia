@@ -14,8 +14,13 @@ RUN export PATH=$PATH:$MPI_DIR/bin
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb bash
 
 RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
+# RUN cd /utopia_cloned && git checkout edsl_refactor && git submodule update --init --recursive && git pull
 RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
 
+RUN echo "Source branch: "
+RUN echo $SOURCE_BRANCH
+
+RUN cd /utopia_cloned && git pull
 
 ##########################################################################
 ##########################################################################
@@ -27,22 +32,22 @@ RUN cd /utopia_cloned/utopia/bin && \
     cmake .. -DCMAKE_INSTALL_PREFIX=/utopia -DCMAKE_BUILD_TYPE=Release
 
 RUN cd /utopia_cloned/utopia/bin && make -j4
+RUN cd /utopia_cloned/utopia/bin && make -j4 complete
 RUN cd /utopia_cloned/utopia/bin && make install
 
+# compile utopia (DEBUG)
 
-# compile utopia debug
+# RUN cd /utopia_cloned/utopia && mkdir bin_debug
+# RUN cd /utopia_cloned/utopia/bin_debug && \
+#    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_debug -DCMAKE_BUILD_TYPE=Debug
 
-RUN cd /utopia_cloned/utopia && mkdir bin_debug
-RUN cd /utopia_cloned/utopia/bin_debug && \
-    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_debug -DCMAKE_BUILD_TYPE=Debug
-
-RUN cd /utopia_cloned/utopia/bin_debug && make -j4
-RUN cd /utopia_cloned/utopia/bin_debug && make install
+# RUN cd /utopia_cloned/utopia/bin_debug && make -j4
+# RUN cd /utopia_cloned/utopia/bin_debug && make -j4 complete
+# RUN cd /utopia_cloned/utopia/bin_debug && make install
 
 ##########################################################################
 
 ENV LD_LIBRARY_PATH /opt/petsc/lib
-RUN cd /utopia_cloned/utopia/bin && ./utopia_exec -verbose && ./utopia_exec -test none -bench
 
 # compile moonolith
 
@@ -54,6 +59,14 @@ RUN cd /moonolith_cloned/bin && \
 
 RUN cd /moonolith_cloned/bin && make -j4 && make install
 
+# compile moonolith (DEBUG) (skip because of Docker Hub time limit)
+
+# RUN cd /moonolith_cloned && mkdir bin_debug
+# RUN cd /moonolith_cloned/bin_debug && \
+#	cmake .. -DCMAKE_INSTALL_PREFIX=/par_moonolith_debug -DCMAKE_BUILD_TYPE=Debug \
+#			 -DMPI_CXX_COMPILER=$MPI_DIR/bin/mpic++ -DMPI_C_COMPILER=$MPI_DIR/bin/mpicc -DMPI_FOUND=TRUE
+
+# RUN cd /moonolith_cloned/bin_debug && make -j4 && make install
 
 ##########################################################################
 ##########################################################################
@@ -65,18 +78,32 @@ RUN cd /utopia_cloned/utopia_fe/bin && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_fe -DUTOPIA_DIR=/utopia -DCMAKE_BUILD_TYPE=Release -DMOONOLITH_DIR=/par_moonolith
 
 RUN cd /utopia_cloned/utopia_fe/bin && make -j4
+RUN cd /utopia_cloned/utopia_fe/bin && make -j4 complete
 RUN cd /utopia_cloned/utopia_fe/bin && make install
-RUN cd /utopia_cloned/utopia_fe/bin && ./utopia_fe_exec -test all
 
-
-# compile utopia_fe debug (skip because of Docker Hub time limit)
+# compile utopia_fe (DEBUG) (skip because of Docker Hub time limit)
 
 # RUN cd /utopia_cloned/utopia_fe && mkdir bin_debug
-# RUN cd /utopia_cloned/utopia_fe/bin_debug && cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_fe_debug -DUTOPIA_DIR=/utopia_debug -DCMAKE_BUILD_TYPE=Debug -DMOONOLITH_DIR=/par_moonolith
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && cmake .. -DCMAKE_INSTALL_PREFIX=/utopia_fe_debug -DUTOPIA_DIR=/utopia_debug -DCMAKE_BUILD_TYPE=Debug -DMOONOLITH_DIR=/par_moonolith_debug
 
-# RUN cd /utopia_cloned/utopia_fe/bin_debug && make -j4
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && make -j4 complete
 # RUN cd /utopia_cloned/utopia_fe/bin_debug && make install
-# RUN cd /utopia_cloned/utopia_fe/bin_debug && ./utopia_fe_exec -test all
+
+##########################################################################
+##########################################################################
+
+# run tests
+
+# RUN echo 'UTOPIA TESTING' 											   > /utopia_test_out.txt
+# RUN cd /utopia_cloned/utopia/bin       && ./utopia_test -verbose -bench >> /utopia_test_out.txt
+
+# RUN echo 'UTOPIA TESTING (DEBUG)' 									  >> /utopia_test_out.txt
+# RUN cd /utopia_cloned/utopia/bin_debug && ./utopia_test -verbose -bench >> /utopia_test_out.txt
+
+# RUN echo 'UTOPIA_FE TESTING' 											   > /utopia_fe_test_out.txt
+# RUN cd /utopia_cloned/utopia_fe/bin       && ./utopia_fe_exec -test all >> /utopia_fe_test_out.txt
+# RUN echo 'UTOPIA_FE TESTING (DEBUG)' 									  >> /utopia_fe_test_out.txt
+# RUN cd /utopia_cloned/utopia_fe/bin_debug && ./utopia_fe_exec -test all >> /utopia_fe_test_out.txt
 
 ##########################################################################
 ##########################################################################

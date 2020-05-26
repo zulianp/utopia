@@ -1,27 +1,23 @@
 #ifndef UTOPIA_SOLVER_BIGGS_18
 #define UTOPIA_SOLVER_BIGGS_18
 
+#include <cassert>
 #include <vector>
-#include <assert.h>
 #include "utopia_Function.hpp"
 
+namespace utopia {
 
-namespace utopia
-{
-
-    template<class Matrix, class Vector>
-    class Biggs18 final: public UnconstrainedTestFunction<Matrix, Vector>
-    {
+    template <class Matrix, class Vector>
+    class Biggs18 final : public UnconstrainedTestFunction<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        using Traits = utopia::Traits<Vector>;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm = typename Traits::Communicator;
 
-        Biggs18()
-        {
-            assert(!utopia::is_parallel<Matrix>::value || mpi_world_size() == 1 && "does not work for parallel matrices");
-
-            x_init_ = zeros(6);
-            x_exact_ = zeros(6);
+        Biggs18() {
+            x_init_.zeros(serial_layout(dim()));
+            x_exact_.zeros(serial_layout(dim()));
 
             {
                 const Write<Vector> write1(x_init_);
@@ -48,34 +44,21 @@ namespace utopia
                 x_exact_.set(4, 4.0);
                 x_exact_.set(5, 3.0);
             }
-
         }
 
-        std::string name() const override
-        {
-            return "Biggs Exp6";
-        }
+        std::string name() const override { return "Biggs Exp6"; }
 
-        SizeType dim() const override
-        {
-            return 6.0;
-        }
+        SizeType dim() const override { return 6.0; }
 
-        bool exact_sol_known() const override
-        {
-            return false;
-        }
+        bool exact_sol_known() const override { return false; }
 
-
-
-        bool value(const Vector &point, typename Vector::Scalar &result) const override
-        {
-            if( mpi_world_size() > 1){
+        bool value(const Vector &point, typename Vector::Scalar &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
-            assert(point.size().get(0) == 6);
+            assert(point.size() == 6);
 
             {
                 const Read<Vector> read(point);
@@ -87,29 +70,29 @@ namespace utopia
                 const Scalar x5 = point.get(4);
                 const Scalar x6 = point.get(5);
 
-
                 result = 0.0;
-                for(SizeType i = 1; i <=13; i++)
-                {
-                    Scalar c = -i*0.1;
-                    Scalar b = (x3 * std::exp(c* x1)) - (x4* std::exp(c*x2))+ (x6 * std::exp(c*x5)) - std::exp (c)+ (5.0* std::exp(10.0*c)) - (3.0 * std::exp(4.0*c));
-                    result += b*b;
+                for (SizeType i = 1; i <= 13; i++) {
+                    Scalar c = -i * 0.1;
+                    Scalar b = (x3 * std::exp(c * x1)) - (x4 * std::exp(c * x2)) + (x6 * std::exp(c * x5)) -
+                               std::exp(c) + (5.0 * std::exp(10.0 * c)) - (3.0 * std::exp(4.0 * c));
+                    result += b * b;
                 }
-
             }
 
             return true;
         }
 
-        bool gradient(const Vector &point, Vector &result) const override
-        {
-            if( mpi_world_size() > 1){
+        bool gradient(const Vector &point, Vector &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
-            assert(point.size().get(0) == 6);
-            result = zeros(6);
+            assert(point.size() == 6);
+
+            if (empty(result)) {
+                result.zeros(layout(point));
+            }
 
             {
                 const Read<Vector> read(point);
@@ -122,26 +105,26 @@ namespace utopia
                 const Scalar x5 = point.get(4);
                 const Scalar x6 = point.get(5);
 
-                Scalar g1=0, g2=0, g3=0, g4=0, g5=0, g6 =0;
+                Scalar g1 = 0, g2 = 0, g3 = 0, g4 = 0, g5 = 0, g6 = 0;
 
-                for(SizeType i = 1; i <=13; i++)
-                {
-                    Scalar c = -i*0.1;
-                    Scalar fi = (x3 * std::exp(c* x1)) - (x4* std::exp(c*x2))+ (x6 * std::exp(c*x5)) - std::exp (c)+ (5.0* std::exp(10.0*c)) - (3.0 * std::exp(4.0*c));
+                for (SizeType i = 1; i <= 13; i++) {
+                    Scalar c = -i * 0.1;
+                    Scalar fi = (x3 * std::exp(c * x1)) - (x4 * std::exp(c * x2)) + (x6 * std::exp(c * x5)) -
+                                std::exp(c) + (5.0 * std::exp(10.0 * c)) - (3.0 * std::exp(4.0 * c));
 
-                    Scalar dfdx1 =   c*x3* std::exp(c*x1);
-                    Scalar dfdx2 = - c*x4* std::exp(c*x2);
-                    Scalar dfdx3 =         std::exp(c*x1);
-                    Scalar dfdx4 = -       std::exp(c*x2);
-                    Scalar dfdx5 =   c*x6* std::exp(c*x5);
-                    Scalar dfdx6 =         std::exp(c*x5);
+                    Scalar dfdx1 = c * x3 * std::exp(c * x1);
+                    Scalar dfdx2 = -c * x4 * std::exp(c * x2);
+                    Scalar dfdx3 = std::exp(c * x1);
+                    Scalar dfdx4 = -std::exp(c * x2);
+                    Scalar dfdx5 = c * x6 * std::exp(c * x5);
+                    Scalar dfdx6 = std::exp(c * x5);
 
-                    g1+= 2.0 * fi * dfdx1;
-                    g2+= 2.0 * fi * dfdx2;
-                    g3+= 2.0 * fi * dfdx3;
-                    g4+= 2.0 * fi * dfdx4;
-                    g5+= 2.0 * fi * dfdx5;
-                    g6+= 2.0 * fi * dfdx6;
+                    g1 += 2.0 * fi * dfdx1;
+                    g2 += 2.0 * fi * dfdx2;
+                    g3 += 2.0 * fi * dfdx3;
+                    g4 += 2.0 * fi * dfdx4;
+                    g5 += 2.0 * fi * dfdx5;
+                    g6 += 2.0 * fi * dfdx6;
                 }
 
                 result.set(0, g1);
@@ -154,15 +137,17 @@ namespace utopia
             return true;
         }
 
-        bool hessian(const Vector &point, Matrix &result) const override
-        {
-            if( mpi_world_size() > 1){
+        bool hessian(const Vector &point, Matrix &result) const override {
+            if (point.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
-            assert(point.size().get(0) == 6);
-            result = zeros(6, 6);
+            assert(point.size() == 6);
+            // result.dense(serial_layout(6, 6));
+            if (empty(result)) {
+                result.dense(serial_layout(6, 6));
+            }
 
             const Read<Vector> read(point);
             const Write<Matrix> write(result);
@@ -174,29 +159,28 @@ namespace utopia
             const Scalar x5 = point.get(4);
             const Scalar x6 = point.get(5);
 
-            Scalar term11= 0, term12= 0, term13= 0, term14= 0, term15= 0, term16 = 0;
-            Scalar term22= 0, term23= 0, term24= 0, term25= 0, term26 = 0;
-            Scalar term33= 0, term34= 0, term35= 0, term36 = 0;
-            Scalar term44= 0, term45= 0, term46 = 0, term55= 0, term56 = 0, term66 = 0;
+            Scalar term11 = 0, term12 = 0, term13 = 0, term14 = 0, term15 = 0, term16 = 0;
+            Scalar term22 = 0, term23 = 0, term24 = 0, term25 = 0, term26 = 0;
+            Scalar term33 = 0, term34 = 0, term35 = 0, term36 = 0;
+            Scalar term44 = 0, term45 = 0, term46 = 0, term55 = 0, term56 = 0, term66 = 0;
 
+            for (SizeType i = 1; i <= 13; i++) {
+                Scalar c = -i * 0.1;
+                Scalar fi = (x3 * std::exp(c * x1)) - (x4 * std::exp(c * x2)) + (x6 * std::exp(c * x5)) - std::exp(c) +
+                            (5.0 * std::exp(10.0 * c)) - (3.0 * std::exp(4.0 * c));
 
-            for(SizeType i = 1; i <=13; i++)
-            {
-                Scalar c = -i*0.1;
-                Scalar fi = (x3 * std::exp(c* x1)) - (x4* std::exp(c*x2))+ (x6 * std::exp(c*x5)) - std::exp (c)+ (5.0* std::exp(10.0*c)) - (3.0 * std::exp(4.0*c));
-
-                Scalar dfdx1 = c*x3*std::exp(c*x1);
-                Scalar d2fdx11 = c*c*x3* std::exp(c*x1);
-                Scalar d2fdx13 = c*std::exp(c*x1);
-                Scalar dfdx2 = -c*x4*std::exp(c*x2);
-                Scalar d2fdx22 = -c*c*x4* std::exp(c*x2);
-                Scalar d2fdx24 = -c*std::exp(c*x2);
-                Scalar dfdx3 = std::exp(c*x1);
-                Scalar dfdx4 = -std::exp(c*x2);
-                Scalar dfdx5 = c*x6*std::exp(c*x5);
-                Scalar d2fdx55 = c*c*x6* std::exp(c*x5);
-                Scalar d2fdx56 =c*std::exp(c*x5);
-                Scalar dfdx6 = std::exp(c*x5);
+                Scalar dfdx1 = c * x3 * std::exp(c * x1);
+                Scalar d2fdx11 = c * c * x3 * std::exp(c * x1);
+                Scalar d2fdx13 = c * std::exp(c * x1);
+                Scalar dfdx2 = -c * x4 * std::exp(c * x2);
+                Scalar d2fdx22 = -c * c * x4 * std::exp(c * x2);
+                Scalar d2fdx24 = -c * std::exp(c * x2);
+                Scalar dfdx3 = std::exp(c * x1);
+                Scalar dfdx4 = -std::exp(c * x2);
+                Scalar dfdx5 = c * x6 * std::exp(c * x5);
+                Scalar d2fdx55 = c * c * x6 * std::exp(c * x5);
+                Scalar d2fdx56 = c * std::exp(c * x5);
+                Scalar dfdx6 = std::exp(c * x5);
 
                 term11 += (2.0 * dfdx1 * dfdx1) + (2.0 * fi * d2fdx11);
                 term12 += 2.0 * dfdx2 * dfdx1;
@@ -268,35 +252,20 @@ namespace utopia
             result.set(5, 4, term56);
             result.set(5, 5, term66);
 
-
             return true;
         }
 
-        Vector initial_guess() const override
-        {
-            return x_init_;
-        }
+        Vector initial_guess() const override { return x_init_; }
 
-        const Vector & exact_sol() const override
-        {
-            return x_exact_;
-        }
+        const Vector &exact_sol() const override { return x_exact_; }
 
-        Scalar min_function_value() const override
-        {
-            return 5.65565;
-        }
-
+        Scalar min_function_value() const override { return 5.65565; }
 
     private:
         Vector x_init_;
         Vector x_exact_;
-
-
     };
 
+}  // namespace utopia
 
-
-}
-
-#endif //UTOPIA_SOLVER_BIGGS_18
+#endif  // UTOPIA_SOLVER_BIGGS_18

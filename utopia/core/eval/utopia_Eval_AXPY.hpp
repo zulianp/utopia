@@ -1,300 +1,249 @@
-//
-// Created by Patrick Zulian on 29/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_EVAL_AXPY_HPP
 #define UTOPIA_UTOPIA_EVAL_AXPY_HPP
 
 #include "utopia_Eval_Empty.hpp"
 
+#include "utopia_Tracer.hpp"
+
 namespace utopia {
 
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
+    /// hack that only allows for Terminal symbol on the left-hand side since the compiler thinks
+    /// that this is ambiguous with Binary<Left, Right, Op>
+    template <class LeftDerived, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
+    class Eval<
+        Binary<Tensor<LeftDerived, Order>, Binary<Number<ScalarT>, Tensor<RightTensor, Order>, Multiplies>, Plus>,
+        Traits,
+        Backend> {
+    public:
+        using Left = utopia::Tensor<LeftDerived, Order>;
+        using Right = utopia::Tensor<RightTensor, Order>;
+        using Expr = utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Plus>;
+        using Result = EXPR_TYPE(Traits, Left);
+
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&right = Eval<Right, Traits>::apply(expr.right().right());
+            auto &&left = Eval<Left, Traits>::apply(expr.left());
+            auto &&alpha = expr.right().left();
+
+            if (result.is_alias(right)) {
+                result.scale(alpha);
+                result.axpy(1.0, left);
+            } else if (result.is_alias(left)) {
+                result.axpy(alpha, right);
+            } else {
+                result.construct(left);
+                result.axpy(alpha, right);
+            }
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    /// hack that only allows for Terminal symbol on the left-hand side since the compiler thinks
+    /// that this is ambiguous with Binary<Left, Right, Op>
+    /// result = left + (right * alpha)
+    template <class LeftDerived, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
+    class Eval<
+        Binary<Tensor<LeftDerived, Order>, Binary<Tensor<RightTensor, Order>, Number<ScalarT>, Multiplies>, Plus>,
+        Traits,
+        Backend> {
+    public:
+        using Left = utopia::Tensor<LeftDerived, Order>;
+        using Right = utopia::Tensor<RightTensor, Order>;
+        using Expr = utopia::Binary<Left, Binary<Right, Number<ScalarT>, Multiplies>, Plus>;
+        using Result = EXPR_TYPE(Traits, Left);
+
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&left = Eval<Left, Traits>::apply(expr.left());
+            auto &&right = Eval<Right, Traits>::apply(expr.right().left());
+            auto alpha = expr.right().right();
+
+            if (result.is_alias(right)) {
+                result.scale(alpha);
+                result.axpy(1.0, left);
+            } else {
+                if (!result.is_alias(left)) {
+                    result.construct(left);
+                }
+
+                result.axpy(alpha, right);
+            }
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    /// left + alpha * identity()
+    template <class LeftDerived, typename ScalarT, class Traits, int Backend>
+    class Eval<Binary<Tensor<LeftDerived, 2>, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies>, Plus>,
+               Traits,
+               Backend> {
+    public:
+        using Left = utopia::Tensor<LeftDerived, 2>;
+        using Expr = utopia::Binary<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies>, Plus>;
+        using Result = EXPR_TYPE(Traits, Left);
+
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            result = Eval<Left, Traits>::apply(expr.left());
+            result.shift_diag(expr.right().left().get());
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
+    /// axpy specialization result = x + alpha * y
+    template <class LeftDerived, int LeftOrder, class Right, typename ScalarT, class Traits, int Backend>
+    class Eval<Binary<Tensor<LeftDerived, LeftOrder>, Binary<Number<ScalarT>, Right, Multiplies>, Plus>,
+               Traits,
+               Backend> {
+    public:
+        using Left = utopia::Tensor<LeftDerived, LeftOrder>;
+        using Expr = utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Plus>;
+        using Result = EXPR_TYPE(Traits, Expr);
+
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&alpha = expr.right().left();
+            auto &&y = Eval<Left, Traits, Backend>::apply(expr.left());
+            auto &&x = Eval<Right, Traits, Backend>::apply(expr.right().right());
+
+            if (result.is_alias(y)) {
+                result.axpy(alpha, x);
+            } else if (result.is_alias(x)) {
+                result.scale(alpha);
+                result.axpy(1.0, y);
+            } else {
+                result.construct(x);
+                result.scale(alpha);
+                result.axpy(1.0, y);
+            }
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    /// result = l - alpha * r;
+    template <class LeftDerived, int LeftOrder, class Right, typename ScalarT, class Traits, int Backend>
+    class Eval<Binary<Tensor<LeftDerived, LeftOrder>, Binary<Number<ScalarT>, Right, Multiplies>, Minus>,
+               Traits,
+               Backend> {
+    public:
+        using Left = utopia::Tensor<LeftDerived, LeftOrder>;
+        using Expr = utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Minus>;
+        using Result = EXPR_TYPE(Traits, Expr);
+        using Scalar = typename Traits::Scalar;
+
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &&l = Eval<Left, Traits, Backend>::apply(expr.left());
+            auto &&r = Eval<Right, Traits, Backend>::apply(expr.right().right());
+            Scalar alpha = expr.right().left();
+
+            if (result.is_alias(l)) {
+                result.axpy(-alpha, r);
+            } else if (result.is_alias(r)) {
+                result.scale(-alpha);
+                result.axpy(1.0, l);
+            } else {
+                result.construct(l);
+                result.axpy(-alpha, r);
+            }
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    /// result = alpha * left + right
+    template <class Left, class Right, typename ScalarT, class Traits, int Backend>
     class Eval<Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus>, Traits, Backend> {
     public:
-        typedef utopia::Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus> Expr;
-        typedef EXPR_TYPE(Traits, Expr) Result;
+        using Expr = utopia::Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus>;
+        using Result = EXPR_TYPE(Traits, Expr);
+        using Scalar = typename Traits::Scalar;
 
-        inline static Result apply(const Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus> &expr) {
-            Result result;
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
 
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.left().left(),
-                    Eval<Left, Traits>::apply(expr.left().right())
-                    );
+            const Scalar alpha = expr.left().left();
+            auto &&left = Eval<Left, Traits, Backend>::apply(expr.left().right());
+            auto &&right = Eval<Right, Traits, Backend>::apply(expr.right());
 
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
+            if (result.is_alias(right)) {
+                result.axpy(alpha, left);
 
-
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Plus>, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Right)
-        apply(const Binary< Binary<Left, Number<ScalarT>, Multiplies>, Right, Plus > &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.left().right(),
-                    Eval<Left, Traits>::apply(expr.left().left())
-                    );
-
-
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-    ///hack that only allows for Terminal symbol on the left-hand side since the compiler thinks
-    ///that this is ambiguous with Binary<Left, Right, Op>
-    template<class LeftTensor, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Wrapper<LeftTensor, Order>, Binary<Number<ScalarT>, Wrapper<RightTensor, Order>, Multiplies>, Plus>, Traits, Backend> {
-    public:
-        typedef utopia::Wrapper<LeftTensor, Order> Left;
-        typedef utopia::Wrapper<RightTensor, Order> Right;
-        typedef utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Plus> Expr;
-
-        inline static EXPR_TYPE(Traits, Left) apply(const Expr &expr)
-        {
-            EXPR_TYPE(Traits, Left) result;
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Left, Traits>::apply(expr.left()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.right().left(),
-                    Eval<Right, Traits>::apply(expr.right().right())
-                    );
-
-
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-    ///hack that only allows for Terminal symbol on the left-hand side since the compiler thinks
-    ///that this is ambiguous with Binary<Left, Right, Op>
-    template<class LeftTensor, int Order, class RightTensor, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Wrapper<LeftTensor, Order>, Binary<Wrapper<RightTensor, Order>, Number<ScalarT>, Multiplies>, Plus>, Traits, Backend> {
-    public:
-        typedef utopia::Wrapper<LeftTensor, Order> Left;
-        typedef utopia::Wrapper<RightTensor, Order> Right;
-        typedef utopia::Binary<Left, Binary<Right, Number<ScalarT>, Multiplies>, Plus> Expr;
-
-        inline static EXPR_TYPE(Traits, Left) apply(const Expr &expr)
-        {
-            EXPR_TYPE(Traits, Left) result;
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Left, Traits>::apply(expr.left()) );
-            UTOPIA_BACKEND(Traits).axpy(
-                    result,
-                    expr.right().right(),
-                    Eval<Right, Traits>::apply(expr.right().left())
-                    );
-
-
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-    // template<class Left, typename ScalarT, class Traits, int Backend>
-    // class Eval<Assign<Left,
-    //                   Binary< Number<ScalarT>,
-    //                           Factory<Identity, 2>,
-    //                           Multiplies>
-    //                  >,
-    //            Traits, Backend> {
-    // public:
-    //     inline static void apply(const Assign<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies> > &expr) {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         UTOPIA_BACKEND(Traits).build(
-    //                Eval<Left, Traits>::apply(expr.left()),
-    //                size(expr.right().right()),
-    //                expr.right().right().type()
-    //         );
-
-    //         UTOPIA_BACKEND(Traits).scal(
-    //                 expr.right().left(),
-    //                 Eval<Left, Traits>::apply(expr.left()),
-    //                 Eval<Left, Traits>::apply(expr.left())
-    //         );
-
-    //         UTOPIA_TRACE_END(expr);
-    //     }
-    // };
-
-    template<class Left, class Traits, int Backend>
-    class Eval<Binary<Left, Factory<Identity, 2>, Plus>, Traits, Backend> {
-    public:
-        inline static typename TypeAndFill<Traits, Left>::Type apply(const Binary<Left, Factory<Identity, 2>, Plus> &expr) {
-            static_assert(Left::Order == 2, "can only be instantiated for 2nd order tensors");
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            typename TypeAndFill<Traits, Left>::Type result = Eval<Left, Traits>::apply(expr.left());
-            UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
-
-
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-    template<class Left, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies>, Plus>, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Left)
-        apply(const Binary<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies>, Plus> &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            EXPR_TYPE(Traits, Left) result = Eval<Left, Traits>::apply(expr.left());
-            UTOPIA_BACKEND(Traits).mat_diag_shift(result, expr.right().left());
-
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Right)
-        apply(const Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus > &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
-
-            UTOPIA_TRACE_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).zaxpy(
-                    -expr.left().right(),
-                     Eval<Left,  Traits>::apply(expr.left().left()),
-                     Eval<Right, Traits>::apply(expr.right()),
-                     result
-            );
-
-            UTOPIA_TRACE_END(expr);
-            return result;
-        }
-    };
-
-    //axpy specialization
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
-    class Eval<
-            Assign<Left,
-                   Binary<Left,
-                          Binary<Number<ScalarT>,
-                                 Right,
-                                 Multiplies>,
-                          Plus
-                         >
-                    >, Traits, Backend> {
-        public:
-            typedef utopia::Binary<Left, Binary<Number<ScalarT>, Right, Multiplies>, Plus> RExpr;
-            typedef utopia::Assign<Left, RExpr> Expr;
-
-        inline static bool apply(const Expr &expr)
-        {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            if(&expr.left() == &expr.right().left()) {
-                auto &&l = Eval<Left, Traits, Backend>::apply(expr.left());
-                UTOPIA_BACKEND(Traits).axpy(
-                    l,
-                    expr.right().right().left(),
-                    Eval<Right, Traits, Backend>::apply(expr.right().right().right())
-                );
             } else {
-                auto &&l  = Eval<Left, Traits, Backend>::apply(expr.left());
-                auto &&ll = Eval<Left, Traits, Backend>::apply(expr.right().left());
-                auto &&rr = Eval<Right, Traits, Backend>::apply(expr.right().right().right());
-
-                auto &&alpha = expr.right().right().left();
-
-                if(&rr == &l) {
-                    // assert(false);
-                    expr.left() = Eval<RExpr, Traits, Backend>::apply(expr.right());
+                if (result.is_alias(left)) {
+                    result.scale(alpha);
+                    result.axpy(1, right);
                 } else {
-                    l = ll;
-                    UTOPIA_BACKEND(Traits).axpy(
-                        l,
-                        alpha,
-                        rr
-                    );
+                    result.assign(right);
+                    result.axpy(alpha, left);
                 }
             }
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
 
-    //axpy specialization
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
-    class Eval<
-            Assign<Left,
-                   Binary<Binary<Number<ScalarT>,
-                                 Right,
-                                 Multiplies>,
-                          Left,
-                          Plus
-                         >
-                    >, Traits, Backend> {
-        public:
-            typedef utopia::Binary<Binary<Number<ScalarT>, Right, Multiplies>, Left, Plus> RExpr;
-            typedef utopia::Assign<Left, RExpr> Expr;
+    /// result = alpha * left - right; (in order to avoid ambiguos specialization Left )
+    template <typename ScalarT, class LeftDerived, int LeftOrder, class Right, class Traits, int Backend>
+    class Eval<Binary<Binary<Number<ScalarT>, Tensor<LeftDerived, LeftOrder>, Multiplies>, Right, Minus>,
+               Traits,
+               Backend> {
+    public:
+        using Left = utopia::Tensor<LeftDerived, LeftOrder>;
+        using Expr = utopia::Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Minus>;
+        using Result = EXPR_TYPE(Traits, Expr);
+        using Scalar = typename Traits::Scalar;
 
-        inline static bool apply(const Expr &expr)
-        {
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            if(&expr.left() == &expr.right().right()) {
-                auto &&l = Eval<Left, Traits, Backend>::apply(expr.left());
-                UTOPIA_BACKEND(Traits).axpy(
-                    l,
-                    expr.right().left().left(),
-                    Eval<Right, Traits, Backend>::apply(expr.right().left().right())
-                );
+            auto &&left = Eval<Left, Traits>::apply(expr.left().right());
+            auto &&right = Eval<Right, Traits>::apply(expr.right());
+            const ScalarT alpha = expr.left().left();
+
+            if (result.is_alias(right)) {
+                result.scale(-1.0);
+                result.axpy(alpha, left);
+            } else if (result.is_alias(left)) {
+                result.scale(alpha);
+                result.axpy(-1.0, right);
             } else {
-                auto &&l  = Eval<Left, Traits, Backend>::apply(expr.left());
-                auto &&ll = Eval<Left, Traits, Backend>::apply(expr.right().right());
-                auto &&rr = Eval<Right, Traits, Backend>::apply(expr.right().left().right());
-
-                auto &&alpha = expr.right().left().left();
-
-                if(&rr == &l) {
-                    // assert(false);
-                    expr.left() = Eval<RExpr, Traits, Backend>::apply(expr.right());
-                } else {
-                    l = ll;
-                    UTOPIA_BACKEND(Traits).axpy(
-                        l,
-                        alpha,
-                        rr
-                    );
-                }
+                result.assign(left);
+                result.scale(alpha);
+                result.axpy(-1.0, right);
             }
 
             UTOPIA_TRACE_END(expr);
-            return true;
         }
     };
-}
 
-#endif //UTOPIA_UTOPIA_EVAL_AXPY_HPP
+}  // namespace utopia
+
+#endif  // UTOPIA_UTOPIA_EVAL_AXPY_HPP

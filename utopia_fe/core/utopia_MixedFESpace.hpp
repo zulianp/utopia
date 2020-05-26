@@ -88,7 +88,8 @@
 
 // 	template<class Traits1, class Traits2, int Backend>
 // 	MixedFESpace<FESpace<Traits1, Backend>, FESpace<Traits2, Backend> > operator*(FESpace<Traits1, Backend> &fs1,
-// 																				  FESpace<Traits2, Backend> &fs2)
+// 																				  FESpace<Traits2,
+// Backend> &fs2)
 
 // 	{
 // 		return MixedFESpace<FESpace<Traits1, Backend>, FESpace<Traits2, Backend> >(fs1, fs2);
@@ -96,23 +97,28 @@
 
 // 	template<class... Spaces, class Traits, int Backend>
 // 	MixedFESpace<Spaces..., FESpace<Traits, Backend> > operator*(MixedFESpace<Spaces...>  &&fs1,
-// 																 FESpace<Traits, Backend> &fs2)
+// 																 FESpace<Traits, Backend>
+// &fs2)
 
 // 	{
-// 		return MixedFESpace<Spaces..., FESpace<Traits, Backend> >(std::tuple_cat(fs1.subspaces(), std::tie(fs2)));
+// 		return MixedFESpace<Spaces..., FESpace<Traits, Backend> >(std::tuple_cat(fs1.subspaces(),
+// std::tie(fs2)));
 // 	}
 
 // 	template<class... Spaces, class Traits, int Backend>
 // 	MixedFESpace<FESpace<Traits, Backend>, Spaces...> operator*(FESpace<Traits, Backend> &fs1,
-// 																MixedFESpace<Spaces...>  &&fs2)
+// 																MixedFESpace<Spaces...>
+// &&fs2)
 
 // 	{
-// 		return MixedFESpace<FESpace<Traits, Backend>, Spaces...>(std::tuple_cat(std::tie(fs1), fs2.subspaces()));
+// 		return MixedFESpace<FESpace<Traits, Backend>, Spaces...>(std::tuple_cat(std::tie(fs1),
+// fs2.subspaces()));
 // 	}
 
 // 	template<class... Spaces1, class... Spaces2>
 // 	MixedFESpace<Spaces1..., Spaces2...> operator*(MixedFESpace<Spaces1...>  &&fs1,
-// 												   MixedFESpace<Spaces2...>  &&fs2)
+// 												   MixedFESpace<Spaces2...>
+// &&fs2)
 
 // 	{
 // 		return MixedFESpace<Spaces1..., Spaces2...>( std::tuple_cat(fs1.subspaces(), fs2.subspaces()) );
@@ -121,4 +127,3 @@
 // }
 
 // #endif //UTOPIA_MIXED_FE_SPACE_HPP
-

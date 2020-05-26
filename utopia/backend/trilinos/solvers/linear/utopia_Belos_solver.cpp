@@ -6,6 +6,6 @@
 #include "utopia_trilinos_Types.hpp"
 
 namespace utopia {
-    template class BelosSolver<TSMatrixd, TVectord>;
-}
+    template class BelosSolver<TpetraMatrixd, TpetraVectord>;
+}  // namespace utopia
 #endif  // WITH_TRILINOS_BELOS

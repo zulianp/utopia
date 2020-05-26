@@ -1,30 +1,30 @@
 #ifndef UTOPIA_UTOPIA_INSTANCE_HPP
 #define UTOPIA_UTOPIA_INSTANCE_HPP
 
+#include "utopia_Input.hpp"
 #include "utopia_Logger.hpp"
 
+#include <cassert>
 #include <map>
 #include <string>
-#include <cassert>
 
 namespace utopia {
-    class Utopia final {
+    class Utopia final : public Configurable {
     public:
         static void Init(int argc, char *argv[]);
         static int Finalize();
         static void Abort();
 
-        inline std::string get(const std::string &key) const
-        {
+        void read(Input &is) override;
+        void print_usage(std::ostream &os) const override;
+
+        inline std::string get(const std::string &key) const {
             auto it = settings_.find(key);
-            if(it == settings_.end()) return "";
+            if (it == settings_.end()) return "";
             return it->second;
         }
 
-        inline void set(const std::string &key, const std::string &value)
-        {
-            settings_[key] = value;
-        }
+        inline void set(const std::string &key, const std::string &value) { settings_[key] = value; }
 
         static Utopia &instance();
 
@@ -40,18 +40,17 @@ namespace utopia {
             return *maintenance_logger_;
         }
 
-        void set_exit_code(const int code)
-        {
-            exit_code_ = code;
-        }
+        void set_exit_code(const int code) { exit_code_ = code; }
+
+        void read_input(int argc, char *argv[]);
 
     private:
         Utopia();
         std::map<std::string, std::string> settings_;
         std::shared_ptr<Logger> logger_;
         std::shared_ptr<Logger> maintenance_logger_;
-        int exit_code_;
+        int exit_code_{EXIT_SUCCESS};
     };
-}
+}  // namespace utopia
 
-#endif //UTOPIA_UTOPIA_INSTANCE_HPP
+#endif  // UTOPIA_UTOPIA_INSTANCE_HPP

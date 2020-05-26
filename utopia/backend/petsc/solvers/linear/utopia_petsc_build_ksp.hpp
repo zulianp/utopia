@@ -2,13 +2,13 @@
 #define UTOPIA_PETSC_BUILD_KSP_HPP
 
 #include "utopia_Core.hpp"
-#include "utopia_LinearSolver.hpp"
 #include "utopia_IterativeSolver.hpp"
-#include "utopia_petsc_Types.hpp"
+#include "utopia_LinearSolver.hpp"
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_Types.hpp"
+#include "utopia_petsc_impl.hpp"
 
-
-#define KSPUTOPIA         "utopia"
+#define KSPUTOPIA "utopia"
 
 /*
  Defines the basic KSP object
@@ -20,26 +20,29 @@
 PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP);
 PETSC_INTERN PetscErrorCode KSPDestroy_UTOPIA(KSP);
 PETSC_INTERN PetscErrorCode KSPReset_UTOPIA(KSP);
-PETSC_INTERN PetscErrorCode KSPView_UTOPIA(KSP,PetscViewer);
-PETSC_INTERN PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject,KSP);
+PETSC_INTERN PetscErrorCode KSPView_UTOPIA(KSP, PetscViewer);
+PETSC_INTERN PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject, KSP);
 
-PETSC_INTERN PetscErrorCode KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat &, const Mat &, const Vec &, Vec &) > solve_routine);
-PETSC_INTERN PetscErrorCode KSPSetTolerances_UTOPIA(KSP ksp, std::function< void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &) > utopia_set_tolerances);
-PETSC_INTERN PetscErrorCode KSPSetGetConvergenceReason_UTOPIA(KSP ksp, std::function< void(PetscInt &,  KSPConvergedReason&) > convergence_reason);
+PETSC_INTERN PetscErrorCode
+KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine);
+PETSC_INTERN PetscErrorCode
+KSPSetTolerances_UTOPIA(KSP ksp,
+                        std::function<void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &)>
+                            utopia_set_tolerances);
+PETSC_INTERN PetscErrorCode
+KSPSetGetConvergenceReason_UTOPIA(KSP ksp, std::function<void(PetscInt &, KSPConvergedReason &)> convergence_reason);
 
-typedef struct
-{
-    std::function< void(const Mat &, const Mat &, const Vec &, Vec &) > utopia_solve_routine;
-    std::function< void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &) > utopia_set_tolerances;
-    std::function< void(PetscInt &,  KSPConvergedReason&) > get_convergence_reason;
+typedef struct {
+    std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> utopia_solve_routine;
+    std::function<void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &)>
+        utopia_set_tolerances;
+    std::function<void(PetscInt &, KSPConvergedReason &)> get_convergence_reason;
 
 } KSP_UTOPIA;
 
-
 namespace utopia {
-    template<typename Matrix, typename Vector>
-    void build_ksp(const std::shared_ptr<utopia::LinearSolver<Matrix, Vector> > &lin_solver, KSP &ksp)
-    {
+    template <typename Matrix, typename Vector>
+    void build_ksp(const std::shared_ptr<utopia::LinearSolver<Matrix, Vector>> &lin_solver, KSP &ksp) {
         using namespace utopia;
 
         assert(lin_solver);
@@ -48,13 +51,13 @@ namespace utopia {
 
         auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector, PETSC>>(lin_solver);
 
-        if(factorization) {
+        if (factorization) {
             factorization->strategy().set_ksp_options(ksp);
             return;
         }
 
         auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector, PETSC>>(lin_solver);
-        if(ksp_solver) {
+        if (ksp_solver) {
             ksp_solver->set_ksp_options(ksp);
             ksp_solver->attach_preconditioner(ksp);
             return;
@@ -62,102 +65,90 @@ namespace utopia {
 
         //////////////// All the others //////////////////////////
 
-
         // check if our options overwrite this
         KSPSetFromOptions(ksp);
         KSPSetType(ksp, KSPUTOPIA);
 
         auto iterative_solver = std::dynamic_pointer_cast<utopia::IterativeSolver<Matrix, Vector>>(lin_solver);
 
-        if(iterative_solver) {
+        if (iterative_solver) {
             ksp->rtol = iterative_solver->rtol();
             ksp->abstol = iterative_solver->atol();
             ksp->max_it = iterative_solver->max_it();
         }
 
-        std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine = [lin_solver](const Mat &A, const Mat & P, const Vec &b, Vec & x)
-        {
-            assert(lin_solver);
+        std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine =
+            [lin_solver](const Mat &A, const Mat & /*P*/, const Vec &b, Vec &x) {
+                assert(lin_solver);
 
-            Vector  b_ut, x_ut;
+                Vector b_ut, x_ut;
 
-            // we need to get some better way how to do this
-            utopia::convert(x, x_ut);
-            utopia::convert(b, b_ut);
+                // we need to get some better way how to do this
+                utopia::convert(x, x_ut);
+                utopia::convert(b, b_ut);
 
-            Matrix A_ut;
-            A_ut.implementation().wrap(const_cast<Mat &>(A));
+                Matrix A_ut;
+                A_ut.wrap(const_cast<Mat &>(A));
 
-            lin_solver->solve(A_ut, b_ut, x_ut);
+                lin_solver->solve(A_ut, b_ut, x_ut);
 
-            convert(x_ut, x);
-        };
+                convert(x_ut, x);
+            };
 
+        std::function<void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &)> tol_routine =
+            [lin_solver](
+                const PetscReal &rtol, const PetscReal &abstol, const PetscReal & /*dtol*/, const PetscInt &maxits) {
+                assert(lin_solver);
 
-        std::function< void(const PetscReal &, const PetscReal &,
-                            const PetscReal &, const PetscInt &) > tol_routine = [lin_solver](const PetscReal & rtol,
-                                                                                               const PetscReal & abstol,
-                                                                                               const PetscReal & dtol,
-                                                                                               const PetscInt & maxits)
-        {
-            assert(lin_solver);
-
-            if (dynamic_cast<utopia::IterativeSolver<Matrix, Vector>*>(lin_solver.get()) != nullptr)
-            {
-                auto ls = dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get());
-                ls->atol(abstol);
-                ls->rtol(rtol);
-                ls->max_it(maxits);
-            }
-            else
-            {
-                std::cout<<"set tol is not configured for direct solvers yet... \n";
-            }
-        };
-
-        std::function< void(PetscInt &,  KSPConvergedReason&) > convergence_routine = [lin_solver](PetscInt & max_it,  KSPConvergedReason & reason)
-        {
-            assert(lin_solver);
-
-            if (dynamic_cast<utopia::IterativeSolver<Matrix, Vector>*>(lin_solver.get()) != nullptr)
-            {
-                auto ls = dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get());
-                max_it = ls->get_num_it();
-
-                switch (ls->get_convergence_reason() )
-                {
-                        // sucess
-                    case utopia::ConvergenceReason::CONVERGED_FNORM_ABS:
-                        reason = KSP_CONVERGED_ATOL;
-                        break;
-
-                    case utopia::ConvergenceReason::CONVERGED_FNORM_RELATIVE:
-                        reason = KSP_CONVERGED_RTOL;
-                        break;
-
-                    case utopia::ConvergenceReason::CONVERGED_SNORM_RELATIVE:
-                        reason = KSP_CONVERGED_STEP_LENGTH;
-                        break;
-
-                        // fail
-                    case utopia::ConvergenceReason::DIVERGED_MAX_IT :
-                        reason = KSP_DIVERGED_ITS;
-                        break;
-
-                    default:
-                        reason = KSP_CONVERGED_RTOL_NORMAL;
+                if (dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get()) != nullptr) {
+                    auto ls = dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get());
+                    ls->atol(abstol);
+                    ls->rtol(rtol);
+                    ls->max_it(maxits);
+                } else {
+                    std::cout << "set tol is not configured for direct solvers yet... \n";
                 }
-            }
-            else
-            {
-                std::cout<<"get convergence reason is not configured for direct solvers yet... \n";
-#if UTOPIA_PETSC_VERSION_LESS_THAN(3,11,0)
-                reason =  KSP_DIVERGED_PCSETUP_FAILED;
+            };
+
+        std::function<void(PetscInt &, KSPConvergedReason &)> convergence_routine =
+            [lin_solver](PetscInt &max_it, KSPConvergedReason &reason) {
+                assert(lin_solver);
+
+                if (dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get()) != nullptr) {
+                    auto ls = dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get());
+                    max_it = ls->get_num_it();
+
+                    switch (ls->get_convergence_reason()) {
+                            // sucess
+                        case utopia::ConvergenceReason::CONVERGED_FNORM_ABS:
+                            reason = KSP_CONVERGED_ATOL;
+                            break;
+
+                        case utopia::ConvergenceReason::CONVERGED_FNORM_RELATIVE:
+                            reason = KSP_CONVERGED_RTOL;
+                            break;
+
+                        case utopia::ConvergenceReason::CONVERGED_SNORM_RELATIVE:
+                            reason = KSP_CONVERGED_STEP_LENGTH;
+                            break;
+
+                            // fail
+                        case utopia::ConvergenceReason::DIVERGED_MAX_IT:
+                            reason = KSP_DIVERGED_ITS;
+                            break;
+
+                        default:
+                            reason = KSP_CONVERGED_RTOL_NORMAL;
+                    }
+                } else {
+                    std::cout << "get convergence reason is not configured for direct solvers yet... \n";
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 11, 0)
+                    reason = KSP_DIVERGED_PCSETUP_FAILED;
 #else
-                reason =  KSP_DIVERGED_PC_FAILED;
+                    reason = KSP_DIVERGED_PC_FAILED;
 #endif
-            }
-        };
+                }
+            };
 
         KSPSetSolveRoutine_UTOPIA(ksp, solve_routine);
         KSPSetTolerances_UTOPIA(ksp, tol_routine);
@@ -172,7 +163,6 @@ namespace utopia {
 
         KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
     }
-}
-
+}  // namespace utopia
 
 #endif

@@ -1,0 +1,101 @@
+{
+    "version" : 2,
+    "adaptivity" : false,
+    "pourous-matrix" : {
+
+        "mesh" :
+        {
+            "type" : "file",
+            "path" : "../data/frac/regular_equidim_embedded_matrix.e",
+            "order" : 1,
+            "refinements" : 0
+        },
+        "space" :
+        {
+            "system-name" : "pourous-matrix",
+            "variables" : [
+                {
+                    "name"  : "u",
+                    "order" : 1
+                }
+            ],
+            "boundary-conditions" : [
+                {
+                    "side" : 4,
+                    "value" : 1
+                }
+            ]
+        },
+        "gradient-recovery" :
+        {
+            "max-local-error" : 0.0001,
+            "max-refinements" : 3
+        },
+        "type" : "FlowWithFractures",
+        "permeability" : 1,
+        "forcing-function" : [
+            {
+                "block": 3,
+                "value" : 1,
+                "type" : "surface",
+                "class" : "AdaptiveFunction"
+            }
+        ],
+        "fractures" : [
+            {
+                "type" : "line",
+                "p0-x" : 0.0,
+                "p0-y" : 0.5,
+                "p1-x" : 1.0,
+                "p1-y" : 0.5,
+                "permeability" : 1.0e4,
+                "aperture" : 1e-4
+            },
+            {
+                "type" : "line",
+                "p0-x" : 0.5,
+                "p0-y" : 0.0,
+                "p1-x" : 0.5,
+                "p1-y" : 1.0,
+                "permeability" : 1.0e4,
+                "aperture" : 1e-4
+            },
+            {
+                "type" : "line",
+                "p0-x" : 0.5,
+                "p0-y" : 0.75,
+                "p1-x" : 1.0,
+                "p1-y" : 0.75,
+                "permeability" : 1.0e4,
+                "aperture" : 1e-4
+            },
+            {
+                "type" : "line",
+                "p0-x" : 0.75,
+                "p0-y" : 0.5,
+                "p1-x" : 0.75,
+                "p1-y" : 1.0,
+                "permeability" : 1.0e4,
+                "aperture" : 1e-4
+            },
+            {
+                "type" : "line",
+                "p0-x" : 0.5,
+                "p0-y" : 0.65,
+                "p1-x" : 0.75,
+                "p1-y" : 0.65,
+                "permeability" : 1.0e4,
+                "aperture" : 1e-4
+            },
+            {
+                "type" : "line",
+                "p0-x" : 0.65,
+                "p0-y" : 0.5,
+                "p1-x" : 0.65,
+                "p1-y" : 0.75,
+                "permeability" : 1.0e4,
+                "aperture" : 1e-4
+            }
+        ]
+    }
+}

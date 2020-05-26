@@ -2,7 +2,6 @@
 
 // namespace utopia {
 
-
 // 	void BoxAdapter::read(moonolith::InputStream &is)
 // 	{
 // 	    auto &min = get_min();

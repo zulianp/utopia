@@ -20,15 +20,29 @@
 #cmakedefine WITH_UTOPIA_OPENCL
 #cmakedefine WITH_EIGEN_3
 #cmakedefine UTOPIA_TRACE_ENABLED
+#cmakedefine UTOPIA_TRACE_EXPR_ENABLED
+#cmakedefine ENABLE_NO_ALLOC_REGIONS
 #cmakedefine WITH_PASSO_EXTENSIONS
 #cmakedefine WITH_TINY_EXPR
 #cmakedefine WITH_JSON
 #cmakedefine WITH_M3ELINSOL
 #cmakedefine WITH_CPP14
+#cmakedefine UTOPIA_DEPRECATED_API
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR
 #cmakedefine UTOPIA_PETSC_VERSION_SUBMINOR
+
+#ifdef WITH_TRILINOS
+#include <Kokkos_Macros.hpp>
+#define UTOPIA_LAMBDA KOKKOS_LAMBDA
+#define UTOPIA_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
+#define UTOPIA_FUNCTION KOKKOS_FUNCTION
+#else
+#define UTOPIA_LAMBDA [=]
+#define UTOPIA_INLINE_FUNCTION inline
+#define UTOPIA_FUNCTION
+#endif
 
 
 #ifdef WITH_OPEN_BLAS
@@ -56,23 +70,6 @@
 #cmakedefine HAS_CXX11_FUNC               //__func__ preprocessor constant
 #endif //WITH_CPP11
 
-
-#ifdef WITH_PETSC
-	#define UTOPIA_PETSC_VERSION_LESS_THAN(major,minor,subminor)                   \
-	  ((PETSC_VERSION_MAJOR < (major) ||                   \
-	    (PETSC_VERSION_MAJOR == (major) && ((PETSC_VERSION_MINOR < (minor)) || \
-	                                                         (PETSC_VERSION_MINOR == (minor) && \
-	                                                          PETSC_VERSION_SUBMINOR < (subminor))))) ? 1 : 0)
-
-#define UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(major,minor,subminor)                   \
-	  ((PETSC_VERSION_MAJOR > (major) ||                   \
-	    (PETSC_VERSION_MAJOR == (major) && ((PETSC_VERSION_MINOR > (minor)) || \
-	                                                         (PETSC_VERSION_MINOR == (minor) && \
-	                                                          PETSC_VERSION_SUBMINOR >= (subminor))))) ? 1 : 0)
-#else // WITH_PETSC
-	#define UTOPIA_PETSC_VERSION_LESS_THAN(major,minor,subminor) 1
-	#define UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(major,minor,subminor) 0
-#endif // WITH_PETSC
 
 #ifndef NDEBUG
 #include <assert.h>

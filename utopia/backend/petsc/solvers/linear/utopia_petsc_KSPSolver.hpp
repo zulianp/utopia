@@ -1,52 +1,52 @@
 #ifndef UTOPIA_PETSC_KSP_HPP
 #define UTOPIA_PETSC_KSP_HPP
 
-#include "utopia_Preconditioner.hpp"
-#include "utopia_PreconditionedSolver.hpp"
-#include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_PreconditionedSolver.hpp"
+#include "utopia_Preconditioner.hpp"
+#include "utopia_Smoother.hpp"
+#include "utopia_petsc_Vector.hpp"
 
-
-#include <algorithm>
-#include <petscpc.h>
 #include <petscksp.h>
+#include <petscpc.h>
 #include <petscsys.h>
+#include <algorithm>
 
 namespace utopia {
 
-    template<class Matrix, class Vector>
+    // FIXME this whole wrapper needs fixing
+    template <class Matrix, class Vector>
     class KSPWrapper;
 
     PetscErrorCode UtopiaPCApplyShell(PC pc, Vec x, Vec y);
-    PetscErrorCode MyKSPMonitor(KSP,PetscInt,PetscReal,void*);
+    PetscErrorCode MyKSPMonitor(KSP, PetscInt, PetscReal, void *);
     std::string converged_str(KSPConvergedReason reason);
 
     /**@ingroup     Linear
      * @brief       Class provides interface to Petsc KSP solvers \n
      *              For setting up basic parameters, one can use classic Petsc runtime options, e.g.
      *              To see all possibilities, please refer to:
-     *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a>
-     *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPType.html#KSPType">solver types</a>
+     *                                                   * <a
+     * href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a>
+     *                                                   * <a
+     * href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPType.html#KSPType">solver types</a>
      *
      *              Setting own/utopia preconditioner, can be done as following:
      *              \snippet tests/utopia_SolverTest.cpp PetscKSPSolver solve example1
      *              Detailed information about preconditioners, can be found in  \ref precondotioners.
      */
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class KSPSolver {};
 
-    template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> :
-        public PreconditionedSolver<Matrix, Vector>,
-        public Smoother<Matrix, Vector> {
+    template <typename Matrix, typename Vector>
+    class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector> {
     public:
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::Preconditioner<Vector> Preconditioner;
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
+        using Preconditioner = utopia::Preconditioner<Vector>;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
-        typedef utopia::Smoother<Matrix, Vector> Smoother;
 
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "only works with petsc types");
 
@@ -54,24 +54,23 @@ namespace utopia {
 
         KSPSolver();
 
-
         KSPSolver(std::unique_ptr<Impl> &&w);
 
         void wrap(KSP &ksp);
 
-        virtual ~KSPSolver();
+        ~KSPSolver() override;
 
         /* @brief      Sets the choice of direct solver.
          *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings.
          *
          * @param[in]  pc_type  The type of direct solver.
          */
-        void pc_type(const std::string &pc_type);
+        virtual void pc_type(const std::string &pc_type);
 
         /**
          * @brief      Sets KSP type
          */
-        void ksp_type(const std::string & ksp_type);
+        virtual void ksp_type(const std::string &ksp_type);
 
         /**
          * @brief      Sets solver package for choice of direct solver.
@@ -93,12 +92,17 @@ namespace utopia {
         /**
          * @brief      Setter for number of global subdomains
          */
-        void number_of_subdomains(const SizeType & n);
+        void number_of_subdomains(const SizeType &n);
+
+        /**
+         * @brief      Set norm type
+         */
+        void norm_type(const std::string &norm_type);
 
         /**
          * @brief      Setter for overlap used inside of Additive Schwarz method
          */
-        void overlap(const SizeType & n);
+        void overlap(const SizeType &n);
 
         /**
          * @brief      Sets ksp and pc type for all sub_ksp and all sub_pc
@@ -115,12 +119,10 @@ namespace utopia {
          */
         void sub_pc_type(const std::string type);
 
-
         /**
          * @brief      Sets solver package type for all sub_ksp
          */
         void sub_solver_package(const std::string type);
-
 
         /**
          * @brief      Returns type of solver package.
@@ -139,7 +141,6 @@ namespace utopia {
 
         void describe(std::ostream &os) const;
 
-
         /**
          * @brief      Sets the default options for PETSC KSP solver. \n
          *             Default: BiCGstab
@@ -150,15 +151,15 @@ namespace utopia {
 
         virtual void attach_preconditioner(KSP &ksp) const;
 
-        virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
+        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
 
         virtual void set_monitor_options(KSP &ksp) const;
 
         void handle_reset(const Matrix &op);
 
-        virtual void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
+        void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
 
-        virtual void update(const std::shared_ptr<const Matrix> &op) override;
+        void update(const std::shared_ptr<const Matrix> &op) override;
 
         KSPSolver &operator=(const KSPSolver &other);
 
@@ -168,7 +169,7 @@ namespace utopia {
 
         KSPSolver(KSPSolver &&other);
 
-        virtual KSPSolver * clone() const override;
+        KSPSolver *clone() const override;
 
         Impl &ksp();
 
@@ -178,13 +179,13 @@ namespace utopia {
 
         KSP &implementation();
 
-        virtual void read(Input &is) override;
-        virtual void print_usage(std::ostream &os = std::cout) const override;
+        void read(Input &is) override;
+        void print_usage(std::ostream &os = std::cout) const override;
 
     protected:
         std::unique_ptr<Impl> ksp_;
     };
 
-}
+}  // namespace utopia
 
-#endif //UTOPIA_PETSC_KSP_HPP
+#endif  // UTOPIA_PETSC_KSP_HPP

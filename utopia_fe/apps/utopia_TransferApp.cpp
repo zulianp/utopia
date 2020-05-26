@@ -1,69 +1,53 @@
 #include "utopia_TransferApp.hpp"
-#include "utopia_TransferAssembler.hpp"
-#include "utopia_L2LocalAssembler.hpp"
 #include "utopia_ApproxL2LocalAssembler.hpp"
 #include "utopia_InterpolationLocalAssembler.hpp"
+#include "utopia_L2LocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
-#include "utopia_ui.hpp"
 #include "utopia_SymbolicFunction.hpp"
+#include "utopia_TransferAssembler.hpp"
+#include "utopia_ui.hpp"
 
-#include "utopia_UIFunctionSpace.hpp"
+#include "libmesh/boundary_mesh.h"
+#include "libmesh/elem.h"
+#include "libmesh/mesh_base.h"
+#include "libmesh/mesh_refinement.h"
+#include "libmesh/node.h"
+#include "utopia_MeshTransferOperator.hpp"
 #include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
-#include "utopia_MeshTransferOperator.hpp"
-
-#include "libmesh/mesh_refinement.h"
-#include "libmesh/boundary_mesh.h"
-
 
 namespace utopia {
 
     class TransferApp::InputSpace : public Configurable {
     public:
-        InputSpace(libMesh::Parallel::Communicator &comm)
-        : mesh_(comm), space_(make_ref(mesh_))
-        {}
+        InputSpace(libMesh::Parallel::Communicator &comm) : mesh_(comm), space_(make_ref(mesh_)) {}
 
-        void read(Input &is) override
-        {
+        void read(Input &is) override {
             try {
                 is.get("mesh", mesh_);
                 is.get("space", space_);
 
-
-            } catch(const std::exception &ex) {
+            } catch (const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
             }
         }
 
-        inline bool empty() const
-        {
-            return mesh_.empty();
-        }
+        inline bool empty() const { return mesh_.empty(); }
 
-        inline libMesh::MeshBase &mesh()
-        {
-            return mesh_.mesh();
-        }
+        inline libMesh::MeshBase &mesh() { return mesh_.mesh(); }
 
-        inline std::shared_ptr<libMesh::MeshBase> mesh_ptr()
-        {
-            return mesh_.mesh_ptr();
-        }
+        inline std::shared_ptr<libMesh::MeshBase> mesh_ptr() { return mesh_.mesh_ptr(); }
 
-        inline LibMeshFunctionSpace &space()
-        {
-            return space_.space()[0];
-        }
+        inline LibMeshFunctionSpace &space() { return space_.space()[0]; }
 
         UIMesh<libMesh::DistributedMesh> mesh_;
-        UIFunctionSpace<LibMeshFunctionSpace>  space_;
+        UIFunctionSpace<LibMeshFunctionSpace> space_;
     };
 
-    void TransferApp::run(Input &in)
-    {
+    void TransferApp::run(Input &in) {
         Chrono c;
         c.start();
 
@@ -77,17 +61,20 @@ namespace utopia {
         std::shared_ptr<MeshTransferOperator> transfer_operator;
 
         in.get("transfer", [&](Input &is) {
-            //get spaces
+            // get spaces
             is.get("master", input_master);
-            is.get("slave",  input_slave);
+            is.get("slave", input_slave);
+
+            std::cout << "1) read fe spaces form disk" << std::endl;
 
             is.get("master-boundary", master_boundary);
-            is.get("slave-boundary",  slave_boundary);
+            is.get("slave-boundary", slave_boundary);
 
-            if(master_boundary) {
-                auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_master.mesh().mesh_dimension()-1);
+            if (master_boundary) {
+                auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_master.mesh().mesh_dimension() - 1);
                 input_master.mesh().boundary_info->sync(*b_mesh);
-                master_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
+                master_actual_space =
+                    std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
                 master_actual_space->initialize();
                 master_actual_mesh = b_mesh;
             } else {
@@ -95,10 +82,11 @@ namespace utopia {
                 master_actual_space = make_ref(input_master.space());
             }
 
-            if(slave_boundary) {
-                auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_slave.mesh().mesh_dimension()-1);
+            if (slave_boundary) {
+                auto b_mesh = std::make_shared<libMesh::BoundaryMesh>(comm(), input_slave.mesh().mesh_dimension() - 1);
                 input_slave.mesh().boundary_info->sync(*b_mesh);
-                slave_actual_space = std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
+                slave_actual_space =
+                    std::make_shared<LibMeshFunctionSpace>(*b_mesh, libMesh::LAGRANGE, libMesh::FIRST, "u");
                 slave_actual_space->initialize();
                 slave_actual_mesh = b_mesh;
             } else {
@@ -106,12 +94,10 @@ namespace utopia {
                 slave_actual_space = make_ref(input_slave.space());
             }
 
-            transfer_operator = std::make_shared<MeshTransferOperator>(
-                master_actual_mesh,
-                make_ref(master_actual_space->dof_map()),
-                slave_actual_mesh,
-                make_ref(slave_actual_space->dof_map())
-            );
+            transfer_operator = std::make_shared<MeshTransferOperator>(master_actual_mesh,
+                                                                       make_ref(master_actual_space->dof_map()),
+                                                                       slave_actual_mesh,
+                                                                       make_ref(slave_actual_space->dof_map()));
 
             transfer_operator->read(is);
 
@@ -124,7 +110,7 @@ namespace utopia {
             std::string fun_type = "non-linear";
             is.get("function-type", fun_type);
 
-            if(fun_type == "constant") {
+            if (fun_type == "constant") {
                 fun_is_constant = true;
             } else {
                 fun_is_constant = false;
@@ -135,20 +121,23 @@ namespace utopia {
             fun_is_constant = true;
 
             fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
-#endif //WITH_TINY_EXPR
-
+#endif  // WITH_TINY_EXPR
         });
 
         c.stop();
 
-        if(!transfer_operator) {
+        if (!transfer_operator) {
             std::cout << "[Error] unable to read setting file" << std::endl;
             return;
         }
 
+        std::cout << "2) assembling transfer operator..." << std::endl;
+
         bool ok = transfer_operator->assemble();
 
-        if(!ok) {
+        std::cout << "3) assembly of transfer operator DONE" << std::endl;
+
+        if (!ok) {
             std::cerr << "[Error] unable to assemble operator" << std::endl;
             assert(false);
             exit(-1);
@@ -164,7 +153,7 @@ namespace utopia {
         USparseMatrix mass_mat_master;
         assemble(inner(u, v) * dX, mass_mat_master);
 
-        if(!fun_is_constant) {
+        if (!fun_is_constant) {
             assemble(inner(*fun, v) * dX, fun_master_h);
 
             fun_master = fun_master_h;
@@ -176,12 +165,12 @@ namespace utopia {
             fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
 #else
             fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->expr());
-#endif //WITH_TINY_EXPR
+#endif  // WITH_TINY_EXPR
         }
 
         c.stop();
 
-        if(mpi_world_rank() == 0) {
+        if (mpi_world_rank() == 0) {
             std::cout << "Assembled M and fun_m" << std::endl;
             std::cout << c << std::endl;
             std::cout << std::flush;
@@ -193,10 +182,10 @@ namespace utopia {
         transfer_operator->apply_transpose(fun_slave, back_fun_master);
 
         double sum_fun_master = sum(fun_master);
-        double sum_fun_slave  = sum(fun_slave);
+        double sum_fun_slave = sum(fun_slave);
 
         ////////////////////////////////////////////////////////////
-        //output
+        // output
         ////////////////////////////////////////////////////////////
 
         convert(fun_master, *input_master.space().equation_system().solution);
@@ -214,11 +203,31 @@ namespace utopia {
         ////////////////////////////////////////////////////////////
         convert(fun_slave, *input_slave.space().equation_system().solution);
         input_slave.space().equation_system().solution->close();
+
+        // auto       el     = input_slave.space().mesh().active_local_elements_begin();
+
+        // const auto end_el = input_slave.space().mesh().active_local_elements_end();
+
+        //    for ( ; el != end_el; ++el)
+        //    {
+        //         const libMesh::Elem * elem = *el;
+
+        //         libMesh::Elem * ele = *el;
+
+        //         std::cout<<"current_elem_LIBMESH: "<<ele[0]<<std::endl;
+
+        //              for(int ll=0; ll<ele->n_nodes(); ll++){
+        //                const libMesh::Node * v_node = ele->node_ptr(ll);
+        //                const libMesh::dof_id_type v_dof =
+        //                v_node->dof_number(input_slave.space().equation_system().number(),0,0); std::cout<<"node_id is
+        //                "<<v_node->id()<<" and dof is "<<v_dof<<std::endl;
+        //              }
+        //    }
+
         libMesh::Nemesis_IO io_slave(input_slave.mesh());
         io_slave.write_equation_systems("slave.e", input_slave.space().equation_systems());
     }
 
     TransferApp::TransferApp() {}
     TransferApp::~TransferApp() {}
-}
-
+}  // namespace utopia
