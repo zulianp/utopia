@@ -222,6 +222,8 @@ namespace utopia {
             assert(ierr == 0);
             ierr = TaoSetType(tao, type_.c_str());
             assert(ierr == 0);
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void set_from_options() {
@@ -304,6 +306,7 @@ namespace utopia {
             assert(ierr == 0);
             ierr = TaoSetMaximumIterations(tao, maxits);
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
         }
 
         void set_monitor() {

@@ -16,8 +16,8 @@ namespace utopia {
 
     using SolverType = const char *;
 
-    static SolverType SIMPLE_BACKTRACKING_TAG = "SIMPLE_BACKTRACKING";
-    static SolverType BACKTRACKING_TAG = "BACKTRACKING";
+    // static SolverType SIMPLE_BACKTRACKING_TAG = "SIMPLE_BACKTRACKING";
+    // static SolverType BACKTRACKING_TAG = "BACKTRACKING";
 
     /**
      * @brief      Front-end to create ls strategy objects.

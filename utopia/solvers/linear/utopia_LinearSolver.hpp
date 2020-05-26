@@ -26,9 +26,12 @@ namespace utopia {
 
         using Super::update;
 
-        ~LinearSolver() override = default;
-
         LinearSolver() = default;
+        ~LinearSolver() override = default;
+        LinearSolver &operator=(const LinearSolver &) = default;
+        LinearSolver &operator=(LinearSolver &&) = default;
+        LinearSolver(LinearSolver &&other) = default;
+
         LinearSolver(const LinearSolver &other) {
             UTOPIA_UNUSED(other);
             assert((!other.op_) && "cannot be copied once initialized");

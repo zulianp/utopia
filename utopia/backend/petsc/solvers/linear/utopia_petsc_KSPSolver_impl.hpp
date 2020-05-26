@@ -456,6 +456,8 @@ namespace utopia {
             } else {
                 utopia_error("Number of subdomain can be set only for PCBJACOBI or PCASM.");
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void norm_type(const std::string &norm_type) {
@@ -491,6 +493,8 @@ namespace utopia {
                 utopia_error("Overlap can be set only for PCASM");
                 return;
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void sub_ksp_pc_type(const std::string &sub_ksp_type, const std::string &sub_pc_type) {
@@ -533,6 +537,8 @@ namespace utopia {
                 KSPGetPC(subksp[i], &subpc);
                 PCSetType(subpc, sub_pc_type.c_str());
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void sub_ksp_type(const std::string &sub_ksp_type) {
@@ -572,6 +578,8 @@ namespace utopia {
             for (auto i = 0; i < nlocal; i++) {
                 KSPSetType(subksp[i], sub_ksp_type.c_str());
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void sub_pc_type(const std::string &sub_pc_type) {
@@ -613,6 +621,8 @@ namespace utopia {
                 KSPGetPC(subksp[i], &subpc);
                 PCSetType(subpc, sub_pc_type.c_str());
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void sub_solver_package(const std::string &sub_pc_type) {
@@ -658,6 +668,8 @@ namespace utopia {
                 PCFactorSetMatSolverType(subpc, sub_pc_type.c_str());
 #endif
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void set_monitor(PetscErrorCode (*monitor)(KSP, PetscInt, PetscReal, void *),
@@ -667,6 +679,7 @@ namespace utopia {
             UTOPIA_UNUSED(ierr);
             ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy);
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
         }
 
         bool apply(const Vector &b, Vector &x) {

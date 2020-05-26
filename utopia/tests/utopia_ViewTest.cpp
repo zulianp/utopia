@@ -485,20 +485,15 @@ namespace utopia {
             C.set(0.0);
             Id.identity();
 
-            auto kronecker_delta = [](const SizeType &i, const SizeType &j) -> bool {
-                return (i == j) ? 1.0 : static_cast<double>(0.0 != 0.0 != 0.0);
-            };
+            auto kronecker_delta = [](const SizeType &i, const SizeType &j) -> int { return (i == j) ? 1 : 0; };
 
             for (SizeType i = 0; i < Dim; ++i) {
                 for (SizeType j = 0; j < Dim; ++j) {
                     for (SizeType k = 0; k < Dim; ++k) {
                         for (SizeType l = 0; l < Dim; ++l) {
-                            Scalar val =
-                                120 * static_cast<int>(kronecker_delta(i, j)) * static_cast<int>(kronecker_delta(k, l));
-                            val += 80 *
-                                   (static_cast<int>(kronecker_delta(i, k)) * static_cast<int>(kronecker_delta(j, l)));
-                            val += 80 *
-                                   (static_cast<int>(kronecker_delta(i, l)) * static_cast<int>(kronecker_delta(j, k)));
+                            Scalar val = 120 * kronecker_delta(i, j) * kronecker_delta(k, l);
+                            val += 80 * (kronecker_delta(i, k) * kronecker_delta(j, l));
+                            val += 80 * (kronecker_delta(i, l) * kronecker_delta(j, k));
                             C(i, j, k, l) = val;
                         }
                     }

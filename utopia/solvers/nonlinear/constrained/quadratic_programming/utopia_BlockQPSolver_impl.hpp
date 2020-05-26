@@ -20,7 +20,10 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(const BlockQPSolver &other)
-        : Super(other), local_lb_(std::make_shared<Vector>()), local_ub_(std::make_shared<Vector>()) {
+        : VariableBoundSolverInterface<Vector>(other),
+          Super(other),
+          local_lb_(std::make_shared<Vector>()),
+          local_ub_(std::make_shared<Vector>()) {
         if (other.serial_solver_) {
             serial_solver_ = std::shared_ptr<QPSolver>(other.serial_solver_->clone());
         }

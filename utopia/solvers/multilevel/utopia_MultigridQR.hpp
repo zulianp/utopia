@@ -167,7 +167,7 @@ namespace utopia {
          *
          */
         bool apply(const Vector &rhs, Vector &x_fine) override {
-            Scalar r_norm, r0_norm, diff_norm;
+            Scalar r_norm, /*r0_norm,*/ diff_norm;
             SizeType it = 0;
             bool converged = false;
             bool ok = true;
@@ -181,7 +181,7 @@ namespace utopia {
             memory.rhs[l] = rhs;
 
             r_norm = norm2(memory.rhs[l] - level(l).A() * memory.x[l]);
-            r0_norm = r_norm;
+            // r0_norm = r_norm;
 
             Vector x_old = memory.x[l];
 

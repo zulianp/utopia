@@ -41,6 +41,8 @@ target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 #hidden dependencies
 target_include_directories(utopia_ui SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
+# target_compile_options(utopia_ui PRIVATE "-Wno-cast-function-type")
+
 # target_include_directories(utopia_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson)
 
 if(WIN32)
