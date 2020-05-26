@@ -113,7 +113,6 @@ namespace utopia {
             abort();
         }
     }
-                        const std::string &expr_string);
 }  // namespace utopia
 
 #define CONST_DERIVED_CRT(Derived) \
