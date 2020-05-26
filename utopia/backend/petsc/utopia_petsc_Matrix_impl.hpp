@@ -253,6 +253,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
     }  // namespace internal
 
@@ -270,6 +271,8 @@ namespace utopia {
 
         // DOUBT no restore?
         // err =  MatMPIAIJRestoreSeqAIJ(raw_type(), &d, &o, &cols); assert(err == 0);
+
+        UTOPIA_UNUSED(err);
     }
 
     template <class F>
@@ -380,6 +383,8 @@ namespace utopia {
             // Off-diagonal block
             internal::read_petsc_seqaij_impl(
                 o, [=](const SizeType &i, const SizeType &j, const Scalar &v) { op(rr.begin() + i, cols[j], v); });
+
+            UTOPIA_UNUSED(err);
 
         } else if (has_type(MATSEQDENSE) || has_type(MATMPIDENSE)) {
             const PetscScalar *array = nullptr;
