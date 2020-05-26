@@ -31,9 +31,12 @@ namespace utopia {
                 // n x n matrix with maximum 3 entries x row
                 Write<Matrix> w(mat);
                 Range r = row_range(mat);
-                auto n = size(mat).get(0);
+                SizeType n = size(mat).get(0);
 
-                for (SizeType i = r.begin(); i != r.end(); ++i) {
+                const SizeType r_begin = r.begin();
+                const SizeType r_end = r.end();
+
+                for (SizeType i = r_begin; i != r_end; ++i) {
                     mat.c_set(i, i, i);
                     mat.c_set(i, n - 1, i);
                     mat.c_set(i, 0, i);

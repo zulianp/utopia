@@ -209,7 +209,7 @@ namespace utopia {
             auto mat_layout = layout(vl.comm(), 2, vl.local_size(), 2 * vl.comm().size(), vl.size());
 
             auto r = range(x);
-            long n = local_size(x).get(0);
+            // long n = local_size(x).get(0);
             long N = size(x).get(0);
 
             if (is_sparse<Matrix>::value) {

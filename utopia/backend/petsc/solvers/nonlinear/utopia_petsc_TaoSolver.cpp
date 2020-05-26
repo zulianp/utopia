@@ -228,6 +228,7 @@ namespace utopia {
             assert(initialized());
             auto ierr = TaoSetFromOptions(tao);
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
         }
 
         void destroy() {
@@ -275,6 +276,7 @@ namespace utopia {
 
             auto ierr = TaoSetVariableBounds(tao, raw_type(lb), raw_type(ub));
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
         }
 
         bool get_ksp(KSP *ksp) {

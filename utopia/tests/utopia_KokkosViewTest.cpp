@@ -59,7 +59,7 @@ namespace utopia {
         x += 0.5 * x;
         x *= 2.0;
 
-        const double x_dot_x = dot(x, x);
+        // const double x_dot_x = dot(x, x);
         // disp(x_dot_x);
 
         const SizeType n = 2;

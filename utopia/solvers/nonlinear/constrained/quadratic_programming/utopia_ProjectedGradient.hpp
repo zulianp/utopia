@@ -217,7 +217,7 @@ namespace utopia {
             x_half.zeros(layout);
         }
 
-        void update(const Operator<Vector> &A) override {}
+        void update(const Operator<Vector> &) override {}
 
     private:
         // buffers

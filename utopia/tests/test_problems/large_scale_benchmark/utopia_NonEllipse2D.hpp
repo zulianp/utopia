@@ -432,7 +432,7 @@ namespace utopia {
         }
 
         void form_lb2(Vector &lb) {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array_marker;
 
             DMDAGetInfo(da_,

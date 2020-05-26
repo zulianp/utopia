@@ -257,16 +257,16 @@ namespace utopia {
             solver.solve(A, b, x);
             Vector Ax = A * x;
 
-            const Scalar r_norm = norm2(b - Ax);
+            // const Scalar r_norm = norm2(b - Ax);
 
             utopia_test_assert(approxeq(Ax, b, 1e-6));
         }
 
         template <class MultigridSolver>
         static void run_multigrid(const SizeType n, MultigridSolver &multigrid) {
-            using TransferT = utopia::Transfer<Matrix, Vector>;
-            using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
-            using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
+            // using TransferT = utopia::Transfer<Matrix, Vector>;
+            // using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
+            // using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
 
             const static bool verbose = false;
             const static bool use_masks = true;

@@ -91,8 +91,8 @@ namespace utopia {
             assert(left.rows() == right.cols());
             assert(left.cols() == right.rows());
 
-            const auto rows = left.rows();
-            const auto cols = left.cols();
+            // const auto rows = left.rows();
+            // const auto cols = left.cols();
 
             left.add_transpose(right);
 

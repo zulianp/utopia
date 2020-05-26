@@ -18,7 +18,7 @@ namespace utopia {
 
         using RCPMapType = typename Tensor::RCPMapType;
 
-        inline RowView(const Tensor &t, const SizeType row, const bool force_local_view = true) : t_(t), offset_(0) {
+        inline RowView(const Tensor &t, const SizeType row) : t_(t), offset_(0) {
             auto impl = raw_type(t_);
             assert(impl->isLocallyIndexed());
             auto rr = row_range(t);

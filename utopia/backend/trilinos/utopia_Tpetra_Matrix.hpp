@@ -334,11 +334,15 @@ namespace utopia {
         }
 
         inline void write_lock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
             // TODO?
             implementation().resumeFill();
         }
 
-        inline void write_unlock(WriteMode mode = utopia::AUTO) override { this->finalize(); }
+        inline void write_unlock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
+            this->finalize();
+        }
 
         void set(const SizeType &row, const SizeType &col, const Scalar &value) override;
         Scalar get(const SizeType &row, const SizeType &col) const;

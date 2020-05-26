@@ -68,12 +68,15 @@ namespace utopia {
 
             {
                 Range r = row_range(A);
+                const SizeType r_begin = r.begin();
+                const SizeType r_end = r.end();
+
                 Write<Matrix> w(A);
-                if (r.begin() == 0) {
+                if (r_begin == SizeType(0)) {
                     A.set(0, 0, 1.);
                 }
 
-                if (r.end() == n) {
+                if (r_end == n) {
                     A.set(n - 1, n - 1, 1.);
                 }
             }
@@ -82,9 +85,12 @@ namespace utopia {
 
             {
                 Range row_range = range(b);
+                const SizeType r_begin = row_range.begin();
+                const SizeType r_end = row_range.end();
+
                 Write<Vector> w(b);
 
-                for (auto r = row_range.begin(); r != row_range.end(); ++r) {
+                for (SizeType r = r_begin; r != r_end; ++r) {
                     if (r >= n / 2.) {
                         b.set(r, -50.0);
                     }

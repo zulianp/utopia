@@ -248,7 +248,7 @@ namespace utopia {
         RCPMapType row_map;
         const int index_base = 0;
 
-        if (rows_local == INVALID_INDEX) {
+        if (rows_local == static_cast<std::size_t>(INVALID_INDEX)) {
             // NEW SIZE
             const SizeType rows_local = utopia::decompose(comm_, rows_global);
             row_map.reset(new MapType(rows_global, rows_local, index_base, comm));
@@ -270,7 +270,7 @@ namespace utopia {
         owner_ = true;
 
         init_ = std::make_shared<InitStructs>();
-        if (cols_local == INVALID_INDEX) {
+        if (cols_local == static_cast<std::size_t>(INVALID_INDEX)) {
             // NEW SIZE
             const SizeType cols_local = utopia::decompose(comm_, cols_global);
             init_->domain_map.reset(new MapType(cols_global, cols_local, index_base, comm));
@@ -292,8 +292,8 @@ namespace utopia {
         RCPMapType row_map;
         RCPMapType col_map;
         const int index_base = 0;
-        if (rows_local == INVALID_INDEX) {
-            assert(cols_local == INVALID_INDEX);
+        if (rows_local == static_cast<std::size_t>(INVALID_INDEX)) {
+            assert(cols_local == static_cast<std::size_t>(INVALID_INDEX));
 
             const SizeType rows_local_auto = utopia::decompose(comm_, rows_global);
 
@@ -314,7 +314,7 @@ namespace utopia {
         owner_ = true;
 
         init_ = std::make_shared<InitStructs>();
-        if (cols_local == INVALID_INDEX) {
+        if (cols_local == static_cast<std::size_t>(INVALID_INDEX)) {
             const SizeType cols_local_auto = utopia::decompose(comm_, cols_global);
             init_->domain_map.reset(new MapType(cols_global, cols_local_auto, index_base, comm));
         } else {
@@ -336,10 +336,12 @@ namespace utopia {
         write_lock();
 
         Range r = row_range();
+        const std::size_t r_begin = r.begin();
+        const std::size_t r_end = r.end();
 
         auto cols = init_->domain_map->getGlobalNumElements();
 
-        for (auto i = r.begin(); i < r.end(); ++i) {
+        for (auto i = r_begin; i < r_end; ++i) {
             if (i < cols) {
                 set(i, i, factor);
             } else {

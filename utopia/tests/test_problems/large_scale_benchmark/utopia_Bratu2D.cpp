@@ -253,7 +253,7 @@ namespace utopia {
 
     PetscErrorCode Bratu2DMMSSolution(ParamsBratu2D * /*user*/, const DMDACoor2d *c, PetscScalar *u) {
         // we need to return 0 for bc
-        PetscReal x = PetscRealPart(c->x), y = PetscRealPart(c->y);
+        // PetscReal x = PetscRealPart(c->x), y = PetscRealPart(c->y);
         u[0] = 0.0;
         return 0;
     }

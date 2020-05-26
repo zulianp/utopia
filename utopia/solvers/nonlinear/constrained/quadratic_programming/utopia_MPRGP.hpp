@@ -85,7 +85,7 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
             // //cudaProfilerStart();
 
-            Scalar r_norm0 = norm2(rhs);
+            // Scalar r_norm0 = norm2(rhs);
 
             const auto &&ub = constraints.upper_bound();
             const auto &&lb = constraints.lower_bound();

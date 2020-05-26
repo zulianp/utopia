@@ -38,7 +38,7 @@ namespace utopia {
 
         SizeType n = vecs.size();
 
-        if (n != SizeType(vectors.size()) || n != SizeType(results.size())) {
+        if (n != static_cast<SizeType>(vectors.size()) || n != static_cast<SizeType>(results.size())) {
             std::vector<Scalar> result_new(n);
             VecMDot(raw_type(v1), n, vecs.data(), result_new.data());
 
@@ -46,7 +46,7 @@ namespace utopia {
                 results[i] = result_new[i];
             }
         } else {
-            if (n != results.size()) {
+            if (n != static_cast<SizeType>(results.size())) {
                 results.resize(n);
             }
 

@@ -671,7 +671,7 @@ namespace utopia {
 
             auto rr = row_range(M);
             for (auto i = rr.begin(); i < rr.end(); ++i) {
-                RowView<TpetraMatrixd> row(M, i, true);
+                RowView<TpetraMatrixd> row(M, i);
                 for (auto j = 0; j < row.n_values(); ++j) {
                     int col = row.col(j);
                     int val = row.get(j);
@@ -711,7 +711,7 @@ namespace utopia {
             }
 
             Scalar val = 0.0;
-            m.read([&](const SizeType &i, const SizeType &j, const Scalar &v) { val += v; });
+            m.read([&](const SizeType &, const SizeType &, const Scalar &v) { val += v; });
 
             comm_.synched_print(val, std::cout);
 
@@ -965,7 +965,7 @@ namespace utopia {
 
             TpetraMatrixd P_t = transpose(P);
 
-            each_read(P_t, [&count](const SizeType i, const SizeType j, const double val) {
+            each_read(P_t, [&count](const SizeType &, const SizeType &, const double val) {
                 utopia_test_assert(val == 1.);
                 --count;
             });
@@ -1248,7 +1248,7 @@ namespace utopia {
 
             {
                 Write<TpetraMatrixd> w_(A2);
-                each_read(A, [&A2](const SizeType i, const SizeType j, const double value) { A2.set(i, j, 1.); });
+                each_read(A, [&A2](const SizeType i, const SizeType j, const double &) { A2.set(i, j, 1.); });
             }
         }
 
@@ -1403,7 +1403,7 @@ namespace utopia {
 
             utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
 
-            each_transform(P, [](const SizeType i, const SizeType j, const double) -> double { return j; });
+            each_transform(P, [](const SizeType &, const SizeType j, const double &) -> double { return j; });
 
             each_read(P, [](const SizeType i, const SizeType j, const double value) {
                 if (j != SizeType(value)) {

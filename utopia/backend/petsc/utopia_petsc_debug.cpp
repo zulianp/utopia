@@ -79,6 +79,7 @@ namespace utopia {
     }
 
     void PetscDebugger::describe(std::ostream &os) const {
+        UTOPIA_UNUSED(os);
         // TODO(zulianp):
     }
 

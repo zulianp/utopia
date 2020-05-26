@@ -79,7 +79,7 @@ namespace utopia {
             smoothers_.resize(this->n_levels());
             smoothers_[this->num_levels_ - 1] = fine_smoother;
 
-            for (std::size_t l = 1; l < this->num_levels_ - 1; ++l) {
+            for (SizeType l = 1; l < this->num_levels_ - 1; ++l) {
                 smoothers_[l] = std::shared_ptr<Smoother>(coarse_smoother->clone());
             }
         }

@@ -30,9 +30,9 @@ namespace utopia {
             constraints_memory_.init_memory(layouts);
             const SizeType finest_level = layouts.size();
 
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
             help_loc_.resize(n_levels);
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 help_loc_[l].zeros(layouts[l]);
             }
 

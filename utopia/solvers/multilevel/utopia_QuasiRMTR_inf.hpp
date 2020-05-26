@@ -56,11 +56,11 @@ namespace utopia {
             if (tr_subproblems_.size() > 0) {
                 in.get("coarse-QPSolver", *tr_subproblems_[0]);
 
-                for (auto i = 1; i < tr_subproblems_.size(); i++) in.get("fine-QPSolver", *tr_subproblems_[i]);
+                for (std::size_t i = 1; i < tr_subproblems_.size(); i++) in.get("fine-QPSolver", *tr_subproblems_[i]);
             }
 
             if (hessian_approxs_.size() > 0) {
-                for (auto i = 1; i < hessian_approxs_.size(); i++)
+                for (std::size_t i = 1; i < hessian_approxs_.size(); i++)
                     in.get("hessian-approx-strategy", *hessian_approxs_[i]);
             }
         }
@@ -82,9 +82,13 @@ namespace utopia {
         std::string name() override { return "QuasiRMTR_inf"; }
 
         bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy) {
-            if (hessian_approxs_.size() != this->n_levels()) hessian_approxs_.resize(this->n_levels());
+            if (static_cast<SizeType>(hessian_approxs_.size()) != this->n_levels()) {
+                hessian_approxs_.resize(this->n_levels());
+            }
 
-            for (auto l = 0; l != hessian_approxs_.size(); ++l)
+            const SizeType n_hessians = hessian_approxs_.size();
+
+            for (SizeType l = 0; l != n_hessians; ++l)
                 hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(strategy->clone());
 
             return true;
@@ -104,7 +108,7 @@ namespace utopia {
 
         bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy,
                                                 const SizeType &level) {
-            if (hessian_approxs_.size() != this->n_levels()) {
+            if (static_cast<SizeType>(hessian_approxs_.size()) != this->n_levels()) {
                 hessian_approxs_.resize(this->n_levels());
             }
 
@@ -120,7 +124,7 @@ namespace utopia {
         }
 
         bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy) {
-            if (tr_subproblems_.size() != this->n_levels()) {
+            if (static_cast<SizeType>(tr_subproblems_.size()) != this->n_levels()) {
                 tr_subproblems_.resize(this->n_levels());
             }
 
@@ -129,7 +133,7 @@ namespace utopia {
         }
 
         bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy) {
-            if (tr_subproblems_.size() != this->n_levels()) {
+            if (static_cast<SizeType>(tr_subproblems_.size()) != this->n_levels()) {
                 tr_subproblems_.resize(this->n_levels());
             }
 
@@ -141,7 +145,7 @@ namespace utopia {
         }
 
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies) {
-            if (strategies.size() != this->n_levels()) {
+            if (static_cast<SizeType>(strategies.size()) != this->n_levels()) {
                 utopia_error(
                     "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML "
                     "hierarchy. \n");
@@ -170,7 +174,7 @@ namespace utopia {
                 }
                 const SizeType fine_level = this->n_levels() - 1;
 
-                for (auto l = 0; l < fine_level; l++) {
+                for (SizeType l = 0; l < fine_level; l++) {
                     this->transfer(l).init_memory();
                 }
 

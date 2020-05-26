@@ -7,11 +7,11 @@
 namespace utopia {
 
     template <class Op>
-    TpetraMatrix::Scalar TpetraMatrix::local_parallel_reduce_values(Op op, const Scalar &initial_value) const {
-        using LocalMatrix = typename CrsMatrixType::local_matrix_type;
-        using Data = typename LocalMatrix::values_type;
-        const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
-        const Data &data = local_mat.values;
+    TpetraMatrix::Scalar TpetraMatrix::local_parallel_reduce_values(Op, const Scalar &initial_value) const {
+        // using LocalMatrix = typename CrsMatrixType::local_matrix_type;
+        // using Data = typename LocalMatrix::values_type;
+        // const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
+        // const Data &data = local_mat.values;
 
         // Scalar ret = initial_value;
         // KokkosOp<Scalar, Op> kop;
