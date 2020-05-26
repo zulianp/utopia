@@ -20,6 +20,9 @@ namespace utopia {
         using Super = utopia::OperatorBasedQPSolver<Matrix, Vector>;
 
     public:
+        using Super::solve;
+        using Super::update;
+
         MPGRP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {
@@ -85,7 +88,7 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
             // //cudaProfilerStart();
 
-            Scalar r_norm0 = norm2(rhs);
+            // Scalar r_norm0 = norm2(rhs);
 
             const auto &&ub = constraints.upper_bound();
             const auto &&lb = constraints.lower_bound();
@@ -158,7 +161,7 @@ namespace utopia {
                         this->get_fi(x, g, *lb, *ub, fi);
 
                         help_f1 = x - (alpha_bar * fi);
-                        this->get_projection(help_f1, *lb, *ub, x);
+                        this->project(help_f1, *lb, *ub, x);
 
                         A.apply(x, Ax);
                         g = Ax - rhs;

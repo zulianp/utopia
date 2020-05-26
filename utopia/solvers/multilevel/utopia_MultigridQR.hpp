@@ -79,7 +79,7 @@ namespace utopia {
             smoothers_.resize(this->n_levels());
             smoothers_[this->num_levels_ - 1] = fine_smoother;
 
-            for (std::size_t l = 1; l < this->num_levels_ - 1; ++l) {
+            for (SizeType l = 1; l < this->num_levels_ - 1; ++l) {
                 smoothers_[l] = std::shared_ptr<Smoother>(coarse_smoother->clone());
             }
         }
@@ -167,7 +167,7 @@ namespace utopia {
          *
          */
         bool apply(const Vector &rhs, Vector &x_fine) override {
-            Scalar r_norm, r0_norm, diff_norm;
+            Scalar r_norm, /*r0_norm,*/ diff_norm;
             SizeType it = 0;
             bool converged = false;
             bool ok = true;
@@ -181,7 +181,7 @@ namespace utopia {
             memory.rhs[l] = rhs;
 
             r_norm = norm2(memory.rhs[l] - level(l).A() * memory.x[l]);
-            r0_norm = r_norm;
+            // r0_norm = r_norm;
 
             Vector x_old = memory.x[l];
 

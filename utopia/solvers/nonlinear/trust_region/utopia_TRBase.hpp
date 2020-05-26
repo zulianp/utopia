@@ -326,7 +326,7 @@ namespace utopia {
         \param x_k                - initial guess/ current iterate
         \param radius              - tr. radius
           */
-        virtual Scalar delta_init(const Vector &x_k, const Scalar &radius0, bool rad_flg) {
+        virtual Scalar delta_init(const Vector &x_k, const Scalar &radius0, bool &rad_flg) {
             Scalar x_norm = norm2(x_k);
             if (radius0 == 0) {
                 rad_flg = true;

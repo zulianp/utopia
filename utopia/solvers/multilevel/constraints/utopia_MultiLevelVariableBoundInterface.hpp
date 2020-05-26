@@ -44,10 +44,10 @@ namespace utopia {
 
     public:
         void init_memory(const std::vector<Layout> &layouts) {
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
             help_.resize(n_levels);
 
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 help_[l].zeros(layouts[l]);
             }
 

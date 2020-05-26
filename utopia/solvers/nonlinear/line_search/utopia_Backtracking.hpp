@@ -168,7 +168,7 @@ namespace utopia {
         void init_memory(const Layout &layout) override {
             if (empty(x_k)) {
                 x_k.zeros(layout);
-            } else if (!x_k.comm().conjunction(layout.local_size() == local_size(x_k).get(0))) {
+            } else if (!x_k.comm().conjunction(layout.local_size() == x_k.local_size())) {
                 x_k.zeros(layout);
             }
         }

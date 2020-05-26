@@ -232,7 +232,7 @@ namespace utopia {
                 // Solve
                 solver->solve(x);
 
-                auto sol_status = solver->solution_status();
+                // auto sol_status = solver->solution_status();
 
                 // std::cout<<"it: "<< sol_status.iterates << "  \n";
                 // std::cout<<"gradient_norm: "<< sol_status.gradient_norm << "  \n";
@@ -241,7 +241,7 @@ namespace utopia {
                 if (exp_verbose && mpi_world_rank() == 0) {
                     if (auto *test_fun = dynamic_cast<UnconstrainedExtendedTestFunction<Matrix, Vector> *>(
                             ml_problems[i]->get_functions().back().get())) {
-                        const auto dim = test_fun->dim();
+                        // const auto dim = test_fun->dim();
                         // const auto num_its = sol_status.iterates;
                         // const auto conv_reason = sol_status.reason;
 

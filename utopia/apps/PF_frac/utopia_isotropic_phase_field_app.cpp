@@ -69,7 +69,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -109,7 +109,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -148,7 +148,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -188,7 +188,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -228,7 +228,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -268,7 +268,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -308,7 +308,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -348,8 +348,8 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
-        using Vector = typename FunctionSpace::Vector;
+        // using SizeType = FunctionSpace::SizeType;
+        // using Vector = typename FunctionSpace::Vector;
 
         Comm world;
 
@@ -388,7 +388,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 

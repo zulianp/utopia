@@ -33,13 +33,13 @@ namespace utopia {
 
     template <class FunctionSpace>
     void plot_grid_function(FunctionSpace &space, Input & /*in*/) {
-        using Elem = typename FunctionSpace::Elem;
+        // using Elem = typename FunctionSpace::Elem;
         using Mesh = typename FunctionSpace::Mesh;
-        using ElemView = typename FunctionSpace::ViewDevice::Elem;
-        using Device = typename FunctionSpace::Device;
+        // using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        // using Device = typename FunctionSpace::Device;
         using Point = typename Mesh::Point;
         using Scalar = typename Mesh::Scalar;
-        using Comm = typename FunctionSpace::Comm;
+        // using Comm = typename FunctionSpace::Comm;
 
         PetscVector v;
 
@@ -199,12 +199,7 @@ namespace utopia {
 
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView = FunctionSpace::ViewDevice::Elem;
-        using Device = FunctionSpace::Device;
-        using Point = Mesh::Point;
-        using Scalar = Mesh::Scalar;
         using Comm = FunctionSpace::Comm;
 
         Comm comm;
@@ -229,12 +224,8 @@ namespace utopia {
 
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformHex8;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView = FunctionSpace::ViewDevice::Elem;
-        using Device = FunctionSpace::Device;
-        using Point = Mesh::Point;
-        using Scalar = Mesh::Scalar;
+        // using Scalar = Mesh::Scalar;
         using Comm = FunctionSpace::Comm;
 
         Comm comm;
@@ -245,8 +236,6 @@ namespace utopia {
 
         FunctionSpace space;
         space.read(in);
-
-        // plot_grid_function(space, in);
 
         poisson_l2_error(space, in);
     }
@@ -259,12 +248,7 @@ namespace utopia {
 
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView = FunctionSpace::ViewDevice::Elem;
-        using Device = FunctionSpace::Device;
-        using Point = Mesh::Point;
-        using Scalar = Mesh::Scalar;
         using Comm = FunctionSpace::Comm;
 
         Comm comm;

@@ -110,7 +110,7 @@ set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 # More restrictive
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
-include_directories(${CMAKE_SOURCE_DIR}/external/GSL/include)
+include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/external/GSL/include)
 
 if(ENABLE_DEPRECATED_API)
     set(UTOPIA_DEPRECATED_API ON)
@@ -341,7 +341,7 @@ endif()
 if(TRY_WITH_TRILINOS)
     find_package(Trilinos)
     if(Trilinos_FOUND)
-        include_directories(${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
+        include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Kokkos_CXX_FLAGS}")
         set(WITH_TRILINOS ON)
     endif()

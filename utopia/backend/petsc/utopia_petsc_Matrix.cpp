@@ -385,7 +385,7 @@ namespace utopia {
 
         unsigned long offset_out[2] = {static_cast<unsigned long>(0), static_cast<unsigned long>(0)};
 
-        MPI_Exscan(&offsets_in, &offset_out, 2, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        MPI_Exscan(offsets_in, offset_out, 2, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
         offset_out[0] += global_row_range.begin();
         offset_out[1] += global_col_range.begin();

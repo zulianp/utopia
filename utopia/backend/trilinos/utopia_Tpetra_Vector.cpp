@@ -388,7 +388,7 @@ namespace utopia {
                               const Scalar &val) {
         comm_ = comm;
 
-        if (n_local == Traits<TpetraVector>::decide()) {
+        if (static_cast<std::size_t>(n_local) == Traits<TpetraVector>::decide()) {
             values(n_global, val);
             return;
         }

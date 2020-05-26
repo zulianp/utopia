@@ -37,6 +37,7 @@ namespace utopia {
         using SizeType = Traits::SizeType;
         using LocalSizeType = Traits::LocalSizeType;
         using Scalar = Traits::Scalar;
+        using IndexArray = Traits::IndexArray;
 
         Comm comm_;
 
@@ -316,7 +317,7 @@ namespace utopia {
             TpetraVectord v(layout(comm_, rows, Traits::determine()), 1.);
             TpetraVectord At_v = transpose(A) * v;
 
-            each_read(At_v, [](const SizeType i, const double val) { utopia_test_assert(val <= 2. + 1e-16); });
+            each_read(At_v, [](const SizeType &, const double val) { utopia_test_assert(val <= 2. + 1e-16); });
 
             double s_At_v = sum(At_v);
             utopia_test_assert(approxeq(s_At_v, size(A).get(0) * 2.));
@@ -345,7 +346,7 @@ namespace utopia {
 
             // disp(At);
 
-            each_read(At_v, [](const SizeType i, const double val) { utopia_test_assert(val <= 2. + 1e-16); });
+            each_read(At_v, [](const SizeType &, const double val) { utopia_test_assert(val <= 2. + 1e-16); });
 
             double s_At_v = sum(At_v);
 
@@ -590,9 +591,9 @@ namespace utopia {
 
         template <class Matrix, class Vector>
         void test_mg() {
-            using TransferT = utopia::Transfer<Matrix, Vector>;
-            using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
-            using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
+            // using TransferT = utopia::Transfer<Matrix, Vector>;
+            // using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
+            // using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
 
             const static bool verbose = false;
             const static bool use_masks = false;
@@ -671,8 +672,9 @@ namespace utopia {
 
             auto rr = row_range(M);
             for (auto i = rr.begin(); i < rr.end(); ++i) {
-                RowView<TpetraMatrixd> row(M, i, true);
-                for (auto j = 0; j < row.n_values(); ++j) {
+                RowView<TpetraMatrixd> row(M, i);
+                const SizeType n_row_values = row.n_values();
+                for (SizeType j = 0; j < n_row_values; ++j) {
                     int col = row.col(j);
                     int val = row.get(j);
                     utopia_test_assert(col == val);
@@ -711,7 +713,7 @@ namespace utopia {
             }
 
             Scalar val = 0.0;
-            m.read([&](const SizeType &i, const SizeType &j, const Scalar &v) { val += v; });
+            m.read([&](const SizeType &, const SizeType &, const Scalar &v) { val += v; });
 
             comm_.synched_print(val, std::cout);
 
@@ -935,7 +937,7 @@ namespace utopia {
                 }
             }
 
-            each_read(B, [](const SizeType i, const SizeType j, const double val) {
+            each_read(B, [](const SizeType &, const SizeType &, const double val) {
                 SizeType j_val = val;
                 utopia_test_assert(j_val == val);
             });
@@ -956,7 +958,7 @@ namespace utopia {
             }
 
             SizeType count = 0;
-            each_read(P, [&count](const SizeType i, const SizeType j, const double val) {
+            each_read(P, [&count](const SizeType &, const SizeType &, const double val) {
                 utopia_test_assert(val == 1.);
                 ++count;
             });
@@ -965,7 +967,7 @@ namespace utopia {
 
             TpetraMatrixd P_t = transpose(P);
 
-            each_read(P_t, [&count](const SizeType i, const SizeType j, const double val) {
+            each_read(P_t, [&count](const SizeType &, const SizeType &, const double val) {
                 utopia_test_assert(val == 1.);
                 --count;
             });
@@ -1099,9 +1101,9 @@ namespace utopia {
 
             bool ok = true;
             ok = fun_tpetra->value(x_tpetra, val_tpetra);
-            assert(ok);
+            utopia_test_assert(ok);
             ok = fun_petsc->value(x_petsc, val_petsc);
-            assert(ok);
+            utopia_test_assert(ok);
 
             utopia_test_assert(cross_backend_approxeq(x_petsc, x_tpetra));
 
@@ -1111,9 +1113,9 @@ namespace utopia {
             PetscVector grad_petsc;
 
             ok = fun_tpetra->gradient(x_tpetra, grad_tpetra);
-            assert(ok);
+            utopia_test_assert(ok);
             ok = fun_petsc->gradient(x_petsc, grad_petsc);
-            assert(ok);
+            utopia_test_assert(ok);
 
             utopia_test_assert(cross_backend_approxeq(grad_petsc, grad_tpetra));
 
@@ -1123,9 +1125,9 @@ namespace utopia {
             PetscMatrix H_petsc;
 
             ok = fun_tpetra->hessian(x_tpetra, H_tpetra);
-            assert(ok);
+            utopia_test_assert(ok);
             ok = fun_petsc->hessian(x_petsc, H_petsc);
-            assert(ok);
+            utopia_test_assert(ok);
 
             // write("H_p.m", H_petsc);
             // write("H_t.m", H_tpetra);
@@ -1142,7 +1144,7 @@ namespace utopia {
 
         template <class Matrix, class Vector>
         void rmtr_test() {
-            using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
+            // using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
             using ProblemType = utopia::Bratu1D<Matrix, Vector>;
 
             auto problem = MultiLevelTestProblem1D<Matrix, Vector, ProblemType>(2, 10, true);
@@ -1248,7 +1250,7 @@ namespace utopia {
 
             {
                 Write<TpetraMatrixd> w_(A2);
-                each_read(A, [&A2](const SizeType i, const SizeType j, const double value) { A2.set(i, j, 1.); });
+                each_read(A, [&A2](const SizeType i, const SizeType j, const double &) { A2.set(i, j, 1.); });
             }
         }
 
@@ -1280,8 +1282,9 @@ namespace utopia {
             const int n = mpi_world_size() * 2;
             const int off = mpi_world_rank() * 2;
 
-            std::vector<TpetraVectord::SizeType> ghosts{(off + 3) % n};
-            TpetraVectord v = ghosted(2, n, ghosts);
+            IndexArray ghosts{(off + 3) % n};
+            TpetraVectord v;
+            v.ghosted(layout(TrilinosCommunicator::get_default(), 2, n), ghosts);
 
             auto r = range(v);
 
@@ -1403,7 +1406,7 @@ namespace utopia {
 
             utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
 
-            each_transform(P, [](const SizeType i, const SizeType j, const double) -> double { return j; });
+            each_transform(P, [](const SizeType &, const SizeType j, const double &) -> double { return j; });
 
             each_read(P, [](const SizeType i, const SizeType j, const double value) {
                 if (j != SizeType(value)) {
@@ -1479,7 +1482,9 @@ namespace utopia {
             values[2] = -1;
             values[3] = 1;
 
-            TpetraMatrixd A = utopia::crs(n_rows, n_cols, row_ptr, columns, values);
+            TpetraMatrixd A;
+            // = utopia::crs(n_rows, n_cols, row_ptr, columns, values);
+            A.crs(serial_layout(n_rows, n_cols), row_ptr, columns, values);
         }
 
         void trilinos_swap() {

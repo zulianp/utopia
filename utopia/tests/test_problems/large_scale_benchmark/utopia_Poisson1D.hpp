@@ -226,7 +226,7 @@ namespace utopia {
             {
                 auto rhs_view = view_device(rhs_);
                 parallel_for(range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
+                    // Scalar xi = (h_ * i);
                     if (i == 0) {
                         rhs_view.set(i, 0.0);
                     } else if (i == n_ - 1) {
@@ -374,7 +374,7 @@ namespace utopia {
             {
                 auto rhs_view = view_device(rhs_);
                 parallel_for(range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
+                    // Scalar xi = (h_ * i);
                     if (i == 0) {
                         rhs_view.set(i, 0.0);
                     } else if (i == n_ - 1) {

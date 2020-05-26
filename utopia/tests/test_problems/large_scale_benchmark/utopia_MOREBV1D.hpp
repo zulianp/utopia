@@ -154,7 +154,7 @@ namespace utopia {
                 for (SizeType i = r.begin(); i != r.end(); ++i) {
                     Scalar xi = x.get(i);
                     Scalar ti = coords_.get(i);
-                    Scalar element, item;
+                    Scalar element;
 
                     if (i == 0) {
                         Scalar xi_m = 0.0;

@@ -94,7 +94,7 @@ namespace utopia {
         using Matrix = typename FunctionSpace::Matrix;
         using Comm = typename FunctionSpace::Comm;
 
-        static const int Dim = Elem::Dim;
+        // static const int Dim = Elem::Dim;
         static const int NFunctions = Elem::NFunctions;
 
         using Point = typename FunctionSpace::Point;
@@ -285,7 +285,7 @@ namespace utopia {
 
     static void petsc_poisson_2(Input &in) {
         static const int Dim = 2;
-        static const int NNodes = 4;
+        // static const int NNodes = 4;
 
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
@@ -304,7 +304,7 @@ namespace utopia {
 
     static void petsc_poisson_3(Input &in) {
         static const int Dim = 3;
-        static const int NNodes = 8;
+        // static const int NNodes = 8;
 
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformHex8;

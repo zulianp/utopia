@@ -45,7 +45,7 @@ namespace utopia {
                 const PetscInt row_begin = ia[r];
                 const PetscInt row_end = ia[r + 1];
 
-                const PetscInt row_global = ra_begin + r;
+                // const PetscInt row_global = ra_begin + r;
 
                 for (PetscInt i = row_begin; i < row_end; ++i) {
                     // array[i] = op(row_global, ja[i], array[i]);
@@ -56,6 +56,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(m, &array);
             err = MatRestoreRowIJ(m, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class Map, class Reduce, typename Accumulator>
@@ -93,6 +94,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class F>
@@ -157,8 +159,8 @@ namespace utopia {
             for (PetscInt i = 0; i < n; ++i) {
                 const PetscInt row_end = ia[i + 1];
 
-#pragma clang loop unroll_count(UNROLL_FACTOR)
-#pragma GCC unroll 5
+                // #pragma clang loop unroll_count(UNROLL_FACTOR)
+                // #pragma GCC unroll 5
                 for (PetscInt k = ia[i]; k < row_end; ++k) {
                     op(i, ja[k], array[k]);
                 }
@@ -167,6 +169,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class F>
@@ -194,8 +197,8 @@ namespace utopia {
             for (PetscInt i = n - 1; i >= 0; --i) {
                 const PetscInt row_end = ia[i + 1];
 
-#pragma clang loop unroll_count(UNROLL_FACTOR)
-#pragma GCC unroll 5
+                // #pragma clang loop unroll_count(UNROLL_FACTOR)
+                // #pragma GCC unroll 5
                 for (PetscInt k = ia[i]; k < row_end; ++k) {
                     op(i, ja[k], array[k]);
                 }
@@ -204,6 +207,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
 
         template <class F>
@@ -249,6 +253,7 @@ namespace utopia {
             MatSeqAIJRestoreArray(mat, &array);
             err = MatRestoreRowIJ(mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, nullptr, &done);
             assert(err == 0);
+            UTOPIA_UNUSED(err);
         }
     }  // namespace internal
 
@@ -266,6 +271,8 @@ namespace utopia {
 
         // DOUBT no restore?
         // err =  MatMPIAIJRestoreSeqAIJ(raw_type(), &d, &o, &cols); assert(err == 0);
+
+        UTOPIA_UNUSED(err);
     }
 
     template <class F>
@@ -331,6 +338,8 @@ namespace utopia {
         internal::transform_ijv_seqaij_impl(o, [=](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
             return op(rr.begin() + i, cols[j], v);
         });
+
+        UTOPIA_UNUSED(err);
     }
 
     template <class F>
@@ -374,6 +383,8 @@ namespace utopia {
             // Off-diagonal block
             internal::read_petsc_seqaij_impl(
                 o, [=](const SizeType &i, const SizeType &j, const Scalar &v) { op(rr.begin() + i, cols[j], v); });
+
+            UTOPIA_UNUSED(err);
 
         } else if (has_type(MATSEQDENSE) || has_type(MATMPIDENSE)) {
             const PetscScalar *array = nullptr;

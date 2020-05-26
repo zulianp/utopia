@@ -105,7 +105,7 @@ namespace utopia {
         using Matrix = typename FunctionSpace::Matrix;
         using Comm = typename FunctionSpace::Comm;
 
-        static const int Dim = Elem::Dim;
+        // static const int Dim = Elem::Dim;
         static const int NFunctions = Elem::NFunctions;
 
         using Point = typename FunctionSpace::Point;

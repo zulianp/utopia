@@ -21,9 +21,9 @@ namespace utopia {
     // CLANG-TIDY (BIG CHANGE)
     RedundantQPSolver<PetscMatrix, PetscVector>::RedundantQPSolver(const RedundantQPSolver &other)
         : VariableBoundSolverInterface(other),
-          MatrixFreeQPSolver(other),
-          PreconditionedSolver(other),
-          QPSolver(other),
+          // MatrixFreeQPSolver(other),
+          // PreconditionedSolver(other),
+          // QPSolver(other),
           OperatorBasedQPSolver(other) {
         if (other.qp_solver_) {
             qp_solver_ = std::shared_ptr<OperatorBasedQPSolver>(other.qp_solver_->clone());

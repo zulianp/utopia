@@ -137,7 +137,10 @@ namespace utopia {
             TpetraVectord w(vl, 50);
 
             auto w_view = const_view_device(w);
-            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) { auto v = w_view.get(i); });
+            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) {
+                auto v = w_view.get(i);
+                UTOPIA_UNUSED(v);
+            });
         }
 
         void kokkos_apply() {

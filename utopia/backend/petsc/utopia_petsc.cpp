@@ -102,8 +102,9 @@ namespace utopia {
         Mat M;
         auto ierr = MatGetDiagonalBlock(mat.raw_type(), &M);
         assert(ierr == 0);
+        UTOPIA_UNUSED(ierr);
+
         block.wrap(M);
         block.update_mirror();
-        // block.comm() = PetscCommunicator::self();
     }
 }  // namespace utopia

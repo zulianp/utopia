@@ -41,19 +41,6 @@
 #include <iostream>
 #include <sstream>
 
-// namespace std {
-//    template<typename _Tp>
-//    constexpr _Tp &&
-//    forward(typename std::remove_reference<_Tp>::type &__t) noexcept { return static_cast<_Tp &&>(__t); }
-
-//    template<typename _Tp>
-//    constexpr _Tp &&
-//    forward(typename std::remove_reference<_Tp>::type &&__t) noexcept {
-//        static_assert(!std::is_lvalue_reference<_Tp>::value, "template argument substituting _Tp is an lvalue
-//        reference type"); return static_cast<_Tp &&>(__t);
-//    }
-//}
-
 namespace utopia {
     using SizeType = long;
     static const SizeType INVALID_INDEX = -1;
@@ -126,14 +113,6 @@ namespace utopia {
             abort();
         }
     }
-
-    // template <class Left, class Right, typename Scalar>
-    // void test_assert_approxeq(const Left &left,
-    //                           const Right &right,
-    //                           const Scalar &tol,
-    //                           const std::string &filename,
-    //                           const int line,
-    //                           const std::string &expr_string);
 }  // namespace utopia
 
 #define CONST_DERIVED_CRT(Derived) \
@@ -152,10 +131,6 @@ namespace utopia {
 #define UTOPIA_VECTOR(Tensor) typename utopia::Traits<Tensor>::Vector
 #define UTOPIA_UNUSED(macro_var_) (void)macro_var_
 #define utopia_assert(macro_expr__) assert((macro_expr__))
-
-// #define utopia_test_asserteq(macro_left_, macro_right_, macro_tol_) \
-//     utopia::test_assert_approxeq(                                   \
-//         (macro_left_), (macro_right_), (macro_tol_), __FILE__, __LINE__, #macro_left_ " approxeq " #macro_right_)
 
 ////////////////////////////////////////////////////////////////////////////////
 

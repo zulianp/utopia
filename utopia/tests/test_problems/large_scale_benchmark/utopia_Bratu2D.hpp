@@ -11,7 +11,7 @@ namespace utopia {
 }  // namespace utopia
 
 #ifdef WITH_PETSC
-#warning "this code should go in the petsc backend folder"
+// #warning "this code should go in the petsc backend folder"
 
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>

@@ -79,7 +79,7 @@ namespace utopia {
             const auto &ub = *constraints_.upper_bound();
             const auto &lb = *constraints_.lower_bound();
 
-            get_projection(lb, ub, help_);
+            project(lb, ub, help_);
             help_ -= x;
 
             return norm2(help_);
@@ -95,16 +95,13 @@ namespace utopia {
             const auto &ub = *constraints_.upper_bound();
             const auto &lb = *constraints_.lower_bound();
 
-            get_projection(lb, ub, g);
+            project(lb, ub, g);
             g -= x;
         }
 
     public:
         // expose it for CUDA
-        UTOPIA_DEPRECATED_MSG(
-            "Use void project(const Vector &lb, const Vector &ub, Vector &x) instead, which does not need a secondary "
-            "vector.")
-        bool get_projection(const Vector &x, const Vector &lb, const Vector &ub, Vector &Pc) const {
+        bool project(const Vector &x, const Vector &lb, const Vector &ub, Vector &Pc) const {
             if (empty(Pc) || size(Pc) != size(x)) {
                 Pc = 0.0 * x;
             }
@@ -150,26 +147,6 @@ namespace utopia {
                     d_x.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
                 });
             }
-        }
-
-        UTOPIA_DEPRECATED_MSG(
-            "Use void project(const Vector &lb, const Vector &ub, Vector &x) instead, which uses local indexing "
-            "(faster)")
-        bool get_projection(const Vector &lb, const Vector &ub, Vector &x) const {
-            {
-                auto d_lb = const_local_view_device(lb);
-                auto d_ub = const_local_view_device(ub);
-                auto x_view = local_view_device(x);
-
-                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                    const Scalar li = d_lb.get(i);
-                    const Scalar ui = d_ub.get(i);
-                    const Scalar xi = x_view.get(i);
-                    x_view.set(i, (li >= xi) ? li : ((ui <= xi) ? ui : xi));
-                });
-            }
-
-            return true;
         }
 
         void make_iterate_feasible(Vector &x) const {
