@@ -387,8 +387,14 @@ namespace utopia {
             UTOPIA_UNUSED(err);
 
         } else if (has_type(MATSEQDENSE) || has_type(MATMPIDENSE)) {
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 11, 0)
+            PetscScalar *array = nullptr;
+            MatDenseGetArray(raw_type(), &array);
+#else
+            // const correctness is respected
             const PetscScalar *array = nullptr;
             MatDenseGetArrayRead(raw_type(), &array);
+#endif
 
             SizeType rows = this->local_rows();
             SizeType cols = this->cols();
@@ -403,8 +409,11 @@ namespace utopia {
                 }
             }
 
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 11, 0)
+            MatDenseRestoreArray(raw_type(), &array);
+#else
             MatDenseRestoreArrayRead(raw_type(), &array);
-
+#endif
         } else {
             std::cerr << ("PetscMatrix::read not implemented for matrix type: ") << type() << std::endl;
             assert(false);
