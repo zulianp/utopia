@@ -210,8 +210,8 @@ namespace utopia {
             const SizeType n = dofs.size();
 
             for (SizeType i = 0; i < n; ++i) {
-                assert(dofs[i] < mesh.n_nodes() * mesh.n_components());
-                assert(i < values.size());
+                assert(SizeType(dofs[i]) < SizeType(mesh.n_nodes() * mesh.n_components()));
+                assert(i < SizeType(values.size()));
 
                 values[i] = vec.get(dofs[i]);
             }
@@ -228,7 +228,7 @@ namespace utopia {
             const SizeType n = dofs.size();
 
             for (SizeType i = 0; i < n; ++i) {
-                assert(dofs[i] < mesh.n_nodes() * mesh.n_components());
+                assert(SizeType(dofs[i]) < SizeType(mesh.n_nodes() * mesh.n_components()));
                 values[i] = vec.get(dofs[i]);
             }
         }

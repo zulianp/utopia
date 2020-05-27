@@ -7,6 +7,7 @@
 #include "utopia_Logger.hpp"
 //#include "utopia_kokkos_ParallelEach.hpp"
 // #include "utopia_trilinos_Each_impl.hpp"
+#include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_trilinos_Utils.hpp"
 
 #include <MatrixMarket_Tpetra.hpp>
@@ -727,21 +728,9 @@ namespace utopia {
     }
 
     void TpetraMatrix::shift_diag(const TpetraVector &d) {
-        // FIXME this should be parallel
-
-        // const auto r = utopia::range(d);
-        // assert(r == utopia::row_range(*this));
-
-        // Read<TpetraVector> rd(d);
-        // Write<TpetraMatrix> w(*this);
-        // for (SizeType i = r.begin(); i < r.end(); ++i) {
-        //     add(i, i, d.get(i));
-        // }
-
         auto d_view = const_view_device(d);
 
         this->transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
-            UTOPIA_DEVICE_ASSERT(i < d_view.size());
             return (i == j) ? (v + d_view.get(i)) : v;
         });
     }
