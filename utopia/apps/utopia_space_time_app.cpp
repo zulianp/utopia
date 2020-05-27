@@ -15,23 +15,21 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_STHeatEquation.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_Tri3.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_impl.hpp"
-
 #include "utopia_app_utils.hpp"
 
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_impl.hpp"
 
 #include <cmath>
 
@@ -39,25 +37,25 @@ namespace utopia {
 
     template <class FunctionSpace, class RHSFun>
     static void space_time(FunctionSpace &space, RHSFun rhs_fun, Input &in) {
-        static const int Dim = FunctionSpace::Dim;
-        static const int NVars = 1;
+        // static const int Dim = FunctionSpace::Dim;
+        // static const int NVars = 1;
 
         // expose inner types
-        using Comm = typename FunctionSpace::Comm;
-        using Mesh = typename FunctionSpace::Mesh;
-        using Elem = typename FunctionSpace::Shape;
-        using ElemView = typename FunctionSpace::ViewDevice::Elem;
-        using SizeType = typename FunctionSpace::SizeType;
-        using Scalar = typename FunctionSpace::Scalar;
-        using Dev = typename FunctionSpace::Device;
-        using Point = typename FunctionSpace::Point;
-        using Subspace = typename FunctionSpace::template Subspace<1>;
-        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
+        // using Comm = typename FunctionSpace::Comm;
+        // using Mesh = typename FunctionSpace::Mesh;
+        // using Elem = typename FunctionSpace::Shape;
+        // using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        // using SizeType = typename FunctionSpace::SizeType;
+        // using Scalar = typename FunctionSpace::Scalar;
+        // using Dev = typename FunctionSpace::Device;
+        // using Point = typename FunctionSpace::Point;
+        // using Subspace = typename FunctionSpace::template Subspace<1>;
+        // using ElemViewScalar = typename Subspace::ViewDevice::Elem;
 
-        static const int NNodes = Elem::NNodes;
+        // static const int NNodes = Elem::NNodes;
 
-        using FEFunction = utopia::FEFunction<FunctionSpace>;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
+        // using FEFunction = utopia::FEFunction<FunctionSpace>;
+        // using Quadrature = utopia::Quadrature<Elem, 2>;
         using Model = utopia::STHeatEquation<FunctionSpace>;
 
         ////Check input
@@ -67,8 +65,8 @@ namespace utopia {
         stats.start();
         // boundary conditions
 
-        using Point = typename FunctionSpace::Point;
-        using Scalar = typename FunctionSpace::Scalar;
+        // using Point = typename FunctionSpace::Point;
+        // using Scalar = typename FunctionSpace::Scalar;
 
         /// example from: Space-time Finite Element Methods for Parabolic Initial-Boundary Problems with Variable
         /// Coefficients (Andreas Schafelner)
@@ -141,7 +139,7 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         // using Elem           = utopia::Tri3<double, 2>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
@@ -187,7 +185,7 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType = FunctionSpace::SizeType;
@@ -222,7 +220,7 @@ namespace utopia {
 
         space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space_time(space, UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, in);
+        space_time(space, UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, in);
     }
 
     UTOPIA_REGISTER_APP(space_time_3);

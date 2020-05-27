@@ -29,8 +29,8 @@ namespace utopia {
         }
 
         template <typename Point, typename Grad>
-        UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g) {
-            const auto x = p[0];
+        UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &, Grad &g) {
+            // const auto x = p[0];
             switch (i) {
                 case 0: {
                     g[0] = -1;

@@ -7,26 +7,28 @@
 #include "utopia_ConjugateGradient.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_DeviceView.hpp"
-#include "utopia_LaplacianView.hpp"
-#include "utopia_MPITimeStatistics.hpp"
-#include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
-#include "utopia_PoissonFE.hpp"
-#include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_petsc_Matrix.hpp"
-// #include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_L2Norm.hpp"
+#include "utopia_LaplacianView.hpp"
 #include "utopia_LinearElasticityView.hpp"
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_MassMatrixView.hpp"
 #include "utopia_PhaseField.hpp"
+#include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_Matrix.hpp"
 
+// petsc
+#include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_FE.hpp"
 
+// std
 #include <cmath>
 
 namespace utopia {
@@ -59,7 +61,7 @@ namespace utopia {
         using Device = typename FunctionSpace::Device;
         using Point = typename Mesh::Point;
         using Scalar = typename Mesh::Scalar;
-        using Comm = typename FunctionSpace::Comm;
+        // using Comm = typename FunctionSpace::Comm;
 
         using Quadrature = utopia::Quadrature<Elem, 2>;
 
@@ -146,7 +148,7 @@ namespace utopia {
                                         space_view.elem(i, e);
 
                                         auto p_e = p_view.make(e);
-                                        auto c_e = x_view.make(e);
+                                        // auto c_e = x_view.make(e);
                                         auto dx = dx_view.make(e);
 
                                         x_view.get(e, c);
@@ -197,7 +199,7 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using Comm = FunctionSpace::Comm;
@@ -222,7 +224,7 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using Scalar = Mesh::Scalar;
@@ -246,7 +248,7 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using Comm = FunctionSpace::Comm;

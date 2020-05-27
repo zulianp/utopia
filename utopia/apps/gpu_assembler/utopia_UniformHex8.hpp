@@ -58,7 +58,7 @@ namespace utopia {
 
             const Scalar x = p[0];
             const Scalar y = p[1];
-            const Scalar t = p[2];
+            // const Scalar t = p[2];
 
             switch (i) {
                 case 0: {
@@ -178,7 +178,7 @@ namespace utopia {
 
             const Scalar x = p[0];
             const Scalar y = p[1];
-            const Scalar t = p[2];
+            // const Scalar t = p[2];
 
             switch (i) {
                 // f = (1.0 - x) * (1.0 - y) * (1.0 - t);

@@ -1,8 +1,10 @@
 #ifndef UTOPIA_PETSC_NEUMANN_BOUNDARY_CONDITIONS_HPP
 #define UTOPIA_PETSC_NEUMANN_BOUNDARY_CONDITIONS_HPP
 
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_std_function.hpp"
+
+// petsc
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 namespace utopia {
 
@@ -11,9 +13,10 @@ namespace utopia {
 
     //!! Only for petsc
     template <class Elem, int Components>
-    class NeumannBoundaryCondition<FunctionSpace<PetscDM<Elem::Dim>, Components, Elem>> : public Configurable {
+    class NeumannBoundaryCondition<FunctionSpace<PetscStructuredGrid<Elem::Dim>, Components, Elem>>
+        : public Configurable {
     public:
-        using Mesh = utopia::PetscDM<Elem::Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Elem::Dim>;
         using NodeIndex = typename Mesh::NodeIndex;
         using FunctionSpace = utopia::FunctionSpace<Mesh, Components, Elem>;
         using Point = typename FunctionSpace::Point;

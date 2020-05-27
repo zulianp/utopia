@@ -36,7 +36,7 @@ namespace utopia {
 
         static const int NQuadPoints = Quadrature::NPoints;
 
-        void read(Input &in) override {}
+        void read(Input &) override {}
 
         PFMassMatrix(FunctionSpace &space) : space_(space) {}
 

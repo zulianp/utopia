@@ -10,31 +10,29 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityFE.hpp"
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PhaseField.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_Tri3.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_impl.hpp"
-
-#include "utopia_LinearElasticityFE.hpp"
-
 #include "utopia_app_utils.hpp"
 
-#include "utopia_petsc_NeumannBoundaryConditions.hpp"
-
+// petsc
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_NeumannBoundaryConditions.hpp"
+#include "utopia_petsc_impl.hpp"
 
+// std
 #include <cmath>
 
 namespace utopia {
@@ -43,8 +41,8 @@ namespace utopia {
         std::cout << "petsc_tri" << std::endl;
         static const int Dim = 2;
 
-        using Mesh = utopia::PetscDM<Dim>;
-        using Comm = Mesh::Comm;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        // using Comm = Mesh::Comm;
         using SizeType = Mesh::SizeType;
         using Scalar = Mesh::Scalar;
         using Point = Mesh::Point;
