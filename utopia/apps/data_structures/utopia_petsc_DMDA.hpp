@@ -309,6 +309,8 @@ namespace utopia {
             for (SizeType d = 0; d < n; ++d) {
                 dims[d] = dims_buff[d];
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         std::unique_ptr<PetscDMDA> uniform_refine() const {
@@ -353,6 +355,8 @@ namespace utopia {
                 start[d] = start_buff[d];
                 extent[d] = extent_buff[d];
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         static void get_ghost_corners(DM dm, IntArray &start, IntArray &extent) {
@@ -371,6 +375,8 @@ namespace utopia {
                 start[d] = start_buff[d];
                 extent[d] = extent_buff[d];
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         static SizeType get_dof(DM dm) {

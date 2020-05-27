@@ -261,7 +261,7 @@ namespace utopia {
                 fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
             }
 
-            return std::move(fine_space);
+            return fine_space;
         }
 
         template <class F>
