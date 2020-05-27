@@ -18,8 +18,7 @@ namespace utopia {
 
     template <class FunctionSpace>
     class PoissonFE final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-                            public Operator<typename FunctionSpace::Vector>,
-                            public Configurable {
+                            public Operator<typename FunctionSpace::Vector> {
     public:
         using Comm = typename FunctionSpace::Comm;
         using Matrix = typename FunctionSpace::Matrix;

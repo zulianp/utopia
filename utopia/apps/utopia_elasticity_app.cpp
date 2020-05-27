@@ -100,19 +100,19 @@ namespace utopia {
     template <class FunctionSpace>
     static void linear_elasticity(FunctionSpace &space, Input &in) {
         using Elem = typename FunctionSpace::Elem;
-        using Dev = typename FunctionSpace::Device;
+        // using Dev = typename FunctionSpace::Device;
         using Vector = typename FunctionSpace::Vector;
         using Matrix = typename FunctionSpace::Matrix;
         using Comm = typename FunctionSpace::Comm;
 
         // static const int Dim = Elem::Dim;
-        static const int NFunctions = Elem::NFunctions;
+        // static const int NFunctions = Elem::NFunctions;
 
         using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
         using Quadrature = utopia::Quadrature<Elem, 2>;
-        using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
+        // using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
 
         bool use_direct_solver = false;
         bool debug_matrices = false;
@@ -130,7 +130,7 @@ namespace utopia {
         stats.start();
 
         Quadrature quadrature;
-        auto &&space_view = space.view_device();
+        // auto &&space_view = space.view_device();
 
         //////////////////////////////////////////////////////////////////
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("before-create-vector");
@@ -246,7 +246,7 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
 
@@ -269,7 +269,7 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
 
@@ -296,7 +296,7 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
         using Scalar = Mesh::Scalar;
         using Point = Mesh::Point;
 
@@ -370,12 +370,12 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView = FunctionSpace::ViewDevice::Elem;
-        using SizeType = Mesh::SizeType;
-        using Scalar = Mesh::Scalar;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
-        using Dev = FunctionSpace::Device;
-        using VectorD = utopia::StaticVector<Scalar, Dim>;
+        // using ElemView = FunctionSpace::ViewDevice::Elem;
+        // using SizeType = Mesh::SizeType;
+        // using Scalar = Mesh::Scalar;
+        // using Quadrature = utopia::Quadrature<Elem, 2>;
+        // using Dev = FunctionSpace::Device;
+        // using VectorD = utopia::StaticVector<Scalar, Dim>;
 
         FunctionSpace space;
         space.read(in);

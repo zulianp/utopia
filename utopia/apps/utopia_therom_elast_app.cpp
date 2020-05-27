@@ -67,13 +67,13 @@ namespace utopia {
         // static const int NVars = FunctionSpace::Dim + 1;
 
         // expose inner types
-        using Elem = typename FunctionSpace::Shape;
-        using SizeType = typename FunctionSpace::SizeType;
-        using Dev = typename FunctionSpace::Device;
-        using Point = typename FunctionSpace::Point;
+        // using Elem = typename FunctionSpace::Shape;
+        // using SizeType = typename FunctionSpace::SizeType;
+        // using Dev = typename FunctionSpace::Device;
+        // using Point = typename FunctionSpace::Point;
 
-        using Subspace = typename FunctionSpace::template Subspace<1>;
-        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
+        // using Subspace = typename FunctionSpace::template Subspace<1>;
+        // using ElemViewScalar = typename Subspace::ViewDevice::Elem;
 
         // static const int NNodes = Elem::NNodes;
         using Model = utopia::WeakThermoElasticity<FunctionSpace>;

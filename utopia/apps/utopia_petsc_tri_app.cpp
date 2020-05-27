@@ -44,7 +44,7 @@ namespace utopia {
         static const int Dim = 2;
 
         using Mesh = utopia::PetscDM<Dim>;
-        using Comm = Mesh::Comm;
+        // using Comm = Mesh::Comm;
         using SizeType = Mesh::SizeType;
         using Scalar = Mesh::Scalar;
         using Point = Mesh::Point;

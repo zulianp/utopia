@@ -45,9 +45,9 @@ namespace utopia {
     template <class FunctionSpace>
     static void init_phase_field(FunctionSpace &space, PetscVector &x) {
         // using Comm           = typename FunctionSpace::Comm;
-        using Mesh = typename FunctionSpace::Mesh;
+        // using Mesh = typename FunctionSpace::Mesh;
         using Elem = typename FunctionSpace::Shape;
-        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        // using ElemView = typename FunctionSpace::ViewDevice::Elem;
         using SizeType = typename FunctionSpace::SizeType;
         using Scalar = typename FunctionSpace::Scalar;
         using Dev = typename FunctionSpace::Device;
@@ -103,17 +103,16 @@ namespace utopia {
         using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
 
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, 1);
+        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
         space.emplace_dirichlet_condition(
-            SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return t * disp; }, 1);
+            SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return t * disp; }, 1);
 
         for (int d = 2; d < Dim + 1; ++d) {
-            space.emplace_dirichlet_condition(
-                SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+            space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
             space.emplace_dirichlet_condition(
-                SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
         }
     }
 
@@ -122,7 +121,7 @@ namespace utopia {
                                                PetscVector &x_new,
                                                const typename FunctionSpace::SizeType &comp) {
         static const int Dim = FunctionSpace::Dim;
-        using Scalar = typename FunctionSpace::Scalar;
+        // using Scalar = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
 
         {
@@ -141,29 +140,29 @@ namespace utopia {
 
     template <class FunctionSpace>
     static void phase_field_fracture_sim(FunctionSpace &space, MPITimeStatistics &stats, Input &in) {
-        static const int Dim = FunctionSpace::Dim;
-        static const int NVars = FunctionSpace::Dim + 1;
+        // static const int Dim = FunctionSpace::Dim;
+        // static const int NVars = FunctionSpace::Dim + 1;
 
         // expose inner types
-        using Comm = typename FunctionSpace::Comm;
-        using Mesh = typename FunctionSpace::Mesh;
-        using Elem = typename FunctionSpace::Shape;
-        using ElemView = typename FunctionSpace::ViewDevice::Elem;
-        using SizeType = typename FunctionSpace::SizeType;
+        // using Comm = typename FunctionSpace::Comm;
+        // using Mesh = typename FunctionSpace::Mesh;
+        // using Elem = typename FunctionSpace::Shape;
+        // using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        // using SizeType = typename FunctionSpace::SizeType;
         using Scalar = typename FunctionSpace::Scalar;
-        using Dev = typename FunctionSpace::Device;
-        using Point = typename FunctionSpace::Point;
+        // using Dev = typename FunctionSpace::Device;
+        // using Point = typename FunctionSpace::Point;
 
-        using Subspace = typename FunctionSpace::template Subspace<1>;
-        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
+        // using Subspace = typename FunctionSpace::template Subspace<1>;
+        // using ElemViewScalar = typename Subspace::ViewDevice::Elem;
 
-        static const int NNodes = Elem::NNodes;
+        // static const int NNodes = Elem::NNodes;
 
-        using FEFunction = utopia::FEFunction<FunctionSpace>;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
-        using Parameters = typename PhaseFieldForBrittleFractures<FunctionSpace>::Parameters;
+        // using FEFunction = utopia::FEFunction<FunctionSpace>;
+        // using Quadrature = utopia::Quadrature<Elem, 2>;
+        // using Parameters = typename PhaseFieldForBrittleFractures<FunctionSpace>::Parameters;
 
-        auto &mesh = space.mesh();
+        // auto &mesh = space.mesh();
 
         Scalar disp = 0.001;
 
@@ -253,7 +252,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 
@@ -282,7 +281,7 @@ namespace utopia {
         using Mesh = utopia::PetscDM<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 

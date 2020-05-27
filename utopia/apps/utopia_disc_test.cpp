@@ -59,7 +59,7 @@ namespace utopia {
         using Device = typename FunctionSpace::Device;
         using Point = typename Mesh::Point;
         using Scalar = typename Mesh::Scalar;
-        using Comm = typename FunctionSpace::Comm;
+        // using Comm = typename FunctionSpace::Comm;
 
         using Quadrature = utopia::Quadrature<Elem, 2>;
 
@@ -146,7 +146,7 @@ namespace utopia {
                                         space_view.elem(i, e);
 
                                         auto p_e = p_view.make(e);
-                                        auto c_e = x_view.make(e);
+                                        // auto c_e = x_view.make(e);
                                         auto dx = dx_view.make(e);
 
                                         x_view.get(e, c);

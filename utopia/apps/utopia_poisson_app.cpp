@@ -138,7 +138,7 @@ namespace utopia {
                 SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return -p[1]; }, c);
         }
 
-        auto diffusivity = UTOPIA_LAMBDA(const Point &p)->Scalar {
+        auto diffusivity = UTOPIA_LAMBDA(const Point & /*p*/)->Scalar {
             // Scalar dist = 0.0;
             // for(SizeType i = 0; i < p.size(); ++i) {
             //     Scalar v = p[i] - 0.5;
@@ -291,7 +291,7 @@ namespace utopia {
         using Elem = utopia::PetscUniformQuad4;
         // using Elem             = utopia::Tri3<double, 2>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
 
         PetscCommunicator world;
         FunctionSpace space;

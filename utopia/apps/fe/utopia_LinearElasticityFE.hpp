@@ -82,7 +82,7 @@ namespace utopia {
         inline const Comm &comm() const override { return space_.comm(); }
 
         bool apply(const Vector &x, Vector &y) const override {
-            const Comm &comm = space_.comm();
+            // const Comm &comm = space_.comm();
 
             if (y.empty()) {
                 space_.create_vector(y);

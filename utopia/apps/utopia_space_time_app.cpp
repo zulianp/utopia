@@ -39,25 +39,25 @@ namespace utopia {
 
     template <class FunctionSpace, class RHSFun>
     static void space_time(FunctionSpace &space, RHSFun rhs_fun, Input &in) {
-        static const int Dim = FunctionSpace::Dim;
-        static const int NVars = 1;
+        // static const int Dim = FunctionSpace::Dim;
+        // static const int NVars = 1;
 
         // expose inner types
-        using Comm = typename FunctionSpace::Comm;
-        using Mesh = typename FunctionSpace::Mesh;
-        using Elem = typename FunctionSpace::Shape;
-        using ElemView = typename FunctionSpace::ViewDevice::Elem;
-        using SizeType = typename FunctionSpace::SizeType;
-        using Scalar = typename FunctionSpace::Scalar;
-        using Dev = typename FunctionSpace::Device;
-        using Point = typename FunctionSpace::Point;
-        using Subspace = typename FunctionSpace::template Subspace<1>;
-        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
+        // using Comm = typename FunctionSpace::Comm;
+        // using Mesh = typename FunctionSpace::Mesh;
+        // using Elem = typename FunctionSpace::Shape;
+        // using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        // using SizeType = typename FunctionSpace::SizeType;
+        // using Scalar = typename FunctionSpace::Scalar;
+        // using Dev = typename FunctionSpace::Device;
+        // using Point = typename FunctionSpace::Point;
+        // using Subspace = typename FunctionSpace::template Subspace<1>;
+        // using ElemViewScalar = typename Subspace::ViewDevice::Elem;
 
-        static const int NNodes = Elem::NNodes;
+        // static const int NNodes = Elem::NNodes;
 
-        using FEFunction = utopia::FEFunction<FunctionSpace>;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
+        // using FEFunction = utopia::FEFunction<FunctionSpace>;
+        // using Quadrature = utopia::Quadrature<Elem, 2>;
         using Model = utopia::STHeatEquation<FunctionSpace>;
 
         ////Check input
@@ -67,8 +67,8 @@ namespace utopia {
         stats.start();
         // boundary conditions
 
-        using Point = typename FunctionSpace::Point;
-        using Scalar = typename FunctionSpace::Scalar;
+        // using Point = typename FunctionSpace::Point;
+        // using Scalar = typename FunctionSpace::Scalar;
 
         /// example from: Space-time Finite Element Methods for Parabolic Initial-Boundary Problems with Variable
         /// Coefficients (Andreas Schafelner)
@@ -222,7 +222,7 @@ namespace utopia {
 
         space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space_time(space, UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, in);
+        space_time(space, UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, in);
     }
 
     UTOPIA_REGISTER_APP(space_time_3);

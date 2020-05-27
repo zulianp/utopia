@@ -63,7 +63,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static void grad_x(const int i, const Point &p, Deriv &dst) {
             UTOPIA_DEVICE_ASSERT(dst.size() == 1);
 
-            const auto x = p[0];
+            // const auto x = p[0];
             const auto t = p[1];
 
             switch (i) {

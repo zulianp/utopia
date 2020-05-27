@@ -283,7 +283,7 @@ namespace utopia {
             }
 
             auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
-                for (auto r = 0; r < rectangles.size(); r++) {
+                for (std::size_t r = 0; r < rectangles.size(); r++) {
                     if (rectangles[r].belongs_to_rectangle(x[0], x[1])) return 1.0;
                 }
                 return 0.0;
