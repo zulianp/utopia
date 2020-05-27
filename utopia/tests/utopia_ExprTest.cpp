@@ -241,15 +241,23 @@ namespace utopia {
 
             D += Matrix(diag(v));
 
+            // The next lines seem to crash when using Trilinos/Code coverage info/specific version of Kokkos/Tpetra
+            // #ifndef WITH_CODE_COVERAGE
+
             UTOPIA_NO_ALLOC_BEGIN("mat_copy5");  //
             // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
+            D.shift_diag(v);
             D += diag(v);  // bad way D += Matrix(diag(v));
             UTOPIA_NO_ALLOC_END();
 
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy6");
             // FIME still creates a temporary (but now it is just a vector)
             D -= diag(v);  // bad way D -= Matrix(diag(v));
-            // UTOPIA_NO_ALLOC_END();
+                           // UTOPIA_NO_ALLOC_END();
+
+            // #else
+            // #warning "FIXME: D += diag(v) test si commented out because it generates errors with code-coverage
+            // instrumentation" #endif
         }
 
         void e_mul_test() {

@@ -32,15 +32,15 @@ namespace utopia {
         inline std::size_t n_values() const { return cols_.size(); }
 
         inline SizeType col(const int index) const {
-            assert(index < n_values());
+            assert(static_cast<std::size_t>(index) < n_values());
 
             auto ret = col_map_->getGlobalElement(cols_[index]);
-            assert(ret < size(t_).get(1));
+            assert(ret < SizeType(size(t_).get(1)));
             return ret;
         }
 
         inline Scalar get(const int index) const {
-            assert(index < n_values());
+            assert(static_cast<std::size_t>(index) < n_values());
             return values_[index];
         }
 
