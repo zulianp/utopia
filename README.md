@@ -1,4 +1,4 @@
-[![CodeFactor](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/badge/edsl_refactor)](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/overview/edsl_refactor)
+[![CodeFactor](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/badge)](https://www.codefactor.io/repository/bitbucket/zulianp/utopia)
 
 # Utopia #
 Utopia is a C++ embedded domain specific language designed for parallel non-linear solution strategies and finite element analysis.
