@@ -1,20 +1,23 @@
 #ifndef UTOPIA_PETSC_DMDA_HPP
 #define UTOPIA_PETSC_DMDA_HPP
 
+#include "utopia_Algorithms.hpp"
 #include "utopia_StructuredGrid.hpp"
 #include "utopia_make_unique.hpp"
-#include "utopia_petsc_DM.hpp"
-
-#include "utopia_Algorithms.hpp"
-
-#include <cassert>
 
 #include <petscdmda.h>
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_FE.hpp"
+
+#include <cassert>
 
 namespace utopia {
 
     template <class Point, class IntArray>
     class PetscDMDA;
+
+    template <int Dim>
+    using PetscStructuredGrid = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
     template <class Point, class IntArray>
     class PetscDMDA : public StructuredGrid<Point, IntArray>, public PetscDMBase {
@@ -326,7 +329,7 @@ namespace utopia {
             DMDASetElementType(fine->raw_type(), elem_type);
             fine->update_mirror();
 
-            return std::move(fine);
+            return fine;
         }
 
         std::unique_ptr<PetscDMDA> clone(const SizeType &n_components) const {
@@ -385,6 +388,7 @@ namespace utopia {
             SizeType ret;
             ierr = DMDAGetDof(dm, &ret);
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
             return ret;
         }
 

@@ -4,11 +4,12 @@
 #include "utopia_FunctionSpace.hpp"
 #include "utopia_MultiVariateElement.hpp"
 #include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_DofMap.hpp"
 
 // TOBEREMOVED
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_MakeElem.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
+// #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 namespace utopia {
 

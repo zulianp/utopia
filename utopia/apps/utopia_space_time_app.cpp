@@ -15,23 +15,21 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_STHeatEquation.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_Tri3.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-#include "utopia_petsc_impl.hpp"
-
 #include "utopia_app_utils.hpp"
 
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_impl.hpp"
 
 #include <cmath>
 
@@ -141,7 +139,7 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         // using Elem           = utopia::Tri3<double, 2>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
@@ -187,7 +185,7 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType = FunctionSpace::SizeType;

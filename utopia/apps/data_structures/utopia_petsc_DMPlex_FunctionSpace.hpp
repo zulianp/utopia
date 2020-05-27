@@ -6,9 +6,9 @@
 #include "utopia_petsc_DMPlex.hpp"
 
 // TOBEREMOVED
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_MakeElem.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 namespace utopia {
 

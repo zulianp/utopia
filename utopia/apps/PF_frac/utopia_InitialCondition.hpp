@@ -24,14 +24,15 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
+
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_petsc_impl.hpp"
 
 #include <chrono>

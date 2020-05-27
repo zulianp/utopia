@@ -10,26 +10,27 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityFE.hpp"
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PhaseField.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_app_utils.hpp"
+
+// petsc
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_FE.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 
-#include "utopia_LinearElasticityFE.hpp"
-
-#include "utopia_app_utils.hpp"
-
+// std
 #include <cmath>
 
 namespace utopia {
@@ -38,7 +39,7 @@ namespace utopia {
     using MeshType = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
     // template<int Dim>
-    // using MeshType = utopia::PetscDM<Dim>;
+    // using MeshType = utopia::PetscStructuredGrid<Dim>;
 
     static void elast_mg_2(Input &in) {
         static const int Dim = 2;

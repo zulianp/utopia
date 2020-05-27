@@ -30,28 +30,26 @@
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MPRGP.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
+#include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_QuasiNewtonBound.hpp"
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-
-#include "utopia_ProjectedGaussSeidelNew.hpp"
-#include "utopia_petsc_RedundantQPSolver.hpp"
-
-#include "utopia_petsc_DMDA.hpp"
-#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
+
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_RedundantQPSolver.hpp"
 #endif  // WITH_PETSC
 
 #include <chrono>
@@ -66,7 +64,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -106,7 +104,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -145,7 +143,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -185,7 +183,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -225,7 +223,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -265,7 +263,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -305,7 +303,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -345,7 +343,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
@@ -385,7 +383,7 @@ namespace utopia {
         static const int NVars = Dim + 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         // using SizeType = FunctionSpace::SizeType;
