@@ -342,7 +342,9 @@ namespace utopia {
 
         inline void simplex(const bool simplex) { simplex_ = simplex; }
 
-        void describe(std::ostream &os = std::cout) const {
+        void describe() const override { describe(std::cout); }
+
+        void describe(std::ostream &os) const {
             SizeType nl;
 
             DMGetNumLabels(this->raw_type(), &nl);
