@@ -36,7 +36,7 @@ namespace utopia {
     template <class Op>
     void TpetraMatrix::aux_transform(const Op &op) {
         KokkosOp<Scalar, Op> k_op(op);
-        transform_values(KOKKOS_LAMBDA(const Scalar value)->Scalar { return k_op.apply(value); });
+        transform_values(UTOPIA_LAMBDA(const Scalar value)->Scalar { return k_op.apply(value); });
     }
 
     template <class F>
@@ -46,7 +46,7 @@ namespace utopia {
         const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
         const Data &data = local_mat.values;
 
-        Kokkos::parallel_for(data.extent(0), KOKKOS_LAMBDA(const SizeType i) { data(i) = op(data(i)); });
+        Kokkos::parallel_for(data.extent(0), UTOPIA_LAMBDA(const SizeType i) { data(i) = op(data(i)); });
     }
 
     template <class Op>
@@ -69,7 +69,7 @@ namespace utopia {
         auto col_map = impl->getColMap()->getLocalMap();
 
         Kokkos::parallel_for(
-            "TpetraMatrix::transform_ijv", team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+            "TpetraMatrix::transform_ijv", team_policy(n, Kokkos::AUTO), UTOPIA_LAMBDA(const member_type &team_member) {
                 const int row_ind = team_member.league_rank();
                 auto row = local_mat.row(row_ind);
                 auto n_values = row.length;
@@ -102,7 +102,7 @@ namespace utopia {
         auto col_map = impl->getColMap()->getLocalMap();
 
         Kokkos::parallel_for(
-            "TpetraMatrix::read", team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+            "TpetraMatrix::read", team_policy(n, Kokkos::AUTO), UTOPIA_LAMBDA(const member_type &team_member) {
                 const int row_ind = team_member.league_rank();
                 auto row = local_mat.row(row_ind);
                 auto n_values = row.length;

@@ -241,6 +241,7 @@ namespace utopia {
 
             D += Matrix(diag(v));
 
+            // The next lines seem to crash when using Trilinos/Code coverage info/specific version of Kokkos/Tpetra
             UTOPIA_NO_ALLOC_BEGIN("mat_copy5");  //
             // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
             D += diag(v);  // bad way D += Matrix(diag(v));
