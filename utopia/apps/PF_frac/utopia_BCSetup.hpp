@@ -22,7 +22,6 @@
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MPRGP.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_QuasiNewtonBound.hpp"
@@ -30,10 +29,12 @@
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
+
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 #include "utopia_petsc_impl.hpp"
 
 #include <chrono>
@@ -51,7 +52,7 @@ namespace utopia {
 
         ~BCSetup() override = default;
 
-        void read(Input &in) override {}
+        void read(Input &) override {}
 
         virtual void emplace_time_dependent_BC(const Scalar &time) = 0;
 
@@ -75,23 +76,23 @@ namespace utopia {
 
             for (int d = 1; d < Dim + 1; ++d) {
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                    SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::top(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                    SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                 if (Dim == 3) {
                     this->space_.emplace_dirichlet_condition(
-                        SideSet::front(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                        SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                     this->space_.emplace_dirichlet_condition(
-                        SideSet::back(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                        SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
                 }
             }
         }
@@ -115,17 +116,17 @@ namespace utopia {
             this->space_.reset_bc();
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, 1);
+                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
             this->space_.emplace_dirichlet_condition(
-                SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return disp_y_ * time; }, 1);
+                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; }, 1);
 
             for (int d = 2; d < Dim + 1; ++d) {
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                    SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; }, d);
+                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
             }
         }
 
@@ -145,23 +146,23 @@ namespace utopia {
         void read(Input &in) override { in.get("disp_y", disp_y_); }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
-            static const int Dim = FunctionSpace::Dim;
+            // static const int Dim = FunctionSpace::Dim;
 
             using Point = typename FunctionSpace::Point;
             this->space_.reset_bc();
 
             this->space_.emplace_dirichlet_condition(SideSet::bottom(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                                                      1  // disp_x
             );
 
             this->space_.emplace_dirichlet_condition(SideSet::bottom(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                                                      2  // disp_y
             );
 
             this->space_.emplace_dirichlet_condition(SideSet::top(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return disp_y_ * time; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; },
                                                      2  // disp_y
             );
         }
@@ -181,23 +182,23 @@ namespace utopia {
         void read(Input &in) override { in.get("disp_y", disp_y_); }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
-            static const int Dim = FunctionSpace::Dim;
+            // static const int Dim = FunctionSpace::Dim;
 
             using Point = typename FunctionSpace::Point;
             this->space_.reset_bc();
 
             this->space_.emplace_dirichlet_condition(SideSet::bottom(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                                                      1  // disp_x
             );
 
             this->space_.emplace_dirichlet_condition(SideSet::bottom(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                                                      2  // disp_y
             );
 
             this->space_.emplace_dirichlet_condition(SideSet::top(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return disp_y_ * time; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; },
                                                      2  // disp_y
             );
         }
@@ -221,7 +222,7 @@ namespace utopia {
         }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
-            static const int Dim = FunctionSpace::Dim;
+            // static const int Dim = FunctionSpace::Dim;
 
             using Point = typename FunctionSpace::Point;
             this->space_.reset_bc();
@@ -235,12 +236,12 @@ namespace utopia {
             //     );
 
             this->space_.emplace_dirichlet_condition(SideSet::bottom(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                                                      2  // disp_y
             );
 
             this->space_.emplace_dirichlet_condition(SideSet::left(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
                                                      1  // disp_x
             );
 
@@ -263,12 +264,12 @@ namespace utopia {
             //     );
 
             this->space_.emplace_dirichlet_condition(SideSet::top(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return disp_y_ * time; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return disp_y_ * time; },
                                                      2  // disp_y
             );
 
             this->space_.emplace_dirichlet_condition(SideSet::right(),
-                                                     UTOPIA_LAMBDA(const Point &p)->Scalar { return disp_x_ * time; },
+                                                     UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; },
                                                      1  // disp_x
             );
 

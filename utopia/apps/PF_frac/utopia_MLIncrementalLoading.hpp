@@ -51,7 +51,7 @@ namespace utopia {
 
             init_ml_setup();
 
-            for (auto l = 0; l < level_functions_.size(); l++) {
+            for (std::size_t l = 0; l < level_functions_.size(); l++) {
                 level_functions_[l]->read(in);
                 BC_conditions_[l]->read(in);
             }
@@ -252,7 +252,7 @@ namespace utopia {
         }
 
         void prepare_for_solve() override {
-            for (auto l = 0; l < BC_conditions_.size(); l++) {
+            for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
                 BC_conditions_[l]->emplace_time_dependent_BC(this->time_);
             }
 
@@ -263,7 +263,7 @@ namespace utopia {
                 fun_finest->build_irreversility_constraint(this->lb_);
             }
 
-            for (auto l = 0; l < BC_conditions_.size(); l++) {
+            for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
                 Vector &bc_flgs = level_functions_[l]->get_eq_constrains_flg();
                 Vector &bc_values = level_functions_[l]->get_eq_constrains_values();
 
@@ -289,7 +289,7 @@ namespace utopia {
             // fe_problem_->setup_constant_pressure_field(press_ts);
             // std::cout<<"----- yes, constant pressure, "<< press_ts << " ......... \n";
 
-            for (auto l = 0; l < n_levels_; l++) {
+            for (SizeType l = 0; l < n_levels_; l++) {
                 auto *fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
                 fun->setup_constant_pressure_field(press_ts);
                 fun->set_pressure(press_ts);
