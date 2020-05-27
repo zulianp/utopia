@@ -153,6 +153,8 @@ namespace utopia {
             ierr = PetscObjectSetName((PetscObject)raw_type(), "Mesh");
 
             partition(refinement_limit);
+
+            UTOPIA_UNUSED(ierr);
         }
 
         // const SizeType n = this->dims().size();
@@ -231,6 +233,8 @@ namespace utopia {
         }
 
         bool is_node_on_boundary(const SizeType &idx, const SideSet::BoundaryIdType b_id) const {
+            UTOPIA_UNUSED(idx);
+            UTOPIA_UNUSED(b_id);
             // DMLabelGetValue(DMLabel label, PetscInt point, PetscInt * value)
             assert(false);
             return false;
@@ -339,7 +343,7 @@ namespace utopia {
         inline void simplex(const bool simplex) { simplex_ = simplex; }
 
         void describe(std::ostream &os = std::cout) const {
-            SizeType nl, num_cs, num_vs, num_fs, num_marker, num_bd;
+            SizeType nl;
 
             DMGetNumLabels(this->raw_type(), &nl);
 
@@ -445,7 +449,7 @@ namespace utopia {
             PetscInt dof_range_begin, dof_range_end;
             PetscDMBase::dof_ownership_range(dm, dof_range_begin, dof_range_end);
 
-            const SizeType dim = PetscDMBase::get_dimension(dm);
+            // const SizeType dim = PetscDMBase::get_dimension(dm);
             // assert(dim == this->dim());
 
             // this->set_dof_range_begin(dof_range_begin);
@@ -509,6 +513,8 @@ namespace utopia {
                 assert(ierr == 0);
                 *dm = distributed_mesh;
             }
+
+            UTOPIA_UNUSED(ierr);
         }
     };  // namespace utopia
 
