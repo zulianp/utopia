@@ -7,7 +7,7 @@
 #include "utopia_Logger.hpp"
 //#include "utopia_kokkos_ParallelEach.hpp"
 // #include "utopia_trilinos_Each_impl.hpp"
-#include "utopia_trilinos_DeviceView.hpp"
+
 #include "utopia_trilinos_Utils.hpp"
 
 #include <MatrixMarket_Tpetra.hpp>

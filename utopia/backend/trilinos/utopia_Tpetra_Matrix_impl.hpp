@@ -3,6 +3,7 @@
 
 #include "utopia_Tpetra_Matrix.hpp"
 #include "utopia_kokkos_Eval_Reduce.hpp"
+#include "utopia_trilinos_DeviceView.hpp"
 
 namespace utopia {
 
