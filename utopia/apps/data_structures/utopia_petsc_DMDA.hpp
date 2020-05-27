@@ -1,20 +1,23 @@
 #ifndef UTOPIA_PETSC_DMDA_HPP
 #define UTOPIA_PETSC_DMDA_HPP
 
+#include "utopia_Algorithms.hpp"
 #include "utopia_StructuredGrid.hpp"
 #include "utopia_make_unique.hpp"
-#include "utopia_petsc_DM.hpp"
-
-#include "utopia_Algorithms.hpp"
-
-#include <cassert>
 
 #include <petscdmda.h>
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_FE.hpp"
+
+#include <cassert>
 
 namespace utopia {
 
     template <class Point, class IntArray>
     class PetscDMDA;
+
+    template <int Dim>
+    using PetscStructuredGrid = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
     template <class Point, class IntArray>
     class PetscDMDA : public StructuredGrid<Point, IntArray>, public PetscDMBase {
@@ -309,6 +312,8 @@ namespace utopia {
             for (SizeType d = 0; d < n; ++d) {
                 dims[d] = dims_buff[d];
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         std::unique_ptr<PetscDMDA> uniform_refine() const {
@@ -324,7 +329,7 @@ namespace utopia {
             DMDASetElementType(fine->raw_type(), elem_type);
             fine->update_mirror();
 
-            return std::move(fine);
+            return fine;
         }
 
         std::unique_ptr<PetscDMDA> clone(const SizeType &n_components) const {
@@ -353,6 +358,8 @@ namespace utopia {
                 start[d] = start_buff[d];
                 extent[d] = extent_buff[d];
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         static void get_ghost_corners(DM dm, IntArray &start, IntArray &extent) {
@@ -371,6 +378,8 @@ namespace utopia {
                 start[d] = start_buff[d];
                 extent[d] = extent_buff[d];
             }
+
+            UTOPIA_UNUSED(ierr);
         }
 
         static SizeType get_dof(DM dm) {
@@ -379,6 +388,7 @@ namespace utopia {
             SizeType ret;
             ierr = DMDAGetDof(dm, &ret);
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
             return ret;
         }
 

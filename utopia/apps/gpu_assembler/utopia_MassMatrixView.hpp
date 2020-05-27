@@ -91,13 +91,15 @@ namespace utopia {
 
         template <class Fun, class DX, class Matrix>
         UTOPIA_INLINE_FUNCTION static void assemble(const Fun &fun, const DX &dx, Matrix &mat) {
-            const auto n = fun.n_points();
-            for (SizeType k = 0; k < n; ++k) {
-                for (SizeType j = 0; j < fun.n_functions(); ++j) {
+            const int n = fun.n_points();
+            const int n_fun = fun.n_functions();
+
+            for (int k = 0; k < n; ++k) {
+                for (int j = 0; j < n_fun; ++j) {
                     const auto g_test = fun(j, k);
                     mat(j, j) += inner(g_test, g_test) * dx(k);
 
-                    for (SizeType l = j + 1; l < fun.n_functions(); ++l) {
+                    for (int l = j + 1; l < n_fun; ++l) {
                         const auto v = inner(g_test, fun(l, k)) * dx(k);
                         mat(j, l) += v;
                         mat(l, j) += v;
@@ -196,13 +198,14 @@ namespace utopia {
                                                         const QPValue &qp_fun,
                                                         Function f,
                                                         Matrix &mat) {
-            const auto n = fun.n_points();
-            for (SizeType k = 0; k < n; ++k) {
-                for (SizeType j = 0; j < fun.n_functions(); ++j) {
+            const int n = fun.n_points();
+            const int n_fun = fun.n_functions();
+            for (int k = 0; k < n; ++k) {
+                for (int j = 0; j < n_fun; ++j) {
                     const auto g_test = fun(j, k);
                     mat(j, j) += (g_test * g_test) * dx(k) * f(qp_fun(k));
 
-                    for (SizeType l = j + 1; l < fun.n_functions(); ++l) {
+                    for (int l = j + 1; l < n_fun; ++l) {
                         const auto v = (g_test * fun(l, k)) * dx(k) * f(qp_fun(k));
                         mat(j, l) += v;
                         mat(l, j) += v;

@@ -28,6 +28,8 @@ namespace utopia {
                 auto ierr = PetscViewerDestroy(&viewer);
                 assert(ierr == 0);
                 viewer = nullptr;
+
+                UTOPIA_UNUSED(ierr);
             }
         }
 

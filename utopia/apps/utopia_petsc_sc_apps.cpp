@@ -14,23 +14,24 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PhaseField.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
-
-#include "utopia_petsc_DMDA.hpp"
-#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 #ifdef WITH_PETSC
+// petsc
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
+
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_FE.hpp"
+
 #endif  // WITH_PETSC
 
 #include <cmath>
@@ -42,11 +43,11 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = 2;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using SizeType = Mesh::SizeType;
-        using Scalar = Mesh::Scalar;
+        // using Scalar = Mesh::Scalar;
         // using Point            = Mesh::Point;
 
         FunctionSpace space;
@@ -73,12 +74,12 @@ namespace utopia {
 
     static void petsc_local_vec_view(Input &in) {
         static const int Dim = 3;
-        static const int NNodes = 8;
+        // static const int NNodes = 8;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
         // using Scalar           = Mesh::Scalar;
         // using Point            = Mesh::Point;
         FunctionSpace space;
@@ -93,9 +94,9 @@ namespace utopia {
 
     static void petsc_bratu(Input &in) {
         static const int Dim = 3;
-        static const int NNodes = 8;
+        // static const int NNodes = 8;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, 1, Elem>;
         using SizeType = Mesh::SizeType;
@@ -170,9 +171,9 @@ namespace utopia {
         space.read(in);
 
         // boundary conditions
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &p)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
         stats.stop_and_collect("space+bc");
         ///////////////////////////////////////
@@ -229,7 +230,7 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_bratu);
 
     static void petsc_dm_app() {
-        // using Mesh = utopia::PetscDM<2>;
+        // using Mesh = utopia::PetscStructuredGrid<2>;
         // using SizeType = Mesh::SizeType;
         // SizeType nx = 10;
         // SizeType ny = 10;
@@ -334,13 +335,13 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = Dim;
 
-        using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        // using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using ElemView = FunctionSpace::ViewDevice::Elem;
         using SizeType = FunctionSpace::SizeType;
-        using Scalar = FunctionSpace::Scalar;
+        // using Scalar = FunctionSpace::Scalar;
         using Quadrature = utopia::Quadrature<Elem, 2>;
         using Dev = FunctionSpace::Device;
         using FEFunction = utopia::FEFunction<FunctionSpace>;
@@ -358,11 +359,11 @@ namespace utopia {
         auto f = fun.value(q);
         auto g = fun.gradient(q);
 
-        auto shape = space.shape(q);
-        auto shape_grad = space.shape_grad(q);
+        // auto shape = space.shape(q);
+        // auto shape_grad = space.shape_grad(q);
 
         // custom operator can be create with factory functions
-        auto lapl = laplacian(space, q);
+        // auto lapl = laplacian(space, q);
 
         // END: Host context
 
@@ -372,15 +373,15 @@ namespace utopia {
             auto f_view = f.view_device();
             auto g_view = g.view_device();
 
-            auto shape_view = shape.view_device();
-            auto shape_grad_view = shape_grad.view_device();
+            // auto shape_view = shape.view_device();
+            // auto shape_grad_view = shape_grad.view_device();
 
             // Device Kernel (GPU or CPU) (this should be hidden better)
             Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
                 ElemView e;
                 space_view.elem(idx, e);
 
-                auto s_grad = shape_grad_view.make(e);
+                // auto s_grad = shape_grad_view.make(e);
             });
 
             // END: Device context
@@ -394,22 +395,22 @@ namespace utopia {
         static const int NVars = 1;
 
         using Comm = utopia::PetscCommunicator;
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
         using ElemView = FunctionSpace::ViewDevice::Elem;
         using SizeType = FunctionSpace::SizeType;
         using Scalar = FunctionSpace::Scalar;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
+        // using Quadrature = utopia::Quadrature<Elem, 2>;
         using Dev = FunctionSpace::Device;
-        using FEFunction = utopia::FEFunction<FunctionSpace>;
+        // using FEFunction = utopia::FEFunction<FunctionSpace>;
         using Point = typename FunctionSpace::Point;
 
         Comm world;
 
-        SizeType scale = (world.size() + 1);
-        SizeType nx = scale * 10;
-        SizeType ny = scale * 10;
+        // SizeType scale = (world.size() + 1);
+        // SizeType nx = scale * 10;
+        // SizeType ny = scale * 10;
 
         FunctionSpace space;
         space.read(in);

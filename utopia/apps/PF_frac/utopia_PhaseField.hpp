@@ -16,8 +16,7 @@ namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
     class PhaseFieldForBrittleFractures final
-        : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-          public Configurable
+        : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>
 
     {
     public:
@@ -249,22 +248,24 @@ namespace utopia {
                     auto c_shape_fun_el = c_shape_view.make(c_e);
 
                     ////////////////////////////////////////////
+                    const int n_u_fun = u_grad_shape_el.n_functions();
+                    const int n_c_fun = c_grad_shape_el.n_functions();
 
-                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                    for (int qp = 0; qp < NQuadPoints; ++qp) {
                         Scalar sum_eigs = sum(el_strain.values[qp]);
 
                         strain_view.split_positive(el_strain, qp, strain_p);
 
                         split_stress(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress);
 
-                        for (SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
+                        for (int j = 0; j < n_u_fun; ++j) {
                             auto grad_test = u_grad_shape_el(j, qp);
                             u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
                         }
 
                         const Scalar elast = grad_elastic_energy_wrt_c(params_, c[qp], sum_eigs, strain_p);
 
-                        for (SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
+                        for (int j = 0; j < n_c_fun; ++j) {
                             const Scalar shape_test = c_shape_fun_el(j, qp);
                             const Scalar frac = grad_fracture_energy_wrt_c(
                                 params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
@@ -376,15 +377,17 @@ namespace utopia {
                     auto c_shape_fun_el = c_shape_view.make(c_e);
 
                     ////////////////////////////////////////////
+                    const int n_u_fun = u_grad_shape_el.n_functions();
+                    const int n_c_fun = c_grad_shape_el.n_functions();
 
-                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                    for (int qp = 0; qp < NQuadPoints; ++qp) {
                         Scalar sum_eigs = sum(el_strain.values[qp]);
                         strain_view.split(el_strain, qp, strain_n, strain_p);
 
                         const Scalar eep = elastic_energy_positve(params_, sum_eigs, strain_p);
 
-                        for (SizeType l = 0; l < c_grad_shape_el.n_functions(); ++l) {
-                            for (SizeType j = 0; j < c_grad_shape_el.n_functions(); ++j) {
+                        for (int l = 0; l < n_c_fun; ++l) {
+                            for (int j = 0; j < n_c_fun; ++j) {
                                 el_mat(l, j) += bilinear_cc(params_,
                                                             c[qp],
                                                             eep,
@@ -396,8 +399,8 @@ namespace utopia {
                             }
                         }
 
-                        for (SizeType l = 0; l < u_grad_shape_el.n_functions(); ++l) {
-                            for (SizeType j = 0; j < u_grad_shape_el.n_functions(); ++j) {
+                        for (int l = 0; l < n_u_fun; ++l) {
+                            for (int j = 0; j < n_u_fun; ++j) {
                                 el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(params_,
                                                                                 c[qp],
                                                                                 el_strain.vectors[qp],
@@ -416,8 +419,8 @@ namespace utopia {
                         stress_positive(
                             params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
 
-                        for (SizeType c_i = 0; c_i < c_grad_shape_el.n_functions(); ++c_i) {
-                            for (SizeType u_i = 0; u_i < u_grad_shape_el.n_functions(); ++u_i) {
+                        for (SizeType c_i = 0; c_i < n_c_fun; ++c_i) {
+                            for (SizeType u_i = 0; u_i < n_u_fun; ++u_i) {
                                 const Scalar val =
                                     bilinear_uc(params_,
                                                 c[qp],
@@ -502,7 +505,7 @@ namespace utopia {
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_pos;
             positive_projection(eigen_vectors, eigen_values, proj_pos);
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_neg, I4sym;
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;  // proj_neg
             I4sym.identity_sym();
 
             Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = (I4sym - (1.0 - gc) * proj_pos) * C;
