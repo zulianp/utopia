@@ -306,23 +306,32 @@ namespace utopia {
         } else {
             // see for a distributed example
             // https://github.com/trilinos/Trilinos/blob/master/packages/tpetra/core/example/Lesson07-Kokkos-Fill/04_tpetra.cpp
-            assert(false && "Sparse distributed matrix assembly with CRS structures is not implemented yet.");
+            // assert(false && "Sparse distributed matrix assembly with CRS structures is not implemented yet.");
+
+            row_map.reset(new MapType(rows_global, rows_local, index_base, comm));
+            col_map.reset(new MapType(cols_global, index_base, comm));
         }
 
-        UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
-        mat_.reset(new CrsMatrixType(row_map, col_map, rowPtr, cols, values));
-        owner_ = true;
+        try {
+            UTOPIA_REPORT_ALLOC("TpetraMatrix::crs_init");
+            mat_.reset(new CrsMatrixType(row_map, col_map, rowPtr, cols, values));
+            owner_ = true;
 
-        init_ = std::make_shared<InitStructs>();
-        if (cols_local == static_cast<std::size_t>(INVALID_INDEX)) {
-            const SizeType cols_local_auto = utopia::decompose(comm_, cols_global);
-            init_->domain_map.reset(new MapType(cols_global, cols_local_auto, index_base, comm));
-        } else {
-            init_->domain_map.reset(new MapType(cols_global, cols_local, index_base, comm));
+            init_ = std::make_shared<InitStructs>();
+            if (cols_local == static_cast<std::size_t>(INVALID_INDEX)) {
+                const SizeType cols_local_auto = utopia::decompose(comm_, cols_global);
+                init_->domain_map.reset(new MapType(cols_global, cols_local_auto, index_base, comm));
+            } else {
+                init_->domain_map.reset(new MapType(cols_global, cols_local, index_base, comm));
+            }
+            init_->range_map = row_map;
+
+            finalize();
+        } catch (const std::exception &ex) {
+            std::cout << ex.what() << std::endl;
+            assert(false);
+            throw ex;
         }
-        init_->range_map = row_map;
-
-        finalize();
     }
 
     void TpetraMatrix::crs_identity(const RCPCommType &comm,
@@ -732,6 +741,7 @@ namespace utopia {
         auto d_view = const_view_device(d);
 
         this->transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
+            UTOPIA_DEVICE_ASSERT(i < d_view.size());
             return (i == j) ? (v + d_view.get(i)) : v;
         });
     }
