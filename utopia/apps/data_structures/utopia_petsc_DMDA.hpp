@@ -338,7 +338,7 @@ namespace utopia {
             cloned->set_n_components(n_components);
             // cloned->type_override_ = type_override_;
             cloned->init_from_mirror();
-            return std::move(cloned);
+            return cloned;
         }
 
         std::unique_ptr<PetscDMDA> clone() const { return clone(this->n_components()); }
