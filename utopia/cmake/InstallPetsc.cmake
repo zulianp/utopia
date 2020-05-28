@@ -58,18 +58,21 @@ if(NOT PETSC_FOUND)
     set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-mpi=1 --download-scalapack=yes --download-hypre=yes --with-cxx-dialect=C++11 -download-superlu_dist=yes --download-superlu=yes --download-mumps=yes -with-debugging=0)
 
     #####################################################################
-    # DMPlex dependencies
-    set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen)
 
-    if(HDF5_DIR)
-        set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-hdf5-dir=${HDF5_DIR})
-    else()
-        set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-hdf5)
-    endif()
+    if(UTOPIA_ENABLE_PETSC_DM_PLEX)
+        # DMPlex dependencies
+        set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen)
 
-    if(UTOPIA_ENABLE_CGNS)
-        set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-cgns=yes --with-cgns-dir=/opt/local)
-        message(STATUS "USING CGNS")
+        if(HDF5_DIR)
+            set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-hdf5-dir=${HDF5_DIR})
+        else()
+            set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-hdf5)
+        endif()
+
+        if(UTOPIA_ENABLE_CGNS)
+            set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-cgns=yes --with-cgns-dir=/opt/local)
+            message(STATUS "USING CGNS")
+        endif()
     endif()
 
     #####################################################################
