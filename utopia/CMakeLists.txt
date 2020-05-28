@@ -59,6 +59,7 @@ option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the futre" ON)
 option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
+option(UTOPIA_ENABLE_PETSC_DM_PLEX "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies" ON)
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)

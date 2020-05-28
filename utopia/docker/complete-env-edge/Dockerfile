@@ -14,6 +14,9 @@ RUN apk add --no-cache \
     python2 \
     nano
 
+#############################################################################
+############################## LCOV ########################################
+#############################################################################
 
 RUN git clone https://github.com/linux-test-project/lcov.git /lcov_git
 RUN cd /lcov_git && make install
@@ -33,28 +36,41 @@ RUN cd /utopia_cloned && git pull
 # Compile petsc (dmplex dependencies do not compile, so we turn them off)
 RUN cd /utopia_cloned/utopia && mkdir bin && cd bin && cmake .. -DUTOPIA_ENABLE_PETSC_DM_PLEX=OFF
 
-# Compile petsc
-RUN cd /utopia_cloned/utopia/bin && make petsc
+#############################################################################
+############################## PETSC ########################################
+#############################################################################
+
+RUN cd /utopia_cloned/utopia/bin && make petsc VERBOSE=1
 ENV PETSC_DIR /utopia_cloned/utopia/external/petsc
 
-# Compile trilinos
-RUN cd /utopia_cloned/utopia/bin && make trilinos
+
+#############################################################################
+############################## TRILINOS #####################################
+#############################################################################
+
+RUN cd /utopia_cloned/utopia/bin && make trilinos VERBOSE=1
 ENV TRILINOS_DIR /utopia_cloned/utopia/external/trilinos
 
-###################################################################################################################
-###################################################################################################################
+#############################################################################
+############################## SLEPC ########################################
+#############################################################################
 
-# Compile
-RUN cd /utopia_cloned/utopia && mkdir bin_cov
-RUN cd /utopia_cloned/utopia/bin_cov && cmake -DENABLE_CODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
-RUN cd /utopia_cloned/utopia/bin_cov && make complete
+# RUN git clone https://bitbucket.org/slepc/slepc /slepc_cloned
+# RUN cd /slepc_cloned && git checkout maint
 
-# Create coverage data
-RUN cp /utopia_cloned/utopia/scripts/utils/coverage.sh /utopia_cloned/utopia/bin_cov/coverage.sh
-RUN cd /utopia_cloned/utopia/bin_cov && source coverage.sh
+# # Dependencies for Arpack
+# RUN apk add --no-cache \
+#           autoconf automake libtool
 
-# Running in parallel inside Docker
-RUN echo "For parallel runs use: mpirun --allow-run-as-root -n 2 ./utopia_test"
+# ENV F77=mpif77
+# RUN cd /slepc_cloned && ./configure --prefix=/utopia_cloned/utopia/external/slepc --download-arpack
+# RUN cd /slepc_cloned && \
+#     make && \
+#     make install
+
+
+# ENV SLEPC_DIR=/utopia_cloned/utopia/external/slepc
+# ENV CPATH $CPATH:$SLEPC_DIR/include
 
 ###################################################################################################################
 ###################################################################################################################
@@ -63,6 +79,7 @@ ENV LD_LIBRARY_PATH=$PETSC_DIR/lib/:$TRILINOS_DIR/lib
 
 RUN echo 'export LD_LIBRARY_PATH='$LD_LIBRARY_PATH   > setup.sh
 RUN echo 'export PETSC_DIR='$PETSC_DIR              >> setup.sh
+# RUN echo 'export SLEPC_DIR='$SLEPC_DIR              >> setup.sh
 RUN echo 'export TRILINOS_DIR='$TRILINOS_DIR        >> setup.sh
 RUN env | grep PATH                                 >> setup.sh
 RUN echo 'apk add bash'                             >> setup.sh
@@ -72,9 +89,7 @@ RUN echo 'apk add bash-doc'                         >> setup.sh
 RUN cat setup.sh
 RUN cat setup.sh                                    >> /root/.profile
 
-
 #############################################################################
 #############################################################################
-
 
 CMD ["/bin/sh"]
