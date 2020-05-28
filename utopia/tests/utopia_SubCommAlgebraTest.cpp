@@ -2,14 +2,15 @@
 #include "utopia.hpp"
 #include "utopia_BlockQPSolver.hpp"
 #include "utopia_ParallelTestRunner.hpp"
+#include "utopia_RedundantQPSolver.hpp"
 #include "utopia_SemismoothNewton_old.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
-#include "utopia_petsc_Redundant.hpp"
-#include "utopia_petsc_RedundantQPSolver.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Redundant.hpp"
+#include "utopia_petsc_RedundantQPSolver.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 #endif  // WITH_PETSC
 

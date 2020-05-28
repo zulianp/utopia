@@ -254,6 +254,7 @@ namespace utopia {
         }
     };
 
+#ifdef WITH_PETSC
     static void unconstrained_opt() {
         int verbosity_level = 1;
         if (Utopia::instance().verbose()) {
@@ -261,15 +262,15 @@ namespace utopia {
         }
 
         if (mpi_world_size() == 1) {
-#ifdef WITH_PETSC
             UnconstrainedOptimizationBenchmark<PetscMatrix, PetscVector> bench1(10);
             bench1.set_verbosity_level(verbosity_level);
             bench1.run();
-#endif  // WITH_PETSC
+
         } else {
             std::cout << "unconstrained_opt, does not work in parallel. \n";
         }
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION_OPTIONAL(unconstrained_opt);
+#endif  // WITH_PETSC
 }  // namespace utopia

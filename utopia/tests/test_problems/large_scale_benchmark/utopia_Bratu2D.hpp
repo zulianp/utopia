@@ -3,7 +3,6 @@
 
 #include "utopia.hpp"
 #include "utopia_TestFunctions.hpp"
-#include "utopia_petsc_Layout.hpp"
 
 namespace utopia {
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
@@ -12,12 +11,12 @@ namespace utopia {
 
 #ifdef WITH_PETSC
 // #warning "this code should go in the petsc backend folder"
-
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
 #include <petscdmda.h>
 #include <petscmatlab.h>
 #include <petscsnes.h>
+#include "utopia_petsc_Layout.hpp"
 
 namespace utopia {
     using ParamsBratu2D = struct ParamsBratu2D;
