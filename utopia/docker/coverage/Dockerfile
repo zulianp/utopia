@@ -1,48 +1,9 @@
-FROM alpine:edge
+FROM zulianp/utopia-env-complete-edge:latest
 
-# Add testing repository
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing"     >> /etc/apk/repositories
+# Update to last version
+RUN cd /utopia_cloned/utopia && git pull
 
-RUN apk add --no-cache \
-    clang-dev curl build-base clang cmake git linux-headers m4 gdb bash \
-    valgrind-dev \
-    libexecinfo-dev \
-    openmpi openmpi-dev openssh  \
-    lapack-dev blas-dev \
-    libgfortran gfortran \
-    perl perl-io-gzip perl-json \
-    python2 \
-    nano
-
-
-RUN git clone https://github.com/linux-test-project/lcov.git /lcov_git
-RUN cd /lcov_git && make install
-RUN PATH=$PATH:/usr/local/bin/lcov
-
-###################################################################################################################
-###################################################################################################################
-
-# Clone code
-RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
-RUN cd /utopia_cloned && git checkout layout_primitive && git submodule update --init --recursive && git pull
-RUN cd /utopia_cloned && git pull
-
-###################################################################################################################
-###################################################################################################################
-
-# Compile petsc (dmplex dependencies do not compile, so we turn them off)
-RUN cd /utopia_cloned/utopia && mkdir bin && cd bin && cmake .. -DUTOPIA_ENABLE_PETSC_DM_PLEX=OFF
-
-# Compile petsc
-RUN cd /utopia_cloned/utopia/bin && make petsc
-ENV PETSC_DIR /utopia_cloned/utopia/external/petsc
-
-# Compile trilinos
-RUN cd /utopia_cloned/utopia/bin && make trilinos
-ENV TRILINOS_DIR /utopia_cloned/utopia/external/trilinos
-
-###################################################################################################################
-###################################################################################################################
+RUN rm -rf /utopia_cloned/utopia/bin_cov
 
 # Compile
 RUN cd /utopia_cloned/utopia && mkdir bin_cov
@@ -56,25 +17,10 @@ RUN cd /utopia_cloned/utopia/bin_cov && source coverage.sh
 # Running in parallel inside Docker
 RUN echo "For parallel runs use: mpirun --allow-run-as-root -n 2 ./utopia_test"
 
-###################################################################################################################
-###################################################################################################################
 
-ENV LD_LIBRARY_PATH=$PETSC_DIR/lib/:$TRILINOS_DIR/lib
-
-RUN echo 'export LD_LIBRARY_PATH='$LD_LIBRARY_PATH   > setup.sh
-RUN echo 'export PETSC_DIR='$PETSC_DIR              >> setup.sh
-RUN echo 'export TRILINOS_DIR='$TRILINOS_DIR        >> setup.sh
-RUN env | grep PATH                                 >> setup.sh
-RUN echo 'apk add bash'                             >> setup.sh
-RUN echo 'apk add bash-completion'                  >> setup.sh
-RUN echo 'apk add bash-doc'                         >> setup.sh
-
-RUN cat setup.sh
-RUN cat setup.sh                                    >> /root/.profile
-
-
-#############################################################################
-#############################################################################
-
+RUN cd /utopia_cloned/utopia/bin_cov &&  \
+    curl -s https://codecov.io/bash > .codecov && \
+    chmod +x .codecov && \
+    ./.codecov -f /utopia_cloned/utopia/bin_cov/filtered_cov.info -t c754a0a2-6280-4ce4-9756-b65d1f910144
 
 CMD ["/bin/sh"]
