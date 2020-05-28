@@ -184,6 +184,9 @@ namespace utopia {
 
     template <class T>
     class RangeDevice;
+
+    template <class M, class V>
+    class Redundant;
 }  // namespace utopia
 
 #endif  // UTOPIA_UTOPIA_FORWARD_DECLARATIONS_HPP

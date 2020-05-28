@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef WITH_PETSC
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
@@ -84,7 +84,6 @@ namespace utopia {
             Matrix H_working;
             Vector g_working, x_working;
 
-#ifdef WITH_PETSC
             Bratu2D<PetscMatrix, PetscVector> fun(n_);
             PetscVector x = fun.initial_guess();
             PetscMatrix H;
@@ -109,8 +108,6 @@ namespace utopia {
             } else {
                 qp_solver->solve(H_working, -1.0 * g_working, x_working);
             }
-
-#endif
         }
 
         void STCG_test() {
@@ -171,8 +168,6 @@ namespace utopia {
         }
 
         void Poisson_test() {
-// FIXME
-#ifdef WITH_PETSC
             Poisson3D<Matrix, Vector> fun(10);
 
             Vector b;
@@ -183,12 +178,7 @@ namespace utopia {
                 fun.describe();
             }
 
-#ifdef WITH_PETSC
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
-#else
-            // auto subproblem = std::make_shared<utopia::Lanczos<Matrix, Vector> >();
-            auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector>>();
-#endif
             // subproblem->pc_type("bjacobi");
             subproblem->atol(1e-14);
             subproblem->max_it(1000);
@@ -228,7 +218,6 @@ namespace utopia {
             if (output_vtk_) {
                 fun.output_to_VTK(x);
             }
-#endif  // WITH_PETSC
         }
 
         void TR_unconstrained() {
@@ -246,12 +235,7 @@ namespace utopia {
                 fun.describe();
             }
 
-#ifdef WITH_PETSC
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
-#else
-            auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
-#endif
-
             // #ifdef WITH_PETSC
             //     #ifdef WITH_SLEPC
             //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
@@ -403,8 +387,6 @@ namespace utopia {
         }
 
         void RMTR_unconstrained() {
-// FIXME
-#ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Bratu2D<Matrix, Vector>> multilevel_problem(2, n_levels_, n_);
 
             auto fun = multilevel_problem.get_functions().back();
@@ -415,11 +397,7 @@ namespace utopia {
                 fun_Bratu2D->describe();
             }
 
-#ifdef WITH_PETSC
             auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", true);
-#else
-            auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector>>();
-#endif
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector>>("sor");
 
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
@@ -444,11 +422,9 @@ namespace utopia {
             if (output_vtk_) {
                 fun_Bratu2D->output_to_VTK(x, "RMTR_output.vtk");
             }
-#endif  // WITH_PETSC
         }
 
         void RMTR_l2_linear() {
-#ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector>> multilevel_problem(3, n_levels_, n_);
 
             // auto fun = multilevel_problem.level_functions_[n_levels_-1];
@@ -486,11 +462,9 @@ namespace utopia {
             if (output_vtk_) {
                 fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");
             }
-#endif  // WITH_PETSC
         }
 
         void RMTR_inf_linear_unconstr() {
-#ifdef WITH_PETSC
             PetscMultilevelTestProblem<Matrix, Vector, Poisson3D<Matrix, Vector>> multilevel_problem(3, n_levels_, n_);
 
             auto funs = multilevel_problem.get_functions();
@@ -532,11 +506,9 @@ namespace utopia {
             if (output_vtk_) {
                 fun_Poisson3D->output_to_VTK(x, "RMTR__linear_output.vtk");
             }
-#endif  // WITH_PETSC
         }
 
         void TR_tril_test() {
-#ifdef WITH_PETSC
             Poisson3D<PetscMatrix, PetscVector> fun(50);
             PetscVector x = fun.initial_guess();
 
@@ -581,8 +553,6 @@ namespace utopia {
             tr_solver.solve(fun_QP_tril, x_tril);
 
 #endif  // WITH_TRILINOS
-
-#endif  // WITH_PETSC
         }
 
         template <class Matrix1, class Vector1, class Matrix2, class Vector2>
@@ -635,7 +605,6 @@ namespace utopia {
         void get_ML_problem(std::vector<std::shared_ptr<Transfer<Matrix1, Vector1>>> &transfers_tril,
                             std::vector<std::shared_ptr<ExtendedFunction<Matrix1, Vector1>>> &level_functions_tril,
                             Vector1 &x_fine) {
-#ifdef WITH_PETSC
             PetscMultilevelTestProblem<PetscMatrix, PetscVector, Poisson3D<PetscMatrix, PetscVector>>
                 multilevel_problem(3, n_levels_, n_);
 
@@ -673,8 +642,6 @@ namespace utopia {
                         copy_QPfun_to_tril<PetscMatrix, PetscVector, Matrix, Vector>(*fun_Laplace);
                 }
             }
-
-#endif  // WITH_PETSC
         }
 
         void RMTR_inf_test() {
@@ -882,7 +849,6 @@ namespace utopia {
     };
 
     void hck() {
-#ifdef WITH_PETSC
         auto n_levels = 2;
 
         auto coarse_dofs = 10;
@@ -894,10 +860,9 @@ namespace utopia {
 #ifdef WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 #endif
-#endif
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(hck);
 }  // namespace utopia
 
-#endif
+#endif  // WITH_PETSC

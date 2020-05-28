@@ -7,8 +7,11 @@
 #include "utopia_AbstractVector.hpp"
 #include "utopia_ObjectFactory.hpp"
 #include "utopia_make_unique.hpp"
+
+#ifdef WITH_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
+#endif  // WITH_PETSC
 
 namespace utopia {
 

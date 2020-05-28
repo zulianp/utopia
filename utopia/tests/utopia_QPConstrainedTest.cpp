@@ -27,9 +27,9 @@ namespace utopia {
             test_functions_[3] = std::make_shared<Poisson1D<Matrix, Vector> >(n_ * mpi_world_size(), 4);
 
             // // works only with  petsc
-            test_functions_[4] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_ * mpi_world_size(), 1);
-            test_functions_[5] = std::make_shared<Poisson2D<PetscMatrix, PetscVector> >(n_ * mpi_world_size(), 2);
-            test_functions_[6] = std::make_shared<Membrane2D<PetscMatrix, PetscVector> >(n_ * mpi_world_size());
+            test_functions_[4] = std::make_shared<Poisson2D<Matrix, Vector> >(n_ * mpi_world_size(), 1);
+            test_functions_[5] = std::make_shared<Poisson2D<Matrix, Vector> >(n_ * mpi_world_size(), 2);
+            test_functions_[6] = std::make_shared<Membrane2D<Matrix, Vector> >(n_ * mpi_world_size());
         }
 
         ~QPConstrainedBenchmark() override { test_functions_.clear(); }
@@ -67,6 +67,7 @@ namespace utopia {
             // );
 
             // works only for petsc
+#ifdef WITH_PETSC
             this->register_experiment("ProjectedTao_Test", [this]() {
                 auto lin_solver = std::make_shared<GMRES<Matrix, Vector> >();
                 TaoQPSolver<Matrix, Vector> solver(lin_solver);
@@ -75,6 +76,7 @@ namespace utopia {
 
                 run_test(this->test_functions_, solver, "ProjectedTao_Test", this->verbose_);
             });
+#endif  // WITH_PETSC
         }
 
     private:
@@ -169,6 +171,7 @@ namespace utopia {
     };
 
     static void qp_constrained() {
+#ifdef WITH_PETSC
         int verbosity_level = 1;
         const int n_global = 20;
         bool alg_verbose = false;
@@ -177,7 +180,6 @@ namespace utopia {
             verbosity_level = 2;
         }
 
-#ifdef WITH_PETSC
         QPConstrainedBenchmark<PetscMatrix, PetscVector> bench_petsc(n_global, alg_verbose);
         bench_petsc.set_verbosity_level(verbosity_level);
         bench_petsc.run();
