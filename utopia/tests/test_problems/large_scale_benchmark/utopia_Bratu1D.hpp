@@ -198,7 +198,7 @@ namespace utopia {
                 }
             }
 
-            auto n = size(M).get(0);
+            // auto n = size(M).get(0);
             // M *= 1./(h_*h_);
             M *= 1. / (h_);
         }

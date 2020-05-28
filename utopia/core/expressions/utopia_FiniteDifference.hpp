@@ -155,12 +155,9 @@ namespace utopia {
                 h_i.read_lock();
 
                 H *= 0.0;
-                Matrix H_copy = H;
-
-                Write<Matrix> w_H(H);
 
                 SizeType last_i = -1;
-                each_read(H_copy, [&](const SizeType &i, const SizeType &j, const Scalar &) {
+                H.transform_ijv([&](const SizeType &i, const SizeType &j, const Scalar &) {
                     if (last_i != i) {
                         {
                             // Scoped lock
@@ -182,7 +179,7 @@ namespace utopia {
                         last_i = i;
                     }
 
-                    H.set(i, j, h_i.get(j));
+                    return h_i.get(j);
                 });
 
                 h_i.read_unlock();
@@ -197,19 +194,18 @@ namespace utopia {
                 Vector ei(layout(x), 0.0);
                 Vector ej(layout(x), 0.0);
 
-                const Write<Matrix> wlock(H);
+                // const Write<Matrix> wlock(H);
 
                 const Scalar h2 = h * h;
 
-                const Range rr = row_range(H);
-                const Range cr = col_range(H);
+                // const Range rr = row_range(H);
+                // const Range cr = col_range(H);
                 const Range vr = range(x);
 
                 H *= 0.0;
-                Matrix H_copy = H;
 
                 SizeType last_i = -1;
-                each_read(H_copy, [&](const SizeType &i, const SizeType &j, const Scalar &) {
+                H.transform_ijv([&](const SizeType &i, const SizeType &j, const Scalar &) {
                     if (last_i != i) {
                         const Write<Vector> ewlock(ei);
                         if (i > 0 && vr.inside(i - 1)) ei.set(i - 1, 0);
@@ -230,7 +226,7 @@ namespace utopia {
                     fun.value(x - ei + ej, fmipj);
                     fun.value(x - ei - ej, fmimj);
 
-                    H.set(i, j, (fpipj - fpimj - fmipj + fmimj) / (4 * h2));
+                    return (fpipj - fpimj - fmipj + fmimj) / (4 * h2);
                 });
 
                 return true;

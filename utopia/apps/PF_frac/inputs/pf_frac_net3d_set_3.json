@@ -1,7 +1,7 @@
 {
     "app" : "petsc_isotropic_phase_field_3d",
-    "output-path" : "RMTR_3d_net",
-    "log_output_path": "RMTR_3d_net.csv",
+    "output-path" : "RMTR_net_set_3",
+    "log_output_path": "RMTR_net_set_3.csv",
     "nx" : 20,
     "ny" : 20,
     "nz" : 20,
@@ -15,8 +15,8 @@
     "with_damage" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
-    "num_time_steps" : 10,
-    "dt" : 0.1,
+    "num_time_steps" : 80,
+    "dt" : 10,
     "adjust_dt_on_failure": false,
     "shrinking_factor" : 0.5,
     "use_pressure": true,
@@ -42,12 +42,19 @@
         "post_smoothing_steps": 2,
         "grad_smoothess_termination" : 1e-6,
         "max_sucessful_smoothing_it": 1,
-        "max_QP_smoothing_it": 10,
+        "max_QP_smoothing_it": 40,
         "max_QP_coarse_it": 1000,
+	"n_coarse_sub_comm": 1,
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-9,
             "max-it": 1000
+        },
+	"fine-QPSolver" : {
+            "verbose" : false,
+            "check_s_norm_each" : 10,
+            "n_local_sweeps" : 3,
+            "stol" : 1e-8
         }
     }
 }

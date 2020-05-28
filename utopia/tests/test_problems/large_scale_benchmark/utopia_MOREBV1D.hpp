@@ -41,10 +41,11 @@ namespace utopia {
             auto n = size(x).get(0);
 
             {
-                auto d_x = const_device_view(x);
-                auto d_t = const_device_view(coords_);
+                auto d_x = const_view_device(x);
+                auto d_t = const_view_device(coords_);
+                auto A_help1_view = view_device(*A_help1_);
 
-                parallel_each_write(*A_help1_, UTOPIA_LAMBDA(const SizeType &i)->Scalar {
+                parallel_for(range_device(*A_help1_), UTOPIA_LAMBDA(const SizeType &i) {
                     Scalar xi = d_x.get(i);
                     Scalar ti = d_t.get(i);
                     Scalar element, item;
@@ -53,14 +54,16 @@ namespace utopia {
                         Scalar xi_p = d_x.get(i + 1);
                         element = xi + h_ + 1.0;
                         item = 2. * xi - xi_p + 0.5 * (h_ * h_ * std::pow(element, 3));
-                        return item * item;
+                        A_help1_view.set(i, item * item);
+                        return;
                     }
 
                     if (i == n - 1) {
                         Scalar xi_m = d_x.get(i - 1);
                         element = xi + ti + 1.0;
                         item = 2. * xi - xi_m + 0.5 * (h_ * h_ * std::pow(element, 3));
-                        return item * item;
+                        A_help1_view.set(i, item * item);
+                        return;
                     }
 
                     Scalar xi_m = d_x.get(i - 1);
@@ -68,7 +71,7 @@ namespace utopia {
                     element = xi + ti + 1.0;
                     item = 2. * xi - xi_m - xi_p + 0.5 * (h_ * h_ * std::pow(element, 3));
 
-                    return item * item;
+                    A_help1_view.set(i, item * item);
                 });
             }
 
@@ -84,6 +87,8 @@ namespace utopia {
                 g.set(0.0);
             }
 
+            // TODO(Alena) is there a way to make this work on GPU?
+            // parallelizing per row should be feasible
             auto n = size(x).get(0);
             {
                 Read<Vector> d_x(x);
@@ -144,10 +149,12 @@ namespace utopia {
 
                 Range r = row_range(H);
 
+                // TODO(Alena) is there a way to make this work on GPU? Preallocating the matrix structure and
+                // parallelizing per row should be feasible
                 for (SizeType i = r.begin(); i != r.end(); ++i) {
                     Scalar xi = x.get(i);
                     Scalar ti = coords_.get(i);
-                    Scalar element, item;
+                    Scalar element;
 
                     if (i == 0) {
                         Scalar xi_m = 0.0;
@@ -297,17 +304,19 @@ namespace utopia {
             init_memory();
 
             {
-                parallel_each_write(coords_, UTOPIA_LAMBDA(const SizeType i)->Scalar { return (h_ * i); });
+                auto coords_view = view_device(coords_);
+                parallel_for(range_device(coords_), UTOPIA_LAMBDA(const SizeType i) { coords_view.set(i, (h_ * i)); });
 
                 // see More, Garbbow, Hillstrom
-                parallel_each_write(x0_, UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                auto x0_view = view_device(x0_);
+                parallel_for(range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
                     Scalar xi = (h_ * i);
                     if (i == 0) {
-                        return 0.0;
+                        x0_view.set(i, 0.0);
                     } else if (i == n_ - 1) {
-                        return 0.0;
+                        x0_view.set(i, 0.0);
                     } else {
-                        return xi * (xi - 1.0);
+                        x0_view.set(i, xi * (xi - 1.0));
                     }
                 });
             }
@@ -340,7 +349,7 @@ namespace utopia {
             // }
 
             // this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound));
-        }
+        }  // namespace utopia
 
     private:
         Scalar a_, b_;
@@ -357,7 +366,7 @@ namespace utopia {
 
         std::unique_ptr<Vector> A_help1_;
         std::unique_ptr<Vector> A_help2_;
-    };
+    };  // namespace utopia
 
 }  // namespace utopia
 #endif

@@ -50,8 +50,10 @@ namespace utopia {
             const Read<Vector> read(point);
             const Write<Vector> write(gradient);
             const Range rr = range(point);
+            const SizeType r_begin = rr.begin();
+            const SizeType r_end = rr.end();
 
-            for (SizeType i = rr.begin(); i != rr.end(); i++) {
+            for (SizeType i = r_begin; i != r_end; i++) {
                 const auto x = point.get(i);
                 gradient.set(i, 2. * x + 20. * pi * sin(2. * pi * x));
             }
@@ -62,7 +64,7 @@ namespace utopia {
         bool hessian(const Vector &point, Matrix &hessian) const override {
             using std::cos;
 
-            const auto n = point.size();
+            // const auto n = point.size();
 
             if (empty(hessian)) {
                 hessian.sparse(square_matrix_layout(layout(point)), 1, 0.0);
@@ -72,8 +74,10 @@ namespace utopia {
             const Write<Matrix> write(hessian);
 
             Range rr = range(point);
+            const SizeType r_begin = rr.begin();
+            const SizeType r_end = rr.end();
 
-            for (SizeType i = rr.begin(); i != rr.end(); i++) {
+            for (SizeType i = r_begin; i != r_end; i++) {
                 const auto x = point.get(i);
                 hessian.set(i, i, 40 * pi * pi * cos(2. * pi * x) + 2);
             }

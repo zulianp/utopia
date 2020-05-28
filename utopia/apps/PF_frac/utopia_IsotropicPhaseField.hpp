@@ -24,10 +24,7 @@ namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
     class IsotropicPhaseFieldForBrittleFractures final
-        : public ExtendedFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-          public Configurable
-
-    {
+        : public ExtendedFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
@@ -261,8 +258,8 @@ namespace utopia {
                 Device::parallel_reduce(
                     space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i) {
-                        StaticMatrix<Scalar, Dim, Dim> strain_n;
-                        StaticMatrix<Scalar, Dim, Dim> strain_p;
+                        // StaticMatrix<Scalar, Dim, Dim> strain_n;
+                        // StaticMatrix<Scalar, Dim, Dim> strain_p;
 
                         CElem c_e;
                         C_view.elem(i, c_e);
@@ -375,7 +372,7 @@ namespace utopia {
             auto u_val = u_fun.value(q);
             auto differential = C.differential(q);
 
-            auto v_grad_shape = U.shape_grad(q);
+            // auto v_grad_shape = U.shape_grad(q);
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
@@ -400,7 +397,7 @@ namespace utopia {
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
 
-                auto v_grad_shape_view = v_grad_shape.view_device();
+                // auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
@@ -408,7 +405,7 @@ namespace utopia {
                 auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    StaticMatrix<Scalar, Dim, Dim> stress, strain_p;
+                    StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
                     StaticVector<Scalar, U_NDofs> u_el_vec;
                     StaticVector<Scalar, C_NDofs> c_el_vec;
 
@@ -420,7 +417,7 @@ namespace utopia {
                     UElem u_e;
                     U_view.elem(i, u_e);
                     auto el_strain = strain_view.make(u_e);
-                    auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                    // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
                     auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
                     ////////////////////////////////////////////
@@ -612,7 +609,7 @@ namespace utopia {
                 auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
+                    // StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
                     StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
                     StaticMatrix<Scalar, Dim, Dim> stress;
 
@@ -926,11 +923,12 @@ namespace utopia {
             {
                 auto d_x_old = const_device_view(x_old_);
 
-                parallel_transform(lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                auto lb_view = view_device(lb);
+                parallel_for(range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
-                        return d_x_old.get(i);
+                        lb_view.set(i, d_x_old.get(i));
                     } else {
-                        return -9e15;
+                        lb_view.set(i, -9e15);
                     }
                 });
             }
@@ -941,15 +939,12 @@ namespace utopia {
             {
                 auto d_x_old = const_device_view(x_old_);
 
-                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                auto g_view = view_device(g);
+                parallel_for(range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol) {
-                            return 0.0;
-                        } else {
-                            return xi;
+                            g_view.set(i, 0.0);
                         }
-                    } else {
-                        return xi;
                     }
                 });
             }
@@ -961,15 +956,12 @@ namespace utopia {
                 auto d_x_old = const_device_view(x_old_);
                 auto d_x = const_device_view(x);
 
-                parallel_transform(g, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                auto g_view = view_device(g);
+                parallel_for(range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol || d_x.get(i) > params_.crack_set_tol) {
-                            return 0.0;
-                        } else {
-                            return xi;
+                            g_view.set(i, 0.0);
                         }
-                    } else {
-                        return xi;
                     }
                 });
             }
@@ -980,27 +972,21 @@ namespace utopia {
             {
                 auto d_x_old = const_device_view(x_old_);
 
-                parallel_transform(val, UTOPIA_LAMBDA(const SizeType &i, const Scalar &vi)->Scalar {
+                auto val_view = view_device(val);
+                parallel_for(range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol) {
-                            return d_x_old.get(i);
-                        } else {
-                            return vi;
+                            val_view.set(i, d_x_old.get(i));
                         }
-                    } else {
-                        return vi;
                     }
                 });
 
-                parallel_transform(flg, UTOPIA_LAMBDA(const SizeType &i, const Scalar &fi)->Scalar {
+                auto flg_view = view_device(flg);
+                parallel_for(range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
                     if (i % (Dim + 1) == 0) {
                         if (d_x_old.get(i) > params_.crack_set_tol) {
-                            return 1.0;
-                        } else {
-                            return fi;
+                            flg_view.set(i, 1.0);
                         }
-                    } else {
-                        return fi;
                     }
                 });
             }

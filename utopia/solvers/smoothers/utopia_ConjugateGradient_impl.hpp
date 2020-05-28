@@ -243,7 +243,7 @@ namespace utopia {
             r_norm = norm2(r_new);
             UTOPIA_NO_ALLOC_END();
 
-            if (r_norm < this->atol()) {
+            if (r_norm <= this->atol()) {
                 if (this->verbose()) {
                     PrintInfo::print_iter_status(it, {r_norm});
                 }

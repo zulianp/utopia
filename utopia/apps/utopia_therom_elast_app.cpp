@@ -15,19 +15,19 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_WeakThermoElasticity.hpp"
-#include "utopia_petsc.hpp"
-#include "utopia_petsc_DirichletBoundaryConditions.hpp"
-#include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
+#include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_impl.hpp"
 
 #include <cmath>
 
@@ -63,25 +63,18 @@ namespace utopia {
     template <class FunctionSpace>
     static void thermo_elast(FunctionSpace &space, Input &in) {
         static const int Dim = FunctionSpace::Dim;
-        static const int NVars = FunctionSpace::Dim + 1;
+        // static const int NVars = FunctionSpace::Dim + 1;
 
         // expose inner types
-        using Comm = typename FunctionSpace::Comm;
-        using Mesh = typename FunctionSpace::Mesh;
-        using Elem = typename FunctionSpace::Shape;
-        using ElemView = typename FunctionSpace::ViewDevice::Elem;
-        using SizeType = typename FunctionSpace::SizeType;
-        using Scalar = typename FunctionSpace::Scalar;
-        using Dev = typename FunctionSpace::Device;
-        using Point = typename FunctionSpace::Point;
+        // using Elem = typename FunctionSpace::Shape;
+        // using SizeType = typename FunctionSpace::SizeType;
+        // using Dev = typename FunctionSpace::Device;
+        // using Point = typename FunctionSpace::Point;
 
-        using Subspace = typename FunctionSpace::template Subspace<1>;
-        using ElemViewScalar = typename Subspace::ViewDevice::Elem;
+        // using Subspace = typename FunctionSpace::template Subspace<1>;
+        // using ElemViewScalar = typename Subspace::ViewDevice::Elem;
 
-        static const int NNodes = Elem::NNodes;
-
-        using FEFunction = utopia::FEFunction<FunctionSpace>;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
+        // static const int NNodes = Elem::NNodes;
         using Model = utopia::WeakThermoElasticity<FunctionSpace>;
 
         MPITimeStatistics stats(space.comm());
@@ -158,10 +151,9 @@ namespace utopia {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
 
         FunctionSpace space;
         space.read(in);
@@ -175,10 +167,10 @@ namespace utopia {
         static const int Dim = 3;
         static const int NVars = Dim + 1;
 
-        using Mesh = utopia::PetscDM<Dim>;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = FunctionSpace::SizeType;
+        // using SizeType = FunctionSpace::SizeType;
 
         FunctionSpace space;
         space.read(in);

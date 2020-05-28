@@ -4,6 +4,9 @@
 #include "utopia_petsc_Types.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
+
 #include <mpi.h>
 #include <petsc/private/taoimpl.h>
 #include "petsctao.h"
@@ -219,12 +222,15 @@ namespace utopia {
             assert(ierr == 0);
             ierr = TaoSetType(tao, type_.c_str());
             assert(ierr == 0);
+
+            UTOPIA_UNUSED(ierr);
         }
 
         void set_from_options() {
             assert(initialized());
             auto ierr = TaoSetFromOptions(tao);
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
         }
 
         void destroy() {
@@ -272,6 +278,7 @@ namespace utopia {
 
             auto ierr = TaoSetVariableBounds(tao, raw_type(lb), raw_type(ub));
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
         }
 
         bool get_ksp(KSP *ksp) {
@@ -299,6 +306,7 @@ namespace utopia {
             assert(ierr == 0);
             ierr = TaoSetMaximumIterations(tao, maxits);
             assert(ierr == 0);
+            UTOPIA_UNUSED(ierr);
         }
 
         void set_monitor() {

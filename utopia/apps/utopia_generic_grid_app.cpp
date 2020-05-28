@@ -28,7 +28,7 @@ namespace utopia {
     template class PetscDMPlex<V, I>;
 
     // FIXME
-    void generic_grid_test(Input &in) {
+    void generic_grid_test(Input &) {
         // COMPILE-TIME BEGIN (everything is evaualted at compile time)
         constexpr StructuredGrid<V, I> g({10, 10}, {0, 0}, {10, 10}, {0, 0}, {10, 10}, VA({0.0, 0.0}), VA({1.0, 1.0}));
 
@@ -43,12 +43,12 @@ namespace utopia {
         // for some reaons clang is able to do this at compile time but not gcc
         /*constexpr*/ PetscScalar meas = g.measure();
         // COMPILE-TIME END
-        assert(device::approxeq(meas, 1.0, 1e-8));
+        utopia_test_assert(device::approxeq(meas, 1.0, 1e-8));
     }
 
     UTOPIA_REGISTER_APP(generic_grid_test);
 
-    void vec_grid_test(Input &in) {
+    void vec_grid_test(Input &) {
         // run-time sizes real data
         std::vector<PetscInt> zeros_v = {0, 0};
         std::vector<PetscInt> dims_v = {10, 10};
@@ -64,14 +64,14 @@ namespace utopia {
         StructuredGrid<VectorView<ArrayView<PetscScalar>>, ArrayView<PetscInt>> g(
             dims, zeros, dims, zeros, dims, box_min, box_max);
 
-        assert(g.dim() == 2);
-        assert(g.n_nodes() == 100);
-        assert(g.n_elements() == 81);
+        utopia_test_assert(g.dim() == 2);
+        utopia_test_assert(g.n_nodes() == 100);
+        utopia_test_assert(g.n_elements() == 81);
         PetscScalar meas = g.measure();
         bool is_b = g.is_node_on_boundary(0);
-        assert(is_b);
+        utopia_test_assert(is_b);
 
-        assert(device::approxeq(meas, 1.0, 1e-8));
+        utopia_test_assert(device::approxeq(meas, 1.0, 1e-8));
     }
 
     UTOPIA_REGISTER_APP(vec_grid_test);
@@ -99,7 +99,7 @@ namespace utopia {
         using Elem = FunctionSpace::Elem;
         using Quadrature = utopia::Quadrature<Elem, 2>;
         using Device = FunctionSpace::Device;
-        using Point = FunctionSpace::Point;
+        // using Point = FunctionSpace::Point;
         using Scalar = FunctionSpace::Scalar;
         using ElementMatrix = utopia::StaticMatrix<Scalar, 3 * NVar, 3 * NVar>;
         // using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
@@ -150,7 +150,7 @@ namespace utopia {
 
         Quadrature q;
         auto grad = space.shape_grad(q);
-        auto fun = space.shape(q);
+        // auto fun = space.shape(q);
         auto dx = space.differential(q);
 
         PetscMatrix H;
@@ -160,7 +160,7 @@ namespace utopia {
             auto space_view = space.view_device();
             auto H_view = space.assembly_view_device(H);
             auto grad_view = grad.view_device();
-            auto fun_view = fun.view_device();
+            // auto fun_view = fun.view_device();
             auto dx_view = dx.view_device();
 
             Device::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {

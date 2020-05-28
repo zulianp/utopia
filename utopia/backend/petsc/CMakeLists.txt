@@ -101,14 +101,14 @@ if(PETSC_FOUND)
     endforeach(MODULE)
 
     target_include_directories(utopia_petsc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    target_include_directories(utopia_petsc PUBLIC ${PETSC_INCLUDES})
+    target_include_directories(utopia_petsc SYSTEM PUBLIC ${PETSC_INCLUDES})
 
     target_link_libraries(utopia_petsc utopia_core utopia_utils utopia_solvers utopia_ui)
     target_link_libraries(utopia_petsc ${PETSC_LIBRARIES})
     add_definitions(${PETSC_DEFINITIONS})
 
     if(SLEPC_FOUND)
-        target_include_directories(utopia_petsc PUBLIC ${SLEPC_INCLUDES})
+        target_include_directories(utopia_petsc SYSTEM PUBLIC ${SLEPC_INCLUDES})
         target_link_libraries(utopia_petsc ${SLEPC_LIBRARIES})
         add_definitions(${SLEPC_LIB_SLEPC})
     endif()

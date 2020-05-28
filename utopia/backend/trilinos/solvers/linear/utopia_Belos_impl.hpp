@@ -74,7 +74,7 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     BelosSolver<Matrix, Vector, TRILINOS>::BelosSolver(const BelosSolver &other)
-        : impl_(utopia::make_unique<Impl>(*other.impl_)) {
+        : PreconditionedSolver(other), impl_(utopia::make_unique<Impl>(*other.impl_)) {
         // FIXME
     }
 
@@ -120,7 +120,8 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &precond) {
+    void BelosSolver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &) {
+        assert(false && "IMPLEMENT ME");
         set_preconditioner();  //(A) //FIXME
     }
 
@@ -249,7 +250,9 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
-    bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A) {
+    bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem(Matrix &) {
+        std::cerr << "[Warning] matrix parameter ignored" << std::endl;
+
         impl_->linear_problem->setProblem();
         auto sol_type = impl_->param_list->get("Solver Type", "CG");
         auto belos_params = Teuchos::sublist(impl_->param_list, sol_type, false);

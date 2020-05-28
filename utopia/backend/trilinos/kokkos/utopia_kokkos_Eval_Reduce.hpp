@@ -30,7 +30,7 @@ namespace utopia {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
 
-        inline static Scalar eval(const Vector &vec, const Op op, const Scalar &initial_value) {
+        inline static Scalar eval(const Vector &vec, const Op &, const Scalar &initial_value) {
             using ExecutionSpaceT = typename Vector::ExecutionSpace;
             using Scalar = typename Vector::Scalar;
             using Data = decltype(vec.raw_type()->template getLocalView<ExecutionSpaceT>());

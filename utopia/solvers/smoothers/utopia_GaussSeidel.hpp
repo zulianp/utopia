@@ -209,9 +209,9 @@ namespace utopia {
             d = diag(A);
 
             if (l1_) {
-                Write<Vector> w(d);
-                each_read(A, [this](const SizeType &i, const SizeType & /*j*/, const Scalar &value) {
-                    d.add(i, std::abs(value));
+                auto d_view = view_device(d);
+                A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType & /*j*/, const Scalar &value) {
+                    d_view.atomic_add(i, device::abs(value));
                 });
             }
 

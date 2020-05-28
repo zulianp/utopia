@@ -44,10 +44,10 @@ namespace utopia {
 
     public:
         void init_memory(const std::vector<Layout> &layouts) {
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
             help_.resize(n_levels);
 
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 help_[l].zeros(layouts[l]);
             }
 
@@ -88,16 +88,20 @@ namespace utopia {
             utopia_assert_equal(x.size(), ub.size());
 
             {
-                auto d_lb = const_device_view(lb);
-                auto d_ub = const_device_view(ub);
+                auto d_lb = const_local_view_device(lb);
+                auto d_ub = const_local_view_device(ub);
+                auto x_view = local_view_device(x);
 
-                parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
                     Scalar li = d_lb.get(i);
                     Scalar ui = d_ub.get(i);
+
+                    auto xi = x_view.get(i);
+
                     if (li >= xi) {
-                        return li;
+                        x_view.set(i, li);
                     } else {
-                        return (ui <= xi) ? ui : xi;
+                        x_view.set(i, (ui <= xi) ? ui : xi);
                     }
                 });
             }

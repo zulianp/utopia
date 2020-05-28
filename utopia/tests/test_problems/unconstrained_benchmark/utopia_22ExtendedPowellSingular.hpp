@@ -25,20 +25,21 @@ namespace utopia {
             x_init_.zeros(v_layout);
 
             {
-                const Write<Vector> write1(x_init_);
+                auto x_view = view_device(x_init_);
 
-                each_write(x_init_, [](const SizeType i) -> double {
-                    SizeType m = (i + 1) % 4;
+                parallel_for(range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) {
+                    const SizeType m = (i + 1) % 4;
+                    Scalar v = 1.0;
 
                     if (m == 1) {
-                        return 3.0;
+                        v = 3.0;
                     } else if (m == 2) {
-                        return -1.0;
+                        v = -1.0;
                     } else if (m == 3) {
-                        return 0.0;
-                    } else {
-                        return 1.0;
+                        v = 0.0;
                     }
+
+                    x_view.set(i, v);
                 });
             }
         }
@@ -209,7 +210,8 @@ namespace utopia {
 
             H.sparse(square_matrix_layout(layout(x)), 3, 3);
 
-            Scalar xjp1, xjp2, xjp3, f1, f2, f3, f4, f43, f33;
+            // Scalar xjp1, xjp2, xjp3, f1, f2, f3, f4, f33, f43;
+            Scalar xjp1, xjp2, xjp3, f3, f4;
             Scalar df1dxj, df1dxjp1, df2dxjp3, df2dxjp2, df3dxjp1, df3dxjp2, df4dxj, df4dxjp3;
 
             {
@@ -232,16 +234,16 @@ namespace utopia {
                     else
                         xjp3 = 0.0;
 
-                    f1 = x.get(j - 1) + (10.0 * xjp1);
+                    // f1 = x.get(j - 1) + (10.0 * xjp1);
                     df1dxj = 1.0;
                     df1dxjp1 = 10.0;
 
                     if (j + 1 <= n) {
-                        f2 = xjp2 - xjp3;
+                        // f2 = xjp2 - xjp3;
                         df2dxjp2 = 1.0;
                         df2dxjp3 = -1.0;
                     } else {
-                        f2 = 0.0;
+                        // f2 = 0.0;
                         df2dxjp2 = 0.0;
                         df2dxjp3 = 0.0;
                     }
@@ -266,8 +268,8 @@ namespace utopia {
                         df4dxjp3 = 0.0;
                     }
 
-                    f43 = f4 * f4 * f4;
-                    f33 = f3 * f3 * f3;
+                    // f43 = f4 * f4 * f4;
+                    // f33 = f3 * f3 * f3;
 
                     H.set(j - 1, j - 1, (2.0 * df1dxj * df1dxj) + (120.0 * f4 * f4 * df4dxj * df4dxj));
 

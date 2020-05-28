@@ -5,7 +5,7 @@
 #ifndef UTOPIA_UTOPIA_EVAL_REDUCE_HPP
 #define UTOPIA_UTOPIA_EVAL_REDUCE_HPP
 
-#include "utopia_Each.hpp"
+//#include "utopia_Each.hpp"
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_Operations.hpp"
 #include "utopia_Operators.hpp"
@@ -171,24 +171,20 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
 
         inline static SizeType apply(const Expr &expr) {
-            const auto &op = expr.operation().is_non_zero();
             SizeType result = 0;
             UTOPIA_TRACE_BEGIN(expr);
 
+            const Scalar tol = expr.operation().is_non_zero().tol();
+
             const auto &mat = expr.expr().derived();
-
-            each_read(mat, [&result, &op](const SizeType i, const SizeType j, const Scalar value) {
-                UTOPIA_UNUSED(i);
-                UTOPIA_UNUSED(j);
-
-                result += op.apply(value);
-            });
-
-            const auto &comm = mat.comm();
-
-            Vector v(layout(comm, 1, comm.size()), result);
-            // Vector v = local_values(1, result);
-            result = sum(v);
+            mat.map_reduce(
+                // map
+                UTOPIA_LAMBDA(const Scalar &x)->SizeType { return static_cast<SizeType>(x > tol); },
+                // reduce
+                UTOPIA_LAMBDA(const SizeType &left, const SizeType &right)->SizeType { return left + right; },
+                // mpi operation
+                Plus(),
+                result);
 
             UTOPIA_TRACE_END(expr);
             return result;

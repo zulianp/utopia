@@ -59,6 +59,7 @@ namespace utopia {
         using MatrixLayout = typename Traits<BlasMatrix>::MatrixLayout;
 
         using Constructible = utopia::Constructible<T, std::size_t, 2>;
+        using Constructible::dense_identity;
         using Constructible::sparse;
 
         ////////////////////////////////////////////////////////////////////
@@ -883,6 +884,56 @@ namespace utopia {
             }
         }
 
+        template <class F>
+        void read(const F f) const {
+            const SizeType nr = rows();
+            const SizeType nc = cols();
+
+            SizeType idx = 0;
+            for (SizeType j = 0; j < nc; ++j) {
+                for (SizeType i = 0; i < nr; ++i) {
+                    f(i, j, entries_[idx++]);
+                }
+            }
+        }
+
+        template <class F>
+        void transform_values(const F f) {
+            for (auto &e : entries_) {
+                e = f(e);
+            }
+        }
+
+        template <class F>
+        void transform_ijv(const F f) {
+            const SizeType nr = rows();
+            const SizeType nc = cols();
+
+            SizeType idx = 0;
+            for (SizeType j = 0; j < nc; ++j) {
+                for (SizeType i = 0; i < nr; ++i, ++idx) {
+                    entries_[idx] = f(i, j, entries_[idx]);
+                }
+            }
+        }
+
+        // template <class Op, class MPIOp>
+        // Scalar parallel_reduce_values(const Op &op, const MPIOp &, const Scalar initial_value) const {
+        //     Scalar ret = initial_value;
+        //     for (const auto &e : entries_) {
+        //         ret = op.apply(ret, e);
+        //     }
+
+        //     return ret;
+        // }
+
+        template <class Map, class Reduce, class MPIOp, typename Accumulator>
+        void map_reduce(const Map &map, const Reduce &reduce, const MPIOp &, Accumulator &accumulator) const {
+            for (const auto &e : entries_) {
+                accumulator = reduce(accumulator, map(e));
+            }
+        }
+
     private:
         Entries entries_;
         SizeType rows_{0};
@@ -906,7 +957,7 @@ namespace utopia {
         inline T &ref(const SizeType i, const SizeType j) { return at(idx(i, j)); }
 
         inline SizeType idx(const SizeType i, const SizeType j) const { return i + rows() * j; }
-    };
+    };  // namespace utopia
 
 }  // namespace utopia
 

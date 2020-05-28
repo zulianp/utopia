@@ -204,16 +204,16 @@ namespace utopia {
 #define UTOPIA_FACTORY_REGISTER_VECTOR(macro_Vector_)                          \
     static int UTOPIA_DEFINE_FACTORY_VAR(macro_Vector_) =                      \
         utopia::AlgebraFactory<typename utopia::Traits<macro_Vector_>::Scalar, \
-                               typename utopia::Traits<macro_Vector_>::SizeType>::register_vector<macro_Vector_>();
+                               typename utopia::Traits<macro_Vector_>::SizeType>::register_vector<macro_Vector_>()
 
 #define UTOPIA_FACTORY_REGISTER_MATRIX(macro_Matrix_)                          \
     static int UTOPIA_DEFINE_FACTORY_VAR(macro_Matrix_) =                      \
         utopia::AlgebraFactory<typename utopia::Traits<macro_Matrix_>::Scalar, \
-                               typename utopia::Traits<macro_Matrix_>::SizeType>::register_matrix<macro_Matrix_>();
+                               typename utopia::Traits<macro_Matrix_>::SizeType>::register_matrix<macro_Matrix_>()
 
 #define UTOPIA_FACTORY_REGISTER_LINEAR_SOLVER(macro_LinearSolver_)                      \
     static int UTOPIA_DEFINE_FACTORY_VAR(macro_LinearSolver_) = utopia::AlgebraFactory< \
         typename utopia::Traits<macro_LinearSolver_>::Scalar,                           \
-        typename utopia::Traits<macro_LinearSolver_>::SizeType>::register_linear_solver<macro_LinearSolver_>();
+        typename utopia::Traits<macro_LinearSolver_>::SizeType>::register_linear_solver<macro_LinearSolver_>()
 
 #endif  // UTOPIA_OBJECT_FACTORY_HPP

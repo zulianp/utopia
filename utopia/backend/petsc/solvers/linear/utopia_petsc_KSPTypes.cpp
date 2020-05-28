@@ -17,7 +17,11 @@ namespace utopia {
                   // #endif
                   KSPCGNE,
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 8, 0)
-                  KSPCGNASH, KSPCGSTCG, KSPCGGLTR, KSPFETIDP, KSPPIPEBCGS,
+                  KSPFETIDP, KSPPIPEBCGS,
+#endif
+        // Seriously??
+#if (UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 8, 0) && UTOPIA_PETSC_VERSION_LESS_THAN(3, 12, 0))
+                  KSPCGNASH, KSPCGSTCG, KSPCGGLTR,
 #else
                   KSPSTCG, KSPGLTR, KSPNASH,
 #endif

@@ -29,13 +29,13 @@ namespace utopia {
 
             UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
             UTOPIA_RUN_TEST(Quasi_TR_MPRGP);
-            UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+            // UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
 
-            UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
+            // UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test);
             UTOPIA_RUN_TEST(QuasiNewtonBoundTest);
             UTOPIA_RUN_TEST(Quasi_TR_MPRGP);
-            UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-            UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+            // UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+            // UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
             UTOPIA_RUN_TEST(MPRGP_test);
         }
 
@@ -177,84 +177,84 @@ namespace utopia {
             nlsolver.solve(fun2, x2);
         }
 
-        void TR_constraint_GCP_test() {
-            auto &&comm = Comm::get_default();
+        // void TR_constraint_GCP_test() {
+        //     auto &&comm = Comm::get_default();
 
-            Bratu1D<Matrix, Vector> fun(_n);
-            Vector x(layout(comm, Traits::decide(), _n), 1.0);
-            fun.apply_bc_to_initial_guess(x);
+        //     Bratu1D<Matrix, Vector> fun(_n);
+        //     Vector x(layout(comm, Traits::decide(), _n), 1.0);
+        //     fun.apply_bc_to_initial_guess(x);
 
-            Vector ub, lb;
-            fun.generate_constraints(lb, ub);
-            auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-            auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+        //     Vector ub, lb;
+        //     fun.generate_constraints(lb, ub);
+        //     auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+        //     auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 
-            TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
-            tr_solver.set_box_constraints(box);
-            tr_solver.atol(1e-6);
-            tr_solver.rtol(1e-10);
-            tr_solver.stol(1e-10);
-            tr_solver.max_it(1000);
-            tr_solver.verbose(_verbose);
-            tr_solver.solve(fun, x);
-        }
+        //     TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
+        //     tr_solver.set_box_constraints(box);
+        //     tr_solver.atol(1e-6);
+        //     tr_solver.rtol(1e-10);
+        //     tr_solver.stol(1e-10);
+        //     tr_solver.max_it(1000);
+        //     tr_solver.verbose(_verbose);
+        //     tr_solver.solve(fun, x);
+        // }
 
-        void QuasiTR_constraint_GCP_test() {
-            auto &&comm = Comm::get_default();
+        // void QuasiTR_constraint_GCP_test() {
+        //     auto &&comm = Comm::get_default();
 
-            Bratu1D<Matrix, Vector> fun(_n);
-            Vector x(layout(comm, Traits::decide(), _n), 1.0);
-            fun.apply_bc_to_initial_guess(x);
+        //     Bratu1D<Matrix, Vector> fun(_n);
+        //     Vector x(layout(comm, Traits::decide(), _n), 1.0);
+        //     fun.apply_bc_to_initial_guess(x);
 
-            Vector lb(layout(x), -0.01);
-            Vector ub(layout(x), 0.01);
-            auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+        //     Vector lb(layout(x), -0.01);
+        //     Vector ub(layout(x), 0.01);
+        //     auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-            SizeType memory_size = 5;
-            auto hess_approx = std::make_shared<ApproxType>(memory_size);
-            auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
-            // auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
-            // qp_solver->memory_size(10);
+        //     SizeType memory_size = 5;
+        //     auto hess_approx = std::make_shared<ApproxType>(memory_size);
+        //     auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+        //     // auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+        //     // qp_solver->memory_size(10);
 
-            QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, qp_solver);
-            tr_solver.set_box_constraints(box);
-            tr_solver.atol(1e-6);
-            tr_solver.rtol(1e-10);
-            tr_solver.stol(1e-10);
-            tr_solver.verbose(_verbose);
-            tr_solver.max_it(1000);
-            tr_solver.delta0(1);
-            tr_solver.solve(fun, x);
-        }
+        //     QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, qp_solver);
+        //     tr_solver.set_box_constraints(box);
+        //     tr_solver.atol(1e-6);
+        //     tr_solver.rtol(1e-10);
+        //     tr_solver.stol(1e-10);
+        //     tr_solver.verbose(_verbose);
+        //     tr_solver.max_it(1000);
+        //     tr_solver.delta0(1);
+        //     tr_solver.solve(fun, x);
+        // }
 
-        void Gradient_projection_active_set_test() {
-            auto &&comm = Comm::get_default();
+        // void Gradient_projection_active_set_test() {
+        //     auto &&comm = Comm::get_default();
 
-            Bratu1D<Matrix, Vector> fun(_n);
-            Vector x(layout(comm, Traits::decide(), _n), 0.0);
-            fun.apply_bc_to_initial_guess(x);
+        //     Bratu1D<Matrix, Vector> fun(_n);
+        //     Vector x(layout(comm, Traits::decide(), _n), 0.0);
+        //     fun.apply_bc_to_initial_guess(x);
 
-            Vector lb(layout(x), -0.01);
-            Vector ub(layout(x), 0.01);
-            auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+        //     Vector lb(layout(x), -0.01);
+        //     Vector ub(layout(x), 0.01);
+        //     auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-            auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
-            qp_solver->verbose(false);
-            qp_solver->atol(1e-12);
+        //     auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+        //     qp_solver->verbose(false);
+        //     qp_solver->atol(1e-12);
 
-            auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
-            qp_solver->set_linear_solver(lsolver);
+        //     auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
+        //     qp_solver->set_linear_solver(lsolver);
 
-            TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
-            tr_solver.set_box_constraints(box);
-            tr_solver.atol(1e-6);
-            tr_solver.rtol(1e-10);
-            tr_solver.stol(1e-10);
-            tr_solver.verbose(_verbose);
-            tr_solver.max_it(1000);
-            tr_solver.delta0(1);
-            tr_solver.solve(fun, x);
-        }
+        //     TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
+        //     tr_solver.set_box_constraints(box);
+        //     tr_solver.atol(1e-6);
+        //     tr_solver.rtol(1e-10);
+        //     tr_solver.stol(1e-10);
+        //     tr_solver.verbose(_verbose);
+        //     tr_solver.max_it(1000);
+        //     tr_solver.delta0(1);
+        //     tr_solver.solve(fun, x);
+        // }
 
         void MPRGP_test() {
             auto &&comm = Comm::get_default();
@@ -283,35 +283,35 @@ namespace utopia {
             tr_solver.solve(fun, x);
         }
 
-        void Quasi_TR_Gradient_projection_active_set_test() {
-            auto &&comm = Comm::get_default();
+        // void Quasi_TR_Gradient_projection_active_set_test() {
+        //     auto &&comm = Comm::get_default();
 
-            SizeType memory_size = 5;
+        //     SizeType memory_size = 5;
 
-            Bratu1D<Matrix, Vector> fun(_n);
-            Vector x(layout(comm, Traits::decide(), _n), 0.0);
-            fun.apply_bc_to_initial_guess(x);
+        //     Bratu1D<Matrix, Vector> fun(_n);
+        //     Vector x(layout(comm, Traits::decide(), _n), 0.0);
+        //     fun.apply_bc_to_initial_guess(x);
 
-            Vector lb(layout(x), -0.01);
-            Vector ub(layout(x), 0.01);
-            auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+        //     Vector lb(layout(x), -0.01);
+        //     Vector ub(layout(x), 0.01);
+        //     auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-            auto hess_approx = std::make_shared<ApproxType>(memory_size);
-            auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+        //     auto hess_approx = std::make_shared<ApproxType>(memory_size);
+        //     auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
 
-            auto precond = hess_approx->build_Hinv_precond();
-            qp_solver->set_preconditioner(precond);
+        //     auto precond = hess_approx->build_Hinv_precond();
+        //     qp_solver->set_preconditioner(precond);
 
-            QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, qp_solver);
-            tr_solver.set_box_constraints(box);
-            tr_solver.atol(1e-6);
-            tr_solver.rtol(1e-10);
-            tr_solver.stol(1e-10);
-            tr_solver.verbose(_verbose);
-            tr_solver.max_it(1000);
-            tr_solver.delta0(1);
-            tr_solver.solve(fun, x);
-        }
+        //     QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, qp_solver);
+        //     tr_solver.set_box_constraints(box);
+        //     tr_solver.atol(1e-6);
+        //     tr_solver.rtol(1e-10);
+        //     tr_solver.stol(1e-10);
+        //     tr_solver.verbose(_verbose);
+        //     tr_solver.max_it(1000);
+        //     tr_solver.delta0(1);
+        //     tr_solver.solve(fun, x);
+        // }
 
         void Quasi_TR_MPRGP() {
             auto &&comm = Comm::get_default();

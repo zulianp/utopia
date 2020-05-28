@@ -432,7 +432,7 @@ namespace utopia {
         }
 
         void form_lb2(Vector &lb) {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array_marker;
 
             DMDAGetInfo(da_,
@@ -477,7 +477,7 @@ namespace utopia {
         }
 
         void form_BC_marker(Vector &bc_marker, Vector &bc_values) {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, /*k,*/ mx, my, xm, ym, xs, ys;
             PetscScalar **array_marker;
             PetscScalar **array_values;
 
@@ -527,7 +527,7 @@ namespace utopia {
         }
 
         void build_init_guess() {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, /*k,*/ mx, my, xm, ym, xs, ys;
             PetscScalar **array;
 
             DMDAGetInfo(da_,
@@ -576,7 +576,7 @@ namespace utopia {
         }
 
         void build_rhs() {
-            PetscInt d, dof, i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt /*d, dof,*/ i, j, /*k,*/ mx, my, xm, ym, xs, ys;
             PetscScalar **array;
             PetscScalar Hx, Hy;
 
@@ -636,7 +636,7 @@ namespace utopia {
         }
 
         void remove_BC_contrib(Vector &x) const {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, /*k,*/ mx, my, xm, ym, xs, ys;
             PetscScalar **array;
 
             DMDAGetInfo(da_,

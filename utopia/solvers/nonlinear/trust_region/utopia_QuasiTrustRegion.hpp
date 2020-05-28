@@ -19,6 +19,8 @@ namespace utopia {
         using NonLinearSolver = utopia::QuasiNewtonBase<Vector>;
 
     public:
+        using utopia::QuasiNewtonBase<Vector>::init_memory;
+
         QuasiTrustRegion(const std::shared_ptr<HessianApproximation> &hessian_approx,
                          const std::shared_ptr<TRSubproblem> &tr_subproblem)
             : NonLinearSolver(hessian_approx, tr_subproblem), initialized_(false) {}
@@ -49,7 +51,11 @@ namespace utopia {
             bool converged = false;
             NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-            Scalar delta, product, ared, pred, rho, E_taken, E_old, E_new;  // alpha;
+            Scalar delta, ared, pred, rho, E_taken, E_old, E_new;  // alpha;
+
+#ifdef DEBUG_mode
+            Scalar product;
+#endif
 
             SizeType it = 0;
             SizeType it_successful = 0;
@@ -133,7 +139,10 @@ namespace utopia {
 
                 // value of the objective function with correction
                 fun.value(x_trial, E_new);
+
+#ifdef DEBUG_mode
                 product = dot(g, p_k);  // just to do tests
+#endif
 
                 // decrease ratio
                 ared = E_old - E_new;  // reduction observed on objective function

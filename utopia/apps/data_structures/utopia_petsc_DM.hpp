@@ -74,23 +74,29 @@ namespace utopia {
 
         void create_local_vector(PetscVector &vec) const {
             UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::create_local_vector(...)");
+            //////////////////////////////////////////////
 
             vec.destroy();
-            auto err = DMCreateLocalVector(raw_type(), &vec.raw_type());
-            assert(err == 0);
-            UTOPIA_REPORT_ALLOC("PetscDMbase::create_local_vector");
+            auto ierr = DMCreateLocalVector(raw_type(), &vec.raw_type());
+            assert(ierr == 0);
 
+            //////////////////////////////////////////////
+            UTOPIA_UNUSED(ierr);
+            UTOPIA_REPORT_ALLOC("PetscDMbase::create_local_vector");
             UTOPIA_TRACE_REGION_END("PetscDMbase::create_local_vector(...)");
         }
 
         void create_interpolation(const PetscDMBase &target, PetscMatrix &I) const {
             UTOPIA_TRACE_REGION_BEGIN("PetscDMbase::create_interpolation(...)");
+            //////////////////////////////////////////////
 
             I.destroy();
             auto ierr = DMCreateInterpolation(raw_type(), target.raw_type(), &I.raw_type(), nullptr);
             assert(ierr == 0);
-            UTOPIA_REPORT_ALLOC("PetscDMbase::create_local_vector");
 
+            //////////////////////////////////////////////
+            UTOPIA_UNUSED(ierr);
+            UTOPIA_REPORT_ALLOC("PetscDMbase::create_local_vector");
             UTOPIA_TRACE_REGION_END("PetscDMbase::create_interpolation(...)");
         }
 

@@ -30,7 +30,7 @@ namespace utopia {
 
     public:
         void init_memory(const std::vector<Layout> &layouts) {
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
 
             x.resize(n_levels);
             x_0.resize(n_levels);
@@ -43,7 +43,7 @@ namespace utopia {
             energy.resize(n_levels);
             gnorm.resize(n_levels);
 
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 x[l].zeros(layouts[l]);
                 x_0[l].zeros(layouts[l]);
                 s[l].zeros(layouts[l]);
@@ -65,11 +65,11 @@ namespace utopia {
     public:
         void init_memory(const std::vector<Layout> &layouts) {
             const Scalar inf = std::numeric_limits<Scalar>::infinity();
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
             active_lower.resize(n_levels);
             active_upper.resize(n_levels);
 
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 active_lower[l].values(layouts[l], -inf);
                 active_upper[l].values(layouts[l], inf);
             }

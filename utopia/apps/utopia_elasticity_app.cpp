@@ -10,26 +10,27 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LaplacianView.hpp"
+#include "utopia_LinearElasticityFE.hpp"
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PhaseField.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
+#include "utopia_app_utils.hpp"
+
+// petsc
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
+#include "utopia_petsc_FE.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 
-#include "utopia_LinearElasticityFE.hpp"
-
-#include "utopia_app_utils.hpp"
-
+// std
 #include <cmath>
 
 namespace utopia {
@@ -38,7 +39,7 @@ namespace utopia {
     using MeshType = utopia::PetscDMDA<StaticVector<PetscScalar, Dim>, ArrayView<PetscInt, Dim>>;
 
     // template<int Dim>
-    // using MeshType = utopia::PetscDM<Dim>;
+    // using MeshType = utopia::PetscStructuredGrid<Dim>;
 
     static void elast_mg_2(Input &in) {
         static const int Dim = 2;
@@ -100,19 +101,19 @@ namespace utopia {
     template <class FunctionSpace>
     static void linear_elasticity(FunctionSpace &space, Input &in) {
         using Elem = typename FunctionSpace::Elem;
-        using Dev = typename FunctionSpace::Device;
+        // using Dev = typename FunctionSpace::Device;
         using Vector = typename FunctionSpace::Vector;
         using Matrix = typename FunctionSpace::Matrix;
         using Comm = typename FunctionSpace::Comm;
 
-        static const int Dim = Elem::Dim;
-        static const int NFunctions = Elem::NFunctions;
+        // static const int Dim = Elem::Dim;
+        // static const int NFunctions = Elem::NFunctions;
 
         using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
         using Quadrature = utopia::Quadrature<Elem, 2>;
-        using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
+        // using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
 
         bool use_direct_solver = false;
         bool debug_matrices = false;
@@ -130,7 +131,7 @@ namespace utopia {
         stats.start();
 
         Quadrature quadrature;
-        auto &&space_view = space.view_device();
+        // auto &&space_view = space.view_device();
 
         //////////////////////////////////////////////////////////////////
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("before-create-vector");
@@ -246,7 +247,7 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
 
@@ -269,7 +270,7 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("start");
 
@@ -296,7 +297,7 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using SizeType = Mesh::SizeType;
+        // using SizeType = Mesh::SizeType;
         using Scalar = Mesh::Scalar;
         using Point = Mesh::Point;
 
@@ -370,12 +371,12 @@ namespace utopia {
         using Mesh = utopia::MeshType<Dim>;
         using Elem = utopia::PetscUniformHex8;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        using ElemView = FunctionSpace::ViewDevice::Elem;
-        using SizeType = Mesh::SizeType;
-        using Scalar = Mesh::Scalar;
-        using Quadrature = utopia::Quadrature<Elem, 2>;
-        using Dev = FunctionSpace::Device;
-        using VectorD = utopia::StaticVector<Scalar, Dim>;
+        // using ElemView = FunctionSpace::ViewDevice::Elem;
+        // using SizeType = Mesh::SizeType;
+        // using Scalar = Mesh::Scalar;
+        // using Quadrature = utopia::Quadrature<Elem, 2>;
+        // using Dev = FunctionSpace::Device;
+        // using VectorD = utopia::StaticVector<Scalar, Dim>;
 
         FunctionSpace space;
         space.read(in);

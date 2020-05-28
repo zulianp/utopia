@@ -27,6 +27,7 @@
 #cmakedefine WITH_JSON
 #cmakedefine WITH_M3ELINSOL
 #cmakedefine WITH_CPP14
+#cmakedefine WITH_CODE_COVERAGE
 #cmakedefine UTOPIA_DEPRECATED_API
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR

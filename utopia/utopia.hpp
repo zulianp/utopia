@@ -285,6 +285,7 @@ minimal compilable and runnable example.
 
 #ifdef WITH_PETSC
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_impl.hpp"
 #endif  // WITH_PETSC
 
 #ifdef WITH_CUDA

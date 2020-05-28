@@ -18,7 +18,8 @@ namespace utopia {
     // FIXME copy constructor creates weird behaviour
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
-        : Super(other),
+        : VariableBoundSolverInterface<Vector>(other),
+          Super(other),
           use_line_search_(other.use_line_search_),
           use_symmetric_sweep_(other.use_symmetric_sweep_),
           l1_(other.l1_),

@@ -25,7 +25,8 @@ namespace utopia {
             std::vector<bool> is_zero_row(n, true);
             const std::size_t r_begin = row_range(A).begin();
 
-            each_read(A, [&is_zero_row, r_begin, tol](const SizeType i, const SizeType, const double val) {
+            // FIXME not portable
+            A.read([&is_zero_row, r_begin, tol](const SizeType i, const SizeType, const Scalar val) {
                 if (device::abs(val) > tol) {
                     is_zero_row[i - r_begin] = false;
                 }

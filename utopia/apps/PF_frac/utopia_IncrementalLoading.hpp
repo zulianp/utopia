@@ -23,7 +23,6 @@
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MPRGP.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_QuasiNewtonBound.hpp"
@@ -31,10 +30,12 @@
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
+
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -276,9 +277,7 @@ namespace utopia {
         }
 
     public:  // made public because of nvcc
-        void set_nonzero_elem_to(Vector &v, const Scalar &val) {
-            parallel_transform(v, UTOPIA_LAMBDA(const SizeType &i, const Scalar &vi)->Scalar { return vi + val; });
-        }
+        void set_nonzero_elem_to(Vector &v, const Scalar &val) { v.shift(val); }
 
     private:
         FunctionSpace &space_;

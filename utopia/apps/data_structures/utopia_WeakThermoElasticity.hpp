@@ -16,8 +16,7 @@ namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
     class WeakThermoElasticity final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-                                       public Operator<typename FunctionSpace::Vector>,
-                                       public Configurable {
+                                       public Operator<typename FunctionSpace::Vector> {
     public:
         using Comm = typename FunctionSpace::Comm;
         using Scalar = typename FunctionSpace::Scalar;
@@ -56,7 +55,7 @@ namespace utopia {
             H_ptr_ = utopia::make_unique<Matrix>();
         }
 
-        void read(Input &in) override {}
+        void read(Input &) override {}
 
         inline bool update(const Vector & /*x*/) override {
             // x_coeff_.update(x);
@@ -85,7 +84,7 @@ namespace utopia {
         inline const Comm &comm() const override { return space_.comm(); }
 
         bool apply(const Vector &x, Vector &y) const override {
-            const auto &comm = space_.comm();
+            // const auto &comm = space_.comm();
 
             if (y.empty()) {
                 space_.create_vector(y);
@@ -129,7 +128,7 @@ namespace utopia {
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
                 auto g_view = space_.assembly_view_device(y);
-                auto laplacian_view = laplacian.view_device();
+                // auto laplacian_view = laplacian.view_device();
 
                 Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                     StaticVector<Scalar, C_NDofs + U_NDofs> coeff, el_vec;
@@ -235,7 +234,7 @@ namespace utopia {
             return true;
         }
 
-        bool hessian(const Vector &x_const, Matrix &H) const override {
+        bool hessian(const Vector &, Matrix &H) const override {
             if (empty(H)) {
                 space_.create_matrix(H);
             } else {
@@ -246,8 +245,8 @@ namespace utopia {
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
 
-            auto &x = const_cast<Vector &>(x_const);
-
+            // auto &x = const_cast<Vector &>(x_const);
+            //
             // FEFunction<CSpace> c_fun(C, x);
             // FEFunction<USpace> u_fun(U, x);
 

@@ -11,12 +11,14 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class QPSolver : public virtual PreconditionedSolver<Matrix, Vector>,
-                     public virtual VariableBoundSolverInterface<Vector> {
+    class QPSolver : public virtual VariableBoundSolverInterface<Vector>, public PreconditionedSolver<Matrix, Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
+
+        QPSolver(const QPSolver &other)
+            : VariableBoundSolverInterface<Vector>(other), PreconditionedSolver<Matrix, Vector>(other) {}
 
         QPSolver() = default;
         ~QPSolver() override = default;
@@ -29,12 +31,15 @@ namespace utopia {
     };
 
     template <class Vector>
-    class MatrixFreeQPSolver : public virtual MatrixFreeLinearSolver<Vector>,
-                               public virtual VariableBoundSolverInterface<Vector> {
+    class MatrixFreeQPSolver : public virtual VariableBoundSolverInterface<Vector>,
+                               public MatrixFreeLinearSolver<Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
+
+        MatrixFreeQPSolver(const MatrixFreeQPSolver &other)
+            : VariableBoundSolverInterface<Vector>(other), MatrixFreeLinearSolver<Vector>(other) {}
 
         MatrixFreeQPSolver() = default;
 
@@ -49,7 +54,7 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    class OperatorBasedQPSolver : public virtual MatrixFreeQPSolver<Vector>, public virtual QPSolver<Matrix, Vector> {
+    class OperatorBasedQPSolver : public MatrixFreeQPSolver<Vector>, public QPSolver<Matrix, Vector> {
     public:
         using MatrixFreeQPSolver<Vector>::update;
         using QPSolver<Matrix, Vector>::update;
@@ -58,6 +63,24 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
+
+        OperatorBasedQPSolver()
+            : VariableBoundSolverInterface<Vector>(), MatrixFreeQPSolver<Vector>(), QPSolver<Matrix, Vector>() {}
+
+        OperatorBasedQPSolver(const OperatorBasedQPSolver &other)
+            : VariableBoundSolverInterface<Vector>(other),
+              MatrixFreeQPSolver<Vector>(other),
+              QPSolver<Matrix, Vector>(other) {}
+
+        OperatorBasedQPSolver &operator=(const OperatorBasedQPSolver &other) {
+            if (this == &other) return *this;
+
+            VariableBoundSolverInterface<Vector>::operator=(other);
+            MatrixFreeQPSolver<Vector>::operator=(other);
+            QPSolver<Matrix, Vector>::operator=(other);
+
+            return *this;
+        }
 
         ~OperatorBasedQPSolver() override = default;
 

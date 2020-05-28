@@ -18,8 +18,7 @@ namespace utopia {
 
     template <class FunctionSpace>
     class PoissonFE final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-                            public Operator<typename FunctionSpace::Vector>,
-                            public Configurable {
+                            public Operator<typename FunctionSpace::Vector> {
     public:
         using Comm = typename FunctionSpace::Comm;
         using Matrix = typename FunctionSpace::Matrix;
@@ -42,7 +41,7 @@ namespace utopia {
 
         using LKernel = utopia::LaplacianKernel<Scalar>;
 
-        void read(Input &in) override {}
+        void read(Input & /*in*/) override {}
 
         inline Size size() const override {
             const SizeType n_dofs = space_->n_dofs();
@@ -88,8 +87,8 @@ namespace utopia {
                     auto grad = grad_view.make(e);
                     auto dx = dx_view.make(e);
 
-                    const auto n_qp = grad.n_points();
-                    const auto n_fun = grad.n_functions();
+                    const int n_qp = grad.n_points();
+                    const int n_fun = grad.n_functions();
 
                     // for(SizeType k = 0; k < n; ++k) {
                     //     for(SizeType j = 0; j < grad.n_functions(); ++j) {
@@ -101,12 +100,12 @@ namespace utopia {
                     //     }
                     // }
 
-                    for (SizeType k = 0; k < n_qp; ++k) {
-                        for (SizeType j = 0; j < n_fun; ++j) {
+                    for (int k = 0; k < n_qp; ++k) {
+                        for (int j = 0; j < n_fun; ++j) {
                             const auto g_test = grad(j, k);
                             el_vec(j) += LKernel::apply(1.0, g_test, g_test, dx(k)) * coeff(j);
 
-                            for (SizeType l = j + 1; l < n_fun; ++l) {
+                            for (int l = j + 1; l < n_fun; ++l) {
                                 const auto g_trial = grad(l, k);
                                 const Scalar v = LKernel::apply(1.0, g_trial, g_test, dx(k));
 

@@ -1,5 +1,5 @@
 #include "utopia.hpp"
-#include "utopia_CoreDecprecatedHeaders.hpp"
+// #include "utopia_CoreDecprecatedHeaders.hpp"
 #include "utopia_Device.hpp"
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_TestProblems.hpp"
@@ -242,25 +242,31 @@ namespace utopia {
             x.set(xb + 1, x.get(xb + 0) * x.get(xb + 1));
         }
 
-        each_read(x, [](const SizeType i, const double value) {
-            switch (i % 10) {
-                case 0:
-                case 1:
-                case 9:
-                    utopia_test_assert(approxeq(-1, value));
-                    break;
-                case 2:
-                case 3:
-                case 4:
-                    utopia_test_assert(approxeq(10, value));
-                    break;
-                case 5:
-                case 6:
-                case 7:
-                case 8:
-                    utopia_test_assert(approxeq(1, value));
-            }
-        });
+        {
+            auto x_view = view_device(x);
+
+            parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                auto value = x_view.get(i);
+
+                switch (i % 10) {
+                    case 0:
+                    case 1:
+                    case 9:
+                        utopia_test_assert(approxeq(-1, value));
+                        break;
+                    case 2:
+                    case 3:
+                    case 4:
+                        utopia_test_assert(approxeq(10, value));
+                        break;
+                    case 5:
+                    case 6:
+                    case 7:
+                    case 8:
+                        utopia_test_assert(approxeq(1, value));
+                }
+            });
+        }
 
         x.set(0.);
     }
@@ -704,9 +710,9 @@ namespace utopia {
             }
         }
 
-#ifdef UTOPIA_DEPRECATED_API
-        PetscVector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
-#endif  // UTOPIA_DEPRECATED_API
+        // #ifdef UTOPIA_DEPRECATED_API
+        //         PetscVector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
+        // #endif  // UTOPIA_DEPRECATED_API
     }
 
     void maria() {
@@ -765,7 +771,7 @@ namespace utopia {
             a.set(3, 1, 4);
         }
 
-        each_read(a, [](const SizeType i, const SizeType j, const double value) {
+        a.read([](const SizeType i, const SizeType j, const double value) {
             if (i == j) {
                 utopia_test_assert(approxeq(i + 1, value));
             } else {
@@ -775,7 +781,7 @@ namespace utopia {
 
         PetscMatrix b(PetscCommunicator::self());
         b = local_diag_block(a);
-        each_read(b, [](const SizeType i, const SizeType j, const double value) {
+        b.read(UTOPIA_LAMBDA(const SizeType i, const SizeType j, const double value) {
             if (i == j) {
                 utopia_test_assert(approxeq(i + 1, value));
             } else {
@@ -800,7 +806,7 @@ namespace utopia {
             }
         }
 
-        each_read(a, [](const SizeType i, const SizeType /*j*/, const double value) {
+        a.read(UTOPIA_LAMBDA(const SizeType i, const SizeType /*j*/, const double value) {
             utopia_test_assert(approxeq(i, value));
         });
     }
@@ -1161,23 +1167,25 @@ namespace utopia {
         utopia_test_assert(approxeq(one, actual_min));
         utopia_test_assert(approxeq(two, actual_max));
 
-#ifdef UTOPIA_DEPRECATED_API
-        actual_min = min(two, values(n, 1.));
-        actual_max = max(values(n, 2.), one);
+        // #ifdef UTOPIA_DEPRECATED_API
+        //         actual_min = min(two, values(n, 1.));
+        //         actual_max = max(values(n, 2.), one);
 
-        utopia_test_assert(approxeq(one, actual_min));
-        utopia_test_assert(approxeq(two, actual_max));
-#endif  // UTOPIA_DEPRECATED_API
+        //         utopia_test_assert(approxeq(one, actual_min));
+        //         utopia_test_assert(approxeq(two, actual_max));
+        // #endif  // UTOPIA_DEPRECATED_API
     }
 
     void petsc_ghosted() {
+        using IndexArray = Traits<PetscVector>::IndexArray;
         auto &&comm = PetscCommunicator::get_default();
         const int n = comm.size() * 2;
         const int off = comm.rank() * 2;
 
-        std::vector<PetscInt> ghosts{(off + 3) % n};
+        IndexArray ghosts{(off + 3) % n};
 
-        PetscVector v = ghosted(2, n, ghosts);
+        PetscVector v;
+        v.ghosted(layout(comm, 2, n), ghosts);
 
         auto r = range(v);
 
@@ -1252,7 +1260,7 @@ namespace utopia {
         double sum_P = sum(P);
         P = transpose(P);
 
-        each_apply(P, [](const double value) -> double { return value * 2.; });
+        P.transform_values(UTOPIA_LAMBDA(const PetscScalar value)->PetscScalar { return value * 2.; });
 
         double sum_P_2 = sum(P);
 
@@ -1350,7 +1358,7 @@ namespace utopia {
         {
             Write<PetscMatrix> w_m(M);
             auto r = row_range(M);
-            auto c = col_range(M);
+            // auto c = col_range(M);
 
             for (auto i = r.begin(); i != r.end(); ++i) {
                 for (auto j = 0; j < m; ++j) {

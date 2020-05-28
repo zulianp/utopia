@@ -141,12 +141,8 @@ namespace utopia {
 
             Matrix R_boolean = *_R;
 
-            each_apply(R_boolean, [](const Scalar value) -> Scalar {
-                if (std::abs(value) > off_diag_tol) {
-                    return 1.;
-                } else {
-                    return 0.;
-                }
+            R_boolean.transform_values(UTOPIA_LAMBDA(const Scalar value)->Scalar {
+                return static_cast<Scalar>(device::abs(value) > off_diag_tol);
             });
 
             x_new = R_boolean * x;

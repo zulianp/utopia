@@ -16,6 +16,17 @@ namespace utopia {
         }
     };
 
+
+    template <class Scalar>
+    class DeviceOp<Scalar, AbsMax> {
+    public:
+        UTOPIA_INLINE_FUNCTION static constexpr Scalar apply(const Scalar &a, const Scalar &b) {
+            auto aa = device::abs(a);
+            auto ab = device::abs(b);
+            return (aa > ab) ? aa : ab;
+        }
+    };
+
     template <class Scalar>
     class DeviceOp<Scalar, Min> {
     public:

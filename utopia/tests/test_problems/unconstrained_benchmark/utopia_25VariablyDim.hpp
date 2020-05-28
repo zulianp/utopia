@@ -35,13 +35,22 @@ namespace utopia {
             SizeType n_global = size(x_exact_).get(0);
 
             {
-                const Write<Vector> write1(x_init_);
-                const Write<Vector> write2(x_inc_);
+                // const Write<Vector> write1(x_init_);
+                // const Write<Vector> write2(x_inc_);
 
-                each_write(x_init_,
-                           [n_global](const SizeType i) -> double { return (n_global - i - 1.) / Scalar(n_global); });
+                // each_write(x_init_,
+                //            [n_global](const SizeType i) -> double { return (n_global - i - 1.) / Scalar(n_global);
+                //            });
 
-                each_write(x_inc_, [](const SizeType i) -> double { return i + 1; });
+                // each_write(x_inc_, [](const SizeType i) -> double { return i + 1; });
+
+                auto x_view = view_device(x_init_);
+                parallel_for(range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) {
+                    x_view.set(i, (n_global - i - 1.) / Scalar(n_global));
+                });
+
+                auto x_inc_view = view_device(x_inc_);
+                parallel_for(range_device(x_inc_), UTOPIA_LAMBDA(const SizeType &i) { x_inc_view.set(i, i + 1.0); });
             }
         }
 

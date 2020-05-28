@@ -89,18 +89,23 @@ namespace utopia {
                 });
 
                 // measure loop time for vectors
-                this->register_experiment("vec_each_" + std::to_string(i), [vl]() {
+                this->register_experiment("vec_for_" + std::to_string(i), [vl]() {
                     Vector x(vl, 1.);
 
-                    each_write(x, [](const SizeType i) -> Scalar { return i; });
+                    {
+                        auto x_view = view_device(x);
+                        parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, i); });
+                    }
 
-                    Scalar res = 0.0;
-
-                    each_read(x, [&res](const SizeType /*i*/, const Scalar val) { res += val; });
+                    Scalar res = sum(x);
 
                     res /= size(x).get(0);
 
-                    each_transform(x, x, [res](const SizeType /*i*/, const Scalar val) -> Scalar { return val - res; });
+                    {
+                        auto x_view = local_view_device(x);
+                        parallel_for(local_range_device(x),
+                                     UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_view.get(i) - res); });
+                    }
                 });
 
                 // Matrices
@@ -118,7 +123,7 @@ namespace utopia {
                     // auto N = size(A).get(0);
                     Scalar res = 0.0;
 
-                    each_read(A, [&res](const SizeType /*i*/, const SizeType /*j*/, const Scalar val) { res += val; });
+                    A.read([&res](const SizeType /*i*/, const SizeType /*j*/, const Scalar val) { res += val; });
 
                     utopia_test_assert(approxeq(res, 0.));
                 });

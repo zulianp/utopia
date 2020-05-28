@@ -1,10 +1,13 @@
 #ifndef UTOPIA_TRILINOS_COMMUNICATOR_HPP
 #define UTOPIA_TRILINOS_COMMUNICATOR_HPP
 
+#include "utopia_Communicator.hpp"
+
+#include "utopia_Teuchos_MPI_Operations.hpp"
+
 #include <Teuchos_Comm.hpp>
 #include <Teuchos_RCP.hpp>
 #include <Tpetra_Core.hpp>
-#include "utopia_Communicator.hpp"
 
 #include <array>
 
@@ -75,6 +78,13 @@ namespace utopia {
         inline T max(const T &val) const {
             T ret_global = 0.0;
             Teuchos::reduceAll(*get(), Teuchos::REDUCE_MAX, 1, &val, &ret_global);
+            return ret_global;
+        }
+
+        template <class Op, typename T>
+        inline T reduce(const Op & /*op*/, const T &val) const {
+            T ret_global = 0.0;
+            Teuchos::reduceAll(*get(), MPIReduceOp<Op, TRILINOS>::op(), 1, &val, &ret_global);
             return ret_global;
         }
 

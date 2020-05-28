@@ -349,6 +349,9 @@ namespace utopia {
         template <class F>
         void transform_values(F f);
 
+        template <class Fun>
+        void read(Fun fun) const;
+
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR BLAS1Operand ////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
@@ -807,6 +810,11 @@ namespace utopia {
                             const SizeType &global_size,
                             const PetscArray<SizeType> &index) {
             ghosted(comm().get(), local_size, global_size, index);
+        }
+
+        inline void ghosted(const Layout &l, const PetscArray<SizeType> &index) {
+            comm_ = l.comm();
+            this->ghosted(comm_.get(), l.local_size(), l.size(), index);
         }
 
         inline std::string get_class() const override { return "PetscVector"; }

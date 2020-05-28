@@ -155,8 +155,8 @@ namespace utopia {
 
             Matrix R_boolean = *_R_truncated;
 
-            each_apply(R_boolean, [](const Scalar value) -> Scalar {
-                if (std::abs(value) > off_diag_tol) {
+            R_boolean.transform_values(UTOPIA_LAMBDA(const Scalar &value)->Scalar {
+                if (device::abs(value) > off_diag_tol) {
                     return 1.;
                 } else {
                     return 0.;
@@ -165,14 +165,13 @@ namespace utopia {
 
             x_new = R_boolean * x;
 
-            ReadAndWrite<Vector> rw_(x_new);
-
-            auto r = range(x_new);
-            for (auto i = r.begin(); i < r.end(); ++i) {
-                if (x_new.get(i) > 1.) {
-                    x_new.set(i, 1.);
+            x_new.transform_values(UTOPIA_LAMBDA(const Scalar &value)->Scalar {
+                if (value > 1.) {
+                    return 1.0;
+                } else {
+                    return 0.0;
                 }
-            }
+            });
 
             return true;
         }
