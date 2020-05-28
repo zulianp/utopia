@@ -30,6 +30,29 @@ namespace utopia {
         result.transform_values([op, x](const Scalar &val) -> Scalar { return op.template apply<Scalar>(x, val); });
     }
 
+    template <class Fun>
+    void PetscVector::read(Fun fun) const {
+        PetscErrorCode ierr;
+
+        const auto r = this->range();
+        const std::size_t r_begin = r.begin();
+        const auto &impl = this->raw_type();
+
+        const PetscScalar *arr;
+
+        ierr = VecGetArrayRead(impl, &arr);
+        assert(ierr == 0);
+
+        For<>::apply(r_begin, r.end(), [&arr, &fun, r_begin](const std::size_t i) {
+            auto idx = i - r_begin;
+            fun(i, arr[idx]);
+        });
+
+        ierr = VecRestoreArrayRead(impl, &arr);
+        assert(ierr == 0);
+        (void)ierr;
+    }
+
 }  // namespace utopia
 
 #endif  // UTOPIA_PETSC_VECTOR_IMPL_HPP

@@ -6,9 +6,9 @@
 #include "utopia_petsc_DMPlex.hpp"
 
 // TOBEREMOVED
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_MakeElem.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
 
 namespace utopia {
 
@@ -267,7 +267,7 @@ namespace utopia {
 
         FunctionSpace() : subspace_id_(0) {}
 
-        FunctionSpace(const PetscCommunicator &comm, const SizeType subspace_id = 0) : subspace_id_(subspace_id) {
+        FunctionSpace(const PetscCommunicator &, const SizeType subspace_id = 0) : subspace_id_(subspace_id) {
             // allocate_mesh(comm);
         }
 

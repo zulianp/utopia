@@ -304,9 +304,49 @@ namespace utopia {
             utopia_test_assert(approxeq(M_abs, M_abs_2, 1e-8));
         }
 
+        void transform_ijv_test() {
+            Matrix M;
+
+            M.sparse(layout(world, Traits::decide(), Traits::decide(), 3, 3), 3, 3);
+
+            assemble_laplacian_1D(M);
+
+            M *= 0.0;
+
+            assemble_laplacian_1D(M);
+
+            auto rr = M.row_range();
+            auto nc = M.cols();
+
+            // M.transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
+
+            // std::stringstream ss;
+            M.transform_ijv([&](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
+                utopia_test_assert(rr.inside(i));
+                utopia_test_assert(j < nc);
+
+                // ss << "(" << i << " " << j << ") -> " << v << std::endl;
+
+                return v;
+            });
+
+            M.read([&](const SizeType &i, const SizeType &j, const Scalar &v) {
+                utopia_test_assert(rr.inside(i));
+                utopia_test_assert(j < nc);
+                utopia_test_assert(v >= -1.0);
+                utopia_test_assert(v <= 2.0);
+            });
+
+            // M.comm().synched_print(ss.str(), std::cout);
+
+            // disp(M);
+            // TODO(Patrick) write meaningul test
+        }
+
         void run() {
             UTOPIA_RUN_TEST(sparse_chop_test);
             UTOPIA_RUN_TEST(transform_test);
+            UTOPIA_RUN_TEST(transform_ijv_test);
         }
     };
 
@@ -390,7 +430,7 @@ namespace utopia {
             m3 = m1 * m3;
             // direct variant:  m1.multiply(m3, m3);
 
-            each_read(m3, [](SizeType i, SizeType /*y*/, double entry) {
+            m3.read([](SizeType i, SizeType /*y*/, double entry) {
                 if (i == 0) {
                     utopia_test_assert(entry == 192);
                 } else {
@@ -512,13 +552,13 @@ namespace utopia {
             Vector x(vec_layout, 1.0);
             Vector y(vec_layout, -1.0);
 
-            each_write(y, [n](const SizeType &i) -> Scalar {
-                if (i == 0) {
-                    return 1e-14;
-                }
-
-                return (i < n / 2.0) ? -i : i;
-            });
+            {
+                auto y_view = view_device(y);
+                parallel_for(range_device(y), UTOPIA_LAMBDA(const SizeType &i) {
+                    const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
+                    y_view.set(i, val);
+                });
+            }
 
             Matrix M = outer(x, y);
             chop_smaller_than(M, 1e-13);
@@ -544,21 +584,21 @@ namespace utopia {
     };
 
     static void algebra() {
-#ifdef WITH_BLAS
-        DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
-        SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
-        SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+        // #ifdef WITH_BLAS
+        //         DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        //         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        //         SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        // #endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
-        DenseAlgebraTest<PetscMatrix, PetscVector>().run();
+        // DenseAlgebraTest<PetscMatrix, PetscVector>().run();
         SparseAlgebraTest<PetscMatrix, PetscVector>().run();
 #endif  // WITH_PETSC
 
-#ifdef WITH_TRILINOS
-        VectorAlgebraTest<TpetraVector>().run();
-        SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
-#endif  // WITH_TRILINOS
+        // #ifdef WITH_TRILINOS
+        //         VectorAlgebraTest<TpetraVector>().run();
+        //         SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
+        // #endif  // WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(algebra);

@@ -39,10 +39,12 @@ namespace utopia {
                 auto points = point_.make(e);
 
                 Point p;
-                const auto n = shape.n_points();
-                for (SizeType k = 0; k < n; ++k) {
+                const int n = shape.n_points();
+                const int n_fun = shape.n_functions();
+
+                for (int k = 0; k < n; ++k) {
                     points.get(k, p);
-                    for (SizeType j = 0; j < shape.n_functions(); ++j) {
+                    for (int j = 0; j < n_fun; ++j) {
                         acc(j) += fun_(p) * shape(j, k) * dx(k);
                     }
                 }

@@ -67,7 +67,8 @@ namespace utopia {
             InputParameters in;
             in.set("type", Solver::direct());
             ls->read(in);
-            return std::move(ls);
+            // return std::move(ls);
+            return ls;
             // #ifdef WITH_PETSC
             //             return utopia::make_unique<Factorization<Matrix, Vector>>();
             // #else

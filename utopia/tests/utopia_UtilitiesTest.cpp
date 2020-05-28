@@ -1,7 +1,7 @@
 #include "utopia.hpp"
 #include "utopia_AutoDiff.hpp"  //simplify_test
 #include "utopia_Blocks.hpp"
-#include "utopia_CoreDecprecatedHeaders.hpp"
+// #include "utopia_CoreDecprecatedHeaders.hpp"
 #include "utopia_Eval_Blocks.hpp"
 #include "utopia_Testing.hpp"
 
@@ -111,7 +111,7 @@ namespace utopia {
             utopia_test_assert(size.get(0) == 2);
             utopia_test_assert(size.get(1) == 2);
 
-            each_read(m, [](SizeType x, SizeType y, double entry) {
+            m.read([](SizeType x, SizeType y, double entry) {
                 if (x == y) {
                     utopia_test_assert(approxeq(1.0, entry));
                 } else {
@@ -125,7 +125,7 @@ namespace utopia {
             utopia_test_assert(size.get(0) == 2);
             utopia_test_assert(size.get(1) == 2);
 
-            each_read(m2, [](SizeType, SizeType, double entry) { utopia_test_assert(approxeq(-4.0, entry)); });
+            m2.read([](SizeType, SizeType, double entry) { utopia_test_assert(approxeq(-4.0, entry)); });
         }
 
         void wrapper_test() {
@@ -163,7 +163,7 @@ namespace utopia {
             auto m1_view = view(m1, Range(0, 1), Range(0, 3));
             Matrix m2 = m1_view;
 
-            each_read(m2, [](SizeType /*x*/, SizeType y, double entry) {
+            m2.read([](SizeType /*x*/, SizeType y, double entry) {
                 utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
             });
 
@@ -179,13 +179,11 @@ namespace utopia {
             Matrix m3 = m1;
             view(m3, Range(0, 1), Range(0, 3)) = m2;
 
-            each_read(m3, [](SizeType x, SizeType y, double entry) {
-                utopia_test_assert(approxeq(x == y ? 1.0 : 0.0, entry));
-            });
+            m3.read(
+                [](SizeType x, SizeType y, double entry) { utopia_test_assert(approxeq(x == y ? 1.0 : 0.0, entry)); });
 
             Matrix diff = m1 - m3;
-            each_read(diff,
-                      [](SizeType /*x*/, SizeType /*y*/, double entry) { utopia_test_assert(approxeq(0.0, entry)); });
+            diff.read([](SizeType /*x*/, SizeType /*y*/, double entry) { utopia_test_assert(approxeq(0.0, entry)); });
 
             ////////////////////////////////////////////////////////////
 
@@ -214,10 +212,10 @@ namespace utopia {
                 m.set(2, 1, -1.0);
                 m.set(2, 2, -1.0);
             }
-#ifdef UTOPIA_DEPRECATED_API
-            Vector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
-            utopia_test_assert(c.size() == 3);
-#endif  // UTOPIA_DEPRECATED_API
+            // #ifdef UTOPIA_DEPRECATED_API
+            //             Vector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
+            //             utopia_test_assert(c.size() == 3);
+            // #endif  // UTOPIA_DEPRECATED_API
         }
 
         // TODO(eric): move this to AutoDiffTest?
@@ -235,17 +233,17 @@ namespace utopia {
             // For now only works for trees with with certain sub-trees:  Id * (m + 0) * v + 0 *v -> m * v
             // Bug: Id is removed even if it is not in R^(n x n)
 
-#ifdef UTOPIA_DEPRECATED_API
-            auto expr = identity(n, n) * (m + zeros(n, n)) * v + zeros(n, n) * v;
-            auto s_expr = simplify(expr);
+            // #ifdef UTOPIA_DEPRECATED_API
+            //             auto expr = identity(n, n) * (m + zeros(n, n)) * v + zeros(n, n) * v;
+            //             auto s_expr = simplify(expr);
 
-            // disp(tree_format(s_expr.get_class()));
+            //             // disp(tree_format(s_expr.get_class()));
 
-            Vector expected = m * v;
-            Vector actual = s_expr;
+            //             Vector expected = m * v;
+            //             Vector actual = s_expr;
 
-            utopia_test_assert(approxeq(expected, actual));
-#endif  // UTOPIA_DEPRECATED_API
+            //             utopia_test_assert(approxeq(expected, actual));
+            // #endif  // UTOPIA_DEPRECATED_API
         }
 
         void variable_test() {
@@ -302,95 +300,96 @@ namespace utopia {
         }
     };
 
-    template <class Matrix, class Vector>
-    class InlinerTest {
-    private:
-        void inline_eval_test() {
-            int n = 10;
-            Vector v(serial_layout(n), 1.0);
-            Vector res(layout(v), 0.0);
+    //     template <class Matrix, class Vector>
+    //     class InlinerTest {
+    //     private:
+    //         void inline_eval_test() {
+    //             int n = 10;
+    //             Vector v(serial_layout(n), 1.0);
+    //             Vector res(layout(v), 0.0);
 
-            {
-                Read<Vector> r_v(v);
-                inline_eval(0.1 * v + abs(sqrt(v) - v), res);
-            }
+    //             {
+    //                 Read<Vector> r_v(v);
+    //                 inline_eval(0.1 * v + abs(sqrt(v) - v), res);
+    //             }
 
-            Vector v_exp(layout(v), 0.1);
-            utopia_test_assert(approxeq(v_exp, res));
+    //             Vector v_exp(layout(v), 0.1);
+    //             utopia_test_assert(approxeq(v_exp, res));
 
-            Matrix m;
-            m.identity(serial_layout(n, n));
-            Matrix m_res;
-            m_res.dense(serial_layout(n, n));
+    //             Matrix m;
+    //             m.identity(serial_layout(n, n));
+    //             Matrix m_res;
+    //             m_res.dense(serial_layout(n, n));
 
-            // we will be reading from n to the end of the function
-            {
-                Read<Matrix> r_m(m);
-                inline_eval(0.1 * m + abs(sqrt(m) - m), m_res);
-            }
+    //             // we will be reading from n to the end of the function
+    //             {
+    //                 Read<Matrix> r_m(m);
+    //                 inline_eval(0.1 * m + abs(sqrt(m) - m), m_res);
+    //             }
 
-            each_read(m_res, [](SizeType x, SizeType y, double entry) {
-                utopia_test_assert(approxeq(x == y ? 0.1 : 0.0, entry));
-            });
+    //             each_read(m_res, [](SizeType x, SizeType y, double entry) {
+    //                 utopia_test_assert(approxeq(x == y ? 0.1 : 0.0, entry));
+    //             });
 
-            {
-                Read<Matrix> r_m(m);
-                Read<Vector> r_v(v);
-                inline_eval((m + m) * v + v, res);
-            }
+    //             {
+    //                 Read<Matrix> r_m(m);
+    //                 Read<Vector> r_v(v);
+    //                 inline_eval((m + m) * v + v, res);
+    //             }
 
-            v_exp.values(serial_layout(n), 3.0);
-            utopia_test_assert(approxeq(v_exp, res));
+    //             v_exp.values(serial_layout(n), 3.0);
+    //             utopia_test_assert(approxeq(v_exp, res));
 
-            Number<double> num = 0;
+    //             Number<double> num = 0;
 
-            {
-                Read<Matrix> r_m(m);
-                Read<Vector> r_v(v);
+    //             {
+    //                 Read<Matrix> r_m(m);
+    //                 Read<Vector> r_v(v);
 
-                inline_eval(dot(m * v, 3 * v), num);
-            }
+    //                 inline_eval(dot(m * v, 3 * v), num);
+    //             }
 
-            utopia_test_assert(approxeq(30.0, num));
-#ifdef UTOPIA_DEPRECATED_API
-            {
-                Read<Matrix> r_m(m);
-                Read<Vector> r_v(v);
+    //             utopia_test_assert(approxeq(30.0, num));
+    // #ifdef UTOPIA_DEPRECATED_API
+    //             {
+    //                 Read<Matrix> r_m(m);
+    //                 Read<Vector> r_v(v);
 
-                inline_eval(3. * dot(v, v) +
-                                dot(m * transpose(m), 0.1 * m + 0.5 * -0.6 * identity(n, n) + values(n, n, 0.0001)),
-                            num);
-            }
-            utopia_test_assert(approxeq(28.001, num));
-#endif  // UTOPIA_DEPRECATED_API
-        }
+    //                 inline_eval(3. * dot(v, v) +
+    //                                 dot(m * transpose(m), 0.1 * m + 0.5 * -0.6 * identity(n, n) + values(n, n,
+    //                                 0.0001)),
+    //                             num);
+    //             }
+    //             utopia_test_assert(approxeq(28.001, num));
+    // #endif  // UTOPIA_DEPRECATED_API
+    //         }
 
-    public:
-        static void print_backend_info() {
-            mpi_world_barrier();
-            if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
-            }
-            mpi_world_barrier();
-        }
+    //     public:
+    //         static void print_backend_info() {
+    //             mpi_world_barrier();
+    //             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
+    //                 std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+    //             }
+    //             mpi_world_barrier();
+    //         }
 
-        void run() {
-            print_backend_info();
-            UTOPIA_RUN_TEST(inline_eval_test);
-        }
-    };
+    //         void run() {
+    //             print_backend_info();
+    //             UTOPIA_RUN_TEST(inline_eval_test);
+    //         }
+    //     };
 
     static void utilities() {
 #ifdef WITH_BLAS
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
-        InlinerTest<BlasMatrixd, BlasVectord>().run();
+        // InlinerTest<BlasMatrixd, BlasVectord>().run();
 #endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
         BlockTest<PetscMatrix, PetscVector>().run();
 
         if (mpi_world_size() == 1) {
-            UtilitiesTest<PetscMatrix, PetscVector>().run();  // FIXME
+            // UtilitiesTest<PetscMatrix, PetscVector>().run();  // FIXME
             BlockTest<PetscMatrix, PetscVector>().run();
 #ifdef WITH_BLAS
             // interoperability

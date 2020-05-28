@@ -12,7 +12,7 @@ namespace utopia {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
 
-        inline static void eval(const Vector &lhs, const Op op, const Vector &rhs, Vector &result) {
+        inline static void eval(const Vector &lhs, const Op &, const Vector &rhs, Vector &result) {
             using ExecutionSpaceT = typename Vector::ExecutionSpace;
 
             assert(!lhs.empty());
@@ -33,7 +33,7 @@ namespace utopia {
                                  KOKKOS_LAMBDA(const int i) { k_res(i, 0) = k_op.apply(k_lhs(i, 0), k_rhs(i, 0)); });
         }
 
-        inline static void eval(const Vector &lhs, const Op op, const Scalar &rhs, Vector &result) {
+        inline static void eval(const Vector &lhs, const Op &, const Scalar &rhs, Vector &result) {
             using ExecutionSpaceT = typename Vector::ExecutionSpace;
 
             assert(!lhs.empty());

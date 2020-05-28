@@ -30,9 +30,9 @@ namespace utopia {
             constraints_memory_.init_memory(layouts);
             const SizeType finest_level = layouts.size();
 
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
             help_loc_.resize(n_levels);
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 help_loc_[l].zeros(layouts[l]);
             }
 
@@ -62,6 +62,8 @@ namespace utopia {
                 Scalar ub_min = min(this->help_loc_[finer_level]);
 
                 {
+                    // TODO(Alena) can this be done with a parallel for?
+
                     Read<Matrix> r_A(mat_transfer->R());
                     Write<Vector> rw_c_l(constraints_memory_.active_lower[level]);
                     Read<Vector> rw_f_l(this->help_[finer_level]);

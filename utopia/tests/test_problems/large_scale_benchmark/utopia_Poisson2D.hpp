@@ -342,7 +342,7 @@ namespace utopia {
         }
 
         void form_ub2(Vector &lb) {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array_marker;
 
             DMDAGetInfo(da_,
@@ -373,7 +373,6 @@ namespace utopia {
             for (j = ys; j < ys + ym; j++) {
                 for (i = xs; i < xs + xm; i++) {
                     PetscScalar x1 = coords[j][i].x;
-                    PetscScalar x2 = coords[j][i].y;
 
                     if (x1 <= 0.5) {
                         array_marker[j][i] = 0.1;
@@ -389,7 +388,7 @@ namespace utopia {
         }
 
         void form_BC_marker(Vector &bc_marker, Vector &bc_values) {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array_marker;
             PetscScalar **array_values;
 
@@ -451,7 +450,7 @@ namespace utopia {
         }
 
         void build_init_guess() {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array;
 
             DMDAGetInfo(da_,
@@ -503,9 +502,8 @@ namespace utopia {
         }
 
         void build_exact_sol() {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array;
-            PetscScalar Hx, Hy;
 
             // DM             coordDA;
             // Vec            coordinates;
@@ -560,7 +558,7 @@ namespace utopia {
         }
 
         void build_rhs() {
-            PetscInt d, dof, i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array;
             PetscScalar Hx, Hy;
 
@@ -601,7 +599,7 @@ namespace utopia {
         }
 
         void remove_BC_contrib(Vector &x) const {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array;
 
             DMDAGetInfo(da_,

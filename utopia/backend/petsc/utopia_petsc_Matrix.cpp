@@ -385,7 +385,7 @@ namespace utopia {
 
         unsigned long offset_out[2] = {static_cast<unsigned long>(0), static_cast<unsigned long>(0)};
 
-        MPI_Exscan(&offsets_in, &offset_out, 2, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        MPI_Exscan(offsets_in, offset_out, 2, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
         offset_out[0] += global_row_range.begin();
         offset_out[1] += global_col_range.begin();
@@ -1281,7 +1281,7 @@ namespace utopia {
     bool PetscMatrix::equals(const PetscMatrix &other, const Scalar &tol) const {
         PetscMatrix diff = other;
         diff.axpy(-1.0, *this);
-        return diff.norm2() < tol;
+        return diff.norm_infty() <= tol;
     }
 
     void PetscMatrix::diagonal_block(PetscMatrix &other) const {
@@ -1373,8 +1373,8 @@ namespace utopia {
         }
 
         SizeType ret = 0;
-        each_read(*this,
-                  [tol, &ret](const SizeType &, const SizeType &, const Scalar &v) { ret += PetscAbs(v) > tol; });
+        // FIXME reading indices is not necessary
+        this->read([tol, &ret](const SizeType &, const SizeType &, const Scalar &v) { ret += PetscAbs(v) > tol; });
 
         return ret;
     }

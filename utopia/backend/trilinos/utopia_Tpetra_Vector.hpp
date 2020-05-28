@@ -70,6 +70,7 @@ namespace utopia {
 
         using Super = utopia::Tensor<TpetraVector, 1>;
         using Constructible = utopia::Constructible<Scalar, SizeType, 1>;
+        using Constructible::values;
         using Constructible::zeros;
 
         using Super::Super;
@@ -179,6 +180,9 @@ namespace utopia {
         void transform(const Pow &p) override;
         void transform(const Reciprocal<TpetraScalar> &op) override;
 
+        template <class F>
+        void transform_values(F f);
+
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Comparable ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +221,11 @@ namespace utopia {
                      const TpetraVector::SizeType &local_size,
                      const TpetraVector::SizeType &global_size,
                      const std::vector<SizeType> &ghost_index);
+
+        inline void ghosted(const Layout &l, const std::vector<SizeType> &ghost_index) {
+            comm_ = l.comm();
+            this->ghosted(comm_.get(), l.local_size(), l.size(), ghost_index);
+        }
 
         inline void axpy(const Scalar &alpha, const TpetraVector &x) override {
             implementation().update(alpha, *x.vec_, 1.);
@@ -349,12 +358,14 @@ namespace utopia {
         void write_unlock(WriteMode mode = utopia::AUTO) override;
 
         inline void read_and_write_lock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
             // write_data_ = implementation().getDataNonConst();
             // read_only_data_ = write_data_;
             make_view();
         }
 
         inline void read_and_write_unlock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
             // write_data_ = Teuchos::ArrayRCP<Scalar>();
             // read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
 

@@ -4,11 +4,12 @@
 #include "utopia_FunctionSpace.hpp"
 #include "utopia_MultiVariateElement.hpp"
 #include "utopia_petsc_DMDA.hpp"
+#include "utopia_petsc_DMDA_DofMap.hpp"
 
 // TOBEREMOVED
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_MakeElem.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
+// #include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 namespace utopia {
 
@@ -261,7 +262,7 @@ namespace utopia {
                 fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
             }
 
-            return std::move(fine_space);
+            return fine_space;
         }
 
         template <class F>

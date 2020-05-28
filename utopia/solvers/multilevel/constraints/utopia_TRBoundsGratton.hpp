@@ -26,9 +26,9 @@ namespace utopia {
         void init_memory_impl(const std::vector<Layout> &layouts) {
             constraints_memory_.init_memory(layouts);
 
-            const auto n_levels = layouts.size();
+            const SizeType n_levels = layouts.size();
             help_loc_.resize(n_levels);
-            for (auto l = 0; l < n_levels; l++) {
+            for (SizeType l = 0; l < n_levels; l++) {
                 help_loc_[l].zeros(layouts[l]);
             }
         }
@@ -38,26 +38,29 @@ namespace utopia {
                              const Vector & /*x_level*/,
                              const Scalar &delta_fine) {
             auto finer_level = level + 1;
+
             {
-                auto d_x_finer = const_device_view(x_finer_level);
-                auto d_tr_lb = const_device_view(constraints_memory_.active_lower[finer_level]);
-                auto d_tr_ub = const_device_view(constraints_memory_.active_upper[finer_level]);
+                auto d_x_finer = const_local_view_device(x_finer_level);
+                auto d_tr_lb = const_local_view_device(constraints_memory_.active_lower[finer_level]);
+                auto d_tr_ub = const_local_view_device(constraints_memory_.active_upper[finer_level]);
 
-                parallel_each_write(this->help_[finer_level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                    auto val = d_x_finer.get(i) - delta_fine;
+                auto help_view = local_view_device(this->help_[finer_level]);
+                auto help_loc_view = local_view_device(this->help_loc_[finer_level]);
+
+                parallel_for(local_range_device(this->help_[finer_level]), UTOPIA_LAMBDA(const SizeType &i) {
+                    auto delta_m = d_x_finer.get(i) - delta_fine;
+                    auto delta_p = d_x_finer.get(i) + delta_fine;
+
                     auto lbi = d_tr_lb.get(i);
-                    return device::max(lbi, val);
-                });
-
-                parallel_each_write(help_loc_[finer_level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                    auto val = d_x_finer.get(i) + delta_fine;
                     auto ubi = d_tr_ub.get(i);
-                    return device::min(ubi, val);
+
+                    help_view.set(i, device::max(lbi, delta_m));
+                    help_loc_view.set(i, device::min(ubi, delta_p));
                 });
             }
 
             //------------------------ we should take into account  positive and negative elements projection
-            //separatelly -----------------
+            // separatelly -----------------
             this->transfer_[level]->project_down_positive_negative(
                 this->help_[finer_level], help_loc_[finer_level], constraints_memory_.active_lower[level]);
             this->transfer_[level]->project_down_positive_negative(

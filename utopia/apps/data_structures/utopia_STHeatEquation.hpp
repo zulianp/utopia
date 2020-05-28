@@ -18,9 +18,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class STHeatEquation final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-                                 // public Operator<typename FunctionSpace::Vector>,
-                                 public Configurable {
+    class STHeatEquation final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> {
     public:
         using Comm = typename FunctionSpace::Comm;
         using Matrix = typename FunctionSpace::Matrix;
@@ -46,7 +44,7 @@ namespace utopia {
 
         using LKernel = utopia::LaplacianKernel<Scalar>;
 
-        void read(Input &in) override {}
+        void read(Input &) override {}
 
         // inline Size size() const
         // {

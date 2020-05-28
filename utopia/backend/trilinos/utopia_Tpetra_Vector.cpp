@@ -1,4 +1,6 @@
 #include "utopia_Tpetra_Vector.hpp"
+#include "utopia_Tpetra_Vector_impl.hpp"
+
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_kokkos_Eval_Reduce.hpp"
@@ -386,7 +388,7 @@ namespace utopia {
                               const Scalar &val) {
         comm_ = comm;
 
-        if (n_local == Traits<TpetraVector>::decide()) {
+        if (static_cast<std::size_t>(n_local) == Traits<TpetraVector>::decide()) {
             values(n_global, val);
             return;
         }

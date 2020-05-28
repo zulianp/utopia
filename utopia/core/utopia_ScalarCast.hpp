@@ -23,6 +23,7 @@ namespace utopia {
     template <typename T>
     T scalar_cast(const Factory<Zeros, -1> &expr) {
         assert(expr.size().n_dims() == 0 || expr.size().get(0) == 1);
+        UTOPIA_UNUSED(expr);
         return 0.;
     }
 }  // namespace utopia

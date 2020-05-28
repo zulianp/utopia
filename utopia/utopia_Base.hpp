@@ -41,19 +41,6 @@
 #include <iostream>
 #include <sstream>
 
-// namespace std {
-//    template<typename _Tp>
-//    constexpr _Tp &&
-//    forward(typename std::remove_reference<_Tp>::type &__t) noexcept { return static_cast<_Tp &&>(__t); }
-
-//    template<typename _Tp>
-//    constexpr _Tp &&
-//    forward(typename std::remove_reference<_Tp>::type &&__t) noexcept {
-//        static_assert(!std::is_lvalue_reference<_Tp>::value, "template argument substituting _Tp is an lvalue
-//        reference type"); return static_cast<_Tp &&>(__t);
-//    }
-//}
-
 namespace utopia {
     using SizeType = long;
     static const SizeType INVALID_INDEX = -1;
@@ -145,16 +132,20 @@ namespace utopia {
 #define UTOPIA_UNUSED(macro_var_) (void)macro_var_
 #define utopia_assert(macro_expr__) assert((macro_expr__))
 
+////////////////////////////////////////////////////////////////////////////////
+
 #ifndef NDEBUG
 #define utopia_test_assert(macro_expr_) assert((macro_expr_))
 #define utopia_assert_equal(macro_left_, macro_right_) \
     utopia::assert_equal(macro_left_, macro_right_, __FILE__, __LINE__, #macro_left_ " == " #macro_right_)
+
 #else
 namespace utopia {
     void test_check_assertion(const bool expr,
                               const std::string &filename,
                               const int line,
                               const std::string &expr_string);
+
 }  // namespace utopia
 #define utopia_test_assert(macro_expr_) utopia::test_check_assertion(macro_expr_, __FILE__, __LINE__, #macro_expr_)
 #define utopia_assert_equal(...)

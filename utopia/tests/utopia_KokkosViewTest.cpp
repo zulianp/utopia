@@ -7,8 +7,10 @@
 #include "utopia_trilinos_FECrsGraph.hpp"
 // include edsl components
 #include "utopia_Core.hpp"
+#include "utopia_Device.hpp"
 #include "utopia_Jacobi.hpp"
 #include "utopia_Views.hpp"
+
 #include "utopia_kokkos_Traits.hpp"
 #include "utopia_trilinos.hpp"
 
@@ -57,7 +59,7 @@ namespace utopia {
         x += 0.5 * x;
         x *= 2.0;
 
-        const double x_dot_x = dot(x, x);
+        // const double x_dot_x = dot(x, x);
         // disp(x_dot_x);
 
         const SizeType n = 2;

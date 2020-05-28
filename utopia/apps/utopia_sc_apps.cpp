@@ -21,7 +21,7 @@
 // #ifdef WITH_PETSC
 // #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
 
-// #include "utopia_PetscDM.hpp"
+// #include "utopia_petsc_DM.hpp"
 
 // namespace utopia {
 

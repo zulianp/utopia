@@ -22,6 +22,9 @@ namespace utopia {
         using Super = OperatorBasedQPSolver;
 
     public:
+        using Super::solve;
+        using Super::update;
+
         RedundantQPSolver(const std::shared_ptr<OperatorBasedQPSolver> &qp_solver, const int n_sub_comm = 2)
             : qp_solver_(qp_solver) {
             red_.n_sub_comm(n_sub_comm);

@@ -105,8 +105,7 @@ namespace utopia {
                         std::vector<SizeType> nnz(local_size(b).get(0), 0);
                         auto rr = row_range(b);
 
-                        each_read(b,
-                                  [&](const SizeType r, const SizeType &, const Scalar &) { ++nnz[r - rr.begin()]; });
+                        b.read([&](const SizeType r, const SizeType &, const Scalar &) { ++nnz[r - rr.begin()]; });
 
                         if (!nnz.empty()) {
                             block_row_nnz += *std::max_element(std::begin(nnz), std::end(nnz));
@@ -131,7 +130,7 @@ namespace utopia {
 
                             const auto global_row_offset = l_rr.begin() - b_rr.begin() + row_offset[i];
 
-                            each_read(b, [&](const SizeType r, const SizeType c, const Scalar val) {
+                            b.read([&](const SizeType r, const SizeType c, const Scalar val) {
                                 l.set(global_row_offset + r,
                                       col_offset[j] + c,  // BUG (the columns should be staggered to reflect the
                                                           // parallel decomposition)

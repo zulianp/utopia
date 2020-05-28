@@ -45,12 +45,20 @@ namespace utopia {
 
         PetscCommunicator split(const int color) const;
 
-        explicit PetscCommunicator(const MPI_Comm comm) : wrapper_(make_not_owned(comm)) {}
         PetscCommunicator();
+        explicit PetscCommunicator(const MPI_Comm comm) : wrapper_(make_not_owned(comm)) {}
+        explicit PetscCommunicator(const Communicator &comm) : wrapper_(make_not_owned(comm.raw_comm())) {}
+        inline PetscCommunicator(const PetscCommunicator &other) : wrapper_(other.wrapper_) {}
+        inline PetscCommunicator(PetscCommunicator &&other) : wrapper_(std::move(other.wrapper_)) {}
 
-        PetscCommunicator(const Communicator &comm) : wrapper_(make_not_owned(comm.raw_comm())) {}
-
-        PetscCommunicator(const PetscCommunicator &other) : wrapper_(other.wrapper_) {}
+        inline PetscCommunicator &operator=(const PetscCommunicator &other) {
+            wrapper_ = other.wrapper_;
+            return *this;
+        }
+        inline PetscCommunicator &operator=(PetscCommunicator &&other) {
+            wrapper_ = std::move(other.wrapper_);
+            return *this;
+        }
 
     private:
         std::shared_ptr<Wrapper> wrapper_;

@@ -1,7 +1,10 @@
 #ifndef UTOPIA_COEFFICIENT_HPP
 #define UTOPIA_COEFFICIENT_HPP
 
-#include "utopia_PetscDM.hpp"
+#include "utopia_DeviceView.hpp"
+
+// petsc
+#include "utopia_petsc_Vector.hpp"
 
 namespace utopia {
 

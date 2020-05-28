@@ -1,9 +1,12 @@
 #include "utopia_petsc_Eval_KroneckerProduct.hpp"
 
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_MPI.hpp"
 #include "utopia_Wrapper.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
+
+#include "utopia_petsc_Communicator.hpp"
 
 #include <mpi.h>
 #include <vector>
@@ -45,14 +48,20 @@ namespace utopia {
         MPI_Allreduce(MPI_IN_PLACE, &is_evenly_distributed, 1, MPI_INT, MPI_MIN, comm);
 
         if (is_evenly_distributed != 0) {
-            MPI_Allgather(right_array, r_range.extent(), MPIU_SCALAR, &recvbuf[0], r_range.extent(), MPIU_SCALAR, comm);
+            MPI_Allgather(right_array,
+                          r_range.extent(),
+                          MPIType<Scalar>::value(),
+                          &recvbuf[0],
+                          r_range.extent(),
+                          MPIType<Scalar>::value(),
+                          comm);
         } else {
             const long n_values = r_range.extent();
             std::vector<long> n_values_x_proc(n_procs);
             std::vector<long> offsets(n_procs);
             n_values_x_proc[rank] = n_values;
 
-            MPI_Allgather(&n_values, 1, MPI_LONG, &n_values_x_proc[0], 1, MPI_LONG, comm);
+            MPI_Allgather(&n_values, 1, MPIType<long>::value(), &n_values_x_proc[0], 1, MPIType<long>::value(), comm);
 
             offsets[0] = 0;
             for (int r = 1; r != n_procs; ++r) {
@@ -68,8 +77,14 @@ namespace utopia {
                     continue;
                 }
 
-                MPI_Isend(right_array, r_range.extent(), MPIU_SCALAR, r, r, comm, &requests[req_index++]);
-                MPI_Irecv(&recvbuf[offsets[r]], n_values_x_proc[r], MPIU_SCALAR, r, rank, comm, &requests[req_index++]);
+                MPI_Isend(right_array, r_range.extent(), MPIType<Scalar>::value(), r, r, comm, &requests[req_index++]);
+                MPI_Irecv(&recvbuf[offsets[r]],
+                          n_values_x_proc[r],
+                          MPIType<Scalar>::value(),
+                          r,
+                          rank,
+                          comm,
+                          &requests[req_index++]);
             }
 
             MPI_Waitall(requests.size(), &requests[0], MPI_STATUSES_IGNORE);

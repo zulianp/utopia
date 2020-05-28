@@ -105,6 +105,29 @@ namespace utopia {
         static const int value = 1;
     };
 
+    class AbsMax {
+    public:
+        std::string get_class() const { return "AbsMax"; }
+
+        template <typename T>
+        inline static T apply(const T &left, const T &right) {
+            using std::abs;
+            return std::max(abs(left), abs(right));
+        }
+    };
+
+    template <>
+    class is_commutative<AbsMax> {
+    public:
+        static const int value = 1;
+    };
+
+    template <>
+    class is_associative<AbsMax> {
+    public:
+        static const int value = 1;
+    };
+
     class And {
     public:
         std::string get_class() const { return "And"; }
@@ -198,7 +221,7 @@ namespace utopia {
         template <typename T>
         inline bool operator()(const T &left, const T &right) const {
             using std::abs;
-            return abs(left - right) < _tol;
+            return abs(left - right) <= _tol;
         }
 
         ApproxEqual(const double tol = 1e-8) : _tol(tol) {}
@@ -208,7 +231,7 @@ namespace utopia {
         template <typename T>
         inline bool apply(const T &left, const T &right) const {
             using std::abs;
-            return abs(left - right) < tol();
+            return abs(left - right) <= tol();
         }
 
     private:
@@ -411,8 +434,10 @@ namespace utopia {
         template <typename TOther>
         inline TOther apply(const TOther &x) const {
             using std::abs;
-            return abs(x) > tol_;
+            return (abs(x) > tol_) ? 1 : 0;
         }
+
+        inline T tol() const { return tol_; }
 
     private:
         T tol_;

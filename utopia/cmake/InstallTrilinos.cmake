@@ -2,7 +2,7 @@
 
 if(NOT TRILINOS_FOUND)
 
-    # git clone https://github.com/trilinos/Trilinos.git 
+    # git clone https://github.com/trilinos/Trilinos.git
     include(ExternalProject)
 
     set(STAGE_DIR 				"${CMAKE_BINARY_DIR}/stage")
@@ -13,6 +13,7 @@ if(NOT TRILINOS_FOUND)
     set(TRILINOS_MPI_BASE_DIR   $ENV{MPI_DIR})
 
     list(APPEND TRILINOS_CMAKE_ARGS
+        "-DCMAKE_CXX_STANDARD=14"
         "-DCMAKE_INSTALL_PREFIX=${TRILINOS_INSTALL_DIR}"
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DENABLE_SANITIZER=${ENABLE_SANITIZER}"

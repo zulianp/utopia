@@ -85,20 +85,42 @@ namespace utopia {
 
         static void fix_semidefinite_operator(Matrix &A) {
             Vector d(row_layout(A), 0.0);
-            // Size s = local_size(A);
-            // d = local_values(s.get(0), 0.);
+
+            // TODO(Patrick) FIXME use atomic_store once available
 
             {
-                Write<Vector> w_d(d);
+                auto d_view = view_device(d);
 
-                each_read(A, [&d](const SizeType i, const SizeType j, const double &val) {
-                    if (i == j && std::abs(val) < 1e-12) {
-                        d.set(i, 1.0);
+                A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &val) {
+                    if (i == j && device::abs(val) < 1e-12) {
+                        d_view.atomic_add(i, 1.0);
                     }
                 });
             }
 
+            d.transform_values(UTOPIA_LAMBDA(const Scalar &v) {
+                if (v >= 1.0) {
+                    return 1.0;
+                } else {
+                    return 0.0;
+                }
+            });
+
             A += Matrix(diag(d));
+
+            // Vector d(row_layout(A), 1.0);
+
+            // {
+            //     auto d_view = view_device(d);
+
+            //     A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &val) {
+            //         if (i == j && device::abs(val) > 1e-12) {
+            //             d_view.set(i, 0.0);
+            //         }
+            //     });
+            // }
+
+            // A += Matrix(diag(d));
         }
 
         /**

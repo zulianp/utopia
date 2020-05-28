@@ -22,14 +22,16 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
+
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
+#include "utopia_petsc_impl.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -282,7 +284,7 @@ namespace utopia {
             }
 
             auto sampler = utopia::sampler(C, [&rectangles](const Point &x) -> Scalar {
-                for (auto r = 0; r < rectangles.size(); r++) {
+                for (std::size_t r = 0; r < rectangles.size(); r++) {
                     if (rectangles[r].belongs_to_rectangle(x[0], x[1])) return 1.0;
                 }
                 return 0.0;

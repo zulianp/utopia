@@ -37,13 +37,16 @@ namespace utopia {
             assemble_laplacian_1D(m);
             {
                 Range r = row_range(m);
+                const SizeType r_begin = r.begin();
+                const SizeType r_end = r.end();
+
                 Write<Matrix> w(m);
-                if (r.begin() == 0) {
+                if (r_begin == 0) {
                     m.set(0, 0, 1.);
                     m.set(0, 1, 0);
                 }
 
-                if (r.end() == n) {
+                if (r_end == n) {
                     m.set(n - 1, n - 1, 1.);
                     m.set(n - 1, n - 2, 0);
                 }
@@ -54,13 +57,16 @@ namespace utopia {
                 // Creating test vector (alternative way see [assemble vector alternative], which might be easier for
                 // beginners)
                 Range r = range(rhs);
+                const SizeType r_begin = r.begin();
+                const SizeType r_end = r.end();
+
                 Write<Vector> w(rhs);
 
-                if (r.begin() == 0) {
+                if (r_begin == 0) {
                     rhs.set(0, 0);
                 }
 
-                if (r.end() == n) {
+                if (r_end == n) {
                     rhs.set(n - 1, 0.);
                 }
             }

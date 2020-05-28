@@ -94,16 +94,16 @@ namespace utopia {
             // x = _eq_constraints_mask_matrix_ * x;
 
             {
-                auto d_flg = const_device_view(_eq_constrains_flg);
+                auto d_flg = const_local_view_device(_eq_constrains_flg);
+                auto x_view = local_view_device(x);
 
-                parallel_transform(x, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
+                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
                     Scalar flg = d_flg.get(i);
 
                     // TODO:: use abs with eps tolerance
                     if (flg == 1.0) {
-                        return 0.0;
-                    } else
-                        return xi;
+                        x_view.set(i, 0.0);
+                    }
                 });
             }
 

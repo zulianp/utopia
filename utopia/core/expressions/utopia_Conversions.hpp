@@ -20,8 +20,7 @@ namespace utopia {
         std::vector<int> nnzxrow(n_row_local, 0);
         auto r = row_range(from);
 
-        each_read(from,
-                  [&nnzxrow, &r](const SizeType i, const SizeType &, const double &) { ++nnzxrow[i - r.begin()]; });
+        from.read([&nnzxrow, &r](const SizeType i, const SizeType &, const double &) { ++nnzxrow[i - r.begin()]; });
 
         auto nnz = *std::max_element(nnzxrow.begin(), nnzxrow.end());
 
@@ -30,7 +29,7 @@ namespace utopia {
 
         {
             Write<TTo> w_t(to);
-            each_read(from, [&to](const SizeType i, const SizeType j, const double val) { to.set(i, j, val); });
+            from.read([&to](const SizeType i, const SizeType j, const double val) { to.set(i, j, val); });
         }
 
         assert(size(from) == size(to));
@@ -47,37 +46,22 @@ namespace utopia {
         // auto ls = local_size(from).get(0);
         to.zeros(layout(from));
 
-        Write<TTo> w_t(to);
-        each_read(from, [&to](const SizeType i, const double val) { to.set(i, val); });
+        // Write<TTo> w_t(to);
+        // each_read(from, [&to](const SizeType i, const double val) { to.set(i, val); });
+
+        // FIXME check if backends have same memory space and device
+
+        {
+            auto from_view = const_local_view_device(from);
+            auto to_view = local_view_device(to);
+
+            parallel_for(local_range_device(from),
+                         UTOPIA_LAMBDA(const SizeType &i) { to_view.set(i, from_view.get(i)); });
+        }
 
         assert(size(from) == size(to));
         assert(local_size(from) == local_size(to));
     }
-
-    //    template<class Vector, class Matrix>
-    //    void vec2mat(const Vector &v, Matrix &m, const bool transpose = false)
-    //    {
-    //        if(transpose) {
-    //            m = values(1, v.size().get(0), 0);
-    //            const Read<Vector> read(v);
-    //            const Write<Matrix> write(m);
-    //            const Range r = range(v);
-    //
-    //            for(int i = r.begin(); i < r.end(); ++i) {
-    //                m.set(0, i, v.get(i));
-    //            }
-    //
-    //        } else {
-    //            m = values(v.size().get(0), 1, 0);
-    //            const Read<Vector> read(v);
-    //            const Write<Matrix> write(m);
-    //            const Range r = range(v);
-    //
-    //            for(int i = r.begin(); i < r.end(); ++i) {
-    //                m.set(i, 0, v.get(i));
-    //            }
-    //        }
-    //    }
 
     template <class T1, class T2>
     bool cross_backend_approxeq(const Tensor<T1, 1> &l, const Tensor<T2, 1> &r) {

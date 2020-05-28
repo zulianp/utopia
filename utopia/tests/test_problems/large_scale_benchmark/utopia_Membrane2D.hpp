@@ -188,7 +188,7 @@ namespace utopia {
         }
 
         void form_lb(Vector &lb) {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array;
 
             DMDAGetInfo(da_,
@@ -222,7 +222,7 @@ namespace utopia {
                         // Constrained is computed as upper part of circle with the radius R=1, and the centre S=(1;
                         // 0.5; -1.3)
                         PetscScalar x = coords[j][i].x;
-                        PetscScalar y = coords[j][i].y;
+                        // PetscScalar y = coords[j][i].y;
 
                         PetscScalar c = ((x - 0.5) * (x - 0.5)) - 1.0 + (1.3 * 1.3);
                         PetscScalar b = 2.0 * 1.3;
@@ -360,7 +360,7 @@ namespace utopia {
         }
 
         void form_BC_marker(Vector &bc_marker, Vector &bc_values) {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array_marker;
             PetscScalar **array_values;
 
@@ -396,8 +396,8 @@ namespace utopia {
                     if (j == 0) {
                         array_marker[j][i] = 1.0;
 
-                        PetscScalar x1 = coords[j][i].x;
-                        PetscScalar x2 = coords[j][i].y;
+                        // PetscScalar x1 = coords[j][i].x;
+                        // PetscScalar x2 = coords[j][i].y;
 
                         array_values[j][i] = 0.0;
 
@@ -418,7 +418,7 @@ namespace utopia {
         }
 
         void build_init_guess() {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array;
 
             DMDAGetInfo(da_,
@@ -462,7 +462,7 @@ namespace utopia {
         }
 
         void remove_BC_contrib(Vector &x) const {
-            PetscInt i, j, k, mx, my, xm, ym, xs, ys;
+            PetscInt i, j, mx, my, xm, ym, xs, ys;
             PetscScalar **array;
 
             DMDAGetInfo(da_,

@@ -72,14 +72,16 @@ namespace utopia {
 
         template <class Grad, class DX, class Matrix>
         UTOPIA_INLINE_FUNCTION void assemble(const Grad &grad, const DX &dx, Matrix &mat) const {
-            const auto n = grad.n_points();
-            for (SizeType k = 0; k < n; ++k) {
+            const int n = grad.n_points();
+            const int n_fun = grad.n_functions();
+
+            for (int k = 0; k < n; ++k) {
                 // pragma GCCunroll(NDofs)
-                for (SizeType j = 0; j < grad.n_functions(); ++j) {
-                    const auto g_test = grad(j, k);
+                for (int j = 0; j < n_fun; ++j) {
+                    // const auto g_test = grad(j, k);
                     mat(j, j) += kernel(grad, dx, j, j, k);
 
-                    for (SizeType l = j + 1; l < grad.n_functions(); ++l) {
+                    for (int l = j + 1; l < n_fun; ++l) {
                         const auto v = kernel(grad, dx, l, j, k);
                         mat(j, l) += v;
                         mat(l, j) += v;

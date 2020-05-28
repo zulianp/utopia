@@ -1,7 +1,13 @@
 #ifndef UTOPIA_PETSC_DIRICHLET_BOUNDARY_CONDITIONS_HPP
 #define UTOPIA_PETSC_DIRICHLET_BOUNDARY_CONDITIONS_HPP
 
-#include "utopia_petsc_dma_FunctionSpace.hpp"
+#include "utopia_DeviceView.hpp"
+#include "utopia_ForwardDeclarations.hpp"
+#include "utopia_SideSets.hpp"
+
+// petsc
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 
 namespace utopia {
 

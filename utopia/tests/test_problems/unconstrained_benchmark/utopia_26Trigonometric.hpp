@@ -30,9 +30,8 @@ namespace utopia {
             x_inc_.values(x_layout, 1.0);
 
             {
-                const Write<Vector> write2(x_inc_);
-
-                each_write(x_inc_, [](const SizeType i) -> double { return i + 1; });
+                auto x_inc_view = view_device(x_inc_);
+                parallel_for(range_device(x_inc_), UTOPIA_LAMBDA(const SizeType &i) { x_inc_view.set(i, i + 1.0); });
             }
         }
 
@@ -50,15 +49,7 @@ namespace utopia {
             Vector xcos = x;
             Vector xsin = x;
 
-            {
-                const Write<Vector> write1(xcos);
-                const Write<Vector> write2(xsin);
-                const Read<Vector> r1(x);
-
-                each_write(xcos, [&x](const SizeType i) -> double { return std::cos(x.get(i)); });
-
-                each_write(xsin, [&x](const SizeType i) -> double { return std::sin(x.get(i)); });
-            }
+            cos_sin_x(x, xcos, xsin);
 
             Scalar s1 = sum(xcos);
             Vector t(layout(x), (n_global - s1));
@@ -70,6 +61,19 @@ namespace utopia {
             return true;
         }
 
+        static void cos_sin_x(const Vector &x, Vector &xcos, Vector &xsin) {
+            auto x_view = const_view_device(x);
+
+            auto xcos_view = view_device(xcos);
+            auto xsin_view = view_device(xsin);
+
+            parallel_for(range_device(xcos), UTOPIA_LAMBDA(const SizeType &i) {
+                const auto xi = x_view.get(i);
+                xcos_view.set(i, device::cos(xi));
+                xsin_view.set(i, device::sin(xi));
+            });
+        }
+
         bool gradient(const Vector &x, Vector &g) const override {
             assert(local_size(x).get(0) == this->dim());
 
@@ -77,15 +81,7 @@ namespace utopia {
             Vector xcos = x;
             Vector xsin = x;
 
-            {
-                const Write<Vector> write1(xcos);
-                const Write<Vector> write2(xsin);
-                const Read<Vector> r1(x);
-
-                each_write(xcos, [&x](const SizeType i) -> double { return std::cos(x.get(i)); });
-
-                each_write(xsin, [&x](const SizeType i) -> double { return std::sin(x.get(i)); });
-            }
+            cos_sin_x(x, xcos, xsin);
 
             Scalar s1 = sum(xcos);
             Vector t(layout(x), (n_global - s1));
@@ -113,15 +109,7 @@ namespace utopia {
             Vector xsin = x;
             Vector ones(layout(x), 1.0);
 
-            {
-                const Write<Vector> write1(xcos);
-                const Write<Vector> write2(xsin);
-                const Read<Vector> r1(x);
-
-                each_write(xcos, [&x](const SizeType i) -> double { return std::cos(x.get(i)); });
-
-                each_write(xsin, [&x](const SizeType i) -> double { return std::sin(x.get(i)); });
-            }
+            cos_sin_x(x, xcos, xsin);
 
             Scalar s1 = sum(xcos);
             Vector t = (n_global - s1) * ones;
@@ -136,24 +124,25 @@ namespace utopia {
                 const Read<Vector> read3(t);
                 const Write<Matrix> write(H);
 
-                each_write(H, [&xsin, &xcos, &t, s2, n_global](const SizeType i, const SizeType j) -> double {
-                    Scalar val;
+                H.transform_ijv(
+                    [&xsin, &xcos, &t, s2, n_global](const SizeType i, const SizeType j, const Scalar &) -> Scalar {
+                        Scalar val;
 
-                    if (i == j) {
-                        val = (((i + 1) * ((i + 1) + 2.)) + n_global) * xsin.get(i) * xsin.get(i);
-                        val += xcos.get(i) * (xcos.get(i) - ((2. * (i + 1.)) + 2.) * xsin.get(i));
-                        val += t.get(i) * (((i + 1.) * xcos.get(i)) + xsin.get(i));
-                        val = 2.0 * (val + (xcos.get(i) * s2));
-                    } else {
-                        Scalar th = xcos.get(i);
-                        Scalar xsj = xsin.get(i);
-                        val = xsin.get(j) * (((n_global + (i + 1) + (j + 1)) * xsj) - th);
-                        val -= (xsj * xcos.get(j));
-                        val *= 2.0;
-                    }
+                        if (i == j) {
+                            val = (((i + 1) * ((i + 1) + 2.)) + n_global) * xsin.get(i) * xsin.get(i);
+                            val += xcos.get(i) * (xcos.get(i) - ((2. * (i + 1.)) + 2.) * xsin.get(i));
+                            val += t.get(i) * (((i + 1.) * xcos.get(i)) + xsin.get(i));
+                            val = 2.0 * (val + (xcos.get(i) * s2));
+                        } else {
+                            Scalar th = xcos.get(i);
+                            Scalar xsj = xsin.get(i);
+                            val = xsin.get(j) * (((n_global + (i + 1) + (j + 1)) * xsj) - th);
+                            val -= (xsj * xcos.get(j));
+                            val *= 2.0;
+                        }
 
-                    return val;
-                });
+                        return val;
+                    });
             }
 
             return true;

@@ -23,14 +23,16 @@
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MassMatrixView.hpp"
-#include "utopia_PetscDM.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
+
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMDA_FunctionSpace.hpp"
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_Matrix.hpp"
-#include "utopia_petsc_dma_FunctionSpace.hpp"
+#include "utopia_petsc_impl.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -181,8 +183,9 @@ namespace utopia {
             const T alpha = distr_angle_alpha(generator);
             const T beta = distr_angle_beta(generator);
 
-            auto max_l = std::max(std::max(params.x_min, params.y_min), params.z_min);
-            auto min_l = std::min(std::min(params.x_max, params.y_max), params.z_max);
+            // TODO(Alena) WHY WAS NOT THIS USED?
+            // auto max_l = std::max(std::max(params.x_min, params.y_min), params.z_min);
+            // auto min_l = std::min(std::min(params.x_max, params.y_max), params.z_max);
 
             // std::uniform_real_distribution<> distr_length(max_l, min_l);
             std::uniform_real_distribution<> distr_length(0, 1);
@@ -285,7 +288,7 @@ namespace utopia {
             T min_x = 0;
             T min_z = 0;
 
-            for (auto p = 0; p < points_.size(); p++) {
+            for (std::size_t p = 0; p < points_.size(); p++) {
                 auto ax = points_[p].x;
                 auto az = points_[p].z;
                 points_[p].x = (ax * cos_gamma) - (az * sin_gamma);
@@ -307,7 +310,7 @@ namespace utopia {
                 std::uniform_real_distribution<> distr_move_by(move_by_p, move_by_m);
                 auto moving_factor = distr_move_by(generator);
 
-                for (auto p = 0; p < points_.size(); p++) {
+                for (std::size_t p = 0; p < points_.size(); p++) {
                     points_[p].x = points_[p].x - moving_factor;
                 }
             }
@@ -319,7 +322,7 @@ namespace utopia {
                 std::uniform_real_distribution<> distr_move_by(move_by_m, move_by_p);
                 auto moving_factor = distr_move_by(generator);
 
-                for (auto p = 0; p < points_.size(); p++) {
+                for (std::size_t p = 0; p < points_.size(); p++) {
                     points_[p].x = points_[p].x + moving_factor;
                 }
             }
@@ -331,7 +334,7 @@ namespace utopia {
                 std::uniform_real_distribution<> distr_move_by(move_by_p, move_by_m);
                 auto moving_factor = distr_move_by(generator);
 
-                for (auto p = 0; p < points_.size(); p++) {
+                for (std::size_t p = 0; p < points_.size(); p++) {
                     points_[p].z = points_[p].z - moving_factor;
                 }
             }
@@ -343,7 +346,7 @@ namespace utopia {
                 std::uniform_real_distribution<> distr_move_by(move_by_m, move_by_p);
                 auto moving_factor = distr_move_by(generator);
 
-                for (auto p = 0; p < points_.size(); p++) {
+                for (std::size_t p = 0; p < points_.size(); p++) {
                     points_[p].z = points_[p].z + moving_factor;
                 }
             }
@@ -411,7 +414,7 @@ namespace utopia {
             }
 
             auto sampler = utopia::sampler(C, [&paralleloids](const Point &x) -> Scalar {
-                for (auto r = 0; r < paralleloids.size(); r++) {
+                for (std::size_t r = 0; r < paralleloids.size(); r++) {
                     if (paralleloids[r].belongs_to_paralleloid(x[0], x[1], x[2])) return 1.0;
                 }
                 return 0.0;

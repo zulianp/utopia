@@ -58,8 +58,16 @@ namespace utopia {
         IndexSet index;
         // index.reserve(local_size(indicator).get(0));
 
+        // {
+        //     each_read(indicator.derived(), [&index](const SizeType i, const Scalar value) {
+        //         if (value == 1.) {
+        //             index.push_back(i);
+        //         }
+        //     });
+        // }
+
         {
-            each_read(indicator.derived(), [&index](const SizeType i, const Scalar value) {
+            indicator.derived().read([&index](const SizeType i, const Scalar &value) {
                 if (value == 1.) {
                     index.push_back(i);
                 }

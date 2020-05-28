@@ -429,37 +429,40 @@ namespace utopia {
                 }
 
                 {
-                    auto d_YY_sum = const_device_view(YY_sum_);
-                    auto d_SY_sum = const_device_view(SY_sum_);
+                    auto d_YY_sum = const_local_view_device(YY_sum_);
+                    auto d_SY_sum = const_local_view_device(SY_sum_);
 
-                    parallel_each_write(D_, UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                    auto D_view = local_view_device(D_);
+
+                    parallel_for(local_range_device(D_), UTOPIA_LAMBDA(const SizeType i) {
                         Scalar yy = YY_sum_.get(i);
                         Scalar sy = SY_sum_.get(i);
 
-                        if (!std::isfinite(yy) || !std::isfinite(sy)) {
-                            return theta_working;
+                        if (!device::isfinite(yy) || !device::isfinite(sy)) {
+                            D_view.set(i, theta_working);
                         }
 
                         Scalar dii = (yy / sy);
 
-                        if (dii > 10e-10 && std::isfinite(dii)) {
-                            return dii;
+                        if (dii > 10e-10 && device::isfinite(dii)) {
+                            D_view.set(i, dii);
                         } else {
-                            return theta_working;
+                            D_view.set(i, theta_working);
                         }
                     });
                 }
 
                 {
-                    auto d_D = const_device_view(D_);
+                    auto D_view = const_local_view_device(D_);
+                    auto D_inv_view = local_view_device(D_inv_);
 
-                    parallel_each_write(D_inv_, UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                        Scalar dii = D_.get(i);
+                    parallel_for(local_range_device(D_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar dii = D_view.get(i);
 
-                        if (std::isfinite(dii) && dii != 0.0) {
-                            return 1. / dii;
+                        if (device::isfinite(dii) && dii != 0.0) {
+                            D_inv_view.set(i, 1. / dii);
                         } else {
-                            return theta_working;
+                            D_inv_view.set(i, theta_working);
                         }
                     });
                 }

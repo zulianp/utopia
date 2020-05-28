@@ -3,6 +3,8 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 
+#include "utopia_Algorithms.hpp"
+
 #include <cassert>
 #include <cmath>
 
@@ -61,24 +63,33 @@ namespace utopia {
                 uk = b - A * x;
 
                 {
-                    Write<Vector> w_wk(wk), w_zk(zk);
-                    Read<Vector> r_uk(uk), r_ub(ub), r_lb(lb), r_p(pk);
+                    auto uk_view = const_local_view_device(uk);
+                    auto ub_view = const_local_view_device(ub);
+                    auto lb_view = const_local_view_device(lb);
+                    auto pk_view = const_local_view_device(pk);
 
-                    each_read(x, [&](SizeType i, Scalar elem) {
+                    auto x_view = local_view_device(zk);
+                    auto wk_view = local_view_device(wk);
+                    auto zk_view = local_view_device(zk);
+
+                    parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                        const auto elem = x_view.get(i);
+
                         Scalar val = 0.;
-                        if (approxeq(elem, ub.get(i)) || approxeq(elem, lb.get(i))) {
-                            val = std::max(uk.get(i), Scalar(0));
+                        if (device::approxeq(elem, ub_view.get(i), device::epsilon<Scalar>()) ||
+                            device::approxeq(elem, lb_view.get(i), device::epsilon<Scalar>())) {
+                            val = device::max(uk_view.get(i), Scalar(0));
                         } else {
-                            val = uk.get(i);
+                            val = uk_view.get(i);
                         }
 
                         if (val == 0) {
-                            zk.set(i, std::max(pk.get(i), Scalar(0)));
+                            zk_view.set(i, device::max(pk_view.get(i), Scalar(0)));
                         } else {
-                            zk.set(i, pk.get(i));
+                            zk_view.set(i, pk_view.get(i));
                         }
 
-                        wk.set(i, val);
+                        wk_view.set(i, val);
                     });
                 }
 

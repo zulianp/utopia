@@ -19,13 +19,12 @@ namespace utopia {
 
             x_exact_.zeros(v_layout);
             x_init_.zeros(v_layout);
-            SizeType n_global = 8.0;
+            SizeType n_global = 8;
 
             {
-                const Write<Vector> write1(x_init_);
-                const Write<Vector> write2(x_exact_);
-
-                each_write(x_init_, [n_global](const SizeType i) -> double { return (i + 1) / Scalar(n_global + 1); });
+                auto x_view = view_device(x_init_);
+                parallel_for(range_device(x_init_),
+                             UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i + 1) / Scalar(n_global + 1)); });
 
                 x_exact_.set(0, 0.043153);
                 x_exact_.set(1, 0.193091);

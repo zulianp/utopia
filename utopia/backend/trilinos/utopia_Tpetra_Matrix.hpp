@@ -53,6 +53,9 @@ namespace utopia {
         using ScalarArray = Traits<TpetraMatrix>::ScalarArray;
         using MatrixLayout = Traits<TpetraMatrix>::MatrixLayout;
 
+        using BLAS2Matrix<TpetraMatrix, TpetraVector>::multiply;
+        using BLAS2Matrix<TpetraMatrix, TpetraVector>::transpose_multiply;
+
         // types of Trilinos Objects
         using CrsMatrixType = Tpetra::CrsMatrix<Scalar, LocalSizeType, SizeType, Node>;
         using RCPCrsMatrixType = Teuchos::RCP<CrsMatrixType>;
@@ -325,6 +328,15 @@ namespace utopia {
                           Tpetra::global_size_t cols_global,
                           const Scalar factor);
 
+        void crs(const MatrixLayout &l,
+                 const Teuchos::ArrayRCP<size_t> &rowPtr,
+                 const Teuchos::ArrayRCP<LocalSizeType> &cols,
+                 const Teuchos::ArrayRCP<Scalar> &values) {
+            comm_ = l.comm();
+
+            crs_init(comm_.get(), l.local_size(0), l.local_size(1), l.size(0), l.size(1), rowPtr, cols, values);
+        }
+
         inline void read_lock() override {
             // TODO?
         }
@@ -334,11 +346,15 @@ namespace utopia {
         }
 
         inline void write_lock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
             // TODO?
             implementation().resumeFill();
         }
 
-        inline void write_unlock(WriteMode mode = utopia::AUTO) override { this->finalize(); }
+        inline void write_unlock(WriteMode mode = utopia::AUTO) override {
+            UTOPIA_UNUSED(mode);
+            this->finalize();
+        }
 
         void set(const SizeType &row, const SizeType &col, const Scalar &value) override;
         Scalar get(const SizeType &row, const SizeType &col) const;
@@ -483,6 +499,21 @@ namespace utopia {
         void transform(const Pow &p) override;
         void transform(const Reciprocal<Scalar> &op) override;
 
+        template <class Op>
+        Scalar local_parallel_reduce_values(Op op, const Scalar &initial_value) const;
+
+        template <class Op, class MPIOp>
+        Scalar parallel_reduce_values(Op op, MPIOp mpi_op, const Scalar &initial_value) const;
+
+        template <class F>
+        void transform_values(F op);
+
+        template <class Op>
+        void transform_ijv(Op op);
+
+        template <class F>
+        void read(F op) const;
+
         ////////////////////////////////////////////////////////////////////////
         //////////////////////////// Blas1Tensor //////////////////////////////
         ////////////////////////////////////////////////////////////////////////
@@ -524,6 +555,10 @@ namespace utopia {
         } InitStructs;
 
         std::shared_ptr<InitStructs> init_;
+
+        template <class Op>
+        void aux_transform(const Op &op);
+
     };  // TpetraMatrix
 }  // namespace utopia
 

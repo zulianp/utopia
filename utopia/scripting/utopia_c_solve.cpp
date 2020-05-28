@@ -3,6 +3,7 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Version.hpp"
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_impl.hpp"
 
 extern "C" {
 
@@ -24,6 +25,10 @@ int UtopiaFinalize() {
 }
 
 void USolverCreate(USolver *solver, USolverType type, UPreconditionerType prec, UPackage package) {
+    // FIXME
+    UTOPIA_UNUSED(prec);
+    UTOPIA_UNUSED(package);
+
     using namespace utopia;
     std::cout << "USolverCreate: (USolverType=" << type << ")" << std::endl;
     *solver = new USolverImpl;
@@ -63,5 +68,13 @@ void USolverDestroy(USolver *solver) {
     *solver = nullptr;
 }
 
-void USolverSolve(USolver solver, UMat A, UVec b, UVec x) { std::cout << "(void" << std::endl; }
+void USolverSolve(USolver solver, UMat A, UVec b, UVec x) {
+    // FIXME
+    UTOPIA_UNUSED(solver);
+    UTOPIA_UNUSED(A);
+    UTOPIA_UNUSED(b);
+    UTOPIA_UNUSED(x);
+
+    std::cout << "USolverSolve" << std::endl;
+}
 }

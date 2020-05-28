@@ -21,9 +21,9 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class PorousFlowFE final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-                               // public Operator<typename FunctionSpace::Vector>,
-                               public Configurable {
+    class PorousFlowFE final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>
+    // public Operator<typename FunctionSpace::Vector>,
+    {
     public:
         using Comm = typename FunctionSpace::Comm;
         using Matrix = typename FunctionSpace::Matrix;
@@ -266,17 +266,17 @@ namespace utopia {
                     auto grad = grad_view.make(e);
                     auto dx = dx_view.make(e);
 
-                    const auto n_qp = grad.n_points();
-                    const auto n_fun = grad.n_functions();
+                    const int n_qp = grad.n_points();
+                    const int n_fun = grad.n_functions();
 
-                    for (SizeType k = 0; k < n_qp; ++k) {
+                    for (int k = 0; k < n_qp; ++k) {
                         auto ck = permeability(k);
 
-                        for (SizeType j = 0; j < n_fun; ++j) {
+                        for (int j = 0; j < n_fun; ++j) {
                             const auto g_test = grad(j, k);
                             el_mat(j, j) += LKernel::apply(ck, g_test, g_test, dx(k));
 
-                            for (SizeType l = j + 1; l < n_fun; ++l) {
+                            for (int l = j + 1; l < n_fun; ++l) {
                                 const auto g_trial = grad(l, k);
                                 const Scalar v = LKernel::apply(ck, g_trial, g_test, dx(k));
 
@@ -629,7 +629,7 @@ namespace utopia {
             // } else {
             using Point1 = utopia::StaticVector<Scalar, 1>;
 
-            Scalar spacing = space_->mesh().min_spacing();
+            // Scalar spacing = space_->mesh().min_spacing();
 
             ArrayView<Point1, 12> q_points;
             ArrayView<Scalar, 12> q_weights{};
@@ -638,7 +638,7 @@ namespace utopia {
 
             network_.read(in);
 
-            auto &mesh = space_->mesh();
+            // auto &mesh = space_->mesh();
 
             mass_vector_ = std::make_shared<Vector>();
             space_->create_vector(*mass_vector_);
@@ -652,7 +652,7 @@ namespace utopia {
             {
                 auto space_view = space_->view_device();
 
-                auto dx_view = differential_temp.view_device();
+                // auto dx_view = differential_temp.view_device();
                 auto fun_view = fun_temp.view_device();
 
                 auto p_view = space_->assembly_view_device(*permeability_field_);
@@ -665,7 +665,7 @@ namespace utopia {
                     Elem e;
                     Point p, v, p_quad, isect_1, isect_2;
                     StaticVector<Scalar, 1> p_fracture;
-                    StaticVector<Scalar, NQPoints> permeability;
+                    // StaticVector<Scalar, NQPoints> permeability;
                     ElementVector p_el_vec, m_el_vec;
                     ElementMatrix mass;
 
@@ -675,19 +675,19 @@ namespace utopia {
                     space_view.elem(i, e);
 
                     auto fun = fun_view.make(e);
-                    auto dx = dx_view.make(e);
+                    // auto dx = dx_view.make(e);
 
                     mass.set(0.0);
                     mass_mat_view.assemble(e, mass);
 
-                    for (SizeType i = 0; i < Elem::NFunctions; ++i) {
-                        for (SizeType j = 0; j < Elem::NFunctions; ++j) {
+                    for (int i = 0; i < Elem::NFunctions; ++i) {
+                        for (int j = 0; j < Elem::NFunctions; ++j) {
                             m_el_vec(i) += mass(i, j);
                         }
                     }
 
-                    const auto n_qp = fun.n_points();
-                    const auto n_fun = fun.n_functions();
+                    // const auto n_qp = fun.n_points();
+                    const int n_fun = fun.n_functions();
 
                     bool intersected = false;
 
@@ -703,14 +703,15 @@ namespace utopia {
                             v = isect_2 - isect_1;
                             const Scalar len_isect = norm2(v);
 
-                            for (SizeType k = 0; k < q_weights.size(); ++k) {
+                            const int nqw = q_weights.size();
+                            for (int k = 0; k < nqw; ++k) {
                                 Scalar w = q_weights[k] * len_isect;
                                 p = isect_1 + q_points[k](0) * v;
                                 fracture.inverse_transform(p, p_fracture);
                                 e.inverse_transform(p, p_quad);
 
-                                for (SizeType j = 0; j < n_fun; ++j) {
-                                    for (SizeType l = 0; l < fracture.n_functions(); ++l) {
+                                for (int j = 0; j < n_fun; ++j) {
+                                    for (int l = 0; l < fracture.n_functions(); ++l) {
                                         const Scalar mm = e.fun(j, p_quad) * fracture.fun(l, p_fracture);
                                         p_el_vec(j) += fracture.permeability * fracture.aperture * mm * w;
                                         // m_el_vec(j) += mm * w;

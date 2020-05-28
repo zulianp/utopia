@@ -24,6 +24,11 @@ namespace utopia {
 
         IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), norm_freq_(1.0) {}
 
+        IterativeSolver(const IterativeSolver &other) = default;
+        IterativeSolver(IterativeSolver &&other) = default;
+        IterativeSolver &operator=(const IterativeSolver &) = default;
+        IterativeSolver &operator=(IterativeSolver &&) = default;
+
         ~IterativeSolver() override = default;
 
         void read(Input &in) override {
@@ -139,21 +144,21 @@ namespace utopia {
             bool converged = false;
             if (compute_norm(it)) {
                 // termination because norm of grad is down
-                if (g_norm < atol_) {
+                if (g_norm <= atol_) {
                     exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
                     this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_ABS;
                     converged = true;
                 }
 
                 // step size so small that we rather exit than wait for nan's
-                if (s_norm < stol_) {
+                if (s_norm <= stol_) {
                     exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
                     this->solution_status_.reason = ConvergenceReason::CONVERGED_SNORM_RELATIVE;
                     converged = true;
                 }
 
                 // step size so small that we rather exit than wait for nan's
-                if (r_norm < rtol_) {
+                if (r_norm <= rtol_) {
                     exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
                     this->solution_status_.reason = ConvergenceReason::CONVERGED_FNORM_RELATIVE;
                     converged = true;

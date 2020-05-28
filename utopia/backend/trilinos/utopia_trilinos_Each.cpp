@@ -21,7 +21,7 @@ namespace utopia {
         });
     }
 
-    template class Each<TpetraMatrix, 2, FillType::SPARSE>;
+    // template class Each<TpetraMatrix, 2, FillType::SPARSE>;
     template class Each<TpetraVector, 1, FillType::DENSE>;
     template class Each<TpetraVector, 1, FillType::DELEGATE>;
 }  // namespace utopia

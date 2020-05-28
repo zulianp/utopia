@@ -18,6 +18,7 @@ namespace utopia {
         using NonLinearSolver = utopia::QuasiNewtonBase<Vector>;
 
         using HessianApproximation = utopia::HessianApproximation<Vector>;
+        using QuasiNewtonBase<Vector>::init_memory;
 
     public:
         QuasiTrustRegionVariableBound(const std::shared_ptr<HessianApproximation> &hessian_approx,

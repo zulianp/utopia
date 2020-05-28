@@ -8,6 +8,11 @@
 #include "utopia_petsc_Redundant.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
 
+#ifdef WITH_PETSC
+#include "utopia_petsc_Matrix_impl.hpp"
+#include "utopia_petsc_Vector_impl.hpp"
+#endif  // WITH_PETSC
+
 namespace utopia {
 
     template <class Matrix, class Vector>
@@ -58,7 +63,10 @@ namespace utopia {
             assemble_laplacian_1D(A);
 
             v1.zeros(v_lo);
-            each_write(v1, [](const SizeType &i) -> Scalar { return Scalar(i); });
+            // each_write(v1, [](const SizeType &i) -> Scalar { return Scalar(i); });
+
+            auto v1_view = view_device(v1);
+            parallel_for(range_device(v1), UTOPIA_LAMBDA(const SizeType &i) { v1_view.set(i, Scalar(i)); });
 
             // creating subcommunicators, indices, and scatters
             Redundant<Matrix, Vector> red;

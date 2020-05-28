@@ -25,8 +25,8 @@ namespace utopia {
             x_exact_.values(layout(x_init_), 0.15812);  // depends on size.. this is valid for n=10
 
             {
-                const Write<Vector> write1(x_init_);
-                each_write(x_init_, [](const SizeType i) -> double { return i + 1; });
+                auto x_view = view_device(x_init_);
+                parallel_for(range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, i + 1.0); });
             }
         }
 

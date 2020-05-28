@@ -119,13 +119,15 @@ namespace utopia {
 
         template <class Grad, class DX, class Matrix>
         UTOPIA_INLINE_FUNCTION static void assemble(const Grad &grad, const DX &dx, Matrix &mat) {
-            const auto n = grad.n_points();
-            for (SizeType k = 0; k < n; ++k) {
-                for (SizeType j = 0; j < grad.n_functions(); ++j) {
+            const int n = grad.n_points();
+            const int n_fun = grad.n_functions();
+
+            for (int k = 0; k < n; ++k) {
+                for (int j = 0; j < n_fun; ++j) {
                     const auto g_test = grad(j, k);
                     mat(j, j) += dot(g_test, g_test) * dx(k);
 
-                    for (SizeType l = j + 1; l < grad.n_functions(); ++l) {
+                    for (int l = j + 1; l < n_fun; ++l) {
                         const auto v = dot(g_test, grad(l, k)) * dx(k);
                         mat(j, l) += v;
                         mat(l, j) += v;
