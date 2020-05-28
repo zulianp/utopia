@@ -16,6 +16,8 @@ RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4
 # Docker hub stuff (comment if on PC)
 COPY . /utopia_cloned
 RUN ls /utopia_cloned
+RUN cd /utopia_cloned && git branch
+
 
 # (Uncomment these ones if on PC)
 # RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
