@@ -54,13 +54,25 @@ if(NOT PETSC_FOUND)
     set(PETSC_MPI_BASE_DIR   $ENV{MPI_DIR})
     set(MAKE_COMMAND "make")
 
-    # set(PETSC_CONFIG_ARGS "$ENV{PETSC_CONFIG_ARGS} ${PETSC_CONFIG_ARGS}")
-    set(PETSC_CONFIG_ARGS "$ENV{PETSC_CONFIG_ARGS}")
+    set(PETSC_CONFIG_ARGS $ENV{PETSC_CONFIG_ARGS})
+    set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-mpi=1 --download-scalapack=yes --download-hypre=yes --with-cxx-dialect=C++11 -download-superlu_dist=yes --download-superlu=yes --download-mumps=yes -with-debugging=0)
+
+    #####################################################################
+    # DMPlex dependencies
+    set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen)
+
+    if(HDF5_DIR)
+        set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-hdf5-dir=${HDF5_DIR})
+    else()
+        set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-hdf5)
+    endif()
 
     if(UTOPIA_ENABLE_CGNS)
-        set(PETSC_CONFIG_ARGS "--with-cgns=yes --with-cgns-dir=/opt/local")
+        set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --with-cgns=yes --with-cgns-dir=/opt/local)
         message(STATUS "USING CGNS")
     endif()
+
+    #####################################################################
 
     ExternalProject_Add(
         petsc
@@ -73,7 +85,7 @@ if(NOT PETSC_FOUND)
         INSTALL_DIR         ${PETSC_INSTALL_DIR}
         LOG_CONFIGURE       1
         LOG_BUILD           1
-        CONFIGURE_COMMAND   <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --with-mpi=1 --download-scalapack=yes --download-hypre=yes --with-cxx-dialect=C++11 -download-superlu_dist=yes --download-superlu=yes --download-mumps=yes --download-hdf5 --download-netcdf --download-pnetcdf --download-exodusii --download-zlib --download-triangle --download-ctetgen -with-debugging=0 ${PETSC_CONFIG_ARGS}  #-with-mpi-include=${MPI_INCLUDE_PATH} --with-mpi-lib=${MPI_LIBRARIES} --with-cgns=yes --with-cgns-dir=/opt/local
+        CONFIGURE_COMMAND   <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> ${PETSC_CONFIG_ARGS}
         BUILD_COMMAND       ${MAKE_COMMAND}
         INSTALL_COMMAND     make install
         # COMMAND       ${MAKE_COMMAND}
