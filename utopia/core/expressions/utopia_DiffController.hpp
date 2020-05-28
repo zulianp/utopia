@@ -3,6 +3,7 @@
 
 #include "utopia_FiniteDifference.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_Rename.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Wrapper.hpp"
 

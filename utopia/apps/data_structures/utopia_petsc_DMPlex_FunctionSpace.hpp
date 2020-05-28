@@ -192,7 +192,7 @@ namespace utopia {
             //     fine_space->dirichlet_bcs_[i]->init_from(*dirichlet_bcs_[i]);
             // }
 
-            return std::move(fine_space);
+            return fine_space;
         }
 
         inline void create_interpolation(const FunctionSpace &target, PetscMatrix &I) const {

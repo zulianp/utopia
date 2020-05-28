@@ -4,11 +4,13 @@ codecov:
   # ci:
   #   - "travis.org"
   strict_yaml_branch: "yaml-config"
-  max_report_age: 24
+  # max_report_age: 24
   disable_default_path_fixes: yes
   require_ci_to_pass: no
   notify:
     after_n_builds: 2
     wait_for_ci: no
-  fixes:
-    - "*/utopia/utopia/::/utopia/utopia/"
+fixes:
+  - "*/utopia/utopia/::/utopia/utopia/"
+  - "*/utopia_cloned/utopia/::/utopia/utopia/"
+

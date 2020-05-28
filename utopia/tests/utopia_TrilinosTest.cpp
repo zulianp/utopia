@@ -816,8 +816,6 @@ namespace utopia {
             // using MatrixT = utopia::PetscMatrix;
             // using VectorT = utopia::PetscVector;
 
-            bool verbose = false;
-
             VectorT rhs;
             MatrixT A, I;
 
@@ -828,7 +826,7 @@ namespace utopia {
             );
 
 #ifdef WITH_PETSC
-
+            bool verbose = false;
             bool ok = true;
             // FIXME needs trilinos formats but for the moment lets use petsc's
             {

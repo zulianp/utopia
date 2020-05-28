@@ -589,15 +589,12 @@ namespace utopia {
     };
 
     void expr() {
-        auto n_dofs = 10;
 #ifdef WITH_PETSC
-        PetscCommunicator petsc_comm;
-        ExpressionTests<PetscMatrix, PetscVector>(petsc_comm, n_dofs).run();
+        ExpressionTests<PetscMatrix, PetscVector>(PetscCommunicator(), 10).run();
 #endif
 
 #ifdef WITH_TRILINOS
-        TrilinosCommunicator trilinos_comm;
-        ExpressionTests<TpetraMatrixd, TpetraVectord>(trilinos_comm, n_dofs).run();
+        ExpressionTests<TpetraMatrixd, TpetraVectord>(TrilinosCommunicator(), 10).run();
 #endif
     }
 
