@@ -10,5 +10,7 @@ codecov:
   notify:
     after_n_builds: 2
     wait_for_ci: no
-  fixes:
-    - "*/utopia/utopia/::/utopia/utopia/"
+fixes:
+  - "*/utopia/utopia/::/utopia/utopia/"
+  - "*/utopia_cloned/utopia/::/utopia/utopia/"
+
