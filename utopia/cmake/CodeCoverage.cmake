@@ -13,12 +13,14 @@ if(ENABLE_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       --coverage # sets all required flags
       -fprofile-instr-generate
       -fcoverage-mapping
+      -ftest-coverage
     )
   else()
     target_compile_options(coverage_config INTERFACE
       -O0        # no optimization
       -g         # generate debug info
       --coverage # sets all required flags
+      -ftest-coverage
     )
   endif()
 

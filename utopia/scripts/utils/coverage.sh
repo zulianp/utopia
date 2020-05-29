@@ -3,7 +3,7 @@
 # Copy me into your bin folder
 
 # Uncomment me to remove previous coverage runs
-rm ./*.info; find . -name "*.gcda" -print0 | xargs -0 rm
+rm -f ./*.info; find . -name "*.gcda" -print0 | xargs -0 rm
 
 lcov --capture --directory . --output-file cov.info
 

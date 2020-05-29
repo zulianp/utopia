@@ -9,6 +9,7 @@
 #include "utopia_Benchmark.hpp"
 #include "utopia_Chrono.hpp"
 #include "utopia_MPI.hpp"
+#include "utopia_RangeDevice.hpp"
 
 namespace utopia {
 

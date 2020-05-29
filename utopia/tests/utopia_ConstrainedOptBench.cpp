@@ -13,7 +13,8 @@ namespace utopia {
     template <class Matrix, class Vector>
     class ConstrainedOptimizationBenchmark : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
 
         std::string name() override { return "TR: Bound constrained optimization benchmark"; }
 
@@ -195,22 +196,24 @@ namespace utopia {
         }
     };
 
-    static void constrained_opt() {
-        int verbosity_level = 1;
-        if (Utopia::instance().verbose()) {
-            verbosity_level = 2;
-        }
-
-        if (mpi_world_size() == 1) {
 #ifdef WITH_PETSC
+    static void constrained_opt() {
+        if (mpi_world_size() == 1) {
+            int verbosity_level = 1;
+            if (Utopia::instance().verbose()) {
+                verbosity_level = 2;
+            }
+
             ConstrainedOptimizationBenchmark<PetscMatrix, PetscVector> bench1;
             bench1.set_verbosity_level(verbosity_level);
             bench1.run();
-#endif  // WITH_PETSC
+
         } else {
             std::cout << "constrained_opt, does not work in parallel. \n";
         }
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION_OPTIONAL(constrained_opt);
+
+#endif  // WITH_PETSC
 }  // namespace utopia

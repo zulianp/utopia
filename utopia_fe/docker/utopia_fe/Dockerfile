@@ -1,5 +1,9 @@
 # utopia_fe/Dockerfile
 
+# https://docs.docker.com/docker-hub/builds/automated-testing/
+# https://medium.com/better-programming/how-to-test-your-automated-builds-on-docker-hub-e40879f35d1e
+# https://github.com/NMichas/dockerbuild/blob/master/docker-compose.test.yml
+
 FROM zulianp/utopia-fe-env:latest
 
 ENV PETSC_DIR /opt/petsc
@@ -13,14 +17,17 @@ RUN export PATH=$PATH:$MPI_DIR/bin
 
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb bash
 
-RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
-# RUN cd /utopia_cloned && git checkout edsl_refactor && git submodule update --init --recursive && git pull
-RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
+# Docker hub stuff (comment if on PC)
+COPY . /utopia_cloned
+RUN ls /utopia_cloned
+RUN cd /utopia_cloned && git branch
 
-RUN echo "Source branch: "
-RUN echo $SOURCE_BRANCH
 
-RUN cd /utopia_cloned && git pull
+# (Uncomment these ones if on PC)
+# RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
+# # RUN cd /utopia_cloned && git checkout edsl_refactor && git submodule update --init --recursive && git pull
+# RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
+
 
 ##########################################################################
 ##########################################################################
@@ -120,6 +127,7 @@ RUN env | grep PATH 							  >> setup.sh
 RUN echo 'apk add bash' 						  >> setup.sh
 RUN echo 'apk add bash-completion'				  >> setup.sh
 RUN echo 'apk add bash-doc'						  >> setup.sh
+RUN echo 'export PATH=$PATH:/opt/petsc/bin'       >> setup.sh
 
 RUN cat setup.sh
 RUN cat setup.sh 								  >> /root/.profile

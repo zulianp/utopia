@@ -280,9 +280,11 @@ namespace utopia {
                 std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > >(n_levels_, n_);
             ml_problems_[1] =
                 std::make_shared<MultiLevelTestProblem1D<Matrix, Vector, Bratu1D<Matrix, Vector> > >(n_levels_, n_);
+#ifdef WITH_PETSC
             ml_problems_[2] =
                 std::make_shared<PetscMultilevelTestProblem<Matrix, Vector, NonEllipse2D<Matrix, Vector> > >(
                     2, n_levels_, n_);
+#endif  // WITH_PETSC
         }
 
         ~QuasiRMTR_test() override { ml_problems_.clear(); }
@@ -451,16 +453,15 @@ namespace utopia {
     };
 
     static void rmtr() {
-        int verbosity_level = 0;
-        const int n_global = 10;
-        bool alg_verbose = false;
-
         // FIXME create a special purpose flag only for these
         // if(Utopia::instance().verbose()) {
         // 	verbosity_level = 2;
         // }
 
 #ifdef WITH_PETSC
+        int verbosity_level = 0;
+        const int n_global = 10;
+        bool alg_verbose = false;
         RMTR_test<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();
@@ -468,16 +469,15 @@ namespace utopia {
     }
 
     static void quasi_rmtr() {
-        int verbosity_level = 0;
-        const int n_global = 10;
-        bool alg_verbose = false;
-
         // FIXME create a special purpose flag only for these
         // if(Utopia::instance().verbose()) {
         // 	verbosity_level = 2;
         // }
 
 #ifdef WITH_PETSC
+        int verbosity_level = 0;
+        const int n_global = 10;
+        bool alg_verbose = false;
         QuasiRMTR_test<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();
