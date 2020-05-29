@@ -26,7 +26,7 @@ namespace utopia {
             mat.sparse(layout(this->comm(), Traits::decide(), Traits::decide(), n, n), 3, 3);
 
             // FIXME this is serial and not really portable
-            Scalar norm1_read = 0.0;
+            // Scalar norm1_read = 0.0;
             {
                 // n x n matrix with maximum 3 entries x row
                 Write<Matrix> w(mat);
@@ -43,16 +43,11 @@ namespace utopia {
                 }
             }
 
-            std::stringstream ss;
-            mat.read([&](const SizeType &, const SizeType &, const Scalar &val) { norm1_read += device::abs(val); });
-
-            // this->comm().synched_print(ss.str(), std::cout);
-
-            norm1_read = this->comm().sum(norm1_read);
+            // mat.read([&](const SizeType &, const SizeType &, const Scalar &val) { norm1_read += device::abs(val); });
+            // norm1_read = this->comm().sum(norm1_read);
 
             const Scalar norm1_mat = sum(abs(mat));
-
-            utopia_test_asserteq(norm1_read, norm1_mat, device::epsilon<Scalar>());
+            utopia_test_asserteq(Scalar(26.0), norm1_mat, device::epsilon<Scalar>());
         }
 
     public:
