@@ -1,5 +1,9 @@
 # utopia_fe/Dockerfile
 
+# https://docs.docker.com/docker-hub/builds/automated-testing/
+# https://medium.com/better-programming/how-to-test-your-automated-builds-on-docker-hub-e40879f35d1e
+# https://github.com/NMichas/dockerbuild/blob/master/docker-compose.test.yml
+
 FROM zulianp/utopia-fe-env:latest
 
 ENV PETSC_DIR /opt/petsc
