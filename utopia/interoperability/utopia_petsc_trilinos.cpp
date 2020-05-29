@@ -3,6 +3,8 @@
 #ifdef WITH_TRILINOS
 #ifdef WITH_PETSC
 
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 #include "utopia_trilinos.hpp"
 
 namespace utopia {
@@ -12,5 +14,6 @@ namespace utopia {
     template class GaussSeidel<TpetraMatrixd, TpetraVectord, TRILINOS>;
 }  // namespace utopia
 
+#endif  // not def KOKKOS_ENABLE_CUDA
 #endif  // WITH_PETSC
 #endif  // WITH_TRILINOS
