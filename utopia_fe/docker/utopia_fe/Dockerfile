@@ -18,14 +18,15 @@ RUN export PATH=$PATH:$MPI_DIR/bin
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb bash
 
 # Docker hub stuff (comment if on PC)
-# COPY . /utopia_cloned
-# RUN ls /utopia_cloned
-# RUN cd /utopia_cloned && git branch
+COPY . /utopia_cloned
+RUN ls /utopia_cloned
+RUN cd /utopia_cloned && git branch
 
 
 # (Uncomment these ones if on PC)
-RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
-RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
+# RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
+# # RUN cd /utopia_cloned && git checkout edsl_refactor && git submodule update --init --recursive && git pull
+# RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
 
 
 ##########################################################################
