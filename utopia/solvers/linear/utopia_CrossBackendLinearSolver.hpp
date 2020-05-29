@@ -1,7 +1,7 @@
 #ifndef CROSS_BACKEND_LINEAR_SOLVER_HPP
 #define CROSS_BACKEND_LINEAR_SOLVER_HPP
 
-#include "utopia_Conversions.hpp"
+#include "utopia_ConvertTensor.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Smoother.hpp"
@@ -28,7 +28,7 @@ namespace utopia {
                 mat_buff_ = std::make_shared<WantedMatrix>();
             }
 
-            backend_convert_sparse(*op, *mat_buff_);
+            backend_convert(*op, *mat_buff_);
             solver_.update(mat_buff_);
         }
 
@@ -73,7 +73,7 @@ namespace utopia {
                 mat_buff_ = std::make_shared<WantedMatrix>();
             }
 
-            backend_convert_sparse(*op, *mat_buff_);
+            backend_convert(*op, *mat_buff_);
             solver_.update(mat_buff_);
         }
 
