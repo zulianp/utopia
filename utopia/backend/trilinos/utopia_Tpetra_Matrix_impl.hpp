@@ -37,12 +37,6 @@ namespace utopia {
         MatDataOpFunctor<Data, KokkosOp<Scalar, Op>, Scalar> functor{kop, data, initial_value};
         Kokkos::parallel_reduce(data.extent(0), functor, ret);
         return ret;
-
-        // TODO(Patrick) implement parallel version
-        // KokkosOp<Scalar, Op> k_op;
-        // Scalar ret = initial_value;
-        // read([&](const SizeType &, const SizeType &, const Scalar &v) { ret = k_op.apply(ret, v); });
-        // return ret;
     }
 
     template <class Op, class MPIOp>
