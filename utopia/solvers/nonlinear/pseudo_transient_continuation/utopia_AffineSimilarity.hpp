@@ -403,35 +403,6 @@ namespace utopia {
 
         Scalar norm_l2(const Vector &s) { return std::sqrt(norm_l2_2(s)); }
 
-        void update_scaling_matrices(const Vector &x_old, const Vector &x_new) {
-            Vector x_scaling(layout(x_old), 1.0);
-
-            // {
-            //     Read<Vector> r1(x_old), r2(x_new);
-            //     auto tol = alpha_treshold_;
-            //     each_write(x_scaling, [&x_old, &x_new, tol](const SizeType i) -> Scalar {
-            //         return std::max(std::max(std::abs(x_old.get(i)), std::abs(x_new.get(i))), tol);
-            //     });
-            // }
-
-            {
-                auto x_old_view = const_local_view_device(x_old);
-                auto x_new_view = const_local_view_device(x_new);
-                auto x_scaling_view = local_view_device(x_scaling);
-
-                auto tol = alpha_treshold_;
-
-                parallel_for(local_range_device(x_scaling), UTOPIA_LAMBDA(const SizeType i) {
-                    x_scaling_view.set(
-                        i,
-                        device::max(device::max(device::abs(x_old_view.get(i)), device::abs(x_new_view.get(i))), tol));
-                });
-            }
-
-            D_ = diag(x_scaling);
-            D_inv_ = diag(1.0 / x_scaling);
-        }
-
         bool clamp_tau(Scalar &tau) {
             if (std::isinf(tau) || tau > tau_max_) {
                 tau = tau_max_;
@@ -461,6 +432,37 @@ namespace utopia {
             // this quantities have already D_inv inside ...
             return (norm2(g_trial) < norm2(g)) ? true : false;
         }
+
+    NVCC_PRIVATE
+        void update_scaling_matrices(const Vector &x_old, const Vector &x_new) {
+            Vector x_scaling(layout(x_old), 1.0);
+
+            // {
+            //     Read<Vector> r1(x_old), r2(x_new);
+            //     auto tol = alpha_treshold_;
+            //     each_write(x_scaling, [&x_old, &x_new, tol](const SizeType i) -> Scalar {
+            //         return std::max(std::max(std::abs(x_old.get(i)), std::abs(x_new.get(i))), tol);
+            //     });
+            // }
+
+            {
+                auto x_old_view = const_local_view_device(x_old);
+                auto x_new_view = const_local_view_device(x_new);
+                auto x_scaling_view = local_view_device(x_scaling);
+
+                auto tol = alpha_treshold_;
+
+                parallel_for(local_range_device(x_scaling), UTOPIA_LAMBDA(const SizeType i) {
+                    x_scaling_view.set(
+                        i,
+                        device::max(device::max(device::abs(x_old_view.get(i)), device::abs(x_new_view.get(i))), tol));
+                });
+            }
+
+            D_ = diag(x_scaling);
+            D_inv_ = diag(1.0 / x_scaling);
+        }
+
 
     private:
         Matrix M_;      // mass matrix

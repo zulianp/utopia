@@ -45,11 +45,12 @@ namespace utopia {
         Vector local_residual_, local_correction_;
         std::shared_ptr<Vector> local_lb_, local_ub_;
 
+        bool step(const Vector &rhs, Vector &x);
+
+    NVCC_PRIVATE
         static void global_to_local(const Vector &g, Vector &l);
         static void local_to_global(const Vector &l, Vector &g);
         static void local_to_global_add(const Vector &l, Vector &g);
-
-        bool step(const Vector &rhs, Vector &x);
     };
 }  // namespace utopia
 

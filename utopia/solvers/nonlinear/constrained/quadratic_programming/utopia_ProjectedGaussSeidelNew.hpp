@@ -70,8 +70,6 @@ namespace utopia {
         bool use_sweeper_{true};
         std::unique_ptr<ProjectedGaussSeidelSweep<Scalar, SizeType> > sweeper_;
 
-        void init(const Matrix &A);
-
         /// residual must be computed outside
         void apply_local_sweeps(const Matrix &A, const Vector &r, const Vector &lb, const Vector &ub, Vector &c) const;
 
@@ -79,6 +77,10 @@ namespace utopia {
 
         /// residual must be computed outside
         void apply_local_sweeps_unconstrained(const Matrix &A, const Vector &r, Vector &c) const;
+
+    NVCC_PRIVATE
+        void init(const Matrix &A);
+
     };
 }  // namespace utopia
 
