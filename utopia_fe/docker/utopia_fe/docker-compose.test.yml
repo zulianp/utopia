@@ -1,3 +1,3 @@
 sut:
-  build: .
+  # build: .
   command: cd utopia_cloned/utopia/bin && ./utopia_test -v && ./utopia_bench -v
