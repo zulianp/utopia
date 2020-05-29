@@ -13,6 +13,9 @@
 #include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_petsc_KSPSolvers.hpp"
 #include "utopia_petsc_Types.hpp"
+#include "utopia_trilinos_Types.hpp"
+
+#include "utopia_petsc_trilinos_ConvertTensor.hpp"
 
 namespace utopia {
 

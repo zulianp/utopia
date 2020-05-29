@@ -92,7 +92,7 @@ namespace utopia {
             fun.hessian(x, H);
             fun.gradient(x, g);
 
-            backend_convert_sparse(H, H_working);
+            backend_convert(H, H_working);
             backend_convert(g, g_working);
             x_working = 0.0 * g_working;
 
@@ -530,7 +530,7 @@ namespace utopia {
             Matrix H_tril;
             Vector g_tril;
             Vector x_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert_sparse(H, H_tril);
+            backend_convert(H, H_tril);
             backend_convert(g, g_tril);
             backend_convert(x, x_tril);
 
@@ -567,7 +567,7 @@ namespace utopia {
 
             Matrix2 H_tril;
             Vector2 g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert_sparse(H, H_tril);
+            backend_convert(H, H_tril);
             backend_convert(g, g_tril);
             backend_convert(x_eq, x_eq_tril);
             backend_convert(x_bc_marker, x_bc_marker_tril);
@@ -589,7 +589,7 @@ namespace utopia {
 
             Matrix2 H_tril;
             Vector2 x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert_sparse(H, H_tril);
+            backend_convert(H, H_tril);
             backend_convert(x_eq, x_eq_tril);
             backend_convert(x_bc_marker, x_bc_marker_tril);
             empty_rhs_tril = 0.0 * x_eq_tril;
@@ -625,7 +625,7 @@ namespace utopia {
                 auto *mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(transfers[i].get());
 
                 Matrix I_tril;
-                backend_convert_sparse(mat_transfer->I(), I_tril);
+                backend_convert(mat_transfer->I(), I_tril);
                 transfers_tril.push_back(
                     std::make_shared<MatrixTransfer<Matrix, Vector>>(std::make_shared<Matrix>(I_tril)));
             }
