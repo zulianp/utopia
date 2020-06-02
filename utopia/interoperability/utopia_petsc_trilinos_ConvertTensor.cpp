@@ -1,5 +1,10 @@
-#include "utopia_petsc_trilinos_ConvertTensor.hpp"
+#include "utopia_Base.hpp"
+
+#ifdef WITH_TRILINOS
+#ifdef WITH_PETSC
+
 #include "utopia_petsc.hpp"
+#include "utopia_petsc_trilinos_ConvertTensor.hpp"
 #include "utopia_trilinos.hpp"
 
 // FIXME do not use this!!! It will not be portable in the future
@@ -101,3 +106,6 @@ namespace utopia {
     }
 
 }  // namespace utopia
+
+#endif
+#endif

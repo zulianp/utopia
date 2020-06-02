@@ -5,6 +5,7 @@
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "utopia.hpp"
+#include "utopia_ConvertTensor.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_Eval_Residual.hpp"
 #include "utopia_For.hpp"

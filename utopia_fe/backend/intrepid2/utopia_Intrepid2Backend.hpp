@@ -167,7 +167,7 @@ namespace utopia {
             //FIXME inefficient
             PetscMatrix temp;
             utopia::convert(p_mat, temp);
-            backend_convert_sparse(temp, utopia_mat);
+            backend_convert(temp, utopia_mat);
         }
 
     #endif //WITH_TRILINOS

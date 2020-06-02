@@ -4,26 +4,30 @@
 
 #include "utopia.hpp"
 #include "utopia_Assert.hpp"
+#include "utopia_Bratu1D.hpp"
+#include "utopia_ConvertTensor.hpp"
+#include "utopia_Eval_Structure.hpp"
+#include "utopia_IPTransfer.hpp"
 #include "utopia_Jacobi.hpp"
 #include "utopia_MultilevelTestProblem1D.hpp"
 #include "utopia_Operations.hpp"
+#include "utopia_Poisson1D.hpp"
+#include "utopia_Structure.hpp"
+#include "utopia_TestProblems.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
+
+// trilinos
 #include "utopia_trilinos.hpp"
-#include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 #include "utopia_trilinos_solvers.hpp"
+
+// FIXME This is deprecated remove it
+#include "utopia_trilinos_Each_impl.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
-
-#include "utopia_Bratu1D.hpp"
-#include "utopia_Eval_Structure.hpp"
-#include "utopia_IPTransfer.hpp"
-#include "utopia_Poisson1D.hpp"
-#include "utopia_Structure.hpp"
-#include "utopia_TestProblems.hpp"
 
 #include <algorithm>
 #include <cmath>
