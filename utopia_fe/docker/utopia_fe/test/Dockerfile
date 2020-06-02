@@ -3,4 +3,4 @@ FROM zulianp/utopia:this
 COPY . .
 RUN ls
 
-CMD ["echo hi"]
+CMD ["/bin/sh"]
