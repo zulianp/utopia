@@ -1,6 +1,6 @@
 sut:
   build: ./test/
-  command: cd utopia_cloned/utopia/bin && ./utopia_test -v && ./utopia_bench -v
+  command:  /utopia_cloned/utopia/bin/utopia_test -verbose -data_path /utopia_cloned/utopia/data
   environment:
     - SOURCE_BRANCH
     - IMAGE_NAME
