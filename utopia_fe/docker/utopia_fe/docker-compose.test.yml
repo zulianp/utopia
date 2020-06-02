@@ -1,0 +1,7 @@
+sut:
+  build: ./test/
+  command:  /utopia_cloned/utopia/bin/utopia_test -verbose -data_path /utopia_cloned/utopia/data
+  environment:
+    - SOURCE_BRANCH
+    - IMAGE_NAME
+    - SOURCE_COMMIT

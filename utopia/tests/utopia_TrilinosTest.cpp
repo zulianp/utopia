@@ -4,26 +4,30 @@
 
 #include "utopia.hpp"
 #include "utopia_Assert.hpp"
+#include "utopia_Bratu1D.hpp"
+#include "utopia_ConvertTensor.hpp"
+#include "utopia_Eval_Structure.hpp"
+#include "utopia_IPTransfer.hpp"
 #include "utopia_Jacobi.hpp"
 #include "utopia_MultilevelTestProblem1D.hpp"
 #include "utopia_Operations.hpp"
+#include "utopia_Poisson1D.hpp"
+#include "utopia_Structure.hpp"
+#include "utopia_TestProblems.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
+
+// trilinos
 #include "utopia_trilinos.hpp"
-#include "utopia_trilinos_Each_impl.hpp"
 #include "utopia_trilinos_Utils.hpp"
 #include "utopia_trilinos_solvers.hpp"
+
+// FIXME This is deprecated remove it
+#include "utopia_trilinos_Each_impl.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
-
-#include "utopia_Bratu1D.hpp"
-#include "utopia_Eval_Structure.hpp"
-#include "utopia_IPTransfer.hpp"
-#include "utopia_Poisson1D.hpp"
-#include "utopia_Structure.hpp"
-#include "utopia_TestProblems.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -512,8 +516,8 @@ namespace utopia {
             PetscMatrix R_tpetra;
             PetscMatrix R_2_tpetra;
 
-            backend_convert_sparse(R_2, R_2_tpetra);
-            backend_convert_sparse(R, R_tpetra);
+            backend_convert(R_2, R_2_tpetra);
+            backend_convert(R, R_tpetra);
 
             // disp(R_2_tpetra);
             // disp("-----------------------------");
@@ -842,8 +846,8 @@ namespace utopia {
                 ok = read(folder + "/I_3", petsc_I);
                 utopia_test_assert(ok);
 
-                backend_convert_sparse(petsc_I, I);
-                backend_convert_sparse(petsc_A, A);
+                backend_convert(petsc_I, I);
+                backend_convert(petsc_A, A);
                 backend_convert(petsc_rhs, rhs);
 
                 const double sum_A = sum(abs(A));
@@ -1023,7 +1027,7 @@ namespace utopia {
             solver.solve(H, g, x);
 
             PetscMatrix p_mat;
-            backend_convert_sparse(H, p_mat);
+            backend_convert(H, p_mat);
 
             // disp(p_mat);
             double diff = norm2(g - H * x);
@@ -1131,7 +1135,7 @@ namespace utopia {
             // write("H_t.m", H_tpetra);
 
             PetscMatrix H_converted;
-            backend_convert_sparse(H_tpetra, H_converted);
+            backend_convert(H_tpetra, H_converted);
 
             // write("H_c.m", H_converted);
 
@@ -1261,7 +1265,7 @@ namespace utopia {
             utopia_test_assert(ok);
 
             TpetraMatrixd P;
-            backend_convert_sparse(petsc_P, P);
+            backend_convert(petsc_P, P);
 
             P = transpose(P);
 
@@ -1393,7 +1397,7 @@ namespace utopia {
             utopia_test_assert(ok);
 
             TpetraMatrixd P;
-            backend_convert_sparse(petsc_P, P);
+            backend_convert(petsc_P, P);
 
             double sum_P = sum(P);
             P = transpose(P);
