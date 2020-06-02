@@ -1,3 +1,7 @@
 sut:
-  build: .
+  build: ./test/
   command: cd utopia_cloned/utopia/bin && ./utopia_test -v && ./utopia_bench -v
+  environment:
+    - SOURCE_BRANCH
+    - IMAGE_NAME
+    - SOURCE_COMMIT
