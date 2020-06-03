@@ -5,14 +5,14 @@ class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector> {
 public:
     typedef UTOPIA_SCALAR(Matrix) Scalar;
 
-    Rosenbrock2DFunction() {
-        assert(!utopia::is_parallel<Matrix>::value ||
-               utopia::mpi_world_size() == 1 && "does not work for parallel matrices");
-    }
+    Rosenbrock2DFunction() {}
 
     bool value(const Vector &point, Scalar &result) const override {
         using namespace utopia;
+
         assert(point.size() == 2);
+        assert(!utopia::is_parallel<Matrix>::value ||
+               point.comm().size() == 1 && "does not work for parallel matrices");
 
         const Read<Vector> read(point);
 
@@ -25,8 +25,14 @@ public:
 
     bool gradient(const Vector &point, Vector &result) const override {
         using namespace utopia;
+
         assert(point.size() == 2);
-        result = zeros(2);
+        assert(!utopia::is_parallel<Matrix>::value ||
+               point.comm().size() == 1 && "does not work for parallel matrices");
+
+        if (empty(result)) {
+            result.zeros(layout(point));
+        }
 
         const Read<Vector> read(point);
         const Write<Vector> write(result);
@@ -41,8 +47,14 @@ public:
 
     bool hessian(const Vector &point, Matrix &result) const override {
         using namespace utopia;
+
         assert(point.size() == 2);
-        result = zeros(2, 2);
+        assert(!utopia::is_parallel<Matrix>::value ||
+               point.comm().size() == 1 && "does not work for parallel matrices");
+
+        if (empty(result)) {
+            result.dense(square_matrix_layout(layout(point)));
+        }
 
         const Read<Vector> read(point);
         const Write<Matrix> write(result);
@@ -61,32 +73,42 @@ public:
 
 int main(int argc, char **argv) {
     using namespace utopia;
+
+#ifdef WITH_PETSC
+    using MatrixT = PetscMatrix;
+    using VectorT = PetscVector;
+#else
+    using MatrixT = BlasMatrixd;
+    using VectorT = BlasVectord;
+#endif
     Utopia::Init(argc, argv);
+
+    InputParameters params;
+    params.init(argc, argv);
 
     {  // Only in the main file: put this scope so that the petsc objects will be destroyed before the call to finalize
 
         // instatiating Rosenbrock 2D banana function
-        Rosenbrock2DFunction<utopia::PetscMatrix, utopia::PetscVector> rosenbrock_fun;
+        Rosenbrock2DFunction<MatrixT, VectorT> rosenbrock_fun;
+
+        VectorT rosenbrock_exact, x;
 
         // exact solution to our problem
-        PetscVector rosenbrock_exact = values(2, 1);
+        rosenbrock_exact.values(serial_layout(2), 1);
 
         // constructing initial guess
-        PetscVector x = values(2, 2);
-
-        // setting up parameters of solver
-        // Parameters params;
-        // params.tol(1e-9);
-        // params.solver_type("TRUST_REGION");
-        // params.lin_solver_type(BICGSTAB_TAG);
-        // params.trust_region_alg(DOGLEG_TAG);
-        // params.verbose(true);
+        x.values(serial_layout(2), 2);
 
         // nonlinear solve
-        solve(rosenbrock_fun, x);
+        Newton<MatrixT, VectorT> newton;
+        newton.solve(rosenbrock_fun, x);
 
         // comparing obtained solution with exact one
-        std::cout << "Correct solution: " << (approxeq(x, rosenbrock_exact) ? "true." : "false.") << std::endl;
+
+        std::stringstream ss;
+        ss << "Correct solution: " << (approxeq(x, rosenbrock_exact) ? "true." : "false.") << std::endl;
+
+        x.comm().root_print(ss.str());
     }
 
     return Utopia::Finalize();
