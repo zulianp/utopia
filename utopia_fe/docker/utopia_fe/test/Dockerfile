@@ -1,6 +1,4 @@
-ARG DOCKER_TAG
-
-FROM zulianp/utopia:$DOCKER_TAG
+FROM zulianp/utopia:this
 RUN echo 'tag='${DOCKER_TAG}
 
 # On laptop
