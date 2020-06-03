@@ -15,10 +15,10 @@ hello: ../examples/example_hello_world.cpp $(LIB_UTOPIA)
 	$(CXX) $(CXX_FLAGS) $(DEFS) ../examples/example_hello_world.cpp $(INCLUDES) -o hello $(LIBS)
 
 clean:
-	rm -f hello rwt fem1D rosenbrock utopia_mult_exp
+	rm -f hello
 
-run_hello: hello
+run: hello
 	mpiexec -np 3 ./hello
 
-.PHONY: clean run_hello
+.PHONY: clean run
 
