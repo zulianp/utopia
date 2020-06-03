@@ -81,6 +81,7 @@ int main(int argc, char **argv) {
     using MatrixT = BlasMatrixd;
     using VectorT = BlasVectord;
 #endif
+
     Utopia::Init(argc, argv);
 
     InputParameters params;
