@@ -348,6 +348,25 @@ namespace utopia {
             transform_ijv_seqaij(op);
         } else if (has_type(MATMPIAIJ)) {
             transform_ijv_mpiaij(op);
+        } else if (has_type(MATSEQDENSE) || has_type(MATMPIDENSE)) {
+            PetscScalar *array = nullptr;
+            MatDenseGetArray(raw_type(), &array);
+
+            SizeType rows = this->local_rows();
+            SizeType cols = this->cols();
+
+            auto rr = this->row_range();
+
+            for (SizeType j = 0; j < cols; ++j) {
+                const SizeType j_offset = j * rows;
+                for (SizeType i = 0; i < rows; ++i) {
+                    const SizeType idx = i + j_offset;
+                    auto &v = array[idx];
+                    v = op(rr.begin() + i, j, v);
+                }
+            }
+
+            MatDenseRestoreArray(raw_type(), &array);
         } else {
             std::cerr << ("PetscMatrix::transform_ijv not implemented for matrix type: ") << type() << std::endl;
             assert(false && "IMPLEMENT ME");

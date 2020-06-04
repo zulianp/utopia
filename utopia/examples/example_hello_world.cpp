@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+// Run it with `./examples/example_hello_world
 int main(const int argc, char *argv[]) {
     using namespace utopia;
 

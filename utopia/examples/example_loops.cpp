@@ -172,6 +172,7 @@ static void run_all(const int n) {
 #endif  // WITH_TRILINOS
 }
 
+// Run it with `./examples/example_loops -n 100000
 int main(int argc, char **argv) {
     using namespace utopia;
 

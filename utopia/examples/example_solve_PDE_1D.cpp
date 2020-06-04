@@ -93,7 +93,7 @@ void solve_PDE_1D(utopia::Input& in) {
     write("X.m", x);
 }
 
-// use "make run_assemble" to compile and run this example
+// Run it with `./examples/example_solve_PDE_1D -n_local 10 -rhs_value 1.0`
 int main(int argc, char** argv) {
     using namespace utopia;
 

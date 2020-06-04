@@ -71,6 +71,7 @@ public:
     }
 };
 
+// Run it with `./examples/example_nonlinear_solve
 int main(int argc, char **argv) {
     using namespace utopia;
 
