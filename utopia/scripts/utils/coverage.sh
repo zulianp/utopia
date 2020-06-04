@@ -7,7 +7,7 @@ rm -f ./*.info; find . -name "*.gcda" -print0 | xargs -0 rm
 
 lcov --capture --directory . --output-file cov.info
 
-make -j4 complete && ./utopia_test -verbose && ./utopia_bench
+make -j4 complete && ./utopia_test -verbose &&  ./utopia_test -verbose -test unconstrained_opt -test newton_ls && ./utopia_bench
 ret=$?
 
 echo 'execution returned' $ret

@@ -372,6 +372,10 @@ namespace utopia {
 
             if (reason < 0) {
                 utopia_warning("> Failed to converge");
+
+                std::cerr << "gnorm: " << gnorm << std::endl;
+                std::cerr << "cnorm: " << cnorm << std::endl;
+                std::cerr << "xdiff: " << xdiff << std::endl;
             }
 
             return reason >= 0;

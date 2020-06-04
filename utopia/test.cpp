@@ -1,6 +1,7 @@
 
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
+#include "utopia_Version.hpp"
 
 #include <ctime>
 #include <iostream>
@@ -15,6 +16,11 @@ int main(const int argc, char *argv[]) {
     Utopia::Init(argc, argv);
 
     {
+        if (mpi_world_rank() == 0) {
+            std::cout << "UTOPIA_VERSION:     " << UTOPIA_VERSION << std::endl;
+            std::cout << "UTOPIA_GIT_VERSION: " << UTOPIA_GIT_VERSION << std::endl;
+        }
+
         bool run_tests = true;
 
         TestRunner test_runner;

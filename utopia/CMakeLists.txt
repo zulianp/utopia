@@ -354,6 +354,7 @@ if(TRY_WITH_TRILINOS)
     endif()
 endif()
 
+add_subdirectory(examples)
 add_subdirectory(backend/polymorphic)
 
 # backend modules
@@ -437,6 +438,7 @@ write_compiler_detection_header(
 
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/utopia_Version.hpp
     DESTINATION include
 )
 
@@ -542,7 +544,7 @@ add_dependencies(bench_and_test bench utest)
 ##########################################################################################
 
 add_custom_target(complete)
-add_dependencies(complete utopia utopia_test utopia_bench utopia_exec)
+add_dependencies(complete utopia utopia_test utopia_bench utopia_exec utopia_examples)
 
 ##########################################################################################
 target_format_setup(utopia_test)
