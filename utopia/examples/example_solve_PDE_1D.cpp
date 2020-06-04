@@ -13,6 +13,7 @@ void solve_PDE_1D(utopia::Input& in) {
     Matrix A;
     Vector x, b;
 
+    // Tipically passed from outside
     Comm& comm = Comm::get_default();
 
     // Set default values
