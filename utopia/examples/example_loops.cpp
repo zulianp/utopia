@@ -7,7 +7,7 @@ using namespace utopia;
 
 template <class Vector>
 static void run(const int n) {
-    using Scalar = typename Traits<Vector>::Scalar;
+    // using Scalar = typename Traits<Vector>::Scalar;
 
     std::cout << "Each Utopia" << std::endl;
     Vector v;
