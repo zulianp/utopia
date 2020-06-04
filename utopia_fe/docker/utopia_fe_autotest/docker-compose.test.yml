@@ -5,3 +5,4 @@ sut:
     - SOURCE_BRANCH
     - IMAGE_NAME
     - SOURCE_COMMIT
+    - DOCKER_TAG

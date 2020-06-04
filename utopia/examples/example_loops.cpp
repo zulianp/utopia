@@ -1,4 +1,3 @@
-// #define UTOPIA_DISABLE_UNROLLING
 #include "utopia.hpp"
 
 #include <algorithm>
@@ -8,14 +7,21 @@ using namespace utopia;
 
 template <class Vector>
 static void run(const int n) {
+    // using Scalar = typename Traits<Vector>::Scalar;
+
     std::cout << "Each Utopia" << std::endl;
-    Vector v = local_values(n, 1.);
-    std::cout << backend(v).info().get_name() << std::endl;
+    Vector v;
+
+    v.values(serial_layout(n), 1.);
+    std::cout << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
 
-    each_write(v, [](const SizeType i) -> double { return 10.; });
+    {
+        auto v_view = local_view_device(v);
+        parallel_for(local_range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, 10.); });
+    }
 
     c.stop();
     std::cout << c << std::endl;
@@ -80,8 +86,10 @@ static void run_for(const int n) {
 template <class Vector>
 static void run_access(const int n) {
     std::cout << "Utopia Access" << std::endl;
-    Vector v = local_values(n, 1.);
-    std::cout << backend(v).info().get_name() << std::endl;
+    Vector v;
+    v.values(serial_layout(n), 1.);
+
+    std::cout << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
@@ -96,28 +104,19 @@ static void run_access(const int n) {
     std::cout << c << std::endl;
 }
 
-static double get(const Vectord &v, const SizeType i) { return v.implementation()[i]; }
-
-template <class Expr>
-static void set(Expression<Expr> &v, const SizeType i, const double val) {
-    //      v.derived().implementation()[i] = val;
-
-    Backend<double, Traits<Expr>::Backend>::set(v.derived().implementation(), i, val);
-    //    v.set(i, val);
-}
-
 static void run_access_blas(const int n) {
     std::cout << "Utopia Access Blas" << std::endl;
-    Vectord v = local_values(n, 1.);
-    std::cout << backend(v).info().get_name() << std::endl;
+    BlasVectord v;
+    v.values(serial_layout(n), 1.0);
+    std::cout << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
 
     {
-        Write<Vectord> w_(v);
+        Write<BlasVectord> w_(v);
         auto r = range(v);
-        For<>::apply(r.begin(), r.end(), [&v](const SizeType i) { set(v, i, 10); });
+        For<>::apply(r.begin(), r.end(), [&v](const SizeType i) { v.set(i, 10); });
     }
 
     c.stop();
@@ -126,8 +125,9 @@ static void run_access_blas(const int n) {
 
 static void run_access_petsc(const int n) {
     std::cout << "Utopia Access Petsc" << std::endl;
-    PetscVector v = local_values(n, 1.);
-    std::cout << backend(v).info().get_name() << std::endl;
+    PetscVector v;
+    v.values(serial_layout(n), 1.0);
+    std::cout << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
@@ -160,8 +160,8 @@ static void run_all(const int n) {
 
 #ifdef WITH_BLAS
     // run with blas types
-    run<Vectord>(n);
-    run_access<Vectord>(n);
+    run<BlasVectord>(n);
+    run_access<BlasVectord>(n);
     run_access_blas(n);
 #endif  // WITH_BLAS
 
@@ -172,18 +172,17 @@ static void run_all(const int n) {
 #endif  // WITH_TRILINOS
 }
 
+// Run it with `./examples/example_loops -n 100000
 int main(int argc, char **argv) {
     using namespace utopia;
 
     Utopia::Init(argc, argv);
 
-    if (argc < 2) {
-        static const int N = 90000000;
-        run_all(N);
-        return Utopia::Finalize();
-    }
-
-    auto n = atol(argv[1]);
+    InputParameters params;
+    params.init(argc, argv);
+    long n = 1000;
+    params.get("n", n);
     run_all(n);
+
     return Utopia::Finalize();
 }
