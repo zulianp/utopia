@@ -117,7 +117,7 @@ namespace utopia {
             }
 
             inline bool apply(const Vector &b, Vector &x) {
-                assert(!empty_);
+                if (empty_) return false;
 
                 auto raw_mat = op_->raw_type();
 
