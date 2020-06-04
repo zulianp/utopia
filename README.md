@@ -23,6 +23,8 @@ Copyright (c) 2015 Institute of Computational Science - USI Università della Sv
 
 # Getting started
 
+([More in-depth guide here](https://bitbucket.org/zulianp/utopia/wiki/Getting%20started))
+
 ## Downloading utopia
 
 Clone the repository and its submodules
