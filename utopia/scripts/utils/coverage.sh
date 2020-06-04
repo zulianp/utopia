@@ -7,7 +7,7 @@ rm -f ./*.info; find . -name "*.gcda" -print0 | xargs -0 rm
 
 lcov --capture --directory . --output-file cov.info
 
-make -j4 complete && ./utopia_test -verbose &&  ./utopia_test -verbose -test unconstrained_opt -test newton_ls && ./utopia_bench
+make -j4 complete && ./utopia_test -verbose &&  ./utopia_test -verbose -test unconstrained_opt -test newton_ls && ./utopia_bench -verbose
 ret=$?
 
 echo 'execution returned' $ret
@@ -16,7 +16,7 @@ if [[ $ret -eq '0' ]]; then
     echo "Tests successful"
 else
     echo "Did not compile or pass the test";
-    return;
+    return 1;
 fi
 
 lcov --capture --directory . --output-file cov.info
