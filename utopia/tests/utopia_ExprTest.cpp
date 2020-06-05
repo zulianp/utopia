@@ -54,10 +54,6 @@ namespace utopia {
             UTOPIA_RUN_TEST(vec_add_add_add_test);
             UTOPIA_RUN_TEST(convert_test);
             UTOPIA_RUN_TEST(emul_test);
-
-            // FIXME (mem allocs)
-
-            // Seq. fault
             UTOPIA_RUN_TEST(mat_transp_mult_test);
         }
 

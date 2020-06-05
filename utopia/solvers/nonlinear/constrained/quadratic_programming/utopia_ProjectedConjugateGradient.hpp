@@ -51,7 +51,8 @@ namespace utopia {
             while (!converged) {
                 // START step
 
-                Scalar alpha = dot(uk, pk) / dot(pk, A * pk);
+                Apk = A * pk;
+                Scalar alpha = dot(uk, pk) / dot(pk, Apk);
                 assert(alpha != 0.);
                 if (alpha == 0. || std::isinf(alpha) || std::isnan(alpha)) break;
 
@@ -93,7 +94,8 @@ namespace utopia {
                     });
                 }
 
-                const Scalar beta = dot(wk, A * pk) / dot(pk, A * pk);
+                Apk = A * pk;
+                const Scalar beta = dot(wk, A * pk) / dot(pk, Apk);
                 pk = wk + beta * zk;
 
                 // END step
@@ -125,6 +127,7 @@ namespace utopia {
             wk.zeros(layout);
             zk.zeros(layout);
             pk.zeros(layout);
+            Apk.zeros(layout);
         }
 
         void update(const std::shared_ptr<const Matrix> &op) override {
@@ -134,7 +137,7 @@ namespace utopia {
 
     private:
         // buffers
-        Vector x_old, x_half, r, uk, wk, zk, pk;
+        Vector x_old, x_half, r, uk, wk, zk, pk, Apk;
     };
 }  // namespace utopia
 
