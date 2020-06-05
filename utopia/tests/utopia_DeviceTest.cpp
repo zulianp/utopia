@@ -33,7 +33,7 @@ namespace utopia {
 
             {
                 // device context
-                auto r = v.range_device();
+                auto r = range_device(v);
                 auto v_device = view_device(v);
 
                 // using kokkos parallel for (r contains the traits of the backend
@@ -60,9 +60,9 @@ namespace utopia {
     };
 
     static void device_test() {
-        // #ifdef WITH_BLAS
-        //         DeviceTest<BlasMatrixd, BlasVectord>().run();
-        // #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        DeviceTest<BlasMatrixd, BlasVectord>().run();
+#endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
         DeviceTest<utopia::PetscMatrix, utopia::PetscVector>::run();

@@ -14,7 +14,7 @@ namespace utopia {
 
         inline static bool apply(const Matrix &m, Matrix &result) {
             auto s = size(m);
-            auto n = s.get(0);
+            SizeType n = s.get(0);
 
             assert(n == s.get(1));
             assert(n <= 3);
