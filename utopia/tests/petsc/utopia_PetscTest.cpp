@@ -1,5 +1,4 @@
 #include "utopia.hpp"
-// #include "utopia_CoreDecprecatedHeaders.hpp"
 #include "utopia_Device.hpp"
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_TestProblems.hpp"
@@ -8,68 +7,6 @@
 #include "utopia_assemble_laplacian_1D.hpp"
 
 namespace utopia {
-
-#ifdef WITH_PETSC
-
-    // template<>
-    // class Each<PetscMatrix, 2, FillType::POLYMORPHIC>{
-    // public:
-    //     template<class Fun>
-    //     inline static void apply_write(PetscMatrix &mat, Fun fun)
-    //     {
-    //         assert(false);
-    //     }
-
-    //     template<class Fun>
-    //     inline static void apply_read(const PetscMatrix &mat, Fun fun)
-    //     {
-    //         assert(false);
-    //     }
-
-    //     template<class Fun>
-    //     inline static void apply_transform(PetscMatrix &mat, Fun fun)
-    //     {
-    //         assert(false);
-    //     }
-
-    //     template<class Fun>
-    //     inline static void apply(PetscMatrix &mat, Fun fun)
-    //     {
-
-    //     }
-    // };
-
-    // FIXME
-    void petc_optional() {
-        //  MPI_Comm sub_comm;
-        //  MPI_Comm_split(
-        //      PETSC_COMM_WORLD,
-        //      mpi_world_rank() % 2 == 1,
-        //      mpi_world_rank(),
-        //      &sub_comm);
-
-        //  int rank;
-        //  MPI_Comm_rank(sub_comm, &rank);
-
-        //  {
-        //      //optionals only work for this builder at the moment
-        //      PetscMatrix m = local_sparse(10, 10, 1, sub_comm, str("my_mat"));
-
-        //      auto r = row_range(m);
-        //      {
-        //          Write<PetscMatrix> w_m(m);
-        //          for(auto i = r.begin(); i != r.end(); ++i) {
-        //              m.set(i, i, rank);
-        //          }
-        //      }
-
-        //     PetscVector vec;
-        //     std::string path = Utopia::instance().get("data_path");
-        //     read(path + "/RHS_10x10x10_hexa_3D", vec, sub_comm, str("my_vec"));
-        //     }
-
-        // MPI_Comm_free(&sub_comm);
-    }
 
     void petsc_reciprocal() {
         // test also  diag
@@ -308,6 +245,7 @@ namespace utopia {
 
         PetscMatrix x;
         x.sparse(ml, 7, 7);
+
         PetscMatrix y;
         y.sparse(ml, 2, 2);
 
@@ -329,9 +267,9 @@ namespace utopia {
         }
 
         {
-            Read<PetscMatrix> r(x);
-            PetscScalar v = x.get(xb + 1, 1);
-            utopia_test_assert(approxeq(3, v));
+            Read<PetscMatrix> r(y);
+            PetscScalar v = y.get(xb + 1, 1);
+            utopia_test_assert(approxeq(1, v));
         }
 
         x.sparse(layout(comm, PetscTraits::decide(), PetscTraits::decide(), n, n), 1, 1);
@@ -474,8 +412,6 @@ namespace utopia {
     }
 
     void petsc_matrix_composite() {
-        // std::cout << "begin: petsc_matrix_composite_test" << std::endl;
-
         const PetscInt n = 10;
         auto &&comm = PetscCommunicator::get_default();
         auto ml = layout(comm, PetscTraits::decide(), PetscTraits::decide(), n, n);
@@ -491,34 +427,36 @@ namespace utopia {
         PetscMatrix expected;
         expected.dense(layout(result), 2.9);
         utopia_test_assert(approxeq(expected, result));
-
-        // std::cout << "end: petsc_matrix_composite_test" << std::endl;
     }
 
-    // void petsc_view()
-    // {
-    //     //! [Global views]
-    //     const PetscInt offset = mpi_world_size();
-    //     const PetscInt n = offset + 5;
-    //     const PetscInt m = offset + 10;
-    //     PetscMatrix m1 = identity(m, n);
-    //     PetscMatrix m2 = m1.range(
-    //         1, offset + 6,
-    //         0, offset + 5);
+    void petsc_select_submatrix() {
+        //! [Global views]
+        const PetscInt offset = mpi_world_size();
+        const PetscInt n = offset + 5;
+        const PetscInt m = offset + 10;
 
-    //     each_read(m2, [](const SizeType i, const SizeType j, const double value) {
-    //         if (i + 1 == j) {
-    //             if(!approxeq(1, value)) {
-    //                 std::cout << i << ", " << j << " -> " << value << std::endl;
-    //             }
-    //             utopia_test_assert(approxeq(1, value));
-    //         } else {
-    //             utopia_test_assert(approxeq(0, value));
-    //         }
-    //     });
+        auto &&comm = PetscCommunicator::get_default();
+        auto ml = layout(comm, PetscTraits::decide(), PetscTraits::decide(), m, n);
 
-    //     //! [Global views]
-    // }
+        PetscMatrix m1;
+        m1.identity(ml, 1.0);
+
+        PetscMatrix m2;
+        m1.select(Range(1, offset + 6), Range(0, offset + 5), m2);
+
+        m2.read([](const SizeType i, const SizeType j, const double value) {
+            if (i + 1 == j) {
+                if (!approxeq(1, value)) {
+                    std::cout << i << ", " << j << " -> " << value << std::endl;
+                }
+                utopia_test_assert(approxeq(1, value));
+            } else {
+                utopia_test_assert(approxeq(0, value));
+            }
+        });
+
+        //! [Global views]
+    }
 
     void petsc_mat_tests() {
         auto &&comm = PetscCommunicator::get_default();
@@ -606,54 +544,7 @@ namespace utopia {
 #endif  // WITH_BLAS
     }
 
-    // FIXME does not work
-    void petsc_local_entities() {
-        std::cout << "Begin: petsc_local_entities_test." << std::endl;
-
-        auto &&comm = PetscCommunicator::get_default();
-
-        PetscMatrix matrix;
-
-        int rank = comm.rank();
-        int size = comm.size();
-
-        PetscVector ones(layout(comm, 2, PetscTraits::determine()), rank);
-
-        matrix.identity(
-            layout(
-                comm, ((rank != 0) && rank < size - 1) ? 4 : 3, 2, PetscTraits::determine(), PetscTraits::determine()),
-            1.0);
-
-        // disp(matrix);
-
-        if (size > 1) {
-            Write<PetscMatrix> write(matrix);
-            Range mr = row_range(matrix);
-            Range vr = range(ones);
-
-            if (mr.begin() != 0 && mr.end() != matrix.size().get(0)) {
-                matrix.set(mr.begin() + 2, vr.begin() - 1, 1.0);
-                matrix.set(mr.begin() + 3, vr.end(), 1.0);
-            }
-
-            if (mr.begin() == 0) {
-                matrix.set(mr.begin() + 2, vr.end(), 1.0);
-            }
-            if (mr.end() == matrix.size().get(0)) {
-                matrix.set(mr.begin() + 2, vr.begin() - 1, 1.0);
-            }
-        }
-
-        PetscVector result = matrix * ones;
-
-        // disp(matrix);
-        // disp(result);
-        std::cout << "End: petsc_local_entities_test." << std::endl;
-    }
-
     void petsc_conversion() {
-        // std::cout << "Begin: petsc_conversion_test." << std::endl;
-
         auto &&comm = PetscCommunicator::get_default();
 
         PetscVector vec(layout(comm, PetscTraits::decide(), 10), 1.0);
@@ -684,8 +575,6 @@ namespace utopia {
         PetscMatrix dmat;
         convert(raw_type(mat), dmat);
         convert(dmat, raw_type(mat));
-
-        // std::cout << "End: petsc_conversion_test." << std::endl;
     }
 
     void petsc_factory_and_operations() {
@@ -709,51 +598,6 @@ namespace utopia {
                 m.set(i, i + 1, -1.);
             }
         }
-
-        // #ifdef UTOPIA_DEPRECATED_API
-        //         PetscVector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
-        // #endif  // UTOPIA_DEPRECATED_API
-    }
-
-    void maria() {
-        if (mpi_world_size() != 2) {
-            return;
-        }
-
-        int master_sizes[2] = {15, 10};
-
-        int slave_sizes[2] = {25, 20};
-
-        const std::string data_path = Utopia::instance().get("data_path") + "/master_and_slave";
-
-        auto &&comm = PetscCommunicator::get_default();
-
-        const auto r = comm.rank();
-
-        PetscMatrix B;
-        B.sparse(
-            layout(comm, slave_sizes[r], master_sizes[r], PetscTraits::determine(), PetscTraits::determine()), 2, 2);
-        PetscMatrix D;
-        D.sparse(
-            layout(comm, slave_sizes[r], slave_sizes[r], PetscTraits::determine(), PetscTraits::determine()), 2, 2);
-
-        PetscViewer fd;
-        PetscViewerBinaryOpen(PETSC_COMM_WORLD, (data_path + "/master_matrix").c_str(), FILE_MODE_READ, &fd);
-        MatLoad(raw_type(B), fd);
-        PetscViewerDestroy(&fd);
-
-        PetscViewerBinaryOpen(PETSC_COMM_WORLD, (data_path + "/slave_matrix").c_str(), FILE_MODE_READ, &fd);
-        MatLoad(raw_type(D), fd);
-        PetscViewerDestroy(&fd);
-        PetscMatrix Dinv = diag(1. / sum(D, 1));
-        PetscMatrix T = Dinv * B;
-
-        PetscMatrix Tt = transpose(Dinv * B);
-
-        // disp(Tt.size());
-        // disp(T.size());
-
-        PetscMatrix m = transpose(Dinv + D * Dinv);
     }
 
     void local_diag_block() {
@@ -771,7 +615,7 @@ namespace utopia {
             a.set(3, 1, 4);
         }
 
-        a.read([](const SizeType i, const SizeType j, const double value) {
+        a.read([](const SizeType i, const SizeType j, const PetscScalar value) {
             if (i == j) {
                 utopia_test_assert(approxeq(i + 1, value));
             } else {
@@ -781,11 +625,13 @@ namespace utopia {
 
         PetscMatrix b(PetscCommunicator::self());
         b = local_diag_block(a);
-        b.read(UTOPIA_LAMBDA(const SizeType i, const SizeType j, const double value) {
+
+        auto rr = row_range(a);
+        b.read(UTOPIA_LAMBDA(const SizeType i, const SizeType j, const PetscScalar value) {
             if (i == j) {
-                utopia_test_assert(approxeq(i + 1, value));
+                utopia_test_assert((rr.begin() + i + 1) == SizeType(value));
             } else {
-                utopia_test_assert(approxeq(4, value));
+                utopia_test_assert(4 == SizeType(value));
             }
         });
     }
@@ -870,12 +716,6 @@ namespace utopia {
         utopia_test_assert(approxeq(expected, res));
     }
 
-    // template<class Left, class Right>
-    // utopia::Assign<Left, Right> assign(utopia::Expression<Left> &left,
-    //                                    const utopia::Expression<Right> &right) {
-    //     return utopia::Assign<Left, Right>(left.derived(), right.derived());
-    // }
-
     template <class Expr>
     void eval(const Expr &expr) {
         utopia::Eval<Expr>::apply(expr);
@@ -893,12 +733,6 @@ namespace utopia {
         eval(construct(y, alpha * x + y));
         PetscMatrix m;
         eval(construct(m, outer(x, y)));
-        // disp(m);
-
-        //    PetscVector v2 = values(11, 0.0);
-        //    auto view = v2.range(0, 10);
-        //    eval(assign(view, to_wrapper(x)));
-        //    disp(v2);
     }
 
     void petsc_precond() {
@@ -926,11 +760,6 @@ namespace utopia {
 
         PetscVector expected(vl, 0.5);
         utopia_test_assert(approxeq(expected, sol));
-
-        // PetscViewer   viewer;
-        // PetscViewerDrawOpen(PETSC_COMM_WORLD,0,"",300,0,300,300,&viewer);
-        // VecView(raw_type(sol),viewer);
-        // PetscViewerDestroy(&viewer);
     }
 
     void petsc_tensor_reduction() {
@@ -1166,14 +995,6 @@ namespace utopia {
 
         utopia_test_assert(approxeq(one, actual_min));
         utopia_test_assert(approxeq(two, actual_max));
-
-        // #ifdef UTOPIA_DEPRECATED_API
-        //         actual_min = min(two, values(n, 1.));
-        //         actual_max = max(values(n, 2.), one);
-
-        //         utopia_test_assert(approxeq(one, actual_min));
-        //         utopia_test_assert(approxeq(two, actual_max));
-        // #endif  // UTOPIA_DEPRECATED_API
     }
 
     void petsc_ghosted() {
@@ -1228,7 +1049,6 @@ namespace utopia {
         m.identity(square_matrix_layout(vl), 1.0);
 
         auto expr = dot(v, v) / dot(m * v, v);
-        // std::cout << tree_format(expr.get_class()) << std::endl;
 
         double s = expr;
         utopia_test_assert(approxeq(1., s));
@@ -1358,7 +1178,6 @@ namespace utopia {
         {
             Write<PetscMatrix> w_m(M);
             auto r = row_range(M);
-            // auto c = col_range(M);
 
             for (auto i = r.begin(); i != r.end(); ++i) {
                 for (auto j = 0; j < m; ++j) {
@@ -1368,7 +1187,6 @@ namespace utopia {
         }
 
         PetscVector col_result(row_layout(M), 0.0);
-        // mat_get_col(M, col_result, col_id);
         M.col(col_id, col_result);
 
         PetscVector col_expected(layout(col_result), col_id);
@@ -1409,7 +1227,6 @@ namespace utopia {
         {
             Write<PetscMatrix> w_m(M);
             auto r = row_range(M);
-            // auto c = col_range(M);
 
             for (auto i = r.begin(); i != r.end(); ++i) {
                 if (i < 5) {
@@ -1441,23 +1258,15 @@ namespace utopia {
         m *= 0.;
 
         zero_rows_to_identity(m, 1e-10);
-        // disp(m);
     }
 
-#endif  // WITH_PETSC;
-
     static void petsc_specific() {
-#ifdef WITH_PETSC
-
         UTOPIA_RUN_TEST(petsc_memcheck);
         UTOPIA_RUN_TEST(petsc_line_search);
         UTOPIA_RUN_TEST(petsc_residual);
         UTOPIA_RUN_TEST(petsc_block_mat);
         UTOPIA_RUN_TEST(petsc_ghosted);
-
-        // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
-
-        // UTOPIA_RUN_TEST(petsc_view); //FIXME
+        UTOPIA_RUN_TEST(petsc_select_submatrix);
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
         UTOPIA_RUN_TEST(petsc_hardcoded_cg);
         UTOPIA_RUN_TEST(petsc_reciprocal);
@@ -1494,20 +1303,14 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_norm_test);
         UTOPIA_RUN_TEST(petsc_chop_test);
         UTOPIA_RUN_TEST(petsc_zero_rows_to_id);
+        UTOPIA_RUN_TEST(petsc_conversion);
+        UTOPIA_RUN_TEST(petsc_sparse_matrix_accessors);
+        UTOPIA_RUN_TEST(local_diag_block);
 
         // serial tests
 #ifdef PETSC_HAVE_MUMPS
         UTOPIA_RUN_TEST(petsc_inverse);
 #endif  // PETSC_HAVE_MUMPS
-
-        // petsc_sparse_matrix_accessors();  // TODO:: here something doesnt work in parallel !
-
-        // // petsc_local_entities(); //FIXME does not work
-        //  petsc_conversion();
-        //  maria();
-        //  //local_diag_block();              // TODO:: utopia_test_assert fails in parallel
-
-#endif  // WITH_PETSC
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(petsc_specific);

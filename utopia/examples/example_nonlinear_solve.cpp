@@ -78,10 +78,17 @@ int main(int argc, char **argv) {
 #ifdef WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
+#define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND
 #else
+#ifdef WITH_BLAS
     using MatrixT = BlasMatrixd;
     using VectorT = BlasVectord;
+#define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND
 #endif
+#endif
+
+#ifdef EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND
+#undef EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND
 
     Utopia::Init(argc, argv);
 
@@ -114,4 +121,8 @@ int main(int argc, char **argv) {
     }
 
     return Utopia::Finalize();
+#else
+#warning "example_nonlinear_solve requires a dense algebra backend"
+    return 0;
+#endif
 }

@@ -13,16 +13,22 @@
 
 namespace utopia {
 
-    template <class Expr, class Operation, class Traits, int Backend>
-    class Eval<Reduce<Expr, Operation>, Traits, Backend> {
+    template <class InnerExpr, class Operation, class Traits, int Backend>
+    class Eval<Reduce<InnerExpr, Operation>, Traits, Backend> {
     public:
         using Scalar = typename Traits::Scalar;
+        using Expr = utopia::Reduce<InnerExpr, Operation>;
 
-        inline static Number<Scalar> apply(const Reduce<Expr, Operation> &expr) {
+        template <class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
+
+        inline static Number<Scalar> apply(const Expr &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = Eval<Expr, Traits>::apply(expr.expr()).reduce(expr.operation());
+            result = Eval<InnerExpr, Traits>::apply(expr.expr()).reduce(expr.operation());
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -33,6 +39,12 @@ namespace utopia {
     class Eval<Dot<Left, Right>, Traits, Backend> {
     public:
         using Scalar = typename Traits::Scalar;
+
+        // FIXME this lazy and not safe
+        template <class Expr, class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
 
         inline static Number<Scalar> apply(const Dot<Left, Right> &expr) {
             Scalar result;
@@ -50,28 +62,40 @@ namespace utopia {
         }
     };
 
-    template <class Expr, class Traits, int Backend>
-    class Eval<Norm<Expr, 2>, Traits, Backend> {
+    template <class InnerExpr, class Traits, int Backend>
+    class Eval<Norm<InnerExpr, 2>, Traits, Backend> {
     public:
         using Scalar = typename Traits::Scalar;
 
-        inline static Number<Scalar> apply(const Norm<Expr, 2> &expr) {
+        // FIXME this lazy and not safe
+        template <class Expr, class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
+
+        inline static Number<Scalar> apply(const Norm<InnerExpr, 2> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = Eval<Expr, Traits>::apply(expr.expr()).norm2();
+            result = Eval<InnerExpr, Traits>::apply(expr.expr()).norm2();
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template <class Expr, class Traits, int Backend>
-    class Eval<Norm<Expr, 1>, Traits, Backend> {
+    template <class InnerExpr, class Traits, int Backend>
+    class Eval<Norm<InnerExpr, 1>, Traits, Backend> {
     public:
         using Scalar = typename Traits::Scalar;
 
-        inline static Number<Scalar> apply(const Norm<Expr, 1> &expr) {
+        // FIXME this lazy and not safe
+        template <class Expr, class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
+
+        inline static Number<Scalar> apply(const Norm<InnerExpr, 1> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -79,19 +103,25 @@ namespace utopia {
             //         Eval<Expr, Traits>::apply(expr.expr())
             // );
 
-            result = Eval<Expr, Traits>::apply(expr.expr()).norm1();
+            result = Eval<InnerExpr, Traits>::apply(expr.expr()).norm1();
 
             UTOPIA_TRACE_END(expr);
             return result;
         }
     };
 
-    template <class Expr, class Traits, int Backend>
-    class Eval<Norm<Expr, INFINITY_NORM_TAG>, Traits, Backend> {
+    template <class InnerExpr, class Traits, int Backend>
+    class Eval<Norm<InnerExpr, INFINITY_NORM_TAG>, Traits, Backend> {
     public:
         using Scalar = typename Traits::Scalar;
 
-        inline static Number<Scalar> apply(const Norm<Expr, INFINITY_NORM_TAG> &expr) {
+        // FIXME this lazy and not safe
+        template <class Expr, class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
+
+        inline static Number<Scalar> apply(const Norm<InnerExpr, INFINITY_NORM_TAG> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
@@ -99,7 +129,7 @@ namespace utopia {
             //         Eval<Expr, Traits>::apply(expr.expr())
             // );
 
-            result = Eval<Expr, Traits>::apply(expr.expr()).norm_infty();
+            result = Eval<InnerExpr, Traits>::apply(expr.expr()).norm_infty();
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -109,6 +139,12 @@ namespace utopia {
     template <class Left, class Right, class Traits, int Backend>
     class Eval<ReduceApproxEqual<Left, Right>, Traits, Backend> {
     public:
+        // FIXME this lazy and not safe
+        template <class Expr, class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
+
         inline static bool apply(const ReduceApproxEqual<Left, Right> &expr) {
             bool result;
             UTOPIA_TRACE_BEGIN(expr);
@@ -145,16 +181,22 @@ namespace utopia {
     //     }
     // };
 
-    template <class Expr, class Traits, int Backend>
-    class Eval<Trace<Expr>, Traits, Backend> {
+    template <class InnerExpr, class Traits, int Backend>
+    class Eval<Trace<InnerExpr>, Traits, Backend> {
     public:
         using Scalar = typename Traits::Scalar;
 
-        inline static Number<Scalar> apply(const Trace<Expr> &expr) {
+        // FIXME this lazy and not safe
+        template <class Expr, class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
+
+        inline static Number<Scalar> apply(const Trace<InnerExpr> &expr) {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);
 
-            result = Eval<Expr, Traits>::apply(expr.expr()).trace();
+            result = Eval<InnerExpr, Traits>::apply(expr.expr()).trace();
 
             UTOPIA_TRACE_END(expr);
             return result;
@@ -169,6 +211,11 @@ namespace utopia {
 
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
+
+        template <class Result>
+        inline static void apply(const Expr &expr, Result &result) {
+            result = apply(expr);
+        }
 
         inline static SizeType apply(const Expr &expr) {
             SizeType result = 0;

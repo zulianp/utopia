@@ -159,6 +159,7 @@ namespace utopia {
     public:
         inline Strategy &strategy() { return strategy_; }
 
+        inline bool is_proxy() const { return false; }
         inline bool is_sparse() const { return is_sparse_; }
     };  // namespace utopia
 }  // namespace utopia
