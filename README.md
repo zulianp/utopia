@@ -6,13 +6,13 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 # Main contributors of utopia
 
 - Dr. Patrick Zulian (Lead developer)
-- Alena Kopanicakova (Linear and non-linear solvers, Fenics and MOOSE interoperability)
-- Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith)
+- Alena Kopanicakova (Linear and non-linear solvers)
+- Dr. Maria Giuseppina Chiara Nestola (MOOSE integrations)
 
 Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
 
 # License
-The software is realized with NO WARRANTY and it is licenzed under BSD 3-Clause license (https://opensource.org/licenses/BSD-3-Clause)
+The software is realized with NO WARRANTY and it is licenzed under [BSD 3-Clause license](https://opensource.org/licenses/BSD-3-Clause)
 
 # Copyright
 Copyright (c) 2015 Institute of Computational Science - USI Università della Svizzera Italiana, ETH-Z Eidgenössische Technische Hochschule Zürich
@@ -49,8 +49,7 @@ For compiling the very experimental FE library follow the instructions [HERE](ht
 
 ## Contact
 
-Join us on slack:
-https://join.slack.com/t/ics-utopia/signup
+Join us on [slack](https://join.slack.com/t/ics-utopia/signup)
 
 
 ## Citing Utopia
