@@ -85,8 +85,8 @@ namespace utopia {
         inline bool is_surface() const override { return bilinear_integrator_->is_surface(); }
 
     private:
-        std::shared_ptr<LinearIntegratorT> linear_integrator_;
         std::shared_ptr<BilinearIntegratorT> bilinear_integrator_;
+        std::shared_ptr<LinearIntegratorT> linear_integrator_;
     };
 
     template <class FS>

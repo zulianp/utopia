@@ -320,6 +320,11 @@ namespace utopia {
     class Eval<FormTensor<T, Order>, Traits, Backend> {
     public:
         inline static const FormTensor<T, Order> &apply(const FormTensor<T, Order> &expr) { return expr; }
+        inline static void apply(FormTensor<T, Order> &&expr, FormTensor<T, Order> &result) {
+            result = std::move(expr);
+        }
+
+        inline static void apply(const FormTensor<T, Order> &expr, FormTensor<T, Order> &result) { result = expr; }
 
         inline static FormTensor<T, Order> apply(FormTensor<T, Order> &&expr) { return std::move(expr); }
     };
