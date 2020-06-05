@@ -9,10 +9,10 @@ namespace utopia {
 
     FractureFlowTransportSimulation::FractureFlowTransportSimulation(libMesh::Parallel::Communicator &comm)
         : steady_flow_(comm),
-          preset_velocity_field_(false),
-          use_bicgstab(false),
           transport_m_("matrix"),
-          transport_f_("fracture_network") {}
+          transport_f_("fracture_network"),
+          preset_velocity_field_(false),
+          use_bicgstab(false) {}
 
     void FractureFlowTransportSimulation::read(utopia::Input &in) {
         steady_flow_.read(in);
@@ -719,12 +719,12 @@ namespace utopia {
     FractureFlowTransportSimulation::Transport::Transport(const std::string &name)
         : name(name),
           lump_mass_matrix(false),
-          simulation_time(1.),
           h1_regularization(false),
-          regularization_parameter(0.5),
-          dt(0.1),
           use_upwinding(true),
-          boundary_factor(0.) {}
+          regularization_parameter(0.5),
+          boundary_factor(0.),
+          dt(0.1),
+          simulation_time(1.) {}
 
     void FractureFlowTransportSimulation::Transport::read(Input &in) {
         in.get("lump-mass-matrix", lump_mass_matrix);

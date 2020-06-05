@@ -3,7 +3,7 @@
 namespace utopia {
 
     UIContactParams::UIContactParams()
-        : step_tol(5e-6), max_nl_iter(30), is_steady(false), n_transient_steps(1), use_pg(false) {}
+        : is_steady(false), use_pg(false), max_nl_iter(30), n_transient_steps(1), step_tol(5e-6) {}
 
     void UIContactParams::read(Input &is) {
         std::set<int> temp;
