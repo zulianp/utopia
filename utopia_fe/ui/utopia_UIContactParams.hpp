@@ -19,10 +19,10 @@ namespace utopia {
         ContactParams contact_params;
         std::vector<int> contact_surfaces;
         bool is_steady;
+        bool use_pg;
+        int max_nl_iter;
         int n_transient_steps;
         double step_tol;
-        int max_nl_iter;
-        bool use_pg;
     };
 
 }  // namespace utopia
