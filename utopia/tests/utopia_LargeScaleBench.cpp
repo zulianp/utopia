@@ -2,6 +2,7 @@
 #include <string>
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
+#include "utopia_BiCGStab.hpp"
 #include "utopia_Chrono.hpp"
 #include "utopia_LargeScaleIncludes.hpp"
 #include "utopia_MPI.hpp"

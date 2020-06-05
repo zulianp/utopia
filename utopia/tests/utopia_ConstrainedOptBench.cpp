@@ -79,7 +79,7 @@ namespace utopia {
 
             // SemiSmooth Newton does not support dense matrices ....
             this->register_experiment("TR_Variable_SemiSmoothNewton", [this]() {
-                auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
+                auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
                 auto subproblem = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(lsolver);
                 subproblem->atol(tol);
                 subproblem->stol(tol);

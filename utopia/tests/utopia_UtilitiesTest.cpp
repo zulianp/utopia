@@ -185,21 +185,13 @@ namespace utopia {
 
             Matrix diff = m1 - m3;
             diff.read([](SizeType /*x*/, SizeType /*y*/, double entry) { utopia_test_assert(approxeq(0.0, entry)); });
-
-            ////////////////////////////////////////////////////////////
-
-            // Matrix m4 = values(4, 4, 0.0);
-            // view(m4, Range(0, 2), Range(0, 2)) = identity(2, 2);
-
-            // each_read(m4, [](SizeType x, SizeType y, double entry) {
-            //     utopia_test_assert(approxeq(x == y && x < 2 ? 1.0 : 0.0, entry));
-            // });
         }
 
         void factory_and_operations_test() {
             const int n = 3;
             Matrix m;
             m.dense(serial_layout(n, n), 0.0);
+
             {
                 Write<Matrix> w(m);
 
@@ -213,10 +205,6 @@ namespace utopia {
                 m.set(2, 1, -1.0);
                 m.set(2, 2, -1.0);
             }
-            // #ifdef UTOPIA_DEPRECATED_API
-            //             Vector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
-            //             utopia_test_assert(c.size() == 3);
-            // #endif  // UTOPIA_DEPRECATED_API
         }
 
         void variable_test() {
@@ -276,7 +264,11 @@ namespace utopia {
         std::stringstream ss;
         CitationsDB::instance().describe(ss);
 
-        utopia_test_assert(!ss.str().empty());
+        if (mpi_world_rank() == 0) {
+            utopia_test_assert(!ss.str().empty());
+        } else {
+            utopia_test_assert(ss.str().empty());
+        }
     }
 
     static void describe_test() {
@@ -312,24 +304,17 @@ namespace utopia {
 
 #ifdef WITH_BLAS
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
-        // InlinerTest<BlasMatrixd, BlasVectord>().run();
 #endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
         BlockTest<PetscMatrix, PetscVector>().run();
 
-        if (mpi_world_size() == 1) {
-            // UtilitiesTest<PetscMatrix, PetscVector>().run();  // FIXME
-            BlockTest<PetscMatrix, PetscVector>().run();
-#ifdef WITH_BLAS
-            // interoperability
-            // UtilitiesTest<PetscMatrix, BlasVectord>().inline_eval_test();
-            // UtilitiesTest<BlasMatrixd, PetscVector>().inline_eval_test();
-#endif  // WITH_BLAS
-        }
+        UtilitiesTest<PetscMatrix, PetscVector>().run();
+        BlockTest<PetscMatrix, PetscVector>().run();
 
 #endif  // WITH_PETSC
 
+        // FIXME
         if (mpi_world_size() == 1) {
 #ifdef WITH_TRILINOS
             BlockTest<TpetraMatrixd, TpetraVectord>().run();

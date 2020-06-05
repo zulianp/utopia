@@ -104,6 +104,7 @@ static void run_access(const int n) {
     std::cout << c << std::endl;
 }
 
+#ifdef WITH_BLAS
 static void run_access_blas(const int n) {
     std::cout << "Utopia Access Blas" << std::endl;
     BlasVectord v;
@@ -122,7 +123,9 @@ static void run_access_blas(const int n) {
     c.stop();
     std::cout << c << std::endl;
 }
+#endif  // WITH_BLAS
 
+#ifdef WITH_PETSC
 static void run_access_petsc(const int n) {
     std::cout << "Utopia Access Petsc" << std::endl;
     PetscVector v;
@@ -143,6 +146,7 @@ static void run_access_petsc(const int n) {
     c.stop();
     std::cout << c << std::endl;
 }
+#endif  // WITH_PETSC
 
 static void run_all(const int n) {
     run_raw(n);
