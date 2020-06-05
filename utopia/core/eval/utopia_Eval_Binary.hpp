@@ -336,6 +336,21 @@ namespace utopia {
         }
     };
 
+    template <typename T, class Right, class Traits, int Backend>
+    class Eval<Binary<Number<T>, Right, Multiplies>, Traits, Backend> {
+    public:
+        using Scalar = typename Traits::Scalar;
+        using Expr = utopia::Binary<Number<T>, Right, Multiplies>;
+        using Result = EXPR_TYPE(Traits, Right);
+
+        UTOPIA_EVAL_APPLY_TO_TEMPORARY(Expr, Result)
+
+        inline static void apply(const Expr &expr, Result &result) {
+            Eval<Right, Traits, Backend>::apply(expr.right(), result);
+            result.scale(expr.left());
+        }
+    };
+
 }  // namespace utopia
 
 #endif  // UTOPIA_UTOPIA_EVAL_BINARY_HPP_HPP

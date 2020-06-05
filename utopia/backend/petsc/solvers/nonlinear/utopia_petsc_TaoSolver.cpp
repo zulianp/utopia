@@ -342,7 +342,10 @@ namespace utopia {
 
             KSP ksp;
             get_ksp(&ksp);
-            build_ksp(solver, ksp);
+
+            if (ksp != nullptr) {
+                build_ksp(solver, ksp);
+            }
         }
 
         void set_function(Function<Matrix, Vector> &fun) { UtopiaTaoSetUp(tao, fun); }
