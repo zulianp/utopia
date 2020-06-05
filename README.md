@@ -17,10 +17,6 @@ The software is realized with NO WARRANTY and it is licenzed under BSD 3-Clause 
 # Copyright
 Copyright (c) 2015 Institute of Computational Science - USI Università della Svizzera Italiana, ETH-Z Eidgenössische Technische Hochschule Zürich
 
-# Dependencies
-- PETSc (https://www.mcs.anl.gov/petsc/), must be compiled with MUMPS enabled
-- LibMesh for the experimental FE module (https://github.com/libMesh)
-
 # Getting started
 
 ([More in-depth guide here](https://bitbucket.org/zulianp/utopia/wiki/Getting%20started))
@@ -49,33 +45,7 @@ Go to the folder utopia/utopia:
 - make
 - make install.
 
-
-## Compiling utopia_fe
-After compiling utopia.
-
-Define the utopia\_fe path (you can also add it to your .bash_profile)
-export UTOPIA\_FE\_DIR=<The absolute path of where you want to install utopia\_fe>
-
-You need a limesh installation. Define the libmesh install directory
-export LIBMESH\_DIR=<The aboslute path of where you installed libmesh>
-
-Go to the folder utopia/utopia\_fe:
-
-- mkdir bin
-- cd bin
-- cmake .. -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_FE_DIR -DMOONOLITH\_INSTALL\_PREFIX=$UTOPIA_FE_DIR
-- make 
-- make install
-
-
-All the headers and binaries should be in the desired folder in the following form
-- include
-- lib
-- bin
-- config (here you can find useful configuration file for your cmake or make build system)
-
-Setting MOONOLITH\_INSTALL\_PREFIX is optional. But if you want to delete the contect of the bin folder then it is required.
-
+For compiling the very experimental FE library follow the instructions [HERE](https://bitbucket.org/zulianp/utopia/wiki/Utopia%20FE)
 
 ## Contact
 
