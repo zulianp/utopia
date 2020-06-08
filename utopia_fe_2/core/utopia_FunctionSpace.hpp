@@ -15,7 +15,13 @@ namespace utopia {
 
         ~IFunctionSpace() override = default;
         virtual bool write(const Path &path, const Vector &x) const = 0;
+
         virtual void create_vector(Vector &x) const = 0;
+        virtual void create_matrix(Matrix &A) const = 0;
+
+        virtual void apply_constraints(Vector &x) const = 0;
+        virtual void apply_constraints(Matrix &A, Vector &b) const = 0;
+        virtual void apply_zero_constraints(Vector &x) const = 0;
     };
 
     template <class... T>

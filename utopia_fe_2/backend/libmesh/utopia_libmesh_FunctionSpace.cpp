@@ -4,7 +4,9 @@
 #include "utopia_Readable.hpp"
 #include "utopia_SymbolicFunction.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_Writable.hpp"
 #include "utopia_libmesh_LambdaFunction.hpp"
+#include "utopia_petsc_Matrix.hpp"
 
 // libmesh
 #include "libmesh/const_function.h"
@@ -22,12 +24,10 @@ namespace utopia {
 
     template <class Vector>
     inline void convert(const Vector &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec) {
-        {
-            Read<Vector> w_s(utopia_vec);
-            Range r = range(utopia_vec);
-            for (long i = r.begin(); i < r.end(); ++i) {
-                lm_vec.set(i, utopia_vec.get(i));
-            }
+        Read<Vector> w_s(utopia_vec);
+        Range r = range(utopia_vec);
+        for (long i = r.begin(); i < r.end(); ++i) {
+            lm_vec.set(i, utopia_vec.get(i));
         }
     }
 
@@ -39,6 +39,106 @@ namespace utopia {
         Traits::IndexArray ghost_nodes;
         convert(dof_map.get_send_list(), ghost_nodes);
         x.ghosted(layout(comm, dof_map.n_local_dofs(), dof_map.n_dofs()), ghost_nodes);
+    }
+
+    void FunctionSpace<LMMesh>::create_matrix(Matrix &A) const {
+        auto &sys = this->system();
+        auto &dof_map = sys.get_dof_map();
+
+        Communicator comm(mesh_->comm().get());
+
+        static_assert(Traits::Backend == utopia::PETSC, "Only implemented for PETSC algebra atm");
+
+        auto &lm_d_nnz = dof_map.get_n_nz();
+        auto &lm_o_nnz = dof_map.get_n_oz();
+
+        Traits::IndexArray d_nnz, o_nnz;
+
+        convert(lm_d_nnz, d_nnz);
+        convert(lm_o_nnz, o_nnz);
+
+        auto l = layout(comm, dof_map.n_local_dofs(), dof_map.n_dofs());
+
+        A.sparse(square_matrix_layout(l), d_nnz, o_nnz);
+    }
+
+    void FunctionSpace<LMMesh>::apply_constraints(Vector &vec) const {
+        auto &dof_map = system().get_dof_map();
+
+        const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+        Write<Vector> w_v(vec);
+
+        if (has_constaints) {
+            const libMesh::DofConstraintValueMap &rhs_values =
+                const_cast<libMesh::DofMap &>(dof_map).get_primal_constraint_values();
+
+            Range r = range(vec);
+            for (SizeType i = r.begin(); i < r.end(); ++i) {
+                if (dof_map.is_constrained_dof(i)) {
+                    auto valpos = rhs_values.find(i);
+                    vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+                }
+            }
+        }
+    }
+
+    void FunctionSpace<LMMesh>::apply_constraints(Matrix &mat, Vector &vec) const {
+        assert(!empty(mat));
+        assert(!empty(vec));
+
+        auto &dof_map = system().get_dof_map();
+
+        const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+        auto ls = local_size(mat);
+        auto s = size(mat);
+
+        Traits::IndexArray index;
+
+        auto rr = range(vec);
+
+        if (has_constaints) {
+            for (SizeType i = rr.begin(); i < rr.end(); ++i) {
+                if (dof_map.is_constrained_dof(i)) {
+                    index.push_back(i);
+                }
+            }
+        }
+
+        mat.set_zero_rows(index, 1.);
+
+        Write<Vector> w_v(vec);
+
+        if (has_constaints) {
+            const libMesh::DofConstraintValueMap &rhs_values =
+                const_cast<libMesh::DofMap &>(dof_map).get_primal_constraint_values();
+
+            Range r = range(vec);
+            for (SizeType i = r.begin(); i < r.end(); ++i) {
+                if (dof_map.is_constrained_dof(i)) {
+                    auto valpos = rhs_values.find(i);
+                    vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+                }
+            }
+        }
+    }
+
+    void FunctionSpace<LMMesh>::apply_zero_constraints(Vector &vec) const {
+        auto &dof_map = system().get_dof_map();
+
+        const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+        Write<Vector> w_v(vec);
+
+        if (has_constaints) {
+            Range r = range(vec);
+            for (SizeType i = r.begin(); i < r.end(); ++i) {
+                if (dof_map.is_constrained_dof(i)) {
+                    vec.set(i, 0.0);
+                }
+            }
+        }
     }
 
     class FunctionSpace<LMMesh>::Impl {

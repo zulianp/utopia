@@ -32,6 +32,7 @@ namespace utopia {
     public:
         using Comm = typename Traits<Mesh>::Communicator;
         using Vector = typename Traits<Mesh>::Vector;
+        using Matrix = typename Traits<Mesh>::Matrix;
 
         void run() /*override*/ {
             Comm comm;
@@ -52,6 +53,9 @@ namespace utopia {
             x.set(1.0);
 
             space.write("space.e", x);
+
+            Matrix A;
+            space.create_matrix(A);
         }
     };
 

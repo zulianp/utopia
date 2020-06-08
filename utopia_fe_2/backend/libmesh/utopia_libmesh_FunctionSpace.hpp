@@ -13,9 +13,10 @@ namespace utopia {
     class FunctionSpace<LMMesh> final : public IFunctionSpace<LMMesh> {
     public:
         using Traits = utopia::Traits<LMMesh>;
-        using Vector = typename Traits::Vector;
-        using Matrix = typename Traits::Matrix;
-        using Communicator = typename Traits::Communicator;
+        using SizeType = Traits::SizeType;
+        using Vector = Traits::Vector;
+        using Matrix = Traits::Matrix;
+        using Communicator = Traits::Communicator;
 
         FunctionSpace(const Communicator &comm);
         ~FunctionSpace();
@@ -23,7 +24,13 @@ namespace utopia {
         void read(Input &is) override;
         void describe(std::ostream &os = std::cout) const override;
         bool write(const Path &path, const Vector &x) const override;
+
         void create_vector(Vector &x) const override;
+        void create_matrix(Matrix &A) const override;
+
+        void apply_constraints(Vector &x) const override;
+        void apply_constraints(Matrix &A, Vector &b) const override;
+        void apply_zero_constraints(Vector &x) const override;
 
     private:
         std::shared_ptr<LMMesh> mesh_;
