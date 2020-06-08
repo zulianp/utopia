@@ -57,7 +57,7 @@ option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" OFF)
-option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the futre" ON)
+option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the future" ON)
 option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(UTOPIA_ENABLE_PETSC_DM_PLEX "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies" ON)
 option(UTOPIA_PULL_REQUEST_MODE "Mode for ensuring that pull request standards are respected" OFF)
@@ -196,7 +196,6 @@ include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 if( CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
     message(FATAL_ERROR
         "In-source builds are not allowed.
-        CMake would overwrite the makefiles distributed with Moose.
         Please create a directory and run cmake from there, passing the path
         to this source directory as the last argument.
         This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
