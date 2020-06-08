@@ -150,6 +150,7 @@ list(APPEND UTOPIA_FE_MODULES
     backend/intrepid2
     backend/mars
     backend/moonolith
+    backend/petsc
     base
  )
 
@@ -179,6 +180,8 @@ add_utopiafe_module(utopia_fe ${UTOPIA_FE_LIBRARIES})
 add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${LOCAL_HEADERS})
 target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_INCLUDES})
 target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_APPS})
+
+include(apps/apps.cmake)
 
 install(TARGETS utopia_fe
     RUNTIME DESTINATION bin
@@ -310,10 +313,8 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake    DESTINATION config)
 
 # test suite
 add_executable(utopia_fe_test EXCLUDE_FROM_ALL test.cpp)
-# utopia_link_default_targets(utopia_fe_test)
 target_link_libraries(utopia_fe_test utopia_fe)
 include(tests/tests.cmake)
-
 
 ##########################################################################################
 
