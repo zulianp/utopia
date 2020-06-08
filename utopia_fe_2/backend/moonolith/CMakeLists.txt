@@ -2,7 +2,6 @@
 if(ENABLE_MOONOLITH)
     list(APPEND INTERSECTION_MODULES
       .
-      clipper
       )
 
     set(LOCAL_HEADERS "")

@@ -1,6 +1,5 @@
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
-#include "utopia_Version.hpp"
 
 int main(const int argc, char *argv[]) {
     using namespace utopia;

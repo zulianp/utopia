@@ -151,6 +151,7 @@ list(APPEND UTOPIA_FE_MODULES
     backend/mars
     backend/moonolith
     backend/petsc
+    core
     base
  )
 
