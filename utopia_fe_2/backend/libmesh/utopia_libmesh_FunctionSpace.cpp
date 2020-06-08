@@ -77,8 +77,12 @@ namespace utopia {
         std::vector<libMesh::dof_id_type> dofs;
         dof_map.dof_indices(&e, dofs);
 
-        assert(false);
-        // el_vec.read([&](const SizeType &i, const Scalar &val) { vec.c_add(dofs[i], val); });
+        const SizeType n = el_vec.size();
+
+        assert(n == SizeType(dofs.size()));
+        for (SizeType i = 0; i < n; ++i) {
+            vec.c_add(dofs[i], el_vec.get(i));
+        }
     }
 
     void FunctionSpace<LMMesh>::apply_constraints(Vector &vec) const {
@@ -92,7 +96,7 @@ namespace utopia {
             const libMesh::DofConstraintValueMap &rhs_values =
                 const_cast<libMesh::DofMap &>(dof_map).get_primal_constraint_values();
 
-            Range r = range(vec);
+            auto r = range(vec);
             for (SizeType i = r.begin(); i < r.end(); ++i) {
                 if (dof_map.is_constrained_dof(i)) {
                     auto valpos = rhs_values.find(i);
@@ -133,7 +137,7 @@ namespace utopia {
             const libMesh::DofConstraintValueMap &rhs_values =
                 const_cast<libMesh::DofMap &>(dof_map).get_primal_constraint_values();
 
-            Range r = range(vec);
+            auto r = range(vec);
             for (SizeType i = r.begin(); i < r.end(); ++i) {
                 if (dof_map.is_constrained_dof(i)) {
                     auto valpos = rhs_values.find(i);
@@ -151,7 +155,7 @@ namespace utopia {
         Write<Vector> w_v(vec);
 
         if (has_constaints) {
-            Range r = range(vec);
+            auto r = range(vec);
             for (SizeType i = r.begin(); i < r.end(); ++i) {
                 if (dof_map.is_constrained_dof(i)) {
                     vec.set(i, 0.0);
