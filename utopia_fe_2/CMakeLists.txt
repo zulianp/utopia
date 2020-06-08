@@ -18,7 +18,8 @@ option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MARS "Tries to use mars backend" ON)
 option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
-option(ENABLE_LIBMESH "Tries to use the LibMesh related features" OFF)
+option(ENABLE_LIBMESH "Tries to use the LibMesh related features" ON)
+option(ENABLE_MOONOLITH "enable moonolith transfer capabilities" ON)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -69,6 +70,7 @@ endforeach(funcLib)
 
 find_package(Utopia REQUIRED)
 add_definitions(${UTOPIA_DEFS})
+include_directories(${UTOPIA_INCLUDES})
 include_directories(rapidxml)
 
 
@@ -304,6 +306,14 @@ file(WRITE ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake ${CONFIG_CONTENT})
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.makefile DESTINATION config)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake    DESTINATION config)
 
+##########################################################################################
+
+# test suite
+add_executable(utopia_fe_test EXCLUDE_FROM_ALL test.cpp)
+# utopia_link_default_targets(utopia_fe_test)
+target_link_libraries(utopia_fe_test utopia_fe)
+include(tests/tests.cmake)
+
 
 ##########################################################################################
 
@@ -313,7 +323,7 @@ add_dependencies(apps utopia_fe utopia_fe_exec)
 ##########################################################################################
 
 add_custom_target(complete)
-add_dependencies(complete apps)
+add_dependencies(complete apps utopia_fe_test)
 
 ##########################################################################################
 
