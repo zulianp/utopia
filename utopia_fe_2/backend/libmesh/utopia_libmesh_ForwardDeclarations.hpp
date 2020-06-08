@@ -7,6 +7,7 @@ namespace libMesh {
     class EquationSystems;
     class System;
     class Elem;
+    class LibMeshInit;
 
     namespace Parallel {
         class Communicator;

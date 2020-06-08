@@ -174,8 +174,8 @@ configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
 #create main library
-list(APPEND LOCAL_HEADERS utopia_fe.hpp)
-list(APPEND LOCAL_SOURCES utopia_fe.cpp)
+list(APPEND LOCAL_HEADERS utopia_fe.hpp utopia_fe_Instance.hpp)
+list(APPEND LOCAL_SOURCES utopia_fe.cpp utopia_fe_Instance.cpp)
 set(TOP_LEVEL 1)
 add_utopiafe_module(utopia_fe ${UTOPIA_FE_LIBRARIES})
 add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${LOCAL_HEADERS})
