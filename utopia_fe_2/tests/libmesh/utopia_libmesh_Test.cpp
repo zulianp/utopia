@@ -12,11 +12,11 @@ namespace utopia {
     public:
         using Comm = typename Traits<Mesh>::Communicator;
         void run() /*override*/ {
-            // FIXME (create)
             Comm comm;
 
             InputParameters params;
 
+            params.set("format", "libmesh");
             params.set("mesh_type", "square");
             params.set("elem_type", "TRI3");
 
@@ -27,10 +27,30 @@ namespace utopia {
         }
     };
 
+    template <class Mesh>
+    class FunctionSpaceTest final /*: public UnitTest<PetscCommunicator> */ {
+    public:
+        using Comm = typename Traits<Mesh>::Communicator;
+        void run() /*override*/ {
+            Comm comm;
+
+            InputParameters params;
+
+            params.set("format", "libmesh");
+            params.set("mesh_type", "cube");
+            params.set("elem_type", "TET4");
+
+            FunctionSpace<Mesh> space(comm);
+            space.read(params);
+
+            space.describe(std::cout);
+        }
+    };
+
     static void libmesh_specific() {
         // FIXME
         MeshTest<LMMesh>().run();
-        // run_parallel_test<MeshTest<LMMesh>>();
+        FunctionSpaceTest<LMMesh>().run();
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(libmesh_specific);

@@ -19,15 +19,20 @@
 namespace utopia {
 
     template <>
-    class Mesh<libMesh::UnstructuredMesh> : public Configurable, public Describable {
+    class Mesh<libMesh::UnstructuredMesh> : public IMesh {
     public:
         using Scalar = libMesh::Real;
+        using SizeType = std::size_t;
 
         Mesh(const Communicator &comm);
         ~Mesh();
 
         void read(Input &is) override;
         void describe(std::ostream &os = std::cout) const override;
+        bool write(const Path &path) const override;
+
+        libMesh::UnstructuredMesh &raw_type();
+        const libMesh::UnstructuredMesh &raw_type() const;
 
     private:
         std::shared_ptr<libMesh::Parallel::Communicator> comm_;

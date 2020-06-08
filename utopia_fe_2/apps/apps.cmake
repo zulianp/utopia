@@ -1,5 +1,5 @@
 
-if(TARGET utopia_petsc)
+if(TARGET utopia_libmesh)
 
     set(UTOPIA_FE_APPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/apps)
 
@@ -11,7 +11,7 @@ if(TARGET utopia_petsc)
     set(LOCAL_SOURCES "")
     find_project_files(UTOPIA_FE_APPS_DIR APPS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
     target_sources(utopia_fe_exec PRIVATE ${LOCAL_SOURCES})
-    utopia_link_default_targets(utopia_fe_exec)
+    # utopia_link_default_targets(utopia_fe_exec)
 
 
     target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_FE_APPS_DIR})

@@ -3,10 +3,9 @@
 // utopia
 #include "utopia_make_unique.hpp"
 
-// utopia fe
-
 // libmesh
 #include "libmesh/elem.h"
+#include "libmesh/exodusII_io.h"
 #include "libmesh/mesh.h"
 #include "libmesh/mesh_base.h"
 #include "libmesh/mesh_generation.h"
@@ -14,13 +13,19 @@
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
 #include "libmesh/parallel_mesh.h"
+#include "libmesh/serial_mesh.h"
 #include "libmesh/string_to_enum.h"
 
 namespace utopia {
 
     Mesh<libMesh::UnstructuredMesh>::Mesh(const Communicator &comm)
-        : comm_(std::make_shared<libMesh::Parallel::Communicator>(comm.raw_comm())),
-          impl_(utopia::make_unique<libMesh::DistributedMesh>(*comm_)) {}
+        : comm_(std::make_shared<libMesh::Parallel::Communicator>(comm.raw_comm())) {
+        if (comm.size() == 1) {
+            impl_ = utopia::make_unique<libMesh::SerialMesh>(*comm_);
+        } else {
+            impl_ = utopia::make_unique<libMesh::DistributedMesh>(*comm_);
+        }
+    }
 
     Mesh<libMesh::UnstructuredMesh>::~Mesh() {}
 
@@ -28,13 +33,25 @@ namespace utopia {
         os << impl_->mesh_dimension() << std::endl;
     }
 
+    bool Mesh<libMesh::UnstructuredMesh>::write(const Path &path) const {
+        std::unique_ptr<libMesh::MeshOutput<libMesh::MeshBase>> out;
+
+        if (path.extension() == "e") {
+            out = utopia::make_unique<libMesh::ExodusII_IO>(*impl_);
+        }
+
+        out->write(path.to_string());
+        return true;
+    }
+
+    libMesh::UnstructuredMesh &Mesh<libMesh::UnstructuredMesh>::raw_type() { return *impl_; }
+    const libMesh::UnstructuredMesh &Mesh<libMesh::UnstructuredMesh>::raw_type() const { return *impl_; }
+
     void Mesh<libMesh::UnstructuredMesh>::read(Input &in) {
         std::string mesh_type = "square";
         std::string path = "";
 
         int refinements = 0;
-
-        Scalar span[3] = {0., 0., 0.};
 
         Scalar min_coords[3] = {0., 0., 0.};
         Scalar max_coords[3] = {1., 1., 1.};
@@ -49,7 +66,7 @@ namespace utopia {
 
         std::string elem_type = "quad";
 
-        in.get("type", mesh_type);
+        in.get("mesh_type", mesh_type);
         in.get("elem_type", elem_type);
         in.get("order", order);
         in.get("full_order", full_order);
@@ -57,26 +74,22 @@ namespace utopia {
 
         in.get("refinements", refinements);
 
-        in.get("span_x", span[0]);
-        in.get("span_y", span[1]);
-        in.get("span_z", span[2]);
+        in.get("x_min", min_coords[0]);
+        in.get("y_min", min_coords[1]);
+        in.get("z_min", min_coords[2]);
 
-        in.get("min_x", min_coords[0]);
-        in.get("min_y", min_coords[1]);
-        in.get("min_z", min_coords[2]);
+        in.get("x_max", max_coords[0]);
+        in.get("y_max", max_coords[1]);
+        in.get("z_max", max_coords[2]);
 
-        in.get("max_x", max_coords[0]);
-        in.get("max_y", max_coords[1]);
-        in.get("max_z", max_coords[2]);
-
-        in.get("n_x", n[0]);
-        in.get("n_y", n[1]);
-        in.get("n_z", n[2]);
+        in.get("nx", n[0]);
+        in.get("ny", n[1]);
+        in.get("nz", n[2]);
 
         in.get("scale", scale);
-        in.get("shift_x", shift[0]);
-        in.get("shift_y", shift[1]);
-        in.get("shift_z", shift[2]);
+        in.get("x_shift", shift[0]);
+        in.get("y_shift", shift[1]);
+        in.get("z_shift", shift[2]);
 
         libMesh::ElemType lm_elem_type = libMesh::INVALID_ELEM;
 
@@ -118,36 +131,6 @@ namespace utopia {
                                                          // const bool   flat = true
             );
         }
-        // else if (mesh_type == "aabb") {
-        //     libMesh::DistributedMesh temp_mesh(impl_->comm());
-        //     temp_mesh.read(path);
-
-        //     auto bb = bounding_box(temp_mesh);
-
-        //     if (temp_mesh.spatial_dimension() == 3) {
-        //         libMesh::MeshTools::Generation::build_cube(*impl_,
-        //                                                    n[0],
-        //                                                    n[1],
-        //                                                    n[2],
-        //                                                    bb.min()(0) - span[0],
-        //                                                    bb.max()(0) + span[0],
-        //                                                    bb.min()(1) - span[1],
-        //                                                    bb.max()(1) + span[1],
-        //                                                    bb.min()(2) - span[2],
-        //                                                    bb.max()(2) + span[2],
-        //                                                    get_type(elem_type, order, 3, full_order));
-
-        //     } else {
-        //         libMesh::MeshTools::Generation::build_square(*impl_,
-        //                                                      n[0],
-        //                                                      n[1],
-        //                                                      bb.min()(0) - span[0],
-        //                                                      bb.max()(0) + span[0],
-        //                                                      bb.min()(1) - span[1],
-        //                                                      bb.max()(1) + span[1],
-        //                                                      get_type(elem_type, order, 2, full_order));
-        //     }
-        // }
 
         // int block_override = -1;
         // in.get("block-override", block_override);

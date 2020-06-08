@@ -4,6 +4,7 @@
 namespace libMesh {
     class MeshBase;
     class UnstructuredMesh;
+    class EquationSystems;
 
     namespace Parallel {
         class Communicator;
