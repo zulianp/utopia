@@ -3,6 +3,7 @@
 
 namespace libMesh {
     class MeshBase;
+    class UnstructuredMesh;
 
     namespace Parallel {
         class Communicator;

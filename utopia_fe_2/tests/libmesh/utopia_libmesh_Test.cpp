@@ -10,7 +10,21 @@ namespace utopia {
     template <class Mesh>
     class MeshTest final /*: public UnitTest<PetscCommunicator> */ {
     public:
-        void run() /*override*/ { disp("HI: MeshTest"); }
+        using Comm = typename Traits<Mesh>::Communicator;
+        void run() /*override*/ {
+            // FIXME (create)
+            Comm comm;
+
+            InputParameters params;
+
+            params.set("mesh_type", "square");
+            params.set("elem_type", "TRI3");
+
+            Mesh mesh(comm);
+            mesh.read(params);
+
+            mesh.describe(std::cout);
+        }
     };
 
     static void libmesh_specific() {
