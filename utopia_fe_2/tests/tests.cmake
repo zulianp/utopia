@@ -4,6 +4,10 @@ list(APPEND TEST_MODULES
     .
 )
 
+if(TARGET utopia_libmesh)
+    list(APPEND TEST_MODULES libmesh)
+endif()
+
 set(LOCAL_HEADERS "")
 set(LOCAL_SOURCES "")
 find_project_files(UTOPIA_TEST_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
