@@ -34,6 +34,9 @@ namespace utopia {
         libMesh::UnstructuredMesh &raw_type();
         const libMesh::UnstructuredMesh &raw_type() const;
 
+        inline libMesh::Parallel::Communicator &comm() { return *comm_; }
+        inline const libMesh::Parallel::Communicator &comm() const { return *comm_; }
+
     private:
         std::shared_ptr<libMesh::Parallel::Communicator> comm_;
         std::unique_ptr<libMesh::UnstructuredMesh> impl_;

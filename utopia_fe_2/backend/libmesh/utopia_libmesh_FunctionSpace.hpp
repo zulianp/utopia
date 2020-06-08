@@ -10,13 +10,20 @@
 namespace utopia {
 
     template <>
-    class FunctionSpace<LMMesh> final : public IFunctionSpace {
+    class FunctionSpace<LMMesh> final : public IFunctionSpace<LMMesh> {
     public:
+        using Traits = utopia::Traits<LMMesh>;
+        using Vector = typename Traits::Vector;
+        using Matrix = typename Traits::Matrix;
+        using Communicator = typename Traits::Communicator;
+
         FunctionSpace(const Communicator &comm);
         ~FunctionSpace();
 
         void read(Input &is) override;
         void describe(std::ostream &os = std::cout) const override;
+        bool write(const Path &path, const Vector &x) const override;
+        void create_vector(Vector &x) const override;
 
     private:
         std::shared_ptr<LMMesh> mesh_;
@@ -24,6 +31,9 @@ namespace utopia {
 
         class Impl;
         std::unique_ptr<Impl> impl_;
+
+        libMesh::System &system();
+        const libMesh::System &system() const;
     };
 }  // namespace utopia
 

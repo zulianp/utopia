@@ -1,7 +1,9 @@
 #include "utopia_libmesh_FunctionSpace.hpp"
 
 // utopia
+#include "utopia_Readable.hpp"
 #include "utopia_SymbolicFunction.hpp"
+#include "utopia_Traits.hpp"
 #include "utopia_libmesh_LambdaFunction.hpp"
 
 // libmesh
@@ -9,16 +11,47 @@
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/equation_systems.h"
+#include "libmesh/exodusII_io.h"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/mesh.h"
+#include "libmesh/nemesis_io.h"
+#include "libmesh/petsc_vector.h"
 #include "libmesh/string_to_enum.h"
 
 namespace utopia {
+
+    template <class Vector>
+    inline void convert(const Vector &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec) {
+        {
+            Read<Vector> w_s(utopia_vec);
+            Range r = range(utopia_vec);
+            for (long i = r.begin(); i < r.end(); ++i) {
+                lm_vec.set(i, utopia_vec.get(i));
+            }
+        }
+    }
+
+    void FunctionSpace<LMMesh>::create_vector(Vector &x) const {
+        auto &sys = this->system();
+        auto &dof_map = sys.get_dof_map();
+
+        Communicator comm(mesh_->comm().get());
+        Traits::IndexArray ghost_nodes;
+        convert(dof_map.get_send_list(), ghost_nodes);
+        x.ghosted(layout(comm, dof_map.n_local_dofs(), dof_map.n_dofs()), ghost_nodes);
+    }
+
     class FunctionSpace<LMMesh>::Impl {
     public:
         int system_num;
         std::vector<int> vars;
     };
+
+    libMesh::System &FunctionSpace<LMMesh>::system() { return equation_systems_->get_system(impl_->system_num); }
+
+    const libMesh::System &FunctionSpace<LMMesh>::system() const {
+        return equation_systems_->get_system(impl_->system_num);
+    }
 
     FunctionSpace<LMMesh>::FunctionSpace(const Communicator &comm)
         : mesh_(std::make_shared<LMMesh>(comm)), impl_(utopia::make_unique<Impl>()) {}
@@ -26,6 +59,23 @@ namespace utopia {
     FunctionSpace<LMMesh>::~FunctionSpace() {}
 
     void FunctionSpace<LMMesh>::describe(std::ostream &os) const { mesh_->describe(os); }
+
+    bool FunctionSpace<LMMesh>::write(const Path &path, const Vector &x) const {
+        auto &sys = this->system();
+
+        utopia::convert(x, *sys.solution);
+
+        sys.solution->close();
+
+        if (mesh_->comm().size() == 1) {
+            libMesh::ExodusII_IO(mesh_->raw_type()).write_equation_systems(path.to_string(), *equation_systems_);
+        } else {
+            libMesh::Nemesis_IO(mesh_->raw_type()).write_equation_systems(path.to_string(), *equation_systems_);
+        }
+
+        // out->write(path.to_string());
+        return true;
+    }
 
     void FunctionSpace<LMMesh>::read(Input &in) {
         mesh_->read(in);

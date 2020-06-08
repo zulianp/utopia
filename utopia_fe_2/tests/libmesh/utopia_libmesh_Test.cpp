@@ -31,6 +31,8 @@ namespace utopia {
     class FunctionSpaceTest final /*: public UnitTest<PetscCommunicator> */ {
     public:
         using Comm = typename Traits<Mesh>::Communicator;
+        using Vector = typename Traits<Mesh>::Vector;
+
         void run() /*override*/ {
             Comm comm;
 
@@ -44,6 +46,12 @@ namespace utopia {
             space.read(params);
 
             space.describe(std::cout);
+
+            Vector x;
+            space.create_vector(x);
+            x.set(1.0);
+
+            space.write("space.e", x);
         }
     };
 
