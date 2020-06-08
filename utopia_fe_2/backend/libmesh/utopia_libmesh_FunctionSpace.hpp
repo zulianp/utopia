@@ -3,6 +3,8 @@
 
 // utopia
 #include "utopia_FunctionSpace.hpp"
+#include "utopia_blas_Matrix.hpp"
+#include "utopia_blas_Vector.hpp"
 
 // utopia_libmesh
 #include "utopia_libmesh_Mesh.hpp"
@@ -14,9 +16,13 @@ namespace utopia {
     public:
         using Traits = utopia::Traits<LMMesh>;
         using SizeType = Traits::SizeType;
+        using Scalar = Traits::Scalar;
         using Vector = Traits::Vector;
         using Matrix = Traits::Matrix;
         using Communicator = Traits::Communicator;
+        using Elem = libMesh::Elem;
+        using ElementMatrix = utopia::BlasMatrix<Scalar>;
+        using ElementVector = utopia::BlasVector<Scalar>;
 
         FunctionSpace(const Communicator &comm);
         ~FunctionSpace();
@@ -31,6 +37,9 @@ namespace utopia {
         void apply_constraints(Vector &x) const override;
         void apply_constraints(Matrix &A, Vector &b) const override;
         void apply_zero_constraints(Vector &x) const override;
+
+        void add_matrix(const Elem &e, const ElementMatrix &el_mat, Matrix &mat) const;
+        void add_vector(const Elem &e, const ElementVector &el_vec, Vector &vec) const;
 
     private:
         std::shared_ptr<LMMesh> mesh_;

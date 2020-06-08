@@ -6,6 +6,7 @@ namespace libMesh {
     class UnstructuredMesh;
     class EquationSystems;
     class System;
+    class Elem;
 
     namespace Parallel {
         class Communicator;

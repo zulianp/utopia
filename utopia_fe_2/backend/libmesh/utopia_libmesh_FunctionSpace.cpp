@@ -47,8 +47,6 @@ namespace utopia {
 
         Communicator comm(mesh_->comm().get());
 
-        static_assert(Traits::Backend == utopia::PETSC, "Only implemented for PETSC algebra atm");
-
         auto &lm_d_nnz = dof_map.get_n_nz();
         auto &lm_o_nnz = dof_map.get_n_oz();
 
@@ -60,6 +58,27 @@ namespace utopia {
         auto l = layout(comm, dof_map.n_local_dofs(), dof_map.n_dofs());
 
         A.sparse(square_matrix_layout(l), d_nnz, o_nnz);
+    }
+
+    void FunctionSpace<LMMesh>::add_matrix(const Elem &e, const ElementMatrix &el_mat, Matrix &mat) const {
+        auto &sys = this->system();
+        auto &dof_map = sys.get_dof_map();
+
+        std::vector<libMesh::dof_id_type> dofs;
+        dof_map.dof_indices(&e, dofs);
+
+        el_mat.read([&](const SizeType &i, const SizeType &j, const Scalar &val) { mat.c_add(dofs[i], dofs[j], val); });
+    }
+
+    void FunctionSpace<LMMesh>::add_vector(const Elem &e, const ElementVector &el_vec, Vector &vec) const {
+        auto &sys = this->system();
+        auto &dof_map = sys.get_dof_map();
+
+        std::vector<libMesh::dof_id_type> dofs;
+        dof_map.dof_indices(&e, dofs);
+
+        assert(false);
+        // el_vec.read([&](const SizeType &i, const Scalar &val) { vec.c_add(dofs[i], val); });
     }
 
     void FunctionSpace<LMMesh>::apply_constraints(Vector &vec) const {
@@ -173,7 +192,6 @@ namespace utopia {
             libMesh::Nemesis_IO(mesh_->raw_type()).write_equation_systems(path.to_string(), *equation_systems_);
         }
 
-        // out->write(path.to_string());
         return true;
     }
 
