@@ -133,7 +133,7 @@ namespace utopia {
         for (int i = 1; i < argc; i++) {
             std::string str(argv[i]);
 
-            if (str == "-verbose") {
+            if (str == "-verbose" || str == "--verbose") {
                 instance().set("verbose", "true");
             }
 
