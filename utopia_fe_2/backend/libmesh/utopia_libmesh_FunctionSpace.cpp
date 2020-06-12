@@ -14,6 +14,7 @@
 #include "libmesh/dof_map.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/exodusII_io.h"
+#include "libmesh/fe_base.h"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/mesh.h"
 #include "libmesh/nemesis_io.h"
@@ -21,6 +22,18 @@
 #include "libmesh/string_to_enum.h"
 
 namespace utopia {
+
+    int FunctionSpace<LMMesh>::dim() const { return mesh().raw_type().mesh_dimension(); }
+
+    int FunctionSpace<LMMesh>::order(const int var_num) const {
+        auto &sys = this->system();
+        auto &dof_map = sys.get_dof_map();
+        return dof_map.variable_order(var_num);
+    }
+
+    std::unique_ptr<libMesh::FEBase> FunctionSpace<LMMesh>::make_fe(const int var_num) const {
+        return libMesh::FEBase::build(dim(), libMesh::Order(order(var_num)));
+    }
 
     template <class Vector>
     inline void convert(const Vector &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec) {
@@ -31,10 +44,12 @@ namespace utopia {
         }
     }
 
-    void FunctionSpace<LMMesh>::create_vector(Vector &x) const {
-        auto &sys = this->system();
-        auto &dof_map = sys.get_dof_map();
+    libMesh::DofMap &FunctionSpace<LMMesh>::dof_map() { return this->system().get_dof_map(); }
 
+    const libMesh::DofMap &FunctionSpace<LMMesh>::dof_map() const { return this->system().get_dof_map(); }
+
+    void FunctionSpace<LMMesh>::create_vector(Vector &x) const {
+        auto &dof_map = this->dof_map();
         Communicator comm(mesh_->comm().get());
         Traits::IndexArray ghost_nodes;
         convert(dof_map.get_send_list(), ghost_nodes);

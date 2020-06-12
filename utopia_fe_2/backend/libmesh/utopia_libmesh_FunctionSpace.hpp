@@ -9,6 +9,8 @@
 // utopia_libmesh
 #include "utopia_libmesh_Mesh.hpp"
 
+#include "libmesh/fe_base.h"
+
 namespace utopia {
 
     template <>
@@ -41,6 +43,16 @@ namespace utopia {
         void add_matrix(const Elem &e, const ElementMatrix &el_mat, Matrix &mat) const;
         void add_vector(const Elem &e, const ElementVector &el_vec, Vector &vec) const;
 
+        inline LMMesh &mesh() { return *mesh_; }
+        inline const LMMesh &mesh() const { return *mesh_; }
+
+        int dim() const;
+        int order(const int var_num) const;
+        std::unique_ptr<libMesh::FEBase> make_fe(const int var_num) const;
+
+        libMesh::DofMap &dof_map();
+        const libMesh::DofMap &dof_map() const;
+
     private:
         std::shared_ptr<LMMesh> mesh_;
         std::shared_ptr<libMesh::EquationSystems> equation_systems_;
@@ -50,6 +62,15 @@ namespace utopia {
 
         libMesh::System &system();
         const libMesh::System &system() const;
+    };
+
+    using LMFunctionSpace = utopia::FunctionSpace<LMMesh>;
+
+    template <>
+    class Traits<FunctionSpace<LMMesh>> : public Traits<LMMesh> {
+    public:
+        using ElementMatrix = utopia::BlasMatrix<Scalar>;
+        using ElementVector = utopia::BlasVector<Scalar>;
     };
 }  // namespace utopia
 

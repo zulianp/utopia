@@ -1,4 +1,5 @@
 #include "utopia_AppRunner.hpp"
+
 #include "utopia_libmesh.hpp"
 
 #include <cmath>
