@@ -184,6 +184,8 @@ namespace utopia {
         double sum_fun_master = sum(fun_master);
         double sum_fun_slave = sum(fun_slave);
 
+        std::cout << "master: " << sum_fun_master << " slave: " << sum_fun_slave << std::endl;
+
         ////////////////////////////////////////////////////////////
         // output
         ////////////////////////////////////////////////////////////
