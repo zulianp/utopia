@@ -190,29 +190,9 @@ namespace utopia {
         // output
         ////////////////////////////////////////////////////////////
 
-        convert(fun_master, *input_master.space().equation_system().solution);
-        input_master.space().equation_system().solution->close();
-
-        libMesh::Nemesis_IO io_master(input_master.mesh());
-        io_master.write_equation_systems("master.e", input_master.space().equation_systems());
-
-        convert(back_fun_master, *input_master.space().equation_system().solution);
-        input_master.space().equation_system().solution->close();
-
-        libMesh::Nemesis_IO io_master_adj(input_master.mesh());
-        io_master_adj.write_equation_systems("master_adj.e", input_master.space().equation_systems());
-
-        ////////////////////////////////////////////////////////////
-        convert(fun_slave, *input_slave.space().equation_system().solution);
-        input_slave.space().equation_system().solution->close();
-
-        if (mpi_world_size() == 1) {
-            libMesh::ExodusII_IO io_slave(input_slave.mesh());
-            io_slave.write_equation_systems("slave.e", input_slave.space().equation_systems());
-        } else {
-            libMesh::Nemesis_IO io_slave(input_slave.mesh());
-            io_slave.write_equation_systems("slave.e", input_slave.space().equation_systems());
-        }
+        write("master.e", input_master.space(), fun_master);
+        write("slave.e", input_slave.space(), fun_slave);
+        write("master_adj.e", input_master.space(), back_fun_master);
     }
 
     TransferApp::TransferApp() {}
