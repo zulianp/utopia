@@ -13,10 +13,33 @@ namespace utopia {
     void TestRunner::verbose(const bool val) { TestRegistry::instance().verbose(val); }
 
     int TestRunner::run(int argc, char **argv) const {
-        UTOPIA_UNUSED(argc);
-        UTOPIA_UNUSED(argv);
-        return TestRegistry::instance().run_all();
-    }
+        bool run_tests = true;
+
+        std::vector<std::string> tests;
+        for (int i = 1; i < argc; i++) {
+            if (argv[i] == std::string("-test")) {
+                if (++i >= argc) {
+                    break;
+                }
+                tests.emplace_back(argv[i]);
+            }
+
+            else if (argv[i] == std::string("-list")) {
+                this->describe();
+                run_tests = false;
+            }
+        }
+
+        if (run_tests) {
+            if (tests.empty()) {
+                return TestRegistry::instance().run_all();
+            } else {
+                return this->run(tests);
+            }
+        }
+
+        return 0;
+    }  // namespace utopia
 
     int TestRunner::run(const std::vector<std::string> &tests) const {
         auto &tr = TestRegistry::instance();
