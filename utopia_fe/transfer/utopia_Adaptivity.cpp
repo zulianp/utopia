@@ -432,7 +432,7 @@ namespace utopia {
                                             unsigned int sys_number,
                                             unsigned int var_number,
                                             std::vector<int> &index) {
-        std::cout << "Adaptivity::compute_boundary_nodes::Begin " << std::endl;
+        // std::cout << "Adaptivity::compute_boundary_nodes::Begin " << std::endl;
 
         auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
