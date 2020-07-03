@@ -16,7 +16,7 @@ namespace utopia {
             auto s = size(m);
             SizeType n = s.get(0);
 
-            assert(n == s.get(1));
+            assert(n == SizeType(s.get(1)));
             assert(n <= 3);
 
             const Scalar d = det(m);

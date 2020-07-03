@@ -54,7 +54,9 @@ if(SWIG_FOUND)
           # ... add other arguments to install() as necessary
           LIBRARY DESTINATION lib
         )
-
+    else()
+        message(WARNING "Could not find Python")
     endif()
-
+else()
+        message(WARNING "Could not find Swig")
 endif()
