@@ -1009,7 +1009,7 @@ namespace utopia {
         gap_buffer.set_size(n_side_node_dofs, 1);
         normal_buffer.set_size(n_side_node_dofs, dim);
 
-        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
+        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm.get());
         redist.apply(side_node_ownership_ranges, B_buffer, moonolith::AddAssign<double>());
         redist.apply(side_node_ownership_ranges, gap_buffer, moonolith::AddAssign<double>());
         redist.apply(side_node_ownership_ranges, normal_buffer, moonolith::AddAssign<double>());

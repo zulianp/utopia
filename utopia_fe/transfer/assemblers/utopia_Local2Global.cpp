@@ -65,7 +65,7 @@ namespace utopia {
         std::partial_sum(range_master.begin(), range_master.end(), range_master.begin());
         std::partial_sum(range_slave.begin(), range_slave.end(), range_slave.begin());
 
-        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
+        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm);
 
         if (use_set_instead_of_add) {
             // assert(check_valid_matrix(global_mat));

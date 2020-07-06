@@ -504,7 +504,7 @@ namespace utopia {
                                   const libMesh::DofMap &lm_dofs,
                                   const TransferOptions &opts,
                                   TransferDataT &data) {
-            moonolith::Communicator comm = lm_mesh.comm().get();
+            moonolith::Communicator comm = moonolith::Communicator(lm_mesh.comm().get(), false).duplicate();
             auto mesh = std::make_shared<MeshT>(comm);
 
             FunctionSpaceT space(mesh);
@@ -541,7 +541,7 @@ namespace utopia {
                           const libMesh::DofMap &to_dofs,
                           const TransferOptions &opts,
                           TransferDataT &data) {
-            moonolith::Communicator comm = from_mesh.comm().get();
+            moonolith::Communicator comm = moonolith::Communicator(from_mesh.comm().get(), false).duplicate();
             auto master_mesh = std::make_shared<MeshT>(comm);
             auto slave_mesh = std::make_shared<MeshT>(comm);
 
@@ -673,7 +673,8 @@ namespace utopia {
                                               const libMesh::DofMap &to_dofs,
                                               const TransferOptions &opts,
                                               TransferDataT &data) {
-            moonolith::Communicator comm = from_mesh.comm().get();
+            moonolith::Communicator comm = moonolith::Communicator(from_mesh.comm().get(), false).duplicate();
+
             auto master_mesh = std::make_shared<MeshT>(comm);
             auto slave_mesh = std::make_shared<MeshT>(comm);
 

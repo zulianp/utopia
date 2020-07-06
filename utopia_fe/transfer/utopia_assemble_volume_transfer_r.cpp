@@ -578,10 +578,10 @@ namespace utopia {
 
         int dim = master->mesh_dimension();
 
-        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
+        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm.get());
 
         // bbecsek
-        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist_reverse(comm.get_mpi_comm());
+        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist_reverse(comm.get());
 
         redist.apply(ownershipRangesSlave, mat_buffer, moonolith::AddAssign<double>());
 
@@ -839,11 +839,11 @@ namespace utopia {
 // dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r); 		int
 // offset = 0; 		int
 // space_num = 0; 		if(tags.empty()){ 			for(auto s : local_spaces->spaces()) {
-// if(s) { 					bool first = true; 					libMesh::dof_id_type local_element_id =
-// 0; 					for (auto it = s->active_local_elements_begin(); it !=
+// if(s) { 					bool first = true; 					libMesh::dof_id_type local_element_id
+// = 0; 					for (auto it = s->active_local_elements_begin(); it !=
 // s->active_local_elements_end(); ++it,
-// ++local_element_id) { 						auto elem = *it; 						Adapter
-// a(*s, elem->id(), offset + local_element_id, space_num);
+// ++local_element_id) { 						auto elem = *it;
+// Adapter a(*s, elem->id(), offset + local_element_id, space_num);
 // 						assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
 // 						assert(!local_spaces->dof_map_reverse(space_num)[local_element_id].empty());
 // 						a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
@@ -1386,8 +1386,8 @@ namespace utopia {
 // 		utopia::Write<USparseMatrix> w_B_reverse(B_reverse);
 // 		utopia::each_read(B_x_reverse, [&](const utopia::SizeType i, const utopia::SizeType j, const double
 // value)
-// { 			for(utopia::SizeType d = 0; d < n_var_r ; ++d) { 				B_reverse.set(i + d, j +
-// d, value);
+// { 			for(utopia::SizeType d = 0; d < n_var_r ; ++d) { 				B_reverse.set(i + d, j
+// + d, value);
 // 			}
 // 		});
 
@@ -1400,15 +1400,15 @@ namespace utopia {
 // 									const std::shared_ptr<DofMap> &dof_master,
 // 									const std::shared_ptr<DofMap> &dof_slave,
 // 									const std::shared_ptr<DofMap>
-// &dof_reverse_master, 									const std::shared_ptr<DofMap>
-// &dof_reverse_slave,
+// &dof_reverse_master, 									const
+// std::shared_ptr<DofMap> &dof_reverse_slave,
 // const unsigned int & from_var_num, 									const unsigned
 // int & to_var_num, 									const unsigned int &
 // from_var_num_r, const unsigned int & to_var_num_r, bool
-// use_biorth_, 									int n_var, 									int
-// n_var_r, 									USparseMatrix &B,
-// USparseMatrix &B_reverse, 									const std::vector<
-// std::pair<int, int> > &tags)
+// use_biorth_, 									int n_var,
+// int n_var_r, 									USparseMatrix &B, USparseMatrix
+// &B_reverse, 									const std::vector< std::pair<int, int> >
+// &tags)
 // 	{
 
 // 		///////////////////////////
