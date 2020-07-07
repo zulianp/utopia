@@ -27,4 +27,9 @@ target_link_libraries(example_nonlinear_solve utopia)
 
 
 add_custom_target(utopia_examples)
-add_dependencies(utopia_examples example_hello_world example_solve_PDE_1D example_loops example_nonlinear_solve)
+add_dependencies(utopia_examples
+            example_hello_world
+            example_solve_PDE_1D
+            example_loops
+            example_nonlinear_solve
+            )
