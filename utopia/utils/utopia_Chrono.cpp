@@ -108,6 +108,9 @@ namespace utopia {
         }
 #endif
 
+        // FIXME add Linux variant
+        UTOPIA_UNUSED(other);
+
         return *this;
     }
 
@@ -128,6 +131,9 @@ namespace utopia {
             not_impl_msg = false;
         }
 #endif
+
+        // FIXME add Linux variant
+        UTOPIA_UNUSED(factor);
     }
 
 }  // namespace utopia

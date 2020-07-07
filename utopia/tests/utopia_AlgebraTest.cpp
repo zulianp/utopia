@@ -1,4 +1,6 @@
 #include "utopia.hpp"
+#include "utopia_Algorithms.hpp"
+#include "utopia_Assert.hpp"
 #include "utopia_IsSubTree.hpp"
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
@@ -39,12 +41,10 @@ namespace utopia {
             const Scalar J = det(F);
             const Scalar alpha = (1.0 * lambda * std::log(J) - 1.0 * mu);
 
-            const Scalar temp = lambda * inner(F_inv_t, H);
-            const Scalar temp2 = inner(F_inv_t, H);
             Matrix mat = mu * H - alpha * F_inv_t * transpose(H) * F_inv_t + lambda * inner(F_inv_t, H) * F_inv_t;
-            // Matrix mat = inner(F_inv_t, H) * F_inv_t;
-
             // std::cout << tree_format((inner(F_inv_t, H) * F_inv_t).get_class()) << std::endl;
+            utopia_test_assert(SizeType(3) == mat.rows());
+            utopia_test_assert(SizeType(3) == mat.cols());
         }
 
         void run() { UTOPIA_RUN_TEST(complicated_test); }
@@ -343,10 +343,24 @@ namespace utopia {
             // TODO(Patrick) write meaningul test
         }
 
+        void transpose_test() {
+            Matrix M, M_copy;
+
+            M.sparse(layout(world, Traits::decide(), Traits::decide(), 3, 3), 3, 3);
+
+            assemble_laplacian_1D(M);
+            M_copy.copy(M);
+
+            M = transpose(M);
+
+            utopia_test_asserteq(M, M_copy, device::epsilon<Scalar>());
+        }
+
         void run() {
             UTOPIA_RUN_TEST(sparse_chop_test);
             UTOPIA_RUN_TEST(transform_test);
             UTOPIA_RUN_TEST(transform_ijv_test);
+            UTOPIA_RUN_TEST(transpose_test);
         }
     };
 
@@ -440,11 +454,6 @@ namespace utopia {
         }
 
         void determinant_test() {
-            // if(mpi_world_size() > 1) {
-            //     std::cerr << "[Warning] determinant only implemented for serial and small matrices" << std::endl;
-            //     return;
-            // }
-
             Matrix m, m4;
 
             SizeType n = 3;
@@ -584,21 +593,21 @@ namespace utopia {
     };
 
     static void algebra() {
-        // #ifdef WITH_BLAS
-        //         DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
-        //         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
-        //         SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
-        // #endif  // WITH_BLAS
+#ifdef WITH_BLAS
+        DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
+        SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
+#endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
-        // DenseAlgebraTest<PetscMatrix, PetscVector>().run();
+        DenseAlgebraTest<PetscMatrix, PetscVector>().run();
         SparseAlgebraTest<PetscMatrix, PetscVector>().run();
 #endif  // WITH_PETSC
 
-        // #ifdef WITH_TRILINOS
-        //         VectorAlgebraTest<TpetraVector>().run();
-        //         SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
-        // #endif  // WITH_TRILINOS
+#ifdef WITH_TRILINOS
+        VectorAlgebraTest<TpetraVector>().run();
+        SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
+#endif  // WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(algebra);

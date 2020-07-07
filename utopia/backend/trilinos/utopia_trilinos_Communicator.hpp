@@ -25,6 +25,7 @@ namespace utopia {
 
 #ifdef WITH_MPI
         MPI_Comm raw_comm() const override;
+        explicit TrilinosCommunicator(MPI_Comm comm);
 #endif
 
         inline TrilinosCommunicator *clone() const override { return new TrilinosCommunicator(get()); }

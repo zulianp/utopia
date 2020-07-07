@@ -30,5 +30,8 @@ namespace utopia {
         assert(false);
         return MPI_COMM_SELF;
     }
+
+    TrilinosCommunicator::TrilinosCommunicator(MPI_Comm comm) : comm_(new Teuchos::MpiComm<int>(comm)) {}
+
 #endif
 }  // namespace utopia

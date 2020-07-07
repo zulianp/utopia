@@ -13,9 +13,19 @@ namespace utopia {
     template <class Matrix, class Vector>
     class ConstrainedOptimizationBenchmark : public Benchmark {
     public:
-        DEF_UTOPIA_SCALAR(Vector);
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
 
         std::string name() override { return "TR: Bound constrained optimization benchmark"; }
+
+        // subproblem tol
+        Scalar tol{1e-9};
+
+        Scalar atol{1e-6};
+        Scalar rtol{1e-8};
+        Scalar stol{1e-8};
+
+        bool enable_slow_solvers{false};
 
         ConstrainedOptimizationBenchmark() {
             test_functions_.resize(18);
@@ -47,85 +57,90 @@ namespace utopia {
         void initialize() override {
             this->register_experiment("TR_Variable_Bound_MPRGP", [this]() {
                 auto subproblem = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-                subproblem->atol(1e-14);
-                subproblem->stol(1e-14);
-                subproblem->rtol(1e-14);
+                subproblem->atol(tol);
+                subproblem->stol(tol);
+                subproblem->rtol(tol);
                 subproblem->verbose(false);
 
                 TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
                 run_tr(this->test_functions_, tr_solver, "TR_Variable_Bound_MPRGP", this->verbose_);
             });
 
-            this->register_experiment("TR_Variable_BGS", [this]() {
-                auto subproblem = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
-                subproblem->atol(1e-14);
-                subproblem->stol(1e-14);
-                subproblem->rtol(1e-14);
-                subproblem->verbose(false);
-                subproblem->use_line_search(false);
-
-                TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
-                run_tr(this->test_functions_, tr_solver, "TR_Variable_BGS", this->verbose_);
-            });
-
-#ifdef WITH_PETSC
-            this->register_experiment("TR_Variable_Tao", [this]() {
-                auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
-                lsolver->set_library_type("petsc");
-                auto subproblem = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(lsolver);
-
-                TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
-                run_tr(this->test_functions_, tr_solver, "TR_Variable_Tao", this->verbose_);
-            });
-#endif  // WITH_PETSC
-
             this->register_experiment("TR_Variable_ProjGradient", [this]() {
                 auto subproblem = std::make_shared<utopia::ProjectedGradient<Matrix, Vector> >();
-                subproblem->atol(1e-14);
-                subproblem->stol(1e-14);
-                subproblem->rtol(1e-14);
+                subproblem->atol(tol);
+                subproblem->stol(tol);
+                subproblem->rtol(tol);
                 subproblem->verbose(false);
 
                 TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
                 run_tr(this->test_functions_, tr_solver, "TR_Variable_ProjGradient", this->verbose_);
             });
 
-            this->register_experiment("TR_Variable_ProjCG", [this]() {
-                auto subproblem = std::make_shared<utopia::ProjectedConjugateGradient<Matrix, Vector> >();
-                subproblem->atol(1e-14);
-                subproblem->stol(1e-14);
-                subproblem->rtol(1e-14);
-                subproblem->verbose(false);
-
-                TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
-                run_tr(this->test_functions_, tr_solver, "TR_Variable_ProjCG", this->verbose_);
-            });
-
             // SemiSmooth Newton does not support dense matrices ....
-            // this->register_experiment("TR_Variable_SemiSmoothNewton",
-            // 	[this]() {
-            // 		auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
-            //            auto subproblem = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(lsolver);
-            //            subproblem->atol(1e-14);
-            //            subproblem->stol(1e-14);
-            //            subproblem->rtol(1e-14);
-            //            subproblem->verbose(false);
-
-            //            TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
-            //            run_tr(this->test_functions_, tr_solver, "TR_Variable_SemiSmoothNewton", this->verbose_);
-            // 	}
-            // );
             this->register_experiment("TR_Variable_SemiSmoothNewton", [this]() {
                 auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
                 auto subproblem = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(lsolver);
-                subproblem->atol(1e-14);
-                subproblem->stol(1e-14);
-                subproblem->rtol(1e-14);
+                subproblem->atol(tol);
+                subproblem->stol(tol);
+                subproblem->rtol(tol);
                 subproblem->verbose(false);
 
                 TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
                 run_tr(this->test_functions_, tr_solver, "TR_Variable_SemiSmoothNewton", this->verbose_);
             });
+
+            this->register_experiment("TR_Variable_SemiSmoothNewton", [this]() {
+                auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
+                auto subproblem = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(lsolver);
+                subproblem->atol(tol);
+                subproblem->stol(tol);
+                subproblem->rtol(tol);
+                subproblem->verbose(false);
+
+                TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
+                run_tr(this->test_functions_, tr_solver, "TR_Variable_SemiSmoothNewton", this->verbose_);
+            });
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            // FIXME(Alena) these are too slow for both testing and basic benchmarking
+            if (enable_slow_solvers) {
+                this->register_experiment("TR_Variable_PGS", [this]() {
+                    auto subproblem = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+                    subproblem->atol(tol);
+                    subproblem->stol(tol);
+                    subproblem->rtol(tol);
+                    subproblem->verbose(false);
+                    subproblem->use_line_search(false);
+
+                    TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
+                    run_tr(this->test_functions_, tr_solver, "TR_Variable_PGS", this->verbose_);
+                });
+
+                this->register_experiment("TR_Variable_ProjCG", [this]() {
+                    auto subproblem = std::make_shared<utopia::ProjectedConjugateGradient<Matrix, Vector> >();
+                    subproblem->atol(tol);
+                    subproblem->stol(tol);
+                    subproblem->rtol(tol);
+                    subproblem->verbose(false);
+
+                    TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
+                    run_tr(this->test_functions_, tr_solver, "TR_Variable_ProjCG", this->verbose_);
+                });
+            }
+
+            // FIXME(Alena/Patrick) This is not converging
+#ifdef WITH_PETSC
+            // this->register_experiment("TR_Variable_Tao", [this]() {
+            //     auto lsolver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector> >();
+            //     lsolver->set_library_type("petsc");
+            //     auto subproblem = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector> >(lsolver);
+
+            //     TrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
+            //     run_tr(this->test_functions_, tr_solver, "TR_Variable_Tao", this->verbose_);
+            // });
+#endif  // WITH_PETSC
         }
 
     private:
@@ -133,23 +148,22 @@ namespace utopia {
         bool verbose_{false};
 
         template <class TRSolver>
-        static void run_tr(std::vector<std::shared_ptr<ConstrainedTestFunction<Matrix, Vector> > > &test_functions,
-                           TRSolver &solver,
-                           const std::string &solv_name,
-                           const bool &exp_verbose) {
+        void run_tr(std::vector<std::shared_ptr<ConstrainedTestFunction<Matrix, Vector> > > &test_functions,
+                    TRSolver &solver,
+                    const std::string &solv_name,
+                    const bool &exp_verbose) const {
             InputParameters in;
-            in.set("atol", 1e-6);
-            in.set("rtol", 1e-11);
-            in.set("stol", 1e-14);
-            in.set("stol", 1e-14);
+            in.set("atol", atol);
+            in.set("rtol", rtol);
+            in.set("stol", stol);
             in.set("delta_min", 1e-13);
             in.set("max-it", 5000);
             in.set("verbose", false);
 
             // auto params_qp = std::make_shared<InputParameters>();
-            // params_qp->set("atol", 1e-14);
-            // params_qp->set("rtol", 1e-14);
-            // params_qp->set("stol", 1e-14);
+            // params_qp->set("atol", tol);
+            // params_qp->set("rtol", tol);
+            // params_qp->set("stol", tol);
             // auto params_qp_cast = std::static_pointer_cast<Input>(params_qp);
             // in.set("linear-solver", params_qp_cast);
             solver.read(in);
@@ -195,22 +209,24 @@ namespace utopia {
         }
     };
 
-    static void constrained_opt() {
-        int verbosity_level = 1;
-        if (Utopia::instance().verbose()) {
-            verbosity_level = 2;
-        }
-
-        if (mpi_world_size() == 1) {
 #ifdef WITH_PETSC
+    static void constrained_opt() {
+        if (mpi_world_size() == 1) {
+            int verbosity_level = 1;
+            if (Utopia::instance().verbose()) {
+                verbosity_level = 2;
+            }
+
             ConstrainedOptimizationBenchmark<PetscMatrix, PetscVector> bench1;
             bench1.set_verbosity_level(verbosity_level);
             bench1.run();
-#endif  // WITH_PETSC
+
         } else {
             std::cout << "constrained_opt, does not work in parallel. \n";
         }
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION_OPTIONAL(constrained_opt);
+
+#endif  // WITH_PETSC
 }  // namespace utopia

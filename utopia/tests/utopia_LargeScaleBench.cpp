@@ -2,6 +2,7 @@
 #include <string>
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
+#include "utopia_BiCGStab.hpp"
 #include "utopia_Chrono.hpp"
 #include "utopia_LargeScaleIncludes.hpp"
 #include "utopia_MPI.hpp"
@@ -17,20 +18,18 @@ namespace utopia {
         std::string name() override { return "LargeScaleUnconstrainedBenchmark benchmark."; }
 
         explicit LargeScaleUnconstrainedBenchmark(const SizeType &n, const bool verbose) : n_(n), verbose_(verbose) {
-            test_functions_.resize(1);
-            // test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
+            test_functions_.resize(7);
+            test_functions_[0] = std::make_shared<Bratu2D<Matrix, Vector> >(n_);
 
-            // test_functions_[0] = std::make_shared<Poisson3D<Matrix, Vector> >(n_);
-            // test_functions_[0] = std::make_shared<Morebv1D<Matrix, Vector> >(n_);
+            test_functions_[1] = std::make_shared<Poisson3D<Matrix, Vector> >(n_);
+            test_functions_[2] = std::make_shared<Morebv1D<Matrix, Vector> >(n_);
 
-            // test_functions_[0] = std::make_shared<Poisson2D<Matrix, Vector> >(n_);
+            test_functions_[3] = std::make_shared<Poisson2D<Matrix, Vector> >(n_);
 
-            // test_functions_[0] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
-            // test_functions_[1] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
+            test_functions_[4] = std::make_shared<Poisson1D<Matrix, Vector> >(n_);
+            test_functions_[5] = std::make_shared<Bratu1D<Matrix, Vector> >(n_);
 
-            test_functions_[0] = std::make_shared<NonEllipse2D<Matrix, Vector> >(n_);
-
-            // auto fun = Poisson1D<Matrix, Vector>(n_);
+            test_functions_[6] = std::make_shared<NonEllipse2D<Matrix, Vector> >(n_);
         }
 
         ~LargeScaleUnconstrainedBenchmark() override { test_functions_.clear(); }
@@ -43,120 +42,103 @@ namespace utopia {
                 run_tr(this->test_functions_, solver, "NewtonTest_FACTORIZATION", this->verbose_);
             });
 
-            // this->register_experiment("NewtonTest_CG_HOMEMADE_jacobi",
-            // 	[this]() {
-            //            auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE> >();
-            //            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+            this->register_experiment("NewtonTest_CG_HOMEMADE_jacobi", [this]() {
+                auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE> >();
+                lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
-            //            lin_solver->atol(1e-10);
-            //            lin_solver->max_it(500);
-            //            lin_solver->verbose(false);
+                lin_solver->atol(1e-10);
+                lin_solver->max_it(500);
+                lin_solver->verbose(false);
 
-            //            Newton<Matrix, Vector> solver(lin_solver);
-            //            run_tr(this->test_functions_, solver, "NewtonTest_CG_HOMEMADE_jacobi", this->verbose_);
-            // 	}
-            // );
+                Newton<Matrix, Vector> solver(lin_solver);
+                run_tr(this->test_functions_, solver, "NewtonTest_CG_HOMEMADE_jacobi", this->verbose_);
+            });
 
-            // this->register_experiment("NewtonTest_CG_PETSC_jacobi",
-            // 	[this]() {
-            //            auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector> >();
-            //            lin_solver->pc_type("sor");
-            //                 // lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
-            //            // lin_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            this->register_experiment("NewtonTest_CG_PETSC_jacobi", [this]() {
+                auto lin_solver = std::make_shared<utopia::ConjugateGradient<Matrix, Vector> >();
+                lin_solver->pc_type("sor");
+                // lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+                // lin_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
 
-            //            lin_solver->atol(1e-10);
-            //            lin_solver->max_it(500);
-            //            lin_solver->verbose(false);
+                lin_solver->atol(1e-10);
+                lin_solver->max_it(500);
+                lin_solver->verbose(false);
 
-            //            Newton<Matrix, Vector> solver(lin_solver);
-            //            run_tr(this->test_functions_, solver, "NewtonTest_CG_PETSC_inv_diag", this->verbose_);
-            // 	}
-            // );
+                Newton<Matrix, Vector> solver(lin_solver);
+                run_tr(this->test_functions_, solver, "NewtonTest_CG_PETSC_inv_diag", this->verbose_);
+            });
 
-            // this->register_experiment("NewtonTest_STCG_inv_diag",
-            // 	[this]() {
-            //            auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            //            lin_solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());
+            this->register_experiment("NewtonTest_STCG_inv_diag", [this]() {
+                auto lin_solver = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+                lin_solver->set_preconditioner(std::make_shared<PointJacobi<Matrix, Vector> >());
 
-            //            lin_solver->atol(1e-10);
-            //            lin_solver->max_it(300);
+                lin_solver->atol(1e-10);
+                lin_solver->max_it(300);
 
-            //            Newton<Matrix, Vector> solver(lin_solver);
-            //            run_tr(this->test_functions_, solver, "NewtonTest_STCG_inv_diag", this->verbose_);
-            // 	}
-            // );
+                Newton<Matrix, Vector> solver(lin_solver);
+                run_tr(this->test_functions_, solver, "NewtonTest_STCG_inv_diag", this->verbose_);
+            });
 
-            // this->register_experiment("NewtonTest_BiCGStab_GS_PETSC",
-            // 	[this]() {
-            //            auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector> >();
-            //            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+            this->register_experiment("NewtonTest_BiCGStab_GS_PETSC", [this]() {
+                auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector> >();
+                lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
-            //            lin_solver->atol(1e-10);
-            //            lin_solver->max_it(300);
+                lin_solver->atol(1e-10);
+                lin_solver->max_it(300);
 
-            //            Newton<Matrix, Vector> solver(lin_solver);
-            //            run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_GS", this->verbose_);
-            // 	}
-            // );
+                Newton<Matrix, Vector> solver(lin_solver);
+                run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_GS", this->verbose_);
+            });
 
-            // this->register_experiment("NewtonTest_BiCGStab_HOMEMADE_GS",
-            // 	[this]() {
-            //            auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector, HOMEMADE> >();
-            //            lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+            this->register_experiment("NewtonTest_BiCGStab_HOMEMADE_GS", [this]() {
+                auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector, HOMEMADE> >();
+                lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
-            //            lin_solver->atol(1e-10);
-            //            lin_solver->max_it(300);
+                lin_solver->atol(1e-10);
+                lin_solver->max_it(300);
 
-            //            Newton<Matrix, Vector> solver(lin_solver);
-            //            run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_GS", this->verbose_);
-            // 	}
-            // );
+                Newton<Matrix, Vector> solver(lin_solver);
+                run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_GS", this->verbose_);
+            });
 
-            // #ifdef WITH_PETSC
-            // 	this->register_experiment("NewtonTest_GMRES_backtracking",
-            // 		[this]() {
-            //             auto lin_solver = std::make_shared<utopia::GMRES<Matrix, Vector> >();
-            //             lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+#ifdef WITH_PETSC
+            this->register_experiment("NewtonTest_GMRES_backtracking", [this]() {
+                auto lin_solver = std::make_shared<utopia::GMRES<Matrix, Vector> >();
+                lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
-            //             lin_solver->atol(1e-10);
-            //             lin_solver->max_it(300);
+                lin_solver->atol(1e-10);
+                lin_solver->max_it(300);
 
-            //             auto ls_strat  = std::make_shared<utopia::Backtracking<Vector> >();
-            //             Newton<Matrix, Vector> solver(lin_solver);
-            //             solver.set_line_search_strategy(ls_strat);
+                auto ls_strat = std::make_shared<utopia::Backtracking<Vector> >();
+                Newton<Matrix, Vector> solver(lin_solver);
+                solver.set_line_search_strategy(ls_strat);
 
-            //             run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_backtracking",
-            //             this->verbose_);
-            // 		}
-            // 	);
+                run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_backtracking", this->verbose_);
+            });
 
-            // 	this->register_experiment("NewtonTest_GMRES_SimpleBacktracking",
-            // 		[this]() {
-            //             auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector> >();
-            //             lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
+            this->register_experiment("NewtonTest_GMRES_SimpleBacktracking", [this]() {
+                auto lin_solver = std::make_shared<utopia::BiCGStab<Matrix, Vector> >();
+                lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
 
-            //             lin_solver->atol(1e-10);
-            //             lin_solver->max_it(300);
+                lin_solver->atol(1e-10);
+                lin_solver->max_it(300);
 
-            //             auto ls_strat  = std::make_shared<utopia::SimpleBacktracking<Vector> >();
-            //             Newton<Matrix, Vector> solver(lin_solver);
-            //             solver.set_line_search_strategy(ls_strat);
+                auto ls_strat = std::make_shared<utopia::SimpleBacktracking<Vector> >();
+                Newton<Matrix, Vector> solver(lin_solver);
+                solver.set_line_search_strategy(ls_strat);
 
-            //             run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_SimpleBacktracking",
-            //             this->verbose_);
-            // 		}
-            // 	);
-            // #endif
+                run_tr(
+                    this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_SimpleBacktracking", this->verbose_);
+            });
+#endif
 
-            // this->register_experiment("TR_STCG",
-            // 	[this]() {
-            // 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-            // 		subproblem->pc_type("asm");
-            // 		TrustRegion<Matrix, Vector> solver(subproblem);
-            // 		solver.delta0(1e10);
-            // 		run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
-            // 	}
-            // );
+            this->register_experiment("TR_STCG", [this]() {
+                auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+                subproblem->pc_type("asm");
+                TrustRegion<Matrix, Vector> solver(subproblem);
+                solver.delta0(1e10);
+                run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
+            });
         }
 
     private:
@@ -233,6 +215,7 @@ namespace utopia {
     };
 
     static void unconstrained_large_scale() {
+#ifdef WITH_PETSC
         int verbosity_level = 1;
         const int n_global = 10;
         bool alg_verbose = false;
@@ -241,7 +224,6 @@ namespace utopia {
             verbosity_level = 2;
         }
 
-#ifdef WITH_PETSC
         LargeScaleUnconstrainedBenchmark<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();

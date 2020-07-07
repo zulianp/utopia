@@ -2,6 +2,7 @@
 #define UTOPIA_SCALAR_CAST_HPP
 
 #include "utopia_Expressions.hpp"
+#include "utopia_Factory.hpp"
 
 namespace utopia {
 

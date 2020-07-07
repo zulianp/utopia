@@ -13,9 +13,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
-    ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient()
-
-        = default;
+    ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient() = default;
 
     template <class Matrix, class Vector, int Backend>
     void ConjugateGradient<Matrix, Vector, Backend>::copy(const ConjugateGradient &other) {

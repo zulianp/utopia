@@ -24,14 +24,20 @@ RUN cd petsc_cloned && \
     ./configure \
                 --with-mpi-dir=$MPI_DIR \
                 --prefix=/opt/petsc \
-                --with-cxx-dialect=C++11 \
-                --download-superlu=yes \
-                --download-superlu_dist \
-                --download-metis \
-                --download-parmetis \
-                --download-mumps \
                 --download-scalapack \
-                --download-hypre
+                --download-hypre \
+                --with-cxx-dialect=C++11 \
+                --download-superlu_dist \
+                --download-superlu \
+                --download-mumps \
+                --download-hdf5 \
+                --download-netcdf \
+                --download-pnetcdf \
+                --download-exodusii \
+                --download-zlib \
+                --download-triangle \
+                --download-ctetgen \
+                -with-debugging=0
 
 RUN cd petsc_cloned && \
     make && \
@@ -89,12 +95,28 @@ RUN cd trilinos_cloned && mkdir build && cd build && \
       -DTpetraCore_ENABLE_EXPLICIT_INSTANTIATION=ON \
       -DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
       -DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON \
-      -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON
+      -DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON \
+      -DCMAKE_CXX_STANDARD=14
 
 
 RUN cd trilinos_cloned && cd build && make && make install
 
+
 ENV TRILINOS_DIR /opt/trilinos
+ENV LD_LIBRARY_PATH=/opt/petsc/lib/:/opt/slepc/lib
+
+RUN echo 'export LD_LIBRARY_PATH='$LD_LIBRARY_PATH   > setup.sh
+RUN echo 'export MOONOLITH_DIR='$MOONOLITH_DIR      >> setup.sh
+RUN echo 'export TRILINOS_DIR='$TRILINOS_DIR        >> setup.sh
+RUN env | grep PATH                                 >> setup.sh
+RUN echo 'apk add bash'                             >> setup.sh
+RUN echo 'apk add bash-completion'                  >> setup.sh
+RUN echo 'apk add bash-doc'                         >> setup.sh
+RUN echo 'export PATH=$PATH:/opt/petsc/bin'         >> setup.sh
+
+RUN cat setup.sh
+RUN cat setup.sh                                    >> /root/.profile
+
 
 #############################################################################
 #############################################################################

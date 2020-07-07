@@ -342,7 +342,10 @@ namespace utopia {
 
             KSP ksp;
             get_ksp(&ksp);
-            build_ksp(solver, ksp);
+
+            if (ksp != nullptr) {
+                build_ksp(solver, ksp);
+            }
         }
 
         void set_function(Function<Matrix, Vector> &fun) { UtopiaTaoSetUp(tao, fun); }
@@ -372,6 +375,10 @@ namespace utopia {
 
             if (reason < 0) {
                 utopia_warning("> Failed to converge");
+
+                std::cerr << "gnorm: " << gnorm << std::endl;
+                std::cerr << "cnorm: " << cnorm << std::endl;
+                std::cerr << "xdiff: " << xdiff << std::endl;
             }
 
             return reason >= 0;

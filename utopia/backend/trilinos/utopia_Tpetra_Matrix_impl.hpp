@@ -7,23 +7,35 @@
 
 namespace utopia {
 
+    template <typename Data, typename KokkosOp, typename Scalar>
+    struct MatDataOpFunctor {
+        KOKKOS_INLINE_FUNCTION void join(volatile Scalar &val, const volatile Scalar &other) const {
+            // Kokkos forces us to have the input values being declared volatile. Hence we need to make copies for the
+            // reduction operations
+            const Scalar tmp1 = val, tmp2 = other;
+            val = op_.apply(tmp1, tmp2);
+        }
+
+        KOKKOS_INLINE_FUNCTION void operator()(const int &i, Scalar &val) const { val = op_.apply(val, data_(i)); }
+
+        KOKKOS_INLINE_FUNCTION void init(Scalar &val) const { val = initial_value_; }
+
+        const KokkosOp op_;
+        const Data data_;
+        const Scalar initial_value_;
+    };
+
     template <class Op>
     TpetraMatrix::Scalar TpetraMatrix::local_parallel_reduce_values(Op, const Scalar &initial_value) const {
-        // using LocalMatrix = typename CrsMatrixType::local_matrix_type;
-        // using Data = typename LocalMatrix::values_type;
-        // const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
-        // const Data &data = local_mat.values;
+        using LocalMatrix = typename CrsMatrixType::local_matrix_type;
+        using Data = typename LocalMatrix::values_type;
+        const LocalMatrix &local_mat = raw_type()->getLocalMatrix();
+        const Data &data = local_mat.values;
 
-        // Scalar ret = initial_value;
-        // KokkosOp<Scalar, Op> kop;
-        // OpFunctor<Data, KokkosOp<Scalar, Op>, Scalar> functor{kop, data, initial_value};
-        // Kokkos::parallel_reduce(data.extent(0), functor, ret);
-        // return ret;
-
-        // TODO(Patrick) implement parallel version
-        KokkosOp<Scalar, Op> k_op;
         Scalar ret = initial_value;
-        read([&](const SizeType &, const SizeType &, const Scalar &v) { ret = k_op.apply(ret, v); });
+        KokkosOp<Scalar, Op> kop;
+        MatDataOpFunctor<Data, KokkosOp<Scalar, Op>, Scalar> functor{kop, data, initial_value};
+        Kokkos::parallel_reduce(data.extent(0), functor, ret);
         return ret;
     }
 
@@ -119,3 +131,4 @@ namespace utopia {
 }  // namespace utopia
 
 #endif  // UTOPIA_TPETRA_MATRIX_IMPL_HPP
+

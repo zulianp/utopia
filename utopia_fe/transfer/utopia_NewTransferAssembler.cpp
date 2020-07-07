@@ -28,6 +28,7 @@
 #include "moonolith_gauss_quadrature_rule.hpp"
 #include "moonolith_keast_quadrature_rule.hpp"
 #include "moonolith_l2_assembler.hpp"
+#include "moonolith_par_l2_assembler_no_covering.hpp"
 #include "moonolith_par_l2_transfer.hpp"
 #include "moonolith_par_volume_surface_l2_transfer.hpp"
 
@@ -333,23 +334,44 @@ namespace utopia {
                 moonolith::logger() << "ConvertTransferAlgorithm:apply(...) begin" << std::endl;
             }
 
-            moonolith::ParL2Transfer<double,
-                                     Dim,
-                                     moonolith::StaticMax<DimMaster, 1>::value,
-                                     moonolith::StaticMax<DimSlave, 1>::value>
-                assembler(comm);
+            if (opts.has_covering) {
+                moonolith::ParL2Transfer<double,
+                                         Dim,
+                                         moonolith::StaticMax<DimMaster, 1>::value,
+                                         moonolith::StaticMax<DimSlave, 1>::value>
+                    assembler(comm);
 
-            if (opts.tags.empty()) {
+                if (opts.tags.empty()) {
+                    if (!assembler.assemble(master, slave)) {
+                        return false;
+                    }
+                } else {
+                    if (!assembler.assemble(master, slave, opts.tags)) {
+                        return false;
+                    }
+                }
+
+                prepare_data(opts, assembler, data);
+
+            } else {
+                moonolith::ParL2TransferNoCovering<double,
+                                                   Dim,
+                                                   moonolith::StaticMax<DimMaster, 1>::value,
+                                                   moonolith::StaticMax<DimSlave, 1>::value>
+                    assembler(comm);
+
+                // if (opts.tags.empty()) {
                 if (!assembler.assemble(master, slave)) {
                     return false;
                 }
-            } else {
-                if (!assembler.assemble(master, slave, opts.tags)) {
-                    return false;
-                }
-            }
+                // } else {
+                //     if (!assembler.assemble(master, slave, opts.tags)) {
+                //         return false;
+                //     }
+                // }
 
-            prepare_data(opts, assembler, data);
+                prepare_data(opts, assembler, data);
+            }
 
             comm.barrier();
 

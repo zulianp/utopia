@@ -206,7 +206,7 @@ namespace utopia {
             // DMPlexSetElementType(fine->raw_type(), elem_type);
             fine->update_mirror();
 
-            return std::move(fine);
+            return fine;
         }
 
         // std::unique_ptr<PetscDMPlex> clone(const SizeType &n_components) const

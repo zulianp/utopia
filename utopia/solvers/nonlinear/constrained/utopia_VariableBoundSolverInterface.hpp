@@ -10,6 +10,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_RangeDevice.hpp"
 #include "utopia_Traits.hpp"
 
 #include <iomanip>

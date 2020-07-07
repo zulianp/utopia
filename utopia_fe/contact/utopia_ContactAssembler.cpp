@@ -455,7 +455,7 @@ namespace utopia {
         }
 
         ProjectionAlgorithm(ContactDataBuffers &data, const moonolith::IsGlue &is_glue)
-            : data(data), lm_q_master(Dim - 1), lm_q_slave(Dim - 1), is_glue(is_glue) {
+            : data(data), is_glue(is_glue), lm_q_master(Dim - 1), lm_q_slave(Dim - 1) {
             trafo_m = std::make_shared<Trafo>();
             trafo_s = std::make_shared<Trafo>();
             affine_contact.trafo_master = trafo_m;

@@ -9,6 +9,20 @@ list(APPEND TEST_MODULES
     test_problems/PTC_benchmark
 )
 
+if(TARGET utopia_petsc)
+    list(APPEND TEST_MODULES petsc)
+endif()
+
+
+if(TARGET utopia_trilinos)
+    list(APPEND TEST_MODULES trilinos)
+endif()
+
+if(TARGET utopia_blas)
+    list(APPEND TEST_MODULES blas)
+endif()
+
+
 set(LOCAL_HEADERS "")
 set(LOCAL_SOURCES "")
 find_project_files(UTOPIA_TEST_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)

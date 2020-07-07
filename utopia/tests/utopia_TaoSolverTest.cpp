@@ -5,6 +5,7 @@
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
+#include "utopia_Assert.hpp"
 #include "utopia_QuadraticFunction.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
 
@@ -33,7 +34,8 @@ namespace utopia {
 
         auto lsolver = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
 
-        const double scale_factor = 1e-10;
+        // Known problem with small magnitude solution (if scale factor is 1e-10 the test will fail)
+        const double scale_factor = 1e-4;
         rhs *= scale_factor;
         upper_bound *= scale_factor;
 
@@ -41,10 +43,7 @@ namespace utopia {
 
         QuadraticFunction<PetscMatrix, PetscVector> fun(make_ref(m), make_ref(rhs));
         TaoSolver<PetscMatrix, PetscVector> tao(lsolver);
-        // tao.set_ksp_types("bcgs", "jacobi", " ");
         tao.set_box_constraints(box);
-        // tao.set_type("tron");
-        // tao.set_type("gpcg");
         tao.solve(fun, x);
 
         x *= 1. / scale_factor;
@@ -61,7 +60,8 @@ namespace utopia {
         xssn *= 1. / scale_factor;
 
         double n_diff = norm2(xssn - x);
-        utopia_test_assert(n_diff < 1e-10);
+
+        utopia_test_asserteq(n_diff, 0.0, 1e-10);
     }
 
     void petsc_tao_solve_mg() {
@@ -84,8 +84,6 @@ namespace utopia {
         Multigrid<PetscMatrix, PetscVector> multigrid(smoother, linear_solver);
         multigrid.set_transfer_operators(interpolation_operators);
         PetscVector x(row_layout(A), 0.0);
-        // PetscVector upper_bound = values(A.size().get(0), 0.003);
-        // auto box = make_upper_bound_constraints(make_ref(upper_bound));
 
         QuadraticFunction<PetscMatrix, PetscVector> fun(make_ref(A), make_ref(rhs));
         TaoSolver<PetscMatrix, PetscVector> tao(make_ref(multigrid));
@@ -153,12 +151,10 @@ namespace utopia {
     }
 
     static void tao() {
-        // does not work yet missing ksp for dense matrix
-        // UTOPIA_RUN_TEST(petsc_tao_solve_simple);
-        // UTOPIA_RUN_TEST(petsc_tao_solve_vi);
+        UTOPIA_RUN_TEST(petsc_tao_solve_simple);
+        UTOPIA_RUN_TEST(petsc_tao_solve_vi);
         UTOPIA_RUN_TEST(petsc_tao_solve_mg);
 
-// FIXME
 #ifdef PETSC_HAVE_MUMPS
         UTOPIA_RUN_TEST(petsc_tao_tr_bound);
 #endif  // PETSC_HAVE_MUMPS

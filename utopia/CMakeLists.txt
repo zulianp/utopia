@@ -56,9 +56,11 @@ option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
-option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
-option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the futre" ON)
+option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" OFF)
+option(ENABLE_DEPRECATED_API "Decprecated functionality that will be removed in the future" ON)
 option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
+option(UTOPIA_ENABLE_PETSC_DM_PLEX "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies" ON)
+option(UTOPIA_PULL_REQUEST_MODE "Mode for ensuring that pull request standards are respected" OFF)
 
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
@@ -108,7 +110,10 @@ endif()
 set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
 
 # More restrictive
-# set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
+if(UTOPIA_PULL_REQUEST_MODE)
+    set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=deprecated-declarations ")
+    # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef ")
+endif()
 
 include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/external/GSL/include)
 
@@ -191,7 +196,6 @@ include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 if( CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
     message(FATAL_ERROR
         "In-source builds are not allowed.
-        CMake would overwrite the makefiles distributed with Moose.
         Please create a directory and run cmake from there, passing the path
         to this source directory as the last argument.
         This process created the file `CMakeCache.txt' and the directory `CMakeFiles'.
@@ -349,6 +353,7 @@ if(TRY_WITH_TRILINOS)
     endif()
 endif()
 
+add_subdirectory(examples)
 add_subdirectory(backend/polymorphic)
 
 # backend modules
@@ -432,6 +437,7 @@ write_compiler_detection_header(
 
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/utopia_Version.hpp
     DESTINATION include
 )
 
@@ -537,7 +543,7 @@ add_dependencies(bench_and_test bench utest)
 ##########################################################################################
 
 add_custom_target(complete)
-add_dependencies(complete utopia utopia_test utopia_bench utopia_exec)
+add_dependencies(complete utopia utopia_test utopia_bench utopia_exec utopia_examples)
 
 ##########################################################################################
 target_format_setup(utopia_test)

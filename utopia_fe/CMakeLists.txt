@@ -23,12 +23,19 @@ option(ENABLE_MARS "Tries to use mars backend" OFF)
 option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
 option(ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 option(INSTALL_LIBMESH "install libmesh" OFF)
+option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 #################################################################################
 #################################################################################
 #################################################################################
-set(UTOPIA_FE_DEV_FLAGS
-    "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
-)
+
+
+if(UTOPIA_ENABLE_WARNINGS)
+    set(UTOPIA_FE_DEV_FLAGS
+        "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
+    )
+else()
+    set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
+endif()
 
 # More annoying
 # set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Wextra -Werror=uninitialized ")
@@ -36,7 +43,7 @@ set(UTOPIA_FE_DEV_FLAGS
 # More restrictive
 # set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Werror=unused-variable -Werror=unused-local-typedef -Werror=deprecated-declarations ")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_FE_DEV_FLAGS}")
 
 
 if(UNIX AND NOT APPLE)

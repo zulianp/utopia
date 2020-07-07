@@ -5,7 +5,6 @@
 #include "utopia_Binary.hpp"
 #include "utopia_Blocks.hpp"
 #include "utopia_Boolean.hpp"
-#include "utopia_Conversions.hpp"
 #include "utopia_Determinant.hpp"
 #include "utopia_Diag.hpp"
 #include "utopia_Equality.hpp"

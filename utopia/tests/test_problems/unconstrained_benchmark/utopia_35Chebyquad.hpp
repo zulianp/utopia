@@ -22,9 +22,13 @@ namespace utopia {
             SizeType n_global = 8;
 
             {
+                // Device side writing
                 auto x_view = view_device(x_init_);
                 parallel_for(range_device(x_init_),
                              UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i + 1) / Scalar(n_global + 1)); });
+
+                // Host side writing
+                Write<Vector> w(x_exact_);
 
                 x_exact_.set(0, 0.043153);
                 x_exact_.set(1, 0.193091);

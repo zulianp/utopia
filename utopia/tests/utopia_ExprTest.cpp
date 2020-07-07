@@ -51,15 +51,10 @@ namespace utopia {
             UTOPIA_RUN_TEST(rotate_test);
             UTOPIA_RUN_TEST(e_pseudo_inv_test);
             UTOPIA_RUN_TEST(mat_vec_multiply_test);
-            // UTOPIA_RUN_TEST(vec_add_add_add_test);
-            // UTOPIA_RUN_TEST(convert_test);
-            //    UTOPIA_RUN_TEST(convert_test);
-            //   UTOPIA_RUN_TEST(emul_test);
-
-            // FIXME (mem allocs)
-
-            // Seq. fault
-            // UTOPIA_RUN_TEST(mat_transp_mult_test);
+            UTOPIA_RUN_TEST(vec_add_add_add_test);
+            UTOPIA_RUN_TEST(convert_test);
+            UTOPIA_RUN_TEST(emul_test);
+            UTOPIA_RUN_TEST(mat_transp_mult_test);
         }
 
         // void convert_test()
@@ -589,15 +584,12 @@ namespace utopia {
     };
 
     void expr() {
-        auto n_dofs = 10;
 #ifdef WITH_PETSC
-        PetscCommunicator petsc_comm;
-        ExpressionTests<PetscMatrix, PetscVector>(petsc_comm, n_dofs).run();
+        ExpressionTests<PetscMatrix, PetscVector>(PetscCommunicator(), 10).run();
 #endif
 
 #ifdef WITH_TRILINOS
-        TrilinosCommunicator trilinos_comm;
-        ExpressionTests<TpetraMatrixd, TpetraVectord>(trilinos_comm, n_dofs).run();
+        ExpressionTests<TpetraMatrixd, TpetraVectord>(TrilinosCommunicator(), 10).run();
 #endif
     }
 
