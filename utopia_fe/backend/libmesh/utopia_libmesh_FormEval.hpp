@@ -262,7 +262,8 @@ namespace utopia {
         static void apply(const Binary<Left, Right, Plus> &expr, Tensor &result, AssemblyContext<LIBMESH_TAG> &ctx) {
             apply(expr.left(), result, ctx);
 
-            Tensor right = zeros(size(result));
+            Tensor right;
+            right.zeros(layout(result));
             apply(expr.right(), right, ctx);
             result += right;
         }
@@ -279,7 +280,8 @@ namespace utopia {
         static void apply(const Binary<Left, Right, Minus> &expr, Tensor &result, AssemblyContext<LIBMESH_TAG> &ctx) {
             apply(expr.left(), result, ctx);
 
-            Tensor right = zeros(size(result));
+            Tensor right;
+            right.zeros(layout(result));
             apply(expr.right(), right, ctx);
             result -= right;
         }
@@ -288,7 +290,8 @@ namespace utopia {
         static void apply(const Binary<Left, Right, Op> &expr, Tensor &result, AssemblyContext<LIBMESH_TAG> &ctx) {
             apply(expr.left(), result, ctx);
 
-            Tensor right = zeros(size(result));
+            Tensor right;
+            right.zeros(layout(result));
             apply(expr.right(), result, ctx);
 
             result = expr.operation().apply(result, right);

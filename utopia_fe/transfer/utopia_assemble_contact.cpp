@@ -1228,7 +1228,8 @@ namespace utopia {
         }
 
         auto s_gap = local_size(gap_x);
-        gap = local_zeros(s_gap);
+        // gap = local_zeros(s_gap);
+        gap.zeros(layout(gap_x));
 
         static const double LARGE_VALUE = 10000;
         {

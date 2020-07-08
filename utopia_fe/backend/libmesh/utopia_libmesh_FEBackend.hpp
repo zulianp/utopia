@@ -405,7 +405,9 @@ namespace utopia {
             QValues<double> traces = trace(mats, ctx);
 
             for (std::size_t qp = 0; qp < n_quad_points; ++qp) {
-                ret[qp] = traces[qp] * identity(size(mats[qp]));
+                auto s = size(mats[qp]);
+                ret[qp].identity(serial_layout(s.get(0), s.get(1)), traces[qp]);
+                // ret[qp] = traces[qp] * identity(size(mats[qp]));
             }
 
             return ret;
@@ -489,7 +491,8 @@ namespace utopia {
                                  const AssemblyContext<LIBMESH_TAG> &) -> QValues<LMDenseMatrix> {
             auto s = size(mats[0]);
             for (auto &m : mats) {
-                m += identity(s);
+                // m += identity(s);
+                m.shift_diag(1.0);
             }
 
             // std::cout << "-----------------------" << std::endl;
@@ -505,7 +508,8 @@ namespace utopia {
             QValues<LMDenseMatrix> ret = mats;
             auto s = size(mats[0]);
             for (auto &m : ret) {
-                m += identity(s);
+                // m += identity(s);
+                m.shift_diag(1.0);
             }
 
             // std::cout << "-----------------------" << std::endl;
@@ -601,7 +605,8 @@ namespace utopia {
                                  const AssemblyContext<LIBMESH_TAG> &) -> QValues<LMDenseMatrix> {
             auto s = size(mats[0]);
             for (auto &m : mats) {
-                m -= identity(s);
+                // m -= identity(s);
+                m.shift_diag(-1.0);
             }
 
             return std::move(mats);
@@ -1598,8 +1603,9 @@ namespace utopia {
 
             std::vector<Matrix> ret(n_quad_points);
 
+            auto ml = serial_layout(rows, cols);
             for (auto &r : ret) {
-                r = zeros(s);
+                r.dense(ml, 0.0);
             }
 
             for (std::size_t i = 0; i < n_shape_functions; ++i) {

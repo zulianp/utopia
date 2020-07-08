@@ -3,6 +3,10 @@
 
 #include "utopia_DeprecatedHeaders.hpp"
 
+// Remove warnings of depreacted functions since we are using them right now
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace utopia {
 
     // All tests deprecated functionalities shall be moved here.
@@ -118,7 +122,7 @@ namespace utopia {
     static void deprecated() {
 #ifdef WITH_BLAS
         DeprecatedTest<BlasMatrixd, BlasVectord>().run();
-        // DenseDeprecatedTest<BlasMatrixd, BlasVectord>().run();
+        DenseDeprecatedTest<BlasMatrixd, BlasVectord>().run();
 #endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
@@ -132,5 +136,8 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(deprecated);
+
+// reset warning to previous stack state
+#pragma GCC diagnostic pop
 
 }  // namespace utopia

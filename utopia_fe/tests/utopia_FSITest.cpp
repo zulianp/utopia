@@ -278,7 +278,7 @@ namespace utopia {
                 std::cerr << "Volume transfer failure" << std::endl;
             }
 
-            fsi_velocity_s = local_zeros(local_size(displacement_s));
+            fsi_velocity_s.zeros(layout(displacement_s));
             old_displacement_s = displacement_s;
 
             assert(sol_fold.has_ghosts() || mpi_world_size() == 1);
@@ -321,7 +321,7 @@ namespace utopia {
                 // update the forcing term in the fluid
                 linear_solver->solve(mass_mat_s, reaction_force_s, temp_s);
                 UVector temp_f = transpose(B) * temp_s;
-                UVector sol_temp = local_zeros(local_size(fsi_forcing_term_f));
+                UVector sol_temp(layout(fsi_forcing_term_f));
                 linear_solver->solve(mass_mat_f, temp_f, sol_temp);
 
                 // preserves ghost information and copies the entries

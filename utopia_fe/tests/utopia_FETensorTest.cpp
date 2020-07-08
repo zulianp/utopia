@@ -90,8 +90,8 @@ namespace utopia {
         std::cout << "ASSEMBLY end: " << c << std::endl;
         if (no_solve) return;
 
-        x = local_zeros(local_size(A).get(0));
-        forcing_term = local_zeros(local_size(x));
+        x.zeros(row_layout(A));
+        forcing_term.zeros(layout(x));
         forcing_function.eval(x, forcing_term);
         rhs += forcing_term;
 

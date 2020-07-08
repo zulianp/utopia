@@ -76,9 +76,9 @@ namespace utopia {
 
         if (no_solve) return;
 
-        x = local_zeros(local_size(rhs));
+        x.zeros(layout(rhs));
 
-        forcing_term = local_zeros(local_size(rhs));
+        forcing_term.zeros(layout(rhs));
         forcing_function.eval(x, forcing_term);
         rhs += forcing_term;
 

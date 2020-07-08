@@ -30,15 +30,16 @@ namespace utopia {
     }
 
     void MechanicsState::init(const Size &local_size, const Size &global_size) {
-        displacement = local_zeros(local_size);
-        displacement_increment = local_zeros(local_size);
+        auto ls = local_size.get(0);
+        displacement = local_zeros(ls);
+        displacement_increment = local_zeros(ls);
 
-        velocity = local_zeros(local_size);
+        velocity = local_zeros(ls);
 
-        internal_force = local_zeros(local_size);
-        external_force = local_zeros(local_size);
+        internal_force = local_zeros(ls);
+        external_force = local_zeros(ls);
 
-        stress = local_zeros(local_size);
+        stress = local_zeros(ls);
         t = 0.;
     }
 
@@ -180,7 +181,7 @@ namespace utopia {
         const USparseMatrix &K = mech_ctx.stiffness_matrix;
         const UVector rhs = current.external_force;  // - old.internal_force;
 
-        UVector sol_c = local_zeros(s);
+        UVector sol_c = local_zeros(s.get(0));
         UVector rhs_c;      // = transpose(T) * rhs;
         USparseMatrix K_c;  //  = transpose(T) * K * T;
 

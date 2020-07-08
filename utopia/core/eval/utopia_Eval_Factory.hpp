@@ -201,6 +201,42 @@ namespace utopia {
         }
     };
 
+    template <class Left, int Order, class Traits, int Backend>
+    class Eval<Assign<Left, Factory<Resize, Order>>, Traits, Backend> {
+    public:
+        inline static void apply(const Assign<Left, Factory<Resize, Order>> &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Left, Traits>::apply(expr.left())
+                .dense(layout(Traits::Communicator::get_default(),
+                              Traits::decide(),
+                              Traits::decide(),
+                              expr.right().size().get(0),
+                              expr.right().size().get(1)),
+                       0.0);
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
+    template <class Left, class Traits, int Backend>
+    class Eval<Assign<Left, Factory<Zeros, 2>>, Traits, Backend> {
+    public:
+        inline static void apply(const Assign<Left, Factory<Zeros, 2>> &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            Eval<Left, Traits>::apply(expr.left())
+                .dense(layout(Traits::Communicator::get_default(),
+                              Traits::decide(),
+                              Traits::decide(),
+                              expr.right().size().get(0),
+                              expr.right().size().get(1)),
+                       0.0);
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
     //////////////////////////////////////////////////////////////////////////////////////////
     // composites
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -294,19 +330,6 @@ namespace utopia {
     //         UTOPIA_TRACE_BEGIN(expr);
 
     //         result.local_values(expr.size(), expr.type().value());
-
-    //         UTOPIA_TRACE_END(expr);
-    //     }
-    // };
-
-    // NEW FIXME this is for the expression dense()
-    // template <class Left, int Order, class Traits, int Backend>
-    // class Eval<Assign<Left, Factory<Resize, Order>>, Traits, Backend> {
-    // public:
-    //     inline static void apply(const Assign<Left, Factory<Resize, Order>> &expr) {
-    //         UTOPIA_TRACE_BEGIN(expr);
-
-    //         Eval<Left, Traits>::apply(expr.left()).zeros(expr.right().size());
 
     //         UTOPIA_TRACE_END(expr);
     //     }

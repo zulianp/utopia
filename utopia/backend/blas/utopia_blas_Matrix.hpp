@@ -222,6 +222,7 @@ namespace utopia {
         }
 
         void sparse(const MatrixLayout &lo, const SizeType &, const SizeType &) { dense(lo); }
+        void zeros(const MatrixLayout &lo) { dense(lo); }
 
         void dense(const MatrixLayout &lo, const Scalar &val = 0.0) {
             auto &&s = get_size(lo);
