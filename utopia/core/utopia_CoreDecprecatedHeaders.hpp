@@ -5,6 +5,7 @@
 
 #ifdef UTOPIA_DEPRECATED_API
 #include "utopia_Each.hpp"
+#include "utopia_Eval_Factory.hpp"
 #include "utopia_Factory.hpp"
 #include "utopia_ParallelEach.hpp"
 

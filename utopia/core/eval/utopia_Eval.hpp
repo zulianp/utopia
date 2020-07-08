@@ -12,7 +12,6 @@
 #include "utopia_Eval_Differentiable.hpp"
 #include "utopia_Eval_DotOpDot.hpp"
 #include "utopia_Eval_Empty.hpp"
-#include "utopia_Eval_Factory.hpp"
 #include "utopia_Eval_InPlace.hpp"
 #include "utopia_Eval_Inverse.hpp"
 #include "utopia_Eval_KroneckerProduct.hpp"

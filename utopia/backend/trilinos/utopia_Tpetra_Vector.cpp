@@ -401,7 +401,7 @@ namespace utopia {
         }
 
         if (Tpetra::global_size_t(n_global) == Traits<TpetraVector>::determine()) {
-            assert(n_global > 0);
+            assert(n_local > 0);
 
             RCPMapType map;
 
