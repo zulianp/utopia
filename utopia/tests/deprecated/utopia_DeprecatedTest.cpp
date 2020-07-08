@@ -30,7 +30,7 @@ namespace utopia {
             v = values(n, 1.0);
             utopia_test_assert(v.size() == n);
 
-            v = local_values(n_local, n);
+            v = local_values(n_local, 1.0);
             utopia_test_assert(v.size() == n);
 
             v = zeros(n);

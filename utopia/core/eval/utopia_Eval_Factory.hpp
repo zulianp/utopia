@@ -13,26 +13,34 @@ namespace utopia {
         inline static void apply(const Assign<Left, Factory<LocalZeros, 1>> &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // Eval<Left, Traits>::apply(expr.left()).local_zeros(expr.right().size());
-            // layout(world, Traits::decide(), n);
-            Eval<Left, Traits>::apply(expr.left())
-                .zeros(layout(Traits::Communicator::get_default(), expr.right().size().get(0), Traits::determine()));
+            if (Backend == BLAS) {
+                Eval<Left, Traits>::apply(expr.left()).zeros(serial_layout(expr.right().size().get(0)));
+            } else {
+                Eval<Left, Traits>::apply(expr.left())
+                    .zeros(
+                        layout(Traits::Communicator::get_default(), expr.right().size().get(0), Traits::determine()));
+            }
 
             UTOPIA_TRACE_END(expr);
         }
-    };
+    };  // namespace utopia
 
-    template <class Left, class Right, int Order, class Traits, int Backend>
-    class Eval<Assign<Left, Factory<LocalValues<Right>, Order>>, Traits, Backend> {
+    template <class Left, class Right, class Traits, int Backend>
+    class Eval<Assign<Left, Factory<LocalValues<Right>, 1>>, Traits, Backend> {
     public:
-        inline static void apply(const Assign<Left, Factory<LocalValues<Right>, Order>> &expr) {
+        inline static void apply(const Assign<Left, Factory<LocalValues<Right>, 1>> &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
-            // Eval<Left, Traits>::apply(expr.left()).local_values(expr.right().size(), expr.right().type().value());
+            if (Backend == BLAS) {
+                Eval<Left, Traits>::apply(expr.left())
+                    .values(serial_layout(expr.right().size().get(0)), expr.right().type().value());
 
-            Eval<Left, Traits>::apply(expr.left())
-                .values(layout(Traits::Communicator::get_default(), expr.right().size().get(0), Traits::determine()),
+            } else {
+                Eval<Left, Traits>::apply(expr.left())
+                    .values(
+                        layout(Traits::Communicator::get_default(), expr.right().size().get(0), Traits::determine()),
                         expr.right().type().value());
+            }
 
             UTOPIA_TRACE_END(expr);
         }
@@ -40,10 +48,10 @@ namespace utopia {
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class Left, int Order, class Traits, int Backend>
-    class Eval<Assign<Left, Factory<Zeros, Order>>, Traits, Backend> {
+    template <class Left, class Traits, int Backend>
+    class Eval<Assign<Left, Factory<Zeros, 1>>, Traits, Backend> {
     public:
-        inline static void apply(const Assign<Left, Factory<Zeros, Order>> &expr) {
+        inline static void apply(const Assign<Left, Factory<Zeros, 1>> &expr) {
             UTOPIA_TRACE_BEGIN(expr);
 
             Eval<Left, Traits>::apply(expr.left())
