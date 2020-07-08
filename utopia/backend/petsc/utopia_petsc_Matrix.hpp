@@ -333,6 +333,14 @@ namespace utopia {
                        o_nnz);
         }
 
+        void identity(const Scalar &diag = 1.0);
+
+        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
+            comm_ = layout.comm();
+            matij_init_identity(
+                comm().get(), MATAIJ, layout.local_size(0), layout.local_size(1), layout.size(0), layout.size(1), diag);
+        }
+
         inline void dense(const MatrixLayout &layout, const Scalar &val = 0.0) {
             comm_ = layout.comm();
             dense_init_values(comm().get(),
@@ -343,14 +351,6 @@ namespace utopia {
                               layout.size(1),
                               val);
         }
-
-        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
-            comm_ = layout.comm();
-            matij_init_identity(
-                comm().get(), MATAIJ, layout.local_size(0), layout.local_size(1), layout.size(0), layout.size(1), diag);
-        }
-
-        void identity(const Scalar &diag = 1.0);
 
         inline void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
             comm_ = layout.comm();
@@ -363,38 +363,40 @@ namespace utopia {
                                 diag);
         }
 
-        inline void identity(const Size &s, const Scalar &diag = 1.0) override {
-            matij_init_identity(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
-        }
+        // void identity(const Scalar &diag = 1.0);
 
-        inline void dense_identity(const Size &s, const Scalar &diag = 1.0) override {
-            dense_init_identity(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
-        }
+        // inline void identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     matij_init_identity(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
+        // }
 
-        inline void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override {
-            dense_init_identity(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
-        }
+        // inline void dense_identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     dense_init_identity(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
+        // }
 
-        inline void values(const Size &s, const Scalar &val) override {
-            dense_init_values(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), val);
-        }
+        // inline void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     dense_init_identity(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
+        // }
 
-        inline void sparse(const Size &s, const SizeType &nnz) override {
-            matij_init(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), nnz, nnz);
-        }
+        // inline void values(const Size &s, const Scalar &val) override {
+        //     dense_init_values(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), val);
+        // }
 
-        inline void local_identity(const Size &s, const Scalar &diag = 1.0) override {
-            matij_init_identity(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
-        }
+        // inline void sparse(const Size &s, const SizeType &nnz) override {
+        //     matij_init(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), nnz, nnz);
+        // }
 
-        inline void local_values(const Size &s, const Scalar &val) override {
-            dense_init_values(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, val);
-        }
+        // inline void local_identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     matij_init_identity(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
+        // }
 
-        /// Specialize for sparse matrices
-        inline void local_sparse(const Size &s, const SizeType &nnz) override {
-            matij_init(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, nnz, nnz);
-        }
+        // inline void local_values(const Size &s, const Scalar &val) override {
+        //     dense_init_values(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, val);
+        // }
+
+        // /// Specialize for sparse matrices
+        // inline void local_sparse(const Size &s, const SizeType &nnz) override {
+        //     matij_init(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, nnz, nnz);
+        // }
 
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Normed ////////////////////////////////

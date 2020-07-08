@@ -182,27 +182,28 @@ namespace utopia {
         {
             auto x_view = view_device(x);
 
-            parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                auto value = x_view.get(i);
+            parallel_for(
+                range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                    auto value = x_view.get(i);
 
-                switch (i % 10) {
-                    case 0:
-                    case 1:
-                    case 9:
-                        utopia_test_assert(approxeq(-1, value));
-                        break;
-                    case 2:
-                    case 3:
-                    case 4:
-                        utopia_test_assert(approxeq(10, value));
-                        break;
-                    case 5:
-                    case 6:
-                    case 7:
-                    case 8:
-                        utopia_test_assert(approxeq(1, value));
-                }
-            });
+                    switch (i % 10) {
+                        case 0:
+                        case 1:
+                        case 9:
+                            utopia_test_assert(approxeq(-1, value));
+                            break;
+                        case 2:
+                        case 3:
+                        case 4:
+                            utopia_test_assert(approxeq(10, value));
+                            break;
+                        case 5:
+                        case 6:
+                        case 7:
+                        case 8:
+                            utopia_test_assert(approxeq(1, value));
+                    }
+                });
         }
 
         x.set(0.);
@@ -528,7 +529,7 @@ namespace utopia {
         const PetscInt xb = xr.begin();
 
         BlasVectord y;
-        y.values(xr.extent(), 2.0);
+        y.values(serial_layout(xr.extent()), 2.0);
 
         {
             Read<BlasVectord> r_y(y);

@@ -17,7 +17,7 @@ namespace utopia {
 
     void ConvertTensor<TpetraVector, PetscVector, 1, TRILINOS, PETSC>::apply(const TpetraVector &in, PetscVector &out) {
         PetscCommunicator comm(in.comm().raw_comm());
-        out.zeros(comm, in.local_size(), in.size());
+        out.zeros(layout(comm, in.local_size(), in.size()));
 
         // FIXME do not use this!!! It will not be portable in the future
 
@@ -33,7 +33,7 @@ namespace utopia {
 
     void ConvertTensor<PetscVector, TpetraVector, 1, PETSC, TRILINOS>::apply(const PetscVector &in, TpetraVector &out) {
         TrilinosCommunicator comm(in.comm().raw_comm());
-        out.zeros(comm, in.local_size(), in.size());
+        out.zeros(layout(comm, in.local_size(), in.size()));
 
         // FIXME do not use this!!! It will not be portable in the future
 

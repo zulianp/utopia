@@ -389,12 +389,26 @@ namespace utopia {
         comm_ = comm;
 
         if (static_cast<std::size_t>(n_local) == Traits<TpetraVector>::decide()) {
-            values(n_global, val);
+            const SizeType local_s = utopia::decompose(comm_, n_global);
+
+            RCPMapType map;
+
+            UTOPIA_REPORT_ALLOC("TpetraVector::values");
+            map = Teuchos::rcp(new MapType(n_global, local_s, 0, comm));
+            vec_.reset(new VectorType(map));
+            implementation().putScalar(val);
             return;
         }
 
         if (Tpetra::global_size_t(n_global) == Traits<TpetraVector>::determine()) {
-            local_values(n_local, val);
+            assert(n_global > 0);
+
+            RCPMapType map;
+
+            UTOPIA_REPORT_ALLOC("TpetraVector::values");
+            map = Teuchos::rcp(new MapType(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), n_local, 0, comm));
+            vec_.reset(new VectorType(map));
+            implementation().putScalar(val);
             return;
         }
 
@@ -411,34 +425,33 @@ namespace utopia {
         assert(size() > 0);
     }
 
-    void TpetraVector::values(const SizeType &s, const Scalar &val) {
-        assert(s > 0);
+    // void TpetraVector::values(const SizeType &s, const Scalar &val) {
+    //     assert(s > 0);
 
-        // NEW SIZE
-        const SizeType local_s = utopia::decompose(comm_, s);
+    //     // NEW SIZE
+    //     const SizeType local_s = utopia::decompose(comm_, s);
 
-        RCPMapType map;
+    //     RCPMapType map;
 
-        UTOPIA_REPORT_ALLOC("TpetraVector::values");
-        map = Teuchos::rcp(new MapType(s, local_s, 0, comm().get()));
-        vec_.reset(new VectorType(map));
-        implementation().putScalar(val);
+    //     UTOPIA_REPORT_ALLOC("TpetraVector::values");
+    //     map = Teuchos::rcp(new MapType(s, local_s, 0, comm().get()));
+    //     vec_.reset(new VectorType(map));
+    //     implementation().putScalar(val);
 
-        assert(size() > 0);
-    }
+    //     assert(size() > 0);
+    // }
 
-    void TpetraVector::local_values(const SizeType &s, const Scalar &val) {
-        assert(s > 0);
+    // void TpetraVector::local_values(const SizeType &s, const Scalar &val) {
+    //     assert(s > 0);
 
-        RCPMapType map;
+    //     RCPMapType map;
 
-        UTOPIA_REPORT_ALLOC("TpetraVector::values");
-        map = Teuchos::rcp(new MapType(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), s, 0, comm().get()));
-        vec_.reset(new VectorType(map));
-        implementation().putScalar(val);
+    //     UTOPIA_REPORT_ALLOC("TpetraVector::values");
+    //     map = Teuchos::rcp(new MapType(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), s, 0,
+    //     comm().get())); vec_.reset(new VectorType(map)); implementation().putScalar(val);
 
-        assert(size() > 0);
-    }
+    //     assert(size() > 0);
+    // }
 
     void TpetraVector::c_set(const SizeType &i, const Scalar &value) { implementation().replaceGlobalValue(i, value); }
 
@@ -453,7 +466,8 @@ namespace utopia {
     void TpetraVector::shift(const Scalar &x) {
         auto k_res = this->implementation().template getLocalView<ExecutionSpace>();
         assert(k_res.extent(0) > 0);
-        Kokkos::parallel_for(k_res.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) += x; });
+        Kokkos::parallel_for(
+            k_res.extent(0), KOKKOS_LAMBDA(const int i) { k_res(i, 0) += x; });
     }
 
 }  // namespace utopia

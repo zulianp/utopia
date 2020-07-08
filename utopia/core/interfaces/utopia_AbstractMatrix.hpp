@@ -42,6 +42,12 @@ namespace utopia {
     // public Selectable<AbstractMatrix<Scalar_, SizeType_>, 2>
     {
     public:
+        using Scalar = Scalar_;
+        using SizeType = SizeType_;
+        using MatrixLayout = utopia::Layout<Communicator, 2, SizeType_>;
+
+        virtual void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) = 0;
+
         ~AbstractMatrix() override = default;
     };
 
@@ -56,6 +62,7 @@ namespace utopia {
 
         using AbstractMatrix = utopia::AbstractMatrix<Scalar, SizeType>;
         using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
+        using MatrixLayout = typename AbstractMatrix::MatrixLayout;
 
         template <class... Args>
         Wrapper(Args &&... args) : impl_(std::make_shared<Matrix>(std::forward<Args>(args)...)) {}
@@ -315,13 +322,7 @@ namespace utopia {
 
         /////////////////////////////////////////////
 
-        inline void sparse(const Size &s, const SizeType &nnz) override { impl_->sparse(s, nnz); }
-
-        inline void local_sparse(const Size &s, const SizeType &nnz) override { impl_->local_sparse(s, nnz); }
-
-        inline void identity(const Size &s, const Scalar &diag = 1.0) override { impl_->identity(s, diag); }
-
-        inline void local_identity(const Size &s, const Scalar &diag = 1.0) override { impl_->local_identity(s, diag); }
+        void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override { impl_->identity(layout, diag); }
 
         /////////////////////////////////////////////
 

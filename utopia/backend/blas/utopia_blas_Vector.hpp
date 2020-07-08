@@ -43,8 +43,8 @@ namespace utopia {
         using Scalar = T;
         using SizeType = std::size_t;
 
-        using Constructible<T, std::size_t, 1>::values;
-        using Constructible<T, std::size_t, 1>::zeros;
+        // using Constructible<T, std::size_t, 1>::values;
+        // using Constructible<T, std::size_t, 1>::zeros;
 
         using iterator = typename Entries::iterator;
         using const_iterator = typename Entries::const_iterator;
@@ -390,14 +390,18 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void values(const Layout &l, const Scalar &val) { values(l.size(), val); }
-
-        inline void zeros(const Layout &l) { values(l.size(), 0.0); }
-
-        inline void values(const SizeType &s, const Scalar &val) override {
+        inline void values(const Layout &l, const Scalar &val) {
+            auto s = l.size();
             resize(s);
             set(val);
         }
+
+        inline void zeros(const Layout &l) { values(l, 0.0); }
+
+        // inline void values(const SizeType &s, const Scalar &val) override {
+        //     resize(s);
+        //     set(val);
+        // }
 
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Selectable //////////////////////////////////

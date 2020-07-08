@@ -169,6 +169,21 @@ namespace utopia {
                                                                           options(opts...));
     }
 
+    template <class T, class Traits, int Backend>
+    class Eval<Construct<Tensor<T, 2>, Diag<Factory<Zeros, 1>>>, Traits, Backend> {
+    public:
+        using Expr = utopia::Construct<Tensor<T, 2>, Diag<Factory<Zeros, 1>>>;
+
+        inline static void apply(const Expr &expr) {
+            UTOPIA_TRACE_BEGIN(expr);
+
+            auto &l = Eval<Tensor<T, 2>, Traits>::apply(expr.left());
+            l.zeros(matrix_layout(layout(expr.right())));
+
+            UTOPIA_TRACE_END(expr);
+        }
+    };
+
     /** @}*/
 }  // namespace utopia
 
