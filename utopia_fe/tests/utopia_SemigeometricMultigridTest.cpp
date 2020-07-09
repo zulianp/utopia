@@ -81,7 +81,7 @@ namespace utopia {
         mg.init(sys, 4);
         // mg.max_it(1);
 
-        UVector sol = local_zeros(local_size(rhs));
+        UVector sol(layout(rhs), 0.0);
 
         Chrono c;
         c.start();
@@ -155,7 +155,7 @@ namespace utopia {
         mg.init(V, 4);
         mg.update(make_ref(lapl_mat));
 
-        UVector sol = local_zeros(local_size(rhs));
+        UVector sol(layout(rhs), 0.0);
 
         Chrono c;
         c.start();

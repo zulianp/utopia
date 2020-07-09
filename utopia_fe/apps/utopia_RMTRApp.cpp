@@ -166,11 +166,7 @@ namespace utopia {
                 libMesh::DistributedMesh temp_mesh(mesh.comm());
                 temp_mesh.read(path);
 
-#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
-                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(temp_mesh);
-#else
-                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(temp_mesh);
-#endif
+                auto bb = utopia::bounding_box(temp_mesh);
 
                 if (temp_mesh.spatial_dimension() == 3) {
                     libMesh::MeshTools::Generation::build_cube(mesh,

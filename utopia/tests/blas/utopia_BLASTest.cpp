@@ -133,7 +133,7 @@ namespace utopia {
 
         TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(utopia::BlasVectord::comm(), 10);
 
-        x0.values(10, 2.0);
+        x0.values(serial_layout(10), 2.0);
         newtonSolver.solve(fun2, x0);
 #endif  // WITH_LAPACK
     }
@@ -262,7 +262,7 @@ namespace utopia {
 
         SizeType n = 3;
         MatrixT mat;
-        mat.zeros({n, n});
+        mat.dense(serial_layout(n, n));
 
         {
             Write<MatrixT> write(mat);
@@ -321,7 +321,7 @@ namespace utopia {
 
         int n = 30;
         BlasMatrixd A;
-        A.zeros({n, n});
+        A.dense(serial_layout(n, n));
         double h = 1. / n;
 
         assemble_laplacian_1D(A, false);
@@ -334,7 +334,7 @@ namespace utopia {
         set_zero_rows(A, index, 1.0);
 
         BlasVectord rhs;
-        rhs.values(n, 0.1);
+        rhs.values(serial_layout(n), 0.1);
 
         rhs *= h;
 
@@ -342,12 +342,12 @@ namespace utopia {
         rhs.set(n - 1, 0.0);
 
         BlasVectord x;
-        x.zeros(n);
+        x.zeros(serial_layout(n));
 
         ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
 
         auto ub = std::make_shared<BlasVectord>();
-        ub->values(n, 25);
+        ub->values(serial_layout(n), 25);
 
         BoxConstraints<BlasVectord> box(nullptr, ub);
 
@@ -367,7 +367,7 @@ namespace utopia {
     void test_transpose_add() {
         int n = 3, m = 4;
         BlasMatrixd A;
-        A.zeros({n, n});
+        A.dense(serial_layout(n, n));
 
         {
             Write<BlasMatrixd> w_A(A);
@@ -377,7 +377,7 @@ namespace utopia {
         }
 
         BlasMatrixd result;
-        result.zeros({n, n});
+        result.dense(serial_layout(n, n));
 
         UTOPIA_NO_ALLOC_BEGIN("transpose_add_1");
         result = A + transpose(A);
@@ -385,9 +385,9 @@ namespace utopia {
         UTOPIA_NO_ALLOC_END();
 
         BlasMatrixd B;
-        B.zeros({n, m});
+        B.dense(serial_layout(n, m), 0.0);
         BlasMatrixd C;
-        C.zeros({m, n});
+        C.dense(serial_layout(m, n), 0.0);
 
         {
             Write<BlasMatrixd> w_B(B), w_C(C);

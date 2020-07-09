@@ -3,6 +3,8 @@
 
 #include "libmesh/serial_mesh.h"
 
+#include "utopia_LibMeshBackend.hpp"
+
 namespace utopia {
 
     class Voxel2Element {
@@ -47,7 +49,7 @@ namespace utopia {
             auto elem = libMesh::Elem::build(libMesh::QUAD4);
 
             for (int i = 0; i < 4; ++i) {
-                elem->set_node(i) = &mesh->node(i);
+                elem->set_node(i) = utopia::node_ptr(*mesh, i);
             }
 
             mesh->add_elem(elem.release());
@@ -137,7 +139,7 @@ namespace utopia {
             auto elem = libMesh::Elem::build(libMesh::HEX8);
 
             for (int i = 0; i < 8; ++i) {
-                elem->set_node(i) = &mesh->node(i);
+                elem->set_node(i) = utopia::node_ptr(*mesh, i);
             }
 
             mesh->add_elem(elem.release());

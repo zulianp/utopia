@@ -37,7 +37,7 @@ namespace utopia {
 
         inline void update(const double dt, const UVector &sliding_distance, const UVector &normal_stress) {
             if (empty(wear)) {
-                wear = local_zeros(local_size(normal_stress));
+                wear.zeros(layout(normal_stress));
             }
 
             wear += (dt * wear_coefficient) * abs(e_mul(sliding_distance, normal_stress));

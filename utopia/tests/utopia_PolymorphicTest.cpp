@@ -55,12 +55,12 @@ namespace utopia {
 #endif  // WITH_TRILINOS
 
             auto x = DefaultFactory::new_vector();
-            x->values(n, 2.0);
+            x->values(serial_layout(n), 2.0);
 
             auto m = unique_to_shared(DefaultFactory::new_matrix());
 
             if (m) {
-                m->identity({n, n}, 2.0);
+                m->identity(serial_layout(n, n), 2.0);
 
                 auto y = DefaultFactory::new_vector();
                 m->apply(*x, *y);

@@ -415,9 +415,9 @@ namespace utopia {
             convert(dof_map.get_send_list(), ghost_nodes);
 
             x_ = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
-            inc_c_ = local_zeros(local_size(x_));
-            xc_ = local_zeros(local_size(x_));
-            lagrange_multiplier_ = local_zeros(local_size(x_));
+            inc_c_.zeros(layout(x_));
+            xc_.zeros(layout(x_));
+            lagrange_multiplier_.zeros(layout(x_));
         }
 
         virtual void finalize() {}

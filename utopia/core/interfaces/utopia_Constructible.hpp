@@ -15,11 +15,11 @@ namespace utopia {
 
         virtual ~SparseConstructible() = default;
 
-        virtual void sparse(const Size &s, const SizeType & /*nnz*/) = 0;
-        virtual void local_sparse(const Size &s, const SizeType & /*nnz*/) = 0;
+        // virtual void sparse(const Size &s, const SizeType & /*nnz*/) = 0;
+        // virtual void local_sparse(const Size &s, const SizeType & /*nnz*/) = 0;
 
-        virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
-        virtual void local_identity(const Size &s, const Scalar &diag = 1.0) { identity(s, diag); }
+        // virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
+        // virtual void local_identity(const Size &s, const Scalar &diag = 1.0) { identity(s, diag); }
     };
 
     template <typename Scalar_, typename SizeType_>
@@ -30,13 +30,13 @@ namespace utopia {
 
         virtual ~DenseConstructible() = default;
 
-        virtual void zeros(const Size &s) { values(s, 0.0); }
-        virtual void values(const Size &s, const Scalar &val) = 0;
-        virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) = 0;
+        // virtual void zeros(const Size &s) { values(s, 0.0); }
+        // virtual void values(const Size &s, const Scalar &val) = 0;
+        // virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) = 0;
 
-        virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
-        virtual void local_values(const Size &s, const Scalar &val) { values(s, val); }
-        virtual void local_dense_identity(const Size &s, const Scalar &diag = 1.0) { dense_identity(s, diag); }
+        // virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
+        // virtual void local_values(const Size &s, const Scalar &val) { values(s, val); }
+        // virtual void local_dense_identity(const Size &s, const Scalar &diag = 1.0) { dense_identity(s, diag); }
     };
 
     template <typename Scalar_, typename SizeType_>
@@ -50,20 +50,20 @@ namespace utopia {
         // virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
 
         /// Specialize for sparse matrices
-        void sparse(const Size &s, const SizeType & /*nnz*/) override { zeros(s); }
+        // void sparse(const Size &s, const SizeType & /*nnz*/) override { zeros(s); }
 
-        /// Specialize for sparse matrices
-        void local_sparse(const Size &s, const SizeType & /*nnz*/) override { local_zeros(s); }
+        // /// Specialize for sparse matrices
+        // void local_sparse(const Size &s, const SizeType & /*nnz*/) override { local_zeros(s); }
 
-        void local_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
+        // void local_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
 
-        void zeros(const Size &s) override { this->values(s, 0.0); }
-        // virtual void values(const Size &s, const Scalar &val) = 0;
-        void dense_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
+        // void zeros(const Size &s) override { this->values(s, 0.0); }
+        // // virtual void values(const Size &s, const Scalar &val) = 0;
+        // void dense_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
 
-        void local_zeros(const Size &s) override { local_values(s, 0.0); }
-        void local_values(const Size &s, const Scalar &val) override { this->values(s, val); }
-        void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override { dense_identity(s, diag); }
+        // void local_zeros(const Size &s) override { local_values(s, 0.0); }
+        // void local_values(const Size &s, const Scalar &val) override { this->values(s, val); }
+        // void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override { dense_identity(s, diag); }
     };
 
     template <typename Scalar_, typename SizeType_>
@@ -74,18 +74,18 @@ namespace utopia {
 
         virtual ~Constructible() = default;
 
-        virtual void zeros(const SizeType &s) { values(s, 0.0); }
-        virtual void values(const SizeType &s, const Scalar &val) = 0;
+        // virtual void zeros(const SizeType &s) { values(s, 0.0); }
+        // virtual void values(const SizeType &s, const Scalar &val) = 0;
 
-        virtual void local_zeros(const SizeType &s) { local_values(s, 0.0); }
-        virtual void local_values(const SizeType &s, const Scalar &val) { values(s, val); }
+        // virtual void local_zeros(const SizeType &s) { local_values(s, 0.0); }
+        // virtual void local_values(const SizeType &s, const Scalar &val) { values(s, val); }
 
-        // comodity
-        virtual void zeros(const Size &s) { values(s, 0.0); }
-        virtual void values(const Size &s, const Scalar &val) { values(s.get(0), val); }
+        // // comodity
+        // virtual void zeros(const Size &s) { values(s, 0.0); }
+        // virtual void values(const Size &s, const Scalar &val) { values(s.get(0), val); }
 
-        virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
-        virtual void local_values(const Size &s, const Scalar &val) { local_values(s.get(0), val); }
+        // virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
+        // virtual void local_values(const Size &s, const Scalar &val) { local_values(s.get(0), val); }
     };
 }  // namespace utopia
 

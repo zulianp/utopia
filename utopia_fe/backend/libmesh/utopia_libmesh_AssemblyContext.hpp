@@ -163,7 +163,7 @@ namespace utopia {
             offset.resize(n_vars + 1);
             offset[0] = 0;
 
-            const libMesh::Elem *elem = space_ptr->mesh().elem(active_values().current_element());
+            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), active_values().current_element());
 
             const libMesh::ElemType type = elem->type();
             const unsigned int sys_num = space_ptr->dof_map().sys_number();
@@ -195,7 +195,7 @@ namespace utopia {
             }
 
             auto space_ptr = find_any_space(expr);
-            const libMesh::Elem *elem = space_ptr->mesh().elem(active_values().current_element());
+            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), active_values().current_element());
 
             auto n = n_boundary_sides(elem);
 

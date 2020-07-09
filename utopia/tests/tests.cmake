@@ -9,6 +9,9 @@ list(APPEND TEST_MODULES
     test_problems/PTC_benchmark
 )
 
+
+list(APPEND TEST_MODULES deprecated)
+
 if(TARGET utopia_petsc)
     list(APPEND TEST_MODULES petsc)
 endif()

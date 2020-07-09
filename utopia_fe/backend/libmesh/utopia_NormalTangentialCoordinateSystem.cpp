@@ -20,7 +20,7 @@
 
 namespace utopia {
     void scale_normal_vector_with_gap(const int dim, const UVector &normals, const UVector &gap, UVector &out) {
-        out = local_zeros(local_size(normals));
+        out = local_zeros(normals.local_size());
 
         Read<UVector> r_n(normals), r_g(gap);
         Write<UVector> w_o(out);

@@ -45,6 +45,11 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using SizeType = SizeType_;
+        using Layout = utopia::Layout<Communicator, 1, SizeType_>;
+
+        virtual void values(const Layout &l, const Scalar &value) = 0;
+        virtual void zeros(const Layout &l) = 0;
+
         ~AbstractVector() override = default;
     };
 
@@ -54,8 +59,11 @@ namespace utopia {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+
         using AbstractVector =
             utopia::AbstractVector<typename Traits<Vector>::Scalar, typename Traits<Vector>::SizeType>;
+
+        using Layout = typename AbstractVector::Layout;
 
         template <class... Args>
         Wrapper(Args &&... args) : impl_(std::make_shared<Vector>(std::forward<Args>(args)...)) {}
@@ -213,18 +221,8 @@ namespace utopia {
 
         inline void transform(const Reciprocal<Scalar> &op) override { return impl_->transform(op); }
 
-        inline void zeros(const SizeType &s) override { impl_->zeros(s); }
-        inline void values(const SizeType &s, const Scalar &val) override { impl_->values(s, val); }
-
-        inline void local_zeros(const SizeType &s) override { impl_->local_zeros(s); }
-        inline void local_values(const SizeType &s, const Scalar &val) override { impl_->local_values(s, val); }
-
-        // comodity
-        inline void zeros(const Size &s) override { impl_->zeros(s); }
-        inline void values(const Size &s, const Scalar &val) override { impl_->values(s, val); }
-
-        inline void local_zeros(const Size &s) override { impl_->local_values(s, 0.0); }
-        inline void local_values(const Size &s, const Scalar &val) override { impl_->local_values(s, val); }
+        inline void values(const Layout &l, const Scalar &value) override { impl_->values(l, value); }
+        inline void zeros(const Layout &l) override { impl_->zeros(l); }
 
         Vector &get() { return *impl_; }
 

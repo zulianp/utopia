@@ -335,13 +335,10 @@ namespace utopia {
             }
 
             for (uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem) {
-                if ((predicate->select(master_slave->get_boundary_info().boundary_id(elem, side_elem)))) {
+                auto b_id = utopia::boundary_id(master_slave->get_boundary_info(), elem, side_elem);
+                if ((predicate->select(b_id))) {
                     // ID_FIX
-                    SurfaceAdapter a(*master_slave,
-                                     elem->id(),
-                                     element_id,
-                                     master_slave->get_boundary_info().boundary_id(elem, side_elem),
-                                     search_radius);
+                    SurfaceAdapter a(*master_slave, elem->id(), element_id, b_id, search_radius);
                     // SurfaceAdapter a(*master_slave, elem->id(), elem->id(),
                     // master_slave->get_boundary_info().boundary_id(elem, side_elem), search_radius);
                     assert(!local_spaces->dof_map()[element_id].empty());
@@ -517,8 +514,8 @@ namespace utopia {
             const int index_master = master.element();
             const int index_slave = slave.element();
 
-            auto &el_master = *master_mesh.elem(index_master);
-            auto &el_slave = *slave_mesh.elem(index_slave);
+            auto &el_master = *utopia::elem_ptr(master_mesh, index_master);
+            auto &el_slave = *utopia::elem_ptr(slave_mesh, index_slave);
 
             const int dim_master = master_mesh.mesh_dimension();
             const int dim_slave = slave_mesh.mesh_dimension();
@@ -1012,7 +1009,7 @@ namespace utopia {
         gap_buffer.set_size(n_side_node_dofs, 1);
         normal_buffer.set_size(n_side_node_dofs, dim);
 
-        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
+        moonolith::Redistribute<moonolith::SparseMatrix<double> > redist(comm.get());
         redist.apply(side_node_ownership_ranges, B_buffer, moonolith::AddAssign<double>());
         redist.apply(side_node_ownership_ranges, gap_buffer, moonolith::AddAssign<double>());
         redist.apply(side_node_ownership_ranges, normal_buffer, moonolith::AddAssign<double>());
@@ -1231,7 +1228,8 @@ namespace utopia {
         }
 
         auto s_gap = local_size(gap_x);
-        gap = local_zeros(s_gap);
+        // gap = local_zeros(s_gap);
+        gap.zeros(layout(gap_x));
 
         static const double LARGE_VALUE = 10000;
         {

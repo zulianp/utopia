@@ -457,7 +457,7 @@ namespace utopia {
         vec = local_zeros(dof_map.n_local_dofs());
 
         if (empty(sol)) {
-            sol = local_zeros(local_size(vec));
+            sol.zeros(layout(vec));
             std::cout << "[Warning] empty solution vector initializing to zero" << std::endl;
         }
 
@@ -477,7 +477,7 @@ namespace utopia {
             apply_zero_boundary_conditions(dof_map, vec);
         }
 
-        UVector inc = local_zeros(local_size(sol));
+        UVector inc(layout(sol), 0.0);
         Factorization<USparseMatrix, UVector> solver;
         if (!solver.solve(mat, vec, inc)) {
             return false;

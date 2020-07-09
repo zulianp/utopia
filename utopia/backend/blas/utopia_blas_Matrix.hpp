@@ -58,9 +58,9 @@ namespace utopia {
         using BLAS3DenseMatrix<BlasMatrix>::transpose_multiply;
         using MatrixLayout = typename Traits<BlasMatrix>::MatrixLayout;
 
-        using Constructible = utopia::Constructible<T, std::size_t, 2>;
-        using Constructible::dense_identity;
-        using Constructible::sparse;
+        // using Constructible = utopia::Constructible<T, std::size_t, 2>;
+        // using Constructible::dense_identity;
+        // using Constructible::sparse;
 
         ////////////////////////////////////////////////////////////////////
         ///////////////////////// BOILERPLATE CODE FOR EDSL ////////////////
@@ -222,6 +222,7 @@ namespace utopia {
         }
 
         void sparse(const MatrixLayout &lo, const SizeType &, const SizeType &) { dense(lo); }
+        void zeros(const MatrixLayout &lo) { dense(lo); }
 
         void dense(const MatrixLayout &lo, const Scalar &val = 0.0) {
             auto &&s = get_size(lo);
@@ -559,19 +560,19 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible //////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void identity(const Size &s, const Scalar &diag = 1.0) override {
-            assert(s.dims() == 2);
-            identity(s.get(0), s.get(1), diag);
-        }
+        // inline void identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     assert(s.dims() == 2);
+        //     identity(s.get(0), s.get(1), diag);
+        // }
 
-        inline void values(const Size &s, const T &val) override {
-            if (s.dims() == 1) {
-                resize(s.get(0), s.get(0));
-            } else {
-                resize(s.get(0), s.get(1));
-            }
-            set(val);
-        }
+        // inline void values(const Size &s, const T &val) override {
+        //     if (s.dims() == 1) {
+        //         resize(s.get(0), s.get(0));
+        //     } else {
+        //         resize(s.get(0), s.get(1));
+        //     }
+        //     set(val);
+        // }
 
         bool equals(const BlasMatrix &other, const T &tol = 0.0) const override {
             if (other.rows() != rows()) return false;
