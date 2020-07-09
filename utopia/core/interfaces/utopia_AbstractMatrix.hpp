@@ -47,9 +47,15 @@ namespace utopia {
         using MatrixLayout = utopia::Layout<Communicator, 2, SizeType_>;
 
         virtual void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) = 0;
+        virtual void sparse(const MatrixLayout &layout, const SizeType &nnz_d_block, const SizeType &nnz_o_block) = 0;
 
         ~AbstractMatrix() override = default;
     };
+
+    template <typename Scalar, typename SizeType>
+    void disp(const AbstractMatrix<Scalar, SizeType> &m) {
+        m.describe();
+    }
 
     template <class Matrix>
     class Wrapper<Matrix, 2>
@@ -323,6 +329,9 @@ namespace utopia {
         /////////////////////////////////////////////
 
         void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override { impl_->identity(layout, diag); }
+        void sparse(const MatrixLayout &layout, const SizeType &d_nnz, const SizeType &o_nnz) override {
+            impl_->sparse(layout, d_nnz, o_nnz);
+        }
 
         /////////////////////////////////////////////
 

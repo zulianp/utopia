@@ -53,6 +53,11 @@ namespace utopia {
         ~AbstractVector() override = default;
     };
 
+    template <typename Scalar, typename SizeType>
+    void disp(const AbstractVector<Scalar, SizeType> &v) {
+        v.describe();
+    }
+
     template <class Vector>
     class Wrapper<Vector, 1>
         : public AbstractVector<typename Traits<Vector>::Scalar, typename Traits<Vector>::SizeType> {

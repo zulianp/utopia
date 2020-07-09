@@ -42,7 +42,7 @@ namespace utopia {
         using AbstractLinearSolver = utopia::AbstractLinearSolver<Scalar, SizeType>;
 
         void convenience_wrapper() {
-            const SizeType n = 10;
+            const SizeType n_local = 10;
 
 #ifdef WITH_TRILINOS
 #ifdef UTOPIA_TPETRA_SIZE_TYPE
@@ -54,13 +54,19 @@ namespace utopia {
 #endif  // UTOPIA_TPETRA_SIZE_TYPE
 #endif  // WITH_TRILINOS
 
+            auto comm_ptr = DefaultFactory::new_communicator();
+            const SizeType n = n_local * comm_ptr->size();
+
+            auto vl = layout(*comm_ptr, n_local, n);
+            auto ml = square_matrix_layout(vl);
+
             auto x = DefaultFactory::new_vector();
-            x->values(serial_layout(n), 2.0);
+            x->values(vl, 2.0);
 
             auto m = unique_to_shared(DefaultFactory::new_matrix());
 
             if (m) {
-                m->identity(serial_layout(n, n), 2.0);
+                m->identity(ml, 2.0);
 
                 auto y = DefaultFactory::new_vector();
                 m->apply(*x, *y);
@@ -85,6 +91,10 @@ namespace utopia {
 
                 m->apply(*x, *r);
                 r->axpy(-1.0, *y);
+
+                // Use disp for printing
+                // disp(*r);
+                // disp(*m);
 
                 Scalar norm_r = r->norm2();
 
