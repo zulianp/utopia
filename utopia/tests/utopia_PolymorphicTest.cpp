@@ -26,7 +26,9 @@ namespace utopia {
     UTOPIA_FACTORY_REGISTER_LINEAR_SOLVER(PetscLinearSolver);
 
 #ifdef WITH_TRILINOS
-    UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
+    UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVectord);
+    // FIXME
+    // UTOPIA_FACTORY_REGISTER_MATRIX(TpetraMatrixd);
 #endif
 
     class PolymorphicTest final {
@@ -40,6 +42,31 @@ namespace utopia {
         using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
         using AbstractMatrix = utopia::AbstractMatrix<Scalar, SizeType>;
         using AbstractLinearSolver = utopia::AbstractLinearSolver<Scalar, SizeType>;
+
+        void dynamic_wrapper(const std::string &backend_name) {
+            auto comm_ptr = DefaultFactory::new_communicator(backend_name);
+            auto x_ptr = DefaultFactory::new_vector(backend_name);
+            auto y_ptr = DefaultFactory::new_vector(backend_name);
+            auto mat_ptr = DefaultFactory::new_matrix(backend_name);
+
+            const SizeType n_local = 10;
+            const SizeType n = n_local * comm_ptr->size();
+            auto vl = layout(*comm_ptr, n_local, n);
+            auto ml = square_matrix_layout(vl);
+
+            x_ptr->values(vl, 1.0);
+            mat_ptr->identity(ml, 2.0);
+            mat_ptr->apply(*x_ptr, *y_ptr);
+
+            Scalar y_norm = y_ptr->norm2();
+            utopia_test_assert(approxeq(y_norm, std::sqrt(n * 2 * 2), 1e-8));
+
+            // disp(y_ptr->norm2());
+        }
+
+        void petsc_wrapper() { dynamic_wrapper("petsc"); }
+
+        void trilinos_wrapper() { dynamic_wrapper("trilinos"); }
 
         void convenience_wrapper() {
             const SizeType n_local = 10;
@@ -98,12 +125,24 @@ namespace utopia {
 
                 Scalar norm_r = r->norm2();
 
-                disp(norm_r);
+                // disp(norm_r);
                 utopia_test_assert(norm_r < 1e-6);
             }
         }
 
-        void run() { UTOPIA_RUN_TEST(convenience_wrapper); }
+        void run() {
+            UTOPIA_RUN_TEST(convenience_wrapper);
+
+#ifdef WITH_PETSC
+            UTOPIA_RUN_TEST(petsc_wrapper);
+#endif
+
+#ifdef WITH_TRILINOS
+#ifdef UTOPIA_TPETRA_SIZE_TYPE
+            UTOPIA_RUN_TEST(trilinos_wrapper);
+#endif
+#endif
+        }
     };
 
     static void polymorphic() { PolymorphicTest().run(); }
