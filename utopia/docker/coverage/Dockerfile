@@ -1,7 +1,7 @@
 FROM zulianp/utopia-env-complete-edge:latest
 
 # Update to last version
-# RUN cd /utopia_cloned/utopia && git pull
+# RUN cd /utopia_cloned/utopia && git checkout development && git pull
 # RUN rm -rf /utopia_cloned/utopia/bin_cov
 
 RUN rm -rf /code
