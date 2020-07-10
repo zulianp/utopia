@@ -6,6 +6,7 @@ FROM zulianp/utopia-env-complete-edge:latest
 
 RUN rm -rf /code
 COPY . /code
+RUN ls /code
 
 # Compile
 RUN cd /code/utopia && mkdir bin_cov
