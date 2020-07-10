@@ -19,17 +19,19 @@ void example_communicator(utopia::Input &in) {
 
     std::stringstream ss;
 
+    std::string msg = "Comm sizes:";
+
+    // You can change it from the command-line by using the `-msg <Your message> option`
+    in.get("msg", msg);
+
+    ss << msg << "\n";
     ss << "World:   " << world.size() << "\n";
     ss << "Self:    " << self.size() << "\n";
     ss << "Default: " << default_comm.size() << "\n";
+    ss << "Default == World: " << (default_comm.same(world) ? "Yes" : "No") << std::endl;
 
     // Synchronized print to the standard output
     world.synched_print(ss.str(), std::cout);
-
-    std::string msg = "Hello!";
-    in.get("msg", msg);
-
-    world.synched_print(msg, std::cout);
 }
 
 // Run it with `./examples/example_communicator`
