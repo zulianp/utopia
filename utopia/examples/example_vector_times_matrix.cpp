@@ -49,7 +49,6 @@ void vector_by_matrix_mult(utopia::Input& in) {
         //     }
         // }
 
-
         // Parallel for loop.
         parallel_for(
             local_range_device(b), UTOPIA_LAMBDA(const SizeType& i) {
