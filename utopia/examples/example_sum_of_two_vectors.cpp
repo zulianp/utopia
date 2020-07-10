@@ -130,11 +130,11 @@ void sum_of_two_vectors() {
 
     // This does not work either since it is also not performed in 
     // parallel. 
-    auto j = 0;
-    for (auto i = 0; i < n_local; ++i) {
-        a_view.set(i, j);
-        j++;
-    }
+    // auto j = 0;
+    // for (auto i = 0; i < n_local; ++i) {
+    //     a_view.set(i, j);
+    //     j++;
+    // }
 
 
 
