@@ -35,17 +35,20 @@
 
 namespace utopia {
 
-    class TpetraVector : public DistributedVector<TpetraScalar, TpetraSizeType>,
-                         public Normed<TpetraScalar>,
-                         public Transformable<TpetraScalar>,
-                         public Reducible<TpetraScalar>,
-                         public Constructible<TpetraScalar, TpetraSizeType, 1>,
-                         public ElementWiseOperand<TpetraScalar>,
-                         public ElementWiseOperand<TpetraVector>,
-                         public Comparable<TpetraVector>,
-                         public BLAS1Tensor<TpetraVector>,
-                         public Tensor<TpetraVector, 1>,
-                         public Selectable<TpetraVector, 1> {
+    class TpetraVector :
+        // Dynamic polymorphic types
+        public DistributedVector<TpetraScalar, TpetraSizeType>,
+        public Normed<TpetraScalar>,
+        public Transformable<TpetraScalar>,
+        public Reducible<TpetraScalar>,
+        public ElementWiseOperand<TpetraScalar>,
+        // Static polymorphic types
+        public Constructible<TpetraVector>,
+        public ElementWiseOperand<TpetraVector>,
+        public Comparable<TpetraVector>,
+        public BLAS1Tensor<TpetraVector>,
+        public Tensor<TpetraVector, 1>,
+        public Selectable<TpetraVector, 1> {
     public:
         using SizeType = Traits<TpetraVector>::SizeType;
         using LocalSizeType = Traits<TpetraVector>::LocalSizeType;
@@ -69,9 +72,6 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
 
         using Super = utopia::Tensor<TpetraVector, 1>;
-        // using Constructible = utopia::Constructible<Scalar, SizeType, 1>;
-        // using Constructible::values;
-        // using Constructible::zeros;
 
         using Super::Super;
 
@@ -125,8 +125,11 @@ namespace utopia {
         //////////////////////////////// OVERRIDES for Constructible ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
 
-        inline void values(const Layout &l, const Scalar &value) { values(l.comm(), l.local_size(), l.size(), value); }
-        inline void zeros(const Layout &l) { values(l, 0.0); }
+        inline void values(const Layout &l, const Scalar &value) override {
+            values(l.comm(), l.local_size(), l.size(), value);
+        }
+
+        inline void zeros(const Layout &l) override { values(l, 0.0); }
 
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Reducible ////////////////////

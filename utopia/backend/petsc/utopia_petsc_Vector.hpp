@@ -34,28 +34,24 @@
 
 namespace utopia {
 
-    class PetscVector : public DistributedVector<PetscScalar, PetscInt>,
-                        public Normed<PetscScalar>,
-                        public Transformable<PetscScalar>,
-                        public Reducible<PetscScalar>,
-                        public Constructible<PetscScalar, PetscInt, 1>,
-                        public ElementWiseOperand<PetscScalar>,
-                        public ElementWiseOperand<PetscVector>,
-                        public Comparable<PetscVector>,
-                        // public Ranged<PetscVector, 1>,
-                        public BLAS1Tensor<PetscVector>,
-                        public Tensor<PetscVector, 1>,
-                        public Selectable<PetscVector, 1> {
+    class PetscVector :
+        // Dynamic polymorphic types
+        public DistributedVector<PetscScalar, PetscInt>,
+        public Normed<PetscScalar>,
+        public Transformable<PetscScalar>,
+        public Reducible<PetscScalar>,
+        public ElementWiseOperand<PetscScalar>,
+        // Static polymorphic types
+        public Constructible<PetscVector>,
+        public ElementWiseOperand<PetscVector>,
+        public Comparable<PetscVector>,
+        public BLAS1Tensor<PetscVector>,
+        public Tensor<PetscVector, 1>,
+        public Selectable<PetscVector, 1> {
     public:
         using Scalar = PetscScalar;
         using SizeType = PetscInt;
         using Super = utopia::Tensor<PetscVector, 1>;
-        // using Constructible = utopia::Constructible<PetscScalar, PetscInt, 1>;
-
-        // using Constructible::local_values;
-        // using Constructible::local_zeros;
-        // using Constructible::values;
-        // using Constructible::zeros;
         using Super::Super;
         using Layout = typename Traits<PetscVector>::Layout;
 
@@ -396,9 +392,11 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible ////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void values(const Layout &l, const Scalar &value) { values(l.comm(), l.local_size(), l.size(), value); }
+        inline void values(const Layout &l, const Scalar &value) override {
+            values(l.comm(), l.local_size(), l.size(), value);
+        }
 
-        inline void zeros(const Layout &l) { values(l, 0.0); }
+        inline void zeros(const Layout &l) override { values(l, 0.0); }
 
         //////////////////////////////////////////////////////////////////////////////////////////
 

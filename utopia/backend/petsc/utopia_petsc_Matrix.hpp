@@ -104,18 +104,16 @@ namespace utopia {
         // Dynamic polymorphic types
         public DistributedMatrix<PetscScalar, PetscInt>,
         public PolymorphicMatrix,
-        public Constructible<PetscScalar, PetscInt, 2>,
         public Normed<PetscScalar>,
         public Reducible<PetscScalar>,
         public ReducibleMatrix<PetscScalar, PetscInt>,
         public Transformable<PetscScalar>,
         // Static polymorphic types
-        // public DynamicTypeDistributedMatrix<PetscScalar, PetscInt, PetscMatrix, PetscVector>,
+        public Constructible<PetscMatrix>,
         public BLAS1Tensor<PetscMatrix>,
         public BLAS2Matrix<PetscMatrix, PetscVector>,
         public BLAS3Matrix<PetscMatrix>,
         public Comparable<PetscMatrix>,
-        // public Ranged<PetscMatrix, 2>,
         public Operator<PetscVector>,
         public Tensor<PetscMatrix, 2>,
         public Selectable<PetscMatrix, 2> {
@@ -309,7 +307,9 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible ////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void sparse(const MatrixLayout &layout, const SizeType nnz_d_block, const SizeType nnz_o_block) {
+        inline void sparse(const MatrixLayout &layout,
+                           const SizeType &nnz_d_block,
+                           const SizeType &nnz_o_block) override {
             comm_ = layout.comm();
             matij_init(comm().get(),
                        MATAIJ,
@@ -335,13 +335,13 @@ namespace utopia {
 
         void identity(const Scalar &diag = 1.0);
 
-        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
+        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override {
             comm_ = layout.comm();
             matij_init_identity(
                 comm().get(), MATAIJ, layout.local_size(0), layout.local_size(1), layout.size(0), layout.size(1), diag);
         }
 
-        inline void dense(const MatrixLayout &layout, const Scalar &val = 0.0) {
+        inline void dense(const MatrixLayout &layout, const Scalar &val = 0.0) override {
             comm_ = layout.comm();
             dense_init_values(comm().get(),
                               MATDENSE,
@@ -352,7 +352,7 @@ namespace utopia {
                               val);
         }
 
-        inline void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
+        inline void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override {
             comm_ = layout.comm();
             dense_init_identity(comm().get(),
                                 MATDENSE,
