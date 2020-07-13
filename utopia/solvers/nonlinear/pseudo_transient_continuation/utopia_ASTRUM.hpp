@@ -302,6 +302,7 @@ namespace utopia {
             }
         }
 
+    NVCC_PRIVATE
         void update_scaling_matrices(const Vector &x_old, const Vector &x_new) {
             Vector x_scaling(layout(x_old), 1.0);
 

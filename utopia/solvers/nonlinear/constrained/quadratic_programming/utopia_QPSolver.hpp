@@ -65,11 +65,10 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
 
         OperatorBasedQPSolver()
-            : VariableBoundSolverInterface<Vector>(), MatrixFreeQPSolver<Vector>(), QPSolver<Matrix, Vector>() {}
+            : MatrixFreeQPSolver<Vector>(), QPSolver<Matrix, Vector>() {}
 
         OperatorBasedQPSolver(const OperatorBasedQPSolver &other)
-            : VariableBoundSolverInterface<Vector>(other),
-              MatrixFreeQPSolver<Vector>(other),
+            : MatrixFreeQPSolver<Vector>(other),
               QPSolver<Matrix, Vector>(other) {}
 
         OperatorBasedQPSolver &operator=(const OperatorBasedQPSolver &other) {
