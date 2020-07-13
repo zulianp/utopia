@@ -54,7 +54,7 @@ namespace utopia {
 
         const int n = 9;
         BlasMatrixd A;
-        A.zeros({n, n});
+        A.dense(serial_layout(n, n), 0.0);
         std::vector<SizeType> is{0, 1, 2, 3, 4, 5, 6, 7, 8};
 
         {
@@ -145,7 +145,7 @@ namespace utopia {
         }
 
         BlasMatrixd B;
-        B.zeros({n, n});
+        B.dense(serial_layout(n, n), 0.0);
         {
             Write<BlasMatrixd> w_B(B);
             B.set_matrix(is, is, {+6.944444e+05, 0, 0, 0, 0, 0, 0, 0, 0, 0, +2.387253e+06, 0, 0, 0, 0, 0, 0, 0, 0, 0,

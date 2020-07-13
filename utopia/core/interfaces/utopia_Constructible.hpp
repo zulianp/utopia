@@ -2,90 +2,66 @@
 #define UTOPIA_CONSTRUCTIBLE_HPP
 
 #include "utopia_Size.hpp"
+#include "utopia_Traits.hpp"
 
 namespace utopia {
-    template <typename Scalar_, typename SizeType_, int Order_>
+    template <class Tensor, int Order_ = Traits<Tensor>::Order>
     class Constructible {};
 
-    template <typename Scalar_, typename SizeType_>
+    template <class Tensor>
     class SparseConstructible {
     public:
-        using Scalar = Scalar_;
-        using SizeType = SizeType_;
+        using Traits_ = utopia::Traits<Tensor>;
+        using Scalar = typename Traits_::Scalar;
+        using SizeType = typename Traits_::SizeType;
+        using LocalSizeType = typename Traits_::LocalSizeType;
+        using MatrixLayout = typename Traits_::MatrixLayout;
 
         virtual ~SparseConstructible() = default;
 
-        virtual void sparse(const Size &s, const SizeType & /*nnz*/) = 0;
-        virtual void local_sparse(const Size &s, const SizeType & /*nnz*/) = 0;
-
-        virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
-        virtual void local_identity(const Size &s, const Scalar &diag = 1.0) { identity(s, diag); }
+        virtual void sparse(const MatrixLayout &layout, const SizeType &nnz_d_block, const SizeType &nnz_o_block) = 0;
+        virtual void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) = 0;
     };
 
-    template <typename Scalar_, typename SizeType_>
+    template <class Tensor>
     class DenseConstructible {
     public:
-        using Scalar = Scalar_;
-        using SizeType = SizeType_;
+        using Traits_ = utopia::Traits<Tensor>;
+        using Scalar = typename Traits_::Scalar;
+        using SizeType = typename Traits_::SizeType;
+        using LocalSizeType = typename Traits_::LocalSizeType;
+        using MatrixLayout = typename Traits_::MatrixLayout;
 
         virtual ~DenseConstructible() = default;
 
-        virtual void zeros(const Size &s) { values(s, 0.0); }
-        virtual void values(const Size &s, const Scalar &val) = 0;
-        virtual void dense_identity(const Size &s, const Scalar &diag = 1.0) = 0;
-
-        virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
-        virtual void local_values(const Size &s, const Scalar &val) { values(s, val); }
-        virtual void local_dense_identity(const Size &s, const Scalar &diag = 1.0) { dense_identity(s, diag); }
+        virtual void dense(const MatrixLayout &layout, const Scalar &val = 0.0) = 0;
+        virtual void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0) = 0;
     };
 
-    template <typename Scalar_, typename SizeType_>
-    class Constructible<Scalar_, SizeType_, 2> : public SparseConstructible<Scalar_, SizeType_>,
-                                                 public DenseConstructible<Scalar_, SizeType_> {
+    template <class Tensor>
+    class Constructible<Tensor, 2> : public SparseConstructible<Tensor>, public DenseConstructible<Tensor> {
     public:
-        using Scalar = Scalar_;
-        using SizeType = SizeType_;
+        using Traits_ = utopia::Traits<Tensor>;
+        using Scalar = typename Traits_::Scalar;
+        using SizeType = typename Traits_::SizeType;
+        using LocalSizeType = typename Traits_::LocalSizeType;
+        using MatrixLayout = typename Traits_::MatrixLayout;
 
         ~Constructible() override = default;
-        // virtual void identity(const Size &s, const Scalar &diag = 1.0) = 0;
-
-        /// Specialize for sparse matrices
-        void sparse(const Size &s, const SizeType & /*nnz*/) override { zeros(s); }
-
-        /// Specialize for sparse matrices
-        void local_sparse(const Size &s, const SizeType & /*nnz*/) override { local_zeros(s); }
-
-        void local_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
-
-        void zeros(const Size &s) override { this->values(s, 0.0); }
-        // virtual void values(const Size &s, const Scalar &val) = 0;
-        void dense_identity(const Size &s, const Scalar &diag = 1.0) override { this->identity(s, diag); }
-
-        void local_zeros(const Size &s) override { local_values(s, 0.0); }
-        void local_values(const Size &s, const Scalar &val) override { this->values(s, val); }
-        void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override { dense_identity(s, diag); }
     };
 
-    template <typename Scalar_, typename SizeType_>
-    class Constructible<Scalar_, SizeType_, 1> {
+    template <class Tensor>
+    class Constructible<Tensor, 1> {
     public:
-        using Scalar = Scalar_;
-        using SizeType = SizeType_;
+        using Traits_ = utopia::Traits<Tensor>;
+        using Scalar = typename Traits_::Scalar;
+        using SizeType = typename Traits_::SizeType;
+        using LocalSizeType = typename Traits_::LocalSizeType;
+        using Layout = typename Traits_::Layout;
 
         virtual ~Constructible() = default;
-
-        virtual void zeros(const SizeType &s) { values(s, 0.0); }
-        virtual void values(const SizeType &s, const Scalar &val) = 0;
-
-        virtual void local_zeros(const SizeType &s) { local_values(s, 0.0); }
-        virtual void local_values(const SizeType &s, const Scalar &val) { values(s, val); }
-
-        // comodity
-        virtual void zeros(const Size &s) { values(s, 0.0); }
-        virtual void values(const Size &s, const Scalar &val) { values(s.get(0), val); }
-
-        virtual void local_zeros(const Size &s) { local_values(s, 0.0); }
-        virtual void local_values(const Size &s, const Scalar &val) { local_values(s.get(0), val); }
+        virtual void values(const Layout &l, const Scalar &value) = 0;
+        virtual void zeros(const Layout &l) = 0;
     };
 }  // namespace utopia
 

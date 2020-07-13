@@ -5,7 +5,9 @@
 #include <iostream>
 #include "utopia_BLAS_Operands.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_Communicator.hpp"
 #include "utopia_Expression.hpp"
+#include "utopia_Layout.hpp"
 #include "utopia_Normed.hpp"
 
 namespace utopia {
@@ -84,6 +86,11 @@ namespace utopia {
             value_ = scalar_cast<Scalar>(expr.value_);
         }
 
+        template <class Any>
+        inline void zeros(Any &&) {
+            value_ = 0.0;
+        }
+
         inline void construct(const Number<Scalar> &expr) { value_ = expr.value_; }
 
         inline void assign(const Number<Scalar> &expr) { value_ = expr.value_; }
@@ -125,6 +132,11 @@ namespace utopia {
     template <typename T>
     Size size(const Number<T> &) {
         return {1};
+    }
+
+    template <typename T>
+    inline Layout<SelfCommunicator, 1, int> layout(const Number<T> &) {
+        return Layout<SelfCommunicator, 1, int>(SelfCommunicator(), 1, 1);
     }
 
     template <typename Scalar_>

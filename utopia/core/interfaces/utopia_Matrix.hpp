@@ -67,27 +67,6 @@ namespace utopia {
         inline Range row_range() const { return Range(0, this->rows()); }
         inline Range col_range() const { return Range(0, this->cols()); }
 
-        // inline void row_layout(Layout<SizeType, 1> &l) const
-        // {
-        // 	l.local_size(0) = local_rows();
-        // 	l.global_size(0) = this->rows();
-        // }
-
-        // inline void col_layout(Layout<SizeType, 1> &l) const
-        // {
-        // 	l.local_size(0) = local_cols();
-        // 	l.global_size(0) = this->cols();
-        // }
-
-        // inline void layout(Layout<SizeType, 2> &l) const
-        // {
-        // 	l.local_size(0) = local_rows();
-        // 	l.local_size(1) = local_cols();
-
-        // 	l.global_size(0) = this->rows();
-        // 	l.global_size(1) = this->cols();
-        // }
-
         inline SizeType local_rows() const { return this->rows(); }
         inline SizeType local_cols() const { return this->cols(); }
 
@@ -126,12 +105,7 @@ namespace utopia {
 
     // parallel types, collective operations
     template <typename Scalar_, typename SizeType_>
-    class DistributedMatrix : public MatrixBase<Scalar_, SizeType_>,
-                              // public BLAS1Tensor<DistributedMatrix<Scalar_, SizeType_>>,
-                              // public BLAS2Matrix<DistributedMatrix<Scalar_, SizeType_>,
-                              //                    DistributedVector<Scalar_, SizeType_>>,
-                              // public BLAS3Matrix<DistributedMatrix<Scalar_, SizeType_>>,
-                              public virtual DistributedObject {
+    class DistributedMatrix : public MatrixBase<Scalar_, SizeType_>, public virtual DistributedObject {
     public:
         using Scalar = Scalar_;
         using SizeType = SizeType_;
@@ -145,27 +119,6 @@ namespace utopia {
 
         virtual SizeType local_rows() const = 0;
         virtual SizeType local_cols() const = 0;
-
-        // virtual void row_layout(Layout<SizeType, 1> &l) const
-        // {
-        // 	l.local_size(0) = local_rows();
-        // 	l.global_size(0) = this->rows();
-        // }
-
-        // virtual void col_layout(Layout<SizeType, 1> &l) const
-        // {
-        // 	l.local_size(0) = local_cols();
-        // 	l.global_size(0) = this->cols();
-        // }
-
-        // virtual void layout(Layout<SizeType, 2> &l) const
-        // {
-        // 	l.local_size(0) = local_rows();
-        // 	l.local_size(1) = local_cols();
-
-        // 	l.global_size(0) = this->rows();
-        // 	l.global_size(1) = this->cols();
-        // }
 
         virtual Size local_size() const { return {local_rows(), local_cols()}; }
 

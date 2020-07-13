@@ -62,7 +62,7 @@ namespace utopia {
         inline static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> std::vector<USerialMatrix> {
             const auto &s = expr.space();
             const auto &mesh = s.mesh();
-            const auto &elem_ptr = mesh.elem(ctx.current_element());
+            const auto &elem_ptr = utopia::elem_ptr(mesh, ctx.current_element());
             const auto &dof_map = s.dof_map();
             const auto n_entries = expr.rows() * expr.cols();
 

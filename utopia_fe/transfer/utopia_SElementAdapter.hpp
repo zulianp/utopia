@@ -39,7 +39,7 @@ namespace utopia {
               face_id_(nullptr) {
             assert(element < fe.n_elem());
 
-            libMesh::Elem *e = fe.elem(element);
+            libMesh::Elem *e = utopia::elem_ptr(fe, element);
 
             const int dim = fe.mesh_dimension();
 
@@ -97,12 +97,12 @@ namespace utopia {
 
             assert(element_ < fe_->n_local_elem());
 
-            return fe_->elem(element_);
+            return utopia::elem_ptr(*fe_, element_);
         }
 
         const libMesh::Elem *get() const {
             assert(fe_);
-            return fe_->elem(element_);
+            return utopia::elem_ptr(*fe_, element_);
         }
 
         inline const libMesh::MeshBase &space() const {

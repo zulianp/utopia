@@ -26,9 +26,12 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using SizeType = SizeType_;
+        using LocalSizeType = SizeType_;
         using Communicator = utopia::Communicator;
         using Layout = utopia::Layout<Communicator, 1, SizeType>;
         using MatrixLayout = utopia::Layout<Communicator, 2, SizeType>;
+
+        static const int Order = 1;
     };
 
     // parallel types, collective operations
@@ -37,16 +40,23 @@ namespace utopia {
                            public Normed<Scalar_>,
                            public Transformable<Scalar_>,
                            public Reducible<Scalar_>,
-                           public Constructible<Scalar_, SizeType_, 1>,
                            public ElementWiseOperand<Scalar_>,
+                           public Constructible<AbstractVector<Scalar_, SizeType_>>,
                            public ElementWiseOperand<AbstractVector<Scalar_, SizeType_>>,
                            public Comparable<AbstractVector<Scalar_, SizeType_>>,
                            public BLAS1Tensor<AbstractVector<Scalar_, SizeType_>> {
     public:
         using Scalar = Scalar_;
         using SizeType = SizeType_;
+        using Layout = utopia::Layout<Communicator, 1, SizeType_>;
+
         ~AbstractVector() override = default;
     };
+
+    template <typename Scalar, typename SizeType>
+    void disp(const AbstractVector<Scalar, SizeType> &v) {
+        v.describe();
+    }
 
     template <class Vector>
     class Wrapper<Vector, 1>
@@ -54,8 +64,11 @@ namespace utopia {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+
         using AbstractVector =
             utopia::AbstractVector<typename Traits<Vector>::Scalar, typename Traits<Vector>::SizeType>;
+
+        using Layout = typename AbstractVector::Layout;
 
         template <class... Args>
         Wrapper(Args &&... args) : impl_(std::make_shared<Vector>(std::forward<Args>(args)...)) {}
@@ -213,18 +226,8 @@ namespace utopia {
 
         inline void transform(const Reciprocal<Scalar> &op) override { return impl_->transform(op); }
 
-        inline void zeros(const SizeType &s) override { impl_->zeros(s); }
-        inline void values(const SizeType &s, const Scalar &val) override { impl_->values(s, val); }
-
-        inline void local_zeros(const SizeType &s) override { impl_->local_zeros(s); }
-        inline void local_values(const SizeType &s, const Scalar &val) override { impl_->local_values(s, val); }
-
-        // comodity
-        inline void zeros(const Size &s) override { impl_->zeros(s); }
-        inline void values(const Size &s, const Scalar &val) override { impl_->values(s, val); }
-
-        inline void local_zeros(const Size &s) override { impl_->local_values(s, 0.0); }
-        inline void local_values(const Size &s, const Scalar &val) override { impl_->local_values(s, val); }
+        inline void values(const Layout &l, const Scalar &value) override { impl_->values(l, value); }
+        inline void zeros(const Layout &l) override { impl_->zeros(l); }
 
         Vector &get() { return *impl_; }
 

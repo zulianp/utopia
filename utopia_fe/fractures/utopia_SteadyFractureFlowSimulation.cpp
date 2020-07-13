@@ -307,12 +307,12 @@ namespace utopia {
                                                  make_ref(D),
                                                  nullptr});
 
-        UVector z = local_zeros(local_size(B).get(0));
+        UVector z(row_layout(B), 0.0);
         UVector rhs = blocks(rhs_m, rhs_f, z);
 
-        x_m = local_zeros(local_size(rhs_m));
-        x_f = local_zeros(local_size(rhs_f));
-        lagr = local_zeros(local_size(z));
+        x_m.zeros(layout(rhs_m));
+        x_f.zeros(layout(rhs_f));
+        lagr.zeros(layout(z));
 
         UVector sol = blocks(x_m, x_f, lagr);
 
@@ -444,14 +444,14 @@ namespace utopia {
         L2TransferOperator t(make_ref(B), make_ref(D));
 
         if (empty(x_f)) {
-            x_f = local_zeros(local_size(rhs_f));
+            x_f.zeros(layout(rhs_f));
         }
 
-        UVector lagr_m = local_zeros(local_size(rhs_m));
-        UVector lagr_s = local_zeros(local_size(rhs_f));
+        UVector lagr_m(layout(rhs_m), 0.0);
+        UVector lagr_s(layout(rhs_f), 0.0);
 
         UVector rhs_lagr_m, rhs_lagr_s;
-        UVector delta_lagr = local_zeros(local_size(rhs_f));
+        UVector delta_lagr(layout(rhs_f), 0.0);
 
         double dumping = 1.;
 

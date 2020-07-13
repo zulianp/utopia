@@ -232,8 +232,8 @@ namespace utopia {
             const int src_index = master.element();
             const int dest_index = slave.element();
 
-            auto &master_el = *master_mesh.elem(src_index);
-            auto &slave_el = *slave_mesh.elem(dest_index);
+            auto &master_el = *utopia::elem_ptr(master_mesh, src_index);
+            auto &slave_el = *utopia::elem_ptr(slave_mesh, dest_index);
 
             return pg_assembler_.assemble(master_el,
                                           master_type,

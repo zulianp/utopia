@@ -267,14 +267,69 @@ namespace utopia {
         return true;
     }
 
-    inline libMesh::MeshTools::BoundingBox bounding_box(const libMesh::MeshBase &mesh) {
-#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
-        libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(mesh);
+#if LIBMESH_VERSION_LESS_THAN(1, 6, 0)
+    using LMBoundingBox = libMesh::MeshTools::BoundingBox;
 #else
-        libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
+    using LMBoundingBox = libMesh::BoundingBox;
 #endif
 
+    inline LMBoundingBox bounding_box(const libMesh::MeshBase &mesh) {
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+        LMBoundingBox bb = libMesh::MeshTools::bounding_box(mesh);
+#else
+        LMBoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
+#endif
         return bb;
+    }
+
+    inline const libMesh::Elem *elem_ptr(const libMesh::MeshBase &mesh, const libMesh::dof_id_type &idx) {
+#if LIBMESH_VERSION_LESS_THAN(1, 6, 0)
+        return mesh.elem(idx);
+#else
+        return mesh.elem_ptr(idx);
+#endif
+    }
+
+    inline libMesh::Elem *elem_ptr(libMesh::MeshBase &mesh, const libMesh::dof_id_type &idx) {
+#if LIBMESH_VERSION_LESS_THAN(1, 6, 0)
+        return mesh.elem(idx);
+#else
+        return mesh.elem_ptr(idx);
+#endif
+    }
+
+    inline const libMesh::Node *node_ptr(const libMesh::MeshBase &mesh, const libMesh::dof_id_type &idx) {
+#if LIBMESH_VERSION_LESS_THAN(1, 6, 0)
+        return &mesh.node(idx);
+#else
+        return mesh.node_ptr(idx);
+#endif
+    }
+
+    inline libMesh::Node *node_ptr(libMesh::MeshBase &mesh, const libMesh::dof_id_type &idx) {
+#if LIBMESH_VERSION_LESS_THAN(1, 6, 0)
+        return &mesh.node(idx);
+#else
+        return mesh.node_ptr(idx);
+#endif
+    }
+
+    UTOPIA_DEPRECATED_MSG("This method should be replaced. multiple ids have to be handled.")
+    inline libMesh::boundary_id_type boundary_id(const libMesh::BoundaryInfo &b_info,
+                                                 const libMesh::Elem *elem,
+                                                 const libMesh::dof_id_type &idx) {
+#if LIBMESH_VERSION_LESS_THAN(1, 6, 0)
+        return b_info.boundary_id(elem, idx);
+#else
+        std::vector<libMesh::boundary_id_type> ids;
+        b_info.boundary_ids(elem, idx, ids);
+
+        if (ids.empty()) {
+            return -1;
+        } else {
+            return ids[0];
+        }
+#endif
     }
 }  // namespace utopia
 

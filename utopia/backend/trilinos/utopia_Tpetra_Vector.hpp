@@ -35,17 +35,20 @@
 
 namespace utopia {
 
-    class TpetraVector : public DistributedVector<TpetraScalar, TpetraSizeType>,
-                         public Normed<TpetraScalar>,
-                         public Transformable<TpetraScalar>,
-                         public Reducible<TpetraScalar>,
-                         public Constructible<TpetraScalar, TpetraSizeType, 1>,
-                         public ElementWiseOperand<TpetraScalar>,
-                         public ElementWiseOperand<TpetraVector>,
-                         public Comparable<TpetraVector>,
-                         public BLAS1Tensor<TpetraVector>,
-                         public Tensor<TpetraVector, 1>,
-                         public Selectable<TpetraVector, 1> {
+    class TpetraVector :
+        // Dynamic polymorphic types
+        public DistributedVector<TpetraScalar, TpetraSizeType>,
+        public Normed<TpetraScalar>,
+        public Transformable<TpetraScalar>,
+        public Reducible<TpetraScalar>,
+        public ElementWiseOperand<TpetraScalar>,
+        // Static polymorphic types
+        public Constructible<TpetraVector>,
+        public ElementWiseOperand<TpetraVector>,
+        public Comparable<TpetraVector>,
+        public BLAS1Tensor<TpetraVector>,
+        public Tensor<TpetraVector, 1>,
+        public Selectable<TpetraVector, 1> {
     public:
         using SizeType = Traits<TpetraVector>::SizeType;
         using LocalSizeType = Traits<TpetraVector>::LocalSizeType;
@@ -69,9 +72,6 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
 
         using Super = utopia::Tensor<TpetraVector, 1>;
-        using Constructible = utopia::Constructible<Scalar, SizeType, 1>;
-        using Constructible::values;
-        using Constructible::zeros;
 
         using Super::Super;
 
@@ -125,21 +125,18 @@ namespace utopia {
         //////////////////////////////// OVERRIDES for Constructible ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
 
-        inline void values(const Layout &l, const Scalar &value) { values(l.comm(), l.local_size(), l.size(), value); }
+        inline void values(const Layout &l, const Scalar &value) override {
+            values(l.comm(), l.local_size(), l.size(), value);
+        }
 
-        inline void zeros(const Layout &l) { values(l, 0.0); }
-
-        void values(const SizeType &s, const Scalar &val) override;
-        void local_values(const SizeType &s, const Scalar &val) override;
+        inline void zeros(const Layout &l) override { values(l, 0.0); }
 
         /////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////// OVERRIDES for Reducible ////////////////////
         /////////////////////////////////////////////////////////////////////////////////
 
         inline Scalar reduce(const Plus &) const override { return sum(); }
-
         inline Scalar reduce(const Min &) const override { return min(); }
-
         inline Scalar reduce(const Max &) const override { return max(); }
 
         Scalar sum() const override;
@@ -192,35 +189,6 @@ namespace utopia {
         //////////////////////////////////////////
         // API functions
         //////////////////////////////////////////
-
-        void zeros(const TrilinosCommunicator &comm, const SizeType &n_local, const SizeType &n_global) {
-            values(comm.get(), n_local, n_global, 0.0);
-        }
-
-        void values(const TrilinosCommunicator &comm,
-                    const SizeType &n_local,
-                    const SizeType &n_global,
-                    const Scalar &value) {
-            values(comm.get(), n_local, n_global, value);
-        }
-
-        void values(const RCPCommType &comm, const SizeType &n_local, const SizeType &n_global, const Scalar &value);
-
-        inline void init(const RCPMapType &map) {
-            UTOPIA_REPORT_ALLOC("TpetraVector::init");
-            vec_.reset(new VectorType(map));
-        }
-
-        void ghosted(const TpetraVector::SizeType &local_size,
-                     const TpetraVector::SizeType &global_size,
-                     const std::vector<SizeType> &ghost_index) {
-            ghosted(comm().get(), local_size, global_size, ghost_index);
-        }
-
-        void ghosted(const RCPCommType &comm,
-                     const TpetraVector::SizeType &local_size,
-                     const TpetraVector::SizeType &global_size,
-                     const std::vector<SizeType> &ghost_index);
 
         inline void ghosted(const Layout &l, const std::vector<SizeType> &ghost_index) {
             comm_ = l.comm();
@@ -509,6 +477,37 @@ namespace utopia {
         }
 
         inline void free_view() { view_ptr_ = nullptr; }
+
+        void zeros(const TrilinosCommunicator &comm, const SizeType &n_local, const SizeType &n_global) {
+            values(comm.get(), n_local, n_global, 0.0);
+        }
+
+        void values(const TrilinosCommunicator &comm,
+                    const SizeType &n_local,
+                    const SizeType &n_global,
+                    const Scalar &value) {
+            values(comm.get(), n_local, n_global, value);
+        }
+
+        void values(const RCPCommType &comm, const SizeType &n_local, const SizeType &n_global, const Scalar &value);
+
+        void ghosted(const TpetraVector::SizeType &local_size,
+                     const TpetraVector::SizeType &global_size,
+                     const std::vector<SizeType> &ghost_index) {
+            ghosted(comm().get(), local_size, global_size, ghost_index);
+        }
+
+    public:
+        void ghosted(const RCPCommType &comm,
+                     const TpetraVector::SizeType &local_size,
+                     const TpetraVector::SizeType &global_size,
+                     const std::vector<SizeType> &ghost_index);
+
+        inline void init(const RCPMapType &map) {
+            UTOPIA_REPORT_ALLOC("TpetraVector::init");
+            comm_ = map->getComm();
+            vec_.reset(new VectorType(map));
+        }
     };
 }  // namespace utopia
 

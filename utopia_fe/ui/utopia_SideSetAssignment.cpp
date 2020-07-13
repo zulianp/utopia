@@ -91,7 +91,7 @@ namespace utopia {
                         continue;
                     }
 
-                    int side_set = bi.boundary_id(elem_ptr, i);
+                    int side_set = utopia::boundary_id(bi, elem_ptr, i);
 
                     auto side_ptr = elem_ptr->build_side_ptr(i);
 
@@ -113,7 +113,7 @@ namespace utopia {
                                 }
 
                                 bi.add_side(elem_ptr, i, n.side_set);
-                                assert(bi.boundary_id(elem_ptr, i) == n.side_set);
+                                assert(utopia::boundary_id(bi, elem_ptr, i) == n.side_set);
 
                                 std::cout << "changed " << side_set << " to " << n.side_set << std::endl;
                             }

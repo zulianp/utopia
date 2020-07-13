@@ -54,7 +54,9 @@ namespace utopia {
 
         static const Elem &elem(const FunctionSpace &space, const ElementIter &e_it) { return **e_it; }
 
-        static const Elem &elem(const FunctionSpace &space, const Integer idx) { return *space.mesh().elem(idx); }
+        static const Elem &elem(const FunctionSpace &space, const Integer idx) {
+            return *utopia::elem_ptr(space.mesh(), idx);
+        }
 
         Integer tag(const FunctionSpace &space, const ElementIter &e_it) {
             // return -1 for auto tag mode
@@ -118,7 +120,7 @@ namespace utopia {
         template <class Bound>
         static void fill_bound(const FunctionSpace &space, const Integer handle, Bound &bound, const double blow_up) {
             const auto &mesh = space.mesh();
-            const auto &e = *mesh.elem(handle);
+            const auto &e = *utopia::elem_ptr(mesh, handle);
             const auto dim = mesh.spatial_dimension();
 
             if (dim > mesh.mesh_dimension()) {
@@ -179,7 +181,7 @@ namespace utopia {
                 const libMesh::dof_id_type local_element_id = *it;
                 const libMesh::dof_id_type global_element_id = space.handle_to_element_id(local_element_id);
 
-                const libMesh::Elem *elem = mesh.elem(global_element_id);
+                const libMesh::Elem *elem = utopia::elem_ptr(mesh, global_element_id);
 
                 for (libMesh::dof_id_type j = 0; j != elem->n_nodes(); ++j) {
                     nodeIds.insert(elem->node_id(j));
@@ -206,7 +208,7 @@ namespace utopia {
             os << n_elements;
 
             for (auto node_id : nodeIds) {
-                const libMesh::Point &p = mesh.node(node_id);
+                const libMesh::Point &p = *utopia::node_ptr(mesh, node_id);
 
                 for (int i = 0; i < LIBMESH_DIM; ++i) {
                     // WRITE 3
@@ -222,7 +224,7 @@ namespace utopia {
                 const libMesh::dof_id_type local_element_id = *it;
                 const libMesh::dof_id_type global_element_id = space.handle_to_element_id(local_element_id);
 
-                const libMesh::Elem *elem = mesh.elem(global_element_id);
+                const libMesh::Elem *elem = utopia::elem_ptr(mesh, global_element_id);
 
                 const int e_n_nodes = elem->n_nodes();
 
@@ -328,7 +330,7 @@ namespace utopia {
                     // READ 8
                     is >> index;
 
-                    elem->set_node(ii) = &mesh_ptr->node(index);
+                    elem->set_node(ii) = utopia::node_ptr(*mesh_ptr, index);
                 }
 
                 mesh_ptr->add_elem(elem);
