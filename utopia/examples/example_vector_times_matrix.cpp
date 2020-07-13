@@ -1,9 +1,9 @@
 #include <iostream>
 #include <sstream>
 #include "utopia.hpp"
-// In this simple example we solve the following equation A x = b.
+// In this simple example we solve the following equation Ab = x.
 // A in this case is a simple Identity matrix = 1.
-// So in the end we should have that x = b.
+// So in the end we should have that b = x.
 
 template <class Matrix, class Vector>
 void vector_by_matrix_mult(utopia::Input& in) {
@@ -11,7 +11,7 @@ void vector_by_matrix_mult(utopia::Input& in) {
     using Comm = typename Traits<Vector>::Communicator;
     using SizeType = typename Traits<Vector>::SizeType;
 
-    // Instatiate the Matrix and vectors.
+    // Initialize the Matrix and vectors.
     Matrix A;
     Vector b, x;
 
@@ -20,15 +20,14 @@ void vector_by_matrix_mult(utopia::Input& in) {
 
     // Set default values.
     SizeType n_local = 10;
-    auto value = 2;
+    auto n_value = 2;
 
     // Give different values to n_value and n_local from command line.
     in.get("n_local", n_local);
-    in.get("value", value);
+    in.get("n_value", n_value);
 
     // Setup the layout of the vectors and matrices.
-    // This allows for the data to be distributed
-    // in a certain manner and set the
+    // This allows for everything to communicate properly and set the
     // size of the matrix and vectors to be the same.
     SizeType n_global = n_local * comm.size();
     auto l = layout(comm, n_local, n_global);
@@ -43,7 +42,7 @@ void vector_by_matrix_mult(utopia::Input& in) {
         // 0 = r.begin() till index r.end() = in this default case 9.
         // Set the vector to have zeros everywhere except at the index 0
         // and index 9.
-        // This loop does not take advantage of parallel and it is not hardware portable.
+        // This loop does not take advantage of parallel.
         // for (SizeType i = r.begin(); i != r.end(); ++i) {
         //     if (i > 0 && i < n_local - 1) {
         //         b.set(i, 0);
@@ -54,7 +53,7 @@ void vector_by_matrix_mult(utopia::Input& in) {
         parallel_for(
             local_range_device(b), UTOPIA_LAMBDA(const SizeType& i) {
                 if (i == 0 || i == n_local - 1) {
-                    b_view.set(i, value);
+                    b_view.set(i, n_value);
                 }
             });
     }
@@ -81,8 +80,6 @@ void vector_by_matrix_mult(utopia::Input& in) {
     disp(x);
 }
 
-// Run it with `./examples/example_vector_times_matrix`
-// or `./examples/example_vector_times_matrix -n_local 100 -value 23`
 int main(const int argc, char* argv[]) {
     using namespace utopia;
 
