@@ -71,7 +71,7 @@ void example_trivial_linear_system(utopia::Input& in) {
     //     // For parallel matrices the non-local data is communicated to the owner processes.
     //     Write<Matrix> w(A);
     //
-    //     // r in a serial 3X3 matrix has range (0, 3], the row_range describes which local rows the matrix owns.
+    //     // r in a serial 3X3 matrix has range [0, 3), the row_range describes which local rows the matrix owns.
     //     auto r = row_range(A);
     //     for (SizeType i = r.begin(); i != r.end(); ++i) {
     //         A.set(i, i, 1);
