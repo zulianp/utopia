@@ -73,11 +73,11 @@ namespace utopia {
             }
 
             if (empty(sol_m)) {
-                sol_m = local_zeros(local_size(rhs_m));
+                sol_m.zeros(layout(rhs_m));
             }
 
             if (empty(sol_s)) {
-                sol_s = local_zeros(local_size(rhs_s));
+                sol_s.zeros(layout(rhs_s));
             }
 
             if (!apply_T_transpose(rhs_s, rhs)) return false;
@@ -103,7 +103,7 @@ namespace utopia {
 
             assert(!has_nan_or_inf(temp));
 
-            x = local_zeros(local_size(temp));
+            x.zeros(layout(temp));
             bool ok = coupling_op_solver_->apply(temp, x);
 
             assert(!has_nan_or_inf(x));
@@ -113,7 +113,7 @@ namespace utopia {
         bool apply_T_transpose(const Vector &rhs, Vector &x) {
             assert(!has_nan_or_inf(rhs));
 
-            temp = local_zeros(local_size(rhs));
+            temp.zeros(layout(rhs));
             if (!coupling_op_solver_->apply(rhs, temp)) {
                 return false;
             }

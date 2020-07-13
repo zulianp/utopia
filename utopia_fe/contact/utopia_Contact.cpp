@@ -39,7 +39,7 @@ namespace utopia {
         if (use_biorthogonal_basis) {
             UVector d = sum(coupling_, 1);
 
-            inv_mass_vector_ = local_zeros(local_size(d));
+            inv_mass_vector_.zeros(layout(d));
 
             {
                 Write<UVector> w_(inv_mass_vector_);

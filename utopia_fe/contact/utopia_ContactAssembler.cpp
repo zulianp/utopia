@@ -96,7 +96,7 @@ namespace utopia {
 
     void ContactTensors::finalize(const SizeType spatial_dim, const bool normalize) {
         zero_rows_to_identity(D, 1e-13);
-        gap = local_zeros(local_size(weighted_gap));
+        gap.zeros(layout(weighted_gap));
 
         if (!empty(Q)) {
             UVector d_inv = diag(D);

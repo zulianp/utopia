@@ -34,7 +34,7 @@ namespace utopia {
             : fe_(&fe), element_(element), element_handle_(element_handle), tag_(tag), dof_map_(nullptr) {
             assert(element < fe.n_elem());
 
-            libMesh::Elem *e = fe.elem(element);
+            libMesh::Elem *e = utopia::elem_ptr(fe, element);
 
             bool is_s = is_shell();
 
@@ -42,12 +42,12 @@ namespace utopia {
 
             if (is_s) {
                 compute_side_normal(Dimension, *e, n);
-                assert(n.size() > 0.99);
+                // assert(n.size() > 0.99);
             }
 
             std::array<double, Dimension> p_a;
             for (libMesh::dof_id_type i = 0; i < e->n_nodes(); ++i) {
-                const libMesh::Point &p = fe.node(e->node_id(i));
+                const libMesh::Point &p = *utopia::node_ptr(fe, e->node_id(i));
                 for (int d = 0; d < Dimension; ++d) {
                     p_a[d] = p(d);
                 }
@@ -86,12 +86,12 @@ namespace utopia {
         libMesh::Elem *get() {
             assert(fe_);
             assert(element_ < fe_->n_local_elem());
-            return fe_->elem(element_);
+            return utopia::elem_ptr(*fe_, element_);
         }
 
         const libMesh::Elem *get() const {
             assert(fe_);
-            return fe_->elem(element_);
+            return utopia::elem_ptr(*fe_, element_);
         }
 
         inline const libMesh::MeshBase &space() const {
@@ -125,7 +125,7 @@ namespace utopia {
         bool is_shell() const {
             assert(fe_);
 
-            libMesh::Elem &e = *fe_->elem(element_);
+            const libMesh::Elem &e = *get();
 
             if (Dimension == 3) {
                 return is_tri(e.type()) || is_quad(e.type());

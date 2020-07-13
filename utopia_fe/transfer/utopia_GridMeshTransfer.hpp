@@ -98,7 +98,7 @@ namespace utopia {
 
                 for (auto ind : index) {
                     auto temp_mesh = Voxel2Element::build(to_mesh->comm(), from_mesh, ind);
-                    auto grid_elem = temp_mesh->elem(0);
+                    auto grid_elem = utopia::elem_ptr(*temp_mesh, 0);
 
                     // temp_mesh->prepare_for_use();
                     // plot_mesh(*temp_mesh, "grid/m" + std::to_string(ind));

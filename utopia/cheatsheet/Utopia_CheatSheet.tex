@@ -1,0 +1,83 @@
+\documentclass[a4paper,landscape,columns=3]{cheatsheet} %https://github.com/ACHinrichs/LaTeX-templates/blob/master/cheatsheet/cheatsheet.pdf
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[]{graphicx}
+\usepackage{algpseudocode}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage[algo2e,algoruled]{algorithm2e}
+
+\title{Utopia cheat-sheet}
+
+\definecolor{cppred}{rgb}{0.6,0,0} % for strings
+\definecolor{cppping}{rgb}{1,0.7,0.7} % for numbers
+\definecolor{cppgreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{cpppurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{cppdocblue}{rgb}{0.25,0.35,0.75} % cppdoc
+
+\lstset
+{
+	language=C++,
+	basicstyle=\scriptsize\ttfamily,
+	numberstyle=\tiny\color{cpppink},
+	keywordstyle=\color{cpppurple}\bfseries,
+	stringstyle=\color{cppred},
+	commentstyle=\color{cppgreen},
+}
+
+\newcommand{\cppdouble}{{\color{cpppurple} double}}
+\newcommand{\cppint}{{\color{cpppurple} int}}
+\newcommand{\cppif}{{\color{cpppurple} if}}
+\newcommand{\cppwhile}{{\color{cpppurple} while}}
+\newcommand{\cppelse}{{\color{cpppurple} else}}
+
+
+\begin{document}
+% \maketitle
+\href{https://bitbucket.org/zulianp/utopia}{\includegraphics[width=0.5\linewidth]{../../utopia_logo.pdf}}
+\section{Installation}
+\begin{enumerate}\footnotesize
+\item Download with \emph{git clone --recurse-submodules https://bitbucket.org/zulianp/utopia.git}
+\end{enumerate}
+
+
+\section{Basics}
+\subsection{Backends}
+
+\subsection{Traits}
+
+\section{Communicator}
+\begin{itemize}
+	\item
+Get the default serial communicator
+\begin{lstlisting}
+auto comm = Communicator::self();
+\end{lstlisting}
+\end{itemize}
+
+\section{Layouts}
+
+\section{Tensor}
+\subsection{Vector}
+\subsection{Matrix}
+
+
+\section{Linear solver}
+
+
+\section{Nonlinear solver}
+
+\section{Input-ouput}
+
+
+\section{Conversions and interoperability}
+
+
+\section{Acknowledgements}
+\cite{utopiagit}
+
+\bibliographystyle{alpha}
+\bibliography{Utopia_CheatSheet}
+
+\end{document}

@@ -35,7 +35,27 @@ namespace utopia {
         //////////////////////////////////////////////////
 
         libMesh::QGauss qrule(dim, libMesh::Order(2 * order));
+        // libMesh::QGauss qrule(dim, libMesh::Order(10));
         qrule.init(e_type);
+
+        ////////////////////////////////////////
+
+        // std::cout << "q.points = {";
+        // for (auto &p : qrule.get_points()) {
+        //     std::cout << "{" << p(0) << ", " << p(1) << ", " << p(2) << "}," << std::endl;
+        // }
+        // std::cout << "};";
+
+        // std::cout << "q.weights = {";
+        // for (auto &w : qrule.get_weights()) {
+        //     std::cout << (w * 6) << "," << std::endl;
+        // }
+        // std::cout << "};";
+
+        ////////////////////////////////////////
+
+        // disp(qrule.get_weights(), std::cout);
+        // disp(q_rule.get_points(), std::cout);
 
         auto fe = libMesh::FEBase::build(dim, libMesh::Order(order));
         fe->get_phi();
@@ -156,14 +176,14 @@ namespace utopia {
         // dim = 1;
         // test_dual_basis(libMesh::EDGE3, dim, order, alpha);
 
-        // dim = 3;
-        // test_dual_basis(libMesh::TET10, dim, order, alpha);
+        dim = 3;
+        test_dual_basis(libMesh::TET10, dim, order, alpha);
 
         // dim = 3;
         // test_dual_basis(libMesh::HEX27, dim, order, alpha);
 
-        dim = 3;
-        test_dual_basis(libMesh::PRISM6, dim, 1, alpha);
+        // dim = 3;
+        // test_dual_basis(libMesh::PRISM6, dim, 1, alpha);
 
         // libMesh::DenseMatrix<libMesh::Real> trafo, inv_trafo, weights;
         // DualBasis::build_trafo_and_weights(

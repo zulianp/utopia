@@ -588,7 +588,10 @@ namespace utopia {
             operator_ = std::make_shared<ClampedOperator>(operator_);
         }
 
-        operator_->describe(std::cout);
+        if (operator_) {
+            operator_->describe(std::cout);
+        }
+
         return true;
     }
 

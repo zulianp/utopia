@@ -60,6 +60,10 @@ namespace utopia {
             return instance().new_vector_impl(backend);
         }
 
+        inline static std::unique_ptr<Communicator> new_communicator(const BackendType &backend) {
+            return instance().new_comm_impl(backend);
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         template <class Matrix>
@@ -95,6 +99,10 @@ namespace utopia {
             return instance().new_linear_solver_impl(backend);
         }
 
+        inline static std::unique_ptr<Communicator> new_communicator() {
+            return instance().new_comm_impl(instance().default_backend_);
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
     private:
@@ -106,15 +114,19 @@ namespace utopia {
 
         std::map<BackendType, std::unique_ptr<IFactoryMethod<AbstractLinearSolver>>> linear_solver_factory_;
 
+        std::map<BackendType, std::unique_ptr<IFactoryMethod<Communicator>>> comm_factory_;
+
         AlgebraFactory() : default_backend_("") {}
 
         ////////////////////////////////////////////////////////////////////////////////
 
         template <class Vector>
         int register_vector_impl() {
-            vector_factory_[Traits<Vector>::backend_info().get_name()] =
-                utopia::make_unique<FactoryMethod<AbstractVector, Wrapper<Vector>>>();
+            auto &&backend_name = Traits<Vector>::backend_info().get_name();
+            vector_factory_[backend_name] = utopia::make_unique<FactoryMethod<AbstractVector, Wrapper<Vector>>>();
 
+            comm_factory_[backend_name] =
+                utopia::make_unique<FactoryMethod<Communicator, typename Traits<Vector>::Communicator>>();
             return Traits<Vector>::Backend;
         }
 
@@ -131,6 +143,26 @@ namespace utopia {
             auto it = vector_factory_.find(backend);
             if (it == vector_factory_.end()) {
                 std::cerr << "AlgebraFactory::new_vector(): no backend with id " << backend
+                          << " has registered to factory" << std::endl;
+                return nullptr;
+            } else {
+                return it->second->make();
+            }
+        }
+
+        std::unique_ptr<Communicator> new_comm_impl(const BackendType &backend) {
+            if (comm_factory_.empty()) {
+                std::cerr << "AlgebraFactory::new_communicator(): no backend has registered to factory" << std::endl;
+                return nullptr;
+            }
+
+            if (backend.empty()) {
+                return comm_factory_.begin()->second->make();
+            }
+
+            auto it = comm_factory_.find(backend);
+            if (it == comm_factory_.end()) {
+                std::cerr << "AlgebraFactory::new_communicator(): no backend with id " << backend
                           << " has registered to factory" << std::endl;
                 return nullptr;
             } else {

@@ -10,7 +10,14 @@ if(NOT TRILINOS_FOUND)
     set(TRILINOS_SOURCE_DIR 	${STAGE_DIR}/Trilinos)
     set(TRILINOS_BIN_DIR 		${STAGE_DIR}/Trilinos/bin)
     set(TRILINOS_INSTALL_DIR    ${CMAKE_SOURCE_DIR}/external/Trilinos)
-    set(TRILINOS_MPI_BASE_DIR   $ENV{MPI_DIR})
+
+    if(NOT MPI_DIR)
+        set(MPI_DIR  $ENV{MPI_DIR})
+    endif()
+
+    if(MPI_DIR)
+        set(TRILINOS_MPI_BASE_DIR  ${MPI_DIR})
+    endif()
 
     list(APPEND TRILINOS_CMAKE_ARGS
         "-DCMAKE_CXX_STANDARD=14"

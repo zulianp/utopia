@@ -121,6 +121,115 @@ namespace utopia {
         SizeType size_[Order];
     };
 
+    template <int Order, typename LocalSizeType_, typename SizeType_>
+    class Layout<Communicator, Order, LocalSizeType_, SizeType_> {
+    public:
+        using SizeType = SizeType_;
+        using LocalSizeType = LocalSizeType_;
+
+        inline LocalSizeType_ &local_size(const int i = 0) {
+            assert(i < Order);
+            return local_size_[i];
+        }
+
+        inline const LocalSizeType_ &local_size(const int i = 0) const {
+            assert(i < Order);
+            return local_size_[i];
+        }
+
+        inline SizeType &size(const int i = 0) {
+            assert(i < Order);
+            return size_[i];
+        }
+
+        inline const SizeType &size(const int i = 0) const {
+            assert(i < Order);
+            return size_[i];
+        }
+
+        inline bool same_local_size(const Layout &other) const {
+            for (int i = 0; i < Order; ++i) {
+                if (local_size_[i] != other.local_size(i)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        inline bool same_size(const Layout &other) const {
+            for (int i = 0; i < Order; ++i) {
+                if (size_[i] != other.size(i)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// collective (communicator of this is used for the computation)
+        inline bool same(const Layout &other) const {
+            if (!comm().same(other.comm())) return false;
+            if (!same_size(other)) return false;
+
+            return comm().conjunction(same_local_size(other));
+        }
+
+        const Communicator &comm() const { return comm_; }
+
+        template <typename... Args>
+        Layout(const Communicator &comm, Args &&... args) : comm_(comm) {
+            init(std::forward<Args>(args)...);
+        }
+
+        // Layout() {
+        //     for (int i = 0; i < Order; ++i) {
+        //         local_size_[i] = 0;
+        //         size_[i] = 0;
+        //     }
+        // }
+
+        template <class OtherComm, typename OtherSizeType, typename OtherLocalSizeType>
+        Layout(const Layout<OtherComm, Order, OtherLocalSizeType, OtherSizeType> &other) : comm_(other.comm()) {
+            std::copy(&other.local_size(0), &other.local_size(0) + Order, local_size_);
+            std::copy(&other.size(0), &other.size(0) + Order, size_);
+        }
+
+        inline void init(const LocalSizeType local_size[Order], SizeType size[Order]) {
+            std::copy(local_size, local_size + Order, local_size_);
+            std::copy(size, size + Order, size_);
+        }
+
+        inline void init(const Size &local, const Size &global) {
+            auto &local_data = local.data();
+            auto &global_data = global.data();
+
+            assert(int(local_data.size()) <= Order);
+            assert(int(global_data.size()) <= Order);
+
+            std::copy(local_data.begin(), local_data.end(), local_size_);
+            std::copy(global_data.begin(), global_data.end(), size_);
+        }
+
+        inline void init(const LocalSizeType local_size, SizeType size) {
+            local_size_[0] = local_size;
+            size_[0] = size;
+        }
+
+        friend void disp(const Layout &layout, std::ostream &os = std::cout) {
+            os << "comm: " << layout.comm_.rank() << "/" << layout.comm_.size() << "\n";
+
+            for (int i = 0; i < Order; ++i) {
+                os << layout.local_size_[i] << " " << layout.size_[i] << "\n";
+            }
+        }
+
+    private:
+        const Communicator &comm_;
+        LocalSizeType local_size_[Order];
+        SizeType size_[Order];
+    };
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     //// SERIAL LAYOUTS //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////

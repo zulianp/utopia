@@ -11,8 +11,8 @@ public:
         using namespace utopia;
 
         assert(point.size() == 2);
-        assert(!utopia::is_parallel<Matrix>::value ||
-               point.comm().size() == 1 && "does not work for parallel matrices");
+        assert((!utopia::is_parallel<Matrix>::value || point.comm().size() == 1) &&
+               "does not work for parallel matrices");
 
         const Read<Vector> read(point);
 
