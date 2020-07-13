@@ -1,6 +1,8 @@
 #ifndef UTOPIA_CONVERTIBLE_HPP
 #define UTOPIA_CONVERTIBLE_HPP
 
+#include <cmath>
+#include <cstdlib>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -82,25 +84,37 @@ namespace utopia {
     template <>
     class Convert<std::string, double> {
     public:
-        static void apply(const std::string &in, double &out) { out = atof(in.c_str()); }
+        static void apply(const std::string &in, double &out) {
+            using std::atof;
+            out = atof(in.c_str());
+        }
     };
 
     template <>
     class Convert<std::string, float> {
     public:
-        static void apply(const std::string &in, float &out) { out = atof(in.c_str()); }
+        static void apply(const std::string &in, float &out) {
+            using std::atof;
+            out = atof(in.c_str());
+        }
     };
 
     template <>
     class Convert<std::string, int> {
     public:
-        static void apply(const std::string &in, int &out) { out = atoi(in.c_str()); }
+        static void apply(const std::string &in, int &out) {
+            using std::atoi;
+            out = atoi(in.c_str());
+        }
     };
 
     template <>
     class Convert<std::string, long> {
     public:
-        static void apply(const std::string &in, long &out) { out = atol(in.c_str()); }
+        static void apply(const std::string &in, long &out) {
+            using std::atol;
+            out = atol(in.c_str());
+        }
     };
 
     // template<>
@@ -108,7 +122,7 @@ namespace utopia {
     // public:
     //     static void apply(const std::string &in, long long &out)
     //     {
-    //         out = atol(in.c_str());
+    //         using std::atol;out = atol(in.c_str());
     //     }
     // };
 
@@ -117,6 +131,7 @@ namespace utopia {
     public:
         static void apply(const std::string &in, unsigned long &out) {
             // FIXME
+            using std::atol;
             out = atol(in.c_str());
         }
     };
@@ -126,6 +141,7 @@ namespace utopia {
     public:
         static void apply(const std::string &in, long long int &out) {
             // FIXME
+            using std::atoll;
             out = atoll(in.c_str());
         }
     };

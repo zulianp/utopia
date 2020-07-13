@@ -82,15 +82,16 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
 
     LIST(APPEND MOONOLITH_LIBRARIES
     -L${MOONOLITH_INSTALL_DIR}/lib
-    "-lpar_moonolith_mesh" 
-    "-lpar_moonolith_spatial_hashing" 
-    "-lmoonolith_opencl" 
-    "-lpar_moonolith_intersection" 
-    "-lpar_moonolith_tree" 
-    "-lpar_moonolith_mpi" 
-    "-lpar_moonolith_utils" 
-    "-lpar_moonolith_core" 
+    "-lpar_moonolith_mesh"
+    "-lpar_moonolith_spatial_hashing"
+    "-lmoonolith_opencl"
+    "-lpar_moonolith_intersection"
+    "-lpar_moonolith_tree"
+    "-lpar_moonolith_mpi"
+    "-lpar_moonolith_utils"
+    "-lpar_moonolith_core"
     "-lpar_moonolith_visual"
+    "-lpar_moonolith_configuration"
     )
 
     set(MOONOLITH_FOUND TRUE)
