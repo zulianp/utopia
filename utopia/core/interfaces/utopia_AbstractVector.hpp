@@ -26,9 +26,12 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using SizeType = SizeType_;
+        using LocalSizeType = SizeType_;
         using Communicator = utopia::Communicator;
         using Layout = utopia::Layout<Communicator, 1, SizeType>;
         using MatrixLayout = utopia::Layout<Communicator, 2, SizeType>;
+
+        static const int Order = 1;
     };
 
     // parallel types, collective operations
@@ -37,8 +40,8 @@ namespace utopia {
                            public Normed<Scalar_>,
                            public Transformable<Scalar_>,
                            public Reducible<Scalar_>,
-                           public Constructible<Scalar_, SizeType_, 1>,
                            public ElementWiseOperand<Scalar_>,
+                           public Constructible<AbstractVector<Scalar_, SizeType_>>,
                            public ElementWiseOperand<AbstractVector<Scalar_, SizeType_>>,
                            public Comparable<AbstractVector<Scalar_, SizeType_>>,
                            public BLAS1Tensor<AbstractVector<Scalar_, SizeType_>> {
@@ -47,11 +50,13 @@ namespace utopia {
         using SizeType = SizeType_;
         using Layout = utopia::Layout<Communicator, 1, SizeType_>;
 
-        virtual void values(const Layout &l, const Scalar &value) = 0;
-        virtual void zeros(const Layout &l) = 0;
-
         ~AbstractVector() override = default;
     };
+
+    template <typename Scalar, typename SizeType>
+    void disp(const AbstractVector<Scalar, SizeType> &v) {
+        v.describe();
+    }
 
     template <class Vector>
     class Wrapper<Vector, 1>

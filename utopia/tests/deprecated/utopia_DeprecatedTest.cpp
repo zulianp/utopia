@@ -1,3 +1,7 @@
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_DEPRECATED_API
+
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 
@@ -141,3 +145,5 @@ namespace utopia {
 #pragma GCC diagnostic pop
 
 }  // namespace utopia
+
+#endif  // UTOPIA_DEPRECATED_API

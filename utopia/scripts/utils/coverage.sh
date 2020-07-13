@@ -7,7 +7,7 @@ rm -f ./*.info; find . -name "*.gcda" -print0 | xargs -0 rm
 
 lcov --capture --directory . --output-file cov.info
 
-# Make sure we have right configuration
+# Make sure we have the right configuration
 cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_DEPRECATED_API=OFF
 make -j4 complete && ./utopia_test -verbose &&  ./utopia_test -verbose -test unconstrained_opt -test newton_ls -test constrained_opt && ./utopia_bench -verbose
 ret=$?
