@@ -64,12 +64,17 @@ namespace utopia {
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
 
-        OperatorBasedQPSolver() : MatrixFreeQPSolver<Vector>(), QPSolver<Matrix, Vector>() {}
-        // FIXME common base class: VariableBoundSolverInterface<Vector>(other) creates problems for NVCC
+        OperatorBasedQPSolver() = default;
 
+        // FIX since VariableBoundSolverInterface<Vector>(other) creates problems for NVCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreorder"
         OperatorBasedQPSolver(const OperatorBasedQPSolver &other)
-            : MatrixFreeQPSolver<Vector>(other), QPSolver<Matrix, Vector>(other) {}
-        // FIXME common base class: VariableBoundSolverInterface<Vector>(other) creates problems for NVCC
+            : VariableBoundSolverInterface<Vector>(other),
+              MatrixFreeQPSolver<Vector>(other),
+              QPSolver<Matrix, Vector>(other) {}
+
+#pragma GCC diagnostic pop
 
         OperatorBasedQPSolver &operator=(const OperatorBasedQPSolver &other) {
             if (this == &other) return *this;
