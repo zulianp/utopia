@@ -1,6 +1,9 @@
+
 #include <iostream>
 #include <sstream>
+
 #include "utopia.hpp"
+
 // In this simple example we solve the following equation A x = b.
 // A in this case is a simple Identity matrix = 1.
 // So in the end we should have that x = b.
@@ -11,7 +14,7 @@ void vector_by_matrix_mult(utopia::Input& in) {
     using Comm = typename Traits<Vector>::Communicator;
     using SizeType = typename Traits<Vector>::SizeType;
 
-    // Instatiate the Matrix and vectors.
+    // Instantiate the Matrix and vectors.
     Matrix A;
     Vector b, x;
 
@@ -22,28 +25,28 @@ void vector_by_matrix_mult(utopia::Input& in) {
     SizeType n_local = 10;
     auto value = 2;
 
-    // Give different values to n_value and n_local from command line.
+    // Give different values to value and n_local from command line.
     in.get("n_local", n_local);
     in.get("value", value);
 
     // Setup the layout of the vectors and matrices.
-    // This allows for the data to be distributed
-    // in a certain manner and set the
-    // size of the matrix and vectors to be the same.
+    // Layouts allow us to distribute the data in according to the number of local entries n_local.
+    // Note that the number of rows of the matrix and the size of the vectors are the same.
     SizeType n_global = n_local * comm.size();
     auto l = layout(comm, n_local, n_global);
 
-    // Set vector b to have a structure as follows: [n_value, n_value,...]*n_local.
+    // Initialize the vector with the desired layout, and set all entries to zero.
     b.values(l, 0);
 
     {
+        // Here we access the locally index view of b. Index goes from 0 to n_local-1.
         auto b_view = local_view_device(b);
 
         // For loop that iterates through the elements of the vector from index
-        // 0 = r.begin() till index r.end() = in this default case 9.
-        // Set the vector to have zeros everywhere except at the index 0
-        // and index 9.
-        // This loop does not take advantage of parallel and it is not hardware portable.
+        // 0 = r.begin() till index r.end() = n_local (excluded).
+        // Change the entries of the vector at the local indexes 0 and 9.
+        // This loop does not take advantage of parallelism and it is not hardware portable
+        // (i.e., it will not work if the memory of b is stored on the GPU).
         // for (SizeType i = r.begin(); i != r.end(); ++i) {
         //     if (i > 0 && i < n_local - 1) {
         //         b.set(i, 0);
@@ -61,23 +64,24 @@ void vector_by_matrix_mult(utopia::Input& in) {
 
     A.identity(square_matrix_layout(l), 1);
 
-    // Example of identity matrix.
+    // Example of assembling the identity matrix on the host.
     // {
-    //     // r in a 3X3 matrix has range of 3, the range is how many columns the matrix has. With indexes starting from
-    //     0.
-    //     // so in this case: 0, 1, 2. Similar to an array
+    //     // Scoped lock for allowing to write data from the host.
+    //     // When `w` is destroyed the memory is transferred to the device.
+    //     // For parallel matrices the non-local data is communicated to the owner processes.
     //     Write<Matrix> w(A);
+    //
+    //     // r in a serial 3X3 matrix has range (0, 3], the row_range describes which local rows the matrix owns.
     //     auto r = row_range(A);
-
     //     for (SizeType i = r.begin(); i != r.end(); ++i) {
     //         A.set(i, i, 1);
     //     }
     // }
 
-    // Solve the equation.
+    // Solve the equation A x = b.
     solve(A, b, x);
 
-    // Display the vector x.
+    // Display the solution vector x.
     disp(x);
 }
 
@@ -87,7 +91,7 @@ int main(const int argc, char* argv[]) {
     using namespace utopia;
 
     // Use certain Matrix or Vector depending
-    // on what you have on your machine.
+    // on what back-end we have installed on our system.
 #ifdef WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
