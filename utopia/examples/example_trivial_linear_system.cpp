@@ -9,7 +9,7 @@
 // So in the end we should have that x = b.
 
 template <class Matrix, class Vector>
-void vector_by_matrix_mult(utopia::Input& in) {
+void example_trivial_linear_system(utopia::Input& in) {
     using namespace utopia;
     using Comm = typename Traits<Vector>::Communicator;
     using SizeType = typename Traits<Vector>::SizeType;
@@ -85,8 +85,8 @@ void vector_by_matrix_mult(utopia::Input& in) {
     disp(x);
 }
 
-// Run it with `./examples/example_vector_times_matrix`
-// or `./examples/example_vector_times_matrix -n_local 100 -value 23`
+// Run it with `./examples/example_trivial_linear_system`
+// or `./examples/example_trivial_linear_system -n_local 100 -value 23`
 int main(const int argc, char* argv[]) {
     using namespace utopia;
 
@@ -111,8 +111,8 @@ int main(const int argc, char* argv[]) {
     InputParameters params;
     params.init(argc, argv);
 
-    // Display the resulting vector.
-    vector_by_matrix_mult<MatrixT, VectorT>(params);
+    // Run example
+    example_trivial_linear_system<MatrixT, VectorT>(params);
 
     return Utopia::Finalize();
 }
