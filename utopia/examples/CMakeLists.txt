@@ -21,10 +21,26 @@ add_executable(example_nonlinear_solve EXCLUDE_FROM_ALL example_nonlinear_solve.
 utopia_link_default_targets(example_nonlinear_solve)
 target_link_libraries(example_nonlinear_solve utopia)
 
+# Communicator
+add_executable(example_communicator EXCLUDE_FROM_ALL example_communicator.cpp)
+utopia_link_default_targets(example_communicator)
+target_link_libraries(example_communicator utopia)
+
+# Matrix * Vector
+add_executable(example_vector_times_matrix EXCLUDE_FROM_ALL example_vector_times_matrix.cpp)
+utopia_link_default_targets(example_vector_times_matrix)
+target_link_libraries(example_vector_times_matrix utopia)
 
 # Add more examples here and add target to dependecy list below
 # ...
 
 
 add_custom_target(utopia_examples)
-add_dependencies(utopia_examples example_hello_world example_solve_PDE_1D example_loops example_nonlinear_solve)
+add_dependencies(utopia_examples
+            example_hello_world
+            example_solve_PDE_1D
+            example_loops
+            example_nonlinear_solve
+            example_communicator
+            example_vector_times_matrix
+            )

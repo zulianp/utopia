@@ -15,6 +15,8 @@
 
 #include "libmesh/boundary_info.h"
 
+#include "utopia_LibMeshBackend.hpp"
+
 namespace utopia {
 
     void Adaptivity::compute_all_constraints(const libMesh::MeshBase &mesh,
@@ -430,7 +432,7 @@ namespace utopia {
                                             unsigned int sys_number,
                                             unsigned int var_number,
                                             std::vector<int> &index) {
-        std::cout << "Adaptivity::compute_boundary_nodes::Begin " << std::endl;
+        // std::cout << "Adaptivity::compute_boundary_nodes::Begin " << std::endl;
 
         auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
@@ -458,7 +460,7 @@ namespace utopia {
                 // auto neigh = ele->neighbor_ptr(kk);
 
                 // if (neigh != libMesh::remote_elem &&
-                // mesh.get_boundary_info().boundary_id(ele, kk)>0)
+                // utopia::boundary_id(mesh.get_boundary_info(), ele, kk)>0)
                 //{
                 // auto side = ele->build_side_ptr(kk);
 
@@ -531,7 +533,7 @@ namespace utopia {
                         }
 
                         if (index_local.size() == parent_side_0->n_nodes()) {
-                            auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0, jj);
+                            auto bc_id = utopia::boundary_id(mesh.get_boundary_info(), ele_parent_0, jj);
 
                             auto check =
                                 (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
@@ -552,7 +554,7 @@ namespace utopia {
                 for (int kk = 0; kk < ele->n_sides(); kk++) {
                     auto neigh = ele->neighbor_ptr(kk);
 
-                    auto bc_id = mesh.get_boundary_info().boundary_id(ele, kk);
+                    auto bc_id = utopia::boundary_id(mesh.get_boundary_info(), ele, kk);
 
                     auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
 
@@ -720,7 +722,7 @@ namespace utopia {
                 }
 
                 if (index_local.size() == parent_side_0_new->n_nodes()) {
-                    auto bc_id = mesh.get_boundary_info().boundary_id(ele_parent_0, jj);
+                    auto bc_id = utopia::boundary_id(mesh.get_boundary_info(), ele_parent_0, jj);
 
                     auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
 
@@ -742,7 +744,7 @@ namespace utopia {
                 for (int kk = 0; kk < ele->n_sides(); kk++) {
                     auto neigh = ele->neighbor_ptr(kk);
                     if (ele->neighbor_ptr(kk) == nullptr && ele->neighbor_ptr(kk) != libMesh::remote_elem) {
-                        auto bc_id = mesh.get_boundary_info().boundary_id(ele, kk);
+                        auto bc_id = utopia::boundary_id(mesh.get_boundary_info(), ele, kk);
 
                         auto check = (std::find(dirichlet_id.begin(), dirichlet_id.end(), bc_id) != dirichlet_id.end());
 

@@ -571,6 +571,8 @@ namespace utopia {
             internal::local_map_reduce_petsc_impl(d, map, reduce, accumulator);
             internal::local_map_reduce_petsc_impl(o, map, reduce, accumulator);
             accumulator = comm().reduce(mpi_op, accumulator);
+
+            UTOPIA_UNUSED(err);
         } else {
             assert(false);
             std::cerr << ("PetscMatrix::map_reduce not implemented for matrix type: ") << type() << std::endl;

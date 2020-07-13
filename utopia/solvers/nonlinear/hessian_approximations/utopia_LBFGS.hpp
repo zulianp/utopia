@@ -434,37 +434,39 @@ namespace utopia {
 
                     auto D_view = local_view_device(D_);
 
-                    parallel_for(local_range_device(D_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar yy = YY_sum_.get(i);
-                        Scalar sy = SY_sum_.get(i);
+                    parallel_for(
+                        local_range_device(D_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar yy = d_YY_sum.get(i);
+                            Scalar sy = d_SY_sum.get(i);
 
-                        if (!device::isfinite(yy) || !device::isfinite(sy)) {
-                            D_view.set(i, theta_working);
-                        }
+                            if (!device::isfinite(yy) || !device::isfinite(sy)) {
+                                D_view.set(i, theta_working);
+                            }
 
-                        Scalar dii = (yy / sy);
+                            Scalar dii = (yy / sy);
 
-                        if (dii > 10e-10 && device::isfinite(dii)) {
-                            D_view.set(i, dii);
-                        } else {
-                            D_view.set(i, theta_working);
-                        }
-                    });
+                            if (dii > 10e-10 && device::isfinite(dii)) {
+                                D_view.set(i, dii);
+                            } else {
+                                D_view.set(i, theta_working);
+                            }
+                        });
                 }
 
                 {
                     auto D_view = const_local_view_device(D_);
                     auto D_inv_view = local_view_device(D_inv_);
 
-                    parallel_for(local_range_device(D_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar dii = D_view.get(i);
+                    parallel_for(
+                        local_range_device(D_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar dii = D_view.get(i);
 
-                        if (device::isfinite(dii) && dii != 0.0) {
-                            D_inv_view.set(i, 1. / dii);
-                        } else {
-                            D_inv_view.set(i, theta_working);
-                        }
-                    });
+                            if (device::isfinite(dii) && dii != 0.0) {
+                                D_inv_view.set(i, 1. / dii);
+                            } else {
+                                D_inv_view.set(i, theta_working);
+                            }
+                        });
                 }
 
             }  // end FORM norm

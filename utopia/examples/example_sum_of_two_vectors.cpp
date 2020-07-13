@@ -31,9 +31,7 @@ void sum_of_two_vectors() {
     // In this case, our vector will be 10 x comm.size().
     SizeType n_local = 10;
 
-    // We compute the global size of our vectors,
-    // which we define as the number of process
-    // multiplied by the number of local entries.
+    // We compute the global size of our vectors.
     SizeType n_global = n_local * comm.size();
 
     // We need a layout, that is a description of
@@ -53,28 +51,26 @@ void sum_of_two_vectors() {
 
     // We have two way to initialise vectors, that is with local 
     // or global indexing.
-    // We can either do it locally or globally. A local initia-
-    // -lisation involves a fixed range for the entries. Each
+    // A local initialisation involves a fixed range for the entries. Each
     // entry may have a different processor. On the other hand,
     // with a global intialisation we have the sum of all the
     // n_locals. 
     // You can run the programm to see the difference in terms
-    // of output. The first output is local, the second is global.
+    // of output. The first output is with local indexing, 
+    // the second is with global indexing.
 
-    // In both case, we need to access the device: the device
-    // is where we are performing the computation, such as 'host' or
-    // the gpu. 
+    // You have a device (GPU, CPU) or a host (always CPU).
     // For using local indexing, we can do, for example: 
     // auto a_view = local_view_device(a);.
     // Fo using global indexing, instead, with 
     // auto a_view = view_device(a);.
 
-    // In both cases, we use the set(index, value) function 
+    // In both cases, we use the 'set(index, value)'' function 
     // to set a value at a certain index. 
-    // We can also use get(index) to get the value at certain 
+    // We can also use 'get(index)'' to get the value at certain 
     // index. 
-    // the disp function allows to visualise the content of a
-    // vector or a matrix. 
+    // the 'disp(vector/matrix)' function allows to visualise 
+    // the content of a vector or a matrix. 
 
     {
         auto a_view = local_view_device(a);
@@ -97,6 +93,7 @@ void sum_of_two_vectors() {
         parallel_for(
             range_device(a), UTOPIA_LAMBDA(const SizeType& i) {
                 const Scalar val = i;
+                // a more complex example. 
                 // const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
                 a_view.set(i, i);
             });
@@ -113,7 +110,7 @@ void sum_of_two_vectors() {
     // -------------- Wrong way to initialise a vector --------------------
 
 
-    // This initialisation does not work either since it is also not performed 
+    // This initialisation does not work since it is not performed 
     // in parallel. 
     // a_view.set(0, 1);
     // a_view.set(1, 10);

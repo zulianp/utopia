@@ -99,12 +99,13 @@ namespace utopia {
         auto &V_f = transport_f_.space->space().last_subspace();
 
         UVector &xkp1_m = transport_m_.concentration;
-        UVector rhs_m = local_zeros(local_size(xkp1_m));
+        UVector rhs_m;
+        rhs_m.zeros(layout(xkp1_m));
 
         apply_boundary_conditions(V_m.dof_map(), transport_m_.system_matrix, xkp1_m);
 
         UVector &xkp1_f = transport_f_.concentration;
-        UVector rhs_f = local_zeros(local_size(xkp1_f));
+        UVector rhs_f(layout(xkp1_f), 0.0);
 
         apply_boundary_conditions(V_f.dof_map(), transport_f_.system_matrix, xkp1_f);
 
@@ -183,8 +184,8 @@ namespace utopia {
         UVector &x_m = transport_m_.concentration;
         UVector &x_f = transport_f_.concentration;
 
-        UVector rhs_m = local_zeros(local_size(x_m));
-        UVector rhs_f = local_zeros(local_size(x_f));
+        UVector rhs_m(layout(x_m), 0.0);
+        UVector rhs_f(layout(x_f), 0.0);
 
         USparseMatrix &A_m = transport_m_.system_matrix;
         USparseMatrix &A_f = transport_f_.system_matrix;
@@ -212,8 +213,8 @@ namespace utopia {
         // write("A.m", A);
 
         // lagrange mult
-        UVector z = local_zeros(local_size(steady_flow_.B).get(0));
-        UVector lagr = local_zeros(local_size(z));
+        UVector z(row_layout(steady_flow_.B), 0);
+        UVector lagr(layout(z), 0);
 
         libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
@@ -284,8 +285,8 @@ namespace utopia {
         UVector &x_m = transport_m_.concentration;
         UVector &x_f = transport_f_.concentration;
 
-        UVector rhs_m = local_zeros(local_size(x_m));
-        UVector rhs_f = local_zeros(local_size(x_f));
+        UVector rhs_m(layout(x_m), 0.0);
+        UVector rhs_f(layout(x_f), 0.0);
 
         USparseMatrix &A_m = transport_m_.system_matrix;
         USparseMatrix &A_f = transport_f_.system_matrix;
@@ -390,8 +391,8 @@ namespace utopia {
         UVector &x_m = transport_m_.concentration;
         UVector &x_f = transport_f_.concentration;
 
-        UVector rhs_m = local_zeros(local_size(x_m));
-        UVector rhs_f = local_zeros(local_size(x_f));
+        UVector rhs_m(layout(x_m), 0.0);
+        UVector rhs_f(layout(x_f), 0.0);
 
         USparseMatrix &A_m = transport_m_.system_matrix;
         USparseMatrix &A_f = transport_f_.system_matrix;
@@ -586,7 +587,7 @@ namespace utopia {
         utopia::assemble(l_form, M_x_v);
         utopia::assemble(b_form, aux_mass_matrix);
 
-        UVector aux_values = local_zeros(local_size(M_x_v));
+        UVector aux_values(layout(M_x_v), 0.0);
 
         // this mass vector contains also the porosity
         copy_values(C, mass_vector, aux_space.subspace(dim + 1), M_x_v);
@@ -692,7 +693,7 @@ namespace utopia {
 
     void FractureFlowTransportSimulation::Transport::remove_mass(const UVector &in, UVector &out) {
         if (empty(out)) {
-            out = local_zeros(local_size(in));
+            out.zeros(layout(in));
         }
 
         if (lump_mass_matrix) {
@@ -706,7 +707,7 @@ namespace utopia {
 
     void FractureFlowTransportSimulation::Transport::add_mass(const UVector &in, UVector &out) const {
         if (empty(out)) {
-            out = local_zeros(local_size(in));
+            out.zeros(layout(in));
         }
 
         if (lump_mass_matrix) {
@@ -990,7 +991,7 @@ namespace utopia {
         copy_values(C, c0, C, concentration);
         synchronize(concentration);
 
-        f = local_zeros(local_size(concentration));
+        f.zeros(layout(concentration));
 
         UVector ff;
 
@@ -1072,7 +1073,7 @@ namespace utopia {
         copy_values(C, c0, C, concentration);
         synchronize(concentration);
 
-        f = local_zeros(local_size(concentration));
+        f.zeros(layout(concentration));
 
         UVector ff;
 

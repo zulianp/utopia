@@ -34,28 +34,24 @@
 
 namespace utopia {
 
-    class PetscVector : public DistributedVector<PetscScalar, PetscInt>,
-                        public Normed<PetscScalar>,
-                        public Transformable<PetscScalar>,
-                        public Reducible<PetscScalar>,
-                        public Constructible<PetscScalar, PetscInt, 1>,
-                        public ElementWiseOperand<PetscScalar>,
-                        public ElementWiseOperand<PetscVector>,
-                        public Comparable<PetscVector>,
-                        // public Ranged<PetscVector, 1>,
-                        public BLAS1Tensor<PetscVector>,
-                        public Tensor<PetscVector, 1>,
-                        public Selectable<PetscVector, 1> {
+    class PetscVector :
+        // Dynamic polymorphic types
+        public DistributedVector<PetscScalar, PetscInt>,
+        public Normed<PetscScalar>,
+        public Transformable<PetscScalar>,
+        public Reducible<PetscScalar>,
+        public ElementWiseOperand<PetscScalar>,
+        // Static polymorphic types
+        public Constructible<PetscVector>,
+        public ElementWiseOperand<PetscVector>,
+        public Comparable<PetscVector>,
+        public BLAS1Tensor<PetscVector>,
+        public Tensor<PetscVector, 1>,
+        public Selectable<PetscVector, 1> {
     public:
         using Scalar = PetscScalar;
         using SizeType = PetscInt;
         using Super = utopia::Tensor<PetscVector, 1>;
-        using Constructible = utopia::Constructible<PetscScalar, PetscInt, 1>;
-
-        using Constructible::local_values;
-        using Constructible::local_zeros;
-        using Constructible::values;
-        using Constructible::zeros;
         using Super::Super;
         using Layout = typename Traits<PetscVector>::Layout;
 
@@ -396,38 +392,27 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible ////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void values(const Layout &l, const Scalar &value) { values(l.comm(), l.local_size(), l.size(), value); }
-
-        inline void zeros(const Layout &l) { values(l, 0.0); }
-
-        inline void values(const PetscCommunicator &comm,
-                           const SizeType &local_size,
-                           const SizeType &global_size,
-                           const Scalar &value) {
-            comm_ = comm;
-            values(this->comm().get(), type_override(), local_size, global_size, value);
+        inline void values(const Layout &l, const Scalar &value) override {
+            values(l.comm(), l.local_size(), l.size(), value);
         }
 
-        inline void zeros(const PetscCommunicator &comm, const SizeType &local_size, const SizeType &global_size) {
-            comm_ = comm;
-            zeros(this->comm().get(), type_override(), local_size, global_size);
-        }
+        inline void zeros(const Layout &l) override { values(l, 0.0); }
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        inline void zeros(const SizeType &s) override { zeros(comm().get(), type_override(), PETSC_DECIDE, s); }
+        // inline void zeros(const SizeType &s) override { zeros(comm().get(), type_override(), PETSC_DECIDE, s); }
 
-        inline void values(const SizeType &s, const Scalar &val) override {
-            values(comm().get(), type_override(), PETSC_DECIDE, s, val);
-        }
+        // inline void values(const SizeType &s, const Scalar &val) override {
+        //     values(comm().get(), type_override(), PETSC_DECIDE, s, val);
+        // }
 
-        inline void local_zeros(const SizeType &s) override {
-            zeros(comm().get(), type_override(), s, PETSC_DETERMINE);
-        }
+        // inline void local_zeros(const SizeType &s) override {
+        //     zeros(comm().get(), type_override(), s, PETSC_DETERMINE);
+        // }
 
-        inline void local_values(const SizeType &s, const Scalar &val) override {
-            values(comm().get(), type_override(), s, PETSC_DETERMINE, val);
-        }
+        // inline void local_values(const SizeType &s, const Scalar &val) override {
+        //     values(comm().get(), type_override(), s, PETSC_DETERMINE, val);
+        // }
 
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Comparable ////////////////////////////
@@ -688,35 +673,7 @@ namespace utopia {
 
         inline void make_immutable() { immutable_ = true; }
 
-        // builders
-        void repurpose(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global);
-        inline void zeros(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global) {
-            repurpose(comm, type, n_local, n_global);
-            check_error(VecZeroEntries(implementation()));
-
-            assert(is_consistent());
-        }
-
-        inline void values(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global, Scalar value) {
-            repurpose(comm, type, n_local, n_global);
-            check_error(VecSet(implementation(), value));
-
-            assert(is_consistent());
-        }
-
-        void init(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global);
-        void ghosted(MPI_Comm comm, SizeType local_size, SizeType global_size, const std::vector<SizeType> &index);
-        void nest(MPI_Comm comm, SizeType nb, IS is[], Vec x[], const bool use_vec_nest_type = false);
-
         // ops
-        /// this is y
-        // inline void axpy(const Scalar &alpha, const PetscVector &x)
-        // {
-        //     assert(is_consistent());
-        //     assert(x.is_consistent());
-
-        //     check_error( VecAXPY(implementation(), alpha, x.implementation()) );
-        // }
 
         /// this is y
         inline void axpby(const Scalar alpha, const PetscVector &x, const Scalar &beta) {
@@ -744,8 +701,6 @@ namespace utopia {
             assert(other.is_consistent());
         }
 
-        // Scalar dot(const PetscVector &other) const;
-
         inline void e_div(const PetscVector &other, PetscVector &result) const {
             if (implementation() != result.vec_ && other.implementation() != result.vec_) {
                 // if result is compatibe should not trigger a reallocation
@@ -758,11 +713,6 @@ namespace utopia {
         inline void abs() { check_error(VecAbs(implementation())); }
 
         inline void reciprocal() { check_error(VecReciprocal(implementation())); }
-
-        // inline void scale(const Scalar factor)
-        // {
-        //     check_error( VecScale(implementation(), factor) );
-        // }
 
         inline void reciprocal(const Scalar numerator) {
             reciprocal();
@@ -778,9 +728,6 @@ namespace utopia {
 
         bool has_nan_or_inf() const;
         bool is_mpi() const;
-
-        void resize(SizeType local_size, SizeType global_size);
-        void resize(SizeType global_size) { resize(PETSC_DECIDE, global_size); }
 
         void select(const PetscIndexSet &index, PetscVector &result) const override;
 
@@ -899,6 +846,49 @@ namespace utopia {
 
         inline static const PetscVector &down_cast(const DistributedVector<Scalar, SizeType> &super) {
             return dynamic_cast<const PetscVector &>(super);
+        }
+
+        // REVIST all below
+
+        inline void values(const PetscCommunicator &comm,
+                           const SizeType &local_size,
+                           const SizeType &global_size,
+                           const Scalar &value) {
+            comm_ = comm;
+            values(this->comm().get(), type_override(), local_size, global_size, value);
+        }
+
+        inline void zeros(const PetscCommunicator &comm, const SizeType &local_size, const SizeType &global_size) {
+            comm_ = comm;
+            zeros(this->comm().get(), type_override(), local_size, global_size);
+        }
+
+        void resize(SizeType local_size, SizeType global_size);
+        void resize(SizeType global_size) { resize(PETSC_DECIDE, global_size); }
+
+    public:
+        // REVIST below
+
+        // builders
+        void repurpose(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global);
+
+        void ghosted(MPI_Comm comm, SizeType local_size, SizeType global_size, const std::vector<SizeType> &index);
+        void nest(MPI_Comm comm, SizeType nb, IS is[], Vec x[], const bool use_vec_nest_type = false);
+
+        void init(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global);
+
+        inline void zeros(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global) {
+            repurpose(comm, type, n_local, n_global);
+            check_error(VecZeroEntries(implementation()));
+
+            assert(is_consistent());
+        }
+
+        inline void values(MPI_Comm comm, VecType type, SizeType n_local, SizeType n_global, Scalar value) {
+            repurpose(comm, type, n_local, n_global);
+            check_error(VecSet(implementation(), value));
+
+            assert(is_consistent());
         }
     };
 
