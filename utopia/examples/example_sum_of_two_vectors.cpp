@@ -55,9 +55,6 @@ void sum_of_two_vectors() {
     // entry may have a different processor. On the other hand,
     // with a global intialisation we have the sum of all the
     // n_locals. 
-    // You can run the programm to see the difference in terms
-    // of output. The first output is with local indexing, 
-    // the second is with global indexing.
 
     // You have a device (GPU, CPU) or a host (always CPU).
     // For using local indexing, we can do, for example: 
@@ -65,7 +62,11 @@ void sum_of_two_vectors() {
     // Fo using global indexing, instead, with 
     // auto a_view = view_device(a);.
 
-    // In both cases, we use the 'set(index, value)'' function 
+    // You can run the programm to see the difference in terms
+    // of output. The first output is with local indexing, 
+    // the second is with global indexing.
+
+    // In both cases, we use the 'set(index, value)' function 
     // to set a value at a certain index. 
     // We can also use 'get(index)'' to get the value at certain 
     // index. 
