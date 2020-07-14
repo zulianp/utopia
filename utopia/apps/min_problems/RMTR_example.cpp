@@ -15,6 +15,7 @@
 #include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_MLSteadyState.hpp"
+#include "utopia_QP_Poisson.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -57,14 +58,14 @@ static void bratu_2d_rmtr(Input &in) {
 
   stats.start();
 
-  // MLIncrementalLoading<FunctionSpace,
-  //                      IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-  //                      PFFracFixAllDisp<FunctionSpace>,
-  //                      InitialCondidtionPFFracNet2D<FunctionSpace> >
-  //     time_stepper(space);
+  MLSteadyState<FunctionSpace,
+                QPPoisson<FunctionSpace>,
+                AllZeroBC<FunctionSpace>,
+                AllZeroIG<FunctionSpace> > time_stepper(space);
 
-  // time_stepper.read(in);
-  // time_stepper.run();
+  time_stepper.read(in);
+  time_stepper.run();
+
 
   disp("------------------- here I am --------------");
 

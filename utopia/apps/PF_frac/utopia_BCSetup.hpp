@@ -44,7 +44,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class BCSetup : public Configurable {
+    class BCSetup : virtual public Configurable {
     public:
         using Scalar = typename FunctionSpace::Scalar;
 

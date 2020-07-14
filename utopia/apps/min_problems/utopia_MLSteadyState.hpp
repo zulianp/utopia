@@ -27,6 +27,7 @@ class MLSteadyState final : public Configurable {
         n_levels_(2),
         n_coarse_sub_comm_(1),
         log_output_path_("rmtr_log_file.csv"),
+        output_path_("rmtr_out.csv"),
         save_output_(true),
         mprgp_smoother_(false),
         hjsmn_smoother_(false) {
@@ -38,6 +39,7 @@ class MLSteadyState final : public Configurable {
     // IncrementalLoadingBase<FunctionSpace>::read(in);
 
     in.get("log_output_path", log_output_path_);
+    in.get("output_path", output_path_); 
     in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
     in.get("n_levels", n_levels_);
     in.get("save_output", save_output_);
@@ -112,7 +114,7 @@ class MLSteadyState final : public Configurable {
 
     // initial conddition needs to be setup only on the finest level
     SizeType pf_comp = 0;
-    IC_ = std::make_shared<ICType>(*spaces_.back(), pf_comp);
+    IC_ = std::make_shared<ICType>(*spaces_.back());
 
     //////////////////////////////////////////////// init solver
     //////////////////////////////////////////////////////
@@ -196,21 +198,11 @@ class MLSteadyState final : public Configurable {
 
   void init_solution(Vector &solution) {
     spaces_.back()->create_vector(solution);
-    // spaces_.back()->create_vector(this->lb_);
     rename("X", solution);
 
     IC_->init(solution);
-    // if(this->use_pressure_ && !this->use_constant_pressure_){
-    //     Vector & pressure_vec =  level_functions_.back()->pressure_field();
-    //     // IC_->init(this->solution_, pressure_vec);
-    // }
-
     spaces_.back()->apply_constraints(solution);
 
-    if (auto *fun_finest =
-            dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-      fun_finest->old_solution(solution);
-    }
 
     // // adding sol to all levels
     // for (auto l = n_levels_ - 1; l > 0; l--) {
@@ -229,8 +221,7 @@ class MLSteadyState final : public Configurable {
     // }
   }
 
-  void write_to_file(FunctionSpace &space, const Scalar &time,
-                     const Vector &sol) {
+  void write_to_file(FunctionSpace &space, const Vector &sol) {
     if (save_output_) {
       spaces_.back()->write(this->output_path_ + ".vtr", sol);
       Utopia::instance().set("log_output_path", log_output_path_);
@@ -239,7 +230,7 @@ class MLSteadyState final : public Configurable {
 
   void prepare_for_solve(Vector &solution) {
     for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
-      BC_conditions_[l]->emplace_time_dependent_BC(this->time_);
+      BC_conditions_[l]->emplace_BC();
     }
 
     // update fine level solution  and constraint
@@ -256,35 +247,39 @@ class MLSteadyState final : public Configurable {
     }
   }
 
+    void init(FunctionSpace &space, Vector & solution) {
+        init_solution(solution);
+        write_to_file(space, solution);
+    }  
+
   void run() {
     if (!init_) {
       init_ml_setup();
     }
 
+    // disp("------------- 1 -----------");
+    // exit(0);
+
+
+    Vector solution; 
+
     // init fine level spaces
-    this->init(*spaces_[n_levels_ - 1]);
+    this->init(*spaces_[n_levels_ - 1], solution);
 
-    this->time_step_counter_ = 0;
-    while (this->time_ < this->final_time_) {
-      if (mpi_world_rank() == 0) {
-        std::cout << "#########################################################"
-                     "############# \n";
-        std::cout << "Time-step: " << this->time_step_counter_
-                  << "  time:  " << this->time_ << "  dt:  " << this->dt_
-                  << " \n";
-        std::cout << "#########################################################"
-                     "############# \n";
-      }
+    // disp("------------- 1 -----------");
+    // exit(0);    
 
-      prepare_for_solve();
+    prepare_for_solve(solution);
+
+    disp("------------- 1 -----------");
+    exit(0);        
 
       // ////////////////////////////////////////////////////////////////////////////////////////////////////////
-      rmtr_->solve(this->solution_);
+      rmtr_->solve(solution);
       auto sol_status = rmtr_->solution_status();
       //////////////////////////////////////////////////////////////////////////////////////////////////////////
       // update_time_step(sol_status.reason);
-      disp("------- save solution ------- ? ");
-    }
+      disp("------- todo:: save solution ------- ? ");
   }
 
  private:
@@ -301,6 +296,7 @@ class MLSteadyState final : public Configurable {
 
   std::shared_ptr<ICType> IC_;
   std::string log_output_path_;
+  std::string output_path_; 
 
   std::shared_ptr<
       RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER>>
