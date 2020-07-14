@@ -31,6 +31,11 @@ add_executable(example_vector_times_matrix EXCLUDE_FROM_ALL example_vector_times
 utopia_link_default_targets(example_vector_times_matrix)
 target_link_libraries(example_vector_times_matrix utopia)
 
+# Sum of two vectors
+add_executable(example_sum_of_two_vectors EXCLUDE_FROM_ALL example_sum_of_two_vectors.cpp)
+utopia_link_default_targets(example_sum_of_two_vectors)
+target_link_libraries(example_sum_of_two_vectors utopia)
+
 # Add more examples here and add target to dependecy list below
 # ...
 
@@ -43,4 +48,5 @@ add_dependencies(utopia_examples
             example_nonlinear_solve
             example_communicator
             example_vector_times_matrix
+            example_sum_of_two_vectors
             )
