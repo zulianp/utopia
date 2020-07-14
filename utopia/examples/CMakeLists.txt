@@ -26,10 +26,10 @@ add_executable(example_communicator EXCLUDE_FROM_ALL example_communicator.cpp)
 utopia_link_default_targets(example_communicator)
 target_link_libraries(example_communicator utopia)
 
-# Matrix * Vector
-add_executable(example_vector_times_matrix EXCLUDE_FROM_ALL example_vector_times_matrix.cpp)
-utopia_link_default_targets(example_vector_times_matrix)
-target_link_libraries(example_vector_times_matrix utopia)
+# Simple linear system
+add_executable(example_trivial_linear_system EXCLUDE_FROM_ALL example_trivial_linear_system.cpp)
+utopia_link_default_targets(example_trivial_linear_system)
+target_link_libraries(example_trivial_linear_system utopia)
 
 # Sum of two vectors
 add_executable(example_sum_of_two_vectors EXCLUDE_FROM_ALL example_sum_of_two_vectors.cpp)
@@ -47,6 +47,10 @@ add_dependencies(utopia_examples
             example_loops
             example_nonlinear_solve
             example_communicator
+<<<<<<< HEAD
             example_vector_times_matrix
             example_sum_of_two_vectors
+=======
+            example_trivial_linear_system
+>>>>>>> ee1f4f0ae349bc670ca32f2f9f12f2ffc5089cb5
             )
