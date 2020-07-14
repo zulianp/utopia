@@ -271,15 +271,35 @@ class MLSteadyState final : public Configurable {
 
     prepare_for_solve(solution);
 
-    disp("------------- 1 -----------");
-    exit(0);        
+    Matrix H; 
+    Vector g; 
+    level_functions_.back()->hessian(solution, H); 
+    level_functions_.back()->gradient(solution, g); 
 
-      // ////////////////////////////////////////////////////////////////////////////////////////////////////////
-      rmtr_->solve(solution);
-      auto sol_status = rmtr_->solution_status();
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // update_time_step(sol_status.reason);
-      disp("------- todo:: save solution ------- ? ");
+    // disp(H, "H"); 
+
+    auto direct_solver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
+
+    Vector s = 0*solution; 
+    direct_solver->solve(H, g, s); 
+
+    solution = solution - s; 
+
+    // disp(solution); 
+    // disp("------------- 1 -----------");
+    // exit(0);        
+
+    // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // rmtr_->solve(solution);
+    // auto sol_status = rmtr_->solution_status();
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // update_time_step(sol_status.reason);
+    disp("------- todo:: save solution ------- ? ");
+
+    write_to_file(*spaces_[n_levels_ - 1], solution); 
+
+    // disp("------------- 1 -----------");
+    // exit(0);     
   }
 
  private:

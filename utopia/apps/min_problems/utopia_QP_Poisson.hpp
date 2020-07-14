@@ -16,9 +16,6 @@
 #include "utopia_Views.hpp"
 
 
-#define UNROLL_FACTOR 4
-#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
-
 namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
@@ -168,6 +165,82 @@ namespace utopia {
         bool gradient(const Vector &x_const, Vector &g) const override {
             UTOPIA_TRACE_REGION_BEGIN("QPPoisson::gradient");
 
+            if (empty(g)) {
+                space_.create_vector(g);
+            } else {
+                g.set(0.0);
+            }
+
+            CSpace C = space_;
+
+            ///////////////////////////////////////////////////////////////////////////
+
+            // update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+
+            FEFunction<CSpace> c_fun(c_coeff);
+
+            Quadrature q;
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto differential = C.differential(q);
+
+            auto c_shape = C.shape(q);
+            auto c_grad_shape = C.shape_grad(q);
+
+
+            {
+                
+                auto C_view = C.view_device();
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+
+                auto differential_view = differential.view_device();
+
+                // auto v_grad_shape_view = v_grad_shape.view_device();
+                auto c_shape_view = c_shape.view_device();
+                auto c_grad_shape_view = c_grad_shape.view_device();
+
+                auto g_view = space_.assembly_view_device(g);
+                
+
+                Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    StaticVector<Scalar, C_NDofs> c_el_vec;
+                    c_el_vec.set(0.0);
+                    ////////////////////////////////////////////
+
+                    CElem c_e;
+                    C_view.elem(i, c_e);
+                    StaticVector<Scalar, NQuadPoints> c;
+                    c_view.get(c_e, c);
+
+                    auto c_grad_el = c_grad_view.make(c_e);
+                    auto dx = differential_view.make(c_e);
+                    auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+                    auto c_shape_fun_el = c_shape_view.make(c_e);
+
+                    ////////////////////////////////////////////
+                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                        for (SizeType j = 0; j < C_NDofs; ++j) {
+                            c_el_vec(j) += inner(c_grad_el[qp], c_grad_shape_el(j, qp)) * dx(qp);
+
+                            // TODO:: fix me + fix energy 
+                            const Scalar shape_test = c_shape_fun_el(j, qp);
+                            for (SizeType k = 0; k < C_NDofs; ++k) {
+                                c_el_vec(j) += inner(c_shape_fun_el(k, qp), -1.0 * shape_test) * dx(qp);
+                            }
+                        }
+                    }
+
+                    C_view.add_vector(c_e, c_el_vec, g_view);
+                });
+            }
+
+
+            space_.apply_zero_constraints(g);
+
+
             UTOPIA_TRACE_REGION_END("QPPoisson::gradient");
             return true;
         }
@@ -175,6 +248,91 @@ namespace utopia {
         bool hessian(const Vector &x_const, Matrix &H) const override {
             UTOPIA_TRACE_REGION_BEGIN("QPPoisson::hessian");
 
+
+            if (empty(H)) {
+                // if(use_dense_hessian_) {
+                //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+                // } else {
+                space_.create_matrix(H);
+                // }
+            } else {
+                H *= 0.0;
+            }
+
+            CSpace C = space_;
+
+
+            ////////////////////////////////////////////////////////////////////////////
+            // update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+
+
+            FEFunction<CSpace> c_fun(c_coeff);
+
+            ////////////////////////////////////////////////////////////////////////////
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto differential = C.differential(q);
+
+            auto c_shape = C.shape(q);
+            auto c_grad_shape = C.shape_grad(q);
+
+
+            {
+                auto C_view = C.view_device();
+
+                auto space_view = space_.view_device();
+
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto differential_view = differential.view_device();
+
+                auto c_shape_view = c_shape.view_device();
+                auto c_grad_shape_view = c_grad_shape.view_device();
+
+                auto H_view = space_.assembly_view_device(H);
+
+                Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    StaticMatrix<Scalar, C_NDofs, C_NDofs> el_mat;      
+                    el_mat.set(0.0);
+
+                    ////////////////////////////////////////////
+                    CElem c_e;
+                    C_view.elem(i, c_e);
+                    StaticVector<Scalar, NQuadPoints> c;
+                    c_view.get(c_e, c);
+
+                    auto dx = differential_view.make(c_e);
+                    auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+                    auto c_shape_fun_el = c_shape_view.make(c_e);
+
+                    ////////////////////////////////////////////
+                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+
+                        for (SizeType l = 0; l < C_NDofs; ++l) {
+                            auto &&c_grad_l = c_grad_shape_el(l, qp);
+
+                            for (SizeType j = l; j < C_NDofs; ++j) {
+                                Scalar val = inner(c_grad_shape_el(j, qp), c_grad_l) * dx(qp);
+                                val = (l == j) ? (0.5 * val) : val;
+
+                                el_mat(l, j) += val;
+                                el_mat(j, l) += val;
+                            }
+                        }
+
+                      
+                    }
+
+                    space_view.add_matrix(c_e, el_mat, H_view);
+                });
+            }
+
+            space_.apply_constraints(H);
 
             UTOPIA_TRACE_REGION_END("QPPoisson::hessian");
             return true;
