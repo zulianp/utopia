@@ -54,7 +54,8 @@ namespace utopia {
 
         void read(Input &) override {}
 
-        virtual void emplace_time_dependent_BC(const Scalar &time) = 0;
+        virtual void emplace_BC() {}; 
+        virtual void emplace_time_dependent_BC(const Scalar &time) {}; 
 
     protected:
         FunctionSpace &space_;

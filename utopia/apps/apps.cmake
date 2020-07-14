@@ -10,6 +10,7 @@ if(TARGET utopia_petsc)
         cpu_assembler
         cpu_assembler/dmplex
         PF_frac
+        min_problems
         fe
     )
 
