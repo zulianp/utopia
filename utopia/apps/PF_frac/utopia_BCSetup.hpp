@@ -76,17 +76,31 @@ namespace utopia {
             this->space_.reset_bc();
 
             for (int d = 1; d < Dim + 1; ++d) {
+                // this->space_.emplace_dirichlet_condition(
+                //     SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                // this->space_.emplace_dirichlet_condition(
+                //     SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                if(d==1){
                 this->space_.emplace_dirichlet_condition(
+                    SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.000; }, d);
+                }
+                else
+                {
+                    this->space_.emplace_dirichlet_condition(
                     SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+                }
 
-                this->space_.emplace_dirichlet_condition(
-                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
-
-                this->space_.emplace_dirichlet_condition(
-                    SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
-
-                this->space_.emplace_dirichlet_condition(
-                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+                if(d==1){
+                    this->space_.emplace_dirichlet_condition(
+                        SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.001; }, d);
+                }
+                else
+                {
+                    this->space_.emplace_dirichlet_condition(
+                        SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);                    
+                }
 
                 if (Dim == 3) {
                     this->space_.emplace_dirichlet_condition(

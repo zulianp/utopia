@@ -225,7 +225,10 @@ namespace utopia {
                 spaces_[l]->create_vector(coarse_sol);
 
                 transfers_[l - 1]->project_down(fine_sol, coarse_sol);
-                spaces_[l]->apply_constraints(coarse_sol);
+
+                std::cout<<"coarse_sol: "<< size(coarse_sol) << "  \n";
+
+                // spaces_[l]->apply_constraints(coarse_sol);
 
                 // transfers_[l]->restrict(fine_sol, coarse_sol);
             }
@@ -236,16 +239,61 @@ namespace utopia {
                 // only finest level
                 IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
 
-                // all levels
+                // // all levels
                 // for(auto l=0; l < spaces_.size(); l++){
 
                 //     ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
                 //     Vector & sol  = fun->old_solution();
                 //     rename("X", sol);
 
-                //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr",
-                //     sol);
+                //     std::cout<<"------ lev: "<< l << "   \n";
+                //     std::cout<<"sol: "<< size(sol) << "  \n"; 
+
+                //     auto name = this->output_path_+"_lev_"+ std::to_string(l)+"_time_"+std::to_string(time)+".vtk"; 
+                //     std::cout<<"------ name: "<< name << " \n";
+
+                //     spaces_[l]->write(name, sol);
                 // }
+
+                  Vector sol = this->solution_; 
+
+
+                  for (auto l = n_levels_ - 1; l > 0; l--) 
+                  {
+
+                      ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
+                      Vector sol_coarse  = 0*fun_coarse->get_eq_constrains_flg();
+
+                      // transfers_[l - 1]->project_down(sol, sol_coarse);
+                      transfers_[l - 1]->restrict(sol, sol_coarse);
+
+                      // L2-fit projection 
+                      // IPTransferNested<Matrix, Vector> * tr_nested = dynamic_cast<IPTransferNested<Matrix, Vector> *>(transfers_[l - 1].get());
+                      // const Matrix & I = tr_nested->I(); 
+                      // Vector s_help = transpose(I)*sol; 
+                      // Matrix II = transpose(I) * I; 
+                      // auto direct_solver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
+                      // direct_solver->solve(II, s_help, sol_coarse); 
+
+
+                      spaces_[l-1]->apply_constraints(sol_coarse);
+                      rename("X", sol_coarse);
+                      
+
+                      auto name = this->output_path_+"_lev_"+ std::to_string(l-1)+"_time_"+std::to_string(time)+".vtr"; 
+                      spaces_[l-1]->write(name,
+                      sol_coarse);
+
+
+                      transfers_[l - 1]->interpolate(sol_coarse, sol); 
+                      auto name2 = this->output_path_+"_lev_up_"+ std::to_string(l)+"_time_"+std::to_string(time)+".vtr"; 
+                      rename("X", sol);
+                      spaces_[l]->apply_constraints(sol);
+                      spaces_[l]->write(name2, sol);
+
+
+                      sol = sol_coarse; 
+                  }                
 
                 Utopia::instance().set("log_output_path", log_output_path_);
             }

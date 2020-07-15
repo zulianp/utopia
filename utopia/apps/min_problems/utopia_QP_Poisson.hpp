@@ -78,19 +78,17 @@ namespace utopia {
 
             this->local_x_ = std::make_shared<Vector>();
             space_.create_local_vector(*this->local_x_);
+
+
+            // TODO:: add more options
+            this->init_forcing_function(this->rhs_);
+            
+            // disp(this->rhs_); 
+            // exit(0);
         }
 
-        QPPoisson(FunctionSpace &space, const Parameters &params) :  space_(space), params_(params)
-        {
-            this->local_x_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_x_);
 
-            this->local_pressure_field_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_pressure_field_);
 
-            this->local_c_old_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_c_old_);
-        }
 
 
         inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override 
@@ -157,6 +155,8 @@ namespace utopia {
 
             val = x_const.comm().sum(val);
 
+            // add contributions from RHS 
+            val = val + dot(x_const, this->rhs_); 
 
             UTOPIA_TRACE_REGION_END("QPPoisson::value");
             return true;
@@ -189,9 +189,7 @@ namespace utopia {
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-
-            {
-                
+            {                
                 auto C_view = C.view_device();
                 auto c_view = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
@@ -225,11 +223,11 @@ namespace utopia {
                         for (SizeType j = 0; j < C_NDofs; ++j) {
                             c_el_vec(j) += inner(c_grad_el[qp], c_grad_shape_el(j, qp)) * dx(qp);
 
-                            // TODO:: fix me + fix energy 
-                            const Scalar shape_test = c_shape_fun_el(j, qp);
-                            for (SizeType k = 0; k < C_NDofs; ++k) {
-                                c_el_vec(j) += inner(c_shape_fun_el(k, qp), -1.0 * shape_test) * dx(qp);
-                            }
+                            // // TODO:: fix me + fix energy 
+                            // const Scalar shape_test = c_shape_fun_el(j, qp);
+                            // for (SizeType k = 0; k < C_NDofs; ++k) {
+                            //     c_el_vec(j) += inner(c_shape_fun_el(k, qp), -1.0 * shape_test) * dx(qp);
+                            // }
                         }
                     }
 
@@ -237,9 +235,8 @@ namespace utopia {
                 });
             }
 
-
+            g = g + this->rhs_; 
             space_.apply_zero_constraints(g);
-
 
             UTOPIA_TRACE_REGION_END("QPPoisson::gradient");
             return true;
@@ -339,9 +336,60 @@ namespace utopia {
         }
 
 
+    private: 
+
+        void init_forcing_function(Vector & rhs) 
+        {
+            using Elem = typename FunctionSpace::Elem;
+            static const int NNodes = Elem::NNodes;
+            using ElementVector = utopia::StaticVector<Scalar, NNodes>;
+            using Mesh = typename FunctionSpace::Mesh;
+            using Point = typename Mesh::Point;
+
+            auto forcing_function = UTOPIA_LAMBDA(const Point &x)->Scalar { 
+                // return (4.0 * 6.0) * x[0] + 2.0; 
+                // return -1.0; 
+
+                Scalar pi = 3.1415926; 
+                // return -2.0 * pi * pi * device::sin(pi * x[0]) * device::sin(pi * x[1]); 
+
+                return -4.0 * pi * pi * device::sin(2.0*pi * x[0]) * device::sin(2.0*pi * x[1]); 
+            };
+
+
+            space_.create_vector(rhs);
+            Quadrature q;
+
+            Projection<FunctionSpace, Quadrature, decltype(forcing_function)> proj(space_, q, forcing_function);
+
+            auto proj_view = proj.view_device();
+
+            {
+                auto space_view = space_.view_device();
+                auto rhs_view = space_.assembly_view_device(rhs);
+
+                Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Elem e;
+                    space_view.elem(i, e);
+
+                    ElementVector el_vec;
+                    el_vec.set(0.0);
+
+                    proj_view.assemble(i, e, el_vec);
+                    space_view.add_vector(e, el_vec, rhs_view);
+                });
+            }
+
+            // TODO:: 
+            // space_->apply_constraints(rhs);
+        }        
+
+
     private:
         FunctionSpace &space_;
         Parameters params_;
+
+        Vector rhs_; 
 
         std::shared_ptr<Vector> local_x_;
     };

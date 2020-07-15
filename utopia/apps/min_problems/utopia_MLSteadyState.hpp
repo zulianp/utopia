@@ -221,10 +221,44 @@ class MLSteadyState final : public Configurable {
     // }
   }
 
-  void write_to_file(FunctionSpace &space, const Vector &sol) {
+  void write_to_file(FunctionSpace &space, const Vector &solution) {
     if (save_output_) {
-      spaces_.back()->write(this->output_path_ + ".vtr", sol);
+      spaces_.back()->write(this->output_path_ + ".vtr", solution);
       Utopia::instance().set("log_output_path", log_output_path_);
+
+      Vector sol = solution; 
+
+
+      for (auto l = n_levels_ - 1; l > 0; l--) 
+      {
+
+          ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
+          Vector sol_coarse  = 0*fun_coarse->get_eq_constrains_flg();
+
+          transfers_[l - 1]->project_down(sol, sol_coarse);
+          // transfers_[l - 1]->restrict(sol, sol_coarse);
+
+          // L2-fit projection 
+          // IPTransferNested<Matrix, Vector> * tr_nested = dynamic_cast<IPTransferNested<Matrix, Vector> *>(transfers_[l - 1].get());
+          // const Matrix & I = tr_nested->I(); 
+          // Vector s_help = transpose(I)*sol; 
+          // Matrix II = transpose(I) * I; 
+          // auto direct_solver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
+          // direct_solver->solve(II, s_help, sol_coarse); 
+
+
+          spaces_[l-1]->apply_constraints(sol_coarse);
+
+          rename("X", sol_coarse);
+          
+
+          spaces_[l-1]->write(this->output_path_+"_l_"+ std::to_string(l)+".vtr",
+          sol_coarse);
+
+          sol = sol_coarse; 
+      }
+
+
     }
   }
 
