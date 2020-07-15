@@ -93,8 +93,8 @@ namespace utopia {
             fun.hessian(x, H);
             fun.gradient(x, g);
 
-            backend_convert(H, H_working);
-            backend_convert(g, g_working);
+            convert(H, H_working);
+            convert(g, g_working);
             x_working = 0.0 * g_working;
 
             // monitor(0, H, "Hessian.m", "H");
@@ -531,9 +531,9 @@ namespace utopia {
             Matrix H_tril;
             Vector g_tril;
             Vector x_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert(H, H_tril);
-            backend_convert(g, g_tril);
-            backend_convert(x, x_tril);
+            convert(H, H_tril);
+            convert(g, g_tril);
+            convert(x, x_tril);
 
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
 
@@ -541,8 +541,8 @@ namespace utopia {
             Vector ub_tril(layout(x_tril), 9e9);
 
             empty_rhs_tril = 0.0 * x_tril;
-            backend_convert(x_eq, x_eq_tril);
-            backend_convert(x_bc_marker, x_bc_marker_tril);
+            convert(x_eq, x_eq_tril);
+            convert(x_bc_marker, x_bc_marker_tril);
 
             QuadraticExtendedFunction<Matrix, Vector> fun_QP_tril(
                 H_tril, g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril);
@@ -568,10 +568,10 @@ namespace utopia {
 
             Matrix2 H_tril;
             Vector2 g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert(H, H_tril);
-            backend_convert(g, g_tril);
-            backend_convert(x_eq, x_eq_tril);
-            backend_convert(x_bc_marker, x_bc_marker_tril);
+            convert(H, H_tril);
+            convert(g, g_tril);
+            convert(x_eq, x_eq_tril);
+            convert(x_bc_marker, x_bc_marker_tril);
             empty_rhs_tril = 0.0 * x_eq_tril;
 
             return std::make_shared<QuadraticExtendedFunction<Matrix2, Vector2>>(
@@ -590,9 +590,9 @@ namespace utopia {
 
             Matrix2 H_tril;
             Vector2 x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert(H, H_tril);
-            backend_convert(x_eq, x_eq_tril);
-            backend_convert(x_bc_marker, x_bc_marker_tril);
+            convert(H, H_tril);
+            convert(x_eq, x_eq_tril);
+            convert(x_bc_marker, x_bc_marker_tril);
             empty_rhs_tril = 0.0 * x_eq_tril;
 
             int n = pow(fun.dim(), 1. / 3.);
@@ -618,7 +618,7 @@ namespace utopia {
                 fun_Poisson3D->describe();
             }
 
-            backend_convert(x, x_fine);
+            convert(x, x_fine);
 
             auto transfers = multilevel_problem.get_transfer();
 
@@ -626,7 +626,7 @@ namespace utopia {
                 auto *mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(transfers[i].get());
 
                 Matrix I_tril;
-                backend_convert(mat_transfer->I(), I_tril);
+                convert(mat_transfer->I(), I_tril);
                 transfers_tril.push_back(
                     std::make_shared<MatrixTransfer<Matrix, Vector>>(std::make_shared<Matrix>(I_tril)));
             }
