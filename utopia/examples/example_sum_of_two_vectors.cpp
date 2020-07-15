@@ -3,7 +3,7 @@
 
 // Utopia may use different backend libraries
 // to define a vector, a template class allows
-// flexibility.
+// to write the code one for all vector types.
 template <class Vector>
 void sum_of_two_vectors() {
     using namespace utopia;
@@ -13,8 +13,8 @@ void sum_of_two_vectors() {
     // sharing local information for their computation.
     using Comm = typename Traits<Vector>::Communicator;
 
-    // SyzeType is a type that refers to n_locals and
-    // n_global, which we will see in a second.
+    // SyzeType is a type for indicies, in this case is used
+    // for n_locals and n_global, which we will see in a second.
     using SizeType = typename Traits<Vector>::SizeType;
 
     // The element of a vector are of type Scalar.
@@ -24,7 +24,7 @@ void sum_of_two_vectors() {
     Vector a, b;
 
     // Default initialisation of the communicator.
-    Comm& comm = Comm::get_default();
+    Comm comm = Comm::get_default();
 
     // For each process we declare the number of local
     // entries that we want to use to compute our calculations.
@@ -34,44 +34,40 @@ void sum_of_two_vectors() {
     // We compute the global size of our vectors.
     SizeType n_global = n_local * comm.size();
 
-    // We need a layout, that is a description of
-    // the context of our data. 
+    // A layout allows to describe the distribution of the data.
+    // with n_local we define how many local entries we want
+    // and with n_global how many global entries we have in total.
     auto l = layout(comm, n_local, n_global);
 
-    // Initialise vector a. Note: this type of initialisation
-    // assign the same value to each entry.
-    // a will therefore be [5 5 5 5 5 5 5 5 5 5]'.
+    // Initialise the vector `a` with uniform value `5`.
     a.values(l, 5);
 
-    // Initialise vector b.
+    // Initialise the vector `b` with uniform value `2`.
     b.values(l, 2);
 
     // ----- Initialising vectors with different values ------
 
-
-    // We have two way to initialise vectors, that is with local 
+    // We have two way to initialise vectors, that is with local
     // or global indexing.
     // A local initialisation involves a fixed range for the entries. Each
-    // entry may have a different processor. On the other hand,
-    // with a global intialisation we have the sum of all the
-    // n_locals. 
+    // entry may have a different processor.
 
     // You have a device (GPU, CPU) or a host (always CPU).
-    // For using local indexing, we can do, for example: 
+    // For using local indexing, we can do, for example:
     // auto a_view = local_view_device(a);.
-    // Fo using global indexing, instead, with 
+    // Fo using global indexing, instead, with
     // auto a_view = view_device(a);.
 
     // You can run the programm to see the difference in terms
-    // of output. The first output is with local indexing, 
+    // of output. The first output is with local indexing,
     // the second is with global indexing.
 
-    // In both cases, we use the 'set(index, value)' function 
-    // to set a value at a certain index. 
-    // We can also use 'get(index)'' to get the value at certain 
-    // index. 
-    // the 'disp(vector/matrix)' function allows to visualise 
-    // the content of a vector or a matrix. 
+    // In both cases, we use the 'set(index, value)' function
+    // to set a value at a certain index.
+    // We can also use 'get(index)'' to get the value at certain
+    // index.
+    // the 'disp(vector/matrix)' function allows to visualise
+    // the content of a vector or a matrix.
 
     {
         auto a_view = local_view_device(a);
@@ -80,13 +76,15 @@ void sum_of_two_vectors() {
                 const auto ai = a_view.get(i);
                 a_view.set(i, i);
             });
-
     }
 
-    // Display the content. 
+    // An expression object for sum of two vectors is created here, and ..
     auto c_expr = a + b;
+
+    // evaluated here
     Vector c = c_expr;
 
+    // Display the content.
     disp(c);
 
     {
@@ -94,7 +92,7 @@ void sum_of_two_vectors() {
         parallel_for(
             range_device(a), UTOPIA_LAMBDA(const SizeType& i) {
                 const Scalar val = i;
-                // a more complex example. 
+                // a more complex example.
                 // const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
                 a_view.set(i, i);
             });
@@ -106,13 +104,11 @@ void sum_of_two_vectors() {
 
     disp(d);
 
-
     // ---------------------------------------------------------------------
     // -------------- Wrong way to initialise a vector --------------------
 
-
-    // This initialisation does not work since it is not performed 
-    // in parallel. 
+    // This initialisation does not work since it is not performed
+    // in parallel.
     // a_view.set(0, 1);
     // a_view.set(1, 10);
     // a_view.set(2, 33);
@@ -126,12 +122,9 @@ void sum_of_two_vectors() {
     // }
 
     // ---------------------------------------------------------------------
-
-
 }
 
-
-// Use 'make -j4 complete' to compile. 
+// Use 'make -j4 complete' to compile.
 // Then run with, for example, 4 processor with
 // mpirun  -n 4 ./examples/your_example'
 int main(int argc, char** argv) {
@@ -141,7 +134,7 @@ int main(int argc, char** argv) {
 #ifdef WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
-#else    
+#else
 #ifdef WITH_TRILINOS
     using MatrixT = TpetraMatrixd;
     using VectorT = TpetraVectord;
@@ -157,4 +150,3 @@ int main(int argc, char** argv) {
 
     return Utopia::Finalize();
 }
-
