@@ -144,7 +144,6 @@ void fastest_solver() {
 int main(const int argc, char *argv[]) {
     using namespace utopia;
 
-
     // Checking which backend is active.
     #ifdef WITH_PETSC
         using MatrixT = PetscMatrix;
@@ -159,12 +158,10 @@ int main(const int argc, char *argv[]) {
     #endif
     #endif
 
-    // Initializes library and dependencies runtimes
     Utopia::Init(argc, argv);
 
     fastest_solver<MatrixT, VectorT>();
 
-    // Finalizes library and dependencies runtimes
     return Utopia::Finalize();
 }
 
