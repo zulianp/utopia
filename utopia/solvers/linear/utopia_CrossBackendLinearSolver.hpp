@@ -14,12 +14,12 @@ namespace utopia {
         ~CrossBackendLinearSolver() override {}
 
         bool apply(const Vector &rhs, Vector &sol) override {
-            backend_convert(rhs, rhs_buff_);
-            backend_convert(sol, sol_buff_);
+            convert(rhs, rhs_buff_);
+            convert(sol, sol_buff_);
 
             bool ok = solver_.apply(rhs_buff_, sol_buff_);
 
-            backend_convert(sol_buff_, sol);
+            convert(sol_buff_, sol);
             return ok;
         }
 
@@ -28,7 +28,7 @@ namespace utopia {
                 mat_buff_ = std::make_shared<WantedMatrix>();
             }
 
-            backend_convert(*op, *mat_buff_);
+            convert(*op, *mat_buff_);
             solver_.update(mat_buff_);
         }
 
@@ -49,22 +49,22 @@ namespace utopia {
         ~CrossBackendLinearSolverAndSmoother() override {}
 
         bool apply(const Vector &rhs, Vector &sol) override {
-            backend_convert(rhs, rhs_buff_);
-            backend_convert(sol, sol_buff_);
+            convert(rhs, rhs_buff_);
+            convert(sol, sol_buff_);
 
             bool ok = solver_.apply(rhs_buff_, sol_buff_);
 
-            backend_convert(sol_buff_, sol);
+            convert(sol_buff_, sol);
             return ok;
         }
 
         bool smooth(const Vector &rhs, Vector &x) override {
-            backend_convert(rhs, rhs_buff_);
-            backend_convert(x, sol_buff_);
+            convert(rhs, rhs_buff_);
+            convert(x, sol_buff_);
 
             bool ok = solver_.smooth(rhs_buff_, sol_buff_);
 
-            backend_convert(sol_buff_, x);
+            convert(sol_buff_, x);
             return ok;
         }
 
@@ -73,7 +73,7 @@ namespace utopia {
                 mat_buff_ = std::make_shared<WantedMatrix>();
             }
 
-            backend_convert(*op, *mat_buff_);
+            convert(*op, *mat_buff_);
             solver_.update(mat_buff_);
         }
 

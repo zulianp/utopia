@@ -121,18 +121,6 @@ namespace utopia {
 
     /**
      * @ingroup    interoperability
-     * @brief      Converts utopia-wrapper specified type of tensor into original type.
-     *
-     * @param      t        Utopia tensor(wrapper).
-     * @param      rawType  The external library tensor (backend supported).
-     */
-    template <class Derived, int Order, class RawType>
-    inline void convert(Tensor<Derived, Order> & /*t*/, RawType & /*rawType*/) {
-        assert(false && "OVERLOAD ME IF NEEDED");
-    }
-
-    /**
-     * @ingroup    interoperability
      * @brief      Converts bewtween vectors with compatible types
      *
      * @param      from  source of copy
