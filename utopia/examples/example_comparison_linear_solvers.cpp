@@ -18,7 +18,6 @@ struct less_than_key {
     }
 };
 
-
 template <class Matrix, class Vector>
 void fastest_solver() {
     using namespace utopia;
@@ -52,9 +51,7 @@ void fastest_solver() {
                 const auto bi = b_view.get(i);
                 b_view.set(i, i);
             });
-
     }
-    x.zeros(l);
 
 
     // Matrix 
