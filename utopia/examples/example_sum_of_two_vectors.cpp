@@ -3,7 +3,7 @@
 
 // Utopia may use different backend libraries
 // to define a vector, a template class allows
-// to write the code one for all vector types.
+// to write the code once for all vector types.
 template <class Vector>
 void sum_of_two_vectors() {
     using namespace utopia;
