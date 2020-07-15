@@ -53,7 +53,6 @@ add_dependencies(utopia_examples
             example_loops
             example_nonlinear_solve
             example_communicator
-            example_vector_times_matrix
             example_sum_of_two_vectors
             example_trivial_linear_system
             example_comparison_linear_solvers
