@@ -22,15 +22,22 @@ namespace utopia {
         static void apply(const T &in, T &out) { out.copy(in); }
     };
 
+    /**
+     * @ingroup    interoperability
+     * @brief      Converts the From tensor to the To tensor type
+     *
+     * @param      from       Source tensor
+     * @param      to         Destination tensor
+     */
     template <class From, class To, int Order>
-    inline void backend_convert(const Tensor<From, Order> &from, Tensor<To, Order> &to) {
+    inline void convert(const Tensor<From, Order> &from, Tensor<To, Order> &to) {
         ConvertTensor<From, To>::apply(from.derived(), to.derived());
     }
 
     template <class T1, class T2, int Order>
     bool cross_backend_approxeq(const Tensor<T1, Order> &l, const Tensor<T2, Order> &r) {
         T1 r_copy;
-        backend_convert(r, r_copy);
+        convert(r, r_copy);
         return approxeq(l, r_copy, 1e-10);
     }
 
