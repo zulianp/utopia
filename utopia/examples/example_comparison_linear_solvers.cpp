@@ -91,6 +91,15 @@ void fastest_solver() {
     timeCG.start();
     {
         ConjugateGradient<Matrix, Vector> cg;
+        // Setting a conditioner is important with iterative linear solver.
+        // The more a problem is bad conditioned, that is the more the difference
+        // between the largest and small eigenvalues is significant, the more
+        // the solution will deviate from the exact solution. 
+        // A preconditioner allows to make this difference smaller, so that
+        // the solution found with the iterative system will be more 
+        // precise. 
+        // Set the preconditioner by uncommenting the following line. 
+        //cg.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
         cg.solve(A, b, x);
     }
     timeCG.stop();
@@ -106,6 +115,9 @@ void fastest_solver() {
     timeGS.start();
     {
         GaussSeidel<Matrix, Vector> gs;
+    //  Set the preconditioner by uncommenting the following line. 
+    //  (Somehow not working in this example)  
+    //  gs.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
         gs.solve(A, b, x);
     }
     timeGS.stop();
@@ -121,6 +133,8 @@ void fastest_solver() {
     timeBi.start();
     {
         BiCGStab<Matrix, Vector> Bi;
+        // Set the preconditioner by uncommenting the following line. 
+        // Bi.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
         Bi.solve(A, b, x);
     }
     timeBi.stop();
