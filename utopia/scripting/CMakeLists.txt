@@ -1,39 +1,19 @@
-list(APPEND SCRIPTING_MODULES
-    .
-)
-
-set(LOCAL_HEADERS "")
-set(LOCAL_SOURCES "")
-find_project_files(CMAKE_CURRENT_SOURCE_DIR SCRIPTING_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-
-add_library(utopia_c SHARED ${LOCAL_SOURCES})
-target_link_libraries(utopia_c utopia)
-target_include_directories(utopia_c PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-install(TARGETS utopia_c
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    )
-
-install(FILES ${LOCAL_HEADERS} DESTINATION include)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
-
+utopia_add_library(utopia_c ${CMAKE_CURRENT_SOURCE_DIR} "." "utopia")
 
 ################ SWIG ##################
 
 find_package(SWIG)
 
 if(SWIG_FOUND)
+    # 2020-07-16 AF: Is this even working???
+    #                we are using set_target_properties on the target "_utopia", which is never defined???
+
     include(${SWIG_USE_FILE})
 
     find_package(PythonLibs)
 
     if(PythonLibs_FOUND)
-        include_directories(${PYTHON_INCLUDE_PATH})
-        include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+        target_include_directories(utopia_c PRIVATE ${PYTHON_INCLUDE_PATH})
         # set(CMAKE_SWIG_FLAGS "")
 
         set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)

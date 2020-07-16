@@ -81,7 +81,6 @@ if(PETSC_FOUND)
         list(APPEND PETSC_MODULES
             solvers/eigensolvers
         )
-
     endif()
 
     if(ENABLE_PASSO_EXTENSIONS)
@@ -90,47 +89,19 @@ if(PETSC_FOUND)
             )
     endif()
 
-    set(LOCAL_HEADERS "")
-    set(LOCAL_SOURCES "")
-    find_project_files(CMAKE_CURRENT_SOURCE_DIR PETSC_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-    add_library(utopia_petsc STATIC utopia_petsc.cpp ${LOCAL_SOURCES})
-    utopia_link_default_targets(utopia_petsc)
-
-    foreach(MODULE ${PETSC_MODULES})
-        target_include_directories(utopia_petsc PUBLIC ${MODULE})
-    endforeach(MODULE)
-
-    target_include_directories(utopia_petsc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    utopia_add_library(utopia_petsc ${CMAKE_CURRENT_SOURCE_DIR} "${PETSC_MODULES}" "utopia_core;utopia_utils;utopia_solvers;utopia_ui")
     target_include_directories(utopia_petsc SYSTEM PUBLIC ${PETSC_INCLUDES})
-
-    target_link_libraries(utopia_petsc utopia_core utopia_utils utopia_solvers utopia_ui)
-    target_link_libraries(utopia_petsc ${PETSC_LIBRARIES})
-    add_definitions(${PETSC_DEFINITIONS})
+    target_link_libraries(utopia_petsc PUBLIC ${PETSC_LIBRARIES})
+    target_compile_definitions(utopia_petsc PUBLIC ${PETSC_DEFINITIONS})
 
     if(SLEPC_FOUND)
         target_include_directories(utopia_petsc SYSTEM PUBLIC ${SLEPC_INCLUDES})
-        target_link_libraries(utopia_petsc ${SLEPC_LIBRARIES})
-        add_definitions(${SLEPC_LIB_SLEPC})
+        target_link_libraries(utopia_petsc PUBLIC ${SLEPC_LIBRARIES})
+        target_compile_definitions(${SLEPC_LIB_SLEPC})
     endif()
-
-
-    install(TARGETS utopia_petsc
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
-
-    install(FILES ${LOCAL_HEADERS} DESTINATION include)
-
-    set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_petsc" PARENT_SCOPE)
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS} ${UTOPIA_DEV_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS} ${UTOPIA_DEV_FLAGS}")
-
 
     set(UTOPIA_INCLUDES ${UTOPIA_INCLUDES} PARENT_SCOPE)
     set(UTOPIA_LIBRARIES ${UTOPIA_LIBRARIES} PARENT_SCOPE)
-    set(UTOPIA_DEFS ${UTOPIA_DEFS} PARENT_SCOPE)
 endif()
 
 

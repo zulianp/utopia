@@ -2,70 +2,43 @@
 find_package(Trilinos)
 
 if(TRILINOS_FOUND)
-    foreach(LIB ${Trilinos_LIBRARY_DIRS})
-        list(APPEND UTOPIA_LIBRARIES -L${LIB})
-    endforeach(LIB)
+    ##### These lines are needed so the utopia-config.makefile will be correctly built. The UtopiaTargets.cmake file is populated automatically by cmake #########
+   foreach(LIB ${Trilinos_LIBRARY_DIRS})
+       list(APPEND UTOPIA_LIBRARIES -L${LIB})
+   endforeach(LIB)
 
-    list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
-    # list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
-    list(APPEND Trilinos_all_libs ${Trilinos_TPL_LIBRARIES})
-    list(APPEND Trilinos_all_libs ${Trilinos_LIBRARIES})
-    list(REMOVE_DUPLICATES Trilinos_all_libs)
-    foreach(LIB ${Trilinos_all_libs})
-        if(EXISTS ${LIB})
-            list(APPEND UTOPIA_LIBRARIES ${LIB})
-        else()
-            list(APPEND UTOPIA_LIBRARIES -l${LIB})
+   list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
+   # list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
+   list(APPEND Trilinos_all_libs ${Trilinos_LIBRARIES})
+   list(APPEND Trilinos_all_libs ${Trilinos_TPL_LIBRARIES})
+   list(REVERSE Trilinos_all_libs)
+   list(REMOVE_DUPLICATES Trilinos_all_libs)
+   list(REVERSE Trilinos_all_libs)
+   foreach(LIB ${Trilinos_all_libs})
+       if(EXISTS ${LIB})
+           list(APPEND UTOPIA_LIBRARIES ${LIB})
+       else()
+           list(APPEND UTOPIA_LIBRARIES -l${LIB})
+       endif()
+   endforeach()
+   list(APPEND UTOPIA_INCLUDES ${Trilinos_TPL_INCLUDE_DIRS})
+   ############### End of population of variables for utopia-config.makefile #########################3
+
+    set(UTOPIA_TRILINOS_DEPS Kokkos::kokkos)
+    # Unfortunately trilinos libraries are not namespaced (yet), we use the bare target names
+    list(APPEND Utopia_Trilinos_possible_packages Amesos2 Belos Ifpack2 MueLu)
+    foreach(package ${Utopia_Trilinos_possible_packages})
+        # e.g Amesos2: WITH_TRILINOS_AMESOS2=TRUE if package is found in Trilinos_PACKAGE_LIST
+        string(TOUPPER ${package} packageUpper)
+        list(FIND Trilinos_PACKAGE_LIST ${package} PACKAGE_FOUND)
+        if (NOT PACKAGE_FOUND EQUAL -1)
+            set(WITH_TRILINOS_${packageUpper} TRUE PARENT_SCOPE)
+            list(APPEND UTOPIA_TRILINOS_DEPS ${package})
         endif()
     endforeach()
-    list(APPEND Trilinos_TPL_INCLUDE_DIRS ${Trilinos_additional_headers})
-    list(APPEND UTOPIA_INCLUDES ${Trilinos_TPL_INCLUDE_DIRS})
-    #####
-    message(STATUS "Trilinos_additional_headers ${Trilinos_additional_headers}")
-    message(STATUS "Trilinos_TPL_INCLUDE_DIRS ${Trilinos_TPL_INCLUDE_DIRS}")
-
-    list(FIND Trilinos_PACKAGE_LIST "Amesos2" AMESOS2_FOUND)
-    if (NOT AMESOS2_FOUND EQUAL -1)
-      set(WITH_TRILINOS_AMESOS2 TRUE PARENT_SCOPE)
-    endif()
-    list(FIND Trilinos_PACKAGE_LIST "Belos" BELOS_FOUND)
-    if (NOT BELOS_FOUND EQUAL -1)
-      set(WITH_TRILINOS_BELOS TRUE PARENT_SCOPE)
-    endif()
-    list(FIND Trilinos_PACKAGE_LIST "Ifpack2" IFPACK2_FOUND)
-    if (NOT IFPACK2_FOUND EQUAL -1)
-      set(WITH_TRILINOS_IFPACK2 TRUE PARENT_SCOPE)
-    endif()
-    list(FIND Trilinos_PACKAGE_LIST "MueLu" MUELUE_FOUND)
-    if (NOT MUELUE_FOUND EQUAL -1)
-      set(WITH_TRILINOS_MUELU TRUE PARENT_SCOPE)
-    endif()
-
-    # set(CMAKE_C_COMPILER ${TRILINOS_COMPILER})
-
-    if(NOT MPI_CXX_COMPILER)
-        set(MPI_CXX_COMPILER $ENV{MPI_CXX_COMPILER})
-        message(STATUS "compiler ${MPI_CXX_COMPILER}")
-    endif()
-
-    if(MPI_CXX_COMPILER)
-        set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-        set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
-    else()
-         execute_process(COMMAND mpicxx -v RESULT_VARIABLE MPICXX_FAILED)
-
-        if(MPICXX_FAILED)
-            message(STATUS "Using CMAKE compiler, you can define MPI_CXX_COMPILER=<alias_or_path_to_your_compiler>")
-        else()
-            message(STATUS "-----------------------------------------------")
-            message(STATUS "\n[MPI] using mpicxx for compiling c++ files.\nIf you want to use your own compiler define MPI_CXX_COMPILER=<alias_or_path_to_your_compiler>")
-            message(STATUS "-----------------------------------------------")
-            set(CMAKE_CXX_COMPILER mpicxx)
-            set(CMAKE_CXX_COMPILER_DEBUG mpicxx)
-        endif()
-    endif()
 
     set(WITH_TRILINOS TRUE)
+    set(UTOPIA_TRILINOS TRUE PARENT_SCOPE)
 
     find_package(TpetraExt)
     if(TRILINOS_TPETRAEXT_FOUND)
@@ -78,9 +51,6 @@ endif()
 
 # set-up module
 if(TRILINOS_FOUND)
-    set(UTOPIA_TRILINOS TRUE PARENT_SCOPE)
-    set(WITH_TRILINOS ON PARENT_SCOPE)
-
     list(APPEND TRILINOS_MODULES
         .
         eval
@@ -89,48 +59,15 @@ if(TRILINOS_FOUND)
         solvers/nonlinear
         kokkos
         )
+    utopia_add_library(utopia_trilinos ${CMAKE_CURRENT_SOURCE_DIR} "${TRILINOS_MODULES}" "utopia_core;utopia_utils;utopia_solvers")
 
-    set(LOCAL_HEADERS "")
-    set(LOCAL_SOURCES "")
-    find_project_files(CMAKE_CURRENT_SOURCE_DIR TRILINOS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-    add_library(utopia_trilinos STATIC ${LOCAL_SOURCES})
-    utopia_link_default_targets(utopia_trilinos)
+    # include manually thirtparty library include directories (I think this should be added with target_link_libraries(utopia_trilinos TrilinosPaackage), but it is not)
+    target_include_directories(utopia_trilinos PUBLIC ${Trilinos_TPL_INCLUDE_DIRS})
+    target_link_libraries(utopia_trilinos PUBLIC ${UTOPIA_TRILINOS_DEPS})
 
-    foreach(MODULE ${TRILINOS_MODULES})
-        target_include_directories(utopia_trilinos PUBLIC ${MODULE})
-    endforeach(MODULE)
-
-    target_include_directories(utopia_trilinos PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    target_include_directories(utopia_trilinos SYSTEM PUBLIC ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
-
-    target_link_libraries(utopia_trilinos utopia_core utopia_utils utopia_solvers)
-    target_link_libraries(utopia_trilinos ${Trilinos_LIBRARIES})
-    target_link_libraries(utopia_trilinos ${Trilinos_TPL_LIBRARIES})
-    target_link_libraries(utopia_trilinos "-L${Trilinos_LIBRARY_DIRS}")
-    # set_target_properties(utopia_trilinos PROPERTIES COMPILE_FLAG ${Trilinos_CXX_COMPILER_FLAGS})
-
-    add_definitions(${TRILINOS_DEFINITIONS})
-    # add_definitions(${Kokkos_CXX_FLAGS})
-
-    # message(STATUS "${Trilinos_TPL_LIBRARIES}, ${Trilinos_LIBRARIES}")
-    # message(STATUS "HERE: ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${CXX_FLAGS}")
-
-
-    install(TARGETS utopia_trilinos
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
-
-    install(FILES ${LOCAL_HEADERS} DESTINATION include)
-
-    set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_trilinos" PARENT_SCOPE)
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS} ${UTOPIA_DEV_FLAGS}")
-
+    # target_compile_definitions(utopia_trilinos PUBLIC ${TRILINOS_DEFINITIONS})
+    # target_compile_definitions(utopia_trilinos PUBLIC ${Kokkos_CXX_FLAGS})
 
     set(UTOPIA_INCLUDES ${UTOPIA_INCLUDES} PARENT_SCOPE)
     set(UTOPIA_LIBRARIES ${UTOPIA_LIBRARIES} PARENT_SCOPE)
-    set(UTOPIA_DEFS ${UTOPIA_DEFS} PARENT_SCOPE)
 endif()

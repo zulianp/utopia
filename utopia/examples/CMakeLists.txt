@@ -3,23 +3,23 @@
 # Hello world
 add_executable(example_hello_world EXCLUDE_FROM_ALL example_hello_world.cpp)
 utopia_link_default_targets(example_hello_world)
-target_link_libraries(example_hello_world utopia)
+target_link_libraries(example_hello_world PRIVATE utopia)
 
 
 # Assemble and solve a linear system
 add_executable(example_solve_PDE_1D EXCLUDE_FROM_ALL example_solve_PDE_1D.cpp)
 utopia_link_default_targets(example_solve_PDE_1D)
-target_link_libraries(example_solve_PDE_1D utopia)
+target_link_libraries(example_solve_PDE_1D PRIVATE utopia)
 
 # Loops
 add_executable(example_loops EXCLUDE_FROM_ALL example_loops.cpp)
 utopia_link_default_targets(example_loops)
-target_link_libraries(example_loops utopia)
+target_link_libraries(example_loops PRIVATE utopia)
 
 # Non-linear
 add_executable(example_nonlinear_solve EXCLUDE_FROM_ALL example_nonlinear_solve.cpp)
 utopia_link_default_targets(example_nonlinear_solve)
-target_link_libraries(example_nonlinear_solve utopia)
+target_link_libraries(example_nonlinear_solve PRIVATE utopia)
 
 # Communicator
 add_executable(example_communicator EXCLUDE_FROM_ALL example_communicator.cpp)

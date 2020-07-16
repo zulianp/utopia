@@ -70,49 +70,21 @@ if(BLAS_FOUND OR OPEN_BLAS_FOUND)
     endif()
 
 
-    set(LOCAL_HEADERS "")
-    set(LOCAL_SOURCES "")
-    find_project_files(CMAKE_CURRENT_SOURCE_DIR BLAS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-
-
-    add_library(utopia_blas STATIC ${LOCAL_SOURCES})
-    utopia_link_default_targets(utopia_blas)
-
-    foreach(MODULE ${BLAS_MODULES})
-        target_include_directories(utopia_blas PUBLIC ${MODULE})
-    endforeach(MODULE)
-
-
-    target_include_directories(utopia_blas PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    utopia_add_library(utopia_blas ${CMAKE_CURRENT_SOURCE_DIR} "${BLAS_MODULES}" "utopia_core;utopia_utils;utopia_solvers")
     target_include_directories(utopia_blas PUBLIC ${BLAS_INCLUDE_DIR})
-
-    target_link_libraries(utopia_blas utopia_core utopia_utils utopia_solvers)
-    target_link_libraries(utopia_blas ${BLAS_LIBRARIES})
-    add_definitions(${BLAS_DEFINITIONS})
+    target_link_libraries(utopia_blas PUBLIC ${BLAS_LIBRARIES})
+    target_compile_definitions(utopia_blas PUBLIC ${BLAS_DEFINITIONS})
 
     if(LAPACK_FOUND)
         target_include_directories(utopia_blas PUBLIC ${LAPACK_INCLUDE_DIR})
-        target_link_libraries(utopia_blas ${LAPACK_LIBRARIES})
-        add_definitions(${LAPACK_DEFINITIONS})
+        target_link_libraries(utopia_blas PUBLIC ${LAPACK_LIBRARIES})
+        target_compile_definitions(utopia_blas PUBLIC ${LAPACK_DEFINITIONS})
     endif()
 
     if(UMFPACK_FOUND)
         target_include_directories(utopia_blas PUBLIC ${UMFPACK_INCLUDES})
-        target_link_libraries(utopia_blas ${UMFPACK_LIBRARIES})
+        target_link_libraries(utopia_blas PUBLIC ${UMFPACK_LIBRARIES})
     endif()
-
-    install(TARGETS utopia_blas
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
-
-    install(FILES ${LOCAL_HEADERS} DESTINATION include)
-
-    set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_blas" PARENT_SCOPE)
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS} ${UTOPIA_DEV_FLAGS}")
 
     set(UTOPIA_INCLUDES ${UTOPIA_INCLUDES} PARENT_SCOPE)
     set(UTOPIA_LIBRARIES ${UTOPIA_LIBRARIES} PARENT_SCOPE)
