@@ -1,5 +1,6 @@
 #include "utopia.hpp"
 #include "utopia_Version.hpp"
+#include "utopia_Jacobi.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -142,6 +143,25 @@ void fastest_solver() {
     solvers.push_back(MySolver());
     solvers[2].name = "BiCGStab";
     solvers[2].time = timeBi;
+
+
+
+    // ---------------------------------------------------------------    
+    // ------------------------- Jacobi ------------------------------
+
+    Chrono timeJ;
+    timeJ.start();
+    {
+        Jacobi<Matrix, Vector> J;
+        // Set the preconditioner by uncommenting the following line. 
+        // J.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+        J.solve(A, b, x);
+    }
+    timeJ.stop();
+
+    solvers.push_back(MySolver());
+    solvers[3].name = "Jacobi";
+    solvers[3].time = timeJ;
 
 // -------------- PRINTING THE RESULTS ---------------------------
 
