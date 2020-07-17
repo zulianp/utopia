@@ -243,7 +243,6 @@ macro(utopia_add_library libName libraryRootDir subDirs libraryDeps)
     add_library(${libName} STATIC ${THIS_LIB_SOURCES})
     utopia_link_default_targets(${libName})
 
-    target_include_directories(${libName} PUBLIC $<BUILD_INTERFACE:${libraryRootDir}>)
     foreach(MODULE ${subDirs})
         target_include_directories(${libName} PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
     endforeach(MODULE)
@@ -521,8 +520,8 @@ append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_DEFS\n" 			"\
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_CXX_FLAGS\n"  	"\n)\n\n" "${CMAKE_CXX_FLAGS}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_C_COMPILER\n"  	"\n)\n\n" "${CMAKE_C_COMPILER}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_CXX_COMPILER\n" 	"\n)\n\n" "${CMAKE_CXX_COMPILER}")
-set(OLD_CMAKE_CONFIG_CONTENT ${CONFIG_CONTENT})
 file(WRITE ${CMAKE_BINARY_DIR}/utopia-config.cmake ${CONFIG_CONTENT})
+list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 
 install(FILES ${CMAKE_BINARY_DIR}/utopia-config.makefile DESTINATION config)
 install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake 	 DESTINATION config)
