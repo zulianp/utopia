@@ -1,5 +1,10 @@
 @PACKAGE_INIT@
 
+if (NOT CMAKE_CXX_EXTENSIONS)
+    # set extensionst to OFF if not specified explicitly
+    set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
+
 include(CMakeFindDependencyMacro)
 if (@WITH_TRILINOS@)
     find_dependency(Trilinos HINTS @TRILINOS_DIR@/lib/cmake)
