@@ -1,11 +1,25 @@
 #include "utopia.hpp"
 #include "utopia_Version.hpp"
 #include "utopia_Jacobi.hpp"
+#include "utopia_BiCGStab.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <iomanip>
 using namespace std;
+
+
+template <class Solver, class Matrix, class Vector>
+void measure_solver(const std::string &solver_name,Matrix& A, Vector& b) {
+    using namespace utopia;
+    Solver s;
+    Chrono c;
+    Vector x(layout(b), 0);
+    c.start();
+    s.solve(A, b, x);
+    c.stop();
+    std::cout << solver_name << " " << c << std::endl;
+}
 
 
 struct MySolver {
