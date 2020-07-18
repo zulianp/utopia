@@ -19,7 +19,7 @@
 namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
-    class QPPoisson final : public ExtendedFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> 
+    class BratuFem final : public ExtendedFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> 
     {
     public:
         using Scalar = typename FunctionSpace::Scalar;
@@ -41,36 +41,28 @@ namespace utopia {
         class Parameters : public Configurable {
         public:
             void read(Input &in) override {
-
-                // in.get("mu", mu);
-                // in.get("lambda", lambda);
-
+                in.get("lambda", lambda);
+                in.get("rhs_type", rhs_type); 
             }
 
-            Parameters()
-                // : 
-                  // a(1.0),
-                  // b(1.0)
+            Parameters(): 
+            lambda(0.0), 
+            rhs_type(0)
             {
 
             }
 
-            // Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda;
-            // Scalar regularization, pressure, penalty_param, crack_set_tol;
-            // bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
+            Scalar lambda;
+            SizeType rhs_type; 
         };
 
         void read(Input &in) override {
-            params_.read(in);
+            params_.read(in); 
 
-            // in.get("use_dense_hessian", use_dense_hessian_);
-            // in.get("check_derivatives", check_derivatives_);
-            // in.get("diff_controller", diff_ctrl_);
-            
-            // init_force_field(in);
+            this->init_forcing_function(this->rhs_);
         }
 
-        QPPoisson(FunctionSpace &space) : space_(space)
+        BratuFem(FunctionSpace &space) : space_(space)
         {
             // needed for ML setup
             space_.create_vector(this->_x_eq_values);
@@ -86,8 +78,6 @@ namespace utopia {
             // disp(this->rhs_); 
             // exit(0);
         }
-
-
 
 
 
@@ -118,6 +108,7 @@ namespace utopia {
             auto c_val = c_fun.value(q);
             auto c_grad = c_fun.gradient(q);
             auto differential = C.differential(q);
+            auto c_shape = C.shape(q);
 
             val = 0.0;
 
@@ -125,6 +116,7 @@ namespace utopia {
                 auto C_view = C.view_device();
                 auto c_view = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
+                auto c_shape_view = c_shape.view_device();
 
                 auto differential_view = differential.view_device();
 
@@ -143,8 +135,12 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
+                        auto c_shape_fun_el = c_shape_view.make(c_e);
+
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            el_energy += inner(c_grad_el[qp], c_grad_el[qp]) * dx(qp);
+                            el_energy += 0.5* inner(c_grad_el[qp], c_grad_el[qp]) * dx(qp);
+
+                            el_energy -= params_.lambda * device::exp(c[qp]) * dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -223,11 +219,8 @@ namespace utopia {
                         for (SizeType j = 0; j < C_NDofs; ++j) {
                             c_el_vec(j) += inner(c_grad_el[qp], c_grad_shape_el(j, qp)) * dx(qp);
 
-                            // // TODO:: fix me + fix energy 
-                            // const Scalar shape_test = c_shape_fun_el(j, qp);
-                            // for (SizeType k = 0; k < C_NDofs; ++k) {
-                            //     c_el_vec(j) += inner(c_shape_fun_el(k, qp), -1.0 * shape_test) * dx(qp);
-                            // }
+                            const Scalar shape_test = c_shape_fun_el(j, qp);
+                            c_el_vec(j) -= inner(params_.lambda*c[qp], shape_test) * dx(qp);
                         }
                     }
 
@@ -312,11 +305,14 @@ namespace utopia {
 
                         for (SizeType l = 0; l < C_NDofs; ++l) {
                             auto &&c_grad_l = c_grad_shape_el(l, qp);
+                            const Scalar c_shape_l = c_shape_fun_el(l, qp);
 
                             for (SizeType j = l; j < C_NDofs; ++j) {
                                 Scalar val = inner(c_grad_shape_el(j, qp), c_grad_l) * dx(qp);
-                                val = (l == j) ? (0.5 * val) : val;
+                                val -= inner(params_.lambda*c_shape_fun_el(j, qp), c_shape_l) * dx(qp);
 
+
+                                val = (l == j) ? (0.5 * val) : val;
                                 el_mat(l, j) += val;
                                 el_mat(j, l) += val;
                             }
@@ -346,14 +342,29 @@ namespace utopia {
             using Mesh = typename FunctionSpace::Mesh;
             using Point = typename Mesh::Point;
 
+            if(params_.rhs_type==0){
+                space_.create_vector(rhs);
+                rhs = 0.0*rhs; 
+                return; 
+            }
+
+
             auto forcing_function = UTOPIA_LAMBDA(const Point &x)->Scalar { 
-                // return (4.0 * 6.0) * x[0] + 2.0; 
-                // return -1.0; 
-
                 Scalar pi = 3.1415926; 
-                // return -2.0 * pi * pi * device::sin(pi * x[0]) * device::sin(pi * x[1]); 
 
-                return -4.0 * pi * pi * device::sin(2.0*pi * x[0]) * device::sin(2.0*pi * x[1]); 
+                if(params_.rhs_type==1){
+                    return 1.0; 
+                }
+                else if (params_.rhs_type==2){
+                    return -4.0 * pi * pi * device::sin(2.0*pi * x[0]) * device::sin(2.0*pi * x[1]); 
+                }
+                else if (params_.rhs_type==3){
+                    return -2.0 * pi * pi * device::sin(pi * x[0]) * device::sin(pi * x[1]); 
+                }
+                else{
+                    std::cerr<< "---------- forcing function choice wrong ------- \n"; 
+                    return 0.0;
+                }
             };
 
 

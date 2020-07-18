@@ -162,10 +162,6 @@ class MLSteadyState final : public Configurable {
       tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
     }
 
-    // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
-    // ls->pc_type("bjacobi");
-    // auto tr_strategy_coarse =
-    // std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
 
     // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
     rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -202,23 +198,6 @@ class MLSteadyState final : public Configurable {
 
     IC_->init(solution);
     spaces_.back()->apply_constraints(solution);
-
-
-    // // adding sol to all levels
-    // for (auto l = n_levels_ - 1; l > 0; l--) {
-    //     auto *fun_fine = dynamic_cast<ProblemType
-    //     *>(level_functions_[l].get()); Vector &fine_sol =
-    //     fun_fine->old_solution();
-
-    //     auto *fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l -
-    //     1].get()); Vector &coarse_sol = fun_coarse->old_solution();
-    //     spaces_[l]->create_vector(coarse_sol);
-
-    //     transfers_[l - 1]->project_down(fine_sol, coarse_sol);
-    //     spaces_[l]->apply_constraints(coarse_sol);
-
-    //     // transfers_[l]->restrict(fine_sol, coarse_sol);
-    // }
   }
 
   void write_to_file(FunctionSpace &space, const Vector &solution) {
@@ -226,37 +205,36 @@ class MLSteadyState final : public Configurable {
       spaces_.back()->write(this->output_path_ + ".vtr", solution);
       Utopia::instance().set("log_output_path", log_output_path_);
 
-      Vector sol = solution; 
+      
+      // Vector sol = solution; 
+      // for (auto l = n_levels_ - 1; l > 0; l--) 
+      // {
+
+      //     ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
+      //     Vector sol_coarse  = 0*fun_coarse->get_eq_constrains_flg();
+
+      //     // transfers_[l - 1]->project_down(sol, sol_coarse);
+      //     // transfers_[l - 1]->restrict(sol, sol_coarse);
+
+      //     // L2-fit projection 
+      //     // IPTransferNested<Matrix, Vector> * tr_nested = dynamic_cast<IPTransferNested<Matrix, Vector> *>(transfers_[l - 1].get());
+      //     // const Matrix & I = tr_nested->I(); 
+      //     // Vector s_help = transpose(I)*sol; 
+      //     // Matrix II = transpose(I) * I; 
+      //     // auto direct_solver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
+      //     // direct_solver->solve(II, s_help, sol_coarse); 
 
 
-      for (auto l = n_levels_ - 1; l > 0; l--) 
-      {
+      //     spaces_[l-1]->apply_constraints(sol_coarse);
 
-          ProblemType * fun_coarse = dynamic_cast<ProblemType *>(level_functions_[l-1].get());
-          Vector sol_coarse  = 0*fun_coarse->get_eq_constrains_flg();
-
-          transfers_[l - 1]->project_down(sol, sol_coarse);
-          // transfers_[l - 1]->restrict(sol, sol_coarse);
-
-          // L2-fit projection 
-          // IPTransferNested<Matrix, Vector> * tr_nested = dynamic_cast<IPTransferNested<Matrix, Vector> *>(transfers_[l - 1].get());
-          // const Matrix & I = tr_nested->I(); 
-          // Vector s_help = transpose(I)*sol; 
-          // Matrix II = transpose(I) * I; 
-          // auto direct_solver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
-          // direct_solver->solve(II, s_help, sol_coarse); 
+      //     rename("X", sol_coarse);
 
 
-          spaces_[l-1]->apply_constraints(sol_coarse);
+      //     spaces_[l-1]->write(this->output_path_+"_l_"+ std::to_string(l-1)+".vtr",
+      //     sol_coarse);
 
-          rename("X", sol_coarse);
-          
-
-          spaces_[l-1]->write(this->output_path_+"_l_"+ std::to_string(l)+".vtr",
-          sol_coarse);
-
-          sol = sol_coarse; 
-      }
+      //     sol = sol_coarse; 
+      // }
 
 
     }
@@ -279,6 +257,7 @@ class MLSteadyState final : public Configurable {
 
       level_functions_[l]->init_constraint_indices();
     }
+
   }
 
     void init(FunctionSpace &space, Vector & solution) {
@@ -305,30 +284,46 @@ class MLSteadyState final : public Configurable {
 
     prepare_for_solve(solution);
 
-    Matrix H; 
-    Vector g; 
-    level_functions_.back()->hessian(solution, H); 
-    level_functions_.back()->gradient(solution, g); 
+    // Matrix H; 
+    // Vector g; 
+    // level_functions_.back()->hessian(solution, H); 
+    // level_functions_.back()->gradient(solution, g); 
 
     // disp(H, "H"); 
 
-    auto direct_solver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
+    // auto direct_solver = std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
+    // Vector s = 0*solution; 
+    // direct_solver->solve(H, g, s); 
+    // solution = solution - s; 
 
-    Vector s = 0*solution; 
-    direct_solver->solve(H, g, s); 
-
-    solution = solution - s; 
-
-    // disp(solution); 
-    // disp("------------- 1 -----------");
-    // exit(0);        
 
     // ////////////////////////////////////////////////////////////////////////////////////////////////////////
     // rmtr_->solve(solution);
     // auto sol_status = rmtr_->solution_status();
+
+
+    auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+    subproblem->pc_type("asm");
+    TrustRegion<Matrix, Vector> solver(subproblem);    
+    subproblem->atol(1e-14);
+    solver.verbose(true);
+    solver.delta0(1e-0);
+    solution.set(1.0);
+    solver.atol(1e-10);
+    solver.solve(*level_functions_.back(), solution); 
+
+
+    // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+    // subproblem->pc_type("asm");
+    // Newton<Matrix, Vector> solver(subproblem);    
+    // solver.verbose(true);
+    // solution.set(1.0);
+    // solver.solve(*level_functions_.back(), solution);     
+
+
+
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // update_time_step(sol_status.reason);
-    disp("------- todo:: save solution ------- ? ");
 
     write_to_file(*spaces_[n_levels_ - 1], solution); 
 

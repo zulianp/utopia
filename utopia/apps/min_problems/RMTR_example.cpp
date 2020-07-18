@@ -15,7 +15,7 @@
 #include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_MLSteadyState.hpp"
-#include "utopia_QP_Poisson.hpp"
+#include "utopia_BratuFem.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -59,7 +59,7 @@ static void bratu_2d_rmtr(Input &in) {
   stats.start();
 
   MLSteadyState<FunctionSpace,
-                QPPoisson<FunctionSpace>,
+                BratuFem<FunctionSpace>,
                 AllZeroBC<FunctionSpace>,
                 AllZeroIG<FunctionSpace> > time_stepper(space);
 
