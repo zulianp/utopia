@@ -9,26 +9,17 @@
 using namespace std;
 
 
-
-void create_csv(const std::string &solver_name, const utopia::Chrono c) {
-    //Given the solver name and the time it took to solve it.
-    // write in the csv file.
-}
-
 template <class Solver, class Matrix, class Vector>
 void measure_solver(const std::string &solver_name,Matrix& A, Vector& b) {
     using namespace utopia;
-    //Declare vairables.
     Solver s;
     Chrono c;
     Vector x(layout(b), 0);
-
     c.start();
     s.solve(A, b, x);
     c.stop();
     std::cout << solver_name << " " << c << std::endl;
 }
-
 
 
 struct MySolver {
