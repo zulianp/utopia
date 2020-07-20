@@ -87,25 +87,8 @@ namespace utopia {
         inline void write(const unsigned char *) override {}
     };
 
-    class StreamWrapper final : public AppOutputStream {
+    class StreamWrapper : public AppOutputStream {
     public:
-        template <typename T>
-        struct CloseFile {
-            CloseFile() /* noexcept */
-                = default;
-
-            template <typename U>
-            CloseFile(const CloseFile<U> &,
-                      typename std::enable_if<std::is_convertible<U *, T *>::value>::type * = nullptr) noexcept {}
-
-            void operator()(T *const obj) const /* noexcept */
-            {
-                // do nothing
-                obj->close();
-                delete obj;
-            }
-        };
-
         ~StreamWrapper() = default;
 
         inline void write(bool val) override { stream() << val; }
@@ -140,12 +123,30 @@ namespace utopia {
 
         void wrap_cout() { stream_ptr_ = &std::cout; }
         void wrap_cerr() { stream_ptr_ = &std::cerr; }
+        void wrap(std::ostream &os) { stream_ptr_ = &os; }
 
         StreamWrapper() : stream_ptr_(&std::cout) {}
         StreamWrapper(std::ostream &os) : stream_ptr_(&os) {}
 
     private:
         std::ostream *stream_ptr_;
+    };
+
+    class FileLogger final : public StreamWrapper {
+    public:
+        ~FileLogger() {
+            os_ << std::flush;
+            os_.close();
+        }
+
+        bool open(const Path &path) {
+            os_.open(path.c_str());
+            this->wrap(os_);
+            return !os_.good();
+        }
+
+    private:
+        std::ofstream os_;
     };
 
     class Reporter : public Configurable {
