@@ -6,6 +6,7 @@ list(APPEND CORE_MODULES
     interfaces
     view
     view/expressions
+    console
 )
 
 set(LOCAL_HEADERS "")
