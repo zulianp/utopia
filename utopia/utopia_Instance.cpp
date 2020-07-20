@@ -4,9 +4,12 @@
 #include "utopia_Base.hpp"
 #include "utopia_CiteUtopia.hpp"
 #include "utopia_Config.hpp"
+#include "utopia_InputParameters.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
+
+#include "utopia_Reporter.hpp"
 
 #ifdef WITH_TRILINOS
 #include "utopia_trilinos_Library.hpp"
@@ -128,6 +131,10 @@ namespace utopia {
     }
 
     void Utopia::read_input(int argc, char *argv[]) {
+        InputParameters params;
+        params.init(argc, argv);
+        read(params);
+
         instance().set("citations", "false");
 
         for (int i = 1; i < argc; i++) {
@@ -185,9 +192,11 @@ namespace utopia {
         }
     }
 
-    void Utopia::read(Input &is) {
+    void Utopia::read(Input &in) {
+        Reporter::instance().read(in);
+
         for (auto &s : settings_) {
-            is.get(s.first, s.second);
+            in.get(s.first, s.second);
         }
     }
 

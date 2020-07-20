@@ -26,6 +26,21 @@ namespace utopia {
             return *this;
         }
 
+        inline AppOutputStream &operator<<(std::ostream &(*pf)(std::ostream &)) {
+            write(pf);
+            return *this;
+        }
+
+        inline AppOutputStream &operator<<(std::ios &(*pf)(std::ios &)) {
+            write(pf);
+            return *this;
+        }
+
+        inline AppOutputStream &operator<<(std::ios_base &(*pf)(std::ios_base &)) {
+            write(pf);
+            return *this;
+        }
+
         virtual void write(bool val) = 0;
         virtual void write(short val) = 0;
         virtual void write(unsigned short val) = 0;
@@ -51,6 +66,7 @@ namespace utopia {
         virtual void write(unsigned char c) = 0;
         // character sequence (2)
         virtual void write(const char *s) = 0;
+        virtual void write(const std::string &s) { write(s.c_str()); }
         virtual void write(const signed char *s) = 0;
         virtual void write(const unsigned char *s) = 0;
 
@@ -159,7 +175,7 @@ namespace utopia {
 
         ~Reporter() = default;
 
-        void read(Input &) override {}
+        void read(Input &in) override;
 
         inline AppOutputStream &cout() { return *cout_; }
         inline AppOutputStream &cerr() { return *cerr_; }

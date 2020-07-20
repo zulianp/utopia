@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "utopia_Input.hpp"
+
 #define utopia_warning(macro_msg_) \
     { utopia::Utopia::instance().logger().warning(__FILE__, __LINE__, macro_msg_); }
 #define utopia_error(macro_msg_) \
@@ -49,7 +51,9 @@
 
 namespace utopia {
 
-    class Logger {
+    class AppOutputStream;
+
+    class Logger : public Configurable {
     public:
         class Entry;
 
@@ -60,6 +64,8 @@ namespace utopia {
         virtual void status(const std::string &file, const int line, const std::string &message) = 0;
 
         virtual void flush() = 0;
+
+        virtual void read(Input &) override {}
 
         Logger();
         virtual ~Logger();
@@ -99,9 +105,9 @@ namespace utopia {
         }
 
     private:
-        std::ostream &status_stream_;
-        std::ostream &warning_stream_;
-        std::ostream &error_stream_;
+        std::unique_ptr<AppOutputStream> status_stream_;
+        std::unique_ptr<AppOutputStream> warning_stream_;
+        std::unique_ptr<AppOutputStream> error_stream_;
 
         bool status_direct_output_{true};
         bool warning_direct_output_{true};

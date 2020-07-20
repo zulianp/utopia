@@ -18,9 +18,12 @@ int main(const int argc, char *argv[]) {
         // Print git version to terminal
         out() << "Hello this is UTOPIA_GIT_VERSION: " << UTOPIA_GIT_VERSION << '\n';
 
+        // Some useful streams
         out() << "Use utopia::out() instead of std::cout!\n";
         err() << "Use utopia::err() instead of std::cerr!\n";
         dev() << "Use utopia::dev() if your output is meant for developers!\n";
+
+        out() << std::endl;
     }
 
     // Finalizes library and dependencies runtimes
