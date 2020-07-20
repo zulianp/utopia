@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "utopia.hpp"
 #include "utopia_BiCGStab.hpp"
 #include "utopia_ConjugateGradient.hpp"
@@ -5,7 +6,6 @@
 #include "utopia_Jacobi.hpp"
 #include "utopia_PointJacobi.hpp"
 #include "utopia_Version.hpp"
-#include <cstdlib>
 
 #include <fstream>
 #include <iomanip>
@@ -13,17 +13,6 @@
 #include <string>
 #include <vector>
 using namespace std;
-
-struct MySolver {
-    string name;
-    utopia::Chrono time;
-};
-
-// struct less_than_key {
-//     inline bool operator() (const MySolver& struct1, const MySolver& struct2) {
-//         return (struct1.time.get_seconds() < struct2.time.get_seconds());
-//     }
-// };
 
 template <class Solver, class Matrix, class Vector>
 void measure_solver(Matrix& A, Vector& b, const string solver_name) {
@@ -54,25 +43,20 @@ void measure_solver(Matrix& A, Vector& b, const string solver_name) {
     // stringstream ss;
     cout << solver_name << endl << "norm_r: " << norm_r << " time: " << c.get_seconds() << endl << endl;
 
-    std::ofstream myfile;
+    ofstream myfile;
     myfile.open("./../examples/linear_solvers.csv", ios_base::app);
     if (!myfile.good()) {
-        std::cerr << "Could not open file for writing" << std::endl;
+        std::cerr << "Could not open file for writing" << endl;
     } else {
-        myfile << solver_name << ";"<< norm_r<< ";"<< c.get_seconds() << "\n";
+        myfile << solver_name << "," << norm_r << "," << c.get_seconds() << "\n";
         myfile.close();
     }
-
-    
-
-
 }
 
 template <class Matrix, class Vector>
 void test_linear_solver() {
     using namespace utopia;
-    vector<MySolver> solvers;
-
+ 
     // ---------------------------------------------------------------
     // The code inside here is only to initialise the vectors
     // and the matrix.
@@ -85,7 +69,7 @@ void test_linear_solver() {
 
     Comm& comm = Comm::get_default();
 
-    SizeType n_local = 10;
+    SizeType n_local = 1000;
     SizeType n_global = n_local * comm.size();
 
     auto l = layout(comm, n_local, n_global);
@@ -132,9 +116,9 @@ void test_linear_solver() {
         }
     }
 
-    // ofstream ofs;
-    // ofs.open("./../examples/linear_solver.csv", ofstream::out | ofstream::trunc);
-    // ofs.close();
+    ofstream ofs;
+    ofs.open("./../examples/linear_solvers.csv", ofstream::out | ofstream::trunc);
+    ofs.close();
 
     measure_solver<ConjugateGradient<Matrix, Vector>>(A, b, "ConjugateGradient");
     measure_solver<GaussSeidel<Matrix, Vector>>(A, b, "GaussSeidel");
@@ -142,18 +126,13 @@ void test_linear_solver() {
     measure_solver<Jacobi<Matrix, Vector>>(A, b, "Jacobi");
     measure_solver<PointJacobi<Matrix, Vector>>(A, b, "PointJacobi");
 
-    cout << system("/usr/bin/python2.7 ./../examples/hello_world.py 1");
-
-    // // -------------- PRINTING THE RESULTS ---------------------------
-
-    //     sort(solvers.begin(), solvers.end(), less_than_key());
-    //     for (auto it = solvers.begin(); it != solvers.end(); ++it){
-    //         cout << it->name << ":" << it->time <<endl;
-    //     }
-
-    // measure_solver<ConjugateGradient, MatrixT, VectorT>(Matrix &A, Vector &b, "Conjugate Gradient");
-
-
+    if (system("/usr/bin/python2.7 ./../examples/linear_solvers_plot.py 1")) {
+        cout << system("/usr/bin/python2.7 ./../examples/linear_solvers_plot.py 1");
+    } else if (system("/usr/bin/python3 ./../examples/linear_solvers_plot.py 1")) {
+        cout << system("/usr/bin/python3 ./../examples/linear_solvers_plot.py 1");
+    } else {
+        cout << "Update python please." << endl;
+    }
 }
 
 // -------------------------------------------------------------
@@ -179,7 +158,6 @@ int main(const int argc, char* argv[]) {
     Utopia::Init(argc, argv);
 
     test_linear_solver<MatrixT, VectorT>();
-    // print_statistics_test();
-
+   
     return Utopia::Finalize();
 }
