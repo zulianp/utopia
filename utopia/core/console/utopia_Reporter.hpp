@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <ostream>
 
 #include "utopia_Input.hpp"
@@ -175,6 +176,7 @@ namespace utopia {
         std::unique_ptr<AppOutputStream> dev_;
     };
 
+    // we only use these directly
     inline AppOutputStream &out() { return Reporter::instance().cout(); }
     inline AppOutputStream &err() { return Reporter::instance().cerr(); }
     inline AppOutputStream &dev() { return Reporter::instance().dev(); }

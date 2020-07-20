@@ -1,4 +1,5 @@
 #include "utopia.hpp"
+#include "utopia_Reporter.hpp"
 #include "utopia_Version.hpp"
 
 #include <iostream>
@@ -15,7 +16,11 @@ int main(const int argc, char *argv[]) {
         // Your utopia code here...
 
         // Print git version to terminal
-        std::cout << "Hello this is UTOPIA_GIT_VERSION: " << UTOPIA_GIT_VERSION << std::endl;
+        out() << "Hello this is UTOPIA_GIT_VERSION: " << UTOPIA_GIT_VERSION << '\n';
+
+        out() << "Use utopia::out() instead of std::cout!\n";
+        err() << "Use utopia::err() instead of std::cerr!\n";
+        dev() << "Use utopia::dev() if your output is meant for developers!\n";
     }
 
     // Finalizes library and dependencies runtimes
