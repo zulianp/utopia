@@ -24,7 +24,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
+                utopia::out() << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
             }
         }
 
@@ -89,7 +89,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
+                utopia::out() << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
             }
         }
 

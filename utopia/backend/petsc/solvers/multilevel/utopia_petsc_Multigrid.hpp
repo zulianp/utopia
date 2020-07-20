@@ -174,7 +174,7 @@ namespace utopia {
                     KSPType ksp_type;
                     KSPGetType(ksp, &ksp_type);
 
-                    std::cout << ksp_type << ", " << pc_type << std::endl;
+                    utopia::out() << ksp_type << ", " << pc_type << std::endl;
                 }
 
                 // return false;
@@ -286,13 +286,14 @@ namespace utopia {
             KSPSetTolerances(*ksp_, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
 
             if (this->verbose()) {
-                KSPMonitorSet(*ksp_,
-                              [](KSP, PetscInt iter, PetscReal res, void *) -> PetscErrorCode {
-                                  PrintInfo::print_iter_status(iter, {res});
-                                  return 0;
-                              },
-                              nullptr,
-                              nullptr);
+                KSPMonitorSet(
+                    *ksp_,
+                    [](KSP, PetscInt iter, PetscReal res, void *) -> PetscErrorCode {
+                        PrintInfo::print_iter_status(iter, {res});
+                        return 0;
+                    },
+                    nullptr,
+                    nullptr);
             }
         }
     };

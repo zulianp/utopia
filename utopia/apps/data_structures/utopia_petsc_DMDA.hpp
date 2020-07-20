@@ -247,7 +247,9 @@ namespace utopia {
                     break;
                 }
 
-                default: { assert(false); }
+                default: {
+                    assert(false);
+                }
             }
         }
 
@@ -393,10 +395,10 @@ namespace utopia {
         }
 
         void describe() const override {
-            std::cout << "n_elements      : " << this->n_elements() << std::endl;
-            std::cout << "n_nodes         : " << this->n_nodes() << std::endl;
-            std::cout << "dim             : " << this->dim() << std::endl;
-            std::cout << "elements_x_cell : " << this->elements_x_cell() << std::endl;
+            utopia::out() << "n_elements      : " << this->n_elements() << std::endl;
+            utopia::out() << "n_nodes         : " << this->n_nodes() << std::endl;
+            utopia::out() << "dim             : " << this->dim() << std::endl;
+            utopia::out() << "elements_x_cell : " << this->elements_x_cell() << std::endl;
 
             disp("box_min");
             disp(this->box_min());

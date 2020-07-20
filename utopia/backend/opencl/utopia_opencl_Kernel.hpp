@@ -23,10 +23,10 @@ namespace utopia {
             void visit(const utopia::Expression<Derived> &expr, Env &env, const Options &options) {
                 pre_visit();
 
-                std::cout << "FAILED" << std::endl;
-                std::cout << "------------------------------------------" << std::endl;
-                std::cout << tree_format(expr.derived().get_class()) << std::endl;
-                std::cout << "------------------------------------------" << std::endl;
+                utopia::out() << "FAILED" << std::endl;
+                utopia::out() << "------------------------------------------" << std::endl;
+                utopia::out() << tree_format(expr.derived().get_class()) << std::endl;
+                utopia::out() << "------------------------------------------" << std::endl;
                 os_ << "[TODO]";
                 assert(false);
                 post_visit();
@@ -314,7 +314,7 @@ namespace utopia {
 
                 visit(expr.derived(), env_, Options());
 
-                // std::cout << tree_format(expr.get_class()) << std::endl;
+                // utopia::out() <<tree_format(expr.get_class()) << std::endl;
                 // env_.describe(std::cout);
 
                 tpl_.map("OP", os_.str());
@@ -409,7 +409,7 @@ namespace utopia {
 
                 template <typename InnerExpr>
                 void pre_order_visit(const utopia::Evaluate<InnerExpr> &node) {
-                    // std::cout << "encountered evaluate for " << node.expr().get_class() << std::endl;
+                    // utopia::out() <<"encountered evaluate for " << node.expr().get_class() << std::endl;
                     env_->new_arg(make_var_copy(node));
                 }
 
@@ -461,8 +461,8 @@ namespace utopia {
 
             template <class ExprT>
             std::string get_template_path(const ExprT &expr) {
-                // std::cout << tree_format(expr.get_class()) << std::endl;
-                // std::cout << "has_mat_mat_mul: " << has_mat_mat_mul(expr) << std::endl;
+                // utopia::out() <<tree_format(expr.get_class()) << std::endl;
+                // utopia::out() <<"has_mat_mat_mul: " << has_mat_mat_mul(expr) << std::endl;
 
                 if (has_mat_mat_mul(expr)) {
                     return "/utopia_TemplateBLAS_2.cl";
@@ -479,12 +479,12 @@ namespace utopia {
 
             void initialize(const Expr &expr) {
                 if (initialized()) {
-                    // std::cout << "initialized" << std::endl;
+                    // utopia::out() <<"initialized" << std::endl;
                     return;
                 }
 
                 // if(has_mat_mat_mul(expr)) {
-                // 	std::cout << "Needs to handle mat mat mul" << std::endl;
+                // 	utopia::out() <<"Needs to handle mat mat mul" << std::endl;
                 // }
 
                 KernelCodeGenerator gen;
@@ -498,7 +498,7 @@ namespace utopia {
 
                 ok = gen.generate(expr, name_, code_template, code_);
                 assert(ok);
-                // std::cout << "initializing kernel for:\n" << treeFormat(expr.get_class()) << std::endl;
+                // utopia::out() <<"initializing kernel for:\n" << treeFormat(expr.get_class()) << std::endl;
                 initialized_ = true;
             }
 
@@ -567,7 +567,7 @@ namespace utopia {
                 err = kernel_.setArg(2, cl::__local(sizeof(Scalar) * group_size));
                 assert(check_cl_error(err));
 
-                // std::cout << "additional args: " << env_.args().size() << std::endl;
+                // utopia::out() <<"additional args: " << env_.args().size() << std::endl;
 
                 for (const auto &arg_ptr : env_.args()) {
                     arg_ptr->set_as_arg_at(arg_ptr->get_arg_num() + 3, kernel_);
@@ -590,7 +590,7 @@ namespace utopia {
 
                 eval.set_value(host_reduced);
 
-                // std::cout << "[REDUCTION] = " << host_reduced << std::endl;
+                // utopia::out() <<"[REDUCTION] = " << host_reduced << std::endl;
 
                 CLStats::instance().kernel_execution_end();
                 return true;
@@ -645,10 +645,10 @@ namespace utopia {
                 nav.visit(expr);
 
                 Size s = size(expr);
-                // std::cout << "expr size" << std::endl;
+                // utopia::out() <<"expr size" << std::endl;
                 // disp(s);
 
-                // std::cout << "additional args: " << env_.args().size() << std::endl;
+                // utopia::out() <<"additional args: " << env_.args().size() << std::endl;
 
                 int n_entries = s.get(0);
                 for (SizeType i = 1; i < s.n_dims(); ++i) {
@@ -661,16 +661,16 @@ namespace utopia {
                 assert(check_cl_error(err));
 
                 assert(n_entries > 0);
-                // std::cout << "n_args: " << (env_.args().size() + 1) << std::endl;
+                // utopia::out() <<"n_args: " << (env_.args().size() + 1) << std::endl;
 
                 for (const auto &arg_ptr : env_.args()) {
-                    // std::cout << "setting arg: " << arg_ptr->get_arg_num() << std::endl;
+                    // utopia::out() <<"setting arg: " << arg_ptr->get_arg_num() << std::endl;
                     // err = kernel_.setArg(arg_ptr->get_arg_num() + 1, arg_ptr->buffer());
                     arg_ptr->set_as_arg_at(arg_ptr->get_arg_num() + 1, kernel_);
                     assert(check_cl_error(err));
                 }
 
-                // std::cout << "evaluating: " << get_name() << std::endl;
+                // utopia::out() <<"evaluating: " << get_name() << std::endl;
                 err = CLContext::instance().current_queue().enqueueNDRangeKernel(
                     kernel_, cl::NullRange, global_range, cl::NullRange);
                 assert(check_cl_error(err));
@@ -683,7 +683,7 @@ namespace utopia {
 
             bool execute(const Expr &expr) {
                 if (initialized()) {
-                    // std::cout << "reusing kernel remap variables" << std::endl;
+                    // utopia::out() <<"reusing kernel remap variables" << std::endl;
                     RemapVariables remap(env_);
                     make_nav(remap).visit(expr);
                 } else {
@@ -799,7 +799,7 @@ namespace utopia {
 
             template <class EvaluatedExpr>
             bool call(const Evaluate<EvaluatedExpr> &expr) {
-                // std::cout << tree_format(expr.get_class()) << std::endl;
+                // utopia::out() <<tree_format(expr.get_class()) << std::endl;
 
                 EvalAction eval;
                 auto nav = make_nav(eval);
@@ -810,7 +810,7 @@ namespace utopia {
             }
 
             bool call(const Expr &expr) {
-                // std::cout << "HERE: is scalar" << std::endl;
+                // utopia::out() <<"HERE: is scalar" << std::endl;
                 return false;
             }
 

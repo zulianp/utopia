@@ -77,7 +77,7 @@
 //                 auto d_expr = derivative(expr);
 //                 auto d_expr_2 = derivative(d_expr);
 
-//                 // std::cout << tree_format(d_expr_2.get_class()) << std::endl;
+//                 // utopia::out() <<tree_format(d_expr_2.get_class()) << std::endl;
 
 //                 Number<double> f = expr;
 //                 UTOPIA_UNUSED(f);  // or double f = scalar_cast<double>(expr);
@@ -163,7 +163,7 @@
 //                 auto d_expr = derivative(expr);
 //                 auto d_expr_2 = derivative(d_expr);
 
-//                 // std::cout << tree_format(d_expr_2.get_class()) << std::endl;
+//                 // utopia::out() <<tree_format(d_expr_2.get_class()) << std::endl;
 
 //                 Number<double> f = expr;
 //                 UTOPIA_UNUSED(f);
@@ -188,7 +188,7 @@
 //             auto expr = trace(d_x);
 //             auto d_expr = derivative(expr);
 
-//             // std::cout << tree_format(d_expr.get_class()) << std::endl;
+//             // utopia::out() <<tree_format(d_expr.get_class()) << std::endl;
 //             Matrix f = d_expr;
 //             // disp(f);
 //         }

@@ -31,17 +31,17 @@ namespace utopia {
 
         CLVectord res = abs(m * pow2(v1) + sqrt(v2) - v3);
 
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
         // disp(v1);
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
         // disp(res);
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
 
         CLMatrixd mat_res = transpose(abs(0.1 * (m * m) - m) * (m));  // inner transpose does not work yet.
 
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
         // // disp(mat_res);
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
     }
 
 #endif  // WITH_UTOPIA_OPENCL

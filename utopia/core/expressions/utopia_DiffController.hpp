@@ -2,6 +2,7 @@
 #define UTOPIA_UTOPIA_DIFFCONTROLLER_HPP
 
 #include "utopia_FiniteDifference.hpp"
+#include "utopia_IOStream.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_Rename.hpp"
 #include "utopia_Traits.hpp"
@@ -36,19 +37,19 @@ namespace utopia {
             bool ok = approxeq(gfd, g, 1e-7);
 
             if (!ok) {
-                std::cout << "------ Failure -------\n";
-                std::cout << "------ Gradient ------\n";
-                std::cout << "Expected:\n";
+                utopia::err() << "------ Failure -------\n";
+                utopia::err() << "------ Gradient ------\n";
+                utopia::err() << "Expected:\n";
                 rename("g_fd", gfd);
                 disp(gfd);
                 write("G_fd.m", gfd);
 
-                std::cout << "Actual:\n";
+                utopia::err() << "Actual:\n";
                 disp(g);
                 rename("g", const_cast<Vector &>(g));
                 write("G.m", g);
 
-                std::cout << "----------------------\n";
+                utopia::err() << "----------------------\n";
                 assert(false);
             }
 

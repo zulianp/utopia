@@ -181,7 +181,7 @@ namespace utopia {
                     ok = full_cycle(l);
                     assert(ok);
                 } else {
-                    std::cout << "ERROR::UTOPIA_MG<< unknown MG type... \n";
+                    utopia::out() << "ERROR::UTOPIA_MG<< unknown MG type... \n";
                 }
 
 #ifdef CHECK_NUM_PRECISION_mode
@@ -301,7 +301,7 @@ namespace utopia {
                         std::cerr << l << " alpha: " << alpha << std::endl;
                         c += c_I;
                     } else {
-                        // std::cout << l << " : " << alpha << std::endl;
+                        // utopia::out() <<l << " : " << alpha << std::endl;
                         c += alpha * c_I;
                     }
 

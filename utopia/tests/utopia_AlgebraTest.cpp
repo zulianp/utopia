@@ -42,7 +42,7 @@ namespace utopia {
             const Scalar alpha = (1.0 * lambda * std::log(J) - 1.0 * mu);
 
             Matrix mat = mu * H - alpha * F_inv_t * transpose(H) * F_inv_t + lambda * inner(F_inv_t, H) * F_inv_t;
-            // std::cout << tree_format((inner(F_inv_t, H) * F_inv_t).get_class()) << std::endl;
+            // utopia::out() <<tree_format((inner(F_inv_t, H) * F_inv_t).get_class()) << std::endl;
             utopia_test_assert(SizeType(3) == mat.rows());
             utopia_test_assert(SizeType(3) == mat.cols());
         }
@@ -237,7 +237,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
 
@@ -563,10 +563,11 @@ namespace utopia {
 
             {
                 auto y_view = view_device(y);
-                parallel_for(range_device(y), UTOPIA_LAMBDA(const SizeType &i) {
-                    const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
-                    y_view.set(i, val);
-                });
+                parallel_for(
+                    range_device(y), UTOPIA_LAMBDA(const SizeType &i) {
+                        const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
+                        y_view.set(i, val);
+                    });
             }
 
             Matrix M = outer(x, y);

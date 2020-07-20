@@ -294,7 +294,7 @@ namespace utopia {
 
         inline void describe() const override {
             if (empty()) {
-                std::cout << "PetscMatrix: Empty" << std::endl;
+                utopia::out() << "PetscMatrix: Empty" << std::endl;
             }
 
             MatView(wrapper_->implementation(), PETSC_VIEWER_STDOUT_(communicator()));

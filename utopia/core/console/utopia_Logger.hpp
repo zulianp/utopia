@@ -51,7 +51,7 @@
 
 namespace utopia {
 
-    class AppOutputStream;
+    class OStream;
 
     class Logger : public Configurable {
     public:
@@ -105,9 +105,9 @@ namespace utopia {
         }
 
     private:
-        std::unique_ptr<AppOutputStream> status_stream_;
-        std::unique_ptr<AppOutputStream> warning_stream_;
-        std::unique_ptr<AppOutputStream> error_stream_;
+        std::unique_ptr<OStream> status_stream_;
+        std::unique_ptr<OStream> warning_stream_;
+        std::unique_ptr<OStream> error_stream_;
 
         bool status_direct_output_{true};
         bool warning_direct_output_{true};

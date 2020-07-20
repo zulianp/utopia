@@ -231,7 +231,7 @@ namespace utopia {
             const Scalar r_norm = norm2(r);
 
             if (r_norm > 1e-5) {
-                std::cout << "non zero norm: " << r_norm << std::endl;
+                utopia::out() << "non zero norm: " << r_norm << std::endl;
                 return false;
             }
 
@@ -538,7 +538,7 @@ namespace utopia {
 
                     if (n_changed == 0) {
                         if (this->verbose() && mpi_world_rank() == 0) {
-                            std::cout << "SemismoothNewton:: set is not changing ... \n";
+                            utopia::out() << "SemismoothNewton:: set is not changing ... \n";
                         }
 
                         converged = true;

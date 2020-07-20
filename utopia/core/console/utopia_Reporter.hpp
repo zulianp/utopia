@@ -10,70 +10,11 @@
 #include "utopia_Utils.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_IOStream.hpp"
+
 namespace utopia {
 
-    class AppOutputStream : public Configurable {
-    public:
-        virtual ~AppOutputStream() = default;
-        AppOutputStream() = default;
-
-        AppOutputStream(const AppOutputStream &) = delete;
-        AppOutputStream &operator=(const AppOutputStream &) = delete;
-
-        template <typename T>
-        inline AppOutputStream &operator<<(const T &val) {
-            this->write(val);
-            return *this;
-        }
-
-        inline AppOutputStream &operator<<(std::ostream &(*pf)(std::ostream &)) {
-            write(pf);
-            return *this;
-        }
-
-        inline AppOutputStream &operator<<(std::ios &(*pf)(std::ios &)) {
-            write(pf);
-            return *this;
-        }
-
-        inline AppOutputStream &operator<<(std::ios_base &(*pf)(std::ios_base &)) {
-            write(pf);
-            return *this;
-        }
-
-        virtual void write(bool val) = 0;
-        virtual void write(short val) = 0;
-        virtual void write(unsigned short val) = 0;
-        virtual void write(int val) = 0;
-        virtual void write(unsigned int val) = 0;
-        virtual void write(long val) = 0;
-        virtual void write(unsigned long val) = 0;
-        virtual void write(float val) = 0;
-        virtual void write(double val) = 0;
-        virtual void write(long double val) = 0;
-        virtual void write(void *val) = 0;
-
-        // stream buffers (2)
-        virtual void write(std::streambuf *sb) = 0;
-        // manipulators (3)
-        virtual void write(std::ostream &(*pf)(std::ostream &)) = 0;
-        virtual void write(std::ios &(*pf)(std::ios &)) = 0;
-        virtual void write(std::ios_base &(*pf)(std::ios_base &)) = 0;
-
-        // single character (1)
-        virtual void write(char c) = 0;
-        virtual void write(signed char c) = 0;
-        virtual void write(unsigned char c) = 0;
-        // character sequence (2)
-        virtual void write(const char *s) = 0;
-        virtual void write(const std::string &s) { write(s.c_str()); }
-        virtual void write(const signed char *s) = 0;
-        virtual void write(const unsigned char *s) = 0;
-
-        virtual void read(Input &) {}
-    };
-
-    class NullAppOutputStream final : public AppOutputStream {
+    class NullOStream final : public OStream {
     public:
         inline void write(bool) override {}
         inline void write(short) override {}
@@ -81,7 +22,9 @@ namespace utopia {
         inline void write(int) override {}
         inline void write(unsigned int) override {}
         inline void write(long) override {}
+        inline void write(long long) override {}
         inline void write(unsigned long) override {}
+        inline void write(unsigned long long) override{};
         inline void write(float) override {}
         inline void write(double) override {}
         inline void write(long double) override {}
@@ -102,9 +45,11 @@ namespace utopia {
         inline void write(const char *) override {}
         inline void write(const signed char *) override {}
         inline void write(const unsigned char *) override {}
+
+        inline void write(const Describable &) override {}
     };
 
-    class StreamWrapper : public AppOutputStream {
+    class StreamWrapper : public OStream {
     public:
         ~StreamWrapper() = default;
 
@@ -114,7 +59,9 @@ namespace utopia {
         inline void write(int val) override { stream() << val; }
         inline void write(unsigned int val) override { stream() << val; }
         inline void write(long val) override { stream() << val; }
+        inline void write(long long val) override { stream() << val; }
         inline void write(unsigned long val) override { stream() << val; }
+        inline void write(unsigned long long val) override { stream() << val; };
         inline void write(float val) override { stream() << val; }
         inline void write(double val) override { stream() << val; }
         inline void write(long double val) override { stream() << val; }
@@ -136,11 +83,13 @@ namespace utopia {
         inline void write(const signed char *s) override { stream() << s; }
         inline void write(const unsigned char *s) override { stream() << s; }
 
-        std::ostream &stream() { return *stream_ptr_; }
+        inline void write(const Describable &d) override { d.describe(stream()); }
 
-        void wrap_cout() { stream_ptr_ = &std::cout; }
-        void wrap_cerr() { stream_ptr_ = &std::cerr; }
-        void wrap(std::ostream &os) { stream_ptr_ = &os; }
+        inline std::ostream &stream() { return *stream_ptr_; }
+
+        inline void wrap_cout() { stream_ptr_ = &std::cout; }
+        inline void wrap_cerr() { stream_ptr_ = &std::cerr; }
+        inline void wrap(std::ostream &os) { stream_ptr_ = &os; }
 
         StreamWrapper() : stream_ptr_(&std::cout) {}
         StreamWrapper(std::ostream &os) : stream_ptr_(&os) {}
@@ -177,9 +126,9 @@ namespace utopia {
 
         void read(Input &in) override;
 
-        inline AppOutputStream &cout() { return *cout_; }
-        inline AppOutputStream &cerr() { return *cerr_; }
-        inline AppOutputStream &dev() { return *dev_; }
+        inline OStream &cout() { return *cout_; }
+        inline OStream &cerr() { return *cerr_; }
+        inline OStream &dev() { return *dev_; }
 
         Reporter()
             : cout_(utopia::make_unique<StreamWrapper>(std::cout)),
@@ -187,15 +136,10 @@ namespace utopia {
               dev_(utopia::make_unique<StreamWrapper>(std::cout)) {}
 
     private:
-        std::unique_ptr<AppOutputStream> cout_;
-        std::unique_ptr<AppOutputStream> cerr_;
-        std::unique_ptr<AppOutputStream> dev_;
+        std::unique_ptr<OStream> cout_;
+        std::unique_ptr<OStream> cerr_;
+        std::unique_ptr<OStream> dev_;
     };
-
-    // we only use these directly
-    inline AppOutputStream &out() { return Reporter::instance().cout(); }
-    inline AppOutputStream &err() { return Reporter::instance().cerr(); }
-    inline AppOutputStream &dev() { return Reporter::instance().dev(); }
 
 }  // namespace utopia
 

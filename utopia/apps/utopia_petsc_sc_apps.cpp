@@ -39,7 +39,7 @@
 namespace utopia {
 
     static void petsc_dm_multivar(Input &in) {
-        std::cout << "excuting: petsc_dm_multivar" << std::endl;
+        utopia::out() << "excuting: petsc_dm_multivar" << std::endl;
         static const int Dim = 2;
         static const int NVars = 2;
 
@@ -60,7 +60,8 @@ namespace utopia {
 
         {
             auto v_view = view_device(v);
-            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i % NVars); });
+            parallel_for(
+                range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i % NVars); });
         }
 
         disp(space.mesh().n_nodes());
@@ -171,9 +172,11 @@ namespace utopia {
         space.read(in);
 
         // boundary conditions
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
         stats.stop_and_collect("space+bc");
         ///////////////////////////////////////
@@ -247,7 +250,7 @@ namespace utopia {
         // dm.create_matrix(mat);
 
         // dm.each_element([](const Mesh::Elem &e) {
-        //     // std::cout << e.idx() << std::endl;
+        //     // utopia::out() <<e.idx() << std::endl;
         // });
 
         // std::stringstream ss;
@@ -267,9 +270,9 @@ namespace utopia {
 
         // for(int i = 0; i < size; ++i) {
         //     if(i == rank) {
-        //         std::cout << "--------------------------------------------\n";
-        //         std::cout << ss.str() << std::endl;
-        //         std::cout << "--------------------------------------------\n";
+        //         utopia::out() <<"--------------------------------------------\n";
+        //         utopia::out() <<ss.str() << std::endl;
+        //         utopia::out() <<"--------------------------------------------\n";
         //     }
 
         //     world.barrier();
@@ -285,50 +288,68 @@ namespace utopia {
         ////////////////////////////////////
 
         // HORIZONTAL
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+        space.emplace_dirichlet_condition(
+            SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
+        space.emplace_dirichlet_condition(
+            SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
-        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+        space.emplace_dirichlet_condition(
+            SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
-        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
+        space.emplace_dirichlet_condition(
+            SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
         ////////////////////////////////////
 
         // VERTICAL
 
-        space.emplace_dirichlet_condition(SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
+        space.emplace_dirichlet_condition(
+            SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-        space.emplace_dirichlet_condition(SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
+        space.emplace_dirichlet_condition(
+            SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
-        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
+        space.emplace_dirichlet_condition(
+            SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
+        space.emplace_dirichlet_condition(
+            SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
 
         ////////////////////////////////////
 
         // DEPTH
-        space.emplace_dirichlet_condition(SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
+        space.emplace_dirichlet_condition(
+            SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-        space.emplace_dirichlet_condition(SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+        space.emplace_dirichlet_condition(
+            SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
-        space.emplace_dirichlet_condition(SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
+        space.emplace_dirichlet_condition(
+            SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 0);
 
-        space.emplace_dirichlet_condition(SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+        space.emplace_dirichlet_condition(
+            SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
         ////////////////////////////////////
 
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 0);
+        space.emplace_dirichlet_condition(
+            SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 0);
 
-        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 0);
+        space.emplace_dirichlet_condition(
+            SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 0);
 
-        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 1);
+        space.emplace_dirichlet_condition(
+            SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 1);
 
-        space.emplace_dirichlet_condition(SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 1);
+        space.emplace_dirichlet_condition(
+            SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 1);
 
-        space.emplace_dirichlet_condition(SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 2);
+        space.emplace_dirichlet_condition(
+            SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return -0.1; }, 2);
 
-        space.emplace_dirichlet_condition(SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 2);
+        space.emplace_dirichlet_condition(
+            SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.1; }, 2);
     }
 
     static void petsc_fe_function(Input &in) {
@@ -377,12 +398,13 @@ namespace utopia {
             // auto shape_grad_view = shape_grad.view_device();
 
             // Device Kernel (GPU or CPU) (this should be hidden better)
-            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
-                ElemView e;
-                space_view.elem(idx, e);
+            Dev::parallel_for(
+                space.element_range(), UTOPIA_LAMBDA(const SizeType &idx) {
+                    ElemView e;
+                    space_view.elem(idx, e);
 
-                // auto s_grad = shape_grad_view.make(e);
-            });
+                    // auto s_grad = shape_grad_view.make(e);
+                });
 
             // END: Device context
         }
@@ -420,24 +442,26 @@ namespace utopia {
 
         x.set(0.0);
 
-        auto sampler = utopia::sampler(space, UTOPIA_LAMBDA(const Point &x) {
-            auto dist_x = 0.5 - x[0];
-            return device::exp(-10.0 * dist_x * dist_x);
-        });
+        auto sampler = utopia::sampler(
+            space, UTOPIA_LAMBDA(const Point &x) {
+                auto dist_x = 0.5 - x[0];
+                return device::exp(-10.0 * dist_x * dist_x);
+            });
 
         {
             auto &&space_view = space.view_device();
             auto x_view = FunctionSpace::assembly_view_device(x);
             auto sampler_view = sampler.view_device();
 
-            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                ElemView e;
-                space_view.elem(i, e);
+            Dev::parallel_for(
+                space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    ElemView e;
+                    space_view.elem(i, e);
 
-                StaticVector<Scalar, 4> s;
-                sampler_view.assemble(e, s);
-                space_view.set_vector(e, s, x_view);
-            });
+                    StaticVector<Scalar, 4> s;
+                    sampler_view.assemble(e, s);
+                    space_view.set_vector(e, s, x_view);
+                });
         }
 
         rename("C", x);

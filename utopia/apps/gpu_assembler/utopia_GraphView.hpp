@@ -44,22 +44,23 @@ namespace utopia {
             auto mesh_view = mesh.view_device();
             StencilView stencil_view(mesh_view);
 
-            std::cout << mesh.local_node_range() << std::endl;
+            utopia::out() << mesh.local_node_range() << std::endl;
 
             auto lnr = mesh.local_node_range();
 
-            Dev::parallel_for(lnr, UTOPIA_LAMBDA(const SizeType &i) {
-                std::cout << i << ") ";
-                for (typename StencilView::SizeType k = 0; k < stencil_view.size(); ++k) {
-                    auto idx = stencil_view.index(i, k);
+            Dev::parallel_for(
+                lnr, UTOPIA_LAMBDA(const SizeType &i) {
+                    utopia::out() << i << ") ";
+                    for (typename StencilView::SizeType k = 0; k < stencil_view.size(); ++k) {
+                        auto idx = stencil_view.index(i, k);
 
-                    if (idx != stencil_view.invalid()) {
-                        std::cout << idx << " ";
+                        if (idx != stencil_view.invalid()) {
+                            utopia::out() << idx << " ";
+                        }
                     }
-                }
 
-                std::cout << std::endl;
-            });
+                    utopia::out() << std::endl;
+                });
 
             auto owned_row_map = Teuchos::rcp(new MapType(mesh.n_nodes(), lnr.extent(), 0, mesh.comm().get()));
 

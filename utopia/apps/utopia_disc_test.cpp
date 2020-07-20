@@ -47,7 +47,8 @@ namespace utopia {
 
         space.create_vector(v);
 
-        space.sample(v, UTOPIA_LAMBDA(const Point &p)->Scalar { return p[0] * p[1]; });
+        space.sample(
+            v, UTOPIA_LAMBDA(const Point &p)->Scalar { return p[0] * p[1]; });
 
         rename("f", v);
         space.write("F.vts", v);
@@ -139,31 +140,32 @@ namespace utopia {
             auto x_view = x_val.view_device();
             auto dx_view = differential.view_device();
 
-            Device::parallel_reduce(space.element_range(),
-                                    UTOPIA_LAMBDA(const SizeType &i)->Scalar {
-                                        StaticVector<Scalar, Quadrature::NPoints> c;
-                                        Point p;
-                                        ElemView e;
+            Device::parallel_reduce(
+                space.element_range(),
+                UTOPIA_LAMBDA(const SizeType &i)->Scalar {
+                    StaticVector<Scalar, Quadrature::NPoints> c;
+                    Point p;
+                    ElemView e;
 
-                                        space_view.elem(i, e);
+                    space_view.elem(i, e);
 
-                                        auto p_e = p_view.make(e);
-                                        // auto c_e = x_view.make(e);
-                                        auto dx = dx_view.make(e);
+                    auto p_e = p_view.make(e);
+                    // auto c_e = x_view.make(e);
+                    auto dx = dx_view.make(e);
 
-                                        x_view.get(e, c);
+                    x_view.get(e, c);
 
-                                        Scalar el_err = 0.0;
+                    Scalar el_err = 0.0;
 
-                                        for (SizeType qp = 0; qp < Quadrature::NPoints; ++qp) {
-                                            p_e.get(qp, p);
-                                            const Scalar diff = (c(qp) - oracle(p));
-                                            el_err += diff * diff * dx(qp);
-                                        }
+                    for (SizeType qp = 0; qp < Quadrature::NPoints; ++qp) {
+                        p_e.get(qp, p);
+                        const Scalar diff = (c(qp) - oracle(p));
+                        el_err += diff * diff * dx(qp);
+                    }
 
-                                        return el_err;
-                                    },
-                                    err);
+                    return el_err;
+                },
+                err);
         }
 
         err = std::sqrt(space.comm().sum(err));
@@ -172,8 +174,8 @@ namespace utopia {
 
         ////////////////////////////////////////////////////////////////////////
 
-        std::cout << "n_dofs=" << x.size() << std::endl;
-        std::cout << "l2_error=" << err << std::endl;
+        utopia::out() << "n_dofs=" << x.size() << std::endl;
+        utopia::out() << "l2_error=" << err << std::endl;
 
         bool skip_output = false;
         in.get("skip_output", skip_output);

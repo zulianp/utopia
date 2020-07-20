@@ -75,7 +75,7 @@ namespace utopia {
         if (this->has_bound()) {
             while (it++ < n_sweeps) {
                 step(A, b, x);
-                // std::cout << "--------------------------------------------- sweep "
+                // utopia::out() <<"--------------------------------------------- sweep "
                 //              "--------------------------------- \n";
             }
         } else {

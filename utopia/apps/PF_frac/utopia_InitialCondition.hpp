@@ -62,30 +62,32 @@ namespace utopia {
             // un-hard-code
             auto C = this->space_.subspace(PF_component_);
 
-            auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x)->Scalar {
-                Scalar f = 0.0;
-                if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
-                    x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.5) {
-                    f = 1.0;
-                } else {
-                    f = 0.0;
-                }
-                return f;
-            });
+            auto sampler = utopia::sampler(
+                C, UTOPIA_LAMBDA(const Point &x)->Scalar {
+                    Scalar f = 0.0;
+                    if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
+                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.5) {
+                        f = 1.0;
+                    } else {
+                        f = 0.0;
+                    }
+                    return f;
+                });
 
             {
                 auto C_view = C.view_device();
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    StaticVector<Scalar, NNodes> s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 
@@ -114,34 +116,36 @@ namespace utopia {
             // un-hard-code
             auto C = this->space_.subspace(PF_component_);
 
-            auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x)->Scalar {
-                Scalar f = 0.0;
-                if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
-                    x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.5 && x[1] > 0.3) {
-                    f = 1.0;
-                } else if ((x[0] > 0.3) && (x[0] < 0.7) && (x[1] > 0.7 - this->space_.mesh().min_spacing()) &&
-                           (x[1] < 0.7 + this->space_.mesh().min_spacing())) {
-                    f = 1.0;
-                } else {
-                    f = 0.0;
-                }
+            auto sampler = utopia::sampler(
+                C, UTOPIA_LAMBDA(const Point &x)->Scalar {
+                    Scalar f = 0.0;
+                    if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
+                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.5 && x[1] > 0.3) {
+                        f = 1.0;
+                    } else if ((x[0] > 0.3) && (x[0] < 0.7) && (x[1] > 0.7 - this->space_.mesh().min_spacing()) &&
+                               (x[1] < 0.7 + this->space_.mesh().min_spacing())) {
+                        f = 1.0;
+                    } else {
+                        f = 0.0;
+                    }
 
-                return f;
-            });
+                    return f;
+                });
 
             {
                 auto C_view = C.view_device();
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    StaticVector<Scalar, NNodes> s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 
@@ -170,32 +174,35 @@ namespace utopia {
             // un-hard-code
             auto C = this->space_.subspace(PF_component_);
 
-            auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x)->Scalar {
-                Scalar f = 0.0;
-                Scalar h = this->space_.mesh().min_spacing();
+            auto sampler = utopia::sampler(
+                C, UTOPIA_LAMBDA(const Point &x)->Scalar {
+                    Scalar f = 0.0;
+                    Scalar h = this->space_.mesh().min_spacing();
 
-                if (x[0] > 0.55 && x[0] < 0.7 && x[1] > (0.4) && x[1] < (0.6) && x[2] < (0.6 + h) && x[2] > (0.6 - h)) {
-                    f = 1.0;
-                } else {
-                    f = 0.0;
-                }
+                    if (x[0] > 0.55 && x[0] < 0.7 && x[1] > (0.4) && x[1] < (0.6) && x[2] < (0.6 + h) &&
+                        x[2] > (0.6 - h)) {
+                        f = 1.0;
+                    } else {
+                        f = 0.0;
+                    }
 
-                return f;
-            });
+                    return f;
+                });
 
             {
                 auto C_view = C.view_device();
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    StaticVector<Scalar, NNodes> s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 
@@ -229,7 +236,7 @@ namespace utopia {
             // auto width = 0.1;
 
             if (mpi_world_rank() == 0) {
-                std::cout << "width: " << width << "  \n";
+                utopia::out() << "width: " << width << "  \n";
             }
 
             std::vector<Rectangle<Scalar>> rectangles;
@@ -256,14 +263,15 @@ namespace utopia {
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    CoeffVector s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 
@@ -299,7 +307,7 @@ namespace utopia {
             auto width = 0.2;
 
             if (mpi_world_rank() == 0) {
-                std::cout << "width: " << width << "  \n";
+                utopia::out() << "width: " << width << "  \n";
             }
 
             std::vector<Rectangle<Scalar>> rectangles;
@@ -326,14 +334,15 @@ namespace utopia {
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    CoeffVector s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 
@@ -371,7 +380,7 @@ namespace utopia {
             // auto width = 0.1;
 
             if (mpi_world_rank() == 0) {
-                std::cout << "width: " << width << "  \n";
+                utopia::out() << "width: " << width << "  \n";
             }
 
             std::vector<Rectangle<Scalar>> rectangles;
@@ -399,14 +408,15 @@ namespace utopia {
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    CoeffVector s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 

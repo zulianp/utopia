@@ -12,7 +12,7 @@ namespace utopia {
         inline explicit Entry(std::string file, const int line, std::string message)
             : file(std::move(file)), line(line), message(std::move(message)) {}
 
-        inline friend AppOutputStream &operator<<(AppOutputStream &os, const Entry &e) {
+        inline friend OStream &operator<<(OStream &os, const Entry &e) {
             os << e.file << ":" << e.line << "\n" << e.message;
             return os;
         }

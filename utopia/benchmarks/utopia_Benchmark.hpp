@@ -24,12 +24,12 @@ namespace utopia {
             chrono_all_.stop();
 
             if (mpi_world_rank() == 0) {
-                std::cout << "---------------------\n";
-                std::cout << "[" << name() << "]"
-                          << "\n";
-                std::cout << "---------------------\n";
+                utopia::out() << "---------------------\n";
+                utopia::out() << "[" << name() << "]"
+                              << "\n";
+                utopia::out() << "---------------------\n";
                 to_csv(std::cout);
-                std::cout << "---------------------\n";
+                utopia::out() << "---------------------\n";
             }
         }
 

@@ -96,7 +96,7 @@ namespace utopia {
 
             if (empty(I_)) {
                 if (this->verbose()) {
-                    std::cout << "mass matrix not set, using Identity matrix ... \n";
+                    utopia::out() << "mass matrix not set, using Identity matrix ... \n";
                 }
 
                 I_ = local_identity(local_size(H).get(0), local_size(H).get(1));

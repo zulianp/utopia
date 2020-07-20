@@ -206,26 +206,27 @@ namespace utopia {
                     m_view.describe();
                 }
 
-                Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
+                Dev::parallel_for(
+                    space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
 
-                    // FIXME this is too big for GPU stack memory for hexas
-                    ElementMatrix el_mat;
-                    Point c;
-                    space_view.elem(i, e);
+                        // FIXME this is too big for GPU stack memory for hexas
+                        ElementMatrix el_mat;
+                        Point c;
+                        space_view.elem(i, e);
 
-                    // Assemble local laplacian
-                    el_mat.set(0.0);
-                    l_view.assemble(i, e, el_mat);
-                    e.centroid(c);
-                    el_mat *= diffusivity(c);
-                    space_view.add_matrix(e, el_mat, mat_view);
+                        // Assemble local laplacian
+                        el_mat.set(0.0);
+                        l_view.assemble(i, e, el_mat);
+                        e.centroid(c);
+                        el_mat *= diffusivity(c);
+                        space_view.add_matrix(e, el_mat, mat_view);
 
-                    // Assemble local mass-matrix and reuse el_mat
-                    el_mat.set(0.0);
-                    m_view.assemble(i, e, el_mat);
-                    space_view.add_matrix(e, el_mat, mass_mat_view);
-                });
+                        // Assemble local mass-matrix and reuse el_mat
+                        el_mat.set(0.0);
+                        m_view.assemble(i, e, el_mat);
+                        space_view.add_matrix(e, el_mat, mass_mat_view);
+                    });
             }
 
             stats.stop_and_collect("assemblies");
@@ -240,10 +241,10 @@ namespace utopia {
             // write("A.m", mat);
 
             Scalar vol = sum(mass_mat);
-            std::cout << "vol: " << vol << std::endl;
+            utopia::out() << "vol: " << vol << std::endl;
 
             Scalar zero = sum(mat);
-            std::cout << "zero: " << zero << std::endl;
+            utopia::out() << "zero: " << zero << std::endl;
 
             space.apply_constraints(mat, rhs);
 
@@ -280,7 +281,7 @@ namespace utopia {
         //////////////////////////////////////////
 
         if (comm.rank() == 0) {
-            std::cout << "n_dofs: " << space.n_dofs() << std::endl;
+            utopia::out() << "n_dofs: " << space.n_dofs() << std::endl;
         }
         stats.describe(std::cout);
     }

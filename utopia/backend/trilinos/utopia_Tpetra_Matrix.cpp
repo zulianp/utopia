@@ -102,7 +102,7 @@ namespace utopia {
         try {
             mat_->apply(vec.implementation(), result.implementation());
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
 
@@ -122,7 +122,7 @@ namespace utopia {
         try {
             mat_->apply(vec.implementation(), result.implementation(), Teuchos::TRANS);
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -189,7 +189,7 @@ namespace utopia {
                                            params);
 
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -204,7 +204,7 @@ namespace utopia {
             mat.owner_ = true;
             assert(is_valid(true));
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -215,7 +215,7 @@ namespace utopia {
 
             owner_ = true;
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -232,7 +232,7 @@ namespace utopia {
             }
 
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -329,7 +329,7 @@ namespace utopia {
 
             finalize();
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
             throw ex;
         }
@@ -420,7 +420,7 @@ namespace utopia {
             mat_ = Tpetra::MatrixMarket::Reader<CrsMatrixType>::readSparse(is, comm);
         } catch (std::exception &ex) {
             is.close();
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             return false;
         }
 
@@ -436,7 +436,7 @@ namespace utopia {
         try {
             Tpetra::MatrixMarket::Writer<CrsMatrixType>::writeSparseFile(path, mat_, "mat", "", false);
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             return false;
         }
 

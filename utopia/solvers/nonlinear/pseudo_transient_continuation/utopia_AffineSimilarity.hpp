@@ -55,7 +55,7 @@ namespace utopia {
             using namespace utopia;
 
             if (empty(M_) && mpi_world_rank() == 0) {
-                std::cout << "Affine similarity solver requires mass matrix to be initialized .... \n ";
+                utopia::out() << "Affine similarity solver requires mass matrix to be initialized .... \n ";
             }
 
             Vector g, s, rhs, x_trial, g_trial;
@@ -176,13 +176,13 @@ namespace utopia {
                         if (residual_monotonicity_test(g_trial, g)) {
                             x = x_trial;
                             converged_inner = true;
-                            std::cout << "converged, because of the monotonicity test. \n";
+                            utopia::out() << "converged, because of the monotonicity test. \n";
                         } else {
                             // this seems to perform better than
                             // performing update also after residual monotonicity is satisfied
                             tau = estimate_tau(g_trial, g, s, tau, s_norm);
                             converged_inner = clamp_tau(tau);
-                            std::cout << "converged, clamping  \n";
+                            utopia::out() << "converged, clamping  \n";
                         }
 
                         if (!converged) {
@@ -190,7 +190,7 @@ namespace utopia {
                             if (tau_diff < 1e-1) {
                                 converged_inner = true;
                                 x = x_trial;
-                                std::cout << "converged, because of tau_diff   " << tau_diff << "  \n";
+                                utopia::out() << "converged, because of tau_diff   " << tau_diff << "  \n";
                             } else {
                                 tau_old = tau;
                             }
@@ -201,8 +201,8 @@ namespace utopia {
                     }
 
                     if (mpi_world_rank() == 0 && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
-                        std::cout << "------------------------------ end of fixed point iteration "
-                                     "------------------------ \n";
+                        utopia::out() << "------------------------------ end of fixed point iteration "
+                                         "------------------------ \n";
 
                 }  // this is outer loop of residual monicity test
 
@@ -233,7 +233,7 @@ namespace utopia {
             }  // outer solve loop while(!converged)
 
             if (mpi_world_rank() == 0 && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
-                std::cout << "solves_counter: " << solves_counter << "  \n";
+                utopia::out() << "solves_counter: " << solves_counter << "  \n";
 
             // reseting mass matrix initialization
             mass_init_ = false;
@@ -433,7 +433,7 @@ namespace utopia {
             return (norm2(g_trial) < norm2(g)) ? true : false;
         }
 
-    NVCC_PRIVATE
+        NVCC_PRIVATE
         void update_scaling_matrices(const Vector &x_old, const Vector &x_new) {
             Vector x_scaling(layout(x_old), 1.0);
 
@@ -452,17 +452,18 @@ namespace utopia {
 
                 auto tol = alpha_treshold_;
 
-                parallel_for(local_range_device(x_scaling), UTOPIA_LAMBDA(const SizeType i) {
-                    x_scaling_view.set(
-                        i,
-                        device::max(device::max(device::abs(x_old_view.get(i)), device::abs(x_new_view.get(i))), tol));
-                });
+                parallel_for(
+                    local_range_device(x_scaling), UTOPIA_LAMBDA(const SizeType i) {
+                        x_scaling_view.set(
+                            i,
+                            device::max(device::max(device::abs(x_old_view.get(i)), device::abs(x_new_view.get(i))),
+                                        tol));
+                    });
             }
 
             D_ = diag(x_scaling);
             D_inv_ = diag(1.0 / x_scaling);
         }
-
 
     private:
         Matrix M_;      // mass matrix

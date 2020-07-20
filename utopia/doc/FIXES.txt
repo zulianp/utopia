@@ -15,7 +15,7 @@
     assert(approxeq(1.0, one));
 
     one = norm2(v/norm2(v));
-    std::cout << "done\n";
+    utopia::out() <<"done\n";
     assert(approxeq(1.0, one));
 }
 

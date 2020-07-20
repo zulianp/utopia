@@ -277,7 +277,7 @@ namespace utopia {
 
             double val = norm1(Y * v);
             double tolerance = 30. * std::numeric_limits<double>::epsilon();
-            // std::cout << "val " << val <<std::endl;
+            // utopia::out() <<"val " << val <<std::endl;
             utopia_test_assert(approxeq(val, 0., tolerance));
 
             TpetraMatrixd Id;
@@ -383,9 +383,9 @@ namespace utopia {
             utopia_test_assert(s_t.get(0) == s.get(1));
 
             // disp(A);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
             // disp(At);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
 
             TpetraMatrixd id;
             id.identity(layout(comm_, rows, cols, Traits::determine(), Traits::determine()), 1.0);
@@ -404,11 +404,11 @@ namespace utopia {
             double norm_expected = size(v2).get(0) * 2.;
 
             // disp(id);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
             // disp(id_t);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
 
-            // std::cout << norm_expected << " == " << norm_actual << std::endl;
+            // utopia::out() <<norm_expected << " == " << norm_actual << std::endl;
             utopia_test_assert(approxeq(norm_expected, norm_actual));
         }
 
@@ -885,11 +885,11 @@ namespace utopia {
                 ok = multigrid.apply(rhs, x);
                 utopia_test_assert(ok);
             } catch (const std::exception &ex) {
-                std::cout << ex.what() << std::endl;
+                utopia::out() << ex.what() << std::endl;
                 utopia_test_assert(false);
             }
 
-            std::cout << std::flush;
+            utopia::out() << std::flush;
 
             write("A.mm", multigrid.level(0).A());
 
@@ -1412,7 +1412,7 @@ namespace utopia {
 
             each_read(P, [](const SizeType i, const SizeType j, const double value) {
                 if (j != SizeType(value)) {
-                    std::cout << i << " " << j << " " << value << std::endl;
+                    utopia::out() << i << " " << j << " " << value << std::endl;
                 }
 
                 utopia_test_assert(j == SizeType(value));

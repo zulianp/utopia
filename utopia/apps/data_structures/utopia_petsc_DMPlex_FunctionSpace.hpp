@@ -160,7 +160,7 @@ namespace utopia {
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i < NComponents);
 
-            // std::cout << i << " " << subspace_id_ << " " << mesh_->n_components() << std::endl;
+            // utopia::out() <<i << " " << subspace_id_ << " " << mesh_->n_components() << std::endl;
 
             // assert(i + subspace_id_ < mesh_->n_components());
             return space;
@@ -239,7 +239,7 @@ namespace utopia {
             // DMPolytopeType ct;
             // DMPlexGetCellType(mesh_->raw_type(), idx, &ct);
 
-            // std::cout << " DMPolytopeType: " << ct << std::endl;
+            // utopia::out() <<" DMPolytopeType: " << ct << std::endl;
 
             DMPlexComputeCellGeometryAffineFEM(mesh_->raw_type(),
                                                idx,

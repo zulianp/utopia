@@ -2,6 +2,7 @@
 #define UTOPIA_STATIC_MATH_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_IOStream.hpp"
 
 namespace utopia {
 
@@ -92,10 +93,10 @@ namespace utopia {
         static void print_all() {
             for (auto const &c : instance().combs) {
                 for (auto n : c) {
-                    std::cout << n << " ";
+                    utopia::out() << n << " ";
                 }
 
-                std::cout << std::endl;
+                utopia::out() << std::endl;
             }
         }
 

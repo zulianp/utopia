@@ -15,7 +15,7 @@ int main(const int argc, char *argv[]) {
         // Your utopia code here...
 
         // Print git version to terminal
-        std::cout << "Hello this is UTOPIA_GIT_VERSION: " << UTOPIA_GIT_VERSION << std::endl;
+        utopia::out() << "Hello this is UTOPIA_GIT_VERSION: " << UTOPIA_GIT_VERSION << std::endl;
     }
 
     // Finalizes library and dependencies runtimes
