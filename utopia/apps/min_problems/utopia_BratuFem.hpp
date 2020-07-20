@@ -311,7 +311,6 @@ namespace utopia {
                                 Scalar val = inner(c_grad_shape_el(j, qp), c_grad_l) * dx(qp);
                                 val -= inner(params_.lambda*c_shape_fun_el(j, qp), c_shape_l) * dx(qp);
 
-
                                 val = (l == j) ? (0.5 * val) : val;
                                 el_mat(l, j) += val;
                                 el_mat(j, l) += val;
