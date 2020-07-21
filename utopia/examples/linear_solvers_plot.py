@@ -5,8 +5,6 @@ import csv
 import os
 
 
-path = os.getcwd() + '/linear_solvers.csv'
-print(path)
 
 with open(path) as csvfile:
     data = list(csv.reader(csvfile))
@@ -30,9 +28,9 @@ x2 = np.arange(len(name))
 width = 0.35  # the width of the bars
 
 fig, ax = plt.subplots()
-rects1 = ax.bar(x - width/2, norm, width)
+
 fig2, ax2 = plt.subplots()
-rects2 = ax2.bar(x2 + width/2, time, width)
+
 
 # Add some text for name, title and custom x-axis tick name, etc.
 # ax.set_ylabel('')
@@ -40,13 +38,6 @@ ax.set_title('Norm')
 ax.set_xticks(x)
 ax.set_xticklabels(name)
 ax.legend()
-
-
-ax2.set_ylabel('Seconds')
-ax2.set_title('Time to solve linear system')
-ax2.set_xticks(x)
-ax2.set_xticklabels(name)
-ax2.legend()
 
 
 
