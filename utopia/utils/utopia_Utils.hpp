@@ -13,6 +13,7 @@
 #include "utopia_CSV.hpp"
 #include "utopia_Chrono.hpp"
 
+#include "utopia_Describable.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Path.hpp"
 
@@ -125,15 +126,19 @@ namespace utopia {
         BG_DEFAULT = 49
     };
 
-    class ColorModifier {
+    class ColorModifier : public Describable {
         ColorCode code;
 
     public:
         void set_color_code(ColorCode new_code) { code = new_code; }
 
         ColorModifier(ColorCode pCode) : code(pCode) {}
+
+        void describe(std::ostream &os) const override { os << "\033[" << code << "m"; }
+
         friend std::ostream &operator<<(std::ostream &os, const ColorModifier &mod) {
-            return os << "\033[" << mod.code << "m";
+            mod.describe(os);
+            return os;
         }
     };
 
