@@ -6,8 +6,14 @@
 namespace utopia {
 
     void write(const Path &path, LibMeshFunctionSpace &space, UVector &x) {
+        std::cout << "Writing solution at " << path.to_string() << std::endl;
+        space.equation_system().solution->add(-6.0);
+        std::cout << "x_norm: " << x.norm2() << std::endl;
+
         utopia::convert(x, *space.equation_system().solution);
         space.equation_system().solution->close();
+
+        std::cout << "lm_x_norm: " << space.equation_system().solution->l2_norm() << std::endl;
 
         if (space.mesh().comm().size() == 1) {
             libMesh::ExodusII_IO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());

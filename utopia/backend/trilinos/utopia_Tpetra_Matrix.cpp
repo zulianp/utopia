@@ -380,7 +380,7 @@ namespace utopia {
     }
 
     void TpetraMatrix::diag(const TpetraMatrix &mat) {
-        TpetraVector d;
+        TpetraVector d(mat.comm());
         mat.build_diag(d);
         diag(d);
     }
