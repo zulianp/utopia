@@ -471,7 +471,7 @@ namespace utopia {
     TpetraMatrix::Scalar TpetraMatrix::norm2() const { return implementation().getFrobeniusNorm(); }
 
     TpetraMatrix::Scalar TpetraMatrix::sum() const {
-        TpetraVector vec, row_sum;
+        TpetraVector vec(this->comm()), row_sum(this->comm());
         vec.values(layout(this->communicator(), this->local_size().get(1), this->size().get(1)), 1.);
         this->multiply(vec, row_sum);
         return row_sum.sum();
@@ -693,7 +693,7 @@ namespace utopia {
         }
 
         // BAD we have a temporary here
-        TpetraVector temp;
+        TpetraVector temp(this->comm());
 
         if (transpose) {
             transpose_multiply(x, temp);
