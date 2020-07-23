@@ -130,7 +130,7 @@ namespace utopia {
             // serial implementation for test
             w.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &val) {
                 // We use assert for the gpu
-                UTOPIA_DEVICE_ASSERT(device::approxeq(Scalar(i * n + j), val));
+                UTOPIA_DEVICE_ASSERT(device::approxeq(Scalar(i * n + j), val, 1e-8));
             });
         }
 
