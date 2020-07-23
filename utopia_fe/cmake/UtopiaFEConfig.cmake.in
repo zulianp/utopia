@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Utopia HINTS @Utopia_DIR@)
+find_dependency(ParMoonolith HINTS @ParMoonolith_DIR@)
+if (@WITH_BOOST@)
+    find_dependency(Boost HINTS @Boost_DIR@)
+endif()
+
+########## old style variables. Preferably you should use target_link_libraries(my_target Utopia::utopia) ################
+@OLD_CMAKE_CONFIG_CONTENT@
+########## end of old style variables ####################################################################################
+
+include("${CMAKE_CURRENT_LIST_DIR}/UtopiaFETargets.cmake")
+
+

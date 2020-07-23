@@ -21,11 +21,11 @@ find_package(PkgConfig QUIET)
 
 # set(LIBMESH_DIR LIBMESH_DIR-NOTFOUND CACHE PATH "Libmesh installation directory")
 if($ENV{LIBMESH_DIR})
-  set(ENV{PKG_CONFIG_PATH} $ENV{LIBMESH_DIR}/lib/pkgconfig)
+    set(ENV{PKG_CONFIG_PATH} "$ENV{LIBMESH_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
 endif()
 
 if(LIBMESH_DIR)
-  set(ENV{PKG_CONFIG_PATH} ${LIBMESH_DIR}/lib/pkgconfig)
+    set(ENV{PKG_CONFIG_PATH} "${LIBMESH_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
 endif()
 
 pkg_check_modules(PC_LIBMESH QUIET libmesh-${METHOD})
