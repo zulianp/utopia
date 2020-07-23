@@ -93,7 +93,7 @@ namespace utopia {
         void assign(TpetraVector &&other) override;
 
         ////////////////////////////////
-        TpetraVector(const TrilinosCommunicator &comm = Tpetra::getDefaultComm()) : comm_(comm) {}
+        inline explicit TpetraVector(const TrilinosCommunicator &comm = Tpetra::getDefaultComm()) : comm_(comm) {}
 
         explicit TpetraVector(const Layout &layout, const Scalar &val = 0.0) { values(layout, val); }
 
