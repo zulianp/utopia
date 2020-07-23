@@ -122,7 +122,7 @@ class MLSteadyState final : public Configurable {
 
     if (!rmtr_) {
       rmtr_ = std::make_shared<RMTR_inf<
-          Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN> >(
+          Matrix, Vector, TRBoundsGratton<Matrix, Vector>, GALERKIN> >(
           n_levels_);
     }
 
@@ -226,7 +226,7 @@ class MLSteadyState final : public Configurable {
 
     // rmtr_->delta0(1.0);
 
-    // rmtr_->set_box_constraints(box); 
+    rmtr_->set_box_constraints(box); 
     rmtr_->solve(solution);
     auto sol_status = rmtr_->solution_status();
 
@@ -288,7 +288,7 @@ class MLSteadyState final : public Configurable {
   std::string output_path_;
 
   std::shared_ptr<
-      RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN> >
+      RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, GALERKIN> >
       rmtr_;
 
   bool save_output_;
