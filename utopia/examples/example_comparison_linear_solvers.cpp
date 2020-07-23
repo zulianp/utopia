@@ -15,21 +15,34 @@
 using namespace std;
 
 const char* file = "./linear_solvers.csv";
+const char* RUN_PYTHON_27 = "/usr/bin/python2.7 ./../examples/linear_solvers_plot.py ./linear_solvers.csv";
+const char* RUN_PYTHON_3 = "/usr/bin/python3 ./../examples/linear_solvers_plot.py ./linear_solvers.csv";
 
 template <class Solver, class Matrix, class Vector>
 void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
     using namespace utopia;
     using Scalar = typename Traits<Vector>::Scalar;
 
+    // Instantiate Solver
     Solver s;
+
+    // Set tolerances...
     s.atol(1e-10);
     s.rtol(1e-10);
     s.stol(1e-10);
+
+    // Set maximum number of iterations that the solver will run for.
     s.max_it(b.size() * 1000);
 
+    // Instiate Chrono to keep trak of the time it takes to solve
+    // the linear system.
     Chrono c;
+
+    // Instatiate the vecor x to have the same layout as b with 0 as
+    // values.
     Vector x(layout(b), 0);
 
+    // Set comm to be same as the one for vector b.
     auto& comm = b.comm();
 
     c.start();
@@ -43,6 +56,7 @@ void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
     // You can uncomment it.
     // s.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
 
+    // Instantiate vector r(residual)
     Vector r = A * x;
     r = b - r;
     x += r;
@@ -54,15 +68,19 @@ void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
     r = b - r;
     Scalar norm_r = norm2(r);
 
+    // Check and see what rank the current process has.
     if (comm.rank() == 0) {
-        // stringstream ss;
+        // print to terminal the values we get
         cout << solver_name << endl << "norm_r: " << norm_r << " time: " << c.get_seconds() << endl << endl;
 
+        // Open the csv file and make sure we append new elements and not
+        // just overwrite.
         ofstream myfile;
         myfile.open(file, ios_base::app);
         if (!myfile.good()) {
             std::cerr << "Could not open file for writing" << endl;
         } else {
+            // Write to csv file norm followed by the time it took to solve.
             myfile << solver_name << "," << norm_r << "," << c.get_seconds() << "\n";
             myfile.close();
         }
@@ -143,10 +161,12 @@ void test_linear_solver() {
     // A *= n;
 
     if (comm.rank() == 0) {
+        // Delete the contents of the csv file
         ofstream ofs;
         ofs.open(file, ofstream::out | ofstream::trunc);
         ofs.close();
 
+        // Run the different solvers.
         measure_solver<ConjugateGradient<Matrix, Vector>>(A, b, "ConjugateGradient");
         measure_solver<GaussSeidel<Matrix, Vector>>(A, b, "GaussSeidel");
         measure_solver<BiCGStab<Matrix, Vector>>(A, b, "BiCGStab");
@@ -157,10 +177,13 @@ void test_linear_solver() {
 
         // measure_solver<Factorization<Matrix, Vector>>(A, b, "Factorization");
 
-        if (system("/usr/bin/python2.7 ./../examples/linear_solvers_plot.py ./linear_solvers.csv 1")) {
-            cout << system("/usr/bin/python2.7 ./../examples/linear_solvers_plot.py ./linear_solvers.csv 1");
-        } else if (system("/usr/bin/python3 ./../examples/linear_solvers_plot.py ./linear_solvers.csv 1")) {
-            cout << system("/usr/bin/python3 ./../examples/linear_solvers_plot.py ./linear_solvers.csv 1");
+        // Check and see which python version the user has
+        // then run the python file which will open up the
+        // csv file we just modified and plot the values.
+        if (system(RUN_PYTHON_27)) {
+            cout << system(RUN_PYTHON_27);
+        } else if (system(RUN_PYTHON_3)) {
+            cout << system(RUN_PYTHON_3);
         } else {
             cout << "Update python please." << endl;
         }
