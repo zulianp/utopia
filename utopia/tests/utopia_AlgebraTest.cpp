@@ -256,7 +256,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     class SparseAlgebraTest {
-    public:
+        NVCC_PRIVATE
         using Traits = utopia::Traits<Matrix>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
@@ -318,29 +318,18 @@ namespace utopia {
             auto rr = M.row_range();
             auto nc = M.cols();
 
-            // M.transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
-
-            // std::stringstream ss;
-            M.transform_ijv([&](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
+            M.transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
                 utopia_test_assert(rr.inside(i));
                 utopia_test_assert(j < nc);
-
-                // ss << "(" << i << " " << j << ") -> " << v << std::endl;
-
                 return v;
             });
 
-            M.read([&](const SizeType &i, const SizeType &j, const Scalar &v) {
+            M.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v) {
                 utopia_test_assert(rr.inside(i));
                 utopia_test_assert(j < nc);
                 utopia_test_assert(v >= -1.0);
                 utopia_test_assert(v <= 2.0);
             });
-
-            // M.comm().synched_print(ss.str(), std::cout);
-
-            // disp(M);
-            // TODO(Patrick) write meaningul test
         }
 
         void transpose_test() {
@@ -366,7 +355,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     class DenseAlgebraTest {
-    private:
+        NVCC_PRIVATE
         using Traits = utopia::Traits<Matrix>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
