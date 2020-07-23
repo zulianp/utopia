@@ -60,8 +60,7 @@ static void bratu_2d_rmtr(Input &in) {
 
   MLSteadyState<FunctionSpace,
                 BratuFem<FunctionSpace>,
-                AllZeroBC<FunctionSpace>,
-                AllZeroIG<FunctionSpace> > time_stepper(space);
+                AllZeroBC<FunctionSpace> > time_stepper(space);
 
   time_stepper.read(in);
   time_stepper.run();

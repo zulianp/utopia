@@ -1,8 +1,8 @@
 {
     "app" : "bratu_2d_rmtr",
     "output-path" : "bratu_2d_rmtr",
-    "nx" : 100,
-    "ny" : 100,
+    "nx" : 5,
+    "ny" : 5,
     "nz" : 2,
     "x_min" : 0, 
     "x_max" : 1,
@@ -14,7 +14,7 @@
     "solver" : {
         "verbose" : true,
         "max-it" : 200,
-        "atol": 1e-5, 
+        "atol": 1e-9, 
         "max_coarse_it": 1,
         "max_sucessful_coarse_it": 1,
         "pre_smoothing_steps" : 2,

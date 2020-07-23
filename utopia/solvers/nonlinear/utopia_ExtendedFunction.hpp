@@ -34,7 +34,7 @@ namespace utopia {
         bool value(const Vector & /*point*/, Scalar & /*value*/) const override = 0;
 
         // Copy of vec...
-        Vector initial_guess() const { return _x_eq_values; }
+        virtual Vector initial_guess() const { return _x_eq_values; }
 
         virtual Layout layout() const { return utopia::layout(_x_eq_values); }
 

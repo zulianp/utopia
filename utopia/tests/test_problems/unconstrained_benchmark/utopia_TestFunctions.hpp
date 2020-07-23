@@ -68,7 +68,7 @@ namespace utopia {
 
         ~UnconstrainedExtendedTestFunction() override = default;
 
-        Vector initial_guess() const override = 0;
+        virtual Vector initial_guess() const override = 0;
     };
 
     template <class Matrix, class Vector>
