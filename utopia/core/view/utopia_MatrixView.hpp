@@ -43,14 +43,14 @@ namespace utopia {
 
         inline std::string get_class() const override { return "MatrixView"; }
 
-        UTOPIA_FUNCTION TensorView() = default;
+        TensorView() = default;
         UTOPIA_FUNCTION TensorView(ArrayView2D &&view) : view_(std::move(view)) {}
         UTOPIA_FUNCTION TensorView(const ArrayView2D &view) : view_(view) {}
 
-        UTOPIA_FUNCTION TensorView(TensorView &&other) : view_(std::move(other.view_)) {}
+        TensorView(TensorView &&other) : view_(std::move(other.view_)) {}
 
         template <class... Args>
-        UTOPIA_FUNCTION TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
+        TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
 
         // template<class... Args>
         // UTOPIA_FUNCTION TensorView(Args && ...args)

@@ -158,7 +158,7 @@ namespace utopia {
         UTOPIA_FUNCTION constexpr TensorView(const TensorView &other) : view_(other.view_) {}
 
         template <class... Args>
-        UTOPIA_FUNCTION TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
+        TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
 
         template <class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr) {
@@ -166,7 +166,7 @@ namespace utopia {
         }
 
         template <class Expr>
-        UTOPIA_FUNCTION TensorView(DeviceExpression<Expr> &&expr) {
+        TensorView(DeviceExpression<Expr> &&expr) {
             DeviceAssign<TensorView, Expr>::apply(*this, std::move(expr.derived()));
         }
 

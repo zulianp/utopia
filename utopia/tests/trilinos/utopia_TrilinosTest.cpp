@@ -17,6 +17,8 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
+#include <Kokkos_DualView.hpp>
+
 // trilinos
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_Utils.hpp"
@@ -717,7 +719,21 @@ namespace utopia {
             }
 
             Scalar val = 0.0;
-            m.read([&](const SizeType &, const SizeType &, const Scalar &v) { val += v; });
+
+            // FIXME try to come up with utopia front end types for similar operations
+            using DualViewType = Kokkos::DualView<Scalar *, TpetraVectord::ExecutionSpace>;
+
+            DualViewType acc("acc", 1);
+            auto d_acc = acc.view_device();
+
+            m.read(UTOPIA_LAMBDA(const SizeType &, const SizeType &, const Scalar &v) {
+                device::atomic_add(&d_acc(0), v);
+            });
+
+            acc.modify<TpetraVectord::ExecutionSpace>();
+            // acc.synch();
+
+            val = acc.view_host()(0);
 
             comm_.synched_print(val, std::cout);
 
@@ -1361,7 +1377,7 @@ namespace utopia {
 
 #endif  // HAVE_BELOS_TPETRA
 
-#ifdef HAVE_AMESOS2_KOKKOS
+#ifdef WITH_TRILINOS_AMESOS2
 
         void trilinos_amesos2() {
             std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml";
@@ -1583,13 +1599,13 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
 
-#ifdef HAVE_BELOS_TPETRA
+#ifdef WITH_TRILINOS_BELOS
             UTOPIA_RUN_TEST(trilinos_belos);
-#endif  // HAVE_BELOS_TPETRA
+#endif  // WITH_TRILINOS_BELOS
 
-            //#ifdef HAVE_AMESOS2_TPETRA
+#ifdef WITH_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);
-            //#endif //HAVE_AMESOS2_TPETRA
+#endif  // WITH_TRILINOS_AMESOS2
 
 #ifdef WITH_PETSC
             UTOPIA_RUN_TEST(trilinos_transform);
