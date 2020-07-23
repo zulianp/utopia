@@ -4,7 +4,7 @@ import numpy as np
 import csv
 import os
 
-path = "../build_docker/linear_solvers.csv"
+path = "./linear_solvers.csv"
 
 with open(path) as csvfile:
     data = list(csv.reader(csvfile))

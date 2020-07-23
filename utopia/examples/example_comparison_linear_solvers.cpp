@@ -1,4 +1,3 @@
-#include <cstdlib>
 #include "utopia.hpp"
 #include "utopia_BiCGStab.hpp"
 #include "utopia_ConjugateGradient.hpp"
@@ -7,6 +6,7 @@
 #include "utopia_PointJacobi.hpp"
 #include "utopia_Version.hpp"
 
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -14,9 +14,9 @@
 #include <vector>
 using namespace std;
 
-const char* file = "./linear_solvers.csv";
-const char* RUN_PYTHON_27 = "/usr/bin/python2.7 ./../examples/linear_solvers_plot.py ./linear_solvers.csv";
-const char* RUN_PYTHON_3 = "/usr/bin/python3 ./../examples/linear_solvers_plot.py ./linear_solvers.csv";
+const char* file = "../examples/linear_solvers.csv";
+const char* RUN_PYTHON_27 = "/usr/bin/python2.7 ../examples/linear_solvers_plot.py";
+const char* RUN_PYTHON_3 = "/usr/bin/python3 ../examples/linear_solvers_plot.py";
 
 template <class Solver, class Matrix, class Vector>
 void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
@@ -25,6 +25,20 @@ void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
 
     // Instantiate Solver
     Solver s;
+
+    // Setting a conditioner is important with iterative linear solver.
+    // The more a problem is bad conditioned, that is the more the difference
+    // between the largest and small eigenvalues is significant, the more
+    // the solution will deviate from the exact solution.
+    // A preconditioner allows to make this difference smaller, so that
+    // the solution found with the iterative system will be more
+    // precise.
+    // You can uncomment it.
+    // s.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+
+    // if () {
+    //     s.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+    // }
 
     // Set tolerances...
     s.atol(1e-10);
@@ -46,16 +60,6 @@ void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
     auto& comm = b.comm();
 
     c.start();
-    // Setting a conditioner is important with iterative linear solver.
-    // The more a problem is bad conditioned, that is the more the difference
-    // between the largest and small eigenvalues is significant, the more
-    // the solution will deviate from the exact solution.
-    // A preconditioner allows to make this difference smaller, so that
-    // the solution found with the iterative system will be more
-    // precise.
-    // You can uncomment it.
-    // s.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
-
     // Instantiate vector r(residual)
     Vector r = A * x;
     r = b - r;
@@ -129,10 +133,10 @@ void test_linear_solver() {
     }
 
     // Matrix
-    SizeType n_local_rows = 10;
-    SizeType n_local_cols = 10;
-    SizeType d_nnz = 3;
-    SizeType o_nnz = 3;
+    // SizeType n_local_rows = 10;
+    // SizeType n_local_cols = 10;
+    // SizeType d_nnz = 3;
+    // SizeType o_nnz = 3;
 
     A.sparse(square_matrix_layout(l), 3, 2);
     {
