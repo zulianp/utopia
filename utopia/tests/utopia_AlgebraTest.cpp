@@ -256,7 +256,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     class SparseAlgebraTest {
-        NVCC_PRIVATE
+    public:
         using Traits = utopia::Traits<Matrix>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
@@ -355,7 +355,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     class DenseAlgebraTest {
-        NVCC_PRIVATE
+    public:
         using Traits = utopia::Traits<Matrix>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;

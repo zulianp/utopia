@@ -8,7 +8,7 @@
 namespace utopia {
     template <class Matrix, class Vector>
     class Chebyquad35 final : public UnconstrainedTestFunction<Matrix, Vector> {
-        NVCC_PRIVATE
+    public:
         using Traits = utopia::Traits<Vector>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
