@@ -1,6 +1,6 @@
 {
     "app" : "bratu_2d_rmtr",
-    "log_output_path" : "membrane",
+    "log_output_path" : "membrane.csv",
     "output_path": "membrane",
     "nx" : 100,
     "ny" : 100,
@@ -8,11 +8,11 @@
     "x_max" : 1,
     "y_min" : 0,
     "y_max" : 1,
-    "n_levels": 3,
+    "n_levels": 2,
     "solver" : {
         "verbose" : true,
         "max-it" : 200,
-        "atol": 1e-5, 
+        "atol": 1e-8, 
         "max_coarse_it": 2,
         "max_sucessful_coarse_it": 1,
         "pre_smoothing_steps" : 2,
@@ -21,7 +21,7 @@
         "Hpost_lagging": false,        
         "grad_smoothess_termination" : 1e-6,
         "max_sucessful_smoothing_it": 1,
-        "max_QP_smoothing_it": 1,
+        "max_QP_smoothing_it": 3,
         "max_QP_coarse_it": 1000,
         "linear-solver" : {
             "verbose" : false,

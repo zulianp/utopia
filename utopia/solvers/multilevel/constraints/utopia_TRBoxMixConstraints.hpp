@@ -9,6 +9,7 @@
 #include "utopia_LevelMemory.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_BoxKornhuberTruncation.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -101,6 +102,12 @@ namespace utopia {
     template <class Matrix, class Vector>
     using TRGrattonBoxKornhuber =
         utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, BoxKornhuber<Matrix, Vector>>;
+
+
+    template <class Matrix, class Vector>
+    using TRGrattonBoxKornhuberTruncation =
+        utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, BoxKornhuberTruncation<Matrix, Vector>>;
+
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // // // // // // // //

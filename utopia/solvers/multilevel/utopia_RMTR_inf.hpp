@@ -21,6 +21,7 @@
 
 #include "utopia_IdentityTransfer.hpp"
 #include "utopia_MultiLevelVariableBoundInterface.hpp"
+#include "utopia_MatrixTruncatedTransfer.hpp"
 
 // TODO:: remove in the future -> needed for UTOPIA_PETSC_COLLECTIVE_MEMUSAGE compilation
 // #include "utopia_petsc_debug.hpp"
@@ -126,6 +127,7 @@ namespace utopia {
             return true;
         }
 
+
     private:
         void init_memory() override {
             const auto &layouts = this->local_level_layouts();
@@ -223,6 +225,66 @@ namespace utopia {
         Scalar criticality_measure(const SizeType &level) override {
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]);
         }
+
+
+        void truncate(const SizeType & level) override
+        {
+            
+            // truncate_interpolation
+            if(level == this->n_levels()-1)
+            {
+                // std::cout<<"---- yes, the finest level ------ \n"; 
+
+                Vector active_flgs = 0.0*this->memory_.x[level]; 
+
+                if (this->box_constraints_.has_lower_bound()) {
+
+                    // std::cout<<"----- yes, in ------ \n"; 
+
+                    Vector lb  = *(this->box_constraints_.lower_bound());
+
+                    auto d_lb   = const_local_view_device(lb);
+                    auto d_x    = const_local_view_device(this->memory_.x[level]);                 
+                    auto d_flg  = local_view_device(active_flgs);
+
+                    parallel_for(local_range_device(active_flgs), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar li = d_lb.get(i);
+                        const Scalar xi = d_x.get(i);
+
+                        if(device::abs(li - xi) < 1e-14){
+                            d_flg.set(i, 1.0);
+                        }
+                        else{
+                            d_flg.set(i, 0.0);
+                        }
+
+                    });
+
+                } // lb check 
+                
+
+            // disp(active_flgs, "active flgs"); 
+            // std::cout<<"d_flg: "<< sum(active_flgs) << "  \n"; 
+
+            auto *transfer_trun = dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector> *>(this->transfers_.back().get());
+            transfer_trun->truncate_interpolation(active_flgs); 
+
+            // exit(0);
+
+            }// level check 
+        }
+
+
+        void make_ml_iterate_feasible(const SizeType & level)        
+        {
+            // this->make_iterate_feasible(this->memory_.x[level]); 
+
+            // TODO:: check with levels 
+            this->get_projection(this->active_lower(level), this->active_upper(level), this->memory_.x[level]); 
+        }
+
+
+
 
     public:  // nvcc requires it to be public when using lambdas
         bool solve_qp_subproblem(const SizeType &level, const bool &flg) override {

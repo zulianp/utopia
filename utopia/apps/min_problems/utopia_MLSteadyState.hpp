@@ -109,8 +109,10 @@ class MLSteadyState final : public Configurable {
       Matrix inv_lumped_mass = diag(1. / sum(M_coarse, 1));
       Matrix P = inv_lumped_mass * R * M_fine;
 
-      transfers_[i - 1] = std::make_shared<IPTransferNested<Matrix, Vector>>(
-          std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
+
+      // transfers_[i - 1] = std::make_shared<IPTransferNested<Matrix, Vector>>(
+      transfers_[i - 1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(
+        std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
     }
 
     // initial conddition needs to be setup only on the finest level
@@ -122,7 +124,7 @@ class MLSteadyState final : public Configurable {
 
     if (!rmtr_) {
       rmtr_ = std::make_shared<RMTR_inf<
-          Matrix, Vector, TRBoundsGratton<Matrix, Vector>, GALERKIN> >(
+          Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN> >(
           n_levels_);
     }
 
@@ -227,6 +229,7 @@ class MLSteadyState final : public Configurable {
     // rmtr_->delta0(1.0);
 
     rmtr_->set_box_constraints(box); 
+    // rmtr_->max_it(4);
     rmtr_->solve(solution);
     auto sol_status = rmtr_->solution_status();
 
@@ -288,7 +291,7 @@ class MLSteadyState final : public Configurable {
   std::string output_path_;
 
   std::shared_ptr<
-      RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, GALERKIN> >
+      RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN> >
       rmtr_;
 
   bool save_output_;

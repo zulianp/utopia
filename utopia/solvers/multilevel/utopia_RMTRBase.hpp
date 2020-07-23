@@ -202,6 +202,9 @@ namespace utopia {
         template <MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, GALERKIN>::value, int> = 0>
         bool init_consistency_terms(const SizeType &level) {
             UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms0");
+
+            this->truncate(level); 
+
             // Restricted fine level gradient
             this->transfer(level - 1).restrict(this->ml_derivs_.g[level], this->ml_derivs_.g_diff[level - 1]);
 
@@ -297,6 +300,16 @@ namespace utopia {
                         {" it. ", "|| g ||", "   E + <g_diff, x>", "ared   ", "  pred  ", "  rho  ", "  delta "});
                 }
             }
+        }
+
+        virtual void truncate(const SizeType & /*level*/)
+        {
+
+        }
+
+        virtual void make_ml_iterate_feasible(const SizeType & /*level*/)
+        {
+            
         }
 
         /**

@@ -249,12 +249,16 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_END();
 
             // terminate, since TR rad. does not allow to take more corrections on given level
-            if (converged == true) {
-                if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE) {
-                    std::cout << " converged last  \n";
-                }
-                return true;
-            }
+            // if (converged == true) {
+            //     if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE) {
+            //         std::cout << " converged last  \n";
+            //     }
+            //     return true;
+            // }
+
+            this->make_ml_iterate_feasible(level); 
+
+
 
         } else if (mpi_world_rank() == 0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE &&
                    this->verbose() == true) {

@@ -250,6 +250,7 @@ namespace utopia {
                 for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
                     if (_eq_active_flg.get(i) == 1.0) {
                         indices_eq_constraints_.push_back(i);
+                        // std::cout<<"i: "<< i << " \n"; 
                     }
                 }
             }
