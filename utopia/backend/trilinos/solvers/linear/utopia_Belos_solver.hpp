@@ -1,7 +1,7 @@
 #ifndef UTOPIA_BELOS_SOLVERS_HPP
 #define UTOPIA_BELOS_SOLVERS_HPP
 
-#include <utopia_Config.hpp>
+#include "utopia_Config.hpp"
 
 #ifdef WITH_TRILINOS_BELOS
 

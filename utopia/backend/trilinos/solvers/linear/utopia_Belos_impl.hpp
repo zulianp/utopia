@@ -1,6 +1,10 @@
 #ifndef UTOPIA_BELOS_IMPL_HPP
 #define UTOPIA_BELOS_IMPL_HPP
 
+#include "utopia_Base.hpp"
+
+#ifdef WITH_TRILINOS_BELOS
+
 #include "utopia_Belos_solver.hpp"
 
 #include "utopia_Wrapper.hpp"
@@ -328,3 +332,4 @@ namespace utopia {
 }  // namespace utopia
 
 #endif  // UTOPIA_BELOS_IMPL_HPP
+#endif  // WITH_TRILINOS_BELOS

@@ -1,4 +1,4 @@
-#include <utopia_Config.hpp>
+#include "utopia_Config.hpp"
 
 #ifdef WITH_TRILINOS_BELOS
 
@@ -8,4 +8,5 @@
 namespace utopia {
     template class BelosSolver<TpetraMatrixd, TpetraVectord>;
 }  // namespace utopia
+
 #endif  // WITH_TRILINOS_BELOS
