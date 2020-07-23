@@ -1,4 +1,4 @@
-utopia_add_library(utopia_c ${CMAKE_CURRENT_SOURCE_DIR} "." "utopia")
+utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
 
 ################ SWIG ##################
 
@@ -13,7 +13,7 @@ if(SWIG_FOUND)
     find_package(PythonLibs)
 
     if(PythonLibs_FOUND)
-        target_include_directories(utopia_c PRIVATE ${PYTHON_INCLUDE_PATH})
+        target_include_directories(utopia PRIVATE ${PYTHON_INCLUDE_PATH})
         # set(CMAKE_SWIG_FLAGS "")
 
         set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
@@ -25,7 +25,7 @@ if(SWIG_FOUND)
         # set_property(TARGET _utopia PROPERTY SWIG_USE_LIBRARY_INCLUDE_DIRECTORIES TRUE)
 
         swig_link_libraries(utopia ${PYTHON_LIBRARIES} utopia)
-        set_target_properties(_utopia PROPERTIES SUFFIX ".so")
+        set_target_properties(utopia PROPERTIES SUFFIX ".so")
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia.py DESTINATION lib)
 

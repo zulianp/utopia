@@ -1,4 +1,4 @@
-utopia_add_library(utopia_interoperability ${CMAKE_CURRENT_SOURCE_DIR} "." "utopia_core;utopia_utils;utopia_solvers")
+utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
 
 # if(TARGET utopia_opencl)
 # 	target_link_libraries(utopia_interoperability PUBLIC utopia_opencl)

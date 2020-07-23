@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.13)
 
 project(utopia)
 # cmake_policy(SET "CMP0079" NEW)
@@ -38,7 +38,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #################################################################################
 #################################################################################
 
-option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable for linux" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
 
 option(TRY_WITH_MPI "Enable the cuda backend" ON)
@@ -73,6 +72,9 @@ option(INSTALL_TRILINOS "Install trilinos directly" ON)
 option(INSTALL_PETSC "Install petsc directly" ON)
 option(INSTALL_PETSC_DEBUG "Install petsc directly" ON)
 option(ENABLE_GPERFTOOLS "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)" OFF)
+
+option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+
 # set(UTOPIA_DEFAULT_TARGETS)
 include(CodeCoverage)
 
@@ -235,31 +237,16 @@ macro(print_dependency_table)
 endmacro()
 
 #################################################################################
-macro(utopia_add_library libName libraryRootDir subDirs libraryDeps)
-    set(THIS_LIB_HEADERS "")
-    set(THIS_LIB_SOURCES "")
-    find_project_files(${libraryRootDir} "${subDirs}" THIS_LIB_HEADERS THIS_LIB_SOURCES)
-
-    add_library(${libName} STATIC ${THIS_LIB_SOURCES})
-    utopia_link_default_targets(${libName})
-
+function(utopia_add_library libraryRootDir subDirs)
+    set(THIS_MODULE_SOURCES "")
+    set(THIS_MODULE_HEADERS "")
+    find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS THIS_MODULE_SOURCES)
+    target_sources(utopia PRIVATE ${THIS_MODULE_SOURCES})
+    install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
     foreach(MODULE ${subDirs})
-        target_include_directories(${libName} PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+        target_include_directories(utopia BEFORE PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
     endforeach(MODULE)
-
-    target_link_libraries(${libName} PUBLIC ${libraryDeps})
-    set_utopia_compiler_features(${libName})
-
-    install(TARGETS ${libName}
-        EXPORT UtopiaTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-    )
-    install(FILES ${THIS_LIB_HEADERS} DESTINATION include)
-    list(APPEND UTOPIA_COMPONENTS ${libName})
-    set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS}" PARENT_SCOPE)
-endmacro()
+endfunction()
 
 #################################################################################
 
@@ -377,6 +364,29 @@ if(TRY_WITH_TRILINOS)
     endif()
 endif()
 
+list(APPEND UTOPIA_HEADERS
+    utopia.hpp
+    utopia_Base.hpp
+    utopia_Instance.hpp
+    utopia_DeprecatedHeaders.hpp
+    )
+
+list(APPEND UTOPIA_SOURCES
+    utopia.cpp
+    utopia_Instance.cpp
+    utopia_Base.cpp
+    )
+add_library(utopia ${UTOPIA_SOURCES})
+utopia_link_default_targets(utopia)
+target_include_directories(utopia BEFORE PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}> $<INSTALL_INTERFACE:include>)
+target_include_directories(utopia BEFORE PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+install(TARGETS utopia
+    EXPORT UtopiaTargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
 add_subdirectory(examples)
 add_subdirectory(backend/polymorphic)
 
@@ -422,19 +432,6 @@ add_definitions(${UTOPIA_DEFS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
 
-list(APPEND UTOPIA_HEADERS
-    utopia.hpp
-    utopia_Base.hpp
-    utopia_Instance.hpp
-    utopia_DeprecatedHeaders.hpp
-    )
-
-list(APPEND UTOPIA_SOURCES
-    utopia.cpp
-    utopia_Instance.cpp
-    utopia_Base.cpp
-    )
-
 # config is created based on the successful backend compilations
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Version.hpp.in ${CMAKE_BINARY_DIR}/utopia_Version.hpp)
@@ -462,12 +459,6 @@ install(FILES
 
 ##########################################################
 
-# archive
-add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
-utopia_link_default_targets(utopia)
-target_link_libraries(utopia PUBLIC ${UTOPIA_COMPONENTS})
-target_link_libraries(utopia PUBLIC ${UTOPIA_LIBRARIES})
-
 # test suite
 add_executable(utopia_test EXCLUDE_FROM_ALL test.cpp)
 utopia_link_default_targets(utopia_test)
@@ -486,25 +477,18 @@ utopia_link_default_targets(utopia_exec)
 target_link_libraries(utopia_exec PRIVATE utopia)
 include(apps/apps.cmake)
 
-install(TARGETS utopia
-    EXPORT UtopiaTargets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-)
-
 install(FILES ${UTOPIA_ROOT_PATH}/utopia.hpp DESTINATION include)
 install(FILES ${UTOPIA_HEADERS} DESTINATION include)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_Config.hpp DESTINATION include)
 
 # Generate files useful for dependent build systems
-LIST(REVERSE UTOPIA_LIBRARIES)
-LIST(REMOVE_DUPLICATES UTOPIA_LIBRARIES)
-LIST(REVERSE UTOPIA_LIBRARIES)
+LIST(REVERSE UTOPIA_THIRDPARTY_LIBRARIES)
+LIST(REMOVE_DUPLICATES UTOPIA_THIRDPARTY_LIBRARIES)
+LIST(REVERSE UTOPIA_THIRDPARTY_LIBRARIES)
 set(CONFIG_CONTENT "#Automatically generated by utopia CMakeLists.txt\n\n")
-append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_INCLUDES=-I${CMAKE_INSTALL_PREFIX}/include " "\n" "-I" "${UTOPIA_INCLUDES}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_INCLUDES=-I${CMAKE_INSTALL_PREFIX}/include " "\n" "-I" "${UTOPIA_THIRDPARTY_INCLUDES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib " " -lutopia" "-l" "${UTOPIA_COMPONENTS}")
-append_list_to_string_for_makefile(CONFIG_CONTENT " " "\n" "" "${UTOPIA_LIBRARIES}")
+append_list_to_string_for_makefile(CONFIG_CONTENT " " "\n" "" "${UTOPIA_THIRDPARTY_LIBRARIES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_DEFS=" "\n" "" "${UTOPIA_DEFS}")
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_CXX_FLAGS=${CMAKE_CXX_FLAGS}\n")
 set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_CXX_COMPILER=${CMAKE_CXX_COMPILER}\n")
@@ -513,9 +497,9 @@ set(CONFIG_CONTENT "${CONFIG_CONTENT}UTOPIA_C_COMPILER=${CMAKE_C_COMPILER}\n")
 file(WRITE ${CMAKE_BINARY_DIR}/utopia-config.makefile ${CONFIG_CONTENT})
 
 set(CONFIG_CONTENT "#Automatically generated by utopia CMakeLists.txt\n\n")
-append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_INCLUDES\n\t${CMAKE_INSTALL_PREFIX}/include\n" 		"\n)\n\n" "${UTOPIA_INCLUDES}")
-append_list_to_string_for_makefile(CONFIG_CONTENT "LIST(APPEND UTOPIA_LIBRARIES\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "\n\t-lutopia" "\n\t-l" "${UTOPIA_COMPONENTS}")
-append_list_to_string_for_cmake(CONFIG_CONTENT "\n" ")\n\n" "${UTOPIA_LIBRARIES}")
+append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_INCLUDES\n\t${CMAKE_INSTALL_PREFIX}/include\n" 		"\n)\n\n" "${UTOPIA_THIRDPARTY_INCLUDES}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "LIST(APPEND UTOPIA_LIBRARIES\n\t-L${CMAKE_INSTALL_PREFIX}/lib\n\t-lutopia" "" "\n\t-l" "${UTOPIA_COMPONENTS}")
+append_list_to_string_for_cmake(CONFIG_CONTENT "\n" ")\n\n" "${UTOPIA_THIRDPARTY_LIBRARIES}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_DEFS\n" 			"\n)\n\n" "${UTOPIA_DEFS}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_CXX_FLAGS\n"  	"\n)\n\n" "${CMAKE_CXX_FLAGS}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_C_COMPILER\n"  	"\n)\n\n" "${CMAKE_C_COMPILER}")

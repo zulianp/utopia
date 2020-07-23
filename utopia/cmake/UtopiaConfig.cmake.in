@@ -7,7 +7,7 @@ endif()
 
 include(CMakeFindDependencyMacro)
 if (@WITH_TRILINOS@)
-    find_dependency(Trilinos HINTS @TRILINOS_DIR@/lib/cmake)
+    find_dependency(Trilinos HINTS @Trilinos_DIR@)
 endif()
 
 ########## old style variables. Preferably you should use target_link_libraries(my_target Utopia::utopia) ################

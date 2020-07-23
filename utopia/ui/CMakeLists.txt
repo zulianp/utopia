@@ -11,7 +11,7 @@ find_path(TINY_EXPR_DIR
 
 if(TINY_EXPR_DIR)
     # tinyexpr
-    add_library(tinyexpr STATIC ${TINY_EXPR_DIR}/tinyexpr.c)
+    add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
     target_include_directories(tinyexpr PUBLIC $<BUILD_INTERFACE:${TINY_EXPR_DIR}>)
     set(WITH_TINY_EXPR ON PARENT_SCOPE)
     set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
@@ -24,17 +24,17 @@ if(TINY_EXPR_DIR)
         )
 endif()
 
-utopia_add_library(utopia_ui ${CMAKE_CURRENT_SOURCE_DIR} "." "utopia_utils;utopia_core")
+utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
 #hidden dependencies
-target_include_directories(utopia_ui SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
-# target_compile_options(utopia_ui PRIVATE "-Wno-cast-function-type")
+target_include_directories(utopia SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
+# target_compile_options(utopia PRIVATE "-Wno-cast-function-type")
 
 if(WIN32)
-    target_include_directories(utopia_ui PRIVATE windows)
+    target_include_directories(utopia PRIVATE windows)
 endif()
 
 if(TARGET tinyexpr)
-    target_link_libraries(utopia_ui PUBLIC tinyexpr)
+    target_link_libraries(utopia PUBLIC tinyexpr)
 endif()
 
 find_path(JSON_DIR
@@ -47,7 +47,7 @@ find_path(JSON_DIR
     PATH_SUFFIXES single_include/nlohmann
 )
 if(JSON_DIR)
-    target_include_directories(utopia_ui SYSTEM PRIVATE ${JSON_DIR})
+    target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
     set(WITH_JSON ON PARENT_SCOPE)
 endif()
 

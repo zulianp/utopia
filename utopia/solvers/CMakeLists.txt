@@ -18,4 +18,4 @@ list(APPEND SOLVERS_MODULES
     preconditioners
     saddlepoint
 )
-utopia_add_library(utopia_solvers ${CMAKE_CURRENT_SOURCE_DIR} "${SOLVERS_MODULES}" "utopia_utils;utopia_core")
+utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${SOLVERS_MODULES}")
