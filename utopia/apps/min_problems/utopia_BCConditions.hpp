@@ -69,6 +69,35 @@ class AllZeroBC : public BCSetup<FunctionSpace> {
   }
 };
 
+
+template <class FunctionSpace>
+class AllZeroBCLeft : public BCSetup<FunctionSpace> {
+ public:
+  using Scalar = typename FunctionSpace::Scalar;
+  using Vector = typename FunctionSpace::Vector;
+
+  AllZeroBCLeft(FunctionSpace &space) : BCSetup<FunctionSpace>(space) {}
+
+  void read(Input &in) override { BCSetup<FunctionSpace>::read(in); }
+
+  void emplace_BC() override {
+    static const int Dim = FunctionSpace::Dim;
+    // static const int NVars = FunctionSpace::NVars;
+    static const int NVars = 1;
+    using Point = typename FunctionSpace::Point;
+
+    this->space_.reset_bc();
+
+    for (int v = 0; v < NVars; v++) {
+      this->space_.emplace_dirichlet_condition(
+          SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; },
+          v);
+    }
+  }
+};
+
+
+
 template <class FunctionSpace>
 class AllZeroIG : public InitialCondition<FunctionSpace> {
  public:

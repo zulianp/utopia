@@ -8,13 +8,14 @@
 #include "utopia_Multilevel.hpp"
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_TestFunctions.hpp"
 
 #include <memory>
 
 namespace utopia {
 
 // FIXME complete the overriding process
-template <class FunctionSpace, class ProblemType, class BCType>
+template <class FunctionSpace, class ProblemType, class BCType, class ICType>
 class MLSteadyState final : public Configurable {
  public:
   using Matrix = typename FunctionSpace::Matrix;
@@ -26,20 +27,25 @@ class MLSteadyState final : public Configurable {
       : init_(false),
         n_levels_(2),
         n_coarse_sub_comm_(1),
-        log_output_path_("rmtr_log_file.csv"),
-        output_path_("rmtr_out.csv"),
-        save_output_(true){
+        log_output_path_("rmtr_log_file"),
+        output_path_("rmtr_out"),
+        save_output_(true),
+        mprgp_smoother_(false),
+        hjsmn_smoother_(false) {
     spaces_.resize(2);
     spaces_[0] = make_ref(space_coarse);
   }
 
   void read(Input &in) override {
-  
+    // IncrementalLoadingBase<FunctionSpace>::read(in);
+
     in.get("log_output_path", log_output_path_);
     in.get("output_path", output_path_);
     in.get("n_coarse_sub_comm", n_coarse_sub_comm_);
     in.get("n_levels", n_levels_);
     in.get("save_output", save_output_);
+    in.get("mprgp_smoother", mprgp_smoother_);
+    in.get("hjsmn_smoother", hjsmn_smoother_);
 
     init_ml_setup();
 
@@ -47,6 +53,8 @@ class MLSteadyState final : public Configurable {
       level_functions_[l]->read(in);
       BC_conditions_[l]->read(in);
     }
+
+    IC_->read(in);
 
     in.get("solver", *rmtr_);
   }
@@ -105,23 +113,30 @@ class MLSteadyState final : public Configurable {
           std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
     }
 
+    // initial conddition needs to be setup only on the finest level
+    SizeType pf_comp = 0;
+    IC_ = std::make_shared<ICType>(*spaces_.back());
+
     //////////////////////////////////////////////// init solver
     //////////////////////////////////////////////////////
 
     if (!rmtr_) {
       rmtr_ = std::make_shared<RMTR_inf<
-          Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(
+          Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN> >(
           n_levels_);
     }
 
-    // std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine =
-    auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
-    tr_strategy_fine->n_local_sweeps(1); 
+    std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine =
+    std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+    // std::make_shared<utopia::MPGRP<Matrix, Vector>>();
 
 
     std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse =
-        std::make_shared<SemismoothNewton<Matrix, Vector>>(
-            std::make_shared<Factorization<Matrix, Vector>>());
+      std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+    tr_strategy_coarse->atol(1e-12); 
+        // std::make_shared<SemismoothNewton<Matrix, Vector>>(
+        //     std::make_shared<Factorization<Matrix, Vector>>());
+
 
     rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
     // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -132,8 +147,6 @@ class MLSteadyState final : public Configurable {
     rmtr_->set_transfer_operators(transfers_);
     rmtr_->set_functions(level_functions_);
     rmtr_->verbose(true);
-    rmtr_->atol(1e-9);
-
 
     init_ = true;
 
@@ -154,6 +167,13 @@ class MLSteadyState final : public Configurable {
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
+  void init_solution(Vector &solution) {
+    spaces_.back()->create_vector(solution);
+    rename("X", solution);
+
+    IC_->init(solution);
+    spaces_.back()->apply_constraints(solution);
+  }
 
   void write_to_file(FunctionSpace &space, const Vector &solution) {
     if (save_output_) {
@@ -181,6 +201,7 @@ class MLSteadyState final : public Configurable {
   }
 
   void init(FunctionSpace &space, Vector &solution) {
+    init_solution(solution);
     write_to_file(space, solution);
   }
 
@@ -189,34 +210,50 @@ class MLSteadyState final : public Configurable {
       init_ml_setup();
     }
 
+
+    Vector solution;
+
     // init fine level spaces
-    Vector solution = level_functions_.back()->initial_guess(); 
     this->init(*spaces_[n_levels_ - 1], solution);
-
-
-
     prepare_for_solve(solution);
 
+    solution = level_functions_.back()->initial_guess(); 
 
-    
-    rmtr_->delta0(1e9);
+
+    auto *fine_fun = dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(level_functions_.back().get());
+    auto box = fine_fun->box_constraints(); 
+
+
+    // rmtr_->delta0(1.0);
+
+    // rmtr_->set_box_constraints(box); 
     rmtr_->solve(solution);
     auto sol_status = rmtr_->solution_status();
-    sol_status.describe(std::cout); 
-    // rmtr_->print_usage(std::cout); 
 
 
 
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
     // subproblem->pc_type("asm");
     // TrustRegion<Matrix, Vector> solver(subproblem);
     // subproblem->atol(1e-14);
     // solver.verbose(true);
     // solver.delta0(1e-0);
-    // solution.set(1.0);
+    // // solution.set(1.0);
     // solver.atol(1e-10);
     // solver.solve(*level_functions_.back(), solution);
+
+
+
+    // auto subproblem = std::make_shared<MPGRP<Matrix, Vector> >();
+    // TrustRegionVariableBound<Matrix, Vector> solver(subproblem);
+    // subproblem->atol(1e-14);
+    // solver.verbose(true);
+    // solver.set_box_constraints(box); 
+    // solver.solve(*level_functions_.back(), solution);    
+
+
+
 
     // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
     // subproblem->pc_type("asm");
@@ -228,7 +265,10 @@ class MLSteadyState final : public Configurable {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     write_to_file(*spaces_[n_levels_ - 1], solution);
+    // write_to_file(*spaces_[n_levels_ - 1], *lb);
 
+    // disp("------------- 1 -----------");
+    // exit(0);
   }
 
  private:
@@ -243,15 +283,17 @@ class MLSteadyState final : public Configurable {
       level_functions_;
   std::vector<std::shared_ptr<BCType>> BC_conditions_;
 
-
+  std::shared_ptr<ICType> IC_;
   std::string log_output_path_;
   std::string output_path_;
 
   std::shared_ptr<
-      RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >
+      RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN> >
       rmtr_;
 
   bool save_output_;
+  bool mprgp_smoother_;
+  bool hjsmn_smoother_;
 };
 
 }  // namespace utopia

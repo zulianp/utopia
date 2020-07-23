@@ -1,5 +1,5 @@
-#ifndef UTOPIA_QP_POISSON_HPP
-#define UTOPIA_QP_POISSON_HPP
+#ifndef UTOPIA_MEMBRANE_HPP
+#define UTOPIA_MEMBRANE_HPP
 
 #include "utopia_DeviceTensorContraction.hpp"
 #include "utopia_DeviceTensorProduct.hpp"
@@ -19,9 +19,7 @@
 namespace utopia {
 
 template <class FunctionSpace, int Dim = FunctionSpace::Dim>
-// class BratuFem final : public ExtendedFunction<typename
-// FunctionSpace::Matrix, typename FunctionSpace::Vector>
-class BratuFem final
+class MembraneFEM final
     :   virtual public UnconstrainedExtendedTestFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>, 
         virtual public ConstrainedExtendedTestFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> { 
  public:
@@ -41,26 +39,13 @@ class BratuFem final
   static const int C_NDofs = CSpace::NDofs;
   static const int NQuadPoints = Quadrature::NPoints;
 
-  class Parameters : public Configurable {
-   public:
-    void read(Input &in) override {
-      in.get("lambda", lambda);
-      in.get("rhs_type", rhs_type);
-    }
-
-    Parameters() : lambda(0.0), rhs_type(0) {}
-
-    Scalar lambda;
-    SizeType rhs_type;
-  };
 
   void read(Input &in) override {
-    params_.read(in);
 
-    this->init_forcing_function(this->rhs_);
+
   }
 
-  BratuFem(FunctionSpace &space) : space_(space) {
+  MembraneFEM(FunctionSpace &space) : space_(space) {
     // needed for ML setup
     space_.create_vector(this->_x_eq_values);
     space_.create_vector(this->_eq_constrains_flg);
@@ -68,8 +53,6 @@ class BratuFem final
     this->local_x_ = std::make_shared<Vector>();
     space_.create_local_vector(*this->local_x_);
 
-    // TODO:: add more options
-    this->init_forcing_function(this->rhs_);
     this->init_constraints(); 
 
   }
@@ -80,12 +63,11 @@ class BratuFem final
   }
 
   inline bool update(const Vector & /*x*/) override {
-    // x_coeff_.update(x);
     return true;
   }
 
   bool value(const Vector &x_const, Scalar &val) const override {
-    UTOPIA_TRACE_REGION_BEGIN("QPPoisson::value");
+    UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::value");
 
     CSpace C = space_.subspace(0);
 
@@ -130,9 +112,8 @@ class BratuFem final
             auto c_shape_fun_el = c_shape_view.make(c_e);
 
             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-              el_energy += 0.5 * inner(c_grad_el[qp], c_grad_el[qp]) * dx(qp);
-
-              el_energy -= params_.lambda * device::exp(c[qp]) * dx(qp);
+              el_energy += 0.5*inner(c_grad_el[qp], c_grad_el[qp]) * dx(qp);
+              el_energy += c[qp] * dx(qp);
             }
 
             assert(el_energy == el_energy);
@@ -143,15 +124,13 @@ class BratuFem final
 
     val = x_const.comm().sum(val);
 
-    // add contributions from RHS
-    val = val + dot(x_const, this->rhs_);
 
-    UTOPIA_TRACE_REGION_END("QPPoisson::value");
+    UTOPIA_TRACE_REGION_END("MembraneFEM::value");
     return true;
   }
 
   bool gradient(const Vector &x_const, Vector &g) const override {
-    UTOPIA_TRACE_REGION_BEGIN("QPPoisson::gradient");
+    UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::gradient");
 
     if (empty(g)) {
       space_.create_vector(g);
@@ -213,8 +192,7 @@ class BratuFem final
                     inner(c_grad_el[qp], c_grad_shape_el(j, qp)) * dx(qp);
 
                 const Scalar shape_test = c_shape_fun_el(j, qp);
-                c_el_vec(j) -=
-                    inner(params_.lambda * c[qp], shape_test) * dx(qp);
+                c_el_vec(j) += shape_test * dx(qp);
               }
             }
 
@@ -222,15 +200,14 @@ class BratuFem final
           });
     }
 
-    g = g + this->rhs_;
     space_.apply_zero_constraints(g);
 
-    UTOPIA_TRACE_REGION_END("QPPoisson::gradient");
+    UTOPIA_TRACE_REGION_END("MembraneFEM::gradient");
     return true;
   }
 
   bool hessian(const Vector &x_const, Matrix &H) const override {
-    UTOPIA_TRACE_REGION_BEGIN("QPPoisson::hessian");
+    UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::hessian");
 
     if (empty(H)) {
       // if(use_dense_hessian_) {
@@ -299,9 +276,6 @@ class BratuFem final
 
                 for (SizeType j = l; j < C_NDofs; ++j) {
                   Scalar val = inner(c_grad_shape_el(j, qp), c_grad_l) * dx(qp);
-                  val -=
-                      inner(params_.lambda * c_shape_fun_el(j, qp), c_shape_l) *
-                      dx(qp);
 
                   val = (l == j) ? (0.5 * val) : val;
                   el_mat(l, j) += val;
@@ -316,73 +290,71 @@ class BratuFem final
 
     space_.apply_constraints(H);
 
-    UTOPIA_TRACE_REGION_END("QPPoisson::hessian");
+    UTOPIA_TRACE_REGION_END("MembraneFEM::hessian");
     return true;
   }
 
  private:
-  void init_forcing_function(Vector &rhs) {
-    using Elem = typename FunctionSpace::Elem;
-    static const int NNodes = Elem::NNodes;
-    using ElementVector = utopia::StaticVector<Scalar, NNodes>;
-    using Mesh = typename FunctionSpace::Mesh;
-    using Point = typename Mesh::Point;
-
-    if (params_.rhs_type == 0) {
-      space_.create_vector(rhs);
-      rhs = 0.0 * rhs;
-      return;
-    }
-
-    auto forcing_function = UTOPIA_LAMBDA(const Point &x)->Scalar {
-      Scalar pi = 3.1415926;
-
-      if (params_.rhs_type == 1) {
-        return 1.0;
-      } else if (params_.rhs_type == 2) {
-        return -4.0 * pi * pi * device::sin(2.0 * pi * x[0]) *
-               device::sin(2.0 * pi * x[1]);
-      } else if (params_.rhs_type == 3) {
-        return -2.0 * pi * pi * device::sin(pi * x[0]) * device::sin(pi * x[1]);
-      } else {
-        std::cerr << "---------- forcing function choice wrong ------- \n";
-        return 0.0;
-      }
-    };
-
-    space_.create_vector(rhs);
-    Quadrature q;
-
-    Projection<FunctionSpace, Quadrature, decltype(forcing_function)> proj(
-        space_, q, forcing_function);
-
-    auto proj_view = proj.view_device();
-
-    {
-      auto space_view = space_.view_device();
-      auto rhs_view = space_.assembly_view_device(rhs);
-
-      Device::parallel_for(space_.element_range(),
-                           UTOPIA_LAMBDA(const SizeType &i) {
-                             Elem e;
-                             space_view.elem(i, e);
-
-                             ElementVector el_vec;
-                             el_vec.set(0.0);
-
-                             proj_view.assemble(i, e, el_vec);
-                             space_view.add_vector(e, el_vec, rhs_view);
-                           });
-    }
-  }
-
-
   void init_constraints(){
 
     // ToDO:: fix based on example 
     Vector lb; 
     space_.create_vector(lb);
-    lb.set(-1.0); 
+    
+
+    using Point = typename FunctionSpace::Point;
+    using Dev = typename FunctionSpace::Device;
+    using Mesh = typename FunctionSpace::Mesh;
+    using Elem = typename FunctionSpace::Shape;
+    using ElemViewScalar =
+        typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+    static const int NNodes = Elem::NNodes;
+
+    auto C = this->space_;
+
+    auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &coords)->Scalar {
+      
+      auto x = coords[0]; 
+      auto y = coords[1]; 
+
+      auto result = 0.0; 
+
+      if(x==1.0){
+        
+      auto c = ((y - 0.5) * (y - 0.5)) - 1.0 + (1.3 * 1.3);
+      auto b = 2.0 * 1.3;
+      result = (-b + device::sqrt(b * b - 4.0 * c)) / 2.0;
+
+    }
+    else
+    {
+      result = -9e9;
+    }
+
+      return result;
+    });
+
+    {
+      auto C_view = C.view_device();
+      auto sampler_view = sampler.view_device();
+      auto x_view = this->space_.assembly_view_device(lb);
+
+      Dev::parallel_for(this->space_.element_range(),
+                        UTOPIA_LAMBDA(const SizeType &i) {
+                          ElemViewScalar e;
+                          C_view.elem(i, e);
+
+                          StaticVector<Scalar, NNodes> s;
+                          sampler_view.assemble(e, s);
+                          C_view.set_vector(e, s, x_view);
+                        });
+    }
+
+
+
+
+
+
     this->constraints_ = make_lower_bound_constraints(std::make_shared<Vector>(lb));
   }
 
@@ -395,7 +367,7 @@ class BratuFem final
     rename("X", solution);
 
     // TODO:: add initial condition
-    solution.set(1.0);
+    solution.set(0.0);
     space_.apply_constraints(solution);
 
     return solution;
@@ -403,19 +375,23 @@ class BratuFem final
 
   // not known...
   const Vector &exact_sol() const {
-    std::cout << "BratuFEM:: exact Solution not know, terminate... \n";
+    std::cout << "MembraneFEM:: exact Solution not know, terminate... \n";
     Vector x;
     return x;
   }
 
   Scalar min_function_value() const {
-    std::cout << "BratuFEM:: exact Solution not know, terminate... \n";
+    std::cout << "MembraneFEM:: exact Solution not know, terminate... \n";
     return 0;
   }
 
-  virtual std::string name() const { return "BratuFem"; }
+  virtual std::string name() const { return "MembraneFEM"; }
 
-  virtual SizeType dim() const { return size(rhs_); }
+  virtual SizeType dim() const { 
+    Vector help;
+    space_.create_vector(help);
+    return size(help); 
+  }
 
   virtual bool exact_sol_known() const { return false; }
 
@@ -423,10 +399,6 @@ class BratuFem final
 
  private:
   FunctionSpace &space_;
-  Parameters params_;
-
-  Vector rhs_;
-
   std::shared_ptr<Vector> local_x_;
 };
 
