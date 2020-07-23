@@ -478,34 +478,11 @@ namespace utopia {
     }
 
     TpetraMatrix::Scalar TpetraMatrix::norm_infty() const {
-        // FIXME (optimize for device)
-        // Scalar ret = -std::numeric_limits<Scalar>::max();
-
         Scalar ret = 0;
-        // each_read(*this,
-        //           [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::max(std::abs(val), ret);
-        //           });
-
-        // auto &comm = *communicator();
-        // Scalar ret_global = 0.;
-        // Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
-        // return ret_global;
         return parallel_reduce_values(AbsMax(), Max(), ret);
     }
 
-    TpetraMatrix::Scalar TpetraMatrix::norm1() const {
-        // FIXME (optimize for device)
-        // Scalar ret = 0.0;
-        // each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::abs(val) + ret;
-        // });
-
-        // auto &comm = *communicator();
-        // Scalar ret_global = 0.;
-        // Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
-        // return ret_global;
-
-        return parallel_reduce_values(AbsPlus(), Plus(), 0);
-    }
+    TpetraMatrix::Scalar TpetraMatrix::norm1() const { return parallel_reduce_values(AbsPlus(), Plus(), 0); }
 
     TpetraMatrix::SizeType TpetraMatrix::rows() const {
         if (is_null()) {
@@ -599,32 +576,6 @@ namespace utopia {
                               TpetraMatrix & /*result*/) const {
         assert(false && "IMPLEMENT ME");
     }
-
-    // void TpetraMatrix::identity(const Size &s, const Scalar &diag) {
-    //     crs_identity(comm().get(), INVALID_INDEX, INVALID_INDEX, s.get(0), s.get(1), diag);
-    // }
-
-    // void TpetraMatrix::sparse(const Size &s, const SizeType &nnz) {
-    //     crs_init(comm().get(), INVALID_INDEX, INVALID_INDEX, s.get(0), s.get(1), nnz);
-    // }
-
-    // void TpetraMatrix::local_sparse(const Size &s, const SizeType &nnz) {
-    //     crs_init(comm().get(),
-    //              s.get(0),
-    //              s.get(1),
-    //              Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-    //              Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-    //              nnz);
-    // }
-
-    // void TpetraMatrix::local_identity(const Size &s, const Scalar &diag) {
-    //     crs_identity(comm().get(),
-    //                  s.get(0),
-    //                  s.get(1),
-    //                  Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-    //                  Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-    //                  diag);
-    // }
 
     void TpetraMatrix::transform(const Sqrt &op) { aux_transform(op); }
 
