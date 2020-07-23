@@ -4,6 +4,7 @@
 #include "utopia_Blocks.hpp"
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_MaxRowNNZ.hpp"
+#include "utopia_RowView.hpp"
 
 namespace utopia {
 
@@ -123,12 +124,27 @@ namespace utopia {
 
                             const auto global_row_offset = l_rr.begin() - b_rr.begin() + row_offset[i];
 
-                            b.read([&](const SizeType r, const SizeType c, const Scalar val) {
-                                l.set(global_row_offset + r,
-                                      col_offset[j] + c,  // BUG (the columns should be staggered to reflect the
-                                                          // parallel decomposition)
-                                      val);
-                            });
+                            // b.read([&](const SizeType r, const SizeType c, const Scalar val) {
+                            //     l.set(global_row_offset + r,
+                            //           col_offset[j] + c,  // BUG (the columns should be staggered to reflect the
+                            //                               // parallel decomposition)
+                            //           val);
+                            // });
+
+                            // BUG (the columns should be staggered to reflect the
+                            // Host side until we find better way
+                            for (auto r = b_rr.begin(); r != b_rr.end(); ++r) {
+                                RowView<Right> row(b, r);
+
+                                SizeType n_values = row.n_values();
+
+                                for (SizeType k = 0; k < n_values; ++k) {
+                                    auto val = row.get(k);
+                                    auto c = row.col(k);
+
+                                    l.set(global_row_offset + r, col_offset[j] + c, val);
+                                }
+                            }
                         }
                     }
                 }

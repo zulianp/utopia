@@ -13,6 +13,7 @@ namespace utopia {
 
     TrilinosCommunicator::TrilinosCommunicator(const SelfCommunicator & /*comm*/)
         : comm_(new Teuchos::SerialComm<int>()) {}
+
     TrilinosCommunicator::TrilinosCommunicator(const Communicator &comm)
         : comm_(new Teuchos::MpiComm<int>(comm.raw_comm())) {
         assert(comm.size() == this->size());
@@ -35,11 +36,11 @@ namespace utopia {
 
     TrilinosCommunicator::TrilinosCommunicator(MPI_Comm comm) : comm_(new Teuchos::MpiComm<int>(comm)) {}
 
-    TrilinosCommunicator::TrilinosCommunicator self() {
+    TrilinosCommunicator TrilinosCommunicator::self() {
         return TrilinosCommunicator(Teuchos::rcp(new Teuchos::SerialComm<int>()));
     }
 
-    TrilinosCommunicator::TrilinosCommunicator world() {
+    TrilinosCommunicator TrilinosCommunicator::world() {
         // FIXME
         return TrilinosCommunicator(Teuchos::rcp(new Teuchos::MpiComm<int>(MPI_COMM_WORLD)));
     }
