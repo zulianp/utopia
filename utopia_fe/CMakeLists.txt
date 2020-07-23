@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8.1)
+cmake_minimum_required(VERSION 3.13)
 project(utopia_fe)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -24,6 +24,7 @@ option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
 option(ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 option(INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
+option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 #################################################################################
 #################################################################################
 #################################################################################
@@ -83,7 +84,7 @@ endforeach(funcLib)
 
 find_package(Utopia REQUIRED)
 add_definitions(${UTOPIA_DEFS})
-include_directories(rapidxml)
+
 
 
 ########################################################################
@@ -93,16 +94,11 @@ function(find_project_files rootPath dirPaths headers sources)
     SET(theaders ${${headers}})
     SET(tsources ${${sources}})
 
-    SET(ROOT_PATH ${${rootPath}})
-    SET(DIR_PATHS ${${dirPaths}})
-
-    FOREACH(INCLUDE_PATH ${DIR_PATHS})
-        INCLUDE_DIRECTORIES(BEFORE ${ROOT_PATH}/${INCLUDE_PATH})
-
-        file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
-        file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
-        file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
-        file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
+    FOREACH(INCLUDE_PATH ${dirPaths})
+        file(GLOB TEMP_HPPSRC "${rootPath}/${INCLUDE_PATH}/*.cpp" )
+        file(GLOB TEMP_SRC "${rootPath}/${INCLUDE_PATH}/*.c" )
+        file(GLOB TEMP_HPPDR "${rootPath}/${INCLUDE_PATH}/*.hpp" )
+        file(GLOB TEMP_HDR "${rootPath}/${INCLUDE_PATH}/*.h" )
 
         SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
 
@@ -115,38 +111,28 @@ function(find_project_files rootPath dirPaths headers sources)
 endfunction()
 ########################################################################
 
-# all arguments after module_name are the dependencies, we access them via ${ARGN}
-macro(add_utopiafe_module module_name)
-    add_library(${module_name} STATIC ${LOCAL_SOURCES})
-    target_link_libraries(${module_name} PUBLIC ${ARGN} ${UTOPIA_LIBRARIES})
-    target_include_directories(${module_name} BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-    foreach(module_dependency ${ARGN})
-        target_include_directories(${module_name} PUBLIC $<TARGET_PROPERTY:${module_dependency},INTERFACE_INCLUDE_DIRECTORIES>)
-    endforeach()
-    target_include_directories(${module_name} PRIVATE ${UTOPIA_INCLUDES})
-    set_utopia_compiler_features(${module_name})
-        if (NOT TOP_LEVEL)
-        set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};${module_name}" PARENT_SCOPE)
-    endif()
-    install(TARGETS ${module_name}
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-    )
+function(utopiafe_add_library libraryRootDir subDirs)
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
+    find_project_files(${libraryRootDir} "${subDirs}" LOCAL_HEADERS LOCAL_SOURCES)
+    target_sources(utopia_fe PRIVATE ${LOCAL_SOURCES})
     install(FILES ${LOCAL_HEADERS} DESTINATION include)
-endmacro(add_utopiafe_module)
-
+    foreach(MODULE ${subDirs})
+        target_include_directories(utopia_fe BEFORE PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+    endforeach(MODULE)
+endfunction()
 
 macro(add_utopiafe_app app_name)
     add_library(${app_name} EXCLUDE_FROM_ALL STATIC ${LOCAL_SOURCES})
-    target_link_libraries(${app_name} PUBLIC ${ARGN} ${UTOPIA_LIBRARIES})
     target_include_directories(${app_name} BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
     foreach(app_dependency ${ARGN})
-        target_include_directories(${app_name} PUBLIC $<TARGET_PROPERTY:${app_dependency},INTERFACE_INCLUDE_DIRECTORIES>)
+        target_link_libraries(${app_name} PUBLIC ${app_dependency})
     endforeach()
-    target_include_directories(${app_name} PRIVATE ${UTOPIA_INCLUDES})
+    #    foreach(app_dependency ${ARGN})
+    #        target_include_directories(${app_name} PUBLIC $<TARGET_PROPERTY:${app_dependency},INTERFACE_INCLUDE_DIRECTORIES>)
+    #    endforeach()
     set_utopia_compiler_features(${app_name})
-        if (NOT TOP_LEVEL)
+    if (NOT TOP_LEVEL)
         set(UTOPIA_FE_APPS "${UTOPIA_FE_APPS};${app_name}" PARENT_SCOPE)
     endif()
     # install(TARGETS ${app_name}
@@ -159,8 +145,6 @@ endmacro(add_utopiafe_app)
 
 
 list(APPEND UTOPIA_FE_MODULES
-    tests
-    apps
     multiphysics
     fractures
     wear
@@ -169,15 +153,16 @@ list(APPEND UTOPIA_FE_MODULES
     transfer
     visualization
     backend/libmesh
+    intersection
     # backend/homemade
     backend/mars
-    intersection
     contact
     materials
     functions
     core
-    rapidxml
     base
+    tests
+    apps
  )
 
 if(INSTALL_LIBMESH)
@@ -188,30 +173,30 @@ if(ENABLE_INTREPID2)
     list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
 endif()
 
-include_directories(BEFORE ${CMAKE_SOURCE_DIR})
-include_directories(BEFORE ${CMAKE_BINARY_DIR})
+add_library(utopia_fe utopia_fe.cpp)
+set_utopia_compiler_features(utopia_fe)
+target_include_directories(utopia_fe BEFORE PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}> $<INSTALL_INTERFACE:include>)
+target_include_directories(utopia_fe BEFORE PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+install(TARGETS utopia_fe
+    EXPORT UtopiaFETargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+target_link_libraries(utopia_fe PUBLIC Utopia::utopia)
+install(FILES utopia_fe.hpp DESTINATION include)
 
+# now add all subdirectories to utopia_fe library
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
-        add_subdirectory("${MODULE}")
+    add_subdirectory("${MODULE}")
 ENDFOREACH(MODULE)
 
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
-#create main library
-list(APPEND LOCAL_HEADERS utopia_fe.hpp)
-list(APPEND LOCAL_SOURCES utopia_fe.cpp)
 set(TOP_LEVEL 1)
-add_utopiafe_module(utopia_fe ${UTOPIA_FE_LIBRARIES})
 add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${LOCAL_HEADERS})
-target_include_directories(utopia_fe_exec PRIVATE ${UTOPIA_INCLUDES})
-target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_APPS})
-
-install(TARGETS utopia_fe
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    )
+target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
 
 #--------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------
@@ -316,8 +301,8 @@ if(MOONOLITH_INCLUDES)
 append_list_to_string_for_cmake(CONFIG_CONTENT "" ")\n\n"  ${MOONOLITH_INCLUDES})
 endif()
 
-append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_LIBRARIES\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"-l" "\"" "${UTOPIA_FE_LIBRARIES}")
-append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"" "\"" "${MOONOLITH_LIBRARIES}")
+append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_LIBRARIES\n\t-L${CMAKE_INSTALL_PREFIX}/lib\n\t-lutopia_fe" "" "\n\t\"-l" "\"" "${UTOPIA_FE_LIBRARIES}")
+append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "" "" "\n\t\"" "\"" "${MOONOLITH_LIBRARIES}")
 append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "" "" "\n\t\"" "\"" "${LIBMESH_LIBRARIES}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "\n" "\n)\n\n" "${UTOPIA_LIBRARIES}")
 
@@ -327,12 +312,36 @@ append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_CXX_FLAGS\
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_C_COMPILER\n"     "\n)\n\n" "${CMAKE_C_COMPILER}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_CXX_COMPILER\n"   "\n)\n\n" "${CMAKE_CXX_COMPILER}")
 
-
 file(WRITE ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake ${CONFIG_CONTENT})
+list(JOIN CONFIG_CONTENT "\n" OLD_CMAKE_CONFIG_CONTENT)
 
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.makefile DESTINATION config)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.cmake    DESTINATION config)
 
+# new style exported targets, this allows to use target_link_libraries(my_target UtopiaFE::utopia_fe)
+install(EXPORT UtopiaFETargets
+    FILE UtopiaFETargets.cmake
+    NAMESPACE UtopiaFE::
+    DESTINATION lib/cmake
+)
+
+include(CMakePackageConfigHelpers)
+# generate the config file that is includes the exports
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UtopiaFEConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake"
+    INSTALL_DESTINATION "lib/cmake"
+)
+# generate the version file for the config file
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfigVersion.cmake"
+    VERSION "${UtopiaFE_VERSION_MAJOR}.${UtopiaFE_VERSION_MINOR}"
+    COMPATIBILITY AnyNewerVersion
+)
+# install the configuration file
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake
+    DESTINATION lib/cmake/
+)
 
 ##########################################################################################
 

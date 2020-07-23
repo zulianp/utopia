@@ -1,6 +1,7 @@
 option(ENABLE_CODE_COVERAGE "Enable coverage reporting" OFF)
 
 add_library(coverage_config INTERFACE)
+install(TARGETS coverage_config EXPORT UtopiaTargets)
 
 if(ENABLE_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   message(STATUS "[STATUS] code coverage enabled")
@@ -37,7 +38,7 @@ endif()
 
 
 macro(utopia_link_default_targets target)
-  target_link_libraries(${target} coverage_config)
+  target_link_libraries(${target} PUBLIC coverage_config)
 endmacro()
 
 # 1) remove previous gcda files
