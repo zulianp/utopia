@@ -10,7 +10,6 @@ namespace utopia {
 
     Traits<TpetraMatrix>::SizeType MaxRowNNZ<TpetraMatrix, TRILINOS>::apply(const TpetraMatrix &in) {
         using ExecutionSpaceT = typename TpetraVector::ExecutionSpace;
-        using LocalMatrix = TpetraMatrix::CrsMatrixType::local_matrix_type;
         using ViewType = Kokkos::View<LocalSizeType *[1], ExecutionSpaceT>;
 
         auto r = in.row_range();

@@ -10,9 +10,7 @@ namespace utopia {
 
     class Benchmark {
     public:
-        Benchmark()
-
-            = default;
+        Benchmark() = default;
 
         virtual ~Benchmark() = default;
         virtual void initialize() = 0;
@@ -24,12 +22,12 @@ namespace utopia {
             chrono_all_.stop();
 
             if (mpi_world_rank() == 0) {
-                utopia::out() << "---------------------\n";
-                utopia::out() << "[" << name() << "]"
-                              << "\n";
-                utopia::out() << "---------------------\n";
+                std::cout << "---------------------\n";
+                std::cout << "[" << name() << "]"
+                          << "\n";
+                std::cout << "---------------------\n";
                 to_csv(std::cout);
-                utopia::out() << "---------------------\n";
+                std::cout << "---------------------\n";
             }
         }
 
