@@ -415,7 +415,7 @@ add_dependencies(apps utopia_fe utopia_fe_exec)
 
 # ##############################################################################
 
-add_custom_target(utopia_fe_complete)
-add_dependencies(utopia_fe_complete apps)
+add_custom_target(complete)
+add_dependencies(complete apps)
 
 # ##############################################################################
