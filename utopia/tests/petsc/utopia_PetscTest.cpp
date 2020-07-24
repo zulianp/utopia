@@ -448,7 +448,7 @@ namespace utopia {
         m2.read([](const SizeType i, const SizeType j, const double value) {
             if (i + 1 == j) {
                 if (!approxeq(1, value)) {
-                    std::cout << i << ", " << j << " -> " << value << std::endl;
+                    utopia::out() << i << ", " << j << " -> " << value << std::endl;
                 }
                 utopia_test_assert(approxeq(1, value));
             } else {

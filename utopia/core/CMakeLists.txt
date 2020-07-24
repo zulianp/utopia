@@ -6,6 +6,7 @@ list(APPEND CORE_MODULES
     interfaces
     view
     view/expressions
+    console
 )
 
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${CORE_MODULES}")

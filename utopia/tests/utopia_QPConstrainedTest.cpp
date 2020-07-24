@@ -86,9 +86,9 @@ namespace utopia {
                              const std::string &solv_name,
                              const bool &exp_verbose) {
             if (exp_verbose && mpi_world_rank() == 0) {
-                std::cout << "--------------------------------------------------------- \n";
-                std::cout << "				" << solv_name << "				\n";
-                std::cout << "--------------------------------------------------------- \n";
+                utopia::out() << "--------------------------------------------------------- \n";
+                utopia::out() << "				" << solv_name << "				\n";
+                utopia::out() << "--------------------------------------------------------- \n";
             }
 
             InputParameters in;

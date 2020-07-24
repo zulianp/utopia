@@ -93,36 +93,37 @@ namespace utopia {
                 auto dx_view = differential.view_device();
                 auto p_view = points.view_device();
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElementVector el_vec;
-                    el_vec.set(0.0);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElementVector el_vec;
+                        el_vec.set(0.0);
 
-                    Elem e;
-                    space_view.elem(i, e);
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    auto &&dx = dx_view.make(e);
-                    auto &&deriv = st_deriv_view.make(e);
-                    auto &&p = p_view.make(e);
+                        auto &&dx = dx_view.make(e);
+                        auto &&deriv = st_deriv_view.make(e);
+                        auto &&p = p_view.make(e);
 
-                    Point p_qp;
+                        Point p_qp;
 
-                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                        p.get(qp, p_qp);
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            p.get(qp, p_qp);
 
-                        for (SizeType j = 0; j < NFunctions; ++j) {
-                            el_vec(j) += (fun(p_qp) * deriv.partial_t(j, qp)) * dx(qp);
+                            for (SizeType j = 0; j < NFunctions; ++j) {
+                                el_vec(j) += (fun(p_qp) * deriv.partial_t(j, qp)) * dx(qp);
+                            }
                         }
-                    }
 
-                    space_view.add_vector(e, el_vec, g_view);
-                });
+                        space_view.add_vector(e, el_vec, g_view);
+                    });
             }
 
             space_->apply_constraints(g);
 
             c.stop();
             if (g.comm().rank() == 0) {
-                std::cout << "STHeatEquation::space_time_linear_form(...): " << c << std::endl;
+                utopia::out() << "STHeatEquation::space_time_linear_form(...): " << c << std::endl;
             }
             return true;
         }
@@ -146,35 +147,36 @@ namespace utopia {
                 auto st_deriv_view = st_deriv.view_device();
                 auto dx_view = differential.view_device();
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElementMatrix el_mat;
-                    el_mat.set(0.0);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElementMatrix el_mat;
+                        el_mat.set(0.0);
 
-                    Elem e;
-                    space_view.elem(i, e);
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    auto &&dx = dx_view.make(e);
-                    auto &&deriv = st_deriv_view.make(e);
+                        auto &&dx = dx_view.make(e);
+                        auto &&deriv = st_deriv_view.make(e);
 
-                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                        for (SizeType j = 0; j < NFunctions; ++j) {
-                            for (SizeType l = 0; l < NFunctions; ++l) {
-                                el_mat(j, l) += (deriv.partial_t(l, qp) * deriv.partial_t(j, qp) +
-                                                 inner(deriv.grad_x(l, qp), deriv.grad_x_partial_t(j, qp))) *
-                                                dx(qp);
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            for (SizeType j = 0; j < NFunctions; ++j) {
+                                for (SizeType l = 0; l < NFunctions; ++l) {
+                                    el_mat(j, l) += (deriv.partial_t(l, qp) * deriv.partial_t(j, qp) +
+                                                     inner(deriv.grad_x(l, qp), deriv.grad_x_partial_t(j, qp))) *
+                                                    dx(qp);
+                                }
                             }
                         }
-                    }
 
-                    space_view.add_matrix(e, el_mat, H_view);
-                });
+                        space_view.add_matrix(e, el_mat, H_view);
+                    });
             }
 
             space_->apply_constraints(H);
 
             c.stop();
             if (x.comm().rank() == 0) {
-                std::cout << "STHeatEquation::hessian(...): " << c << std::endl;
+                utopia::out() << "STHeatEquation::hessian(...): " << c << std::endl;
             }
             return true;
         }

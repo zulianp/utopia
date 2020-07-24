@@ -3,18 +3,18 @@
 
 #include "utopia_AppRegistry.hpp"
 
-#define UTOPIA_RUN_APP(app_name)                                                          \
-    {                                                                                     \
-        utopia::Chrono private_c;                                                         \
-        private_c.start();                                                                \
-        if (utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {      \
-            std::cout << "> " << std::left << std::setw(40) << (#app_name) << std::flush; \
-        }                                                                                 \
-        app_name();                                                                       \
-        private_c.stop();                                                                 \
-        if (utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {      \
-            std::cout << "(" << private_c.get_seconds() << "s)" << std::endl;             \
-        }                                                                                 \
+#define UTOPIA_RUN_APP(app_name)                                                              \
+    {                                                                                         \
+        utopia::Chrono private_c;                                                             \
+        private_c.start();                                                                    \
+        if (utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {          \
+            utopia::out() << "> " << std::left << std::setw(40) << (#app_name) << std::flush; \
+        }                                                                                     \
+        app_name();                                                                           \
+        private_c.stop();                                                                     \
+        if (utopia::mpi_world_rank() == 0 && utopia::Utopia::instance().verbose()) {          \
+            utopia::out() << "(" << private_c.get_seconds() << "s)" << std::endl;             \
+        }                                                                                     \
     }
 
 namespace utopia {

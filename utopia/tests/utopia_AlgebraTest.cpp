@@ -42,7 +42,7 @@ namespace utopia {
             const Scalar alpha = (1.0 * lambda * std::log(J) - 1.0 * mu);
 
             Matrix mat = mu * H - alpha * F_inv_t * transpose(H) * F_inv_t + lambda * inner(F_inv_t, H) * F_inv_t;
-            // std::cout << tree_format((inner(F_inv_t, H) * F_inv_t).get_class()) << std::endl;
+            // utopia::out() <<tree_format((inner(F_inv_t, H) * F_inv_t).get_class()) << std::endl;
             utopia_test_assert(SizeType(3) == mat.rows());
             utopia_test_assert(SizeType(3) == mat.cols());
         }
@@ -237,7 +237,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
 
@@ -318,29 +318,18 @@ namespace utopia {
             auto rr = M.row_range();
             auto nc = M.cols();
 
-            // M.transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
-
-            // std::stringstream ss;
-            M.transform_ijv([&](const SizeType &i, const SizeType &j, const Scalar &v) -> Scalar {
+            M.transform_ijv(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v)->Scalar {
                 utopia_test_assert(rr.inside(i));
                 utopia_test_assert(j < nc);
-
-                // ss << "(" << i << " " << j << ") -> " << v << std::endl;
-
                 return v;
             });
 
-            M.read([&](const SizeType &i, const SizeType &j, const Scalar &v) {
+            M.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &v) {
                 utopia_test_assert(rr.inside(i));
                 utopia_test_assert(j < nc);
                 utopia_test_assert(v >= -1.0);
                 utopia_test_assert(v <= 2.0);
             });
-
-            // M.comm().synched_print(ss.str(), std::cout);
-
-            // disp(M);
-            // TODO(Patrick) write meaningul test
         }
 
         void transpose_test() {
@@ -366,7 +355,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     class DenseAlgebraTest {
-    private:
+    public:
         using Traits = utopia::Traits<Matrix>;
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
@@ -563,10 +552,11 @@ namespace utopia {
 
             {
                 auto y_view = view_device(y);
-                parallel_for(range_device(y), UTOPIA_LAMBDA(const SizeType &i) {
-                    const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
-                    y_view.set(i, val);
-                });
+                parallel_for(
+                    range_device(y), UTOPIA_LAMBDA(const SizeType &i) {
+                        const Scalar val = (i == 0) ? 1e-14 : ((i < n / 2.0) ? -i : i);
+                        y_view.set(i, val);
+                    });
             }
 
             Matrix M = outer(x, y);

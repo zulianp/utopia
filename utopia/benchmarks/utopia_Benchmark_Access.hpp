@@ -95,7 +95,8 @@ namespace utopia {
 
                     {
                         auto x_view = view_device(x);
-                        parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, i); });
+                        parallel_for(
+                            range_device(x), UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, i); });
                     }
 
                     Scalar res = sum(x);
@@ -104,8 +105,9 @@ namespace utopia {
 
                     {
                         auto x_view = local_view_device(x);
-                        parallel_for(local_range_device(x),
-                                     UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_view.get(i) - res); });
+                        parallel_for(
+                            local_range_device(x),
+                            UTOPIA_LAMBDA(const SizeType i) { x_view.set(i, x_view.get(i) - res); });
                     }
                 });
 
@@ -120,13 +122,7 @@ namespace utopia {
                     Matrix A;
                     A.sparse(ml, 3, 2);
                     assemble_laplacian_1D(A);
-
-                    // auto N = size(A).get(0);
-                    Scalar res = 0.0;
-
-                    A.read([&res](const SizeType /*i*/, const SizeType /*j*/, const Scalar val) { res += val; });
-
-                    utopia_test_assert(approxeq(res, 0.));
+                    A.read(UTOPIA_LAMBDA(const SizeType /*i*/, const SizeType /*j*/, const Scalar){});
                 });
 
                 //...

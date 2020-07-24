@@ -180,7 +180,7 @@ namespace utopia {
                 bool converged = this->delta_termination(corr_norm, level + 1);
 
                 if (converged && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0) {
-                    std::cout << "termination  due to small radius on level: " << level << ". \n";
+                    utopia::out() << "termination  due to small radius on level: " << level << ". \n";
                 }
 
                 corr_norm = this->memory_.delta[level + 1] - corr_norm;

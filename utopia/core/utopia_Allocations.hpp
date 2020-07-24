@@ -4,7 +4,9 @@
 #include <iostream>
 #include <stack>
 #include <string>
+
 #include "utopia_Base.hpp"
+#include "utopia_IOStream.hpp"
 
 #ifdef ENABLE_NO_ALLOC_REGIONS
 #define UTOPIA_NO_ALLOC_BEGIN(macro_name_) utopia::Allocations::instance().no_alloc_region_begin(macro_name_)
@@ -66,8 +68,8 @@ namespace utopia {
             }
 
             if (count_ > 0) {
-                std::cout << "[Status] total allocations " << count_ << ", " << n_violations_ << " violations "
-                          << std::endl;
+                utopia::out() << "[Status] total allocations " << count_ << ", " << n_violations_ << " violations "
+                              << std::endl;
             }
         }
 

@@ -205,7 +205,7 @@ namespace utopia {
 
             multigrid.apply(rhs, x_0);
             diff = norm2(A * x_0 - rhs);
-            std::cout << "diff: " << diff << " \n";
+            utopia::out() << "diff: " << diff << " \n";
 
             multigrid.max_it(1);
             multigrid.cycle_type(MULTIPLICATIVE_CYCLE);

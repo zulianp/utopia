@@ -137,7 +137,7 @@ namespace utopia {
 
         Scalar min_function_value() const override {
             // depends on the solution to which we converged to
-            std::cout << "Bratu1D:: min_function_value :: wrong.... \n";
+            utopia::out() << "Bratu1D:: min_function_value :: wrong.... \n";
             return -1.012;
         }
 

@@ -114,7 +114,7 @@ namespace utopia {
             pgs.solve(m, rhs, solution);
 
             c.stop();
-            // if(mpi_world_rank() == 0) std::cout << c << std::endl;
+            // if(mpi_world_rank() == 0) utopia::out() <<c << std::endl;
 
             PetscVector solution_u(layout(rhs), 0.0);
             ProjectedGaussSeidel<PetscMatrix, PetscVector, -1> pgs_u;
@@ -131,7 +131,7 @@ namespace utopia {
             pgs_u.solve(m, rhs, solution_u);
 
             c.stop();
-            // if(mpi_world_rank() == 0) std::cout << c << std::endl;
+            // if(mpi_world_rank() == 0) utopia::out() <<c << std::endl;
 
             Scalar diff = norm2(solution_u - solution);
             // Scalar res_norm = norm2(m * solution_u - rhs);
@@ -158,7 +158,7 @@ namespace utopia {
 
             // c.stop();
 
-            // if(mpi_world_rank() == 0) std::cout << c << std::endl;
+            // if(mpi_world_rank() == 0) utopia::out() <<c << std::endl;
 
             // Scalar res_norm_ref = norm2(m * solution - rhs);
 
@@ -426,7 +426,7 @@ namespace utopia {
                 PetscVector diff = hm_x_0 - x_0;
 
                 Scalar norm_diff = norm2(diff) / Scalar(norm2(hm_x_0));
-                std::cout << "norm_diff: " << std::to_string(norm_diff) << std::endl;
+                utopia::out() << "norm_diff: " << std::to_string(norm_diff) << std::endl;
             }
 
             utopia_test_assert(approxeq(x_0, hm_x_0, 1e-8));

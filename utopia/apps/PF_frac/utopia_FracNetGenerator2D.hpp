@@ -48,7 +48,7 @@ namespace utopia {
         T x;
         T y;
 
-        void describe() { std::cout << "(" << x << " , " << y << " ) \n"; }
+        void describe() { utopia::out() << "(" << x << " , " << y << " ) \n"; }
     };
 
     template <class T>
@@ -172,11 +172,11 @@ namespace utopia {
         }
 
         void describe() {
-            std::cout << "A: " << A_.x << " " << A_.y << "  \n";
-            std::cout << "B: " << B_.x << " " << B_.y << "  \n";
-            std::cout << "C: " << C_.x << " " << C_.y << "  \n";
-            std::cout << "D: " << D_.x << " " << D_.y << "  \n";
-            std::cout << "------------------------------  \n";
+            utopia::out() << "A: " << A_.x << " " << A_.y << "  \n";
+            utopia::out() << "B: " << B_.x << " " << B_.y << "  \n";
+            utopia::out() << "C: " << C_.x << " " << C_.y << "  \n";
+            utopia::out() << "D: " << D_.x << " " << D_.y << "  \n";
+            utopia::out() << "------------------------------  \n";
         }
 
     private:
@@ -295,14 +295,15 @@ namespace utopia {
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    CoeffVector s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 
@@ -346,17 +347,18 @@ namespace utopia {
                 auto sol_view = this->space_.assembly_view_device(sol_vec);
                 auto press_view = this->space_.assembly_view_device(press_vec);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    StaticVector<Scalar, NNodes> s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, sol_view);
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, sol_view);
 
-                    press_sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, press_view);
-                });
+                        press_sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, press_view);
+                    });
             }
 
             // add new fracture to existing ones

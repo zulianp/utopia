@@ -108,7 +108,7 @@ namespace utopia {
 
         // print function
         inline void describe() const override {
-            std::cout << Traits<Vector>::backend_info().get_name() << " (vector)" << std::endl;
+            utopia::out() << Traits<Vector>::backend_info().get_name() << " (vector)" << std::endl;
             impl_->describe();
         }
 

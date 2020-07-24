@@ -63,7 +63,7 @@ namespace utopia {
         }
 
         bool value(const Vector & /*x_const*/, Scalar & /*val*/
-                   ) const override {
+        ) const override {
             assert(false);
             return false;
         }
@@ -130,75 +130,77 @@ namespace utopia {
                 auto g_view = space_.assembly_view_device(y);
                 // auto laplacian_view = laplacian.view_device();
 
-                Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    StaticVector<Scalar, C_NDofs + U_NDofs> coeff, el_vec;
-                    el_vec.set(0.0);
+                Device::parallel_for(
+                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticVector<Scalar, C_NDofs + U_NDofs> coeff, el_vec;
+                        el_vec.set(0.0);
 
-                    ////////////////////////////////////////////////////////////////////
+                        ////////////////////////////////////////////////////////////////////
 
-                    MixedElem e;
-                    space_view.elem(i, e);
+                        MixedElem e;
+                        space_view.elem(i, e);
 
-                    x_view.get(e, coeff);
+                        x_view.get(e, coeff);
 
-                    CElem c_e;
-                    C_view.elem(i, c_e);
+                        CElem c_e;
+                        C_view.elem(i, c_e);
 
-                    auto dx = differential_view.make(c_e);
-                    auto shape_c = c_shape_view.make(c_e);
-                    auto grad_c = c_grad_shape_view.make(c_e);
+                        auto dx = differential_view.make(c_e);
+                        auto shape_c = c_shape_view.make(c_e);
+                        auto grad_c = c_grad_shape_view.make(c_e);
 
-                    UElem u_e;
-                    U_view.elem(i, u_e);
+                        UElem u_e;
+                        U_view.elem(i, u_e);
 
-                    auto &&strain = strain_view.make(u_e);
+                        auto &&strain = strain_view.make(u_e);
 
-                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                        const auto dx_qp = dx(qp);
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            const auto dx_qp = dx(qp);
 
-                        // laplacian
-                        for (SizeType i = 0; i < C_NDofs; ++i) {
-                            auto &&g_test = grad_c(i, qp);
+                            // laplacian
+                            for (SizeType i = 0; i < C_NDofs; ++i) {
+                                auto &&g_test = grad_c(i, qp);
 
-                            el_vec(i) += inner(g_test, g_test) * dx_qp * coeff(i);
+                                el_vec(i) += inner(g_test, g_test) * dx_qp * coeff(i);
 
-                            for (SizeType j = i + 1; j < C_NDofs; ++j) {
-                                auto &&g_trial = grad_c(j, qp);
+                                for (SizeType j = i + 1; j < C_NDofs; ++j) {
+                                    auto &&g_trial = grad_c(j, qp);
 
-                                auto v = inner(g_test, g_trial) * dx_qp;
+                                    auto v = inner(g_test, g_trial) * dx_qp;
 
-                                el_vec(i) += v * coeff(j);
-                                el_vec(j) += v * coeff(i);
-                            }
-                        }
-
-                        for (SizeType i = 0; i < U_NDofs; ++i) {
-                            auto &&strain_test = strain(i, qp);
-
-                            el_vec(C_NDofs + i) +=
-                                LEKernel::strain_apply(mu, lmbda, strain_test, strain_test, dx_qp) * coeff(C_NDofs + i);
-
-                            // a(u, u)
-                            for (SizeType j = i + 1; j < U_NDofs; ++j) {
-                                auto &&strain_trial = strain(j, qp);
-
-                                auto v = LEKernel::strain_apply(mu, lmbda, strain_trial, strain_test, dx_qp);
-
-                                el_vec(C_NDofs + i) += v * coeff(C_NDofs + j);
-                                el_vec(C_NDofs + j) += v * coeff(C_NDofs + i);
+                                    el_vec(i) += v * coeff(j);
+                                    el_vec(j) += v * coeff(i);
+                                }
                             }
 
-                            // a(u, c)
-                            for (SizeType j = 0; j < C_NDofs; ++j) {
-                                auto v = -alpha * (3 * lmbda + 2 * mu) * shape_c(j, qp);
+                            for (SizeType i = 0; i < U_NDofs; ++i) {
+                                auto &&strain_test = strain(i, qp);
+
                                 el_vec(C_NDofs + i) +=
-                                    inner(strain_test, v * device::identity<Scalar>()) * dx_qp * coeff(j);
+                                    LEKernel::strain_apply(mu, lmbda, strain_test, strain_test, dx_qp) *
+                                    coeff(C_NDofs + i);
+
+                                // a(u, u)
+                                for (SizeType j = i + 1; j < U_NDofs; ++j) {
+                                    auto &&strain_trial = strain(j, qp);
+
+                                    auto v = LEKernel::strain_apply(mu, lmbda, strain_trial, strain_test, dx_qp);
+
+                                    el_vec(C_NDofs + i) += v * coeff(C_NDofs + j);
+                                    el_vec(C_NDofs + j) += v * coeff(C_NDofs + i);
+                                }
+
+                                // a(u, c)
+                                for (SizeType j = 0; j < C_NDofs; ++j) {
+                                    auto v = -alpha * (3 * lmbda + 2 * mu) * shape_c(j, qp);
+                                    el_vec(C_NDofs + i) +=
+                                        inner(strain_test, v * device::identity<Scalar>()) * dx_qp * coeff(j);
+                                }
                             }
                         }
-                    }
 
-                    space_view.add_vector(e, el_vec, y_view);
-                });
+                        space_view.add_vector(e, el_vec, y_view);
+                    });
             }
 
             space_.copy_at_constrained_dofs(x, y);
@@ -222,12 +224,12 @@ namespace utopia {
             if (!ok) {
                 Scalar norm_y = norm_infty(mat_y);
 
-                std::cout << "norm_diff: " << norm_diff << std::endl;
-                std::cout << "norm_y: " << norm_y << std::endl;
+                utopia::out() << "norm_diff: " << norm_diff << std::endl;
+                utopia::out() << "norm_y: " << norm_y << std::endl;
                 // Vector diff = y - mat_y;
                 // disp(diff);
             }
-            // std::cout << "norm_diff: " << norm_diff << std::endl;
+            // utopia::out() <<"norm_diff: " << norm_diff << std::endl;
             // assert(norm_diff < 1e-8);
             // return ok;
 
@@ -279,71 +281,72 @@ namespace utopia {
                 auto H_view = space_.assembly_view_device(H);
                 auto laplacian_view = laplacian.view_device();
 
-                Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    StaticMatrix<Scalar, C_NDofs, C_NDofs> lap_mat;
-                    StaticMatrix<Scalar, U_NDofs, U_NDofs> elast_mat;
-                    StaticMatrix<Scalar, U_NDofs, C_NDofs> coupling_mat;
-                    StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
+                Device::parallel_for(
+                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticMatrix<Scalar, C_NDofs, C_NDofs> lap_mat;
+                        StaticMatrix<Scalar, U_NDofs, U_NDofs> elast_mat;
+                        StaticMatrix<Scalar, U_NDofs, C_NDofs> coupling_mat;
+                        StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
 
-                    lap_mat.set(0.0);
-                    elast_mat.set(0.0);
-                    coupling_mat.set(0.0);
-                    el_mat.set(0.0);
+                        lap_mat.set(0.0);
+                        elast_mat.set(0.0);
+                        coupling_mat.set(0.0);
+                        el_mat.set(0.0);
 
-                    ////////////////////////////////////////////////////////////////////
+                        ////////////////////////////////////////////////////////////////////
 
-                    MixedElem e;
-                    space_view.elem(i, e);
+                        MixedElem e;
+                        space_view.elem(i, e);
 
-                    CElem c_e;
-                    C_view.elem(i, c_e);
+                        CElem c_e;
+                        C_view.elem(i, c_e);
 
-                    auto dx = differential_view.make(c_e);
-                    auto shape_c = c_shape_view.make(c_e);
+                        auto dx = differential_view.make(c_e);
+                        auto shape_c = c_shape_view.make(c_e);
 
-                    UElem u_e;
-                    U_view.elem(i, u_e);
+                        UElem u_e;
+                        U_view.elem(i, u_e);
 
-                    //(0, 0)
-                    laplacian_view.assemble(i, c_e, lap_mat);
+                        //(0, 0)
+                        laplacian_view.assemble(i, c_e, lap_mat);
 
-                    auto &&strain = strain_view.make(u_e);
+                        auto &&strain = strain_view.make(u_e);
 
-                    for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                        const auto dx_qp = dx(qp);
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            const auto dx_qp = dx(qp);
 
-                        for (SizeType i = 0; i < U_NDofs; ++i) {
-                            auto &&strain_test = strain(i, qp);
+                            for (SizeType i = 0; i < U_NDofs; ++i) {
+                                auto &&strain_test = strain(i, qp);
 
-                            elast_mat(i, i) += LEKernel::strain_apply(mu, lmbda, strain_test, strain_test, dx_qp);
+                                elast_mat(i, i) += LEKernel::strain_apply(mu, lmbda, strain_test, strain_test, dx_qp);
 
-                            // a(u, u)
-                            for (SizeType j = i + 1; j < U_NDofs; ++j) {
-                                auto &&strain_trial = strain(j, qp);
+                                // a(u, u)
+                                for (SizeType j = i + 1; j < U_NDofs; ++j) {
+                                    auto &&strain_trial = strain(j, qp);
 
-                                auto v = LEKernel::strain_apply(mu, lmbda, strain_trial, strain_test, dx_qp);
+                                    auto v = LEKernel::strain_apply(mu, lmbda, strain_trial, strain_test, dx_qp);
 
-                                elast_mat(i, j) += v;
-                                elast_mat(j, i) += v;
-                            }
+                                    elast_mat(i, j) += v;
+                                    elast_mat(j, i) += v;
+                                }
 
-                            // a(u, c)
-                            for (SizeType j = 0; j < C_NDofs; ++j) {
-                                auto v = -alpha * (3 * lmbda + 2 * mu) * shape_c(j, qp);
-                                coupling_mat(i, j) += inner(strain_test, v * device::identity<Scalar>()) * dx_qp;
+                                // a(u, c)
+                                for (SizeType j = 0; j < C_NDofs; ++j) {
+                                    auto v = -alpha * (3 * lmbda + 2 * mu) * shape_c(j, qp);
+                                    coupling_mat(i, j) += inner(strain_test, v * device::identity<Scalar>()) * dx_qp;
+                                }
                             }
                         }
-                    }
 
-                    // to temporary mat buffer
-                    el_mat.set_matrix(0, 0, lap_mat);
-                    el_mat.set_matrix(C_NDofs, C_NDofs, elast_mat);
-                    // In the weak coupling this is not here
-                    // el_mat.set_matrix(0, C_NDofs, transpose(coupling_mat));
-                    el_mat.set_matrix(C_NDofs, 0, coupling_mat);
+                        // to temporary mat buffer
+                        el_mat.set_matrix(0, 0, lap_mat);
+                        el_mat.set_matrix(C_NDofs, C_NDofs, elast_mat);
+                        // In the weak coupling this is not here
+                        // el_mat.set_matrix(0, C_NDofs, transpose(coupling_mat));
+                        el_mat.set_matrix(C_NDofs, 0, coupling_mat);
 
-                    space_view.add_matrix(e, el_mat, H_view);
-                });
+                        space_view.add_matrix(e, el_mat, H_view);
+                    });
             }
 
             space_.apply_constraints(H);

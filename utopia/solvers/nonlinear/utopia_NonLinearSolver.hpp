@@ -103,7 +103,7 @@ namespace utopia {
 
             if (mpi_world_rank() == 0 && verbose_) {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
-                std::cout << "  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
+                utopia::out() << "  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
             }
 
             this->solution_status_.execution_time = _time.get_seconds();

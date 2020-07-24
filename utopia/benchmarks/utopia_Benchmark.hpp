@@ -10,9 +10,7 @@ namespace utopia {
 
     class Benchmark {
     public:
-        Benchmark()
-
-            = default;
+        Benchmark() = default;
 
         virtual ~Benchmark() = default;
         virtual void initialize() = 0;

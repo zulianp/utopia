@@ -231,18 +231,18 @@ namespace utopia {
                 ok = approxeq(mat, vectors * diag(values) * transpose(vectors), 1e-8);
             }
 
-            if (!ok) {
-                disp("--------------------");
-                disp(mat);
-                disp("--------------------");
-                disp(vectors);
-                disp("--------------------");
-                disp(values);
-                disp("--------------------");
+            // if (!ok) {
+            //     disp("--------------------");
+            //     disp(mat);
+            //     disp("--------------------");
+            //     disp(vectors);
+            //     disp("--------------------");
+            //     disp(values);
+            //     disp("--------------------");
 
-                Mat reconstructed = vectors * diag(values) * transpose(vectors);
-                disp(reconstructed);
-            }
+            //     Mat reconstructed = vectors * diag(values) * transpose(vectors);
+            //     disp(reconstructed);
+            // }
 
             UTOPIA_DEVICE_ASSERT(ok);
             return ok;

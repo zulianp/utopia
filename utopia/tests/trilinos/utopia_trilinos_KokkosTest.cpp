@@ -72,7 +72,8 @@ namespace utopia {
             auto r = range(v);
 
             auto v_view = view_device(v);
-            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
+            parallel_for(
+                range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
 
             Scalar z = min(v);
 
@@ -88,7 +89,8 @@ namespace utopia {
             auto r = range(v);
 
             auto v_view = view_device(v);
-            parallel_for(range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
+            parallel_for(
+                range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, i - r.begin()); });
 
             Scalar z = max(v);
 
@@ -102,7 +104,8 @@ namespace utopia {
             TpetraVectord w(vl, -1.);
 
             auto w_view = view_device(w);
-            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) { w_view.set(i, i); });
+            parallel_for(
+                range_device(w), UTOPIA_LAMBDA(const SizeType &i) { w_view.set(i, i); });
 
             {
                 Read<TpetraVectord> r_(w);
@@ -125,8 +128,14 @@ namespace utopia {
                 UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &)->Scalar { return i * n + j; });
 
             // serial implementation for test
-            w.read([=](const SizeType &i, const SizeType &j, const Scalar &val) {
-                utopia_test_assert(approxeq(Scalar(i * n + j), val));
+            w.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &val) {
+                // We use assert for the gpu
+                UTOPIA_DEVICE_ASSERT(device::approxeq(Scalar(i * n + j), val, 1e-8));
+
+                // not tested in release mode
+                UTOPIA_UNUSED(i);
+                UTOPIA_UNUSED(j);
+                UTOPIA_UNUSED(val);
             });
         }
 
@@ -137,10 +146,11 @@ namespace utopia {
             TpetraVectord w(vl, 50);
 
             auto w_view = const_view_device(w);
-            parallel_for(range_device(w), UTOPIA_LAMBDA(const SizeType &i) {
-                auto v = w_view.get(i);
-                UTOPIA_UNUSED(v);
-            });
+            parallel_for(
+                range_device(w), UTOPIA_LAMBDA(const SizeType &i) {
+                    auto v = w_view.get(i);
+                    UTOPIA_UNUSED(v);
+                });
         }
 
         void kokkos_apply() {
