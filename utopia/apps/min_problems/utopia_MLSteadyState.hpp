@@ -7,8 +7,8 @@
 #include "utopia_MassMatrix.hpp"
 #include "utopia_Multilevel.hpp"
 #include "utopia_RedundantQPSolver.hpp"
-#include "utopia_make_unique.hpp"
 #include "utopia_TestFunctions.hpp"
+#include "utopia_make_unique.hpp"
 
 #include <memory>
 
@@ -109,10 +109,10 @@ class MLSteadyState final : public Configurable {
       Matrix inv_lumped_mass = diag(1. / sum(M_coarse, 1));
       Matrix P = inv_lumped_mass * R * M_fine;
 
-
       // transfers_[i - 1] = std::make_shared<IPTransferNested<Matrix, Vector>>(
-      transfers_[i - 1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(
-        std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
+      transfers_[i - 1] =
+          std::make_shared<MatrixTruncatedTransfer<Matrix, Vector>>(
+              std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
     }
 
     // initial conddition needs to be setup only on the finest level
@@ -123,22 +123,21 @@ class MLSteadyState final : public Configurable {
     //////////////////////////////////////////////////////
 
     if (!rmtr_) {
-      rmtr_ = std::make_shared<RMTR_inf<
-          Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN> >(
+      rmtr_ = std::make_shared<
+          RMTR_inf<Matrix, Vector,
+                   TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>(
           n_levels_);
     }
 
     std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine =
-    std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+        std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
     // std::make_shared<utopia::MPGRP<Matrix, Vector>>();
 
-
     std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse =
-      std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
-    tr_strategy_coarse->atol(1e-12); 
-        // std::make_shared<SemismoothNewton<Matrix, Vector>>(
-        //     std::make_shared<Factorization<Matrix, Vector>>());
-
+        std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+    tr_strategy_coarse->atol(1e-12);
+    // std::make_shared<SemismoothNewton<Matrix, Vector>>(
+    //     std::make_shared<Factorization<Matrix, Vector>>());
 
     rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
     // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -212,28 +211,23 @@ class MLSteadyState final : public Configurable {
       init_ml_setup();
     }
 
-
     Vector solution;
 
     // init fine level spaces
     this->init(*spaces_[n_levels_ - 1], solution);
     prepare_for_solve(solution);
 
-    solution = level_functions_.back()->initial_guess(); 
+    solution = level_functions_.back()->initial_guess();
 
-
-    auto *fine_fun = dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(level_functions_.back().get());
-    auto box = fine_fun->box_constraints(); 
-
-
+    auto *fine_fun =
+        dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(
+            level_functions_.back().get());
+    auto box = fine_fun->box_constraints();
 
     // rmtr_->delta0(1.0);
-    rmtr_->set_box_constraints(box); 
+    rmtr_->set_box_constraints(box);
     rmtr_->solve(solution);
     auto sol_status = rmtr_->solution_status();
-
-
-
 
     // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
     // subproblem->pc_type("asm");
@@ -245,17 +239,12 @@ class MLSteadyState final : public Configurable {
     // solver.atol(1e-10);
     // solver.solve(*level_functions_.back(), solution);
 
-
-
     // auto subproblem = std::make_shared<MPGRP<Matrix, Vector> >();
     // TrustRegionVariableBound<Matrix, Vector> solver(subproblem);
     // subproblem->atol(1e-14);
     // solver.verbose(true);
-    // solver.set_box_constraints(box); 
-    // solver.solve(*level_functions_.back(), solution);    
-
-
-
+    // solver.set_box_constraints(box);
+    // solver.solve(*level_functions_.back(), solution);
 
     // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
     // subproblem->pc_type("asm");
@@ -268,7 +257,7 @@ class MLSteadyState final : public Configurable {
 
     write_to_file(*spaces_[n_levels_ - 1], solution);
 
-    // auto lb = box.lower_bound(); 
+    // auto lb = box.lower_bound();
     // write_to_file(*spaces_[n_levels_ - 1], *lb);
 
     // disp("------------- 1 -----------");
@@ -292,7 +281,8 @@ class MLSteadyState final : public Configurable {
   std::string output_path_;
 
   std::shared_ptr<
-      RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN> >
+      RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>,
+               GALERKIN>>
       rmtr_;
 
   bool save_output_;
