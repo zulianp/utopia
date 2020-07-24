@@ -351,10 +351,6 @@ class MembraneFEM final
     }
 
 
-
-
-
-
     this->constraints_ = make_lower_bound_constraints(std::make_shared<Vector>(lb));
   }
 

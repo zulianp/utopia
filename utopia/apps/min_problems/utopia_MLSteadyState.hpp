@@ -226,10 +226,9 @@ class MLSteadyState final : public Configurable {
     auto box = fine_fun->box_constraints(); 
 
 
-    // rmtr_->delta0(1.0);
 
+    // rmtr_->delta0(1.0);
     rmtr_->set_box_constraints(box); 
-    // rmtr_->max_it(4);
     rmtr_->solve(solution);
     auto sol_status = rmtr_->solution_status();
 
@@ -268,6 +267,8 @@ class MLSteadyState final : public Configurable {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     write_to_file(*spaces_[n_levels_ - 1], solution);
+
+    // auto lb = box.lower_bound(); 
     // write_to_file(*spaces_[n_levels_ - 1], *lb);
 
     // disp("------------- 1 -----------");
