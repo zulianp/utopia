@@ -19,7 +19,7 @@
 #
 # Include the trilinos package configuration:
 #
-FIND_PACKAGE(TRILINOS_CONFIG
+FIND_PACKAGE(Trilinos
   CONFIG
   NAMES Trilinos TRILINOS TrilinosConfig TrilinosConfig.cmake
   HINTS
