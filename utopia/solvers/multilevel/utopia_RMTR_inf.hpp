@@ -22,6 +22,9 @@
 #include "utopia_IdentityTransfer.hpp"
 #include "utopia_MultiLevelVariableBoundInterface.hpp"
 #include "utopia_MatrixTruncatedTransfer.hpp"
+#include "utopia_MLConstraintsIncludes.hpp"
+
+
 
 // TODO:: remove in the future -> needed for UTOPIA_PETSC_COLLECTIVE_MEMUSAGE compilation
 // #include "utopia_petsc_debug.hpp"
@@ -229,17 +232,20 @@ namespace utopia {
 
         void truncate(const SizeType & level) override
         {
-            
+            this->execute_truncation(level); 
+        }
+
+
+
+        void execute_truncation(const int & level)
+        {
             // truncate_interpolation
             if(level == this->n_levels()-1)
             {
-                // std::cout<<"---- yes, the finest level ------ \n"; 
-
                 Vector active_flgs = 0.0*this->memory_.x[level]; 
 
                 if (this->box_constraints_.has_lower_bound()) {
 
-                    // std::cout<<"----- yes, in ------ \n"; 
 
                     Vector lb  = *(this->box_constraints_.lower_bound());
 
@@ -262,14 +268,9 @@ namespace utopia {
 
                 } // lb check 
                 
-
-            // disp(active_flgs, "active flgs"); 
-            // std::cout<<"d_flg: "<< sum(active_flgs) << "  \n"; 
-
+ 
             auto *transfer_trun = dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector> *>(this->transfers_.back().get());
             transfer_trun->truncate_interpolation(active_flgs); 
-
-            // exit(0);
 
             }// level check 
         }

@@ -80,6 +80,12 @@ namespace utopia {
                             if (rr_fine_level.inside(j)) {
                                 // std::cout<<"----- yes, in...\n"; 
                                 Scalar val_cons_fine_lb = this->help_[finer_level].get(j);
+
+                                // test if node active =>  truncated index, do not take into account 
+                                if(device::abs(val_cons_fine_lb) < 1e-14){
+                                    val_cons_fine_lb = -9e9; 
+                                }
+
                                 max_value = (max_value > val_cons_fine_lb) ? max_value : val_cons_fine_lb;
 
                         //         // Scalar val_cons_fine_ub = this->help_loc_[finer_level].get(j);

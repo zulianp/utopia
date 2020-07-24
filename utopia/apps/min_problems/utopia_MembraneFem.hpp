@@ -45,7 +45,7 @@ class MembraneFEM final
 
   }
 
-  MembraneFEM(FunctionSpace &space) : space_(space) {
+  MembraneFEM(FunctionSpace &space) : coef1_(1.0), coef2_(1.0),  space_(space) {
     // needed for ML setup
     space_.create_vector(this->_x_eq_values);
     space_.create_vector(this->_eq_constrains_flg);
@@ -112,8 +112,8 @@ class MembraneFEM final
             auto c_shape_fun_el = c_shape_view.make(c_e);
 
             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-              el_energy += 0.5*inner(c_grad_el[qp], c_grad_el[qp]) * dx(qp);
-              el_energy += c[qp] * dx(qp);
+              el_energy += 0.5*inner(c_grad_el[qp], coef1_ * c_grad_el[qp]) * dx(qp);
+              el_energy += coef2_* c[qp] * dx(qp);
             }
 
             assert(el_energy == el_energy);
@@ -189,10 +189,10 @@ class MembraneFEM final
             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
               for (SizeType j = 0; j < C_NDofs; ++j) {
                 c_el_vec(j) +=
-                    inner(c_grad_el[qp], c_grad_shape_el(j, qp)) * dx(qp);
+                    inner(c_grad_el[qp], coef1_* c_grad_shape_el(j, qp)) * dx(qp);
 
                 const Scalar shape_test = c_shape_fun_el(j, qp);
-                c_el_vec(j) += shape_test * dx(qp);
+                c_el_vec(j) += coef2_ * shape_test * dx(qp);
               }
             }
 
@@ -275,7 +275,7 @@ class MembraneFEM final
                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
 
                 for (SizeType j = l; j < C_NDofs; ++j) {
-                  Scalar val = inner(c_grad_shape_el(j, qp), c_grad_l) * dx(qp);
+                  Scalar val = inner(c_grad_shape_el(j, qp), coef1_ * c_grad_l) * dx(qp);
 
                   val = (l == j) ? (0.5 * val) : val;
                   el_mat(l, j) += val;
@@ -394,8 +394,13 @@ class MembraneFEM final
   virtual bool parallel() const { return true; }
 
  private:
+  Scalar coef1_; 
+  Scalar coef2_; 
   FunctionSpace &space_;
   std::shared_ptr<Vector> local_x_;
+
+
+
 };
 
 }  // namespace utopia
