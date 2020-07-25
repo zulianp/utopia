@@ -124,7 +124,7 @@ class MLSteadyState final : public Configurable {
 
     if (!rmtr_) {
       rmtr_ = std::make_shared<RMTR_inf<
-          Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>(
+          Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(
           n_levels_);
     }
 
@@ -218,24 +218,25 @@ class MLSteadyState final : public Configurable {
 
     solution = level_functions_.back()->initial_guess();
 
-    auto *fine_fun =
-        dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(
-            level_functions_.back().get());
-    auto box = fine_fun->box_constraints();
+    // auto *fine_fun =
+    //     dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(
+    //         level_functions_.back().get());
+    // auto box = fine_fun->box_constraints();
 
     // rmtr_->delta0(1.0);
-    rmtr_->set_box_constraints(box);
+    // rmtr_->set_box_constraints(box);
     rmtr_->solve(solution);
     auto sol_status = rmtr_->solution_status();
 
-    // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+    // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
     // subproblem->pc_type("asm");
     // TrustRegion<Matrix, Vector> solver(subproblem);
-    // subproblem->atol(1e-14);
+    // subproblem->atol(1e-9);
     // solver.verbose(true);
     // solver.delta0(1e-0);
     // // solution.set(1.0);
-    // solver.atol(1e-10);
+    // solver.atol(1e-9);
+    // solver.rtol(1e-9);
     // solver.solve(*level_functions_.back(), solution);
 
     // auto subproblem = std::make_shared<MPGRP<Matrix, Vector> >();
@@ -279,8 +280,8 @@ class MLSteadyState final : public Configurable {
   std::string log_output_path_;
   std::string output_path_;
 
-  std::shared_ptr<RMTR_inf<Matrix, Vector,
-                           TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>
+  std::shared_ptr<
+      RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>
       // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
       // GALERKIN>>
       rmtr_;

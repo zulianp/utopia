@@ -11,11 +11,11 @@
 #include "utopia_BCConditions.hpp"
 #include "utopia_BCSetup.hpp"
 #include "utopia_BratuFE.hpp"
+#include "utopia_BratuFem.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_MLSteadyState.hpp"
-#include "utopia_BratuFem.hpp"
 #include "utopia_MembraneFem.hpp"
 
 #ifdef WITH_PETSC
@@ -59,21 +59,16 @@ static void bratu_2d_rmtr(Input &in) {
 
   stats.start();
 
-  // MLSteadyState<FunctionSpace,
-  //               BratuFem<FunctionSpace>,
-  //               AllZeroBC<FunctionSpace>, 
-  //               AllZeroIG<FunctionSpace> > time_stepper(space);
+  MLSteadyState<FunctionSpace, BratuFem<FunctionSpace>,
+                AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
+      time_stepper(space);
 
-  
-  MLSteadyState<FunctionSpace,
-                MembraneFEM<FunctionSpace>,
-                AllZeroBCLeft<FunctionSpace>, 
-                AllZeroIG<FunctionSpace> > time_stepper(space);
-
+  // MLSteadyState<FunctionSpace, MembraneFEM<FunctionSpace>,
+  //               AllZeroBCLeft<FunctionSpace>, AllZeroIG<FunctionSpace> >
+  //     time_stepper(space);
 
   time_stepper.read(in);
   time_stepper.run();
-
 
   disp("------------------- here I am --------------");
 

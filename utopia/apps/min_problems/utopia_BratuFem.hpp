@@ -22,8 +22,10 @@ template <class FunctionSpace, int Dim = FunctionSpace::Dim>
 // class BratuFem final : public ExtendedFunction<typename
 // FunctionSpace::Matrix, typename FunctionSpace::Vector>
 class BratuFem final
-    :   virtual public UnconstrainedExtendedTestFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>, 
-        virtual public ConstrainedExtendedTestFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> { 
+    : virtual public UnconstrainedExtendedTestFunction<
+          typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
+      virtual public ConstrainedExtendedTestFunction<
+          typename FunctionSpace::Matrix, typename FunctionSpace::Vector> {
  public:
   using Scalar = typename FunctionSpace::Scalar;
   using SizeType = typename FunctionSpace::SizeType;
@@ -70,8 +72,7 @@ class BratuFem final
 
     // TODO:: add more options
     this->init_forcing_function(this->rhs_);
-    this->init_constraints(); 
-
+    this->init_constraints();
   }
 
   inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
@@ -190,36 +191,36 @@ class BratuFem final
 
       auto g_view = space_.assembly_view_device(g);
 
-      Device::parallel_for(
-          space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-            StaticVector<Scalar, C_NDofs> c_el_vec;
-            c_el_vec.set(0.0);
-            ////////////////////////////////////////////
+      Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(
+                                                       const SizeType &i) {
+        StaticVector<Scalar, C_NDofs> c_el_vec;
+        c_el_vec.set(0.0);
+        ////////////////////////////////////////////
 
-            CElem c_e;
-            C_view.elem(i, c_e);
-            StaticVector<Scalar, NQuadPoints> c;
-            c_view.get(c_e, c);
+        CElem c_e;
+        C_view.elem(i, c_e);
+        StaticVector<Scalar, NQuadPoints> c;
+        c_view.get(c_e, c);
 
-            auto c_grad_el = c_grad_view.make(c_e);
-            auto dx = differential_view.make(c_e);
-            auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-            auto c_shape_fun_el = c_shape_view.make(c_e);
+        auto c_grad_el = c_grad_view.make(c_e);
+        auto dx = differential_view.make(c_e);
+        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+        auto c_shape_fun_el = c_shape_view.make(c_e);
 
-            ////////////////////////////////////////////
-            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-              for (SizeType j = 0; j < C_NDofs; ++j) {
-                c_el_vec(j) +=
-                    inner(c_grad_el[qp], c_grad_shape_el(j, qp)) * dx(qp);
+        ////////////////////////////////////////////
+        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+          for (SizeType j = 0; j < C_NDofs; ++j) {
+            c_el_vec(j) +=
+                inner(c_grad_el[qp], c_grad_shape_el(j, qp)) * dx(qp);
 
-                const Scalar shape_test = c_shape_fun_el(j, qp);
-                c_el_vec(j) -=
-                    inner(params_.lambda * c[qp], shape_test) * dx(qp);
-              }
-            }
+            const Scalar shape_test = c_shape_fun_el(j, qp);
+            c_el_vec(j) -=
+                inner(params_.lambda * device::exp(c[qp]), shape_test) * dx(qp);
+          }
+        }
 
-            C_view.add_vector(c_e, c_el_vec, g_view);
-          });
+        C_view.add_vector(c_e, c_el_vec, g_view);
+      });
     }
 
     g = g + this->rhs_;
@@ -297,11 +298,16 @@ class BratuFem final
                 auto &&c_grad_l = c_grad_shape_el(l, qp);
                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
 
+                Scalar val1 = 0;
+                val1 -= inner(params_.lambda * device::exp(c[qp]), c_shape_l) *
+                        dx(qp);
+                el_mat(l, l) += val1;
+
                 for (SizeType j = l; j < C_NDofs; ++j) {
                   Scalar val = inner(c_grad_shape_el(j, qp), c_grad_l) * dx(qp);
-                  val -=
-                      inner(params_.lambda * c_shape_fun_el(j, qp), c_shape_l) *
-                      dx(qp);
+                  // val -= inner(params_.lambda * device::exp(c[qp]),
+                  //              c_shape_fun_el(l, qp)) *
+                  //        dx(qp);
 
                   val = (l == j) ? (0.5 * val) : val;
                   el_mat(l, j) += val;
@@ -376,26 +382,23 @@ class BratuFem final
     }
   }
 
-
-  void init_constraints(){
-
-    // ToDO:: fix based on example 
-    Vector lb; 
+  void init_constraints() {
+    // ToDO:: fix based on example
+    Vector lb;
     space_.create_vector(lb);
-    lb.set(-1.0); 
-    this->constraints_ = make_lower_bound_constraints(std::make_shared<Vector>(lb));
+    lb.set(-1.0);
+    this->constraints_ =
+        make_lower_bound_constraints(std::make_shared<Vector>(lb));
   }
-
 
  public:
   Vector initial_guess() const override {
-
     Vector solution;
     space_.create_vector(solution);
     rename("X", solution);
 
     // TODO:: add initial condition
-    solution.set(1.0);
+    solution.set(-1.0);
     space_.apply_constraints(solution);
 
     return solution;
