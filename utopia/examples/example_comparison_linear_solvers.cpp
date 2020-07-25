@@ -15,8 +15,8 @@
 using namespace std;
 
 const char* file = "../examples/linear_solvers.csv";
-const char* RUN_PYTHON_27 = "/usr/bin/python2.7 ../examples/linear_solvers_plot.py";
-const char* RUN_PYTHON_3 = "/usr/bin/python3 ../examples/linear_solvers_plot.py";
+const char* RUN_PYTHON_27 = "python2.7 ../examples/linear_solvers_plot.py";
+const char* RUN_PYTHON_3 = "python3 ../examples/linear_solvers_plot.py";
 
 template <class Solver, class Matrix, class Vector>
 void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
@@ -26,21 +26,12 @@ void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
     // Instantiate Solver
     Solver s;
 
-    // Setting a conditioner is important with iterative linear solver.
-    // The more a problem is bad conditioned, that is the more the difference
-    // between the largest and small eigenvalues is significant, the more
-    // the solution will deviate from the exact solution.
-    // A preconditioner allows to make this difference smaller, so that
-    // the solution found with the iterative system will be more
-    // precise.
-    // You can uncomment it.
-    // s.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
+    // Setting a preconditioner is important with iterative linear solvers.
+    // The worst the condition number, the harder it is for the iterative
+    // solver to converge to the solution.
+    // A preconditioner allows to speed up the solution process.
 
-    // if () {
-    //     s.set_preconditioner(make_shared<InvDiagPreconditioner<Matrix, Vector>>());
-    // }
-
-    // Set tolerances...
+    // Set tolerances for stopping conditions.
     s.atol(1e-10);
     s.rtol(1e-10);
     s.stol(1e-10);
@@ -48,26 +39,30 @@ void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
     // Set maximum number of iterations that the solver will run for.
     s.max_it(b.size() * 1000);
 
-    // Instiate Chrono to keep trak of the time it takes to solve
+    // Instantiate Chrono to keep track of the time it takes to solve
     // the linear system.
     Chrono c;
 
-    // Instatiate the vecor x to have the same layout as b with 0 as
+    // Instantiate the vector x to have the same layout as b with 0 as
     // values.
     Vector x(layout(b), 0);
 
-    // Set comm to be same as the one for vector b.
+    // Get the communicator of b.
     auto& comm = b.comm();
 
     c.start();
-    // Instantiate vector r(residual)
+    // Compute the residual r.
     Vector r = A * x;
     r = b - r;
+
+    // Do a gradient descent step.
     x += r;
 
+    // Solve the linear system.
     s.solve(A, b, x);
     c.stop();
 
+    // Check the residual norm.
     r = A * x;
     r = b - r;
     Scalar norm_r = norm2(r);
@@ -131,12 +126,6 @@ void test_linear_solver() {
                 b_view.set(i, f);
             });
     }
-
-    // Matrix
-    // SizeType n_local_rows = 10;
-    // SizeType n_local_cols = 10;
-    // SizeType d_nnz = 3;
-    // SizeType o_nnz = 3;
 
     A.sparse(square_matrix_layout(l), 3, 2);
     {
