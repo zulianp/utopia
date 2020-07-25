@@ -19,9 +19,9 @@
 #include "utopia_MultiLevelEvaluations.hpp"
 #include "utopia_RMTR.hpp"
 
+#include "utopia_IPRTruncatedTransfer.hpp"
 #include "utopia_IdentityTransfer.hpp"
 #include "utopia_MLConstraintsIncludes.hpp"
-#include "utopia_MatrixTruncatedTransfer.hpp"
 #include "utopia_MultiLevelVariableBoundInterface.hpp"
 
 #include "utopia_FunEvalsIncludes.hpp"
@@ -261,7 +261,7 @@ class RMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
                          std::is_same<T, TRGelmanMandelBoxKornhuberTruncation<
                                              Matrix, Vector> >::value),
                        int> = 0>
-  void execute_truncation(const SizeType &level) {}
+  void execute_truncation(const SizeType & /*level*/) {}
 
   template <
       class T = MLConstraints,
@@ -291,8 +291,26 @@ class RMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
 
                        if (device::abs(li - xi) < 1e-14) {
                          d_flg.set(i, 1.0);
-                       } else {
-                         d_flg.set(i, 0.0);
+                       }
+
+                     });
+
+      }  // lb check
+
+      if (this->box_constraints_.has_upper_bound()) {
+        Vector ub = *(this->box_constraints_.upper_bound());
+
+        auto d_ub = const_local_view_device(ub);
+        auto d_x = const_local_view_device(this->memory_.x[level]);
+        auto d_flg = local_view_device(active_flgs);
+
+        parallel_for(local_range_device(active_flgs),
+                     UTOPIA_LAMBDA(const SizeType i) {
+                       const Scalar ui = d_ub.get(i);
+                       const Scalar xi = d_x.get(i);
+
+                       if (device::abs(ui - xi) < 1e-14) {
+                         d_flg.set(i, 1.0);
                        }
 
                      });
@@ -300,7 +318,7 @@ class RMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
       }  // lb check
 
       auto *transfer_trun =
-          dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector> *>(
+          dynamic_cast<IPRTruncatedTransfer<Matrix, Vector> *>(
               this->transfers_.back().get());
       transfer_trun->truncate_interpolation(active_flgs);
 

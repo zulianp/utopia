@@ -111,7 +111,7 @@ class MLSteadyState final : public Configurable {
 
       // transfers_[i - 1] = std::make_shared<IPTransferNested<Matrix, Vector>>(
       transfers_[i - 1] =
-          std::make_shared<MatrixTruncatedTransfer<Matrix, Vector>>(
+          std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(
               std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
     }
 
@@ -123,9 +123,8 @@ class MLSteadyState final : public Configurable {
     //////////////////////////////////////////////////////
 
     if (!rmtr_) {
-      rmtr_ = std::make_shared<
-          RMTR_inf<Matrix, Vector,
-                   TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>(
+      rmtr_ = std::make_shared<RMTR_inf<
+          Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER>>(
           n_levels_);
     }
 
@@ -280,9 +279,10 @@ class MLSteadyState final : public Configurable {
   std::string log_output_path_;
   std::string output_path_;
 
-  std::shared_ptr<
-      RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>,
-               GALERKIN>>
+  std::shared_ptr<RMTR_inf<Matrix, Vector,
+                           TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER>>
+      // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
+      // GALERKIN>>
       rmtr_;
 
   bool save_output_;
