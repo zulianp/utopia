@@ -124,7 +124,7 @@ class MLSteadyState final : public Configurable {
 
     if (!rmtr_) {
       rmtr_ = std::make_shared<RMTR_inf<
-          Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER>>(
+          Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>(
           n_levels_);
     }
 
@@ -280,7 +280,7 @@ class MLSteadyState final : public Configurable {
   std::string output_path_;
 
   std::shared_ptr<RMTR_inf<Matrix, Vector,
-                           TRGrattonBoxKornhuber<Matrix, Vector>, FIRST_ORDER>>
+                           TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>
       // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
       // GALERKIN>>
       rmtr_;

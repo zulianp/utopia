@@ -8,10 +8,10 @@
     "x_max" : 1,
     "y_min" : 0,
     "y_max" : 1,
-    "n_levels": 3,
+    "n_levels": 2,
     "solver" : {
         "verbose" : true,
-        "max-it" : 200,
+        "max-it" : 50,
         "atol": 1e-8, 
         "max_coarse_it": 2,
         "max_sucessful_coarse_it": 1,

@@ -10,6 +10,7 @@
 #include "utopia_LevelMemory.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_TRBoundsGelmanMandel.hpp"
 
 #include <iomanip>
 #include <limits>

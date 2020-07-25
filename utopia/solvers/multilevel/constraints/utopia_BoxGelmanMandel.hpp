@@ -4,7 +4,7 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_Core.hpp"
-#include "utopia_DeprecatedHeaders.hpp"
+// #include "utopia_DeprecatedHeaders.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_IdentityTransfer.hpp"
 #include "utopia_LevelMemory.hpp"
@@ -63,10 +63,15 @@ class BoxGelmanMandel : public MultilevelVariableBoundSolverInterface<
 
     {
       auto d_x = const_device_view(x_level);
-      parallel_each_write(constraints_memory_.active_lower[level],
-                          UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                            return d_x.get(i) + lower_multiplier;
-                          });
+      auto d_lb = local_view_device(constraints_memory_.active_lower[level]);
+
+      parallel_for(local_range_device(constraints_memory_.active_lower[level]),
+                   UTOPIA_LAMBDA(const SizeType i) {
+                     const Scalar xi = d_x.get(i);
+
+                     d_lb.set(i, xi + lower_multiplier);
+
+                   });
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,10 +85,14 @@ class BoxGelmanMandel : public MultilevelVariableBoundSolverInterface<
 
     {
       auto d_x = const_device_view(x_level);
-      parallel_each_write(constraints_memory_.active_upper[level],
-                          UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                            return d_x.get(i) + upper_multiplier;
-                          });
+      auto d_ub = local_view_device(constraints_memory_.active_upper[level]);
+
+      parallel_for(local_range_device(constraints_memory_.active_upper[level]),
+                   UTOPIA_LAMBDA(const SizeType i) {
+                     const Scalar xi = d_x.get(i);
+                     d_ub.set(i, xi + upper_multiplier);
+
+                   });
     }
   }
 
