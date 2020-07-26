@@ -216,12 +216,12 @@ class MLSteadyState final : public Configurable {
     this->init(*spaces_[n_levels_ - 1], solution);
     prepare_for_solve(solution);
 
-    solution = level_functions_.back()->initial_guess();
+    // solution = level_functions_.back()->initial_guess();
 
-    // auto *fine_fun =
-    //     dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(
-    //         level_functions_.back().get());
-    // auto box = fine_fun->box_constraints();
+    // // auto *fine_fun =
+    // //     dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(
+    // //         level_functions_.back().get());
+    // // auto box = fine_fun->box_constraints();
 
     // rmtr_->delta0(1.0);
     // rmtr_->set_box_constraints(box);
@@ -231,9 +231,9 @@ class MLSteadyState final : public Configurable {
     // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
     // subproblem->pc_type("asm");
     // TrustRegion<Matrix, Vector> solver(subproblem);
-    // subproblem->atol(1e-9);
+    // subproblem->atol(1e-14);
     // solver.verbose(true);
-    // solver.delta0(1e-0);
+    // // solver.delta0(1e-0);
     // // solution.set(1.0);
     // solver.atol(1e-9);
     // solver.rtol(1e-9);

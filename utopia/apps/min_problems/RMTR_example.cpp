@@ -15,6 +15,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_FEFunction.hpp"
+#include "utopia_IgnitionFEM.hpp"
 #include "utopia_MLSteadyState.hpp"
 #include "utopia_MembraneFem.hpp"
 
@@ -63,10 +64,6 @@ static void bratu_2d_rmtr(Input &in) {
                 AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
       time_stepper(space);
 
-  // MLSteadyState<FunctionSpace, MembraneFEM<FunctionSpace>,
-  //               AllZeroBCLeft<FunctionSpace>, AllZeroIG<FunctionSpace> >
-  //     time_stepper(space);
-
   time_stepper.read(in);
   time_stepper.run();
 
@@ -80,6 +77,82 @@ static void bratu_2d_rmtr(Input &in) {
 }
 
 UTOPIA_REGISTER_APP(bratu_2d_rmtr);
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // //
+static void membrane_2d_rmtr(Input &in) {
+  static const int Dim = 2;
+  static const int NVars = 1;
+
+  using Comm = utopia::PetscCommunicator;
+  using Mesh = utopia::PetscStructuredGrid<Dim>;
+  using Elem = utopia::PetscUniformQuad4;
+  using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+  Comm world;
+
+  MPITimeStatistics stats(world);
+  stats.start();
+
+  FunctionSpace space;
+  space.read(in);
+  stats.stop_and_collect("space-creation");
+
+  stats.start();
+
+  MLSteadyState<FunctionSpace, MembraneFEM<FunctionSpace>,
+                AllZeroBCLeft<FunctionSpace>, AllZeroIG<FunctionSpace> >
+      time_stepper(space);
+
+  time_stepper.read(in);
+  time_stepper.run();
+
+  stats.stop_collect_and_restart("end");
+
+  space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+  stats.stop_and_collect("output");
+  stats.describe(std::cout);
+}
+
+UTOPIA_REGISTER_APP(membrane_2d_rmtr);
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // //
+static void ignition_2d_rmtr(Input &in) {
+  static const int Dim = 2;
+  static const int NVars = 1;
+
+  using Comm = utopia::PetscCommunicator;
+  using Mesh = utopia::PetscStructuredGrid<Dim>;
+  using Elem = utopia::PetscUniformQuad4;
+  using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+  Comm world;
+
+  MPITimeStatistics stats(world);
+  stats.start();
+
+  FunctionSpace space;
+  space.read(in);
+  stats.stop_and_collect("space-creation");
+
+  stats.start();
+
+  MLSteadyState<FunctionSpace, IgnitionFem<FunctionSpace>,
+                AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
+      time_stepper(space);
+
+  time_stepper.read(in);
+  time_stepper.run();
+
+  stats.stop_collect_and_restart("end");
+
+  space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+  stats.stop_and_collect("output");
+  stats.describe(std::cout);
+}
+
+UTOPIA_REGISTER_APP(ignition_2d_rmtr);
 
 }  // namespace utopia
 
