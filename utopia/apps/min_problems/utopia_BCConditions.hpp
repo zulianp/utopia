@@ -69,7 +69,6 @@ class AllZeroBC : public BCSetup<FunctionSpace> {
   }
 };
 
-
 template <class FunctionSpace>
 class AllZeroBCLeft : public BCSetup<FunctionSpace> {
  public:
@@ -81,7 +80,7 @@ class AllZeroBCLeft : public BCSetup<FunctionSpace> {
   void read(Input &in) override { BCSetup<FunctionSpace>::read(in); }
 
   void emplace_BC() override {
-    static const int Dim = FunctionSpace::Dim;
+    // static const int Dim = FunctionSpace::Dim;
     // static const int NVars = FunctionSpace::NVars;
     static const int NVars = 1;
     using Point = typename FunctionSpace::Point;
@@ -95,8 +94,6 @@ class AllZeroBCLeft : public BCSetup<FunctionSpace> {
     }
   }
 };
-
-
 
 template <class FunctionSpace>
 class AllZeroIG : public InitialCondition<FunctionSpace> {
@@ -142,7 +139,6 @@ class AllZeroIG : public InitialCondition<FunctionSpace> {
 
     x *= 0.0;
   }
-
 };
 
 }  // namespace utopia

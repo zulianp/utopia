@@ -45,6 +45,8 @@ class IgnitionFem final
     // needed for ML setup
     space_.create_vector(this->_x_eq_values);
     space_.create_vector(this->_eq_constrains_flg);
+    space_.create_vector(x_exact_);
+    x_exact_.set(0.0);
 
     this->local_x_ = std::make_shared<Vector>();
     space_.create_local_vector(*this->local_x_);
@@ -88,8 +90,6 @@ class IgnitionFem final
       auto C_view = C.view_device();
       auto c_view = c_val.view_device();
       auto c_grad_view = c_grad.view_device();
-      auto c_shape_view = c_shape.view_device();
-
       auto differential_view = differential.view_device();
 
       Device::parallel_reduce(
@@ -107,7 +107,6 @@ class IgnitionFem final
 
             Scalar el_energy = 0.0;
             Scalar expc = 0.0;
-            auto c_shape_fun_el = c_shape_view.make(c_e);
 
             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
               el_energy += 0.5 * inner(c_grad_el[qp], c_grad_el[qp]) * dx(qp);
@@ -357,12 +356,57 @@ class IgnitionFem final
   }
 
   void init_constraints() {
-    // ToDO:: fix based on example
     Vector lb;
     space_.create_vector(lb);
-    lb.set(-1.0);
-    this->constraints_ =
-        make_lower_bound_constraints(std::make_shared<Vector>(lb));
+
+    using Point = typename FunctionSpace::Point;
+    using Dev = typename FunctionSpace::Device;
+    using Mesh = typename FunctionSpace::Mesh;
+    using Elem = typename FunctionSpace::Shape;
+    using ElemViewScalar =
+        typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+    static const int NNodes = Elem::NNodes;
+
+    auto C = this->space_;
+
+    auto sampler =
+        utopia::sampler(C, UTOPIA_LAMBDA(const Point &coords)->Scalar {
+
+          auto x = coords[0];
+          auto y = coords[1];
+
+          const auto help1 = (x - 7.0 / 16.0);
+          const auto help2 = (y - 7.0 / 16.0);
+
+          const auto term1 = -8.0 * help1 * help1;
+          const auto term2 = -8.0 * help2 * help2;
+
+          const auto result = term1 + term2 + 0.2;
+          return result;
+        });
+
+    {
+      auto C_view = C.view_device();
+      auto sampler_view = sampler.view_device();
+      auto x_view = this->space_.assembly_view_device(lb);
+
+      Dev::parallel_for(this->space_.element_range(),
+                        UTOPIA_LAMBDA(const SizeType &i) {
+                          ElemViewScalar e;
+                          C_view.elem(i, e);
+
+                          StaticVector<Scalar, NNodes> s;
+                          sampler_view.assemble(e, s);
+                          C_view.set_vector(e, s, x_view);
+                        });
+    }
+
+    Vector ub;
+    space_.create_vector(ub);
+    ub.set(0.5);
+
+    this->constraints_ = make_box_constaints(std::make_shared<Vector>(lb),
+                                             std::make_shared<Vector>(ub));
   }
 
  public:
@@ -380,13 +424,12 @@ class IgnitionFem final
 
   // not known...
   const Vector &exact_sol() const {
-    std::cout << "IgnitionFem:: exact Solution not know, terminate... \n";
-    Vector x;
-    return x;
+    std::cout << "IgnitionFem:: exact Solution not known, terminate... \n";
+    return x_exact_;
   }
 
   Scalar min_function_value() const {
-    std::cout << "IgnitionFem:: exact Solution not know, terminate... \n";
+    std::cout << "IgnitionFem:: min_function_value not known, terminate... \n";
     return 0;
   }
 
@@ -402,6 +445,7 @@ class IgnitionFem final
   FunctionSpace &space_;
 
   Vector rhs_;
+  Vector x_exact_;
 
   std::shared_ptr<Vector> local_x_;
 };

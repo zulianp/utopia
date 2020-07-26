@@ -20,8 +20,10 @@ namespace utopia {
 
 template <class FunctionSpace, int Dim = FunctionSpace::Dim>
 class MembraneFEM final
-    :   virtual public UnconstrainedExtendedTestFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>, 
-        virtual public ConstrainedExtendedTestFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> { 
+    : virtual public UnconstrainedExtendedTestFunction<
+          typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
+      virtual public ConstrainedExtendedTestFunction<
+          typename FunctionSpace::Matrix, typename FunctionSpace::Vector> {
  public:
   using Scalar = typename FunctionSpace::Scalar;
   using SizeType = typename FunctionSpace::SizeType;
@@ -39,22 +41,19 @@ class MembraneFEM final
   static const int C_NDofs = CSpace::NDofs;
   static const int NQuadPoints = Quadrature::NPoints;
 
+  void read(Input & /*in*/) override {}
 
-  void read(Input &in) override {
-
-
-  }
-
-  MembraneFEM(FunctionSpace &space) : coef1_(1.0), coef2_(1.0),  space_(space) {
+  MembraneFEM(FunctionSpace &space) : coef1_(1.0), coef2_(1.0), space_(space) {
     // needed for ML setup
     space_.create_vector(this->_x_eq_values);
     space_.create_vector(this->_eq_constrains_flg);
+    space_.create_vector(x_exact_);
+    x_exact_.set(0.0);
 
     this->local_x_ = std::make_shared<Vector>();
     space_.create_local_vector(*this->local_x_);
 
-    this->init_constraints(); 
-
+    this->init_constraints();
   }
 
   inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
@@ -62,9 +61,7 @@ class MembraneFEM final
     return true;
   }
 
-  inline bool update(const Vector & /*x*/) override {
-    return true;
-  }
+  inline bool update(const Vector & /*x*/) override { return true; }
 
   bool value(const Vector &x_const, Scalar &val) const override {
     UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::value");
@@ -90,8 +87,6 @@ class MembraneFEM final
       auto C_view = C.view_device();
       auto c_view = c_val.view_device();
       auto c_grad_view = c_grad.view_device();
-      auto c_shape_view = c_shape.view_device();
-
       auto differential_view = differential.view_device();
 
       Device::parallel_reduce(
@@ -108,12 +103,10 @@ class MembraneFEM final
             auto dx = differential_view.make(c_e);
 
             Scalar el_energy = 0.0;
-
-            auto c_shape_fun_el = c_shape_view.make(c_e);
-
             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-              el_energy += 0.5*inner(c_grad_el[qp], coef1_ * c_grad_el[qp]) * dx(qp);
-              el_energy += coef2_* c[qp] * dx(qp);
+              el_energy +=
+                  0.5 * inner(c_grad_el[qp], coef1_ * c_grad_el[qp]) * dx(qp);
+              el_energy += coef2_ * c[qp] * dx(qp);
             }
 
             assert(el_energy == el_energy);
@@ -123,7 +116,6 @@ class MembraneFEM final
     }
 
     val = x_const.comm().sum(val);
-
 
     UTOPIA_TRACE_REGION_END("MembraneFEM::value");
     return true;
@@ -169,35 +161,35 @@ class MembraneFEM final
 
       auto g_view = space_.assembly_view_device(g);
 
-      Device::parallel_for(
-          space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-            StaticVector<Scalar, C_NDofs> c_el_vec;
-            c_el_vec.set(0.0);
-            ////////////////////////////////////////////
+      Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(
+                                                       const SizeType &i) {
+        StaticVector<Scalar, C_NDofs> c_el_vec;
+        c_el_vec.set(0.0);
+        ////////////////////////////////////////////
 
-            CElem c_e;
-            C_view.elem(i, c_e);
-            StaticVector<Scalar, NQuadPoints> c;
-            c_view.get(c_e, c);
+        CElem c_e;
+        C_view.elem(i, c_e);
+        StaticVector<Scalar, NQuadPoints> c;
+        c_view.get(c_e, c);
 
-            auto c_grad_el = c_grad_view.make(c_e);
-            auto dx = differential_view.make(c_e);
-            auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-            auto c_shape_fun_el = c_shape_view.make(c_e);
+        auto c_grad_el = c_grad_view.make(c_e);
+        auto dx = differential_view.make(c_e);
+        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+        auto c_shape_fun_el = c_shape_view.make(c_e);
 
-            ////////////////////////////////////////////
-            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-              for (SizeType j = 0; j < C_NDofs; ++j) {
-                c_el_vec(j) +=
-                    inner(c_grad_el[qp], coef1_* c_grad_shape_el(j, qp)) * dx(qp);
+        ////////////////////////////////////////////
+        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+          for (SizeType j = 0; j < C_NDofs; ++j) {
+            c_el_vec(j) +=
+                inner(c_grad_el[qp], coef1_ * c_grad_shape_el(j, qp)) * dx(qp);
 
-                const Scalar shape_test = c_shape_fun_el(j, qp);
-                c_el_vec(j) += coef2_ * shape_test * dx(qp);
-              }
-            }
+            const Scalar shape_test = c_shape_fun_el(j, qp);
+            c_el_vec(j) += coef2_ * shape_test * dx(qp);
+          }
+        }
 
-            C_view.add_vector(c_e, c_el_vec, g_view);
-          });
+        C_view.add_vector(c_e, c_el_vec, g_view);
+      });
     }
 
     space_.apply_zero_constraints(g);
@@ -275,7 +267,8 @@ class MembraneFEM final
                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
 
                 for (SizeType j = l; j < C_NDofs; ++j) {
-                  Scalar val = inner(c_grad_shape_el(j, qp), coef1_ * c_grad_l) * dx(qp);
+                  Scalar val =
+                      inner(c_grad_shape_el(j, qp), coef1_ * c_grad_l) * dx(qp);
 
                   val = (l == j) ? (0.5 * val) : val;
                   el_mat(l, j) += val;
@@ -295,12 +288,10 @@ class MembraneFEM final
   }
 
  private:
-  void init_constraints(){
-
-    // ToDO:: fix based on example 
-    Vector lb; 
+  void init_constraints() {
+    // ToDO:: fix based on example
+    Vector lb;
     space_.create_vector(lb);
-    
 
     using Point = typename FunctionSpace::Point;
     using Dev = typename FunctionSpace::Device;
@@ -312,27 +303,25 @@ class MembraneFEM final
 
     auto C = this->space_;
 
-    auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &coords)->Scalar {
-      
-      auto x = coords[0]; 
-      auto y = coords[1]; 
+    auto sampler =
+        utopia::sampler(C, UTOPIA_LAMBDA(const Point &coords)->Scalar {
 
-      auto result = 0.0; 
+          auto x = coords[0];
+          auto y = coords[1];
 
-      if(x==1.0){
-        
-      auto c = ((y - 0.5) * (y - 0.5)) - 1.0 + (1.3 * 1.3);
-      auto b = 2.0 * 1.3;
-      result = (-b + device::sqrt(b * b - 4.0 * c)) / 2.0;
+          auto result = 0.0;
 
-    }
-    else
-    {
-      result = -9e9;
-    }
+          if (x == 1.0) {
+            auto c = ((y - 0.5) * (y - 0.5)) - 1.0 + (1.3 * 1.3);
+            auto b = 2.0 * 1.3;
+            result = (-b + device::sqrt(b * b - 4.0 * c)) / 2.0;
 
-      return result;
-    });
+          } else {
+            result = -9e9;
+          }
+
+          return result;
+        });
 
     {
       auto C_view = C.view_device();
@@ -350,14 +339,12 @@ class MembraneFEM final
                         });
     }
 
-
-    this->constraints_ = make_lower_bound_constraints(std::make_shared<Vector>(lb));
+    this->constraints_ =
+        make_lower_bound_constraints(std::make_shared<Vector>(lb));
   }
-
 
  public:
   Vector initial_guess() const override {
-
     Vector solution;
     space_.create_vector(solution);
     rename("X", solution);
@@ -371,22 +358,21 @@ class MembraneFEM final
 
   // not known...
   const Vector &exact_sol() const {
-    std::cout << "MembraneFEM:: exact Solution not know, terminate... \n";
-    Vector x;
-    return x;
+    std::cout << "MembraneFEM:: exact Solution not known, terminate... \n";
+    return x_exact_;
   }
 
   Scalar min_function_value() const {
-    std::cout << "MembraneFEM:: exact Solution not know, terminate... \n";
+    std::cout << "MembraneFEM:: min_function_value not known, terminate... \n";
     return 0;
   }
 
   virtual std::string name() const { return "MembraneFEM"; }
 
-  virtual SizeType dim() const { 
+  virtual SizeType dim() const {
     Vector help;
     space_.create_vector(help);
-    return size(help); 
+    return size(help);
   }
 
   virtual bool exact_sol_known() const { return false; }
@@ -394,13 +380,11 @@ class MembraneFEM final
   virtual bool parallel() const { return true; }
 
  private:
-  Scalar coef1_; 
-  Scalar coef2_; 
+  Scalar coef1_;
+  Scalar coef2_;
   FunctionSpace &space_;
+  Vector x_exact_;
   std::shared_ptr<Vector> local_x_;
-
-
-
 };
 
 }  // namespace utopia

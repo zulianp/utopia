@@ -27,7 +27,7 @@ class MLSteadyState final : public Configurable {
       : init_(false),
         n_levels_(2),
         n_coarse_sub_comm_(1),
-        log_output_path_("rmtr_log_file"),
+        log_output_path_("rmtr_log_file.csv"),
         output_path_("rmtr_out"),
         save_output_(true),
         mprgp_smoother_(false),
@@ -116,16 +116,19 @@ class MLSteadyState final : public Configurable {
     }
 
     // initial conddition needs to be setup only on the finest level
-    SizeType pf_comp = 0;
     IC_ = std::make_shared<ICType>(*spaces_.back());
 
     //////////////////////////////////////////////// init solver
     //////////////////////////////////////////////////////
 
     if (!rmtr_) {
-      rmtr_ = std::make_shared<RMTR_inf<
-          Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(
-          n_levels_);
+      rmtr_ = std::make_shared<
+          RMTR_inf<Matrix, Vector,
+                   //          TRGrattonBoxKornhuberTruncation<Matrix, Vector>,
+                   //          GALERKIN>>(
+                   // n_levels_);
+                   TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(n_levels_);
+      // TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>(n_levels_);
     }
 
     std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine =
@@ -138,8 +141,8 @@ class MLSteadyState final : public Configurable {
     // std::make_shared<SemismoothNewton<Matrix, Vector>>(
     //     std::make_shared<Factorization<Matrix, Vector>>());
 
-    rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-    // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+    // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+    rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
     rmtr_->set_coarse_tr_strategy(tr_strategy_coarse);
     rmtr_->set_fine_tr_strategy(tr_strategy_fine);
@@ -175,7 +178,7 @@ class MLSteadyState final : public Configurable {
     spaces_.back()->apply_constraints(solution);
   }
 
-  void write_to_file(FunctionSpace &space, const Vector &solution) {
+  void write_to_file(FunctionSpace & /*space*/, const Vector &solution) {
     if (save_output_) {
       spaces_.back()->write(this->output_path_ + ".vtr", solution);
       Utopia::instance().set("log_output_path", log_output_path_);
@@ -218,13 +221,13 @@ class MLSteadyState final : public Configurable {
 
     // solution = level_functions_.back()->initial_guess();
 
-    // // auto *fine_fun =
-    // //     dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(
-    // //         level_functions_.back().get());
-    // // auto box = fine_fun->box_constraints();
+    auto *fine_fun =
+        dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(
+            level_functions_.back().get());
+    auto box = fine_fun->box_constraints();
 
     // rmtr_->delta0(1.0);
-    // rmtr_->set_box_constraints(box);
+    rmtr_->set_box_constraints(box);
     rmtr_->solve(solution);
     auto sol_status = rmtr_->solution_status();
 
@@ -239,7 +242,7 @@ class MLSteadyState final : public Configurable {
     // solver.rtol(1e-9);
     // solver.solve(*level_functions_.back(), solution);
 
-    // auto subproblem = std::make_shared<MPGRP<Matrix, Vector> >();
+    // auto subproblem = std::make_shared<MPGRP<Matrix, Vector>>();
     // TrustRegionVariableBound<Matrix, Vector> solver(subproblem);
     // subproblem->atol(1e-14);
     // solver.verbose(true);
@@ -281,9 +284,12 @@ class MLSteadyState final : public Configurable {
   std::string output_path_;
 
   std::shared_ptr<
+      // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix,
+      // Vector>,
+      //          GALERKIN>>
       RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>
-      // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
-      // GALERKIN>>
+      // RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>,
+      //          GALERKIN>>
       rmtr_;
 
   bool save_output_;

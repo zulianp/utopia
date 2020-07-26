@@ -66,6 +66,8 @@ class BratuFem final
     // needed for ML setup
     space_.create_vector(this->_x_eq_values);
     space_.create_vector(this->_eq_constrains_flg);
+    space_.create_vector(this->x_exact_);
+    x_exact_.set(0.0);
 
     this->local_x_ = std::make_shared<Vector>();
     space_.create_local_vector(*this->local_x_);
@@ -109,8 +111,6 @@ class BratuFem final
       auto C_view = C.view_device();
       auto c_view = c_val.view_device();
       auto c_grad_view = c_grad.view_device();
-      auto c_shape_view = c_shape.view_device();
-
       auto differential_view = differential.view_device();
 
       Device::parallel_reduce(
@@ -127,9 +127,6 @@ class BratuFem final
             auto dx = differential_view.make(c_e);
 
             Scalar el_energy = 0.0;
-
-            auto c_shape_fun_el = c_shape_view.make(c_e);
-
             for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
               el_energy += 0.5 * inner(c_grad_el[qp], c_grad_el[qp]) * dx(qp);
 
@@ -406,13 +403,12 @@ class BratuFem final
 
   // not known...
   const Vector &exact_sol() const {
-    std::cout << "BratuFEM:: exact Solution not know, terminate... \n";
-    Vector x;
-    return x;
+    std::cout << "BratuFEM:: exact Solution not known, terminate... \n";
+    return x_exact_;
   }
 
   Scalar min_function_value() const {
-    std::cout << "BratuFEM:: exact Solution not know, terminate... \n";
+    std::cout << "BratuFEM:: min_function_value not known, terminate... \n";
     return 0;
   }
 
@@ -429,6 +425,7 @@ class BratuFem final
   Parameters params_;
 
   Vector rhs_;
+  Vector x_exact_;
 
   std::shared_ptr<Vector> local_x_;
 };
