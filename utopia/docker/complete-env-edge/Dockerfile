@@ -85,6 +85,7 @@ RUN env | grep PATH                                 >> setup.sh
 RUN echo 'apk add bash'                             >> setup.sh
 RUN echo 'apk add bash-completion'                  >> setup.sh
 RUN echo 'apk add bash-doc'                         >> setup.sh
+RUN echo 'apk add swig'								>> setup.sh
 
 RUN cat setup.sh
 RUN cat setup.sh                                    >> /root/.profile
