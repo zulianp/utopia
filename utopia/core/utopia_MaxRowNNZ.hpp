@@ -37,7 +37,7 @@ namespace utopia {
 
     template <class Derived>
     inline typename Traits<Derived>::SizeType max_row_nnz(const Tensor<Derived, 2> &mat) {
-        return MaxRowNNZ<Tensor<Derived, 2>>::apply(mat.derived());
+        return MaxRowNNZ<Derived>::apply(mat.derived());
     }
 
 }  // namespace utopia

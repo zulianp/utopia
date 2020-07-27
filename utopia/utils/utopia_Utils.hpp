@@ -12,6 +12,8 @@
 
 #include "utopia_CSV.hpp"
 #include "utopia_Chrono.hpp"
+
+#include "utopia_Describable.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Path.hpp"
 
@@ -39,8 +41,8 @@ namespace utopia {
 
     bool read(const std::string &path, std::string &str);
     bool write(const std::string &path, const std::string &str);
-    void disp(const std::string &str);
-    void disp(const char *str);
+    void disp(const std::string &str, std::ostream &os = std::cout);
+    void disp(const char *str, std::ostream &os = std::cout);
 
     inline void disp(const double value, std::ostream &os = std::cout) { os << value << "\n"; }
 
@@ -51,8 +53,8 @@ namespace utopia {
     inline void disp(const long long int value, std::ostream &os = std::cout) { os << value << "\n"; }
 
     template <typename T>
-    void disp(const T &val, const std::string &name) {
-        if (mpi_world_rank() == 0) std::cout << "---  " << name << "  --- \n";
+    void disp(const T &val, const std::string &name, std::ostream &os = std::cout) {
+        if (mpi_world_rank() == 0) os << "---  " << name << "  --- \n";
         return disp(val);
     }
 
@@ -124,15 +126,19 @@ namespace utopia {
         BG_DEFAULT = 49
     };
 
-    class ColorModifier {
+    class ColorModifier : public Describable {
         ColorCode code;
 
     public:
         void set_color_code(ColorCode new_code) { code = new_code; }
 
         ColorModifier(ColorCode pCode) : code(pCode) {}
+
+        void describe(std::ostream &os) const override { os << "\033[" << code << "m"; }
+
         friend std::ostream &operator<<(std::ostream &os, const ColorModifier &mod) {
-            return os << "\033[" << mod.code << "m";
+            mod.describe(os);
+            return os;
         }
     };
 

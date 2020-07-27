@@ -76,47 +76,48 @@ namespace utopia {
                 auto dx_view = differential_temp.view_device();
                 auto grad_view = grad_temp.view_device();
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    ElementVector coeff, el_vec;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        ElementVector coeff, el_vec;
+                        space_view.elem(i, e);
 
-                    coeff_view.get(e, coeff);
-                    el_vec.set(0.0);
+                        coeff_view.get(e, coeff);
+                        el_vec.set(0.0);
 
-                    auto grad = grad_view.make(e);
-                    auto dx = dx_view.make(e);
+                        auto grad = grad_view.make(e);
+                        auto dx = dx_view.make(e);
 
-                    const int n_qp = grad.n_points();
-                    const int n_fun = grad.n_functions();
+                        const int n_qp = grad.n_points();
+                        const int n_fun = grad.n_functions();
 
-                    // for(SizeType k = 0; k < n; ++k) {
-                    //     for(SizeType j = 0; j < grad.n_functions(); ++j) {
-                    //         for(SizeType l = 0; l < grad.n_functions(); ++l) {
-                    //             const auto g_test  = grad(j, k);
-                    //             const auto g_trial = grad(l, k);
-                    //             el_vec(j) += LKernel::apply(1.0, coeff(l), g_trial, g_test, dx(k));
-                    //         }
-                    //     }
-                    // }
+                        // for(SizeType k = 0; k < n; ++k) {
+                        //     for(SizeType j = 0; j < grad.n_functions(); ++j) {
+                        //         for(SizeType l = 0; l < grad.n_functions(); ++l) {
+                        //             const auto g_test  = grad(j, k);
+                        //             const auto g_trial = grad(l, k);
+                        //             el_vec(j) += LKernel::apply(1.0, coeff(l), g_trial, g_test, dx(k));
+                        //         }
+                        //     }
+                        // }
 
-                    for (int k = 0; k < n_qp; ++k) {
-                        for (int j = 0; j < n_fun; ++j) {
-                            const auto g_test = grad(j, k);
-                            el_vec(j) += LKernel::apply(1.0, g_test, g_test, dx(k)) * coeff(j);
+                        for (int k = 0; k < n_qp; ++k) {
+                            for (int j = 0; j < n_fun; ++j) {
+                                const auto g_test = grad(j, k);
+                                el_vec(j) += LKernel::apply(1.0, g_test, g_test, dx(k)) * coeff(j);
 
-                            for (int l = j + 1; l < n_fun; ++l) {
-                                const auto g_trial = grad(l, k);
-                                const Scalar v = LKernel::apply(1.0, g_trial, g_test, dx(k));
+                                for (int l = j + 1; l < n_fun; ++l) {
+                                    const auto g_trial = grad(l, k);
+                                    const Scalar v = LKernel::apply(1.0, g_trial, g_test, dx(k));
 
-                                el_vec(j) += v * coeff(l);
-                                el_vec(l) += v * coeff(j);
+                                    el_vec(j) += v * coeff(l);
+                                    el_vec(l) += v * coeff(j);
+                                }
                             }
                         }
-                    }
 
-                    space_view.add_vector(e, el_vec, y_view);
-                });
+                        space_view.add_vector(e, el_vec, y_view);
+                    });
             }
 
             space_->copy_at_constrained_dofs(x, y);
@@ -150,24 +151,25 @@ namespace utopia {
                 auto l_view = laplacian_.view_device();
                 auto coeff_view = x_coeff_->view_device();
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    ElementVector coeff;
+                        ElementVector coeff;
 
-                    coeff_view.get(e, coeff);
+                        coeff_view.get(e, coeff);
 
-                    ElementMatrix el_mat;
-                    el_mat.set(0.0);
+                        ElementMatrix el_mat;
+                        el_mat.set(0.0);
 
-                    l_view.assemble(i, e, el_mat);
+                        l_view.assemble(i, e, el_mat);
 
-                    ElementVector el_vec;
-                    el_vec = el_mat * coeff;
+                        ElementVector el_vec;
+                        el_vec = el_mat * coeff;
 
-                    space_view.add_vector(e, el_vec, g_view);
-                });
+                        space_view.add_vector(e, el_vec, g_view);
+                    });
             }
 
             if (!empty(rhs_)) {
@@ -178,7 +180,7 @@ namespace utopia {
 
             c.stop();
             if (x.comm().rank() == 0) {
-                std::cout << "PoissonFE::gradient(...): " << c << std::endl;
+                utopia::out() << "PoissonFE::gradient(...): " << c << std::endl;
             }
             return true;
         }
@@ -199,23 +201,24 @@ namespace utopia {
                 auto H_view = space_->assembly_view_device(H);
                 auto l_view = laplacian_.view_device();
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    ElementMatrix el_mat;
-                    el_mat.set(0.0);
-                    l_view.assemble(i, e, el_mat);
+                        ElementMatrix el_mat;
+                        el_mat.set(0.0);
+                        l_view.assemble(i, e, el_mat);
 
-                    space_view.add_matrix(e, el_mat, H_view);
-                });
+                        space_view.add_matrix(e, el_mat, H_view);
+                    });
             }
 
             space_->apply_constraints(H);
 
             c.stop();
             if (x.comm().rank() == 0) {
-                std::cout << "PoissonFE::hessian(...): " << c << std::endl;
+                utopia::out() << "PoissonFE::hessian(...): " << c << std::endl;
             }
             return true;
         }
@@ -238,16 +241,17 @@ namespace utopia {
                 auto space_view = space_->view_device();
                 auto rhs_view = space_->assembly_view_device(rhs_);
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    ElementVector el_vec;
-                    el_vec.set(0.0);
+                        ElementVector el_vec;
+                        el_vec.set(0.0);
 
-                    proj_view.assemble(i, e, el_vec);
-                    space_view.add_vector(e, el_vec, rhs_view);
-                });
+                        proj_view.assemble(i, e, el_vec);
+                        space_view.add_vector(e, el_vec, rhs_view);
+                    });
             }
 
             space_->apply_constraints(rhs_);

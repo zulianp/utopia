@@ -9,16 +9,16 @@ extern "C" {
 
 #include "utopia_c_solve.h"
 
-void UtopiaPrintVersion() { std::cout << UTOPIA_VERSION << std::endl; }
+void UtopiaPrintVersion() { utopia::out() << UTOPIA_VERSION << std::endl; }
 
 void UtopiaInitialize(int argc, char *argv[]) {
     using namespace utopia;
-    std::cout << "UtopiaInitialize" << std::endl;
+    utopia::out() << "UtopiaInitialize" << std::endl;
     Utopia::Init(argc, argv);
 }
 
 int UtopiaFinalize() {
-    std::cout << "UtopiaFinalize" << std::endl;
+    utopia::out() << "UtopiaFinalize" << std::endl;
 
     using namespace utopia;
     return Utopia::Finalize();
@@ -30,7 +30,7 @@ void USolverCreate(USolver *solver, USolverType type, UPreconditionerType prec, 
     UTOPIA_UNUSED(package);
 
     using namespace utopia;
-    std::cout << "USolverCreate: (USolverType=" << type << ")" << std::endl;
+    utopia::out() << "USolverCreate: (USolverType=" << type << ")" << std::endl;
     *solver = new USolverImpl;
 
     static const std::string ksp = "ksp";
@@ -50,7 +50,7 @@ void USolverPrintInfo(USolver solver) {
     auto ksp = dynamic_cast<KSPSolver<PetscMatrix, PetscVector> *>(solver_ptr);
 
     if (ksp) {
-        std::cout << "KSP" << std::endl;
+        utopia::out() << "KSP" << std::endl;
         ksp->describe(std::cout);
     } else {
         auto fact = dynamic_cast<Factorization<PetscMatrix, PetscVector> *>(solver_ptr);
@@ -60,7 +60,7 @@ void USolverPrintInfo(USolver solver) {
 
 void USolverDestroy(USolver *solver) {
     using namespace utopia;
-    std::cout << "USolverDestroy" << std::endl;
+    utopia::out() << "USolverDestroy" << std::endl;
 
     auto solver_ptr = reinterpret_cast<LinearSolver<PetscMatrix, PetscVector> *>((*solver)->ptr);
     delete solver_ptr;
@@ -75,6 +75,6 @@ void USolverSolve(USolver solver, UMat A, UVec b, UVec x) {
     UTOPIA_UNUSED(b);
     UTOPIA_UNUSED(x);
 
-    std::cout << "USolverSolve" << std::endl;
+    utopia::out() << "USolverSolve" << std::endl;
 }
 }

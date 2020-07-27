@@ -226,7 +226,7 @@ namespace utopia {
             //  // write("H.m", H);
 
             //  c.stop();
-            //  if(x.comm().rank() == 0) { std::cout << "PoissonFE::hessian(...): " << c << std::endl; }
+            //  if(x.comm().rank() == 0) { utopia::out() <<"PoissonFE::hessian(...): " << c << std::endl; }
             // return true;
         }
 
@@ -255,46 +255,47 @@ namespace utopia {
                 auto H_view = space_->assembly_view_device(H);
                 auto permeability_view = p_val.view_device();
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    StaticVector<Scalar, NQPoints> permeability;
-                    ElementMatrix el_mat;
-                    space_view.elem(i, e);
-                    permeability_view.get(e, permeability);
-                    el_mat.set(0.0);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        StaticVector<Scalar, NQPoints> permeability;
+                        ElementMatrix el_mat;
+                        space_view.elem(i, e);
+                        permeability_view.get(e, permeability);
+                        el_mat.set(0.0);
 
-                    auto grad = grad_view.make(e);
-                    auto dx = dx_view.make(e);
+                        auto grad = grad_view.make(e);
+                        auto dx = dx_view.make(e);
 
-                    const int n_qp = grad.n_points();
-                    const int n_fun = grad.n_functions();
+                        const int n_qp = grad.n_points();
+                        const int n_fun = grad.n_functions();
 
-                    for (int k = 0; k < n_qp; ++k) {
-                        auto ck = permeability(k);
+                        for (int k = 0; k < n_qp; ++k) {
+                            auto ck = permeability(k);
 
-                        for (int j = 0; j < n_fun; ++j) {
-                            const auto g_test = grad(j, k);
-                            el_mat(j, j) += LKernel::apply(ck, g_test, g_test, dx(k));
+                            for (int j = 0; j < n_fun; ++j) {
+                                const auto g_test = grad(j, k);
+                                el_mat(j, j) += LKernel::apply(ck, g_test, g_test, dx(k));
 
-                            for (int l = j + 1; l < n_fun; ++l) {
-                                const auto g_trial = grad(l, k);
-                                const Scalar v = LKernel::apply(ck, g_trial, g_test, dx(k));
+                                for (int l = j + 1; l < n_fun; ++l) {
+                                    const auto g_trial = grad(l, k);
+                                    const Scalar v = LKernel::apply(ck, g_trial, g_test, dx(k));
 
-                                el_mat(j, l) += v;
-                                el_mat(l, j) += v;
+                                    el_mat(j, l) += v;
+                                    el_mat(l, j) += v;
+                                }
                             }
                         }
-                    }
 
-                    space_view.add_matrix(e, el_mat, H_view);
-                });
+                        space_view.add_matrix(e, el_mat, H_view);
+                    });
             }
 
             space_->apply_constraints(H);
 
             c.stop();
             if (x.comm().rank() == 0) {
-                std::cout << "PoissonFE::hessian(...): " << c << std::endl;
+                utopia::out() << "PoissonFE::hessian(...): " << c << std::endl;
             }
             return true;
         }
@@ -394,7 +395,7 @@ namespace utopia {
         //                        UTOPIA_DEVICE_ASSERT(e.contains(p, 1e-8));
         //                        e.inverse_transform(p, p_quad);
 
-        //                        // std::cout << p[0] << " " << p[1] << std::endl;
+        //                        // utopia::out() <<p[0] << " " << p[1] << std::endl;
 
         //                        for(SizeType j = 0; j < n_fun; ++j) {
         //                             e.grad(j, p_quad, g_test);
@@ -425,7 +426,7 @@ namespace utopia {
         //     // write("H.m", H);
 
         //     c.stop();
-        //     if(x.comm().rank() == 0) { std::cout << "PoissonFE::hessian(...): " << c << std::endl; }
+        //     if(x.comm().rank() == 0) { utopia::out() <<"PoissonFE::hessian(...): " << c << std::endl; }
         //     return true;
         // }
 
@@ -661,78 +662,79 @@ namespace utopia {
 
                 // auto points_view = points_temp.view_device();
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    Point p, v, p_quad, isect_1, isect_2;
-                    StaticVector<Scalar, 1> p_fracture;
-                    // StaticVector<Scalar, NQPoints> permeability;
-                    ElementVector p_el_vec, m_el_vec;
-                    ElementMatrix mass;
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        Point p, v, p_quad, isect_1, isect_2;
+                        StaticVector<Scalar, 1> p_fracture;
+                        // StaticVector<Scalar, NQPoints> permeability;
+                        ElementVector p_el_vec, m_el_vec;
+                        ElementMatrix mass;
 
-                    p_el_vec.set(0.0);
-                    m_el_vec.set(0.0);
+                        p_el_vec.set(0.0);
+                        m_el_vec.set(0.0);
 
-                    space_view.elem(i, e);
+                        space_view.elem(i, e);
 
-                    auto fun = fun_view.make(e);
-                    // auto dx = dx_view.make(e);
+                        auto fun = fun_view.make(e);
+                        // auto dx = dx_view.make(e);
 
-                    mass.set(0.0);
-                    mass_mat_view.assemble(e, mass);
+                        mass.set(0.0);
+                        mass_mat_view.assemble(e, mass);
 
-                    for (int i = 0; i < Elem::NFunctions; ++i) {
-                        for (int j = 0; j < Elem::NFunctions; ++j) {
-                            m_el_vec(i) += mass(i, j);
+                        for (int i = 0; i < Elem::NFunctions; ++i) {
+                            for (int j = 0; j < Elem::NFunctions; ++j) {
+                                m_el_vec(i) += mass(i, j);
+                            }
                         }
-                    }
 
-                    // const auto n_qp = fun.n_points();
-                    const int n_fun = fun.n_functions();
+                        // const auto n_qp = fun.n_points();
+                        const int n_fun = fun.n_functions();
 
-                    bool intersected = false;
+                        bool intersected = false;
 
-                    const SizeType n_fracs = network_.n_fractures();
-                    for (SizeType f = 0; f < n_fracs; ++f) {
-                        const auto &fracture = network_.line_fracture(f);
+                        const SizeType n_fracs = network_.n_fractures();
+                        for (SizeType f = 0; f < n_fracs; ++f) {
+                            const auto &fracture = network_.line_fracture(f);
 
-                        if (e.univar_elem().intersect_line(fracture.node(0), fracture.node(1), isect_1, isect_2)) {
-                            intersected = true;
-                            UTOPIA_DEVICE_ASSERT(fracture.contains(isect_1));
-                            UTOPIA_DEVICE_ASSERT(fracture.contains(isect_2));
+                            if (e.univar_elem().intersect_line(fracture.node(0), fracture.node(1), isect_1, isect_2)) {
+                                intersected = true;
+                                UTOPIA_DEVICE_ASSERT(fracture.contains(isect_1));
+                                UTOPIA_DEVICE_ASSERT(fracture.contains(isect_2));
 
-                            v = isect_2 - isect_1;
-                            const Scalar len_isect = norm2(v);
+                                v = isect_2 - isect_1;
+                                const Scalar len_isect = norm2(v);
 
-                            const int nqw = q_weights.size();
-                            for (int k = 0; k < nqw; ++k) {
-                                Scalar w = q_weights[k] * len_isect;
-                                p = isect_1 + q_points[k](0) * v;
-                                fracture.inverse_transform(p, p_fracture);
-                                e.inverse_transform(p, p_quad);
+                                const int nqw = q_weights.size();
+                                for (int k = 0; k < nqw; ++k) {
+                                    Scalar w = q_weights[k] * len_isect;
+                                    p = isect_1 + q_points[k](0) * v;
+                                    fracture.inverse_transform(p, p_fracture);
+                                    e.inverse_transform(p, p_quad);
 
-                                for (int j = 0; j < n_fun; ++j) {
-                                    for (int l = 0; l < fracture.n_functions(); ++l) {
-                                        const Scalar mm = e.fun(j, p_quad) * fracture.fun(l, p_fracture);
-                                        p_el_vec(j) += fracture.permeability * fracture.aperture * mm * w;
-                                        // m_el_vec(j) += mm * w;
+                                    for (int j = 0; j < n_fun; ++j) {
+                                        for (int l = 0; l < fracture.n_functions(); ++l) {
+                                            const Scalar mm = e.fun(j, p_quad) * fracture.fun(l, p_fracture);
+                                            p_el_vec(j) += fracture.permeability * fracture.aperture * mm * w;
+                                            // m_el_vec(j) += mm * w;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    if (intersected) {
-                        space_view.add_vector(e, p_el_vec, p_view);
-                    }
+                        if (intersected) {
+                            space_view.add_vector(e, p_el_vec, p_view);
+                        }
 
-                    space_view.add_vector(e, m_el_vec, m_view);
-                });
+                        space_view.add_vector(e, m_el_vec, m_view);
+                    });
             }
 
             const Scalar mean_permability = sum(*permeability_field_);
             const Scalar vol = sum(*mass_vector_);
-            std::cout << "mean_permability: " << mean_permability << std::endl;
-            std::cout << "vol: " << vol << std::endl;
+            utopia::out() << "mean_permability: " << mean_permability << std::endl;
+            utopia::out() << "vol: " << vol << std::endl;
 
             e_pseudo_inv(*mass_vector_, *mass_vector_, 1e-12);
             (*permeability_field_) = e_mul((*permeability_field_), (*mass_vector_));
@@ -858,13 +860,13 @@ namespace utopia {
         //     Scalar spacing        = space_->mesh().min_spacing();
 
         //     if(rescale_with_spacing_ && (spacing > frac_aperture)) {
-        //         std::cout << "RESCALING" << std::endl;
+        //         utopia::out() <<"RESCALING" << std::endl;
         //         Scalar spacing2 = std::sqrt(frac_aperture/spacing);
         //         frac_aperture /= spacing2;
         //         frac_perm *= spacing2;
         //     }
 
-        //     std::cout << spacing << std::endl;
+        //     utopia::out() <<spacing << std::endl;
 
         //     Point p1, p2, u, n;
 
@@ -966,7 +968,7 @@ namespace utopia {
         //     }
 
         //     const Scalar avg_perm = sum(*permeability_field_);
-        //     std::cout << "avg_perm: " << avg_perm << std::endl;
+        //     utopia::out() <<"avg_perm: " << avg_perm << std::endl;
         //     (*permeability_field_) = e_mul((*permeability_field_) , 1./(*mass_vector_));
         // }
 

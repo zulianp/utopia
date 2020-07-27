@@ -21,7 +21,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
 
@@ -401,7 +401,7 @@ namespace utopia {
             const bool verbose = true;
 
             if (verbose) {
-                std::cout << "Rastrigin:" << std::endl;
+                utopia::out() << "Rastrigin:" << std::endl;
             }
 
             Rastrigin<GlobalMatrix, GlobalVector> fun1;
@@ -409,13 +409,13 @@ namespace utopia {
 
             if (mpi_world_size() == 1) {
                 // FIXME seems to fail for this function
-                // if(verbose) { std::cout << "Rosenbrock01:" << std::endl; }
+                // if(verbose) { utopia::out() <<"Rosenbrock01:" << std::endl; }
 
                 // Rosenbrock01<GlobalMatrix, GlobalVector> fun2;
                 // aux_convex_hull(2, fun2, convex_hull_n_gradients);
 
                 if (verbose) {
-                    std::cout << "Woods14:" << std::endl;
+                    utopia::out() << "Woods14:" << std::endl;
                 }
 
                 Woods14<GlobalMatrix, GlobalVector> fun3;

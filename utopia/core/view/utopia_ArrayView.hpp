@@ -65,8 +65,8 @@ namespace utopia {
             size_ = size;
         }
 
-        UTOPIA_FUNCTION ArrayView &operator=(const ArrayView &other) = default;
-        UTOPIA_FUNCTION ArrayView(const ArrayView &other) = default;
+        ArrayView &operator=(const ArrayView &other) = default;
+        ArrayView(const ArrayView &other) = default;
 
     private:
         T *data_;

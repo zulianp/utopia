@@ -34,7 +34,7 @@ namespace utopia {
     public:
         void print_backend_info() const override {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << Traits<Tensor>::backend_info().get_name() << std::endl;
+                utopia::out() << "\nBackend: " << Traits<Tensor>::backend_info().get_name() << std::endl;
             }
         }
 
@@ -51,7 +51,7 @@ namespace utopia {
             const bool print_info = Utopia::instance().verbose() && mpi_world_rank() == 0;
 
             if (print_info) {
-                std::cout << "--> [comm size = " << comm_size << "]" << std::endl;
+                utopia::out() << "--> [comm size = " << comm_size << "]" << std::endl;
             }
 
             // 1) we run on comm
@@ -66,7 +66,7 @@ namespace utopia {
                     Comm sub_comm = comm.split(comm.rank() / p);
 
                     if (print_info) {
-                        std::cout << "--> [sub comm(0) size: = " << sub_comm.size() << "]" << std::endl;
+                        utopia::out() << "--> [sub comm(0) size: = " << sub_comm.size() << "]" << std::endl;
                     }
 
                     test.set_comm(sub_comm);

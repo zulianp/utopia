@@ -32,7 +32,7 @@ namespace utopia {
         inline static NonLinearSolverPtr solver(const SolverType &tag, LinearSolverPtr &linear_solver) {
             auto it = instance().nl_solvers_.find(tag);
             if (it == instance().nl_solvers_.end()) {
-                std::cout << "LinearSolver not available, solving with Newton.  \n";
+                utopia::out() << "LinearSolver not available, solving with Newton.  \n";
                 return std::make_shared<Newton<Matrix, Vector>>(linear_solver);
             } else {
                 auto ptr = it->second->make();

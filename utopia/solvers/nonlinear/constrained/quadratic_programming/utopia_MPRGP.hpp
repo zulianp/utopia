@@ -112,7 +112,7 @@ namespace utopia {
             assert(lb);
             assert(ub);
 
-            // std::cout << x.comm().size() << " " << rhs.comm().size() << " " << lb->comm().size() << " "
+            // utopia::out() <<x.comm().size() << " " << rhs.comm().size() << " " << lb->comm().size() << " "
             //           << ub->comm().size() << std::endl;
 
             this->project(*lb, *ub, x);
@@ -211,15 +211,16 @@ namespace utopia {
                 auto d_g = const_local_view_device(g);
                 auto d_fi = local_view_device(fi);
 
-                parallel_for(local_range_device(fi), UTOPIA_LAMBDA(const SizeType i) {
-                    // read all
-                    const Scalar li = d_lb.get(i);
-                    const Scalar ui = d_ub.get(i);
-                    const Scalar xi = d_x.get(i);
-                    const Scalar gi = d_g.get(i);
+                parallel_for(
+                    local_range_device(fi), UTOPIA_LAMBDA(const SizeType i) {
+                        // read all
+                        const Scalar li = d_lb.get(i);
+                        const Scalar ui = d_ub.get(i);
+                        const Scalar xi = d_x.get(i);
+                        const Scalar gi = d_g.get(i);
 
-                    d_fi.set(i, (li < xi && xi < ui) ? gi : Scalar(0.0));
-                });
+                        d_fi.set(i, (li < xi && xi < ui) ? gi : Scalar(0.0));
+                    });
             }
 
             // {
@@ -265,17 +266,18 @@ namespace utopia {
                 auto h1 = local_view_device(help_f1);
                 auto h2 = local_view_device(help_f2);
 
-                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
-                    // read all for quantities
-                    const Scalar li = d_lb.get(i);
-                    const Scalar ui = d_ub.get(i);
-                    const Scalar xi = d_x.get(i);
-                    const Scalar pi = d_p.get(i);
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType i) {
+                        // read all for quantities
+                        const Scalar li = d_lb.get(i);
+                        const Scalar ui = d_ub.get(i);
+                        const Scalar xi = d_x.get(i);
+                        const Scalar pi = d_p.get(i);
 
-                    // write both helpers
-                    h1.set(i, (pi > 0) ? ((xi - li) / pi) : Scalar(1e15));
-                    h2.set(i, (pi < 0) ? ((xi - ui) / pi) : Scalar(1e15));
-                });
+                        // write both helpers
+                        h1.set(i, (pi > 0) ? ((xi - li) / pi) : Scalar(1e15));
+                        h2.set(i, (pi < 0) ? ((xi - ui) / pi) : Scalar(1e15));
+                    });
             }
 
             return multi_min(help_f1, help_f2);
@@ -333,18 +335,19 @@ namespace utopia {
                 auto d_g = const_local_view_device(g);
                 auto d_beta = local_view_device(beta);
 
-                parallel_for(local_range_device(beta), UTOPIA_LAMBDA(const SizeType i) {
-                    const Scalar li = d_lb.get(i);
-                    const Scalar ui = d_ub.get(i);
-                    const Scalar xi = d_x.get(i);
-                    const Scalar gi = d_g.get(i);
+                parallel_for(
+                    local_range_device(beta), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar li = d_lb.get(i);
+                        const Scalar ui = d_ub.get(i);
+                        const Scalar xi = d_x.get(i);
+                        const Scalar gi = d_g.get(i);
 
-                    const Scalar val = (device::abs(li - xi) < 1e-14)
-                                           ? device::min(0.0, gi)
-                                           : ((device::abs(ui - xi) < 1e-14) ? device::max(0.0, gi) : 0.0);
+                        const Scalar val = (device::abs(li - xi) < 1e-14)
+                                               ? device::min(0.0, gi)
+                                               : ((device::abs(ui - xi) < 1e-14) ? device::max(0.0, gi) : 0.0);
 
-                    d_beta.set(i, val);
-                });
+                        d_beta.set(i, val);
+                    });
             }
 
             // {
@@ -408,7 +411,7 @@ namespace utopia {
             }
 
             if (this->verbose())
-                std::cout << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
+                utopia::out() << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
 
             return lambda;
         }

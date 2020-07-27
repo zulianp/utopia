@@ -9,26 +9,27 @@ template <class Vector>
 static void run(const int n) {
     // using Scalar = typename Traits<Vector>::Scalar;
 
-    std::cout << "Each Utopia" << std::endl;
+    utopia::out() << "Each Utopia" << std::endl;
     Vector v;
 
     v.values(serial_layout(n), 1.);
-    std::cout << backend_info(v).get_name() << std::endl;
+    utopia::out() << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
 
     {
         auto v_view = local_view_device(v);
-        parallel_for(local_range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, 10.); });
+        parallel_for(
+            local_range_device(v), UTOPIA_LAMBDA(const SizeType &i) { v_view.set(i, 10.); });
     }
 
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 
 static void run_raw(const int n) {
-    std::cout << "Raw" << std::endl;
+    utopia::out() << "Raw" << std::endl;
     std::vector<double> v(n, 1.);
 
     Chrono c;
@@ -37,11 +38,11 @@ static void run_raw(const int n) {
         vi = 10.;
     }
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 
 static void run_array(const int n) {
-    std::cout << "Array" << std::endl;
+    utopia::out() << "Array" << std::endl;
     std::vector<double> v(n, 1.);
 
     auto a = &v[0];
@@ -54,11 +55,11 @@ static void run_array(const int n) {
     }
 
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 
 static void run_stl_each(const int n) {
-    std::cout << "ForEach" << std::endl;
+    utopia::out() << "ForEach" << std::endl;
     std::vector<double> v(n, 1.);
 
     Chrono c;
@@ -67,11 +68,11 @@ static void run_stl_each(const int n) {
     std::for_each(std::begin(v), std::end(v), [](double &value) { value = 10.; });
 
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 
 static void run_for(const int n) {
-    std::cout << "For" << std::endl;
+    utopia::out() << "For" << std::endl;
     std::vector<double> v(n, 1.);
 
     Chrono c;
@@ -80,16 +81,16 @@ static void run_for(const int n) {
     For<64>::apply(0, n, [&v](const std::size_t i) { v[i] = 10.; });
 
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 
 template <class Vector>
 static void run_access(const int n) {
-    std::cout << "Utopia Access" << std::endl;
+    utopia::out() << "Utopia Access" << std::endl;
     Vector v;
     v.values(serial_layout(n), 1.);
 
-    std::cout << backend_info(v).get_name() << std::endl;
+    utopia::out() << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
@@ -101,15 +102,15 @@ static void run_access(const int n) {
     }
 
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 
 #ifdef WITH_BLAS
 static void run_access_blas(const int n) {
-    std::cout << "Utopia Access Blas" << std::endl;
+    utopia::out() << "Utopia Access Blas" << std::endl;
     BlasVectord v;
     v.values(serial_layout(n), 1.0);
-    std::cout << backend_info(v).get_name() << std::endl;
+    utopia::out() << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
@@ -121,16 +122,16 @@ static void run_access_blas(const int n) {
     }
 
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 #endif  // WITH_BLAS
 
 #ifdef WITH_PETSC
 static void run_access_petsc(const int n) {
-    std::cout << "Utopia Access Petsc" << std::endl;
+    utopia::out() << "Utopia Access Petsc" << std::endl;
     PetscVector v;
     v.values(serial_layout(n), 1.0);
-    std::cout << backend_info(v).get_name() << std::endl;
+    utopia::out() << backend_info(v).get_name() << std::endl;
 
     Chrono c;
     c.start();
@@ -144,7 +145,7 @@ static void run_access_petsc(const int n) {
     }
 
     c.stop();
-    std::cout << c << std::endl;
+    utopia::out() << c << std::endl;
 }
 #endif  // WITH_PETSC
 

@@ -382,10 +382,10 @@ namespace utopia {
             this->time_step_counter_ = 0;
             while (this->time_ < this->final_time_) {
                 if (mpi_world_rank() == 0) {
-                    std::cout << "###################################################################### \n";
-                    std::cout << "Time-step: " << this->time_step_counter_ << "  time:  " << this->time_
-                              << "  dt:  " << this->dt_ << " \n";
-                    std::cout << "###################################################################### \n";
+                    utopia::out() << "###################################################################### \n";
+                    utopia::out() << "Time-step: " << this->time_step_counter_ << "  time:  " << this->time_
+                                  << "  dt:  " << this->dt_ << " \n";
+                    utopia::out() << "###################################################################### \n";
                 }
 
                 prepare_for_solve();

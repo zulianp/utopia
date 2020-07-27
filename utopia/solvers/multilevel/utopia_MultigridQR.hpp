@@ -200,7 +200,7 @@ namespace utopia {
                     ok = standard_cycle(l);
                     assert(ok);
                 } else {
-                    std::cout << "ERROR::UTOPIA_MG<< unknown MG type... \n";
+                    utopia::out() << "ERROR::UTOPIA_MG<< unknown MG type... \n";
                 }
 
 #ifdef CHECK_NUM_PRECISION_mode

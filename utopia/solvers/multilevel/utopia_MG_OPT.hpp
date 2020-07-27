@@ -44,7 +44,7 @@ namespace utopia {
 
         std::string name() override { return "MG_OPT"; }
 
-        void init_memory() override { std::cout << "-------- to be done \n"; }
+        void init_memory() override { utopia::out() << "-------- to be done \n"; }
 
         void read(Input &in) override {
             NonlinearMultiLevelBase<Matrix, Vector>::read(in);

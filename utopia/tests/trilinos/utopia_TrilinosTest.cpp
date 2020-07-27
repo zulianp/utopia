@@ -17,6 +17,8 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
+#include <Kokkos_DualView.hpp>
+
 // trilinos
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_Utils.hpp"
@@ -277,7 +279,7 @@ namespace utopia {
 
             double val = norm1(Y * v);
             double tolerance = 30. * std::numeric_limits<double>::epsilon();
-            // std::cout << "val " << val <<std::endl;
+            // utopia::out() <<"val " << val <<std::endl;
             utopia_test_assert(approxeq(val, 0., tolerance));
 
             TpetraMatrixd Id;
@@ -383,9 +385,9 @@ namespace utopia {
             utopia_test_assert(s_t.get(0) == s.get(1));
 
             // disp(A);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
             // disp(At);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
 
             TpetraMatrixd id;
             id.identity(layout(comm_, rows, cols, Traits::determine(), Traits::determine()), 1.0);
@@ -404,11 +406,11 @@ namespace utopia {
             double norm_expected = size(v2).get(0) * 2.;
 
             // disp(id);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
             // disp(id_t);
-            // std::cout << "-----------------------" << std::endl;
+            // utopia::out() <<"-----------------------" << std::endl;
 
-            // std::cout << norm_expected << " == " << norm_actual << std::endl;
+            // utopia::out() <<norm_expected << " == " << norm_actual << std::endl;
             utopia_test_assert(approxeq(norm_expected, norm_actual));
         }
 
@@ -717,7 +719,21 @@ namespace utopia {
             }
 
             Scalar val = 0.0;
-            m.read([&](const SizeType &, const SizeType &, const Scalar &v) { val += v; });
+
+            // FIXME try to come up with utopia front end types for similar operations
+            using DualViewType = Kokkos::DualView<Scalar *, TpetraVectord::ExecutionSpace>;
+
+            DualViewType acc("acc", 1);
+            auto d_acc = acc.view_device();
+
+            m.read(UTOPIA_LAMBDA(const SizeType &, const SizeType &, const Scalar &v) {
+                device::atomic_add(&d_acc(0), v);
+            });
+
+            acc.modify<TpetraVectord::ExecutionSpace>();
+            // acc.synch();
+
+            val = acc.view_host()(0);
 
             comm_.synched_print(val, std::cout);
 
@@ -885,11 +901,11 @@ namespace utopia {
                 ok = multigrid.apply(rhs, x);
                 utopia_test_assert(ok);
             } catch (const std::exception &ex) {
-                std::cout << ex.what() << std::endl;
+                utopia::out() << ex.what() << std::endl;
                 utopia_test_assert(false);
             }
 
-            std::cout << std::flush;
+            utopia::out() << std::flush;
 
             write("A.mm", multigrid.level(0).A());
 
@@ -1361,7 +1377,7 @@ namespace utopia {
 
 #endif  // HAVE_BELOS_TPETRA
 
-#ifdef HAVE_AMESOS2_KOKKOS
+#ifdef WITH_TRILINOS_AMESOS2
 
         void trilinos_amesos2() {
             std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml";
@@ -1412,7 +1428,7 @@ namespace utopia {
 
             each_read(P, [](const SizeType i, const SizeType j, const double value) {
                 if (j != SizeType(value)) {
-                    std::cout << i << " " << j << " " << value << std::endl;
+                    utopia::out() << i << " " << j << " " << value << std::endl;
                 }
 
                 utopia_test_assert(j == SizeType(value));
@@ -1583,13 +1599,13 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
 
-#ifdef HAVE_BELOS_TPETRA
+#ifdef WITH_TRILINOS_BELOS
             UTOPIA_RUN_TEST(trilinos_belos);
-#endif  // HAVE_BELOS_TPETRA
+#endif  // WITH_TRILINOS_BELOS
 
-            //#ifdef HAVE_AMESOS2_TPETRA
+#ifdef WITH_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);
-            //#endif //HAVE_AMESOS2_TPETRA
+#endif  // WITH_TRILINOS_AMESOS2
 
 #ifdef WITH_PETSC
             UTOPIA_RUN_TEST(trilinos_transform);

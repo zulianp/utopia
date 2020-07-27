@@ -11,7 +11,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     void run_all_benchmarks(const std::string &backend_name) {
         if (mpi_world_rank() == 0) {
-            std::cout << "\n> " << backend_name << std::endl;
+            utopia::out() << "\n> " << backend_name << std::endl;
         }
 
         int verbosity_level = 1;
@@ -47,7 +47,7 @@ namespace utopia {
     void run_benchmarks() {
         mpi_world_barrier();
         if (mpi_world_rank() == 0) {
-            std::cout << "[Begin benchmark]" << std::endl;
+            utopia::out() << "[Begin benchmark]" << std::endl;
         }
 
         // Parallel benchmarks
@@ -68,7 +68,7 @@ namespace utopia {
 
         mpi_world_barrier();
         if (mpi_world_rank() == 0) {
-            std::cout << "[End benchmark]" << std::endl;
+            utopia::out() << "[End benchmark]" << std::endl;
         }
     }
 }  // namespace utopia

@@ -90,7 +90,7 @@ namespace utopia {
 
         Scalar min_function_value() const override {
             // depends on the solution to which we converged to
-            std::cout << "Poisson1D:: min_function_value :: wrong.... \n";
+            utopia::out() << "Poisson1D:: min_function_value :: wrong.... \n";
             return -1.012;
         }
 
@@ -156,38 +156,41 @@ namespace utopia {
 
             {
                 auto rhs_view = view_device(rhs_);
-                parallel_for(range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        rhs_view.set(i, xi * device::cos(xi));
-                    } else if (i == n_ - 1) {
-                        rhs_view.set(i, xi * device::cos(xi));
-                    } else {
-                        // rhs_view.set(i,  (2.0* device::sin(xi)) + (xi*device::cos(xi)));
-                        rhs_view.set(i, h_ * (2.0 * device::sin(xi)) + (xi * device::cos(xi)));
-                    }
-                });
+                parallel_for(
+                    range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            rhs_view.set(i, xi * device::cos(xi));
+                        } else if (i == n_ - 1) {
+                            rhs_view.set(i, xi * device::cos(xi));
+                        } else {
+                            // rhs_view.set(i,  (2.0* device::sin(xi)) + (xi*device::cos(xi)));
+                            rhs_view.set(i, h_ * (2.0 * device::sin(xi)) + (xi * device::cos(xi)));
+                        }
+                    });
 
                 auto exact_sol_view = view_device(exact_sol_);
-                parallel_for(range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    // return xi * device::cos(xi);
-                    exact_sol_view.set(i, xi * device::cos(xi));
-                });
+                parallel_for(
+                    range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        // return xi * device::cos(xi);
+                        exact_sol_view.set(i, xi * device::cos(xi));
+                    });
 
                 auto x0_view = view_device(x0_);
-                parallel_for(range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        xi = xi * device::cos(xi);
-                    } else if (i == n_ - 1) {
-                        xi = xi * device::cos(xi);
-                    } else {
-                        xi = 0.0;
-                    }
+                parallel_for(
+                    range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            xi = xi * device::cos(xi);
+                        } else if (i == n_ - 1) {
+                            xi = xi * device::cos(xi);
+                        } else {
+                            xi = 0.0;
+                        }
 
-                    x0_view.set(i, xi);
-                });
+                        x0_view.set(i, xi);
+                    });
             }
 
             auto vec_layout = layout(rhs_);
@@ -225,34 +228,37 @@ namespace utopia {
 
             {
                 auto rhs_view = view_device(rhs_);
-                parallel_for(range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                    // Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        rhs_view.set(i, 0.0);
-                    } else if (i == n_ - 1) {
-                        rhs_view.set(i, 0.0);
-                    } else {
-                        rhs_view.set(i, h_ * 10.0);
-                    }
-                });
+                parallel_for(
+                    range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
+                        // Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            rhs_view.set(i, 0.0);
+                        } else if (i == n_ - 1) {
+                            rhs_view.set(i, 0.0);
+                        } else {
+                            rhs_view.set(i, h_ * 10.0);
+                        }
+                    });
 
                 auto exact_sol_view = view_device(exact_sol_);
-                parallel_for(range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    exact_sol_view.set(i, 5.0 * xi * (xi - 1.0));
-                });
+                parallel_for(
+                    range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        exact_sol_view.set(i, 5.0 * xi * (xi - 1.0));
+                    });
 
                 auto x0_view = view_device(x0_);
-                parallel_for(range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        x0_view.set(i, 5.0 * xi * (xi - 1.0));
-                    } else if (i == n_ - 1) {
-                        x0_view.set(i, 5.0 * xi * (xi - 1.0));
-                    } else {
-                        x0_view.set(i, 0.0);
-                    }
-                });
+                parallel_for(
+                    range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            x0_view.set(i, 5.0 * xi * (xi - 1.0));
+                        } else if (i == n_ - 1) {
+                            x0_view.set(i, 5.0 * xi * (xi - 1.0));
+                        } else {
+                            x0_view.set(i, 0.0);
+                        }
+                    });
             }
 
             Vector bc_markers(layout(rhs_), 0.0);
@@ -276,10 +282,11 @@ namespace utopia {
             {
                 auto upper_bound_view = view_device(upper_bound);
 
-                parallel_for(range_device(upper_bound), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    upper_bound_view.set(i, 0.5 + ((xi - 0.5) * (xi - 0.5)));
-                });
+                parallel_for(
+                    range_device(upper_bound), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        upper_bound_view.set(i, 0.5 + ((xi - 0.5) * (xi - 0.5)));
+                    });
             }
 
             this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound));
@@ -296,37 +303,40 @@ namespace utopia {
 
             {
                 auto rhs_view = view_device(rhs_);
-                parallel_for(range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        rhs_view.set(i, 0.0);
-                    } else if (i == n_ - 1) {
-                        rhs_view.set(i, 0.0);
-                    } else {
-                        rhs_view.set(i,
-                                     h_ * (9.0 * pi_ * pi_ * std::cos(3.0 * pi_ * xi)) +
-                                         (16.0 * pi_ * pi_ * std::sin(4.0 * pi_ * xi)));
-                    }
-                });
+                parallel_for(
+                    range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            rhs_view.set(i, 0.0);
+                        } else if (i == n_ - 1) {
+                            rhs_view.set(i, 0.0);
+                        } else {
+                            rhs_view.set(i,
+                                         h_ * (9.0 * pi_ * pi_ * std::cos(3.0 * pi_ * xi)) +
+                                             (16.0 * pi_ * pi_ * std::sin(4.0 * pi_ * xi)));
+                        }
+                    });
 
                 auto exact_sol_view = view_device(exact_sol_);
-                parallel_for(range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    // return xi * device::cos(xi);
-                    return exact_sol_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
-                });
+                parallel_for(
+                    range_device(exact_sol_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        // return xi * device::cos(xi);
+                        return exact_sol_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
+                    });
 
                 auto x0_view = view_device(x0_);
-                parallel_for(range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        x0_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
-                    } else if (i == n_ - 1) {
-                        x0_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
-                    } else {
-                        x0_view.set(i, 0.0);
-                    }
-                });
+                parallel_for(
+                    range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            x0_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
+                        } else if (i == n_ - 1) {
+                            x0_view.set(i, (device::sin(4.0 * pi_ * xi) + device::cos(xi * pi_ * 3.0)));
+                        } else {
+                            x0_view.set(i, 0.0);
+                        }
+                    });
             }
 
             Vector bc_markers(layout(rhs_), 0.0);
@@ -350,13 +360,14 @@ namespace utopia {
             Vector upper_bound(layout(rhs_), 0.0);
             {
                 auto upper_bound_view = view_device(upper_bound);
-                parallel_for(range_device(upper_bound), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    Scalar periods = 4.0;
-                    Scalar c = 2.0 * 3.14 * periods * (2.0 * xi - 1.0) / 2.0;
-                    // device::cos
-                    upper_bound_view.set(i, 0.5 + ((device::cos(c)) - 0.5) * ((device::cos(c)) - 0.5));
-                });
+                parallel_for(
+                    range_device(upper_bound), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        Scalar periods = 4.0;
+                        Scalar c = 2.0 * 3.14 * periods * (2.0 * xi - 1.0) / 2.0;
+                        // device::cos
+                        upper_bound_view.set(i, 0.5 + ((device::cos(c)) - 0.5) * ((device::cos(c)) - 0.5));
+                    });
             }
 
             this->constraints_ = make_upper_bound_constraints(std::make_shared<Vector>(upper_bound));
@@ -373,20 +384,21 @@ namespace utopia {
 
             {
                 auto rhs_view = view_device(rhs_);
-                parallel_for(range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
-                    // Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        rhs_view.set(i, 0.0);
-                    } else if (i == n_ - 1) {
-                        rhs_view.set(i, 0.0);
-                    } else {
-                        if (i < n_ / 2.0) {
-                            rhs_view.set(i, h_ * 50.0);
+                parallel_for(
+                    range_device(rhs_), UTOPIA_LAMBDA(const SizeType i) {
+                        // Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            rhs_view.set(i, 0.0);
+                        } else if (i == n_ - 1) {
+                            rhs_view.set(i, 0.0);
                         } else {
-                            rhs_view.set(i, h_ * -50.0);
+                            if (i < n_ / 2.0) {
+                                rhs_view.set(i, h_ * 50.0);
+                            } else {
+                                rhs_view.set(i, h_ * -50.0);
+                            }
                         }
-                    }
-                });
+                    });
 
                 // not know yet
                 exact_sol_.set(0.0);
