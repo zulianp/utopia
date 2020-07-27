@@ -8,7 +8,7 @@
     "x_max" : 1,
     "y_min" : 0,
     "y_max" : 1,
-    "n_levels": 6,
+    "n_levels": 7,
     "solver" : {
         "verbose" : true,
         "max-it" : 150,

@@ -58,7 +58,8 @@ class BoxKornhuberTruncation
 
   void init_level_impl(const SizeType &level, const Vector &x_finer_level,
                        const Vector &x_level, const Scalar & /*delta_fine*/) {
-    auto finer_level = level + 1;
+    const auto finer_level = level + 1;
+    const auto n_levels = help_loc_.size();
 
     if (auto *mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector> *>(
             this->transfer_[level].get())) {
@@ -98,7 +99,8 @@ class BoxKornhuberTruncation
 
               // test if node active =>  truncated index, do not take into
               // account
-              if (device::abs(val_cons_fine_lb) < 1e-14) {
+              if (device::abs(val_cons_fine_lb) < 1e-14 &&
+                  finer_level == n_levels - 1) {
                 val_cons_fine_lb = -9e9;
               }
 
@@ -109,7 +111,8 @@ class BoxKornhuberTruncation
 
               // test if node active =>  truncated index, do not take into
               // account
-              if (device::abs(val_cons_fine_ub) < 1e-14) {
+              if (device::abs(val_cons_fine_ub) < 1e-14 &&
+                  finer_level == n_levels - 1) {
                 val_cons_fine_ub = 9e9;
               }
 
