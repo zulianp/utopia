@@ -53,10 +53,3 @@ fig.tight_layout()
 fig2.tight_layout()
 
 plt.show()
-
-# # ------------------------------
-
-
-
-
-
