@@ -12,7 +12,7 @@
     "solver" : {
         "verbose" : true,
         "max-it" : 150,
-        "atol": 1e-8, 
+        "atol": 1e-9, 
         "max_coarse_it": 2,
         "max_sucessful_coarse_it": 1,
         "pre_smoothing_steps" : 2,
@@ -25,7 +25,7 @@
         "max_QP_coarse_it": 1000,
         "linear-solver" : {
             "verbose" : false,
-            "atol": 1e-9,
+            "atol": 1e-12,
             "max-it": 1000
         }
     }

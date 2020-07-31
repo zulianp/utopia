@@ -124,10 +124,9 @@ class MLSteadyState final : public Configurable {
     if (!rmtr_) {
       rmtr_ = std::make_shared<
           RMTR_inf<Matrix, Vector,
-                   //          TRGrattonBoxKornhuberTruncation<Matrix, Vector>,
-                   //          GALERKIN>>(
-                   // n_levels_);
-                   TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(n_levels_);
+                   TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>(
+          n_levels_);
+      // TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(n_levels_);
       // TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>(n_levels_);
     }
 
@@ -284,11 +283,11 @@ class MLSteadyState final : public Configurable {
   std::string output_path_;
 
   std::shared_ptr<
-      // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix,
+      RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>,
+               GALERKIN>>
+      // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
+      // GALERKIN>> RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix,
       // Vector>,
-      //          GALERKIN>>
-      RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>
-      // RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix, Vector>,
       //          GALERKIN>>
       rmtr_;
 

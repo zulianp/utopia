@@ -99,8 +99,7 @@ class BoxKornhuberTruncation
 
               // test if node active =>  truncated index, do not take into
               // account
-              if (device::abs(val_cons_fine_lb) < 1e-14 &&
-                  finer_level == n_levels - 1) {
+              if (device::abs(val_cons_fine_lb) < 1e-14) {
                 val_cons_fine_lb = -9e9;
               }
 
@@ -111,8 +110,7 @@ class BoxKornhuberTruncation
 
               // test if node active =>  truncated index, do not take into
               // account
-              if (device::abs(val_cons_fine_ub) < 1e-14 &&
-                  finer_level == n_levels - 1) {
+              if (device::abs(val_cons_fine_ub) < 1e-14) {
                 val_cons_fine_ub = 9e9;
               }
 

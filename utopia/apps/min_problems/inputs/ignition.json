@@ -9,7 +9,7 @@
     "x_max" : 1,
     "y_min" : 0,
     "y_max" : 1,
-    "n_levels": 4,
+    "n_levels": 6,
     "solver" : {
         "verbose" : true,
         "max-it" : 500,
@@ -22,7 +22,7 @@
         "Hpost_lagging": false,        
         "grad_smoothess_termination" : 1e-6,
         "max_sucessful_smoothing_it": 1,
-        "max_QP_smoothing_it": 1,
+        "max_QP_smoothing_it": 3,
         "max_QP_coarse_it": 1000,
         "linear-solver" : {
             "verbose" : false,
