@@ -1,15 +1,19 @@
 # InstallTrilinos.cmake
 
 if(NOT TRILINOS_FOUND)
-
     # git clone https://github.com/trilinos/Trilinos.git
     include(ExternalProject)
+
+    if(UTOPIA_DEPENDENCIES_DIR)
+        set(TRILINOS_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/Trilinos)
+    else()
+        set(TRILINOS_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/Trilinos)
+    endif()
 
     set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
     set(TRILINOS_URL https://github.com/trilinos/Trilinos.git)
     set(TRILINOS_SOURCE_DIR ${STAGE_DIR}/Trilinos)
     set(TRILINOS_BIN_DIR ${STAGE_DIR}/Trilinos/bin)
-    set(TRILINOS_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/Trilinos)
 
     if(NOT MPI_DIR)
         set(MPI_DIR $ENV{MPI_DIR})

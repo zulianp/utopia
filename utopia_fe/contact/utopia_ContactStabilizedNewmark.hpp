@@ -46,15 +46,15 @@ namespace utopia {
                 is_new_time_step_ = false;
             }
 
-            hessian = internal_mass_matrix_ + ((dt_ * dt_ * density_) / 4.) * stiffness_matrix_;
-            gradient =
-                ((dt_ * dt_ * density_) / 4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
+            hessian = internal_mass_matrix_ + ((dt_ * dt_ /** density_*/) / 4.) * stiffness_matrix_;
+            gradient = ((dt_ * dt_ /** density_*/) / 4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) -
+                       forcing_term_;
             return true;
         }
 
         bool stress(const Vector &x, Vector &result) override {
-            result =
-                ((dt_ * dt_ * density_) / 4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
+            result = ((dt_ * dt_ /* density_*/) / 4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) -
+                     forcing_term_;
             return true;
         }
 
@@ -66,7 +66,7 @@ namespace utopia {
             auto v = test(V);
 
             utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
-            // internal_mass_matrix_ *= density;
+            internal_mass_matrix_ *= density;
             initial_condition(internal_mass_matrix_, initial_velocity);
             density_ = density;
         }
@@ -125,12 +125,12 @@ namespace utopia {
 
         void update_forcing_term() {
             // if(this->external_force_fun()) {
-            // 	this->external_force_fun()->eval(t_, external_force_);
+            //  this->external_force_fun()->eval(t_, external_force_);
             // }
 
             // FIXME is density_ * external_force wrong?
             forcing_term_ = internal_mass_matrix_ * x_old_ +
-                            ((dt_ * dt_ * density_) / 4.) * (2. * external_force_ - internal_force_old_);
+                            ((dt_ * dt_ /* density_*/) / 4.) * (2. * external_force_ - internal_force_old_);
         }
 
         void next_step() override {
