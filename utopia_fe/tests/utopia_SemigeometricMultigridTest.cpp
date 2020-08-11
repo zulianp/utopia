@@ -102,7 +102,7 @@ namespace utopia {
         const double err = norm2(stiffness_mat * sol - rhs);
         utopia_test_assert(err < 1e-6);
 
-        write("elast_mg.pvtu", V[0], sol);
+        write("elast_mg.e", V[0], sol);
     }
 
     void run_semigeometric_multigrid_poisson(libMesh::Parallel::Communicator &comm) {
