@@ -125,27 +125,27 @@ namespace utopia {
                 auto residual_view = local_view_device(residual);
                 auto x_view = local_view_device(x);
 
-                parallel_reduce(r,
-                                UTOPIA_LAMBDA(const SizeType &i)->SizeType {
-                                    const bool prev_active_i = active_view.get(i);
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType {
+                        const bool prev_active_i = active_view.get(i);
 
-                                    const Scalar d_lb_i = d_lb_view.get(i);
-                                    const Scalar d_ub_i = d_ub_view.get(i);
-                                    const Scalar x_i = x_view.get(i);
+                        const Scalar d_lb_i = d_lb_view.get(i);
+                        const Scalar d_ub_i = d_ub_view.get(i);
+                        const Scalar x_i = x_view.get(i);
 
-                                    const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
-                                    const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
-                                    const bool active_i = active_lb || active_ub;
+                        const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
+                        const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
+                        const bool active_i = active_lb || active_ub;
 
-                                    const Scalar val =
-                                        active_lb ? (lb_view.get(i) - x_i)
-                                                  : (active_ub ? (ub_view.get(i) - x_i) : residual_view.get(i));
+                        const Scalar val = active_lb ? (lb_view.get(i) - x_i)
+                                                     : (active_ub ? (ub_view.get(i) - x_i) : residual_view.get(i));
 
-                                    residual_view.set(i, val);
-                                    active_view.set(i, active_i);
-                                    return prev_active_i != active_i;
-                                },
-                                changed);
+                        residual_view.set(i, val);
+                        active_view.set(i, active_i);
+                        return prev_active_i != active_i;
+                    },
+                    changed);
             }
 
             changed = b.comm().sum(changed);
@@ -154,6 +154,7 @@ namespace utopia {
             mat.same_nnz_pattern_copy(A);
             set_zero_rows(mat, active, 1.0);
 
+            correction.set(0.0);
             linear_solver_->solve(mat, residual, correction);
 
             x += correction;

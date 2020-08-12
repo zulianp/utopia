@@ -89,7 +89,9 @@ namespace utopia {
             // qp_solver_ = tao;
 
             qp_solver_ =
-                std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
+                // std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix,
+                // Vector>>());
+                std::make_shared<SemismoothNewton<Matrix, Vector>>(iterative_solver);
         }
 
         void read(Input &is) override {
