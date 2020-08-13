@@ -19,6 +19,8 @@
 #include "utopia_petsc_TaoSolver.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
+#include "utopia_SemismoothNewton.hpp"
+
 #include "utopia_libmesh.hpp"
 
 #include "libmesh/exodusII_io.h"
@@ -35,7 +37,8 @@ namespace utopia {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
-        typedef libMesh::Nemesis_IO Exporter;
+        // typedef libMesh::Nemesis_IO Exporter;
+        typedef libMesh::ExodusII_IO Exporter;
         // using ContactT = utopia::ContactAssembler;
         using ContactT = utopia::IContact;
         using ContactStressT = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, Matrix, Vector>;
@@ -80,10 +83,15 @@ namespace utopia {
 
             n_exports = 0;
 
-            auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
-            tao->tao_type("tron");
-            tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
-            qp_solver_ = tao;
+            // auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
+            // tao->tao_type("tron");
+            // tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
+            // qp_solver_ = tao;
+
+            qp_solver_ =
+                // std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix,
+                // Vector>>());
+                std::make_shared<SemismoothNewton<Matrix, Vector>>(iterative_solver);
         }
 
         void read(Input &is) override {
