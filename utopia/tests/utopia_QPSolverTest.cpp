@@ -28,8 +28,8 @@ class QPSolverTest {
 
   static void print_backend_info() {
     if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-      std::cout << "\nBackend: " << backend_info(Vector()).get_name()
-                << std::endl;
+      utopia::out() << "\nBackend: " << backend_info(Vector()).get_name()
+                    << std::endl;
     }
   }
 

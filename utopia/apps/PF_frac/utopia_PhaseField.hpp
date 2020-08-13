@@ -70,7 +70,7 @@ namespace utopia {
         PhaseFieldForBrittleFractures(FunctionSpace &space)
             : space_(space), use_dense_hessian_(false), check_derivatives_(false) {
             params_.length_scale = 2.0 * space.mesh().min_spacing();
-            std::cout << "params_.length_scale: " << params_.length_scale << "  \n";
+            utopia::out() << "params_.length_scale: " << params_.length_scale << "  \n";
             params_.fracture_toughness = 0.001;
 
             params_.mu = 80.0;
@@ -220,63 +220,64 @@ namespace utopia {
 
                 auto g_view = space_.assembly_view_device(g);
 
-                Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    StaticMatrix<Scalar, Dim, Dim> stress, strain_p;
-                    StaticVector<Scalar, U_NDofs> u_el_vec;
-                    StaticVector<Scalar, C_NDofs> c_el_vec;
+                Device::parallel_for(
+                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticMatrix<Scalar, Dim, Dim> stress, strain_p;
+                        StaticVector<Scalar, U_NDofs> u_el_vec;
+                        StaticVector<Scalar, C_NDofs> c_el_vec;
 
-                    u_el_vec.set(0.0);
-                    c_el_vec.set(0.0);
+                        u_el_vec.set(0.0);
+                        c_el_vec.set(0.0);
 
-                    ////////////////////////////////////////////
+                        ////////////////////////////////////////////
 
-                    UElem u_e;
-                    U_view.elem(i, u_e);
-                    auto el_strain = strain_view.make(u_e);
-                    auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto el_strain = strain_view.make(u_e);
+                        auto u_grad_shape_el = v_grad_shape_view.make(u_e);
 
-                    ////////////////////////////////////////////
+                        ////////////////////////////////////////////
 
-                    CElem c_e;
-                    C_view.elem(i, c_e);
-                    StaticVector<Scalar, NQuadPoints> c;
-                    c_view.get(c_e, c);
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
 
-                    auto c_grad_el = c_grad_view.make(c_e);
-                    auto dx = differential_view.make(c_e);
-                    auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-                    auto c_shape_fun_el = c_shape_view.make(c_e);
+                        auto c_grad_el = c_grad_view.make(c_e);
+                        auto dx = differential_view.make(c_e);
+                        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+                        auto c_shape_fun_el = c_shape_view.make(c_e);
 
-                    ////////////////////////////////////////////
-                    const int n_u_fun = u_grad_shape_el.n_functions();
-                    const int n_c_fun = c_grad_shape_el.n_functions();
+                        ////////////////////////////////////////////
+                        const int n_u_fun = u_grad_shape_el.n_functions();
+                        const int n_c_fun = c_grad_shape_el.n_functions();
 
-                    for (int qp = 0; qp < NQuadPoints; ++qp) {
-                        Scalar sum_eigs = sum(el_strain.values[qp]);
+                        for (int qp = 0; qp < NQuadPoints; ++qp) {
+                            Scalar sum_eigs = sum(el_strain.values[qp]);
 
-                        strain_view.split_positive(el_strain, qp, strain_p);
+                            strain_view.split_positive(el_strain, qp, strain_p);
 
-                        split_stress(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress);
+                            split_stress(params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress);
 
-                        for (int j = 0; j < n_u_fun; ++j) {
-                            auto grad_test = u_grad_shape_el(j, qp);
-                            u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
+                            for (int j = 0; j < n_u_fun; ++j) {
+                                auto grad_test = u_grad_shape_el(j, qp);
+                                u_el_vec(j) += inner(stress, 0.5 * (grad_test + transpose(grad_test))) * dx(qp);
+                            }
+
+                            const Scalar elast = grad_elastic_energy_wrt_c(params_, c[qp], sum_eigs, strain_p);
+
+                            for (int j = 0; j < n_c_fun; ++j) {
+                                const Scalar shape_test = c_shape_fun_el(j, qp);
+                                const Scalar frac = grad_fracture_energy_wrt_c(
+                                    params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
+
+                                c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
+                            }
                         }
 
-                        const Scalar elast = grad_elastic_energy_wrt_c(params_, c[qp], sum_eigs, strain_p);
-
-                        for (int j = 0; j < n_c_fun; ++j) {
-                            const Scalar shape_test = c_shape_fun_el(j, qp);
-                            const Scalar frac = grad_fracture_energy_wrt_c(
-                                params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
-
-                            c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
-                        }
-                    }
-
-                    U_view.add_vector(u_e, u_el_vec, g_view);
-                    C_view.add_vector(c_e, c_el_vec, g_view);
-                });
+                        U_view.add_vector(u_e, u_el_vec, g_view);
+                        C_view.add_vector(c_e, c_el_vec, g_view);
+                    });
             }
 
             // check before boundary conditions
@@ -350,93 +351,94 @@ namespace utopia {
 
                 auto H_view = space_.assembly_view_device(H);
 
-                Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
-                    StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
+                Device::parallel_for(
+                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
+                        StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
 
-                    MixedElem e;
-                    space_view.elem(i, e);
-                    el_mat.set(0.0);
+                        MixedElem e;
+                        space_view.elem(i, e);
+                        el_mat.set(0.0);
 
-                    ////////////////////////////////////////////
+                        ////////////////////////////////////////////
 
-                    UElem u_e;
-                    U_view.elem(i, u_e);
-                    auto el_strain = strain_view.make(u_e);
-                    auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto el_strain = strain_view.make(u_e);
+                        auto u_grad_shape_el = v_grad_shape_view.make(u_e);
 
-                    ////////////////////////////////////////////
+                        ////////////////////////////////////////////
 
-                    CElem c_e;
-                    C_view.elem(i, c_e);
-                    StaticVector<Scalar, NQuadPoints> c;
-                    c_view.get(c_e, c);
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
 
-                    auto dx = differential_view.make(c_e);
-                    auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-                    auto c_shape_fun_el = c_shape_view.make(c_e);
+                        auto dx = differential_view.make(c_e);
+                        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+                        auto c_shape_fun_el = c_shape_view.make(c_e);
 
-                    ////////////////////////////////////////////
-                    const int n_u_fun = u_grad_shape_el.n_functions();
-                    const int n_c_fun = c_grad_shape_el.n_functions();
+                        ////////////////////////////////////////////
+                        const int n_u_fun = u_grad_shape_el.n_functions();
+                        const int n_c_fun = c_grad_shape_el.n_functions();
 
-                    for (int qp = 0; qp < NQuadPoints; ++qp) {
-                        Scalar sum_eigs = sum(el_strain.values[qp]);
-                        strain_view.split(el_strain, qp, strain_n, strain_p);
+                        for (int qp = 0; qp < NQuadPoints; ++qp) {
+                            Scalar sum_eigs = sum(el_strain.values[qp]);
+                            strain_view.split(el_strain, qp, strain_n, strain_p);
 
-                        const Scalar eep = elastic_energy_positve(params_, sum_eigs, strain_p);
+                            const Scalar eep = elastic_energy_positve(params_, sum_eigs, strain_p);
 
-                        for (int l = 0; l < n_c_fun; ++l) {
-                            for (int j = 0; j < n_c_fun; ++j) {
-                                el_mat(l, j) += bilinear_cc(params_,
-                                                            c[qp],
-                                                            eep,
-                                                            c_shape_fun_el(j, qp),
-                                                            c_shape_fun_el(l, qp),
-                                                            c_grad_shape_el(j, qp),
-                                                            c_grad_shape_el(l, qp)) *
-                                                dx(qp);
+                            for (int l = 0; l < n_c_fun; ++l) {
+                                for (int j = 0; j < n_c_fun; ++j) {
+                                    el_mat(l, j) += bilinear_cc(params_,
+                                                                c[qp],
+                                                                eep,
+                                                                c_shape_fun_el(j, qp),
+                                                                c_shape_fun_el(l, qp),
+                                                                c_grad_shape_el(j, qp),
+                                                                c_grad_shape_el(l, qp)) *
+                                                    dx(qp);
+                                }
+                            }
+
+                            for (int l = 0; l < n_u_fun; ++l) {
+                                for (int j = 0; j < n_u_fun; ++j) {
+                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(params_,
+                                                                                    c[qp],
+                                                                                    el_strain.vectors[qp],
+                                                                                    el_strain.values[qp],
+                                                                                    p_stress_view.stress(j, qp),
+                                                                                    p_stress_view.C,
+                                                                                    u_grad_shape_el(j, qp),
+                                                                                    u_grad_shape_el(l, qp)) *
+                                                                        dx(qp);
+                                }
+                            }
+
+                            //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                            StaticMatrix<Scalar, Dim, Dim> stress_positive_mat;
+                            stress_positive(
+                                params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
+
+                            for (SizeType c_i = 0; c_i < n_c_fun; ++c_i) {
+                                for (SizeType u_i = 0; u_i < n_u_fun; ++u_i) {
+                                    const Scalar val = bilinear_uc(params_,
+                                                                   c[qp],
+                                                                   stress_positive_mat,
+                                                                   0.5 * (u_grad_shape_el(u_i, qp) +
+                                                                          transpose(u_grad_shape_el(u_i, qp))),
+                                                                   c_shape_fun_el(c_i, qp)) *
+                                                       dx(qp);
+
+                                    el_mat(c_i, C_NDofs + u_i) += val;
+                                    el_mat(C_NDofs + u_i, c_i) += val;
+                                }
                             }
                         }
 
-                        for (int l = 0; l < n_u_fun; ++l) {
-                            for (int j = 0; j < n_u_fun; ++j) {
-                                el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(params_,
-                                                                                c[qp],
-                                                                                el_strain.vectors[qp],
-                                                                                el_strain.values[qp],
-                                                                                p_stress_view.stress(j, qp),
-                                                                                p_stress_view.C,
-                                                                                u_grad_shape_el(j, qp),
-                                                                                u_grad_shape_el(l, qp)) *
-                                                                    dx(qp);
-                            }
-                        }
-
-                        //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                        StaticMatrix<Scalar, Dim, Dim> stress_positive_mat;
-                        stress_positive(
-                            params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
-
-                        for (SizeType c_i = 0; c_i < n_c_fun; ++c_i) {
-                            for (SizeType u_i = 0; u_i < n_u_fun; ++u_i) {
-                                const Scalar val =
-                                    bilinear_uc(params_,
-                                                c[qp],
-                                                stress_positive_mat,
-                                                0.5 * (u_grad_shape_el(u_i, qp) + transpose(u_grad_shape_el(u_i, qp))),
-                                                c_shape_fun_el(c_i, qp)) *
-                                    dx(qp);
-
-                                el_mat(c_i, C_NDofs + u_i) += val;
-                                el_mat(C_NDofs + u_i, c_i) += val;
-                            }
-                        }
-                    }
-
-                    space_view.add_matrix(e, el_mat, H_view);
-                });
+                        space_view.add_matrix(e, el_mat, H_view);
+                    });
             }
 
             // check before boundary conditions

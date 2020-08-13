@@ -15,12 +15,14 @@
 
 #include "utopia_Base.hpp"
 
+#include "utopia_Describable.hpp"
+
 namespace utopia {
-    class Chrono {
+    class Chrono : public Describable {
     public:
         void start();
         void stop();
-        void describe(std::ostream &os) const;
+        void describe(std::ostream &os) const override;
 
         inline double get_seconds() const { return realtime_duration_; }
 

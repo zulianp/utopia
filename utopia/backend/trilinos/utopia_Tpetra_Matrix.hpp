@@ -24,21 +24,21 @@
 #include <memory>
 
 namespace utopia {
-    // template<class NodeType>
-    class TpetraMatrix
-        : public DistributedSparseMatrix<TpetraScalar, TpetraSizeType>,
-          public SparseConstructible<TpetraScalar, TpetraSizeType>,
-          public Normed<TpetraScalar>,
-          public Transformable<TpetraScalar>,
-          // Static polymorphic types
-          // public DynamicTypeDistributedMatrix<TpetraScalar, TpetraSizeType, TpetraMatrix, TpetraVector>,
-          public BLAS1Tensor<TpetraMatrix>,
-          public BLAS2Matrix<TpetraMatrix, TpetraVector>,
-          public BLAS3Matrix<TpetraMatrix>,
-          public Comparable<TpetraMatrix>,
-          public Operator<TpetraVector>,
-          public Tensor<TpetraMatrix, 2>,
-          public Selectable<TpetraMatrix, 2> {
+
+    class TpetraMatrix :
+        // Dynamic polymorphic types
+        public DistributedSparseMatrix<TpetraScalar, TpetraSizeType>,
+        public Normed<TpetraScalar>,
+        public Transformable<TpetraScalar>,
+        // Static polymorphic types
+        public SparseConstructible<TpetraMatrix>,
+        public BLAS1Tensor<TpetraMatrix>,
+        public BLAS2Matrix<TpetraMatrix, TpetraVector>,
+        public BLAS3Matrix<TpetraMatrix>,
+        public Comparable<TpetraMatrix>,
+        public Operator<TpetraVector>,
+        public Tensor<TpetraMatrix, 2>,
+        public Selectable<TpetraMatrix, 2> {
     public:
         /////////////////////////////////////////////////////////////
         // typedef definitions
@@ -225,7 +225,9 @@ namespace utopia {
         // OVERRIDES for SparseConstructible
         /////////////////////////////////////////////////////////////
 
-        inline void sparse(const MatrixLayout &layout, const SizeType nnz_d_block, const SizeType nnz_o_block) {
+        inline void sparse(const MatrixLayout &layout,
+                           const SizeType &nnz_d_block,
+                           const SizeType &nnz_o_block) override {
             comm_ = layout.comm();
             crs_init(comm_.get(),
                      layout.local_size(0),
@@ -235,7 +237,7 @@ namespace utopia {
                      std::max(nnz_d_block, nnz_o_block));
         }
 
-        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
+        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override {
             comm_ = layout.comm();
             crs_identity(comm_.get(), layout.local_size(0), layout.local_size(1), layout.size(0), layout.size(1), diag);
         }

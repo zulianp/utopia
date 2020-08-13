@@ -1,6 +1,9 @@
 #ifndef UTOPIA_AMESOS2_SOLVERS_HPP
 #define UTOPIA_AMESOS2_SOLVERS_HPP
 
+#include "utopia_Base.hpp"
+#ifdef WITH_TRILINOS_AMESOS2
+
 #include "Amesos2_config.h"
 
 #ifdef HAVE_AMESOS2_KOKKOS
@@ -73,3 +76,4 @@ namespace utopia {
 
 #endif  // HAVE_AMESOS2_KOKKOS
 #endif  // UTOPIA_AMESOS2_SOLVERS_HPP
+#endif  // WITH_TRILINOS_AMESOS2

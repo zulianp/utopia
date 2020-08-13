@@ -29,29 +29,29 @@ namespace utopia {
         }
 
         void describe_all_resources() const {
-            std::cout << "platforms:\n";
+            utopia::out() << "platforms:\n";
 
             for (const auto &p : platforms_) {
-                std::cout << "----------------------------------------------\n";
-                std::cout << "[" << p.getInfo<CL_PLATFORM_NAME>() << "] devices: "
-                          << "\n";
+                utopia::out() << "----------------------------------------------\n";
+                utopia::out() << "[" << p.getInfo<CL_PLATFORM_NAME>() << "] devices: "
+                              << "\n";
 
                 std::vector<cl::Device> all_devices;
                 p.getDevices(CL_DEVICE_TYPE_ALL, &all_devices);
                 for (const auto &d : all_devices) {
-                    std::cout << "\t\t- " << d.getInfo<CL_DEVICE_VENDOR>() << " " << d.getInfo<CL_DEVICE_NAME>()
-                              << "\n";
+                    utopia::out() << "\t\t- " << d.getInfo<CL_DEVICE_VENDOR>() << " " << d.getInfo<CL_DEVICE_NAME>()
+                                  << "\n";
                 }
 
-                std::cout << "----------------------------------------------\n";
+                utopia::out() << "----------------------------------------------\n";
             }
         }
 
         void describe_current_setup() const {
-            std::cout << "Using platform: " << current_platform().getInfo<CL_PLATFORM_NAME>() << "\n";
-            std::cout << "  Using device: " << current_device().getInfo<CL_DEVICE_VENDOR>() << " ";
-            std::cout << current_device().getInfo<CL_DEVICE_NAME>() << " ";
-            std::cout << "(" << current_device().getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << " compute units)\n";
+            utopia::out() << "Using platform: " << current_platform().getInfo<CL_PLATFORM_NAME>() << "\n";
+            utopia::out() << "  Using device: " << current_device().getInfo<CL_DEVICE_VENDOR>() << " ";
+            utopia::out() << current_device().getInfo<CL_DEVICE_NAME>() << " ";
+            utopia::out() << "(" << current_device().getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << " compute units)\n";
         }
 
         void set_current_device(const long current_device) {
@@ -299,10 +299,10 @@ namespace utopia {
     inline void disp(Wrapper<CLVector<T>, 1> &w) {
         w.implementation().synch_read_buffer(CLContext::instance().current_queue());
         for (auto v : w.implementation().entries) {
-            std::cout << v << " ";
+            utopia::out() << v << " ";
         }
 
-        std::cout << std::endl;
+        utopia::out() << std::endl;
     }
 
     template <typename T>
@@ -312,13 +312,13 @@ namespace utopia {
         for (SizeType i = 0; i < m.rows; ++i) {
             const SizeType offset = i * m.cols;
             for (SizeType j = 0; j < m.cols; ++j) {
-                std::cout << w.implementation().entries[offset + j] << " ";
+                utopia::out() << w.implementation().entries[offset + j] << " ";
             }
 
-            std::cout << "\n";
+            utopia::out() << "\n";
         }
 
-        std::cout << std::endl;
+        utopia::out() << std::endl;
     }
 
     class CLStats {

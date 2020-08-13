@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <string>
-#include "test_problems/utopia_assemble_laplacian_1D.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
 #include "utopia_Chrono.hpp"

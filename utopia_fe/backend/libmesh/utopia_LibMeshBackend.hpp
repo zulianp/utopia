@@ -166,7 +166,7 @@ namespace utopia {
         // FIXME inefficient
         PetscVector temp;
         utopia::convert(lm_vec, temp);
-        utopia::backend_convert(temp, utopia_vec);
+        utopia::convert(temp, utopia_vec);
     }
 
     inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TpetraMatrixd &utopia_mat) {
@@ -177,7 +177,7 @@ namespace utopia {
         // FIXME inefficient
         PetscMatrix temp;
         utopia::convert(p_mat, temp);
-        backend_convert(temp, utopia_mat);
+        utopia::convert(temp, utopia_mat);
     }
 
 #endif  // WITH_TRILINOS

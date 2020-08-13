@@ -344,30 +344,30 @@ namespace utopia {
                     }
                 }
 
-                // std::cout << "-------------------------------------------" << std::endl;
-                // std::cout << "compiling program" << std::endl;
+                // utopia::out() <<"-------------------------------------------" << std::endl;
+                // utopia::out() <<"compiling program" << std::endl;
 
                 std::string flags = " -I" + utopia::Utopia::instance().get("opencl_templates_path") + "/../kernels/ ";
-                // std::cout << flags << std::endl;
+                // utopia::out() <<flags << std::endl;
 
                 compile_opencl_programs(sources, program_, flags);
                 initialized_ = true;
 
-                // std::cout << "-------------------------------------------" << std::endl;
+                // utopia::out() <<"-------------------------------------------" << std::endl;
 
                 // init kernels
                 for (auto k_ptr : kernels_) {
                     if (!k_ptr->is_callable()) {
                         k_ptr->make_callable(program_);
                     } else {
-                        // std::cout << "already callable" << std::endl;
+                        // utopia::out() <<"already callable" << std::endl;
                     }
                 }
             }
 
             template <class Tensor, int Order>
             void post_order_visit(const Wrapper<Tensor, Order> &expr) {
-                // std::cout << "Data" << std::endl;
+                // utopia::out() <<"Data" << std::endl;
             }
 
             template <class EvaluatedExpr>
@@ -388,7 +388,7 @@ namespace utopia {
 
             template <class Derived>
             void post_order_visit(const Expression<Derived> &expr) {
-                // std::cout << "expression" << std::endl;
+                // utopia::out() <<"expression" << std::endl;
             }
 
             template <class Ignore>

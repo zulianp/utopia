@@ -51,7 +51,7 @@ namespace utopia {
         slepc.get_real_eigenpair(0, large, eigenvector);
 
         const Scalar result = large / small;
-        // std::cout << "small: " << small << ", large: " << large << ", cond: " << result << std::endl;
+        // utopia::out() <<"small: " << small << ", large: " << large << ", cond: " << result << std::endl;
         return result;
     }
 }  // namespace utopia

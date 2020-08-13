@@ -230,7 +230,7 @@ namespace utopia {
             // space.set_dirichlet_conditions(dirichlet_bcs_);
             assert(i < NComponents);
 
-            // std::cout << i << " " << subspace_id_ << " " << mesh_->n_components() << std::endl;
+            // utopia::out() <<i << " " << subspace_id_ << " " << mesh_->n_components() << std::endl;
 
             assert(i + subspace_id_ < mesh_->n_components());
             return space;
@@ -284,24 +284,25 @@ namespace utopia {
                 auto space_view = view_device();
                 auto v_view = utopia::view_device(v);
 
-                Device::parallel_for(this->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    this->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    NodeIndex nodes;
-                    space_view.mesh().nodes(i, nodes);
-                    const SizeType n_nodes = nodes.size();
+                        NodeIndex nodes;
+                        space_view.mesh().nodes(i, nodes);
+                        const SizeType n_nodes = nodes.size();
 
-                    Point p;
-                    for (SizeType i = 0; i < n_nodes; ++i) {
-                        auto idx = nodes[i] * mesh_->n_components() + subspace_id_;
-                        e.node(i, p);
+                        Point p;
+                        for (SizeType i = 0; i < n_nodes; ++i) {
+                            auto idx = nodes[i] * mesh_->n_components() + subspace_id_;
+                            e.node(i, p);
 
-                        if (r.inside(idx)) {
-                            v_view.set(idx, f(p));
+                            if (r.inside(idx)) {
+                                v_view.set(idx, f(p));
+                            }
                         }
-                    }
-                });
+                    });
             }
         }
 

@@ -1,10 +1,13 @@
 #ifndef UTOPIA_KOKKOS_EVAL_REDUCE_HPP
 #define UTOPIA_KOKKOS_EVAL_REDUCE_HPP
 
+#include "utopia_Traits.hpp"
+#include "utopia_kokkos_Operations.hpp"
+
 #include <Kokkos_Core.hpp>
+
 #include <cassert>
 #include <iostream>
-#include "utopia_kokkos_Operations.hpp"
 
 namespace utopia {
     template <typename Data, typename KokkosOp, typename Scalar>

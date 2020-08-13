@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "utopia_Base.hpp"
+#include "utopia_IOStream.hpp"
 
 #include <petscsys.h>
 
@@ -11,7 +12,7 @@ namespace utopia {
     class PetscErrorHandler {
     public:
         static bool Check(PetscErrorCode err) {
-            if (err) std::cout << "PetscErrorCode=" << err << std::endl;
+            if (err) utopia::out() << "PetscErrorCode=" << err << std::endl;
             return true;
         }
     };

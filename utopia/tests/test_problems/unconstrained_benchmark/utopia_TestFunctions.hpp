@@ -34,7 +34,7 @@ namespace utopia {
 
         virtual void describe() const {
             if (mpi_world_rank() == 0) {
-                std::cout << name() << ",   Globalsize:";
+                utopia::out() << name() << ",   Globalsize:";
 
                 std::string numWithCommas = std::to_string(dim());
                 int insertPosition = numWithCommas.length() - 3;
@@ -43,8 +43,8 @@ namespace utopia {
                     insertPosition -= 3;
                 }
 
-                std::cout << numWithCommas << ",   parallel:  " << parallel() << ",   sol. known:" << exact_sol_known()
-                          << "  \n";
+                utopia::out() << numWithCommas << ",   parallel:  " << parallel()
+                              << ",   sol. known:" << exact_sol_known() << "  \n";
             }
         }
     };
@@ -122,13 +122,14 @@ namespace utopia {
                     auto d_x = const_local_view_device(x);
                     auto help_view = local_view_device(help_);
 
-                    parallel_for(local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar li = d_lb.get(i);
-                        Scalar ui = d_ub.get(i);
-                        Scalar xi = d_x.get(i);
+                    parallel_for(
+                        local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar li = d_lb.get(i);
+                            Scalar ui = d_ub.get(i);
+                            Scalar xi = d_x.get(i);
 
-                        help_view.set(i, (xi < li || xi > ui) ? 1.0 : 0.0);
-                    });
+                            help_view.set(i, (xi < li || xi > ui) ? 1.0 : 0.0);
+                        });
                 }
 
                 return (sum(help_) > 0.0) ? false : true;
@@ -141,12 +142,13 @@ namespace utopia {
 
                     auto help_view = local_view_device(help_);
 
-                    parallel_for(local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar ui = d_ub.get(i);
-                        Scalar xi = d_x.get(i);
+                    parallel_for(
+                        local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar ui = d_ub.get(i);
+                            Scalar xi = d_x.get(i);
 
-                        help_view.set(i, (xi > ui) ? 1.0 : 0.0);
-                    });
+                            help_view.set(i, (xi > ui) ? 1.0 : 0.0);
+                        });
                 }
 
                 return (sum(help_) > 0.0) ? false : true;
@@ -159,12 +161,13 @@ namespace utopia {
 
                     auto help_view = local_view_device(help_);
 
-                    parallel_for(local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar li = d_lb.get(i);
-                        Scalar xi = d_x.get(i);
+                    parallel_for(
+                        local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar li = d_lb.get(i);
+                            Scalar xi = d_x.get(i);
 
-                        help_view.set(i, (xi < li) ? 1.0 : 0.0);
-                    });
+                            help_view.set(i, (xi < li) ? 1.0 : 0.0);
+                        });
                 }
 
                 return (sum(help_) > 0.0) ? false : true;
@@ -230,13 +233,14 @@ namespace utopia {
 
                     auto help_view = local_view_device(help_);
 
-                    parallel_for(local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar li = d_lb.get(i);
-                        Scalar ui = d_ub.get(i);
-                        Scalar xi = d_x.get(i);
+                    parallel_for(
+                        local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar li = d_lb.get(i);
+                            Scalar ui = d_ub.get(i);
+                            Scalar xi = d_x.get(i);
 
-                        help_view.set(i, (xi < li || xi > ui) ? 1.0 : 0.0);
-                    });
+                            help_view.set(i, (xi < li || xi > ui) ? 1.0 : 0.0);
+                        });
                 }
 
                 return (sum(help_) > 0.0) ? false : true;
@@ -249,12 +253,13 @@ namespace utopia {
 
                     auto help_view = local_view_device(help_);
 
-                    parallel_for(local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar ui = d_ub.get(i);
-                        Scalar xi = d_x.get(i);
+                    parallel_for(
+                        local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar ui = d_ub.get(i);
+                            Scalar xi = d_x.get(i);
 
-                        help_view.set(i, (xi > ui) ? 1.0 : 0.0);
-                    });
+                            help_view.set(i, (xi > ui) ? 1.0 : 0.0);
+                        });
                 }
 
                 return (sum(help_) > 0.0) ? false : true;
@@ -267,12 +272,13 @@ namespace utopia {
 
                     auto help_view = local_view_device(help_);
 
-                    parallel_for(local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
-                        Scalar li = d_lb.get(i);
-                        Scalar xi = d_x.get(i);
+                    parallel_for(
+                        local_range_device(help_), UTOPIA_LAMBDA(const SizeType i) {
+                            Scalar li = d_lb.get(i);
+                            Scalar xi = d_x.get(i);
 
-                        help_view.set(i, (xi < li) ? 1.0 : 0.0);
-                    });
+                            help_view.set(i, (xi < li) ? 1.0 : 0.0);
+                        });
                 }
 
                 return (sum(help_) > 0.0) ? false : true;

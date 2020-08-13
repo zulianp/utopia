@@ -448,7 +448,7 @@ namespace utopia {
         m2.read([](const SizeType i, const SizeType j, const double value) {
             if (i + 1 == j) {
                 if (!approxeq(1, value)) {
-                    std::cout << i << ", " << j << " -> " << value << std::endl;
+                    utopia::out() << i << ", " << j << " -> " << value << std::endl;
                 }
                 utopia_test_assert(approxeq(1, value));
             } else {
@@ -565,12 +565,24 @@ namespace utopia {
 
         PetscMatrix mat;
         mat.sparse(layout(comm, PetscTraits::decide(), PetscTraits::decide(), 3, 3), 2, 2);
+
         {
+            auto r = row_range(mat);
+
             Write<PetscMatrix> w(mat);
-            mat.set(0, 0, 1);
-            mat.set(0, 1, 2);
-            mat.set(1, 1, 3);
-            mat.set(2, 2, 4);
+
+            if (r.inside(0)) {
+                mat.set(0, 0, 1);
+                mat.set(0, 1, 2);
+            }
+
+            if (r.inside(1)) {
+                mat.set(1, 1, 3);
+            }
+
+            if (r.inside(2)) {
+                mat.set(2, 2, 4);
+            }
         }
 
         PetscMatrix dmat;
@@ -608,12 +620,12 @@ namespace utopia {
 
         {
             Write<PetscMatrix> write(a);
-            a.set(0, 0, 1);
-            a.set(1, 1, 2);
-            a.set(2, 2, 3);
-            a.set(3, 3, 4);
-            a.set(1, 3, 4);
-            a.set(3, 1, 4);
+            a.c_set(0, 0, 1);
+            a.c_set(1, 1, 2);
+            a.c_set(2, 2, 3);
+            a.c_set(3, 3, 4);
+            a.c_set(1, 3, 4);
+            a.c_set(3, 1, 4);
         }
 
         a.read([](const SizeType i, const SizeType j, const PetscScalar value) {

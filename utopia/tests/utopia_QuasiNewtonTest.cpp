@@ -14,7 +14,7 @@ namespace utopia {
     public:
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
 
@@ -42,7 +42,7 @@ namespace utopia {
         void run_multilevel() {
             // UTOPIA_RUN_TEST(Quasi_RMTR_test);
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
-            std::cout << "Fix quasi-Newton tests... \n";
+            utopia::out() << "Fix quasi-Newton tests... \n";
         }
 
         void quasi_newton_test() {

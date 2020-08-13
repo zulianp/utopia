@@ -37,7 +37,7 @@ namespace utopia {
                 const SizeType local_index = index[i] - offset;
 
                 if (local_index >= n) {
-                    std::cout << local_index << " = " << index[i] << " - " << offset << std::endl;
+                    utopia::out() << local_index << " = " << index[i] << " - " << offset << std::endl;
                 }
 
                 assert(local_index < n);
@@ -126,7 +126,7 @@ namespace utopia {
             RCPMapType map;
             vec_ = Tpetra::MatrixMarket::Reader<CrsMatrixType>::readVectorFile(path, comm, map);
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             return false;
         }
 
@@ -143,7 +143,7 @@ namespace utopia {
         try {
             Tpetra::MatrixMarket::Writer<CrsMatrixType>::writeDenseFile(path, vec_, "vec", "");
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             return false;
         }
 

@@ -111,7 +111,7 @@ namespace utopia {
             for (double i : vec_tau) {
                 x = x0;
                 solver.tau_init(i);
-                std::cout << "---- Solve with tau: " << i << " \n \n";
+                utopia::out() << "---- Solve with tau: " << i << " \n \n";
                 solver.solve(fun, x);
             }
 

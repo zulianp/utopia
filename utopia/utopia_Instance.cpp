@@ -4,9 +4,12 @@
 #include "utopia_Base.hpp"
 #include "utopia_CiteUtopia.hpp"
 #include "utopia_Config.hpp"
+#include "utopia_InputParameters.hpp"
 #include "utopia_MPI.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_make_unique.hpp"
+
+#include "utopia_Reporter.hpp"
 
 #ifdef WITH_TRILINOS
 #include "utopia_trilinos_Library.hpp"
@@ -47,9 +50,9 @@ namespace utopia {
         instance().read_input(argc, argv);
 
         // if (instance().verbose() && mpi_world_rank() == 0) {
-        // std::cout << "Available libs:\n";
+        // utopia::out() << "Available libs:\n";
         // for (const auto &l : instance().libraries_) {
-        //     std::cout << "- " << l->name() << "\n";
+        //     utopia::out() << "- " << l->name() << "\n";
         // }
         // }
 
@@ -128,6 +131,10 @@ namespace utopia {
     }
 
     void Utopia::read_input(int argc, char *argv[]) {
+        InputParameters params;
+        params.init(argc, argv);
+        read(params);
+
         instance().set("citations", "false");
 
         for (int i = 1; i < argc; i++) {
@@ -145,6 +152,16 @@ namespace utopia {
                 instance().set("citations", "true");
             }
 
+            if (str == "-data_path") {
+                if (++i >= argc) break;
+
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "data_path: " << argv[i] << std::endl;
+                }
+
+                instance().set("data_path", argv[i]);
+            }
+
 #ifdef ENABLE_NO_ALLOC_REGIONS
 
             if (str == "-on_alloc_violation_abort") {
@@ -155,16 +172,6 @@ namespace utopia {
                 Allocations::instance().verbose(false);
             }
 
-            if (str == "-data_path") {
-                if (++i >= argc) break;
-
-                if (mpi_world_rank() == 0) {
-                    std::cout << "data_path: " << argv[i] << std::endl;
-                }
-
-                instance().set("data_path", argv[i]);
-            }
-
 #endif  // ENABLE_NO_ALLOC_REGIONS
 
 #ifdef UTOPIA_TRACE_ENABLED
@@ -172,7 +179,7 @@ namespace utopia {
                 if (i + 1 < argc) {
                     Tracer::instance().interceptor().expr(argv[i + 1]);
                     Tracer::instance().interceptor().interrupt_on_intercept(true);
-                    std::cout << "Added intercept: " << argv[i + 1] << std::endl;
+                    utopia::out() << "Added intercept: " << argv[i + 1] << std::endl;
                 }
 
                 i++;
@@ -185,9 +192,11 @@ namespace utopia {
         }
     }
 
-    void Utopia::read(Input &is) {
+    void Utopia::read(Input &in) {
+        Reporter::instance().read(in);
+
         for (auto &s : settings_) {
-            is.get(s.first, s.second);
+            in.get(s.first, s.second);
         }
     }
 

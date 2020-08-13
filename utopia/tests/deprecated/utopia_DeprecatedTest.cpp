@@ -1,3 +1,7 @@
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_DEPRECATED_API
+
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
 
@@ -20,7 +24,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
+                utopia::out() << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
             }
         }
 
@@ -85,7 +89,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
+                utopia::out() << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
             }
         }
 
@@ -141,3 +145,5 @@ namespace utopia {
 #pragma GCC diagnostic pop
 
 }  // namespace utopia
+
+#endif  // UTOPIA_DEPRECATED_API

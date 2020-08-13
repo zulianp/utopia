@@ -1,8 +1,1 @@
-list(APPEND MATERIALS_MODULES
-  .
-)
-
-set(LOCAL_HEADERS "")
-set(LOCAL_SOURCES "")
-find_project_files(CMAKE_CURRENT_SOURCE_DIR MATERIALS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-add_utopiafe_module(utopia_fe_materials utopia_fe_core utopia_fe_libmesh_backend utopia_fe_ui)
+utopiafe_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")

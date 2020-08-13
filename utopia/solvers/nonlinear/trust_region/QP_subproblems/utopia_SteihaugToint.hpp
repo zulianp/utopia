@@ -215,7 +215,7 @@ namespace utopia {
                 }
 
                 if (this->verbose() && mpi_world_rank() == 0) {
-                    std::cout << "termination due to p_norm being nans/infs... \n";
+                    utopia::out() << "termination due to p_norm being nans/infs... \n";
                 }
 
                 this->check_convergence(it, g_norm, 1, 1e-15);
@@ -242,7 +242,7 @@ namespace utopia {
                     }
 
                     if (this->verbose() && mpi_world_rank() == 0) {
-                        std::cout << "termination due to indefinite direction... \n";
+                        utopia::out() << "termination due to indefinite direction... \n";
                     }
 
                     this->check_convergence(it, g_norm, 1, 1e-15);
@@ -270,7 +270,7 @@ namespace utopia {
                     }
 
                     if (this->verbose() && mpi_world_rank() == 0) {
-                        std::cout << "termination due to correction exceeding TR radius... \n";
+                        utopia::out() << "termination due to correction exceeding TR radius... \n";
                     }
 
                     this->check_convergence(it, g_norm, 1, 1e-15);

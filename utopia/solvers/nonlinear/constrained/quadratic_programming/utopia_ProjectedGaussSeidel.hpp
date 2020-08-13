@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PROJECTED_GAUSS_SEIDEL_HPP
 #define UTOPIA_PROJECTED_GAUSS_SEIDEL_HPP
 
+#include "utopia_Algorithms.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_IterativeSolver.hpp"
@@ -345,7 +346,10 @@ namespace utopia {
 
             if (l1_) {
                 Write<Vector> w(d);
-                A.read([this](const SizeType &i, const SizeType &, const Scalar &value) { d.add(i, std::abs(value)); });
+                auto d_view = view_device(d);
+                A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &, const Scalar &value) {
+                    d_view.add(i, device::abs(value));
+                });
             }
 
             d_inv = 1. / d;
@@ -366,7 +370,7 @@ namespace utopia {
 
         inline void l1(const bool val) { l1_ = val; }
 
-    private:
+        NVCC_PRIVATE
         bool use_line_search_{false};
         bool use_symmetric_sweep_{true};
         bool l1_{false};

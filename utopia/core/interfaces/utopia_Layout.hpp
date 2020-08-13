@@ -177,10 +177,10 @@ namespace utopia {
 
         const Communicator &comm() const { return comm_; }
 
-        // template <typename... Args>
-        // Layout(Comm comm, Args &&... args) : comm_(std::move(comm)) {
-        //     init(std::forward<Args>(args)...);
-        // }
+        template <typename... Args>
+        Layout(const Communicator &comm, Args &&... args) : comm_(comm) {
+            init(std::forward<Args>(args)...);
+        }
 
         // Layout() {
         //     for (int i = 0; i < Order; ++i) {

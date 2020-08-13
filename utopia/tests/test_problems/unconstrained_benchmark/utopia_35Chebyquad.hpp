@@ -14,7 +14,9 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
-        Chebyquad35() {
+        Chebyquad35() { init(); }
+
+        void init() {
             auto v_layout = serial_layout(dim());
 
             x_exact_.zeros(v_layout);
@@ -24,8 +26,9 @@ namespace utopia {
             {
                 // Device side writing
                 auto x_view = view_device(x_init_);
-                parallel_for(range_device(x_init_),
-                             UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i + 1) / Scalar(n_global + 1)); });
+                parallel_for(
+                    range_device(x_init_),
+                    UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i + 1) / Scalar(n_global + 1)); });
 
                 // Host side writing
                 Write<Vector> w(x_exact_);
