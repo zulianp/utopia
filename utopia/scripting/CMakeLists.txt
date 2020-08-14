@@ -29,7 +29,7 @@ if(SWIG_FOUND)
             utopya
             TYPE SHARED
             LANGUAGE python
-            SOURCES utopia.i utopia_script.cpp)
+            SOURCES utopia.i utopia_script.cpp utopia_swig_Vector.cpp utopia_swig_Matrix.cpp utopia_swig_Communicator.cpp utopia_swig_Layout.cpp)
 
         swig_link_libraries(utopya ${PYTHON_LIBRARIES} utopia)
         target_include_directories(utopya PRIVATE ${PYTHON_INCLUDE_PATH})
