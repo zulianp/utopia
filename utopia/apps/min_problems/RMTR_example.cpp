@@ -132,6 +132,8 @@ static void ignition_2d_rmtr(Input &in) {
   MPITimeStatistics stats(world);
   stats.start();
 
+  // disp("-------- yes, here ----------- ")
+
   FunctionSpace space;
   space.read(in);
   stats.stop_and_collect("space-creation");
