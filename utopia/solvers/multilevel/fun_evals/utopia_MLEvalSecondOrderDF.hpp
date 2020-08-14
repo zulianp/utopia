@@ -14,11 +14,57 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
   using Scalar = typename Traits<Vector>::Scalar;
   using SizeType = typename Traits<Vector>::SizeType;
   using Layout = typename Traits<Vector>::Layout;
+  using Communicator = typename Traits<Vector>::Communicator;
 
   using HessianApprox = utopia::HessianApproximation<Vector>;
+  using HessianApproxPtr = std::shared_ptr<HessianApprox>;
+  using FunctionOperatorHA = typename HessianApprox::FunctionOperator;
+
   using Operator = utopia::Operator<Vector>;
 
  public:
+  struct HessianApproxPtrConsistency {
+   public:
+    HessianApproxPtrConsistency(const HessianApproxPtr &fine,
+                                const HessianApproxPtr &coarse)
+        : fine_(fine), coarse_(coarse) {}
+
+    HessianApproxPtrConsistency() {}
+
+    HessianApproxPtr fine_;
+    HessianApproxPtr coarse_;
+  };
+
+  class FunctionOperatorDFEval final : public Operator {
+   public:
+    FunctionOperatorDFEval(
+        const Size &size, const Size &local_size,
+        const std::shared_ptr<Communicator> &comm,
+        const std::function<void(const Vector &, Vector &)> operator_action)
+        : size_(size),
+          local_size_(local_size),
+          comm_(comm),
+          operator_action_(operator_action) {}
+
+    bool apply(const Vector &rhs, Vector &ret) const override {
+      operator_action_(rhs, ret);
+      return true;
+    }
+
+    inline Communicator &comm() override { return *comm_; }
+
+    inline const Communicator &comm() const override { return *comm_; }
+
+    inline Size size() const override { return size_; }
+
+    inline Size local_size() const override { return local_size_; }
+
+   private:
+    Size size_, local_size_;
+    std::shared_ptr<Communicator> comm_;
+    std::function<void(const Vector &, Vector &)> operator_action_;
+  };
+
   MultilevelDerivEval(const SizeType &nl_levels)
       : n_levels_(nl_levels), initialized_(false) {
     utopia::out() << "this class works only with the identity transfer \n";
@@ -32,8 +78,8 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
 
     if (level < n_levels_ - 1) {
       // help_[level] = H_diff[level] * s_global;
-      hessian_approxs_init_[level][0]->apply_H(s_global, help1_[level]);
-      hessian_approxs_init_[level][1]->apply_H(s_global, help2_[level]);
+      hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+      hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
       help1_[level] -= help2_[level];
 
@@ -60,8 +106,8 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     if (level < n_levels_ - 1) {
       // help_[level] = H_diff[level] * s_global;
 
-      hessian_approxs_init_[level][0]->apply_H(s_global, help1_[level]);
-      hessian_approxs_init_[level][1]->apply_H(s_global, help2_[level]);
+      hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+      hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
       help1_[level] -= help2_[level];
 
@@ -92,8 +138,8 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     if (level < n_levels_ - 1) {
       // help_[level] = H_diff[level] * s_global;
 
-      hessian_approxs_init_[level][0]->apply_H(s_global, help1_[level]);
-      hessian_approxs_init_[level][1]->apply_H(s_global, help2_[level]);
+      hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+      hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
       help1_[level] -= help2_[level];
 
@@ -120,38 +166,63 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     return true;
   }
 
-  std::shared_ptr<Operator> build_apply_H_diff() {
-    std::function<void(const SizeType &, const Vector &, Vector &)> my_func =
-        [this](const SizeType &level, const Vector &x, Vector &result) {
+  std::shared_ptr<FunctionOperatorDFEval> build_apply_H_diff(
+      const SizeType &level) {
+    std::function<void(const Vector &, Vector &)> my_func =
+        [this, level](const Vector &x, Vector &result) {
           // this->apply_H(x, result);
 
-          hessian_approxs_init_[level][0]->apply_H(x, help1_[level]);
-          hessian_approxs_init_[level][1]->apply_H(x, help2_[level]);
+          hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+          hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
           result = help1_[level] - help2_[level];
         };
 
-    return std::make_shared<Operator>(*this, my_func);
+    auto comm = std::shared_ptr<Communicator>(help1_[level].comm().clone());
+
+    Size size, local_size;
+    size.set_dims(2);
+    size.set(0, help1_[level].size());
+    size.set(1, help1_[level].size());
+
+    local_size.set_dims(2);
+    local_size.set(0, help1_[level].local_size());
+    local_size.set(1, help1_[level].local_size());
+
+    return std::make_shared<FunctionOperatorDFEval>(size, local_size, comm,
+                                                    my_func);
   }
 
-  std::shared_ptr<Operator> build_apply_H_plus_Hdiff(
-      const std::shared_ptr<Operator> &apply_B_fun) {
-    std::function<void(const SizeType &, const Vector &, Vector &)> my_func =
-        [this, &apply_B_fun](const SizeType &level, const Vector &x,
-                             Vector &result) {
+  std::shared_ptr<FunctionOperatorDFEval> build_apply_H_plus_Hdiff(
+      const SizeType &level,
+      const std::shared_ptr<FunctionOperatorHA> &apply_B_fun) {
+    std::function<void(const Vector &, Vector &)> my_func =
+        [this, &apply_B_fun, level](const Vector &x, Vector &result) {
           // this->apply_H(x, result);
 
-          hessian_approxs_init_[level][0]->apply_H(x, help1_[level]);
-          hessian_approxs_init_[level][1]->apply_H(x, help2_[level]);
+          hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+          hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
           result = help1_[level] - help2_[level];
 
-          apply_B_fun->apply(help1_[level]);
+          apply_B_fun->apply(x, help1_[level]);
           result += help1_[level];
 
         };
 
-    return std::make_shared<Operator>(*this, my_func);
+    auto comm = std::shared_ptr<Communicator>(help1_[level].comm().clone());
+
+    Size size, local_size;
+    size.set_dims(2);
+    size.set(0, help1_[level].size());
+    size.set(1, help1_[level].size());
+
+    local_size.set_dims(2);
+    local_size.set(0, help1_[level].local_size());
+    local_size.set(1, help1_[level].local_size());
+
+    return std::make_shared<FunctionOperatorDFEval>(size, local_size, comm,
+                                                    my_func);
   }
 
   void init_memory(
@@ -162,6 +233,7 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     help2_.resize(n_levels_);
     g_diff.resize(n_levels_);
     g.resize(n_levels_);
+    y.resize(n_levels_);
 
     // this one could be done nicer
     hessian_approxs_init_.resize(n_levels_);
@@ -171,8 +243,7 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
       help2_[l].zeros(layouts[l]);
       g_diff[l].zeros(layouts[l]);
       g[l].zeros(layouts[l]);
-
-      hessian_approxs_init_[l].resize(2);
+      y[l].zeros(layouts[l]);
     }
 
     initialized_ = true;
@@ -180,10 +251,11 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
 
   bool initialized() const { return initialized_; }
 
-  void set_init_approx(const SizeType &level, const HessianApprox &approx_fine,
-                       const HessianApprox &approx_coarse) {
-    hessian_approxs_init_[level, 0] = approx_fine;
-    hessian_approxs_init_[level, 1] = approx_coarse;
+  void set_init_approx(const SizeType &level,
+                       const HessianApproxPtr &approx_fine,
+                       const HessianApproxPtr &approx_coarse) {
+    hessian_approxs_init_[level].fine_ = approx_fine;
+    hessian_approxs_init_[level].coarse_ = approx_coarse;
   }
 
  private:
@@ -191,10 +263,10 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
   bool initialized_;
 
  public:
-  std::vector<Vector> g, g_diff, help1_, help2_;
+  std::vector<Vector> g, g_diff, help1_, help2_, y;
 
   //          fine_presmoothing, coarse_init
-  std::vector<std::vector<HessianApprox>> hessian_approxs_init_;
+  std::vector<HessianApproxPtrConsistency> hessian_approxs_init_;
 };
 
 }  // namespace utopia

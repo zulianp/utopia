@@ -28,7 +28,7 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
   using Scalar = typename utopia::Traits<Vector>::Scalar;
   using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-  typedef utopia::RMTRBase<Matrix, Vector, FIRST_ORDER_DF> RMTRBase;
+  typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> RMTRBase;
   typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
   using TRSubproblem = utopia::MatrixFreeQPSolver<Vector>;
@@ -41,7 +41,7 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
   typedef utopia::Level<Matrix, Vector> Level;
 
   using BoxConstraints = utopia::BoxConstraints<Vector>;
-  typedef utopia::RMTRBase<Matrix, Vector, FIRST_ORDER_DF> RMTR;
+  typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> RMTR;
 
   using MLConstraints::check_feasibility;
 
@@ -316,8 +316,30 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
   }
 
  public:
-  // public because of nvcc
   bool solve_qp_subproblem(const SizeType &level, const bool &flg) override {
+    return this->solve_qp_DF(level, flg);
+  }
+
+  void init_hess_app_terms(const SizeType &fine_level) override {
+    this->init_hess_second_order(fine_level);
+  }
+
+  template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<is_same<T, FIRST_ORDER_DF>::value, int> = 0>
+  void init_hess_second_order(const SizeType & /*fine_level*/) {}
+
+  template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> = 0>
+  void init_hess_second_order(const SizeType &fine_level) {
+    this->ml_derivs_.set_init_approx(fine_level - 1,
+                                     hessian_approxs_[fine_level],
+                                     hessian_approxs_[fine_level - 1]);
+  }
+
+  // public because of nvcc
+  template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<is_same<T, FIRST_ORDER_DF>::value, int> = 0>
+  bool solve_qp_DF(const SizeType &level, const bool &flg) {
     Scalar radius = this->memory_.delta[level];
 
     // first we need to prepare box of intersection of level constraints with
@@ -364,6 +386,79 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
     this->ml_derivs_.g[level] *= -1.0;
     this->memory_.s[level].set(0.0);
     auto multiplication_action = hessian_approxs_[level]->build_apply_H();
+
+    this->tr_subproblems_[level]->solve(*multiplication_action,
+                                        this->ml_derivs_.g[level],
+                                        this->memory_.s[level]);
+    this->ml_derivs_.g[level] *= -1.0;
+
+    if (has_nan_or_inf(this->memory_.s[level])) {
+      this->memory_.s[level].set(0.0);
+    } else {
+      // ----- just for debugging pourposes, to be commented out in the
+      // future...
+      MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]);
+    }
+
+    return true;
+  }
+
+  // public because of nvcc
+  template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> = 0>
+  bool solve_qp_DF(const SizeType &level, const bool &flg) {
+    Scalar radius = this->memory_.delta[level];
+
+    // first we need to prepare box of intersection of level constraints with
+    // tr. constraints
+    std::shared_ptr<Vector> &lb = tr_subproblems_[level]->lower_bound();
+    std::shared_ptr<Vector> &ub = tr_subproblems_[level]->upper_bound();
+
+    const Vector &active_lower = this->active_lower(level);
+    const Vector &active_upper = this->active_upper(level);
+
+    *lb = active_lower - this->memory_.x[level];
+    *ub = active_upper - this->memory_.x[level];
+
+    {
+      lb->transform_values(UTOPIA_LAMBDA(const Scalar &xi)->Scalar {
+        return (xi >= -1.0 * radius) ? xi : -1.0 * radius;
+      });
+
+      ub->transform_values(UTOPIA_LAMBDA(const Scalar &xi)->Scalar {
+        return (xi <= radius) ? xi : radius;
+      });
+    }
+
+    Scalar atol_level =
+        (level == this->n_levels() - 1)
+            ? this->atol()
+            : std::min(this->atol(), this->grad_smoothess_termination() *
+                                         this->memory_.gnorm[level + 1]);
+    if (auto *tr_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(
+            tr_subproblems_[level].get())) {
+      if (tr_solver->atol() > atol_level) {
+        tr_solver->atol(atol_level);
+      }
+
+      if (flg) {
+        tr_solver->max_it(this->max_QP_coarse_it());
+      } else {
+        tr_solver->max_it(this->max_QP_smoothing_it());
+      }
+    } else {
+      assert("QuasiRMTR_inf:: dynamic cas failed. \n");
+    }
+
+    this->ml_derivs_.g[level] *= -1.0;
+    this->memory_.s[level].set(0.0);
+
+    auto multiplication_action_hessian =
+        hessian_approxs_[level]->build_apply_H();
+
+    auto multiplication_action = this->ml_derivs_.build_apply_H_plus_Hdiff(
+        level, multiplication_action_hessian);
+
     this->tr_subproblems_[level]->solve(*multiplication_action,
                                         this->ml_derivs_.g[level],
                                         this->memory_.s[level]);
