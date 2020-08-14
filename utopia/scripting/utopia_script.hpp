@@ -74,16 +74,16 @@ namespace scripting {
         VectorImpl* impl_;
     };
 
-    class Layout {
-    public:
-        using LayoutImpl = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
+    // class Layout {
+    // public:
+    //     using LayoutImpl = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
 
-        Layout();
-        ~Layout();
+    //     Layout();
+    //     ~Layout();
 
-    private:
-        LayoutImpl* impl_;
-    };
+    // private:
+    //     LayoutImpl* impl_;
+    // };
 
     class Communicator {
     public:
@@ -98,10 +98,12 @@ namespace scripting {
 
     class SelfCommunicator {
     public:
-        using SelfCommunicatorImpl_ = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
+        using SelfCommunicatorImpl_ = utopia::SelfCommunicator;
 
         SelfCommunicator();
         ~SelfCommunicator();
+
+        SelfCommunicator get_default();
 
     private:
         SelfCommunicator* impl_;
