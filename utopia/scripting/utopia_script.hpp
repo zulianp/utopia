@@ -1,12 +1,7 @@
 #ifndef UTOPIA_SCRIPT_HPP
 #define UTOPIA_SCRIPT_HPP
 
-// Create fowrad declerations file..
-// Seperate files(per class)...
-// Keep names of functions.
-//#include "utopia_Layout.hpp"
-
-//#include "../core/interfaces/utopia_AbstractMatrix.hpp"
+// #include "utopia_AbstractVector.hpp"
 
 namespace utopia {
     // Forward declarations
@@ -18,15 +13,6 @@ namespace utopia {
 
     template <typename Scalar, typename SizeType>
     class AlgebraFactory;
-
-    template <class Communicator, int Order, typename LocalSizeType, typename SizeType>
-    class Layout;
-
-    class Communicator;
-
-    class SelfCommunicator;
-    // TODO::add class Comm
-
 }  // namespace utopia
 
 namespace scripting {
@@ -34,14 +20,10 @@ namespace scripting {
     using Scalar = double;
     using SizeType = int;
     using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
-    using Communicator = class Communicator;
-    using Order = int;
-    using LocalSizeType = int;
 
     void init();
     void finalize();
     void print_info();
-    // void create_serial_layout();
 
     class SparseMatrix {
     public:
@@ -50,17 +32,6 @@ namespace scripting {
         SparseMatrix();
         ~SparseMatrix();
         void print_info();
-        // void create_square_matrix(const SizeType& /*size*/);
-        void create_identity_matrix(const SizeType&);
-
-        // Utility functions -----
-        bool is_empty();
-        void clear_matrix();
-
-        // Display functions----
-        void disp();
-
-        // Question...: Create special functions that create special matrices?
 
     private:
         MatrixImpl* impl_;
@@ -73,56 +44,10 @@ namespace scripting {
         Vector();
         ~Vector();
         void print_info();
-        void create_vector(const SizeType& /*size*/, const Scalar& /*value*/);
-
-        // Mutators-------
-        // void set_value(const SizeType&, const Scalar&);
-
-        // Utility functions -----
-        bool is_empty();
-        void clear_vector();
-
-        // Display function-------
-        void disp();
-
-        // Vector sum(const Vector&);
 
     private:
         VectorImpl* impl_;
     };
-
-    class Layout {
-    public:
-        using LayoutImpl = utopia::Layout<Communicator, Order, LocalSizeType, SizeType>;
-
-        void create_serial_layout(const SizeType& /*size*/);
-
-        // TODO:: figure out how to implement comm for parallel layout
-        // void create_parallel_layout(Comm, const SizeType&, const SizeType&);
-
-    private:
-        LayoutImpl* impl_;
-    };
-
-    class Communicator {
-    public:
-        using CommImpl = utopia::Communicator;
-        Communicator();
-        ~Communicator();
-
-    private:
-        CommImpl* impl_;
-    };
-
-    // class SelfCommunicator {
-    // public:
-    //     using CommImpl = utopia::SelfCommunicator;
-    //     SelfCommunicator();
-    //     ~SelfCommunicator();
-
-    // private:
-    //     CommImpl* impl_;
-    // };
 
 }  // namespace scripting
 
