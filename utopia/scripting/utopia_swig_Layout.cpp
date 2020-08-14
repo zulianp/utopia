@@ -9,15 +9,15 @@
 
 namespace scripting {
     Layout::Layout() : impl_(nullptr) {
-        auto layout = Factory::new_layout();
-        if (!layout) {
-            utopia::out() << "[Error] Layout could not be constructed" << std::endl;
+        auto comm = Factory::new_layout();
+        if (!comm) {
+            utopia::out() << "[Error] Communicator could not be constructed" << std::endl;
             return;
         }
 
-        impl_ = layout.get();
+        impl_ = comm.get();
 
-        layout.release();
+        comm.release();
     }
 
     Layout::~Layout() { delete impl_; }

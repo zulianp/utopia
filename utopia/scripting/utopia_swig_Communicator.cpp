@@ -23,19 +23,5 @@ namespace scripting {
 
     Communicator::~Communicator() { delete impl_; }
 
-    SelfCommunicator::SelfCommunicator() : impl_(nullptr) {
-        auto selfComm = Factory::new_communicator();
-        if (!selfComm) {
-            utopia::out() << "[Error] SelfCommunicator could not be constructed" << std::endl;
-            return;
-        }
-
-        impl_ = selfComm.get();
-
-        selfComm.release();
-    }
-
-    SelfCommunicator::~SelfCommunicator() { delete impl_; }
-
     // void Communicator::get_the_default() { return impl_->get_default(); }
 }  // namespace scripting

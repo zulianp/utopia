@@ -24,11 +24,11 @@ namespace scripting {
 
     void SparseMatrix::print_info() { utopia::out() << "SparseMatrix::print()" << std::endl; }
 
-    // // TODO:: Change so that we have a layout as paramater not size.
-    // void SparseMatrix::create_identity_matrix(const SizeType &size) {
-    //     auto l = utopia::serial_layout(size);
-    //     impl_->identity(utopia::square_matrix_layout(l), 1);
-    // }
+    // TODO:: Change so that we have a layout as paramater not size.
+    void SparseMatrix::create_identity_matrix(const SizeType &size) {
+        auto l = utopia::serial_layout(size);
+        impl_->identity(utopia::square_matrix_layout(l), 1);
+    }
 
     void SparseMatrix::clear_matrix() { impl_->clear(); }
 

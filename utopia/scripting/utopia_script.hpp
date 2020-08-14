@@ -127,12 +127,12 @@ namespace scripting {
 
     class SelfCommunicator {
     public:
-        using SelfCommImpl = utopia::SelfCommunicator;
+        using CommImpl = utopia::SelfCommunicator;
         SelfCommunicator();
         ~SelfCommunicator();
 
     private:
-        SelfCommImpl* impl_;
+        CommImpl* impl_;
     };
 
 }  // namespace scripting
