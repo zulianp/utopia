@@ -8,18 +8,6 @@
 
 #include <iostream>
 
-namespace utopia {
-
-#ifdef WITH_PETSC
-    UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
-    UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
-#endif  // WITH_PETSC
-
-#ifdef WITH_TRILINOS
-    UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
-#endif  // WITH_PETSC
-
-}  // namespace utopia
 namespace scripting {
     Communicator::Communicator() : impl_(nullptr) {
         auto comm = Factory::new_communicator();
@@ -35,5 +23,5 @@ namespace scripting {
 
     Communicator::~Communicator() { delete impl_; }
 
-    void Communicator::get_the_default() { return impl_->get_default(); }
+    // void Communicator::get_the_default() { return impl_->get_default(); }
 }  // namespace scripting

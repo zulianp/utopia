@@ -6,18 +6,7 @@
 #include "utopia_Version.hpp"
 #include "utopia_script.hpp"
 
-namespace utopia {
-
-#ifdef WITH_PETSC
-    UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
-    UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
-#endif  // WITH_PETSC
-
-#ifdef WITH_TRILINOS
-    UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
-#endif  // WITH_PETSC
-
-}  // namespace utopia
+// namespace utopia
 namespace scripting {
     SparseMatrix::SparseMatrix() : impl_(nullptr) {
         auto mat = Factory::new_matrix();

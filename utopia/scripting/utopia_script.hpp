@@ -22,10 +22,21 @@ namespace utopia {
     template <class Communicator, int Order, typename LocalSizeType, typename SizeType>
     class Layout;
 
+    template <class SelfCommunicator, int Order, typename LocalSizeType, typename SizeType>
+    class Layout;
+
     class Communicator;
 
     class SelfCommunicator;
-    // TODO::add class Comm
+
+#ifdef WITH_PETSC
+    UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
+    UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
+#endif  // WITH_PETSC
+
+#ifdef WITH_TRILINOS
+    UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
+#endif  // WITH_PETSC
 
 }  // namespace utopia
 
@@ -35,7 +46,7 @@ namespace scripting {
     using SizeType = int;
     using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
     using Communicator = class Communicator;
-    using Order = int;
+    using SelfCommunicator = class SelfCommunicator;
     using LocalSizeType = int;
 
     void init();
@@ -93,15 +104,15 @@ namespace scripting {
 
     class Layout {
     public:
-        using LayoutImpl = utopia::Layout<Communicator, Order, LocalSizeType, SizeType>;
-
-        void create_serial_layout(const SizeType& /*size*/);
+        using LayoutImpl = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
+        using LayoutImplSelf = utopia::Layout<SelfCommunicator, 1, LocalSizeType, SizeType>;
 
         // TODO:: figure out how to implement comm for parallel layout
         // void create_parallel_layout(Comm, const SizeType&, const SizeType&);
 
     private:
         LayoutImpl* impl_;
+        LayoutImplSelf* implSelf_;
     };
 
     class Communicator {
@@ -114,15 +125,15 @@ namespace scripting {
         CommImpl* impl_;
     };
 
-    // class SelfCommunicator {
-    // public:
-    //     using CommImpl = utopia::SelfCommunicator;
-    //     SelfCommunicator();
-    //     ~SelfCommunicator();
+    class SelfCommunicator {
+    public:
+        using CommImpl = utopia::SelfCommunicator;
+        SelfCommunicator();
+        ~SelfCommunicator();
 
-    // private:
-    //     CommImpl* impl_;
-    // };
+    private:
+        CommImpl* impl_;
+    };
 
 }  // namespace scripting
 
