@@ -1,8 +1,6 @@
 #ifndef UTOPIA_SCRIPT_HPP
 #define UTOPIA_SCRIPT_HPP
 
-// #include "utopia_AbstractVector.hpp"
-
 namespace utopia {
     // Forward declarations
     template <typename Scalar, typename SizeType>
@@ -38,6 +36,8 @@ namespace scripting {
     using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
     using LocalSizeType = int;
     using Communicator = class Communicator;
+    using SelfCommunicator = class SelfCommunicator;
+    using Layout = class Layout;
 
     void init();
     void finalize();
@@ -49,9 +49,12 @@ namespace scripting {
 
         SparseMatrix();
         ~SparseMatrix();
+
+        void disp();
+        void set(const SizeType&, const SizeType&, const Scalar&);
+
         void print_info();
         void clear();
-        void disp();
         bool empty();
 
     private:
@@ -64,26 +67,31 @@ namespace scripting {
 
         Vector();
         ~Vector();
-        void print_info();
-        void clear();
-        bool empty();
+
         void disp();
+        void set(const SizeType& /*position*/, const Scalar& /*value*/);
+        Scalar get(const SizeType& /*position*/);
+        void describe();
+        bool empty();
+        void clear();
         void create_vector(const SizeType& /*size*/, const Scalar& /*value*/);
+        Scalar norm1();
+        // void values(const Layout&, const Scalar&);
 
     private:
         VectorImpl* impl_;
     };
 
-    // class Layout {
-    // public:
-    //     using LayoutImpl = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
+    class Layout {
+    public:
+        using LayoutImpl = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
 
-    //     Layout();
-    //     ~Layout();
+        Layout();
+        ~Layout();
 
-    // private:
-    //     LayoutImpl* impl_;
-    // };
+    private:
+        LayoutImpl* impl_;
+    };
 
     class Communicator {
     public:
@@ -91,6 +99,8 @@ namespace scripting {
 
         Communicator();
         ~Communicator();
+        int rank();
+        int size();
 
     private:
         CommunicatorImpl* impl_;
@@ -103,7 +113,9 @@ namespace scripting {
         SelfCommunicator();
         ~SelfCommunicator();
 
-        SelfCommunicator get_default();
+        void get_default();
+        int rank();
+        int size();
 
     private:
         SelfCommunicator* impl_;
