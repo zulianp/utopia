@@ -28,8 +28,10 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
   struct HessianApproxPtrConsistency {
    public:
     HessianApproxPtrConsistency(const HessianApproxPtr &fine,
-                                const HessianApproxPtr &coarse)
-        : fine_(fine), coarse_(coarse) {}
+                                const HessianApproxPtr &coarse) {
+      fine_ = std::shared_ptr<HessianApprox>(fine->clone());
+      coarse_ = std::shared_ptr<HessianApprox>(coarse->clone());
+    }
 
     HessianApproxPtrConsistency() {}
 
@@ -210,14 +212,20 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
         [this, &apply_B_fun, level](const Vector &x, Vector &result) {
           // this->apply_H(x, result);
 
+          // std::cout << "fine:  \n";
           this->hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+
+          // std::cout << "coarse:  \n";
           this->hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
+          // std::cout << "sum:  \n";
           result = this->help1_[level] - this->help2_[level];
 
+          // std::cout << "new-one:  \n";
           apply_B_fun->apply(x, help1_[level]);
           result += this->help1_[level];
 
+          // std::cout << "--------------------------- \n";
         };
 
     auto comm = std::shared_ptr<Communicator>(help1_[level].comm().clone());
@@ -264,8 +272,13 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
   void set_init_approx(const SizeType &level,
                        const HessianApproxPtr &approx_fine,
                        const HessianApproxPtr &approx_coarse) {
-    hessian_approxs_init_[level].fine_ = approx_fine;
-    hessian_approxs_init_[level].coarse_ = approx_coarse;
+    // does not need to be cloned
+    hessian_approxs_init_[level].fine_ =
+        std::shared_ptr<HessianApprox>(approx_fine->clone());
+
+    // we need to clone as we want to stop updates
+    hessian_approxs_init_[level].coarse_ =
+        std::shared_ptr<HessianApprox>(approx_coarse->clone());
   }
 
  private:

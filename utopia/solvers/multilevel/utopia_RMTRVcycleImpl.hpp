@@ -307,23 +307,15 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
   bool make_grad_updates = true, make_hess_updates = true, converged = false,
        delta_converged = false;
 
-  std::cout << "------------- local solve 00001 ------------- \n";
-
   UTOPIA_NO_ALLOC_BEGIN("RMTR::region3");
   const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
   this->initialize_local_solve(level, solve_type);
 
-  std::cout << "------------- local solve 00002 ------------- \n";
-
   make_hess_updates =
       this->init_deriv_loc_solve(this->function(level), level, solve_type);
 
-  std::cout << "------------- local solve 00003 ------------- \n";
-
   converged = this->check_local_convergence(
       it, it_success, level, this->memory_.delta[level], solve_type);
-
-  std::cout << "------------- local solve 00004 ------------- \n";
 
   if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE &&
       this->verbose() == true && mpi_world_rank() == 0) {
@@ -333,16 +325,11 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
             rho, this->memory_.delta[level]});
   }
 
-  std::cout << "------------- local solve 00005 ------------- \n";
-
   UTOPIA_NO_ALLOC_END();
 
   it++;
 
-  std::cout << "------------- local solve 000 ------------- \n";
-
   while (!converged) {
-    std::cout << "------------- local solve 001 ------------- \n";
     UTOPIA_NO_ALLOC_BEGIN("RMTR::hessian_eval1");
     if (make_hess_updates) {
       bool update_h = (this->Hpost_lagging() && solve_type == POST_SMOOTHING)
@@ -353,8 +340,6 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
       }
     }
     UTOPIA_NO_ALLOC_END();
-
-    std::cout << "------------- local solve 002 ------------- \n";
 
     //----------------------------------------------------------------------------
     //     solving constrained system to get correction and  building trial

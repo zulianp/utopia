@@ -386,12 +386,7 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
     this->ml_derivs_.g[level] *= -1.0;
     this->memory_.s[level].set(0.0);
 
-    std::cout << "------------ A A A 1 ---------------- \n";
-
     auto multiplication_action = hessian_approxs_[level]->build_apply_H();
-
-    std::cout << "------------ A A A 2 ---------------- \n";
-
     this->tr_subproblems_[level]->solve(*multiplication_action,
                                         this->ml_derivs_.g[level],
                                         this->memory_.s[level]);
@@ -413,7 +408,6 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
             enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> = 0>
   bool solve_qp_DF(const SizeType &level, const bool &flg) {
     Scalar radius = this->memory_.delta[level];
-    std::cout << "------------- 000 ------------- \n";
 
     // first we need to prepare box of intersection of level constraints with
     // tr. constraints
@@ -459,8 +453,6 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
     this->ml_derivs_.g[level] *= -1.0;
     this->memory_.s[level].set(0.0);
 
-    std::cout << "------------- 0 ------------- \n";
-
     auto multiplication_action_hessian =
         hessian_approxs_[level]->build_apply_H();
 
@@ -469,15 +461,10 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
                                           this->ml_derivs_.g[level],
                                           this->memory_.s[level]);
     } else {
-      std::cout << "------------- 1 ------------- \n";
-
       // auto multiplication_action = this->ml_derivs_.build_apply_H_plus_Hdiff(
       //     level, multiplication_action_hessian);
-      std::cout << "------ wrong but a test ------- \n";
       auto multiplication_action = this->ml_derivs_.build_apply_H_plus_Hdiff(
           level, multiplication_action_hessian);
-
-      std::cout << "------------- 2 ------------- \n";
 
       this->tr_subproblems_[level]->solve(*multiplication_action,
                                           this->ml_derivs_.g[level],

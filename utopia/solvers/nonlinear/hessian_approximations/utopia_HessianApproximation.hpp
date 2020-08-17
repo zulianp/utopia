@@ -45,6 +45,9 @@ class HessianApproximation : public virtual Clonable,
 
   ~HessianApproximation() override = default;
 
+  // TODO:: override in childs
+  bool is_approx_fully_built() { return false; }
+
   virtual void initialize(const Vector &x_k, const Vector & /* g */) {
     comm_ = std::shared_ptr<Communicator>(x_k.comm().clone());
 
