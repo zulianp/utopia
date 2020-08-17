@@ -464,16 +464,26 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
     auto multiplication_action_hessian =
         hessian_approxs_[level]->build_apply_H();
 
-    std::cout << "------------- 1 ------------- \n";
+    if (level == this->n_levels() - 1) {
+      this->tr_subproblems_[level]->solve(*multiplication_action_hessian,
+                                          this->ml_derivs_.g[level],
+                                          this->memory_.s[level]);
+    } else {
+      std::cout << "------------- 1 ------------- \n";
 
-    auto multiplication_action = this->ml_derivs_.build_apply_H_plus_Hdiff(
-        level, multiplication_action_hessian);
+      // auto multiplication_action = this->ml_derivs_.build_apply_H_plus_Hdiff(
+      //     level, multiplication_action_hessian);
+      std::cout << "------ wrong but a test ------- \n";
+      auto multiplication_action = this->ml_derivs_.build_apply_H_plus_Hdiff(
+          level, multiplication_action_hessian);
 
-    std::cout << "------------- 2 ------------- \n";
+      std::cout << "------------- 2 ------------- \n";
 
-    this->tr_subproblems_[level]->solve(*multiplication_action,
-                                        this->ml_derivs_.g[level],
-                                        this->memory_.s[level]);
+      this->tr_subproblems_[level]->solve(*multiplication_action,
+                                          this->ml_derivs_.g[level],
+                                          this->memory_.s[level]);
+    }
+
     this->ml_derivs_.g[level] *= -1.0;
 
     if (has_nan_or_inf(this->memory_.s[level])) {

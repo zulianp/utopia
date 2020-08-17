@@ -8,6 +8,8 @@
 #include "utopia_LevelMemory.hpp"
 #include "utopia_MultiLevelEvaluations.hpp"
 
+// TODO:: extend for generic transfer
+// TODO:: use help1_, help2_ based on level informations
 namespace utopia {
 template <typename Matrix, typename Vector>
 class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
@@ -38,10 +40,11 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
   class FunctionOperatorDFEval final : public Operator {
    public:
     FunctionOperatorDFEval(
-        const Size &size, const Size &local_size,
-        const std::shared_ptr<Communicator> &comm,
-        const std::function<void(const Vector &, Vector &)> operator_action)
-        : size_(size),
+        MultilevelDerivEval &parent, const Size size, const Size local_size,
+        const std::shared_ptr<Communicator> comm,
+        const std::function<void(const Vector &, Vector &)> &operator_action)
+        : parent_(parent),
+          size_(size),
           local_size_(local_size),
           comm_(comm),
           operator_action_(operator_action) {}
@@ -60,15 +63,18 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     inline Size local_size() const override { return local_size_; }
 
    private:
+    MultilevelDerivEval &parent_;
     Size size_, local_size_;
     std::shared_ptr<Communicator> comm_;
-    std::function<void(const Vector &, Vector &)> operator_action_;
+    const std::function<void(const Vector &, Vector &)> operator_action_;
   };
 
   MultilevelDerivEval(const SizeType &nl_levels)
       : n_levels_(nl_levels), initialized_(false) {
     utopia::out() << "this class works only with the identity transfer \n";
   }
+
+  ~MultilevelDerivEval() = default;
 
   inline Scalar compute_energy(const SizeType &level,
                                const ExtendedFunction<Matrix, Vector> &fun,
@@ -170,12 +176,16 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
       const SizeType &level) {
     std::function<void(const Vector &, Vector &)> my_func =
         [this, level](const Vector &x, Vector &result) {
-          // this->apply_H(x, result);
 
-          hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
-          hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
+          // std::cout << "------ inside1 ------- \n";
+          this->hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
 
-          result = help1_[level] - help2_[level];
+          // std::cout << "------ inside2 ------- \n";
+          this->hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
+
+          result = this->help1_[level] - this->help2_[level];
+          // std::cout << "------ inside2 ------- \n";
+
         };
 
     auto comm = std::shared_ptr<Communicator>(help1_[level].comm().clone());
@@ -189,8 +199,8 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     local_size.set(0, help1_[level].local_size());
     local_size.set(1, help1_[level].local_size());
 
-    return std::make_shared<FunctionOperatorDFEval>(size, local_size, comm,
-                                                    my_func);
+    return std::make_shared<FunctionOperatorDFEval>(*this, size, local_size,
+                                                    comm, my_func);
   }
 
   std::shared_ptr<FunctionOperatorDFEval> build_apply_H_plus_Hdiff(
@@ -200,13 +210,13 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
         [this, &apply_B_fun, level](const Vector &x, Vector &result) {
           // this->apply_H(x, result);
 
-          hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
-          hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
+          this->hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+          this->hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
-          result = help1_[level] - help2_[level];
+          result = this->help1_[level] - this->help2_[level];
 
           apply_B_fun->apply(x, help1_[level]);
-          result += help1_[level];
+          result += this->help1_[level];
 
         };
 
@@ -221,8 +231,8 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     local_size.set(0, help1_[level].local_size());
     local_size.set(1, help1_[level].local_size());
 
-    return std::make_shared<FunctionOperatorDFEval>(size, local_size, comm,
-                                                    my_func);
+    return std::make_shared<FunctionOperatorDFEval>(*this, size, local_size,
+                                                    comm, my_func);
   }
 
   void init_memory(
