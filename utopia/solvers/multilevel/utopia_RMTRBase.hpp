@@ -213,7 +213,9 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     this->ml_derivs_.g_diff[level - 1] -= this->ml_derivs_.g[level - 1];
     // UTOPIA_NO_ALLOC_END();
 
+    std::cout << "--------------------------------- IC-1 -------------\n";
     this->init_hess_app_terms(level);
+    std::cout << "--------------------------------- IC-2 -------------\n";
 
     return smoothness_flg;
   }

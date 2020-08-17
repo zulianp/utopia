@@ -466,22 +466,20 @@ class QuasiNewtonTest {
   // }
 
   void Quasi_RMTR_inf_bound_test() {
-    const SizeType n_levels = 3;
+    const SizeType n_levels = 2;
     const SizeType n = 10;
 
     MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > problem(
         n_levels, n);
 
     auto rmtr = std::make_shared<
-        QuasiRMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
+        QuasiRMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>,
+                      // SECOND_ORDER_DF> >(n_levels);
                       SECOND_ORDER_DF> >(n_levels);
 
     // intial guess
     // Vector x = values(problem.n_dofs(n_levels - 1), 0.0);
     Vector x = problem.get_functions().back()->initial_guess();
-
-    // upper, lower bound...
-    Vector ub, lb;
 
     const SizeType memory_size = 5;
     std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(
@@ -540,7 +538,8 @@ static void quasi_newton() {
   // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector>
   // >().run_sparse();
 
-  QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
+  // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector>
+  // >().run_sparse();
   QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >()
       .run_multilevel();
 #endif
