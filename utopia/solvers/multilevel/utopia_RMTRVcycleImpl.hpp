@@ -1,6 +1,7 @@
 #ifndef UTOPIA_RMTR_BASE_IMPL_HPP
 #define UTOPIA_RMTR_BASE_IMPL_HPP
 
+#include "utopia_Backtracking.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_Function.hpp"
@@ -191,6 +192,18 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
     if (!this->skip_BC_checks()) {
       this->zero_correction_related_to_equality_constrain(
           this->function(level), this->memory_.s[level]);
+    }
+
+    bool use_line_search = true;
+    // TODO:: fix
+    if (use_line_search) {
+      auto ls_strategy_ = std::make_shared<utopia::Backtracking<Vector>>();
+      Scalar alpha_ = 1.0;
+      ls_strategy_->get_alpha(this->function(level), this->ml_derivs_.g[level],
+                              this->memory_.x[level], this->memory_.s[level],
+                              alpha_);
+      std::cout << "alpha: " << alpha_ << "  \n";
+      this->memory_.s[level] *= alpha_;
     }
 
     E_old = this->memory_.energy[level];
