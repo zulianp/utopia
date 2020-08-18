@@ -69,14 +69,29 @@ namespace scripting {
         ~Vector();
 
         void disp();
+
+        SizeType local_size();
+        void c_set(const SizeType&, const Scalar&);
+        void c_add(const SizeType&, const Scalar&);
+
+        /*lock*/
+        void read_lock();
+        void read_unlock();
+
+        /*basic mutators*/
         void set(const SizeType& /*position*/, const Scalar& /*value*/);
         Scalar get(const SizeType& /*position*/);
+
         void describe();
+
+        /*utility*/
         bool empty();
         void clear();
-        void create_vector(const SizeType& /*size*/, const Scalar& /*value*/);
+        void set(const Scalar& val);
         Scalar norm1();
         // void values(const Layout&, const Scalar&);
+
+        void create_vector(const SizeType& /*size*/, const Scalar& /*value*/);
 
     private:
         VectorImpl* impl_;
@@ -108,7 +123,7 @@ namespace scripting {
 
     class SelfCommunicator {
     public:
-        using SelfCommunicatorImpl_ = utopia::SelfCommunicator;
+        using SelfCommunicatorImpl_ = utopia::Communicator;
 
         SelfCommunicator();
         ~SelfCommunicator();

@@ -1,8 +1,6 @@
 #include "../utopia.hpp"
 #include "utopia_Communicator.hpp"
-#include "utopia_Instance.hpp"
 #include "utopia_ObjectFactory.hpp"
-#include "utopia_Version.hpp"
 #include "utopia_script.hpp"
 
 #include <iostream>

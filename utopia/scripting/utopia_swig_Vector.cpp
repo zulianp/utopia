@@ -28,6 +28,14 @@ namespace scripting {
         impl_->values(l, value);
     }
 
+    SizeType Vector::local_size() { return impl_->local_size(); }
+
+    void Vector::c_set(const SizeType &i, const Scalar &value) { impl_->c_set(i, value); }
+    void Vector::c_add(const SizeType &i, const Scalar &value) { impl_->c_add(i, value); }
+
+    void Vector::read_lock() { impl_->read_lock(); }
+    void Vector::read_unlock() { impl_->read_unlock(); }
+
     void Vector::clear() { impl_->clear(); }
 
     bool Vector::empty() { return impl_->empty(); }
