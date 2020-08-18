@@ -72,7 +72,9 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
   };
 
   MultilevelDerivEval(const SizeType &nl_levels)
-      : n_levels_(nl_levels), initialized_(false) {
+      : n_levels_(nl_levels),
+        initialized_(false),
+        switch_to_second_order_(false) {
     utopia::out() << "this class works only with the identity transfer \n";
   }
 
@@ -85,14 +87,18 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     fun.value(x, energy);
 
     if (level < n_levels_ - 1) {
-      // help_[level] = H_diff[level] * s_global;
-      hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
-      hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
+      if (switch_to_second_order_) {
+        // help_[level] = H_diff[level] * s_global;
+        hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+        hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
-      help1_[level] -= help2_[level];
+        help1_[level] -= help2_[level];
 
-      energy +=
-          (0.5 * dot(help1_[level], s_global)) + dot(g_diff[level], s_global);
+        energy +=
+            (0.5 * dot(help1_[level], s_global)) + dot(g_diff[level], s_global);
+      } else {
+        energy += dot(g_diff[level], s_global);
+      }
     }
     return energy;
   }
@@ -114,12 +120,16 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     if (level < n_levels_ - 1) {
       // help_[level] = H_diff[level] * s_global;
 
-      hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
-      hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
+      if (switch_to_second_order_) {
+        hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+        hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
-      help1_[level] -= help2_[level];
+        help1_[level] -= help2_[level];
 
-      g[level] = g[level] + g_diff[level] + help1_[level];
+        g[level] = g[level] + g_diff[level] + help1_[level];
+      } else {
+        g[level] += g_diff[level];
+      }
     }
     return true;
   }
@@ -146,14 +156,19 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     if (level < n_levels_ - 1) {
       // help_[level] = H_diff[level] * s_global;
 
-      hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
-      hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
+      if (switch_to_second_order_) {
+        hessian_approxs_init_[level].fine_->apply_H(x, help1_[level]);
+        hessian_approxs_init_[level].coarse_->apply_H(x, help2_[level]);
 
-      help1_[level] -= help2_[level];
+        help1_[level] -= help2_[level];
 
-      energy +=
-          (0.5 * dot(help1_[level], s_global)) + dot(g_diff[level], s_global);
-      g[level] += g_diff[level] + help1_[level];
+        energy +=
+            (0.5 * dot(help1_[level], s_global)) + dot(g_diff[level], s_global);
+        g[level] += g_diff[level] + help1_[level];
+      } else {
+        energy += dot(g_diff[level], s_global);
+        g[level] += g_diff[level];
+      }
     }
 
     return energy;
@@ -272,18 +287,31 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
   void set_init_approx(const SizeType &level,
                        const HessianApproxPtr &approx_fine,
                        const HessianApproxPtr &approx_coarse) {
+    if (approx_fine->is_approx_fully_built()) {
+      switch_to_second_order_ = true;
+    } else {
+      switch_to_second_order_ = false;
+    }
+
     // does not need to be cloned
-    hessian_approxs_init_[level].fine_ =
-        std::shared_ptr<HessianApprox>(approx_fine->clone());
+    hessian_approxs_init_[level].fine_ = approx_fine;
+    // std::shared_ptr<HessianApprox>(approx_fine->clone());
 
     // we need to clone as we want to stop updates
     hessian_approxs_init_[level].coarse_ =
         std::shared_ptr<HessianApprox>(approx_coarse->clone());
   }
 
+  void switch_to_second_order(const bool &flg) {
+    switch_to_second_order_ = flg;
+  }
+
+  bool switch_to_second_order() const { return switch_to_second_order_; }
+
  private:
   SizeType n_levels_;
   bool initialized_;
+  bool switch_to_second_order_;
 
  public:
   std::vector<Vector> g, g_diff, help1_, help2_, y;

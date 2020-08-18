@@ -456,7 +456,10 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
     auto multiplication_action_hessian =
         hessian_approxs_[level]->build_apply_H();
 
-    if (level == this->n_levels() - 1) {
+    if (level == this->n_levels() - 1 or
+        !hessian_approxs_[level]->is_approx_fully_built() or
+        (level < this->n_levels() - 1 and
+         (!hessian_approxs_[level + 1]->is_approx_fully_built()))) {
       this->tr_subproblems_[level]->solve(*multiplication_action_hessian,
                                           this->ml_derivs_.g[level],
                                           this->memory_.s[level]);
