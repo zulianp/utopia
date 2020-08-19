@@ -72,6 +72,12 @@ namespace scripting {
 
         Scalar norm_infty();
         Scalar norm1();
+        Scalar norm2();
+
+        Scalar trace();
+
+        /*transform*/
+        // void transform(const Sqrt&);
 
     private:
         MatrixImpl* impl_;
