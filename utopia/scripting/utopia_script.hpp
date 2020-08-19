@@ -52,10 +52,26 @@ namespace scripting {
 
         void disp();
         void set(const SizeType&, const SizeType&, const Scalar&);
+        void add(const SizeType&, const SizeType&, const Scalar&);
+
+        void c_set(const SizeType&, const SizeType&, const Scalar&);
+        void c_add(const SizeType&, const SizeType&, const Scalar&);
 
         void print_info();
         void clear();
         bool empty();
+
+        SizeType rows();
+        SizeType cols();
+        SizeType local_rows();
+        SizeType local_cols();
+
+        /*lock*/
+        void read_lock();
+        void read_unlock();
+
+        Scalar norm_infty();
+        Scalar norm1();
 
     private:
         MatrixImpl* impl_;
@@ -90,6 +106,11 @@ namespace scripting {
         void set(const Scalar& val);
         Scalar norm_infty();
         Scalar norm1();
+
+        void e_mul(const Scalar&);
+        void e_min(const Scalar&);
+        void e_div(const Scalar&);
+        void e_max(const Scalar&);
         // void values(const Layout&, const Scalar&);
 
         void create_vector(const SizeType& /*size*/, const Scalar& /*value*/);

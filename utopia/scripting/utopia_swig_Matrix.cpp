@@ -37,4 +37,26 @@ namespace scripting {
     void SparseMatrix::disp() { impl_->describe(); }
 
     void SparseMatrix::set(const SizeType &i, const SizeType &j, const Scalar &value) { impl_->set(i, j, value); }
+    void SparseMatrix::add(const SizeType &i, const SizeType &j, const Scalar &value){ impl_->add(i, j, value); }
+
+    void SparseMatrix::c_set(const SizeType &i, const SizeType &j, const Scalar &value) { impl_->c_set(i, j, value); }
+
+    void SparseMatrix::c_add(const SizeType &i, const SizeType &j, const Scalar &value){ impl_->c_add(i, j, value); }
+
+    SizeType SparseMatrix::cols() {return impl_->cols();}
+
+    SizeType SparseMatrix::rows() {return impl_->rows();}
+
+    SizeType SparseMatrix::local_cols() {return impl_->local_cols();}
+
+    SizeType SparseMatrix::local_rows() {return impl_->local_rows();}
+
+    void SparseMatrix::read_lock() { impl_->read_lock(); }
+    void SparseMatrix::read_unlock() { impl_->read_unlock(); }
+
+
+    Scalar SparseMatrix::norm_infty() {return impl_->norm_infty();}
+
+    Scalar SparseMatrix::norm1() { return impl_->norm1(); }
+
 }  // namespace scripting

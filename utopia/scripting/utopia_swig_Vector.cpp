@@ -54,6 +54,14 @@ namespace scripting {
 
     Scalar Vector::norm1() { return impl_->norm1(); }
 
+    // void Vector::e_mul(const Scalar &other) override {impl_->e_mul(other);}
+
+    // void Vector::e_min(const Scalar &other) override {impl_->e_min(other);}
+
+    // void Vector::e_div(const Scalar &other) override {impl_->e_div(other);}
+
+    // void Vector::e_max(const Scalar &other) override {impl_->e_max(other);}
+
     // void Vector::values(const Layout &l, const Scalar &value) { impl_->values(l, value); }
 
 }  // namespace scripting
