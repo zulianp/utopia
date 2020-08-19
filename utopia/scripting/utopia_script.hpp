@@ -88,6 +88,7 @@ namespace scripting {
         bool empty();
         void clear();
         void set(const Scalar& val);
+        Scalar norm_infty();
         Scalar norm1();
         // void values(const Layout&, const Scalar&);
 
