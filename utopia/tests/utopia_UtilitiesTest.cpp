@@ -302,9 +302,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(describe_test);
         UTOPIA_RUN_TEST(describe_chrono_test);
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
 #ifdef UTOPIA_WITH_PETSC
         BlockTest<PetscMatrix, PetscVector>().run();

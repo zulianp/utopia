@@ -47,7 +47,7 @@ namespace utopia {
 #endif  // WITH_UTOPIA_OPENCL
 
 #ifdef WITH_LAPACK
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
     void test_lapack_eigen_solver() {
         using namespace utopia;
         using SizeType = Traits<BlasMatrixd>::SizeType;
@@ -182,7 +182,7 @@ namespace utopia {
         auto ptr_2 = fact_1->make();
     }
 
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 #endif  // WITH_LAPACK
 
     static void misc() {
@@ -195,7 +195,7 @@ namespace utopia {
 #endif
 
 #ifdef WITH_LAPACK
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         UTOPIA_RUN_TEST(test_lapack_eigen_solver);
 #endif
 #endif

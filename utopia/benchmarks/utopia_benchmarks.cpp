@@ -60,7 +60,7 @@ namespace utopia {
 #endif  // UTOPIA_WITH_TRILINOS
 
         // Serial benchmarks
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         if (mpi_world_size() == 1) {
             run_all_benchmarks<BlasMatrixd, BlasVectord>("homemade");
         }

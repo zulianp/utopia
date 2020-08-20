@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     using VectorT = PetscVector;
 #define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND
 #else
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
     using MatrixT = BlasMatrixd;
     using VectorT = BlasVectord;
 #define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND

@@ -46,7 +46,7 @@ option(TRY_WITH_MPI "Enable the cuda backend" ON)
 option(TRY_UTOPIA_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
 option(TRY_UTOPIA_WITH_TRILINOS "Enable the Trilinos backend" ON)
-option(TRY_WITH_BLAS "Enable the blas backend" ON)
+option(TRY_UTOPIA_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"
        OFF)
 
@@ -456,7 +456,7 @@ add_subdirectory(examples)
 add_subdirectory(backend/polymorphic)
 
 # backend modules
-if(TRY_WITH_BLAS)
+if(TRY_UTOPIA_WITH_BLAS)
     add_subdirectory(backend/blas)
 endif()
 

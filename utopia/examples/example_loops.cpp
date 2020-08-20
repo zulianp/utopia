@@ -105,7 +105,7 @@ static void run_access(const int n) {
     utopia::out() << c << std::endl;
 }
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 static void run_access_blas(const int n) {
     utopia::out() << "Utopia Access Blas" << std::endl;
     BlasVectord v;
@@ -124,7 +124,7 @@ static void run_access_blas(const int n) {
     c.stop();
     utopia::out() << c << std::endl;
 }
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
 #ifdef UTOPIA_WITH_PETSC
 static void run_access_petsc(const int n) {
@@ -154,8 +154,8 @@ static void run_all(const int n) {
     run_array(n);
     run_stl_each(n);
     run_for(n);
-    // if it has compiled with blas or petsc WITH_BLAS or UTOPIA_WITH_PETSC macros are available (if you want to make it
-    // compile no matter the utopia installation)
+    // if it has compiled with blas or petsc UTOPIA_WITH_BLAS or UTOPIA_WITH_PETSC macros are available (if you want to
+    // make it compile no matter the utopia installation)
 #ifdef UTOPIA_WITH_PETSC
     // run with petsc types
     run<PetscVector>(n);
@@ -163,12 +163,12 @@ static void run_all(const int n) {
     run_access_petsc(n);
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
     // run with blas types
     run<BlasVectord>(n);
     run_access<BlasVectord>(n);
     run_access_blas(n);
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
 #ifdef UTOPIA_WITH_TRILINOS
     // run with trilinos types

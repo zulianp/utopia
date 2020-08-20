@@ -1,7 +1,7 @@
 #ifndef UTOPIA_CONFIG_HPP
 #define UTOPIA_CONFIG_HPP
 
-#define WITH_BLAS
+#define UTOPIA_WITH_BLAS
 #define WITH_LAPACK
 #define UTOPIA_WITH_PETSC
 /* #undef WITH_SLEPC */
@@ -49,7 +49,7 @@
 
 
 #ifdef WITH_OPEN_BLAS
-#define WITH_BLAS
+#define UTOPIA_WITH_BLAS
 #endif
 
 #ifdef UTOPIA_WITH_PETSC_CRAY

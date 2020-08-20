@@ -115,9 +115,9 @@ namespace utopia {
 
     static void selection(){
     // FIXME
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
     //     SelectionTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
 #ifdef UTOPIA_WITH_PETSC
     //   SelectionTest<PetscMatrix, PetscVector>().run();

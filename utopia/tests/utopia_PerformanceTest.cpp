@@ -344,7 +344,7 @@
 
 // #endif //WITH_UTOPIA_OPENCL
 
-// #ifdef WITH_BLAS
+// #ifdef UTOPIA_WITH_BLAS
 // 		if(verbose) {
 // 			utopia::out() <<"------------------------------------\n";
 // 			utopia::out() <<"Blas: " << std::endl;

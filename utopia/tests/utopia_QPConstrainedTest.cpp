@@ -191,11 +191,11 @@ namespace utopia {
         // 	bench_tril.run();
         // #endif //UTOPIA_WITH_TRILINOS
 
-        // #ifdef WITH_BLAS
+        // #ifdef UTOPIA_WITH_BLAS
         // 	QPConstrainedBenchmark<BlasMatrixd, BlasVectord> bench_blas(n_global, alg_verbose);
         // 	bench_blas.set_verbosity_level(verbosity_level);
         // 	bench_blas.run();
-        // #endif //WITH_BLAS
+        // #endif //UTOPIA_WITH_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_constrained);

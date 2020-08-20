@@ -1,7 +1,7 @@
 #ifndef UTOPIA_CONFIG_HPP
 #define UTOPIA_CONFIG_HPP
 
-#cmakedefine WITH_BLAS
+#cmakedefine UTOPIA_WITH_BLAS
 #cmakedefine WITH_LAPACK
 #cmakedefine UTOPIA_WITH_PETSC
 #cmakedefine WITH_SLEPC
@@ -49,7 +49,7 @@
 
 
 #ifdef WITH_OPEN_BLAS
-#define WITH_BLAS
+#define UTOPIA_WITH_BLAS
 #endif
 
 #ifdef UTOPIA_WITH_PETSC_CRAY

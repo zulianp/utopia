@@ -1,7 +1,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 
 #include "utopia.hpp"
 #include "utopia_TestProblems.hpp"
@@ -424,4 +424,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(blas);
 }  // namespace utopia
 
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS

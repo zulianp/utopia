@@ -539,10 +539,10 @@ namespace utopia {
         // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
 #endif
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
         // QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
         // #ifdef UTOPIA_WITH_TRILINOS
         // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();

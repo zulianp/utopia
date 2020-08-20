@@ -62,9 +62,9 @@ namespace utopia {
     };
 
     static void device_test() {
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         DeviceTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
 #ifdef UTOPIA_WITH_PETSC
         DeviceTest<utopia::PetscMatrix, utopia::PetscVector>::run();

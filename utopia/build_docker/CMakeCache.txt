@@ -391,14 +391,14 @@ SLEPC_LIB_SLEPC:FILEPATH=SLEPC_LIB_SLEPC-NOTFOUND
 //Path to a file.
 TINY_EXPR_DIR:PATH=TINY_EXPR_DIR-NOTFOUND
 
+//Enable the blas backend
+TRY_UTOPIA_WITH_BLAS:BOOL=ON
+
 //Enable the petsc backend
 TRY_UTOPIA_WITH_PETSC:BOOL=ON
 
 //Enable the Trilinos backend
 TRY_UTOPIA_WITH_TRILINOS:BOOL=ON
-
-//Enable the blas backend
-TRY_WITH_BLAS:BOOL=ON
 
 //Look for eigen for comparing performance
 TRY_WITH_EIGEN_3:BOOL=OFF

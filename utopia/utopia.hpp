@@ -41,9 +41,9 @@ Visit our <a href="https://bitbucket.org/zulianp/utopia/wiki/Home">Wiki</a> for 
 #include "utopia_trilinos.hpp"
 #endif  // UTOPIA_WITH_TRILINOS
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 #include "utopia_blas.hpp"
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"

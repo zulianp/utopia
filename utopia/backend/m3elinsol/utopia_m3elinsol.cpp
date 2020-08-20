@@ -9,9 +9,9 @@
 #include "utopia_petsc_impl.hpp"
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 #include "utopia_blas.hpp"
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
 // explicit instantiations
 
