@@ -3,7 +3,7 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_trilinos.hpp"
 #endif
 
@@ -70,9 +70,9 @@ namespace utopia {
         DeviceTest<utopia::PetscMatrix, utopia::PetscVector>::run();
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         DeviceTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(device_test);

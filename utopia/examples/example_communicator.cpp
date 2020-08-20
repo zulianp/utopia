@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 #ifdef UTOPIA_WITH_PETSC
     using VectorT = PetscVector;
 #else
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     using VectorT = TpetraVectord;
 #else
     using VectorT = BlasVectord;

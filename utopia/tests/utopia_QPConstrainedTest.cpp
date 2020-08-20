@@ -185,11 +185,11 @@ namespace utopia {
         bench_petsc.run();
 #endif  // UTOPIA_WITH_PETSC
 
-        // #ifdef WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
         //     QPConstrainedBenchmark<TpetraMatrixd, TpetraVectord> bench_tril(n_global, alg_verbose);
         // 	bench_tril.set_verbosity_level(verbosity_level);
         // 	bench_tril.run();
-        // #endif //WITH_TRILINOS
+        // #endif //UTOPIA_WITH_TRILINOS
 
         // #ifdef WITH_BLAS
         // 	QPConstrainedBenchmark<BlasMatrixd, BlasVectord> bench_blas(n_global, alg_verbose);

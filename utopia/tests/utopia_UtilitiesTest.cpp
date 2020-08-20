@@ -316,9 +316,9 @@ namespace utopia {
 
         // FIXME
         if (mpi_world_size() == 1) {
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
             BlockTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
         }
     }
 

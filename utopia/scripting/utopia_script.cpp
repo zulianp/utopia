@@ -13,7 +13,7 @@ namespace utopia {
     UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
 #endif  // UTOPIA_WITH_PETSC
 

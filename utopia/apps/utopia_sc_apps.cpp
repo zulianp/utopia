@@ -1,7 +1,7 @@
 
 // #include "utopia_Base.hpp"
 
-// #ifdef WITH_TRILINOS
+// #ifdef UTOPIA_WITH_TRILINOS
 // //include edsl components
 // #include "utopia_AppRunner.hpp"
 // #include "utopia_Core.hpp"
@@ -227,4 +227,4 @@
 //     UTOPIA_REGISTER_APP(poisson_2D);
 // }
 
-// #endif //WITH_TRILINOS
+// #endif //UTOPIA_WITH_TRILINOS

@@ -11,9 +11,9 @@
 
 #include "utopia_Reporter.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_trilinos_Library.hpp"
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Library.hpp"
@@ -33,9 +33,9 @@ namespace utopia {
         instance().add_library(utopia::make_unique<PetscLibrary>());
 #endif
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         instance().add_library(utopia::make_unique<TrilinosLibrary>());
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
 #ifdef WITH_MPI
         if (instance().libraries_.empty()) {

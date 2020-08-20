@@ -34,12 +34,12 @@ Visit our <a href="https://bitbucket.org/zulianp/utopia/wiki/Home">Wiki</a> for 
 #include "utopia_Solvers.hpp"
 #include "utopia_Utils.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 // Macros defined in a petsc header are conflicting with Enums defined in Trilinos
 // Trilinos inclusions should always preceed petsc inclusions
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
 #ifdef WITH_BLAS
 #include "utopia_blas.hpp"

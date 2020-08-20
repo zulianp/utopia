@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 
 #include "utopia.hpp"
 #include "utopia_Assert.hpp"
@@ -1377,7 +1377,7 @@ namespace utopia {
 
 #endif  // HAVE_BELOS_TPETRA
 
-#ifdef WITH_TRILINOS_AMESOS2
+#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
 
         void trilinos_amesos2() {
             std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml";
@@ -1599,13 +1599,13 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
 
-#ifdef WITH_TRILINOS_BELOS
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
             UTOPIA_RUN_TEST(trilinos_belos);
-#endif  // WITH_TRILINOS_BELOS
+#endif  // UTOPIA_WITH_TRILINOS_BELOS
 
-#ifdef WITH_TRILINOS_AMESOS2
+#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);
-#endif  // WITH_TRILINOS_AMESOS2
+#endif  // UTOPIA_WITH_TRILINOS_AMESOS2
 
 #ifdef UTOPIA_WITH_PETSC
             UTOPIA_RUN_TEST(trilinos_transform);
@@ -1640,4 +1640,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_specific);
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS

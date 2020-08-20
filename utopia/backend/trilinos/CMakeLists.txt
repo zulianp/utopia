@@ -28,26 +28,26 @@ if(TRILINOS_FOUND)
     # Unfortunately trilinos libraries are not namespaced (yet), we use the bare target names
     list(APPEND Utopia_Trilinos_possible_packages Amesos2 Belos Ifpack2 MueLu)
     foreach(package ${Utopia_Trilinos_possible_packages})
-        # e.g Amesos2: WITH_TRILINOS_AMESOS2=TRUE if package is found in Trilinos_PACKAGE_LIST
+        # e.g Amesos2: UTOPIA_WITH_TRILINOS_AMESOS2=TRUE if package is found in Trilinos_PACKAGE_LIST
         string(TOUPPER ${package} packageUpper)
         string(TOLOWER ${package} packageLower)
         list(FIND Trilinos_PACKAGE_LIST ${package} PACKAGE_FOUND)
         if (NOT PACKAGE_FOUND EQUAL -1)
-            set(WITH_TRILINOS_${packageUpper} TRUE PARENT_SCOPE)
+            set(UTOPIA_WITH_TRILINOS_${packageUpper} TRUE PARENT_SCOPE)
             list(APPEND UTOPIA_TRILINOS_DEPS ${packageLower})
         endif()
     endforeach()
 
-    set(WITH_TRILINOS TRUE)
+    set(UTOPIA_WITH_TRILINOS TRUE)
     set(UTOPIA_TRILINOS TRUE PARENT_SCOPE)
 
     find_package(TpetraExt)
     if(TRILINOS_TPETRAEXT_FOUND)
-        set(WITH_TRILINOS_TPETRAEXT TRUE PARENT_SCOPE)
+        set(UTOPIA_WITH_TRILINOS_TPETRAEXT TRUE PARENT_SCOPE)
     endif()
 else()
     message(WARNING "[Warning] Trilinos not found")
-    set(WITH_TRILINOS FALSE)
+    set(UTOPIA_WITH_TRILINOS FALSE)
 endif()
 
 # set-up module

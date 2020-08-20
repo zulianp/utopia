@@ -25,7 +25,7 @@ namespace utopia {
     UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
     UTOPIA_FACTORY_REGISTER_LINEAR_SOLVER(PetscLinearSolver);
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVectord);
     // FIXME
     // UTOPIA_FACTORY_REGISTER_MATRIX(TpetraMatrixd);
@@ -71,7 +71,7 @@ namespace utopia {
         void convenience_wrapper() {
             const SizeType n_local = 10;
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #ifdef UTOPIA_TPETRA_SIZE_TYPE
             // if types are the same TirlinosFactory == DefaultFactory
             InputParameters params;
@@ -79,7 +79,7 @@ namespace utopia {
             DefaultFactory::init(params);
 
 #endif  // UTOPIA_TPETRA_SIZE_TYPE
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
             auto comm_ptr = DefaultFactory::new_communicator();
             const SizeType n = n_local * comm_ptr->size();
@@ -137,7 +137,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_wrapper);
 #endif
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #ifdef UTOPIA_TPETRA_SIZE_TYPE
             UTOPIA_RUN_TEST(trilinos_wrapper);
 #endif

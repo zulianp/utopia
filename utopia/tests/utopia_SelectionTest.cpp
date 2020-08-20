@@ -123,10 +123,10 @@ namespace utopia {
     //   SelectionTest<PetscMatrix, PetscVector>().run();
 #endif  // UTOPIA_WITH_PETSC
 
-        // #ifdef WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
         // FIME missing implementation in TpetraMatrix
         //         SelectionTest<TpetraMatrixd, TpetraVectord>().run();
-        // #endif //WITH_TRILINOS
+        // #endif //UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(selection);

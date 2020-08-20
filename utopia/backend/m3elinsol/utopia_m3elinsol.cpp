@@ -1,8 +1,8 @@
 #include "utopia_m3elinsol_impl.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_trilinos.hpp"
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"
@@ -21,9 +21,9 @@ namespace utopia {
     template class ASPAMG<PetscMatrix, PetscVector>;
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 
     template class ASPAMG<TpetraMatrixd, TpetraVectord>;
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
 }  // namespace utopia

@@ -67,9 +67,9 @@ namespace utopia {
         run_parallel_test<Loops<PetscMatrix, PetscVector>>();
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         run_parallel_test<Loops<TpetraMatrixd, TpetraVectord>>();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(loops);

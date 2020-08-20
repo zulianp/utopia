@@ -1,7 +1,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_Testing.hpp"
 
 #include "utopia_trilinos_FECrsGraph.hpp"
@@ -216,4 +216,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(kokkos_view);
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS

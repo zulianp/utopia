@@ -6,7 +6,7 @@ list(APPEND UTILS_MODULES
 )
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${UTILS_MODULES}")
 
-if (WITH_TRILINOS)
+if (UTOPIA_WITH_TRILINOS)
     # we depend on kokkos headers, i.e. we need to pull in the kokkos target
     target_link_libraries(utopia PUBLIC Kokkos::kokkos)
 endif()

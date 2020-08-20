@@ -276,9 +276,9 @@ namespace utopia {
 
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         QPSolverTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
 #ifdef WITH_BLAS
         QPSolverTest<BlasMatrixd, BlasVectord>().run();  // TODO(zulianp): : because blas is missing min operation ....

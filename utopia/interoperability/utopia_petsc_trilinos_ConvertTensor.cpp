@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #ifdef UTOPIA_WITH_PETSC
 
 #include "utopia_petsc.hpp"

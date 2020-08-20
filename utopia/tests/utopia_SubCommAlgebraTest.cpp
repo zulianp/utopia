@@ -255,9 +255,9 @@ namespace utopia {
         run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>();
 #endif  // UTOPIA_WITH_PETSC
 
-        // #ifdef WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
         //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >();
-        // #endif //WITH_TRILINOS
+        // #endif //UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(sub_comm_algebra);

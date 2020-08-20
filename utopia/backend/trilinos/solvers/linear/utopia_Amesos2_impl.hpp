@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS_AMESOS2
+#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
 
 #include "utopia_Amesos2_solver.hpp"
 
@@ -356,4 +356,4 @@ namespace utopia {
 
 #endif  // HAVE_AMESOS2_KOKKOS
 #endif  // UTOPIA_AMESOS2_IMPL_HPP
-#endif  // WITH_TRILINOS_AMESOS2
+#endif  // UTOPIA_WITH_TRILINOS_AMESOS2

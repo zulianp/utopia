@@ -45,7 +45,7 @@ option(TRY_WITH_MPI "Enable the cuda backend" ON)
 # option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_UTOPIA_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
-option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
+option(TRY_UTOPIA_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"
        OFF)
@@ -417,7 +417,7 @@ if(INSTALL_PETSC_DEBUG)
 endif()
 
 # using this to defining UTOPIA_LAMBDA correctly
-if(TRY_WITH_TRILINOS)
+if(TRY_UTOPIA_WITH_TRILINOS)
     find_package(Trilinos)
     if(Trilinos_FOUND)
         # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS}
@@ -426,7 +426,7 @@ if(TRY_WITH_TRILINOS)
         # "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}")
         # message(STATUS "HERE:
         # ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}")
-        set(WITH_TRILINOS ON)
+        set(UTOPIA_WITH_TRILINOS ON)
     endif()
 endif()
 
@@ -460,7 +460,7 @@ if(TRY_WITH_BLAS)
     add_subdirectory(backend/blas)
 endif()
 
-if(TRY_WITH_TRILINOS)
+if(TRY_UTOPIA_WITH_TRILINOS)
     add_subdirectory(backend/trilinos)
 endif()
 
