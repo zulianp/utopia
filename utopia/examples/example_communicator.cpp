@@ -38,7 +38,7 @@ void example_communicator(utopia::Input &in) {
 int main(int argc, char **argv) {
     using namespace utopia;
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using VectorT = PetscVector;
 #else
 #ifdef WITH_TRILINOS

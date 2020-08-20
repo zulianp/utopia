@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/shared/utopia/build_docker/CMakeFiles/trilinos"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/CMakeFiles/trilinos.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/CMakeFiles/trilinos-complete.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-install.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-mkdir.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-download.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-update.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-patch.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-configure.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"trilinos"
+		],
+		"name" : "trilinos"
+	}
+}

@@ -126,7 +126,7 @@ static void run_access_blas(const int n) {
 }
 #endif  // WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 static void run_access_petsc(const int n) {
     utopia::out() << "Utopia Access Petsc" << std::endl;
     PetscVector v;
@@ -147,21 +147,21 @@ static void run_access_petsc(const int n) {
     c.stop();
     utopia::out() << c << std::endl;
 }
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 static void run_all(const int n) {
     run_raw(n);
     run_array(n);
     run_stl_each(n);
     run_for(n);
-    // if it has compiled with blas or petsc WITH_BLAS or WITH_PETSC macros are available (if you want to make it
+    // if it has compiled with blas or petsc WITH_BLAS or UTOPIA_WITH_PETSC macros are available (if you want to make it
     // compile no matter the utopia installation)
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     // run with petsc types
     run<PetscVector>(n);
     run_access<PetscVector>(n);
     run_access_petsc(n);
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_BLAS
     // run with blas types

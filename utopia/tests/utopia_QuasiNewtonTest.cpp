@@ -529,7 +529,7 @@ namespace utopia {
     };
 
     static void quasi_newton() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
         // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
 

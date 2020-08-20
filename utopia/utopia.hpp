@@ -45,10 +45,10 @@ Visit our <a href="https://bitbucket.org/zulianp/utopia/wiki/Home">Wiki</a> for 
 #include "utopia_blas.hpp"
 #endif  // WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_CUDA
 #include "utopia_cuda.hpp"

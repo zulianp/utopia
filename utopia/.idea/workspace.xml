@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" GENERATION_DIR="." />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="4b845d16-b352-4674-b012-da345b40fdec" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/../.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/utopia.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/INSTALL" beforeDir="false" afterPath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/INSTALL" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/m4/libtool.m4" beforeDir="false" afterPath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/m4/libtool.m4" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/scripts/config.guess" beforeDir="false" afterPath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/scripts/config.guess" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/scripts/config.sub" beforeDir="false" afterPath="$PROJECT_DIR$/build_dep/stage/src/petsc/arch-darwin-c-opt/externalpackages/git.pnetcdf/scripts/config.sub" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="IgnoredFileRootStore">
+    <option name="generatedRoots">
+      <set>
+        <option value="$PROJECT_DIR$/.idea" />
+      </set>
+    </option>
+  </component>
+  <component name="ProjectId" id="1eAbmUL9B4qfBPUP9tI1n9kibEv" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="4b845d16-b352-4674-b012-da345b40fdec" name="Default Changelist" comment="" />
+      <created>1593767503867</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1593767503867</updated>
+      <workItem from="1593767505006" duration="33000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

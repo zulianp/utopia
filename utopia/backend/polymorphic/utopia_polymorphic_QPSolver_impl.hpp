@@ -12,13 +12,13 @@
 #include "utopia_SemismoothNewton.hpp"
 
 // PETSC
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "petsctao.h"
 #include "utopia_petsc_Factorizations.hpp"
 #include "utopia_petsc_RowView.hpp"
 #include "utopia_petsc_SemismoothNewton.hpp"
 #include "utopia_petsc_TaoQPSolver.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #include <functional>
 #include <map>
@@ -69,7 +69,7 @@ namespace utopia {
             ls->read(in);
             // return std::move(ls);
             return ls;
-            // #ifdef WITH_PETSC
+            // #ifdef UTOPIA_WITH_PETSC
             //             return utopia::make_unique<Factorization<Matrix, Vector>>();
             // #else
             //             return utopia::make_unique<BiCGStab<Matrix, Vector>>();
@@ -90,7 +90,7 @@ namespace utopia {
             register_solver("any", "pcg", utopia::make_unique<ProjectedConjugateGradient<Matrix, Vector>>());
             register_solver("any", "pgs", utopia::make_unique<ProjectedGaussSeidel<Matrix, Vector>>());
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             register_solver(
                 "petsc",
                 "ssnewton",
@@ -102,7 +102,7 @@ namespace utopia {
             tron->tao_type(TAOTRON);
             tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
             register_solver("petsc", TAOTRON, std::move(tron));
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
         }
     };
 
@@ -123,7 +123,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     PolymorphicQPSolver<Matrix, Vector>::PolymorphicQPSolver() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
         tron->tao_type(TAOTRON);
         tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));

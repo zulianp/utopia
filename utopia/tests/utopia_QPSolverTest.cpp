@@ -11,10 +11,10 @@
 #include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 namespace utopia {
 
@@ -267,14 +267,14 @@ namespace utopia {
     // };
 
     static void qp_solver() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         QPSolverTest<PetscMatrix, PetscVector>().run();
         QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
 
         PQPSolverTest<PetscMatrix, PetscVector>().run();
         // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_TRILINOS
         QPSolverTest<TpetraMatrixd, TpetraVectord>().run();

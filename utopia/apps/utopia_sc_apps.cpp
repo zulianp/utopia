@@ -18,7 +18,7 @@
 
 // #include <cmath>
 
-// #ifdef WITH_PETSC
+// #ifdef UTOPIA_WITH_PETSC
 // #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
 
 // #include "utopia_petsc_DM.hpp"
@@ -71,7 +71,7 @@
 // }
 
 // #endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-// #endif //WITH_PETSC
+// #endif //UTOPIA_WITH_PETSC
 
 // namespace utopia {
 

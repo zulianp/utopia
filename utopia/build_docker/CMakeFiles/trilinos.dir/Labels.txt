@@ -1,0 +1,13 @@
+# Target labels
+ trilinos
+# Source files and their labels
+/shared/utopia/build_docker/CMakeFiles/trilinos
+/shared/utopia/build_docker/CMakeFiles/trilinos.rule
+/shared/utopia/build_docker/CMakeFiles/trilinos-complete.rule
+/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-install.rule
+/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-mkdir.rule
+/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-download.rule
+/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-update.rule
+/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-patch.rule
+/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-configure.rule
+/shared/utopia/build_docker/stage/src/trilinos-stamp/trilinos-build.rule

@@ -30,10 +30,10 @@ if(PETSC_FOUND)
         endif()
     endif()
 
-    set(WITH_PETSC TRUE)
+    set(UTOPIA_WITH_PETSC TRUE)
 else()
     message(WARNING "[Warning] Petsc not found")
-    set(WITH_PETSC FALSE)
+    set(UTOPIA_WITH_PETSC FALSE)
 endif()
 
 
@@ -61,7 +61,7 @@ endif()
 # set-up module
 if(PETSC_FOUND)
     set(UTOPIA_PETSC TRUE PARENT_SCOPE)
-    set(WITH_PETSC ON PARENT_SCOPE)
+    set(UTOPIA_WITH_PETSC ON PARENT_SCOPE)
 
     list(APPEND PETSC_MODULES
         .

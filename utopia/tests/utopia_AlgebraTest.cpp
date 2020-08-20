@@ -589,10 +589,10 @@ namespace utopia {
         SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
 #endif  // WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         DenseAlgebraTest<PetscMatrix, PetscVector>().run();
         SparseAlgebraTest<PetscMatrix, PetscVector>().run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_TRILINOS
         VectorAlgebraTest<TpetraVector>().run();

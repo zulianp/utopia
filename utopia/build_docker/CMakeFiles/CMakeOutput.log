@@ -1,0 +1,484 @@
+The system is: Linux - 4.19.76-linuxkit - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/clang 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+
+The C compiler identification is Clang, found in "/shared/utopia/build_docker/CMakeFiles/3.15.5/CompilerIdC/a.out"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: /usr/bin/clang++ 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+
+The CXX compiler identification is Clang, found in "/shared/utopia/build_docker/CMakeFiles/3.15.5/CompilerIdCXX/a.out"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_1efc2/fast && /usr/bin/make -f CMakeFiles/cmTC_1efc2.dir/build.make CMakeFiles/cmTC_1efc2.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_1efc2.dir/testCCompiler.c.o
+/usr/bin/clang    -o CMakeFiles/cmTC_1efc2.dir/testCCompiler.c.o   -c /shared/utopia/build_docker/CMakeFiles/CMakeTmp/testCCompiler.c
+Linking C executable cmTC_1efc2
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1efc2.dir/link.txt --verbose=1
+/usr/bin/clang    -L/opt/petsc/lib  CMakeFiles/cmTC_1efc2.dir/testCCompiler.c.o  -o cmTC_1efc2 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_d264b/fast && /usr/bin/make -f CMakeFiles/cmTC_d264b.dir/build.make CMakeFiles/cmTC_d264b.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o
+/usr/bin/clang   -v -o CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
+Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)
+Target: x86_64-alpine-linux-musl
+Thread model: posix
+InstalledDir: /usr/bin
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Candidate multilib: .;@m64
+Selected multilib: .;@m64
+ "/usr/bin/clang-9" -cc1 -triple x86_64-alpine-linux-musl -emit-obj -mrelax-all -disable-free -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mthread-model posix -mdisable-fp-elim -fmath-errno -masm-verbose -mconstructor-aliases -munwind-tables -fuse-init-array -target-cpu x86-64 -dwarf-column-info -debugger-tuning=gdb -v -coverage-notes-file /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.gcno -resource-dir /usr/lib/clang/9.0.0 -Iopt/petsc/include -I/opt/slepc/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/clang/9.0.0/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdebug-compilation-dir /shared/utopia/build_docker/CMakeFiles/CMakeTmp -ferror-limit 19 -fmessage-length 0 -stack-protector 2 -fobjc-runtime=gcc -fdiagnostics-show-option -faddrsig -o CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o -x c /usr/share/cmake/Modules/CMakeCCompilerABI.c
+clang -cc1 version 9.0.0 based upon LLVM 9.0.0 default target x86_64-alpine-linux-musl
+ignoring nonexistent directory "opt/petsc/include"
+ignoring nonexistent directory "/opt/slepc/include"
+ignoring nonexistent directory "/usr/local/include"
+ignoring nonexistent directory "/usr/lib/clang/9.0.0/include"
+ignoring nonexistent directory "/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/include
+End of search list.
+Linking C executable cmTC_d264b
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d264b.dir/link.txt --verbose=1
+/usr/bin/clang    -L/opt/petsc/lib -v CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o  -o cmTC_d264b 
+Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)
+Target: x86_64-alpine-linux-musl
+Thread model: posix
+InstalledDir: /usr/bin
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Candidate multilib: .;@m64
+Selected multilib: .;@m64
+ "/usr/bin/ld" -pie -z now -z relro --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib/ld-musl-x86_64.so.1 -o cmTC_d264b /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../Scrt1.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crti.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtbeginS.o -L/opt/petsc/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0 -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../.. -L/usr/bin/../lib -L/lib -L/usr/lib CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtendS.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crtn.o
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Parsed C implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [/usr/include]
+  end of search list found
+  collapse include dir [/usr/include] ==> [/usr/include]
+  implicit include dirs: [/usr/include]
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):/usr/bin/make cmTC_d264b/fast && /usr/bin/make -f CMakeFiles/cmTC_d264b.dir/build.make CMakeFiles/cmTC_d264b.dir/build]
+  ignore line: [make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp']
+  ignore line: [Building C object CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o]
+  ignore line: [/usr/bin/clang   -v -o CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
+  ignore line: [Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)]
+  ignore line: [Target: x86_64-alpine-linux-musl]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /usr/bin]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m64]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m64]
+  ignore line: [ "/usr/bin/clang-9" -cc1 -triple x86_64-alpine-linux-musl -emit-obj -mrelax-all -disable-free -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mthread-model posix -mdisable-fp-elim -fmath-errno -masm-verbose -mconstructor-aliases -munwind-tables -fuse-init-array -target-cpu x86-64 -dwarf-column-info -debugger-tuning=gdb -v -coverage-notes-file /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.gcno -resource-dir /usr/lib/clang/9.0.0 -Iopt/petsc/include -I/opt/slepc/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/clang/9.0.0/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdebug-compilation-dir /shared/utopia/build_docker/CMakeFiles/CMakeTmp -ferror-limit 19 -fmessage-length 0 -stack-protector 2 -fobjc-runtime=gcc -fdiagnostics-show-option -faddrsig -o CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o -x c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
+  ignore line: [clang -cc1 version 9.0.0 based upon LLVM 9.0.0 default target x86_64-alpine-linux-musl]
+  ignore line: [ignoring nonexistent directory "opt/petsc/include"]
+  ignore line: [ignoring nonexistent directory "/opt/slepc/include"]
+  ignore line: [ignoring nonexistent directory "/usr/local/include"]
+  ignore line: [ignoring nonexistent directory "/usr/lib/clang/9.0.0/include"]
+  ignore line: [ignoring nonexistent directory "/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ /usr/include]
+  ignore line: [End of search list.]
+  ignore line: [Linking C executable cmTC_d264b]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d264b.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/clang    -L/opt/petsc/lib -v CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o  -o cmTC_d264b ]
+  ignore line: [Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)]
+  ignore line: [Target: x86_64-alpine-linux-musl]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /usr/bin]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m64]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m64]
+  link line: [ "/usr/bin/ld" -pie -z now -z relro --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib/ld-musl-x86_64.so.1 -o cmTC_d264b /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../Scrt1.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crti.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtbeginS.o -L/opt/petsc/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0 -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../.. -L/usr/bin/../lib -L/lib -L/usr/lib CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtendS.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crtn.o]
+    arg [/usr/bin/ld] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-znow] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib/ld-musl-x86_64.so.1] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_d264b] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../Scrt1.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crti.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtbeginS.o] ==> ignore
+    arg [-L/opt/petsc/lib] ==> dir [/opt/petsc/lib]
+    arg [-L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0] ==> dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+    arg [-L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib] ==> dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib]
+    arg [-L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../..] ==> dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../..]
+    arg [-L/usr/bin/../lib] ==> dir [/usr/bin/../lib]
+    arg [-L/lib] ==> dir [/lib]
+    arg [-L/usr/lib] ==> dir [/usr/lib]
+    arg [CMakeFiles/cmTC_d264b.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--no-as-needed] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtendS.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crtn.o] ==> ignore
+  collapse library dir [/opt/petsc/lib] ==> [/opt/petsc/lib]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0] ==> [/usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib] ==> [/usr/x86_64-alpine-linux-musl/lib]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../..] ==> [/usr/lib]
+  collapse library dir [/usr/bin/../lib] ==> [/usr/lib]
+  collapse library dir [/lib] ==> [/lib]
+  collapse library dir [/usr/lib] ==> [/usr/lib]
+  implicit libs: [gcc;gcc_s;c;gcc;gcc_s]
+  implicit dirs: [/opt/petsc/lib;/usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0;/usr/x86_64-alpine-linux-musl/lib;/usr/lib;/lib]
+  implicit fwks: []
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_ef9bf/fast && /usr/bin/make -f CMakeFiles/cmTC_ef9bf.dir/build.make CMakeFiles/cmTC_ef9bf.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_ef9bf.dir/testCXXCompiler.cxx.o
+/usr/bin/clang++     -o CMakeFiles/cmTC_ef9bf.dir/testCXXCompiler.cxx.o -c /shared/utopia/build_docker/CMakeFiles/CMakeTmp/testCXXCompiler.cxx
+Linking CXX executable cmTC_ef9bf
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ef9bf.dir/link.txt --verbose=1
+/usr/bin/clang++     -L/opt/petsc/lib  CMakeFiles/cmTC_ef9bf.dir/testCXXCompiler.cxx.o  -o cmTC_ef9bf 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_d0197/fast && /usr/bin/make -f CMakeFiles/cmTC_d0197.dir/build.make CMakeFiles/cmTC_d0197.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o
+/usr/bin/clang++    -v -o CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)
+Target: x86_64-alpine-linux-musl
+Thread model: posix
+InstalledDir: /usr/bin
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Candidate multilib: .;@m64
+Selected multilib: .;@m64
+ "/usr/bin/clang-9" -cc1 -triple x86_64-alpine-linux-musl -emit-obj -mrelax-all -disable-free -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mthread-model posix -mdisable-fp-elim -fmath-errno -masm-verbose -mconstructor-aliases -munwind-tables -fuse-init-array -target-cpu x86-64 -dwarf-column-info -debugger-tuning=gdb -v -coverage-notes-file /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.gcno -resource-dir /usr/lib/clang/9.0.0 -Iopt/petsc/include -I/opt/slepc/include -internal-isystem /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0 -internal-isystem /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/x86_64-alpine-linux-musl -internal-isystem /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/backward -internal-isystem /usr/local/include -internal-isystem /usr/lib/clang/9.0.0/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -fdebug-compilation-dir /shared/utopia/build_docker/CMakeFiles/CMakeTmp -ferror-limit 19 -fmessage-length 0 -stack-protector 2 -fobjc-runtime=gcc -fcxx-exceptions -fexceptions -fdiagnostics-show-option -faddrsig -o CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+clang -cc1 version 9.0.0 based upon LLVM 9.0.0 default target x86_64-alpine-linux-musl
+ignoring nonexistent directory "opt/petsc/include"
+ignoring nonexistent directory "/opt/slepc/include"
+ignoring nonexistent directory "/usr/local/include"
+ignoring nonexistent directory "/usr/lib/clang/9.0.0/include"
+ignoring nonexistent directory "/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0
+ /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/x86_64-alpine-linux-musl
+ /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/backward
+ /usr/include
+End of search list.
+Linking CXX executable cmTC_d0197
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d0197.dir/link.txt --verbose=1
+/usr/bin/clang++     -L/opt/petsc/lib -v CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o  -o cmTC_d0197 
+Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)
+Target: x86_64-alpine-linux-musl
+Thread model: posix
+InstalledDir: /usr/bin
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0
+Candidate multilib: .;@m64
+Selected multilib: .;@m64
+ "/usr/bin/ld" -pie -z now -z relro --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib/ld-musl-x86_64.so.1 -o cmTC_d0197 /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../Scrt1.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crti.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtbeginS.o -L/opt/petsc/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0 -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../.. -L/usr/bin/../lib -L/lib -L/usr/lib CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtendS.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crtn.o
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Parsed CXX implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0]
+    add: [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/x86_64-alpine-linux-musl]
+    add: [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/backward]
+    add: [/usr/include]
+  end of search list found
+  collapse include dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0] ==> [/usr/include/c++/9.2.0]
+  collapse include dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/x86_64-alpine-linux-musl] ==> [/usr/include/c++/9.2.0/x86_64-alpine-linux-musl]
+  collapse include dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/backward] ==> [/usr/include/c++/9.2.0/backward]
+  collapse include dir [/usr/include] ==> [/usr/include]
+  implicit include dirs: [/usr/include/c++/9.2.0;/usr/include/c++/9.2.0/x86_64-alpine-linux-musl;/usr/include/c++/9.2.0/backward;/usr/include]
+
+
+Parsed CXX implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):/usr/bin/make cmTC_d0197/fast && /usr/bin/make -f CMakeFiles/cmTC_d0197.dir/build.make CMakeFiles/cmTC_d0197.dir/build]
+  ignore line: [make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp']
+  ignore line: [Building CXX object CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [/usr/bin/clang++    -v -o CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+  ignore line: [Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)]
+  ignore line: [Target: x86_64-alpine-linux-musl]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /usr/bin]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m64]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m64]
+  ignore line: [ "/usr/bin/clang-9" -cc1 -triple x86_64-alpine-linux-musl -emit-obj -mrelax-all -disable-free -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mthread-model posix -mdisable-fp-elim -fmath-errno -masm-verbose -mconstructor-aliases -munwind-tables -fuse-init-array -target-cpu x86-64 -dwarf-column-info -debugger-tuning=gdb -v -coverage-notes-file /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.gcno -resource-dir /usr/lib/clang/9.0.0 -Iopt/petsc/include -I/opt/slepc/include -internal-isystem /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0 -internal-isystem /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/x86_64-alpine-linux-musl -internal-isystem /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/backward -internal-isystem /usr/local/include -internal-isystem /usr/lib/clang/9.0.0/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -fdebug-compilation-dir /shared/utopia/build_docker/CMakeFiles/CMakeTmp -ferror-limit 19 -fmessage-length 0 -stack-protector 2 -fobjc-runtime=gcc -fcxx-exceptions -fexceptions -fdiagnostics-show-option -faddrsig -o CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+  ignore line: [clang -cc1 version 9.0.0 based upon LLVM 9.0.0 default target x86_64-alpine-linux-musl]
+  ignore line: [ignoring nonexistent directory "opt/petsc/include"]
+  ignore line: [ignoring nonexistent directory "/opt/slepc/include"]
+  ignore line: [ignoring nonexistent directory "/usr/local/include"]
+  ignore line: [ignoring nonexistent directory "/usr/lib/clang/9.0.0/include"]
+  ignore line: [ignoring nonexistent directory "/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0]
+  ignore line: [ /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/x86_64-alpine-linux-musl]
+  ignore line: [ /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../include/c++/9.2.0/backward]
+  ignore line: [ /usr/include]
+  ignore line: [End of search list.]
+  ignore line: [Linking CXX executable cmTC_d0197]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d0197.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/clang++     -L/opt/petsc/lib -v CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o  -o cmTC_d0197 ]
+  ignore line: [Alpine clang version 9.0.0 (https://git.alpinelinux.org/aports f7f0d2c2b8bcd6a5843401a9a702029556492689) (based on LLVM 9.0.0)]
+  ignore line: [Target: x86_64-alpine-linux-musl]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /usr/bin]
+  ignore line: [Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Found candidate GCC installation: /usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Selected GCC installation: /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m64]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m64]
+  link line: [ "/usr/bin/ld" -pie -z now -z relro --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib/ld-musl-x86_64.so.1 -o cmTC_d0197 /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../Scrt1.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crti.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtbeginS.o -L/opt/petsc/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0 -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib -L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../.. -L/usr/bin/../lib -L/lib -L/usr/lib CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtendS.o /usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crtn.o]
+    arg [/usr/bin/ld] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-znow] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib/ld-musl-x86_64.so.1] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_d0197] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../Scrt1.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crti.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtbeginS.o] ==> ignore
+    arg [-L/opt/petsc/lib] ==> dir [/opt/petsc/lib]
+    arg [-L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0] ==> dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+    arg [-L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib] ==> dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib]
+    arg [-L/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../..] ==> dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../..]
+    arg [-L/usr/bin/../lib] ==> dir [/usr/bin/../lib]
+    arg [-L/lib] ==> dir [/lib]
+    arg [-L/usr/lib] ==> dir [/usr/lib]
+    arg [CMakeFiles/cmTC_d0197.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [-lstdc++] ==> lib [stdc++]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/crtendS.o] ==> ignore
+    arg [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../crtn.o] ==> ignore
+  collapse library dir [/opt/petsc/lib] ==> [/opt/petsc/lib]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0] ==> [/usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../../../x86_64-alpine-linux-musl/lib] ==> [/usr/x86_64-alpine-linux-musl/lib]
+  collapse library dir [/usr/bin/../lib/gcc/x86_64-alpine-linux-musl/9.2.0/../../..] ==> [/usr/lib]
+  collapse library dir [/usr/bin/../lib] ==> [/usr/lib]
+  collapse library dir [/lib] ==> [/lib]
+  collapse library dir [/usr/lib] ==> [/usr/lib]
+  implicit libs: [stdc++;m;gcc_s;gcc;c;gcc_s;gcc]
+  implicit dirs: [/opt/petsc/lib;/usr/lib/gcc/x86_64-alpine-linux-musl/9.2.0;/usr/x86_64-alpine-linux-musl/lib;/usr/lib;/lib]
+  implicit fwks: []
+
+
+Determining if the include file pthread.h exists passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_3f4a7/fast && /usr/bin/make -f CMakeFiles/cmTC_3f4a7.dir/build.make CMakeFiles/cmTC_3f4a7.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_3f4a7.dir/CheckIncludeFile.c.o
+/usr/bin/clang   -fPIE   -o CMakeFiles/cmTC_3f4a7.dir/CheckIncludeFile.c.o   -c /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_3f4a7
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_3f4a7.dir/link.txt --verbose=1
+/usr/bin/clang    -L/opt/petsc/lib  CMakeFiles/cmTC_3f4a7.dir/CheckIncludeFile.c.o  -o cmTC_3f4a7 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD succeeded with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_c3f10/fast && /usr/bin/make -f CMakeFiles/cmTC_c3f10.dir/build.make CMakeFiles/cmTC_c3f10.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_c3f10.dir/src.c.o
+/usr/bin/clang   -DCMAKE_HAVE_LIBC_PTHREAD -fPIE   -o CMakeFiles/cmTC_c3f10.dir/src.c.o   -c /shared/utopia/build_docker/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_c3f10
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c3f10.dir/link.txt --verbose=1
+/usr/bin/clang  -DCMAKE_HAVE_LIBC_PTHREAD  -L/opt/petsc/lib  CMakeFiles/cmTC_c3f10.dir/src.c.o  -o cmTC_c3f10 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function sgemm_ exists passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_3eaa1/fast && /usr/bin/make -f CMakeFiles/cmTC_3eaa1.dir/build.make CMakeFiles/cmTC_3eaa1.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_3eaa1.dir/CheckFunctionExists.c.o
+/usr/bin/clang   -DCHECK_FUNCTION_EXISTS=sgemm_ -fPIE   -o CMakeFiles/cmTC_3eaa1.dir/CheckFunctionExists.c.o   -c /usr/share/cmake/Modules/CheckFunctionExists.c
+Linking C executable cmTC_3eaa1
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_3eaa1.dir/link.txt --verbose=1
+/usr/bin/clang  -DCHECK_FUNCTION_EXISTS=sgemm_  -L/opt/petsc/lib  CMakeFiles/cmTC_3eaa1.dir/CheckFunctionExists.c.o  -o cmTC_3eaa1 /usr/lib/libblas.so 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Determining if the function cheev_ exists passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_bd448/fast && /usr/bin/make -f CMakeFiles/cmTC_bd448.dir/build.make CMakeFiles/cmTC_bd448.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_bd448.dir/CheckFunctionExists.c.o
+/usr/bin/clang -DLAPACK_USE_F2C  -DCHECK_FUNCTION_EXISTS=cheev_ -fPIE   -o CMakeFiles/cmTC_bd448.dir/CheckFunctionExists.c.o   -c /usr/share/cmake/Modules/CheckFunctionExists.c
+Linking C executable cmTC_bd448
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bd448.dir/link.txt --verbose=1
+/usr/bin/clang  -DCHECK_FUNCTION_EXISTS=cheev_  -L/opt/petsc/lib  CMakeFiles/cmTC_bd448.dir/CheckFunctionExists.c.o  -o cmTC_bd448 /usr/lib/liblapack.so /usr/lib/libblas.so 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Determining if the include file sys/types.h exists passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_ba385/fast && /usr/bin/make -f CMakeFiles/cmTC_ba385.dir/build.make CMakeFiles/cmTC_ba385.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_ba385.dir/CheckIncludeFile.c.o
+/usr/bin/clang  -I/opt/petsc/include  -fPIE   -o CMakeFiles/cmTC_ba385.dir/CheckIncludeFile.c.o   -c /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_ba385
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ba385.dir/link.txt --verbose=1
+/usr/bin/clang    -L/opt/petsc/lib  CMakeFiles/cmTC_ba385.dir/CheckIncludeFile.c.o  -o cmTC_ba385 /opt/petsc/lib/libpetsc.so /opt/petsc/lib/libcmumps.a /opt/petsc/lib/libdmumps.a /opt/petsc/lib/libsmumps.a /opt/petsc/lib/libzmumps.a /opt/petsc/lib/libmumps_common.a /opt/petsc/lib/libpord.a /opt/petsc/lib/libscalapack.a /opt/petsc/lib/libsuperlu_dist.so /opt/petsc/lib/libHYPRE.a /usr/lib/liblapack.so /usr/lib/libblas.so /opt/petsc/lib/libparmetis.so /opt/petsc/lib/libmetis.so /opt/petsc/lib/libmpifort.so /opt/petsc/lib/libmpi.so /usr/lib/libgfortran.so /usr/lib/libm.a /usr/lib/libssp_nonshared.a -lgcc_s /usr/lib/libquadmath.so /usr/lib/libstdc++.so /usr/lib/libdl.a 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Determining if the include file stdint.h exists passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_bd712/fast && /usr/bin/make -f CMakeFiles/cmTC_bd712.dir/build.make CMakeFiles/cmTC_bd712.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_bd712.dir/CheckIncludeFile.c.o
+/usr/bin/clang  -I/opt/petsc/include  -fPIE   -o CMakeFiles/cmTC_bd712.dir/CheckIncludeFile.c.o   -c /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_bd712
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bd712.dir/link.txt --verbose=1
+/usr/bin/clang    -L/opt/petsc/lib  CMakeFiles/cmTC_bd712.dir/CheckIncludeFile.c.o  -o cmTC_bd712 /opt/petsc/lib/libpetsc.so /opt/petsc/lib/libcmumps.a /opt/petsc/lib/libdmumps.a /opt/petsc/lib/libsmumps.a /opt/petsc/lib/libzmumps.a /opt/petsc/lib/libmumps_common.a /opt/petsc/lib/libpord.a /opt/petsc/lib/libscalapack.a /opt/petsc/lib/libsuperlu_dist.so /opt/petsc/lib/libHYPRE.a /usr/lib/liblapack.so /usr/lib/libblas.so /opt/petsc/lib/libparmetis.so /opt/petsc/lib/libmetis.so /opt/petsc/lib/libmpifort.so /opt/petsc/lib/libmpi.so /usr/lib/libgfortran.so /usr/lib/libm.a /usr/lib/libssp_nonshared.a -lgcc_s /usr/lib/libquadmath.so /usr/lib/libstdc++.so /usr/lib/libdl.a 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Determining if the include file stddef.h exists passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_7dd72/fast && /usr/bin/make -f CMakeFiles/cmTC_7dd72.dir/build.make CMakeFiles/cmTC_7dd72.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_7dd72.dir/CheckIncludeFile.c.o
+/usr/bin/clang  -I/opt/petsc/include  -fPIE   -o CMakeFiles/cmTC_7dd72.dir/CheckIncludeFile.c.o   -c /shared/utopia/build_docker/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_7dd72
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7dd72.dir/link.txt --verbose=1
+/usr/bin/clang    -L/opt/petsc/lib  CMakeFiles/cmTC_7dd72.dir/CheckIncludeFile.c.o  -o cmTC_7dd72 /opt/petsc/lib/libpetsc.so /opt/petsc/lib/libcmumps.a /opt/petsc/lib/libdmumps.a /opt/petsc/lib/libsmumps.a /opt/petsc/lib/libzmumps.a /opt/petsc/lib/libmumps_common.a /opt/petsc/lib/libpord.a /opt/petsc/lib/libscalapack.a /opt/petsc/lib/libsuperlu_dist.so /opt/petsc/lib/libHYPRE.a /usr/lib/liblapack.so /usr/lib/libblas.so /opt/petsc/lib/libparmetis.so /opt/petsc/lib/libmetis.so /opt/petsc/lib/libmpifort.so /opt/petsc/lib/libmpi.so /usr/lib/libgfortran.so /usr/lib/libm.a /usr/lib/libssp_nonshared.a -lgcc_s /usr/lib/libquadmath.so /usr/lib/libstdc++.so /usr/lib/libdl.a 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+
+Determining size of PetscInt passed with the following output:
+Change Dir: /shared/utopia/build_docker/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_1c3b6/fast && /usr/bin/make -f CMakeFiles/cmTC_1c3b6.dir/build.make CMakeFiles/cmTC_1c3b6.dir/build
+make[1]: Entering directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_1c3b6.dir/PETSC_INT_SIZE.c.o
+/usr/bin/clang  -I/opt/petsc/include  -fPIE   -o CMakeFiles/cmTC_1c3b6.dir/PETSC_INT_SIZE.c.o   -c /shared/utopia/build_docker/CMakeFiles/CheckTypeSize/PETSC_INT_SIZE.c
+Linking C executable cmTC_1c3b6
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1c3b6.dir/link.txt --verbose=1
+/usr/bin/clang    -L/opt/petsc/lib  CMakeFiles/cmTC_1c3b6.dir/PETSC_INT_SIZE.c.o  -o cmTC_1c3b6 /opt/petsc/lib/libpetsc.so /opt/petsc/lib/libcmumps.a /opt/petsc/lib/libdmumps.a /opt/petsc/lib/libsmumps.a /opt/petsc/lib/libzmumps.a /opt/petsc/lib/libmumps_common.a /opt/petsc/lib/libpord.a /opt/petsc/lib/libscalapack.a /opt/petsc/lib/libsuperlu_dist.so /opt/petsc/lib/libHYPRE.a /usr/lib/liblapack.so /usr/lib/libblas.so /opt/petsc/lib/libparmetis.so /opt/petsc/lib/libmetis.so /opt/petsc/lib/libmpifort.so /opt/petsc/lib/libmpi.so /usr/lib/libgfortran.so /usr/lib/libm.a /usr/lib/libssp_nonshared.a -lgcc_s /usr/lib/libquadmath.so /usr/lib/libstdc++.so /usr/lib/libdl.a 
+make[1]: Leaving directory '/shared/utopia/build_docker/CMakeFiles/CMakeTmp'
+
+
+

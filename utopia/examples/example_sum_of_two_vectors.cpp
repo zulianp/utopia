@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
     using namespace utopia;
 
 // Checking which backend is active.
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else

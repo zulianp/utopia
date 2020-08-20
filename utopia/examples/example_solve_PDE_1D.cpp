@@ -98,7 +98,7 @@ void solve_PDE_1D(utopia::Input& in) {
 int main(int argc, char** argv) {
     using namespace utopia;
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else

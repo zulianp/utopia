@@ -1,0 +1,1 @@
+cmd='<SOURCE_DIR>/configure;--prefix=<INSTALL_DIR>;--with-mpi=1;--download-mumps=yes;--download-scalapack=yes;--download-hypre=yes;--with-cxx-dialect=C++11;--with-debugging=1;--with-64-bit-indices=1'

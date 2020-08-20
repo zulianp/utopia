@@ -4,7 +4,7 @@
 #include "utopia.hpp"
 #include "utopia_TestFunctions.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -92,6 +92,6 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #endif  // UTOPIA_PETSC_MULTILEVEL_TEST_PROBLEM_HPP

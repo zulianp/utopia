@@ -119,9 +119,9 @@ namespace utopia {
     //     SelectionTest<BlasMatrixd, BlasVectord>().run();
 #endif  // WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     //   SelectionTest<PetscMatrix, PetscVector>().run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
         // #ifdef WITH_TRILINOS
         // FIME missing implementation in TpetraMatrix

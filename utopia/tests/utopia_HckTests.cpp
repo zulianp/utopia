@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
@@ -237,7 +237,7 @@ namespace utopia {
             }
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
-            // #ifdef WITH_PETSC
+            // #ifdef UTOPIA_WITH_PETSC
             //     #ifdef WITH_SLEPC
             //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
             //         // TODO:: add checks if has arpack
@@ -249,7 +249,7 @@ namespace utopia {
             //         auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver,
             //         eigen_solver);
             //     #endif //WITH_SLEPC
-            // #endif //WITH_PETSC
+            // #endif //UTOPIA_WITH_PETSC
 
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_);
@@ -866,4 +866,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(hck);
 }  // namespace utopia
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC

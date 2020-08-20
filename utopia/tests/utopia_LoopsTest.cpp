@@ -63,9 +63,9 @@ namespace utopia {
         run_serial_test<Loops<BlasMatrixd, BlasVectord>>();
 #endif  // WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         run_parallel_test<Loops<PetscMatrix, PetscVector>>();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_TRILINOS
         run_parallel_test<Loops<TpetraMatrixd, TpetraVectord>>();

@@ -4,10 +4,10 @@
 #include "utopia_trilinos.hpp"
 #endif  // WITH_TRILINOS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_BLAS
 #include "utopia_blas.hpp"
@@ -17,9 +17,9 @@
 
 namespace utopia {
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     template class ASPAMG<PetscMatrix, PetscVector>;
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_TRILINOS
 

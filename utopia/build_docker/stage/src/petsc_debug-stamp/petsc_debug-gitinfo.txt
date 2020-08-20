@@ -1,0 +1,3 @@
+repository='https://gitlab.com/petsc/petsc.git'
+module=''
+tag='origin'

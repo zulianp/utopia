@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/shared/utopia/build_docker/CMakeFiles/petsc_debug"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/CMakeFiles/petsc_debug.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/CMakeFiles/petsc_debug-complete.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/petsc_debug-stamp/petsc_debug-install.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/petsc_debug-stamp/petsc_debug-mkdir.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/petsc_debug-stamp/petsc_debug-download.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/petsc_debug-stamp/petsc_debug-update.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/petsc_debug-stamp/petsc_debug-patch.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/petsc_debug-stamp/petsc_debug-configure.rule"
+		},
+		{
+			"file" : "/shared/utopia/build_docker/stage/src/petsc_debug-stamp/petsc_debug-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"petsc_debug"
+		],
+		"name" : "petsc_debug"
+	}
+}

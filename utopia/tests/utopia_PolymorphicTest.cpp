@@ -8,15 +8,15 @@
 #include "utopia_ObjectFactory.hpp"
 #include "utopia_make_unique.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 namespace utopia {
 
 // Register types
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 
     // FIXME make it so that also includes utopia front-end solvers
     using PetscLinearSolver = utopia::KSPSolver<PetscMatrix, PetscVector>;
@@ -133,7 +133,7 @@ namespace utopia {
         void run() {
             UTOPIA_RUN_TEST(convenience_wrapper);
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             UTOPIA_RUN_TEST(petsc_wrapper);
 #endif
 
@@ -149,5 +149,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(polymorphic);
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 }  // namespace utopia

@@ -59,7 +59,7 @@ namespace utopia {
 
         // void convert_test()
         // {
-        //     #ifdef WITH_PETSC
+        //     #ifdef UTOPIA_WITH_PETSC
         //         if(Traits<Vector>::Backend == PETSC) {
         //             Vector ut_vec = local_zeros(10);
 
@@ -323,7 +323,8 @@ namespace utopia {
             Vector x(vec_layout, 1.0);
 
             auto x_view = view_device(x);
-            parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i + 1) * x_view.get(i)); });
+            parallel_for(
+                range_device(x), UTOPIA_LAMBDA(const SizeType &i) { x_view.set(i, (i + 1) * x_view.get(i)); });
 
             Scalar expected = ((x.size() + 1) * x.size()) / 2.0;
             Scalar sum_x = sum(x);
@@ -399,11 +400,12 @@ namespace utopia {
                 auto d_y = const_local_view_device(y);
                 auto d_z = local_view_device(z);
 
-                parallel_for(local_range_device(z), UTOPIA_LAMBDA(const SizeType i) {
-                    const Scalar xi = d_x.get(i);
-                    const Scalar yi = d_y.get(i);
-                    d_z.set(i, xi - yi);
-                });
+                parallel_for(
+                    local_range_device(z), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar xi = d_x.get(i);
+                        const Scalar yi = d_y.get(i);
+                        d_z.set(i, xi - yi);
+                    });
             }
 
             Scalar sum_z = sum(z);
@@ -420,11 +422,12 @@ namespace utopia {
                 auto d_y = const_local_view_device(y);
                 auto d_z = local_view_device(z);
 
-                parallel_for(local_range_device(z), UTOPIA_LAMBDA(const SizeType i) {
-                    const Scalar xi = d_x.get(i);
-                    const Scalar yi = d_y.get(i);
-                    d_z.set(i, xi - yi);
-                });
+                parallel_for(
+                    local_range_device(z), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar xi = d_x.get(i);
+                        const Scalar yi = d_y.get(i);
+                        d_z.set(i, xi - yi);
+                    });
             }
 
             Scalar sum_z = sum(z);
@@ -439,10 +442,11 @@ namespace utopia {
                 auto x_view = view_device(x);
                 auto y_view = view_device(y);
 
-                parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                    x_view.set(i, -(i + 1.0));
-                    y_view.set(i, (i + 1.0));
-                });
+                parallel_for(
+                    range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                        x_view.set(i, -(i + 1.0));
+                        y_view.set(i, (i + 1.0));
+                    });
             }
 
             const Scalar m = multi_min(x, y);
@@ -584,7 +588,7 @@ namespace utopia {
     };
 
     void expr() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         ExpressionTests<PetscMatrix, PetscVector>(PetscCommunicator(), 10).run();
 #endif
 

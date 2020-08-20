@@ -15,9 +15,9 @@
 #include "utopia_trilinos_Library.hpp"
 #endif  // WITH_TRILINOS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Library.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #ifdef WITH_MPI
 #include <mpi.h>
@@ -29,7 +29,7 @@
 namespace utopia {
 
     void Utopia::Init(int argc, char *argv[]) {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         instance().add_library(utopia::make_unique<PetscLibrary>());
 #endif
 
