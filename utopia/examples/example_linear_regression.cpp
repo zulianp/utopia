@@ -13,27 +13,27 @@
 #include "utopia_Version.hpp"
 using namespace std;
 
-////////////////////////////////////////////////////////////////////////////////
-// With linear regression, we are searching for parameters, such that our model
-// gives the most reasonable prediction. To do this, we need to minimise the cost
-// function J(theta), which basically
-// tells us the difference between the actual value y and the value predicted by
-// our hypothesis function.
-// For this example, we rely on a dataset consisting of s samples. Each sample is
-// defined by an input xi and an output yi. The input xi expresses a
-// population and the output yi expresses the profit earned by a foodtruck of
-// a certain company. Supposing that we would like to have a foodtruck in a city
-// with a certain population, we would be able to predict the profit for the food
-// truck, thanks to our model parametrized by theta. For examples with a population
-// of 43'000, we will be able to write a vector [1, 4.3], - with 1 being the bias,
-// -  and by multiplying this vector by theta we will obtain an estimation
-// of the profit. The cost function is defined as:
-////////////////////////////////////////////////////////////////////////////////
+/**
+ * With linear regression, we are searching for parameters, such that our model
+ * gives the most reasonable prediction. To do this, we need to minimise the cost
+ * function J(theta), which basically
+ * tells us the difference between the actual value y and the value predicted by
+ * our hypothesis function.
+ * For this example, we rely on a dataset consisting of s samples. Each sample is
+ * defined by an input xi and an output yi. The input xi expresses a
+ * population and the output yi expresses the profit earned by a foodtruck of
+ * a certain company. Supposing that we would like to have a foodtruck in a city
+ * with a certain population, we would be able to predict the profit for the food
+ * truck, thanks to our model parametrized by theta. For examples with a population
+ * of 43'000, we will be able to write a vector [1, 4.3], - with 1 being the bias,
+ * -  and by multiplying this vector by theta we will obtain an estimation
+ * of the profit. The cost function is defined as:
+ */
 
-////////////////////////////////////////////////////////////////////////////////
-// Contains a file whose first columns contain a population/10000 and the profit
-// of a foodtrack in a place with that population/10000.
-////////////////////////////////////////////////////////////////////////////////
+/**
+ * Contains a file whose first columns contain a population/10000 and the profit
+ * of a foodtrack in a place with that population/10000.
+ */
 const char* file = "./../examples/profit.csv";
 
 namespace utopia {
@@ -46,10 +46,10 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Through this constructor, we read the file csv and we save the data in
-        // a matrix X and a vector y.
-        ////////////////////////////////////////////////////////////////////////////////
+        /**
+         * Through this constructor, we read the file csv and we save the data in
+         * a matrix X and a vector y.
+         */
         LinearRegression() : num_of_samples_(96) {
             fstream data_file;
             string line, number;
@@ -64,7 +64,9 @@ namespace utopia {
             y_.values(l, 0);
             auto y_view = local_view_device(y_);
 
-            // local entries
+            /**
+             * local entries
+             */
             SizeType n_local_rows = num_of_samples_;
             SizeType n_local_cols = 2;
 
@@ -105,14 +107,18 @@ namespace utopia {
 
             Xt_ = transpose(X_);
 
-            ////////////////////////////////////////////////////////////////////////////////
-            // Initialise the vector fo the squared errors and
-            // the hypothesis function.
-            ////////////////////////////////////////////////////////////////////////////////
+            /**
+             * Initialise the vector fo the squared errors and
+             * the hypothesis function.
+             */
             errors_ = make_unique<Vector>(l, 0.0);
             h_ = make_unique<Vector>(l, 0.0);
         }
 
+        // \f\begin{equation*}
+        // 	J(\Theta)
+        // =\frac{1}{2s}\mathlarger{\mathlarger{‎‎\sum}}_{i=1}^{s}(h_{\Theta}({\Theta}^{(i)})-y^{(i)})^2
+        // \end{equation*} \f
         bool value(const Vector& theta, Scalar& cost) const override {
             if (theta.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
@@ -241,7 +247,7 @@ void test() {
 
     QuasiNewton<Vector> solverQN(hess_approx, lsolver);
     // solve
-    solverQN.verbose(true);
+    // solverQN.verbose(true);
     solverQN.solve(newLinearRegression, x);
     QN.stop();
 
@@ -253,11 +259,9 @@ void test() {
     cout << GD.get_seconds() - QN.get_seconds() << " seconds faster than graident descent." << endl;
 }
 
-////////////////////////////////////////////////////////////////////////////////
 // This example does not work in parallel.
 // Please run the example with the following command:
 // make -j 4  utopia_examples && ./examples/example_linear_regression
-////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv) {
     using namespace utopia;
 
