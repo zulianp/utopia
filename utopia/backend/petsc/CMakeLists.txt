@@ -38,22 +38,22 @@ endif()
 
 
 
-if(PETSC_FOUND AND TRY_WITH_SLEPC)
+if(PETSC_FOUND AND TRY_UTOPIA_WITH_SLEPC)
     find_package(SLEPc)
     if(SLEPC_FOUND)
         list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${SLEPC_INCLUDES})
         list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${SLEPC_LIBRARIES})
         message(STATUS "Slepc FOUND")
-        set(WITH_SLEPC TRUE)
+        set(UTOPIA_WITH_SLEPC TRUE)
     else()
         message(WARNING "[Warning] Slepc not found")
-        set(WITH_SLEPC FALSE)
+        set(UTOPIA_WITH_SLEPC FALSE)
     endif()
 endif()
 
 
 if(SLEPC_FOUND)
-    set(WITH_SLEPC ON PARENT_SCOPE)
+    set(UTOPIA_WITH_SLEPC ON PARENT_SCOPE)
     set(UTOPIA_SLEPC TRUE PARENT_SCOPE)
 endif()
 
@@ -77,7 +77,7 @@ if(PETSC_FOUND)
         solvers/nonlinear/line_search
         )
 
-    if(WITH_SLEPC)
+    if(UTOPIA_WITH_SLEPC)
         list(APPEND PETSC_MODULES
             solvers/eigensolvers
         )

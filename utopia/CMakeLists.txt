@@ -44,7 +44,7 @@ option(UTOPIA_STATIC_DEPENDENCIES_ONLY
 option(TRY_WITH_MPI "Enable the cuda backend" ON)
 # option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_UTOPIA_WITH_PETSC "Enable the petsc backend" ON)
-option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
+option(TRY_UTOPIA_WITH_SLEPC "Enable the slepc backend" ON)
 option(TRY_UTOPIA_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_UTOPIA_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"

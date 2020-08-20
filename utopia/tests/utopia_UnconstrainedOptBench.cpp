@@ -7,9 +7,9 @@
 #include "utopia_assemble_laplacian_1D.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
 #include "utopia_petsc_Slepc.hpp"
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_WITH_SLEPC
 #endif  // UTOPIA_WITH_PETSC
 
 #include <cassert>
@@ -99,7 +99,7 @@ namespace utopia {
             });
 
 #ifdef UTOPIA_WITH_PETSC
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
             // TODO(zulianp): : add check for slepcs
             this->register_experiment("TR_MS", [this]() {
                 auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL>>();
@@ -114,7 +114,7 @@ namespace utopia {
                 TrustRegion<Matrix, Vector> solver(subproblem);
                 run_tr(this->test_functions_, solver, "TR_MS", this->verbose_);
             });
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_WITH_SLEPC
 #endif  // UTOPIA_WITH_PETSC
 
             // this->register_experiment("PseudoTransientContinuation",

@@ -4,7 +4,7 @@
 #cmakedefine UTOPIA_WITH_BLAS
 #cmakedefine UTOPIA_WITH_LAPACK
 #cmakedefine UTOPIA_WITH_PETSC
-#cmakedefine WITH_SLEPC
+#cmakedefine UTOPIA_WITH_SLEPC
 #cmakedefine UTOPIA_WITH_TRILINOS
 #cmakedefine UTOPIA_WITH_TRILINOS_AMESOS2
 #cmakedefine UTOPIA_WITH_TRILINOS_BELOS
