@@ -46,7 +46,7 @@ namespace utopia {
 
 #endif  // WITH_UTOPIA_OPENCL
 
-#ifdef WITH_LAPACK
+#ifdef UTOPIA_WITH_LAPACK
 #ifdef UTOPIA_WITH_BLAS
     void test_lapack_eigen_solver() {
         using namespace utopia;
@@ -183,7 +183,7 @@ namespace utopia {
     }
 
 #endif  // UTOPIA_WITH_BLAS
-#endif  // WITH_LAPACK
+#endif  // UTOPIA_WITH_LAPACK
 
     static void misc() {
 #ifdef WITH_CUDA
@@ -194,7 +194,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(test_opencl_code);
 #endif
 
-#ifdef WITH_LAPACK
+#ifdef UTOPIA_WITH_LAPACK
 #ifdef UTOPIA_WITH_BLAS
         UTOPIA_RUN_TEST(test_lapack_eigen_solver);
 #endif

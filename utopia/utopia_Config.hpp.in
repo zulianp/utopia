@@ -2,7 +2,7 @@
 #define UTOPIA_CONFIG_HPP
 
 #cmakedefine UTOPIA_WITH_BLAS
-#cmakedefine WITH_LAPACK
+#cmakedefine UTOPIA_WITH_LAPACK
 #cmakedefine UTOPIA_WITH_PETSC
 #cmakedefine WITH_SLEPC
 #cmakedefine UTOPIA_WITH_TRILINOS

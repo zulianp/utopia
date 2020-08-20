@@ -8,9 +8,9 @@
 #include "utopia_LinearSolverFactory.hpp"
 #include "utopia_Traits.hpp"
 
-#ifdef WITH_LAPACK
+#ifdef UTOPIA_WITH_LAPACK
 #include "utopia_Lapack.hpp"
-#endif  // WITH_LAPACK
+#endif  // UTOPIA_WITH_LAPACK
 
 #ifdef WITH_UMFPACK
 #include "utopia_UmfpackLU.hpp"
@@ -52,10 +52,10 @@ namespace utopia {
         LinearSolverFactory() { init(); }
 
         void init() {
-#ifdef WITH_LAPACK
+#ifdef UTOPIA_WITH_LAPACK
             solvers_[Solver::direct()] = std::make_shared<LSFactoryMethod<LUDecomposition<Matrix, Vector>>>();
             solvers_[Solver::automatic()] = std::make_shared<LSFactoryMethod<LUDecomposition<Matrix, Vector>>>();
-#endif  // WITH_LAPACK
+#endif  // UTOPIA_WITH_LAPACK
         }
     };
 }  // namespace utopia

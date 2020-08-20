@@ -2,7 +2,7 @@
 #define UTOPIA_CONFIG_HPP
 
 #define UTOPIA_WITH_BLAS
-#define WITH_LAPACK
+#define UTOPIA_WITH_LAPACK
 #define UTOPIA_WITH_PETSC
 /* #undef WITH_SLEPC */
 /* #undef UTOPIA_WITH_TRILINOS */
