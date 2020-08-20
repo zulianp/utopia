@@ -11,7 +11,7 @@
 #cmakedefine UTOPIA_WITH_TRILINOS_IFPACK2
 #cmakedefine UTOPIA_WITH_TRILINOS_MUELU
 #cmakedefine UTOPIA_WITH_TRILINOS_TPETRAEXT
-#cmakedefine WITH_CPP11
+#cmakedefine UTOPIA_WITH_CPP11
 #cmakedefine WITH_UMFPACK
 #cmakedefine WITH_MPI
 #cmakedefine WITH_OPEN_BLAS
@@ -58,7 +58,7 @@
 #endif
 
 
-#ifdef WITH_CPP11                          //Global enabler
+#ifdef UTOPIA_WITH_CPP11                          //Global enabler
 #cmakedefine HAS_CXX11_AUTO               //auto keyword
 #cmakedefine HAS_CXX11_NULLPTR            //nullptr
 #cmakedefine HAS_CXX11_LAMBDA             //lambdas
@@ -71,7 +71,7 @@
 #cmakedefine HAS_CXX11_CONSTEXPR          //constexpr keyword
 #cmakedefine HAS_CXX11_SIZEOF_MEMBER      //sizeof() non-static members
 #cmakedefine HAS_CXX11_FUNC               //__func__ preprocessor constant
-#endif //WITH_CPP11
+#endif //UTOPIA_WITH_CPP11
 
 
 #ifndef NDEBUG

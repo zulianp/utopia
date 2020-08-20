@@ -11,7 +11,7 @@
 /* #undef UTOPIA_WITH_TRILINOS_IFPACK2 */
 /* #undef UTOPIA_WITH_TRILINOS_MUELU */
 /* #undef UTOPIA_WITH_TRILINOS_TPETRAEXT */
-#define WITH_CPP11
+#define UTOPIA_WITH_CPP11
 /* #undef WITH_UMFPACK */
 #define WITH_MPI
 /* #undef WITH_OPEN_BLAS */
@@ -58,7 +58,7 @@
 #endif
 
 
-#ifdef WITH_CPP11                          //Global enabler
+#ifdef UTOPIA_WITH_CPP11                          //Global enabler
 /* #undef HAS_CXX11_AUTO */
 /* #undef HAS_CXX11_NULLPTR */
 /* #undef HAS_CXX11_LAMBDA */
@@ -71,7 +71,7 @@
 /* #undef HAS_CXX11_CONSTEXPR */
 /* #undef HAS_CXX11_SIZEOF_MEMBER */
 /* #undef HAS_CXX11_FUNC */
-#endif //WITH_CPP11
+#endif //UTOPIA_WITH_CPP11
 
 
 #ifndef NDEBUG
