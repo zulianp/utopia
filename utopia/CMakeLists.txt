@@ -54,7 +54,7 @@ option(ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
 option(ENABLE_TRACE_EXPR
        "enables utopia tracing facilities for every expression" OFF)
 
-option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
+option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS
        "Enable non-standard petsc solvers developed in the PASSO library" OFF)
