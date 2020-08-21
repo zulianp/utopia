@@ -391,26 +391,8 @@ SLEPC_LIB_SLEPC:FILEPATH=SLEPC_LIB_SLEPC-NOTFOUND
 //Path to a file.
 TINY_EXPR_DIR:PATH=TINY_EXPR_DIR-NOTFOUND
 
-//Enable the blas backend
-TRY_UTOPIA_WITH_BLAS:BOOL=ON
-
 //Look for eigen for comparing performance
 TRY_UTOPIA_WITH_EIGEN_3:BOOL=OFF
-
-//Enable the m3elinsol algebraic multigrid backend
-TRY_UTOPIA_WITH_M3ELINSOL:BOOL=OFF
-
-//Enable the cuda backend
-TRY_UTOPIA_WITH_MPI:BOOL=ON
-
-//Enable the petsc backend
-TRY_UTOPIA_WITH_PETSC:BOOL=ON
-
-//Enable the slepc backend
-TRY_UTOPIA_WITH_SLEPC:BOOL=ON
-
-//Enable the Trilinos backend
-TRY_UTOPIA_WITH_TRILINOS:BOOL=ON
 
 //The directory containing a CMake configuration file for Trilinos.
 Trilinos_DIR:PATH=Trilinos_DIR-NOTFOUND
@@ -421,9 +403,30 @@ UMFPACK_INCLUDES:PATH=UMFPACK_INCLUDES-NOTFOUND
 //Path to a library.
 UMFPACK_LIBRARIES:FILEPATH=UMFPACK_LIBRARIES-NOTFOUND
 
+//Enable the blas backend
+UTOPIA_ENABLE_BLAS:BOOL=ON
+
+//Enable the m3elinsol algebraic multigrid backend
+UTOPIA_ENABLE_M3ELINSOL:BOOL=OFF
+
+//Enable the cuda backend
+UTOPIA_ENABLE_MPI:BOOL=ON
+
+//OFF
+UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities":BOOL=OFF
+
+//Enable the petsc backend
+UTOPIA_ENABLE_PETSC:BOOL=ON
+
 //For the moment is to allow the "make petsc" command to install
 // DMPlex dependencies
 UTOPIA_ENABLE_PETSC_DM_PLEX:BOOL=ON
+
+//Enable the slepc backend
+UTOPIA_ENABLE_SLEPC:BOOL=ON
+
+//Enable the Trilinos backend
+UTOPIA_ENABLE_TRILINOS:BOOL=ON
 
 //Mode for ensuring that pull request standards are respected
 UTOPIA_PULL_REQUEST_MODE:BOOL=OFF

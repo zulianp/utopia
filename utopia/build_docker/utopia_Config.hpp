@@ -21,8 +21,7 @@
 /* #undef UTOPIA_WITH_EIGEN_3 */
 /* #undef UTOPIA_TRACE_ENABLED */
 /* #undef UTOPIA_TRACE_EXPR_ENABLED */
-/* #undef UTOPIA_ENABLE_NO_ALLOC_REGIONS*/
-/* #undef WITH_PASSO_EXTENSIONS */
+/* #undef UTOPIA_ENABLE_NO_ALLOC_REGIONS */
 /* #undef UTOPIA_WITH_TINY_EXPR */
 /* #undef UTOPIA_WITH_JSON */
 /* #undef UTOPIA_WITH_M3ELINSOL */
@@ -47,6 +46,7 @@
 #define NVCC_PRIVATE
 #endif
 
+
 #ifdef UTOPIA_WITH_OPEN_BLAS
 #define UTOPIA_WITH_BLAS
 #endif
@@ -56,7 +56,8 @@
 #define PETSC_CXX_RESTRICT __restrict__
 #endif
 
-#ifdef UTOPIA_WITH_CPP11  // Global enabler
+
+#ifdef UTOPIA_WITH_CPP11                          //Global enabler
 /* #undef HAS_CXX11_AUTO */
 /* #undef HAS_CXX11_NULLPTR */
 /* #undef HAS_CXX11_LAMBDA */
@@ -69,7 +70,8 @@
 /* #undef HAS_CXX11_CONSTEXPR */
 /* #undef HAS_CXX11_SIZEOF_MEMBER */
 /* #undef HAS_CXX11_FUNC */
-#endif  // UTOPIA_WITH_CPP11
+#endif //UTOPIA_WITH_CPP11
+
 
 #ifndef NDEBUG
 #include <assert.h>
@@ -78,11 +80,11 @@
 #define assert_enabled(expr_) assert(expr_)
 #else
 #define assert_enabled(expr_)
-#endif  // ENABLE_LOCK_CHECK
+#endif //ENABLE_LOCK_CHECK
 #else
 #define assert_enabled(expr_)
-#endif  // NDEBUG
+#endif //NDEBUG
 
 #include "utopia_compiler_features.hpp"
 
-#endif  // UTOPIA_CONFIG_HPP
+#endif //UTOPIA_CONFIG_HPP
