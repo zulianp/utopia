@@ -1,7 +1,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_M3ELINSOL
+#ifdef UTOPIA_WITH_M3ELINSOL
 #include "utopia.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_Testing.hpp"

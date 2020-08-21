@@ -1,6 +1,6 @@
 #include "utopia_JSONInput.hpp"
 
-#ifdef WITH_JSON
+#ifdef UTOPIA_WITH_JSON
 #include <fstream>
 #include <utility>
 #include "json.hpp"
@@ -325,4 +325,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // WITH_JSON
+#endif  // UTOPIA_WITH_JSON

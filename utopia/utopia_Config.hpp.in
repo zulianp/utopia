@@ -24,9 +24,9 @@
 #cmakedefine ENABLE_NO_ALLOC_REGIONS
 #cmakedefine WITH_PASSO_EXTENSIONS
 #cmakedefine UTOPIA_WITH_TINY_EXPR
-#cmakedefine WITH_JSON
-#cmakedefine WITH_M3ELINSOL
-#cmakedefine WITH_CPP14
+#cmakedefine UTOPIA_WITH_JSON
+#cmakedefine UTOPIA_WITH_M3ELINSOL
+#cmakedefine UTOPIA_WITH_CPP14
 #cmakedefine WITH_CODE_COVERAGE
 #cmakedefine UTOPIA_DEPRECATED_API
 

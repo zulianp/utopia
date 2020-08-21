@@ -47,7 +47,7 @@ option(TRY_UTOPIA_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_UTOPIA_WITH_SLEPC "Enable the slepc backend" ON)
 option(TRY_UTOPIA_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_UTOPIA_WITH_BLAS "Enable the blas backend" ON)
-option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"
+option(TRY_UTOPIA_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"
        OFF)
 
 option(ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
@@ -215,7 +215,7 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
 endif()
 
 if(ENABLE_CXX14_FEATURES)
-    set(WITH_CPP14 TRUE)
+    set(UTOPIA_WITH_CPP14 TRUE)
 endif()
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
@@ -472,7 +472,7 @@ if(TRY_WITH_OPENCL)
     add_subdirectory(backend/opencl)
 endif()
 
-if(TRY_WITH_M3ELINSOL)
+if(TRY_UTOPIA_WITH_M3ELINSOL)
     add_subdirectory(backend/m3elinsol)
 endif()
 

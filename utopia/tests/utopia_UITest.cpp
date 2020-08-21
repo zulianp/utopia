@@ -81,9 +81,9 @@ namespace utopia {
         auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
         Newton<PetscMatrix, PetscVector> newton(cg);
 
-#ifdef WITH_JSON
+#ifdef UTOPIA_WITH_JSON
         newton.import("Newton", data_path + "/json/default.json");
-#endif  // WITH_JSON
+#endif  // UTOPIA_WITH_JSON
 
         newton.import("Newton", data_path + "/xml/default.xml");
 #endif  // UTOPIA_WITH_PETSC

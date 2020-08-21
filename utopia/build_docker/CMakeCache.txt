@@ -397,6 +397,9 @@ TRY_UTOPIA_WITH_BLAS:BOOL=ON
 //Look for eigen for comparing performance
 TRY_UTOPIA_WITH_EIGEN_3:BOOL=OFF
 
+//Enable the m3elinsol algebraic multigrid backend
+TRY_UTOPIA_WITH_M3ELINSOL:BOOL=OFF
+
 //Enable the cuda backend
 TRY_UTOPIA_WITH_MPI:BOOL=ON
 
@@ -408,9 +411,6 @@ TRY_UTOPIA_WITH_SLEPC:BOOL=ON
 
 //Enable the Trilinos backend
 TRY_UTOPIA_WITH_TRILINOS:BOOL=ON
-
-//Enable the m3elinsol algebraic multigrid backend
-TRY_WITH_M3ELINSOL:BOOL=OFF
 
 //The directory containing a CMake configuration file for Trilinos.
 Trilinos_DIR:PATH=Trilinos_DIR-NOTFOUND

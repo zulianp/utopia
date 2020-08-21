@@ -24,9 +24,9 @@
 /* #undef ENABLE_NO_ALLOC_REGIONS */
 /* #undef WITH_PASSO_EXTENSIONS */
 /* #undef UTOPIA_WITH_TINY_EXPR */
-/* #undef WITH_JSON */
-/* #undef WITH_M3ELINSOL */
-#define WITH_CPP14
+/* #undef UTOPIA_WITH_JSON */
+/* #undef UTOPIA_WITH_M3ELINSOL */
+#define UTOPIA_WITH_CPP14
 /* #undef WITH_CODE_COVERAGE */
 #define UTOPIA_DEPRECATED_API
 
