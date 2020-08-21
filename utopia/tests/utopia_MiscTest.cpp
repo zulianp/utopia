@@ -4,7 +4,7 @@
 
 namespace utopia {
 
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
     void cuda_hello_world() {
         // For the moment no hybrid
         if (utopia::mpi_world_size() != 1) return;
@@ -186,7 +186,7 @@ namespace utopia {
 #endif  // UTOPIA_WITH_LAPACK
 
     static void misc() {
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
         UTOPIA_RUN_TEST(cuda_hello_world);
 #endif
 

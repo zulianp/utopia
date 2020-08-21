@@ -12,18 +12,18 @@
 /* #undef UTOPIA_WITH_TRILINOS_MUELU */
 /* #undef UTOPIA_WITH_TRILINOS_TPETRAEXT */
 #define UTOPIA_WITH_CPP11
-/* #undef WITH_UMFPACK */
+/* #undef UTOPIA_WITH_UMFPACK */
 #define UTOPIA_WITH_MPI
-/* #undef WITH_OPEN_BLAS */
+/* #undef UTOPIA_WITH_OPEN_BLAS */
 /* #undef UTOPIA_WITH_PETSC_CRAY */
-/* #undef WITH_CUDA */
+/* #undef UTOPIA_WITH_CUDA */
 /* #undef WITH_UTOPIA_OPENCL */
-/* #undef WITH_EIGEN_3 */
+/* #undef UTOPIA_WITH_EIGEN_3 */
 /* #undef UTOPIA_TRACE_ENABLED */
 /* #undef UTOPIA_TRACE_EXPR_ENABLED */
 /* #undef ENABLE_NO_ALLOC_REGIONS */
 /* #undef WITH_PASSO_EXTENSIONS */
-/* #undef WITH_TINY_EXPR */
+/* #undef UTOPIA_WITH_TINY_EXPR */
 /* #undef WITH_JSON */
 /* #undef WITH_M3ELINSOL */
 #define WITH_CPP14
@@ -48,7 +48,7 @@
 #endif
 
 
-#ifdef WITH_OPEN_BLAS
+#ifdef UTOPIA_WITH_OPEN_BLAS
 #define UTOPIA_WITH_BLAS
 #endif
 

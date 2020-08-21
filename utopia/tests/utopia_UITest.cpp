@@ -27,7 +27,7 @@ namespace utopia {
         generic_stream(*is_ptr);
     }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
     void symbolic_expr() {
         {
             SymbolicFunction f("x + y + z");
@@ -47,7 +47,7 @@ namespace utopia {
         }
     }
 
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
     void input_parameters() {
         InputParameters in;
@@ -93,9 +93,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(xml_stream);
         UTOPIA_RUN_TEST(input_parameters);
         UTOPIA_RUN_TEST(newton_ui);
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
         UTOPIA_RUN_TEST(symbolic_expr);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(ui);

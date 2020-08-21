@@ -12,18 +12,18 @@
 #cmakedefine UTOPIA_WITH_TRILINOS_MUELU
 #cmakedefine UTOPIA_WITH_TRILINOS_TPETRAEXT
 #cmakedefine UTOPIA_WITH_CPP11
-#cmakedefine WITH_UMFPACK
+#cmakedefine UTOPIA_WITH_UMFPACK
 #cmakedefine UTOPIA_WITH_MPI
-#cmakedefine WITH_OPEN_BLAS
+#cmakedefine UTOPIA_WITH_OPEN_BLAS
 #cmakedefine UTOPIA_WITH_PETSC_CRAY
-#cmakedefine WITH_CUDA
+#cmakedefine UTOPIA_WITH_CUDA
 #cmakedefine WITH_UTOPIA_OPENCL
-#cmakedefine WITH_EIGEN_3
+#cmakedefine UTOPIA_WITH_EIGEN_3
 #cmakedefine UTOPIA_TRACE_ENABLED
 #cmakedefine UTOPIA_TRACE_EXPR_ENABLED
 #cmakedefine ENABLE_NO_ALLOC_REGIONS
 #cmakedefine WITH_PASSO_EXTENSIONS
-#cmakedefine WITH_TINY_EXPR
+#cmakedefine UTOPIA_WITH_TINY_EXPR
 #cmakedefine WITH_JSON
 #cmakedefine WITH_M3ELINSOL
 #cmakedefine WITH_CPP14
@@ -48,7 +48,7 @@
 #endif
 
 
-#ifdef WITH_OPEN_BLAS
+#ifdef UTOPIA_WITH_OPEN_BLAS
 #define UTOPIA_WITH_BLAS
 #endif
 

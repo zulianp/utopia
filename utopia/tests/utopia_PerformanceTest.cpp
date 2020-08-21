@@ -1,9 +1,9 @@
 // #include "utopia_PerformanceTest.hpp"
 // #include "utopia.hpp"
 
-// #ifdef WITH_EIGEN_3
+// #ifdef UTOPIA_WITH_EIGEN_3
 // #include <Eigen/Dense>
-// #endif //WITH_EIGEN_3
+// #endif //UTOPIA_WITH_EIGEN_3
 
 // namespace utopia {
 
@@ -210,7 +210,7 @@
 // 		test_program_mixed<Matrix, Vector>(experiment_name);
 // 	}
 
-// #ifdef WITH_EIGEN_3
+// #ifdef UTOPIA_WITH_EIGEN_3
 // 	void test_program_eigen_3_vectors(const std::string &experiment_name)
 // 	{
 // 		typedef Eigen::MatrixXd Matrix;
@@ -317,7 +317,7 @@
 // 		test_program_eigen_3_vectors("eigen3");
 // 		test_program_eigen_3_mixed("eigen3");
 // 	}
-// #endif //WITH_EIGEN_3
+// #endif //UTOPIA_WITH_EIGEN_3
 
 // 	void run_performance_test()
 // 	{
@@ -362,13 +362,13 @@
 // 		test_program<PetscMatrix, PetscVector>("petsc");
 // #endif //UTOPIA_WITH_PETSC
 
-// #ifdef WITH_EIGEN_3
+// #ifdef UTOPIA_WITH_EIGEN_3
 // 		if(verbose) {
 // 			utopia::out() <<"------------------------------------\n";
 // 			utopia::out() <<"Eigen 3: " << std::endl;
 // 		}
 // 		run_performance_test_eigen_3();
-// #endif //WITH_EIGEN_3
+// #endif //UTOPIA_WITH_EIGEN_3
 
 // 		//UTOPIA_UNIT_TEST_END("PerformanceTest");
 // 	}

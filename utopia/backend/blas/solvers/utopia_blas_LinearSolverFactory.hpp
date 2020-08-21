@@ -12,9 +12,9 @@
 #include "utopia_Lapack.hpp"
 #endif  // UTOPIA_WITH_LAPACK
 
-#ifdef WITH_UMFPACK
+#ifdef UTOPIA_WITH_UMFPACK
 #include "utopia_UmfpackLU.hpp"
-#endif  // WITH_UMFPACK
+#endif  // UTOPIA_WITH_UMFPACK
 
 #include <map>
 #include <memory>

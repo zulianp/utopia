@@ -6524,6 +6524,8 @@ utopia_MPI.hpp
 utopia_Traits.hpp
 /shared/utopia/tests/utopia_Traits.hpp
 
+/shared/utopia/tests/utopia_PerformanceTest.cpp
+
 /shared/utopia/tests/utopia_PolymorphicTest.cpp
 cassert
 -

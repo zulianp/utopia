@@ -50,9 +50,9 @@ Visit our <a href="https://bitbucket.org/zulianp/utopia/wiki/Home">Wiki</a> for 
 #include "utopia_petsc_impl.hpp"
 #endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
 #include "utopia_cuda.hpp"
-#endif  // WITH_CUDA
+#endif  // UTOPIA_WITH_CUDA
 
 #ifdef WITH_UTOPIA_OPENCL
 #include "utopia_opencl.hpp"

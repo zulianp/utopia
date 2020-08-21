@@ -71,7 +71,7 @@ option(
 option(UTOPIA_PULL_REQUEST_MODE
        "Mode for ensuring that pull request standards are respected" OFF)
 
-option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
+option(TRY_UTOPIA_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION
        "Use Doxygen to create the HTML based API documentation" ON)
 

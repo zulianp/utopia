@@ -13,7 +13,7 @@ if(TINY_EXPR_DIR)
     # tinyexpr
     add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
     target_include_directories(tinyexpr PUBLIC $<BUILD_INTERFACE:${TINY_EXPR_DIR}>)
-    set(WITH_TINY_EXPR ON PARENT_SCOPE)
+    set(UTOPIA_WITH_TINY_EXPR ON PARENT_SCOPE)
     set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
 
     install(TARGETS tinyexpr
