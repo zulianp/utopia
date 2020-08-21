@@ -63,7 +63,7 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compil
        OFF)
 option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
-option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
+option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
     UTOPIA_ENABLE_PETSC_DM_PLEX
     "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies"
@@ -71,7 +71,7 @@ option(
 option(UTOPIA_PULL_REQUEST_MODE
        "Mode for ensuring that pull request standards are respected" OFF)
 
-option(TRY_UTOPIA_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
+option(UTOPIA_ENABLE_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION
        "Use Doxygen to create the HTML based API documentation" ON)
 

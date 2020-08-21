@@ -373,9 +373,6 @@ SLEPC_LIB_SLEPC:FILEPATH=SLEPC_LIB_SLEPC-NOTFOUND
 //Path to a file.
 TINY_EXPR_DIR:PATH=TINY_EXPR_DIR-NOTFOUND
 
-//Look for eigen for comparing performance
-TRY_UTOPIA_WITH_EIGEN_3:BOOL=OFF
-
 //The directory containing a CMake configuration file for Trilinos.
 Trilinos_DIR:PATH=Trilinos_DIR-NOTFOUND
 
@@ -388,11 +385,17 @@ UMFPACK_LIBRARIES:FILEPATH=UMFPACK_LIBRARIES-NOTFOUND
 //Enable the blas backend
 UTOPIA_ENABLE_BLAS:BOOL=ON
 
+//Use clang tidy static analyzer
+UTOPIA_ENABLE_CLANG_TIDY:BOOL=OFF
+
 //Enable usage of cxx14 standard
 UTOPIA_ENABLE_CXX14_FEATURES:BOOL=ON
 
 //Decprecated functionality that will be removed in the future
 UTOPIA_ENABLE_DEPRECATED_API:BOOL=ON
+
+//Look for eigen for comparing performance
+UTOPIA_ENABLE_EIGEN_3:BOOL=OFF
 
 //Enable the m3elinsol algebraic multigrid backend
 UTOPIA_ENABLE_M3ELINSOL:BOOL=OFF

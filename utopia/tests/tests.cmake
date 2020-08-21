@@ -51,7 +51,7 @@ foreach(MODULE ${TEST_MODULES})
     target_include_directories(utopia_test PRIVATE ${UTOPIA_TEST_DIR}/${MODULE})
 endforeach()
 
-if(TRY_UTOPIA_WITH_EIGEN_3)
+if(UTOPIA_ENABLE_EIGEN_3)
     find_package(Eigen3)
     if(EIGEN3_FOUND)
         set(UTOPIA_WITH_EIGEN_3 ON)

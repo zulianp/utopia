@@ -30,7 +30,7 @@ if(TARGET utopia_petsc)
         target_link_libraries(utopia_exec PUBLIC gperftools::profiler)
     endif()
 
-    if(TRY_UTOPIA_WITH_EIGEN_3)
+    if(UTOPIA_ENABLE_EIGEN_3)
         find_package(Eigen3)
         if(EIGEN3_FOUND)
             set(UTOPIA_WITH_EIGEN_3 ON)
