@@ -289,9 +289,6 @@ ENABLE_DEPRECATED_API:BOOL=ON
 //use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)
 ENABLE_GPERFTOOLS:BOOL=OFF
 
-//Allows to use the moose installation compilers
-ENABLE_MOOSE_ENV_MODE:BOOL=OFF
-
 //enables utopia alloc-check facilities
 ENABLE_NO_ALLOC_REGIONS:BOOL=OFF
 
@@ -394,8 +391,14 @@ UMFPACK_LIBRARIES:FILEPATH=UMFPACK_LIBRARIES-NOTFOUND
 //Enable the blas backend
 UTOPIA_ENABLE_BLAS:BOOL=ON
 
+//Enable usage of cxx14 standard
+UTOPIA_ENABLE_CXX14_FEATURES:BOOL=ON
+
 //Enable the m3elinsol algebraic multigrid backend
 UTOPIA_ENABLE_M3ELINSOL:BOOL=OFF
+
+//Allows to use the moose installation compilers
+UTOPIA_ENABLE_MOOSE_ENV_MODE:BOOL=OFF
 
 //Enable the cuda backend
 UTOPIA_ENABLE_MPI:BOOL=ON
