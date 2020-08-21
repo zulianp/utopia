@@ -56,7 +56,7 @@ option(UTOPIA_ENABLE_TRACE_EXPR
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities" OFF)
 option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-option(ENABLE_PASSO_EXTENSIONS
+option(UTOPIA_ENABLE_PASSO_EXTENSIONS
        "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers"
@@ -178,7 +178,7 @@ if(UTOPIA_ENABLE_TRACE)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
-if(ENABLE_PASSO_EXTENSIONS)
+if(UTOPIA_ENABLE_PASSO_EXTENSIONS)
     set(WITH_PASSO_EXTENSIONS TRUE)
 endif()
 

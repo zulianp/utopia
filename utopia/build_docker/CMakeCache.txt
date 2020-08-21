@@ -295,9 +295,6 @@ ENABLE_MOOSE_ENV_MODE:BOOL=OFF
 //enables utopia alloc-check facilities
 ENABLE_NO_ALLOC_REGIONS:BOOL=OFF
 
-//Enable non-standard petsc solvers developed in the PASSO library
-ENABLE_PASSO_EXTENSIONS:BOOL=OFF
-
 //The directory containing a CMake configuration file for F2C.
 F2C_DIR:PATH=F2C_DIR-NOTFOUND
 
@@ -405,6 +402,9 @@ UTOPIA_ENABLE_MPI:BOOL=ON
 
 //OFF
 UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities":BOOL=OFF
+
+//Enable non-standard petsc solvers developed in the PASSO library
+UTOPIA_ENABLE_PASSO_EXTENSIONS:BOOL=OFF
 
 //Enable the petsc backend
 UTOPIA_ENABLE_PETSC:BOOL=ON

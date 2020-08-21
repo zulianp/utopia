@@ -83,7 +83,7 @@ if(PETSC_FOUND)
         )
     endif()
 
-    if(ENABLE_PASSO_EXTENSIONS)
+    if(UTOPIA_ENABLE_PASSO_EXTENSIONS)
         list(APPEND PETSC_MODULES
                 external
             )
