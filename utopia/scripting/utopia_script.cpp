@@ -24,8 +24,12 @@ namespace scripting {
         init(argc, &argv_ptr);
     }
 
+    using SizeType = int;
+
     void print_info() { utopia::out() << "Utopia\nversion: " << UTOPIA_VERSION << std::endl; }
 
     void finalize() { utopia::Utopia::Finalize(); }
+
+    Layout serial_layout(SizeType &size) { return utopia::serial_layout(); };
 
 }  // namespace scripting

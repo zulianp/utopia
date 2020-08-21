@@ -1,6 +1,8 @@
 #ifndef UTOPIA_SCRIPT_HPP
 #define UTOPIA_SCRIPT_HPP
 
+#include "../core/utopia_Clonable.hpp"
+
 namespace utopia {
     // Forward declarations
     template <typename Scalar, typename SizeType>
@@ -42,6 +44,8 @@ namespace scripting {
     void init();
     void finalize();
     void print_info();
+
+    Layout<SelfCommunicator, 1, SizeType> serial_layout(SizeType&);
 
     class SparseMatrix {
     public:
@@ -109,14 +113,13 @@ namespace scripting {
         /*utility*/
         bool empty();
         void clear();
-        void set(const Scalar& val);
         Scalar norm_infty();
         Scalar norm1();
 
-        void e_mul(const Scalar&);
-        void e_min(const Scalar&);
-        void e_div(const Scalar&);
-        void e_max(const Scalar&);
+        // void e_mul(const Scalar&);
+        // void e_min(const Scalar&);
+        // void e_div(const Scalar&);
+        // void e_max(const Scalar&);
         // void values(const Layout&, const Scalar&);
 
         void create_vector(const SizeType& /*size*/, const Scalar& /*value*/);
@@ -151,12 +154,12 @@ namespace scripting {
 
     class SelfCommunicator {
     public:
-        using SelfCommunicatorImpl_ = utopia::Communicator;
+        using SelfCommunicatorImpl_ = utopia::SelfCommunicator;
 
         SelfCommunicator();
         ~SelfCommunicator();
 
-        void get_default();
+        Communicator get_default();
         int rank();
         int size();
 

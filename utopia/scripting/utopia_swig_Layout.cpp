@@ -8,7 +8,7 @@
 #include <iostream>
 
 namespace scripting {
-    Layout::Layout() : impl_(nullptr) {}
+    Layout::Layout(class Communicator, const int n_global, const int n_local) : impl_(nullptr) {}
 
     Layout::~Layout() { delete impl_; }
 

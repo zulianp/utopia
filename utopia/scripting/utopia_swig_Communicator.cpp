@@ -32,12 +32,12 @@ namespace scripting {
 
         // impl_ = selfComm.get();
 
-        // selfComm.release();
+        selfComm.release();
     }
 
     SelfCommunicator::~SelfCommunicator() { delete impl_; }
 
-    void SelfCommunicator::get_default() { impl_->get_default(); }
+    // Communicator SelfCommunicator::get_default() { return impl_->get_default(); }
 
     int SelfCommunicator::rank() { return impl_->rank(); }
     int SelfCommunicator::size() { return impl_->size(); }

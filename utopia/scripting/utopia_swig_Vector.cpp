@@ -50,7 +50,7 @@ namespace scripting {
 
     // Communicator &Vector::comm() { return impl_->& comm(); }
 
-    Scalar Vector::norm_infty() {return impl_->norm_infty();}
+    Scalar Vector::norm_infty() { return impl_->norm_infty(); }
 
     Scalar Vector::norm1() { return impl_->norm1(); }
 
