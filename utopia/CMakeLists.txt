@@ -41,7 +41,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY
        "Allows to restrict the linking to static libraries" OFF)
 
-option(TRY_WITH_MPI "Enable the cuda backend" ON)
+option(TRY_UTOPIA_WITH_MPI "Enable the cuda backend" ON)
 # option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_UTOPIA_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_UTOPIA_WITH_SLEPC "Enable the slepc backend" ON)

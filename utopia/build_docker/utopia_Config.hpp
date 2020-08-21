@@ -13,7 +13,7 @@
 /* #undef UTOPIA_WITH_TRILINOS_TPETRAEXT */
 #define UTOPIA_WITH_CPP11
 /* #undef WITH_UMFPACK */
-#define WITH_MPI
+#define UTOPIA_WITH_MPI
 /* #undef WITH_OPEN_BLAS */
 /* #undef UTOPIA_WITH_PETSC_CRAY */
 /* #undef WITH_CUDA */

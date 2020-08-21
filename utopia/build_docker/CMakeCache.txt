@@ -394,6 +394,9 @@ TINY_EXPR_DIR:PATH=TINY_EXPR_DIR-NOTFOUND
 //Enable the blas backend
 TRY_UTOPIA_WITH_BLAS:BOOL=ON
 
+//Enable the cuda backend
+TRY_UTOPIA_WITH_MPI:BOOL=ON
+
 //Enable the petsc backend
 TRY_UTOPIA_WITH_PETSC:BOOL=ON
 
@@ -408,9 +411,6 @@ TRY_WITH_EIGEN_3:BOOL=OFF
 
 //Enable the m3elinsol algebraic multigrid backend
 TRY_WITH_M3ELINSOL:BOOL=OFF
-
-//Enable the cuda backend
-TRY_WITH_MPI:BOOL=ON
 
 //The directory containing a CMake configuration file for Trilinos.
 Trilinos_DIR:PATH=Trilinos_DIR-NOTFOUND

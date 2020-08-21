@@ -13,7 +13,7 @@
 #cmakedefine UTOPIA_WITH_TRILINOS_TPETRAEXT
 #cmakedefine UTOPIA_WITH_CPP11
 #cmakedefine WITH_UMFPACK
-#cmakedefine WITH_MPI
+#cmakedefine UTOPIA_WITH_MPI
 #cmakedefine WITH_OPEN_BLAS
 #cmakedefine UTOPIA_WITH_PETSC_CRAY
 #cmakedefine WITH_CUDA
