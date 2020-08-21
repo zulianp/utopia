@@ -55,7 +55,7 @@ option(UTOPIA_ENABLE_TRACE_EXPR
        "enables utopia tracing facilities for every expression" OFF)
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities" OFF)
-option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
+option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_PASSO_EXTENSIONS
        "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
@@ -192,7 +192,7 @@ endif()
 message(
     STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
-if(ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
         set(UTOPIA_DEV_FLAGS

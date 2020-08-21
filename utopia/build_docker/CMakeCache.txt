@@ -298,9 +298,6 @@ ENABLE_NO_ALLOC_REGIONS:BOOL=OFF
 //Enable non-standard petsc solvers developed in the PASSO library
 ENABLE_PASSO_EXTENSIONS:BOOL=OFF
 
-//Enable clang -fsanitize=address flag
-ENABLE_SANITIZER:BOOL=OFF
-
 //The directory containing a CMake configuration file for F2C.
 F2C_DIR:PATH=F2C_DIR-NOTFOUND
 
@@ -415,6 +412,9 @@ UTOPIA_ENABLE_PETSC:BOOL=ON
 //For the moment is to allow the "make petsc" command to install
 // DMPlex dependencies
 UTOPIA_ENABLE_PETSC_DM_PLEX:BOOL=ON
+
+//Enable clang -fsanitize=address flag
+UTOPIA_ENABLE_SANITIZER:BOOL=OFF
 
 //Enable the slepc backend
 UTOPIA_ENABLE_SLEPC:BOOL=ON
