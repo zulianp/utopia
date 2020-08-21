@@ -50,8 +50,8 @@ option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 option(UTOPIA_ENABLE_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"
        OFF)
 
-option(ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
-option(ENABLE_TRACE_EXPR
+option(UTOPIA_ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
+option(UTOPIA_ENABLE_TRACE_EXPR
        "enables utopia tracing facilities for every expression" OFF)
 
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities" OFF)
@@ -168,13 +168,13 @@ if(ENABLE_GPERFTOOLS)
     endif()
 endif()
 
-if(ENABLE_TRACE_EXPR)
-    set(ENABLE_TRACE ON)
+if(UTOPIA_ENABLE_TRACE_EXPR)
+    set(UTOPIA_ENABLE_TRACE ON)
     set(UTOPIA_TRACE_EXPR_ENABLED ON)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
-if(ENABLE_TRACE)
+if(UTOPIA_ENABLE_TRACE)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
 

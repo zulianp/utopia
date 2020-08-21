@@ -301,12 +301,6 @@ ENABLE_PASSO_EXTENSIONS:BOOL=OFF
 //Enable clang -fsanitize=address flag
 ENABLE_SANITIZER:BOOL=OFF
 
-//enables utopia tracing facilities for regions
-ENABLE_TRACE:BOOL=OFF
-
-//enables utopia tracing facilities for every expression
-ENABLE_TRACE_EXPR:BOOL=OFF
-
 //The directory containing a CMake configuration file for F2C.
 F2C_DIR:PATH=F2C_DIR-NOTFOUND
 
@@ -424,6 +418,12 @@ UTOPIA_ENABLE_PETSC_DM_PLEX:BOOL=ON
 
 //Enable the slepc backend
 UTOPIA_ENABLE_SLEPC:BOOL=ON
+
+//enables utopia tracing facilities for regions
+UTOPIA_ENABLE_TRACE:BOOL=OFF
+
+//enables utopia tracing facilities for every expression
+UTOPIA_ENABLE_TRACE_EXPR:BOOL=OFF
 
 //Enable the Trilinos backend
 UTOPIA_ENABLE_TRILINOS:BOOL=ON
