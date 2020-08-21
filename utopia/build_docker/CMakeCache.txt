@@ -283,9 +283,6 @@ ENABLE_CODE_COVERAGE:BOOL=OFF
 //Enable usage of cxx14 standard
 ENABLE_CXX14_FEATURES:BOOL=ON
 
-//Decprecated functionality that will be removed in the future
-ENABLE_DEPRECATED_API:BOOL=ON
-
 //use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)
 ENABLE_GPERFTOOLS:BOOL=OFF
 
@@ -393,6 +390,9 @@ UTOPIA_ENABLE_BLAS:BOOL=ON
 
 //Enable usage of cxx14 standard
 UTOPIA_ENABLE_CXX14_FEATURES:BOOL=ON
+
+//Decprecated functionality that will be removed in the future
+UTOPIA_ENABLE_DEPRECATED_API:BOOL=ON
 
 //Enable the m3elinsol algebraic multigrid backend
 UTOPIA_ENABLE_M3ELINSOL:BOOL=OFF

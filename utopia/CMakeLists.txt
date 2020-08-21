@@ -61,7 +61,7 @@ option(UTOPIA_ENABLE_PASSO_EXTENSIONS
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers"
        OFF)
-option(ENABLE_DEPRECATED_API
+option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
 option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
@@ -146,7 +146,7 @@ endif()
 
 # include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/external/GSL/include)
 
-if(ENABLE_DEPRECATED_API)
+if(UTOPIA_ENABLE_DEPRECATED_API)
     set(UTOPIA_DEPRECATED_API ON)
 endif()
 
