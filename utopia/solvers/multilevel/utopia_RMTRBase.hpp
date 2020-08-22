@@ -72,9 +72,10 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     return ml_derivs_.compute_hessian(level, fun, memory_.x[level]);
   }
 
-  template <
-      MultiLevelCoherence T = CONSISTENCY_LEVEL,
-      enable_if_t<is_any<T, FIRST_ORDER_DF, SECOND_ORDER_DF>::value, int> = 0>
+  template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<is_any<T, FIRST_ORDER_DF, SECOND_ORDER_DF,
+                               FIRST_ORDER_MULTIPLICATIVE_DF>::value,
+                        int> = 0>
   bool get_multilevel_hessian(const Fun & /*fun*/, const SizeType & /*level*/) {
     return false;
   }
@@ -160,6 +161,61 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     return smoothness_flg;
   }
 
+  template <
+      MultiLevelCoherence T = CONSISTENCY_LEVEL,
+      enable_if_t<is_same<T, FIRST_ORDER_MULTIPLICATIVE_DF>::value, int> = 0>
+  bool init_consistency_terms(const SizeType &level) {
+    this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
+                                       this->ml_derivs_.g_diff[level - 1]);
+
+    // Projecting current iterate to obtain initial iterate on coarser grid
+    this->transfer(level - 1).project_down(this->memory_.x[level],
+                                           this->memory_.x[level - 1]);
+
+    if (!this->skip_BC_checks()) {
+      this->make_iterate_feasible(this->function(level - 1),
+                                  this->memory_.x[level - 1]);
+    }
+
+    //----------------------------------------------------------------------------
+    //    initializing coarse level (deltas, constraints, hessian approx, ...)
+    //----------------------------------------------------------------------------
+    this->init_level(level - 1);
+
+    //----------------------------------------------------------------------------
+    //                  first order coarse level objective managment
+    //----------------------------------------------------------------------------
+
+    // todo:: investigate if correct
+    this->compute_s_global(level, this->memory_.s_working[level]);
+    Scalar energy_fine = this->get_multilevel_energy(
+        this->function(level), level, this->memory_.s_working[level]);
+
+    this->function(level - 1).gradient(this->memory_.x[level - 1],
+                                       this->ml_derivs_.g[level - 1]);
+    Scalar energy_coarse = 0.0;
+    this->function(level - 1).value(this->memory_.x[level - 1], energy_coarse);
+
+    // if (!this->skip_BC_checks()) {
+    //   this->zero_correction_related_to_equality_constrain(
+    //       this->function(level - 1), this->ml_derivs_.g_diff[level - 1]);
+    // }
+
+    // TODO:: pre-allocate
+    Vector help1 = (1. / energy_coarse * this->ml_derivs_.g_diff[level - 1]);
+    Scalar f_cc = (energy_fine / (energy_coarse * energy_coarse));
+    Vector help2 = (f_cc * this->ml_derivs_.g[level - 1]);
+
+    // self.g_diff[level] = (1./loss_coarse * grad_fine) -
+    // (loss_fine/(loss_coarse*loss_coarse) * grad_coarse)
+
+    this->ml_derivs_.g_diff[level - 1] = help1 - help2;
+
+    this->ml_derivs_.e_diff[level - 1] = energy_fine / energy_coarse;
+
+    return true;
+  }
+
   virtual void init_hess_app_terms(const SizeType & /* level */) {}
 
   template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
@@ -213,9 +269,7 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     this->ml_derivs_.g_diff[level - 1] -= this->ml_derivs_.g[level - 1];
     // UTOPIA_NO_ALLOC_END();
 
-    std::cout << "--------------------------------- IC-1 -------------\n";
     this->init_hess_app_terms(level);
-    std::cout << "--------------------------------- IC-2 -------------\n";
 
     return smoothness_flg;
   }
@@ -335,6 +389,21 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {
       if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
         this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level];
+        this->memory_.gnorm[level] = this->criticality_measure(level);
+      }
+    }
+
+    return true;
+  }
+
+  template <
+      MultiLevelCoherence T = CONSISTENCY_LEVEL,
+      enable_if_t<is_same<T, FIRST_ORDER_MULTIPLICATIVE_DF>::value, int> = 0>
+  bool init_deriv_loc_solve(const Fun &fun, const SizeType &level,
+                            const LocalSolveType &solve_type) {
+    if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {
+      if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
+        this->get_multilevel_gradient(fun, level);
         this->memory_.gnorm[level] = this->criticality_measure(level);
       }
     }
