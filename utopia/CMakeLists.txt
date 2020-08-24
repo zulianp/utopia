@@ -41,6 +41,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY
        "Allows to restrict the linking to static libraries" OFF)
 
+option(UTOPIA_ENABLE_XSIMD "Enable vectorization using the xsimd library" ON)
+
 option(TRY_WITH_MPI "Enable the cuda backend" ON)
 # option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
@@ -466,6 +468,10 @@ endif()
 
 if(TRY_WITH_PETSC)
     add_subdirectory(backend/petsc)
+endif()
+
+if(UTOPIA_ENABLE_XSIMD)
+    add_subdirectory(backend/xsimd)
 endif()
 
 if(TRY_WITH_OPENCL)

@@ -6,6 +6,7 @@
 #cmakedefine WITH_PETSC
 #cmakedefine WITH_SLEPC
 #cmakedefine WITH_TRILINOS
+#cmakedefine UTOPIA_WITH_XSIMD
 #cmakedefine WITH_TRILINOS_AMESOS2
 #cmakedefine WITH_TRILINOS_BELOS
 #cmakedefine WITH_TRILINOS_IFPACK2
