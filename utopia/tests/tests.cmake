@@ -30,6 +30,10 @@ if(UTOPIA_BLAS)
     list(APPEND TEST_MODULES blas)
 endif()
 
+if(UTOPIA_WITH_XSIMD)
+    list(APPEND TEST_MODULES xsimd)
+endif()
+
 set(LOCAL_HEADERS "")
 set(LOCAL_SOURCES "")
 find_project_files(${UTOPIA_TEST_DIR} "${TEST_MODULES}" LOCAL_HEADERS

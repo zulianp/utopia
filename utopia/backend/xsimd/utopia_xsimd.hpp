@@ -8,14 +8,18 @@
 #include <xsimd/xsimd.hpp>
 
 namespace utopia {
-    template <typename T, int N>
-    using Batch = xsimd::batch<T, N>;
 
-    using xsimd::load_unaligned;
-    using xsimd::store_unaligned;
+    namespace host {
+        template <typename T, int N>
+        using Batch = xsimd::batch<T, N>;
 
-    using xsimd::load_aligned;
-    using xsimd::store_aligned;
+        using xsimd::load_unaligned;
+        using xsimd::store_unaligned;
+
+        using xsimd::load_aligned;
+        using xsimd::store_aligned;
+
+    }  // namespace host
 }  // namespace utopia
 
 #else  // UTOPIA_WITH_XSIMD
