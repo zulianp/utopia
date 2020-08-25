@@ -30,6 +30,10 @@ if(UTOPIA_BLAS)
     list(APPEND TEST_MODULES blas)
 endif()
 
+if(UTOPIA_ENABLE_VC)
+    list(APPEND TEST_MODULES vc)
+endif()
+
 set(LOCAL_HEADERS "")
 set(LOCAL_SOURCES "")
 find_project_files(${UTOPIA_TEST_DIR} "${TEST_MODULES}" LOCAL_HEADERS
