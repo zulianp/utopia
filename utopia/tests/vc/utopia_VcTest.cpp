@@ -6,8 +6,8 @@ namespace utopia {
 
     class VcTest {
     public:
-        // using Scalar = double;
-        using Scalar = float;
+        using Scalar = double;
+        // using Scalar = float;
         using vScalar = Vc::Vector<Scalar>;
         static const int N = vScalar::Size;
 
@@ -32,11 +32,12 @@ namespace utopia {
             Scalar ret = 0;
             const int data_size = in_data.size();
             const int size_blocks = (data_size / vScalar::Size) * vScalar::Size;
+            static const int simd_size = vScalar::Size;
             // const int santitized = data_size - size_blocks;
 
             for (int i = 0; i < repeat; ++i) {
                 for (int k = 0; k < size_blocks; k += vScalar::Size) {
-                    for (int d = 0; d < vScalar::Size; ++d) {
+                    for (int d = 0; d < simd_size; ++d) {
                         out_data[k + d] += std::sin(in_data[k + d]);
                     }
                 }
@@ -58,7 +59,6 @@ namespace utopia {
             Scalar ret = 0;
             const int data_size = in_data.size();
             const int size_blocks = (data_size / vScalar::Size) * vScalar::Size;
-            // const int santitized = data_size - size_blocks;
 
             for (int i = 0; i < repeat; ++i) {
                 for (int k = 0; k < size_blocks; k += vScalar::Size) {
@@ -74,9 +74,6 @@ namespace utopia {
                 }
             }
 
-            // for (int k = 0; k < data_size; ++k) {
-            //     ret += out_data[k];
-            // }
             for (int k = 0; k < size_blocks; k += vScalar::Size) {
                 auto out = vScalar(&out_data[k], Vc::Unaligned);
                 ret += out.sum();
@@ -95,7 +92,6 @@ namespace utopia {
             Scalar ret = 0;
             const int data_size = u_in_data.size();
             const int size_blocks = (data_size / vScalar::Size) * vScalar::Size;
-            // const int santitized = data_size - size_blocks;
 
             VectorA in_data(data_size), out_data(data_size);
 
@@ -135,19 +131,18 @@ namespace utopia {
         }
 
         void run() {
-            // std::cout << vScalar::Size << std::endl;
-
-            int n = 100;
+            int n = 300;
 
             std::vector<Scalar> in_data(n, 1.0);
             std::vector<Scalar> out_data(n, 0);
 
-            int repeat = 5000000;
+            int repeat = 50000;
 
             Chrono c;
             c.start();
             Scalar ret1 = scalar_test(repeat, in_data, out_data);
             c.stop();
+            double serial_time = c.get_seconds();
 
             std::cout << c << std::endl;
 
@@ -162,7 +157,7 @@ namespace utopia {
 
             std::cout << c << std::endl;
 
-            // utopia_test_assert(approxeq(ret1, ret2, 1e-15));
+            utopia_test_assert(approxeq(ret1, ret2, 1e-15));
 
             //////////////////////////////////////////////////////////////////////////////
 
@@ -175,7 +170,8 @@ namespace utopia {
 
             std::cout << c << std::endl;
 
-            // utopia_test_assert(approxeq(ret1, ret3, 1e-7));
+            utopia_test_assert(approxeq(ret1, ret3, 1e-7));
+            utopia_test_assert(c.get_seconds() < serial_time);
 
             //////////////////////////////////////////////////////////////////////////////
 
@@ -188,7 +184,8 @@ namespace utopia {
 
             std::cout << c << std::endl;
 
-            // utopia_test_assert(approxeq(ret1, ret4, 1e-7));
+            utopia_test_assert(approxeq(ret1, ret4, 1e-7));
+            utopia_test_assert(c.get_seconds() < serial_time);
         }
     };
 
