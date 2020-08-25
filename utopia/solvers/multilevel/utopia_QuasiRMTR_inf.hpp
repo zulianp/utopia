@@ -325,9 +325,9 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
   }
 
   template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
-            enable_if_t<
-                is_any<T, FIRST_ORDER_DF, FIRST_ORDER_MULTIPLICATIVE_DF>::value,
-                int> = 0>
+            enable_if_t<is_any<T, FIRST_ORDER_DF, FIRST_ORDER_MULTIPLICATIVE_DF,
+                               FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF>::value,
+                        int> = 0>
   void init_hess_second_order(const SizeType & /*fine_level*/) {}
 
   template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
@@ -340,9 +340,9 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
 
   // public because of nvcc
   template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
-            enable_if_t<
-                is_any<T, FIRST_ORDER_DF, FIRST_ORDER_MULTIPLICATIVE_DF>::value,
-                int> = 0>
+            enable_if_t<is_any<T, FIRST_ORDER_DF, FIRST_ORDER_MULTIPLICATIVE_DF,
+                               FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF>::value,
+                        int> = 0>
   bool solve_qp_DF(const SizeType &level, const bool &flg) {
     Scalar radius = this->memory_.delta[level];
 
@@ -384,7 +384,7 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
         tr_solver->max_it(this->max_QP_smoothing_it());
       }
     } else {
-      assert("QuasiRMTR_inf:: dynamic cas failed. \n");
+      assert("QuasiRMTR_inf:: dynamic cast failed. \n");
     }
 
     this->ml_derivs_.g[level] *= -1.0;

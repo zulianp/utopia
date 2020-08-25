@@ -474,8 +474,9 @@ class QuasiNewtonTest {
 
     auto rmtr = std::make_shared<
         QuasiRMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>,
-                      // SECOND_ORDER_DF> >(n_levels);
-                      FIRST_ORDER_MULTIPLICATIVE_DF> >(n_levels);
+                      //  SECOND_ORDER_DF> >(
+                      // n_levels);
+                      FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF> >(n_levels);
 
     // intial guess
     // Vector x = values(problem.n_dofs(n_levels - 1), 0.0);
