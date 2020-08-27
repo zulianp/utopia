@@ -31,6 +31,8 @@ if(UTOPIA_ENABLE_VC)
 
         list(APPEND VC_MODULES .)
         utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${VC_MODULES}")
+
+        message(STATUS "${Vc_ARCHITECTURE_FLAGS}\n${Vc_ALL_FLAGS}")
     else()
         set(UTOPIA_WITH_VC FALSE)
     endif()
