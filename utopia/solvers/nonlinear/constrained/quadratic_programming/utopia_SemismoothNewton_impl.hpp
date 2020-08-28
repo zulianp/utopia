@@ -174,8 +174,11 @@ namespace utopia {
                     }
                 }
 
-                if (norm2(residual) < norm2(mat * correction - residual)) {
-                    utopia::err() << "SemismoothNewton: linear solver diverged" << std::endl;
+                const Scalar norm_r = norm2(mat * correction - residual);
+                const Scalar norm_rhs = norm2(residual);
+                if (norm_rhs < norm_r) {
+                    utopia::err() << "SemismoothNewton: linear solver diverged. Norm residual: " << norm_r << " > "
+                                  << norm_rhs << std::endl;
                     assert(false);
                     return false;
                 }
