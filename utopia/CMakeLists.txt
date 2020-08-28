@@ -38,7 +38,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # ##############################################################################
 # ##############################################################################
 
-option(UTOPIA_ENABLE_VC "SIMD wrapper" ON)
+# option(UTOPIA_ENABLE_VC "SIMD wrapper" ON)
+option(UTOPIA_ENABLE_VC "SIMD wrapper" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY
        "Allows to restrict the linking to static libraries" OFF)
 
