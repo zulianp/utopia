@@ -92,8 +92,10 @@ namespace utopia {
             // ssn->fallback_solver(std::make_shared<Factorization<Matrix, Vector>>());
             // qp_solver_ = ssn;
 
-            qp_solver_ =
-                std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
+
+            qp_solver_ = std::make_shared<SemismoothNewton<Matrix, Vector>>(direct_solver);
         }
 
         void read(Input &is) override {
