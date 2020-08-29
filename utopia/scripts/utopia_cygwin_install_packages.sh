@@ -1,3 +1,3 @@
-apt-cyg install gcc-core gcc-fortran gcc-g++ gdb make cmake openmpi libopenmpi-devel libopenmpicxx1 liblapack-devel libopenblas python
-
-
+lynx -source rawgit.com/transcode-open/apt-cyg/master/apt-cyg > apt-cyg
+install apt-cyg /bin
+apt-cyg install gcc-fortran gcc-g++ gdb make cmake openmpi libopenmpi-devel libopenmpicxx1 liblapack-devel libopenblas python
