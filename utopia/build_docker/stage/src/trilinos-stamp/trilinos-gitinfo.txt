@@ -1,3 +1,0 @@
-repository='https://github.com/trilinos/Trilinos.git'
-module=''
-tag='origin'

@@ -1,1 +1,0 @@
-cmd='<SOURCE_DIR>/configure;--prefix=<INSTALL_DIR>;--with-mpi=1;--download-scalapack=yes;--download-hypre=yes;--with-cxx-dialect=C++11;-download-superlu_dist=yes;--download-superlu=yes;--download-mumps=yes;-with-debugging=0;--download-netcdf;--download-pnetcdf;--download-exodusii;--download-zlib;--download-triangle;--download-ctetgen;--download-hdf5'
