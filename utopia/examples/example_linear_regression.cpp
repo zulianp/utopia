@@ -34,6 +34,8 @@ using namespace std;
  * Contains a file whose first columns contain a population/10000 and the profit
  * of a foodtrack in a place with that population/10000.
  */
+
+/** An example:< \f$x_0 + y^3\f$ */
 const char* file = "./../examples/profit.csv";
 
 namespace utopia {
