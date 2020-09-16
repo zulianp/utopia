@@ -34,6 +34,11 @@ if(TRILINOS_FOUND)
         list(FIND Trilinos_PACKAGE_LIST ${package} PACKAGE_FOUND)
         if (NOT PACKAGE_FOUND EQUAL -1)
             set(UTOPIA_WITH_TRILINOS_${packageUpper} TRUE PARENT_SCOPE)
+            if(${package} STREQUAL "MueLu")
+                # ugly hack, but we need to link with muelu-adapters also
+                # I cannot wait until Trilinos finally supports cmake targets correctly
+                list(APPEND UTOPIA_TRILINOS_DEPS "muelu-adapters")
+            endif()
             list(APPEND UTOPIA_TRILINOS_DEPS ${packageLower})
         endif()
     endforeach()
