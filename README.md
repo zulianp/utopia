@@ -52,7 +52,7 @@ For compiling the very experimental FE library follow the instructions [HERE](ht
 ## Contact
 
 - Join us on [slack](https://join.slack.com/t/ics-utopia/signup)
-- Join us or contact us through our [mailing list](https://mailman2.ti-edu.ch/mailman/listinfo/utopia-users)
+- Join us or contact us through our [mailing list](https://lists.usi.ch/mailman3/postorius/lists/utopia-users.lists.usi.ch)
 
 
 ## Citing Utopia
