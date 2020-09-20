@@ -88,10 +88,14 @@ namespace utopia {
             // tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
             // qp_solver_ = tao;
 
-            qp_solver_ =
-                // std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix,
-                // Vector>>());
-                std::make_shared<SemismoothNewton<Matrix, Vector>>(iterative_solver);
+            // auto ssn = std::make_shared<SemismoothNewton<Matrix, Vector>>(iterative_solver);
+            // ssn->fallback_solver(std::make_shared<Factorization<Matrix, Vector>>());
+            // qp_solver_ = ssn;
+
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
+
+            qp_solver_ = std::make_shared<SemismoothNewton<Matrix, Vector>>(direct_solver);
         }
 
         void read(Input &is) override {
