@@ -1535,7 +1535,7 @@ INCLUDE_FILE_PATTERNS  =
 # undefined via #undef or recursively expanded use the := operator 
 # instead of the = operator.
 
-PREDEFINED             =  WITH_PETSC WITH_MPI
+PREDEFINED             =  UTOPIA_WITH_PETSC UTOPIA_WITH_MPI UTOPIA_WITH_TRILINOS
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then 
 # this tag can be used to specify a list of macro names that should be expanded. 

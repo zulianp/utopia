@@ -43,29 +43,30 @@ option(UTOPIA_ENABLE_VC "SIMD wrapper" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY
        "Allows to restrict the linking to static libraries" OFF)
 
-option(TRY_WITH_MPI "Enable the cuda backend" ON)
-# option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
-option(TRY_WITH_PETSC "Enable the petsc backend" ON)
-option(TRY_WITH_SLEPC "Enable the slepc backend" ON)
-option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
-option(TRY_WITH_BLAS "Enable the blas backend" ON)
-option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"
-       OFF)
+option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
+# option(UTOPIA_ENABLE_OPENCL "Enable the opencl backend" OFF)
+option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
+option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" ON)
+option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
+option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
+option(UTOPIA_ENABLE_M3ELINSOL
+       "Enable the m3elinsol algebraic multigrid backend" OFF)
 
-option(ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
-option(ENABLE_TRACE_EXPR
+option(UTOPIA_ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
+option(UTOPIA_ENABLE_TRACE_EXPR
        "enables utopia tracing facilities for every expression" OFF)
 
-option(ENABLE_NO_ALLOC_REGIONS "enables utopia alloc-check facilities" OFF)
-option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-option(ENABLE_PASSO_EXTENSIONS
-       "Enable non-standard petsc solvers developed in the PASSO library" OFF)
-option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
-option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers"
+option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
-option(ENABLE_DEPRECATED_API
+option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
+option(UTOPIA_ENABLE_PASSO_EXTENSIONS
+       "Enable non-standard petsc solvers developed in the PASSO library" OFF)
+option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
+option(UTOPIA_ENABLE_MOOSE_ENV_MODE
+       "Allows to use the moose installation compilers" OFF)
+option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
-option(ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
+option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
     UTOPIA_ENABLE_PETSC_DM_PLEX
     "For the moment is to allow the \"make petsc\" command to install DMPlex dependencies"
@@ -73,19 +74,18 @@ option(
 option(UTOPIA_PULL_REQUEST_MODE
        "Mode for ensuring that pull request standards are respected" OFF)
 
-option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
-option(BUILD_DOCUMENTATION
+option(UTOPIA_ENABLE_EIGEN_3 "Look for eigen for comparing performance" OFF)
+option(UTOPIA_BUILD_DOCUMENTATION
        "Use Doxygen to create the HTML based API documentation" ON)
 
-option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(UTOPIA_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
 
-option(INSTALL_TRILINOS "Install trilinos directly" ON)
-option(INSTALL_PETSC "Install petsc directly" ON)
-option(INSTALL_PETSC_DEBUG "Install petsc directly" ON)
+option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" ON)
+option(UTOPIA_INSTALL_PETSC "Install petsc directly" ON)
+option(UTOPIA_INSTALL_PETSC_DEBUG "Install petsc directly" ON)
 option(
-    ENABLE_GPERFTOOLS
+    UTOPIA_ENABLE_GPERFTOOLS
     "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)"
     OFF)
 
@@ -148,7 +148,7 @@ endif()
 
 # include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/external/GSL/include)
 
-if(ENABLE_DEPRECATED_API)
+if(UTOPIA_ENABLE_DEPRECATED_API)
     set(UTOPIA_DEPRECATED_API ON)
 endif()
 
@@ -160,7 +160,7 @@ if(LINUX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-if(ENABLE_GPERFTOOLS)
+if(UTOPIA_ENABLE_GPERFTOOLS)
     find_package(Gperftools)
 
     if(Gperftools_FOUND)
@@ -170,17 +170,17 @@ if(ENABLE_GPERFTOOLS)
     endif()
 endif()
 
-if(ENABLE_TRACE_EXPR)
-    set(ENABLE_TRACE ON)
+if(UTOPIA_ENABLE_TRACE_EXPR)
+    set(UTOPIA_ENABLE_TRACE ON)
     set(UTOPIA_TRACE_EXPR_ENABLED ON)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
-if(ENABLE_TRACE)
+if(UTOPIA_ENABLE_TRACE)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
-if(ENABLE_PASSO_EXTENSIONS)
+if(UTOPIA_ENABLE_PASSO_EXTENSIONS)
     set(WITH_PASSO_EXTENSIONS TRUE)
 endif()
 
@@ -194,7 +194,7 @@ endif()
 message(
     STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
-if(ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
         set(UTOPIA_DEV_FLAGS
@@ -217,7 +217,7 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
 endif()
 
 if(ENABLE_CXX14_FEATURES)
-    set(WITH_CPP14 TRUE)
+    set(UTOPIA_WITH_CPP14 TRUE)
 endif()
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
@@ -378,7 +378,7 @@ endfunction()
 # ##############################################################################
 # ##############################################################################
 
-set(WITH_CPP11 ON)
+set(UTOPIA_WITH_CPP11 ON)
 
 # ##############################################################################
 # ##############################################################################
@@ -406,20 +406,20 @@ add_custom_target(
 # ##############################################################################
 # ##############################################################################
 
-if(INSTALL_TRILINOS)
+if(UTOPIA_INSTALL_TRILINOS)
     include(InstallTrilinos)
 endif()
 
-if(INSTALL_PETSC)
+if(UTOPIA_INSTALL_PETSC)
     include(InstallPetsc)
 endif()
 
-if(INSTALL_PETSC_DEBUG)
+if(UTOPIA_INSTALL_PETSC_DEBUG)
     include(InstallPetscDebug)
 endif()
 
 # using this to defining UTOPIA_LAMBDA correctly
-if(TRY_WITH_TRILINOS)
+if(UTOPIA_ENABLE_TRILINOS)
     find_package(Trilinos)
     if(Trilinos_FOUND)
         # include_directories(SYSTEM ${Trilinos_INCLUDE_DIRS}
@@ -428,7 +428,7 @@ if(TRY_WITH_TRILINOS)
         # "Kokkos_CXX_FLAGS=${Kokkos_CXX_FLAGS},${CMAKE_CXX_FLAGS}")
         # message(STATUS "HERE:
         # ${Trilinos_CXX_COMPILER_FLAGS},${Kokkos_CXX_FLAGS},${TRILINOS_DEFINITIONS},${CMAKE_CXX_STANDARD},${INTERFACE_COMPILE_FEATURES}")
-        set(WITH_TRILINOS ON)
+        set(UTOPIA_WITH_TRILINOS ON)
     endif()
 endif()
 
@@ -462,23 +462,23 @@ if(UTOPIA_ENABLE_VC)
 endif()
 
 # backend modules
-if(TRY_WITH_BLAS)
+if(UTOPIA_ENABLE_BLAS)
     add_subdirectory(backend/blas)
 endif()
 
-if(TRY_WITH_TRILINOS)
+if(UTOPIA_ENABLE_TRILINOS)
     add_subdirectory(backend/trilinos)
 endif()
 
-if(TRY_WITH_PETSC)
+if(UTOPIA_ENABLE_PETSC)
     add_subdirectory(backend/petsc)
 endif()
 
-if(TRY_WITH_OPENCL)
+if(UTOPIA_ENABLE_OPENCL)
     add_subdirectory(backend/opencl)
 endif()
 
-if(TRY_WITH_M3ELINSOL)
+if(UTOPIA_ENABLE_M3ELINSOL)
     add_subdirectory(backend/m3elinsol)
 endif()
 

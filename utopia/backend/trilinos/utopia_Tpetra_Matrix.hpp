@@ -535,7 +535,7 @@ namespace utopia {
 
         std::shared_ptr<InitStructs> init_;
 
-        NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         template <class Op>
         void aux_transform(const Op &op);
 

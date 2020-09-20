@@ -3,17 +3,17 @@
 #include <algorithm>
 #include <iostream>
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
 #include "mpi.h"
 #include "utopia_MPI.hpp"
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 namespace utopia {
     void Chrono::start() {
         start_ = std::chrono::high_resolution_clock::now();
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         mpi_start_ = MPI_Wtime();
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 #ifdef WIN32
         QueryPerformanceCounter(&realtime_start_);
@@ -44,10 +44,10 @@ namespace utopia {
         end_ = std::chrono::high_resolution_clock::now();
         duration_ = end_ - start_;
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         mpi_end_ = MPI_Wtime();
         mpi_duration_ = mpi_end_ - mpi_start_;
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 #ifdef WIN32
         double start_time_ms = 0;
@@ -76,22 +76,22 @@ namespace utopia {
         os << "[Time elapsed] clock: " << std::to_string(duration_.count()) << " milliseconds,\t";
         os << " " << realtime_duration_ << " seconds.\t";
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         if (mpi_world_rank() == 0) {
             os << "MPI_Wtime: " << mpi_duration_ << " seconds.\n";
         }
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
     }
 
     Chrono &Chrono::operator+=(const Chrono &other) {
         using std::max;
         using std::min;
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         mpi_start_ = min(mpi_start_, other.mpi_start_);
         mpi_end_ = max(mpi_end_, other.mpi_end_);
         mpi_duration_ += other.mpi_duration_;
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 #ifdef __APPLE__
         realtime_start_ = min(realtime_start_, other.realtime_start_);
@@ -115,9 +115,9 @@ namespace utopia {
     }
 
     void Chrono::rescale_duration(const double factor) {
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         mpi_duration_ *= factor;
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 #ifdef __APPLE__
         realtime_duration_ *= factor;

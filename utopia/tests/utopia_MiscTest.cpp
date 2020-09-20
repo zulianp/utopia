@@ -4,7 +4,7 @@
 
 namespace utopia {
 
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
     void cuda_hello_world() {
         // For the moment no hybrid
         if (utopia::mpi_world_size() != 1) return;
@@ -22,7 +22,7 @@ namespace utopia {
     }
 #endif
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
     void test_opencl_code() {
         const int n = 30;
 
@@ -44,10 +44,10 @@ namespace utopia {
         // utopia::out() <<"-------------------\n";
     }
 
-#endif  // WITH_UTOPIA_OPENCL
+#endif  // UTOPIA_WITH_OPENCL
 
-#ifdef WITH_LAPACK
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_LAPACK
+#ifdef UTOPIA_WITH_BLAS
     void test_lapack_eigen_solver() {
         using namespace utopia;
         using SizeType = Traits<BlasMatrixd>::SizeType;
@@ -182,20 +182,20 @@ namespace utopia {
         auto ptr_2 = fact_1->make();
     }
 
-#endif  // WITH_BLAS
-#endif  // WITH_LAPACK
+#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_WITH_LAPACK
 
     static void misc() {
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
         UTOPIA_RUN_TEST(cuda_hello_world);
 #endif
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
         UTOPIA_RUN_TEST(test_opencl_code);
 #endif
 
-#ifdef WITH_LAPACK
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_LAPACK
+#ifdef UTOPIA_WITH_BLAS
         UTOPIA_RUN_TEST(test_lapack_eigen_solver);
 #endif
 #endif

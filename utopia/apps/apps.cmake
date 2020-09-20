@@ -31,13 +31,13 @@ if(UTOPIA_PETSC)
         target_link_libraries(utopia_exec PUBLIC gperftools::profiler)
     endif()
 
-    if(TRY_WITH_EIGEN_3)
+    if(UTOPIA_ENABLE_EIGEN_3)
         find_package(Eigen3)
         if(EIGEN3_FOUND)
-            set(WITH_EIGEN_3 ON)
-            # set(WITH_EIGEN_3 ON PARENT_SCOPE)
+            set(UTOPIA_WITH_EIGEN_3 ON)
             target_include_directories(utopia_exec
                                        PRIVATE ${EIGEN3_INCLUDE_DIR})
+
         endif()
     endif()
 

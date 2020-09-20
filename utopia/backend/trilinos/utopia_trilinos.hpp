@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_Kokkos_ParallelFor.hpp"
 #include "utopia_trilinos_DeviceView.hpp"
 #include "utopia_trilinos_Eval_Factory.hpp"
@@ -30,5 +30,5 @@
 // FIXME re-introduce later
 // #include "utopia_trilinos_Eval_Distance.hpp"
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 #endif  // UTOPIA_TRILINOS_HPP
