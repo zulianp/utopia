@@ -1,5 +1,10 @@
 utopia/bin/*
+utopia/bin_*
+utopia/build/*
+utopia/build_*
+utopia_fe/bin_*
 utopia_fe/bin/*
+utopia_fe/build_*
 
 utopia/build/*
 utopia_fe/build/*
@@ -10,3 +15,8 @@ utopia/doc/*
 *.DS_Store
 *.vtk
 *.vtr
+*.aux
+*.bbl
+*.blg
+*.log
+*.out

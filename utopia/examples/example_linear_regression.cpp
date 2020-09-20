@@ -252,7 +252,7 @@ void test() {
     QN.stop();
 
     // display solution
-    disp(x, "my_solution with with QuasiNewton");
+    disp(x, "my_solution with QuasiNewton");
 
     cout << "Gradient Descent took " << GD.get_seconds() << " seconds to converge." << endl;
     cout << "Quasi Newton took " << QN.get_seconds() << " seconds to converge and was " << flush;
@@ -265,11 +265,11 @@ void test() {
 int main(int argc, char** argv) {
     using namespace utopia;
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     using MatrixT = TpetraMatrixd;
     using VectorT = TpetraVectord;
 #else

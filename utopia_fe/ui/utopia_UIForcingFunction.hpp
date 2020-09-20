@@ -57,7 +57,7 @@ namespace utopia {
                     return;
                 }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
                 std::string value;
                 is.get("value", value);
                 auto f = symbolic(value);
@@ -65,7 +65,7 @@ namespace utopia {
                 double value = 0.;
                 is.get("value", value);
                 auto f = coeff(value);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
                 if (type == "surface") {
                     int normalize_by_area = 0;
@@ -117,7 +117,7 @@ namespace utopia {
                 is.get("coord", coord);
                 is.get("type", type);
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
                 std::string value;
                 is.get("value", value);
                 auto f = symbolic(value);
@@ -125,7 +125,7 @@ namespace utopia {
                 double value = 0.;
                 is.get("value", value);
                 auto f = coeff(value);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
                 if (type == "surface") {
                     int normalize_by_area = 0;
