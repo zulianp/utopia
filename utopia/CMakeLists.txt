@@ -59,8 +59,8 @@ option(UTOPIA_ENABLE_TRACE_EXPR
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
 option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-option(UTOPIA_ENABLE_PASSO_EXTENSIONS
-       "Enable non-standard petsc solvers developed in the PASSO library" OFF)
+# option(UTOPIA_ENABLE_PASSO_EXTENSIONS
+# "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
@@ -123,7 +123,7 @@ endif()
 # set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS}
 # -Werror=inconsistent-missing-override")
 
-if(ENABLE_CLANG_TIDY)
+if(UTOPIA_ENABLE_CLANG_TIDY)
     # FIXME
     find_program(
         CLANG_TIDY
@@ -180,9 +180,7 @@ if(UTOPIA_ENABLE_TRACE)
     set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
-if(UTOPIA_ENABLE_PASSO_EXTENSIONS)
-    set(WITH_PASSO_EXTENSIONS TRUE)
-endif()
+# if(UTOPIA_ENABLE_PASSO_EXTENSIONS) set(WITH_PASSO_EXTENSIONS TRUE) endif()
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS_DEBUG
@@ -204,8 +202,8 @@ if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     endif()
 endif()
 
-if(ENABLE_LOCK_CHECKING)
-    set(ENABLE_LOCK_CHECK TRUE)
+if(UTOPIA_ENABLE_LOCK_CHECKING)
+    set(UTOPIA_ENABLE_LOCK_CHECK TRUE)
 endif()
 
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
@@ -216,7 +214,7 @@ if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
     endif()
 endif()
 
-if(ENABLE_CXX14_FEATURES)
+if(UTOPIA_ENABLE_CXX14_FEATURES)
     set(UTOPIA_WITH_CPP14 TRUE)
 endif()
 
