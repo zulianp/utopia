@@ -1,7 +1,7 @@
 #ifndef UTOPIA_FE_EVAL_SYMBOLIC_FUNCTION_HPP
 #define UTOPIA_FE_EVAL_SYMBOLIC_FUNCTION_HPP
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
 
 #include "utopia_AssemblyContext.hpp"
 #include "utopia_Eval_Empty.hpp"
@@ -29,5 +29,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 #endif  // UTOPIA_FE_EVAL_SYMBOLIC_FUNCTION_HPP

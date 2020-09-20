@@ -2,7 +2,7 @@
 
 namespace utopia {
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
     bool MPICommunicator::conjunction(const bool &val) const {
         int int_val = val;
         MPI_Allreduce(MPI_IN_PLACE, &int_val, 1, MPI_INT, MPI_SUM, get());
@@ -21,6 +21,6 @@ namespace utopia {
         return int_val > 0;
     }
 
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 }  // namespace utopia

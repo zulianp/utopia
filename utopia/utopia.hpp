@@ -34,32 +34,32 @@ Visit our <a href="https://bitbucket.org/zulianp/utopia/wiki/Home">Wiki</a> for 
 #include "utopia_Solvers.hpp"
 #include "utopia_Utils.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 // Macros defined in a petsc header are conflicting with Enums defined in Trilinos
 // Trilinos inclusions should always preceed petsc inclusions
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 #include "utopia_blas.hpp"
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
 #include "utopia_cuda.hpp"
-#endif  // WITH_CUDA
+#endif  // UTOPIA_WITH_CUDA
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
 #include "utopia_opencl.hpp"
-#endif  // WITH_UTOPIA_OPENCL
+#endif  // UTOPIA_WITH_OPENCL
 
-#ifdef WITH_M3ELINSOL
+#ifdef UTOPIA_WITH_M3ELINSOL
 #include "utopia_m3elinsol.hpp"
-#endif  // WITH_M3ELINSOL
+#endif  // UTOPIA_WITH_M3ELINSOL
 
 #endif  // UTOPIA_HPP

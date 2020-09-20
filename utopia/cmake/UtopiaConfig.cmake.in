@@ -6,7 +6,7 @@ if (NOT CMAKE_CXX_EXTENSIONS)
 endif()
 
 include(CMakeFindDependencyMacro)
-if (@WITH_TRILINOS@)
+if (@UTOPIA_WITH_TRILINOS@)
     find_dependency(Trilinos HINTS @Trilinos_DIR@)
 endif()
 

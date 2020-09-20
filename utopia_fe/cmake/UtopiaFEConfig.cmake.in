@@ -3,7 +3,7 @@
 include(CMakeFindDependencyMacro)
 find_dependency(Utopia HINTS @Utopia_DIR@)
 find_dependency(ParMoonolith HINTS @ParMoonolith_DIR@)
-if (@WITH_BOOST@)
+if (@UTOPIA_WITH_BOOST@)
     find_dependency(Boost HINTS @Boost_DIR@)
 endif()
 

@@ -1,7 +1,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_M3ELINSOL
+#ifdef UTOPIA_WITH_M3ELINSOL
 #include "utopia.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_Testing.hpp"
@@ -9,8 +9,8 @@
 
 namespace utopia {
 
-#ifdef WITH_PETSC
-    void amg_with_petsc() {
+#ifdef UTOPIA_WITH_PETSC
+    void amg_UTOPIA_WITH_PETSC() {
         PetscVector rhs, x;
         PetscMatrix A;
 
@@ -35,10 +35,10 @@ namespace utopia {
         utopia_test_assert(res_norm < 1e-8);
     }
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-    // #ifdef WITH_BLAS
-    //     void amg_with_blas()
+    // #ifdef UTOPIA_WITH_BLAS
+    //     void amg_UTOPIA_WITH_BLAS()
     //     {
     //         BlasVectord rhs, x;
     //         BlasMatrixd A;
@@ -67,16 +67,16 @@ namespace utopia {
     //         utopia_test_assert(res_norm < 1e-8);
 
     //     }
-    // #endif //WITH_BLAS
+    // #endif //UTOPIA_WITH_BLAS
 
     static void m3e_lin_sol() {
-#ifdef WITH_PETSC
-        UTOPIA_RUN_TEST(amg_with_petsc);
-#endif  // WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
+        UTOPIA_RUN_TEST(amg_UTOPIA_WITH_PETSC);
+#endif  // UTOPIA_WITH_PETSC
 
-        // #ifdef WITH_BLAS
-        //         UTOPIA_RUN_TEST(amg_with_blas);
-        // #endif //WITH_BLAS
+        // #ifdef UTOPIA_WITH_BLAS
+        //         UTOPIA_RUN_TEST(amg_UTOPIA_WITH_BLAS);
+        // #endif //UTOPIA_WITH_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(m3e_lin_sol);

@@ -7,7 +7,7 @@
 
 #include "utopia_MPI_Operations.hpp"
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
 #include <mpi.h>
 #endif
 
@@ -23,7 +23,7 @@ namespace utopia {
 
         virtual bool same(const Communicator &other) const { return size() == other.size(); }
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         virtual MPI_Comm raw_comm() const = 0;
 #endif
 
@@ -59,9 +59,9 @@ namespace utopia {
             barrier();
         }
 
-        // #ifdef WITH_MPI
+        // #ifdef UTOPIA_WITH_MPI
         // 		virtual MPI_Comm get() const = 0;
-        // #endif //WITH_MPI
+        // #endif //UTOPIA_WITH_MPI
     };
 
     /**
@@ -100,18 +100,18 @@ namespace utopia {
             return val;
         }
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         inline MPI_Comm get() const noexcept { return MPI_COMM_SELF; }
 
         inline MPI_Comm raw_comm() const override { return MPI_COMM_SELF; }
 
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
     };
 
     template <typename T>
     class MPIType {};
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
     template <>
     class MPIType<double> {
     public:
@@ -227,7 +227,7 @@ namespace utopia {
         }
     };
 
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 }  // namespace utopia
 

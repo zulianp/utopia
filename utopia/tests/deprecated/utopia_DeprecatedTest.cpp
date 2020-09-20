@@ -124,19 +124,19 @@ namespace utopia {
     };
 
     static void deprecated() {
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         DeprecatedTest<BlasMatrixd, BlasVectord>().run();
         DenseDeprecatedTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         DeprecatedTest<utopia::PetscMatrix, utopia::PetscVector>::run();
         // DenseDeprecatedTest<PetscMatrix, PetscVector>().run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         DeprecatedTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(deprecated);

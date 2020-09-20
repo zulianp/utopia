@@ -4,7 +4,7 @@
 #include "utopia_fe_config.hpp"
 #include "utopia_libmesh_Types.hpp"
 
-#ifndef WITH_TRILINOS_ALGEBRA
+#ifndef UTOPIA_WITH_TRILINOS_ALGEBRA
 
 #include "utopia.hpp"
 #include "utopia_Contact.hpp"
@@ -88,10 +88,14 @@ namespace utopia {
             // tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
             // qp_solver_ = tao;
 
-            qp_solver_ =
-                // std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix,
-                // Vector>>());
-                std::make_shared<SemismoothNewton<Matrix, Vector>>(iterative_solver);
+            // auto ssn = std::make_shared<SemismoothNewton<Matrix, Vector>>(iterative_solver);
+            // ssn->fallback_solver(std::make_shared<Factorization<Matrix, Vector>>());
+            // qp_solver_ = ssn;
+
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
+
+            qp_solver_ = std::make_shared<SemismoothNewton<Matrix, Vector>>(direct_solver);
         }
 
         void read(Input &is) override {
@@ -614,5 +618,5 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS_ALGEBRA
+#endif  // UTOPIA_WITH_TRILINOS_ALGEBRA
 #endif  // UTOPIA_STEADY_CONTACTHPP

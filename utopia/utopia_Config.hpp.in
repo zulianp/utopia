@@ -1,89 +1,73 @@
 #ifndef UTOPIA_CONFIG_HPP
 #define UTOPIA_CONFIG_HPP
 
-#cmakedefine WITH_BLAS
-#cmakedefine WITH_LAPACK
-#cmakedefine WITH_PETSC
-#cmakedefine WITH_SLEPC
-#cmakedefine WITH_TRILINOS
-#cmakedefine WITH_TRILINOS_AMESOS2
-#cmakedefine WITH_TRILINOS_BELOS
-#cmakedefine WITH_TRILINOS_IFPACK2
-#cmakedefine WITH_TRILINOS_MUELU
-#cmakedefine WITH_TRILINOS_TPETRAEXT
-#cmakedefine WITH_CPP11
-#cmakedefine WITH_UMFPACK
-#cmakedefine WITH_MPI
-#cmakedefine WITH_OPEN_BLAS
-#cmakedefine WITH_PETSC_CRAY
-#cmakedefine WITH_CUDA
-#cmakedefine WITH_UTOPIA_OPENCL
-#cmakedefine WITH_EIGEN_3
+#cmakedefine UTOPIA_WITH_BLAS
+#cmakedefine UTOPIA_WITH_LAPACK
+#cmakedefine UTOPIA_WITH_PETSC
+#cmakedefine UTOPIA_WITH_SLEPC
+#cmakedefine UTOPIA_WITH_TRILINOS
+#cmakedefine UTOPIA_WITH_TRILINOS_AMESOS2
+#cmakedefine UTOPIA_WITH_TRILINOS_BELOS
+#cmakedefine UTOPIA_WITH_TRILINOS_IFPACK2
+#cmakedefine UTOPIA_WITH_TRILINOS_MUELU
+#cmakedefine UTOPIA_WITH_TRILINOS_TPETRAEXT
+#cmakedefine UTOPIA_WITH_CPP11
+#cmakedefine UTOPIA_WITH_UMFPACK
+#cmakedefine UTOPIA_WITH_MPI
+#cmakedefine UTOPIA_WITH_OPEN_BLAS
+#cmakedefine UTOPIA_WITH_PETSC_CRAY
+#cmakedefine UTOPIA_WITH_CUDA
+#cmakedefine UTOPIA_WITH_OPENCL
+#cmakedefine UTOPIA_WITH_EIGEN_3
 #cmakedefine UTOPIA_TRACE_ENABLED
 #cmakedefine UTOPIA_TRACE_EXPR_ENABLED
-#cmakedefine ENABLE_NO_ALLOC_REGIONS
-#cmakedefine WITH_PASSO_EXTENSIONS
-#cmakedefine WITH_TINY_EXPR
-#cmakedefine WITH_JSON
-#cmakedefine WITH_M3ELINSOL
-#cmakedefine WITH_CPP14
-#cmakedefine WITH_CODE_COVERAGE
+#cmakedefine UTOPIA_ENABLE_NO_ALLOC_REGIONS
+#cmakedefine UTOPIA_WITH_TINY_EXPR
+#cmakedefine UTOPIA_WITH_JSON
+#cmakedefine UTOPIA_WITH_M3ELINSOL
+#cmakedefine UTOPIA_WITH_CPP14
+#cmakedefine UTOPIA_WITH_CODE_COVERAGE
 #cmakedefine UTOPIA_DEPRECATED_API
+#cmakedefine UTOPIA_WITH_VC
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR
 #cmakedefine UTOPIA_PETSC_VERSION_SUBMINOR
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include <Kokkos_Macros.hpp>
 #define UTOPIA_LAMBDA KOKKOS_LAMBDA
 #define UTOPIA_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
 #define UTOPIA_FUNCTION KOKKOS_FUNCTION
-#define NVCC_PRIVATE public:
+#define UTOPIA_NVCC_PRIVATE public:
 #else
 #define UTOPIA_LAMBDA [=]
 #define UTOPIA_INLINE_FUNCTION inline
 #define UTOPIA_FUNCTION
-#define NVCC_PRIVATE
+#define UTOPIA_NVCC_PRIVATE
 #endif
 
 
-#ifdef WITH_OPEN_BLAS
-#define WITH_BLAS
+#ifdef UTOPIA_WITH_OPEN_BLAS
+#define UTOPIA_WITH_BLAS
 #endif
 
-#ifdef WITH_PETSC_CRAY
+#ifdef UTOPIA_WITH_PETSC_CRAY
 #define PETSC_CXX_STATIC_INLINE static inline
 #define PETSC_CXX_RESTRICT __restrict__
 #endif
-
-
-#ifdef WITH_CPP11                          //Global enabler
-#cmakedefine HAS_CXX11_AUTO               //auto keyword
-#cmakedefine HAS_CXX11_NULLPTR            //nullptr
-#cmakedefine HAS_CXX11_LAMBDA             //lambdas
-#cmakedefine HAS_CXX11_STATIC_ASSERT      //static_assert()
-#cmakedefine HAS_CXX11_RVALUE_REFERENCES  //rvalue references
-#cmakedefine HAS_CXX11_DECLTYPE           //decltype keyword
-#cmakedefine HAS_CXX11_CSTDINT_H          //cstdint header
-#cmakedefine HAS_CXX11_LONG_LONG          //long long signed & unsigned types
-#cmakedefine HAS_CXX11_VARIADIC_TEMPLATES //variadic templates
-#cmakedefine HAS_CXX11_CONSTEXPR          //constexpr keyword
-#cmakedefine HAS_CXX11_SIZEOF_MEMBER      //sizeof() non-static members
-#cmakedefine HAS_CXX11_FUNC               //__func__ preprocessor constant
-#endif //WITH_CPP11
 
 
 #ifndef NDEBUG
 #include <assert.h>
 #cmakedefine ENABLE_LOCK_CHECK
 #ifdef ENABLE_LOCK_CHECK
-#define assert_enabled(expr_) assert(expr_)
+#define utopia_lock_check_assert(expr_) assert(expr_)
 #else
-#define assert_enabled(expr_)
+#define utopia_lock_check_assert(expr_)
 #endif //ENABLE_LOCK_CHECK
 #else
-#define assert_enabled(expr_)
+#define utopia_lock_check_assert(expr_)
 #endif //NDEBUG
 
 #include "utopia_compiler_features.hpp"
