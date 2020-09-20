@@ -4,7 +4,7 @@
 #include "utopia_fe_config.hpp"
 #include "utopia_libmesh_Types.hpp"
 
-#ifndef WITH_TRILINOS_ALGEBRA
+#ifndef UTOPIA_WITH_TRILINOS_ALGEBRA
 
 #include "utopia.hpp"
 #include "utopia_Contact.hpp"
@@ -618,5 +618,5 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS_ALGEBRA
+#endif  // UTOPIA_WITH_TRILINOS_ALGEBRA
 #endif  // UTOPIA_STEADY_CONTACTHPP

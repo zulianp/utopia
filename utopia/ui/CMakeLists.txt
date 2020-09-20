@@ -13,7 +13,7 @@ if(TINY_EXPR_DIR)
     # tinyexpr
     add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
     target_include_directories(tinyexpr PUBLIC $<BUILD_INTERFACE:${TINY_EXPR_DIR}>)
-    set(WITH_TINY_EXPR ON PARENT_SCOPE)
+    set(UTOPIA_WITH_TINY_EXPR ON PARENT_SCOPE)
     set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
 
     install(TARGETS tinyexpr
@@ -48,7 +48,7 @@ find_path(JSON_DIR
 )
 if(JSON_DIR)
     target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
-    set(WITH_JSON ON PARENT_SCOPE)
+    set(UTOPIA_WITH_JSON ON PARENT_SCOPE)
 endif()
 
 set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS}${UTOPIA_ADDITIONAL_COMPONENTS}" PARENT_SCOPE)

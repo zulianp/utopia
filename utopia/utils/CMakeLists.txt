@@ -6,13 +6,13 @@ list(APPEND UTILS_MODULES
 )
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${UTILS_MODULES}")
 
-if (WITH_TRILINOS)
+if (UTOPIA_WITH_TRILINOS)
     # we depend on kokkos headers, i.e. we need to pull in the kokkos target
     target_link_libraries(utopia PUBLIC Kokkos::kokkos)
 endif()
 
 find_package(MPIExtended)
-if(TRY_WITH_MPI)
+if(UTOPIA_ENABLE_MPI)
     if(MPI_FOUND)
         list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${MPI_CXX_INCLUDE_PATH})
         list(APPEND UTOPIA_THIRDPARTY_LIBRARIES  ${MPI_CXX_LIBRARIES} )
@@ -23,7 +23,7 @@ if(TRY_WITH_MPI)
 
         message(STATUS "WHAT: ${MPI_CXX_INCLUDE_PATH} ${MPI_CXX_LIBRARIES}")
 
-        set(WITH_MPI TRUE PARENT_SCOPE)
+        set(UTOPIA_WITH_MPI TRUE PARENT_SCOPE)
         if(MPI_DIR)
             set(MPI_DIR ${MPI_DIR} PARENT_SCOPE)
         endif()

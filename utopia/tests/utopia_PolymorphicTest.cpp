@@ -8,15 +8,15 @@
 #include "utopia_ObjectFactory.hpp"
 #include "utopia_make_unique.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 namespace utopia {
 
 // Register types
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 
     // FIXME make it so that also includes utopia front-end solvers
     using PetscLinearSolver = utopia::KSPSolver<PetscMatrix, PetscVector>;
@@ -25,7 +25,7 @@ namespace utopia {
     UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
     UTOPIA_FACTORY_REGISTER_LINEAR_SOLVER(PetscLinearSolver);
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVectord);
     // FIXME
     // UTOPIA_FACTORY_REGISTER_MATRIX(TpetraMatrixd);
@@ -71,7 +71,7 @@ namespace utopia {
         void convenience_wrapper() {
             const SizeType n_local = 10;
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #ifdef UTOPIA_TPETRA_SIZE_TYPE
             // if types are the same TirlinosFactory == DefaultFactory
             InputParameters params;
@@ -79,7 +79,7 @@ namespace utopia {
             DefaultFactory::init(params);
 
 #endif  // UTOPIA_TPETRA_SIZE_TYPE
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
             auto comm_ptr = DefaultFactory::new_communicator();
             const SizeType n = n_local * comm_ptr->size();
@@ -133,11 +133,11 @@ namespace utopia {
         void run() {
             UTOPIA_RUN_TEST(convenience_wrapper);
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             UTOPIA_RUN_TEST(petsc_wrapper);
 #endif
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #ifdef UTOPIA_TPETRA_SIZE_TYPE
             UTOPIA_RUN_TEST(trilinos_wrapper);
 #endif
@@ -149,5 +149,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_TEST_FUNCTION(polymorphic);
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 }  // namespace utopia
