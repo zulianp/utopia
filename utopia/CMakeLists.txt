@@ -49,20 +49,21 @@ option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
 option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" ON)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
-option(UTOPIA_ENABLE_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend"
-       OFF)
+option(UTOPIA_ENABLE_M3ELINSOL
+       "Enable the m3elinsol algebraic multigrid backend" OFF)
 
 option(UTOPIA_ENABLE_TRACE "enables utopia tracing facilities for regions" OFF)
 option(UTOPIA_ENABLE_TRACE_EXPR
        "enables utopia tracing facilities for every expression" OFF)
 
-option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities" OFF)
+option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
+       OFF)
 option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(UTOPIA_ENABLE_PASSO_EXTENSIONS
        "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
-option(UTOPIA_ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers"
-       OFF)
+option(UTOPIA_ENABLE_MOOSE_ENV_MODE
+       "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
@@ -74,18 +75,17 @@ option(UTOPIA_PULL_REQUEST_MODE
        "Mode for ensuring that pull request standards are respected" OFF)
 
 option(UTOPIA_ENABLE_EIGEN_3 "Look for eigen for comparing performance" OFF)
-option(BUILD_DOCUMENTATION
+option(UTOPIA_BUILD_DOCUMENTATION
        "Use Doxygen to create the HTML based API documentation" ON)
 
-option(CODE_COVERAGE "Enable coverage reporting" OFF)
 option(UTOPIA_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
 
-option(INSTALL_TRILINOS "Install trilinos directly" ON)
-option(INSTALL_PETSC "Install petsc directly" ON)
-option(INSTALL_PETSC_DEBUG "Install petsc directly" ON)
+option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" ON)
+option(UTOPIA_INSTALL_PETSC "Install petsc directly" ON)
+option(UTOPIA_INSTALL_PETSC_DEBUG "Install petsc directly" ON)
 option(
-    ENABLE_GPERFTOOLS
+    UTOPIA_ENABLE_GPERFTOOLS
     "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)"
     OFF)
 
@@ -160,7 +160,7 @@ if(LINUX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-if(ENABLE_GPERFTOOLS)
+if(UTOPIA_ENABLE_GPERFTOOLS)
     find_package(Gperftools)
 
     if(Gperftools_FOUND)
@@ -406,15 +406,15 @@ add_custom_target(
 # ##############################################################################
 # ##############################################################################
 
-if(INSTALL_TRILINOS)
+if(UTOPIA_INSTALL_TRILINOS)
     include(InstallTrilinos)
 endif()
 
-if(INSTALL_PETSC)
+if(UTOPIA_INSTALL_PETSC)
     include(InstallPetsc)
 endif()
 
-if(INSTALL_PETSC_DEBUG)
+if(UTOPIA_INSTALL_PETSC_DEBUG)
     include(InstallPetscDebug)
 endif()
 
