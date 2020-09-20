@@ -1,29 +1,30 @@
-
-if(TARGET utopia_petsc)
+if(UTOPIA_PETSC)
 
     set(UTOPIA_APPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/apps)
 
-    list(APPEND APPS_MODULES
+    list(
+        APPEND
+        APPS_MODULES
         .
         data_structures
         gpu_assembler
         cpu_assembler
         cpu_assembler/dmplex
         PF_frac
-        fe
-    )
+        fe)
 
     set(LOCAL_HEADERS "")
     set(LOCAL_SOURCES "")
-    find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS LOCAL_SOURCES)
+    find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
+                       LOCAL_SOURCES)
     target_sources(utopia_exec PRIVATE ${LOCAL_SOURCES})
     utopia_link_default_targets(utopia_exec)
-
 
     target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})
     target_include_directories(utopia_exec PRIVATE .)
     foreach(MODULE ${APPS_MODULES})
-        target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR}/${MODULE})
+        target_include_directories(utopia_exec
+                                   PRIVATE ${UTOPIA_APPS_DIR}/${MODULE})
     endforeach()
 
     if(Gperftools_FOUND)
@@ -34,8 +35,9 @@ if(TARGET utopia_petsc)
         find_package(Eigen3)
         if(EIGEN3_FOUND)
             set(WITH_EIGEN_3 ON)
-            #set(WITH_EIGEN_3 ON PARENT_SCOPE)
-            target_include_directories(utopia_exec PRIVATE ${EIGEN3_INCLUDE_DIR})
+            # set(WITH_EIGEN_3 ON PARENT_SCOPE)
+            target_include_directories(utopia_exec
+                                       PRIVATE ${EIGEN3_INCLUDE_DIR})
         endif()
     endif()
 
