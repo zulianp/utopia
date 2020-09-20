@@ -54,9 +54,9 @@ Visit our <a href="https://bitbucket.org/zulianp/utopia/wiki/Home">Wiki</a> for 
 #include "utopia_cuda.hpp"
 #endif  // UTOPIA_WITH_CUDA
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
 #include "utopia_opencl.hpp"
-#endif  // WITH_UTOPIA_OPENCL
+#endif  // UTOPIA_WITH_OPENCL
 
 #ifdef UTOPIA_WITH_M3ELINSOL
 #include "utopia_m3elinsol.hpp"

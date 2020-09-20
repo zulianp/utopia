@@ -17,7 +17,7 @@
 #cmakedefine UTOPIA_WITH_OPEN_BLAS
 #cmakedefine UTOPIA_WITH_PETSC_CRAY
 #cmakedefine UTOPIA_WITH_CUDA
-#cmakedefine WITH_UTOPIA_OPENCL
+#cmakedefine UTOPIA_WITH_OPENCL
 #cmakedefine UTOPIA_WITH_EIGEN_3
 #cmakedefine UTOPIA_TRACE_ENABLED
 #cmakedefine UTOPIA_TRACE_EXPR_ENABLED
@@ -38,12 +38,12 @@
 #define UTOPIA_LAMBDA KOKKOS_LAMBDA
 #define UTOPIA_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
 #define UTOPIA_FUNCTION KOKKOS_FUNCTION
-#define NVCC_PRIVATE public:
+#define UTOPIA_NVCC_PRIVATE public:
 #else
 #define UTOPIA_LAMBDA [=]
 #define UTOPIA_INLINE_FUNCTION inline
 #define UTOPIA_FUNCTION
-#define NVCC_PRIVATE
+#define UTOPIA_NVCC_PRIVATE
 #endif
 
 
@@ -57,32 +57,16 @@
 #endif
 
 
-#ifdef UTOPIA_WITH_CPP11                          //Global enabler
-#cmakedefine HAS_CXX11_AUTO               //auto keyword
-#cmakedefine HAS_CXX11_NULLPTR            //nullptr
-#cmakedefine HAS_CXX11_LAMBDA             //lambdas
-#cmakedefine HAS_CXX11_STATIC_ASSERT      //static_assert()
-#cmakedefine HAS_CXX11_RVALUE_REFERENCES  //rvalue references
-#cmakedefine HAS_CXX11_DECLTYPE           //decltype keyword
-#cmakedefine HAS_CXX11_CSTDINT_H          //cstdint header
-#cmakedefine HAS_CXX11_LONG_LONG          //long long signed & unsigned types
-#cmakedefine HAS_CXX11_VARIADIC_TEMPLATES //variadic templates
-#cmakedefine HAS_CXX11_CONSTEXPR          //constexpr keyword
-#cmakedefine HAS_CXX11_SIZEOF_MEMBER      //sizeof() non-static members
-#cmakedefine HAS_CXX11_FUNC               //__func__ preprocessor constant
-#endif //UTOPIA_WITH_CPP11
-
-
 #ifndef NDEBUG
 #include <assert.h>
 #cmakedefine ENABLE_LOCK_CHECK
 #ifdef ENABLE_LOCK_CHECK
-#define assert_enabled(expr_) assert(expr_)
+#define utopia_lock_check_assert(expr_) assert(expr_)
 #else
-#define assert_enabled(expr_)
+#define utopia_lock_check_assert(expr_)
 #endif //ENABLE_LOCK_CHECK
 #else
-#define assert_enabled(expr_)
+#define utopia_lock_check_assert(expr_)
 #endif //NDEBUG
 
 #include "utopia_compiler_features.hpp"

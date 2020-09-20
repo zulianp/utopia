@@ -311,7 +311,7 @@ namespace utopia {
 
         Scalar min_function_value() const override { return 2.93660e-4; }
 
-        NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         SizeType n_;
         Vector x_init_;
         Vector x_exact_;

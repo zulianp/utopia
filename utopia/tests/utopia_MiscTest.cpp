@@ -22,7 +22,7 @@ namespace utopia {
     }
 #endif
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
     void test_opencl_code() {
         const int n = 30;
 
@@ -44,7 +44,7 @@ namespace utopia {
         // utopia::out() <<"-------------------\n";
     }
 
-#endif  // WITH_UTOPIA_OPENCL
+#endif  // UTOPIA_WITH_OPENCL
 
 #ifdef UTOPIA_WITH_LAPACK
 #ifdef UTOPIA_WITH_BLAS
@@ -190,7 +190,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(cuda_hello_world);
 #endif
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
         UTOPIA_RUN_TEST(test_opencl_code);
 #endif
 

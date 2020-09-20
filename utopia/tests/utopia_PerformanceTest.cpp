@@ -325,7 +325,7 @@
 
 // 		const bool verbose = performance_test_verbose();
 
-// #ifdef WITH_UTOPIA_OPENCL
+// #ifdef UTOPIA_WITH_OPENCL
 
 // 		// CLContext::instance().set_current_device(2);
 
@@ -342,7 +342,7 @@
 // 			CLStats::instance().describe(std::cout);
 // 		}
 
-// #endif //WITH_UTOPIA_OPENCL
+// #endif //UTOPIA_WITH_OPENCL
 
 // #ifdef UTOPIA_WITH_BLAS
 // 		if(verbose) {

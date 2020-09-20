@@ -78,9 +78,8 @@ namespace utopia {
         /// residual must be computed outside
         void apply_local_sweeps_unconstrained(const Matrix &A, const Vector &r, Vector &c) const;
 
-    NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         void init(const Matrix &A);
-
     };
 }  // namespace utopia
 
