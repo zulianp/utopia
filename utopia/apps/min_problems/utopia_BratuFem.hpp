@@ -4,7 +4,6 @@
 #include "utopia_DeviceTensorContraction.hpp"
 #include "utopia_DeviceTensorProduct.hpp"
 #include "utopia_DiffController.hpp"
-#include "utopia_ExtendedFunction.hpp"
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LinearElasticityView.hpp"

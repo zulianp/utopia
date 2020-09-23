@@ -176,10 +176,10 @@ class QPSolverTest {
         interpolation_operators;
     interpolation_operators.resize(num_levels - 1);
     interpolation_operators[1] =
-        std::make_shared<MatrixTruncatedTransfer<Matrix, Vector>>(
+        std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(
             std::make_shared<Matrix>(QtIh));
     interpolation_operators[0] =
-        std::make_shared<MatrixTruncatedTransfer<Matrix, Vector>>(
+        std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(
             std::make_shared<Matrix>(Ih1));
 
     multigrid.set_transfer_operators(interpolation_operators);
