@@ -194,9 +194,9 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
           this->function(level), this->memory_.s[level]);
     }
 
-    bool use_line_search = true;
+    // bool use_line_search = false;
     // TODO:: fix
-    if (use_line_search) {
+    if (this->use_line_search() && (level == this->n_levels() - 1)) {
       auto ls_strategy_ = std::make_shared<utopia::Backtracking<Vector>>();
       Scalar alpha_ = 1.0;
       ls_strategy_->get_alpha(this->function(level), this->ml_derivs_.g[level],

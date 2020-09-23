@@ -456,10 +456,10 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     return true;
   }
 
-  template <
-      MultiLevelCoherence T = CONSISTENCY_LEVEL,
-      enable_if_t<is_same<T, FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF>::value,
-                  int> = 0>
+  template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<is_any<T, FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF,
+                               FIRST_ORDER_MULTIPLICATIVE_DF>::value,
+                        int> = 0>
   bool init_deriv_loc_solve(const Fun &fun, const SizeType &level,
                             const LocalSolveType &solve_type) {
     if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {
