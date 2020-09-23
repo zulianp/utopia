@@ -20,7 +20,7 @@
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 // petsc
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
@@ -32,7 +32,7 @@
 #include "utopia_petsc_DirichletBoundaryConditions.hpp"
 #include "utopia_petsc_FE.hpp"
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #include <cmath>
 

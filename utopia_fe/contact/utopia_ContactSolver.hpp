@@ -4,7 +4,7 @@
 #include "utopia_fe_config.hpp"
 #include "utopia_libmesh_Types.hpp"
 
-#ifndef WITH_TRILINOS_ALGEBRA
+#ifndef UTOPIA_WITH_TRILINOS_ALGEBRA
 
 #include "utopia.hpp"
 #include "utopia_Contact.hpp"
@@ -18,6 +18,8 @@
 #include "utopia_materials.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
+
+#include "utopia_SemismoothNewton.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -35,7 +37,8 @@ namespace utopia {
     public:
         DEF_UTOPIA_SCALAR(Matrix);
         typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
-        typedef libMesh::Nemesis_IO Exporter;
+        // typedef libMesh::Nemesis_IO Exporter;
+        typedef libMesh::ExodusII_IO Exporter;
         // using ContactT = utopia::ContactAssembler;
         using ContactT = utopia::IContact;
         using ContactStressT = utopia::ContactStress<ProductFunctionSpace<LibMeshFunctionSpace>, Matrix, Vector>;
@@ -80,10 +83,19 @@ namespace utopia {
 
             n_exports = 0;
 
-            auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
-            tao->tao_type("tron");
-            tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
-            qp_solver_ = tao;
+            // auto tao = std::make_shared<TaoQPSolver<Matrix, Vector>>();
+            // tao->tao_type("tron");
+            // tao->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
+            // qp_solver_ = tao;
+
+            // auto ssn = std::make_shared<SemismoothNewton<Matrix, Vector>>(iterative_solver);
+            // ssn->fallback_solver(std::make_shared<Factorization<Matrix, Vector>>());
+            // qp_solver_ = ssn;
+
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            direct_solver->set_type(Solver::mumps(), Solver::lu_decomposition());
+
+            qp_solver_ = std::make_shared<SemismoothNewton<Matrix, Vector>>(direct_solver);
         }
 
         void read(Input &is) override {
@@ -606,5 +618,5 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS_ALGEBRA
+#endif  // UTOPIA_WITH_TRILINOS_ALGEBRA
 #endif  // UTOPIA_STEADY_CONTACTHPP

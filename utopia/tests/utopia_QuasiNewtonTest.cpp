@@ -42,8 +42,7 @@ class QuasiNewtonTest {
 
   void run_multilevel() {
     // UTOPIA_RUN_TEST(Quasi_RMTR_test);
-    utopia::out() << "Fix quasi-Newton TESTS ... \n";
-    UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
+    // UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
     utopia::out() << "Fix quasi-Newton tests... \n";
   }
 
@@ -465,62 +464,82 @@ class QuasiNewtonTest {
   //     rmtr->solve(x);
   // }
 
-  void Quasi_RMTR_inf_bound_test() {
-    const SizeType n_levels = 2;
-    const SizeType n = 10;
+  // void Quasi_RMTR_inf_bound_test()
+  // {
+  //     const SizeType n_levels = 3;
+  //     BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true,
+  //     _verbose);
 
-    MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > problem(
-        n_levels, n);
+  //     auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>
+  //     >(n_levels);
 
-    auto rmtr = std::make_shared<
-        QuasiRMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>,
-                      //  SECOND_ORDER_DF> >(
-                      // n_levels);
-                      FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF> >(n_levels);
+  //     // intial guess
+  //     Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 
-    // intial guess
-    // Vector x = values(problem.n_dofs(n_levels - 1), 0.0);
-    Vector x = problem.get_functions().back()->initial_guess();
+  //     // upper, lower bound...
+  //     Vector ub, lb;
+  //     std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >
+  //     level_functions(problem.n_levels); for(auto l=0; l < problem.n_levels;
+  //     l++)
+  //     {
+  //         auto fun = std::make_shared<Bratu1D<Matrix, Vector>
+  //         >(problem.n_dofs[l]); level_functions[l] = fun;
 
-    const SizeType memory_size = 5;
-    std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(
-        n_levels);
-    for (auto l = 0; l < n_levels; l++) {
-      auto hes_approx = std::make_shared<ApproxType>(memory_size);
-      hess_approxs[l] = hes_approx;
-    }
+  //         // making sure that fine level IG is feasible
+  //         if(l+1 == problem.n_levels)
+  //         {
+  //             fun->apply_bc_to_initial_guess(x);
+  //             fun->generate_constraints(lb, ub, -10, 0.01);
+  //         }
+  //     }
 
-    rmtr->set_hessian_approximation_strategies(hess_approxs);
+  //     const SizeType memory_size = 5;
+  //     std::vector<std::shared_ptr<HessianApproximation<Vector> > >
+  //     hess_approxs(problem.n_levels); for(auto l=0; l < problem.n_levels;
+  //     l++)
+  //     {
+  //         auto hes_approx   = std::make_shared<ApproxType >(memory_size);
+  //         hess_approxs[l] = hes_approx;
+  //     }
 
-    std::vector<std::shared_ptr<utopia::MatrixFreeQPSolver<Vector> > >
-        subproblems(n_levels);
-    for (auto l = 0; l < n_levels; l++) {
-      auto tr_strategy = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+  //     rmtr->set_hessian_approximation_strategies(hess_approxs);
 
-      subproblems[l] = tr_strategy;
-    }
+  //     std::vector<std::shared_ptr<utopia::MatrixFreeQPSolver<Vector> > >
+  //     subproblems(problem.n_levels); for(auto l=0; l < problem.n_levels; l++)
+  //     {
+  //         auto tr_strategy =
+  //         std::make_shared<utopia::ProjectedGradientActiveSet<Matrix, Vector>
+  //         >(); auto precond = hess_approxs[l]->build_Hinv_precond();
+  //         tr_strategy->set_preconditioner(precond);
 
-    rmtr->set_tr_strategies(subproblems);
-    rmtr->set_transfer_operators(problem.get_transfer());
-    rmtr->set_functions(problem.get_functions());
+  //         subproblems[l] = tr_strategy;
+  //     }
 
-    rmtr->max_it(30);
-    rmtr->max_sucessful_coarse_it(1);
-    rmtr->max_sucessful_smoothing_it(1);
-    rmtr->delta0(1);
-    rmtr->atol(1e-4);
-    rmtr->rtol(1e-10);
-    rmtr->eps_delta_termination(1e-7);
+  //     rmtr->set_tr_strategies(subproblems);
+  //     rmtr->set_transfer_operators(problem.prolongations,
+  //     problem.restrictions);
 
-    rmtr->verbose(true);
-    rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-    // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+  //     rmtr->max_it(30);
+  //     rmtr->max_coarse_it(3);
+  //     rmtr->max_smoothing_it(3);
+  //     rmtr->delta0(1);
+  //     rmtr->atol(1e-4);
+  //     rmtr->rtol(1e-10);
+  //     rmtr->set_grad_smoothess_termination(0.000001);
+  //     rmtr->set_eps_grad_termination(1e-7);
 
-    // auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-    // rmtr->set_box_constraints(box);
+  //     rmtr->verbose(problem.verbose);
+  //     // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+  //     rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 
-    rmtr->solve(x);
-  }
+  //     rmtr->set_functions(level_functions);
+
+  //        auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+  //     rmtr->set_box_constraints(box);
+
+  //     rmtr->solve(x);
+
+  // }
 
   QuasiNewtonTest() = default;
 
@@ -530,32 +549,30 @@ class QuasiNewtonTest {
 };
 
 static void quasi_newton() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
   QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >()
       .print_backend_info();
   // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector>
   // >().run_dense();
 
-  // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector>
-  // >().run_sparse();
+  QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
 
-  // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector>
-  // >().run_sparse();
-  QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >()
-      .run_multilevel();
+  // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector>
+  // >().run_sparse(); QuasiNewtonTest<PetscMatrix, PetscVector,
+  // LBFGS<PetscVector> >().run_multilevel();
 #endif
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
   QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >()
       .print_backend_info();
   // QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord>
   // >().run_dense();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-  // #ifdef WITH_TRILINOS
+  // #ifdef UTOPIA_WITH_TRILINOS
   // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
-  // 		QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
-  // #endif //WITH_TRILINOS
+  //      QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
+  // #endif //UTOPIA_WITH_TRILINOS
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(quasi_newton);

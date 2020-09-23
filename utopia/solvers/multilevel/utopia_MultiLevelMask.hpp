@@ -1,8 +1,8 @@
 #ifndef UTOPIA_MULTILEVEL_MASK_HPP
 #define UTOPIA_MULTILEVEL_MASK_HPP
 
-#include "utopia_IPRTransfer.hpp"
 #include "utopia_Level.hpp"
+#include "utopia_MatrixTransfer.hpp"
 #include "utopia_MultiLevelBase.hpp"
 #include "utopia_Recorder.hpp"
 
@@ -65,7 +65,7 @@ class MultiLevelMask final {
   std::vector<Vector> masks_;
   bool active_{false};
 
-  NVCC_PRIVATE
+  UTOPIA_NVCC_PRIVATE
   static void generate_mask_from_matrix(const Matrix &A, Vector &mask,
                                         const Scalar on_value,
                                         const Scalar off_value) {

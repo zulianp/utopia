@@ -3,7 +3,7 @@
         "comment" : "I use * to disable options",
         "is-steady" : false,
         "n-transient-steps": 500,
-        "dt": 0.05,
+        "dt": 0.01,
         "max-nl-iter": 20,
         "discretization" : "new",
 
@@ -17,7 +17,7 @@
             ]
         },
 
-        "qp-solver" : {
+        "*qp-solver" : {
             "backend" : "petsc",
             "type" : "tron",
             "max-it" : 5,
@@ -28,7 +28,7 @@
             }
         },
 
-        "*qp-solver" : {
+        "**qp-solver" : {
             "backend" : "any",
             "type" : "ssnewton",
             "max-it" : 5,
@@ -42,7 +42,7 @@
         "mesh": {
             "type": "file",
             "path"   : "../data/contact/pseudo-signorini.e",
-            "refinements" : 0,
+            "refinements" : 1,
             "order" : 1
         },
 
@@ -98,7 +98,7 @@
                 "block" : 4,
                 "type" : "surface",
                 "coord": 2,
-                "value": 1.5
+                "value": 2.5
             }
         ],
 

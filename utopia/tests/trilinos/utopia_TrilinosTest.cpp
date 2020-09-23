@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 
 #include "utopia.hpp"
 #include "utopia_Assert.hpp"
@@ -27,7 +27,7 @@
 // FIXME This is deprecated remove it
 #include "utopia_trilinos_Each_impl.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_trilinos.hpp"
 #endif
 
@@ -502,7 +502,7 @@ namespace utopia {
 
             utopia_test_assert(R.is_valid(true));
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             // using petsc to test trilinos
 
             PetscMatrix A_petsc;
@@ -536,7 +536,7 @@ namespace utopia {
 
             utopia_test_assert(approxeq(diff_2, 0.));
             utopia_test_assert(approxeq(diff, 0.));
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
         }
 
         void test_rap(const int n, const int m) {
@@ -810,19 +810,19 @@ namespace utopia {
         }
 
         void stcg_pt_test() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             // petsc version
             st_cg_test<PetscMatrix, PetscVector>();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
             st_cg_test<TpetraMatrixd, TpetraVectord>();
         }
 
         void trilinos_mg_1D() {
             // if(mpi_world_size() > 1) return;
             // petsc version
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             test_mg<PetscMatrix, PetscVector>();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
         // trilinos version
             test_mg<TpetraMatrixd, TpetraVectord>();
         }
@@ -845,7 +845,7 @@ namespace utopia {
                                                   // std::make_shared<Factorization<MatrixT, VectorT>>()
             );
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             bool verbose = false;
             bool ok = true;
             // FIXME needs trilinos formats but for the moment lets use petsc's
@@ -914,7 +914,7 @@ namespace utopia {
             disp(diff);
             utopia_test_assert(approxeq(diff, 0., 1e-6));
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
         }
 
         void trilinos_row_view() {
@@ -1025,7 +1025,7 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         void trilinos_petsc_interop() {
             KSPSolver<TpetraMatrixd, TpetraVectord> solver;
 
@@ -1049,7 +1049,7 @@ namespace utopia {
             double diff = norm2(g - H * x);
             utopia_test_assert(approxeq(diff, 0., 1e-8));
         }
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
         void trilinos_structure() {
             auto n = 10;
@@ -1063,7 +1063,7 @@ namespace utopia {
         }
 
         void trilinos_exp() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             TpetraVectord x(layout(comm_, 10, Traits::determine()), 2.);
             PetscVector y(layout(comm_, 10, PetscTraits::determine()), 2.);
 
@@ -1072,7 +1072,7 @@ namespace utopia {
 
             utopia_test_assert(cross_backend_approxeq(ey, ex));
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
         }
 
         void trilinos_diag_ops() {
@@ -1105,7 +1105,7 @@ namespace utopia {
         }
 
         void trilinos_bratu_1D() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             int n = 10;
 
             auto fun_tpetra = std::make_shared<Bratu1D<TpetraMatrixd, TpetraVectord>>(n);
@@ -1157,7 +1157,7 @@ namespace utopia {
 
             utopia_test_assert(cross_backend_approxeq(H_petsc, H_tpetra));
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
         }
 
         template <class Matrix, class Vector>
@@ -1272,7 +1272,7 @@ namespace utopia {
             }
         }
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         void trilinos_copy_write_big() {
             PetscMatrix petsc_P;
 
@@ -1294,7 +1294,7 @@ namespace utopia {
                           [&P2](const SizeType i, const SizeType j, const double value) { P2.set(i, j, value * 2.); });
             }
         }
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
         void trilinos_ghosted() {
             const int n = mpi_world_size() * 2;
@@ -1327,10 +1327,10 @@ namespace utopia {
         }
 
         void trilinos_rmtr() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             // petsc version
             rmtr_test<PetscMatrix, PetscVector>();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
             rmtr_test<TpetraMatrixd, TpetraVectord>();
         }
@@ -1377,7 +1377,7 @@ namespace utopia {
 
 #endif  // HAVE_BELOS_TPETRA
 
-#ifdef WITH_TRILINOS_AMESOS2
+#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
 
         void trilinos_amesos2() {
             std::string xml_file = Utopia::instance().get("data_path") + "/xml/UTOPIA_amesos.xml";
@@ -1404,7 +1404,7 @@ namespace utopia {
 
 #endif  // HAVE_AMESOS2_KOKKOS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         void trilinos_transform() {
             PetscMatrix petsc_P;
 
@@ -1434,7 +1434,7 @@ namespace utopia {
                 utopia_test_assert(j == SizeType(value));
             });
         }
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
         void trilinos_set_zeros() {
             TpetraMatrixd m;
@@ -1599,19 +1599,19 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_copy_null);
             UTOPIA_RUN_TEST(trilinos_test_read);
 
-#ifdef WITH_TRILINOS_BELOS
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
             UTOPIA_RUN_TEST(trilinos_belos);
-#endif  // WITH_TRILINOS_BELOS
+#endif  // UTOPIA_WITH_TRILINOS_BELOS
 
-#ifdef WITH_TRILINOS_AMESOS2
+#ifdef UTOPIA_WITH_TRILINOS_AMESOS2
             UTOPIA_RUN_TEST(trilinos_amesos2);
-#endif  // WITH_TRILINOS_AMESOS2
+#endif  // UTOPIA_WITH_TRILINOS_AMESOS2
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             UTOPIA_RUN_TEST(trilinos_transform);
             UTOPIA_RUN_TEST(trilinos_petsc_interop);
             UTOPIA_RUN_TEST(trilinos_copy_write_big);
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
             // Fails on multinode GPU
             UTOPIA_RUN_TEST(trilinos_mat_axpy);
@@ -1640,4 +1640,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(trilinos_specific);
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS

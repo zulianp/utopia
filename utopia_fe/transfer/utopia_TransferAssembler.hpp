@@ -501,8 +501,8 @@ namespace utopia {
         inline void apply_transpose(const UVector &from, UVector &to) const { backward_->apply(from, to); }
 
         inline void describe(std::ostream &os) const {
-            forward_->describe(os);
-            backward_->describe(os);
+            if (forward_) forward_->describe(os);
+            if (backward_) backward_->describe(os);
         }
 
         inline bool write(const Path &) const { return false; }

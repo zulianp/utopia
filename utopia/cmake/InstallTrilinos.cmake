@@ -1,15 +1,19 @@
 # InstallTrilinos.cmake
 
 if(NOT TRILINOS_FOUND)
-
     # git clone https://github.com/trilinos/Trilinos.git
     include(ExternalProject)
+
+    if(UTOPIA_DEPENDENCIES_DIR)
+        set(TRILINOS_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/Trilinos)
+    else()
+        set(TRILINOS_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/Trilinos)
+    endif()
 
     set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
     set(TRILINOS_URL https://github.com/trilinos/Trilinos.git)
     set(TRILINOS_SOURCE_DIR ${STAGE_DIR}/Trilinos)
     set(TRILINOS_BIN_DIR ${STAGE_DIR}/Trilinos/bin)
-    set(TRILINOS_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external/Trilinos)
 
     if(NOT MPI_DIR)
         set(MPI_DIR $ENV{MPI_DIR})
@@ -17,6 +21,26 @@ if(NOT TRILINOS_FOUND)
 
     if(MPI_DIR)
         set(TRILINOS_MPI_BASE_DIR ${MPI_DIR})
+        # message(STATUS "TRILINOS_MPI_BASE_DIR=${TRILINOS_MPI_BASE_DIR}")
+        # message(STATUS "MPI_CXX_COMPILER=${MPI_CXX_COMPILER}") message(STATUS
+        # "MPI_C_COMPILER=${MPI_C_COMPILER}")
+    endif()
+
+    set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER})
+    set(TRILINOS_C_COMPILER ${CMAKE_C_COMPILER})
+
+    if(MPI_CXX_COMPILER)
+        list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_USE_COMPILER_WRAPPERS=ON"
+             "-DMPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
+    endif()
+
+    if(MPI_C_COMPILER)
+        list(APPEND TRILINOS_CMAKE_ARGS "-DMPI_C_COMPILER=${MPI_C_COMPILER}")
+    endif()
+
+    if(MPI_Fortan_COMPILER)
+        list(APPEND TRILINOS_CMAKE_ARGS
+             "-DMPI_Fortan_COMPILER=${MPI_Fortan_COMPILER}")
     endif()
 
     list(
@@ -25,9 +49,8 @@ if(NOT TRILINOS_FOUND)
         "-DCMAKE_CXX_STANDARD=14"
         "-DCMAKE_INSTALL_PREFIX=${TRILINOS_INSTALL_DIR}"
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-        "-DENABLE_SANITIZER=${ENABLE_SANITIZER}"
-        "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-        "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+        "-DCMAKE_CXX_COMPILER=${TRILINOS_CXX_COMPILER}"
+        "-DCMAKE_C_COMPILER=${TRILINOS_C_COMPILER}"
         "-DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}"
         "-DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}"
         "-DTPL_ENABLE_MPI=ON"
@@ -41,7 +64,6 @@ if(NOT TRILINOS_FOUND)
         "-DTrilinos_ENABLE_NOX=ON "
         "-DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON"
-        "-DKOKKOS_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DMueLu_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DRTOp_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DStratimikos_ENABLE_EXPLICIT_INSTANTIATION=ON"

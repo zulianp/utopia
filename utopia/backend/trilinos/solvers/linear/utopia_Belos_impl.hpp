@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS_BELOS
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
 
 #include "utopia_Belos_solver.hpp"
 
@@ -21,19 +21,19 @@
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
-#ifdef WITH_TRILINOS_MUELU
+#ifdef UTOPIA_WITH_TRILINOS_MUELU
 #include <MueLu.hpp>
 #include <MueLu_CreateTpetraPreconditioner.hpp>
 #include <MueLu_TpetraOperator.hpp>
 #else
 #warning "Trilinos was not built with MueLu support. AMG cannot be used as a preconditioner for the Belos solver."
-#endif  // WITH_TRILINOS_MUELU
+#endif  // UTOPIA_WITH_TRILINOS_MUELU
 
-#ifdef WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
 #include <Ifpack2_Factory.hpp>
 #else
 #warning "Trilinos was not built with Ifpack2 support. Direct preconditioners cannot be used with the Belos solver."
-#endif  // WITH_TRILINOS_IFPACK2
+#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
 
 namespace utopia {
 
@@ -53,11 +53,11 @@ namespace utopia {
         using ProblemType = Belos::LinearProblem<Scalar, MultiVectorType, OperatorType>;
         using SolverType = Belos::SolverManager<Scalar, MultiVectorType, OperatorType>;
 
-#ifdef WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
         using IfPack2PrecType = Ifpack2::Preconditioner<Scalar, LocalSizeType, SizeType, Node>;
-#endif  // WITH_TRILINOS_IFPACK2
+#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
 
-#ifdef WITH_TRILINOS_MUELU
+#ifdef UTOPIA_WITH_TRILINOS_MUELU
         using MueLuPrecType = MueLu::TpetraOperator<Scalar, LocalSizeType, SizeType, Node>;
 #endif
 
@@ -67,13 +67,13 @@ namespace utopia {
         Belos::SolverFactory<Scalar, MultiVectorType, OperatorType> belos_factory;
 
         // preconditioner
-#ifdef WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
         Teuchos::RCP<IfPack2PrecType> ifpack2_prec_;
-#endif  // WITH_TRILINOS_IFPACK2
+#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
 
-#ifdef WITH_TRILINOS_MUELU
+#ifdef UTOPIA_WITH_TRILINOS_MUELU
         Teuchos::RCP<MueLuPrecType> muelu_prec_;
-#endif  // WITH_TRILINOS_MUELU
+#endif  // UTOPIA_WITH_TRILINOS_MUELU
     };
 
     template <typename Matrix, typename Vector>
@@ -136,7 +136,7 @@ namespace utopia {
         std::string dir_prec_type =
             impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
         if (direct_solver) {
-#ifdef WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
             impl_->ifpack2_prec_ =
                 Ifpack2::Factory::create<typename Impl::CrsMatrixType>(dir_prec_type, raw_type(precond));
             assert(!impl_->ifpack2_prec_.is_null());
@@ -154,13 +154,13 @@ namespace utopia {
             } else {
                 impl_->linear_problem->setRightPrec(impl_->ifpack2_prec_);
             }
-#else   // WITH_TRILINOS_IFPACK2
+#else   // UTOPIA_WITH_TRILINOS_IFPACK2
             std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with "
                          "Ifpack2 support!"
                       << std::endl;
-#endif  // WITH_TRILINOS_IFPACK2
+#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
         } else {
-#ifdef WITH_TRILINOS_MUELU
+#ifdef UTOPIA_WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
             impl_->muelu_prec_ =
                 MueLu::CreateTpetraPreconditioner((Teuchos::RCP<typename Impl::OperatorType>)raw_type(precond),
@@ -181,7 +181,7 @@ namespace utopia {
 #else
             std::cerr << "Cannot use MueLu as preconditioner since Trilinos was not built with MueLu support."
                       << std::endl;
-#endif  // WITH_TRILINOS_MUELU
+#endif  // UTOPIA_WITH_TRILINOS_MUELU
         }
     }
 
@@ -279,7 +279,7 @@ namespace utopia {
             impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
 
         if (direct_solver) {
-#ifdef WITH_TRILINOS_IFPACK2
+#ifdef UTOPIA_WITH_TRILINOS_IFPACK2
             impl_->ifpack2_prec_ =
                 Ifpack2::Factory::create<typename Impl::CrsMatrixType>(dir_prec_type, raw_type(*this->get_operator()));
             assert(!impl_->ifpack2_prec_.is_null());
@@ -298,13 +298,13 @@ namespace utopia {
             } else {
                 impl_->linear_problem->setRightPrec(impl_->ifpack2_prec_);
             }
-#else   // WITH_TRILINOS_IFPACK2
+#else   // UTOPIA_WITH_TRILINOS_IFPACK2
             std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with "
                          "Ifpack2 support!"
                       << std::endl;
-#endif  // WITH_TRILINOS_IFPACK2
+#endif  // UTOPIA_WITH_TRILINOS_IFPACK2
         } else {
-#ifdef WITH_TRILINOS_MUELU
+#ifdef UTOPIA_WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
             impl_->muelu_prec_ = MueLu::CreateTpetraPreconditioner(
                 (Teuchos::RCP<typename Impl::OperatorType>)raw_type(*this->get_operator()),
@@ -322,14 +322,14 @@ namespace utopia {
             } else {
                 impl_->linear_problem->setRightPrec(impl_->muelu_prec_);
             }
-#else   // WITH_TRILINOS_MUELU
+#else   // UTOPIA_WITH_TRILINOS_MUELU
             std::cerr << "Cannot use MueLu as preconditioner since Trilinos was not built with MueLu support."
                       << std::endl;
-#endif  // WITH_TRILINOS_MUELU
+#endif  // UTOPIA_WITH_TRILINOS_MUELU
         }
     }
 
 }  // namespace utopia
 
 #endif  // UTOPIA_BELOS_IMPL_HPP
-#endif  // WITH_TRILINOS_BELOS
+#endif  // UTOPIA_WITH_TRILINOS_BELOS

@@ -5,7 +5,7 @@
 
 namespace utopia {
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     class PetscLinearSolverTest {
     public:
         using Traits = utopia::Traits<PetscVector>;
@@ -643,10 +643,10 @@ namespace utopia {
         int n_{10};
     };
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
     static void petsc_linear() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         PetscLinearSolverTest().run();
 #endif
     }
