@@ -112,6 +112,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   //----------------------------------------------------------------------------
   //                   presmoothing
   //----------------------------------------------------------------------------
+
   if (this->pre_smoothing_steps() != 0) {
     UTOPIA_NO_ALLOC_BEGIN("RMTR::region2");
     converged = this->local_tr_solve(level, PRE_SMOOTHING);
@@ -194,8 +195,6 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
           this->function(level), this->memory_.s[level]);
     }
 
-    // bool use_line_search = false;
-    // TODO:: fix
     if (this->use_line_search() && (level == this->n_levels() - 1)) {
       auto ls_strategy_ = std::make_shared<utopia::Backtracking<Vector>>();
       Scalar alpha_ = 1.0;
@@ -495,6 +494,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
                      delta_converged)
                         ? true
                         : false;
+
   return level_quit;
 }
 

@@ -42,10 +42,10 @@ class TRBoundsGelmanMandel
     Scalar I_inf_norm = this->transfer_[level]->projection_inf_norm();
 
     {
-      auto d_x_finer = const_device_view(x_finer_level);
-      auto d_tr_lb =
-          const_device_view(constraints_memory_.active_lower[finer_level]);
-      auto d_help = device_view(this->help_[finer_level]);
+      auto d_x_finer = const_local_device_view(x_finer_level);
+      auto d_tr_lb = const_local_device_view(
+          constraints_memory_.active_lower[finer_level]);
+      auto d_help = local_device_view(this->help_[finer_level]);
 
       parallel_for(local_range_device(this->help_[finer_level]),
                    UTOPIA_LAMBDA(const SizeType i) {
@@ -58,8 +58,8 @@ class TRBoundsGelmanMandel
     this->help_[finer_level] = this->help_[finer_level] - x_finer_level;
     Scalar lower_multiplier = 1.0 / I_inf_norm * max(this->help_[finer_level]);
     {
-      auto d_x = const_device_view(x_level);
-      auto d_alb = device_view(constraints_memory_.active_lower[level]);
+      auto d_x = const_local_device_view(x_level);
+      auto d_alb = local_device_view(constraints_memory_.active_lower[level]);
 
       parallel_for(local_range_device(constraints_memory_.active_lower[level]),
                    UTOPIA_LAMBDA(const SizeType i) {
@@ -72,9 +72,9 @@ class TRBoundsGelmanMandel
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     {
-      auto d_x_finer = const_device_view(x_finer_level);
-      auto d_tr_ub =
-          const_device_view(constraints_memory_.active_upper[finer_level]);
+      auto d_x_finer = const_local_device_view(x_finer_level);
+      auto d_tr_ub = const_local_device_view(
+          constraints_memory_.active_upper[finer_level]);
       auto d_help = this->help_[finer_level];
 
       parallel_for(local_range_device(this->help_[finer_level]),
@@ -89,8 +89,8 @@ class TRBoundsGelmanMandel
     Scalar upper_multiplier = 1.0 / I_inf_norm * min(this->help_[finer_level]);
 
     {
-      auto d_x = const_device_view(x_level);
-      auto d_aub = device_view(constraints_memory_.active_upper[level]);
+      auto d_x = const_local_device_view(x_level);
+      auto d_aub = local_device_view(constraints_memory_.active_upper[level]);
 
       parallel_for(local_range_device(constraints_memory_.active_upper[level]),
                    UTOPIA_LAMBDA(const SizeType i) {

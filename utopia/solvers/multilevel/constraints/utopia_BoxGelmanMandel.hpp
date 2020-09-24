@@ -56,21 +56,20 @@ class BoxGelmanMandel : public MultilevelVariableBoundSolverInterface<
     //////////////////////////////////// lower bound
     ////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////
+
     this->help_[finer_level] =
         constraints_memory_.active_lower[finer_level] - x_finer_level;
     Scalar max_val = max(this->help_[finer_level]);
     Scalar lower_multiplier = 1.0 / I_inf_norm * max_val;
 
     {
-      auto d_x = const_device_view(x_level);
+      auto d_x = const_local_view_device(x_level);
       auto d_lb = local_view_device(constraints_memory_.active_lower[level]);
 
       parallel_for(local_range_device(constraints_memory_.active_lower[level]),
                    UTOPIA_LAMBDA(const SizeType i) {
                      const Scalar xi = d_x.get(i);
-
                      d_lb.set(i, xi + lower_multiplier);
-
                    });
     }
 
@@ -84,7 +83,7 @@ class BoxGelmanMandel : public MultilevelVariableBoundSolverInterface<
     Scalar upper_multiplier = 1.0 / I_inf_norm * min_val;
 
     {
-      auto d_x = const_device_view(x_level);
+      auto d_x = const_local_view_device(x_level);
       auto d_ub = local_view_device(constraints_memory_.active_upper[level]);
 
       parallel_for(local_range_device(constraints_memory_.active_upper[level]),

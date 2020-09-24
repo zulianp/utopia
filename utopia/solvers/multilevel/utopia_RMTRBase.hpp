@@ -113,6 +113,7 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
   bool init_consistency_terms(const SizeType &level) {
     // UTOPIA_NO_ALLOC_BEGIN("RMTR::region111");
     // Restricted fine level gradient
+
     this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
                                        this->ml_derivs_.g_diff[level - 1]);
 
