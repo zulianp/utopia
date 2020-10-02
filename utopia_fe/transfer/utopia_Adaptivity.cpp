@@ -255,6 +255,9 @@ namespace utopia {
                                          const unsigned int var_num,
                                          const libMesh::Elem *elem,
                                          const unsigned mesh_dim) {
+
+     #ifdef LIBMESH_VERSION_LESS_THAN(1, 4, 0)
+     #else
         // Only constrain elements in 2,3D.
         if (mesh_dim == 1) return;
 
@@ -348,6 +351,7 @@ namespace utopia {
                 }
             }
         }
+     #endif
     }
 
     void Adaptivity::process_constraints(libMesh::MeshBase &mesh,
@@ -433,7 +437,8 @@ namespace utopia {
                                             unsigned int var_number,
                                             std::vector<int> &index) {
         // std::cout << "Adaptivity::compute_boundary_nodes::Begin " << std::endl;
-
+      #ifdef LIBMESH_VERSION_LESS_THAN(1, 4, 0)
+      #else
         auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
         std::vector<int> dirichlet_id, index_local;
@@ -576,16 +581,22 @@ namespace utopia {
             }
         }
 
-        std::cout << "Adaptivity::compute_boundary_nodes::END " << std::endl;
+     //   std::cout << "Adaptivity::compute_boundary_nodes::END " << std::endl;
+       #endif
+       std::cout << "Adaptivity::compute_boundary_nodes::END " << std::endl;
     }
 
     void Adaptivity::compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh,
                                                     libMesh::DofMap &dof_map,
                                                     unsigned int sys_number,
                                                     unsigned int var_number,
-                                                    std::vector<int> &index) {
-        std::cout << "Adaptivity::compute_boundary_nodes_to_skip::BEGIN " << std::endl;
-
+                                                    std::vector<int> & index)
+   {
+     std::cout << "Adaptivity::compute_boundary_nodes_to_skip::BEGIN " << std::endl;
+     
+     #ifdef LIBMESH_VERSION_LESS_THAN(1, 4, 0)
+     
+     #else
         // Only constrain elements in 2,3D.
         if (mesh.mesh_dimension() == 1) return;
 
@@ -787,6 +798,7 @@ namespace utopia {
         }
 
         std::cout << "Adaptivity::compute_boundary_nodes_to_skip::END " << tmp.size() << " and " << index.size()
-                  << std::endl;
+                 << std::endl;
+    #endif
     }
 }  // namespace utopia
