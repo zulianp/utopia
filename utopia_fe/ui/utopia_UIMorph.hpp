@@ -26,7 +26,10 @@ namespace utopia {
             if (!is_valid()) return false;
 
             // std::cout << "morphing " << std::endl;
-
+      #if LIBMESH_VERSION_LESS_THAN(1, 4, 0)
+            // Old version
+          return false;
+      #else
             if (block == -1) {
                 auto boundary_node_ids = libMesh::MeshTools::find_boundary_nodes(mesh);
 
@@ -74,7 +77,7 @@ namespace utopia {
                     }
                 }
             }
-
+           #endif
             return true;
         }
 
