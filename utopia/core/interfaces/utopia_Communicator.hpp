@@ -72,6 +72,10 @@ namespace utopia {
         int rank() const noexcept override { return 0; }
         int size() const noexcept override { return 1; }
 
+        inline static SelfCommunicator world() { return SelfCommunicator(); }
+
+        inline static SelfCommunicator self() { return SelfCommunicator(); }
+
         void barrier() const override {}
 
         SelfCommunicator *clone() const noexcept override { return new SelfCommunicator(); }
