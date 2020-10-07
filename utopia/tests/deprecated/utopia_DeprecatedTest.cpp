@@ -41,6 +41,9 @@ namespace utopia {
             v = local_values(n_local, 1.0);
             utopia_test_assert(v.size() == n);
 
+            Vector v1 = local_values(n_local, 1.0);
+            utopia_test_assert(v1.size() == n);
+
             v = zeros(n);
             utopia_test_assert(v.size() == n);
 
