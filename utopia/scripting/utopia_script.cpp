@@ -30,6 +30,10 @@ namespace scripting {
 
     void finalize() { utopia::Utopia::Finalize(); }
 
-    Layout serial_layout(SizeType &size) { return utopia::serial_layout(); };
+    // Communicator new_communicator() {
+    //     using DefaultFactory = utopia::AlgebraFactory<Scalar, SizeType>;
+    //     auto comm = DefaultFactory::new_communicator();
+    //     return comm;
+    // }
 
 }  // namespace scripting

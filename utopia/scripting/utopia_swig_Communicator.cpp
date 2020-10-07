@@ -23,24 +23,28 @@ namespace scripting {
     int Communicator::rank() { return impl_->rank(); }
     int Communicator::size() { return impl_->size(); }
 
-    SelfCommunicator::SelfCommunicator() : impl_(nullptr) {
-        auto selfComm = Factory::new_communicator();
-        if (!selfComm) {
-            utopia::out() << "[Error] SelfCommunicator could not be constructed" << std::endl;
-            return;
-        }
+    // namespace scripting
+};  // namespace scripting
 
-        // impl_ = selfComm.get();
+// TODO:: Self_Communicator
+// SelfCommunicator::SelfCommunicator() : impl_(nullptr) {
+//     auto selfComm = Factory::new_communicator();
+//     if (!selfComm) {
+//         utopia::out() << "[Error] SelfCommunicator could not be constructed" << std::endl;
+//         return;
+//     }
 
-        selfComm.release();
-    }
+//     impl_ = selfComm.get();
 
-    SelfCommunicator::~SelfCommunicator() { delete impl_; }
+//     selfComm.release();
+// }
 
-    // Communicator SelfCommunicator::get_default() { return impl_->get_default(); }
+// SelfCommunicator::~SelfCommunicator() { delete impl_; }
 
-    int SelfCommunicator::rank() { return impl_->rank(); }
-    int SelfCommunicator::size() { return impl_->size(); }
+// // Communicator SelfCommunicator::get_default() { return impl_->get_default(); }
 
-    // void Communicator::get_the_default() { return impl_->get_default(); }
-}  // namespace scripting
+// int SelfCommunicator::rank() { return impl_->rank(); }
+// int SelfCommunicator::size() { return impl_->size(); }
+
+// void Communicator::get_the_default() { return impl_->get_default(); }
+// namespace scripting
