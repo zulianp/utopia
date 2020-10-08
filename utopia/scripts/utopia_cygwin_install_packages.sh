@@ -14,3 +14,4 @@ apt-cyg install libopenblas
 apt-cyg install liblapack-devel
 apt-cyg install python
 apt-cyg install doxygen
+apt-cyg install zlib
