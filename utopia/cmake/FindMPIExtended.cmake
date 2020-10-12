@@ -1,10 +1,8 @@
 #First with try with clang compile or else
 
-
-   # message(STATUS "On windows skipping preamble for FindMPIExtended = ${CYGWIN}")
-
+# Check if Cygwin is installed (windows system) if so do not use CLANG
 if(CYGWIN)
-  #  message(STATUS "On windows skipping preamble for FindMPIExtended")
+    message(STATUS "On windows, skipping preamble for FindMPIExtended")
 
     find_library(MPI_C_LIBRARY
     NAMES mpi
@@ -31,6 +29,7 @@ if(CYGWIN)
         DOC "The MPI_C_HEADERS path"
     )
 
+    #Look for excecutables of CXX_Compiler
     IF(MPI_C_HEADERS)
         find_file(MPI_CXX_COMPILER
             NAMES mpic++
@@ -46,6 +45,7 @@ if(CYGWIN)
             DOC "the MPI_CXX_COMPILER path"
         )
 
+        #Look for executables of C_Compiler
         find_file(MPI_C_COMPILER
             NAMES mpicc-openmpi-mp
                   mpicc-mpich-clang
@@ -54,14 +54,14 @@ if(CYGWIN)
             HINTS ${MPI_DIR}/bin
                   $ENV{MPI_DIR}/bin
                   ${MPI_C_HEADERS}/../bin
-                              /usr/bin
-                              DOC "the MPI_C_COMPILER path"
+                  /usr/bin
+            DOC "the MPI_C_COMPILER path"
         )
 
           set(MPI_FOUND TRUE)
 
             list(APPEND MPI_CXX_INCLUDE_PATH ${MPI_C_HEADERS})
-            message(STATUS "MPI_CXX_INCLUDE_PATH=${MPI_CXX_INCLUDE_PATH}\nMPI_CXX_LIBRARIES=${MPI_CXX_LIBRARIES}\nMPI_CXX_COMPILER=${MPI_CXX_COMPILER}\nMPI_C_COMPILER=${MPI_C_COMPILER}")
+            message(STATUS "MPI_CXX_INCLUDE_PATH=${MPI_CXX_INCLUDE_PATH}\n-- MPI_CXX_LIBRARIES=${MPI_CXX_LIBRARIES}\n-- MPI_CXX_COMPILER=${MPI_CXX_COMPILER}\n-- MPI_C_COMPILER=${MPI_C_COMPILER}")
     endif()
 
 
