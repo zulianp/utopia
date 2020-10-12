@@ -43,16 +43,18 @@ const char *file = "./../examples/data_for_examples/profit.csv";
 
 namespace utopia {
 
-    /*!
-     * \brief In our implementation, each population example corresponds to a row in
+    /**
+     * @brief A Class to apply linear regression to a one variable sample of data.
+     * In our implementation, each population example corresponds to a row in
      * our vector \f$x \in \mathbb{R}^{s}\f$, to which we add an additional columns
      * and we set it to all ones to add the bias. The vector x then becomes a matrix
      * \f$X \in \mathbb{R}^{s \times 2}$\f. Similarly, \f$y\in \mathbb{R}^{s}\f$ is
      * a vector with each row correspondig to an example of the profit. \class
      * \tparam Matrix the matrix type
      * \tparam Vector the vector type
+     * @ Filippo Cesana
+     * @ August 2020
      */
-
     template <class Matrix, class Vector>
     class LinearRegression final : public FunctionBase<Vector> {
     public:
@@ -140,6 +142,13 @@ namespace utopia {
          * gradient descent: the derivative term will delete the \f$\frac{1}{2}\f$
          * term.
          */
+
+        /** Cost function
+         * @param param1 Vector &theta, through which we minimise the cost function
+         * @param param2 Sclar & cost: it should go down at each new iteration of the
+         * gradient we are using.
+         * @return a boolean
+         */
         bool value(const Vector &theta, Scalar &cost) const override {
             if (theta.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
@@ -169,8 +178,7 @@ namespace utopia {
             }
 
             /**
-             * Computing the cost, which should go down at each new iteration of the
-             * gradient we are using.
+             * Computing the cost
              */
             cost = 1. / (2. * num_of_samples_) * sum(*errors_);
 
@@ -213,6 +221,11 @@ namespace utopia {
          * \f}
          */
 
+        /** Gradient function
+         * @param param1 Vector &theta, which we update at each iteration
+         * @param param2 second Vector &g the predicted values
+         * @return a boolean
+         */
         bool gradient(const Vector &theta, Vector &g) const override {
             if (theta.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
@@ -230,15 +243,14 @@ namespace utopia {
             return true;
         }
 
-    private:  // Constructor
-        SizeType num_of_samples_;
-        Matrix X_;
-        Matrix Xt_;
-        Vector y_;
-
-        std::unique_ptr<Vector> h_;
-        std::unique_ptr<Vector> errors_;
-    };  // namespace utopia
+    private:
+        SizeType num_of_samples_;        /**< Number of samples in the files cv */
+        Matrix X_;                       /**< The matrix in which we save the x variables and the bias of one */
+        Matrix Xt_;                      /**< The same matrix of above but transposed */
+        Vector y_;                       /**< The output y with which we train the model  */
+        std::unique_ptr<Vector> h_;      /**< The vector where we saved our hypothesis */
+        std::unique_ptr<Vector> errors_; /**< The errors between each hypothesis and the actual output */
+    };
 
 }  // namespace utopia
 #endif
