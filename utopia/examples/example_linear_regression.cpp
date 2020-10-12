@@ -15,28 +15,43 @@ using namespace std;
 
 /**
  * With linear regression, we are searching for parameters, such that our model
- * gives the most reasonable prediction. To do this, we need to minimise the cost
- * function J(theta), which basically
- * tells us the difference between the actual value y and the value predicted by
- * our hypothesis function.
- * For this example, we rely on a dataset consisting of s samples. Each sample is
- * defined by an input xi and an output yi. The input xi expresses a
- * population and the output yi expresses the profit earned by a foodtruck of
- * a certain company. Supposing that we would like to have a foodtruck in a city
- * with a certain population, we would be able to predict the profit for the food
- * truck, thanks to our model parametrized by theta. For examples with a population
- * of 43'000, we will be able to write a vector [1, 4.3], - with 1 being the bias,
- * -  and by multiplying this vector by theta we will obtain an estimation
- * of the profit. The cost function is defined as:
+ * gives the most reasonable prediction. To do this, we need to minimise the
+ * cost function \f$J({\Theta}) : \mathbb{R}^2 \rightarrow  \mathbb{R}\f$, which
+ * basically tells us the difference between the actual value y and the value
+ * predicted by our hypothesis function.
  */
 
 /**
- * Contains a file whose first columns contain a population/10000 and the profit
- * of a foodtrack in a place with that population/10000.
+ * Contains a file whose first column states a population/10000 and the second
+ * columns states the profit of a foodtrack in a place with that
+ * population/10000.
  */
-const char* file = "./../examples/profit.csv";
+const char *file = "./../examples/data_for_examples/profit.csv";
+
+/**
+ * For this example, we rely on a dataset consisting of s samples. Each sample
+ * is defined by an input \f$x_i$ and an output $y_{i}\f$. The input $x_{i}$
+ * expresses a population and the output \f$y_{i}\f$ expresses the profit earned
+ * by a foodtruck of a certain company. Supposing that we would like to have a
+ * foodtruck in a city with a certain population, we would be able to predict
+ * the profit for the food truck, thanks to our model parametrized by
+ * \f${\Theta} \in \mathbb{R}^{2}\f$. For examples with a population of 43'000,
+ * we will be able to write a vector [1, 4.3], - with 1 being the bias, -  and
+ * by multiplying this vector by \f${\Theta}\f$ we will obtain an estimation of
+ * the profit.
+ */
 
 namespace utopia {
+
+    /*!
+     * \brief In our implementation, each population example corresponds to a row in
+     * our vector \f$x \in \mathbb{R}^{s}\f$, to which we add an additional columns
+     * and we set it to all ones to add the bias. The vector x then becomes a matrix
+     * \f$X \in \mathbb{R}^{s \times 2}$\f. Similarly, \f$y\in \mathbb{R}^{s}\f$ is
+     * a vector with each row correspondig to an example of the profit. \class
+     * \tparam Matrix the matrix type
+     * \tparam Vector the vector type
+     */
 
     template <class Matrix, class Vector>
     class LinearRegression final : public FunctionBase<Vector> {
@@ -115,60 +130,98 @@ namespace utopia {
             h_ = make_unique<Vector>(l, 0.0);
         }
 
-        // \f\begin{equation*}
-        // 	J(\Theta)
-        // =\frac{1}{2s}\mathlarger{\mathlarger{‎‎\sum}}_{i=1}^{s}(h_{\Theta}({\Theta}^{(i)})-y^{(i)})^2
-        // \end{equation*} \f
-        bool value(const Vector& theta, Scalar& cost) const override {
+        /**
+         * Our cost function is defined as it follows:
+         * \f{equation*}{
+         *    J(\Theta)
+         * =\frac{1}{2s}\mathlarger{\mathlarger{‎‎\sum}}_{i=1}^{s}(h_{\Theta}({\Theta}^{(i)})-y^{(i)})^2
+         *  \f}
+         * Also, the mean si halved since it makes more convienent to compute the
+         * gradient descent: the derivative term will delete the \f$\frac{1}{2}\f$
+         * term.
+         */
+        bool value(const Vector &theta, Scalar &cost) const override {
             if (theta.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
-            // Our initial hypothesis
+            /**
+             * Initial hypothesis.
+             */
             *h_ = X_ * theta;
 
-            ////////////////////////////////////////////////////////////////////////////////
-            // Evaluating the hypothesis by summing all the differences before the actual
-            // value and expected value.
-            ////////////////////////////////////////////////////////////////////////////////
+            /**
+             * Evaluating the hypothesis by summing all the differences before the
+             * actual value and expected value.
+             */
             {
                 auto squared_errors_view = local_view_device(*errors_);
                 auto h_view = const_local_view_device(*h_);
                 auto y_view = const_local_view_device(y_);
 
                 parallel_for(
-                    local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType& i) {
+                    local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType &i) {
                         const auto yi = y_view.get(i);
                         const auto hi = h_view.get(i);
                         squared_errors_view.set(i, (hi - yi) * (hi - yi));
                     });
             }
 
-            ////////////////////////////////////////////////////////////////////////////////
-            // Computing the cost, which should go down at each new iteration of the
-            // gradient we are using.
-            ////////////////////////////////////////////////////////////////////////////////
+            /**
+             * Computing the cost, which should go down at each new iteration of the
+             * gradient we are using.
+             */
             cost = 1. / (2. * num_of_samples_) * sum(*errors_);
 
             return true;
         }
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // The theta values are the paramater of our model and we try to find optimal
-        // some theta and we keep updating them until we find a minumum.
-        // For example, to reach
-        // this minimum, we can use a gradient based algorithm which update theta at each
-        // iteration using gradient information.values which minimise the cost function
-        // J(theta) which is our goal. So we start with
-        ////////////////////////////////////////////////////////////////////////////////
-        bool gradient(const Vector& theta, Vector& g) const override {
+        /**
+         * \f$ h_{\Theta}(x, {\Theta})\f$ is the hypothesis function  \f$h_{\Theta} :
+         * \mathbb{R}^{2} \rightarrow \mathbb{R}\f$ and it is given by the following
+         * linear model: \f{equation*}{ h_{\Theta}({\Theta}) = {\Theta}X \f}
+         */
+
+        /**
+         * The \f${\Theta}\f$ values are the paramaters of our model and we try to
+         * find optimal values which minimise the cost function \f$J({\Theta})\f$,
+         * which is our goal. So we start with some \f$\Theta\f$ and we keep updating
+         * them until we find a minimum.
+         */
+
+        /**
+         * For example, to reach this minimum, we can use a gradient based algorithm
+         * which update \f${\Theta}\f$ at each iteration using gradient information.
+         */
+
+        /**
+         * For \f$j = \{0,1\}\f$, the gradient has the following form:
+         */
+
+        /**
+         * \f{equation*}{
+         * \frac{\partial}{\partial \Theta_{0}}J(\Theta) = \frac{1}{s}
+         * \mathlarger{\mathlarger{‎‎\sum}}_{i=1}^{s}(h_{\Theta}({\Theta}^{(i)})-y^{(i)}),
+         * \f}
+         */
+
+        /**
+         * \f{equation*}{
+         * \frac{\partial}{\partial \Theta_{1}}J(\Theta) = \frac{1}{s}
+         * \mathlarger{\mathlarger{‎‎\sum}}_{i=1}^{s}(h_{\Theta}({\Theta}^{(i)})-y^{(i)})x^{(i)}
+         * \f}
+         */
+
+        bool gradient(const Vector &theta, Vector &g) const override {
             if (theta.comm().size() > 1) {
                 utopia_error("Function is not supported in parallel... \n");
                 return false;
             }
 
-            // Computing the gradient.
+            /**
+             * Computing the gradient
+             */
             *h_ = X_ * theta;
             *errors_ = *h_ - y_;
 
@@ -177,7 +230,7 @@ namespace utopia {
             return true;
         }
 
-    private:
+    private:  // Constructor
         SizeType num_of_samples_;
         Matrix X_;
         Matrix Xt_;
@@ -185,7 +238,7 @@ namespace utopia {
 
         std::unique_ptr<Vector> h_;
         std::unique_ptr<Vector> errors_;
-    };
+    };  // namespace utopia
 
 }  // namespace utopia
 #endif
@@ -194,49 +247,35 @@ template <class Matrix, class Vector>
 void test() {
     using namespace utopia;
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // construct our problem
-    ////////////////////////////////////////////////////////////////////////////////
+    /** Construct the problem */
     LinearRegression<Matrix, Vector> newLinearRegression;
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // constructing initial guess
+    /** Constructing the initial guess */
     Vector x;
-    ////////////////////////////////////////////////////////////////////////////////
     x.values(serial_layout(2), 0);
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Gradient Descent solver
-    ////////////////////////////////////////////////////////////////////////////////
+    /** Gradient Descent Solver */
     Chrono GD;
     GD.start();
     GradientDescent<Vector> solverGD;
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // set parameters
-    // solverGD.verbose(true); // uncomment to see full output
-    ////////////////////////////////////////////////////////////////////////////////
+    /**
+     * set parameters
+     * solverGD.verbose(true); // uncomment to see full output
+     */
     solverGD.max_it(1500);
-    ////////////////////////////////////////////////////////////////////////////////
-    // solverGD.dumping_parameter(0.01);
-    ////////////////////////////////////////////////////////////////////////////////
+    /** solverGD.dumping_parameter(0.01); */
     auto strategy_to_choose_alpha = std::make_shared<utopia::Backtracking<Vector>>();
     solverGD.set_line_search_strategy(strategy_to_choose_alpha);
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // solve
-    ////////////////////////////////////////////////////////////////////////////////
+    /** Solve */
     solverGD.solve(newLinearRegression, x);
     GD.stop();
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // display the solution
-    ////////////////////////////////////////////////////////////////////////////////
-    disp(x, "my_solution with Gradient");
+    /** Display the solution*/
+    disp(x, "The solution with Gradient");
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Quasi Newton solver
-    ////////////////////////////////////////////////////////////////////////////////
+    /** Quasi Newton Solver */
     Chrono QN;
     QN.start();
     auto hess_approx = std::make_shared<LBFGS<Vector>>(5);
@@ -246,30 +285,36 @@ void test() {
     lsolver->set_preconditioner(precond);
 
     QuasiNewton<Vector> solverQN(hess_approx, lsolver);
-    // solve
-    // solverQN.verbose(true);
+    /** Constructing the initial guess */
+    /** solverQN.verbose(true); */
     solverQN.solve(newLinearRegression, x);
     QN.stop();
 
-    // display solution
-    disp(x, "my_solution with QuasiNewton");
+    /** Display solution */
+    disp(x, "The solution with with QuasiNewton");
 
     cout << "Gradient Descent took " << GD.get_seconds() << " seconds to converge." << endl;
     cout << "Quasi Newton took " << QN.get_seconds() << " seconds to converge and was " << flush;
     cout << GD.get_seconds() - QN.get_seconds() << " seconds faster than graident descent." << endl;
 }
 
-// This example does not work in parallel.
-// Please run the example with the following command:
-// make -j 4  utopia_examples && ./examples/example_linear_regression
-int main(int argc, char** argv) {
+/** This example does not work in parallel.
+ * Please compile and run the example with the following command:
+ * make utopia_examples&& ./examples/example_linear_regression
+ */
+
+/**
+ * export FILE= ./../examples/example_linear_regression.cpp
+ * make docs
+ */
+int main(int argc, char **argv) {
     using namespace utopia;
 
-#ifdef UTOPIA_WITH_PETSC
+#ifdef WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else
-#ifdef UTOPIA_WITH_TRILINOS
+#ifdef WITH_TRILINOS
     using MatrixT = TpetraMatrixd;
     using VectorT = TpetraVectord;
 #else
