@@ -36,14 +36,17 @@ const char* file = "./../examples/data_for_examples/profit.csv";
  * by multiplying this vector by \f${\Theta}\f$ we will obtain an estimation of the profit.
  */
 
-/**
- * In our implementation, each population example corresponds to a row in our vector \f$x \in \mathbb{R}^{s}\f$,
- * to which we add an additional columns and we set it to all ones to add the bias. The vector x then becomes
- * a matrix \f$X \in \mathbb{R}^{s \times 2}$\f. Similarly, \f$y\in \mathbb{R}^{s}\f$ is a vector with each row
- * correspondig to an example of the profit.
- */
-
 namespace utopia {
+
+    /*!
+     * \brief In our implementation, each population example corresponds to a row in our vector \f$x \in
+     * \mathbb{R}^{s}\f$, to which we add an additional columns and we set it to all ones to add the bias. The vector x
+     * then becomes a matrix \f$X \in \mathbb{R}^{s \times 2}$\f. Similarly, \f$y\in \mathbb{R}^{s}\f$ is a vector with
+     * each row correspondig to an example of the profit.
+     * \class
+     * \tparam Matrix the matrix type
+     * \tparam Vector the vector type
+     */
 
     template <class Matrix, class Vector>
     class LinearRegression final : public FunctionBase<Vector> {
@@ -293,6 +296,11 @@ void test() {
 /** This example does not work in parallel.
  * Please compile and run the example with the following command:
  * make utopia_examples&& ./examples/example_linear_regression
+ */
+
+/**
+ * export FILE= ./../examples/example_linear_regression.cpp
+ * make docs
  */
 int main(int argc, char** argv) {
     using namespace utopia;
