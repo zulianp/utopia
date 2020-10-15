@@ -4,7 +4,7 @@
 
 namespace utopia {
 
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
     void cuda_hello_world() {
         // For the moment no hybrid
         if (utopia::mpi_world_size() != 1) return;
@@ -22,7 +22,7 @@ namespace utopia {
     }
 #endif
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
     void test_opencl_code() {
         const int n = 30;
 
@@ -31,30 +31,30 @@ namespace utopia {
 
         CLVectord res = abs(m * pow2(v1) + sqrt(v2) - v3);
 
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
         // disp(v1);
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
         // disp(res);
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
 
         CLMatrixd mat_res = transpose(abs(0.1 * (m * m) - m) * (m));  // inner transpose does not work yet.
 
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
         // // disp(mat_res);
-        // std::cout << "-------------------\n";
+        // utopia::out() <<"-------------------\n";
     }
 
-#endif  // WITH_UTOPIA_OPENCL
+#endif  // UTOPIA_WITH_OPENCL
 
-#ifdef WITH_LAPACK
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_LAPACK
+#ifdef UTOPIA_WITH_BLAS
     void test_lapack_eigen_solver() {
         using namespace utopia;
         using SizeType = Traits<BlasMatrixd>::SizeType;
 
         const int n = 9;
         BlasMatrixd A;
-        A.zeros({n, n});
+        A.dense(serial_layout(n, n), 0.0);
         std::vector<SizeType> is{0, 1, 2, 3, 4, 5, 6, 7, 8};
 
         {
@@ -145,7 +145,7 @@ namespace utopia {
         }
 
         BlasMatrixd B;
-        B.zeros({n, n});
+        B.dense(serial_layout(n, n), 0.0);
         {
             Write<BlasMatrixd> w_B(B);
             B.set_matrix(is, is, {+6.944444e+05, 0, 0, 0, 0, 0, 0, 0, 0, 0, +2.387253e+06, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -182,20 +182,20 @@ namespace utopia {
         auto ptr_2 = fact_1->make();
     }
 
-#endif  // WITH_BLAS
-#endif  // WITH_LAPACK
+#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_WITH_LAPACK
 
     static void misc() {
-#ifdef WITH_CUDA
+#ifdef UTOPIA_WITH_CUDA
         UTOPIA_RUN_TEST(cuda_hello_world);
 #endif
 
-#ifdef WITH_UTOPIA_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
         UTOPIA_RUN_TEST(test_opencl_code);
 #endif
 
-#ifdef WITH_LAPACK
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_LAPACK
+#ifdef UTOPIA_WITH_BLAS
         UTOPIA_RUN_TEST(test_lapack_eigen_solver);
 #endif
 #endif

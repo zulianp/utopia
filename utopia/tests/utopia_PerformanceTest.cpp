@@ -1,9 +1,9 @@
 // #include "utopia_PerformanceTest.hpp"
 // #include "utopia.hpp"
 
-// #ifdef WITH_EIGEN_3
+// #ifdef UTOPIA_WITH_EIGEN_3
 // #include <Eigen/Dense>
-// #endif //WITH_EIGEN_3
+// #endif //UTOPIA_WITH_EIGEN_3
 
 // namespace utopia {
 
@@ -65,7 +65,7 @@
 // 		const bool verbose = performance_test_verbose();
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 
 // 		for(int k = 0; k < N_SIZES; ++k) {
@@ -95,13 +95,13 @@
 // 			c.stop();
 
 // 			if(verbose) {
-// 				std::cout << experiment_name << ", vectors, " << n << ",\t";
+// 				utopia::out() <<experiment_name << ", vectors, " << n << ",\t";
 // 				c.describe(std::cout);
 // 			}
 // 		}
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 // 	}
 
@@ -111,7 +111,7 @@
 // 		const bool verbose = performance_test_verbose();
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 
 // 		for(int k = 0; k < N_SIZES; ++k) {
@@ -147,12 +147,12 @@
 
 // 			if(verbose) {
 // 				all_runs.rescale_duration(1./N_RUNS);
-// 				std::cout << experiment_name << ", mixed, " << n << ",\t" << all_runs;
+// 				utopia::out() <<experiment_name << ", mixed, " << n << ",\t" << all_runs;
 // 			}
 // 		}
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 // 	}
 
@@ -162,7 +162,7 @@
 // 		const bool verbose = performance_test_verbose();
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 
 // 		for(int k = 0; k < N_SIZES; ++k) {
@@ -194,12 +194,12 @@
 
 // 			if(verbose) {
 // 				all_runs.rescale_duration(1./N_RUNS);
-// 				std::cout << experiment_name << ", vectors, " << n << ",\t" << all_runs;
+// 				utopia::out() <<experiment_name << ", vectors, " << n << ",\t" << all_runs;
 // 			}
 // 		}
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 // 	}
 
@@ -210,7 +210,7 @@
 // 		test_program_mixed<Matrix, Vector>(experiment_name);
 // 	}
 
-// #ifdef WITH_EIGEN_3
+// #ifdef UTOPIA_WITH_EIGEN_3
 // 	void test_program_eigen_3_vectors(const std::string &experiment_name)
 // 	{
 // 		typedef Eigen::MatrixXd Matrix;
@@ -219,7 +219,7 @@
 // 		const bool verbose = performance_test_verbose();
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 
 // 		for(int k = 0; k < N_SIZES; ++k) {
@@ -251,12 +251,12 @@
 
 // 			if(verbose) {
 // 				all_runs.rescale_duration(1./N_RUNS);
-// 				std::cout << experiment_name << ", vectors, " << n << ",\t" << all_runs;
+// 				utopia::out() <<experiment_name << ", vectors, " << n << ",\t" << all_runs;
 // 			}
 // 		}
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 // 	}
 
@@ -268,7 +268,7 @@
 // 		const bool verbose = performance_test_verbose();
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 
 // 		for(int k = 0; k < N_SIZES; ++k) {
@@ -303,12 +303,12 @@
 // 			}
 
 // 			if(verbose) {
-// 				std::cout << experiment_name << ", vectors, " << n << ",\t" << all_runs;
+// 				utopia::out() <<experiment_name << ", vectors, " << n << ",\t" << all_runs;
 // 			}
 // 		}
 
 // 		if(verbose) {
-// 			std::cout << "===================" << std::endl;
+// 			utopia::out() <<"===================" << std::endl;
 // 		}
 // 	}
 
@@ -317,7 +317,7 @@
 // 		test_program_eigen_3_vectors("eigen3");
 // 		test_program_eigen_3_mixed("eigen3");
 // 	}
-// #endif //WITH_EIGEN_3
+// #endif //UTOPIA_WITH_EIGEN_3
 
 // 	void run_performance_test()
 // 	{
@@ -325,13 +325,13 @@
 
 // 		const bool verbose = performance_test_verbose();
 
-// #ifdef WITH_UTOPIA_OPENCL
+// #ifdef UTOPIA_WITH_OPENCL
 
 // 		// CLContext::instance().set_current_device(2);
 
 // 		if(verbose) {
-// 			std::cout << "------------------------------------\n";
-// 			std::cout << "OpenCL: " << std::endl;
+// 			utopia::out() <<"------------------------------------\n";
+// 			utopia::out() <<"OpenCL: " << std::endl;
 // 			CLStats::instance().clear();
 // 			CLContext::instance().describe_current_setup();
 // 		}
@@ -342,33 +342,33 @@
 // 			CLStats::instance().describe(std::cout);
 // 		}
 
-// #endif //WITH_UTOPIA_OPENCL
+// #endif //UTOPIA_WITH_OPENCL
 
-// #ifdef WITH_BLAS
+// #ifdef UTOPIA_WITH_BLAS
 // 		if(verbose) {
-// 			std::cout << "------------------------------------\n";
-// 			std::cout << "Blas: " << std::endl;
+// 			utopia::out() <<"------------------------------------\n";
+// 			utopia::out() <<"Blas: " << std::endl;
 // 		}
 
 // 		test_program_inlined<Matrixd, Vectord>("inline");
 // 		test_program<Matrixd, Vectord>("blas");
 // #endif
 
-// #ifdef WITH_PETSC
+// #ifdef UTOPIA_WITH_PETSC
 // 		if(verbose) {
-// 			std::cout << "------------------------------------\n";
-// 			std::cout << "PETSC: " << std::endl;
+// 			utopia::out() <<"------------------------------------\n";
+// 			utopia::out() <<"PETSC: " << std::endl;
 // 		}
 // 		test_program<PetscMatrix, PetscVector>("petsc");
-// #endif //WITH_PETSC
+// #endif //UTOPIA_WITH_PETSC
 
-// #ifdef WITH_EIGEN_3
+// #ifdef UTOPIA_WITH_EIGEN_3
 // 		if(verbose) {
-// 			std::cout << "------------------------------------\n";
-// 			std::cout << "Eigen 3: " << std::endl;
+// 			utopia::out() <<"------------------------------------\n";
+// 			utopia::out() <<"Eigen 3: " << std::endl;
 // 		}
 // 		run_performance_test_eigen_3();
-// #endif //WITH_EIGEN_3
+// #endif //UTOPIA_WITH_EIGEN_3
 
 // 		//UTOPIA_UNIT_TEST_END("PerformanceTest");
 // 	}

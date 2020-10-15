@@ -11,7 +11,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     void run_all_benchmarks(const std::string &backend_name) {
         if (mpi_world_rank() == 0) {
-            std::cout << "\n> " << backend_name << std::endl;
+            utopia::out() << "\n> " << backend_name << std::endl;
         }
 
         int verbosity_level = 1;
@@ -47,20 +47,20 @@ namespace utopia {
     void run_benchmarks() {
         mpi_world_barrier();
         if (mpi_world_rank() == 0) {
-            std::cout << "[Begin benchmark]" << std::endl;
+            utopia::out() << "[Begin benchmark]" << std::endl;
         }
 
         // Parallel benchmarks
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         run_all_benchmarks<PetscMatrix, PetscVector>("petsc");
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         run_all_benchmarks<TpetraMatrixd, TpetraVectord>("trilinos");
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
         // Serial benchmarks
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         if (mpi_world_size() == 1) {
             run_all_benchmarks<BlasMatrixd, BlasVectord>("homemade");
         }
@@ -68,7 +68,7 @@ namespace utopia {
 
         mpi_world_barrier();
         if (mpi_world_rank() == 0) {
-            std::cout << "[End benchmark]" << std::endl;
+            utopia::out() << "[End benchmark]" << std::endl;
         }
     }
 }  // namespace utopia

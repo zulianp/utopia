@@ -1,7 +1,7 @@
 
 // #include "utopia_Base.hpp"
 
-// #ifdef WITH_TRILINOS
+// #ifdef UTOPIA_WITH_TRILINOS
 // //include edsl components
 // #include "utopia_AppRunner.hpp"
 // #include "utopia_Core.hpp"
@@ -18,7 +18,7 @@
 
 // #include <cmath>
 
-// #ifdef WITH_PETSC
+// #ifdef UTOPIA_WITH_PETSC
 // #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0) //DMA-INCOMPLETE
 
 // #include "utopia_petsc_DM.hpp"
@@ -51,7 +51,7 @@
 
 //         SizeType n_nwg = dm.n_local_nodes_with_ghosts();
 
-//         std::cout << "n_nwg: " << n_nwg << std::endl;
+//         utopia::out() <<"n_nwg: " << n_nwg << std::endl;
 
 //         Mesh::DualIndexView ghosted_local_2_global("ghosted_local_2_global", n_nwg);
 //         auto gl2g_view = ghosted_local_2_global.view_device();
@@ -64,14 +64,14 @@
 //         Mesh mesh(world, dims, local_begin, local_end, box, ghosted_local_2_global);
 //         mesh.describe();
 
-//         std::cout << mesh.element_range() << std::endl;
+//         utopia::out() <<mesh.element_range() << std::endl;
 //     }
 
 //     UTOPIA_REGISTER_APP(petsc_dm_to_kokkos);
 // }
 
 // #endif //UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-// #endif //WITH_PETSC
+// #endif //UTOPIA_WITH_PETSC
 
 // namespace utopia {
 
@@ -107,7 +107,7 @@
 
 //         for(SizeType i = 0; i < mesh_view.n_elements(); ++i) {
 //             mesh_view.node_linear_to_tensor_index(i, ind);
-//             std::cout << i << ") [" << ind[0] << ",  " << ind[1] << "]" << std::endl;
+//             utopia::out() <<i << ") [" << ind[0] << ",  " << ind[1] << "]" << std::endl;
 //         }
 
 //         Quadrature quadrature;
@@ -175,8 +175,8 @@
 //         });
 
 //         c.stop();
-//         std::cout << n_assemblies << " assemblies " << c << std::endl;
-//         std::cout << op_sum << std::endl;
+//         utopia::out() <<n_assemblies << " assemblies " << c << std::endl;
+//         utopia::out() <<op_sum << std::endl;
 //     }
 
 //     UTOPIA_REGISTER_APP(sc_mesh);
@@ -211,7 +211,7 @@
 
 //         c.stop();
 
-//         std::cout << c << std::endl;
+//         utopia::out() <<c << std::endl;
 
 //         // poisson.reinit();
 //         rename("L", poisson.laplacian());
@@ -227,4 +227,4 @@
 //     UTOPIA_REGISTER_APP(poisson_2D);
 // }
 
-// #endif //WITH_TRILINOS
+// #endif //UTOPIA_WITH_TRILINOS

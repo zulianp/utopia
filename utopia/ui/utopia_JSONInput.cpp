@@ -1,6 +1,6 @@
 #include "utopia_JSONInput.hpp"
 
-#ifdef WITH_JSON
+#ifdef UTOPIA_WITH_JSON
 #include <fstream>
 #include <utility>
 #include "json.hpp"
@@ -283,7 +283,7 @@ namespace utopia {
         assert(impl_);
         auto it = impl_->json().find(key);
         if (it == impl_->json().end()) {
-            // std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+            // utopia::out() <<"[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
             return;
         }
 
@@ -296,7 +296,7 @@ namespace utopia {
         }
 
         // else {
-        // 	std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+        // 	utopia::out() <<"[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
         // }
     }
 
@@ -304,7 +304,7 @@ namespace utopia {
         assert(impl_);
         auto it = impl_->json().find(key);
         if (it == impl_->json().end()) {
-            // std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+            // utopia::out() <<"[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
             return;
         }
 
@@ -317,7 +317,7 @@ namespace utopia {
         }
 
         // else {
-        // 	std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+        // 	utopia::out() <<"[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
         // }
     }
 
@@ -325,4 +325,4 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif  // WITH_JSON
+#endif  // UTOPIA_WITH_JSON

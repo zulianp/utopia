@@ -368,8 +368,8 @@ namespace utopia {
             // remove self
             if (first == second) continue;
 
-            const auto &e_first = *mesh.elem(first);
-            const auto &e_second = *mesh.elem(second);
+            const auto &e_first = *utopia::elem_ptr(mesh, first);
+            const auto &e_second = *utopia::elem_ptr(mesh, second);
 
             if (are_neighbors(e_first, e_second)) {
                 // std::cout << "neigs\n";

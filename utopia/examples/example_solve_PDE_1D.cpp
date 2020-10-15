@@ -98,11 +98,11 @@ void solve_PDE_1D(utopia::Input& in) {
 int main(int argc, char** argv) {
     using namespace utopia;
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     using MatrixT = TpetraMatrixd;
     using VectorT = TpetraVectord;
 #else

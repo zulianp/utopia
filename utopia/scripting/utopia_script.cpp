@@ -8,14 +8,14 @@
 
 namespace utopia {
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     UTOPIA_FACTORY_REGISTER_VECTOR(PetscVector);
     UTOPIA_FACTORY_REGISTER_MATRIX(PetscMatrix);
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     UTOPIA_FACTORY_REGISTER_VECTOR(TpetraVector);
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 }  // namespace utopia
 
@@ -37,7 +37,7 @@ namespace scripting {
         init(argc, &argv_ptr);
     }
 
-    void print_info() { std::cout << "Utopia\nversion: " << UTOPIA_VERSION << std::endl; }
+    void print_info() { utopia::out() << "Utopia\nversion: " << UTOPIA_VERSION << std::endl; }
 
     void finalize() { utopia::Utopia::Finalize(); }
 
@@ -45,7 +45,7 @@ namespace scripting {
         auto mat = Factory::new_matrix();
 
         if (!mat) {
-            std::cout << "[Error] Matrix could not be constructed" << std::endl;
+            utopia::out() << "[Error] Matrix could not be constructed" << std::endl;
             return;
         }
 
@@ -55,13 +55,13 @@ namespace scripting {
 
     SparseMatrix::~SparseMatrix() { delete impl_; }
 
-    void SparseMatrix::print_info() { std::cout << "SparseMatrix::print()" << std::endl; }
+    void SparseMatrix::print_info() { utopia::out() << "SparseMatrix::print()" << std::endl; }
 
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
 
         if (!vec) {
-            std::cout << "[Error] Vector could not be constructed" << std::endl;
+            utopia::out() << "[Error] Vector could not be constructed" << std::endl;
             return;
         }
 
@@ -71,6 +71,6 @@ namespace scripting {
 
     Vector::~Vector() { delete impl_; }
 
-    void Vector::print_info() { std::cout << "Vector::print()" << std::endl; }
+    void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
 
 }  // namespace scripting

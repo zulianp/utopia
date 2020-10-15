@@ -122,7 +122,7 @@ namespace utopia {
             if (verbose_ && mpi_world_rank() == 0) {
                 ConvergenceReason::exitMessage(num_it, convergence_reason);
                 if (mpi_world_rank() == 0)
-                    std::cout << "  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
+                    utopia::out() << "  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
             }
 
             this->solution_status_.execution_time = _time.get_seconds();

@@ -1,0 +1,187 @@
+\documentclass[a4paper,landscape,columns=3]{cheatsheet} %https://github.com/ACHinrichs/LaTeX-templates/blob/master/cheatsheet/cheatsheet.pdf
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[]{graphicx}
+\usepackage{algpseudocode}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage[algo2e,algoruled]{algorithm2e}
+
+\title{Utopia cheat-sheet}
+
+\definecolor{cppred}{rgb}{0.6,0,0} % for strings
+\definecolor{cppping}{rgb}{1,0.7,0.7} % for numbers
+\definecolor{cppgreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{cpppurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{cppdocblue}{rgb}{0.25,0.35,0.75} % cppdoc
+
+\lstset
+{
+language=C++,
+basicstyle=\scriptsize\ttfamily,
+numberstyle=\tiny\color{cpppink},
+keywordstyle=\color{cpppurple}\bfseries,
+stringstyle=\color{cppred},
+commentstyle=\color{cppgreen},
+}
+
+\newcommand{\cppdouble}{{\color{cpppurple} double}}
+\newcommand{\cppint}{{\color{cpppurple} int}}
+\newcommand{\cppif}{{\color{cpppurple} if}}
+\newcommand{\cppwhile}{{\color{cpppurple} while}}
+\newcommand{\cppelse}{{\color{cpppurple} else}}
+
+
+\begin{document}
+% \maketitle
+\href{https://bitbucket.org/zulianp/utopia}{\includegraphics[width=0.5\linewidth]{../../utopia_logo.pdf}}
+\section{Installation}\footnotesize
+
+\begin{lstlisting}[language=bash]
+git clone --recurse-submodules  \
+https://bitbucket.org/zulianp/utopia.git
+
+cd utopia/utopia && mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=<your install folder>
+make && make install
+\end{lstlisting}
+
+Click  \href{https://bitbucket.org/zulianp/utopia/wiki/Getting%20started}{HERE} for more details!
+
+\section{Basics}
+\subsection{Backends}\footnotesize
+Each backend is defined by their tensor types. We denote vector types with V, Matrix types with M, general tensor types with T.
+\begin{itemize}
+    \item
+    \textbf{Blas--Lapack}, node-level dense algebra
+    \begin{lstlisting}
+    using M = BlasMatrixd;
+    using V = BlasVectord;
+    \end{lstlisting}
+    \item
+    \textbf{PETSc}, parallel sparse and dense algebra
+    \begin{lstlisting}
+    using M = PetscMatrix;
+    using V = PetscVector;
+    \end{lstlisting}
+    \item
+    \textbf{Trilinos}, parallel sparse algebra
+    \begin{lstlisting}
+    using M = TpetraMatrixd;
+    using V = TpetraVectord;
+    \end{lstlisting}
+\end{itemize}
+
+
+\subsection{Traits}\footnotesize
+Traits are used to access data-types associated with a tensors T.
+\begin{lstlisting}
+    // The MPI Communicator
+    using Communicator = Traits<T>::Communicator;
+
+    // Double or single precision real number
+    using Scalar = Traits<T>::Scalar;
+
+    // 32 or 64 bits integer number used for global indexing
+    using SizeType = Traits<T>::SizeType;
+
+    // 32 or 64 bits integer number used for local indexing
+    using LocalSizeType = Traits<T>::LocalSizeType;
+
+    // Array of indices
+    using IndexArray = Traits<T>::IndexArray;
+
+    // Array of scalars
+    using ScalarArray = Traits<T>::ScalarArray;
+
+    // Vector layout type specific to the backend
+    using Layout = Traits<T>::Layout;
+
+    // Matrix layout type specific to the backend
+    using MatrixLayout = Traits<T>::MatrixLayout;
+\end{lstlisting}
+
+\section{Communicator}
+\begin{lstlisting}
+// Get the serial communicator
+auto self = Communicator::self();
+
+// Get the world communicator
+auto world = Communicator::world();
+
+// Get the default communicator (typically world)
+auto comm = Communicator::get_default();
+\end{lstlisting}
+
+\section{Layouts}
+
+\begin{lstlisting}
+// Create a vector layout with n_local entries
+// for each process and n entries in total
+auto vl = layout(comm, n_local, n);
+
+// Create a matrix layout from the vector layout
+auto ml = square_matrix_layout(vl);
+
+// Create a matrix layout with local and total
+// number of rows and columns
+auto ml = layout(comm, rows_local, cols_local, rows, cols);
+\end{lstlisting}
+
+\section{Tensor}
+\subsection{Vector}
+\begin{lstlisting}
+// Construct a vector with a layout vl
+V vec(vl);
+
+// Construct a vector with and set it a uniform value
+V vec(vl, val);
+
+// Construct an existing vector with zeros,
+vec.zeros(vl);
+// or with a uniform value
+vec.values(vl, val);
+
+\end{lstlisting}
+\subsection{Matrix}
+
+\section{BLAS}
+Dense and sparse basic linear algebra subroutines
+\subsection{Level 1}
+
+\subsection{Level 2}
+
+\subsection{Level 3}
+
+\subsection{Others}
+
+
+\section{Linear solver}
+
+
+\section{Nonlinear solver}
+
+\section{Input-ouput}
+\begin{lstlisting}
+// Any tensor t can be inspected in the terminal
+disp(t);
+\end{lstlisting}
+
+
+\section{Conversions and interoperability}
+
+
+\section{Host-side manipulations}
+
+
+\section{Device-side manipulations}
+
+
+\section{Acknowledgements}
+\cite{utopiagit}
+
+\bibliographystyle{alpha}
+\bibliography{Utopia_CheatSheet}
+
+\end{document}

@@ -168,7 +168,7 @@ namespace utopia {
                 utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
             });
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             // NOTE(eric): range assignment is NYI in Petsc backend
             if (std::is_same<Matrix, PetscMatrix>::value) {
                 return;
@@ -244,7 +244,7 @@ namespace utopia {
         static void print_backend_info() {
             mpi_world_barrier();
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
             mpi_world_barrier();
         }
@@ -302,23 +302,23 @@ namespace utopia {
         UTOPIA_RUN_TEST(describe_test);
         UTOPIA_RUN_TEST(describe_chrono_test);
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         UtilitiesTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         BlockTest<PetscMatrix, PetscVector>().run();
 
         UtilitiesTest<PetscMatrix, PetscVector>().run();
         BlockTest<PetscMatrix, PetscVector>().run();
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
         // FIXME
         if (mpi_world_size() == 1) {
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
             BlockTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
         }
     }
 

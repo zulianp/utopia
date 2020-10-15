@@ -6,11 +6,11 @@
 #include "utopia_UnconstrainedBenchmark.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef WITH_PETSC
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_WITH_SLEPC
 #include "utopia_petsc_Slepc.hpp"
-#endif  // WITH_SLEPC
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_SLEPC
+#endif  // UTOPIA_WITH_PETSC
 
 #include <cassert>
 #include <string>
@@ -68,7 +68,7 @@ namespace utopia {
                 TrustRegion<Matrix, Vector> solver(subproblem);
                 run_tr(this->test_functions_, solver, "TR_STCG", this->verbose_);
             });
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             this->register_experiment("TR_Lanczos", [this]() {
                 auto subproblem = std::make_shared<Lanczos<Matrix, Vector>>();
                 TrustRegion<Matrix, Vector> solver(subproblem);
@@ -81,7 +81,7 @@ namespace utopia {
                 run_tr(this->test_functions_, solver, "TR_Nash", this->verbose_);
             });
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
             this->register_experiment("TR_Dogleg", [this]() {
                 auto linear_solver = std::make_shared<GMRES<Matrix, Vector>>();
@@ -98,8 +98,8 @@ namespace utopia {
                 run_tr(this->test_functions_, solver, "TR_Cauchy_Point", this->verbose_);
             });
 
-#ifdef WITH_PETSC
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_PETSC
+#ifdef UTOPIA_WITH_SLEPC
             // TODO(zulianp): : add check for slepcs
             this->register_experiment("TR_MS", [this]() {
                 auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL>>();
@@ -114,8 +114,8 @@ namespace utopia {
                 TrustRegion<Matrix, Vector> solver(subproblem);
                 run_tr(this->test_functions_, solver, "TR_MS", this->verbose_);
             });
-#endif  // WITH_SLEPC
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_SLEPC
+#endif  // UTOPIA_WITH_PETSC
 
             // this->register_experiment("PseudoTransientContinuation",
             // 	[this]() {
@@ -172,10 +172,10 @@ namespace utopia {
             // 			this->register_experiment("ASTRUM",
             // 				[this]() {
 
-            // #ifdef WITH_PETSC
+            // #ifdef UTOPIA_WITH_PETSC
             // 					auto linear_solver = std::make_shared<Factorization<Matrix, Vector>
             // >(MATSOLVERPETSC, PCLU); #else 					auto linear_solver =
-            // std::make_shared<Factorization<Matrix, Vector>>(); #endif //WITH_PETSC
+            // std::make_shared<Factorization<Matrix, Vector>>(); #endif //UTOPIA_WITH_PETSC
 
             // 					ASTRUM<Matrix, Vector> solver(linear_solver);
             // 					solver.reset_mass_matrix(true);
@@ -254,7 +254,7 @@ namespace utopia {
         }
     };
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     static void unconstrained_opt() {
         int verbosity_level = 1;
         if (Utopia::instance().verbose()) {
@@ -272,5 +272,5 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION_OPTIONAL(unconstrained_opt);
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 }  // namespace utopia

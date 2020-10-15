@@ -1,6 +1,7 @@
 #ifndef UTOPIA_TRILINOS_COMMUNICATOR_HPP
 #define UTOPIA_TRILINOS_COMMUNICATOR_HPP
 
+#include "utopia_Base.hpp"
 #include "utopia_Communicator.hpp"
 
 #include "utopia_Teuchos_MPI_Operations.hpp"
@@ -23,9 +24,11 @@ namespace utopia {
 
         inline int size() const override { return comm_->getSize(); }
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         MPI_Comm raw_comm() const override;
         explicit TrilinosCommunicator(MPI_Comm comm);
+        static TrilinosCommunicator self();
+        static TrilinosCommunicator world();
 #endif
 
         inline TrilinosCommunicator *clone() const override { return new TrilinosCommunicator(get()); }

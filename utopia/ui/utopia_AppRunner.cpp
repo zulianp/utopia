@@ -2,6 +2,7 @@
 #include "utopia_AppRegistry.hpp"
 #include "utopia_AppWithInputRegistry.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_IOStream.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_NaryActionRegistry_impl.hpp"
 #include "utopia_ui.hpp"
@@ -26,7 +27,7 @@ namespace utopia {
         std::vector<std::string> apps;
         this->verbose(Utopia::instance().verbose());
 
-        // std::cout << argc << " " << argv[0] << " " << argv[1] << std::endl;
+        // utopia::out() <<argc << " " << argv[0] << " " << argv[1] << std::endl;
 
         int err = 0;
 
@@ -88,10 +89,10 @@ namespace utopia {
     }
 
     void AppRunner::describe(std::ostream &os) const {
-        std::cout << "Apps without input: " << std::endl;
+        utopia::out() << "Apps without input: " << std::endl;
         AppRegistry::instance().describe(os);
 
-        std::cout << "Apps with input: " << std::endl;
+        utopia::out() << "Apps with input: " << std::endl;
         AppWithInputRegistry::instance().describe(os);
     }
 

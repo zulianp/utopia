@@ -103,7 +103,8 @@ namespace utopia {
         initialized_ = true;
 
         if (!is_consistent()) {
-            std::cout << "type copy: " << type_copy << " != " << type_override() << "!=" << this->type() << std::endl;
+            utopia::out() << "type copy: " << type_copy << " != " << type_override() << "!=" << this->type()
+                          << std::endl;
         }
 
         assert(is_consistent());
@@ -377,8 +378,8 @@ namespace utopia {
 
     void PetscVector::describe() const {
         if (is_root()) {
-            std::cout << "is_null    : " << is_null() << "\n";
-            std::cout << "initialized: " << initialized() << "\n";
+            utopia::out() << "is_null    : " << is_null() << "\n";
+            utopia::out() << "initialized: " << initialized() << "\n";
         }
 
         if (is_null()) {

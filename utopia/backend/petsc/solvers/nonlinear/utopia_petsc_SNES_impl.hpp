@@ -150,14 +150,15 @@ namespace utopia {
         SNESSetFromOptions(snes);
 
         if (this->verbose()) {
-            SNESMonitorSet(snes,
-                           [](SNES /*snes*/, PetscInt iter, PetscReal res, void *) -> PetscErrorCode {
-                               if (mpi_world_rank() == 0) std::cout << iter << "       " << res << "      \n";
+            SNESMonitorSet(
+                snes,
+                [](SNES /*snes*/, PetscInt iter, PetscReal res, void *) -> PetscErrorCode {
+                    if (mpi_world_rank() == 0) utopia::out() << iter << "       " << res << "      \n";
 
-                               return 0;
-                           },
-                           nullptr,
-                           nullptr);
+                    return 0;
+                },
+                nullptr,
+                nullptr);
         }
 
         ierr = SNESSetType(snes, SNES_type_.c_str());
@@ -195,7 +196,7 @@ namespace utopia {
             utopia_ksp->attach_preconditioner(ksp);
         } else {
             if (!this->linear_solver_) {
-                std::cout << "utopia::SNES:: linear solver missing, setting to DEFAULT... \n";
+                utopia::out() << "utopia::SNES:: linear solver missing, setting to DEFAULT... \n";
                 const auto utopia_ksp = std::make_shared<KSPSolver<Matrix, Vector> >();
                 this->set_linear_solver(utopia_ksp);
             }
@@ -244,33 +245,35 @@ namespace utopia {
         }
 
         // energy
-        SNESSetObjective(snes,
-                         // FormObjective,
-                         [](SNES /*snes*/, Vec x, PetscReal *energy, void *ctx) -> PetscErrorCode {
-                             auto *fun = static_cast<Function *>(ctx);
-                             Vector x_ut;
+        SNESSetObjective(
+            snes,
+            // FormObjective,
+            [](SNES /*snes*/, Vec x, PetscReal *energy, void *ctx) -> PetscErrorCode {
+                auto *fun = static_cast<Function *>(ctx);
+                Vector x_ut;
 
-                             utopia::convert(x, x_ut);
-                             fun->value(x_ut, *energy);
-                             return 0;
-                         },
-                         &fun);
+                utopia::convert(x, x_ut);
+                fun->value(x_ut, *energy);
+                return 0;
+            },
+            &fun);
 
         // gradient
-        SNESSetFunction(snes,
-                        raw_type(residual),
-                        // FormGradient,
-                        [](SNES /*snes*/, Vec x, Vec res, void *ctx) -> PetscErrorCode {
-                            auto *fun = static_cast<Function *>(ctx);
+        SNESSetFunction(
+            snes,
+            raw_type(residual),
+            // FormGradient,
+            [](SNES /*snes*/, Vec x, Vec res, void *ctx) -> PetscErrorCode {
+                auto *fun = static_cast<Function *>(ctx);
 
-                            Vector x_ut, res_ut;
-                            utopia::convert(x, x_ut);
-                            fun->gradient(x_ut, res_ut);
-                            utopia::convert(res_ut, res);
+                Vector x_ut, res_ut;
+                utopia::convert(x, x_ut);
+                fun->gradient(x_ut, res_ut);
+                utopia::convert(res_ut, res);
 
-                            return 0;
-                        },
-                        &fun);
+                return 0;
+            },
+            &fun);
 
         // hessian
         SNESSetJacobian(

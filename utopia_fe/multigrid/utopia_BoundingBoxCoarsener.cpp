@@ -35,7 +35,7 @@ namespace utopia {
                                moonolith::AABB<Dimension, double> &box) {
             std::array<double, Dimension> p_a;
             for (libMesh::dof_id_type i = 0; i < e.n_nodes(); ++i) {
-                const libMesh::Point &p = mesh.node(e.node_id(i));
+                const libMesh::Point &p = *utopia::node_ptr(mesh, e.node_id(i));
                 for (int d = 0; d < Dimension; ++d) {
                     p_a[d] = p(d);
                 }
@@ -364,7 +364,9 @@ namespace utopia {
                 return impl_->init_3d(n_coarsening_levels, mesh);
             }
 
-            default: { return false; }
+            default: {
+                return false;
+            }
         }
     }
 

@@ -38,7 +38,7 @@ namespace utopia {
         inline static StrategyPtr new_line_search_strategy(const SolverType &tag) {
             auto it = instance().strategies_.find(tag);
             if (it == instance().strategies_.end()) {
-                std::cout << "Strategy not available, solving with Backtracking.  \n";
+                utopia::out() << "Strategy not available, solving with Backtracking.  \n";
                 return std::make_shared<utopia::Backtracking<Vector>>();
             } else {
                 return it->second->make();

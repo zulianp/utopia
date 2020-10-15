@@ -21,7 +21,7 @@
 #include "utopia_petsc_Newton.hpp"
 #include "utopia_petsc_TaoTRQP.hpp"
 
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
 #include "utopia_petsc_Slepc.hpp"
 #endif
 

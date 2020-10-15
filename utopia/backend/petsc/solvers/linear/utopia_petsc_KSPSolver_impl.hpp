@@ -196,11 +196,11 @@ namespace utopia {
         void describe() const {
             PetscBool bool_value;
             KSPGetInitialGuessNonzero(ksp_, &bool_value);
-            std::cout << "-------------------------------------------" << std::endl;
-            std::cout << "KSPGetInitialGuessNonzero: " << bool_value << std::endl;
-            std::cout << "PCType:                    " << pc_type() << std::endl;
-            std::cout << "KSPType:                   " << ksp_type() << std::endl;
-            std::cout << "-------------------------------------------" << std::endl;
+            utopia::out() << "-------------------------------------------" << std::endl;
+            utopia::out() << "KSPGetInitialGuessNonzero: " << bool_value << std::endl;
+            utopia::out() << "PCType:                    " << pc_type() << std::endl;
+            utopia::out() << "KSPType:                   " << ksp_type() << std::endl;
+            utopia::out() << "-------------------------------------------" << std::endl;
 
             PetscErrorCode ierr;
             UTOPIA_UNUSED(ierr);

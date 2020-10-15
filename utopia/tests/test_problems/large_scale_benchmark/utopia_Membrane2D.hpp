@@ -9,7 +9,7 @@ namespace utopia {
     class Membrane2D {};
 }  // namespace utopia
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include <petsc/private/snesimpl.h> /* For SNES_Solve event */
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -511,5 +511,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 #endif  // UTOPIA_MEMBRANE_2D_HPP

@@ -5,12 +5,8 @@
 #include <cassert>
 #include "utopia_Base.hpp"
 
-#ifdef KOKKOS_ENABLE_CUDA
-#define UTOPIA_DEVICE_ASSERT(...)
-#define UTOPIA_DEVICE_ASSERT_CXX14(...)
-#else
+// Cuda should have its own assert(...) function
 #define UTOPIA_DEVICE_ASSERT(expr) assert((expr))
-#endif
 
 #ifdef WITH_CPP17
 /////////////////////////////
@@ -21,13 +17,12 @@
 
 /////////////////////////////
 #else
-#ifdef WITH_CPP14
+#ifdef UTOPIA_WITH_CPP14
 /////////////////////////////
 //////// C++14 //////////////
 #define UTOPIA_IF_CONSTEXPR if
 #define UTOPIA_CONSTEXPR constexpr
 #define UTOPIA_DEVICE_ASSERT_CXX14(expr) UTOPIA_DEVICE_ASSERT((expr))
-
 /////////////////////////////
 
 #else
@@ -38,7 +33,7 @@
 #define UTOPIA_DEVICE_ASSERT_CXX14(...)
 
 /////////////////////////////
-#endif  // WITH_CPP14
+#endif  // UTOPIA_WITH_CPP14
 #endif  // WITH_CPP17
 
 ////////////////////////////////////////

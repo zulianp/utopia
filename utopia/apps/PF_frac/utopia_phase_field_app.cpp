@@ -23,7 +23,7 @@
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 
@@ -35,7 +35,7 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_impl.hpp"
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #include <cmath>
 #include <random>
@@ -61,36 +61,39 @@ namespace utopia {
         // un-hard-code
         auto C = space.subspace(0);
 
-        auto sampler = utopia::sampler(C, UTOPIA_LAMBDA(const Point &x)->Scalar {
-            // const Scalar dist_x = 0.5 - x[0];
-            Scalar f = 0.0;
-            // for(int i = 1; i < Dim; ++i) {
-            // auto dist_i = x[1];
-            // f += device::exp(-500.0 * x[i] * x[i]);
-            if (x[0] > (0.5 - space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing()) && x[1] < 0.5) {
-                f = 1.0;
-                // f = 0.0;
-            } else {
-                f = 0.0;
-            }
-            // }
+        auto sampler = utopia::sampler(
+            C, UTOPIA_LAMBDA(const Point &x)->Scalar {
+                // const Scalar dist_x = 0.5 - x[0];
+                Scalar f = 0.0;
+                // for(int i = 1; i < Dim; ++i) {
+                // auto dist_i = x[1];
+                // f += device::exp(-500.0 * x[i] * x[i]);
+                if (x[0] > (0.5 - space.mesh().min_spacing()) && x[0] < (0.5 + space.mesh().min_spacing()) &&
+                    x[1] < 0.5) {
+                    f = 1.0;
+                    // f = 0.0;
+                } else {
+                    f = 0.0;
+                }
+                // }
 
-            return f;
-        });
+                return f;
+            });
 
         {
             auto &&C_view = C.view_device();
             auto sampler_view = sampler.view_device();
             auto x_view = space.assembly_view_device(x);
 
-            Dev::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                ElemViewScalar e;
-                C_view.elem(i, e);
+            Dev::parallel_for(
+                space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    ElemViewScalar e;
+                    C_view.elem(i, e);
 
-                StaticVector<Scalar, NNodes> s;
-                sampler_view.assemble(e, s);
-                C_view.set_vector(e, s, x_view);
-            });
+                    StaticVector<Scalar, NNodes> s;
+                    sampler_view.assemble(e, s);
+                    C_view.set_vector(e, s, x_view);
+                });
         }
     }
 
@@ -103,13 +106,15 @@ namespace utopia {
         using Point = typename FunctionSpace::Point;
         using Scalar = typename FunctionSpace::Scalar;
 
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+        space.emplace_dirichlet_condition(
+            SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
 
         space.emplace_dirichlet_condition(
             SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return t * disp; }, 1);
 
         for (int d = 2; d < Dim + 1; ++d) {
-            space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+            space.emplace_dirichlet_condition(
+                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
             space.emplace_dirichlet_condition(
                 SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
@@ -128,13 +133,14 @@ namespace utopia {
             auto d_x_old = const_device_view(x_old);
             auto x_new_view = device_view(x_new);
 
-            parallel_for(range_device(x_new), UTOPIA_LAMBDA(const SizeType &i) {
-                if (i % (Dim + 1) == comp) {
-                    x_new_view.set(i, d_x_old.get(i));
-                } else {
-                    x_new_view.set(i, -9e15);
-                }
-            });
+            parallel_for(
+                range_device(x_new), UTOPIA_LAMBDA(const SizeType &i) {
+                    if (i % (Dim + 1) == comp) {
+                        x_new_view.set(i, d_x_old.get(i));
+                    } else {
+                        x_new_view.set(i, -9e15);
+                    }
+                });
         }
     }
 
@@ -206,7 +212,7 @@ namespace utopia {
 
         space.write(output_path + "_" + std::to_string(0.0) + ".vtr", x);
         for (auto t = 0; t < num_ts; t++) {
-            std::cout << "Time-step: " << t << "  \n";
+            utopia::out() << "Time-step: " << t << "  \n";
 
             if (with_BC) {
                 space.reset_bc();

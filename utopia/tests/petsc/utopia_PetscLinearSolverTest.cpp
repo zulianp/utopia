@@ -5,7 +5,7 @@
 
 namespace utopia {
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     class PetscLinearSolverTest {
     public:
         using Traits = utopia::Traits<PetscVector>;
@@ -205,7 +205,7 @@ namespace utopia {
 
             multigrid.apply(rhs, x_0);
             diff = norm2(A * x_0 - rhs);
-            std::cout << "diff: " << diff << " \n";
+            utopia::out() << "diff: " << diff << " \n";
 
             multigrid.max_it(1);
             multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
@@ -643,10 +643,10 @@ namespace utopia {
         int n_{10};
     };
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
     static void petsc_linear() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         PetscLinearSolverTest().run();
 #endif
     }

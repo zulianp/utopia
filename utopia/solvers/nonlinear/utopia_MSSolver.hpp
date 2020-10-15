@@ -327,7 +327,7 @@ namespace utopia {
             leftpoint = left_in;
             midpoint = right_in;
 
-            // std::cout << "step_size: " << step_size << std::endl;
+            // utopia::out() <<"step_size: " << step_size << std::endl;
 
             // we compute the directional derivative
 
@@ -349,7 +349,7 @@ namespace utopia {
                     auto left_diff = f_val - val_left;
                     auto right_diff = val_right - f_val;
 
-                    // std::cout << left_diff << "<=" << right_diff << std::endl;
+                    // utopia::out() <<left_diff << "<=" << right_diff << std::endl;
 
                     if (left_diff <= right_diff) {
                         leftpoint = midpoint;

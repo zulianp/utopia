@@ -1,7 +1,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 
 #include "utopia.hpp"
 #include "utopia_TestProblems.hpp"
@@ -61,7 +61,7 @@ namespace utopia {
         {  // BLAS 2 + 3
             BlasVectord vresult;
             auto expr = m2 * v - (m1 * m2) * v;
-            // std::cout << tree_format(expr.get_class()) << std::endl;
+            // utopia::out() <<tree_format(expr.get_class()) << std::endl;
             vresult = expr;
 
             BlasVectord vexp({0.0, 0.0});
@@ -73,7 +73,7 @@ namespace utopia {
         {  // BLAS 3
             BlasMatrixd mresult;
             auto mexpr = transpose(m2) * transpose(m1);
-            // std::cout << tree_format(mexpr.get_class()) << std::endl;
+            // utopia::out() <<tree_format(mexpr.get_class()) << std::endl;
             mresult = mexpr;
 
             utopia_test_assert(approxeq(mexp, mresult));
@@ -124,7 +124,7 @@ namespace utopia {
     }
 
     void blas_solver_test() {
-#ifdef WITH_LAPACK
+#ifdef UTOPIA_WITH_LAPACK
         auto lapackSolver = std::make_shared<LUDecomposition<BlasMatrixd, BlasVectord> >();
         BlasVectord x0({3.0, -2.0});
 
@@ -133,9 +133,9 @@ namespace utopia {
 
         TestFunctionND_1<BlasMatrixd, BlasVectord> fun2(utopia::BlasVectord::comm(), 10);
 
-        x0.values(10, 2.0);
+        x0.values(serial_layout(10), 2.0);
         newtonSolver.solve(fun2, x0);
-#endif  // WITH_LAPACK
+#endif  // UTOPIA_WITH_LAPACK
     }
 
     void blas_inplace_test() {
@@ -230,8 +230,8 @@ namespace utopia {
         utopia_test_assert(approxeq(wexp, wresult));
 
         Real val = norm2(twiceaxpy);
-        // std::cout << tree_format(norm2(twiceaxpy).get_class()) << std::endl;
-        // std::cout << val << std::endl;
+        // utopia::out() <<tree_format(norm2(twiceaxpy).get_class()) << std::endl;
+        // utopia::out() <<val << std::endl;
         val = norm_infty(twiceaxpy);
         UTOPIA_UNUSED(val);
     }
@@ -248,7 +248,7 @@ namespace utopia {
         auto expr = temp * 0.01;
 
         // query the expression structure
-        // std::cout << tree_format(expr.get_class()) << std::endl;
+        // utopia::out() <<tree_format(expr.get_class()) << std::endl;
 
         // Evaluate and verify value of the expression
         wresult = expr;
@@ -262,7 +262,7 @@ namespace utopia {
 
         SizeType n = 3;
         MatrixT mat;
-        mat.zeros({n, n});
+        mat.dense(serial_layout(n, n));
 
         {
             Write<MatrixT> write(mat);
@@ -321,7 +321,7 @@ namespace utopia {
 
         int n = 30;
         BlasMatrixd A;
-        A.zeros({n, n});
+        A.dense(serial_layout(n, n));
         double h = 1. / n;
 
         assemble_laplacian_1D(A, false);
@@ -334,7 +334,7 @@ namespace utopia {
         set_zero_rows(A, index, 1.0);
 
         BlasVectord rhs;
-        rhs.values(n, 0.1);
+        rhs.values(serial_layout(n), 0.1);
 
         rhs *= h;
 
@@ -342,12 +342,12 @@ namespace utopia {
         rhs.set(n - 1, 0.0);
 
         BlasVectord x;
-        x.zeros(n);
+        x.zeros(serial_layout(n));
 
         ProjectedGaussSeidel<BlasMatrixd, BlasVectord> pgs;
 
         auto ub = std::make_shared<BlasVectord>();
-        ub->values(n, 25);
+        ub->values(serial_layout(n), 25);
 
         BoxConstraints<BlasVectord> box(nullptr, ub);
 
@@ -367,7 +367,7 @@ namespace utopia {
     void test_transpose_add() {
         int n = 3, m = 4;
         BlasMatrixd A;
-        A.zeros({n, n});
+        A.dense(serial_layout(n, n));
 
         {
             Write<BlasMatrixd> w_A(A);
@@ -377,7 +377,7 @@ namespace utopia {
         }
 
         BlasMatrixd result;
-        result.zeros({n, n});
+        result.dense(serial_layout(n, n));
 
         UTOPIA_NO_ALLOC_BEGIN("transpose_add_1");
         result = A + transpose(A);
@@ -385,9 +385,9 @@ namespace utopia {
         UTOPIA_NO_ALLOC_END();
 
         BlasMatrixd B;
-        B.zeros({n, m});
+        B.dense(serial_layout(n, m), 0.0);
         BlasMatrixd C;
-        C.zeros({m, n});
+        C.dense(serial_layout(m, n), 0.0);
 
         {
             Write<BlasMatrixd> w_B(B), w_C(C);
@@ -424,4 +424,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(blas);
 }  // namespace utopia
 
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS

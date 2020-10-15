@@ -52,11 +52,11 @@ namespace utopia {
 
         rhs = local_zeros(V.dof_map().n_local_dofs());
 
-        x = local_zeros(local_size(rhs));
+        x.zeros(layout(rhs));
 
         utopia::assemble(inner(u, v) * dX, Mass);
 
-        forcing_term = local_zeros(local_size(rhs));
+        forcing_term.zeros(layout(rhs));
 
         forcing_function.eval(x, forcing_term);
 

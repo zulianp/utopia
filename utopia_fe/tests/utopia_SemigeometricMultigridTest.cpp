@@ -81,7 +81,7 @@ namespace utopia {
         mg.init(sys, 4);
         // mg.max_it(1);
 
-        UVector sol = local_zeros(local_size(rhs));
+        UVector sol(layout(rhs), 0.0);
 
         Chrono c;
         c.start();
@@ -100,10 +100,9 @@ namespace utopia {
         // cg.solve(stiffness_mat, rhs, sol);
 
         const double err = norm2(stiffness_mat * sol - rhs);
-        convert(sol, *sys.solution);
-        sys.solution->close();
-        Nemesis_IO(*lm_mesh).write_equation_systems("elast_mg.e", *equation_systems);
         utopia_test_assert(err < 1e-6);
+
+        write("elast_mg.e", V[0], sol);
     }
 
     void run_semigeometric_multigrid_poisson(libMesh::Parallel::Communicator &comm) {
@@ -155,7 +154,7 @@ namespace utopia {
         mg.init(V, 4);
         mg.update(make_ref(lapl_mat));
 
-        UVector sol = local_zeros(local_size(rhs));
+        UVector sol(layout(rhs), 0.0);
 
         Chrono c;
         c.start();

@@ -1,6 +1,6 @@
 #include "utopia_Base.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
@@ -93,8 +93,8 @@ namespace utopia {
             fun.hessian(x, H);
             fun.gradient(x, g);
 
-            backend_convert(H, H_working);
-            backend_convert(g, g_working);
+            convert(H, H_working);
+            convert(g, g_working);
             x_working = 0.0 * g_working;
 
             // monitor(0, H, "Hessian.m", "H");
@@ -237,8 +237,8 @@ namespace utopia {
             }
 
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
-            // #ifdef WITH_PETSC
-            //     #ifdef WITH_SLEPC
+            // #ifdef UTOPIA_WITH_PETSC
+            //     #ifdef UTOPIA_WITH_SLEPC
             //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
             //         // TODO:: add checks if has arpack
             //         eigen_solver->solver_type("arpack");
@@ -248,8 +248,8 @@ namespace utopia {
 
             //         auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver,
             //         eigen_solver);
-            //     #endif //WITH_SLEPC
-            // #endif //WITH_PETSC
+            //     #endif //UTOPIA_WITH_SLEPC
+            // #endif //UTOPIA_WITH_PETSC
 
             TrustRegion<Matrix, Vector> tr_solver(subproblem);
             tr_solver.read(input_params_);
@@ -527,13 +527,13 @@ namespace utopia {
 
             QuadraticExtendedFunction<PetscMatrix, PetscVector> fun_QP(H, g, x_eq, x_bc_marker, empty_rhs);
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
             Matrix H_tril;
             Vector g_tril;
             Vector x_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert(H, H_tril);
-            backend_convert(g, g_tril);
-            backend_convert(x, x_tril);
+            convert(H, H_tril);
+            convert(g, g_tril);
+            convert(x, x_tril);
 
             auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
 
@@ -541,8 +541,8 @@ namespace utopia {
             Vector ub_tril(layout(x_tril), 9e9);
 
             empty_rhs_tril = 0.0 * x_tril;
-            backend_convert(x_eq, x_eq_tril);
-            backend_convert(x_bc_marker, x_bc_marker_tril);
+            convert(x_eq, x_eq_tril);
+            convert(x_bc_marker, x_bc_marker_tril);
 
             QuadraticExtendedFunction<Matrix, Vector> fun_QP_tril(
                 H_tril, g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril);
@@ -553,7 +553,7 @@ namespace utopia {
             tr_solver.verbose(verbose_);
             tr_solver.solve(fun_QP_tril, x_tril);
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
         }
 
         template <class Matrix1, class Vector1, class Matrix2, class Vector2>
@@ -568,10 +568,10 @@ namespace utopia {
 
             Matrix2 H_tril;
             Vector2 g_tril, x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert(H, H_tril);
-            backend_convert(g, g_tril);
-            backend_convert(x_eq, x_eq_tril);
-            backend_convert(x_bc_marker, x_bc_marker_tril);
+            convert(H, H_tril);
+            convert(g, g_tril);
+            convert(x_eq, x_eq_tril);
+            convert(x_bc_marker, x_bc_marker_tril);
             empty_rhs_tril = 0.0 * x_eq_tril;
 
             return std::make_shared<QuadraticExtendedFunction<Matrix2, Vector2>>(
@@ -590,9 +590,9 @@ namespace utopia {
 
             Matrix2 H_tril;
             Vector2 x_eq_tril, x_bc_marker_tril, empty_rhs_tril;
-            backend_convert(H, H_tril);
-            backend_convert(x_eq, x_eq_tril);
-            backend_convert(x_bc_marker, x_bc_marker_tril);
+            convert(H, H_tril);
+            convert(x_eq, x_eq_tril);
+            convert(x_bc_marker, x_bc_marker_tril);
             empty_rhs_tril = 0.0 * x_eq_tril;
 
             int n = pow(fun.dim(), 1. / 3.);
@@ -618,7 +618,7 @@ namespace utopia {
                 fun_Poisson3D->describe();
             }
 
-            backend_convert(x, x_fine);
+            convert(x, x_fine);
 
             auto transfers = multilevel_problem.get_transfer();
 
@@ -626,7 +626,7 @@ namespace utopia {
                 auto *mat_transfer = dynamic_cast<MatrixTransfer<PetscMatrix, PetscVector> *>(transfers[i].get());
 
                 Matrix I_tril;
-                backend_convert(mat_transfer->I(), I_tril);
+                convert(mat_transfer->I(), I_tril);
                 transfers_tril.push_back(
                     std::make_shared<MatrixTransfer<Matrix, Vector>>(std::make_shared<Matrix>(I_tril)));
             }
@@ -858,7 +858,7 @@ namespace utopia {
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, false, true).run_petsc();
         HckTests<PetscMatrix, PetscVector>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         HckTests<TpetraMatrixd, TpetraVectord>(coarse_dofs, n_levels, 1.0, verbose, true).run_trilinos();
 #endif
     }
@@ -866,4 +866,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(hck);
 }  // namespace utopia
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC

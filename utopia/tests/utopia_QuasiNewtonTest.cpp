@@ -14,7 +14,7 @@ namespace utopia {
     public:
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
 
@@ -42,7 +42,7 @@ namespace utopia {
         void run_multilevel() {
             // UTOPIA_RUN_TEST(Quasi_RMTR_test);
             // UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test);
-            std::cout << "Fix quasi-Newton tests... \n";
+            utopia::out() << "Fix quasi-Newton tests... \n";
         }
 
         void quasi_newton_test() {
@@ -529,7 +529,7 @@ namespace utopia {
     };
 
     static void quasi_newton() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
         // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
 
@@ -539,15 +539,15 @@ namespace utopia {
         // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
 #endif
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
         // QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-        // #ifdef WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
         // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
         // 		QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
-        // #endif //WITH_TRILINOS
+        // #endif //UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(quasi_newton);

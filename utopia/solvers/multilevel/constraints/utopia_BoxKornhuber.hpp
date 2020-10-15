@@ -104,7 +104,7 @@ namespace utopia {
             }  // dynamic cast test
             else {
                 utopia_error("TRBoundsKornhuber:: box - box - transfer operators not supported. \n ");
-                std::cout << "--------- error ---------- \n";
+                utopia::out() << "--------- error ---------- \n";
             }
         }
 

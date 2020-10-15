@@ -51,14 +51,14 @@
                 "min-y": 0.0,
                 "max-x": 1.0,
                 "max-y": 1.0,
-                "order" : 2
+                "order" : 1
             },
             "space": {
                 "system-name" : "slave",
                 "variables" : [
                     {
                         "name" : "u_s",
-                        "order" : 2
+                        "order" : 1
                     }
                 ]
             }

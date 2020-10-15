@@ -24,21 +24,21 @@
 #include <memory>
 
 namespace utopia {
-    // template<class NodeType>
-    class TpetraMatrix
-        : public DistributedSparseMatrix<TpetraScalar, TpetraSizeType>,
-          public SparseConstructible<TpetraScalar, TpetraSizeType>,
-          public Normed<TpetraScalar>,
-          public Transformable<TpetraScalar>,
-          // Static polymorphic types
-          // public DynamicTypeDistributedMatrix<TpetraScalar, TpetraSizeType, TpetraMatrix, TpetraVector>,
-          public BLAS1Tensor<TpetraMatrix>,
-          public BLAS2Matrix<TpetraMatrix, TpetraVector>,
-          public BLAS3Matrix<TpetraMatrix>,
-          public Comparable<TpetraMatrix>,
-          public Operator<TpetraVector>,
-          public Tensor<TpetraMatrix, 2>,
-          public Selectable<TpetraMatrix, 2> {
+
+    class TpetraMatrix :
+        // Dynamic polymorphic types
+        public DistributedSparseMatrix<TpetraScalar, TpetraSizeType>,
+        public Normed<TpetraScalar>,
+        public Transformable<TpetraScalar>,
+        // Static polymorphic types
+        public SparseConstructible<TpetraMatrix>,
+        public BLAS1Tensor<TpetraMatrix>,
+        public BLAS2Matrix<TpetraMatrix, TpetraVector>,
+        public BLAS3Matrix<TpetraMatrix>,
+        public Comparable<TpetraMatrix>,
+        public Operator<TpetraVector>,
+        public Tensor<TpetraMatrix, 2>,
+        public Selectable<TpetraMatrix, 2> {
     public:
         /////////////////////////////////////////////////////////////
         // typedef definitions
@@ -225,7 +225,9 @@ namespace utopia {
         // OVERRIDES for SparseConstructible
         /////////////////////////////////////////////////////////////
 
-        inline void sparse(const MatrixLayout &layout, const SizeType nnz_d_block, const SizeType nnz_o_block) {
+        inline void sparse(const MatrixLayout &layout,
+                           const SizeType &nnz_d_block,
+                           const SizeType &nnz_o_block) override {
             comm_ = layout.comm();
             crs_init(comm_.get(),
                      layout.local_size(0),
@@ -235,20 +237,20 @@ namespace utopia {
                      std::max(nnz_d_block, nnz_o_block));
         }
 
-        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
+        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override {
             comm_ = layout.comm();
             crs_identity(comm_.get(), layout.local_size(0), layout.local_size(1), layout.size(0), layout.size(1), diag);
         }
 
-        void identity(const Size &s, const Scalar &diag = 1.0) override;
+        // void identity(const Size &s, const Scalar &diag = 1.0) override;
 
-        /// Specialize for sparse matrices
-        void sparse(const Size &s, const SizeType & /*nnz*/) override;
+        // /// Specialize for sparse matrices
+        // void sparse(const Size &s, const SizeType & /*nnz*/) override;
 
-        /// Specialize for sparse matrices
-        void local_sparse(const Size &s, const SizeType & /*nnz*/) override;
+        // /// Specialize for sparse matrices
+        // void local_sparse(const Size &s, const SizeType & /*nnz*/) override;
 
-        void local_identity(const Size &s, const Scalar &diag = 1.0) override;
+        // void local_identity(const Size &s, const Scalar &diag = 1.0) override;
 
         /////////////////////////////////////////////////////////////
         // OVERRIDES for Normed
@@ -305,29 +307,6 @@ namespace utopia {
         void set_owner(const bool owner) { owner_ = owner; }
 
         // API functions
-        void crs_init(const RCPCommType &comm,
-                      std::size_t rows_local,
-                      std::size_t cols_local,
-                      Tpetra::global_size_t rows_global,
-                      Tpetra::global_size_t cols_global,
-                      std::size_t nnz_x_row);
-
-        void crs_init(const RCPCommType &comm,
-                      std::size_t rows_local,
-                      std::size_t cols_local,
-                      Tpetra::global_size_t rows_global,
-                      Tpetra::global_size_t cols_global,
-                      const Teuchos::ArrayRCP<size_t> &rowPtr,
-                      const Teuchos::ArrayRCP<LocalSizeType> &cols,
-                      const Teuchos::ArrayRCP<Scalar> &values);
-
-        void crs_identity(const RCPCommType &comm,
-                          std::size_t rows_local,
-                          std::size_t cols_local,
-                          Tpetra::global_size_t rows_global,
-                          Tpetra::global_size_t cols_global,
-                          const Scalar factor);
-
         void crs(const MatrixLayout &l,
                  const Teuchos::ArrayRCP<size_t> &rowPtr,
                  const Teuchos::ArrayRCP<LocalSizeType> &cols,
@@ -556,9 +535,32 @@ namespace utopia {
 
         std::shared_ptr<InitStructs> init_;
 
-    NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         template <class Op>
         void aux_transform(const Op &op);
+
+        void crs_init(const RCPCommType &comm,
+                      std::size_t rows_local,
+                      std::size_t cols_local,
+                      Tpetra::global_size_t rows_global,
+                      Tpetra::global_size_t cols_global,
+                      std::size_t nnz_x_row);
+
+        void crs_init(const RCPCommType &comm,
+                      std::size_t rows_local,
+                      std::size_t cols_local,
+                      Tpetra::global_size_t rows_global,
+                      Tpetra::global_size_t cols_global,
+                      const Teuchos::ArrayRCP<size_t> &rowPtr,
+                      const Teuchos::ArrayRCP<LocalSizeType> &cols,
+                      const Teuchos::ArrayRCP<Scalar> &values);
+
+        void crs_identity(const RCPCommType &comm,
+                          std::size_t rows_local,
+                          std::size_t cols_local,
+                          Tpetra::global_size_t rows_global,
+                          Tpetra::global_size_t cols_global,
+                          const Scalar factor);
 
     };  // TpetraMatrix
 }  // namespace utopia

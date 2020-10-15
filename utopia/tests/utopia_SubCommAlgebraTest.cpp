@@ -7,12 +7,12 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Redundant.hpp"
 #include "utopia_petsc_RedundantQPSolver.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 namespace utopia {
 
@@ -67,7 +67,8 @@ namespace utopia {
             // each_write(v1, [](const SizeType &i) -> Scalar { return Scalar(i); });
 
             auto v1_view = view_device(v1);
-            parallel_for(range_device(v1), UTOPIA_LAMBDA(const SizeType &i) { v1_view.set(i, Scalar(i)); });
+            parallel_for(
+                range_device(v1), UTOPIA_LAMBDA(const SizeType &i) { v1_view.set(i, Scalar(i)); });
 
             // creating subcommunicators, indices, and scatters
             Redundant<Matrix, Vector> red;
@@ -250,13 +251,13 @@ namespace utopia {
     };
 
     void sub_comm_algebra() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         run_parallel_test<SubCommAlgebraTest<PetscMatrix, PetscVector>>();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-        // #ifdef WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
         //         run_parallel_test< SubCommAlgebraTest<TpetraMatrix, TpetraVector> >();
-        // #endif //WITH_TRILINOS
+        // #endif //UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(sub_comm_algebra);

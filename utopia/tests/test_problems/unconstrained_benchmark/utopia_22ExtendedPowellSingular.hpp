@@ -14,7 +14,9 @@ namespace utopia {
         using SizeType = typename Traits::SizeType;
         using Comm = typename Traits::Communicator;
 
-        ExtendedPowell22(const SizeType &n = 4) : n_(n) {
+        ExtendedPowell22(const SizeType &n = 4) : n_(n) { init(); }
+
+        void init() {
             // n needs to be multiply of 4
             if (n_ % 4 != 0) {
                 utopia_error("ExtendedPowell22:: problem size must be multiply of 4 \n");
@@ -27,20 +29,21 @@ namespace utopia {
             {
                 auto x_view = view_device(x_init_);
 
-                parallel_for(range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) {
-                    const SizeType m = (i + 1) % 4;
-                    Scalar v = 1.0;
+                parallel_for(
+                    range_device(x_init_), UTOPIA_LAMBDA(const SizeType &i) {
+                        const SizeType m = (i + 1) % 4;
+                        Scalar v = 1.0;
 
-                    if (m == 1) {
-                        v = 3.0;
-                    } else if (m == 2) {
-                        v = -1.0;
-                    } else if (m == 3) {
-                        v = 0.0;
-                    }
+                        if (m == 1) {
+                            v = 3.0;
+                        } else if (m == 2) {
+                            v = -1.0;
+                        } else if (m == 3) {
+                            v = 0.0;
+                        }
 
-                    x_view.set(i, v);
-                });
+                        x_view.set(i, v);
+                    });
             }
         }
 
@@ -308,7 +311,7 @@ namespace utopia {
 
         Scalar min_function_value() const override { return 2.93660e-4; }
 
-    private:
+        UTOPIA_NVCC_PRIVATE
         SizeType n_;
         Vector x_init_;
         Vector x_exact_;

@@ -1,18 +1,16 @@
 #First with try with clang compile or else
 
-
 find_library(MPI_CLANG_C_LIBRARY
     NAMES mpi
           mpi-mpich-clang
     PATHS ${MPI_DIR}/lib
           $ENV{MPI_DIR}/lib
-         /opt/local/lib/openmpi-mp/
-                  /opt/local/lib/mpich-mp/
-                  /opt/local/lib/mpich-clang/
-                  /opt/local/lib
-            DOC "The MPI_CLANG_C_LIBRARY library to link against"
+          /opt/local/lib/openmpi-mp/
+          /opt/local/lib/mpich-mp/
+          /opt/local/lib/mpich-clang/
+          /opt/local/lib
+          DOC "The MPI_CLANG_C_LIBRARY library to link against"
 )
-
 
 find_library(MPI_CLANG_CXX_LIBRARY
     NAMES mpi_cxx

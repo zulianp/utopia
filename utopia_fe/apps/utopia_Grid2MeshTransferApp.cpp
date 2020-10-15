@@ -258,11 +258,11 @@ namespace utopia {
         std::shared_ptr<Local2Global> local2global_;
         std::shared_ptr<TransferOperator> transfer_op_;
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
         std::shared_ptr<SymbolicFunction> fun;
 #else
         std::shared_ptr<ConstantCoefficient<double, 0>> fun;
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
         bool fun_is_constant;
         bool print_info = false;
@@ -321,7 +321,7 @@ namespace utopia {
 
             is.get("enumerate-nodes", enumerate_nodes);
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             std::string expr = "x";
             is.get("function", expr);
 
@@ -341,7 +341,7 @@ namespace utopia {
             fun_is_constant = true;
 
             fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
         });
 
         c.stop();
@@ -495,7 +495,7 @@ namespace utopia {
                 if (enumerate_nodes) {
                     fun_master.set(i, comm().rank());
                 } else {
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
                     if (input_master.is_3D) {
                         auto p = input_master.grid3.point(i);
                         fun_master.set(i, fun->eval(p.x, p.y, p.z));
@@ -505,7 +505,7 @@ namespace utopia {
                     }
 #else
                     fun_master.set(i, fun->expr());
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
                 }
             }
         }

@@ -312,7 +312,7 @@ namespace utopia {
 
                 if (verbose_) {
                     Scalar diff_norm = norm2(lagr - lagr_old);
-                    std::cout << it << " " << r_norm << " " << diff_norm << std::endl;
+                    utopia::out() << it << " " << r_norm << " " << diff_norm << std::endl;
                 }
 
                 if (r_norm <= atol_) {
@@ -402,7 +402,7 @@ namespace utopia {
                 }
 
                 if (verbose_) {
-                    std::cout << it << " " << r_norm << std::endl;
+                    utopia::out() << it << " " << r_norm << std::endl;
                 }
 
                 lagr_old = lagr;

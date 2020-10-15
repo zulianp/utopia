@@ -57,12 +57,12 @@ namespace utopia {
         }
     }
 
-    void disp(const std::string &str) {
-        if (mpi_world_rank() == 0) std::cout << str << std::endl;
+    void disp(const std::string &str, std::ostream &os) {
+        if (mpi_world_rank() == 0) os << str << std::endl;
     }
 
-    void disp(const char *str) {
-        if (mpi_world_rank() == 0) std::cout << str << std::endl;
+    void disp(const char *str, std::ostream &os) {
+        if (mpi_world_rank() == 0) os << str << std::endl;
     }
 
     /**

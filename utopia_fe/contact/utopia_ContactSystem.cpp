@@ -80,10 +80,12 @@ namespace utopia {
         const auto &mesh = equation_systems_->get_mesh();
         const int dim = mesh.mesh_dimension();
 
-        UVector normal_stress = local_zeros(local_size(state.displacement));
-        UVector sliding_distance = local_zeros(local_size(state.displacement));
+        UVector normal_stress;
+        normal_stress.zeros(layout(state.displacement));
+        UVector sliding_distance;
+        sliding_distance.zeros(layout(state.displacement));
 
-        // UVector stress = local_zeros(local_size(state.displacement));
+        // UVector stress.zeros(layout(state.displacement));
 
         if (contact.initialized()) {
             // normal_stress = contact.orthogonal_trafo * state.stress;
@@ -94,7 +96,7 @@ namespace utopia {
 
             UVector tangential_velocity;
             contact.apply_orthogonal_trafo(state.velocity, tangential_velocity);
-            sliding_distance = local_zeros(local_size(state.displacement));
+            sliding_distance.zeros(layout(state.displacement));
 
             {
                 Read<UVector> r_v(tangential_velocity);

@@ -3,24 +3,9 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
-// #include <Teuchos_DefaultMpiComm.hpp>
-// #include <Tpetra_CrsMatrix.hpp>
-// #include <Tpetra_Map.hpp>
-// #include <Tpetra_MultiVector.hpp>
-// #include <Tpetra_Vector.hpp>
-// #include <Tpetra_Version.hpp>
-// #include <Teuchos_GlobalMPISession.hpp>
-// #include <Teuchos_oblackholestream.hpp>
-// #include <Teuchos_Array.hpp>
-// #include <Teuchos_ScalarTraits.hpp>
-// #include <Teuchos_RCP.hpp>
-// #include <Kokkos_Core.hpp>
-
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_Kokkos_ParallelFor.hpp"
 #include "utopia_trilinos_DeviceView.hpp"
-
-//#include "utopia_trilinos_Each.hpp"
 #include "utopia_trilinos_Eval_Factory.hpp"
 #include "utopia_trilinos_ForwardDeclarations.hpp"
 #include "utopia_trilinos_RowView.hpp"
@@ -39,12 +24,11 @@
 
 #include "utopia_Tpetra_Matrix_impl.hpp"
 #include "utopia_Tpetra_Vector_impl.hpp"
-
-//#include "utopia_kokkos_ParallelEach.hpp"
-// #include "utopia_trilinos_Each_impl.hpp"
-
+#include "utopia_trilinos_DiffController.hpp"
+#include "utopia_trilinos_LinearSolverFactory.hpp"
+#include "utopia_trilinos_MaxRowNNZ.hpp"
 // FIXME re-introduce later
 // #include "utopia_trilinos_Eval_Distance.hpp"
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 #endif  // UTOPIA_TRILINOS_HPP

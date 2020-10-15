@@ -51,7 +51,7 @@ namespace utopia {
             const Matrix &A = *this->get_operator();
 
             if (this->verbose()) {
-                std::cout << "before smooth: " << double(norm2(rhs - A * x)) << std::endl;
+                utopia::out() << "before smooth: " << double(norm2(rhs - A * x)) << std::endl;
             }
 
             MatSOR(raw_type(A),
@@ -65,7 +65,7 @@ namespace utopia {
                    raw_type(x));
 
             if (this->verbose()) {
-                std::cout << "after smooth: " << double(norm2(rhs - A * x)) << std::endl;
+                utopia::out() << "after smooth: " << double(norm2(rhs - A * x)) << std::endl;
             }
 
             return true;

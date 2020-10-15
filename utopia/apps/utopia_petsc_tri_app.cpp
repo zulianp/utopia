@@ -38,7 +38,7 @@
 namespace utopia {
 
     void petsc_tri(Input &in) {
-        std::cout << "petsc_tri" << std::endl;
+        utopia::out() << "petsc_tri" << std::endl;
         static const int Dim = 2;
 
         using Mesh = utopia::PetscStructuredGrid<Dim>;
@@ -67,7 +67,8 @@ namespace utopia {
 
         space.create_vector(v);
 
-        space.sample(v, UTOPIA_LAMBDA(const Point &p)->Scalar { return p[0] * p[1]; });
+        space.sample(
+            v, UTOPIA_LAMBDA(const Point &p)->Scalar { return p[0] * p[1]; });
 
         rename("f", v);
         space.write("trifun.vtk", v);

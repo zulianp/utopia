@@ -11,8 +11,8 @@ public:
         using namespace utopia;
 
         assert(point.size() == 2);
-        assert(!utopia::is_parallel<Matrix>::value ||
-               point.comm().size() == 1 && "does not work for parallel matrices");
+        assert((!utopia::is_parallel<Matrix>::value || point.comm().size() == 1) &&
+               "does not work for parallel matrices");
 
         const Read<Vector> read(point);
 
@@ -75,12 +75,12 @@ public:
 int main(int argc, char **argv) {
     using namespace utopia;
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND
 #else
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
     using MatrixT = BlasMatrixd;
     using VectorT = BlasVectord;
 #define EXAMPLE_HAS_DENSE_ALGEBRA_BACKEND

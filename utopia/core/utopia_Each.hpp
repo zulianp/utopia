@@ -268,7 +268,8 @@ namespace utopia {
      * 			   Example usage: Printing vector v.
      *
          \code{.cpp}
-         each_read(v, [](const SizeType i, const double entry) { std::cout << "v(" << i << ") = " << entry << std::endl;
+         each_read(v, [](const SizeType i, const double entry) { utopia::out() <<"v(" << i << ") = " << entry <<
+     std::endl;
      }); \endcode
      *
      *

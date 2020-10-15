@@ -102,7 +102,7 @@ namespace utopia {
         try {
             mat_->apply(vec.implementation(), result.implementation());
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
 
@@ -122,7 +122,7 @@ namespace utopia {
         try {
             mat_->apply(vec.implementation(), result.implementation(), Teuchos::TRANS);
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -189,7 +189,7 @@ namespace utopia {
                                            params);
 
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -204,7 +204,7 @@ namespace utopia {
             mat.owner_ = true;
             assert(is_valid(true));
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -215,7 +215,7 @@ namespace utopia {
 
             owner_ = true;
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -232,7 +232,7 @@ namespace utopia {
             }
 
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
         }
     }
@@ -329,7 +329,7 @@ namespace utopia {
 
             finalize();
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             assert(false);
             throw ex;
         }
@@ -380,7 +380,7 @@ namespace utopia {
     }
 
     void TpetraMatrix::diag(const TpetraMatrix &mat) {
-        TpetraVector d;
+        TpetraVector d(mat.comm());
         mat.build_diag(d);
         diag(d);
     }
@@ -420,7 +420,7 @@ namespace utopia {
             mat_ = Tpetra::MatrixMarket::Reader<CrsMatrixType>::readSparse(is, comm);
         } catch (std::exception &ex) {
             is.close();
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             return false;
         }
 
@@ -436,7 +436,7 @@ namespace utopia {
         try {
             Tpetra::MatrixMarket::Writer<CrsMatrixType>::writeSparseFile(path, mat_, "mat", "", false);
         } catch (const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
+            utopia::out() << ex.what() << std::endl;
             return false;
         }
 
@@ -471,41 +471,18 @@ namespace utopia {
     TpetraMatrix::Scalar TpetraMatrix::norm2() const { return implementation().getFrobeniusNorm(); }
 
     TpetraMatrix::Scalar TpetraMatrix::sum() const {
-        TpetraVector vec, row_sum;
-        vec.values(this->communicator(), this->local_size().get(1), this->size().get(1), 1.);
+        TpetraVector vec(this->comm()), row_sum(this->comm());
+        vec.values(layout(this->communicator(), this->local_size().get(1), this->size().get(1)), 1.);
         this->multiply(vec, row_sum);
         return row_sum.sum();
     }
 
     TpetraMatrix::Scalar TpetraMatrix::norm_infty() const {
-        // FIXME (optimize for device)
-        // Scalar ret = -std::numeric_limits<Scalar>::max();
-
         Scalar ret = 0;
-        // each_read(*this,
-        //           [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::max(std::abs(val), ret);
-        //           });
-
-        // auto &comm = *communicator();
-        // Scalar ret_global = 0.;
-        // Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
-        // return ret_global;
         return parallel_reduce_values(AbsMax(), Max(), ret);
     }
 
-    TpetraMatrix::Scalar TpetraMatrix::norm1() const {
-        // FIXME (optimize for device)
-        // Scalar ret = 0.0;
-        // each_read(*this, [&ret](const SizeType &, const SizeType &, const Scalar val) { ret = std::abs(val) + ret;
-        // });
-
-        // auto &comm = *communicator();
-        // Scalar ret_global = 0.;
-        // Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
-        // return ret_global;
-
-        return parallel_reduce_values(AbsPlus(), Plus(), 0);
-    }
+    TpetraMatrix::Scalar TpetraMatrix::norm1() const { return parallel_reduce_values(AbsPlus(), Plus(), 0); }
 
     TpetraMatrix::SizeType TpetraMatrix::rows() const {
         if (is_null()) {
@@ -600,32 +577,6 @@ namespace utopia {
         assert(false && "IMPLEMENT ME");
     }
 
-    void TpetraMatrix::identity(const Size &s, const Scalar &diag) {
-        crs_identity(comm().get(), INVALID_INDEX, INVALID_INDEX, s.get(0), s.get(1), diag);
-    }
-
-    void TpetraMatrix::sparse(const Size &s, const SizeType &nnz) {
-        crs_init(comm().get(), INVALID_INDEX, INVALID_INDEX, s.get(0), s.get(1), nnz);
-    }
-
-    void TpetraMatrix::local_sparse(const Size &s, const SizeType &nnz) {
-        crs_init(comm().get(),
-                 s.get(0),
-                 s.get(1),
-                 Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-                 Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-                 nnz);
-    }
-
-    void TpetraMatrix::local_identity(const Size &s, const Scalar &diag) {
-        crs_identity(comm().get(),
-                     s.get(0),
-                     s.get(1),
-                     Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-                     Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-                     diag);
-    }
-
     void TpetraMatrix::transform(const Sqrt &op) { aux_transform(op); }
 
     void TpetraMatrix::transform(const Pow2 &op) { aux_transform(op); }
@@ -693,7 +644,7 @@ namespace utopia {
         }
 
         // BAD we have a temporary here
-        TpetraVector temp;
+        TpetraVector temp(this->comm());
 
         if (transpose) {
             transpose_multiply(x, temp);

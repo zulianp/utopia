@@ -575,7 +575,7 @@ namespace utopia {
             //      //TODO
             // }
 
-            Vector x = local_zeros(local_size(rhs));
+            Vector x(layout(rhs), 0.0);
 
             // solver_ptr->describe(std::cout);
             if (!solver_ptr->solve(A, rhs, x)) {

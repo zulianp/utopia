@@ -101,7 +101,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
 
@@ -115,18 +115,18 @@ namespace utopia {
 
     static void selection(){
     // FIXME
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
     //     SelectionTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     //   SelectionTest<PetscMatrix, PetscVector>().run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-        // #ifdef WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
         // FIME missing implementation in TpetraMatrix
         //         SelectionTest<TpetraMatrixd, TpetraVectord>().run();
-        // #endif //WITH_TRILINOS
+        // #endif //UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(selection);

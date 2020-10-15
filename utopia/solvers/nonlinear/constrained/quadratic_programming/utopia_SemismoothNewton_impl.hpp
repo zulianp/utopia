@@ -7,7 +7,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
-    class SemismoothNewton<Matrix, Vector, Backend>::Buffers {
+    class SemismoothNewton<Matrix, Vector, Backend>::Details {
     public:
         void init(const Layout &layout) {
             correction.zeros(layout);
@@ -27,11 +27,12 @@ namespace utopia {
         Vector active;
 
         Matrix mat;
+        std::shared_ptr<LinearSolver> fallback_solver;
     };
 
     template <class Matrix, class Vector, int Backend>
     SemismoothNewton<Matrix, Vector, Backend>::SemismoothNewton(std::shared_ptr<LinearSolver> linear_solver)
-        : linear_solver_(std::move(linear_solver)), buffers_(utopia::make_unique<Buffers>()) {}
+        : linear_solver_(std::move(linear_solver)), details_(utopia::make_unique<Details>()) {}
 
     template <class Matrix, class Vector, int Backend>
     SemismoothNewton<Matrix, Vector, Backend>::~SemismoothNewton() = default;
@@ -59,6 +60,12 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector, int Backend>
+    void SemismoothNewton<Matrix, Vector, Backend>::fallback_solver(
+        const std::shared_ptr<LinearSolver> &fallback_solver) {
+        details_->fallback_solver = fallback_solver;
+    }
+
+    template <class Matrix, class Vector, int Backend>
     bool SemismoothNewton<Matrix, Vector, Backend>::smooth(const Vector &, Vector &) {
         assert(false && "IMPLEMENT ME");
         return false;
@@ -82,17 +89,17 @@ namespace utopia {
         auto &&lb = this->get_lower_bound();
         auto &&ub = this->get_upper_bound();
 
-        auto &correction = buffers_->correction;
-        auto &residual = buffers_->residual;
+        auto &correction = details_->correction;
+        auto &residual = details_->residual;
 
-        auto &d_lb = buffers_->d_lb;
-        auto &d_ub = buffers_->d_ub;
+        auto &d_lb = details_->d_lb;
+        auto &d_ub = details_->d_ub;
 
-        auto &lambda = buffers_->lambda;
+        auto &lambda = details_->lambda;
 
-        auto &mat = buffers_->mat;
+        auto &mat = details_->mat;
 
-        auto &active = buffers_->active;
+        auto &active = details_->active;
 
         lambda.set(0.0);
 
@@ -125,27 +132,27 @@ namespace utopia {
                 auto residual_view = local_view_device(residual);
                 auto x_view = local_view_device(x);
 
-                parallel_reduce(r,
-                                UTOPIA_LAMBDA(const SizeType &i)->SizeType {
-                                    const bool prev_active_i = active_view.get(i);
+                parallel_reduce(
+                    r,
+                    UTOPIA_LAMBDA(const SizeType &i)->SizeType {
+                        const bool prev_active_i = active_view.get(i);
 
-                                    const Scalar d_lb_i = d_lb_view.get(i);
-                                    const Scalar d_ub_i = d_ub_view.get(i);
-                                    const Scalar x_i = x_view.get(i);
+                        const Scalar d_lb_i = d_lb_view.get(i);
+                        const Scalar d_ub_i = d_ub_view.get(i);
+                        const Scalar x_i = x_view.get(i);
 
-                                    const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
-                                    const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
-                                    const bool active_i = active_lb || active_ub;
+                        const bool active_lb = d_lb_i <= 0.0;  // FIXME use tol
+                        const bool active_ub = d_ub_i >= 0.0;  // FIXME use tol
+                        const bool active_i = active_lb || active_ub;
 
-                                    const Scalar val =
-                                        active_lb ? (lb_view.get(i) - x_i)
-                                                  : (active_ub ? (ub_view.get(i) - x_i) : residual_view.get(i));
+                        const Scalar val = active_lb ? (lb_view.get(i) - x_i)
+                                                     : (active_ub ? (ub_view.get(i) - x_i) : residual_view.get(i));
 
-                                    residual_view.set(i, val);
-                                    active_view.set(i, active_i);
-                                    return prev_active_i != active_i;
-                                },
-                                changed);
+                        residual_view.set(i, val);
+                        active_view.set(i, active_i);
+                        return prev_active_i != active_i;
+                    },
+                    changed);
             }
 
             changed = b.comm().sum(changed);
@@ -154,7 +161,28 @@ namespace utopia {
             mat.same_nnz_pattern_copy(A);
             set_zero_rows(mat, active, 1.0);
 
-            linear_solver_->solve(mat, residual, correction);
+            correction.set(0.0);
+            if (!linear_solver_->solve(mat, residual, correction)) {
+                utopia::err() << "SemismoothNewton: Unable to solve linear system for subgradient" << std::endl;
+
+                if (this->details_->fallback_solver) {
+                    correction.set(0.0);
+                    if (!this->details_->fallback_solver->solve(mat, residual, correction)) {
+                        utopia::err() << "SemismoothNewton: fallback could not solve" << std::endl;
+                        assert(false);
+                        return false;
+                    }
+                }
+
+                const Scalar norm_r = norm2(mat * correction - residual);
+                const Scalar norm_rhs = norm2(residual);
+                if (norm_rhs < norm_r) {
+                    utopia::err() << "SemismoothNewton: linear solver diverged. Norm residual: " << norm_r << " > "
+                                  << norm_rhs << std::endl;
+                    assert(false);
+                    return false;
+                }
+            }
 
             x += correction;
 
@@ -188,7 +216,7 @@ namespace utopia {
             linear_solver_->init_memory(layout);
         }
 
-        buffers_->init(layout);
+        details_->init(layout);
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -197,7 +225,7 @@ namespace utopia {
         init_memory(row_layout(*op));
 
         // copy the matrix
-        buffers_->mat = *op;
+        details_->mat = *op;
     }
 
 }  // namespace utopia

@@ -133,7 +133,7 @@ namespace utopia {
         USparseMatrix lapl_mat;
         auto lapl = inner(grad(u), grad(v)) * dX;
         assemble(lapl, lapl_mat);
-        warped_displacement = local_zeros(local_size(wear_induced_displacement));
+        warped_displacement.zeros(layout(wear_induced_displacement));
 
         // FIXME warped_displacement passed as dummy
         set_identity_at_constraint_rows(dof_map, lapl_mat);
@@ -215,11 +215,11 @@ namespace utopia {
         const auto &mesh = es.get_mesh();
         const int dim = mesh.mesh_dimension();
 
-        UVector normal_stress = local_zeros(local_size(state.displacement));
-        UVector sliding_distance = local_zeros(local_size(state.displacement));
+        UVector normal_stress(layout(state.displacement), 0.0);
+        UVector sliding_distance(layout(state.displacement), 0.0);
 
         if (empty(wear_induced_displacement)) {
-            wear_induced_displacement = local_zeros(local_size(state.displacement));
+            wear_induced_displacement.zeros(layout(state.displacement));
         }
 
         // UVector stress = local_zeros(local_size(state.displacement));
@@ -230,7 +230,7 @@ namespace utopia {
             normal_stress = contact.orthogonal_trafo() * state.stress;
 
             UVector tangential_velocity = contact.orthogonal_trafo() * state.velocity;
-            sliding_distance = local_zeros(local_size(state.velocity));
+            sliding_distance.zeros(layout(state.velocity));
 
             {
                 Read<UVector> r_v(tangential_velocity);
