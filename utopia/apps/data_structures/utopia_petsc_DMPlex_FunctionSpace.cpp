@@ -1,6 +1,7 @@
 #include "utopia_petsc_Base.hpp"
 
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 14, 0)
 
 #include "utopia_Quad4.hpp"
 #include "utopia_Tri3.hpp"
@@ -17,4 +18,5 @@ namespace utopia {
 
 }  // namespace utopia
 
+#endif  //#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 14, 0)
 #endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)

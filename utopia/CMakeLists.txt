@@ -59,8 +59,8 @@ option(UTOPIA_ENABLE_TRACE_EXPR
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
 option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-# option(UTOPIA_ENABLE_PASSO_EXTENSIONS
-# "Enable non-standard petsc solvers developed in the PASSO library" OFF)
+# option(UTOPIA_ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers
+# developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
@@ -88,6 +88,8 @@ option(
     UTOPIA_ENABLE_GPERFTOOLS
     "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)"
     OFF)
+
+option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 
