@@ -221,7 +221,7 @@ if(UTOPIA_ENABLE_CXX14_FEATURES)
 endif()
 
 if(UTOPIA_ENABLE_CYGWIN)
-    include(InstallPetscCygwin)
+    include(FindMPIExtendedCygwin)
 endif()
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
@@ -414,7 +414,10 @@ if(UTOPIA_INSTALL_TRILINOS)
     include(InstallTrilinos)
 endif()
 
-if(UTOPIA_INSTALL_PETSC)
+if(UTOPIA_INSTALL_PETSC AND UTOPIA_ENABLE_CYGWIN)
+    include(InstallPetscCygwin)
+
+else()
     include(InstallPetsc)
 endif()
 
