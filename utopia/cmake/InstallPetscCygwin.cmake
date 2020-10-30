@@ -1,7 +1,8 @@
 # InstallPetsc.cmake
 
 message("--Using PetscInstallCygwin")
-
+if(CYGWIN)
+message("Running on cygwin!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 if(NOT PETSC_FOUND)
     # git clone -b maint https://gitlab.com/petsc/petsc.git petsc
     include(ExternalProject)
@@ -25,16 +26,18 @@ if(NOT PETSC_FOUND)
         ${PETSC_CONFIG_ARGS}
         --with-mpi=1
         --download-scalapack=yes
-        --with-scalapack=1 --with-scalapack-dir=/opt/local
-        --download-hypre=yes
-        --with-cxx-dialect=C++11
-        -download-superlu_dist=yes
-        --download-superlu=yes
+        --with-scalapack=1 #--with-scalapack-dir=/opt/local
+        #--download-hypre=yes
+        #--with-cxx-dialect=C++11
+        #-download-superlu_dist=yes
+        #--download-superlu=yes
         --download-mumps=yes
-        -with-debugging=0)
+        --with-debugging=0
+        --with-shared-libraries=0)
 
     # ##########################################################################
 
+    #[[
     if(UTOPIA_ENABLE_PETSC_DM_PLEX)
         # DMPlex dependencies
         set(PETSC_CONFIG_ARGS
@@ -59,7 +62,7 @@ if(NOT PETSC_FOUND)
             message(STATUS "USING CGNS")
         endif()
     endif()
-
+]]
     # ##########################################################################
 
     ExternalProject_Add(
@@ -82,5 +85,6 @@ if(NOT PETSC_FOUND)
 
     set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-    # set(PETSC_DIR ${PETSC_INSTALL_DIR})
+    set(PETSC_DIR ${PETSC_INSTALL_DIR})
+endif()
 endif()

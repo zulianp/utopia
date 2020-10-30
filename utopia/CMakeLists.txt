@@ -80,8 +80,6 @@ option(UTOPIA_BUILD_DOCUMENTATION
 
 option(UTOPIA_SCRIPTING
        "Enable exports for other languages (C, Python, etc...)" OFF)
-option(UTOPIA_ENABLE_CYGWIN
-        "Testing Cygwin" OFF)
 
 option(UTOPIA_INSTALL_TRILINOS "Install trilinos directly" ON)
 option(UTOPIA_INSTALL_PETSC "Install petsc directly" ON)
@@ -220,8 +218,8 @@ if(UTOPIA_ENABLE_CXX14_FEATURES)
     set(UTOPIA_WITH_CPP14 TRUE)
 endif()
 
-if(UTOPIA_ENABLE_CYGWIN)
-    include(FindMPIExtendedCygwin)
+if(CYGWIN)
+    include(InstallPetscCygwin)
 endif()
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
@@ -415,7 +413,7 @@ if(UTOPIA_INSTALL_TRILINOS)
 endif()
 
 if(UTOPIA_INSTALL_PETSC AND UTOPIA_ENABLE_CYGWIN)
-    include(InstallPetscCygwin)
+    include(InstallPetsc)
 
 else()
     include(InstallPetsc)
