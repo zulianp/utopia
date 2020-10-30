@@ -48,6 +48,7 @@ option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
 option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" ON)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
+option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 option(UTOPIA_ENABLE_M3ELINSOL
        "Enable the m3elinsol algebraic multigrid backend" OFF)
@@ -437,6 +438,13 @@ list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
 
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 add_library(utopia ${UTOPIA_SOURCES})
+
+if(UTOPIA_ENABLE_KOKKOS_SIMD)
+    set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
+
+    target_include_directories(
+        utopia PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/external/simd-math>)
+endif()
 
 # We use this to force c++14
 set_utopia_compiler_features(utopia)
