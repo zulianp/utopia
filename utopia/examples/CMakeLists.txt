@@ -41,9 +41,6 @@ add_executable(example_comparison_linear_solvers EXCLUDE_FROM_ALL example_compar
 utopia_link_default_targets(example_comparison_linear_solvers)
 target_link_libraries(example_comparison_linear_solvers PRIVATE utopia)
 
-add_executable(example_linear_regression EXCLUDE_FROM_ALL example_linear_regression.cpp)
-utopia_link_default_targets(example_linear_regression)
-target_link_libraries(example_linear_regression PRIVATE utopia)
 
 
 # Add more examples here and add target to dependecy list below
@@ -60,5 +57,4 @@ add_dependencies(utopia_examples
             example_sum_of_two_vectors
             example_trivial_linear_system
             example_comparison_linear_solvers
-            example_linear_regression
             )
