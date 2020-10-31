@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 22/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_READABLE_HPP
 #define UTOPIA_UTOPIA_READABLE_HPP
 
@@ -42,7 +38,7 @@ namespace utopia {
          * @param[in]  value    The value.
          */
         inline Scalar get(const int row, const int col) const {
-            assert_enabled(is_read_locked());
+            utopia_lock_check_assert(is_read_locked());
             assert(row < size(derived()).get(0));
             assert(col < size(derived()).get(1));
 
@@ -75,7 +71,7 @@ namespace utopia {
          * @param[in]  value    The value.
          */
         inline Scalar get(const int index) const {
-            assert_enabled(is_read_locked());
+            utopia_lock_check_assert(is_read_locked());
             assert(index < size(derived()).get(0));
             return Backend<Scalar, Traits<Implementation>::Backend>::get(derived().implementation(), index);
             // return derived().implementation()[index];

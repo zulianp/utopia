@@ -167,21 +167,6 @@ namespace utopia {
     ///////////////////////////////////////// Specialized /////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class T, class Traits, int Backend>
-    class Eval<Construct<Tensor<T, 2>, Diag<Factory<Zeros, 1>>>, Traits, Backend> {
-    public:
-        using Expr = utopia::Construct<Tensor<T, 2>, Diag<Factory<Zeros, 1>>>;
-
-        inline static void apply(const Expr &expr) {
-            UTOPIA_TRACE_BEGIN(expr);
-
-            auto &l = Eval<Tensor<T, 2>, Traits>::apply(expr.left());
-            l.zeros(size(expr.right()));
-
-            UTOPIA_TRACE_END(expr);
-        }
-    };
-
     template <class Left, class Right, class Traits, int Backend>
     class Eval<InPlace<Tensor<Left, 2>, Diag<Tensor<Right, 1>>, Plus>, Traits, Backend> {
     public:

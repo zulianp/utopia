@@ -88,7 +88,8 @@ namespace utopia {
 
                         if ((c_side - c_elem).norm() < 1e-14) {
                             // same element overwrite useless information
-                            elem->subdomain_id() = parent_mesh.get_boundary_info().boundary_id(parent, side_num);
+                            elem->subdomain_id() =
+                                utopia::boundary_id(parent_mesh.get_boundary_info(), parent, side_num);
                             found_side = true;
                             break;
                         }

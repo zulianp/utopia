@@ -101,7 +101,7 @@ namespace utopia {
 
             transfer_operator->read(is);
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             std::string expr = "x";
             is.get("function", expr);
 
@@ -121,7 +121,7 @@ namespace utopia {
             fun_is_constant = true;
 
             fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
         });
 
         c.stop();
@@ -161,11 +161,11 @@ namespace utopia {
             BiCGStab<USparseMatrix, UVector> solver;
             solver.solve(mass_mat_master, fun_master_h, fun_master);
         } else {
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
 #else
             fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->expr());
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
         }
 
         c.stop();
@@ -184,48 +184,15 @@ namespace utopia {
         double sum_fun_master = sum(fun_master);
         double sum_fun_slave = sum(fun_slave);
 
+        std::cout << "master: " << sum_fun_master << " slave: " << sum_fun_slave << std::endl;
+
         ////////////////////////////////////////////////////////////
         // output
         ////////////////////////////////////////////////////////////
 
-        convert(fun_master, *input_master.space().equation_system().solution);
-        input_master.space().equation_system().solution->close();
-
-        libMesh::Nemesis_IO io_master(input_master.mesh());
-        io_master.write_equation_systems("master.e", input_master.space().equation_systems());
-
-        convert(back_fun_master, *input_master.space().equation_system().solution);
-        input_master.space().equation_system().solution->close();
-
-        libMesh::Nemesis_IO io_master_adj(input_master.mesh());
-        io_master_adj.write_equation_systems("master_adj.e", input_master.space().equation_systems());
-
-        ////////////////////////////////////////////////////////////
-        convert(fun_slave, *input_slave.space().equation_system().solution);
-        input_slave.space().equation_system().solution->close();
-
-        // auto       el     = input_slave.space().mesh().active_local_elements_begin();
-
-        // const auto end_el = input_slave.space().mesh().active_local_elements_end();
-
-        //    for ( ; el != end_el; ++el)
-        //    {
-        //         const libMesh::Elem * elem = *el;
-
-        //         libMesh::Elem * ele = *el;
-
-        //         std::cout<<"current_elem_LIBMESH: "<<ele[0]<<std::endl;
-
-        //              for(int ll=0; ll<ele->n_nodes(); ll++){
-        //                const libMesh::Node * v_node = ele->node_ptr(ll);
-        //                const libMesh::dof_id_type v_dof =
-        //                v_node->dof_number(input_slave.space().equation_system().number(),0,0); std::cout<<"node_id is
-        //                "<<v_node->id()<<" and dof is "<<v_dof<<std::endl;
-        //              }
-        //    }
-
-        libMesh::Nemesis_IO io_slave(input_slave.mesh());
-        io_slave.write_equation_systems("slave.e", input_slave.space().equation_systems());
+        write("master.e", input_master.space(), fun_master);
+        write("slave.e", input_slave.space(), fun_slave);
+        write("master_adj.e", input_master.space(), back_fun_master);
     }
 
     TransferApp::TransferApp() {}

@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
 
 #include "utopia_petsc_Eval_Cond.hpp"
 #include "utopia_petsc_Slepc.hpp"
@@ -51,10 +51,10 @@ namespace utopia {
         slepc.get_real_eigenpair(0, large, eigenvector);
 
         const Scalar result = large / small;
-        // std::cout << "small: " << small << ", large: " << large << ", cond: " << result << std::endl;
+        // utopia::out() <<"small: " << small << ", large: " << large << ", cond: " << result << std::endl;
         return result;
     }
 }  // namespace utopia
 
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_WITH_SLEPC
 #endif  // UTOPIA_PETSC_EVAL_COND_IMPL_HPP

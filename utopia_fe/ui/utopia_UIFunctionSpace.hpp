@@ -104,7 +104,7 @@ namespace utopia {
                     auto u = trial(space_->subspace(var_num));
 
                     if (type == "expr") {
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
                         std::string expr = "0";
                         is.get("value", expr);
                         auto g = symbolic(expr);

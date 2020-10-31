@@ -112,7 +112,7 @@ namespace utopia {
             space_ptr->initialize();
             quadrature_order_ = functional_order(expr, *this);
             const int dim = space_ptr->mesh().mesh_dimension();
-            const libMesh::Elem *elem = space_ptr->mesh().elem(current_element_);
+            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
 
             if (is_quad(elem->type())) {
                 const int temp = quadrature_order_ / 2;
@@ -168,7 +168,7 @@ namespace utopia {
         template <class Expr>
         void reinit_fe_from(const Expr &expr, const std::shared_ptr<libMesh::QBase> &quad) {
             auto space_ptr = find_any_space(expr);
-            const libMesh::Elem *elem = space_ptr->mesh().elem(current_element_);
+            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
             block_id_ = elem->subdomain_id();
 
             if (quad) {
@@ -243,7 +243,7 @@ namespace utopia {
             space_ptr->initialize();
             quadrature_order_ = functional_order(expr, *this);
             const int dim = space_ptr->mesh().mesh_dimension();
-            const libMesh::Elem *elem = space_ptr->mesh().elem(current_element_);
+            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
 
             auto s_type = side_type(elem->type());
 
@@ -257,7 +257,7 @@ namespace utopia {
 
             set_up_quadrature(dim - 1, quadrature_order_);
             // block_id_ = elem->side_ptr(side)->subdomain_id();
-            block_id_ = space_ptr->mesh().get_boundary_info().boundary_id(elem, side);
+            block_id_ = utopia::boundary_id(space_ptr->mesh().get_boundary_info(), elem, side);
 
             const auto &eq_sys = space_ptr->equation_system();
             const std::size_t n_vars = eq_sys.n_vars();
@@ -297,9 +297,9 @@ namespace utopia {
         void reinit_side_fe_from(const Expr &expr, const int side) {
             auto space_ptr = find_any_space(expr);
             const int dim = space_ptr->mesh().mesh_dimension();
-            const libMesh::Elem *elem = space_ptr->mesh().elem(current_element_);
+            const libMesh::Elem *elem = utopia::elem_ptr(space_ptr->mesh(), current_element_);
 
-            block_id_ = space_ptr->mesh().get_boundary_info().boundary_id(elem, side);
+            block_id_ = utopia::boundary_id(space_ptr->mesh().get_boundary_info(), elem, side);
 
             const auto &eq_sys = space_ptr->equation_system();
             const std::size_t n_vars = eq_sys.n_vars();
@@ -670,12 +670,12 @@ namespace utopia {
                 return TRAVERSE_CONTINUE;
             }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             inline int visit(const SymbolicFunction &expr) {
                 init_xyz();
                 return TRAVERSE_CONTINUE;
             }
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
             template <class Expr>
             void apply(const Expr &expr) {

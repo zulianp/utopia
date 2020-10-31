@@ -3,7 +3,7 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_trilinos.hpp"
 #endif
 
@@ -19,7 +19,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
+                utopia::out() << "\nBackend: " << Traits::backend_info().get_name() << std::endl;
             }
         }
 
@@ -38,10 +38,12 @@ namespace utopia {
 
                 // using kokkos parallel for (r contains the traits of the backend
                 // and it should be used to provide specific range policies associated to utopia types
-                parallel_for(r, UTOPIA_LAMBDA(const SizeType &i) { v_device.set(i, i); });
+                parallel_for(
+                    r, UTOPIA_LAMBDA(const SizeType &i) { v_device.set(i, i); });
 
                 Scalar reduce_v = 0.0;
-                parallel_reduce(r, UTOPIA_LAMBDA(const SizeType &i) { return v_device.get(i); }, reduce_v);
+                parallel_reduce(
+                    r, UTOPIA_LAMBDA(const SizeType &i) { return v_device.get(i); }, reduce_v);
 
                 // test local reduce
                 reduce_v = v.comm().sum(reduce_v);
@@ -60,17 +62,17 @@ namespace utopia {
     };
 
     static void device_test() {
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         DeviceTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         DeviceTest<utopia::PetscMatrix, utopia::PetscVector>::run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         DeviceTest<utopia::TpetraMatrix, utopia::TpetraVector>::run();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(device_test);

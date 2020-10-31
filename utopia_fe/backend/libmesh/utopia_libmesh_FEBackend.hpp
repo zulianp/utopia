@@ -189,7 +189,7 @@ namespace utopia {
                 cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
             }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             template <class S>
             inline void operator()(
                 const int,
@@ -213,7 +213,7 @@ namespace utopia {
                 libMesh::DirichletBoundary d_bc(bt, vars, lambda);
                 cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
             }
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
             template <class T>
             void strong_enforce(
@@ -342,7 +342,7 @@ namespace utopia {
             return var.get(ctx.block_id());
         }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
         static QValues<double> apply(const SymbolicFunction &fun, const AssemblyContext<LIBMESH_TAG> &ctx) {
             const auto &xyz = ctx.test()[0]->get_xyz();
             auto n_quad_points = xyz.size();
@@ -358,7 +358,7 @@ namespace utopia {
 
             return ret;
         }
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
         static auto determinant(const QValues<LMDenseMatrix> &mats, const AssemblyContext<LIBMESH_TAG> &ctx)
             -> QValues<double> {
@@ -405,7 +405,9 @@ namespace utopia {
             QValues<double> traces = trace(mats, ctx);
 
             for (std::size_t qp = 0; qp < n_quad_points; ++qp) {
-                ret[qp] = traces[qp] * identity(size(mats[qp]));
+                auto s = size(mats[qp]);
+                ret[qp].identity(serial_layout(s.get(0), s.get(1)), traces[qp]);
+                // ret[qp] = traces[qp] * identity(size(mats[qp]));
             }
 
             return ret;
@@ -489,7 +491,8 @@ namespace utopia {
                                  const AssemblyContext<LIBMESH_TAG> &) -> QValues<LMDenseMatrix> {
             auto s = size(mats[0]);
             for (auto &m : mats) {
-                m += identity(s);
+                // m += identity(s);
+                m.shift_diag(1.0);
             }
 
             // std::cout << "-----------------------" << std::endl;
@@ -505,7 +508,8 @@ namespace utopia {
             QValues<LMDenseMatrix> ret = mats;
             auto s = size(mats[0]);
             for (auto &m : ret) {
-                m += identity(s);
+                // m += identity(s);
+                m.shift_diag(1.0);
             }
 
             // std::cout << "-----------------------" << std::endl;
@@ -601,7 +605,8 @@ namespace utopia {
                                  const AssemblyContext<LIBMESH_TAG> &) -> QValues<LMDenseMatrix> {
             auto s = size(mats[0]);
             for (auto &m : mats) {
-                m -= identity(s);
+                // m -= identity(s);
+                m.shift_diag(-1.0);
             }
 
             return std::move(mats);
@@ -1367,7 +1372,9 @@ namespace utopia {
                     break;
                 }
 
-                default: { assert(false); }
+                default: {
+                    assert(false);
+                }
             }
         }
 
@@ -1436,7 +1443,7 @@ namespace utopia {
 
             auto space_ptr = f.space_ptr();
             const auto &mesh = space_ptr->mesh();
-            const auto &elem_ptr = mesh.elem(ctx.current_element());
+            const auto &elem_ptr = utopia::elem_ptr(mesh, ctx.current_element());
             const auto &dof_map = space_ptr->dof_map();
 
             std::vector<libMesh::dof_id_type> indices;
@@ -1596,8 +1603,9 @@ namespace utopia {
 
             std::vector<Matrix> ret(n_quad_points);
 
+            auto ml = serial_layout(rows, cols);
             for (auto &r : ret) {
-                r = zeros(s);
+                r.dense(ml, 0.0);
             }
 
             for (std::size_t i = 0; i < n_shape_functions; ++i) {
@@ -1650,7 +1658,7 @@ namespace utopia {
             const auto &mesh = sub_0.mesh();
             const auto &dof_map = sub_0.dof_map();
 
-            const auto &elem_ptr = mesh.elem(ctx.current_element());
+            const auto &elem_ptr = utopia::elem_ptr(mesh, ctx.current_element());
 
             IndexArray prod_indices;
             std::vector<libMesh::dof_id_type> indices;

@@ -3,7 +3,7 @@
 
 #include "utopia_Expressions.hpp"
 
-// #ifdef WITH_OPENCL
+// #ifdef UTOPIA_WITH_OPENCL
 // #include "utopia_Evaluate.hpp"
 // #endif //WITH_OPENCL
 
@@ -110,7 +110,7 @@ namespace utopia {
             post_intercept(expr);
         }
 
-        // #ifdef WITH_OPENCL
+        // #ifdef UTOPIA_WITH_OPENCL
         template <class Expr, int Order>
         void visit(const Evaluate<Expr, Order> &expr) {
             pre_intercept(expr);
@@ -191,7 +191,7 @@ namespace utopia {
 
         template <class Expr>
         void post_intercept(const Expr &expr) {
-            if (verbose_) std::cout << "visited " << expr.get_class() << std::endl;
+            if (verbose_) utopia::out() << "visited " << expr.get_class() << std::endl;
         }
 
     private:

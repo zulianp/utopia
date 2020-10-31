@@ -104,18 +104,16 @@ namespace utopia {
         // Dynamic polymorphic types
         public DistributedMatrix<PetscScalar, PetscInt>,
         public PolymorphicMatrix,
-        public Constructible<PetscScalar, PetscInt, 2>,
         public Normed<PetscScalar>,
         public Reducible<PetscScalar>,
         public ReducibleMatrix<PetscScalar, PetscInt>,
         public Transformable<PetscScalar>,
         // Static polymorphic types
-        // public DynamicTypeDistributedMatrix<PetscScalar, PetscInt, PetscMatrix, PetscVector>,
+        public Constructible<PetscMatrix>,
         public BLAS1Tensor<PetscMatrix>,
         public BLAS2Matrix<PetscMatrix, PetscVector>,
         public BLAS3Matrix<PetscMatrix>,
         public Comparable<PetscMatrix>,
-        // public Ranged<PetscMatrix, 2>,
         public Operator<PetscVector>,
         public Tensor<PetscMatrix, 2>,
         public Selectable<PetscMatrix, 2> {
@@ -132,7 +130,9 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
         void init_empty(const PetscCommunicator &comm) { wrapper_ = std::make_shared<PetscMatrixMemory>(comm.get()); }
 
-        PetscMatrix(const PetscCommunicator &comm = PetscCommunicator::get_default()) : comm_(comm) {
+        // nvcc has problems with a default argument for PetscMatrix(const PetscCommunicator &comm), so we trick it by forwarding the default constructor to the constructor with the default argument
+        PetscMatrix() : PetscMatrix(PetscCommunicator::get_default()) {}
+        PetscMatrix(const PetscCommunicator &comm /*= PetscCommunicator::get_default() */) : comm_(comm) {
             init_empty(comm);
         }
 
@@ -296,7 +296,7 @@ namespace utopia {
 
         inline void describe() const override {
             if (empty()) {
-                std::cout << "PetscMatrix: Empty" << std::endl;
+                utopia::out() << "PetscMatrix: Empty" << std::endl;
             }
 
             MatView(wrapper_->implementation(), PETSC_VIEWER_STDOUT_(communicator()));
@@ -309,7 +309,9 @@ namespace utopia {
         ////////////// OVERRIDES FOR Constructible ////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
 
-        inline void sparse(const MatrixLayout &layout, const SizeType nnz_d_block, const SizeType nnz_o_block) {
+        inline void sparse(const MatrixLayout &layout,
+                           const SizeType &nnz_d_block,
+                           const SizeType &nnz_o_block) override {
             comm_ = layout.comm();
             matij_init(comm().get(),
                        MATAIJ,
@@ -333,7 +335,15 @@ namespace utopia {
                        o_nnz);
         }
 
-        inline void dense(const MatrixLayout &layout, const Scalar &val = 0.0) {
+        void identity(const Scalar &diag = 1.0);
+
+        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override {
+            comm_ = layout.comm();
+            matij_init_identity(
+                comm().get(), MATAIJ, layout.local_size(0), layout.local_size(1), layout.size(0), layout.size(1), diag);
+        }
+
+        inline void dense(const MatrixLayout &layout, const Scalar &val = 0.0) override {
             comm_ = layout.comm();
             dense_init_values(comm().get(),
                               MATDENSE,
@@ -344,15 +354,7 @@ namespace utopia {
                               val);
         }
 
-        inline void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
-            comm_ = layout.comm();
-            matij_init_identity(
-                comm().get(), MATAIJ, layout.local_size(0), layout.local_size(1), layout.size(0), layout.size(1), diag);
-        }
-
-        void identity(const Scalar &diag = 1.0);
-
-        inline void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0) {
+        inline void dense_identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override {
             comm_ = layout.comm();
             dense_init_identity(comm().get(),
                                 MATDENSE,
@@ -363,38 +365,40 @@ namespace utopia {
                                 diag);
         }
 
-        inline void identity(const Size &s, const Scalar &diag = 1.0) override {
-            matij_init_identity(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
-        }
+        // void identity(const Scalar &diag = 1.0);
 
-        inline void dense_identity(const Size &s, const Scalar &diag = 1.0) override {
-            dense_init_identity(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
-        }
+        // inline void identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     matij_init_identity(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
+        // }
 
-        inline void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override {
-            dense_init_identity(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
-        }
+        // inline void dense_identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     dense_init_identity(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), diag);
+        // }
 
-        inline void values(const Size &s, const Scalar &val) override {
-            dense_init_values(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), val);
-        }
+        // inline void local_dense_identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     dense_init_identity(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
+        // }
 
-        inline void sparse(const Size &s, const SizeType &nnz) override {
-            matij_init(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), nnz, nnz);
-        }
+        // inline void values(const Size &s, const Scalar &val) override {
+        //     dense_init_values(comm().get(), MATDENSE, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), val);
+        // }
 
-        inline void local_identity(const Size &s, const Scalar &diag = 1.0) override {
-            matij_init_identity(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
-        }
+        // inline void sparse(const Size &s, const SizeType &nnz) override {
+        //     matij_init(comm().get(), MATAIJ, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1), nnz, nnz);
+        // }
 
-        inline void local_values(const Size &s, const Scalar &val) override {
-            dense_init_values(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, val);
-        }
+        // inline void local_identity(const Size &s, const Scalar &diag = 1.0) override {
+        //     matij_init_identity(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, diag);
+        // }
 
-        /// Specialize for sparse matrices
-        inline void local_sparse(const Size &s, const SizeType &nnz) override {
-            matij_init(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, nnz, nnz);
-        }
+        // inline void local_values(const Size &s, const Scalar &val) override {
+        //     dense_init_values(comm().get(), MATDENSE, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, val);
+        // }
+
+        // /// Specialize for sparse matrices
+        // inline void local_sparse(const Size &s, const SizeType &nnz) override {
+        //     matij_init(comm().get(), MATAIJ, s.get(0), s.get(1), PETSC_DETERMINE, PETSC_DETERMINE, nnz, nnz);
+        // }
 
         ///////////////////////////////////////////////////////////////////////////
         ////////////// OVERRIDES FOR Normed ////////////////////////////////

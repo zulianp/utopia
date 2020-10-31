@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "utopia_Chrono.hpp"
+#include "utopia_IOStream.hpp"
 #include "utopia_Range.hpp"
 #include "utopia_Traits.hpp"
 
@@ -31,7 +32,8 @@ namespace utopia {
             m.sparse(layout(comm, Traits::decide(), Traits::decide(), n, n), 3, 2);
 
             if (verbose) {
-                std::cout << comm.rank() << "/" << comm.size() << ": problem size = " << m.local_rows() << std::endl;
+                utopia::out() << comm.rank() << "/" << comm.size() << ": problem size = " << m.local_rows()
+                              << std::endl;
             }
 
             assemble_laplacian_1D(m);
@@ -85,7 +87,7 @@ namespace utopia {
                 utopia_test_assert(qp_solver.get_upper_bound().comm().size() == rhs.comm().size());
             }
 
-            // std::cout << "Solving..." << std::endl;
+            // utopia::out() <<"Solving..." << std::endl;
 
             Chrono c;
             c.start();

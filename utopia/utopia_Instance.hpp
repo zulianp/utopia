@@ -2,11 +2,13 @@
 #define UTOPIA_UTOPIA_INSTANCE_HPP
 
 #include "utopia_Input.hpp"
+#include "utopia_Library.hpp"
 #include "utopia_Logger.hpp"
 
 #include <cassert>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace utopia {
     class Utopia final : public Configurable {
@@ -44,11 +46,14 @@ namespace utopia {
 
         void read_input(int argc, char *argv[]);
 
+        inline void add_library(std::unique_ptr<Library> &&l) { libraries_.push_back(std::move(l)); }
+
     private:
         Utopia();
         std::map<std::string, std::string> settings_;
         std::shared_ptr<Logger> logger_;
         std::shared_ptr<Logger> maintenance_logger_;
+        std::vector<std::unique_ptr<Library>> libraries_;
         int exit_code_{EXIT_SUCCESS};
     };
 }  // namespace utopia

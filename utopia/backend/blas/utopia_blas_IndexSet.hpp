@@ -48,10 +48,10 @@ namespace utopia {
         // print function
         inline void describe() const override {
             for (auto i : index_) {
-                std::cout << i << " ";
+                utopia::out() << i << " ";
             }
 
-            std::cout << std::endl;
+            utopia::out() << std::endl;
         }
 
         // utility functions

@@ -15,7 +15,7 @@ namespace utopia {
 
         static void print_backend_info() {
             if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
-                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
 
@@ -126,13 +126,13 @@ namespace utopia {
     };
 
     static void wrapper() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         WrapperTest<PetscMatrix, PetscVector>().run();
 #endif
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         WrapperTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(wrapper);

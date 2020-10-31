@@ -27,7 +27,7 @@ namespace utopia {
         }
     }
 
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
     class SlepcsSolverTest {
     public:
         using Traits = utopia::Traits<PetscVector>;
@@ -70,7 +70,7 @@ namespace utopia {
             slepc.get_real_eigenpair(1, iegr, vr);
 
             auto e = cond(A);
-            std::cout << "e: " << e << std::endl;
+            utopia::out() << "e: " << e << std::endl;
         }
 
         void petsc_slepc_generalized_eigen_test() {
@@ -323,10 +323,10 @@ namespace utopia {
         int _n{10};
     };
 
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_WITH_SLEPC
 
     static void slepc_es() {
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
         SlepcsSolverTest().run();
 #endif
     }

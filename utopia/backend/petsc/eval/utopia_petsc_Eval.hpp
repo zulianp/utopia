@@ -19,9 +19,9 @@
 #include "utopia_petsc_Eval_Residual.hpp"
 #include "utopia_petsc_Eval_VecUniqueSortSerial.hpp"
 
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
 #include "utopia_petsc_Eval_Cond.hpp"
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_WITH_SLEPC
 
 /*! @file
  * Petsc language extensions

@@ -57,21 +57,23 @@ namespace utopia {
                         auto d_tr_lb = const_device_view(constraints_memory_.active_lower[finer_level]);
                         auto d_tr_ub = const_device_view(constraints_memory_.active_upper[finer_level]);
 
-                        parallel_each_write(this->help_[finer_level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                            Scalar xi = d_x_finer.get(i);
-                            auto val = xi - delta_fine;
-                            auto lbi = d_tr_lb.get(i);
+                        parallel_each_write(
+                            this->help_[finer_level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                                Scalar xi = d_x_finer.get(i);
+                                auto val = xi - delta_fine;
+                                auto lbi = d_tr_lb.get(i);
 
-                            return device::max(lbi, val) - xi;
-                        });
+                                return device::max(lbi, val) - xi;
+                            });
 
-                        parallel_each_write(this->help_loc_[finer_level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                            Scalar xi = d_x_finer.get(i);
-                            auto val = xi + delta_fine;
-                            auto ubi = d_tr_ub.get(i);
+                        parallel_each_write(
+                            this->help_loc_[finer_level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                                Scalar xi = d_x_finer.get(i);
+                                auto val = xi + delta_fine;
+                                auto ubi = d_tr_ub.get(i);
 
-                            return device::min(ubi, val) - xi;
-                        });
+                                return device::min(ubi, val) - xi;
+                            });
                     }
 
                     Scalar lb_max = max(this->help_[finer_level]);
@@ -118,7 +120,7 @@ namespace utopia {
                 }  // dynamic cast test
                 else {
                     utopia_error("TRBoundsKornhuber:: transfer operators not supported. \n ");
-                    std::cout << "--------- error ---------- \n";
+                    utopia::out() << "--------- error ---------- \n";
                 }
 
             }  // level check

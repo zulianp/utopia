@@ -365,12 +365,12 @@ namespace utopia {
             TaoGetSolutionStatus(tao, &iterate, &f, &gnorm, &cnorm, &xdiff, &reason);
 
             // if(this->verbose()) {
-            // std::cout << "iterate: " << iterate << std::endl;
-            // std::cout << "f: " << f << std::endl;
-            // std::cout << "gnorm: " << gnorm << std::endl;
-            // std::cout << "cnorm: " << cnorm << std::endl;
-            // std::cout << "xdiff: " << xdiff << std::endl;
-            // std::cout << "reason: " << reason << std::endl;
+            // utopia::out() <<"iterate: " << iterate << std::endl;
+            // utopia::out() <<"f: " << f << std::endl;
+            // utopia::out() <<"gnorm: " << gnorm << std::endl;
+            // utopia::out() <<"cnorm: " << cnorm << std::endl;
+            // utopia::out() <<"xdiff: " << xdiff << std::endl;
+            // utopia::out() <<"reason: " << reason << std::endl;
             // }
 
             if (reason < 0) {

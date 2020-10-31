@@ -30,7 +30,7 @@ namespace utopia {
                 return false;
             }
 
-            // std::cout << "object_begin: " << name <<  std::endl;
+            // utopia::out() <<"object_begin: " << name <<  std::endl;
 
             // if(!current_node) {
             // 	current_node = doc.first_node(name.c_str());
@@ -55,7 +55,7 @@ namespace utopia {
                 return false;
             }
 
-            // std::cout << "object_end: " << current_node->name() <<  std::endl;
+            // utopia::out() <<"object_end: " << current_node->name() <<  std::endl;
 
             if (n_invalid_subtrees_ == 0) {
                 current_node = current_node->parent();

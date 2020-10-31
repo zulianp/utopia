@@ -302,6 +302,7 @@ namespace utopia {
             }
         }
 
+        UTOPIA_NVCC_PRIVATE
         void update_scaling_matrices(const Vector &x_old, const Vector &x_new) {
             Vector x_scaling(layout(x_old), 1.0);
 
@@ -312,11 +313,13 @@ namespace utopia {
                 auto x_new_view = const_local_view_device(x_new);
 
                 auto x_scaling_view = local_view_device(x_scaling);
-                parallel_for(local_range_device(x_scaling), UTOPIA_LAMBDA(const SizeType i) {
-                    x_scaling_view.set(
-                        i,
-                        device::max(device::max(device::abs(x_old_view.get(i)), device::abs(x_new_view.get(i))), tol));
-                });
+                parallel_for(
+                    local_range_device(x_scaling), UTOPIA_LAMBDA(const SizeType i) {
+                        x_scaling_view.set(
+                            i,
+                            device::max(device::max(device::abs(x_old_view.get(i)), device::abs(x_new_view.get(i))),
+                                        tol));
+                    });
             }
 
             D_ = diag(1. / x_scaling);

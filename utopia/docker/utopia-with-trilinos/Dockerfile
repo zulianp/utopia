@@ -17,7 +17,7 @@ RUN cd /utopia_cloned && git checkout development && git submodule update --init
 # compile utopia
 RUN cd /utopia_cloned/utopia && mkdir bin 
 RUN cd /utopia_cloned/utopia/bin && \
-    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia -DCMAKE_BUILD_TYPE=Release  -DTRY_WITH_TRILINOS=ON
+    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia -DCMAKE_BUILD_TYPE=Release  -DUTOPIA_ENABLE_TRILINOS=ON
 
 
 RUN cd /utopia_cloned/utopia/bin && make -j

@@ -27,21 +27,23 @@ RUN PATH=$PATH:/usr/local/bin/lcov
 
 # Clone code
 RUN git clone https://bitbucket.org/zulianp/utopia.git utopia_cloned
-RUN cd /utopia_cloned && git checkout layout_primitive && git submodule update --init --recursive && git pull
+RUN cd /utopia_cloned && git checkout development && git submodule update --init --recursive && git pull
 RUN cd /utopia_cloned && git pull
 
 ###################################################################################################################
 ###################################################################################################################
 
+ENV UTOPIA_DEPENDENCIES_DIR=/dependencies
+
 # Compile petsc (dmplex dependencies do not compile, so we turn them off)
-RUN cd /utopia_cloned/utopia && mkdir bin && cd bin && cmake .. -DUTOPIA_ENABLE_PETSC_DM_PLEX=OFF
+RUN cd /utopia_cloned/utopia && mkdir bin && cd bin && cmake .. -DUTOPIA_ENABLE_PETSC_DM_PLEX=OFF -DUTOPIA_DEPENDENCIES_DIR=$UTOPIA_DEPENDENCIES_DIR
 
 #############################################################################
 ############################## PETSC ########################################
 #############################################################################
 
 RUN cd /utopia_cloned/utopia/bin && make petsc VERBOSE=1
-ENV PETSC_DIR /utopia_cloned/utopia/external/petsc
+ENV PETSC_DIR $UTOPIA_DEPENDENCIES_DIR/petsc
 
 
 #############################################################################
@@ -49,7 +51,7 @@ ENV PETSC_DIR /utopia_cloned/utopia/external/petsc
 #############################################################################
 
 RUN cd /utopia_cloned/utopia/bin && make trilinos VERBOSE=1
-ENV TRILINOS_DIR /utopia_cloned/utopia/external/trilinos
+ENV TRILINOS_DIR $UTOPIA_DEPENDENCIES_DIR/trilinos
 
 #############################################################################
 ############################## SLEPC ########################################
@@ -63,13 +65,13 @@ ENV TRILINOS_DIR /utopia_cloned/utopia/external/trilinos
 #           autoconf automake libtool
 
 # ENV F77=mpif77
-# RUN cd /slepc_cloned && ./configure --prefix=/utopia_cloned/utopia/external/slepc --download-arpack
+# RUN cd /slepc_cloned && ./configure --prefix=$UTOPIA_DEPENDENCIES_DIR/slepc --download-arpack
 # RUN cd /slepc_cloned && \
 #     make && \
 #     make install
 
 
-# ENV SLEPC_DIR=/utopia_cloned/utopia/external/slepc
+# ENV SLEPC_DIR=$UTOPIA_DEPENDENCIES_DIR/slepc
 # ENV CPATH $CPATH:$SLEPC_DIR/include
 
 ###################################################################################################################

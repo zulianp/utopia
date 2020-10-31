@@ -342,3 +342,4 @@ find_package_handle_standard_args(Petsc
   "Petsc could not be found. Be sure to set PETSC_DIR and PETSC_ARCH."
   PETSC_LIBRARIES PETSC_DIR PETSC_INCLUDES PETSC_TEST_RUNS
   PETSC_VERSION PETSC_VERSION_OK)
+

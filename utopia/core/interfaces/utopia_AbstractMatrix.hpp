@@ -17,33 +17,41 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using SizeType = SizeType_;
+        using LocalSizeType = SizeType_;
 
         using Communicator = utopia::Communicator;
         using Layout = utopia::Layout<Communicator, 1, SizeType>;
         using MatrixLayout = utopia::Layout<Communicator, 2, SizeType>;
+
+        static const int Order = 2;
     };
 
     // parallel types, collective operations
     template <typename Scalar_, typename SizeType_>
     class AbstractMatrix : public DistributedMatrix<Scalar_, SizeType_>,
-                           // public PolymorphicMatrix,
-                           public SparseConstructible<Scalar_, SizeType_>,
                            public Normed<Scalar_>,
                            public Reducible<Scalar_>,
                            public ReducibleMatrix<Scalar_, SizeType_>,
                            public Transformable<Scalar_>,
                            // // Static polymorphic types
+                           public SparseConstructible<AbstractMatrix<Scalar_, SizeType_>>,
                            public BLAS1Tensor<AbstractMatrix<Scalar_, SizeType_>>,
                            public BLAS2Matrix<AbstractMatrix<Scalar_, SizeType_>, AbstractVector<Scalar_, SizeType_>>,
                            public BLAS3Matrix<AbstractMatrix<Scalar_, SizeType_>>,
                            public Comparable<AbstractMatrix<Scalar_, SizeType_>>,
-                           public Operator<AbstractVector<Scalar_, SizeType_>>
-    // public Tensor<AbstractMatrix<Scalar_, SizeType_>, 2>,
-    // public Selectable<AbstractMatrix<Scalar_, SizeType_>, 2>
-    {
+                           public Operator<AbstractVector<Scalar_, SizeType_>> {
     public:
+        using Scalar = Scalar_;
+        using SizeType = SizeType_;
+        using MatrixLayout = utopia::Layout<Communicator, 2, SizeType_>;
+
         ~AbstractMatrix() override = default;
     };
+
+    template <typename Scalar, typename SizeType>
+    void disp(const AbstractMatrix<Scalar, SizeType> &m) {
+        m.describe();
+    }
 
     template <class Matrix>
     class Wrapper<Matrix, 2>
@@ -56,6 +64,7 @@ namespace utopia {
 
         using AbstractMatrix = utopia::AbstractMatrix<Scalar, SizeType>;
         using AbstractVector = utopia::AbstractVector<Scalar, SizeType>;
+        using MatrixLayout = typename AbstractMatrix::MatrixLayout;
 
         template <class... Args>
         Wrapper(Args &&... args) : impl_(std::make_shared<Matrix>(std::forward<Args>(args)...)) {}
@@ -315,13 +324,10 @@ namespace utopia {
 
         /////////////////////////////////////////////
 
-        inline void sparse(const Size &s, const SizeType &nnz) override { impl_->sparse(s, nnz); }
-
-        inline void local_sparse(const Size &s, const SizeType &nnz) override { impl_->local_sparse(s, nnz); }
-
-        inline void identity(const Size &s, const Scalar &diag = 1.0) override { impl_->identity(s, diag); }
-
-        inline void local_identity(const Size &s, const Scalar &diag = 1.0) override { impl_->local_identity(s, diag); }
+        void identity(const MatrixLayout &layout, const Scalar &diag = 1.0) override { impl_->identity(layout, diag); }
+        void sparse(const MatrixLayout &layout, const SizeType &d_nnz, const SizeType &o_nnz) override {
+            impl_->sparse(layout, d_nnz, o_nnz);
+        }
 
         /////////////////////////////////////////////
 

@@ -16,12 +16,8 @@ namespace utopia {
         using Comm = typename Traits::Communicator;
 
     public:
-        TestFunctionND_1(SizeType N)
-            : N(N),
-              b(layout(Comm::get_default(), Traits::decide(), N), 3.0),
-              A(layout(Comm::get_default(), Traits::decide(), Traits::decide(), N, N)),
-              a(1.0) {
-            A.identity();
+        TestFunctionND_1(SizeType N) : N(N), b(layout(Comm::get_default(), Traits::decide(), N), 3.0), A(), a(1.0) {
+            A.identity(layout(Comm::get_default(), Traits::decide(), Traits::decide(), N, N), 1.0);
             help_ = make_unique<Vector>(layout(b), 0.0);
 
             static_assert(is_dense_or_polymorphic<Matrix>::value,

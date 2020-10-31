@@ -6,6 +6,8 @@
 #include "utopia_FormTensor.hpp"
 #include "utopia_MultiTensor.hpp"
 
+#include "utopia_LibMeshBackend.hpp"
+
 namespace utopia {
 
     // FIXME (specialize and move to libmesh backend)
@@ -452,7 +454,7 @@ namespace utopia {
             const auto &mesh = sub_0.mesh();
             const auto &dof_map = sub_0.dof_map();
 
-            const auto &elem_ptr = mesh.elem(ctx.current_element());
+            const auto &elem_ptr = utopia::elem_ptr(mesh, ctx.current_element());
 
             IndexArray prod_indices;
             std::vector<libMesh::dof_id_type> indices;

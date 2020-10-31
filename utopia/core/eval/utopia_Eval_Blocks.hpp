@@ -3,6 +3,8 @@
 
 #include "utopia_Blocks.hpp"
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_MaxRowNNZ.hpp"
+#include "utopia_RowView.hpp"
 
 namespace utopia {
 
@@ -101,15 +103,7 @@ namespace utopia {
                 for (SizeType j = 0; j < r.cols(); ++j) {
                     if (!r.block_is_null(i, j)) {
                         const auto &b = r.block(i, j);
-
-                        std::vector<SizeType> nnz(local_size(b).get(0), 0);
-                        auto rr = row_range(b);
-
-                        b.read([&](const SizeType r, const SizeType &, const Scalar &) { ++nnz[r - rr.begin()]; });
-
-                        if (!nnz.empty()) {
-                            block_row_nnz += *std::max_element(std::begin(nnz), std::end(nnz));
-                        }
+                        block_row_nnz += max_row_nnz(b);
                     }
                 }
 
@@ -130,32 +124,33 @@ namespace utopia {
 
                             const auto global_row_offset = l_rr.begin() - b_rr.begin() + row_offset[i];
 
-                            b.read([&](const SizeType r, const SizeType c, const Scalar val) {
-                                l.set(global_row_offset + r,
-                                      col_offset[j] + c,  // BUG (the columns should be staggered to reflect the
-                                                          // parallel decomposition)
-                                      val);
-                            });
+                            // b.read([&](const SizeType r, const SizeType c, const Scalar val) {
+                            //     l.set(global_row_offset + r,
+                            //           col_offset[j] + c,  // BUG (the columns should be staggered to reflect the
+                            //                               // parallel decomposition)
+                            //           val);
+                            // });
+
+                            // BUG (the columns should be staggered to reflect the
+                            // Host side until we find better way
+                            for (auto r = b_rr.begin(); r != b_rr.end(); ++r) {
+                                RowView<Right> row(b, r);
+
+                                SizeType n_values = row.n_values();
+
+                                for (SizeType k = 0; k < n_values; ++k) {
+                                    auto val = row.get(k);
+                                    auto c = row.col(k);
+
+                                    l.set(global_row_offset + r, col_offset[j] + c, val);
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     };
-
-    // template<class Left, int Order, class Right, class Traits, int Backend>
-    // class Eval< Construct<Tensor<Left, Order>, Blocks<Right> >, Traits, Backend> {
-    // public:
-    //     inline static bool apply(const Construct<Tensor<Left, Order>, Blocks<Right> > &expr)
-    //     {
-    //         UTOPIA_TRACE_BEGIN(expr);
-    //         auto &l = Eval<Tensor<Left, Order>, Traits>::apply(expr.left());
-    //         const auto &b = expr.right();
-    //         EvalBlocks<Left, Right, Order>::apply(l, b);
-    //         UTOPIA_TRACE_END(expr);
-    //         return true;
-    //     }
-    // };
 
     template <class Left, int Order, class Right, class Traits, int Backend>
     class Eval<Assign<Tensor<Left, Order>, Blocks<Right> >, Traits, Backend> {

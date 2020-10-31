@@ -182,27 +182,28 @@ namespace utopia {
         {
             auto x_view = view_device(x);
 
-            parallel_for(range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                auto value = x_view.get(i);
+            parallel_for(
+                range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                    auto value = x_view.get(i);
 
-                switch (i % 10) {
-                    case 0:
-                    case 1:
-                    case 9:
-                        utopia_test_assert(approxeq(-1, value));
-                        break;
-                    case 2:
-                    case 3:
-                    case 4:
-                        utopia_test_assert(approxeq(10, value));
-                        break;
-                    case 5:
-                    case 6:
-                    case 7:
-                    case 8:
-                        utopia_test_assert(approxeq(1, value));
-                }
-            });
+                    switch (i % 10) {
+                        case 0:
+                        case 1:
+                        case 9:
+                            utopia_test_assert(approxeq(-1, value));
+                            break;
+                        case 2:
+                        case 3:
+                        case 4:
+                            utopia_test_assert(approxeq(10, value));
+                            break;
+                        case 5:
+                        case 6:
+                        case 7:
+                        case 8:
+                            utopia_test_assert(approxeq(1, value));
+                    }
+                });
         }
 
         x.set(0.);
@@ -447,7 +448,7 @@ namespace utopia {
         m2.read([](const SizeType i, const SizeType j, const double value) {
             if (i + 1 == j) {
                 if (!approxeq(1, value)) {
-                    std::cout << i << ", " << j << " -> " << value << std::endl;
+                    utopia::out() << i << ", " << j << " -> " << value << std::endl;
                 }
                 utopia_test_assert(approxeq(1, value));
             } else {
@@ -520,7 +521,7 @@ namespace utopia {
     }
 
     void petsc_to_blas() {
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 
         PetscVector x(serial_layout(16), 0.);
 
@@ -528,7 +529,7 @@ namespace utopia {
         const PetscInt xb = xr.begin();
 
         BlasVectord y;
-        y.values(xr.extent(), 2.0);
+        y.values(serial_layout(xr.extent()), 2.0);
 
         {
             Read<BlasVectord> r_y(y);
@@ -541,7 +542,7 @@ namespace utopia {
         PetscVector expected(serial_layout(16), 2.0);
         utopia_test_assert(approxeq(expected, x));
 
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
     }
 
     void petsc_conversion() {
@@ -564,12 +565,24 @@ namespace utopia {
 
         PetscMatrix mat;
         mat.sparse(layout(comm, PetscTraits::decide(), PetscTraits::decide(), 3, 3), 2, 2);
+
         {
+            auto r = row_range(mat);
+
             Write<PetscMatrix> w(mat);
-            mat.set(0, 0, 1);
-            mat.set(0, 1, 2);
-            mat.set(1, 1, 3);
-            mat.set(2, 2, 4);
+
+            if (r.inside(0)) {
+                mat.set(0, 0, 1);
+                mat.set(0, 1, 2);
+            }
+
+            if (r.inside(1)) {
+                mat.set(1, 1, 3);
+            }
+
+            if (r.inside(2)) {
+                mat.set(2, 2, 4);
+            }
         }
 
         PetscMatrix dmat;
@@ -607,12 +620,12 @@ namespace utopia {
 
         {
             Write<PetscMatrix> write(a);
-            a.set(0, 0, 1);
-            a.set(1, 1, 2);
-            a.set(2, 2, 3);
-            a.set(3, 3, 4);
-            a.set(1, 3, 4);
-            a.set(3, 1, 4);
+            a.c_set(0, 0, 1);
+            a.c_set(1, 1, 2);
+            a.c_set(2, 2, 3);
+            a.c_set(3, 3, 4);
+            a.c_set(1, 3, 4);
+            a.c_set(3, 1, 4);
         }
 
         a.read([](const SizeType i, const SizeType j, const PetscScalar value) {

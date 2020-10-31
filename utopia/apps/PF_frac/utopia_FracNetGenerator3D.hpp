@@ -107,8 +107,8 @@ namespace utopia {
         T z;
 
         void describe() {
-            std::cout << "( " << x << " , " << y << " , " << z << " )"
-                      << " \n";
+            utopia::out() << "( " << x << " , " << y << " , " << z << " )"
+                          << " \n";
         }
     };
 
@@ -153,16 +153,16 @@ namespace utopia {
         }
 
         void describe() {
-            std::cout << "A: " << points_[0].x << " " << points_[0].y << " " << points_[0].z << " \n";
-            std::cout << "B: " << points_[1].x << " " << points_[1].y << " " << points_[1].z << " \n";
-            std::cout << "C: " << points_[2].x << " " << points_[2].y << " " << points_[2].z << " \n";
-            std::cout << "D: " << points_[3].x << " " << points_[3].y << " " << points_[3].z << " \n \n";
+            utopia::out() << "A: " << points_[0].x << " " << points_[0].y << " " << points_[0].z << " \n";
+            utopia::out() << "B: " << points_[1].x << " " << points_[1].y << " " << points_[1].z << " \n";
+            utopia::out() << "C: " << points_[2].x << " " << points_[2].y << " " << points_[2].z << " \n";
+            utopia::out() << "D: " << points_[3].x << " " << points_[3].y << " " << points_[3].z << " \n \n";
 
-            std::cout << "E: " << points_[4].x << " " << points_[4].y << "  " << points_[4].z << "  \n";
-            std::cout << "F: " << points_[5].x << " " << points_[5].y << "  " << points_[5].z << "  \n";
-            std::cout << "G: " << points_[6].x << " " << points_[6].y << "  " << points_[6].z << "  \n";
-            std::cout << "H: " << points_[7].x << " " << points_[7].y << "  " << points_[7].z << "  \n";
-            std::cout << "------------------------------  \n";
+            utopia::out() << "E: " << points_[4].x << " " << points_[4].y << "  " << points_[4].z << "  \n";
+            utopia::out() << "F: " << points_[5].x << " " << points_[5].y << "  " << points_[5].z << "  \n";
+            utopia::out() << "G: " << points_[6].x << " " << points_[6].y << "  " << points_[6].z << "  \n";
+            utopia::out() << "H: " << points_[7].x << " " << points_[7].y << "  " << points_[7].z << "  \n";
+            utopia::out() << "------------------------------  \n";
         }
 
     private:
@@ -205,7 +205,7 @@ namespace utopia {
                 const T r = distr_length(generator);
                 width = x_min * std::pow((1. - r), (-1. / (params.pow_dist_coef_width - 1.)));
             } else if (params.linear_relation != 0) {
-                std::cout << "linear_relation" << params.linear_relation << std::endl;
+                utopia::out() << "linear_relation" << params.linear_relation << std::endl;
 
                 width = params.linear_relation * length;
             } else {
@@ -404,7 +404,7 @@ namespace utopia {
             auto width = 3.0 * this->space_.mesh().min_spacing();
 
             if (mpi_world_rank() == 0) {
-                std::cout << "width: " << width << "  \n";
+                utopia::out() << "width: " << width << "  \n";
             }
 
             std::vector<Paralleloid<Scalar>> paralleloids;
@@ -425,14 +425,15 @@ namespace utopia {
                 auto sampler_view = sampler.view_device();
                 auto x_view = this->space_.assembly_view_device(x);
 
-                Dev::parallel_for(this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    ElemViewScalar e;
-                    C_view.elem(i, e);
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
 
-                    CoeffVector s;
-                    sampler_view.assemble(e, s);
-                    C_view.set_vector(e, s, x_view);
-                });
+                        CoeffVector s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
             }
         }
 

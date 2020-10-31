@@ -1333,7 +1333,7 @@ namespace utopia {
                 auto &e = out_mesh.elem(elem_idx);
 
                 e.type = convert(side_ptr->type());
-                e.block = in.get_boundary_info().boundary_id(elem_ptr, i);
+                e.block = utopia::boundary_id(in.get_boundary_info(), elem_ptr, i);
                 e.is_affine = side_ptr->has_affine_map();
                 // e.global_idx = side_ptr->id();
 
