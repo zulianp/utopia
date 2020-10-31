@@ -47,6 +47,14 @@ if(NOT MOONOLITH_FOUND OR FORCE_INSTALL_MOONOLITH)
     include(FetchContent)
     message(STATUS "Fetching par_moonolith, since it could not be found.")
 
+    set(MOONOLITH_ENABLE_BENCHMARK
+        OFF}
+        CACHE INTERNAL "")
+
+    set(MOONOLITH_ENABLE_TESTING
+        OFF
+        CACHE INTERNAL "")
+
     FetchContent_Declare(
         moonolith
         GIT_REPOSITORY https://bitbucket.org/zulianp/par_moonolith.git)
