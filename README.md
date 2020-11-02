@@ -48,7 +48,8 @@ Go to the folder utopia/utopia:
 - make
 - make install.
 
-For compiling the very experimental FE library follow the instructions [HERE](https://bitbucket.org/zulianp/utopia/wiki/Utopia%20FE)
+For compiling the very experimental FE library follow the instructions [HERE](https://bitbucket.org/zulianp/utopia/wiki/Utopia%20FE).
+In the future the Utopia FE library will be removed from this repository and will have its own repo (after a large scale refactoring).
 
 ## Contact
 
