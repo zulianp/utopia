@@ -4,4 +4,6 @@
 [submodule "utopia/external/tinyexpr"]
 	path = utopia/external/tinyexpr
 	url = https://github.com/codeplea/tinyexpr
-
+[submodule "utopia/external/GSL"]
+   path = utopia/external/GSL
+   url = https://github.com/microsoft/GSL.git
