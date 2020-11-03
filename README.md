@@ -1,3 +1,4 @@
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![CodeFactor](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/badge)](https://www.codefactor.io/repository/bitbucket/zulianp/utopia) [![codecov](https://codecov.io/bb/zulianp/utopia/branch/master/graph/badge.svg)](https://codecov.io/bb/zulianp/utopia)
 
 # Utopia #
@@ -51,7 +52,8 @@ For compiling the very experimental FE library follow the instructions [HERE](ht
 
 ## Contact
 
-Join us on [slack](https://join.slack.com/t/ics-utopia/signup)
+- Join us on [slack](https://join.slack.com/t/ics-utopia/signup)
+- Join us or contact us through our [mailing list](https://lists.usi.ch/mailman3/postorius/lists/utopia-users.lists.usi.ch)
 
 
 ## Citing Utopia
