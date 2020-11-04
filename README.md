@@ -1,5 +1,6 @@
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![CodeFactor](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/badge)](https://www.codefactor.io/repository/bitbucket/zulianp/utopia) [![codecov](https://codecov.io/bb/zulianp/utopia/branch/master/graph/badge.svg)](https://codecov.io/bb/zulianp/utopia)
+[![CodeFactor](https://www.codefactor.io/repository/bitbucket/zulianp/utopia/badge)](https://www.codefactor.io/repository/bitbucket/zulianp/utopia)
+
 
 # Utopia #
 Utopia is a C++ embedded domain specific language designed for parallel non-linear solution strategies and finite element analysis.
@@ -48,7 +49,8 @@ Go to the folder utopia/utopia:
 - make
 - make install.
 
-For compiling the very experimental FE library follow the instructions [HERE](https://bitbucket.org/zulianp/utopia/wiki/Utopia%20FE)
+For compiling the very experimental FE library follow the instructions [HERE](https://bitbucket.org/zulianp/utopia/wiki/Utopia%20FE).
+In the future the Utopia FE library will be removed from this repository and will have its own repo (after a large scale refactoring).
 
 ## Contact
 
@@ -62,7 +64,7 @@ If you use Utopia for your research please use the following bibtex entry (or eq
 ```bibtex
 @misc{utopiagit,
 	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Alessandro Rigazzi and Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau and Rolf Krause},
-	title = {{U}topia: {A} {C}++ embedded domain specific language for scientific computing. {G}it repository},
+	title = {{U}topia: A performance portable {C}++ library for parallel linear and nonlinear algebra. {G}it repository},
 	url = {https://bitbucket.org/zulianp/utopia},
 	howpublished = {https://bitbucket.org/zulianp/utopia},
 	year = {2016}

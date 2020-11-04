@@ -17,9 +17,5 @@ RUN cd /utopia_cloned/utopia/bin_cov && source coverage.sh
 RUN echo "For parallel runs use: mpirun --allow-run-as-root -n 2 ./utopia_test"
 
 
-RUN cd /utopia_cloned/utopia/bin_cov &&  \
-    curl -s https://utopia_clonedcov.io/bash > .utopia_clonedcov && \
-    chmod +x .utopia_clonedcov && \
-    ./.utopia_clonedcov -f /utopia_cloned/utopia/bin_cov/filtered_cov.info -t c754a0a2-6280-4ce4-9756-b65d1f910144
-
+RUN cd /utopia_cloned/utopia/bin_cov && CODECOV_TOKEN=c754a0a2-6280-4ce4-9756-b65d1f910144 bash <(curl -s https://codecov.io/bash)
 CMD ["/bin/sh"]
