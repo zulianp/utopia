@@ -6,6 +6,8 @@ utopia_fe/bin_*
 utopia_fe/bin/*
 utopia_fe/build_*
 
+external/*
+utopia/external/*
 utopia/build/*
 utopia_fe/build/*
 
