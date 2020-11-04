@@ -1,5 +1,5 @@
 # # InstallPetsc.cmake
-if(NOT UTOPIA_ENABLE_CYGWIN)
+if(NOT CYGWIN)
 message("Running on mac")
 # if(NOT PETSC_FOUND)
 

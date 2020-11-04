@@ -1,5 +1,4 @@
 # InstallPetsc.cmake
-if(Cygwin)
 message(PetscCygwin)
 if(NOT PETSC_FOUND)
     # git clone -b maint https://gitlab.com/petsc/petsc.git petsc
@@ -35,22 +34,24 @@ if(NOT PETSC_FOUND)
 
     # ##########################################################################
 
- #[[   if(UTOPIA_ENABLE_PETSC_DM_PLEX)
+   if(UTOPIA_ENABLE_PETSC_DM_PLEX)
         # DMPlex dependencies
         set(PETSC_CONFIG_ARGS
             ${PETSC_CONFIG_ARGS}
-            --download-netcdf
-            --download-pnetcdf
-            --download-exodusii
-            --download-zlib
-            --download-triangle
-            --download-ctetgen)
+            #--download-netcdf
+            #--download-pnetcdf
+            #--download-exodusii
+            #--download-zlib
+            #--download-triangle
+            #--download-ctetgen
+            )
 
         if(HDF5_DIR)
             set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS}
                                   --with-hdf5-dir=${HDF5_DIR})
         else()
-            set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} --download-hdf5)
+            set(PETSC_CONFIG_ARGS ${PETSC_CONFIG_ARGS} #--download-hdf5
+            )
         endif()
 
         if(UTOPIA_ENABLE_CGNS)
@@ -59,7 +60,6 @@ if(NOT PETSC_FOUND)
             message(STATUS "USING CGNS")
         endif()
     endif()
-]]
     # ##########################################################################
 
     ExternalProject_Add(
@@ -83,5 +83,4 @@ if(NOT PETSC_FOUND)
     set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
     # set(PETSC_DIR ${PETSC_INSTALL_DIR})
-endif()
 endif()
