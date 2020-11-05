@@ -169,12 +169,11 @@ namespace utopia {
                 auto h_view = const_local_view_device(*h_);
                 auto y_view = const_local_view_device(y_);
 
-                parallel_for(
-                    local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType &i) {
-                        const auto yi = y_view.get(i);
-                        const auto hi = h_view.get(i);
-                        squared_errors_view.set(i, (hi - yi) * (hi - yi));
-                    });
+                parallel_for(local_range_device(*errors_), UTOPIA_LAMBDA(const SizeType &i) {
+                    const auto yi = y_view.get(i);
+                    const auto hi = h_view.get(i);
+                    squared_errors_view.set(i, (hi - yi) * (hi - yi));
+                });
             }
 
             /**

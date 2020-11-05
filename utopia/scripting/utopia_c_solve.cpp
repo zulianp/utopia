@@ -1,9 +1,27 @@
 
 #include <iostream>
-#include "utopia_Instance.hpp"
+#include "utopia.hpp"
 #include "utopia_Version.hpp"
-#include "utopia_petsc.hpp"
+
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_impl.hpp"
+
+using VectorType = utopia::PetscVector;
+using MatrixType = utopia::PetscMatrix;
+
+#else
+#ifdef UTOPIA_WITH_TRILINOS
+using VectorType = utopia::TpetraVector;
+using MatrixType = utopia::TpetraMatrix;
+#else
+#ifdef UTOPIA_WITH_BLAS
+using VectorType = utopia::BlasVectord;
+using MatrixType = utopia::BlasMatrixd;
+#else
+#error "No backend available"
+#endif  // UTOPIA_WITH_BLAS
+#endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_WITH_PETSC
 
 extern "C" {
 
@@ -36,33 +54,32 @@ void USolverCreate(USolver *solver, USolverType type, UPreconditionerType prec, 
     static const std::string ksp = "ksp";
     static const std::string fact = "fact";
 
-    if (fact == type) {
-        (*solver)->ptr = new Factorization<PetscMatrix, PetscVector>();
+    // FIXME use inputs
+    auto ls = linear_solver<MatrixType, VectorType>(Solver::automatic());
+    if (ls) {
+        (*solver)->ptr = ls->clone();
     } else {
-        (*solver)->ptr = new KSPSolver<PetscMatrix, PetscVector>();
+        (*solver)->ptr = nullptr;
     }
 }
 
 void USolverPrintInfo(USolver solver) {
     using namespace utopia;
 
-    auto solver_ptr = reinterpret_cast<LinearSolver<PetscMatrix, PetscVector> *>(solver->ptr);
-    auto ksp = dynamic_cast<KSPSolver<PetscMatrix, PetscVector> *>(solver_ptr);
-
-    if (ksp) {
-        utopia::out() << "KSP" << std::endl;
-        ksp->describe(std::cout);
+    auto solver_ptr = reinterpret_cast<LinearSolver<MatrixType, VectorType> *>(solver->ptr);
+    if (solver_ptr) {
+        utopia::out() << "USolverPrintInfo: not null\n";
     } else {
-        auto fact = dynamic_cast<Factorization<PetscMatrix, PetscVector> *>(solver_ptr);
-        fact->describe(std::cout);
+        utopia::out() << "USolverPrintInfo: null\n";
     }
+    // solver_ptr->describe(std::cout);
 }
 
 void USolverDestroy(USolver *solver) {
     using namespace utopia;
     utopia::out() << "USolverDestroy" << std::endl;
 
-    auto solver_ptr = reinterpret_cast<LinearSolver<PetscMatrix, PetscVector> *>((*solver)->ptr);
+    auto solver_ptr = reinterpret_cast<LinearSolver<MatrixType, VectorType> *>((*solver)->ptr);
     delete solver_ptr;
     delete *solver;
     *solver = nullptr;
