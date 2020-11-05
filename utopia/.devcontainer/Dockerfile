@@ -1,4 +1,5 @@
 # See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.148.0/containers/cpp/.devcontainer/base.Dockerfile
+# See tips for vscode: https://github.com/microsoft/vscode-tips-and-tricks
 
 # [Choice] Debian / Ubuntu version: debian-10, debian-9, ubuntu-20.04, ubuntu-18.04
 ARG VARIANT="buster"
@@ -6,7 +7,8 @@ FROM mcr.microsoft.com/vscode/devcontainers/cpp:0-${VARIANT}
 
 # [Optional] Uncomment this section to install additional packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends libopenblas-dev
+    && apt-get -y install --no-install-recommends git clang-format gfortran 
 
-RUN git clone https://github.com/spack/spack ~/spack && \
-    cd ~/spack && . share/spack/setup-env.sh
+COPY ./spack/* /home/vscode/
+RUN ls /home/vscode
+#RUN source /home/vscode/utopia_install_spack.sh
