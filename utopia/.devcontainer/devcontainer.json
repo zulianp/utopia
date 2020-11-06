@@ -23,7 +23,10 @@
 		"ms-python.python",
 		"ms-vscode.cpptools-themes",
 		"ms-vscode.cpptools-extension-pack",
-		"xaver.clang-format"
+		"xaver.clang-format",
+		"dbaeumer.jshint",
+		"mechatroner.rainbow-csv",
+		"aaron-bond.better-comments"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
