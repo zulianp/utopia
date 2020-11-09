@@ -12,6 +12,6 @@ namespace scripting {
 
     Layout::~Layout() { delete impl_; }
 
-    // SerialLayout SerialLayout::serial_layout(const SizeType &size) { return impl_->serial_layout(size); }
+    Layout Layout::serial_layout(const SizeType &size) {}
 
 }  // namespace scripting

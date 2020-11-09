@@ -129,7 +129,7 @@ namespace scripting {
         Layout();
         ~Layout();
 
-        // void serial_layout(const SizeType&);
+        Layout serial_layout(const SizeType& size);
 
     private:
         LayoutImpl* impl_;
@@ -147,21 +147,6 @@ namespace scripting {
     private:
         CommunicatorImpl* impl_;
     };
-
-    // class SelfCommunicator {
-    // public:
-    //     using SelfCommunicatorImpl = utopia::SelfCommunicator;
-
-    //     SelfCommunicator();
-    //     ~SelfCommunicator();
-
-    //     Communicator get_default();
-    //     int rank();
-    //     int size();
-
-    // private:
-    //     SelfCommunicatorImpl* impl_;
-    // };
 
 }  // namespace scripting
 
