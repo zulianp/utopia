@@ -2,6 +2,7 @@
 #define UTOPIA_DM_STEATDY_STATE_JFNK_MG_HPP
 
 #include "utopia_BlockQPSolver.hpp"
+#include "utopia_Chebyshev3level.hpp"
 #include "utopia_IPTransfer.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_MassMatrix.hpp"
@@ -219,8 +220,10 @@ class MLSteadyStateJFNKMG final : public Configurable {
     // disp(solution);
 
     auto hess_approx = std::make_shared<JFNK<Vector>>(*level_functions_.back());
-    auto lsolver =
-        std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+    // auto lsolver =
+    //     std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+    auto lsolver = std::make_shared<Chebyshev3level<Matrix, Vector>>();
+    // lsolver->verbose(true);
 
     // std::cout << "--------- print ---------- \n";
 
