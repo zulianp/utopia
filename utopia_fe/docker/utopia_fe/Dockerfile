@@ -54,7 +54,8 @@ RUN git clone https://zulianp@bitbucket.org/zulianp/par_moonolith.git moonolith_
 RUN cd /moonolith_cloned && mkdir bin
 RUN cd /moonolith_cloned/bin && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=/par_moonolith -DCMAKE_BUILD_TYPE=Release \
-			 -DMPI_CXX_COMPILER=$MPI_DIR/bin/mpic++ -DMPI_C_COMPILER=$MPI_DIR/bin/mpicc -DMPI_FOUND=TRUE
+    -DMPI_C_INCLUDE_PATH=$MPI_DIR/include -DMPI_C_LIBRARIES=$MPI_DIR/lib/libmpi.so  \
+    -DMPI_CXX_LIBRARIES=$MPI_DIR/lib/libmpicxx.so -DMPI_CXX_INCLUDE_PATH=$MPI_DIR/include
 
 RUN cd /moonolith_cloned/bin && make -j4 && make install
 
