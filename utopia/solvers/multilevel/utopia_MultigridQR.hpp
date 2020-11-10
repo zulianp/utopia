@@ -174,7 +174,8 @@ namespace utopia
          */
         bool apply(const Vector &rhs, Vector &x_fine) override
         {
-          Scalar r_norm, r0_norm, diff_norm;
+          Scalar r_norm, r0_norm, diff_norm, diff_Anorm;
+          Vector diff_corr,Adiff_corr;
           SizeType it = 0;
           bool converged = false;
           bool ok = true; UTOPIA_UNUSED(ok);
@@ -192,7 +193,7 @@ namespace utopia
           Vector x_old = memory.x[l]; 
 
           std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
-          this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "||x_old - x_new||" });
+          this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "||x_old - x_new||","||x_old - x_new||_A"});
 
           if(this->verbose())
               PrintInfo::print_iter_status(it, {r_norm, 1});
@@ -220,14 +221,19 @@ namespace utopia
 #else
               // assert(!has_nan_or_inf(x));
 #endif
-              diff_norm = norm2(x_old - memory.x[l]); 
-              x_old = memory.x[l]; 
+              diff_corr = x_old - memory.x[l];
+              Adiff_corr = level(l).A() * diff_corr;
+              
+              diff_norm = norm2(diff_corr);
+              diff_Anorm = std::sqrt(dot(diff_corr, Adiff_corr));
+              
+              x_old = memory.x[l];
 
               r_norm = norm2(memory.rhs[l] - level(l).A() * memory.x[l]);
 
               // print iteration status on every iteration
               if(this->verbose())
-                  PrintInfo::print_iter_status(it, {r_norm, diff_norm});
+                  PrintInfo::print_iter_status(it, {r_norm, diff_norm,diff_Anorm});
 
               // check convergence and print interation info
               converged = this->check_convergence(it, r_norm, diff_norm, 1);
