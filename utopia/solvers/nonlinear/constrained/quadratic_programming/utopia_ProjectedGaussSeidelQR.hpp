@@ -126,7 +126,8 @@ namespace utopia {
             const Vector & g = this->get_upper_bound();
             const Vector & l = this->get_lower_bound();
             
-            Scalar g_i, l_i;
+            Scalar g_i=0.0;
+	    Scalar l_i=0.0;
             
             Range rr = row_range(A);
             {
