@@ -185,20 +185,20 @@ class JFNK_Multigrid final
 
     it++;
 
-    this->memory_.xw[n_levels - 1] = x;
+    this->memory_.x[n_levels - 1] = x;
     this->memory_.rhs[n_levels - 1] = rhs;
 
     while (!converged) {
       this->multiplicative_cycle(n_levels - 1);
 
 #ifdef CHECK_NUM_PRECISION_mode
-      if (has_nan_or_inf(this->memory_.xw[n_levels - 1]) == 1) {
-        this->memory_.xw[n_levels - 1].set(0.0);
+      if (has_nan_or_inf(this->memory_.x[n_levels - 1]) == 1) {
+        this->memory_.x[n_levels - 1].set(0.0);
         return true;
       }
 #endif
 
-      multiplication_action_finest->apply(this->memory_.xw[n_levels - 1],
+      multiplication_action_finest->apply(this->memory_.x[n_levels - 1],
                                           this->memory_.res[n_levels - 1]);
       this->memory_.res[n_levels - 1] -= rhs;
 
@@ -214,7 +214,7 @@ class JFNK_Multigrid final
       it++;
     }
 
-    x = this->memory_.xw[n_levels - 1];
+    x = this->memory_.x[n_levels - 1];
 
     this->print_statistics(it);
 
@@ -260,85 +260,37 @@ class JFNK_Multigrid final
  private:
   bool multiplicative_cycle(const SizeType &l) {
     // PRE-SMOOTHING
-    this->level_solve(l, this->memory_.rhs[l], this->memory_.xw[l],
+    this->level_solve(l, this->memory_.rhs[l], this->memory_.x[l],
                       this->pre_smoothing_steps());
 
-    this->compute_residual(l, this->memory_.xw[l]);
+    this->compute_residual(l, this->memory_.x[l]);
 
     this->transfer(l - 1).restrict(this->memory_.res[l],
                                    this->memory_.rhs[l - 1]);
 
+    this->memory_.x[l - 1].set(0.0);
     if (l == 1) {
-      // std::cout << "------- coarse grid solve ---------- \n";
-      this->memory_.c[l - 1].set(0.0);
       this->zero_correction_related_to_equality_constrain(this->function(l - 1),
                                                           memory_.rhs[l - 1]);
 
       const SizeType coarse_grid_its = this->memory_.rhs[l - 1].size();
 
-      this->level_solve(l - 1, this->memory_.rhs[l - 1], this->memory_.c[l - 1],
+      this->level_solve(l - 1, this->memory_.rhs[l - 1], this->memory_.x[l - 1],
                         coarse_grid_its);
+    } else {
+      this->multiplicative_cycle(l - 1);
     }
 
-    // exit(0);
-    // std::cout << "------prolongate.... \n";
-    this->transfer(l - 1).interpolate(this->memory_.c[l - 1],
+    // interpolate
+    this->transfer(l - 1).interpolate(this->memory_.x[l - 1],
                                       this->memory_.c[l]);
 
     // correct
-    // std::cout << "------correct.... \n";
-    this->memory_.xw[l] += this->memory_.c[l];
+    this->memory_.x[l] += this->memory_.c[l];
 
     // POST-SMOOTHING
-    // std::cout << "------post-smooth.... \n";
-    this->level_solve(l, this->memory_.rhs[l], this->memory_.xw[l],
+    this->level_solve(l, this->memory_.rhs[l], this->memory_.x[l],
                       this->post_smoothing_steps());
-
-    // std::cout << "------ yes, I am inside ------- \n";
-
-    // Vector g_fine, g_restricted, g_coarse, u_2l, s_coarse, s_fine, u_init;
-    // Scalar alpha;
-
-    // this->make_iterate_feasible(fine_fun, u_l);
-
-    // // PRE-SMOOTHING
-    // smoothing(fine_fun, u_l, f, this->pre_smoothing_steps());
-    // fine_fun.gradient(u_l, g_fine);
-
-    // g_fine -= f;
-
-    // this->transfer(l - 2).restrict(g_fine, g_restricted);
-    // this->transfer(l - 2).project_down(u_l, u_2l);
-
-    // this->make_iterate_feasible(this->function(l - 2), u_2l);
-    // this->zero_correction_related_to_equality_constrain(this->function(l -
-    // 2),
-    //                                                     g_restricted);
-
-    // this->function(l - 2).gradient(u_2l, g_coarse);
-
-    // u_init = u_2l;
-    // g_coarse -= g_restricted;  // tau correction - g_diff in rmtr
-
-    // if (l == 2) {
-    //   coarse_solve(this->function(0), u_2l, g_coarse);
-    // } else {
-    //   // recursive call into FAS - needs to be checked
-    //   for (SizeType k = 0; k < this->mg_type(); k++) {
-    //     SizeType l_new = l - 1;
-    //     this->multiplicative_cycle(this->function(l - 2), u_2l, g_coarse,
-    //                                l_new);
-    //   }
-    // }
-
-    // s_coarse = u_2l - u_init;
-    // this->transfer(l - 2).interpolate(s_coarse, s_fine);
-    // this->zero_correction_related_to_equality_constrain(fine_fun, s_fine);
-
-    // u_l += s_fine;
-
-    // // POST-SMOOTHING
-    // smoothing(fine_fun, u_l, f, this->post_smoothing_steps());
 
     return true;
   }

@@ -47,8 +47,6 @@ class Chebyshev3level final : public OperatorBasedLinearSolver<Matrix, Vector> {
     fi_.zeros(layout);
     p_.zeros(layout);
 
-    std::cout << "------- print: " << p_.size() << "   \n";
-
     initialized_ = true;
     layout_ = layout;
   }

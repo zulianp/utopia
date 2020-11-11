@@ -49,7 +49,7 @@ class BratuFem final
       in.get("rhs_type", rhs_type);
     }
 
-    Parameters() : lambda(5.0), rhs_type(0) {}
+    Parameters() : lambda(3.0), rhs_type(0) {}
 
     Scalar lambda;
     SizeType rhs_type;
