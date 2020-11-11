@@ -123,31 +123,25 @@ class MLSteadyStateJFNKMG final : public Configurable {
     //////////////////////////////////////////////// init solver
     //////////////////////////////////////////////////////
 
-    // if (!rmtr_) {
-    //   rmtr_ = std::make_shared<
-    //       RMTR_inf<Matrix, Vector,
-    //                TRGrattonBoxKornhuberTruncation<Matrix, Vector>,
-    //                GALERKIN>>(
-    //       n_levels_);
+    if (!jfnk_mg_) {
+      jfnk_mg_ = std::make_shared<JFNK_Multigrid<Matrix, Vector>>(n_levels_);
+    }
 
-    // }
+    std::shared_ptr<MatrixFreeLinearSolver<PetscVector>> smoother =
+        std::make_shared<Chebyshev3level<Matrix, Vector>>();
+    // smoother->max_it(3);
 
-    std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine =
-        std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+    std::shared_ptr<MatrixFreeLinearSolver<Vector>> coarse_grid_solver =
+        std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+    // tr_strategy_coarse->atol(1e-12);
+    // tr_strategy_coarse->max_it(300);
 
-    std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse =
-        std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
-    tr_strategy_coarse->atol(1e-12);
+    jfnk_mg_->set_coarse_grid_solver(coarse_grid_solver);
+    jfnk_mg_->set_smoother(smoother);
 
-    // // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-    // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
-
-    // rmtr_->set_coarse_tr_strategy(tr_strategy_coarse);
-    // rmtr_->set_fine_tr_strategy(tr_strategy_fine);
-
-    // rmtr_->set_transfer_operators(transfers_);
-    // rmtr_->set_functions(level_functions_);
-    // rmtr_->verbose(true);
+    jfnk_mg_->set_transfer_operators(transfers_);
+    jfnk_mg_->set_functions(level_functions_);
+    jfnk_mg_->verbose(true);
 
     init_ = true;
 
@@ -220,14 +214,14 @@ class MLSteadyStateJFNKMG final : public Configurable {
     // disp(solution);
 
     auto hess_approx = std::make_shared<JFNK<Vector>>(*level_functions_.back());
-    // auto lsolver =
-    //     std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
-    auto lsolver = std::make_shared<Chebyshev3level<Matrix, Vector>>();
-    // lsolver->verbose(true);
+    // // auto lsolver =
+    // //     std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+    // auto lsolver = std::make_shared<Chebyshev3level<Matrix, Vector>>();
+    // // lsolver->verbose(true);
 
     // std::cout << "--------- print ---------- \n";
 
-    QuasiNewton<Vector> nlsolver(hess_approx, lsolver);
+    QuasiNewton<Vector> nlsolver(hess_approx, jfnk_mg_);
     nlsolver.atol(1e-6);
     nlsolver.rtol(1e-15);
     nlsolver.stol(1e-15);
@@ -259,15 +253,7 @@ class MLSteadyStateJFNKMG final : public Configurable {
   std::string log_output_path_;
   std::string output_path_;
 
-  // std::shared_ptr<
-  //     RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix,
-  //     Vector>,
-  //              GALERKIN>>
-  //     // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
-  //     // GALERKIN>> RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix,
-  //     // Vector>,
-  //     //          GALERKIN>>
-  //     rmtr_;
+  std::shared_ptr<JFNK_Multigrid<Matrix, Vector>> jfnk_mg_;
 
   bool save_output_;
   bool mprgp_smoother_;
