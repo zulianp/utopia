@@ -83,11 +83,21 @@ class JFNK_Multigrid final
     this->memory_.g[this->n_levels() - 1] = g;
 
     for (auto l = this->n_levels() - 1; l > 0; l--) {
+      std::cout << "----- update ------- " << l << "          \n";
       this->transfer(l - 1).project_down(this->memory_.x[l],
                                          this->memory_.x[l - 1]);
 
-      this->transfer(l - 1).restrict(this->memory_.g[l],
+      // this->make_iterate_feasible(this->function(l - 1),
+      //                             this->memory_.x[l - 1]);
+
+      // this->transfer(l - 1).restrict(this->memory_.g[l],
+      //                                this->memory_.g[l - 1]);
+
+      this->function(l - 1).gradient(this->memory_.x[l - 1],
                                      this->memory_.g[l - 1]);
+
+      this->zero_correction_related_to_equality_constrain(this->function(l - 1),
+                                                          memory_.g[l - 1]);
 
       hessian_approxs_[l - 1]->update(
           this->memory_.x[l - 1], this->memory_.g[l - 1],
@@ -109,8 +119,17 @@ class JFNK_Multigrid final
       this->transfer(l - 1).project_down(this->memory_.x[l],
                                          this->memory_.x[l - 1]);
 
-      this->transfer(l - 1).restrict(this->memory_.g[l],
+      // this->make_iterate_feasible(this->function(l - 1),
+      //                             this->memory_.x[l - 1]);
+
+      // this->transfer(l - 1).restrict(this->memory_.g[l],
+      //                                this->memory_.g[l - 1]);
+
+      this->function(l - 1).gradient(this->memory_.x[l - 1],
                                      this->memory_.g[l - 1]);
+
+      this->zero_correction_related_to_equality_constrain(this->function(l - 1),
+                                                          memory_.g[l - 1]);
 
       hessian_approxs_[l - 1]->initialize(this->memory_.x[l - 1],
                                           this->memory_.g[l - 1]);
@@ -127,7 +146,8 @@ class JFNK_Multigrid final
       assert(mf_lin_solvers_[l]);
       assert(hessian_approxs_[l]);
       mf_lin_solvers_[l]->init_memory(this->local_level_layouts_[l]);
-      hessian_approxs_[l]->initialize(this->memory_.x[l], this->memory_.g[l]);
+      // hessian_approxs_[l]->initialize(this->memory_.x[l],
+      // this->memory_.g[l]);
     }
 
     init_mem_ = true;
@@ -142,59 +162,61 @@ class JFNK_Multigrid final
   bool apply(const Vector &rhs, Vector &x) override {
     bool converged = false;
     SizeType it = 0, n_levels = this->n_levels();
-    Scalar r_norm, r0_norm = 1, rel_norm = 1, energy;
+    Scalar r_norm, r0_norm = 1, rel_norm = 1;
 
     std::string header_message =
         this->name() + ": " + std::to_string(n_levels) + " levels";
-    this->init_solver(header_message,
-                      {" it. ", "|| grad ||", "r_norm", "Energy"});
+    this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm"});
 
     //////////////////////////////////////////////////////////////////////
     ////////////////////////////  just some test ////////////////////////
     //////////////////////////////////////////////////////////////////////
 
-    //     Vector g(layout(x_h), 0.0);
-    //     fine_fun.gradient(x_h, g);
-    //     r0_norm = norm2(g);
-    //     r_norm = r0_norm;
+    auto multiplication_action_finest =
+        hessian_approxs_[n_levels - 1]->build_apply_H();
 
-    //     fine_fun.value(x_h, energy);
+    multiplication_action_finest->apply(x, this->memory_.res[n_levels - 1]);
+    this->memory_.res[n_levels - 1] -= rhs;
 
-    //     if (this->verbose())
-    //       PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
+    r_norm = norm2(this->memory_.res[n_levels - 1]);
+    r0_norm = r_norm;
 
-    //     it++;
+    if (this->verbose()) PrintInfo::print_iter_status(it, {r_norm, rel_norm});
 
-    //     while (!converged) {
-    //       this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
+    it++;
 
-    // #ifdef CHECK_NUM_PRECISION_mode
-    //       if (has_nan_or_inf(x_h) == 1) {
-    //         x_h.zeros(layout(x_h));
-    //         return true;
-    //       }
-    // #endif
+    this->memory_.xw[n_levels - 1] = x;
+    this->memory_.rhs[n_levels - 1] = rhs;
 
-    //       fine_fun.gradient(x_h, g);
-    //       fine_fun.value(x_h, energy);
+    while (!converged) {
+      this->multiplicative_cycle(n_levels - 1);
 
-    //       r_norm = norm2(g);
-    //       rel_norm = r_norm / r0_norm;
+#ifdef CHECK_NUM_PRECISION_mode
+      if (has_nan_or_inf(this->memory_.xw[n_levels - 1]) == 1) {
+        this->memory_.xw[n_levels - 1].set(0.0);
+        return true;
+      }
+#endif
 
-    //       // print iteration status on every iteration
-    //       if (this->verbose())
-    //         PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
+      multiplication_action_finest->apply(this->memory_.xw[n_levels - 1],
+                                          this->memory_.res[n_levels - 1]);
+      this->memory_.res[n_levels - 1] -= rhs;
 
-    //       // check convergence and print interation info
-    //       converged = this->check_convergence(it, r_norm, rel_norm, 1);
-    //       it++;
-    //     }
+      r_norm = norm2(this->memory_.res[n_levels - 1]);
 
-    //     this->print_statistics(it);
+      rel_norm = r_norm / r0_norm;
 
-    // #ifdef CHECK_NUM_PRECISION_mode
-    //     if (has_nan_or_inf(x_h) == 1) exit(0);
-    // #endif
+      // print iteration status on every iteration
+      if (this->verbose()) PrintInfo::print_iter_status(it, {r_norm, rel_norm});
+
+      // check convergence and print interation info
+      converged = this->check_convergence(it, r_norm, rel_norm, 1);
+      it++;
+    }
+
+    x = this->memory_.xw[n_levels - 1];
+
+    this->print_statistics(it);
 
     return true;
   }
@@ -236,10 +258,43 @@ class JFNK_Multigrid final
   }
 
  private:
-  bool multiplicative_cycle(Fun &fine_fun, Vector &u_l, const Vector &f,
-                            const SizeType &l) {
-    // this->level_solve(1, rhs, x, 3);
+  bool multiplicative_cycle(const SizeType &l) {
+    // PRE-SMOOTHING
+    this->level_solve(l, this->memory_.rhs[l], this->memory_.xw[l],
+                      this->pre_smoothing_steps());
+
+    this->compute_residual(l, this->memory_.xw[l]);
+
+    this->transfer(l - 1).restrict(this->memory_.res[l],
+                                   this->memory_.rhs[l - 1]);
+
+    if (l == 1) {
+      // std::cout << "------- coarse grid solve ---------- \n";
+      this->memory_.c[l - 1].set(0.0);
+      this->zero_correction_related_to_equality_constrain(this->function(l - 1),
+                                                          memory_.rhs[l - 1]);
+
+      const SizeType coarse_grid_its = this->memory_.rhs[l - 1].size();
+
+      this->level_solve(l - 1, this->memory_.rhs[l - 1], this->memory_.c[l - 1],
+                        coarse_grid_its);
+    }
+
     // exit(0);
+    // std::cout << "------prolongate.... \n";
+    this->transfer(l - 1).interpolate(this->memory_.c[l - 1],
+                                      this->memory_.c[l]);
+
+    // correct
+    // std::cout << "------correct.... \n";
+    this->memory_.xw[l] += this->memory_.c[l];
+
+    // POST-SMOOTHING
+    // std::cout << "------post-smooth.... \n";
+    this->level_solve(l, this->memory_.rhs[l], this->memory_.xw[l],
+                      this->post_smoothing_steps());
+
+    // std::cout << "------ yes, I am inside ------- \n";
 
     // Vector g_fine, g_restricted, g_coarse, u_2l, s_coarse, s_fine, u_init;
     // Scalar alpha;
@@ -291,9 +346,17 @@ class JFNK_Multigrid final
   bool level_solve(const SizeType &level, const Vector &rhs, Vector &x,
                    const SizeType &sweeps = 1000) {
     auto multiplication_action = hessian_approxs_[level]->build_apply_H();
-    mf_lin_solvers_[level]->verbose(true);
+    mf_lin_solvers_[level]->verbose(false);
     mf_lin_solvers_[level]->max_it(sweeps);
     return mf_lin_solvers_[level]->solve(*multiplication_action, rhs, x);
+  }
+
+  void compute_residual(const SizeType &level, Vector &x) {
+    auto multiplication_action = hessian_approxs_[level]->build_apply_H();
+
+    multiplication_action->apply(x, this->memory_.res[level]);
+    this->memory_.res[level] =
+        this->memory_.rhs[level] - this->memory_.res[level];
   }
 
  private:

@@ -128,20 +128,27 @@ class MLSteadyStateJFNKMG final : public Configurable {
     }
 
     std::shared_ptr<OperatorBasedLinearSolver<Matrix, Vector>> smoother =
-        std::make_shared<Chebyshev3level<Matrix, Vector>>();
+        std::make_shared<Chebyshev3level<Matrix, Vector, HOMEMADE>>();
+    smoother->atol(1e-10);
     // smoother->max_it(3);
 
     std::shared_ptr<OperatorBasedLinearSolver<Matrix, Vector>>
         coarse_grid_solver = std::make_shared<
             utopia::ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+    coarse_grid_solver->atol(1e-13);
     // tr_strategy_coarse->atol(1e-12);
     // tr_strategy_coarse->max_it(300);
 
     jfnk_mg_->set_coarse_grid_solver(coarse_grid_solver);
     jfnk_mg_->set_smoother(smoother);
 
+    jfnk_mg_->pre_smoothing_steps(5);
+    jfnk_mg_->post_smoothing_steps(5);
+
     jfnk_mg_->set_transfer_operators(transfers_);
     jfnk_mg_->set_functions(level_functions_);
+    jfnk_mg_->max_it(10);
+    jfnk_mg_->atol(1e-10);
     jfnk_mg_->verbose(true);
 
     init_ = true;
@@ -210,6 +217,7 @@ class MLSteadyStateJFNKMG final : public Configurable {
 
     // init fine level spaces
     this->init(*spaces_[n_levels_ - 1], solution);
+    solution.set(1.0);
     prepare_for_solve(solution);
 
     // disp(solution);
@@ -224,14 +232,12 @@ class MLSteadyStateJFNKMG final : public Configurable {
     // std::cout << "--------- print ---------- \n";
 
     QuasiNewton<Matrix, Vector> nlsolver(jfnk_mg_);
-    nlsolver.atol(1e-6);
+    nlsolver.atol(1e-10);
     nlsolver.rtol(1e-15);
     nlsolver.stol(1e-15);
-    nlsolver.max_it(1000);
+    nlsolver.max_it(10);
     nlsolver.verbose(true);
 
-    // auto line_search = std::make_shared<utopia::Backtracking<Vector>>();
-    // nlsolver.set_line_search_strategy(line_search);
     nlsolver.solve(*level_functions_.back(), solution);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -179,7 +179,8 @@ static void bratu_2d_JFNK_mg(Input &in) {
 
   stats.start();
 
-  MLSteadyStateJFNKMG<FunctionSpace, IgnitionFem<FunctionSpace>,
+  // MLSteadyStateJFNKMG<FunctionSpace, IgnitionFem<FunctionSpace>,
+  MLSteadyStateJFNKMG<FunctionSpace, BratuFem<FunctionSpace>,
                       AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
       time_stepper(space);
 
