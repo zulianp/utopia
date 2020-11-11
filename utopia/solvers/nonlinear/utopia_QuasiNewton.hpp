@@ -15,7 +15,7 @@
 
 namespace utopia {
 
-template <class Vector>
+template <class Matrix, class Vector>
 class QuasiNewton : public QuasiNewtonBase<Vector> {
   using Scalar = typename Traits<Vector>::Scalar;
   using SizeType = typename Traits<Vector>::SizeType;
@@ -31,6 +31,9 @@ class QuasiNewton : public QuasiNewtonBase<Vector> {
               const std::shared_ptr<LinSolver> &linear_solver)
       : QuasiNewtonBase<Vector>(hessian_approx, linear_solver),
         initialized_(false) {}
+
+  QuasiNewton(const std::shared_ptr<LinSolver> &linear_solver)
+      : QuasiNewtonBase<Vector>(linear_solver), initialized_(false) {}
 
   bool solve(FunctionBase<Vector> &fun, Vector &x) override {
     using namespace utopia;
@@ -50,7 +53,6 @@ class QuasiNewton : public QuasiNewtonBase<Vector> {
     g0_norm = norm2(g);
     g_norm = g0_norm;
 
-    // this->initialize_approximation(x, g);
     QuasiNewtonBase<Vector>::init_memory(x, g);
 
     if (this->verbose_) {
@@ -107,6 +109,26 @@ class QuasiNewton : public QuasiNewtonBase<Vector> {
 
     this->print_statistics(it);
     return true;
+  }
+
+  void update(const Vector &s, const Vector &y, const Vector &x,
+              const Vector &g) override {
+    std::cout << "------ change this ------- \n";
+    if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
+            this->mf_linear_solver_.get())) {
+      JFNK_mg->update(s, y, x, g);
+    } else {
+      QuasiNewtonBase<Vector>::update(s, y, x, g);
+    }
+  }
+
+  void initialize_approximation(const Vector &x, const Vector &g) override {
+    if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
+            this->mf_linear_solver_.get())) {
+      return JFNK_mg->initialize(x, g);
+    } else {
+      QuasiNewtonBase<Vector>::initialize_approximation(x, g);
+    }
   }
 
  private:

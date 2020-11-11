@@ -121,7 +121,7 @@ class Chebyshev3level final : public OperatorBasedLinearSolver<Matrix, Vector> {
     // Super simple power method to estimate the biggest eigenvalue
     assert(!empty(help_f2));
 
-    // TODO:: setup random vector
+    // TODO:: setup random vector - using device
     // help_f2.set(1.0);
     {
       auto d_help_f2 = local_view_device(help_f2);

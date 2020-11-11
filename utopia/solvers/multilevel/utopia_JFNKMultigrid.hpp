@@ -24,7 +24,7 @@ class JFNK_Multigrid final
   typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
   using FunPtr = std::shared_ptr<Fun>;
 
-  typedef utopia::MatrixFreeLinearSolver<Vector> LinSolver;
+  typedef utopia::OperatorBasedLinearSolver<Matrix, Vector> LinSolver;
   using LinSolverPtr = std::shared_ptr<LinSolver>;
 
   typedef utopia::Transfer<Matrix, Vector> Transfer;
@@ -32,11 +32,10 @@ class JFNK_Multigrid final
  public:
   JFNK_Multigrid(const SizeType &n_levels)
       : NonlinearMultiLevelInterface<Matrix, Vector>(n_levels),
-        OperatorBasedLinearSolver<Matrix, Vector>() {}
+        OperatorBasedLinearSolver<Matrix, Vector>(),
+        init_mem_(false) {}
 
   std::string name() override { return "JFNK_Multigrid"; }
-
-  void init_memory() override { utopia::out() << "-------- to be done \n"; }
 
   JFNK_Multigrid *clone() const override {
     auto jfnk = new JFNK_Multigrid(this->n_levels());
@@ -75,7 +74,52 @@ class JFNK_Multigrid final
     //                         "-");
   }
 
-  void update(const Operator<Vector> &op) override {
+  void update(const Vector &s, const Vector &y, const Vector &x,
+              const Vector &g) {
+    std::cout << "----- update ------- \n";
+
+    hessian_approxs_[this->n_levels() - 1]->update(s, y, x, g);
+    this->memory_.x[this->n_levels() - 1] = x;
+    this->memory_.g[this->n_levels() - 1] = g;
+
+    for (auto l = this->n_levels() - 1; l > 0; l--) {
+      this->transfer(l - 1).project_down(this->memory_.x[l],
+                                         this->memory_.x[l - 1]);
+
+      this->transfer(l - 1).restrict(this->memory_.g[l],
+                                     this->memory_.g[l - 1]);
+
+      hessian_approxs_[l - 1]->update(
+          this->memory_.x[l - 1], this->memory_.g[l - 1],
+          this->memory_.x[l - 1], this->memory_.g[l - 1]);
+    }
+  }
+
+  void initialize(const Vector &x, const Vector &g) {
+    if (init_mem_ == false) {
+      init_memory();
+    }
+
+    this->memory_.x[this->n_levels() - 1] = x;
+    this->memory_.g[this->n_levels() - 1] = g;
+
+    hessian_approxs_[this->n_levels() - 1]->initialize(x, g);
+
+    for (auto l = this->n_levels() - 1; l > 0; l--) {
+      this->transfer(l - 1).project_down(this->memory_.x[l],
+                                         this->memory_.x[l - 1]);
+
+      this->transfer(l - 1).restrict(this->memory_.g[l],
+                                     this->memory_.g[l - 1]);
+
+      hessian_approxs_[l - 1]->initialize(this->memory_.x[l - 1],
+                                          this->memory_.g[l - 1]);
+    }
+  }
+
+  void update(const Operator<Vector> &op) override {}
+
+  void init_memory() override {
     const auto &layouts = this->local_level_layouts();
     memory_.init_memory(layouts);
 
@@ -85,6 +129,8 @@ class JFNK_Multigrid final
       mf_lin_solvers_[l]->init_memory(this->local_level_layouts_[l]);
       hessian_approxs_[l]->initialize(this->memory_.x[l], this->memory_.g[l]);
     }
+
+    init_mem_ = true;
   }
 
   bool solve(const Operator<Vector> &A, const Vector &rhs,
@@ -98,15 +144,14 @@ class JFNK_Multigrid final
     SizeType it = 0, n_levels = this->n_levels();
     Scalar r_norm, r0_norm = 1, rel_norm = 1, energy;
 
-    std::cout << "--------- yes, here, we  are  -------------- \n";
-    exit(0);
+    std::string header_message =
+        this->name() + ": " + std::to_string(n_levels) + " levels";
+    this->init_solver(header_message,
+                      {" it. ", "|| grad ||", "r_norm", "Energy"});
 
-    //     std::string header_message =
-    //         this->name() + ": " + std::to_string(n_levels) + " levels";
-    //     this->init_solver(header_message,
-    //                       {" it. ", "|| grad ||", "r_norm", "Energy"});
-
-    //     this->init_memory();
+    //////////////////////////////////////////////////////////////////////
+    ////////////////////////////  just some test ////////////////////////
+    //////////////////////////////////////////////////////////////////////
 
     //     Vector g(layout(x_h), 0.0);
     //     fine_fun.gradient(x_h, g);
@@ -193,6 +238,9 @@ class JFNK_Multigrid final
  private:
   bool multiplicative_cycle(Fun &fine_fun, Vector &u_l, const Vector &f,
                             const SizeType &l) {
+    // this->level_solve(1, rhs, x, 3);
+    // exit(0);
+
     // Vector g_fine, g_restricted, g_coarse, u_2l, s_coarse, s_fine, u_init;
     // Scalar alpha;
 
@@ -240,11 +288,21 @@ class JFNK_Multigrid final
     return true;
   }
 
+  bool level_solve(const SizeType &level, const Vector &rhs, Vector &x,
+                   const SizeType &sweeps = 1000) {
+    auto multiplication_action = hessian_approxs_[level]->build_apply_H();
+    mf_lin_solvers_[level]->verbose(true);
+    mf_lin_solvers_[level]->max_it(sweeps);
+    return mf_lin_solvers_[level]->solve(*multiplication_action, rhs, x);
+  }
+
  private:
   std::vector<LinSolverPtr> mf_lin_solvers_;
   std::vector<HessianApproxPtr> hessian_approxs_;
 
   JFNKLevelMemory<Matrix, Vector> memory_;
+
+  bool init_mem_;
 };
 
 }  // namespace utopia

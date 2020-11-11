@@ -127,12 +127,13 @@ class MLSteadyStateJFNKMG final : public Configurable {
       jfnk_mg_ = std::make_shared<JFNK_Multigrid<Matrix, Vector>>(n_levels_);
     }
 
-    std::shared_ptr<MatrixFreeLinearSolver<PetscVector>> smoother =
+    std::shared_ptr<OperatorBasedLinearSolver<Matrix, Vector>> smoother =
         std::make_shared<Chebyshev3level<Matrix, Vector>>();
     // smoother->max_it(3);
 
-    std::shared_ptr<MatrixFreeLinearSolver<Vector>> coarse_grid_solver =
-        std::make_shared<utopia::ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+    std::shared_ptr<OperatorBasedLinearSolver<Matrix, Vector>>
+        coarse_grid_solver = std::make_shared<
+            utopia::ConjugateGradient<Matrix, Vector, HOMEMADE>>();
     // tr_strategy_coarse->atol(1e-12);
     // tr_strategy_coarse->max_it(300);
 
@@ -213,7 +214,8 @@ class MLSteadyStateJFNKMG final : public Configurable {
 
     // disp(solution);
 
-    auto hess_approx = std::make_shared<JFNK<Vector>>(*level_functions_.back());
+    // auto hess_approx =
+    // std::make_shared<JFNK<Vector>>(*level_functions_.back());
     // // auto lsolver =
     // //     std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
     // auto lsolver = std::make_shared<Chebyshev3level<Matrix, Vector>>();
@@ -221,7 +223,7 @@ class MLSteadyStateJFNKMG final : public Configurable {
 
     // std::cout << "--------- print ---------- \n";
 
-    QuasiNewton<Vector> nlsolver(hess_approx, jfnk_mg_);
+    QuasiNewton<Matrix, Vector> nlsolver(jfnk_mg_);
     nlsolver.atol(1e-6);
     nlsolver.rtol(1e-15);
     nlsolver.stol(1e-15);

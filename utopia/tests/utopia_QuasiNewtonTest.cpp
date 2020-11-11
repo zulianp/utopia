@@ -59,7 +59,7 @@ class QuasiNewtonTest {
     auto precond = hessian_approx->build_Hinv_precond();
     lsolver->set_preconditioner(precond);
 
-    QuasiNewton<Vector> nlsolver(hessian_approx, lsolver);
+    QuasiNewton<Matrix, Vector> nlsolver(hessian_approx, lsolver);
     nlsolver.atol(1e-5);
     nlsolver.rtol(1e-15);
     nlsolver.stol(1e-15);
@@ -159,7 +159,7 @@ class QuasiNewtonTest {
     auto precond = hess_approx->build_Hinv_precond();
     lsolver->set_preconditioner(precond);
 
-    QuasiNewton<Vector> nlsolver(hess_approx, lsolver);
+    QuasiNewton<Matrix, Vector> nlsolver(hess_approx, lsolver);
     nlsolver.atol(1e-6);
     nlsolver.rtol(1e-15);
     nlsolver.stol(1e-15);
