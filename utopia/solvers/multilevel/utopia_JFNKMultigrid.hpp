@@ -76,14 +76,11 @@ class JFNK_Multigrid final
 
   void update(const Vector &s, const Vector &y, const Vector &x,
               const Vector &g) {
-    std::cout << "----- update ------- \n";
-
     hessian_approxs_[this->n_levels() - 1]->update(s, y, x, g);
     this->memory_.x[this->n_levels() - 1] = x;
     this->memory_.g[this->n_levels() - 1] = g;
 
     for (auto l = this->n_levels() - 1; l > 0; l--) {
-      std::cout << "----- update ------- " << l << "          \n";
       this->transfer(l - 1).project_down(this->memory_.x[l],
                                          this->memory_.x[l - 1]);
 

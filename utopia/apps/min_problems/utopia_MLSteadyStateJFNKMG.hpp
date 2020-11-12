@@ -222,8 +222,7 @@ class MLSteadyStateJFNKMG final : public Configurable {
 
     // disp(solution);
 
-    // auto hess_approx =
-    // std::make_shared<JFNK<Vector>>(*level_functions_.back());
+    auto hess_approx = std::make_shared<JFNK<Vector>>(*level_functions_.back());
     // // auto lsolver =
     // //     std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
     // auto lsolver = std::make_shared<Chebyshev3level<Matrix, Vector>>();
@@ -231,7 +230,14 @@ class MLSteadyStateJFNKMG final : public Configurable {
 
     // std::cout << "--------- print ---------- \n";
 
-    QuasiNewton<Matrix, Vector> nlsolver(jfnk_mg_);
+    auto linear_solver =
+        std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+    linear_solver->verbose(true);
+    jfnk_mg_->max_it(1);
+    jfnk_mg_->verbose(false);
+    linear_solver->set_preconditioner(jfnk_mg_);
+
+    QuasiNewton<Matrix, Vector> nlsolver(hess_approx, linear_solver);
     nlsolver.atol(1e-10);
     nlsolver.rtol(1e-15);
     nlsolver.stol(1e-15);

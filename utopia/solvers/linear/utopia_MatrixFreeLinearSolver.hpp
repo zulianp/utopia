@@ -3,15 +3,18 @@
 
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
+#include "utopia_PreconditionedSolverInterface.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_SolverForwardDeclarations.hpp"
 
 namespace utopia {
 
 template <class Vector>
-class MatrixFreeLinearSolver : virtual public Configurable,
-                               virtual public Clonable,
-                               virtual public Preconditioner<Vector> {
+class MatrixFreeLinearSolver
+    : virtual public Configurable,
+      virtual public Clonable,
+      virtual public Preconditioner<Vector>,
+      virtual public PreconditionedSolverInterface<Vector> {
  public:
   using Preconditioner<Vector>::init_memory;
 

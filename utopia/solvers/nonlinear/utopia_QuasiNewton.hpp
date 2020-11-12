@@ -113,10 +113,15 @@ class QuasiNewton : public QuasiNewtonBase<Vector> {
 
   void update(const Vector &s, const Vector &y, const Vector &x,
               const Vector &g) override {
-    std::cout << "------ change this ------- \n";
     if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
             this->mf_linear_solver_.get())) {
       JFNK_mg->update(s, y, x, g);
+    } else if (this->mf_linear_solver_->has_preconditioner()) {
+      if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
+              this->mf_linear_solver_->get_preconditioner().get())) {
+        JFNK_mg->update(s, y, x, g);
+        QuasiNewtonBase<Vector>::update(s, y, x, g);
+      }
     } else {
       QuasiNewtonBase<Vector>::update(s, y, x, g);
     }
@@ -126,6 +131,12 @@ class QuasiNewton : public QuasiNewtonBase<Vector> {
     if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
             this->mf_linear_solver_.get())) {
       return JFNK_mg->initialize(x, g);
+    } else if (this->mf_linear_solver_->has_preconditioner()) {
+      if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
+              this->mf_linear_solver_->get_preconditioner().get())) {
+        JFNK_mg->initialize(x, g);
+        QuasiNewtonBase<Vector>::initialize_approximation(x, g);
+      }
     } else {
       QuasiNewtonBase<Vector>::initialize_approximation(x, g);
     }
