@@ -16,7 +16,8 @@
 namespace utopia {
 
 template <class Matrix, class Vector>
-class QuasiNewton : public QuasiNewtonBase<Vector> {
+class QuasiNewton : public QuasiNewtonBase<Vector>,
+                    public InexactNewtonInterface<Vector> {
   using Scalar = typename Traits<Vector>::Scalar;
   using SizeType = typename Traits<Vector>::SizeType;
   using Layout = typename Traits<Vector>::Layout;
@@ -64,6 +65,19 @@ class QuasiNewton : public QuasiNewtonBase<Vector> {
 
     UTOPIA_NO_ALLOC_BEGIN("Quasi_Newton");
     while (!converged) {
+      // setting up adaptive stopping criterium for linear solver
+      if (this->has_forcing_strategy()) {
+        if (auto *iterative_solver =
+                dynamic_cast<IterativeSolver<Matrix, Vector> *>(
+                    this->mf_linear_solver_.get())) {
+          iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
+        } else {
+          utopia_error(
+              "utopia::Newton::you can not use inexact Newton with exact "
+              "linear solver. ");
+        }
+      }
+
       // UTOPIA_NO_ALLOC_BEGIN("Quasi1");
       g_minus = -1.0 * g;
       this->linear_solve(g_minus, s);

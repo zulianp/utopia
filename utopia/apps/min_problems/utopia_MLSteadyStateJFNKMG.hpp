@@ -232,17 +232,23 @@ class MLSteadyStateJFNKMG final : public Configurable {
 
     auto linear_solver =
         std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
-    linear_solver->verbose(true);
+    linear_solver->verbose(false);
     jfnk_mg_->max_it(1);
     jfnk_mg_->verbose(false);
     linear_solver->set_preconditioner(jfnk_mg_);
 
     QuasiNewton<Matrix, Vector> nlsolver(hess_approx, linear_solver);
-    nlsolver.atol(1e-10);
+    nlsolver.atol(1e-6);
     nlsolver.rtol(1e-15);
     nlsolver.stol(1e-15);
     nlsolver.max_it(10);
     nlsolver.verbose(true);
+
+    auto ls_strat = std::make_shared<utopia::Backtracking<Vector>>();
+    nlsolver.set_line_search_strategy(ls_strat);
+
+    nlsolver.forcing_strategy(
+        utopia::InexactNewtonForcingStartegies::QUADRATIC_2);
 
     nlsolver.solve(*level_functions_.back(), solution);
 

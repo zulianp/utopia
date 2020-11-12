@@ -32,7 +32,6 @@ class JFNKLevelMemory {
   void init_memory(const std::vector<Layout> &layouts) {
     const SizeType n_levels = layouts.size();
     x.resize(n_levels);
-    // xw.resize(n_levels);
     g.resize(n_levels);
 
     res.resize(n_levels);
@@ -41,7 +40,6 @@ class JFNKLevelMemory {
 
     for (SizeType l = 0; l < n_levels; l++) {
       x[l].zeros(layouts[l]);
-      // xw[l].zeros(layouts[l]);
       g[l].zeros(layouts[l]);
 
       res[l].zeros(layouts[l]);
