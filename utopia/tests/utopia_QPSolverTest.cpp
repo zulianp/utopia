@@ -157,15 +157,15 @@ namespace utopia {
 
 
 
-        void ProjectedGS_QR()
+        void ProjectedGS_QR6()
         {
 
-            std::cout<<"----------- ProjectedGS_QR test  ------------  \n"; 
+            std::cout<<"----------- ProjectedGS_QR test-6 levels  ------------  \n"; 
 
             Vector rhs, x;
             Vector upper_bound,lower_bound;
-            Matrix A, R, Q, Ih_fine, Rot;
-            Matrix Ih1, Ih0; 
+            Matrix A, R, Q, Rot;
+            Matrix T54, T43, T32, T21, T10; 
 
             const std::string data_path = Utopia::instance().get("data_path");
 
@@ -177,12 +177,13 @@ namespace utopia {
             read(data_path + "/forQR/Rot", Rot);
             read(data_path + "/forQR/ub", upper_bound);
             read(data_path + "/forQR/lb", lower_bound);
+            read(data_path + "/forQR/T54", T54);
+            read(data_path + "/forQR/T43", T43);
+            read(data_path + "/forQR/T32", T32);
+            read(data_path + "/forQR/T21", T21);
+            read(data_path + "/forQR/T10", T10);
 
-            read(data_path + "/forQR/Ih", Ih_fine);
-            read(data_path + "/forQR/I2h", Ih1);
-            read(data_path + "/forQR/I3h", Ih0);
-
-            auto num_levels = 3;
+            auto num_levels = 6;
 
 
             // chop_abs(Q, 1e-7); 
@@ -190,36 +191,43 @@ namespace utopia {
             std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
             std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
             std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
-            std::cout<<"I: "<< local_size(Ih_fine).get(0) << "  \n"; 
+            std::cout<<"T54: "<< local_size(T54).get(0) << "  \n"; 
             std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
 
 
             R = transpose(R);   
 
             // version 1 
-            Matrix QtAQ  = transpose(Q)* Rot*A*Rot *Q;
-            Matrix QtIh  = transpose(Q)* Rot* Ih_fine;
-            Vector Qtrhs = transpose(Q)* Rot *rhs;
-            Vector Qtx   = transpose(Q)* Rot *x; 
+            Matrix QtAQ  = transpose(Q)* Rot * A * Rot * Q;
+            Matrix QtT54 = transpose(Q)* Rot * T54;
+            Vector Qtrhs = transpose(Q)* Rot * rhs;
+            Vector Qtx   = transpose(Q)* Rot * x; 
 
             // Matrix QtAQ  = Rot*A*Rot;
             // Matrix QtIh  = Rot* Ih_fine;
             // Vector Qtrhs = Rot *rhs;
             // Vector Qtx   = Rot *x;             
 
-            auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto smoother_fine   = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
-            auto direct_solver = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
+            auto direct_solver   = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
             MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);            
         
             std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            
             interpolation_operators.resize(num_levels - 1);
-            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtIh));
-            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(Ih1));
-               
+
+            interpolation_operators[4] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtT54));
+            interpolation_operators[3] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T43));
+            interpolation_operators[2] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T32));
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T21));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T10));               
             
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
+            multigrid.atol(1e-12);
+            multigrid.stol(1e-12);
+            multigrid.rtol(1e-12);
             multigrid.pre_smoothing_steps(3); 
             multigrid.post_smoothing_steps(3); 
             multigrid.use_line_search(true); 
@@ -232,21 +240,346 @@ namespace utopia {
 
 
             multigrid.solve(QtAQ, Qtrhs, Qtx);
-            x = Rot*Q * Qtx; 
+            x = Rot * Q * Qtx; 
             // x = Rot*Qtx; 
 
 
-            write("x.m", x); 
-            write("IX.m", Qtx);
+            //write("x.m", x); 
+            //write("IX.m", Qtx);
             // disp(x);
-
         }
+        void ProjectedGS_QR5()
+        {
+
+            std::cout<<"----------- ProjectedGS_QR test-5 levels  ------------  \n"; 
+
+            Vector rhs, x;
+            Vector upper_bound,lower_bound;
+            Matrix A, R, Q, Rot;
+            Matrix T54, T43, T32, T21; 
+
+            const std::string data_path = Utopia::instance().get("data_path");
+
+            read(data_path + "/forQR/b", rhs);
+            read(data_path + "/forQR/x", x);
+            read(data_path + "/forQR/A", A);            
+            read(data_path + "/forQR/Q", Q);
+            read(data_path + "/forQR/R", R);
+            read(data_path + "/forQR/Rot", Rot);
+            read(data_path + "/forQR/ub", upper_bound);
+            read(data_path + "/forQR/lb", lower_bound);
+            read(data_path + "/forQR/T54", T54);
+            read(data_path + "/forQR/T43", T43);
+            read(data_path + "/forQR/T32", T32);
+            read(data_path + "/forQR/T21", T21);
+
+            auto num_levels = 5;
+
+            // chop_abs(Q, 1e-7); 
+
+            std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
+            std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
+            std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
+            std::cout<<"T54: "<< local_size(T54).get(0) << "  \n"; 
+            std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
 
 
+            R = transpose(R);   
+
+            // version 1 
+            Matrix QtAQ  = transpose(Q)* Rot * A * Rot * Q;
+            Matrix QtT54 = transpose(Q)* Rot * T54;
+            Vector Qtrhs = transpose(Q)* Rot * rhs;
+            Vector Qtx   = transpose(Q)* Rot * x; 
+
+            // Matrix QtAQ  = Rot*A*Rot;
+            // Matrix QtIh  = Rot* Ih_fine;
+            // Vector Qtrhs = Rot *rhs;
+            // Vector Qtx   = Rot *x;             
+
+            auto smoother_fine   = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
+            auto direct_solver   = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
+            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);            
+        
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            
+            interpolation_operators.resize(num_levels - 1);
+
+            interpolation_operators[3] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtT54));
+            interpolation_operators[2] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T43));
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T32));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T21));
+            
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.max_it(40);
+            multigrid.atol(1e-12);
+            multigrid.stol(1e-12);
+            multigrid.rtol(1e-12);
+            multigrid.pre_smoothing_steps(5); 
+            multigrid.post_smoothing_steps(5); 
+            multigrid.use_line_search(true); 
+            multigrid.verbose(true);
+            // multigrid.mg_type(2); 
+
+            // This should be somewhere else... 
+            multigrid.set_QR(Q, R); 
+            multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
 
 
+            multigrid.solve(QtAQ, Qtrhs, Qtx);
+            x = Rot * Q * Qtx; 
+            // x = Rot*Qtx;
+            //write("x.m", x); 
+            //write("IX.m", Qtx);
+            // disp(x);
+        }
+        void ProjectedGS_QR4()
+        {
+
+            std::cout<<"----------- ProjectedGS_QR test-4 levels  ------------  \n"; 
+
+            Vector rhs, x;
+            Vector upper_bound,lower_bound;
+            Matrix A, R, Q, Rot;
+            Matrix T54, T43, T32; 
+
+            const std::string data_path = Utopia::instance().get("data_path");
+
+            read(data_path + "/forQR/b", rhs);
+            read(data_path + "/forQR/x", x);
+            read(data_path + "/forQR/A", A);            
+            read(data_path + "/forQR/Q", Q);
+            read(data_path + "/forQR/R", R);
+            read(data_path + "/forQR/Rot", Rot);
+            read(data_path + "/forQR/ub", upper_bound);
+            read(data_path + "/forQR/lb", lower_bound);
+            read(data_path + "/forQR/T54", T54);
+            read(data_path + "/forQR/T43", T43);
+            read(data_path + "/forQR/T32", T32);
+
+            auto num_levels = 4;
+
+            // chop_abs(Q, 1e-7); 
+
+            std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
+            std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
+            std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
+            std::cout<<"T54: "<< local_size(T54).get(0) << "  \n"; 
+            std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
 
 
+            R = transpose(R);   
+
+            // version 1 
+            Matrix QtAQ  = transpose(Q)* Rot * A * Rot * Q;
+            Matrix QtT54 = transpose(Q)* Rot * T54;
+            Vector Qtrhs = transpose(Q)* Rot * rhs;
+            Vector Qtx   = transpose(Q)* Rot * x; 
+
+            // Matrix QtAQ  = Rot*A*Rot;
+            // Matrix QtIh  = Rot* Ih_fine;
+            // Vector Qtrhs = Rot *rhs;
+            // Vector Qtx   = Rot *x;             
+
+            auto smoother_fine   = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
+            auto direct_solver   = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
+            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);            
+        
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            
+            interpolation_operators.resize(num_levels - 1);
+
+            interpolation_operators[2] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtT54));
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T43));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T32));
+            
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.max_it(40);
+            multigrid.pre_smoothing_steps(3); 
+            multigrid.post_smoothing_steps(3); 
+            multigrid.use_line_search(true); 
+            multigrid.verbose(true);
+            multigrid.atol(1e-12);
+            multigrid.stol(1e-12);
+            multigrid.rtol(1e-12);
+            // multigrid.mg_type(2); 
+
+            // This should be somewhere else... 
+            multigrid.set_QR(Q, R); 
+            multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
+
+
+            multigrid.solve(QtAQ, Qtrhs, Qtx);
+            x = Rot * Q * Qtx; 
+            // x = Rot*Qtx;
+            //write("x.m", x); 
+            //write("IX.m", Qtx);
+            // disp(x);
+        }
+        void ProjectedGS_QR3()
+        {
+
+            std::cout<<"----------- ProjectedGS_QR test-3 levels  ------------  \n"; 
+
+            Vector rhs, x;
+            Vector upper_bound,lower_bound;
+            Matrix A, R, Q, Rot;
+            Matrix T54, T43; 
+
+            const std::string data_path = Utopia::instance().get("data_path");
+
+            read(data_path + "/forQR/b", rhs);
+            read(data_path + "/forQR/x", x);
+            read(data_path + "/forQR/A", A);            
+            read(data_path + "/forQR/Q", Q);
+            read(data_path + "/forQR/R", R);
+            read(data_path + "/forQR/Rot", Rot);
+            read(data_path + "/forQR/ub", upper_bound);
+            read(data_path + "/forQR/lb", lower_bound);
+            read(data_path + "/forQR/T54", T54);
+            read(data_path + "/forQR/T43", T43);
+
+            auto num_levels = 3;
+
+            // chop_abs(Q, 1e-7); 
+
+            std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
+            std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
+            std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
+            std::cout<<"T54: "<< local_size(T54).get(0) << "  \n"; 
+            std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
+
+
+            R = transpose(R);   
+
+            // version 1 
+            Matrix QtAQ  = transpose(Q)* Rot * A * Rot * Q;
+            Matrix QtT54 = transpose(Q)* Rot * T54;
+            Vector Qtrhs = transpose(Q)* Rot * rhs;
+            Vector Qtx   = transpose(Q)* Rot * x; 
+
+            // Matrix QtAQ  = Rot*A*Rot;
+            // Matrix QtIh  = Rot* Ih_fine;
+            // Vector Qtrhs = Rot *rhs;
+            // Vector Qtx   = Rot *x;             
+
+            auto smoother_fine   = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
+            auto direct_solver   = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
+            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);            
+        
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            
+            interpolation_operators.resize(num_levels - 1);
+
+            interpolation_operators[1] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtT54));
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(T43));
+            
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.max_it(40);
+            multigrid.pre_smoothing_steps(3); 
+            multigrid.post_smoothing_steps(3); 
+            multigrid.use_line_search(true); 
+            multigrid.verbose(true);
+            // multigrid.mg_type(2); 
+            multigrid.atol(1e-12);
+            multigrid.stol(1e-12);
+            multigrid.rtol(1e-12);
+
+            // This should be somewhere else... 
+            multigrid.set_QR(Q, R); 
+            multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
+
+
+            multigrid.solve(QtAQ, Qtrhs, Qtx);
+            x = Rot * Q * Qtx; 
+            // x = Rot*Qtx;
+            //write("x.m", x); 
+            //write("IX.m", Qtx);
+            // disp(x);
+        }
+        void ProjectedGS_QR2()
+        {
+
+            std::cout<<"----------- ProjectedGS_QR test-2 levels  ------------  \n"; 
+
+            Vector rhs, x;
+            Vector upper_bound,lower_bound;
+            Matrix A, R, Q, Rot;
+            Matrix T54; 
+
+            const std::string data_path = Utopia::instance().get("data_path");
+
+            read(data_path + "/forQR/b", rhs);
+            read(data_path + "/forQR/x", x);
+            read(data_path + "/forQR/A", A);            
+            read(data_path + "/forQR/Q", Q);
+            read(data_path + "/forQR/R", R);
+            read(data_path + "/forQR/Rot", Rot);
+            read(data_path + "/forQR/ub", upper_bound);
+            read(data_path + "/forQR/lb", lower_bound);
+            read(data_path + "/forQR/T54", T54);
+            
+            auto num_levels = 2;
+
+            // chop_abs(Q, 1e-7); 
+
+            std::cout<<"A: "<< local_size(A).get(0) << "  \n"; 
+            std::cout<<"Q: "<< local_size(Q).get(0) << "  \n"; 
+            std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n"; 
+            std::cout<<"T54: "<< local_size(T54).get(0) << "  \n"; 
+            std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n"; 
+
+
+            R = transpose(R);   
+
+            // version 1 
+            Matrix QtAQ  = transpose(Q)* Rot * A * Rot * Q;
+            Matrix QtT54 = transpose(Q)* Rot * T54;
+            Vector Qtrhs = transpose(Q)* Rot * rhs;
+            Vector Qtx   = transpose(Q)* Rot * x; 
+
+            // Matrix QtAQ  = Rot*A*Rot;
+            // Matrix QtIh  = Rot* Ih_fine;
+            // Vector Qtrhs = Rot *rhs;
+            // Vector Qtx   = Rot *x;             
+
+            auto smoother_fine   = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector> >();
+            auto direct_solver   = std::make_shared<Factorization<Matrix, Vector> >("mumps", "lu");
+            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);            
+        
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector> > > interpolation_operators;            
+            
+            interpolation_operators.resize(num_levels - 1);
+
+            interpolation_operators[0] = std::make_shared<MatrixTruncatedTransfer<Matrix, Vector> >(std::make_shared<Matrix>(QtT54));
+            
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.max_it(40);
+            multigrid.pre_smoothing_steps(3); 
+            multigrid.post_smoothing_steps(3); 
+            multigrid.use_line_search(true); 
+            multigrid.verbose(true);
+            // multigrid.mg_type(2); 
+            multigrid.atol(1e-12);
+            multigrid.stol(1e-12);
+            multigrid.rtol(1e-12);
+
+            // This should be somewhere else... 
+            multigrid.set_QR(Q, R); 
+            multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
+
+
+            multigrid.solve(QtAQ, Qtrhs, Qtx);
+            x = Rot * Q * Qtx; 
+            // x = Rot*Qtx;
+            //write("x.m", x); 
+            //write("IX.m", Qtx);
+            // disp(x);
+        }
         void run()
         {
             print_backend_info();
@@ -256,9 +589,11 @@ namespace utopia {
             // UTOPIA_RUN_TEST(ngs_test);
             // UTOPIA_RUN_TEST(MPRGP_test); 
 
-
-            UTOPIA_RUN_TEST(ProjectedGS_QR); 
-
+            //UTOPIA_RUN_TEST(ProjectedGS_QR6); 
+            UTOPIA_RUN_TEST(ProjectedGS_QR5); 
+            UTOPIA_RUN_TEST(ProjectedGS_QR4); 
+            UTOPIA_RUN_TEST(ProjectedGS_QR3); 
+            UTOPIA_RUN_TEST(ProjectedGS_QR2);
         }
 
         QPSolverTest() : n(20) {}

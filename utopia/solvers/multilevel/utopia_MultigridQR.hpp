@@ -193,7 +193,7 @@ namespace utopia
           Vector x_old = memory.x[l]; 
 
           std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
-          this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "||x_old - x_new||","||x_old - x_new||_A"});
+          this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "||x_old - x_new||","||x_old - x_new||_A","nactive"});
 
           if(this->verbose())
               PrintInfo::print_iter_status(it, {r_norm, 1});
@@ -222,7 +222,7 @@ namespace utopia
               // assert(!has_nan_or_inf(x));
 #endif
               diff_corr = x_old - memory.x[l];
-              Adiff_corr = level(l).A() * diff_corr;
+              Adiff_corr = *this->get_operator() * diff_corr;
               
               diff_norm = norm2(diff_corr);
               diff_Anorm = std::sqrt(dot(diff_corr, Adiff_corr));
@@ -233,10 +233,17 @@ namespace utopia
 
               // print iteration status on every iteration
               if(this->verbose())
-                  PrintInfo::print_iter_status(it, {r_norm, diff_norm,diff_Anorm});
+              {
+                Scalar num_active=0.0;
+                if(ProjectedGaussSeidelQR<Matrix, Vector>* GS_smoother =  dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector>* > (smoothers_[l].get())){
+                  const Vector& as = GS_smoother->get_active_set();
+                  num_active = sum(as);
+                }
+                PrintInfo::print_iter_status(it, {r_norm, diff_norm, diff_Anorm, num_active});
+              }
 
               // check convergence and print interation info
-              converged = this->check_convergence(it, r_norm, diff_norm, 1);
+              converged = this->check_convergence(it, diff_Anorm, diff_norm, 1);
               it++;
           }
 
