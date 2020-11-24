@@ -21,11 +21,11 @@ namespace utopia {
             libMesh::VTKIO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
 
         } else {
-            if (space.mesh().comm().size() == 1) {
-                libMesh::ExodusII_IO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
-            } else {
-                libMesh::Nemesis_IO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
-            }
+            // if (space.mesh().comm().size() == 1) {
+            libMesh::ExodusII_IO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
+            // } else {
+            //     libMesh::Nemesis_IO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
+            // }
         }
     }
 

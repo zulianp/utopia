@@ -48,6 +48,7 @@ option(UTOPIA_ENABLE_MPI "Enable the cuda backend" ON)
 option(UTOPIA_ENABLE_PETSC "Enable the petsc backend" ON)
 option(UTOPIA_ENABLE_SLEPC "Enable the slepc backend" ON)
 option(UTOPIA_ENABLE_TRILINOS "Enable the Trilinos backend" ON)
+option(UTOPIA_ENABLE_KOKKOS_SIMD "Enable kokkos intriniscs wrapper" OFF)
 option(UTOPIA_ENABLE_BLAS "Enable the blas backend" ON)
 option(UTOPIA_ENABLE_M3ELINSOL
        "Enable the m3elinsol algebraic multigrid backend" OFF)
@@ -59,8 +60,8 @@ option(UTOPIA_ENABLE_TRACE_EXPR
 option(UTOPIA_ENABLE_NO_ALLOC_REGIONS"enables utopia alloc-check facilities"
        OFF)
 option(UTOPIA_ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-# option(UTOPIA_ENABLE_PASSO_EXTENSIONS
-# "Enable non-standard petsc solvers developed in the PASSO library" OFF)
+# option(UTOPIA_ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers
+# developed in the PASSO library" OFF)
 option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
 option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
@@ -88,6 +89,8 @@ option(
     UTOPIA_ENABLE_GPERFTOOLS
     "use Google perf tools (https://gperftools.github.io/gperftools/cpuprofile.html)"
     OFF)
+
+option(UTOPIA_SPACK_MODE "Spack env hacks" OFF)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 
@@ -435,6 +438,13 @@ list(APPEND UTOPIA_HEADERS utopia.hpp utopia_Base.hpp utopia_Instance.hpp
 
 list(APPEND UTOPIA_SOURCES utopia.cpp utopia_Instance.cpp utopia_Base.cpp)
 add_library(utopia ${UTOPIA_SOURCES})
+
+if(UTOPIA_ENABLE_KOKKOS_SIMD)
+    set(UTOPIA_WITH_KOKKOS_SIMD TRUE)
+
+    target_include_directories(
+        utopia PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/external/simd-math>)
+endif()
 
 # We use this to force c++14
 set_utopia_compiler_features(utopia)

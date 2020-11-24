@@ -43,6 +43,8 @@ namespace utopia {
         auto &viewer = wrapper_->viewer;
 
         const auto ext = path.extension();
+
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 14, 0)
         if (ext == "vtk") {
             ierr = PetscViewerASCIIOpen(mpi_comm, path.c_str(), &viewer);
             if (ierr != 0) {
@@ -52,7 +54,9 @@ namespace utopia {
 
             ierr = PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_VTK);
             assert(ierr == 0);
-        } else if (ext == "vts") {
+        } else
+#endif
+            if (ext == "vts") {
             ierr = PetscViewerVTKOpen(mpi_comm, path.c_str(), FILE_MODE_WRITE, &viewer);
             if (ierr != 0) {
                 assert(false);
