@@ -228,8 +228,8 @@ namespace utopia {
             multigrid.atol(1e-12);
             multigrid.stol(1e-12);
             multigrid.rtol(1e-12);
-            multigrid.pre_smoothing_steps(3); 
-            multigrid.post_smoothing_steps(3); 
+            multigrid.pre_smoothing_steps(5); 
+            multigrid.post_smoothing_steps(5); 
             multigrid.use_line_search(true); 
             multigrid.verbose(true);
             // multigrid.mg_type(2); 
@@ -397,8 +397,8 @@ namespace utopia {
             
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
-            multigrid.pre_smoothing_steps(3); 
-            multigrid.post_smoothing_steps(3); 
+            multigrid.pre_smoothing_steps(5); 
+            multigrid.post_smoothing_steps(5); 
             multigrid.use_line_search(true); 
             multigrid.verbose(true);
             multigrid.atol(1e-12);
@@ -479,8 +479,8 @@ namespace utopia {
             
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
-            multigrid.pre_smoothing_steps(3); 
-            multigrid.post_smoothing_steps(3); 
+            multigrid.pre_smoothing_steps(5); 
+            multigrid.post_smoothing_steps(5); 
             multigrid.use_line_search(true); 
             multigrid.verbose(true);
             // multigrid.mg_type(2); 
@@ -559,8 +559,8 @@ namespace utopia {
             
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
-            multigrid.pre_smoothing_steps(3); 
-            multigrid.post_smoothing_steps(3); 
+            multigrid.pre_smoothing_steps(5); 
+            multigrid.post_smoothing_steps(5); 
             multigrid.use_line_search(true); 
             multigrid.verbose(true);
             // multigrid.mg_type(2); 
