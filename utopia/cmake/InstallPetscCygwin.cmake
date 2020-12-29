@@ -68,7 +68,7 @@ if(NOT PETSC_FOUND)
         BUILD_IN_SOURCE 1
         PREFIX ${STAGE_DIR}
         GIT_REPOSITORY ${PETSC_URL}
-        GIT_TAG maint
+        #GIT_TAG maint
         DOWNLOAD_DIR ${STAGE_DIR}
         INSTALL_DIR ${PETSC_INSTALL_DIR}
         LOG_CONFIGURE 1
