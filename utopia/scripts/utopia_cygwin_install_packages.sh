@@ -2,6 +2,8 @@ lynx -source rawgit.com/transcode-open/apt-cyg/master/apt-cyg > apt-cyg
 if ! type "$apt-cyg" > /dev/null; then
   install apt-cyg /bin
 fi
+apt-cyg install autoconf
+apt-cyg install automake
 apt-cyg install gcc-fortran
 apt-cyg install gcc-g++
 apt-cyg install gdb
