@@ -28,8 +28,8 @@ if(NOT PETSC_FOUND)
         #--with-cxx-dialect=C++11
         #-download-superlu_dist=yes
         #--download-superlu=yes
-        --download-mumps=yes
-        -with-debugging=0
+        #--download-mumps=yes
+        --with-debugging=0
         --with-shared-libraries=0)
 
     # ##########################################################################

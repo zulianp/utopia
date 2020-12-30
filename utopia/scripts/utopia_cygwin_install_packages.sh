@@ -4,6 +4,7 @@ if ! type "$apt-cyg" > /dev/null; then
 fi
 apt-cyg install autoconf
 apt-cyg install automake
+apt-cyg install clang
 apt-cyg install gcc-fortran
 apt-cyg install gcc-g++
 apt-cyg install gdb
