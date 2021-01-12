@@ -143,65 +143,78 @@ namespace utopia {
 
         //////////////////////////////////////////////////////////////
 
-        // template <class MatT, class VecT>
-        // static UTOPIA_INLINE_FUNCTION void eigenvalues_3(const MatT &m, VecT &roots) {
-        //     const Scalar s_inv3 = Scalar(1.0) / Scalar(3.0);
-        //     const Scalar s_sqrt3 = device::sqrt(Scalar(3.0));
+        template <class MatT, class VecT>
+        static UTOPIA_INLINE_FUNCTION void eigenvalues_3(const MatT &m, VecT &roots) {
+            const Scalar s_inv3 = Scalar(1.0) / Scalar(3.0);
+            const Scalar s_sqrt3 = device::sqrt(Scalar(3.0));
+            const Scalar zero = 0.0;
 
-        //     // The characteristic equation is x^3 - c2*x^2 + c1*x - c0 = 0.  The
-        //     // eigenvalues are the roots to this equation, all guaranteed to be
-        //     // real-valued, because the matrix is symmetric.
-        //     Scalar c0 = m(0, 0) * m(1, 1) * m(2, 2) + Scalar(2) * m(1, 0) * m(2, 0) * m(2, 1) -
-        //                 m(0, 0) * m(2, 1) * m(2, 1) - m(1, 1) * m(2, 0) * m(2, 0) - m(2, 2) * m(1, 0) * m(1, 0);
-        //     Scalar c1 = m(0, 0) * m(1, 1) - m(1, 0) * m(1, 0) + m(0, 0) * m(2, 2) - m(2, 0) * m(2, 0) +
-        //                 m(1, 1) * m(2, 2) - m(2, 1) * m(2, 1);
-        //     Scalar c2 = m(0, 0) + m(1, 1) + m(2, 2);
+            // The characteristic equation is x^3 - c2*x^2 + c1*x - c0 = 0.  The
+            // eigenvalues are the roots to this equation, all guaranteed to be
+            // real-valued, because the matrix is symmetric.
+            Scalar c0 = m(0, 0) * m(1, 1) * m(2, 2) + Scalar(2) * m(1, 0) * m(2, 0) * m(2, 1) -
+                        m(0, 0) * m(2, 1) * m(2, 1) - m(1, 1) * m(2, 0) * m(2, 0) - m(2, 2) * m(1, 0) * m(1, 0);
+            Scalar c1 = m(0, 0) * m(1, 1) - m(1, 0) * m(1, 0) + m(0, 0) * m(2, 2) - m(2, 0) * m(2, 0) +
+                        m(1, 1) * m(2, 2) - m(2, 1) * m(2, 1);
+            Scalar c2 = m(0, 0) + m(1, 1) + m(2, 2);
 
-        //     // Construct the parameters used in classifying the roots of the equation
-        //     // and in solving the equation for the roots in closed form.
-        //     Scalar c2_over_3 = c2 * s_inv3;
-        //     Scalar a_over_3 = (c2 * c2_over_3 - c1) * s_inv3;
-        //     if (a_over_3 < Scalar(0)) a_over_3 = Scalar(0);
+            // Construct the parameters used in classifying the roots of the equation
+            // and in solving the equation for the roots in closed form.
+            Scalar c2_over_3 = c2 * s_inv3;
+            Scalar a_over_3 = (c2 * c2_over_3 - c1) * s_inv3;
 
-        //     Scalar half_b = Scalar(0.5) * (c0 + c2_over_3 * (Scalar(2) * c2_over_3 * c2_over_3 - c1));
+            // if (a_over_3 < zero) a_over_3 = zero;
+            a_over_3.setZero(a_over_3 < zero);
 
-        //     Scalar q = a_over_3 * a_over_3 * a_over_3 - half_b * half_b;
-        //     if (q < Scalar(0)) q = Scalar(0);
+            Scalar half_b = Scalar(0.5) * (c0 + c2_over_3 * (Scalar(2) * c2_over_3 * c2_over_3 - c1));
 
-        //     // Compute the eigenvalues by solving for the roots of the polynomial.
-        //     Scalar rho = device::sqrt(a_over_3);
-        //     Scalar theta = device::atan2(device::sqrt(q), half_b) *
-        //                    s_inv3;  // since sqrt(q) > 0, atan2 is in [0, pi] and theta is in [0, pi/3]
-        //     Scalar cos_theta = device::cos(theta);
-        //     Scalar sin_theta = device::sin(theta);
-        //     // roots are already sorted, since cos is monotonically decreasing on [0, pi]
-        //     roots(0) = c2_over_3 - rho * (cos_theta + s_sqrt3 * sin_theta);  // == 2*rho*cos(theta+2pi/3)
-        //     roots(1) = c2_over_3 - rho * (cos_theta - s_sqrt3 * sin_theta);  // == 2*rho*cos(theta+ pi/3)
-        //     roots(2) = c2_over_3 + Scalar(2) * rho * cos_theta;
-        // }
+            Scalar q = a_over_3 * a_over_3 * a_over_3 - half_b * half_b;
 
-        // template <class MatT, class VecT>
-        // static inline void extract_kernel_3(const MatT &mat, VecT &res, VecT &representative) {
-        //     SizeType i0 = imax(abs(diag(mat)));
-        //     mat.col(i0, representative);
+            // if (q < zero) q = zero;
+            q.setZero(q < zero);
 
-        //     Scalar n0, n1;
-        //     Vector3 temp, c0, c1;
+            // Compute the eigenvalues by solving for the roots of the polynomial.
+            Scalar rho = device::sqrt(a_over_3);
+            Scalar theta = device::atan2(device::sqrt(q), half_b) *
+                           s_inv3;  // since sqrt(q) > 0, atan2 is in [0, pi] and theta is in [0, pi/3]
+            Scalar cos_theta = device::cos(theta);
+            Scalar sin_theta = device::sin(theta);
+            // roots are already sorted, since cos is monotonically decreasing on [0, pi]
+            roots(0) = c2_over_3 - rho * (cos_theta + s_sqrt3 * sin_theta);  // == 2*rho*cos(theta+2pi/3)
+            roots(1) = c2_over_3 - rho * (cos_theta - s_sqrt3 * sin_theta);  // == 2*rho*cos(theta+ pi/3)
+            roots(2) = c2_over_3 + Scalar(2) * rho * cos_theta;
+        }
 
-        //     mat.col((i0 + 1) % 3, temp);
-        //     c0 = cross(representative, temp);
+        template <class MatT, class VecT>
+        static inline void extract_kernel_3(const MatT &mat, VecT &res, VecT &representative) {
+            SizeType i0 = imax(abs(diag(mat)));
+            mat.col(i0, representative);
 
-        //     mat.col((i0 + 2) % 3, temp);
-        //     c1 = cross(representative, temp);
+            Scalar n0, n1;
+            Vector3 temp, c0, c1;
 
-        //     n0 = dot(c0, c0);
-        //     n1 = dot(c1, c1);
+            mat.col((i0 + 1) % 3, temp);
+            c0 = cross(representative, temp);
 
-        //     if (n0 > n1)
-        //         res = c0 / device::sqrt(n0);
-        //     else
-        //         res = c1 / device::sqrt(n1);
-        // }
+            mat.col((i0 + 2) % 3, temp);
+            c1 = cross(representative, temp);
+
+            n0 = dot(c0, c0);
+            n1 = dot(c1, c1);
+
+            auto n0_greather_n1 = n0 > n1;
+            Scalar mask, neg_mask;
+
+            mask.setZeroInverted(n0_greather_n1);
+            neg_mask.setZero(n0_greather_n1);
+
+            // if (n0 > n1)
+            //     res = c0 / device::sqrt(n0);
+            // else
+            //     res = c1 / device::sqrt(n1);
+
+            res = mask * (c0 / device::sqrt(n0)) + neg_mask * (c1 / device::sqrt(n1));
+        }
 
         // template <class EigenValues, class EigenVectors>
         // UTOPIA_INLINE_FUNCTION static void apply_3(const Expr &mat,
@@ -213,7 +226,7 @@ namespace utopia {
 
         //     // Shift the matrix to the mean eigenvalue and map the matrix coefficients to [-1:1] to avoid over- and
         //     // underflow.
-        //     Scalar shift = trace(mat) / Scalar(3);
+        //     Scalar shift = trace(mat) / Scalar(3.0);
 
         //     scaled_mat.copy(mat);
         //     scaled_mat -= shift * device::identity<Scalar>();
