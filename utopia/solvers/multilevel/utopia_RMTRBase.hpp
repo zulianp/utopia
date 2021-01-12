@@ -167,6 +167,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
       MultiLevelCoherence T = CONSISTENCY_LEVEL,
       enable_if_t<is_same<T, FIRST_ORDER_MULTIPLICATIVE_DF>::value, int> = 0>
   bool init_consistency_terms(const SizeType &level) {
+    std::cout << "-------------- init const. terms 1 ------------- \n";
+
     this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
                                        this->ml_derivs_.g_diff[level - 1]);
 
@@ -189,14 +191,22 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     //----------------------------------------------------------------------------
 
     // todo:: investigate if correct
+    // std::cout << "-------------- init const. terms 2 ------------- \n";
     this->compute_s_global(level, this->memory_.s_working[level]);
+
+    // std::cout << "-------------- init const. terms 3 ------------- \n";
     Scalar energy_fine = this->get_multilevel_energy(
         this->function(level), level, this->memory_.s_working[level]);
 
+    // std::cout << "-------------- init const. terms 4 ------------- \n";
     this->function(level - 1).gradient(this->memory_.x[level - 1],
                                        this->ml_derivs_.g[level - 1]);
+
+    // std::cout << "-------------- init const. terms 5 ------------- \n";
     Scalar energy_coarse = 0.0;
     this->function(level - 1).value(this->memory_.x[level - 1], energy_coarse);
+
+    // std::cout << "-------------- init const. terms 6 ------------- \n";
 
     // if (!this->skip_BC_checks()) {
     //   this->zero_correction_related_to_equality_constrain(
@@ -211,9 +221,15 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     // self.g_diff[level] = (1./loss_coarse * grad_fine) -
     // (loss_fine/(loss_coarse*loss_coarse) * grad_coarse)
 
+    // storing for the first order consistency iteration
+    this->ml_derivs_.g[level - 1] = this->ml_derivs_.g_diff[level - 1];
+
     this->ml_derivs_.g_diff[level - 1] = help1 - help2;
 
     this->ml_derivs_.e_diff[level - 1] = energy_fine / energy_coarse;
+
+    // as level is also zeroth order consistent
+    this->memory_.energy[level - 1] = energy_fine;
 
     return true;
   }
@@ -457,10 +473,29 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     return true;
   }
 
-  template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
-            enable_if_t<is_any<T, FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF,
-                               FIRST_ORDER_MULTIPLICATIVE_DF>::value,
-                        int> = 0>
+  template <
+      MultiLevelCoherence T = CONSISTENCY_LEVEL,
+      enable_if_t<is_same<T, FIRST_ORDER_MULTIPLICATIVE_DF>::value, int> = 0>
+  bool init_deriv_loc_solve(const Fun &fun, const SizeType &level,
+                            const LocalSolveType &solve_type) {
+    if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {
+      if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
+        std::cout << "-------------- here ----------- \n";
+        // this->get_multilevel_gradient(fun, level);
+        std::cout << "-------------- beg  here ----------- \n";
+        this->memory_.gnorm[level] = this->criticality_measure(level);
+        std::cout << "-------------- endd  here ----------- \n";
+        // exit(0);
+      }
+    }
+
+    return true;
+  }
+
+  template <
+      MultiLevelCoherence T = CONSISTENCY_LEVEL,
+      enable_if_t<is_same<T, FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF>::value,
+                  int> = 0>
   bool init_deriv_loc_solve(const Fun &fun, const SizeType &level,
                             const LocalSolveType &solve_type) {
     if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {

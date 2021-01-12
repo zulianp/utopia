@@ -115,7 +115,11 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
 
   if (this->pre_smoothing_steps() != 0) {
     UTOPIA_NO_ALLOC_BEGIN("RMTR::region2");
+    std::cout
+        << "----------------------------- going to smoothing ------------- \n";
     converged = this->local_tr_solve(level, PRE_SMOOTHING);
+    std::cout
+        << "----------------------------- out of smoothing ------------- \n";
     UTOPIA_NO_ALLOC_END();
   } else {
     converged = false;
@@ -148,7 +152,11 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   }
 
   UTOPIA_NO_ALLOC_BEGIN("RMTR::region11");
+  std::cout << "----------------------------- init_consistency_terms 1 "
+               "------------- \n";
   smoothness_flg = this->init_consistency_terms(level);
+  std::cout << "----------------------------- init_consistency_terms 2 "
+               "------------- \n";
   UTOPIA_NO_ALLOC_END();
 
   // UTOPIA_NO_ALLOC_BEGIN("RMTR::region12");
@@ -157,9 +165,12 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   //----------------------------------------------------------------------------
   this->memory_.x_0[level - 1] = this->memory_.x[level - 1];
 
-  // at this point s_global on coarse level is 0, so we can simplify
-  coarse_reduction =
-      this->get_multilevel_energy(this->function(level - 1), level - 1);
+  // at this point s_global on coarse level is 0, so we can simplify - NOT TRUE
+  // IF MG_OPT TYPE OF ML_MODEL IS USED -> better to do directly in specialized
+  // class coarse_reduction =
+  //     this->get_multilevel_energy(this->function(level - 1), level - 1);
+
+  coarse_reduction = this->memory_.energy[level - 1];
 
   // store energy in order to avoid evaluation in the first local_solve
   this->memory_.energy[level - 1] = coarse_reduction;
@@ -168,8 +179,15 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   //----------------------------------------------------------------------------
   //               recursion  / Taylor correction
   //----------------------------------------------------------------------------
+  std::cout << " \n \n \n \n \n \n----------------------------- going to CS "
+               "------------- \n";
+  // exit(0);
+
   if (level == 1 && smoothness_flg) {
+    std::cout << "----------------------------- going to LS------------- \n";
     this->local_tr_solve(level - 1, COARSE_SOLVE);
+    std::cout << "----------------------------- out of LS------------- \n";
+    exit(0);
   } else if (smoothness_flg) {
     // recursive call into RMTR
     for (SizeType k = 0; k < this->mg_type(); k++) {
@@ -177,6 +195,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
       this->multiplicative_cycle(l_new);
     }
   }
+  exit(0);
 
   if (smoothness_flg) {
     //----------------------------------------------------------------------------
@@ -321,13 +340,19 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
 
   UTOPIA_NO_ALLOC_BEGIN("RMTR::region3");
   const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
+
+  std::cout << "--------------- LTRS 1 ------------------- \n";
   this->initialize_local_solve(level, solve_type);
+  // std::cout << "--------------- LTRS 2 ------------------- \n";
 
   make_hess_updates =
       this->init_deriv_loc_solve(this->function(level), level, solve_type);
+  // std::cout << "--------------- LTRS 3 ------------------- \n";
+  // exit(0);
 
   converged = this->check_local_convergence(
       it, it_success, level, this->memory_.delta[level], solve_type);
+  // std::cout << "--------------- LTRS 4 ------------------- \n";
 
   if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE &&
       this->verbose() == true && mpi_world_rank() == 0) {
@@ -336,6 +361,9 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
         0, {this->memory_.gnorm[level], this->memory_.energy[level], ared, pred,
             rho, this->memory_.delta[level]});
   }
+
+  // std::cout << "--------------- LTRS 5 ------------------- \n";
+  // exit(0);
 
   UTOPIA_NO_ALLOC_END();
 
@@ -372,10 +400,14 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
     this->compute_s_global(level, this->memory_.s_working[level]);
     UTOPIA_NO_ALLOC_END();
 
+    std::cout << "--------------- LTRS 2 ------------------- \n";
+
     UTOPIA_NO_ALLOC_BEGIN("RMTR::deriv_comp");
     energy_new = this->get_multilevel_energy(this->function(level), level,
                                              this->memory_.s_working[level]);
     UTOPIA_NO_ALLOC_END();
+
+    std::cout << "--------------- LTRS 3 ------------------- \n";
 
     UTOPIA_NO_ALLOC_BEGIN("RMTR::region701");
     ared = this->memory_.energy[level] - energy_new;
@@ -391,7 +423,9 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
 
     // update in hessian approx ...
     // TODO:: could be done in more elegant way....
+    std::cout << "--------------- LTRS 4 ------------------- \n";
     this->update_level(level);
+    std::cout << "--------------- LTRS 5 ------------------- \n";
 
     //----------------------------------------------------------------------------
     //     acceptance of trial point
@@ -430,6 +464,8 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
     make_hess_updates = make_grad_updates;
     UTOPIA_NO_ALLOC_END();
 
+    std::cout << "--------------- LTRS 6 ------------------- \n";
+
     if (make_grad_updates) {
       // std::cout<<"grad updated... \n"; s
       // Vector g_old = memory_.g[level];
@@ -455,6 +491,10 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
       // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s,
       // H, rho, g_norm);
     }
+
+    std::cout << "--------------- LTRS 7 ------------------- \n";
+    exit(0);
+
     // else
     // {
     //     make_hess_updates = false;
