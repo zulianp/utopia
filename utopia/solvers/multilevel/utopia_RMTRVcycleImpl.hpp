@@ -148,7 +148,10 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   }
 
   UTOPIA_NO_ALLOC_BEGIN("RMTR::region11");
-  smoothness_flg = this->init_consistency_terms(level);
+
+  smoothness_flg =
+      this->init_consistency_terms(level, this->memory_.energy[level]);
+
   UTOPIA_NO_ALLOC_END();
 
   // UTOPIA_NO_ALLOC_BEGIN("RMTR::region12");
@@ -157,9 +160,13 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   //----------------------------------------------------------------------------
   this->memory_.x_0[level - 1] = this->memory_.x[level - 1];
 
-  // at this point s_global on coarse level is 0, so we can simplify
-  coarse_reduction =
-      this->get_multilevel_energy(this->function(level - 1), level - 1);
+  // at this point s_global on coarse level is 0, so we can simplify - NOT TRUE
+  // IF MG_OPT TYPE OF ML_MODEL IS USED -> better to do directly in specialized
+  // class
+  // coarse_reduction =
+  //     this->get_multilevel_energy(this->function(level - 1), level - 1);
+
+  coarse_reduction = this->memory_.energy[level - 1];
 
   // store energy in order to avoid evaluation in the first local_solve
   this->memory_.energy[level - 1] = coarse_reduction;
@@ -168,6 +175,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   //----------------------------------------------------------------------------
   //               recursion  / Taylor correction
   //----------------------------------------------------------------------------
+
   if (level == 1 && smoothness_flg) {
     this->local_tr_solve(level - 1, COARSE_SOLVE);
   } else if (smoothness_flg) {
@@ -209,6 +217,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
     this->memory_.x[level] += this->memory_.s[level];
 
     this->compute_s_global(level, this->memory_.s_working[level]);
+
     E_new = this->get_multilevel_energy(this->function(level), level,
                                         this->memory_.s_working[level]);
 
@@ -234,7 +243,8 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
 
       // todo:: make sure that correct assumption
       this->get_multilevel_gradient(this->function(level), level,
-                                    this->memory_.s_working[level]);
+                                    this->memory_.s_working[level], E_new);
+
       this->memory_.gnorm[level] = this->criticality_measure(level);
     } else {
       this->memory_.x[level] -= this->memory_.s[level];
@@ -304,6 +314,8 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
     this->local_tr_solve(level, post_smoothing_solve_type);
   }
 
+  // exit(0);
+
   return true;
 }
 
@@ -321,6 +333,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
 
   UTOPIA_NO_ALLOC_BEGIN("RMTR::region3");
   const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
+
   this->initialize_local_solve(level, solve_type);
 
   make_hess_updates =
@@ -389,9 +402,9 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
       rho = 0.0;
     }
 
-    // update in hessian approx ...
+    // update of hessian approx ...
     // TODO:: could be done in more elegant way....
-    this->update_level(level);
+    this->update_level(level, energy_new);
 
     //----------------------------------------------------------------------------
     //     acceptance of trial point
@@ -430,31 +443,8 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
     make_hess_updates = make_grad_updates;
     UTOPIA_NO_ALLOC_END();
 
-    if (make_grad_updates) {
-      // std::cout<<"grad updated... \n"; s
-      // Vector g_old = memory_.g[level];
-      UTOPIA_NO_ALLOC_BEGIN("RMTR::grad_computation");
-      this->get_multilevel_gradient(this->function(level), level,
-                                    this->memory_.s_working[level]);
-      this->memory_.gnorm[level] = this->criticality_measure(level);
-      UTOPIA_NO_ALLOC_END();
+    rho = this->update_local_grad(make_grad_updates, level, rho, energy_new);
 
-      // this is just a safety check
-      if (!std::isfinite(this->memory_.gnorm[level])) {
-        UTOPIA_NO_ALLOC_BEGIN("RMTR::region8");
-        rho = 0;
-        this->memory_.x[level] -=
-            this->memory_.s[level];  // return iterate into its initial state
-        this->compute_s_global(level, this->memory_.s_working[level]);
-        this->get_multilevel_gradient(this->function(level), level,
-                                      this->memory_.s_working[level]);
-        this->memory_.gnorm[level] = this->criticality_measure(level);
-        UTOPIA_NO_ALLOC_END();
-      }
-
-      // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s,
-      // H, rho, g_norm);
-    }
     // else
     // {
     //     make_hess_updates = false;

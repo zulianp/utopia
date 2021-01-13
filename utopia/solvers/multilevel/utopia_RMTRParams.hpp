@@ -25,7 +25,7 @@ class RMTRParams : public TrustRegionParams<Vector> {
         _grad_smoothess_termination(1. / 8.),
         _hessian_update_delta(0.15),
         _hessian_update_eta(0.5),
-        _use_line_search(true),
+        _use_line_search(false),
 
         red_(FG_LIGHT_MAGENTA),
         def_(FG_DEFAULT),
