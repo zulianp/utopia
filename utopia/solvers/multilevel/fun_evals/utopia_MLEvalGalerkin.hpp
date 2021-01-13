@@ -73,7 +73,7 @@ class MultilevelDerivEval<Matrix, Vector, GALERKIN> final {
                                const ExtendedFunction<Matrix, Vector> &fun,
                                const Vector &x, const Vector &s_global,
                                const Scalar & /*energy*/) {
-    return this->compute_gradient(level, fun, s_global);
+    return this->compute_gradient(level, fun, x, s_global);
   }
 
   inline Scalar compute_gradient_energy(

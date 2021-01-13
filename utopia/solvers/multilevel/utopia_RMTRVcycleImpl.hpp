@@ -169,6 +169,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   // at this point s_global on coarse level is 0, so we can simplify - NOT TRUE
   // IF MG_OPT TYPE OF ML_MODEL IS USED -> better to do directly in specialized
   // class coarse_reduction =
+
   //     this->get_multilevel_energy(this->function(level - 1), level - 1);
 
   coarse_reduction = this->memory_.energy[level - 1];
@@ -371,6 +372,9 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
 
   it++;
 
+  // std::cout
+  //     << "--------------------------------- 1 ------------------------- \n";
+
   while (!converged) {
     UTOPIA_NO_ALLOC_BEGIN("RMTR::hessian_eval1");
     if (make_hess_updates) {
@@ -421,7 +425,9 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
 
     // update in hessian approx ...
     // TODO:: could be done in more elegant way....
+    // std::cout << "------------------------- 2 --------------------- \n";
     this->update_level(level, energy_new);
+    // std::cout << "------------------------- 3 --------------------- \n";
 
     //----------------------------------------------------------------------------
     //     acceptance of trial point
@@ -460,7 +466,9 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::local_tr_solve(
     make_hess_updates = make_grad_updates;
     UTOPIA_NO_ALLOC_END();
 
+    // std::cout << "------------------------- 4 --------------------- \n";
     rho = this->update_local_grad(make_grad_updates, level, rho, energy_new);
+    // std::cout << "------------------------- 5 --------------------- \n";
 
     // else
     // {

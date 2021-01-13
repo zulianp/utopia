@@ -61,7 +61,7 @@ class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_MGOPT> final {
                                const ExtendedFunction<Matrix, Vector> &fun,
                                const Vector &x, const Vector &s_global,
                                const Scalar & /*energy*/) {
-    return this->compute_gradient(level, fun, s_global);
+    return this->compute_gradient(level, fun, x, s_global);
   }
 
   // s_global is assummed to be zero
