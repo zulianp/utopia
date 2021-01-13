@@ -33,7 +33,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     class MatrixTransfer;
 
-    template <typename Scalar, typename SizeType>
+    template <class Matrix>
     class ProjectedGaussSeidelSweep;
 
 }  // namespace utopia

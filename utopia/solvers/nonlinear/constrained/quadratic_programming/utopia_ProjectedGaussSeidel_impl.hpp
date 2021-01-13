@@ -4,8 +4,11 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
-#include "utopia_ProjectedGaussSeidelSweep.hpp"
 #include "utopia_make_unique.hpp"
+
+#include "utopia_ProjectedGaussSeidelSweep.hpp"
+
+#include "utopia_ProjectedBlockGaussSeidelSweep.hpp"
 
 namespace utopia {
 
@@ -51,6 +54,17 @@ namespace utopia {
         in.get("l1", l1_);
         in.get("use_sweeper", use_sweeper_);
         in.get("check_s_norm_each", check_s_norm_each_);
+
+        int block_size = 0;
+        in.get("block_size", block_size);
+
+        if (block_size == 2) {
+            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 2>>();
+        } else if (block_size == 3) {
+            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 3>>();
+        } else if (block_size == 4) {
+            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 4>>();
+        }
     }
 
     template <class Matrix, class Vector>
@@ -441,7 +455,7 @@ namespace utopia {
 
         if (use_sweeper_) {
             if (!sweeper_) {
-                sweeper_ = utopia::make_unique<ProjectedGaussSeidelSweep<Scalar, SizeType> >();
+                sweeper_ = utopia::make_unique<ProjectedScalarGaussSeidelSweep<Matrix>>();
             }
 
             sweeper_->symmetric(use_symmetric_sweep_);
