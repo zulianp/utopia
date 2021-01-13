@@ -117,7 +117,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
             enable_if_t<is_any<T, FIRST_ORDER, FIRST_ORDER_DF,
                                FIRST_ORDER_MGOPT>::value,
                         int> = 0>
-  bool init_consistency_terms(const SizeType &level) {
+  bool init_consistency_terms(const SizeType &level,
+                              const Scalar & /*energy_fine_level_dep*/) {
     // UTOPIA_NO_ALLOC_BEGIN("RMTR::region111");
     // Restricted fine level gradient
 
@@ -173,7 +174,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
   template <
       MultiLevelCoherence T = CONSISTENCY_LEVEL,
       enable_if_t<is_same<T, FIRST_ORDER_MULTIPLICATIVE_DF>::value, int> = 0>
-  bool init_consistency_terms(const SizeType &level) {
+  bool init_consistency_terms(const SizeType &level,
+                              const Scalar &energy_fine_level_dep) {
     std::cout << "-------------- init const. terms 1 ------------- \n";
 
     this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
@@ -202,8 +204,9 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     this->compute_s_global(level, this->memory_.s_working[level]);
 
     // std::cout << "-------------- init const. terms 3 ------------- \n";
-    Scalar energy_fine = this->get_multilevel_energy(
-        this->function(level), level, this->memory_.s_working[level]);
+    // Scalar energy_fine = this->get_multilevel_energy(
+    //     this->function(level), level, this->memory_.s_working[level]);
+    Scalar energy_fine = energy_fine_level_dep;
 
     // std::cout << "-------------- init const. terms 4 ------------- \n";
     this->function(level - 1).gradient(this->memory_.x[level - 1],
@@ -245,7 +248,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
       MultiLevelCoherence T = CONSISTENCY_LEVEL,
       enable_if_t<is_same<T, FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF>::value,
                   int> = 0>
-  bool init_consistency_terms(const SizeType &level) {
+  bool init_consistency_terms(const SizeType &level,
+                              const Scalar &energy_fine_level_dep) {
     this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
                                        this->ml_derivs_.g_diff_m[level - 1]);
 
@@ -278,8 +282,9 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
 
     // todo:: investigate if correct
     this->compute_s_global(level, this->memory_.s_working[level]);
-    Scalar energy_fine = this->get_multilevel_energy(
-        this->function(level), level, this->memory_.s_working[level]);
+    // Scalar energy_fine = this->get_multilevel_energy(
+    //     this->function(level), level, this->memory_.s_working[level]);
+    Scalar energy_fine = energy_fine_level_dep;
 
     this->function(level - 1).gradient(this->memory_.x[level - 1],
                                        this->ml_derivs_.g[level - 1]);

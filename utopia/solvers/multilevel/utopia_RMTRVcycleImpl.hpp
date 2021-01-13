@@ -154,7 +154,8 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
   UTOPIA_NO_ALLOC_BEGIN("RMTR::region11");
   std::cout << "----------------------------- init_consistency_terms 1 "
                "------------- \n";
-  smoothness_flg = this->init_consistency_terms(level);
+  smoothness_flg =
+      this->init_consistency_terms(level, this->memory_.energy[level]);
   std::cout << "----------------------------- init_consistency_terms 2 "
                "------------- \n";
   UTOPIA_NO_ALLOC_END();
