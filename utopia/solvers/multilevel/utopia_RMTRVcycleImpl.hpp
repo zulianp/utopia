@@ -168,8 +168,8 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
 
   // at this point s_global on coarse level is 0, so we can simplify - NOT TRUE
   // IF MG_OPT TYPE OF ML_MODEL IS USED -> better to do directly in specialized
-  // class coarse_reduction =
-
+  // class
+  // coarse_reduction =
   //     this->get_multilevel_energy(this->function(level - 1), level - 1);
 
   coarse_reduction = this->memory_.energy[level - 1];

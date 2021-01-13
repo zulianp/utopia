@@ -170,11 +170,13 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     this->ml_derivs_.g_diff[level - 1] -= this->ml_derivs_.g[level - 1];
     // UTOPIA_NO_ALLOC_END();
 
-    // TODO:: verify:: NOT REALLY correct ....
-    std::cout << "-------- fix energy evaluation ---------- \n";
-    this->memory_.energy[level - 1] = energy_fine_level_dep;
-    // storing for the first order consistency iteration
-    this->ml_derivs_.g[level - 1] = this->memory_.help[level - 1];
+    // // TODO:: verify:: NOT REALLY correct ....
+    // std::cout << "-------- fix energy evaluation ---------- \n";
+    this->memory_.energy[level - 1] =
+        this->get_multilevel_energy(this->function(level - 1), level - 1);
+
+    // // storing for the first order consistency iteration
+    // this->ml_derivs_.g[level - 1] = this->memory_.help[level - 1];
 
     return smoothness_flg;
   }
