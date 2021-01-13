@@ -47,10 +47,10 @@ class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_MULTIPLICATIVE_DF> final {
                                const ExtendedFunction<Matrix, Vector> &fun,
                                const Vector &x, const Vector &s_global) {
     fun.gradient(x, g[level]);
-    Scalar energy = 0.0;
-    fun.value(x, energy);
 
     if (level < n_levels_ - 1) {
+      Scalar energy = 0.0;
+      fun.value(x, energy);
       g[level] = g[level] * (e_diff[level] + dot(g_diff[level], s_global));
       g[level] += g_diff[level] * energy;
     }
@@ -63,10 +63,10 @@ class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_MULTIPLICATIVE_DF> final {
                                const ExtendedFunction<Matrix, Vector> &fun,
                                const Vector &x) {
     fun.gradient(x, g[level]);
-    Scalar energy = 0.0;
-    fun.value(x, energy);
 
     if (level < n_levels_ - 1) {
+      Scalar energy = 0.0;
+      fun.value(x, energy);
       g[level] = g[level] * (e_diff[level]);
       g[level] += g_diff[level] * energy;
     }
@@ -79,8 +79,6 @@ class MultilevelDerivEval<Matrix, Vector, FIRST_ORDER_MULTIPLICATIVE_DF> final {
                                const Vector &x, const Vector &s_global,
                                const Scalar &energy_new_level_dep) {
     fun.gradient(x, g[level]);
-    // Scalar energy = 0.0;
-    // fun.value(x, energy);
 
     if (level < n_levels_ - 1) {
       Scalar energy_com = energy_new_level_dep / (e_diff[level]);

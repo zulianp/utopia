@@ -228,8 +228,12 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
     this->memory_.x[level] += this->memory_.s[level];
 
     this->compute_s_global(level, this->memory_.s_working[level]);
+
+    // std::cout << "------------------ 1 ------------- \n";
     E_new = this->get_multilevel_energy(this->function(level), level,
                                         this->memory_.s_working[level]);
+
+    // std::cout << "------------------ 2 ------------- \n";
 
     //----------------------------------------------------------------------------
     //                        trial point acceptance
@@ -246,6 +250,7 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
       rho = 0;
     }
 
+    // std::cout << "------------------ 3 ------------- \n";
     bool coarse_corr_taken = false;
     if (rho > this->rho_tol()) {
       coarse_corr_taken = true;
@@ -253,12 +258,14 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
 
       // todo:: make sure that correct assumption
       this->get_multilevel_gradient(this->function(level), level,
-                                    this->memory_.s_working[level]);
+                                    this->memory_.s_working[level], E_new);
+
       this->memory_.gnorm[level] = this->criticality_measure(level);
     } else {
       this->memory_.x[level] -= this->memory_.s[level];
       this->compute_s_global(level, this->memory_.s_working[level]);
     }
+    // std::cout << "------------------ 4 ------------- \n";
 
     //----------------------------------------------------------------------------
     //                                  trust region update
@@ -322,6 +329,8 @@ bool RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>::multiplicative_cycle(
     auto post_smoothing_solve_type = POST_SMOOTHING;
     this->local_tr_solve(level, post_smoothing_solve_type);
   }
+
+  // exit(0);
 
   return true;
 }
