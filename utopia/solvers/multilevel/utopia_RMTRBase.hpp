@@ -316,7 +316,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
 
   template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
             enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> = 0>
-  bool init_consistency_terms(const SizeType &level) {
+  bool init_consistency_terms(const SizeType &level,
+                              const Scalar & /*energy_fine_level_dep*/) {
     // UTOPIA_NO_ALLOC_BEGIN("RMTR::region111");
     // Restricted fine level gradient
     this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
@@ -375,7 +376,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
 
   template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
             enable_if_t<is_same<T, SECOND_ORDER>::value, int> = 0>
-  bool init_consistency_terms(const SizeType &level) {
+  bool init_consistency_terms(const SizeType &level,
+                              const Scalar & /*energy_fine_level_dep*/) {
     // Restricted fine level gradient
     this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
                                        this->ml_derivs_.g_diff[level - 1]);
@@ -441,7 +443,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
 
   template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
             enable_if_t<is_same<T, GALERKIN>::value, int> = 0>
-  bool init_consistency_terms(const SizeType &level) {
+  bool init_consistency_terms(const SizeType &level,
+                              const Scalar & /*energy_fine_level_dep*/) {
     UTOPIA_NO_ALLOC_BEGIN("RMTR::init_consistency_terms0");
 
     this->truncate(level);
