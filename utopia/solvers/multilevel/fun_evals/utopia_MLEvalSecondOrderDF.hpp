@@ -134,6 +134,12 @@ class MultilevelDerivEval<Matrix, Vector, SECOND_ORDER_DF> final {
     return true;
   }
 
+  inline bool compute_gradient(const SizeType &level,
+                               const ExtendedFunction<Matrix, Vector> &fun,
+                               const Vector &x, const Vector &s_global,
+                               const Scalar & /*energy*/) {
+    return this->compute_gradient(level, fun, s_global);
+  }
   // s_global is assummed to be zero
   inline bool compute_gradient(const SizeType &level,
                                const ExtendedFunction<Matrix, Vector> &fun,

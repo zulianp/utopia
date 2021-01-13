@@ -268,20 +268,43 @@ class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>,
     return (-l_term - 0.5 * qp_term);
   }
 
-  bool update_level(const SizeType &level) override {
+  bool update_level(const SizeType &level,
+                    const Scalar &energy_new_level_dep) override {
     this->memory_.help[level] = this->ml_derivs_.g[level];
     this->get_multilevel_gradient(this->function(level), level,
-                                  this->memory_.s_working[level]);
+                                  this->memory_.s_working[level],
+                                  energy_new_level_dep);
+    // this->get_multilevel_gradient(this->function(level), level,
+    //                               this->memory_.s_working[level]);
+
     this->ml_derivs_.y[level] =
         this->ml_derivs_.g[level] - this->memory_.help[level];
 
-    // swap back....
+    // copy back....
     this->ml_derivs_.g[level] = this->memory_.help[level];
     hessian_approxs_[level]->update(
         this->memory_.s[level], this->ml_derivs_.y[level],
         this->memory_.x[level], this->ml_derivs_.g[level]);
 
     return true;
+  }
+
+  Scalar update_local_grad(const bool &make_grad_updates, const SizeType &level,
+                           Scalar &rho,
+                           Scalar & /*energy_new_level_dep*/) override {
+    if (make_grad_updates) {
+      UTOPIA_NO_ALLOC_BEGIN("RMTR::grad_computation");
+
+      // we can simplify by exploring eq. from line 275
+      this->ml_derivs_.g[level] =
+          this->ml_derivs_.y[level] + this->ml_derivs_.g[level];
+      this->memory_.gnorm[level] = this->criticality_measure(level);
+
+      UTOPIA_NO_ALLOC_END();
+    }
+    // check if this case is correct
+
+    return rho;
   }
 
   void initialize_local_solve(const SizeType &level,

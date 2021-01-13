@@ -98,6 +98,23 @@ class MultilevelDerivEval<Matrix, Vector,
     return true;
   }
 
+  inline bool compute_gradient(const SizeType &level,
+                               const ExtendedFunction<Matrix, Vector> &fun,
+                               const Vector &x, const Vector &s_global,
+                               const Scalar &energy) {
+    fun.gradient(x, g[level]);
+
+    if (level < n_levels_ - 1) {
+      gm[level] = g[level] * e_diff_m[level];
+      gm[level] += g_diff_m[level] * energy;
+
+      ga[level] = g[level] + g_diff_a[level];
+      g[level] = gamma_ * ga[level] + ((1.0 - gamma_) * gm[level]);
+    }
+
+    return true;
+  }
+
   inline Scalar compute_gradient_energy(
       const SizeType &level, const ExtendedFunction<Matrix, Vector> &fun,
       const Vector &x, const Vector &s_global) {

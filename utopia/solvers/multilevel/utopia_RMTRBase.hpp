@@ -86,6 +86,13 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global);
   }
 
+  bool get_multilevel_gradient(const Fun &fun, const SizeType &level,
+                               const Vector &s_global,
+                               const Scalar &energy_new_level_dep) {
+    return ml_derivs_.compute_gradient(level, fun, memory_.x[level], s_global,
+                                       energy_new_level_dep);
+  }
+
   bool get_multilevel_gradient(const Fun &fun, const SizeType &level) {
     return ml_derivs_.compute_gradient(level, fun, memory_.x[level]);
   }
@@ -593,7 +600,42 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     return (norm2(help) > this->hessian_update_delta() * g_norm) ? true : false;
   }
 
-  virtual bool update_level(const SizeType & /*level*/) { return false; }
+  virtual bool update_level(const SizeType & /*level*/,
+                            const Scalar & /*energy_new_level_dep*/) {
+    return false;
+  }
+
+  virtual Scalar update_local_grad(const bool &make_grad_updates,
+                                   const SizeType &level, Scalar &rho,
+                                   Scalar &energy_new) {
+    if (make_grad_updates) {
+      // std::cout<<"grad updated... \n"; s
+      // Vector g_old = memory_.g[level];
+      UTOPIA_NO_ALLOC_BEGIN("RMTR::grad_computation");
+      this->get_multilevel_gradient(this->function(level), level,
+                                    this->memory_.s_working[level], energy_new);
+      this->memory_.gnorm[level] = this->criticality_measure(level);
+      UTOPIA_NO_ALLOC_END();
+
+      // this is just a safety check
+      if (!std::isfinite(this->memory_.gnorm[level])) {
+        UTOPIA_NO_ALLOC_BEGIN("RMTR::region8");
+        rho = 0;
+        this->memory_.x[level] -=
+            this->memory_.s[level];  // return iterate into its initial state
+        this->compute_s_global(level, this->memory_.s_working[level]);
+        this->get_multilevel_gradient(this->function(level), level,
+                                      this->memory_.s_working[level]);
+        this->memory_.gnorm[level] = this->criticality_measure(level);
+        UTOPIA_NO_ALLOC_END();
+      }
+
+      // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s,
+      // H, rho, g_norm);
+    }
+
+    return rho;
+  }
 
   void compute_s_global(const SizeType &level, Vector &s_global) {
     if (empty(this->memory_.x_0[level])) {
