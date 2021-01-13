@@ -118,7 +118,7 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
                                FIRST_ORDER_MGOPT>::value,
                         int> = 0>
   bool init_consistency_terms(const SizeType &level,
-                              const Scalar &energy_fine_level_dep) {
+                              const Scalar & /*energy_fine_level_dep*/) {
     // UTOPIA_NO_ALLOC_BEGIN("RMTR::region111");
     // Restricted fine level gradient
 
@@ -165,18 +165,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
                                     this->ml_derivs_.g_diff[level - 1],
                                     this->ml_derivs_.g[level - 1], level - 1)
                               : true;
-
-    // this->memory_.help[level - 1] = this->ml_derivs_.g_diff[level - 1];
     this->ml_derivs_.g_diff[level - 1] -= this->ml_derivs_.g[level - 1];
     // UTOPIA_NO_ALLOC_END();
-
-    // // TODO:: verify:: NOT REALLY correct ....
-    // std::cout << "-------- fix energy evaluation ---------- \n";
-    this->memory_.energy[level - 1] =
-        this->get_multilevel_energy(this->function(level - 1), level - 1);
-
-    // // storing for the first order consistency iteration
-    // this->ml_derivs_.g[level - 1] = this->memory_.help[level - 1];
 
     return smoothness_flg;
   }
@@ -186,6 +176,8 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
       enable_if_t<is_same<T, FIRST_ORDER_MULTIPLICATIVE_DF>::value, int> = 0>
   bool init_consistency_terms(const SizeType &level,
                               const Scalar &energy_fine_level_dep) {
+    std::cout << "-------------- init const. terms 1 ------------- \n";
+
     this->transfer(level - 1).restrict(this->ml_derivs_.g[level],
                                        this->ml_derivs_.g_diff[level - 1]);
 
@@ -208,17 +200,23 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     //----------------------------------------------------------------------------
 
     // todo:: investigate if correct
+    // std::cout << "-------------- init const. terms 2 ------------- \n";
     this->compute_s_global(level, this->memory_.s_working[level]);
 
+    // std::cout << "-------------- init const. terms 3 ------------- \n";
     // Scalar energy_fine = this->get_multilevel_energy(
     //     this->function(level), level, this->memory_.s_working[level]);
     Scalar energy_fine = energy_fine_level_dep;
 
+    // std::cout << "-------------- init const. terms 4 ------------- \n";
     this->function(level - 1).gradient(this->memory_.x[level - 1],
                                        this->ml_derivs_.g[level - 1]);
 
+    // std::cout << "-------------- init const. terms 5 ------------- \n";
     Scalar energy_coarse = 0.0;
     this->function(level - 1).value(this->memory_.x[level - 1], energy_coarse);
+
+    // std::cout << "-------------- init const. terms 6 ------------- \n";
 
     // if (!this->skip_BC_checks()) {
     //   this->zero_correction_related_to_equality_constrain(
@@ -298,11 +296,6 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     Scalar f_cc = (energy_fine / (energy_coarse * energy_coarse));
     Vector help2 = (f_cc * this->ml_derivs_.g[level - 1]);
 
-    // storing for the first order consistency iteration
-    this->ml_derivs_.g[level - 1] = this->ml_derivs_.g_diff_m[level - 1];
-    // true, as also 0th order consistent
-    this->memory_.energy[level - 1] = energy_fine;
-
     this->ml_derivs_.g_diff_m[level - 1] = help1 - help2;
     this->ml_derivs_.e_diff_m[level - 1] = energy_fine / energy_coarse;
 
@@ -367,9 +360,6 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
 
     this->init_hess_app_terms(level);
 
-    this->memory_.energy[level - 1] =
-        this->get_multilevel_energy(this->function(level - 1), level - 1);
-
     return smoothness_flg;
   }
 
@@ -432,10 +422,6 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
                                       this->ml_derivs_.H[level - 1]);
     this->ml_derivs_.H_diff[level - 1] -= this->ml_derivs_.H[level - 1];
 
-    // std::cout << "-------------- add grad, energy storage -------- \n";
-    this->memory_.energy[level - 1] =
-        this->get_multilevel_energy(this->function(level - 1), level - 1);
-
     return smoothness_flg;
   }
 
@@ -479,10 +465,6 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
     }
     UTOPIA_NO_ALLOC_END();
 
-    // std::cout << "-------------- add grad, energy storage -------- \n";
-    this->memory_.energy[level - 1] =
-        this->get_multilevel_energy(this->function(level - 1), level - 1);
-
     return true;
   }
 
@@ -510,8 +492,12 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
                             const LocalSolveType &solve_type) {
     if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {
       if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
-        // this->get_multilevel_gradient(fun, level); - as grad eval elsewhere
+        std::cout << "-------------- here ----------- \n";
+        // this->get_multilevel_gradient(fun, level);
+        std::cout << "-------------- beg  here ----------- \n";
         this->memory_.gnorm[level] = this->criticality_measure(level);
+        std::cout << "-------------- endd  here ----------- \n";
+        // exit(0);
       }
     }
 
@@ -526,7 +512,6 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
                             const LocalSolveType &solve_type) {
     if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {
       if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
-        // can be done more efficiently
         this->get_multilevel_gradient(fun, level);
         this->memory_.gnorm[level] = this->criticality_measure(level);
       }
@@ -543,7 +528,6 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
 
     if (!(solve_type == PRE_SMOOTHING && level == this->n_levels() - 1)) {
       if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
-        // std::cout << "-------------- fix -------- \n";
         this->ml_derivs_.g[level] += this->ml_derivs_.g_diff[level];
         this->memory_.gnorm[level] = this->criticality_measure(level);
 
@@ -808,4 +792,4 @@ class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
 
 }  // namespace utopia
 
-#endif  // UTOPIA_RMTR_BASE_HPP
+#endif  // UTOPIA_RMTR_BASE_HPP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
