@@ -47,7 +47,6 @@ namespace utopia {
 
         void init_from_local_matrix(const Matrix &mat) override {
             // UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::init_from_local_matrix");
-
             const SizeType n_rows = mat.rows();
             const SizeType n_blocks = n_rows / BlockSize;
 
@@ -134,7 +133,6 @@ namespace utopia {
             const SizeType n_blocks = diag_.size();
 
             StaticVector<Scalar, BlockSize> val, d_inv_val;
-            // StaticMatrix<Scalar, BlockSize, BlockSize> d_inv;
 
             auto f = [&](const SizeType &b) {
                 for (SizeType d = 0; d < BlockSize; ++d) {
@@ -170,8 +168,6 @@ namespace utopia {
         }
 
         void apply() {
-            // c_[i] = device::max(lb_[i], device::min(diag_[i] * val, ub_[i]));
-
             const SizeType n_blocks = diag_.size();
 
             StaticVector<Scalar, BlockSize> val, d_inv_val;

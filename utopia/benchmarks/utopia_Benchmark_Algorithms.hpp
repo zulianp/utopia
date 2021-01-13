@@ -140,6 +140,14 @@ namespace utopia {
                     run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
                 });
 
+                this->register_experiment("projected_block_gauss_seidel_" + std::to_string(i), [=]() {
+                    InputParameters params;
+                    params.set("block_size", 2);
+                    ProjectedGaussSeidel<Matrix, Vector> pg;
+                    pg.read(params);
+                    run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
+                });
+
                 // REMOVE ME once both pgs are the same
                 this->register_experiment("projected_l1_gauss_seidel_hm_" + std::to_string(i), [=]() {
                     ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;

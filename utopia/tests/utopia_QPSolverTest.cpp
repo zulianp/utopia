@@ -224,7 +224,7 @@ namespace utopia {
         QPSolverTest() : n(20) {}
 
         SizeType n = 20;
-        bool verbose = true;
+        bool verbose = false;
     };
 
     // FIXME merge with the other once it is poperly implemented
