@@ -52,6 +52,16 @@ namespace utopia {
             run_qp_solver(pgs);
         }
 
+        void nblockgs_test() const {
+            InputParameters params;
+            params.set("block_size", 2);
+
+            ProjectedGaussSeidel<Matrix, Vector> pgs;
+            pgs.read(params);
+
+            run_qp_solver(pgs);
+        }
+
         void MPRGP_test() const {
             MPGRP<Matrix, Vector> qp_solver;
             run_qp_solver(qp_solver);
@@ -201,6 +211,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
             UTOPIA_RUN_TEST(MPRGP_test);
+            UTOPIA_RUN_TEST(nblockgs_test);
         }
 
         void run_GS_QR() {
@@ -213,7 +224,7 @@ namespace utopia {
         QPSolverTest() : n(20) {}
 
         SizeType n = 20;
-        bool verbose = false;
+        bool verbose = true;
     };
 
     // FIXME merge with the other once it is poperly implemented

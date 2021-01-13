@@ -8,6 +8,8 @@
 #include "utopia_Tensor.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
+#include "utopia_TensorView.hpp"
+
 #include <utility>
 
 namespace utopia {
@@ -49,8 +51,8 @@ namespace utopia {
 
         TensorView(TensorView &&other) : view_(std::move(other.view_)) {}
 
-        // template <class... Args>
-        // TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
+        template <class... Args>
+        TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
 
         // template<class... Args>
         // UTOPIA_FUNCTION TensorView(Args && ...args)

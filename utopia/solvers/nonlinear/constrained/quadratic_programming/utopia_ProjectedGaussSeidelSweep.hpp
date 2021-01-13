@@ -25,7 +25,7 @@ namespace utopia {
         virtual void init_from_local_matrix(const Matrix &mat) = 0;
         virtual void update_from_local_matrix(const Matrix &local_diag_block) = 0;
         virtual void apply(const SizeType &times) = 0;
-        virtual void apply_unconstrained(const SizeType &times);
+        virtual void apply_unconstrained(const SizeType &times) = 0;
 
         void set_residual_view(const ConstVectorView &r) {
             // FIXME

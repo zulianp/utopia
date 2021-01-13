@@ -27,8 +27,14 @@ namespace utopia {
 
         class BlockIdx {
         public:
-            constexpr BlockIdx(const SizeType i, const SizeType j)
-                : i(i / BlockSize), sub_i(i - i * BlockSize), j(j / BlockSize), sub_j(j - j * BlockSize) {}
+            constexpr BlockIdx(const SizeType i_scalar, const SizeType j_scalar)
+                : i(i_scalar / BlockSize),
+                  sub_i(i_scalar - i * BlockSize),
+                  j(j_scalar / BlockSize),
+                  sub_j(j_scalar - j * BlockSize) {
+                assert(sub_j < BlockSize);
+                assert(sub_i < BlockSize);
+            }
 
             SizeType i;
             SizeType sub_i;
@@ -39,7 +45,7 @@ namespace utopia {
             inline constexpr bool is_diag() const { return i == j; }
         };
 
-        void init_from_local_matrix(const Matrix &mat) {
+        void init_from_local_matrix(const Matrix &mat) override {
             // UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::init_from_local_matrix");
 
             const SizeType n_rows = mat.rows();
@@ -60,7 +66,9 @@ namespace utopia {
 
                 if (block.is_diag()) {
                     // store diagonal block (invert later)
-                    diag_[i](block.sub_i, block.sub_j) = a_ij;
+                    diag_[block.i](block.sub_i, block.sub_j) = a_ij;
+
+                    assert(a_ij != 0.0 || block.sub_i != block.sub_j);
                 } else {
                     if (a_ij != 0.0) {
                         ++row_ptr_[i + 1];
@@ -70,6 +78,7 @@ namespace utopia {
             });
 
             for (SizeType b = 0; b < n_blocks; ++b) {
+                assert(det(diag_[b]) > 0);
                 inv_diag_[b] = inv(diag_[b]);
             }
 
@@ -98,9 +107,11 @@ namespace utopia {
             // UTOPIA_TRACE_REGION_END("ProjectedBlockGaussSeidelSweep::init_from_local_matrix");
         }
 
-        void update_from_local_matrix(const Matrix &local_diag_block) { init_from_local_matrix(local_diag_block); }
+        void update_from_local_matrix(const Matrix &local_diag_block) override {
+            init_from_local_matrix(local_diag_block);
+        }
 
-        void apply(const SizeType &times) {
+        void apply(const SizeType &times) override {
             // UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::apply(...)");
 
             for (SizeType t = 0; t < times; ++t) {
@@ -110,17 +121,20 @@ namespace utopia {
             // UTOPIA_TRACE_REGION_END("ProjectedBlockGaussSeidelSweep::apply(...)");
         }
 
-        void apply_unconstrained(const SizeType &times) {
+        void apply_unconstrained(const SizeType &times) override {
             for (SizeType t = 0; t < times; ++t) {
                 apply_unconstrained();
             }
         }
 
+        ProjectedBlockGaussSeidelSweep() = default;
+
+    private:
         void apply_unconstrained() {
             const SizeType n_blocks = diag_.size();
 
             StaticVector<Scalar, BlockSize> val, d_inv_val;
-            StaticMatrix<Scalar, BlockSize, BlockSize> d_inv;
+            // StaticMatrix<Scalar, BlockSize, BlockSize> d_inv;
 
             auto f = [&](const SizeType &b) {
                 for (SizeType d = 0; d < BlockSize; ++d) {
@@ -217,9 +231,6 @@ namespace utopia {
             }
         }
 
-        ProjectedBlockGaussSeidelSweep() = default;
-
-    private:
         std::vector<Block> diag_;
         std::vector<Block> inv_diag_;
         std::vector<Scalar> values_;
