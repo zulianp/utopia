@@ -71,7 +71,7 @@ class UnconstrainedExtendedTestFunction
 
   ~UnconstrainedExtendedTestFunction() override = default;
 
-  virtual Vector initial_guess() const override = 0;
+  Vector initial_guess() const override = 0;
 };
 
 template <class Matrix, class Vector>

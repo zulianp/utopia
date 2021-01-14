@@ -50,13 +50,13 @@ class PreconditionedSolverInterface : virtual public Configurable,
     precond_->update(*op);
   }
 
-  virtual void read(Input &in) override {
+  void read(Input &in) override {
     if (precond_) {
       in.get("precond", *precond_);
     }
   }
 
-  virtual void print_usage(std::ostream &os) const override {
+  void print_usage(std::ostream &os) const override {
     this->print_param_usage(os, "precond", "Preconditioner",
                             "Input parameters for preconditioner.", "-");
   }
