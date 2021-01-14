@@ -10,62 +10,64 @@
 #include <petscsnes.h>
 
 namespace utopia {
-    template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class PETSCUtopiaNonlinearFunction {};
+template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
+class PETSCUtopiaNonlinearFunction {};
 
-    template <class Matrix, class Vector>
-    class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC> : public ExtendedFunction<Matrix, Vector> {
-        using Scalar = typename utopia::Traits<Vector>::Scalar;
+template <class Matrix, class Vector>
+class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC>
+    : public ExtendedFunction<Matrix, Vector> {
+  using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-    public:
-        // PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker =
-        // local_zeros(1), const Vector & rhs = local_zeros(1)) :
-        PETSCUtopiaNonlinearFunction(SNES snes,
-                                     const Vector &x_init = Vector(),
-                                     const Vector &bc_marker = Vector(),
-                                     const Vector &rhs = Vector())
-            : ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), snes_(snes) {}
+ public:
+  // PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init =
+  // local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector &
+  // rhs = local_zeros(1)) :
+  PETSCUtopiaNonlinearFunction(SNES snes, const Vector &x_init = Vector(),
+                               const Vector &bc_marker = Vector())
+      : ExtendedFunction<Matrix, Vector>(x_init, bc_marker), snes_(snes) {}
 
-        bool gradient(const Vector &x, Vector &g) const override {
-            // initialization of gradient vector...
-            if (empty(g)) {
-                g.zeros(layout(x));
-            }
+  bool gradient(const Vector &x, Vector &g) const override {
+    // initialization of gradient vector...
+    if (empty(g)) {
+      g.zeros(layout(x));
+    }
 
-            SNESComputeFunction(snes_, raw_type(x), raw_type(g));
+    SNESComputeFunction(snes_, raw_type(x), raw_type(g));
 
-            return true;
-        }
+    return true;
+  }
 
-        bool hessian(const Vector &x, Matrix &hessian) const override {
-            SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian, snes_->jacobian_pre);
-            wrap(snes_->jacobian, hessian);
-            return true;
-        }
+  bool hessian(const Vector &x, Matrix &hessian) const override {
+    SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,
+                        snes_->jacobian_pre);
+    wrap(snes_->jacobian, hessian);
+    return true;
+  }
 
-        bool value(const Vector &x, typename Vector::Scalar &result) const override {
-            // hack to have fresh energy (MOOSE post-processor does things in strange way )
-            Vector grad = 0 * x;
-            this->gradient(x, grad);
+  bool value(const Vector &x, typename Vector::Scalar &result) const override {
+    // hack to have fresh energy (MOOSE post-processor does things in strange
+    // way )
+    Vector grad = 0 * x;
+    this->gradient(x, grad);
 
-            DM dm;
-            DMSNES sdm;
+    DM dm;
+    DMSNES sdm;
 
-            SNESGetDM(snes_, &dm);
-            DMGetDMSNES(dm, &sdm);
-            if (sdm->ops->computeobjective)
-                SNESComputeObjective(snes_, raw_type(x), &result);
-            else
-                result = 0.5 * norm2(grad) * norm2(grad);
+    SNESGetDM(snes_, &dm);
+    DMGetDMSNES(dm, &sdm);
+    if (sdm->ops->computeobjective)
+      SNESComputeObjective(snes_, raw_type(x), &result);
+    else
+      result = 0.5 * norm2(grad) * norm2(grad);
 
-            return true;
-        }
+    return true;
+  }
 
-        virtual void getSNES(SNES &snes) { snes = snes_; }
+  virtual void getSNES(SNES &snes) { snes = snes_; }
 
-    private:
-        SNES snes_;
-    };
+ private:
+  SNES snes_;
+};
 
 }  // namespace utopia
 

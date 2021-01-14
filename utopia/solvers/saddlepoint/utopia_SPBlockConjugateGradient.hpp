@@ -12,427 +12,440 @@
 
 namespace utopia {
 
-    /**
-    @brief Solves the following saddle-point problem:
-        | A_m		0		B_t | | sol_m | = | rhs_m |
-        | 0			A_s		D_t | | sol_s | = | rhs_s |
-        | B 		D 		0   | | lagr  | = | 0     |
-    m := master, s := slave
-    It uses the schur complement
-    Warning: rows with boundary conditions in B_t and D_t have to be handled outside.
-
-    */
-    template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class SPBlockConjugateGradient {
-    public:
-        using Scalar = UTOPIA_SCALAR(Vector);
-
-        SPBlockConjugateGradient()
-            : op_m(std::make_shared<Factorization<Matrix, Vector>>()),
-              op_s(std::make_shared<Factorization<Matrix, Vector>>()),
-              atol_(1e-8),
-              rtol_(1e-8) {}
-
-        void set_master_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &op_m) { this->op_m = op_m; }
-
-        void set_slave_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &op_s) { this->op_s = op_s; }
-
-        void set_prec_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) {
-            if (prec_) {
-                prec_->set_linear_solver(solver);
-            } else {
-                std::cerr << "[Error] set preconditioner before calling set_prec_solver" << std::endl;
-                assert(prec_);
-            }
-        }
-
-        void set_master_sweeps(const int n_sweeps) { master_sweeps_ = n_sweeps; }
-
-        void set_master_max_it(const int n_its) { master_max_it_ = n_its; }
-
-        inline void verbose(const bool verbose) { verbose_ = verbose; }
-
-        inline void atol(const Scalar atol) { atol_ = atol; }
-
-        inline void max_it(const int max_it) { max_it_ = max_it; }
-
-        // inline void rtol(const Scalar rtol)
-        // {
-        // 	rtol_ = rtol;
-        // }
-
-        void update(const std::shared_ptr<Matrix> &A_m,
-                    const std::shared_ptr<Matrix> &A_s,
-                    const std::shared_ptr<Matrix> &B,
-                    const std::shared_ptr<Matrix> &D,
-                    const std::shared_ptr<Matrix> &B_t,
-                    const std::shared_ptr<Matrix> &D_t) {
-            set_up(B, D, B_t, D_t);
-            update(A_m, A_s);
-        }
-
-        void set_up(const std::shared_ptr<Matrix> &B,
-                    const std::shared_ptr<Matrix> &D,
-                    const std::shared_ptr<Matrix> &B_t,
-                    const std::shared_ptr<Matrix> &D_t) {
-            this->B = B;
-            this->B_t = B_t;
-            this->D = D;
-            this->D_t = D_t;
-        }
-
-        void update(const std::shared_ptr<Matrix> &A_m, const std::shared_ptr<Matrix> &A_s) {
-            this->A_m = A_m;
-            this->A_s = A_s;
-
-            op_m->update(A_m);
-            op_s->update(A_s);
-
-            set_iterations_master(master_sweeps_);
-
-            if (prec_) {
-                prec_->update(*this);
-            }
-        }
-
-        bool apply(const Vector &rhs_m, const Vector &rhs_s, Vector &sol_m, Vector &sol_s, Vector &lagr) {
-            if (prec_) {
-                return preconditioned_solve(rhs_m, rhs_s, sol_m, sol_s, lagr);
-            } else {
-                return unpreconditioned_solve(rhs_m, rhs_s, sol_m, sol_s, lagr);
-            }
-        }
-
-        // http://ta.twi.tudelft.nl/nw/users/vuik/talks/norwich_2014.pdf
-        // void init_simple_preconditioner()
-        // {
-        // 	Matrix d_m = diag(1./diag(*A_m));
-        // 	Matrix d_s = diag(1./diag(*A_s));
-
-        // 	P = std::make_shared<Matrix>();
-        // 	*P = (*B) * d_m * transpose(*B) + (*D) * d_s * transpose(*D);
-
-        // 	if(!op_prec) {
-        // 		op_prec = std::make_shared<Factorization<Matrix, Vector>>();
-        // 	}
+/**
+@brief Solves the following saddle-point problem:
+    | A_m		0		B_t | | sol_m | = | rhs_m |
+    | 0			A_s		D_t | | sol_s | = | rhs_s |
+    | B 		D 		0   | | lagr  | = | 0     |
+m := master, s := slave
+It uses the schur complement
+Warning: rows with boundary conditions in B_t and D_t have to be handled
+outside.
+
+*/
+template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
+class SPBlockConjugateGradient {
+ public:
+  using Scalar = UTOPIA_SCALAR(Vector);
+
+  SPBlockConjugateGradient()
+      : op_m(std::make_shared<Factorization<Matrix, Vector>>()),
+        op_s(std::make_shared<Factorization<Matrix, Vector>>()),
+        atol_(1e-8),
+        rtol_(1e-8) {}
+
+  void set_master_solver(
+      const std::shared_ptr<LinearSolver<Matrix, Vector>> &op_m) {
+    this->op_m = op_m;
+  }
+
+  void set_slave_solver(
+      const std::shared_ptr<LinearSolver<Matrix, Vector>> &op_s) {
+    this->op_s = op_s;
+  }
+
+  void set_prec_solver(
+      const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) {
+    if (prec_) {
+      prec_->set_linear_solver(solver);
+    } else {
+      std::cerr << "[Error] set preconditioner before calling set_prec_solver"
+                << std::endl;
+      assert(prec_);
+    }
+  }
+
+  void set_master_sweeps(const int n_sweeps) { master_sweeps_ = n_sweeps; }
+
+  void set_master_max_it(const int n_its) { master_max_it_ = n_its; }
+
+  inline void verbose(const bool verbose) { verbose_ = verbose; }
+
+  inline void atol(const Scalar atol) { atol_ = atol; }
+
+  inline void max_it(const int max_it) { max_it_ = max_it; }
+
+  // inline void rtol(const Scalar rtol)
+  // {
+  // 	rtol_ = rtol;
+  // }
+
+  void update(const std::shared_ptr<Matrix> &A_m,
+              const std::shared_ptr<Matrix> &A_s,
+              const std::shared_ptr<Matrix> &B,
+              const std::shared_ptr<Matrix> &D,
+              const std::shared_ptr<Matrix> &B_t,
+              const std::shared_ptr<Matrix> &D_t) {
+    set_up(B, D, B_t, D_t);
+    update(A_m, A_s);
+  }
+
+  void set_up(const std::shared_ptr<Matrix> &B,
+              const std::shared_ptr<Matrix> &D,
+              const std::shared_ptr<Matrix> &B_t,
+              const std::shared_ptr<Matrix> &D_t) {
+    this->B = B;
+    this->B_t = B_t;
+    this->D = D;
+    this->D_t = D_t;
+  }
+
+  void update(const std::shared_ptr<Matrix> &A_m,
+              const std::shared_ptr<Matrix> &A_s) {
+    this->A_m = A_m;
+    this->A_s = A_s;
+
+    op_m->update(A_m);
+    op_s->update(A_s);
+
+    set_iterations_master(master_sweeps_);
+
+    if (prec_) {
+      prec_->update(*this);
+    }
+  }
+
+  bool apply(const Vector &rhs_m, const Vector &rhs_s, Vector &sol_m,
+             Vector &sol_s, Vector &lagr) {
+    if (prec_) {
+      return preconditioned_solve(rhs_m, rhs_s, sol_m, sol_s, lagr);
+    } else {
+      return unpreconditioned_solve(rhs_m, rhs_s, sol_m, sol_s, lagr);
+    }
+  }
+
+  // http://ta.twi.tudelft.nl/nw/users/vuik/talks/norwich_2014.pdf
+  // void init_simple_preconditioner()
+  // {
+  // 	Matrix d_m = diag(1./diag(*A_m));
+  // 	Matrix d_s = diag(1./diag(*A_s));
+
+  // 	P = std::make_shared<Matrix>();
+  // 	*P = (*B) * d_m * transpose(*B) + (*D) * d_s * transpose(*D);
+
+  // 	if(!op_prec) {
+  // 		op_prec = std::make_shared<Factorization<Matrix, Vector>>();
+  // 	}
+
+  // 	op_prec->update(P);
+  // }
+
+  class BlockPreconditioner {
+   public:
+    virtual ~BlockPreconditioner() = default;
+    virtual bool apply(const Vector &r, Vector &z) const = 0;
+    virtual void update(SPBlockConjugateGradient &solver) = 0;
+    virtual void set_linear_solver(
+        const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) = 0;
+  };
 
-        // 	op_prec->update(P);
-        // }
+  // http://ta.twi.tudelft.nl/nw/users/vuik/talks/norwich_2014.pdf
+  class SIMPLEPreconditioner final : public BlockPreconditioner {
+   public:
+    bool apply(const Vector &r, Vector &z) const override {
+      return op_prec->apply(r, z);
+    }
 
-        class BlockPreconditioner {
-        public:
-            virtual ~BlockPreconditioner() = default;
-            virtual bool apply(const Vector &r, Vector &z) const = 0;
-            virtual void update(SPBlockConjugateGradient &solver) = 0;
-            virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) = 0;
-        };
+    void update(SPBlockConjugateGradient &solver) override {
+      auto &D = *solver.D;
+      auto &B = *solver.B;
 
-        // http://ta.twi.tudelft.nl/nw/users/vuik/talks/norwich_2014.pdf
-        class SIMPLEPreconditioner final : public BlockPreconditioner {
-        public:
-            bool apply(const Vector &r, Vector &z) const override { return op_prec->apply(r, z); }
+      auto &D_t = *solver.D_t;
+      auto &B_t = *solver.B_t;
 
-            void update(SPBlockConjugateGradient &solver) override {
-                auto &D = *solver.D;
-                auto &B = *solver.B;
+      auto &A_m = *solver.A_m;
+      auto &A_s = *solver.A_s;
 
-                auto &D_t = *solver.D_t;
-                auto &B_t = *solver.B_t;
+      Matrix d_m = diag(1. / diag(A_m));
+      Matrix d_s = diag(1. / diag(A_s));
 
-                auto &A_m = *solver.A_m;
-                auto &A_s = *solver.A_s;
+      P = std::make_shared<Matrix>();
+      *P = B * d_m * B_t + D * d_s * D_t;
 
-                Matrix d_m = diag(1. / diag(A_m));
-                Matrix d_s = diag(1. / diag(A_s));
+      if (!op_prec) {
+        op_prec = std::make_shared<Factorization<Matrix, Vector>>();
+      }
+
+      op_prec->update(P);
+    }
 
-                P = std::make_shared<Matrix>();
-                *P = B * d_m * B_t + D * d_s * D_t;
+    inline void set_linear_solver(
+        const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) override {
+      op_prec = solver;
+    }
 
-                if (!op_prec) {
-                    op_prec = std::make_shared<Factorization<Matrix, Vector>>();
-                }
+   private:
+    std::shared_ptr<Matrix> P;
+    std::shared_ptr<LinearSolver<Matrix, Vector>> op_prec;
+  };
 
-                op_prec->update(P);
-            }
+  // class KlawonWildlundPreconditioner final : public BlockPreconditioner {
+  // public:
+  // 	bool apply(const Vector &r, Vector &z) const override
+  // 	{
+  // 		// op_prec->apply(r, z);
+  // 	}
+
+  // 	void update(SPBlockConjugateGradient &solver) override
+  // 	{
+  // 		auto &D = *solver.D;
+  // 		auto &B = *solver.B;
+  // 		auto &A_m = *solver.A_m;
+  // 		auto &A_s = *solver.A_s;
 
-            inline void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) override {
-                op_prec = solver;
-            }
+  // 		Matrix d_m = diag(1./diag(A_m));
+  // 		Matrix d_s = diag(1./diag(A_s));
 
-        private:
-            std::shared_ptr<Matrix> P;
-            std::shared_ptr<LinearSolver<Matrix, Vector>> op_prec;
-        };
+  // 		P = std::make_shared<Matrix>();
+  // 		*P = (*B) * transpose(*B) + (*D) * transpose(*D);
+
+  // 		if(!op_prec) {
+  // 			op = std::make_shared<Factorization<Matrix, Vector>>();
+  // 		}
+
+  // 		op->update(P);
+  // 	}
+
+  // private:
+  // 	std::shared_ptr<Matrix> P, BDtxBD, BDxBDt;
+  // 	std::shared_ptr< LinearSolver<Matrix, Vector> > op;
+  // };
 
-        // class KlawonWildlundPreconditioner final : public BlockPreconditioner {
-        // public:
-        // 	bool apply(const Vector &r, Vector &z) const override
-        // 	{
-        // 		// op_prec->apply(r, z);
-        // 	}
+  // void use_klawon_wildlund_preconditioner()
+  // {
 
-        // 	void update(SPBlockConjugateGradient &solver) override
-        // 	{
-        // 		auto &D = *solver.D;
-        // 		auto &B = *solver.B;
-        // 		auto &A_m = *solver.A_m;
-        // 		auto &A_s = *solver.A_s;
+  // }
 
-        // 		Matrix d_m = diag(1./diag(A_m));
-        // 		Matrix d_s = diag(1./diag(A_s));
+  void use_simple_preconditioner() {
+    prec_ = std::make_shared<SIMPLEPreconditioner>();
+  }
 
-        // 		P = std::make_shared<Matrix>();
-        // 		*P = (*B) * transpose(*B) + (*D) * transpose(*D);
+ private:
+  std::shared_ptr<Matrix> A_m, A_s;
 
-        // 		if(!op_prec) {
-        // 			op = std::make_shared<Factorization<Matrix, Vector>>();
-        // 		}
+  std::shared_ptr<Matrix> D, D_t;
+  std::shared_ptr<Matrix> B, B_t;
 
-        // 		op->update(P);
-        // 	}
+  std::shared_ptr<Matrix> BDxBDt;
+  std::shared_ptr<Matrix> BDtxBD;
 
-        // private:
-        // 	std::shared_ptr<Matrix> P, BDtxBD, BDxBDt;
-        // 	std::shared_ptr< LinearSolver<Matrix, Vector> > op;
-        // };
+  std::shared_ptr<LinearSolver<Matrix, Vector>> op_m;
+  std::shared_ptr<LinearSolver<Matrix, Vector>> op_s;
 
-        // void use_klawon_wildlund_preconditioner()
-        // {
+  Vector buff_m, solved_m, buff_s, solved_s, r;
 
-        // }
+  bool verbose_{false};
+  Scalar atol_, rtol_;
+  int max_it_{1000};
 
-        void use_simple_preconditioner() { prec_ = std::make_shared<SIMPLEPreconditioner>(); }
+  int master_sweeps_{-1};
+  int master_max_it_{-1};
 
-    private:
-        std::shared_ptr<Matrix> A_m, A_s;
+  std::shared_ptr<BlockPreconditioner> prec_;
 
-        std::shared_ptr<Matrix> D, D_t;
-        std::shared_ptr<Matrix> B, B_t;
+  Vector p, q, Ap, r_new, z, z_new;
 
-        std::shared_ptr<Matrix> BDxBDt;
-        std::shared_ptr<Matrix> BDtxBD;
+  void apply_preconditioner(const Vector &r, Vector &z) {
+    assert(prec_);
+    prec_->apply(r, z);
+  }
 
-        std::shared_ptr<LinearSolver<Matrix, Vector>> op_m;
-        std::shared_ptr<LinearSolver<Matrix, Vector>> op_s;
+  inline void apply_op(const Vector &p, Vector &Ap) {
+    buff_m = (*B_t) * p;
+    buff_s = (*D_t) * p;
 
-        Vector buff_m, solved_m, buff_s, solved_s, r;
+    if (empty(solved_m) || size(buff_m) != size(solved_m)) {
+      solved_m.zeros(layout(buff_m));
+    } else {
+      solved_m.set(0.);
+    }
 
-        bool verbose_{false};
-        Scalar atol_, rtol_;
-        int max_it_{1000};
+    if (empty(solved_s) || size(buff_s) != size(solved_s)) {
+      solved_s.zeros(layout(buff_s));
+    } else {
+      solved_s.set(0.);
+    }
 
-        int master_sweeps_{-1};
-        int master_max_it_{-1};
+    op_m->apply(buff_m, solved_m);
+    op_s->apply(buff_s, solved_s);
 
-        std::shared_ptr<BlockPreconditioner> prec_;
+    Ap = (*B) * solved_m + (*D) * solved_s;
+  }
 
-        Vector p, q, Ap, r_new, z, z_new;
+  inline void residual(const Vector &rhs_m, const Vector &rhs_s,
+                       const Vector &p, Vector &r) {
+    buff_m = rhs_m - (*B_t) * p;
+    buff_s = rhs_s - (*D_t) * p;
 
-        void apply_preconditioner(const Vector &r, Vector &z) {
-            assert(prec_);
-            prec_->apply(r, z);
-        }
+    if (empty(solved_m) || size(buff_m) != size(solved_m)) {
+      solved_m.zeros(layout(buff_m));
+    } else {
+      solved_m.set(0.);
+    }
 
-        inline void apply_op(const Vector &p, Vector &Ap) {
-            buff_m = (*B_t) * p;
-            buff_s = (*D_t) * p;
+    if (empty(solved_s) || size(buff_s) != size(solved_s)) {
+      solved_s.zeros(layout(buff_s));
+    } else {
+      solved_s.set(0.);
+    }
 
-            if (empty(solved_m) || size(buff_m) != size(solved_m)) {
-                solved_m.zeros(layout(buff_m));
-            } else {
-                solved_m.set(0.);
-            }
+    op_m->apply(buff_m, solved_m);
+    op_s->apply(buff_s, solved_s);
 
-            if (empty(solved_s) || size(buff_s) != size(solved_s)) {
-                solved_s.zeros(layout(buff_s));
-            } else {
-                solved_s.set(0.);
-            }
+    r = (*B) * solved_m + (*D) * solved_s;
+  }
 
-            op_m->apply(buff_m, solved_m);
-            op_s->apply(buff_s, solved_s);
+  bool preconditioned_solve(const Vector &rhs_m, const Vector &rhs_s,
+                            Vector &sol_m, Vector &sol_s, Vector &lagr) {
+    if (empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
+      lagr.zeros(row_layout(*B));
+    }
 
-            Ap = (*B) * solved_m + (*D) * solved_s;
-        }
+    this->residual(rhs_m, rhs_s, lagr, r);
 
-        inline void residual(const Vector &rhs_m, const Vector &rhs_s, const Vector &p, Vector &r) {
-            buff_m = rhs_m - (*B_t) * p;
-            buff_s = rhs_s - (*D_t) * p;
+    Scalar it = 0;
+    Scalar beta = 0., alpha = 1., r_norm = 9e9;
 
-            if (empty(solved_m) || size(buff_m) != size(solved_m)) {
-                solved_m.zeros(layout(buff_m));
-            } else {
-                solved_m.set(0.);
-            }
+    Vector lagr_old = lagr;
 
-            if (empty(solved_s) || size(buff_s) != size(solved_s)) {
-                solved_s.zeros(layout(buff_s));
-            } else {
-                solved_s.set(0.);
-            }
+    z.zeros(layout(r));
+    z_new.zeros(layout(r));
 
-            op_m->apply(buff_m, solved_m);
-            op_s->apply(buff_s, solved_s);
+    this->apply_preconditioner(r, z);
 
-            r = (*B) * solved_m + (*D) * solved_s;
-        }
+    p = z;
 
-        bool preconditioned_solve(const Vector &rhs_m,
-                                  const Vector &rhs_s,
-                                  Vector &sol_m,
-                                  Vector &sol_s,
-                                  Vector &lagr) {
-            if (empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
-                lagr.zeros(row_layout(*B));
-            }
+    bool converged = false;
+    while (!converged) {
+      this->apply_op(p, Ap);
 
-            this->residual(rhs_m, rhs_s, lagr, r);
+      alpha = dot(r, z) / dot(p, Ap);
+      lagr += alpha * p;
+      r_new = r - alpha * Ap;
 
-            Scalar it = 0;
-            Scalar beta = 0., alpha = 1., r_norm = 9e9;
+      r_norm = norm2(r_new);
 
-            Vector lagr_old = lagr;
+      if (verbose_) {
+        Scalar diff_norm = norm2(lagr - lagr_old);
+        utopia::out() << it << " " << r_norm << " " << diff_norm << std::endl;
+      }
 
-            z.zeros(layout(r));
-            z_new.zeros(layout(r));
+      if (r_norm <= atol_) {
+        converged = true;
+        break;
+      }
 
-            this->apply_preconditioner(r, z);
+      this->apply_preconditioner(r_new, z_new);
 
-            p = z;
+      beta = dot(z_new, r_new) / dot(z, r);
 
-            bool converged = false;
-            while (!converged) {
-                this->apply_op(p, Ap);
+      p = z_new + beta * p;
+      r = r_new;
+      z = z_new;
 
-                alpha = dot(r, z) / dot(p, Ap);
-                lagr += alpha * p;
-                r_new = r - alpha * Ap;
+      it++;
 
-                r_norm = norm2(r_new);
+      if (!converged && it > max_it_) {
+        break;
+      }
 
-                if (verbose_) {
-                    Scalar diff_norm = norm2(lagr - lagr_old);
-                    utopia::out() << it << " " << r_norm << " " << diff_norm << std::endl;
-                }
+      lagr_old = lagr;
+    }
 
-                if (r_norm <= atol_) {
-                    converged = true;
-                    break;
-                }
+    if (empty(sol_m) || size(sol_m) != size(rhs_m)) {
+      sol_m.zeros(layout(rhs_m));
+    }
 
-                this->apply_preconditioner(r_new, z_new);
+    if (empty(sol_s) || size(sol_s) != size(rhs_s)) {
+      sol_s.zeros(layout(rhs_s));
+    }
 
-                beta = dot(z_new, r_new) / dot(z, r);
+    op_m->apply(rhs_m - (*B_t) * lagr, sol_m);
+    op_s->apply(rhs_s - (*D_t) * lagr, sol_s);
 
-                p = z_new + beta * p;
-                r = r_new;
-                z = z_new;
+    return converged;
+  }
 
-                it++;
+  bool unpreconditioned_solve(const Vector &rhs_m, const Vector &rhs_s,
+                              Vector &sol_m, Vector &sol_s, Vector &lagr) {
+    if (empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
+      lagr.zeros(row_layout(*B));
+    }
 
-                if (!converged && it > max_it_) {
-                    break;
-                }
+    this->residual(rhs_m, rhs_s, lagr, r);
 
-                lagr_old = lagr;
-            }
+    bool converged = false;
 
-            if (empty(sol_m) || size(sol_m) != size(rhs_m)) {
-                sol_m.zeros(layout(rhs_m));
-            }
+    Scalar it = 0;
+    Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 
-            if (empty(sol_s) || size(sol_s) != size(rhs_s)) {
-                sol_s.zeros(layout(rhs_s));
-            }
+    Vector lagr_old = lagr;
 
-            op_m->apply(rhs_m - (*B_t) * lagr, sol_m);
-            op_s->apply(rhs_s - (*D_t) * lagr, sol_s);
+    while (!converged) {
+      rho = dot(r, r);
 
-            return converged;
-        }
+      if (rho == 0.) {
+        converged = true;
+        break;
+      }
 
-        bool unpreconditioned_solve(const Vector &rhs_m,
-                                    const Vector &rhs_s,
-                                    Vector &sol_m,
-                                    Vector &sol_s,
-                                    Vector &lagr) {
-            if (empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
-                lagr.zeros(row_layout(*B));
-            }
+      if (it > 0) {
+        beta = rho / rho_1;
+        p = r + beta * p;
+      } else {
+        p = r;
+      }
 
-            this->residual(rhs_m, rhs_s, lagr, r);
+      this->apply_op(p, q);
+      alpha = rho / dot(p, q);
 
-            bool converged = false;
+      lagr += alpha * p;
+      r -= alpha * q;
 
-            Scalar it = 0;
-            Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
+      rho_1 = rho;
+      it++;
+      r_norm = norm2(lagr - lagr_old);
 
-            Vector lagr_old = lagr;
+      converged = r_norm < atol_;
+      it++;
 
-            while (!converged) {
-                rho = dot(r, r);
+      if (!converged && it >= max_it_) {
+        break;
+      }
 
-                if (rho == 0.) {
-                    converged = true;
-                    break;
-                }
+      if (verbose_) {
+        utopia::out() << it << " " << r_norm << std::endl;
+      }
 
-                if (it > 0) {
-                    beta = rho / rho_1;
-                    p = r + beta * p;
-                } else {
-                    p = r;
-                }
+      lagr_old = lagr;
+    }
 
-                this->apply_op(p, q);
-                alpha = rho / dot(p, q);
+    if (empty(sol_m) || size(sol_m) != size(rhs_m)) {
+      sol_m.zeros(layout(rhs_m));
+    }
 
-                lagr += alpha * p;
-                r -= alpha * q;
+    if (empty(sol_s) || size(sol_s) != size(rhs_s)) {
+      sol_s.zeros(layout(rhs_s));
+    }
 
-                rho_1 = rho;
-                it++;
-                r_norm = norm2(lagr - lagr_old);
+    set_iterations_master(master_max_it_);
 
-                converged = r_norm < atol_;
-                it++;
+    op_m->apply(rhs_m - (*B_t) * lagr, sol_m);
+    op_s->apply(rhs_s - (*D_t) * lagr, sol_s);
 
-                if (!converged && it >= max_it_) {
-                    break;
-                }
+    return converged;
+  }
 
-                if (verbose_) {
-                    utopia::out() << it << " " << r_norm << std::endl;
-                }
-
-                lagr_old = lagr;
-            }
-
-            if (empty(sol_m) || size(sol_m) != size(rhs_m)) {
-                sol_m.zeros(layout(rhs_m));
-            }
-
-            if (empty(sol_s) || size(sol_s) != size(rhs_s)) {
-                sol_s.zeros(layout(rhs_s));
-            }
-
-            set_iterations_master(master_max_it_);
-
-            op_m->apply(rhs_m - (*B_t) * lagr, sol_m);
-            op_s->apply(rhs_s - (*D_t) * lagr, sol_s);
-
-            return converged;
-        }
-
-        void set_iterations_master(const int iterations) {
-            if (iterations > 0) {
-                auto op_m_iterative = std::dynamic_pointer_cast<IterativeSolver<Matrix, Vector>>(op_m);
-                if (op_m_iterative) {
-                    op_m_iterative->max_it(iterations);
-                }
-            }
-        }
-    };
+  void set_iterations_master(const int iterations) {
+    if (iterations > 0) {
+      auto op_m_iterative =
+          std::dynamic_pointer_cast<IterativeSolver<Matrix, Vector>>(op_m);
+      if (op_m_iterative) {
+        op_m_iterative->max_it(iterations);
+      }
+    }
+  }
+};
 
 }  // namespace utopia
 

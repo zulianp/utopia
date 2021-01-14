@@ -5,143 +5,144 @@
 
 namespace utopia {
 
-    /**
-     * @brief Good example on how to implement a Linear Solver, Preconditioner, and Smoother
-     * within utopia. Precomputations are done in the update method, and, in order to avoid
-     * costly allocations, possible temporaries are stored as member variables.
-     */
-    template <class Matrix, class Vector>
-    class PointJacobi final : public IterativeSolver<Matrix, Vector> {
-        using Scalar = typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;
-        using Layout = typename Traits<Vector>::Layout;
+/**
+ * @brief Good example on how to implement a Linear Solver, Preconditioner, and
+ * Smoother within utopia. Precomputations are done in the update method, and,
+ * in order to avoid costly allocations, possible temporaries are stored as
+ * member variables.
+ */
+template <class Matrix, class Vector>
+class PointJacobi final : public IterativeSolver<Matrix, Vector> {
+  using Scalar = typename Traits<Vector>::Scalar;
+  using SizeType = typename Traits<Vector>::SizeType;
+  using Layout = typename Traits<Vector>::Layout;
 
-        typedef utopia::IterativeSolver<Matrix, Vector> Solver;
+  typedef utopia::IterativeSolver<Matrix, Vector> Solver;
 
-    public:
-        /**
-         * @brief      Very simple Jacobi solver.
-         *
-         * @param[in]  omega  The relaxation parameter (unused atm).
-         */
-        PointJacobi() = default;
+ public:
+  /**
+   * @brief      Very simple Jacobi solver.
+   *
+   * @param[in]  omega  The relaxation parameter (unused atm).
+   */
+  PointJacobi() = default;
 
-        void read(Input &in) override { Solver::read(in); }
+  void read(Input &in) override { Solver::read(in); }
 
-        void print_usage(std::ostream &os) const override { Solver::print_usage(os); }
+  void print_usage(std::ostream &os) const override { Solver::print_usage(os); }
 
-        bool apply(const Vector &rhs, Vector &x) override {
-            const Matrix &A = *this->get_operator();
+  bool apply(const Vector &rhs, Vector &x) override {
+    const Matrix &A = *this->get_operator();
 
-            SizeType it = 0;
-            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r2");
-            r_ = rhs - A * x;
-            UTOPIA_NO_ALLOC_END();
+    SizeType it = 0;
+    UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r2");
+    r_ = rhs - A * x;
+    UTOPIA_NO_ALLOC_END();
 
-            Scalar g_norm0 = norm2(r_);
-            Scalar g_norm = g_norm0;
-            SizeType compute_norm_each = 50;
+    Scalar g_norm0 = norm2(r_);
+    Scalar g_norm = g_norm0;
+    SizeType compute_norm_each = 50;
 
-            this->init_solver("Point Jacobi", {"it. ", "||r||"});
+    this->init_solver("Point Jacobi", {"it. ", "||r||"});
 
-            while (true) {
-                sweep(rhs, x);
+    while (true) {
+      sweep(rhs, x);
 
-                if (it++ % compute_norm_each == 0) {
-                    UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r21");
-                    r_ = rhs - A * x;
-                    g_norm = norm2(r_);
-                    UTOPIA_NO_ALLOC_END();
+      if (it++ % compute_norm_each == 0) {
+        UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r21");
+        r_ = rhs - A * x;
+        g_norm = norm2(r_);
+        UTOPIA_NO_ALLOC_END();
 
-                    if (this->verbose()) {
-                        PrintInfo::print_iter_status(it, {g_norm});
-                    }
-
-                    if (this->check_convergence(it, g_norm, g_norm / g_norm0, 1)) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+        if (this->verbose()) {
+          PrintInfo::print_iter_status(it, {g_norm});
         }
 
-        bool smooth(const Vector &rhs, Vector &x) override {
-            for (SizeType it = 0; it < this->sweeps(); it++) {
-                sweep(rhs, x);
-            }
-
-            return true;
+        if (this->check_convergence(it, g_norm, g_norm / g_norm0, 1)) {
+          return true;
         }
+      }
+    }
 
-        inline PointJacobi *clone() const override { return new PointJacobi(*this); }
+    return false;
+  }
 
-        void update(const std::shared_ptr<const Matrix> &op) override {
-            Solver::update(op);
+  bool smooth(const Vector &rhs, Vector &x) override {
+    for (SizeType it = 0; it < this->sweeps(); it++) {
+      sweep(rhs, x);
+    }
 
-            const auto &A = *op;
+    return true;
+  }
 
-            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4");
-            d_inv_ = diag(A);
-            UTOPIA_NO_ALLOC_END();
+  inline PointJacobi *clone() const override { return new PointJacobi(*this); }
 
-            // lower and upper part of A
-            LU_ = A;
-            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4.1");
-            LU_ -= Matrix(diag(d_inv_));
-            UTOPIA_NO_ALLOC_END();
+  void update(const std::shared_ptr<const Matrix> &op) override {
+    Solver::update(op);
 
-            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4.2");
-            d_inv_ = 1. / d_inv_;
-            UTOPIA_NO_ALLOC_END();
+    const auto &A = *op;
 
-            // prevents system from being indefinite
-            check_indef(d_inv_);
-        }
+    UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4");
+    d_inv_ = diag(A);
+    UTOPIA_NO_ALLOC_END();
 
-        void init_memory(const Layout &layout) override {
-            r_.zeros(layout);
-            d_inv_.zeros(layout);
-        }
+    // lower and upper part of A
+    LU_ = A;
+    UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4.1");
+    LU_ -= Matrix(diag(d_inv_));
+    UTOPIA_NO_ALLOC_END();
 
-    private:
-        Vector d_inv_;
-        Matrix LU_;
-        Vector r_;
+    UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r4.2");
+    d_inv_ = 1. / d_inv_;
+    UTOPIA_NO_ALLOC_END();
 
-        /**
-         * @brief      Checks if there is a zero in the vector, if yes turn it into 1.
-         *
-         * @param      diag_A  { D_{-1}}
-         *
-         * @return     {  }
-         */
-        inline bool check_indef(Vector &diag_A) {
-            ReadAndWrite<Vector> w(diag_A);
-            Range rr = range(diag_A);
+    // prevents system from being indefinite
+    check_indef(d_inv_);
+  }
 
-            for (SizeType i = rr.begin(); i != rr.end(); i++) {
-                if (diag_A.get(i) == 0) {
-                    diag_A.set(i, 1);
-                }
-            }
+  void init_memory(const Layout &layout) override {
+    r_.zeros(layout);
+    d_inv_.zeros(layout);
+  }
 
-            return true;
-        }
+ private:
+  Vector d_inv_;
+  Matrix LU_;
+  Vector r_;
 
-        inline bool sweep(const Vector &rhs, Vector &x) {
-            UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r1");
-            r_ = rhs - (LU_ * x);
-            x = e_mul(d_inv_, r_);
+  /**
+   * @brief      Checks if there is a zero in the vector, if yes turn it into 1.
+   *
+   * @param      diag_A  { D_{-1}}
+   *
+   * @return     {  }
+   */
+  inline bool check_indef(Vector &diag_A) {
+    ReadAndWrite<Vector> w(diag_A);
+    Range rr = range(diag_A);
 
-            // const Matrix &A = *this->get_operator();
-            // r_ = rhs - A * x;
-            // x += e_mul(d_inv_, r_);
+    for (SizeType i = rr.begin(); i != rr.end(); i++) {
+      if (diag_A.get(i) == 0) {
+        diag_A.set(i, 1);
+      }
+    }
 
-            UTOPIA_NO_ALLOC_END();
-            return true;
-        }
-    };
+    return true;
+  }
+
+  inline bool sweep(const Vector &rhs, Vector &x) {
+    UTOPIA_NO_ALLOC_BEGIN("PointJacobi:r1");
+    r_ = rhs - (LU_ * x);
+    x = e_mul(d_inv_, r_);
+
+    // const Matrix &A = *this->get_operator();
+    // r_ = rhs - A * x;
+    // x += e_mul(d_inv_, r_);
+
+    UTOPIA_NO_ALLOC_END();
+    return true;
+  }
+};
 
 }  // namespace utopia
 

@@ -21,7 +21,13 @@ class PreconditionedSolver
 
   void update(const std::shared_ptr<const Matrix> &op) override {
     IterativeSolver::update(op);
-    PreconditionedSolverInterface::update(op);
+    if (this->precond_) {
+      PreconditionedSolverInterface::update(op);
+      auto ls_ptr = dynamic_cast<LinearSolver *>(this->precond_.get());
+      if (ls_ptr) {
+        ls_ptr->update(op);
+      }
+    }
   }
 
   virtual void update(const std::shared_ptr<const Matrix> &op,

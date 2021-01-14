@@ -166,7 +166,7 @@ class LBFGS final : public HessianApproximation<Vector> {
     // UTOPIA_NO_ALLOC_END();
 
     if (skip_update) {
-      std::cout << "update skipped! \n";
+      // std::cout << "update skipped! \n";
       // UTOPIA_NO_ALLOC_BEGIN("LBFGS2");
       this->init_scaling_factors(y_hat_, s);
       // std::cout<<"updating..... \n";
