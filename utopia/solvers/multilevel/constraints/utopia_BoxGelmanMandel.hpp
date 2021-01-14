@@ -9,6 +9,7 @@
 #include "utopia_IdentityTransfer.hpp"
 #include "utopia_LevelMemory.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_MultiLevelVariableBoundInterface.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
 #include <iomanip>

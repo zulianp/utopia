@@ -10,248 +10,267 @@
 #include "utopia_SimpleBacktracking.hpp"
 
 namespace utopia {
-    /**
-     * @brief      The class for Line-search multilevel optimization algorithm.
-     *
-     * @tparam     Matrix
-     * @tparam     Vector
-     */
-    template <class Matrix, class Vector>
-    class MG_OPT final : public NonlinearMultiLevelBase<Matrix, Vector> {
-        using Scalar = typename utopia::Traits<Vector>::Scalar;
-        using SizeType = typename utopia::Traits<Vector>::SizeType;
+/**
+ * @brief      The class for Line-search multilevel optimization algorithm.
+ *
+ * @tparam     Matrix
+ * @tparam     Vector
+ */
+template <class Matrix, class Vector>
+class MG_OPT final : public NonlinearMultiLevelBase<Matrix, Vector> {
+  using Scalar = typename utopia::Traits<Vector>::Scalar;
+  using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        using LSStrategy = utopia::LSStrategy<Vector>;
-        typedef utopia::Transfer<Matrix, Vector> Transfer;
+  using LSStrategy = utopia::LSStrategy<Vector>;
+  typedef utopia::Transfer<Matrix, Vector> Transfer;
 
-        typedef utopia::NewtonBase<Matrix, Vector> Solver;
-        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
+  typedef utopia::NewtonBase<Matrix, Vector> Solver;
+  typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
-    public:
-        bool solve(Vector & /*x_h*/) override {
-            utopia_error("MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) instead .... \n");
-            return false;
-        }
+ public:
+  bool solve(Vector & /*x_h*/) override {
+    utopia_error(
+        "MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) "
+        "instead .... \n");
+    return false;
+  }
 
-        MG_OPT(const SizeType &n_levels,
-               std::shared_ptr<Solver> smoother,
-               std::shared_ptr<Solver> coarse_solver,
-               std::shared_ptr<LSStrategy> ls_strategy = std::make_shared<utopia::SimpleBacktracking<Vector> >())
-            : NonlinearMultiLevelBase<Matrix, Vector>(n_levels),
-              _smoother(std::move(smoother)),
-              _coarse_solver(std::move(coarse_solver)),
-              _ls_strategy(std::move(ls_strategy)) {}
+  MG_OPT(const SizeType &n_levels, std::shared_ptr<Solver> smoother,
+         std::shared_ptr<Solver> coarse_solver,
+         std::shared_ptr<LSStrategy> ls_strategy =
+             std::make_shared<utopia::SimpleBacktracking<Vector> >())
+      : NonlinearMultiLevelBase<Matrix, Vector>(n_levels),
+        _smoother(std::move(smoother)),
+        _coarse_solver(std::move(coarse_solver)),
+        _ls_strategy(std::move(ls_strategy)) {}
 
-        std::string name() override { return "MG_OPT"; }
+  std::string name() override { return "MG_OPT"; }
 
-        void init_memory() override { utopia::out() << "-------- to be done \n"; }
+  void init_memory() override { utopia::out() << "-------- to be done \n"; }
 
-        void read(Input &in) override {
-            NonlinearMultiLevelBase<Matrix, Vector>::read(in);
+  void read(Input &in) override {
+    NonlinearMultiLevelBase<Matrix, Vector>::read(in);
 
-            if (_smoother) {
-                in.get("smoother", *_smoother);
-            }
-            if (_coarse_solver) {
-                in.get("coarse_solver", *_coarse_solver);
-            }
-            if (_ls_strategy) {
-                in.get("ls_strategy", *_ls_strategy);
-            }
-        }
+    if (_smoother) {
+      in.get("smoother", *_smoother);
+    }
+    if (_coarse_solver) {
+      in.get("coarse_solver", *_coarse_solver);
+    }
+    if (_ls_strategy) {
+      in.get("ls_strategy", *_ls_strategy);
+    }
+  }
 
-        void print_usage(std::ostream &os) const override {
-            NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
+  void print_usage(std::ostream &os) const override {
+    NonlinearMultiLevelBase<Matrix, Vector>::print_usage(os);
 
-            this->print_param_usage(
-                os, "coarse_solver", "NewtonBase", "Input parameters for coarse level QP solvers.", "-");
-            this->print_param_usage(os, "smoother", "NewtonBase", "Input parameters for fine level QP solver.", "-");
-            this->print_param_usage(os, "ls_strategy", "LSStrategy", "Input parameters for line-search strategy.", "-");
-        }
+    this->print_param_usage(os, "coarse_solver", "NewtonBase",
+                            "Input parameters for coarse level QP solvers.",
+                            "-");
+    this->print_param_usage(os, "smoother", "NewtonBase",
+                            "Input parameters for fine level QP solver.", "-");
+    this->print_param_usage(os, "ls_strategy", "LSStrategy",
+                            "Input parameters for line-search strategy.", "-");
+  }
 
-        bool solve(Fun &fine_fun, Vector &x_h, const Vector &rhs) {
-            bool converged = false;
-            SizeType it = 0, n_levels = this->n_levels();
-            Scalar r_norm, r0_norm = 1, rel_norm = 1, energy;
+  bool solve(Fun &fine_fun, Vector &x_h, const Vector &rhs) {
+    bool converged = false;
+    SizeType it = 0, n_levels = this->n_levels();
+    Scalar r_norm, r0_norm = 1, rel_norm = 1, energy;
 
-            std::string header_message = this->name() + ": " + std::to_string(n_levels) + " levels";
-            this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm", "Energy"});
+    std::string header_message =
+        this->name() + ": " + std::to_string(n_levels) + " levels";
+    this->init_solver(header_message,
+                      {" it. ", "|| grad ||", "r_norm", "Energy"});
 
-            this->init_memory();
+    this->init_memory();
 
-            Vector g(layout(x_h), 0.0);
-            fine_fun.gradient(x_h, g);
-            r0_norm = norm2(g);
-            r_norm = r0_norm;
+    Vector g(layout(x_h), 0.0);
+    fine_fun.gradient(x_h, g);
+    r0_norm = norm2(g);
+    r_norm = r0_norm;
 
-            fine_fun.value(x_h, energy);
+    fine_fun.value(x_h, energy);
 
-            if (this->verbose()) PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
+    if (this->verbose())
+      PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
 
-            it++;
+    it++;
 
-            while (!converged) {
-                this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
-
-#ifdef CHECK_NUM_PRECISION_mode
-                if (has_nan_or_inf(x_h) == 1) {
-                    x_h.zeros(layout(x_h));
-                    return true;
-                }
-#endif
-
-                fine_fun.gradient(x_h, g);
-                fine_fun.value(x_h, energy);
-
-                r_norm = norm2(g);
-                rel_norm = r_norm / r0_norm;
-
-                // print iteration status on every iteration
-                if (this->verbose()) PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
-
-                // check convergence and print interation info
-                converged = this->check_convergence(it, r_norm, rel_norm, 1);
-                it++;
-            }
-
-            this->print_statistics(it);
+    while (!converged) {
+      this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
 
 #ifdef CHECK_NUM_PRECISION_mode
-            if (has_nan_or_inf(x_h) == 1) exit(0);
+      if (has_nan_or_inf(x_h) == 1) {
+        x_h.zeros(layout(x_h));
+        return true;
+      }
 #endif
 
-            return true;
-        }
+      fine_fun.gradient(x_h, g);
+      fine_fun.value(x_h, energy);
 
-    private:
-        bool multiplicative_cycle(Fun &fine_fun, Vector &u_l, const Vector &f, const SizeType &l) {
-            Vector g_fine, g_restricted, g_coarse, u_2l, s_coarse, s_fine, u_init;
-            Scalar alpha;
+      r_norm = norm2(g);
+      rel_norm = r_norm / r0_norm;
 
-            this->make_iterate_feasible(fine_fun, u_l);
+      // print iteration status on every iteration
+      if (this->verbose())
+        PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
 
-            // PRE-SMOOTHING
-            smoothing(fine_fun, u_l, f, this->pre_smoothing_steps());
-            fine_fun.gradient(u_l, g_fine);
+      // check convergence and print interation info
+      converged = this->check_convergence(it, r_norm, rel_norm, 1);
+      it++;
+    }
 
-            g_fine -= f;
+    this->print_statistics(it);
 
-            this->transfer(l - 2).restrict(g_fine, g_restricted);
-            this->transfer(l - 2).project_down(u_l, u_2l);
+#ifdef CHECK_NUM_PRECISION_mode
+    if (has_nan_or_inf(x_h) == 1) exit(0);
+#endif
 
-            this->make_iterate_feasible(this->function(l - 2), u_2l);
-            this->zero_correction_related_to_equality_constrain(this->function(l - 2), g_restricted);
+    return true;
+  }
 
-            this->function(l - 2).gradient(u_2l, g_coarse);
+ private:
+  bool multiplicative_cycle(Fun &fine_fun, Vector &u_l, const Vector &f,
+                            const SizeType &l) {
+    Vector g_fine, g_restricted, g_coarse, u_2l, s_coarse, s_fine, u_init;
+    Scalar alpha;
 
-            u_init = u_2l;
-            g_coarse -= g_restricted;  // tau correction - g_diff in rmtr
+    this->make_iterate_feasible(fine_fun, u_l);
 
-            if (l == 2) {
-                coarse_solve(this->function(0), u_2l, g_coarse);
-            } else {
-                // recursive call into FAS - needs to be checked
-                for (SizeType k = 0; k < this->mg_type(); k++) {
-                    SizeType l_new = l - 1;
-                    this->multiplicative_cycle(this->function(l - 2), u_2l, g_coarse, l_new);
-                }
-            }
+    // PRE-SMOOTHING
+    smoothing(fine_fun, u_l, f, this->pre_smoothing_steps());
+    fine_fun.gradient(u_l, g_fine);
 
-            s_coarse = u_2l - u_init;
-            this->transfer(l - 2).interpolate(s_coarse, s_fine);
-            this->zero_correction_related_to_equality_constrain(fine_fun, s_fine);
+    g_fine -= f;
 
-            // TODO:: check which gradient: with/without tau correction  ...
-            // TODO::  put  energy checks ...
+    this->transfer(l - 2).restrict(g_fine, g_restricted);
+    this->transfer(l - 2).project_down(u_l, u_2l);
 
-            _ls_strategy->get_alpha(fine_fun, g_fine, u_l, s_fine, alpha);
-            u_l += alpha * s_fine;
+    this->make_iterate_feasible(this->function(l - 2), u_2l);
+    this->zero_correction_related_to_equality_constrain(this->function(l - 2),
+                                                        g_restricted);
 
-            // POST-SMOOTHING
-            smoothing(fine_fun, u_l, f, this->post_smoothing_steps());
+    this->function(l - 2).gradient(u_2l, g_coarse);
 
-            return true;
-        }
+    u_init = u_2l;
+    g_coarse -= g_restricted;  // tau correction - g_diff in rmtr
 
-        /**
-         * @brief      The function invokes smoothing.
-         *
-         * @param[in]  A     The stifness matrix.
-         * @param[in]  rhs   The right hand side.
-         * @param      x     The current iterate.
-         * @param[in]  nu    The number of smoothing steps.
-         *
-         * @return
-         */
-        bool smoothing(Fun &fun, Vector &x, const Vector &rhs, const SizeType & /*nu = 1*/) {
-            _smoother->max_it(1);
-            _smoother->verbose(true);
-            // This should be done way much more efficient
-            std::shared_ptr<Fun> fun_ptr(&fun, [](Fun *) {});
-            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
-            _smoother->solve(fun_rhs, x, rhs);
-            return true;
-        }
+    if (l == 2) {
+      coarse_solve(this->function(0), u_2l, g_coarse);
+    } else {
+      // recursive call into FAS - needs to be checked
+      for (SizeType k = 0; k < this->mg_type(); k++) {
+        SizeType l_new = l - 1;
+        this->multiplicative_cycle(this->function(l - 2), u_2l, g_coarse,
+                                   l_new);
+      }
+    }
 
-        /**
-         * @brief      The function invokes coarse solver.
-         *
-         * @param      fun   Function to be minimized
-         * @param[in]  rhs   The right hand side.
-         * @param      x     The current iterate.
-         * @param[in]  nu    The number of smoothing steps.
-         *
-         * @return
-         */
-        bool coarse_solve(Fun &fun, Vector &x, const Vector &rhs) {
-            _coarse_solver->verbose(true);
-            // This should be done way much more efficient
-            std::shared_ptr<Fun> fun_ptr(&fun, [](Fun *) {});
-            Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
-            _coarse_solver->solve(fun_rhs, x, rhs);
-            return true;
-        }
+    s_coarse = u_2l - u_init;
+    this->transfer(l - 2).interpolate(s_coarse, s_fine);
+    this->zero_correction_related_to_equality_constrain(fine_fun, s_fine);
 
-    public:
-        /**
-         * @brief      Function changes direct solver needed for coarse grid solve.
-         *
-         * @param[in]  linear_solver  The linear solver.
-         *
-         * @return
-         */
-        bool set_coarse_solver(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>()) {
-            _coarse_solver = nonlinear_solver;
-            // _coarse_solver->set_parameters(_parameters);
-            return true;
-        }
+    // TODO:: check which gradient: with/without tau correction  ...
+    // TODO::  put  energy checks ...
 
-        /**
-         * @brief      Function changes direct solver needed for coarse grid solve.
-         *
-         * @param[in]  linear_solver  The linear solver.
-         *
-         * @return
-         */
-        bool set_smoother(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>()) {
-            _smoother = nonlinear_solver;
-            // _smoother->set_parameters(_parameters);
-            return true;
-        }
+    _ls_strategy->get_alpha(fine_fun, g_fine, u_l, s_fine, alpha);
+    u_l += alpha * s_fine;
 
-        /**
-         * @brief      Sets line search strategy.
-         */
-        bool set_line_search(const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>()) {
-            _ls_strategy = ls_strategy;
-            return true;
-        }
+    // POST-SMOOTHING
+    smoothing(fine_fun, u_l, f, this->post_smoothing_steps());
 
-    protected:
-        std::shared_ptr<Solver> _smoother;        /*  optimization method used on fine levels */
-        std::shared_ptr<Solver> _coarse_solver;   /*  optimization method for coarse level */
-        std::shared_ptr<LSStrategy> _ls_strategy; /*  LS used to determine step size inside of MG */
-    };
+    return true;
+  }
+
+  /**
+   * @brief      The function invokes smoothing.
+   *
+   * @param[in]  A     The stifness matrix.
+   * @param[in]  rhs   The right hand side.
+   * @param      x     The current iterate.
+   * @param[in]  nu    The number of smoothing steps.
+   *
+   * @return
+   */
+  bool smoothing(Fun &fun, Vector &x, const Vector &rhs,
+                 const SizeType & /*nu = 1*/) {
+    _smoother->max_it(1);
+    _smoother->verbose(true);
+    // This should be done way much more efficient
+    std::shared_ptr<Fun> fun_ptr(&fun, [](Fun *) {});
+    Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
+    _smoother->solve(fun_rhs, x, rhs);
+    return true;
+  }
+
+  /**
+   * @brief      The function invokes coarse solver.
+   *
+   * @param      fun   Function to be minimized
+   * @param[in]  rhs   The right hand side.
+   * @param      x     The current iterate.
+   * @param[in]  nu    The number of smoothing steps.
+   *
+   * @return
+   */
+  bool coarse_solve(Fun &fun, Vector &x, const Vector &rhs) {
+    _coarse_solver->verbose(true);
+    // This should be done way much more efficient
+    std::shared_ptr<Fun> fun_ptr(&fun, [](Fun *) {});
+    Function_rhs<Matrix, Vector> fun_rhs(fun_ptr);
+    _coarse_solver->solve(fun_rhs, x, rhs);
+    return true;
+  }
+
+ public:
+  /**
+   * @brief      Function changes direct solver needed for coarse grid solve.
+   *
+   * @param[in]  linear_solver  The linear solver.
+   *
+   * @return
+   */
+  bool set_coarse_solver(const std::shared_ptr<Solver> &nonlinear_solver =
+                             std::shared_ptr<Solver>()) {
+    _coarse_solver = nonlinear_solver;
+    // _coarse_solver->set_parameters(_parameters);
+    return true;
+  }
+
+  /**
+   * @brief      Function changes direct solver needed for coarse grid solve.
+   *
+   * @param[in]  linear_solver  The linear solver.
+   *
+   * @return
+   */
+  bool set_smoother(const std::shared_ptr<Solver> &nonlinear_solver =
+                        std::shared_ptr<Solver>()) {
+    _smoother = nonlinear_solver;
+    // _smoother->set_parameters(_parameters);
+    return true;
+  }
+
+  /**
+   * @brief      Sets line search strategy.
+   */
+  bool set_line_search(const std::shared_ptr<LSStrategy> &ls_strategy =
+                           std::shared_ptr<LSStrategy>()) {
+    _ls_strategy = ls_strategy;
+    return true;
+  }
+
+ protected:
+  std::shared_ptr<Solver>
+      _smoother; /*  optimization method used on fine levels */
+  std::shared_ptr<Solver>
+      _coarse_solver; /*  optimization method for coarse level */
+  std::shared_ptr<LSStrategy>
+      _ls_strategy; /*  LS used to determine step size inside of MG */
+};
 
 }  // namespace utopia
 
