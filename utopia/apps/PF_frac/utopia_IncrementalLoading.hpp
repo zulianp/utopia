@@ -174,6 +174,8 @@ namespace utopia {
         void init_solver() {
             if (tr_solver_) return;
 
+            UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::init_solver(...)");
+
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
             if (this->use_mprgp_) {
                 // MPRGP sucks as a solver, as it can not be preconditioned easily ...
@@ -188,9 +190,13 @@ namespace utopia {
             }
 
             tr_solver_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
+
+            UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solver(...)");
         }
 
         void init_solution() override {
+            UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::init_solution(...)");
+
             space_.create_vector(this->solution_);
             space_.create_vector(this->lb_);
             rename("X", this->solution_);
@@ -203,9 +209,13 @@ namespace utopia {
 
             space_.apply_constraints(this->solution_);
             fe_problem_->old_solution(this->solution_);
+
+            UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solution(...)");
         }
 
         void prepare_for_solve() override {
+            UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::prepare_for_solve(...)");
+
             BC_.emplace_time_dependent_BC(this->time_);
             space_.apply_constraints(this->solution_);
 
@@ -223,9 +233,13 @@ namespace utopia {
             }
 
             fe_problem_->build_irreversility_constraint(this->lb_);
+
+            UTOPIA_TRACE_REGION_END("IncrementalLoading::prepare_for_solve(...)");
         }
 
         void update_time_step(const SizeType &conv_reason) override {
+            UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::update_time_step(...)");
+
             if (this->adjust_dt_on_failure_ && conv_reason < 0) {
                 // reset solution
                 fe_problem_->get_old_solution(this->solution_);
@@ -247,10 +261,14 @@ namespace utopia {
                 // increment time step
                 this->time_ += this->dt_;
             }
+
+            UTOPIA_TRACE_REGION_END("IncrementalLoading::update_time_step(...)");
         }
 
         // allow passing solver
         void run() override {
+            UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::run(...)");
+
             fe_problem_ = std::make_shared<ProblemType>(space_);
             this->init(space_);
 
@@ -275,6 +293,8 @@ namespace utopia {
                 const auto conv_reason = sol_status.reason;
                 update_time_step(conv_reason);
             }
+
+            UTOPIA_TRACE_REGION_END("IncrementalLoading::run(...)");
         }
 
     public:  // made public because of nvcc

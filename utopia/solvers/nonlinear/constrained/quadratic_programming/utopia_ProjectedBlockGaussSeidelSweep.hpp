@@ -25,6 +25,8 @@ namespace utopia {
         using ConstVectorView = utopia::VectorView<ConstArrayView>;
         using Block = utopia::StaticMatrix<Scalar, BlockSize, BlockSize>;
 
+        ProjectedBlockGaussSeidelSweep *clone() const override { return new ProjectedBlockGaussSeidelSweep(); }
+
         class BlockIdx {
         public:
             constexpr BlockIdx(const SizeType i_scalar, const SizeType j_scalar)
@@ -46,7 +48,7 @@ namespace utopia {
         };
 
         void init_from_local_matrix(const Matrix &mat) override {
-            // UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::init_from_local_matrix");
+            UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::init_from_local_matrix");
             const SizeType n_rows = mat.rows();
             const SizeType n_blocks = n_rows / BlockSize;
 
@@ -103,7 +105,7 @@ namespace utopia {
                 }
             });
 
-            // UTOPIA_TRACE_REGION_END("ProjectedBlockGaussSeidelSweep::init_from_local_matrix");
+            UTOPIA_TRACE_REGION_END("ProjectedBlockGaussSeidelSweep::init_from_local_matrix");
         }
 
         void update_from_local_matrix(const Matrix &local_diag_block) override {
@@ -111,19 +113,23 @@ namespace utopia {
         }
 
         void apply(const SizeType &times) override {
-            // UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::apply(...)");
+            UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::apply(...)");
 
             for (SizeType t = 0; t < times; ++t) {
                 apply();
             }
 
-            // UTOPIA_TRACE_REGION_END("ProjectedBlockGaussSeidelSweep::apply(...)");
+            UTOPIA_TRACE_REGION_END("ProjectedBlockGaussSeidelSweep::apply(...)");
         }
 
         void apply_unconstrained(const SizeType &times) override {
+            UTOPIA_TRACE_REGION_BEGIN("ProjectedBlockGaussSeidelSweep::apply_unconstrained(...)");
+
             for (SizeType t = 0; t < times; ++t) {
                 apply_unconstrained();
             }
+
+            UTOPIA_TRACE_REGION_END("ProjectedBlockGaussSeidelSweep::apply_unconstrained(...)");
         }
 
         ProjectedBlockGaussSeidelSweep() = default;

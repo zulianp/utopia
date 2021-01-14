@@ -59,6 +59,7 @@ namespace utopia {
         // TODO
         assert(false && "IMPLEMENT ME");
 
+        UTOPIA_TRACE_REGION_END("BlockQPSolver::smooth");
         return false;
     }
 
@@ -68,7 +69,11 @@ namespace utopia {
 
         if (rhs.comm().size() == 1) {
             serial_solver_->set_box_constraints(BoxConstraints<Vector>(this->lower_bound(), this->upper_bound()));
-            return serial_solver_->apply(rhs, x);
+
+            auto ok = serial_solver_->apply(rhs, x);
+
+            UTOPIA_TRACE_REGION_END("BlockQPSolver::apply");
+            return ok;
         }
 
         this->init_solver("utopia BlockQPSolver comm.size = " + std::to_string(rhs.comm().size()),
@@ -186,6 +191,7 @@ namespace utopia {
 
         if (op->comm().size() == 1) {
             serial_solver_->update(op);
+            UTOPIA_TRACE_REGION_END("BlockQPSolver::update");
             return;
         }
 
@@ -208,7 +214,8 @@ namespace utopia {
         auto g_view = const_local_view_device(g);
         auto l_view = local_view_device(l);
 
-        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { l_view.set(i, g_view.get(i)); });
+        parallel_for(
+            l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { l_view.set(i, g_view.get(i)); });
     }
 
     template <class Matrix, class Vector>
@@ -222,7 +229,8 @@ namespace utopia {
         auto g_view = local_view_device(g);
         auto l_view = const_local_view_device(l);
 
-        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.set(i, l_view.get(i)); });
+        parallel_for(
+            l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.set(i, l_view.get(i)); });
     }
 
     template <class Matrix, class Vector>
@@ -236,7 +244,8 @@ namespace utopia {
         auto g_view = local_view_device(g);
         auto l_view = const_local_view_device(l);
 
-        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.add(i, l_view.get(i)); });
+        parallel_for(
+            l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.add(i, l_view.get(i)); });
     }
 
 }  // namespace utopia

@@ -2,6 +2,7 @@
 #define UTOPIA_PROJECTED_GAUSS_SEIDEL_SWEEP_HPP
 
 #include "utopia_Algorithms.hpp"
+#include "utopia_Clonable.hpp"
 #include "utopia_Trace.hpp"
 #include "utopia_VectorView.hpp"
 #include "utopia_Views.hpp"
@@ -12,7 +13,7 @@
 namespace utopia {
 
     template <class Matrix>
-    class ProjectedGaussSeidelSweep {
+    class ProjectedGaussSeidelSweep : public Clonable {
     public:
         using Scalar = typename Traits<Matrix>::Scalar;
         using SizeType = typename Traits<Matrix>::SizeType;
@@ -26,6 +27,7 @@ namespace utopia {
         virtual void update_from_local_matrix(const Matrix &local_diag_block) = 0;
         virtual void apply(const SizeType &times) = 0;
         virtual void apply_unconstrained(const SizeType &times) = 0;
+        ProjectedGaussSeidelSweep *clone() const override = 0;
 
         void set_residual_view(const ConstVectorView &r) {
             // FIXME
@@ -72,8 +74,10 @@ namespace utopia {
         using VectorView = utopia::VectorView<ArrayView>;
         using ConstVectorView = utopia::VectorView<ConstArrayView>;
 
+        ProjectedScalarGaussSeidelSweep *clone() const override { return new ProjectedScalarGaussSeidelSweep(); }
+
         void init_from_local_matrix(const Matrix &mat) override {
-            // UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidelSweep::init_from_local_matrix");
+            UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidelSweep::init_from_local_matrix");
 
             const SizeType n_rows = mat.rows();
 
@@ -122,7 +126,7 @@ namespace utopia {
                 }
             });
 
-            // UTOPIA_TRACE_REGION_END("ProjectedGaussSeidelSweep::init_from_local_matrix");
+            UTOPIA_TRACE_REGION_END("ProjectedGaussSeidelSweep::init_from_local_matrix");
         }
 
         void update_from_local_matrix(const Matrix &local_diag_block) override {
@@ -130,19 +134,23 @@ namespace utopia {
         }
 
         void apply(const SizeType &times) override {
-            // UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidelSweep::apply(...)");
+            UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidelSweep::apply(...)");
 
             for (SizeType t = 0; t < times; ++t) {
                 apply();
             }
 
-            // UTOPIA_TRACE_REGION_END("ProjectedGaussSeidelSweep::apply(...)");
+            UTOPIA_TRACE_REGION_END("ProjectedGaussSeidelSweep::apply(...)");
         }
 
         void apply_unconstrained(const SizeType &times) override {
+            UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidelSweep::apply_unconstrained(...)");
+
             for (SizeType t = 0; t < times; ++t) {
                 apply_unconstrained();
             }
+
+            UTOPIA_TRACE_REGION_END("ProjectedGaussSeidelSweep::apply_unconstrained(...)");
         }
 
         ProjectedScalarGaussSeidelSweep() = default;

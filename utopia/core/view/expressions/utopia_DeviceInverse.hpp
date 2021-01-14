@@ -20,11 +20,16 @@ namespace utopia {
 
         template <class Result>
         UTOPIA_INLINE_FUNCTION static bool apply(const Expr &expr, Result &result) {
-            const Scalar d = DeviceDeterminant<Expr>::apply(expr);
-            if (d == 0.0) return false;
-
             const SizeType rows = result.rows();
             const SizeType cols = result.cols();
+
+            if (rows == 4) {
+                Scalar d;
+                return invert4(expr, result, d);
+            }
+
+            const Scalar d = DeviceDeterminant<Expr>::apply(expr);
+            if (d == 0.0) return false;
 
             if (rows != cols) {
                 // expr has rows > cols
@@ -122,6 +127,83 @@ namespace utopia {
                     result.set(0.0);
                 }
             }
+        }
+
+        template <class ExprT, class Result>
+        UTOPIA_INLINE_FUNCTION static bool invert4(const ExprT &m, Result &inv, Scalar &det) {
+            const auto m00 = m(0, 0);
+            const auto m10 = m(1, 0);
+            const auto m20 = m(2, 0);
+            const auto m30 = m(3, 0);
+            const auto m01 = m(0, 1);
+            const auto m11 = m(1, 1);
+            const auto m21 = m(2, 1);
+            const auto m31 = m(3, 1);
+            const auto m02 = m(0, 2);
+            const auto m12 = m(1, 2);
+            const auto m22 = m(2, 2);
+            const auto m32 = m(3, 2);
+            const auto m03 = m(0, 3);
+            const auto m13 = m(1, 3);
+            const auto m23 = m(2, 3);
+            const auto m33 = m(3, 3);
+
+            inv(0, 0) = m11 * m22 * m33 - m11 * m23 * m32 - m21 * m12 * m33 + m21 * m13 * m32 + m31 * m12 * m23 -
+                        m31 * m13 * m22;
+
+            inv(1, 0) = -m10 * m22 * m33 + m10 * m23 * m32 + m20 * m12 * m33 - m20 * m13 * m32 - m30 * m12 * m23 +
+                        m30 * m13 * m22;
+
+            inv(2, 0) = m10 * m21 * m33 - m10 * m23 * m31 - m20 * m11 * m33 + m20 * m13 * m31 + m30 * m11 * m23 -
+                        m30 * m13 * m21;
+
+            inv(3, 0) = -m10 * m21 * m32 + m10 * m22 * m31 + m20 * m11 * m32 - m20 * m12 * m31 - m30 * m11 * m22 +
+                        m30 * m12 * m21;
+
+            inv(0, 1) = -m01 * m22 * m33 + m01 * m23 * m32 + m21 * m02 * m33 - m21 * m03 * m32 - m31 * m02 * m23 +
+                        m31 * m03 * m22;
+
+            inv(1, 1) = m00 * m22 * m33 - m00 * m23 * m32 - m20 * m02 * m33 + m20 * m03 * m32 + m30 * m02 * m23 -
+                        m30 * m03 * m22;
+
+            inv(2, 1) = -m00 * m21 * m33 + m00 * m23 * m31 + m20 * m01 * m33 - m20 * m03 * m31 - m30 * m01 * m23 +
+                        m30 * m03 * m21;
+
+            inv(3, 1) = m00 * m21 * m32 - m00 * m22 * m31 - m20 * m01 * m32 + m20 * m02 * m31 + m30 * m01 * m22 -
+                        m30 * m02 * m21;
+
+            inv(0, 2) = m01 * m12 * m33 - m01 * m13 * m32 - m11 * m02 * m33 + m11 * m03 * m32 + m31 * m02 * m13 -
+                        m31 * m03 * m12;
+
+            inv(1, 2) = -m00 * m12 * m33 + m00 * m13 * m32 + m10 * m02 * m33 - m10 * m03 * m32 - m30 * m02 * m13 +
+                        m30 * m03 * m12;
+
+            inv(2, 2) = m00 * m11 * m33 - m00 * m13 * m31 - m10 * m01 * m33 + m10 * m03 * m31 + m30 * m01 * m13 -
+                        m30 * m03 * m11;
+
+            inv(3, 2) = -m00 * m11 * m32 + m00 * m12 * m31 + m10 * m01 * m32 - m10 * m02 * m31 - m30 * m01 * m12 +
+                        m30 * m02 * m11;
+
+            inv(0, 3) = -m01 * m12 * m23 + m01 * m13 * m22 + m11 * m02 * m23 - m11 * m03 * m22 - m21 * m02 * m13 +
+                        m21 * m03 * m12;
+
+            inv(1, 3) = m00 * m12 * m23 - m00 * m13 * m22 - m10 * m02 * m23 + m10 * m03 * m22 + m20 * m02 * m13 -
+                        m20 * m03 * m12;
+
+            inv(2, 3) = -m00 * m11 * m23 + m00 * m13 * m21 + m10 * m01 * m23 - m10 * m03 * m21 - m20 * m01 * m13 +
+                        m20 * m03 * m11;
+
+            inv(3, 3) = m00 * m11 * m22 - m00 * m12 * m21 - m10 * m01 * m22 + m10 * m02 * m21 + m20 * m01 * m12 -
+                        m20 * m02 * m11;
+
+            det = m00 * inv(0, 0) + m01 * inv(1, 0) + m02 * inv(2, 0) + m03 * inv(3, 0);
+
+            if (det == 0) return false;
+
+            const Scalar inv_det = 1.0 / det;
+
+            inv *= inv_det;
+            return true;
         }
 
         template <class Array, class ArrayResult>
