@@ -12,7 +12,9 @@
     "with_damage" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
-    "final_time" : 1.0,
+    "block_solver" : true,
+    "*final_time" : 1.0,
+    "num_time_steps" : 5,
     "dt" : 1.0e-2,
     "second_phase_ts" : {
         "dt" : 1.0e-4,
@@ -28,7 +30,7 @@
     "fracture_toughness":0.3680,
     "pressure0" : 0.0,
     "pressure_increase_factor" : 0.0,
-    "hjsmn_smoother": true,
+    "hjsmn_smoother": false,
     "save_output": true,
     "diff_controller" : {
         "spacing" : 1e-6,
