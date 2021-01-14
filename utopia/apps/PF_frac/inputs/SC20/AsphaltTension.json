@@ -13,8 +13,8 @@
     "use_dense_hessian" : false,
     "check_derivatives" : false,
     "block_solver" : true,
-    "*final_time" : 1.0,
-    "num_time_steps" : 5,
+    "final_time" : 1.0,
+    "*num_time_steps" : 5,
     "dt" : 1.0e-2,
     "second_phase_ts" : {
         "dt" : 1.0e-4,
