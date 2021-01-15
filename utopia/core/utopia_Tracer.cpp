@@ -152,7 +152,7 @@ namespace utopia {
 
                 f_balancing.close();
             }
-#endif UTOPIA_WITH_MPI
+#endif  // UTOPIA_WITH_MPI
         }
     }
 }  // namespace utopia
