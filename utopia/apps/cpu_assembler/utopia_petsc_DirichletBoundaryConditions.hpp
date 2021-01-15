@@ -64,29 +64,30 @@ namespace utopia {
             auto space_view = subspace.view_device();
             auto v_view = utopia::view_device(v);
 
-            Device::parallel_for(subspace.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                ElemView e;
-                space_view.elem(i, e);
+            Device::parallel_for(
+                subspace.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    ElemView e;
+                    space_view.elem(i, e);
 
-                NodeIndex nodes;
-                space_view.mesh().nodes(i, nodes);
+                    NodeIndex nodes;
+                    space_view.mesh().nodes(i, nodes);
 
-                const SizeType n_nodes = nodes.size();
+                    const SizeType n_nodes = nodes.size();
 
-                const SizeType nc = subspace.mesh().n_components();
+                    const SizeType nc = subspace.mesh().n_components();
 
-                Point p;
-                for (SizeType i = 0; i < n_nodes; ++i) {
-                    const SizeType node_id = nodes[i];
-                    auto idx = node_id * nc + component_;
-                    e.node(i, p);
+                    Point p;
+                    for (SizeType i = 0; i < n_nodes; ++i) {
+                        const SizeType node_id = nodes[i];
+                        auto idx = node_id * nc + component_;
+                        e.node(i, p);
 
-                    // FIXME
-                    if (r.inside(idx) && is_constrained_dof(idx - r.begin())) {
-                        v_view.set(idx, fun_(p));
+                        // FIXME
+                        if (r.inside(idx) && is_constrained_dof(idx - r.begin())) {
+                            v_view.set(idx, fun_(p));
+                        }
                     }
-                }
-            });
+                });
         }
 
         void apply_zero(PetscVector &vec) const { apply_val(vec, 0.0); }

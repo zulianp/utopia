@@ -12,14 +12,17 @@ if(UTOPIA_PETSC)
         cpu_assembler/dmplex
         PF_frac
         min_problems
-        fe
-    )
+        fe)
 
     set(LOCAL_HEADERS "")
     set(LOCAL_SOURCES "")
     find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
                        LOCAL_SOURCES)
-    target_sources(utopia_exec PRIVATE ${LOCAL_SOURCES})
+    target_sources(
+        utopia_exec
+        PRIVATE ${LOCAL_SOURCES}
+        PRIVATE ${LOCAL_HEADERS})
+
     utopia_link_default_targets(utopia_exec)
 
     target_include_directories(utopia_exec PRIVATE ${UTOPIA_APPS_DIR})

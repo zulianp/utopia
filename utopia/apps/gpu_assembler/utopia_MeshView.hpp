@@ -537,11 +537,12 @@ namespace utopia {
         template <class Fun>
         void each_element(Fun fun) {
             auto view = view_device();
-            Dev::parallel_for(element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
-                typename ViewDevice::Elem e;
-                view.elem(e_index, e);
-                fun(e_index, e);
-            });
+            Dev::parallel_for(
+                element_range(), UTOPIA_LAMBDA(const SizeType &e_index) {
+                    typename ViewDevice::Elem e;
+                    view.elem(e_index, e);
+                    fun(e_index, e);
+                });
         }
 
         ViewDevice view_device() const {

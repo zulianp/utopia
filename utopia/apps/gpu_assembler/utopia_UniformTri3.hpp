@@ -50,7 +50,9 @@ namespace utopia {
                 case 2: {
                     return 1;
                 }
-                default: { return 0.0; }
+                default: {
+                    return 0.0;
+                }
             }
 
             return 0.0;
