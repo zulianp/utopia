@@ -57,7 +57,7 @@ namespace utopia {
             auto precond = hessian_approx->build_Hinv_precond();
             lsolver->set_preconditioner(precond);
 
-            QuasiNewton<Vector> nlsolver(hessian_approx, lsolver);
+            QuasiNewton<Matrix, Vector> nlsolver(hessian_approx, lsolver);
             nlsolver.atol(1e-5);
             nlsolver.rtol(1e-15);
             nlsolver.stol(1e-15);
@@ -152,7 +152,7 @@ namespace utopia {
             auto precond = hess_approx->build_Hinv_precond();
             lsolver->set_preconditioner(precond);
 
-            QuasiNewton<Vector> nlsolver(hess_approx, lsolver);
+            QuasiNewton<Matrix, Vector> nlsolver(hess_approx, lsolver);
             nlsolver.atol(1e-6);
             nlsolver.rtol(1e-15);
             nlsolver.stol(1e-15);
@@ -187,7 +187,8 @@ namespace utopia {
         //     Vector ub, lb;
         //     fun.generate_constraints(lb, ub);
         //     auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-        //     auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+        //     auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix,
+        //     Vector> >();
 
         //     TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
         //     tr_solver.set_box_constraints(box);
@@ -212,13 +213,13 @@ namespace utopia {
 
         //     SizeType memory_size = 5;
         //     auto hess_approx = std::make_shared<ApproxType>(memory_size);
-        //     auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+        //     auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix,
+        //     Vector> >();
         //     // auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
         //     // qp_solver->memory_size(10);
 
-        //     QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, qp_solver);
-        //     tr_solver.set_box_constraints(box);
-        //     tr_solver.atol(1e-6);
+        //     QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx,
+        //     qp_solver); tr_solver.set_box_constraints(box); tr_solver.atol(1e-6);
         //     tr_solver.rtol(1e-10);
         //     tr_solver.stol(1e-10);
         //     tr_solver.verbose(_verbose);
@@ -238,9 +239,8 @@ namespace utopia {
         //     Vector ub(layout(x), 0.01);
         //     auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-        //     auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
-        //     qp_solver->verbose(false);
-        //     qp_solver->atol(1e-12);
+        //     auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix,
+        //     Vector> >(); qp_solver->verbose(false); qp_solver->atol(1e-12);
 
         //     auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
         //     qp_solver->set_linear_solver(lsolver);
@@ -297,14 +297,14 @@ namespace utopia {
         //     auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
         //     auto hess_approx = std::make_shared<ApproxType>(memory_size);
-        //     auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+        //     auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix,
+        //     Vector> >();
 
         //     auto precond = hess_approx->build_Hinv_precond();
         //     qp_solver->set_preconditioner(precond);
 
-        //     QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx, qp_solver);
-        //     tr_solver.set_box_constraints(box);
-        //     tr_solver.atol(1e-6);
+        //     QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx,
+        //     qp_solver); tr_solver.set_box_constraints(box); tr_solver.atol(1e-6);
         //     tr_solver.rtol(1e-10);
         //     tr_solver.stol(1e-10);
         //     tr_solver.verbose(_verbose);
@@ -367,7 +367,8 @@ namespace utopia {
             fun.apply_bc_to_initial_guess(x);
 
             auto hess_approx = std::make_shared<ApproxType>(memory_size);
-            // auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+            // auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix,
+            // Vector> >();
             auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
             qp_solver->max_it(_n);
 
@@ -391,18 +392,21 @@ namespace utopia {
         // void Quasi_RMTR_test()
         // {
         //     const SizeType n_levels = 3;
-        //     BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, _verbose);
+        //     BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true,
+        //     _verbose);
 
-        //     auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(n_levels);
+        //     auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>
+        //     >(n_levels);
 
         //     // intial guess
         //     Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
-        //     std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
+        //     std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >
+        //     level_functions(problem.n_levels);
 
         //     for(auto l=0; l < problem.n_levels; l++)
         //     {
-        //         auto fun = std::make_shared<Bratu1D<Matrix, Vector> >(problem.n_dofs[l]);
-        //         level_functions[l] = fun;
+        //         auto fun = std::make_shared<Bratu1D<Matrix, Vector>
+        //         >(problem.n_dofs[l]); level_functions[l] = fun;
 
         //         // making sure that fine level IG is feasible
         //         if(l+1 == problem.n_levels)
@@ -410,8 +414,9 @@ namespace utopia {
         //     }
 
         //     const SizeType memory_size = 5;
-        //     std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(problem.n_levels);
-        //     for(auto l=0; l < problem.n_levels; l++)
+        //     std::vector<std::shared_ptr<HessianApproximation<Vector> > >
+        //     hess_approxs(problem.n_levels); for(auto l=0; l < problem.n_levels;
+        //     l++)
         //     {
         //         auto hes_approx   = std::make_shared<ApproxType >(memory_size);
         //         hess_approxs[l] = hes_approx;
@@ -419,10 +424,11 @@ namespace utopia {
 
         //     rmtr->set_hessian_approximation_strategies(hess_approxs);
 
-        //     std::vector<std::shared_ptr<utopia::MatrixFreeTRSubproblem<Vector> > > subproblems(problem.n_levels);
-        //     for(auto l=0; l < problem.n_levels; l++)
+        //     std::vector<std::shared_ptr<utopia::MatrixFreeTRSubproblem<Vector> > >
+        //     subproblems(problem.n_levels); for(auto l=0; l < problem.n_levels; l++)
         //     {
-        //         auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+        //         auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix,
+        //         Vector, HOMEMADE> >();
 
         //         auto precond = hess_approxs[l]->build_Hinv_precond();
         //         tr_strategy->set_preconditioner(precond);
@@ -431,7 +437,8 @@ namespace utopia {
         //     }
 
         //     rmtr->set_tr_strategies(subproblems);
-        //     rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+        //     rmtr->set_transfer_operators(problem.prolongations,
+        //     problem.restrictions);
 
         //     rmtr->max_it(50);
         //     rmtr->max_coarse_it(3);
@@ -453,20 +460,23 @@ namespace utopia {
         // void Quasi_RMTR_inf_bound_test()
         // {
         //     const SizeType n_levels = 3;
-        //     BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, _verbose);
+        //     BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true,
+        //     _verbose);
 
-        //     auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>  >(n_levels);
+        //     auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>
+        //     >(n_levels);
 
         //     // intial guess
         //     Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 
         //     // upper, lower bound...
         //     Vector ub, lb;
-        //     std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
-        //     for(auto l=0; l < problem.n_levels; l++)
+        //     std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >
+        //     level_functions(problem.n_levels); for(auto l=0; l < problem.n_levels;
+        //     l++)
         //     {
-        //         auto fun = std::make_shared<Bratu1D<Matrix, Vector> >(problem.n_dofs[l]);
-        //         level_functions[l] = fun;
+        //         auto fun = std::make_shared<Bratu1D<Matrix, Vector>
+        //         >(problem.n_dofs[l]); level_functions[l] = fun;
 
         //         // making sure that fine level IG is feasible
         //         if(l+1 == problem.n_levels)
@@ -477,8 +487,9 @@ namespace utopia {
         //     }
 
         //     const SizeType memory_size = 5;
-        //     std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(problem.n_levels);
-        //     for(auto l=0; l < problem.n_levels; l++)
+        //     std::vector<std::shared_ptr<HessianApproximation<Vector> > >
+        //     hess_approxs(problem.n_levels); for(auto l=0; l < problem.n_levels;
+        //     l++)
         //     {
         //         auto hes_approx   = std::make_shared<ApproxType >(memory_size);
         //         hess_approxs[l] = hes_approx;
@@ -486,18 +497,20 @@ namespace utopia {
 
         //     rmtr->set_hessian_approximation_strategies(hess_approxs);
 
-        //     std::vector<std::shared_ptr<utopia::MatrixFreeQPSolver<Vector> > > subproblems(problem.n_levels);
-        //     for(auto l=0; l < problem.n_levels; l++)
+        //     std::vector<std::shared_ptr<utopia::MatrixFreeQPSolver<Vector> > >
+        //     subproblems(problem.n_levels); for(auto l=0; l < problem.n_levels; l++)
         //     {
-        //         auto tr_strategy = std::make_shared<utopia::ProjectedGradientActiveSet<Matrix, Vector> >();
-        //         auto precond = hess_approxs[l]->build_Hinv_precond();
+        //         auto tr_strategy =
+        //         std::make_shared<utopia::ProjectedGradientActiveSet<Matrix, Vector>
+        //         >(); auto precond = hess_approxs[l]->build_Hinv_precond();
         //         tr_strategy->set_preconditioner(precond);
 
         //         subproblems[l] = tr_strategy;
         //     }
 
         //     rmtr->set_tr_strategies(subproblems);
-        //     rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+        //     rmtr->set_transfer_operators(problem.prolongations,
+        //     problem.restrictions);
 
         //     rmtr->max_it(30);
         //     rmtr->max_coarse_it(3);
@@ -531,22 +544,25 @@ namespace utopia {
     static void quasi_newton() {
 #ifdef UTOPIA_WITH_PETSC
         QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().print_backend_info();
-        // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector> >().run_dense();
+        // QuasiNewtonTest<PetscMatrix, PetscVector, BFGS<PetscMatrix, PetscVector>
+        // >().run_dense();
 
         QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_sparse();
 
-        // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector> >().run_sparse();
-        // QuasiNewtonTest<PetscMatrix, PetscVector, LBFGS<PetscVector> >().run_multilevel();
+        // QuasiNewtonTest<PetscMatrix, PetscVector, LSR1<PetscVector>
+        // >().run_sparse(); QuasiNewtonTest<PetscMatrix, PetscVector,
+        // LBFGS<PetscVector> >().run_multilevel();
 #endif
 
 #ifdef UTOPIA_WITH_BLAS
         QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().print_backend_info();
-        // QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord> >().run_dense();
+        // QuasiNewtonTest<BlasMatrixd, BlasVectord, BFGS<BlasMatrixd, BlasVectord>
+        // >().run_dense();
 #endif  // UTOPIA_WITH_BLAS
 
         // #ifdef UTOPIA_WITH_TRILINOS
         // QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().print_backend_info();
-        // 		QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
+        //      QuasiNewtonTest<TpetraMatrixd, TpetraVectord>().run_sparse();
         // #endif //UTOPIA_WITH_TRILINOS
     }
 

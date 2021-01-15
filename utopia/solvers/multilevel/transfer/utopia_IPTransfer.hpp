@@ -16,7 +16,7 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector>
-    class IPTransfer final : public Transfer<Matrix, Vector> {
+    class IPTransfer final : public MatrixTransfer<Matrix, Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
@@ -80,7 +80,8 @@ namespace utopia {
          */
         bool boolean_restrict_or(const Vector & /*x*/, Vector & /*x_new*/) override {
             assert(false && "implement me");
-            // static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
+            // static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon()
+            // * 1e6;
 
             // // x_new = local_zeros(local_size(*_R).get(0));
 
@@ -90,7 +91,8 @@ namespace utopia {
             // {
             //     Write<Matrix> w_(R_boolean);
 
-            //     each_read(*_R, [&R_boolean](const SizeType i, const SizeType j, const Scalar value) {
+            //     each_read(*_R, [&R_boolean](const SizeType i, const SizeType j, const
+            //     Scalar value) {
             //         if(std::abs(value) > off_diag_tol) {
             //             R_boolean.set(i, j, 1.);
             //         }
@@ -108,8 +110,10 @@ namespace utopia {
             //     }
             // }
 
-            // //THIS works for serial (use it once we have a is_parallel and is_serial query)
-            // // each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const Scalar value) {
+            // //THIS works for serial (use it once we have a is_parallel and is_serial
+            // query)
+            // // each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const
+            // Scalar value) {
             // //     if(x.get(j) != 0. && std::abs(value) > off_diag_tol) {
             // //         x_new.set(i, 1.);
             // //     }
@@ -185,14 +189,27 @@ namespace utopia {
 
         Scalar restriction_inf_norm() const override { return norm_infty(*_Pr); }
 
-        const Matrix &I() const {
+        const Matrix &I() override {
             assert(_I);
             return *_I;
+        }
+
+        const Matrix &P() override {
+            assert(_Pr);
+            return *_Pr;
+        }
+
+        const Matrix &R() override {
+            assert(_I);
+            _R = std::make_shared<Matrix>(transpose(*_I));
+            return *_R;
         }
 
     protected:
         std::shared_ptr<Matrix> _I;
         std::shared_ptr<Matrix> _Pr;
+        std::shared_ptr<Matrix> _R;
+
         Scalar restrict_factor_;
 
         Matrix P_pos_;

@@ -66,7 +66,8 @@ namespace utopia {
 
         OperatorBasedQPSolver() = default;
 
-        // FIX since VariableBoundSolverInterface<Vector>(other) creates problems for NVCC
+        // FIX since VariableBoundSolverInterface<Vector>(other) creates problems for
+        // NVCC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreorder"
         OperatorBasedQPSolver(const OperatorBasedQPSolver &other)

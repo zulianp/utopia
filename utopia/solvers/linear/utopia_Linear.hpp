@@ -7,5 +7,6 @@
 #include "utopia_LinearSolverInterfaces.hpp"
 #include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_PreconditionedSolver.hpp"
+#include "utopia_PreconditionedSolverInterface.hpp"
 
 #endif

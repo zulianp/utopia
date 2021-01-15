@@ -31,7 +31,8 @@ namespace utopia {
               };
 
         /**
-         * @brief      Gets the alpha = step-size. Function needs to be provided by actual LS strategies.
+         * @brief      Gets the alpha = step-size. Function needs to be provided by
+         * actual LS strategies.
          *
          * @param
          * @param[in]
@@ -85,7 +86,8 @@ namespace utopia {
 
     private:
         bool verbose_{false}; /*!< Verbose inside of LS strategy.  */
-        Scalar c1_;           /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
+        Scalar c1_;           /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 =
+                                 10^{-4} \f$.  */
         SizeType max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */
         Scalar rho_;          /*!< Contraction factor.   */
         Scalar alpha_min_;    /*!< Minimum allowed step-size.   */

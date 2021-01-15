@@ -29,6 +29,8 @@ namespace utopia {
                         const std::shared_ptr<MFSolver> &solver)
             : hessian_approx_strategy_(hessian_approx), mf_linear_solver_(solver), alpha_(1.0) {}
 
+        QuasiNewtonBase(const std::shared_ptr<MFSolver> &solver) : mf_linear_solver_(solver), alpha_(1.0) {}
+
         ~QuasiNewtonBase() override = default;
 
         void read(Input &in) override {
@@ -70,11 +72,23 @@ namespace utopia {
         inline virtual std::shared_ptr<MFSolver> linear_solver() const { return mf_linear_solver_; }
 
         virtual void update(const Vector &s, const Vector &y, const Vector &x, const Vector &g) {
-            hessian_approx_strategy_->update(s, y, x, g);
+            if (hessian_approx_strategy_) {
+                hessian_approx_strategy_->update(s, y, x, g);
+            } else {
+                utopia_assert(
+                    "QuasiNewtonBase::update, missing hessian approx "
+                    "strategy");
+            }
         }
 
         virtual void initialize_approximation(const Vector &x, const Vector &g) {
-            return hessian_approx_strategy_->initialize(x, g);
+            if (hessian_approx_strategy_)
+                return hessian_approx_strategy_->initialize(x, g);
+            else {
+                utopia_assert(
+                    "QuasiNewtonBase::initialize_approximation, missing hessian approx "
+                    "strategy");
+            }
         }
 
         virtual void set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy) { ls_strategy_ = strategy; }
@@ -113,7 +127,8 @@ namespace utopia {
         std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
         std::shared_ptr<MFSolver> mf_linear_solver_;
         Scalar alpha_;                            /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
+        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to
+                                                     obtain step \f$ \alpha_k \f$ */
     };
 
 }  // namespace utopia

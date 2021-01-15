@@ -9,7 +9,8 @@
 namespace utopia {
 
     /**
-     * @brief      Nonlinear Jacobi smoother. Used in nonlinear MG as well as in FAS.
+     * @brief      Nonlinear Jacobi smoother. Used in nonlinear MG as well as in
+     * FAS.
      *
      * @tparam     Matrix
      * @tparam     Vector

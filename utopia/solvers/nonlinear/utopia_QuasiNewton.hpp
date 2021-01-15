@@ -15,8 +15,8 @@
 
 namespace utopia {
 
-    template <class Vector>
-    class QuasiNewton : public QuasiNewtonBase<Vector> {
+    template <class Matrix, class Vector>
+    class QuasiNewton : public QuasiNewtonBase<Vector>, public InexactNewtonInterface<Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -30,6 +30,9 @@ namespace utopia {
         QuasiNewton(const std::shared_ptr<HessianApproximation> &hessian_approx,
                     const std::shared_ptr<LinSolver> &linear_solver)
             : QuasiNewtonBase<Vector>(hessian_approx, linear_solver), initialized_(false) {}
+
+        QuasiNewton(const std::shared_ptr<LinSolver> &linear_solver)
+            : QuasiNewtonBase<Vector>(linear_solver), initialized_(false) {}
 
         bool solve(FunctionBase<Vector> &fun, Vector &x) override {
             using namespace utopia;
@@ -49,7 +52,6 @@ namespace utopia {
             g0_norm = norm2(g);
             g_norm = g0_norm;
 
-            // this->initialize_approximation(x, g);
             QuasiNewtonBase<Vector>::init_memory(x, g);
 
             if (this->verbose_) {
@@ -60,6 +62,18 @@ namespace utopia {
 
             UTOPIA_NO_ALLOC_BEGIN("Quasi_Newton");
             while (!converged) {
+                // setting up adaptive stopping criterium for linear solver
+                if (this->has_forcing_strategy()) {
+                    if (auto *iterative_solver =
+                            dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->mf_linear_solver_.get())) {
+                        iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
+                    } else {
+                        utopia_error(
+                            "utopia::Newton::you can not use inexact Newton with exact "
+                            "linear solver. ");
+                    }
+                }
+
                 // UTOPIA_NO_ALLOC_BEGIN("Quasi1");
                 g_minus = -1.0 * g;
                 this->linear_solve(g_minus, s);
@@ -104,6 +118,34 @@ namespace utopia {
 
             this->print_statistics(it);
             return true;
+        }
+
+        void update(const Vector &s, const Vector &y, const Vector &x, const Vector &g) override {
+            if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(this->mf_linear_solver_.get())) {
+                JFNK_mg->update(s, y, x, g);
+            } else if (this->mf_linear_solver_->has_preconditioner()) {
+                if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
+                        this->mf_linear_solver_->get_preconditioner().get())) {
+                    JFNK_mg->update(s, y, x, g);
+                    QuasiNewtonBase<Vector>::update(s, y, x, g);
+                }
+            } else {
+                QuasiNewtonBase<Vector>::update(s, y, x, g);
+            }
+        }
+
+        void initialize_approximation(const Vector &x, const Vector &g) override {
+            if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(this->mf_linear_solver_.get())) {
+                return JFNK_mg->initialize(x, g);
+            } else if (this->mf_linear_solver_->has_preconditioner()) {
+                if (auto *JFNK_mg = dynamic_cast<JFNK_Multigrid<Matrix, Vector> *>(
+                        this->mf_linear_solver_->get_preconditioner().get())) {
+                    JFNK_mg->initialize(x, g);
+                    QuasiNewtonBase<Vector>::initialize_approximation(x, g);
+                }
+            } else {
+                QuasiNewtonBase<Vector>::initialize_approximation(x, g);
+            }
         }
 
     private:

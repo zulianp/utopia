@@ -31,7 +31,7 @@ namespace utopia {
     class IPTransfer;
 
     template <class Matrix, class Vector>
-    class MatrixTransfer;
+    class IPRTransfer;
 
     template <class Matrix>
     class ProjectedGaussSeidelSweep;

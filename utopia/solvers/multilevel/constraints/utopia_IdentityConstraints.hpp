@@ -7,6 +7,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LevelMemory.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_MultiLevelVariableBoundInterface.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
 #include <iomanip>
@@ -29,7 +30,8 @@ namespace utopia {
             // TODO:: move to checck innitialization
             for (auto l = 0; l < transfer.size(); l++) {
                 if (auto* id_transfer = dynamic_cast<IdentityTransfer<Matrix, Vector>*>(transfer[l].get())) {
-                    // utopia_error("IdentityConstraints, termination due to incorrect setup. ");
+                    // utopia_error("IdentityConstraints, termination due to incorrect
+                    // setup. ");
                 } else {
                     utopia_error("IdentityConstraints, termination due to incorrect setup. ");
                 }
@@ -60,19 +62,21 @@ namespace utopia {
                 auto d_tr_lb = const_device_view(constraints_memory_.active_lower[finer_level]);
                 auto d_tr_ub = const_device_view(constraints_memory_.active_upper[finer_level]);
 
-                parallel_each_write(constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                    auto val1 = d_x_finer.get(i) + delta_fine;
-                    auto val2 = d_tr_ub.get(i);
+                parallel_each_write(
+                    constraints_memory_.active_upper[level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                        auto val1 = d_x_finer.get(i) + delta_fine;
+                        auto val2 = d_tr_ub.get(i);
 
-                    return device::min(val1, val2);
-                });
+                        return device::min(val1, val2);
+                    });
 
-                parallel_each_write(constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
-                    auto val1 = d_x_finer.get(i) - delta_fine;
-                    auto val2 = d_tr_lb.get(i);
+                parallel_each_write(
+                    constraints_memory_.active_lower[level], UTOPIA_LAMBDA(const SizeType i)->Scalar {
+                        auto val1 = d_x_finer.get(i) - delta_fine;
+                        auto val2 = d_tr_lb.get(i);
 
-                    return device::max(val1, val2);
-                });
+                        return device::max(val1, val2);
+                    });
             }
         }
 

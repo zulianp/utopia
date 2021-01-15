@@ -74,8 +74,9 @@ namespace utopia {
         virtual bool project_down(const Vector &x, Vector &x_new) const = 0;
 
         /**
-         * @brief      Splits projection operator into positive and negative part and then transfers them
-         * separatelly, so we end up with \f$  x_{new} = (P_+ * x_+) + (P_- * x_-)  \f$
+         * @brief      Splits projection operator into positive and negative part and
+         * then transfers them separatelly, so we end up with \f$  x_{new} = (P_+ *
+         * x_+) + (P_- * x_-)  \f$
          *
          * @param[in]  x
          * @param      x_new
@@ -90,6 +91,18 @@ namespace utopia {
         virtual Scalar restriction_inf_norm() const = 0;
 
         virtual void handle_equality_constraints(const Vector &) {}
+    };
+
+    template <class Matrix, class Vector>
+    class MatrixTransfer : public Transfer<Matrix, Vector> {
+    public:
+        virtual ~MatrixTransfer() = default;
+
+        virtual const Matrix &I() = 0;
+
+        virtual const Matrix &R() = 0;
+
+        virtual const Matrix &P() = 0;
     };
 
 }  // namespace utopia

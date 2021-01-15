@@ -17,8 +17,9 @@ namespace utopia {
     /**
      * @brief      Base class for all multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy. \n
-     *             Different levels are created by interpolation and restriction operators.\n
-     *             Additionally, it provides stifness matrices on each level, created by using Galerkin assembly. \n
+     *             Different levels are created by interpolation and restriction
+     * operators.\n Additionally, it provides stifness matrices on each level,
+     * created by using Galerkin assembly. \n
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -166,7 +167,9 @@ namespace utopia {
             }
 
             if (num_levels_ != static_cast<SizeType>(transfers.size()) + 1) {
-                utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
+                utopia_error(
+                    "utopia::MultilevelBase:: number of levels and transfer operators do "
+                    "not match ... \n");
                 utopia::out() << num_levels_ << " != " << (transfers.size() + 1);
             }
 

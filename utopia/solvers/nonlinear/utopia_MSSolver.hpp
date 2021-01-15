@@ -61,10 +61,12 @@ namespace utopia {
 
             SelfCommunicator serial_comm;
 
-            // Create Matrix (A e Id// e^T 0 0// 0 0 0), where the symmetric matrix A= (A_ij )is defined by A_ij =
-            // <gradients[i],gradients[j]> with gradients[n_gradients]:= b_g, Id is the Identity and e^T=(1,...,1)
-            Matrix C(serial_layout(m_g, m_g), 0.0);  // C well be an element of the generalized gradient \partial F
-                                                     // (\lambda). Note that the first n+2 rows are fixed.
+            // Create Matrix (A e Id// e^T 0 0// 0 0 0), where the symmetric matrix A=
+            // (A_ij )is defined by A_ij = <gradients[i],gradients[j]> with
+            // gradients[n_gradients]:= b_g, Id is the Identity and e^T=(1,...,1)
+            Matrix C(serial_layout(m_g, m_g),
+                     0.0);  // C well be an element of the generalized gradient \partial F
+                            // (\lambda). Note that the first n+2 rows are fixed.
             Scalar valb_gb_g = normed.dot(in_out_b_g, in_out_b_g);
             C.set(n_gradients, n_gradients, valb_gb_g / a_norm2);
             C.set(n_gp1, n_gradients, 1);
@@ -94,7 +96,8 @@ namespace utopia {
             Vector lambda(vec_layout, 0.0), r_k(vec_layout, 0), p_k(vec_layout, 0), Cp_k(vec_layout, 0),
                 val_newton_func(vec_layout, 0), desc_dir(vec_layout, 0);
 
-            // compute a useful initial lambda. This lambda represents the smallest element of conv{b_g , gradients[0]
+            // compute a useful initial lambda. This lambda represents the smallest
+            // element of conv{b_g , gradients[0]
             // }.
             lambda.set(
                 n_gradients - 1,
@@ -103,11 +106,14 @@ namespace utopia {
                                   (C.get(n_gradients, n_gradients) - C.get(n_gradients - 1, n_gradients)) /
                                       (C.get(n_gradients - 1, n_gradients - 1) -
                                        2 * C.get(n_gradients - 1, n_gradients) + C.get(n_gradients, n_gradients)))));
-            // if (lambda.get(0)<0)  {lambda.set(0, 0);}// xx is wrong in the alternative!!!!!
-            // if (lambda.get(0)>1)  {lambda.set(0, 1);}// xx is wrong in the alternative!!!!!
-            lambda.set(n_gradients, 1 - lambda.get(n_gradients - 1));  // xx is wrong in the alternative!!!!!
+            // if (lambda.get(0)<0)  {lambda.set(0, 0);}// xx is wrong in the
+            // alternative!!!!! if (lambda.get(0)>1)  {lambda.set(0, 1);}// xx is wrong
+            // in the alternative!!!!!
+            lambda.set(n_gradients,
+                       1 - lambda.get(n_gradients - 1));  // xx is wrong in the alternative!!!!!
 
-            // compute the value of the function F(lambda)=val_newton_func and actualize the gradient C of this function
+            // compute the value of the function F(lambda)=val_newton_func and actualize
+            // the gradient C of this function
 
             val_newton_func.set(n_gp1, -1);
             for (std::size_t i = 0; i < n_gp1; i++) {
@@ -130,8 +136,8 @@ namespace utopia {
             while (dot(val_newton_func, val_newton_func) > .000000000001 &&
                    counter1 < 500) {  // Begin Semismooth Newton Method to solve F(lambda)=0
 
-                // solve C desc_dir=val_newton_func by solving C^TC desc_dir= C^T val_newton_func, since C is not
-                // symmetric and might not be regular.
+                // solve C desc_dir=val_newton_func by solving C^TC desc_dir= C^T
+                // val_newton_func, since C is not symmetric and might not be regular.
 
                 int counter2 = 0;
                 Scalar be_k, al_k, res_k;
@@ -156,8 +162,8 @@ namespace utopia {
 
                 lambda -= desc_dir;
 
-                // compute the value of the function F(lambda)=val_newton_func and actualize the gradient C of this
-                // function
+                // compute the value of the function F(lambda)=val_newton_func and
+                // actualize the gradient C of this function
 
                 val_newton_func.set(n_gp1, -1);
                 for (std::size_t i = 0; i < n_gp1; i++) {
@@ -514,7 +520,8 @@ namespace utopia {
                                 const auto dot_bg_fg = normed->dot(b_g, first_g);
 
                                 // Seems harmful for convergence
-                                // const auto lambda = std::min(1., std::max(0., (n_bg2 - dot_bg_fg)/(n_bg2 + a_norm2
+                                // const auto lambda = std::min(1., std::max(0., (n_bg2 -
+                                // dot_bg_fg)/(n_bg2 + a_norm2
                                 // - 2. * dot_bg_fg)));
 
                                 // Seems harmful for B(x)
@@ -570,7 +577,8 @@ namespace utopia {
         Scalar delta_, delta_prime_, radius0_; /*!< Dumping parameter. */
         std::function<Scalar(const Scalar &)> T1_, T2_;
         std::function<Scalar(const Scalar &, const Scalar &)> G_;
-        // std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \delta_k \f$ */
+        // std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order
+        // to obtain step \f$ \delta_k \f$ */
         NormType norm_type_;
 
         std::vector<std::shared_ptr<HilbertFunction>> normed_;

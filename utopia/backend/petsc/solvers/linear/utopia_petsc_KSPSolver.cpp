@@ -167,7 +167,9 @@ namespace utopia {
                 return "KSP_CONVERGED_ITERATING";
             }
 
-            default: { return "unknown code"; }
+            default: {
+                return "unknown code";
+            }
         }
     }
 

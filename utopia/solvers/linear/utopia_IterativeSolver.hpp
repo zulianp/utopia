@@ -71,8 +71,8 @@ namespace utopia {
 
     protected:
         /**
-         * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve
-         * process.
+         * @brief      Initialization of nonlinear solver. Includes nice printout and
+         * starts calculating time of solve process.
          *
          * @param[in]  method            The method.
          * @param[in]  status_variables  The status variables.
@@ -129,8 +129,8 @@ namespace utopia {
         }
 
         /**
-         * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of
-         * gradient and lenght of the step size.
+         * @brief      General function to check convergence in nonlinear solvers. It
+         * checks absolute, relative norm of gradient and lenght of the step size.
          *
          * @param[in]  g_norm  The norm of the gradient.
          * @param[in]  r_norm  The relative norm of the gradient.
@@ -217,7 +217,8 @@ namespace utopia {
         virtual void norm_frequency(const SizeType &freq) { norm_freq_ = freq; };
 
     private:
-        // FIXME these fields should be removed and set directly in the backend state variables
+        // FIXME these fields should be removed and set directly in the backend state
+        // variables
         // ... GENERAL Iterative SOLVER PARAMETERS ...
         Scalar atol_; /*!< Absolute tolerance. */
         Scalar rtol_; /*!< Relative tolerance. */

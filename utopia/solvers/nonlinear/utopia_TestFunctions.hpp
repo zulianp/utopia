@@ -10,7 +10,8 @@
 
 namespace utopia {
 
-    // This function is used for implementation of test functions for unconstrained nonlinear benchmark
+    // This function is used for implementation of test functions for unconstrained
+    // nonlinear benchmark
     template <class Matrix, class Vector>
     class TestFunctionInterface {
     public:

@@ -19,11 +19,16 @@
 #include "utopia_MultiLevelEvaluations.hpp"
 #include "utopia_RMTR.hpp"
 
+#include "utopia_IPRTruncatedTransfer.hpp"
 #include "utopia_IdentityTransfer.hpp"
+#include "utopia_MLConstraintsIncludes.hpp"
 #include "utopia_MultiLevelVariableBoundInterface.hpp"
 
-// TODO:: remove in the future -> needed for UTOPIA_PETSC_COLLECTIVE_MEMUSAGE compilation
-// #include "utopia_petsc_debug.hpp"
+#include "utopia_FunEvalsIncludes.hpp"
+#include "utopia_LevelMemory.hpp"
+
+// TODO:: remove in the future -> needed for UTOPIA_PETSC_COLLECTIVE_MEMUSAGE
+// compilation #include "utopia_petsc_debug.hpp"
 
 namespace utopia {
 
@@ -117,7 +122,8 @@ namespace utopia {
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies) {
             if (static_cast<SizeType>(strategies.size()) != this->n_levels()) {
                 utopia_error(
-                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML "
+                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be "
+                    "equal to number of levels in ML "
                     "hierarchy. \n");
             }
 
@@ -158,13 +164,16 @@ namespace utopia {
             bool flg = RMTR::check_initialization();
 
             if (static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()) {
-                utopia_error("utopia::RMTR_inf:: number of level QP solvers and levels is not equal. \n");
+                utopia_error(
+                    "utopia::RMTR_inf:: number of level QP solvers and levels is not "
+                    "equal. \n");
                 flg = false;
             }
 
-            // if(static_cast<SizeType>(constraints_memory_.size()) != this->n_levels()){
-            //     utopia_error("utopia::RMTR_l2_quasi:: number of hessian approxiations and levels do not match. \n");
-            //     flg = false;
+            // if(static_cast<SizeType>(constraints_memory_.size()) !=
+            // this->n_levels()){
+            //     utopia_error("utopia::RMTR_l2_quasi:: number of hessian approxiations
+            //     and levels do not match. \n"); flg = false;
             // }
 
             return flg;
@@ -180,7 +189,8 @@ namespace utopia {
             return MLConstraints::check_feasibility(level, this->memory_.x[level]);
         }
 
-        // this routine is correct only under assumption, that P/R/I have only positive elements ...
+        // this routine is correct only under assumption, that P/R/I have only
+        // positive elements ...
         void init_level(const SizeType &level) override {
             RMTR::init_level(level);
 
@@ -192,11 +202,13 @@ namespace utopia {
             // this->memory_.delta[level]  = this->delta0();
         }
 
-        // -------------------------- tr radius managment ---------------------------------------------
+        // -------------------------- tr radius managment
+        // ---------------------------------------------
         bool delta_update(const Scalar &rho, const SizeType &level, const Vector & /*s_global*/) override {
             Scalar intermediate_delta;
 
-            // we could do also more sophisticated options, but lets not care for the moment ...
+            // we could do also more sophisticated options, but lets not care for the
+            // moment ...
             if (rho < this->eta1()) {
                 intermediate_delta = std::max(this->gamma1() * this->memory_.delta[level], 1e-15);
             } else if (rho > this->eta2()) {
@@ -224,11 +236,84 @@ namespace utopia {
             return MLConstraints::criticality_measure_inf(level, this->memory_.x[level], this->ml_derivs_.g[level]);
         }
 
+        void truncate(const SizeType &level) override { this->execute_truncation(level); }
+
+        template <class T = MLConstraints,
+                  std::enable_if_t<!(std::is_same<T, TRGrattonBoxKornhuberTruncation<Matrix, Vector> >::value ||
+                                     std::is_same<T, TRKornhuberBoxKornhuberTruncation<Matrix, Vector> >::value ||
+                                     std::is_same<T, TRGelmanMandelBoxKornhuberTruncation<Matrix, Vector> >::value),
+                                   int> = 0>
+        void execute_truncation(const SizeType & /*level*/) {}
+
+        template <class T = MLConstraints,
+                  std::enable_if_t<std::is_same<T, TRGrattonBoxKornhuberTruncation<Matrix, Vector> >::value ||
+                                       std::is_same<T, TRKornhuberBoxKornhuberTruncation<Matrix, Vector> >::value ||
+                                       std::is_same<T, TRGelmanMandelBoxKornhuberTruncation<Matrix, Vector> >::value,
+                                   int> = 0>
+        void execute_truncation(const SizeType &level) {
+            // truncate_interpolation
+            if (level == this->n_levels() - 1) {
+                Vector active_flgs = 0.0 * this->memory_.x[level];
+
+                if (this->box_constraints_.has_lower_bound()) {
+                    Vector lb = *(this->box_constraints_.lower_bound());
+
+                    auto d_lb = const_local_view_device(lb);
+                    auto d_x = const_local_view_device(this->memory_.x[level]);
+                    auto d_flg = local_view_device(active_flgs);
+
+                    parallel_for(
+                        local_range_device(active_flgs), UTOPIA_LAMBDA(const SizeType i) {
+                            const Scalar li = d_lb.get(i);
+                            const Scalar xi = d_x.get(i);
+
+                            if (device::abs(li - xi) < 1e-14) {
+                                d_flg.set(i, 1.0);
+                            }
+                        });
+
+                }  // lb check
+
+                if (this->box_constraints_.has_upper_bound()) {
+                    Vector ub = *(this->box_constraints_.upper_bound());
+
+                    auto d_ub = const_local_view_device(ub);
+                    auto d_x = const_local_view_device(this->memory_.x[level]);
+                    auto d_flg = local_view_device(active_flgs);
+
+                    parallel_for(
+                        local_range_device(active_flgs), UTOPIA_LAMBDA(const SizeType i) {
+                            const Scalar ui = d_ub.get(i);
+                            const Scalar xi = d_x.get(i);
+
+                            if (device::abs(ui - xi) < 1e-14) {
+                                d_flg.set(i, 1.0);
+                            }
+                        });
+
+                }  // lb check
+
+                auto *transfer_trun =
+                    dynamic_cast<IPRTruncatedTransfer<Matrix, Vector> *>(this->transfers_.back().get());
+                transfer_trun->truncate_interpolation(active_flgs);
+
+            }  // level check
+        }
+
+        // TODO:: it should not be necessary
+        void make_ml_iterate_feasible(const SizeType &level) override {
+            // this->make_iterate_feasible(this->memory_.x[level]);
+
+            // TODO:: check with levels
+            this->get_projection(this->active_lower(level), this->active_upper(level), this->memory_.x[level]);
+        }
+
     public:  // nvcc requires it to be public when using lambdas
         bool solve_qp_subproblem(const SizeType &level, const bool &flg) override {
             Scalar radius = this->memory_.delta[level];
 
-            // first we need to prepare box of intersection of level constraints with tr. constraints
+            // first we need to prepare box of intersection of level constraints with
+            // tr. constraints
             std::shared_ptr<Vector> &lb = _tr_subproblems[level]->lower_bound();
             std::shared_ptr<Vector> &ub = _tr_subproblems[level]->upper_bound();
 
@@ -241,30 +326,22 @@ namespace utopia {
             *lb = active_lower - this->memory_.x[level];
             *ub = active_upper - this->memory_.x[level];
 
-            // {
-            //     parallel_transform(*lb, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
-            //         return (xi >= -1.0 * radius) ? xi : -1.0 * radius;
-            //     });
-
-            //     parallel_transform(*ub, UTOPIA_LAMBDA(const SizeType &i, const Scalar &xi)->Scalar {
-            //         return (xi <= radius) ? xi : radius;
-            //     });
-            // }
-
             {
                 auto lb_view = local_view_device(*lb);
 
-                parallel_for(local_range_device(*lb), UTOPIA_LAMBDA(const SizeType &i) {
-                    const auto xi = lb_view.get(i);
-                    lb_view.set(i, (xi >= -radius) ? xi : -radius);
-                });
+                parallel_for(
+                    local_range_device(*lb), UTOPIA_LAMBDA(const SizeType &i) {
+                        const auto xi = lb_view.get(i);
+                        lb_view.set(i, (xi >= -radius) ? xi : -radius);
+                    });
 
                 auto ub_view = local_view_device(*ub);
 
-                parallel_for(local_range_device(*ub), UTOPIA_LAMBDA(const SizeType &i) {
-                    const auto xi = ub_view.get(i);
-                    ub_view.set(i, (xi <= radius) ? xi : radius);
-                });
+                parallel_for(
+                    local_range_device(*ub), UTOPIA_LAMBDA(const SizeType &i) {
+                        const auto xi = ub_view.get(i);
+                        ub_view.set(i, (xi <= radius) ? xi : radius);
+                    });
             }
 
             Scalar atol_level =
@@ -292,7 +369,8 @@ namespace utopia {
             if (has_nan_or_inf(this->memory_.s[level])) {
                 this->memory_.s[level].set(0.0);
             } else {
-                // ----- just for debugging pourposes, to be commented out in the future...
+                // ----- just for debugging pourposes, to be commented out in the
+                // future...
                 MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]);
             }
 

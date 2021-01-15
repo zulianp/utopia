@@ -69,7 +69,9 @@ namespace utopia {
 
         bool use_precond_direction() { return use_precond_direction_; }
 
-        void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) { precond_ = precond; }
+        // void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) {
+        //   precond_ = precond;
+        // }
 
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
             minus_rhs = rhs;
@@ -199,15 +201,16 @@ namespace utopia {
                 }
             }
 
-            // if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step
-            // if(!std::isfinite(p_norm) || p_norm < 0.0)
+            // if preconditioner yields nans or inf, or is precond. dir is indefinite -
+            // return gradient step if(!std::isfinite(p_norm) || p_norm < 0.0)
             if (!std::isfinite(p_norm)) {
                 Scalar alpha_termination;
                 if (r2 >= g_norm) {
                     alpha_termination = 1.0;  // grad. step is inside of tr boundary, just take it
                 } else {
-                    alpha_termination =
-                        std::sqrt(r2 / g_norm);  // grad. step is outside of tr boundary, project on the boundary
+                    alpha_termination = std::sqrt(r2 / g_norm);  // grad. step is outside of
+                                                                 // tr boundary, project on
+                                                                 // the boundary
                 }
 
                 if (std::isfinite(alpha_termination)) {
@@ -303,7 +306,8 @@ namespace utopia {
 
                 g_v_prod_new = dot(r, v_k);
 
-                // if preconditioner yields nans or inf, or is precond. dir is indefinite - just return current step
+                // if preconditioner yields nans or inf, or is precond. dir is indefinite
+                // - just return current step
                 if (!std::isfinite(g_v_prod_new)) {
                     return true;
                 }
@@ -361,7 +365,7 @@ namespace utopia {
 
     private:
         Vector v_k, r, p_k, B_p_k, minus_rhs;
-        std::shared_ptr<Preconditioner> precond_; /*!< Preconditioner to be used. */
+        // std::shared_ptr<Preconditioner> precond_; /*!< Preconditioner to be used. */
         bool use_precond_direction_{false};
         bool initialized_{false};
         Layout layout_;
