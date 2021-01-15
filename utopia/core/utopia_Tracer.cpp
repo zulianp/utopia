@@ -120,6 +120,8 @@ namespace utopia {
 
             f_summary.close();
 
+#ifdef UTOPIA_WITH_MPI
+
             const int mpi_size = mpi_world_size();
             std::vector<double> mean(size), min(size), max(size), variance(size);
 
@@ -150,6 +152,7 @@ namespace utopia {
 
                 f_balancing.close();
             }
+#endif UTOPIA_WITH_MPI
         }
     }
 }  // namespace utopia

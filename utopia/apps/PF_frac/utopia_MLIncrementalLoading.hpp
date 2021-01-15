@@ -40,6 +40,7 @@ namespace utopia {
         }
 
         void read(Input &in) override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::read(...)");
             IncrementalLoadingBase<FunctionSpace>::read(in);
 
             in.get("log_output_path", log_output_path_);
@@ -61,6 +62,8 @@ namespace utopia {
 
             in.get("solver", *rmtr_);
             in.get("second_phase_ts", second_phase_time_stepper_);
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::read(...)");
         }
 
         bool init_ml_setup() {
@@ -211,6 +214,8 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////////////////
 
         void init_solution() override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::init_solution(...)");
+
             spaces_.back()->create_vector(this->solution_);
             spaces_.back()->create_vector(this->lb_);
             rename("X", this->solution_);
@@ -244,9 +249,12 @@ namespace utopia {
 
                 // transfers_[l]->restrict(fine_sol, coarse_sol);
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::init_solution(...)");
         }
 
         void write_to_file(FunctionSpace &space, const Scalar &time) override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::write_to_file(...)");
             if (save_output_) {
                 // only finest level
                 IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
@@ -310,9 +318,13 @@ namespace utopia {
 
                 Utopia::instance().set("log_output_path", log_output_path_);
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::write_to_file(...)");
         }
 
         void prepare_for_solve() override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::prepare_for_solve(...)");
+
             for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
                 BC_conditions_[l]->emplace_time_dependent_BC(this->time_);
             }
@@ -365,9 +377,13 @@ namespace utopia {
             //         this->pressure_increase_factor_));
             // }
             // }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::prepare_for_solve(...)");
         }
 
         void update_time_step(const SizeType &conv_reason) override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
+
             if (this->adjust_dt_on_failure_ && conv_reason < 0) {
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->get_old_solution(this->solution_);
@@ -432,9 +448,13 @@ namespace utopia {
                     this->time_step_counter_ += 1;
                 }
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
         }
 
         void run() override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::run(...)");
+
             if (!init_) {
                 init_ml_setup();
             }
@@ -461,6 +481,8 @@ namespace utopia {
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
                 update_time_step(sol_status.reason);
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::run(...)");
         }
 
     private:

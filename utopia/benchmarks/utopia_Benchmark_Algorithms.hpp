@@ -154,7 +154,7 @@ namespace utopia {
 
                         // params.set("block_size", 3);
                         params.set("block_size", 4);
-                        params.set("verbose", true);
+                        // params.set("verbose", true);
 
                         ProjectedGaussSeidel<Matrix, Vector> pg;
                         pg.read(params);
