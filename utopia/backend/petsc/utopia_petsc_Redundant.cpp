@@ -173,8 +173,9 @@ namespace utopia {
             // vec_sub.set(-6.0);
             auto vec_sub_view = local_view_device(vec_sub);
 
-            parallel_for(local_range_device(vec_sub),
-                         UTOPIA_LAMBDA(const SizeType &i) { vec_sub_view.set(i, buff_view.get(i)); });
+            parallel_for(
+                local_range_device(vec_sub),
+                UTOPIA_LAMBDA(const SizeType &i) { vec_sub_view.set(i, buff_view.get(i)); });
         }
     }
 
@@ -185,8 +186,9 @@ namespace utopia {
             auto buff_view = local_view_device(buff_);
             auto vec_sub_view = const_local_view_device(vec_sub);
 
-            parallel_for(local_range_device(vec_sub),
-                         UTOPIA_LAMBDA(const SizeType &i) { buff_view.set(i, vec_sub_view.get(i)); });
+            parallel_for(
+                local_range_device(vec_sub),
+                UTOPIA_LAMBDA(const SizeType &i) { buff_view.set(i, vec_sub_view.get(i)); });
 
             scatter_to_super.apply(buff_, vec);
         }

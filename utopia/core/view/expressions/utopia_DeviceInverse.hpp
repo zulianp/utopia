@@ -40,7 +40,9 @@ namespace utopia {
                     case 3: {
                         return pseudo_inverse<3>(row_full_rank, expr, d, result);
                     }
-                    default: { return false; }
+                    default: {
+                        return false;
+                    }
                 }
 
             } else {

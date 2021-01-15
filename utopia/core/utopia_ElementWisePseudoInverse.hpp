@@ -21,16 +21,17 @@ namespace utopia {
             if (in.is_alias(out)) {
                 auto out_view = local_view_device(out);
 
-                parallel_for(local_range_device(out), UTOPIA_LAMBDA(const SizeType &i) {
-                    auto val = out_view.get(i);
-                    if (device::abs(val) > tol) {
-                        val = 1. / val;
-                    } else {
-                        val = 0.0;
-                    }
+                parallel_for(
+                    local_range_device(out), UTOPIA_LAMBDA(const SizeType &i) {
+                        auto val = out_view.get(i);
+                        if (device::abs(val) > tol) {
+                            val = 1. / val;
+                        } else {
+                            val = 0.0;
+                        }
 
-                    out_view.set(i, val);
-                });
+                        out_view.set(i, val);
+                    });
 
             } else {
                 auto in_view = const_local_view_device(in);
@@ -41,16 +42,17 @@ namespace utopia {
 
                 auto out_view = local_view_device(out);
 
-                parallel_for(local_range_device(out), UTOPIA_LAMBDA(const SizeType &i) {
-                    auto val = in_view.get(i);
-                    if (device::abs(val) > tol) {
-                        val = 1. / val;
-                    } else {
-                        val = 0.0;
-                    }
+                parallel_for(
+                    local_range_device(out), UTOPIA_LAMBDA(const SizeType &i) {
+                        auto val = in_view.get(i);
+                        if (device::abs(val) > tol) {
+                            val = 1. / val;
+                        } else {
+                            val = 0.0;
+                        }
 
-                    out_view.set(i, val);
-                });
+                        out_view.set(i, val);
+                    });
             }
         }
     };

@@ -5,56 +5,52 @@
 
 namespace utopia {
 
-// this function differs from QuadraticFunction in 2 things: - different signs
-// for rhs term
-//                                                           - supports const
-// TODO:: merge with original QPFunction...
-template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-class TRQuadraticFunction final : public Function<Matrix, Vector, Backend> {
- public:
-  using Scalar = typename utopia::Traits<Matrix>::Scalar;
+    // this function differs from QuadraticFunction in 2 things: - different signs
+    // for rhs term
+    //                                                           - supports const
+    // TODO:: merge with original QPFunction...
+    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    class TRQuadraticFunction final : public Function<Matrix, Vector, Backend> {
+    public:
+        using Scalar = typename utopia::Traits<Matrix>::Scalar;
 
-  TRQuadraticFunction(const std::shared_ptr<const Matrix> &H,
-                      const std::shared_ptr<const Vector> &rhs)
-      : rhs_(rhs), H_(H) {}
+        TRQuadraticFunction(const std::shared_ptr<const Matrix> &H, const std::shared_ptr<const Vector> &rhs)
+            : rhs_(rhs), H_(H) {}
 
-  ~TRQuadraticFunction() = default;
+        ~TRQuadraticFunction() = default;
 
-  bool value(const Vector &x, Scalar &value) const override {
-    Hx_ = *H_ * x;
-    value = 0.5 * dot(x, Hx_) - dot(x, *rhs_);
-    return true;
-  }
+        bool value(const Vector &x, Scalar &value) const override {
+            Hx_ = *H_ * x;
+            value = 0.5 * dot(x, Hx_) - dot(x, *rhs_);
+            return true;
+        }
 
-  bool gradient(const Vector &x, Vector &result) const override {
-    result = *H_ * x - (*rhs_);
-    return true;
-  }
+        bool gradient(const Vector &x, Vector &result) const override {
+            result = *H_ * x - (*rhs_);
+            return true;
+        }
 
-  bool hessian(const Vector & /*x*/, Matrix &H) const override {
-    H = *H_;
-    return true;
-  }
+        bool hessian(const Vector & /*x*/, Matrix &H) const override {
+            H = *H_;
+            return true;
+        }
 
-  bool hessian(const Vector & /*x*/, Matrix & /*result*/,
-               Matrix & /*prec*/) const override {
-    return false;
-  }
+        bool hessian(const Vector & /*x*/, Matrix & /*result*/, Matrix & /*prec*/) const override { return false; }
 
-  bool has_preconditioner() const override { return false; }
+        bool has_preconditioner() const override { return false; }
 
-  bool update(const Vector & /*x*/) override { return true; }
+        bool update(const Vector & /*x*/) override { return true; }
 
-  bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
-    H = *H_;
-    return true;
-  }
+        bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
+            H = *H_;
+            return true;
+        }
 
- private:
-  std::shared_ptr<const Vector> rhs_;
-  std::shared_ptr<const Matrix> H_;
-  Vector Hx_;
-};
+    private:
+        std::shared_ptr<const Vector> rhs_;
+        std::shared_ptr<const Matrix> H_;
+        Vector Hx_;
+    };
 }  // namespace utopia
 
 #endif  // UTOPIA_QUADRATIC_FUNCTION_HPP

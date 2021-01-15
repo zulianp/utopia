@@ -16,224 +16,215 @@
 #include <cmath>
 
 namespace utopia {
-// slow and innefficient implementation just for testing
-template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-class ProjectedGradient final : public OperatorBasedQPSolver<Matrix, Vector> {
- public:
-  using Scalar = typename Traits<Vector>::Scalar;
-  using SizeType = typename Traits<Vector>::SizeType;
-  using Layout = typename Traits<Vector>::Layout;
-  using Super = utopia::OperatorBasedQPSolver<Matrix, Vector>;
+    // slow and innefficient implementation just for testing
+    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
+    class ProjectedGradient final : public OperatorBasedQPSolver<Matrix, Vector> {
+    public:
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout = typename Traits<Vector>::Layout;
+        using Super = utopia::OperatorBasedQPSolver<Matrix, Vector>;
 
-  using Super::solve;
-  using Super::update;
+        using Super::solve;
+        using Super::update;
 
-  ProjectedGradient() = default;
+        ProjectedGradient() = default;
 
-  ProjectedGradient(const ProjectedGradient &) = default;
+        ProjectedGradient(const ProjectedGradient &) = default;
 
-  inline ProjectedGradient *clone() const override {
-    auto ptr = new ProjectedGradient(*this);
-    ptr->set_box_constraints(this->get_box_constraints());
+        inline ProjectedGradient *clone() const override {
+            auto ptr = new ProjectedGradient(*this);
+            ptr->set_box_constraints(this->get_box_constraints());
 
-    return ptr;
-  }
-
-  void read(Input &in) override {
-    OperatorBasedQPSolver<Matrix, Vector>::read(in);
-  }
-
-  void print_usage(std::ostream &os) const override {
-    OperatorBasedQPSolver<Matrix, Vector>::print_usage(os);
-  }
-
-  bool apply(const Vector &b, Vector &x) override {
-    return solve(operator_cast<Vector>(*this->get_operator()), b, x);
-  }
-
-  bool solve_unconstrained(const Operator<Vector> &A, const Vector &b,
-                           Vector &x) {
-    // UTOPIA_RECORD_SCOPE_BEGIN("apply");
-
-    if (this->verbose())
-      this->init_solver("utopia ProjectedGradient",
-                        {" it. ", "|| u - u_old ||"});
-
-    init_memory(layout(b));
-
-    x_old = x;
-    A.apply(x, u);
-    p = b - u;
-    Scalar alpha = 1.;
-
-    bool converged = false;
-    const SizeType check_s_norm_each = 20;
-
-    int iteration = 0;
-    while (!converged) {
-      // perform step
-      x = x + alpha * p;
-
-      A.apply(x, u);
-      p = b - u;
-
-      if (iteration % check_s_norm_each == 0) {
-        const Scalar diff = norm2(x_old - x);
-
-        if (this->verbose()) {
-          PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+            return ptr;
         }
 
-        converged = this->check_convergence(iteration, 1, 1, diff);
-      }
+        void read(Input &in) override { OperatorBasedQPSolver<Matrix, Vector>::read(in); }
 
-      ++iteration;
+        void print_usage(std::ostream &os) const override { OperatorBasedQPSolver<Matrix, Vector>::print_usage(os); }
 
-      if (converged) break;
-
-      x_old = x;
-      A.apply(p, Ap);
-      alpha = dot(p, p) / dot(p, Ap);
-
-      if (std::isinf(alpha) || alpha == 0. || std::isnan(alpha)) {
-        const Scalar diff = norm2(x_old - x);
-
-        // UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
-
-        if (this->verbose()) {
-          PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+        bool apply(const Vector &b, Vector &x) override {
+            return solve(operator_cast<Vector>(*this->get_operator()), b, x);
         }
 
-        converged = this->check_convergence(iteration, 1, 1, diff);
-        break;
-      }
-    }
-    // UTOPIA_RECORD_SCOPE_END("apply");
-    return converged;
-  }
+        bool solve_unconstrained(const Operator<Vector> &A, const Vector &b, Vector &x) {
+            // UTOPIA_RECORD_SCOPE_BEGIN("apply");
 
-  bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
-    // UTOPIA_RECORD_SCOPE_BEGIN("apply");
+            if (this->verbose()) this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-    if (!this->has_bound()) {
-      return solve_unconstrained(A, b, x);
-    }
+            init_memory(layout(b));
 
-    if (this->verbose())
-      this->init_solver("utopia ProjectedGradient",
-                        {" it. ", "|| u - u_old ||"});
+            x_old = x;
+            A.apply(x, u);
+            p = b - u;
+            Scalar alpha = 1.;
 
-    init_memory(layout(b));
+            bool converged = false;
+            const SizeType check_s_norm_each = 20;
 
-    // ideally, we have two separate implementations, or cases
-    this->fill_empty_bounds(layout(x));
+            int iteration = 0;
+            while (!converged) {
+                // perform step
+                x = x + alpha * p;
 
-    const auto &upbo = this->get_upper_bound();
-    const auto &lobo = this->get_lower_bound();
+                A.apply(x, u);
+                p = b - u;
 
-    x_old = x;
-    A.apply(x, u);
-    u = b - u;
-    // u = b - A * x;
-    p = u;
-    Scalar alpha = 1.;
+                if (iteration % check_s_norm_each == 0) {
+                    const Scalar diff = norm2(x_old - x);
 
-    // UTOPIA_RECORD_VALUE("u = b - A * x", u);
-    // UTOPIA_RECORD_VALUE("p = u", p);
+                    if (this->verbose()) {
+                        PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                    }
 
-    bool converged = false;
-    const SizeType check_s_norm_each = 20;
+                    converged = this->check_convergence(iteration, 1, 1, diff);
+                }
 
-    int iteration = 0;
-    while (!converged) {
-      // perform step
-      x_half = x + alpha * p;
+                ++iteration;
 
-      // UTOPIA_RECORD_VALUE("x_half = x + alpha * p", x_half);
+                if (converged) break;
 
-      x = utopia::max(lobo, x_half);
+                x_old = x;
+                A.apply(p, Ap);
+                alpha = dot(p, p) / dot(p, Ap);
 
-      // UTOPIA_RECORD_VALUE("x = utopia::max(lobo, x_half)", x);
+                if (std::isinf(alpha) || alpha == 0. || std::isnan(alpha)) {
+                    const Scalar diff = norm2(x_old - x);
 
-      x = utopia::min(upbo, x);
+                    // UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
 
-      // UTOPIA_RECORD_VALUE("x = utopia::min(upbo, x)", x);
+                    if (this->verbose()) {
+                        PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                    }
 
-      A.apply(x, u);
-      u = b - u;
-
-      // u = b - A * x;
-      {
-        Read<Vector> r_u(u), r_x(x), r_upbo(upbo), r_lobo(lobo);
-        Write<Vector> w_(p, utopia::LOCAL);
-
-        auto r = range(x);
-
-        for (auto i = r.begin(); i != r.end(); ++i) {
-          const auto x_i = x.get(i);
-
-          if (approxeq(x_i, upbo.get(i)) || approxeq(x_i, lobo.get(i))) {
-            p.set(i, 0);
-          } else {
-            p.set(i, u.get(i));
-          }
-        }
-      }
-
-      // UTOPIA_RECORD_VALUE("p <- min_max", p);
-
-      if (iteration % check_s_norm_each == 0) {
-        const Scalar diff = norm2(x_old - x);
-
-        // UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
-
-        if (this->verbose()) {
-          PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                    converged = this->check_convergence(iteration, 1, 1, diff);
+                    break;
+                }
+            }
+            // UTOPIA_RECORD_SCOPE_END("apply");
+            return converged;
         }
 
-        converged = this->check_convergence(iteration, 1, 1, diff);
-      }
+        bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
+            // UTOPIA_RECORD_SCOPE_BEGIN("apply");
 
-      ++iteration;
+            if (!this->has_bound()) {
+                return solve_unconstrained(A, b, x);
+            }
 
-      if (converged) break;
+            if (this->verbose()) this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
-      x_old = x;
-      A.apply(p, Ap);
-      alpha = dot(u, p) / dot(p, Ap);
+            init_memory(layout(b));
 
-      if (std::isinf(alpha) || alpha == 0. || std::isnan(alpha)) {
-        const Scalar diff = norm2(x_old - x);
+            // ideally, we have two separate implementations, or cases
+            this->fill_empty_bounds(layout(x));
 
-        // UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
+            const auto &upbo = this->get_upper_bound();
+            const auto &lobo = this->get_lower_bound();
 
-        if (this->verbose()) {
-          PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+            x_old = x;
+            A.apply(x, u);
+            u = b - u;
+            // u = b - A * x;
+            p = u;
+            Scalar alpha = 1.;
+
+            // UTOPIA_RECORD_VALUE("u = b - A * x", u);
+            // UTOPIA_RECORD_VALUE("p = u", p);
+
+            bool converged = false;
+            const SizeType check_s_norm_each = 20;
+
+            int iteration = 0;
+            while (!converged) {
+                // perform step
+                x_half = x + alpha * p;
+
+                // UTOPIA_RECORD_VALUE("x_half = x + alpha * p", x_half);
+
+                x = utopia::max(lobo, x_half);
+
+                // UTOPIA_RECORD_VALUE("x = utopia::max(lobo, x_half)", x);
+
+                x = utopia::min(upbo, x);
+
+                // UTOPIA_RECORD_VALUE("x = utopia::min(upbo, x)", x);
+
+                A.apply(x, u);
+                u = b - u;
+
+                // u = b - A * x;
+                {
+                    Read<Vector> r_u(u), r_x(x), r_upbo(upbo), r_lobo(lobo);
+                    Write<Vector> w_(p, utopia::LOCAL);
+
+                    auto r = range(x);
+
+                    for (auto i = r.begin(); i != r.end(); ++i) {
+                        const auto x_i = x.get(i);
+
+                        if (approxeq(x_i, upbo.get(i)) || approxeq(x_i, lobo.get(i))) {
+                            p.set(i, 0);
+                        } else {
+                            p.set(i, u.get(i));
+                        }
+                    }
+                }
+
+                // UTOPIA_RECORD_VALUE("p <- min_max", p);
+
+                if (iteration % check_s_norm_each == 0) {
+                    const Scalar diff = norm2(x_old - x);
+
+                    // UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
+
+                    if (this->verbose()) {
+                        PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                    }
+
+                    converged = this->check_convergence(iteration, 1, 1, diff);
+                }
+
+                ++iteration;
+
+                if (converged) break;
+
+                x_old = x;
+                A.apply(p, Ap);
+                alpha = dot(u, p) / dot(p, Ap);
+
+                if (std::isinf(alpha) || alpha == 0. || std::isnan(alpha)) {
+                    const Scalar diff = norm2(x_old - x);
+
+                    // UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
+
+                    if (this->verbose()) {
+                        PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+                    }
+
+                    converged = this->check_convergence(iteration, 1, 1, diff);
+                    break;
+                }
+            }
+            // UTOPIA_RECORD_SCOPE_END("apply");
+            return converged;
         }
 
-        converged = this->check_convergence(iteration, 1, 1, diff);
-        break;
-      }
-    }
-    // UTOPIA_RECORD_SCOPE_END("apply");
-    return converged;
-  }
+        void init_memory(const Layout &layout) override {
+            OperatorBasedQPSolver<Matrix, Vector>::init_memory(layout);
 
-  void init_memory(const Layout &layout) override {
-    OperatorBasedQPSolver<Matrix, Vector>::init_memory(layout);
+            p.zeros(layout);
+            Ap.zeros(layout);
+            x_old.zeros(layout);
+            x_half.zeros(layout);
+        }
 
-    p.zeros(layout);
-    Ap.zeros(layout);
-    x_old.zeros(layout);
-    x_half.zeros(layout);
-  }
+        void update(const Operator<Vector> &) override {}
 
-  void update(const Operator<Vector> &) override {}
-
- private:
-  // buffers
-  Vector x_old, x_half, p, u, Ap;
-};
+    private:
+        // buffers
+        Vector x_old, x_half, p, u, Ap;
+    };
 }  // namespace utopia
 
 #endif  // UTOPIA_PROJECTED_GRADIENT_HPP
