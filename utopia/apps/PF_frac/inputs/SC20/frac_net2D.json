@@ -12,7 +12,7 @@
     "with_damage" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
-    "num_time_steps" : 2,
+    "num_time_steps" : 100,
     "dt" : 1.0,
     "adjust_dt_on_failure": false,
     "shrinking_factor" : 0.5,
@@ -26,7 +26,7 @@
     "min_length" : 0.2, 
     "seed" : 3,
     "pressure0" : 10,
-    "pressure_increase_factor" : 2.0,
+    "pressure_increase_factor" : 5.0,
     "diff_controller" : {
         "spacing" : 1e-6,
         "hessian_from_grad" : false
