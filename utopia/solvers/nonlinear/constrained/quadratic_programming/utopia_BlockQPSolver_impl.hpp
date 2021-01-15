@@ -59,6 +59,7 @@ namespace utopia {
         // TODO
         assert(false && "IMPLEMENT ME");
 
+        UTOPIA_TRACE_REGION_END("BlockQPSolver::smooth");
         return false;
     }
 
@@ -68,7 +69,11 @@ namespace utopia {
 
         if (rhs.comm().size() == 1) {
             serial_solver_->set_box_constraints(BoxConstraints<Vector>(this->lower_bound(), this->upper_bound()));
-            return serial_solver_->apply(rhs, x);
+
+            auto ok = serial_solver_->apply(rhs, x);
+
+            UTOPIA_TRACE_REGION_END("BlockQPSolver::apply");
+            return ok;
         }
 
         this->init_solver("utopia BlockQPSolver comm.size = " + std::to_string(rhs.comm().size()),
@@ -189,6 +194,7 @@ namespace utopia {
 
         if (op->comm().size() == 1) {
             serial_solver_->update(op);
+            UTOPIA_TRACE_REGION_END("BlockQPSolver::update");
             return;
         }
 

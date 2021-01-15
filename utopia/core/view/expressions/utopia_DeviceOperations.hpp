@@ -221,6 +221,8 @@ namespace utopia {
 
     UTOPIA_INLINE_FUNCTION constexpr float inner(const float &left, const float &right) { return left * right; }
 
+    UTOPIA_INLINE_FUNCTION constexpr int inner(const int &left, const int &right) { return left * right; }
+
     template <class Expr>
     UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar trace(const DeviceExpression<Expr> &expr) {
         return DeviceTrace<Expr>::apply(expr.derived());
@@ -310,16 +312,6 @@ namespace utopia {
     // &right, const DeviceExpression<Left> &left) {
     //     return DeviceBinary<Left, DeviceNumber<Right>, Max>(left.derived(), right.type().value());
     // }
-
-    template <class Derived>
-    UTOPIA_INLINE_FUNCTION DeviceTranspose<Derived> transpose(const DeviceExpression<Derived> &expr) {
-        return DeviceTranspose<Derived>(expr.derived());
-    }
-
-    template <class Derived>
-    UTOPIA_INLINE_FUNCTION UTOPIA_STORE_CONST(Derived) transpose(const DeviceTranspose<Derived> &expr) {
-        return expr.expr();
-    }
 
     template <class Expr>
     UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar det(const DeviceExpression<Expr> &expr) {

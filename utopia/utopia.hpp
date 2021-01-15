@@ -67,4 +67,8 @@ more information and tutorials.
 #include "utopia_m3elinsol.hpp"
 #endif  // UTOPIA_WITH_M3ELINSOL
 
+#ifdef UTOPIA_WITH_VC
+#include "utopia_Vc.hpp"
+#endif  // UTOPIA_WITH_M3ELINSOL
+
 #endif  // UTOPIA_HPP
