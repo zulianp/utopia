@@ -22,6 +22,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
         : VariableBoundSolverInterface<Vector>(other),
+          PreconditionedSolverInterface<Vector>(other),
           Super(other),
           use_line_search_(other.use_line_search_),
           use_symmetric_sweep_(other.use_symmetric_sweep_),

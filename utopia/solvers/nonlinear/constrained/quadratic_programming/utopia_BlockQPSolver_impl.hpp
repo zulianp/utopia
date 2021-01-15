@@ -21,6 +21,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(const BlockQPSolver &other)
         : VariableBoundSolverInterface<Vector>(other),
+          PreconditionedSolverInterface<Vector>(other),
           Super(other),
           local_lb_(std::make_shared<Vector>()),
           local_ub_(std::make_shared<Vector>()) {

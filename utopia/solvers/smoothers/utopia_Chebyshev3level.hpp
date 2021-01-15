@@ -28,7 +28,9 @@ namespace utopia {
         Chebyshev3level() : eps_eig_est_(1e-5), power_method_max_it_(5) {}
 
         Chebyshev3level(const Chebyshev3level &other)
-            : eps_eig_est_(other.eps_eig_est_), power_method_max_it_(other.power_method_max_it_) {}
+            : PreconditionedSolverInterface<Vector>(other),
+              eps_eig_est_(other.eps_eig_est_),
+              power_method_max_it_(other.power_method_max_it_) {}
 
         void read(Input &in) override {
             OperatorBasedLinearSolver<Matrix, Vector>::read(in);

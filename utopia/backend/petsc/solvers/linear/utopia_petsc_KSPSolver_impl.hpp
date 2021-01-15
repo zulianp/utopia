@@ -1043,7 +1043,9 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     KSPSolver<Matrix, Vector, PETSC>::KSPSolver(const KSPSolver<Matrix, Vector, PETSC> &other)
-        : PreconditionedSolver(other), ksp_(utopia::make_unique<Impl>(other.ksp_->communicator())) {
+        : PreconditionedSolverInterface<Vector>(other),
+          PreconditionedSolver(other),
+          ksp_(utopia::make_unique<Impl>(other.ksp_->communicator())) {
         ksp_->copy_settings_from(*other.ksp_);
     }
 

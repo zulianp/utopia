@@ -18,7 +18,9 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
 
         QPSolver(const QPSolver &other)
-            : VariableBoundSolverInterface<Vector>(other), PreconditionedSolver<Matrix, Vector>(other) {}
+            : VariableBoundSolverInterface<Vector>(other),
+              PreconditionedSolverInterface<Vector>(other),
+              PreconditionedSolver<Matrix, Vector>(other) {}
 
         QPSolver() = default;
         ~QPSolver() override = default;
@@ -39,7 +41,9 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
 
         MatrixFreeQPSolver(const MatrixFreeQPSolver &other)
-            : VariableBoundSolverInterface<Vector>(other), MatrixFreeLinearSolver<Vector>(other) {}
+            : VariableBoundSolverInterface<Vector>(other),
+              PreconditionedSolverInterface<Vector>(other),
+              MatrixFreeLinearSolver<Vector>(other) {}
 
         MatrixFreeQPSolver() = default;
 
@@ -72,6 +76,7 @@ namespace utopia {
 #pragma GCC diagnostic ignored "-Wreorder"
         OperatorBasedQPSolver(const OperatorBasedQPSolver &other)
             : VariableBoundSolverInterface<Vector>(other),
+              PreconditionedSolverInterface<Vector>(other),
               MatrixFreeQPSolver<Vector>(other),
               QPSolver<Matrix, Vector>(other) {}
 

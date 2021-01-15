@@ -23,7 +23,8 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     ConjugateGradient<Matrix, Vector, Backend>::ConjugateGradient(const ConjugateGradient &other)
-        : Super(other),
+        : PreconditionedSolverInterface<Vector>(other),
+          Super(other),
           reset_initial_guess_(other.reset_initial_guess_),
           apply_gradient_descent_step_(other.apply_gradient_descent_step_) {}
 

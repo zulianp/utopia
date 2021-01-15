@@ -21,6 +21,7 @@ namespace utopia {
     // CLANG-TIDY (BIG CHANGE)
     RedundantQPSolver<PetscMatrix, PetscVector>::RedundantQPSolver(const RedundantQPSolver &other)
         : VariableBoundSolverInterface(other),
+          utopia::PreconditionedSolverInterface<PetscVector>(other),
           // MatrixFreeQPSolver(other),
           // PreconditionedSolver(other),
           // QPSolver(other),
