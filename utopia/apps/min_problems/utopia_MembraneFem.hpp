@@ -18,374 +18,366 @@
 
 namespace utopia {
 
-template <class FunctionSpace, int Dim = FunctionSpace::Dim>
-class MembraneFEM final
-    : virtual public UnconstrainedExtendedTestFunction<
-          typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
-      virtual public ConstrainedExtendedTestFunction<
-          typename FunctionSpace::Matrix, typename FunctionSpace::Vector> {
- public:
-  using Scalar = typename FunctionSpace::Scalar;
-  using SizeType = typename FunctionSpace::SizeType;
-  using Vector = typename FunctionSpace::Vector;
-  using Matrix = typename FunctionSpace::Matrix;
-  using Device = typename FunctionSpace::Device;
+    template <class FunctionSpace, int Dim = FunctionSpace::Dim>
+    class MembraneFEM final : virtual public UnconstrainedExtendedTestFunction<typename FunctionSpace::Matrix,
+                                                                               typename FunctionSpace::Vector>,
+                              virtual public ConstrainedExtendedTestFunction<typename FunctionSpace::Matrix,
+                                                                             typename FunctionSpace::Vector> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Vector = typename FunctionSpace::Vector;
+        using Matrix = typename FunctionSpace::Matrix;
+        using Device = typename FunctionSpace::Device;
 
-  using CSpace = typename FunctionSpace::template Subspace<1>;
-  using CElem = typename CSpace::ViewDevice::Elem;
+        using CSpace = typename FunctionSpace::template Subspace<1>;
+        using CElem = typename CSpace::ViewDevice::Elem;
 
-  // FIXME
-  using Shape = typename FunctionSpace::Shape;
-  using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
+        // FIXME
+        using Shape = typename FunctionSpace::Shape;
+        using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
 
-  static const int C_NDofs = CSpace::NDofs;
-  static const int NQuadPoints = Quadrature::NPoints;
+        static const int C_NDofs = CSpace::NDofs;
+        static const int NQuadPoints = Quadrature::NPoints;
 
-  void read(Input & /*in*/) override {}
+        void read(Input & /*in*/) override {}
 
-  MembraneFEM(FunctionSpace &space) : coef1_(1.0), coef2_(1.0), space_(space) {
-    // needed for ML setup
-    space_.create_vector(this->_x_eq_values);
-    space_.create_vector(this->_eq_constrains_flg);
-    space_.create_vector(x_exact_);
-    x_exact_.set(0.0);
+        MembraneFEM(FunctionSpace &space) : coef1_(1.0), coef2_(1.0), space_(space) {
+            // needed for ML setup
+            space_.create_vector(this->_x_eq_values);
+            space_.create_vector(this->_eq_constrains_flg);
+            space_.create_vector(x_exact_);
+            x_exact_.set(0.0);
 
-    this->local_x_ = std::make_shared<Vector>();
-    space_.create_local_vector(*this->local_x_);
+            this->local_x_ = std::make_shared<Vector>();
+            space_.create_local_vector(*this->local_x_);
 
-    this->init_constraints();
-  }
-
-  inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
-    space_.create_matrix(H);
-    return true;
-  }
-
-  inline bool update(const Vector & /*x*/) override { return true; }
-
-  bool value(const Vector &x_const, Scalar &val) const override {
-    UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::value");
-
-    CSpace C = space_.subspace(0);
-
-    // update local vector x
-    space_.global_to_local(x_const, *local_x_);
-    auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
-
-    FEFunction<CSpace> c_fun(c_coeff);
-    ////////////////////////////////////////////////////////////////////////////
-    Quadrature q;
-
-    auto c_val = c_fun.value(q);
-    auto c_grad = c_fun.gradient(q);
-    auto differential = C.differential(q);
-    auto c_shape = C.shape(q);
-
-    val = 0.0;
-
-    {
-      auto C_view = C.view_device();
-      auto c_view = c_val.view_device();
-      auto c_grad_view = c_grad.view_device();
-      auto differential_view = differential.view_device();
-
-      Device::parallel_reduce(
-          space_.element_range(),
-          UTOPIA_LAMBDA(const SizeType &i) {
-
-            CElem c_e;
-            C_view.elem(i, c_e);
-
-            StaticVector<Scalar, NQuadPoints> c;
-            c_view.get(c_e, c);
-
-            auto c_grad_el = c_grad_view.make(c_e);
-            auto dx = differential_view.make(c_e);
-
-            Scalar el_energy = 0.0;
-            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-              el_energy +=
-                  0.5 * inner(c_grad_el[qp], coef1_ * c_grad_el[qp]) * dx(qp);
-              el_energy += coef2_ * c[qp] * dx(qp);
-            }
-
-            assert(el_energy == el_energy);
-            return el_energy;
-          },
-          val);
-    }
-
-    val = x_const.comm().sum(val);
-
-    UTOPIA_TRACE_REGION_END("MembraneFEM::value");
-    return true;
-  }
-
-  bool gradient(const Vector &x_const, Vector &g) const override {
-    UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::gradient");
-
-    if (empty(g)) {
-      space_.create_vector(g);
-    } else {
-      g.set(0.0);
-    }
-
-    CSpace C = space_;
-
-    ///////////////////////////////////////////////////////////////////////////
-
-    // update local vector x
-    space_.global_to_local(x_const, *local_x_);
-    auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
-
-    FEFunction<CSpace> c_fun(c_coeff);
-
-    Quadrature q;
-    auto c_val = c_fun.value(q);
-    auto c_grad = c_fun.gradient(q);
-    auto differential = C.differential(q);
-
-    auto c_shape = C.shape(q);
-    auto c_grad_shape = C.shape_grad(q);
-
-    {
-      auto C_view = C.view_device();
-      auto c_view = c_val.view_device();
-      auto c_grad_view = c_grad.view_device();
-
-      auto differential_view = differential.view_device();
-
-      // auto v_grad_shape_view = v_grad_shape.view_device();
-      auto c_shape_view = c_shape.view_device();
-      auto c_grad_shape_view = c_grad_shape.view_device();
-
-      auto g_view = space_.assembly_view_device(g);
-
-      Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(
-                                                       const SizeType &i) {
-        StaticVector<Scalar, C_NDofs> c_el_vec;
-        c_el_vec.set(0.0);
-        ////////////////////////////////////////////
-
-        CElem c_e;
-        C_view.elem(i, c_e);
-        StaticVector<Scalar, NQuadPoints> c;
-        c_view.get(c_e, c);
-
-        auto c_grad_el = c_grad_view.make(c_e);
-        auto dx = differential_view.make(c_e);
-        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-        auto c_shape_fun_el = c_shape_view.make(c_e);
-
-        ////////////////////////////////////////////
-        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-          for (SizeType j = 0; j < C_NDofs; ++j) {
-            c_el_vec(j) +=
-                inner(c_grad_el[qp], coef1_ * c_grad_shape_el(j, qp)) * dx(qp);
-
-            const Scalar shape_test = c_shape_fun_el(j, qp);
-            c_el_vec(j) += coef2_ * shape_test * dx(qp);
-          }
+            this->init_constraints();
         }
 
-        C_view.add_vector(c_e, c_el_vec, g_view);
-      });
-    }
+        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
+            space_.create_matrix(H);
+            return true;
+        }
 
-    space_.apply_zero_constraints(g);
+        inline bool update(const Vector & /*x*/) override { return true; }
 
-    UTOPIA_TRACE_REGION_END("MembraneFEM::gradient");
-    return true;
-  }
+        bool value(const Vector &x_const, Scalar &val) const override {
+            UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::value");
 
-  bool hessian(const Vector &x_const, Matrix &H) const override {
-    UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::hessian");
+            CSpace C = space_.subspace(0);
 
-    if (empty(H)) {
-      // if(use_dense_hessian_) {
-      //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
-      // } else {
-      space_.create_matrix(H);
-      // }
-    } else {
-      H *= 0.0;
-    }
+            // update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
 
-    CSpace C = space_;
+            FEFunction<CSpace> c_fun(c_coeff);
+            ////////////////////////////////////////////////////////////////////////////
+            Quadrature q;
 
-    ////////////////////////////////////////////////////////////////////////////
-    // update local vector x
-    space_.global_to_local(x_const, *local_x_);
-    auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto differential = C.differential(q);
+            // auto c_shape = C.shape(q);
 
-    FEFunction<CSpace> c_fun(c_coeff);
+            val = 0.0;
 
-    ////////////////////////////////////////////////////////////////////////////
+            {
+                auto C_view = C.view_device();
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto differential_view = differential.view_device();
 
-    Quadrature q;
+                Device::parallel_reduce(
+                    space_.element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i) {
+                        CElem c_e;
+                        C_view.elem(i, c_e);
 
-    auto c_val = c_fun.value(q);
-    auto c_grad = c_fun.gradient(q);
-    auto differential = C.differential(q);
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
 
-    auto c_shape = C.shape(q);
-    auto c_grad_shape = C.shape_grad(q);
+                        auto c_grad_el = c_grad_view.make(c_e);
+                        auto dx = differential_view.make(c_e);
 
-    {
-      auto C_view = C.view_device();
+                        Scalar el_energy = 0.0;
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            el_energy += 0.5 * inner(c_grad_el[qp], coef1_ * c_grad_el[qp]) * dx(qp);
+                            el_energy += coef2_ * c[qp] * dx(qp);
+                        }
 
-      auto space_view = space_.view_device();
-
-      auto c_view = c_val.view_device();
-      auto c_grad_view = c_grad.view_device();
-      auto differential_view = differential.view_device();
-
-      auto c_shape_view = c_shape.view_device();
-      auto c_grad_shape_view = c_grad_shape.view_device();
-
-      auto H_view = space_.assembly_view_device(H);
-
-      Device::parallel_for(
-          space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-            StaticMatrix<Scalar, C_NDofs, C_NDofs> el_mat;
-            el_mat.set(0.0);
-
-            ////////////////////////////////////////////
-            CElem c_e;
-            C_view.elem(i, c_e);
-            StaticVector<Scalar, NQuadPoints> c;
-            c_view.get(c_e, c);
-
-            auto dx = differential_view.make(c_e);
-            auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-            auto c_shape_fun_el = c_shape_view.make(c_e);
-
-            ////////////////////////////////////////////
-            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-              for (SizeType l = 0; l < C_NDofs; ++l) {
-                auto &&c_grad_l = c_grad_shape_el(l, qp);
-                const Scalar c_shape_l = c_shape_fun_el(l, qp);
-
-                for (SizeType j = l; j < C_NDofs; ++j) {
-                  Scalar val =
-                      inner(c_grad_shape_el(j, qp), coef1_ * c_grad_l) * dx(qp);
-
-                  val = (l == j) ? (0.5 * val) : val;
-                  el_mat(l, j) += val;
-                  el_mat(j, l) += val;
-                }
-              }
+                        assert(el_energy == el_energy);
+                        return el_energy;
+                    },
+                    val);
             }
 
-            space_view.add_matrix(c_e, el_mat, H_view);
-          });
-    }
+            val = x_const.comm().sum(val);
 
-    space_.apply_constraints(H);
+            UTOPIA_TRACE_REGION_END("MembraneFEM::value");
+            return true;
+        }
 
-    UTOPIA_TRACE_REGION_END("MembraneFEM::hessian");
-    return true;
-  }
+        bool gradient(const Vector &x_const, Vector &g) const override {
+            UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::gradient");
 
- private:
-  void init_constraints() {
-    // ToDO:: fix based on example
-    Vector lb;
-    space_.create_vector(lb);
+            if (empty(g)) {
+                space_.create_vector(g);
+            } else {
+                g.set(0.0);
+            }
 
-    using Point = typename FunctionSpace::Point;
-    using Dev = typename FunctionSpace::Device;
-    using Mesh = typename FunctionSpace::Mesh;
-    using Elem = typename FunctionSpace::Shape;
-    using ElemViewScalar =
-        typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
-    static const int NNodes = Elem::NNodes;
+            CSpace C = space_;
 
-    auto C = this->space_;
+            ///////////////////////////////////////////////////////////////////////////
 
-    auto sampler =
-        utopia::sampler(C, UTOPIA_LAMBDA(const Point &coords)->Scalar {
+            // update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
 
-          auto x = coords[0];
-          auto y = coords[1];
+            FEFunction<CSpace> c_fun(c_coeff);
 
-          auto result = 0.0;
+            Quadrature q;
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto differential = C.differential(q);
 
-          if (x == 1.0) {
-            auto c = ((y - 0.5) * (y - 0.5)) - 1.0 + (1.3 * 1.3);
-            auto b = 2.0 * 1.3;
-            result = (-b + device::sqrt(b * b - 4.0 * c)) / 2.0;
+            auto c_shape = C.shape(q);
+            auto c_grad_shape = C.shape_grad(q);
 
-          } else {
-            result = -9e9;
-          }
+            {
+                auto C_view = C.view_device();
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
 
-          return result;
-        });
+                auto differential_view = differential.view_device();
 
-    {
-      auto C_view = C.view_device();
-      auto sampler_view = sampler.view_device();
-      auto x_view = this->space_.assembly_view_device(lb);
+                // auto v_grad_shape_view = v_grad_shape.view_device();
+                auto c_shape_view = c_shape.view_device();
+                auto c_grad_shape_view = c_grad_shape.view_device();
 
-      Dev::parallel_for(this->space_.element_range(),
-                        UTOPIA_LAMBDA(const SizeType &i) {
-                          ElemViewScalar e;
-                          C_view.elem(i, e);
+                auto g_view = space_.assembly_view_device(g);
 
-                          StaticVector<Scalar, NNodes> s;
-                          sampler_view.assemble(e, s);
-                          C_view.set_vector(e, s, x_view);
-                        });
-    }
+                Device::parallel_for(
+                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticVector<Scalar, C_NDofs> c_el_vec;
+                        c_el_vec.set(0.0);
+                        ////////////////////////////////////////////
 
-    this->constraints_ =
-        make_lower_bound_constraints(std::make_shared<Vector>(lb));
-  }
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
 
- public:
-  Vector initial_guess() const override {
-    Vector solution;
-    space_.create_vector(solution);
-    rename("X", solution);
+                        auto c_grad_el = c_grad_view.make(c_e);
+                        auto dx = differential_view.make(c_e);
+                        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+                        auto c_shape_fun_el = c_shape_view.make(c_e);
 
-    // TODO:: add initial condition
-    solution.set(0.0);
-    space_.apply_constraints(solution);
+                        ////////////////////////////////////////////
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            for (SizeType j = 0; j < C_NDofs; ++j) {
+                                c_el_vec(j) += inner(c_grad_el[qp], coef1_ * c_grad_shape_el(j, qp)) * dx(qp);
 
-    return solution;
-  }
+                                const Scalar shape_test = c_shape_fun_el(j, qp);
+                                c_el_vec(j) += coef2_ * shape_test * dx(qp);
+                            }
+                        }
 
-  // not known...
-  const Vector &exact_sol() const {
-    std::cout << "MembraneFEM:: exact Solution not known, terminate... \n";
-    return x_exact_;
-  }
+                        C_view.add_vector(c_e, c_el_vec, g_view);
+                    });
+            }
 
-  Scalar min_function_value() const {
-    std::cout << "MembraneFEM:: min_function_value not known, terminate... \n";
-    return 0;
-  }
+            space_.apply_zero_constraints(g);
 
-  virtual std::string name() const { return "MembraneFEM"; }
+            UTOPIA_TRACE_REGION_END("MembraneFEM::gradient");
+            return true;
+        }
 
-  virtual SizeType dim() const {
-    Vector help;
-    space_.create_vector(help);
-    return size(help);
-  }
+        bool hessian(const Vector &x_const, Matrix &H) const override {
+            UTOPIA_TRACE_REGION_BEGIN("MembraneFEM::hessian");
 
-  virtual bool exact_sol_known() const { return false; }
+            if (empty(H)) {
+                // if(use_dense_hessian_) {
+                //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+                // } else {
+                space_.create_matrix(H);
+                // }
+            } else {
+                H *= 0.0;
+            }
 
-  virtual bool parallel() const { return true; }
+            CSpace C = space_;
 
- private:
-  Scalar coef1_;
-  Scalar coef2_;
-  FunctionSpace &space_;
-  Vector x_exact_;
-  std::shared_ptr<Vector> local_x_;
-};
+            ////////////////////////////////////////////////////////////////////////////
+            // update local vector x
+            space_.global_to_local(x_const, *local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+
+            FEFunction<CSpace> c_fun(c_coeff);
+
+            ////////////////////////////////////////////////////////////////////////////
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto differential = C.differential(q);
+
+            // auto c_shape = C.shape(q);
+            auto c_grad_shape = C.shape_grad(q);
+
+            {
+                auto C_view = C.view_device();
+
+                auto space_view = space_.view_device();
+
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto differential_view = differential.view_device();
+
+                // auto c_shape_view = c_shape.view_device();
+                auto c_grad_shape_view = c_grad_shape.view_device();
+
+                auto H_view = space_.assembly_view_device(H);
+
+                Device::parallel_for(
+                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticMatrix<Scalar, C_NDofs, C_NDofs> el_mat;
+                        el_mat.set(0.0);
+
+                        ////////////////////////////////////////////
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
+
+                        auto dx = differential_view.make(c_e);
+                        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+                        // auto c_shape_fun_el = c_shape_view.make(c_e);
+
+                        ////////////////////////////////////////////
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            for (SizeType l = 0; l < C_NDofs; ++l) {
+                                auto &&c_grad_l = c_grad_shape_el(l, qp);
+                                // const Scalar c_shape_l = c_shape_fun_el(l, qp);
+
+                                for (SizeType j = l; j < C_NDofs; ++j) {
+                                    Scalar val = inner(c_grad_shape_el(j, qp), coef1_ * c_grad_l) * dx(qp);
+
+                                    val = (l == j) ? (0.5 * val) : val;
+                                    el_mat(l, j) += val;
+                                    el_mat(j, l) += val;
+                                }
+                            }
+                        }
+
+                        space_view.add_matrix(c_e, el_mat, H_view);
+                    });
+            }
+
+            space_.apply_constraints(H);
+
+            UTOPIA_TRACE_REGION_END("MembraneFEM::hessian");
+            return true;
+        }
+
+    private:
+        void init_constraints() {
+            // ToDO:: fix based on example
+            Vector lb;
+            space_.create_vector(lb);
+
+            using Point = typename FunctionSpace::Point;
+            using Dev = typename FunctionSpace::Device;
+            using Mesh = typename FunctionSpace::Mesh;
+            using Elem = typename FunctionSpace::Shape;
+            using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+            static const int NNodes = Elem::NNodes;
+
+            auto C = this->space_;
+
+            auto sampler = utopia::sampler(
+                C, UTOPIA_LAMBDA(const Point &coords)->Scalar {
+                    auto x = coords[0];
+                    auto y = coords[1];
+
+                    auto result = 0.0;
+
+                    if (x == 1.0) {
+                        auto c = ((y - 0.5) * (y - 0.5)) - 1.0 + (1.3 * 1.3);
+                        auto b = 2.0 * 1.3;
+                        result = (-b + device::sqrt(b * b - 4.0 * c)) / 2.0;
+
+                    } else {
+                        result = -9e9;
+                    }
+
+                    return result;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(lb);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+
+            this->constraints_ = make_lower_bound_constraints(std::make_shared<Vector>(lb));
+        }
+
+    public:
+        Vector initial_guess() const override {
+            Vector solution;
+            space_.create_vector(solution);
+            rename("X", solution);
+
+            // TODO:: add initial condition
+            solution.set(0.0);
+            space_.apply_constraints(solution);
+
+            return solution;
+        }
+
+        // not known...
+        const Vector &exact_sol() const override {
+            std::cout << "MembraneFEM:: exact Solution not known, terminate... \n";
+            return x_exact_;
+        }
+
+        Scalar min_function_value() const override {
+            std::cout << "MembraneFEM:: min_function_value not known, terminate... \n";
+            return 0;
+        }
+
+        std::string name() const override { return "MembraneFEM"; }
+
+        SizeType dim() const override {
+            Vector help;
+            space_.create_vector(help);
+            return size(help);
+        }
+
+        bool exact_sol_known() const override { return false; }
+
+        bool parallel() const override { return true; }
+
+    private:
+        Scalar coef1_;
+        Scalar coef2_;
+        FunctionSpace &space_;
+        Vector x_exact_;
+        std::shared_ptr<Vector> local_x_;
+    };
 
 }  // namespace utopia
 
