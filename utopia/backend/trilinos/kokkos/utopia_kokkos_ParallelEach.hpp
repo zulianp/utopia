@@ -26,7 +26,8 @@ namespace utopia {
 
             auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
             auto offset = range(v).begin();
-            Kokkos::parallel_for(name, k_v.extent(0), KOKKOS_LAMBDA(const int i) { k_v(i, 0) = fun(offset + i); });
+            Kokkos::parallel_for(
+                name, k_v.extent(0), KOKKOS_LAMBDA(const int i) { k_v(i, 0) = fun(offset + i); });
         }
 
         template <class Fun>
@@ -35,7 +36,8 @@ namespace utopia {
 
             auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
             auto offset = range(v).begin();
-            Kokkos::parallel_for(name, k_v.extent(0), KOKKOS_LAMBDA(const int i) { fun(offset + i, k_v(i, 0)); });
+            Kokkos::parallel_for(
+                name, k_v.extent(0), KOKKOS_LAMBDA(const int i) { fun(offset + i, k_v(i, 0)); });
         }
 
         template <class Fun>
@@ -71,17 +73,18 @@ namespace utopia {
             auto row_map = impl->getRowMap()->getLocalMap();
             auto col_map = impl->getColMap()->getLocalMap();
 
-            Kokkos::parallel_for(name, team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
-                const int row_ind = team_member.league_rank();
-                auto row = local_mat.row(row_ind);
-                auto n_values = row.length;
+            Kokkos::parallel_for(
+                name, team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                    const int row_ind = team_member.league_rank();
+                    auto row = local_mat.row(row_ind);
+                    auto n_values = row.length;
 
-                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
-                    auto &val = row.value(k);
-                    auto col_ind = row.colidx(k);
-                    val = fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind));
+                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
+                        auto &val = row.value(k);
+                        auto col_ind = row.colidx(k);
+                        val = fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind));
+                    });
                 });
-            });
         }
 
         template <class Fun>
@@ -103,17 +106,18 @@ namespace utopia {
             auto row_map = impl->getRowMap()->getLocalMap();
             auto col_map = impl->getColMap()->getLocalMap();
 
-            Kokkos::parallel_for(name, team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
-                const int row_ind = team_member.league_rank();
-                auto row = local_mat.row(row_ind);
-                auto n_values = row.length;
+            Kokkos::parallel_for(
+                name, team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                    const int row_ind = team_member.league_rank();
+                    auto row = local_mat.row(row_ind);
+                    auto n_values = row.length;
 
-                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
-                    auto &val = row.value(k);
-                    auto col_ind = row.colidx(k);
-                    fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
+                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
+                        auto &val = row.value(k);
+                        auto col_ind = row.colidx(k);
+                        fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
+                    });
                 });
-            });
         }
 
         template <class Fun>
@@ -135,17 +139,18 @@ namespace utopia {
             auto row_map = impl->getRowMap()->getLocalMap();
             auto col_map = impl->getColMap()->getLocalMap();
 
-            Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
-                const int row_ind = team_member.league_rank();
-                auto row = local_mat.row(row_ind);
-                auto n_values = row.length;
+            Kokkos::parallel_for(
+                team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                    const int row_ind = team_member.league_rank();
+                    auto row = local_mat.row(row_ind);
+                    auto n_values = row.length;
 
-                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
-                    auto &val = row.value(k);
-                    auto col_ind = row.colidx(k);
-                    val = fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
+                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
+                        auto &val = row.value(k);
+                        auto col_ind = row.colidx(k);
+                        val = fun(row_map.getGlobalElement(row_ind), col_map.getGlobalElement(col_ind), val);
+                    });
                 });
-            });
         }
     };
 
@@ -165,16 +170,17 @@ namespace utopia {
 
         auto n = local_mat.numRows();
 
-        Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
-            const int j = team_member.league_rank();
-            auto row = local_mat.row(j);
-            auto n_values = row.length;
+        Kokkos::parallel_for(
+            team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                const int j = team_member.league_rank();
+                auto row = local_mat.row(j);
+                auto n_values = row.length;
 
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int i) {
-                auto &val = row.value(i);
-                val = fun(val);
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int i) {
+                    auto &val = row.value(i);
+                    val = fun(val);
+                });
             });
-        });
     }
 
 }  // namespace utopia

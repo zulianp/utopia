@@ -39,162 +39,161 @@
 
 namespace utopia {
 
-// // // // // // // // // // // // // // // // // // // // // // // // // // //
-// // // // // // // // //
-static void bratu_2d_rmtr(Input &in) {
-  static const int Dim = 2;
-  static const int NVars = 1;
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void bratu_2d_rmtr(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = 1;
 
-  using Comm = utopia::PetscCommunicator;
-  using Mesh = utopia::PetscStructuredGrid<Dim>;
-  using Elem = utopia::PetscUniformQuad4;
-  using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
-  Comm world;
+        Comm world;
 
-  MPITimeStatistics stats(world);
-  stats.start();
+        MPITimeStatistics stats(world);
+        stats.start();
 
-  FunctionSpace space;
-  space.read(in);
-  stats.stop_and_collect("space-creation");
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
 
-  stats.start();
+        stats.start();
 
-  MLSteadyState<FunctionSpace, BratuFem<FunctionSpace>,
-                AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
-      time_stepper(space);
+        MLSteadyState<FunctionSpace, BratuFem<FunctionSpace>, AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
+            time_stepper(space);
 
-  time_stepper.read(in);
-  time_stepper.run();
+        time_stepper.read(in);
+        time_stepper.run();
 
-  disp("------------------- here I am --------------");
+        disp("------------------- here I am --------------");
 
-  stats.stop_collect_and_restart("end");
+        stats.stop_collect_and_restart("end");
 
-  space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-  stats.stop_and_collect("output");
-  stats.describe(std::cout);
-}
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
 
-UTOPIA_REGISTER_APP(bratu_2d_rmtr);
+    UTOPIA_REGISTER_APP(bratu_2d_rmtr);
 
-// // // // // // // // // // // // // // // // // // // // // // // // // // //
-// // // // // // // // //
-static void membrane_2d_rmtr(Input &in) {
-  static const int Dim = 2;
-  static const int NVars = 1;
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void membrane_2d_rmtr(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = 1;
 
-  using Comm = utopia::PetscCommunicator;
-  using Mesh = utopia::PetscStructuredGrid<Dim>;
-  using Elem = utopia::PetscUniformQuad4;
-  using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
-  Comm world;
+        Comm world;
 
-  MPITimeStatistics stats(world);
-  stats.start();
+        MPITimeStatistics stats(world);
+        stats.start();
 
-  FunctionSpace space;
-  space.read(in);
-  stats.stop_and_collect("space-creation");
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
 
-  stats.start();
+        stats.start();
 
-  MLSteadyState<FunctionSpace, MembraneFEM<FunctionSpace>,
-                AllZeroBCLeft<FunctionSpace>, AllZeroIG<FunctionSpace> >
-      time_stepper(space);
+        MLSteadyState<FunctionSpace,
+                      MembraneFEM<FunctionSpace>,
+                      AllZeroBCLeft<FunctionSpace>,
+                      AllZeroIG<FunctionSpace> >
+            time_stepper(space);
 
-  time_stepper.read(in);
-  time_stepper.run();
+        time_stepper.read(in);
+        time_stepper.run();
 
-  stats.stop_collect_and_restart("end");
+        stats.stop_collect_and_restart("end");
 
-  space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-  stats.stop_and_collect("output");
-  stats.describe(std::cout);
-}
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
 
-UTOPIA_REGISTER_APP(membrane_2d_rmtr);
+    UTOPIA_REGISTER_APP(membrane_2d_rmtr);
 
-// // // // // // // // // // // // // // // // // // // // // // // // // // //
-// // // // // // // // //
-static void ignition_2d_rmtr(Input &in) {
-  static const int Dim = 2;
-  static const int NVars = 1;
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void ignition_2d_rmtr(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = 1;
 
-  using Comm = utopia::PetscCommunicator;
-  using Mesh = utopia::PetscStructuredGrid<Dim>;
-  using Elem = utopia::PetscUniformQuad4;
-  using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
-  Comm world;
+        Comm world;
 
-  MPITimeStatistics stats(world);
-  stats.start();
+        MPITimeStatistics stats(world);
+        stats.start();
 
-  // disp("-------- yes, here ----------- ")
+        // disp("-------- yes, here ----------- ")
 
-  FunctionSpace space;
-  space.read(in);
-  stats.stop_and_collect("space-creation");
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
 
-  stats.start();
+        stats.start();
 
-  MLSteadyState<FunctionSpace, IgnitionFem<FunctionSpace>,
-                AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
-      time_stepper(space);
+        MLSteadyState<FunctionSpace, IgnitionFem<FunctionSpace>, AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
+            time_stepper(space);
 
-  time_stepper.read(in);
-  time_stepper.run();
+        time_stepper.read(in);
+        time_stepper.run();
 
-  stats.stop_collect_and_restart("end");
+        stats.stop_collect_and_restart("end");
 
-  space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-  stats.stop_and_collect("output");
-  stats.describe(std::cout);
-}
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
 
-UTOPIA_REGISTER_APP(ignition_2d_rmtr);
+    UTOPIA_REGISTER_APP(ignition_2d_rmtr);
 
-// // // // // // // // // // // // // // // // // // // // // // // // // // //
-// // // // // // // // //
-static void bratu_2d_JFNK_mg(Input &in) {
-  static const int Dim = 2;
-  static const int NVars = 1;
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void bratu_2d_JFNK_mg(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = 1;
 
-  using Comm = utopia::PetscCommunicator;
-  using Mesh = utopia::PetscStructuredGrid<Dim>;
-  using Elem = utopia::PetscUniformQuad4;
-  using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
 
-  Comm world;
+        Comm world;
 
-  MPITimeStatistics stats(world);
-  stats.start();
+        MPITimeStatistics stats(world);
+        stats.start();
 
-  FunctionSpace space;
-  space.read(in);
-  stats.stop_and_collect("space-creation");
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
 
-  stats.start();
+        stats.start();
 
-  // MLSteadyStateJFNKMG<FunctionSpace, IgnitionFem<FunctionSpace>,
-  MLSteadyStateJFNKMG<FunctionSpace, BratuFem<FunctionSpace>,
-                      AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
-      time_stepper(space);
+        // MLSteadyStateJFNKMG<FunctionSpace, IgnitionFem<FunctionSpace>,
+        MLSteadyStateJFNKMG<FunctionSpace, BratuFem<FunctionSpace>, AllZeroBC<FunctionSpace>, AllZeroIG<FunctionSpace> >
+            time_stepper(space);
 
-  time_stepper.read(in);
-  time_stepper.run();
+        time_stepper.read(in);
+        time_stepper.run();
 
-  stats.stop_collect_and_restart("end");
+        stats.stop_collect_and_restart("end");
 
-  space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
-  stats.stop_and_collect("output");
-  stats.describe(std::cout);
-}
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
 
-UTOPIA_REGISTER_APP(bratu_2d_JFNK_mg);
+    UTOPIA_REGISTER_APP(bratu_2d_JFNK_mg);
 
 }  // namespace utopia
 

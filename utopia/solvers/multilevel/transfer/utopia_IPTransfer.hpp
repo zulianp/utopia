@@ -9,214 +9,212 @@
 #include <memory>
 
 namespace utopia {
-/**
- * @brief      The class for transfer operators.
- *
- * @tparam     Matrix
- * @tparam     Vector
- */
-template <class Matrix, class Vector>
-class IPTransfer final : public MatrixTransfer<Matrix, Vector> {
-  using Scalar = typename utopia::Traits<Vector>::Scalar;
-  using SizeType = typename utopia::Traits<Vector>::SizeType;
+    /**
+     * @brief      The class for transfer operators.
+     *
+     * @tparam     Matrix
+     * @tparam     Vector
+     */
+    template <class Matrix, class Vector>
+    class IPTransfer final : public MatrixTransfer<Matrix, Vector> {
+        using Scalar = typename utopia::Traits<Vector>::Scalar;
+        using SizeType = typename utopia::Traits<Vector>::SizeType;
 
- public:
-  IPTransfer(const std::shared_ptr<Matrix> &I,
-             const Scalar restrict_factor = 1.)
-      : restrict_factor_(restrict_factor) {
-    assert(I);
-    _I = I;
-  }
+    public:
+        IPTransfer(const std::shared_ptr<Matrix> &I, const Scalar restrict_factor = 1.)
+            : restrict_factor_(restrict_factor) {
+            assert(I);
+            _I = I;
+        }
 
-  IPTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P)
-      : _I(I), _Pr(P), restrict_factor_(1.) {
-    assert(I);
-    assert(P);
-  }
+        IPTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P)
+            : _I(I), _Pr(P), restrict_factor_(1.) {
+            assert(I);
+            assert(P);
+        }
 
-  ~IPTransfer() override = default;
+        ~IPTransfer() override = default;
 
-  /*=====================================================
-                          actions
-  =====================================================*/
-  /**
-   * @brief      Interpolation of vector.
-   *             \f$  x_{new} = I * x \f$
-   *
-   * @param[in]  x      The vector x.
-   * @param      x_new  The interpoalted vector.
-   *
-   */
-  bool interpolate(const Vector &x, Vector &x_new) const override {
-    assert(_I);
-    x_new = *_I * x;
-    return true;
-  }
+        /*=====================================================
+                                actions
+        =====================================================*/
+        /**
+         * @brief      Interpolation of vector.
+         *             \f$  x_{new} = I * x \f$
+         *
+         * @param[in]  x      The vector x.
+         * @param      x_new  The interpoalted vector.
+         *
+         */
+        bool interpolate(const Vector &x, Vector &x_new) const override {
+            assert(_I);
+            x_new = *_I * x;
+            return true;
+        }
 
-  /**
-   * @brief      Restriction of vector.
-   *            \f$  x_{new} = R * x  \f$
-   * @param[in]  x
-   * @param      x_new
-   *
-   */
-  bool restrict(const Vector &x, Vector &x_new) const override {
-    assert(_I);
-    x_new = transpose(*_I) * x;
+        /**
+         * @brief      Restriction of vector.
+         *            \f$  x_{new} = R * x  \f$
+         * @param[in]  x
+         * @param      x_new
+         *
+         */
+        bool restrict(const Vector &x, Vector &x_new) const override {
+            assert(_I);
+            x_new = transpose(*_I) * x;
 
-    if (restrict_factor_ != 1.0) {
-      x_new *= restrict_factor_;
-    }
+            if (restrict_factor_ != 1.0) {
+                x_new *= restrict_factor_;
+            }
 
-    return true;
-  }
+            return true;
+        }
 
-  /**
-   * @brief      Restriction of vector based on booleans.
-   * values have to be exact 1. and 0.
-   *            \f$  x_{new} = R * x  \f$
-   * @param[in]  x
-   * @param      x_new
-   *
-   */
-  bool boolean_restrict_or(const Vector & /*x*/, Vector & /*x_new*/) override {
-    assert(false && "implement me");
-    // static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon()
-    // * 1e6;
+        /**
+         * @brief      Restriction of vector based on booleans.
+         * values have to be exact 1. and 0.
+         *            \f$  x_{new} = R * x  \f$
+         * @param[in]  x
+         * @param      x_new
+         *
+         */
+        bool boolean_restrict_or(const Vector & /*x*/, Vector & /*x_new*/) override {
+            assert(false && "implement me");
+            // static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon()
+            // * 1e6;
 
-    // // x_new = local_zeros(local_size(*_R).get(0));
+            // // x_new = local_zeros(local_size(*_R).get(0));
 
-    // Matrix R_boolean = *_R;
-    // R_boolean *= 0.;
+            // Matrix R_boolean = *_R;
+            // R_boolean *= 0.;
 
-    // {
-    //     Write<Matrix> w_(R_boolean);
+            // {
+            //     Write<Matrix> w_(R_boolean);
 
-    //     each_read(*_R, [&R_boolean](const SizeType i, const SizeType j, const
-    //     Scalar value) {
-    //         if(std::abs(value) > off_diag_tol) {
-    //             R_boolean.set(i, j, 1.);
-    //         }
-    //     });
-    // }
+            //     each_read(*_R, [&R_boolean](const SizeType i, const SizeType j, const
+            //     Scalar value) {
+            //         if(std::abs(value) > off_diag_tol) {
+            //             R_boolean.set(i, j, 1.);
+            //         }
+            //     });
+            // }
 
-    // x_new = R_boolean * x;
+            // x_new = R_boolean * x;
 
-    // ReadAndWrite<Vector> rw_(x_new);
+            // ReadAndWrite<Vector> rw_(x_new);
 
-    // auto r = range(x_new);
-    // for(auto i = r.begin(); i < r.end(); ++i) {
-    //     if(x_new.get(i) > 1.) {
-    //         x_new.set(i, 1.);
-    //     }
-    // }
+            // auto r = range(x_new);
+            // for(auto i = r.begin(); i < r.end(); ++i) {
+            //     if(x_new.get(i) > 1.) {
+            //         x_new.set(i, 1.);
+            //     }
+            // }
 
-    // //THIS works for serial (use it once we have a is_parallel and is_serial
-    // query)
-    // // each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const
-    // Scalar value) {
-    // //     if(x.get(j) != 0. && std::abs(value) > off_diag_tol) {
-    // //         x_new.set(i, 1.);
-    // //     }
-    // // });
+            // //THIS works for serial (use it once we have a is_parallel and is_serial
+            // query)
+            // // each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const
+            // Scalar value) {
+            // //     if(x.get(j) != 0. && std::abs(value) > off_diag_tol) {
+            // //         x_new.set(i, 1.);
+            // //     }
+            // // });
 
-    return true;
-  }
+            return true;
+        }
 
-  void handle_equality_constraints(const Vector &is_constrained) override {
-    assert(_I);
-    assert(!empty(*_I));
-    assert(!empty(is_constrained));
-    assert(size(is_constrained).get(0) == size(*_I).get(0));
+        void handle_equality_constraints(const Vector &is_constrained) override {
+            assert(_I);
+            assert(!empty(*_I));
+            assert(!empty(is_constrained));
+            assert(size(is_constrained).get(0) == size(*_I).get(0));
 
-    if (empty(is_constrained) || empty(*_I)) return;
+            if (empty(is_constrained) || empty(*_I)) return;
 
-    set_zero_rows(*_I, is_constrained, 0.0);
-  }
+            set_zero_rows(*_I, is_constrained, 0.0);
+        }
 
-  /**
-   * @brief      Restriction of matrix.
-   *
-   *             \f$  M_{new} = I^{T} * M  * I  \f$
-   * @param[in]  M
-   * @param      M_new
-   *
-   */
-  bool restrict(const Matrix &M, Matrix &M_new) const override {
-    assert(_I);
-    M_new = utopia::ptap(M, *_I);
-    return true;
-  }
+        /**
+         * @brief      Restriction of matrix.
+         *
+         *             \f$  M_{new} = I^{T} * M  * I  \f$
+         * @param[in]  M
+         * @param      M_new
+         *
+         */
+        bool restrict(const Matrix &M, Matrix &M_new) const override {
+            assert(_I);
+            M_new = utopia::ptap(M, *_I);
+            return true;
+        }
 
-  /**
-   * @brief      Projection of vector
-   *            \f$  x_{new} = P * x  \f$
-   * @param[in]  x
-   * @param      x_new
-   *
-   */
-  bool project_down(const Vector &x, Vector &x_new) const override {
-    assert(_Pr || _I);
+        /**
+         * @brief      Projection of vector
+         *            \f$  x_{new} = P * x  \f$
+         * @param[in]  x
+         * @param      x_new
+         *
+         */
+        bool project_down(const Vector &x, Vector &x_new) const override {
+            assert(_Pr || _I);
 
-    if (!_Pr) {
-      return restrict(x, x_new);
-    } else {
-      x_new = *_Pr * x;
-    }
-    return true;
-  }
+            if (!_Pr) {
+                return restrict(x, x_new);
+            } else {
+                x_new = *_Pr * x;
+            }
+            return true;
+        }
 
-  bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg,
-                                      Vector &x_new) override {
-    if (empty(P_pos_)) {
-      P_pos_ = *_Pr;
-      chop_smaller_than(P_pos_, 1e-13);
-    }
+        bool project_down_positive_negative(const Vector &x_pos, const Vector &x_neg, Vector &x_new) override {
+            if (empty(P_pos_)) {
+                P_pos_ = *_Pr;
+                chop_smaller_than(P_pos_, 1e-13);
+            }
 
-    if (empty(P_neg_)) {
-      P_neg_ = (*_Pr);
-      chop_greater_than(P_neg_, -1e-13);
-    }
+            if (empty(P_neg_)) {
+                P_neg_ = (*_Pr);
+                chop_greater_than(P_neg_, -1e-13);
+            }
 
-    x_new = (P_pos_ * x_pos) + (P_neg_ * x_neg);
-    return true;
-  }
+            x_new = (P_pos_ * x_pos) + (P_neg_ * x_neg);
+            return true;
+        }
 
-  Scalar interpolation_inf_norm() const override { return norm_infty(*_I); }
+        Scalar interpolation_inf_norm() const override { return norm_infty(*_I); }
 
-  Scalar projection_inf_norm() const override {
-    m_utopia_warning_once("projection_inf_norm not implemented properly");
-    return norm_infty(transpose(*_I));
-  }
+        Scalar projection_inf_norm() const override {
+            m_utopia_warning_once("projection_inf_norm not implemented properly");
+            return norm_infty(transpose(*_I));
+        }
 
-  Scalar restriction_inf_norm() const override { return norm_infty(*_Pr); }
+        Scalar restriction_inf_norm() const override { return norm_infty(*_Pr); }
 
-  const Matrix &I() override {
-    assert(_I);
-    return *_I;
-  }
+        const Matrix &I() override {
+            assert(_I);
+            return *_I;
+        }
 
-  const Matrix &P() override {
-    assert(_Pr);
-    return *_Pr;
-  }
+        const Matrix &P() override {
+            assert(_Pr);
+            return *_Pr;
+        }
 
-  const Matrix &R() override {
-    assert(_I);
-    _R = std::make_shared<Matrix>(transpose(*_I));
-    return *_R;
-  }
+        const Matrix &R() override {
+            assert(_I);
+            _R = std::make_shared<Matrix>(transpose(*_I));
+            return *_R;
+        }
 
- protected:
-  std::shared_ptr<Matrix> _I;
-  std::shared_ptr<Matrix> _Pr;
-  std::shared_ptr<Matrix> _R;
+    protected:
+        std::shared_ptr<Matrix> _I;
+        std::shared_ptr<Matrix> _Pr;
+        std::shared_ptr<Matrix> _R;
 
-  Scalar restrict_factor_;
+        Scalar restrict_factor_;
 
-  Matrix P_pos_;
-  Matrix P_neg_;
-};
+        Matrix P_pos_;
+        Matrix P_neg_;
+    };
 
 }  // namespace utopia
 

@@ -5,249 +5,250 @@
 
 namespace utopia {
 
-template <typename Matrix, typename Vector, int Backend>
-BiCGStab<Matrix, Vector, Backend>::BiCGStab() = default;
+    template <typename Matrix, typename Vector, int Backend>
+    BiCGStab<Matrix, Vector, Backend>::BiCGStab() = default;
 
-template <typename Matrix, typename Vector, int Backend>
-BiCGStab<Matrix, Vector, Backend> *BiCGStab<Matrix, Vector, Backend>::clone()
-    const {
-  return new BiCGStab(*this);
-}
-
-template <typename Matrix, typename Vector, int Backend>
-void BiCGStab<Matrix, Vector, Backend>::update(const Operator<Vector> &A) {
-  Layout layout_rhs = row_layout(A);
-
-  if (!initialized_ || !layout_rhs.same(layout_)) {
-    init_memory(layout_rhs);
-  }
-}
-
-template <typename Matrix, typename Vector, int Backend>
-void BiCGStab<Matrix, Vector, Backend>::init_memory(const Layout &layout) {
-  OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
-
-  v_.zeros(layout);
-  p_.zeros(layout);
-  h_.zeros(layout);
-  y_.zeros(layout);
-  t_.zeros(layout);
-  s_.zeros(layout);
-  z_.zeros(layout);
-  K_inv_t_.zeros(layout);
-}
-
-// https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method
-// (Preconditioned BiCGSTAB)
-template <typename Matrix, typename Vector, int Backend>
-bool BiCGStab<Matrix, Vector, Backend>::solve_preconditioned(
-    const Operator<Vector> &A, const Vector &b, Vector &x) {
-  const auto b_layout = layout(b);
-  init_memory(b_layout);
-
-  if (empty(x) || !b_layout.same(layout(x))) {
-    x.zeros(b_layout);
-  } else {
-    assert(b_layout.same(layout(x)));
-  }
-
-  Scalar rho = 1., rho_old = 1., alpha = 1., omega = 1., beta = 1.;
-  A.apply(x, r_);
-  r_ = b - r_;
-  r0_ = r_;
-
-  auto precond = this->get_preconditioner();
-
-  this->init_solver("Utopia BiCGStab (preconditioned)", {"it. ", "||r||"});
-  bool converged = false;
-
-  SizeType it = 0;
-  SizeType check_norm_each = 1;
-
-  Scalar r_norm = 1e10;
-  while (!converged) {
-    rho = dot(r0_, r_);
-    beta = (rho / rho_old) * (alpha / omega);
-    p_ = r_ + beta * (p_ - omega * v_);
-    precond->apply(p_, y_);
-    A.apply(y_, v_);
-
-    Scalar r0_dot_v = dot(r0_, v_);
-
-    if (r0_dot_v == 0.0) {
-      assert(false);
-
-      A.apply(x, r_);
-      r_ = b - r_;
-
-      r_norm = norm2(s_);
-
-      if (this->verbose()) {
-        PrintInfo::print_iter_status(it, {r_norm});
-      }
-
-      converged = this->check_convergence(it, r_norm, 1, 1);
-      break;
+    template <typename Matrix, typename Vector, int Backend>
+    BiCGStab<Matrix, Vector, Backend> *BiCGStab<Matrix, Vector, Backend>::clone() const {
+        return new BiCGStab(*this);
     }
 
-    alpha = rho / r0_dot_v;
+    template <typename Matrix, typename Vector, int Backend>
+    void BiCGStab<Matrix, Vector, Backend>::update(const Operator<Vector> &A) {
+        Layout layout_rhs = row_layout(A);
 
-    h_ = x + alpha * y_;
-    // if h is accurate enough
-    // if(h_) { return }
-
-    s_ = r_ - alpha * v_;
-
-    if ((it % check_norm_each) == 0) {
-      r_norm = norm2(s_);
-
-      if (this->verbose()) {
-        PrintInfo::print_iter_status(it, {r_norm});
-      }
-
-      converged = this->check_convergence(it, r_norm, 1, 1);
-      if (converged) {
-        break;
-      }
+        if (!initialized_ || !layout_rhs.same(layout_)) {
+            init_memory(layout_rhs);
+        }
     }
 
-    z_.set(0.0);
-    precond->apply(s_, z_);
-    A.apply(z_, t_);
+    template <typename Matrix, typename Vector, int Backend>
+    void BiCGStab<Matrix, Vector, Backend>::init_memory(const Layout &layout) {
+        OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
 
-    // FIXME should use left preconditioner instead
-    precond->apply(t_, K_inv_t_);
-    omega = dot(z_, K_inv_t_) / dot(K_inv_t_, K_inv_t_);
-
-    assert(Scalar(dot(K_inv_t_, K_inv_t_)) != 0.0);
-
-    if (std::isnan(omega)) {
-      assert(false);
-      break;
+        v_.zeros(layout);
+        p_.zeros(layout);
+        h_.zeros(layout);
+        y_.zeros(layout);
+        t_.zeros(layout);
+        s_.zeros(layout);
+        z_.zeros(layout);
+        K_inv_t_.zeros(layout);
     }
 
-    x = h_ + omega * z_;
-    // if x is accurate enough
-    // if(x_) { return }
+    // https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method
+    // (Preconditioned BiCGSTAB)
+    template <typename Matrix, typename Vector, int Backend>
+    bool BiCGStab<Matrix, Vector, Backend>::solve_preconditioned(const Operator<Vector> &A,
+                                                                 const Vector &b,
+                                                                 Vector &x) {
+        const auto b_layout = layout(b);
+        init_memory(b_layout);
 
-    r_ = s_ - omega * t_;
+        if (empty(x) || !b_layout.same(layout(x))) {
+            x.zeros(b_layout);
+        } else {
+            assert(b_layout.same(layout(x)));
+        }
 
-    rho_old = rho;
+        Scalar rho = 1., rho_old = 1., alpha = 1., omega = 1., beta = 1.;
+        A.apply(x, r_);
+        r_ = b - r_;
+        r0_ = r_;
 
-    if ((it % check_norm_each) == 0) {
-      r_norm = norm2(r_);
-      converged = this->check_convergence(it, r_norm, 1, 1);
+        auto precond = this->get_preconditioner();
 
-      if (converged && this->verbose()) {
-        PrintInfo::print_iter_status(it, {r_norm});
-      }
+        this->init_solver("Utopia BiCGStab (preconditioned)", {"it. ", "||r||"});
+        bool converged = false;
+
+        SizeType it = 0;
+        SizeType check_norm_each = 1;
+
+        Scalar r_norm = 1e10;
+        while (!converged) {
+            rho = dot(r0_, r_);
+            beta = (rho / rho_old) * (alpha / omega);
+            p_ = r_ + beta * (p_ - omega * v_);
+            precond->apply(p_, y_);
+            A.apply(y_, v_);
+
+            Scalar r0_dot_v = dot(r0_, v_);
+
+            if (r0_dot_v == 0.0) {
+                assert(false);
+
+                A.apply(x, r_);
+                r_ = b - r_;
+
+                r_norm = norm2(s_);
+
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {r_norm});
+                }
+
+                converged = this->check_convergence(it, r_norm, 1, 1);
+                break;
+            }
+
+            alpha = rho / r0_dot_v;
+
+            h_ = x + alpha * y_;
+            // if h is accurate enough
+            // if(h_) { return }
+
+            s_ = r_ - alpha * v_;
+
+            if ((it % check_norm_each) == 0) {
+                r_norm = norm2(s_);
+
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {r_norm});
+                }
+
+                converged = this->check_convergence(it, r_norm, 1, 1);
+                if (converged) {
+                    break;
+                }
+            }
+
+            z_.set(0.0);
+            precond->apply(s_, z_);
+            A.apply(z_, t_);
+
+            // FIXME should use left preconditioner instead
+            precond->apply(t_, K_inv_t_);
+            omega = dot(z_, K_inv_t_) / dot(K_inv_t_, K_inv_t_);
+
+            assert(Scalar(dot(K_inv_t_, K_inv_t_)) != 0.0);
+
+            if (std::isnan(omega)) {
+                assert(false);
+                break;
+            }
+
+            x = h_ + omega * z_;
+            // if x is accurate enough
+            // if(x_) { return }
+
+            r_ = s_ - omega * t_;
+
+            rho_old = rho;
+
+            if ((it % check_norm_each) == 0) {
+                r_norm = norm2(r_);
+                converged = this->check_convergence(it, r_norm, 1, 1);
+
+                if (converged && this->verbose()) {
+                    PrintInfo::print_iter_status(it, {r_norm});
+                }
+            }
+
+            it++;
+        }
+
+        return converged;
     }
 
-    it++;
-  }
+    // https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method
+    // (BiCGSTAB)
+    template <typename Matrix, typename Vector, int Backend>
+    bool BiCGStab<Matrix, Vector, Backend>::solve_unpreconditioned(const Operator<Vector> &A,
+                                                                   const Vector &b,
+                                                                   Vector &x) {
+        const auto b_layout = layout(b);
+        init_memory(b_layout);
 
-  return converged;
-}
+        if (empty(x) || !b_layout.same(layout(x))) {
+            x.zeros(b_layout);
+        } else {
+            assert(b_layout.same(layout(x)));
+        }
 
-// https://en.wikipedia.org/wiki/Biconjugate_gradient_stabilized_method
-// (BiCGSTAB)
-template <typename Matrix, typename Vector, int Backend>
-bool BiCGStab<Matrix, Vector, Backend>::solve_unpreconditioned(
-    const Operator<Vector> &A, const Vector &b, Vector &x) {
-  const auto b_layout = layout(b);
-  init_memory(b_layout);
+        Scalar rho = 1., rho_old = 1., alpha = 1., omega = 1., beta = 1.;
+        A.apply(x, r_);
+        r_ = b - r_;
+        r0_ = r_;
 
-  if (empty(x) || !b_layout.same(layout(x))) {
-    x.zeros(b_layout);
-  } else {
-    assert(b_layout.same(layout(x)));
-  }
+        auto precond = this->get_preconditioner();
 
-  Scalar rho = 1., rho_old = 1., alpha = 1., omega = 1., beta = 1.;
-  A.apply(x, r_);
-  r_ = b - r_;
-  r0_ = r_;
+        this->init_solver("Utopia BiCGStab", {"it. ", "||r||"});
+        bool converged = false;
 
-  auto precond = this->get_preconditioner();
+        SizeType it = 0;
+        SizeType check_norm_each = 1;
 
-  this->init_solver("Utopia BiCGStab", {"it. ", "||r||"});
-  bool converged = false;
+        Scalar r_norm = 1e10;
+        while (!converged) {
+            rho = dot(r0_, r_);
 
-  SizeType it = 0;
-  SizeType check_norm_each = 1;
+            if (rho == 0.) {
+                converged = true;
+                break;
+            }
 
-  Scalar r_norm = 1e10;
-  while (!converged) {
-    rho = dot(r0_, r_);
+            beta = (rho / rho_old) * (alpha / omega);
+            p_ = r_ + beta * (p_ - omega * v_);
+            A.apply(p_, v_);
 
-    if (rho == 0.) {
-      converged = true;
-      break;
+            const Scalar r0_dot_v = dot(r0_, v_);
+
+            if (r0_dot_v == 0.0) {
+                assert(false);
+            }
+
+            alpha = rho / r0_dot_v;
+
+            h_ = x + alpha * p_;
+            // if h is accurate enough
+            // if(h_) { return }
+
+            s_ = r_ - alpha * v_;
+
+            // if((it % check_norm_each) == 0) {
+            //     r_norm = norm2(s_);
+
+            //     if(this->verbose()) {
+            //         PrintInfo::print_iter_status({ Scalar(it), r_norm });
+            //     }
+
+            //     converged = this->check_convergence(it, r_norm, 1, 1);
+            //     // if(converged) { break; }
+            // }
+
+            A.apply(s_, t_);
+            omega = dot(t_, s_) / dot(t_, t_);
+
+            if (std::isnan(omega) || std::isinf(omega)) {
+                r_norm = norm2(s_);
+
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status({Scalar(it), r_norm});
+                }
+
+                converged = this->check_convergence(it, r_norm, 1, 1);
+                break;
+            }
+
+            x = h_ + omega * s_;
+            r_ = s_ - omega * t_;
+
+            rho_old = rho;
+
+            if ((it % check_norm_each) == 0) {
+                r_norm = norm2(r_);
+
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status({Scalar(it), r_norm});
+                }
+
+                converged = this->check_convergence(it, r_norm, 1, 1);
+            }
+
+            it++;
+        }
+
+        return converged;
     }
-
-    beta = (rho / rho_old) * (alpha / omega);
-    p_ = r_ + beta * (p_ - omega * v_);
-    A.apply(p_, v_);
-
-    const Scalar r0_dot_v = dot(r0_, v_);
-
-    if (r0_dot_v == 0.0) {
-      assert(false);
-    }
-
-    alpha = rho / r0_dot_v;
-
-    h_ = x + alpha * p_;
-    // if h is accurate enough
-    // if(h_) { return }
-
-    s_ = r_ - alpha * v_;
-
-    // if((it % check_norm_each) == 0) {
-    //     r_norm = norm2(s_);
-
-    //     if(this->verbose()) {
-    //         PrintInfo::print_iter_status({ Scalar(it), r_norm });
-    //     }
-
-    //     converged = this->check_convergence(it, r_norm, 1, 1);
-    //     // if(converged) { break; }
-    // }
-
-    A.apply(s_, t_);
-    omega = dot(t_, s_) / dot(t_, t_);
-
-    if (std::isnan(omega) || std::isinf(omega)) {
-      r_norm = norm2(s_);
-
-      if (this->verbose()) {
-        PrintInfo::print_iter_status({Scalar(it), r_norm});
-      }
-
-      converged = this->check_convergence(it, r_norm, 1, 1);
-      break;
-    }
-
-    x = h_ + omega * s_;
-    r_ = s_ - omega * t_;
-
-    rho_old = rho;
-
-    if ((it % check_norm_each) == 0) {
-      r_norm = norm2(r_);
-
-      if (this->verbose()) {
-        PrintInfo::print_iter_status({Scalar(it), r_norm});
-      }
-
-      converged = this->check_convergence(it, r_norm, 1, 1);
-    }
-
-    it++;
-  }
-
-  return converged;
-}
 }  // namespace utopia
 
 #endif  // UTOPIA_BICG_STAB_IMPL_HPP

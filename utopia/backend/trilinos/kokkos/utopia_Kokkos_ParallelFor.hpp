@@ -21,12 +21,14 @@ namespace utopia {
         template <typename F>
         inline static void apply(const std::size_t &begin, const std::size_t &end, F f) {
             auto extent = end - begin;
-            Kokkos::parallel_for(extent, KOKKOS_LAMBDA(const int i) { f(begin + i); });
+            Kokkos::parallel_for(
+                extent, KOKKOS_LAMBDA(const int i) { f(begin + i); });
         }
 
         template <typename F>
         inline static void apply(const std::size_t &n, F f) {
-            Kokkos::parallel_for(n, KOKKOS_LAMBDA(const int i) { f(i); });
+            Kokkos::parallel_for(
+                n, KOKKOS_LAMBDA(const int i) { f(i); });
         }
     };
 }  // namespace utopia
