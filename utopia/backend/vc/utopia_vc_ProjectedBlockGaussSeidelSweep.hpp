@@ -16,6 +16,7 @@ namespace utopia {
     template <class Matrix>
     using MatrixSIMDType = Vc::Vector<typename Traits<Matrix>::Scalar>;
 
+    // Slower than original non-vectorized version
     template <class Matrix>
     class VcProjectedBlockGaussSeidelSweep final : public ProjectedGaussSeidelSweep<Matrix> {
     public:

@@ -221,6 +221,8 @@ namespace utopia {
 
     UTOPIA_INLINE_FUNCTION constexpr float inner(const float &left, const float &right) { return left * right; }
 
+    UTOPIA_INLINE_FUNCTION constexpr int inner(const int &left, const int &right) { return left * right; }
+
     template <class Expr>
     UTOPIA_INLINE_FUNCTION typename Traits<Expr>::Scalar trace(const DeviceExpression<Expr> &expr) {
         return DeviceTrace<Expr>::apply(expr.derived());
