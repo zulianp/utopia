@@ -5,7 +5,8 @@
 
 namespace utopia {
 
-    // this function differs from QuadraticFunction in 2 things: - different signs for rhs term
+    // this function differs from QuadraticFunction in 2 things: - different signs
+    // for rhs term
     //                                                           - supports const
     // TODO:: merge with original QPFunction...
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>

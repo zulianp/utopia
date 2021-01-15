@@ -43,7 +43,8 @@ namespace utopia {
 
         for (auto s : space.mesh().sides()) {
             if (s != SideSet::bottom()) {
-                space.emplace_dirichlet_condition(s, UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, temperature);
+                space.emplace_dirichlet_condition(
+                    s, UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, temperature);
             }
         }
     }
@@ -54,9 +55,11 @@ namespace utopia {
         using Scalar = typename FunctionSpace::Scalar;
 
         for (int i = disp_begin; i < disp_end; ++i) {
-            space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.; }, i);
+            space.emplace_dirichlet_condition(
+                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.; }, i);
 
-            space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.; }, i);
+            space.emplace_dirichlet_condition(
+                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.; }, i);
         }
     }
 

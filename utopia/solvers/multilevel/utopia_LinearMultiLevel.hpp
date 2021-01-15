@@ -1,7 +1,7 @@
 #ifndef UTOPIA_LINEAR_MULTI_LEVELHPP
 #define UTOPIA_LINEAR_MULTI_LEVELHPP
 
-#include "utopia_MatrixTransfer.hpp"
+#include "utopia_IPRTransfer.hpp"
 #include "utopia_MultiLevelBase.hpp"
 #include "utopia_MultiLevelMask.hpp"
 #include "utopia_Path.hpp"
@@ -14,8 +14,9 @@ namespace utopia {
     /**
      * @brief      Base class for all linear multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy. \n
-     *             Different levels are created by interpolation and restriction operators.\n
-     *             Additionally, it provides stifness matrices on each level, created by using Galerkin assembly. \n
+     *             Different levels are created by interpolation and restriction
+     * operators.\n Additionally, it provides stifness matrices on each level,
+     * created by using Galerkin assembly. \n
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -26,7 +27,7 @@ namespace utopia {
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::Level<Matrix, Vector> Level;
         typedef utopia::Transfer<Matrix, Vector> Transfer;
-        typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
+        typedef utopia::IPRTransfer<Matrix, Vector> IPRTransfer;
 
     public:
         using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
@@ -65,12 +66,14 @@ namespace utopia {
             if (this->n_levels() <= 0) {
                 this->n_levels(interpolation_operators.size() + 1);
             } else if (this->n_levels() != static_cast<SizeType>(interpolation_operators.size()) + 1) {
-                utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n");
+                utopia_error(
+                    "utopia::MultilevelBase:: number of levels and transfer operators do "
+                    "not match ... \n");
             }
 
             this->transfers_.clear();
             for (auto I = interpolation_operators.begin(); I != interpolation_operators.end(); ++I)
-                this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I));
+                this->transfers_.push_back(std::make_shared<IPRTransfer>(*I));
 
             return true;
         }
@@ -113,7 +116,8 @@ namespace utopia {
             // {
             //     auto d_view = view_device(d);
 
-            //     A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &val) {
+            //     A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const
+            //     Scalar &val) {
             //         if (i == j && device::abs(val) > 1e-12) {
             //             d_view.set(i, 0.0);
             //         }
@@ -125,8 +129,9 @@ namespace utopia {
 
         /**
          * @brief
-         *        The function creates corser level operators provided by assembling on differnet levels of MG hierarchy
-         *		The first element of the vector is the coarset matrix and the last is the fienst
+         *        The function creates corser level operators provided by assembling
+         *on differnet levels of MG hierarchy The first element of the vector is the
+         *coarset matrix and the last is the fienst
          * @param[in]  stifness matrix for finest level
          *
          */
@@ -134,7 +139,9 @@ namespace utopia {
             if (this->n_levels() <= 0) {
                 this->n_levels(A.size());
             } else if (this->n_levels() != A.size()) {
-                utopia_error("utopia::MultilevelBase:: number of levels and linear operators do not match ... \n");
+                utopia_error(
+                    "utopia::MultilevelBase:: number of levels and linear operators do "
+                    "not match ... \n");
             }
 
             levels_.clear();
@@ -180,11 +187,13 @@ namespace utopia {
 
         /**
          * @brief
-         *        The function creates corser level operators by using Galerkin assembly.
+         *        The function creates corser level operators by using Galerkin
+         * assembly.
          *
          *        $\f J_{i-1} = R * J_{i} * I  $\f
          *
-         *        Resulting operators are assumed to go from fines = 0 to coarse = numlevels_
+         *        Resulting operators are assumed to go from fines = 0 to coarse =
+         * numlevels_
          *
          * @param[in]  stifness matrix for finest level
          *

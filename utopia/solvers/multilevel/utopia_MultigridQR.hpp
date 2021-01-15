@@ -2,11 +2,11 @@
 #define UTOPIA_MULTIGRID_QR_HPP
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_IPRTruncatedTransfer.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
 #include "utopia_LinearSolver.hpp"
-#include "utopia_MatrixTruncatedTransfer.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_ProjectedGaussSeidelQR.hpp"
 #include "utopia_Recorder.hpp"
@@ -112,7 +112,8 @@ namespace utopia {
                                     "Flag turning on/off line-search after coarse grid correction.",
                                     "false");
             this->print_param_usage(os, "block_size", "int", "Block size for systems.", "1");
-            // this->print_param_usage(os, "smoother", "Smoother", "Input parameters for all smoothers.", "-");
+            // this->print_param_usage(os, "smoother", "Smoother", "Input parameters for
+            // all smoothers.", "-");
             this->print_param_usage(os, "coarse_solver", "LinearSolver", "Input parameters for coarse solver.", "-");
         }
 
@@ -125,8 +126,8 @@ namespace utopia {
             update();
         }
 
-        /*! @brief if no galerkin assembly is used but instead set_linear_operators is used.
-                   One can call this update instead of the other one.
+        /*! @brief if no galerkin assembly is used but instead set_linear_operators is
+           used. One can call this update instead of the other one.
          */
         void update() {
             smoothers_.resize(this->n_levels());
@@ -200,7 +201,7 @@ namespace utopia {
                     ok = standard_cycle(l);
                     assert(ok);
                 } else {
-                    utopia::out() << "ERROR::UTOPIA_MG<< unknown MG type... \n";
+                    std::cout << "ERROR::UTOPIA_MG<< unknown MG type... \n";
                 }
 
 #ifdef CHECK_NUM_PRECISION_mode
@@ -319,12 +320,14 @@ namespace utopia {
                 GS_smoother->set_box_constraints(this->get_box_constraints());
                 GS_smoother->smooth(rhs, x);
             } else {
-                utopia_error("MG_QR: requires ProjectedGaussSeidelQR to be the fine level smoother ");
+                utopia_error(
+                    "MG_QR: requires ProjectedGaussSeidelQR to be the fine level "
+                    "smoother ");
             }
 
             if (pre_sm) {
                 if (auto *trunc_transfer =
-                        dynamic_cast<MatrixTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
+                        dynamic_cast<IPRTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
                     auto *GS_smoother = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(smoothers_[l].get());
                     const Vector &active_set = GS_smoother->get_active_set();
 
@@ -338,7 +341,7 @@ namespace utopia {
                 }
 
                 else {
-                    utopia_error("MG_QR: requires MatrixTruncatedTransfer for the finest level.");
+                    utopia_error("MG_QR: requires IPRTruncatedTransfer for the finest level.");
                 }
             }
             return true;

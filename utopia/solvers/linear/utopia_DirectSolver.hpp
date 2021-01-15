@@ -11,8 +11,11 @@ namespace utopia {
     class DirectSolver : public LinearSolver<Matrix, Vector> {
     public:
         bool apply(const Vector &rhs, Vector &sol) override {
-            std::cerr << "[Warning] Subclass of DirectSolver did not override apply(.,.). Using solve..." << std::endl;
-            std::cerr << "[Task]    You need to fix your direct solver and override apply(.,.) instead of solve(.,.,.)."
+            std::cerr << "[Warning] Subclass of DirectSolver did not override "
+                         "apply(.,.). Using solve..."
+                      << std::endl;
+            std::cerr << "[Task]    You need to fix your direct solver and override "
+                         "apply(.,.) instead of solve(.,.,.)."
                       << std::endl;
             assert(false && "override this method");
             return this->solve(*this->get_operator(), rhs, sol);

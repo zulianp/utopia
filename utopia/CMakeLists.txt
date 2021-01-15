@@ -283,7 +283,11 @@ function(utopia_add_library libraryRootDir subDirs)
     set(THIS_MODULE_HEADERS "")
     find_project_files(${libraryRootDir} "${subDirs}" THIS_MODULE_HEADERS
                        THIS_MODULE_SOURCES)
-    target_sources(utopia PRIVATE ${THIS_MODULE_SOURCES})
+    target_sources(
+        utopia
+        PRIVATE ${THIS_MODULE_SOURCES}
+        PRIVATE ${THIS_MODULE_HEADERS})
+
     install(FILES ${THIS_MODULE_HEADERS} DESTINATION include)
     foreach(MODULE ${subDirs})
         target_include_directories(
@@ -674,5 +678,5 @@ add_dependencies(complete utopia utopia_test utopia_bench utopia_exec
                  utopia_examples)
 
 # ##############################################################################
-target_format_setup(utopia_test)
+target_format_setup("utopia;utopia_test;utopia_bench;utopia_exec")
 # ##############################################################################

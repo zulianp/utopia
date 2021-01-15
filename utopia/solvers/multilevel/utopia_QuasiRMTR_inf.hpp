@@ -21,12 +21,12 @@ namespace utopia {
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template <class Matrix, class Vector, class MLConstraints>
-    class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, FIRST_ORDER_DF>, public MLConstraints {
+    template <class Matrix, class Vector, class MLConstraints, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER_DF>
+    class QuasiRMTR_inf final : public RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL>, public MLConstraints {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
-        typedef utopia::RMTRBase<Matrix, Vector, FIRST_ORDER_DF> RMTRBase;
+        typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> RMTRBase;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
         using TRSubproblem = utopia::MatrixFreeQPSolver<Vector>;
@@ -39,12 +39,12 @@ namespace utopia {
         typedef utopia::Level<Matrix, Vector> Level;
 
         using BoxConstraints = utopia::BoxConstraints<Vector>;
-        typedef utopia::RMTRBase<Matrix, Vector, FIRST_ORDER_DF> RMTR;
+        typedef utopia::RMTRBase<Matrix, Vector, CONSISTENCY_LEVEL> RMTR;
 
         using MLConstraints::check_feasibility;
 
     public:
-        QuasiRMTR_inf(const SizeType &n_levels) : RMTR(n_levels), MLConstraints(this->transfer()) {
+        QuasiRMTR_inf(const SizeType &n_levels) : RMTR(n_levels), MLConstraints(this->transfer()), reset_memory_(true) {
             hessian_approxs_.resize(n_levels);
         }
 
@@ -63,6 +63,8 @@ namespace utopia {
                 for (std::size_t i = 1; i < hessian_approxs_.size(); i++)
                     in.get("hessian-approx-strategy", *hessian_approxs_[i]);
             }
+
+            in.get("reset_memory", reset_memory_);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -77,6 +79,8 @@ namespace utopia {
                                     "HessianApproximation",
                                     "Input parameters for hessian approximation strategies.",
                                     "-");
+
+            this->print_param_usage(os, "reset_memory", "bool", "Flag indicating if memory should be reset.", "-");
         }
 
         std::string name() override { return "QuasiRMTR_inf"; }
@@ -97,7 +101,8 @@ namespace utopia {
         bool set_hessian_approximation_strategies(const std::vector<HessianApproxPtr> &strategies) {
             if (strategies.size() != this->n_levels()) {
                 utopia_error(
-                    "utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of strategies does not equal "
+                    "utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of "
+                    "strategies does not equal "
                     "with levels in ML hierarchy. \n");
             }
 
@@ -105,6 +110,9 @@ namespace utopia {
 
             return true;
         }
+
+        bool reset_memory() const { return reset_memory_; }
+        void reset_memory(const bool &flg) { reset_memory_ = flg; }
 
         bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy,
                                                 const SizeType &level) {
@@ -116,7 +124,8 @@ namespace utopia {
                 hessian_approxs_[level] = strategy;
             } else {
                 utopia_error(
-                    "utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. "
+                    "utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number "
+                    "of levels in ML hierarchy. "
                     "\n");
             }
 
@@ -147,7 +156,8 @@ namespace utopia {
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies) {
             if (static_cast<SizeType>(strategies.size()) != this->n_levels()) {
                 utopia_error(
-                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML "
+                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be "
+                    "equal to number of levels in ML "
                     "hierarchy. \n");
             }
 
@@ -186,12 +196,16 @@ namespace utopia {
             bool flg = RMTRBase::check_initialization();
 
             if (static_cast<SizeType>(tr_subproblems_.size()) != this->n_levels()) {
-                utopia_error("utopia::QuasiRMTR_inf:: number of level QP solvers and levels not equal. \n");
+                utopia_error(
+                    "utopia::QuasiRMTR_inf:: number of level QP solvers and levels not "
+                    "equal. \n");
                 flg = false;
             }
 
             if (static_cast<SizeType>(hessian_approxs_.size()) != this->n_levels()) {
-                utopia_error("utopia::QuasiRMTR_inf:: number of hessian approxiations and levels do not match. \n");
+                utopia_error(
+                    "utopia::QuasiRMTR_inf:: number of hessian approxiations and levels "
+                    "do not match. \n");
                 flg = false;
             }
 
@@ -201,7 +215,8 @@ namespace utopia {
         bool delta_update(const Scalar &rho, const SizeType &level, const Vector & /*s_global*/) override {
             Scalar intermediate_delta;
 
-            // we could do also more sophisticated options, but lets not care for the moment ...
+            // we could do also more sophisticated options, but lets not care for the
+            // moment ...
             if (rho < this->eta1()) {
                 intermediate_delta = std::max(this->gamma1() * this->memory_.delta[level], 1e-15);
             } else if (rho > this->eta2()) {
@@ -236,12 +251,16 @@ namespace utopia {
             return (-l_term - 0.5 * qp_term);
         }
 
-        bool update_level(const SizeType &level) override {
+        bool update_level(const SizeType &level, const Scalar &energy_new_level_dep) override {
             this->memory_.help[level] = this->ml_derivs_.g[level];
-            this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
+            this->get_multilevel_gradient(
+                this->function(level), level, this->memory_.s_working[level], energy_new_level_dep);
+            // this->get_multilevel_gradient(this->function(level), level,
+            //                               this->memory_.s_working[level]);
+
             this->ml_derivs_.y[level] = this->ml_derivs_.g[level] - this->memory_.help[level];
 
-            // swap back....
+            // copy back....
             this->ml_derivs_.g[level] = this->memory_.help[level];
             hessian_approxs_[level]->update(
                 this->memory_.s[level], this->ml_derivs_.y[level], this->memory_.x[level], this->ml_derivs_.g[level]);
@@ -249,12 +268,34 @@ namespace utopia {
             return true;
         }
 
+        Scalar update_local_grad(const bool &make_grad_updates,
+                                 const SizeType &level,
+                                 Scalar &rho,
+                                 Scalar & /*energy_new_level_dep*/) override {
+            if (make_grad_updates) {
+                UTOPIA_NO_ALLOC_BEGIN("RMTR::grad_computation");
+
+                // we can simplify by exploring eq. from line 275
+                this->ml_derivs_.g[level] = this->ml_derivs_.y[level] + this->ml_derivs_.g[level];
+                this->memory_.gnorm[level] = this->criticality_measure(level);
+
+                UTOPIA_NO_ALLOC_END();
+            }
+            // check if this case is correct
+
+            return rho;
+        }
+
         void initialize_local_solve(const SizeType &level, const LocalSolveType &solve_type) override {
             // if(!(solve_type == PRE_SMOOTHING && level == this->n_levels()-1))
             // {
             if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
-                hessian_approxs_[level]->reset();
-                // hessian_approxs_[level]->initialize(this->memory_.x[level], this->ml_derivs_.g[level]);
+                if (this->reset_memory_) {
+                    hessian_approxs_[level]->reset();
+                }
+
+                // hessian_approxs_[level]->initialize(this->memory_.x[level],
+                // this->ml_derivs_.g[level]);
             }
             // }
         }
@@ -275,11 +316,96 @@ namespace utopia {
         }
 
     public:
-        // public because of nvcc
         bool solve_qp_subproblem(const SizeType &level, const bool &flg) override {
+            return this->solve_qp_DF(level, flg);
+        }
+
+        void init_hess_app_terms(const SizeType &fine_level) override { this->init_hess_second_order(fine_level); }
+
+        template <
+            MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<
+                is_any<T, FIRST_ORDER_DF, FIRST_ORDER_MULTIPLICATIVE_DF, FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF>::value,
+                int> = 0>
+        void init_hess_second_order(const SizeType & /*fine_level*/) {}
+
+        template <MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> = 0>
+        void init_hess_second_order(const SizeType &fine_level) {
+            this->ml_derivs_.set_init_approx(
+                fine_level - 1, hessian_approxs_[fine_level], hessian_approxs_[fine_level - 1]);
+        }
+
+        // public because of nvcc
+        template <
+            MultiLevelCoherence T = CONSISTENCY_LEVEL,
+            enable_if_t<
+                is_any<T, FIRST_ORDER_DF, FIRST_ORDER_MULTIPLICATIVE_DF, FIRST_ORDER_ADDITIVE_MULTIPLICATIVE_DF>::value,
+                int> = 0>
+        bool solve_qp_DF(const SizeType &level, const bool &flg) {
             Scalar radius = this->memory_.delta[level];
 
-            // first we need to prepare box of intersection of level constraints with tr. constraints
+            // first we need to prepare box of intersection of level constraints with
+            // tr. constraints
+            std::shared_ptr<Vector> &lb = tr_subproblems_[level]->lower_bound();
+            std::shared_ptr<Vector> &ub = tr_subproblems_[level]->upper_bound();
+
+            const Vector &active_lower = this->active_lower(level);
+            const Vector &active_upper = this->active_upper(level);
+
+            *lb = active_lower - this->memory_.x[level];
+            *ub = active_upper - this->memory_.x[level];
+
+            {
+                lb->transform_values(
+                    UTOPIA_LAMBDA(const Scalar &xi)->Scalar { return (xi >= -1.0 * radius) ? xi : -1.0 * radius; });
+
+                ub->transform_values(UTOPIA_LAMBDA(const Scalar &xi)->Scalar { return (xi <= radius) ? xi : radius; });
+            }
+
+            Scalar atol_level =
+                (level == this->n_levels() - 1)
+                    ? this->atol()
+                    : std::min(this->atol(), this->grad_smoothess_termination() * this->memory_.gnorm[level + 1]);
+            if (auto *tr_solver = dynamic_cast<IterativeSolver<Matrix, Vector> *>(tr_subproblems_[level].get())) {
+                if (tr_solver->atol() > atol_level) {
+                    tr_solver->atol(atol_level);
+                }
+
+                if (flg) {
+                    tr_solver->max_it(this->max_QP_coarse_it());
+                } else {
+                    tr_solver->max_it(this->max_QP_smoothing_it());
+                }
+            } else {
+                assert("QuasiRMTR_inf:: dynamic cast failed. \n");
+            }
+
+            this->ml_derivs_.g[level] *= -1.0;
+            this->memory_.s[level].set(0.0);
+
+            auto multiplication_action = hessian_approxs_[level]->build_apply_H();
+            this->tr_subproblems_[level]->solve(
+                *multiplication_action, this->ml_derivs_.g[level], this->memory_.s[level]);
+            this->ml_derivs_.g[level] *= -1.0;
+
+            if (has_nan_or_inf(this->memory_.s[level])) {
+                this->memory_.s[level].set(0.0);
+            } else {
+                // ----- just for debugging pourposes, to be commented out in the
+                // future...
+                MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]);
+            }
+
+            return true;
+        }
+
+        // public because of nvcc
+        template <MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> = 0>
+        bool solve_qp_DF(const SizeType &level, const bool &flg) {
+            Scalar radius = this->memory_.delta[level];
+
+            // first we need to prepare box of intersection of level constraints with
+            // tr. constraints
             std::shared_ptr<Vector> &lb = tr_subproblems_[level]->lower_bound();
             std::shared_ptr<Vector> &ub = tr_subproblems_[level]->upper_bound();
 
@@ -316,15 +442,30 @@ namespace utopia {
 
             this->ml_derivs_.g[level] *= -1.0;
             this->memory_.s[level].set(0.0);
-            auto multiplication_action = hessian_approxs_[level]->build_apply_H();
-            this->tr_subproblems_[level]->solve(
-                *multiplication_action, this->ml_derivs_.g[level], this->memory_.s[level]);
+
+            auto multiplication_action_hessian = hessian_approxs_[level]->build_apply_H();
+
+            if (level == this->n_levels() - 1 or !hessian_approxs_[level]->is_approx_fully_built() or
+                (level < this->n_levels() - 1 and (!hessian_approxs_[level + 1]->is_approx_fully_built()))) {
+                this->tr_subproblems_[level]->solve(
+                    *multiplication_action_hessian, this->ml_derivs_.g[level], this->memory_.s[level]);
+            } else {
+                // auto multiplication_action = this->ml_derivs_.build_apply_H_plus_Hdiff(
+                //     level, multiplication_action_hessian);
+                auto multiplication_action =
+                    this->ml_derivs_.build_apply_H_plus_Hdiff(level, multiplication_action_hessian);
+
+                this->tr_subproblems_[level]->solve(
+                    *multiplication_action, this->ml_derivs_.g[level], this->memory_.s[level]);
+            }
+
             this->ml_derivs_.g[level] *= -1.0;
 
             if (has_nan_or_inf(this->memory_.s[level])) {
                 this->memory_.s[level].set(0.0);
             } else {
-                // ----- just for debugging pourposes, to be commented out in the future...
+                // ----- just for debugging pourposes, to be commented out in the
+                // future...
                 MLConstraints::get_projection(*lb, *ub, this->memory_.s[level]);
             }
 
@@ -334,6 +475,7 @@ namespace utopia {
     private:
         std::vector<TRSubproblemPtr> tr_subproblems_;
         std::vector<HessianApproxPtr> hessian_approxs_;
+        bool reset_memory_;
     };
 
 }  // namespace utopia

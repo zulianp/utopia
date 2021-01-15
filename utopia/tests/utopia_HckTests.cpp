@@ -70,7 +70,7 @@ namespace utopia {
             // UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(CG_test);
             // UTOPIA_RUN_TEST(ProjectedGS);
-            UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(MPGRP_test);
 
             // nonlinear solver tests
             // UTOPIA_RUN_TEST(newton_test);
@@ -206,7 +206,8 @@ namespace utopia {
             direct_solver->number_of_parallel_solves(mpi_world_size());
 
             auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
-            // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector, HOMEMADE>>(); smoother->l1(true);
+            // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector,
+            // HOMEMADE>>(); smoother->l1(true);
 
             Multigrid<Matrix, Vector> multigrid(smoother, direct_solver);
             // multigrid.verbose(true);
@@ -224,7 +225,8 @@ namespace utopia {
         void TR_unconstrained() {
             if (mpi_world_size() > 1) {
                 m_utopia_error(
-                    "TR_unconstrained crashed with more than 1 process (petsc LUDecomposition does not work in "
+                    "TR_unconstrained crashed with more than 1 process (petsc "
+                    "LUDecomposition does not work in "
                     "parallel)");
                 return;
             }
@@ -239,15 +241,17 @@ namespace utopia {
             auto subproblem = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", false);
             // #ifdef UTOPIA_WITH_PETSC
             //     #ifdef UTOPIA_WITH_SLEPC
-            //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector, PETSC_EXPERIMENTAL> >();
+            //         auto eigen_solver = std::make_shared<SlepcSolver<Matrix, Vector,
+            //         PETSC_EXPERIMENTAL> >();
             //         // TODO:: add checks if has arpack
             //         eigen_solver->solver_type("arpack");
 
-            //         auto linear_solver = std::make_shared<LUDecomposition<Matrix, Vector> >();
-            //         linear_solver->set_library_type("petsc");
+            //         auto linear_solver = std::make_shared<LUDecomposition<Matrix,
+            //         Vector> >(); linear_solver->set_library_type("petsc");
 
-            //         auto subproblem = std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector> >(linear_solver,
-            //         eigen_solver);
+            //         auto subproblem =
+            //         std::make_shared<utopia::MoreSorensenEigen<Matrix, Vector>
+            //         >(linear_solver, eigen_solver);
             //     #endif //UTOPIA_WITH_SLEPC
             // #endif //UTOPIA_WITH_PETSC
 
@@ -272,9 +276,11 @@ namespace utopia {
             // auto lsolver = std::make_shared<GMRES<Matrix, Vector> >();
             // lsolver->pc_type("bjacobi");
 
-            // auto lsolver = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            // auto lsolver = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE>
+            // >();
             auto lsolver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
-            // auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector> >();
+            // auto strategy_sbc = std::make_shared<utopia::SimpleBacktracking<Vector>
+            // >();
             auto strategy_sbc = std::make_shared<utopia::Backtracking<Vector>>();
 
             Newton<Matrix, Vector> solver(lsolver);
@@ -293,9 +299,11 @@ namespace utopia {
             Vector x = fun.initial_guess();
             SizeType memory_size = 5;
 
-            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+            // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector,
+            // HOMEMADE> >();
             auto subproblem = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
-            // subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
+            // subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector>
+            // >());
             subproblem->atol(1e-14);
             subproblem->max_it(100000);
             // subproblem->use_precond_direction(true);
@@ -334,7 +342,8 @@ namespace utopia {
             }
 
             auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
-            // auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            // auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix,
+            // Vector> >();
             qp_solver->atol(1e-10);
             qp_solver->max_it(n_ * n_);
             // qp_solver->use_line_search(false);
@@ -401,7 +410,8 @@ namespace utopia {
             auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<Matrix, Vector>>("stcg", "lu", true);
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector>>("sor");
 
-            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER>
+            // >(n_levels_);
             auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, SECOND_ORDER>>(n_levels_);
 
             // Set TR-QP strategies
@@ -441,7 +451,8 @@ namespace utopia {
             auto tr_strategy_fine = std::make_shared<utopia::Lanczos<Matrix, Vector>>("sor");
 
             // auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(n_levels_);
-            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER>
+            // >(n_levels_);
             auto rmtr = std::make_shared<RMTR_l2<Matrix, Vector, FIRST_ORDER>>(n_levels_);
 
             // Set TR-QP strategies
@@ -478,14 +489,18 @@ namespace utopia {
                 fun_Poisson3D->describe();
             }
 
-            // ---------------------- TODO:: investigate why we get negative alpha --------------
-            // auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
-            // // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            // ---------------------- TODO:: investigate why we get negative alpha
+            // -------------- auto tr_strategy_coarse =
+            // std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            // // auto tr_strategy_fine =
+            // std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
 
-            // auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            // auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>
+            // >(); auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix,
+            // Vector> >();
 
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, FIRST_ORDER>
+            // >(n_levels_);
 
             // // Set TR-QP strategies
             // rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -651,12 +666,14 @@ namespace utopia {
             std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector>>> level_functions_tril;
 
             get_ML_problem<Matrix, Vector, Bratu3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine);
-            // get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine);
+            // get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril,
+            // level_functions_tril, x_fine);
 
             auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
             auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
 
-            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, GALERKIN> >(n_levels_);
+            // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, GALERKIN>
+            // >(n_levels_);
 
             // // Set TR-QP strategies
             // rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -688,18 +705,20 @@ namespace utopia {
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> transfers_tril;
             std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector>>> level_functions_tril;
 
-            // get_ML_problem<Matrix, Vector, Bratu3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine);
+            // get_ML_problem<Matrix, Vector, Bratu3D<Matrix, Vector>>(transfers_tril,
+            // level_functions_tril, x_fine);
             get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine);
 
             auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector>>();
             auto precond = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE>>();
             precond->max_it(1);
             tr_strategy_fine->set_preconditioner(precond);
-            // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix,
+            // Vector> >());
 
             auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector>>();
-            // auto precond_coarse = std::make_shared<GaussSeidel<Matrix, Vector, HOMEMADE> >();
-            // precond_coarse->max_it(1);
+            // auto precond_coarse = std::make_shared<GaussSeidel<Matrix, Vector,
+            // HOMEMADE> >(); precond_coarse->max_it(1);
             // tr_strategy_coarse->set_preconditioner(precond);
             tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
 
@@ -731,11 +750,15 @@ namespace utopia {
 
             auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector>>(n_levels_);
 
-            // auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            // auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix,
+            // Vector, HOMEMADE> >();
+            // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix,
+            // Vector> >());
 
-            // auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-            // tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            // auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix,
+            // Vector, HOMEMADE> >();
+            // tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix,
+            // Vector> >());
 
             // Set TR-QP strategies
             // rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
@@ -793,13 +816,14 @@ namespace utopia {
             std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector>>> level_functions_tril;
             get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril, level_functions_tril, x_fine);
 
-            //  auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER> >(n_levels_);
+            //  auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>
+            //  >(n_levels_);
 
-            //  auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            //  tr_strategy_fine->atol(1e-12);
+            //  auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector>
+            //  >(); tr_strategy_fine->atol(1e-12);
             // //  tr_strategy_fine->verbose(true);
-            //  auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
-            //  tr_strategy_coarse->atol(1e-12);
+            //  auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>
+            //  >(); tr_strategy_coarse->atol(1e-12);
 
             //  rmtr->set_coarse_tr_strategy(tr_strategy_coarse);
             //  rmtr->set_fine_tr_strategy(tr_strategy_fine);

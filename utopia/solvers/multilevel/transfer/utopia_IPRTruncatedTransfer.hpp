@@ -1,5 +1,5 @@
-#ifndef UTOPIA_MATRIX_TRUNCATED_TRANSFER_HPP
-#define UTOPIA_MATRIX_TRUNCATED_TRANSFER_HPP
+#ifndef UTOPIA_IPR_MATRIX_TRUNCATED_TRANSFER_HPP
+#define UTOPIA_IPR_MATRIX_TRUNCATED_TRANSFER_HPP
 
 #include "utopia_Transfer.hpp"
 
@@ -15,12 +15,12 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector>
-    class MatrixTruncatedTransfer final : public Transfer<Matrix, Vector> {
+    class IPRTruncatedTransfer final : public MatrixTransfer<Matrix, Vector> {
     public:
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-        MatrixTruncatedTransfer(const std::shared_ptr<Matrix> &I) {
+        IPRTruncatedTransfer(const std::shared_ptr<Matrix> &I) {
             assert(I);
 
             _I = I;
@@ -31,7 +31,7 @@ namespace utopia {
             _I_truncated = std::make_shared<Matrix>(*_I);
         }
 
-        MatrixTruncatedTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P)
+        IPRTruncatedTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P)
             : _I(I), _R(std::make_shared<Matrix>(transpose(*I))), _Pr(P) {
             assert(I);
             assert(P);
@@ -42,16 +42,16 @@ namespace utopia {
             // std::cout<<"proper transfer down ... \n";
         }
 
-        MatrixTruncatedTransfer(const std::shared_ptr<Matrix> &I,
-                                const std::shared_ptr<Matrix> &R,
-                                const std::shared_ptr<Matrix> &P)
+        IPRTruncatedTransfer(const std::shared_ptr<Matrix> &I,
+                             const std::shared_ptr<Matrix> &R,
+                             const std::shared_ptr<Matrix> &P)
             : _I(I), _R(R), _Pr(P) {
             assert(I);
             assert(R);
             assert(P);
         }
 
-        ~MatrixTruncatedTransfer() override = default;
+        ~IPRTruncatedTransfer() override = default;
 
         /*=====================================================
                             initialization
@@ -230,9 +230,19 @@ namespace utopia {
             return true;
         }
 
-        const Matrix &I() const { return *_I; }
+        const Matrix &I() override {
+            assert(_I);
+            return *_I;
+        }
 
-        const Matrix &R() const { return *_R; }
+        const Matrix &R() override {
+            assert(_R);
+            return *_R;
+        }
+        const Matrix &P() override {
+            assert(_Pr);
+            return *_Pr;
+        }
 
         Scalar interpolation_inf_norm() const override { return norm_infty(*_I); }
 
@@ -250,6 +260,7 @@ namespace utopia {
                 for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
                     if (_eq_active_flg.get(i) == 1.0) {
                         indices_eq_constraints_.push_back(i);
+                        // std::cout<<"i: "<< i << " \n";
                     }
                 }
             }

@@ -1,6 +1,7 @@
 #ifndef UTOPIA_RMTR_BASE_IMPL_HPP
 #define UTOPIA_RMTR_BASE_IMPL_HPP
 
+#include "utopia_Backtracking.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_Function.hpp"
@@ -49,7 +50,8 @@ namespace utopia {
             if (this->cycle_type() == MULTIPLICATIVE_CYCLE)
                 this->multiplicative_cycle(fine_level);
             else {
-                std::cout << "ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n";
+                std::cout << "ERROR::UTOPIA_RMTR << unknown cycle type, solving in "
+                             "multiplicative manner ... \n";
                 this->multiplicative_cycle(fine_level);
             }
 
@@ -100,6 +102,7 @@ namespace utopia {
         //----------------------------------------------------------------------------
         //                   presmoothing
         //----------------------------------------------------------------------------
+
         if (this->pre_smoothing_steps() != 0) {
             UTOPIA_NO_ALLOC_BEGIN("RMTR::region2");
             converged = this->local_tr_solve(level, PRE_SMOOTHING);
@@ -127,14 +130,17 @@ namespace utopia {
             converged = this->criticality_measure_termination(level);
             if (converged == true) {
                 if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE) {
-                    std::cout << "level converged after pre-smoothing, criticality_measure_termination \n";
+                    std::cout << "level converged after pre-smoothing, "
+                                 "criticality_measure_termination \n";
                 }
                 return true;
             }
         }
 
         UTOPIA_NO_ALLOC_BEGIN("RMTR::region11");
-        smoothness_flg = this->init_consistency_terms(level);
+
+        smoothness_flg = this->init_consistency_terms(level, this->memory_.energy[level]);
+
         UTOPIA_NO_ALLOC_END();
 
         // UTOPIA_NO_ALLOC_BEGIN("RMTR::region12");
@@ -143,8 +149,13 @@ namespace utopia {
         //----------------------------------------------------------------------------
         this->memory_.x_0[level - 1] = this->memory_.x[level - 1];
 
-        // at this point s_global on coarse level is 0, so we can simplify
-        coarse_reduction = this->get_multilevel_energy(this->function(level - 1), level - 1);
+        // at this point s_global on coarse level is 0, so we can simplify - NOT TRUE
+        // IF MG_OPT TYPE OF ML_MODEL IS USED -> better to do directly in specialized
+        // class
+        // coarse_reduction =
+        //     this->get_multilevel_energy(this->function(level - 1), level - 1);
+
+        coarse_reduction = this->memory_.energy[level - 1];
 
         // store energy in order to avoid evaluation in the first local_solve
         this->memory_.energy[level - 1] = coarse_reduction;
@@ -153,6 +164,7 @@ namespace utopia {
         //----------------------------------------------------------------------------
         //               recursion  / Taylor correction
         //----------------------------------------------------------------------------
+
         if (level == 1 && smoothness_flg) {
             this->local_tr_solve(level - 1, COARSE_SOLVE);
         } else if (smoothness_flg) {
@@ -177,10 +189,23 @@ namespace utopia {
                 this->zero_correction_related_to_equality_constrain(this->function(level), this->memory_.s[level]);
             }
 
+            if (this->use_line_search() && (level == this->n_levels() - 1)) {
+                auto ls_strategy_ = std::make_shared<utopia::Backtracking<Vector>>();
+                Scalar alpha_ = 1.0;
+                ls_strategy_->get_alpha(this->function(level),
+                                        this->ml_derivs_.g[level],
+                                        this->memory_.x[level],
+                                        this->memory_.s[level],
+                                        alpha_);
+                std::cout << "alpha: " << alpha_ << "  \n";
+                this->memory_.s[level] *= alpha_;
+            }
+
             E_old = this->memory_.energy[level];
             this->memory_.x[level] += this->memory_.s[level];
 
             this->compute_s_global(level, this->memory_.s_working[level]);
+
             E_new = this->get_multilevel_energy(this->function(level), level, this->memory_.s_working[level]);
 
             //----------------------------------------------------------------------------
@@ -204,7 +229,8 @@ namespace utopia {
                 this->memory_.energy[level] = E_new;
 
                 // todo:: make sure that correct assumption
-                this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
+                this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level], E_new);
+
                 this->memory_.gnorm[level] = this->criticality_measure(level);
             } else {
                 this->memory_.x[level] -= this->memory_.s[level];
@@ -248,18 +274,21 @@ namespace utopia {
 
             // UTOPIA_NO_ALLOC_END();
 
-            // terminate, since TR rad. does not allow to take more corrections on given level
-            if (converged == true) {
-                if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE) {
-                    std::cout << " converged last  \n";
-                }
-                return true;
-            }
+            // terminate, since TR rad. does not allow to take more corrections on given
+            // level if (converged == true) {
+            //     if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE) {
+            //         std::cout << " converged last  \n";
+            //     }
+            //     return true;
+            // }
+
+            this->make_ml_iterate_feasible(level);
 
         } else if (mpi_world_rank() == 0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE &&
                    this->verbose() == true) {
-            std::cout << "--------- Recursion terminated due to non-smoothness of the gradient, level: " << level
-                      << " ----------------------- \n";
+            std::cout << "--------- Recursion terminated due to non-smoothness of the "
+                         "gradient, level: "
+                      << level << " ----------------------- \n";
         }
 
         //----------------------------------------------------------------------------
@@ -267,10 +296,13 @@ namespace utopia {
         //----------------------------------------------------------------------------
 
         if (this->post_smoothing_steps() != 0) {
-            // auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE : POST_SMOOTHING;
+            // auto post_smoothing_solve_type = (!smoothness_flg) ? COARSE_SOLVE :
+            // POST_SMOOTHING;
             auto post_smoothing_solve_type = POST_SMOOTHING;
             this->local_tr_solve(level, post_smoothing_solve_type);
         }
+
+        // exit(0);
 
         return true;
     }
@@ -288,11 +320,13 @@ namespace utopia {
 
         UTOPIA_NO_ALLOC_BEGIN("RMTR::region3");
         const bool exact_solve_flg = (solve_type == COARSE_SOLVE) ? true : false;
+
         this->initialize_local_solve(level, solve_type);
 
         make_hess_updates = this->init_deriv_loc_solve(this->function(level), level, solve_type);
 
         converged = this->check_local_convergence(it, it_success, level, this->memory_.delta[level], solve_type);
+
         if (this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && this->verbose() == true &&
             mpi_world_rank() == 0) {
             this->print_level_info(level);
@@ -316,7 +350,8 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
 
             //----------------------------------------------------------------------------
-            //     solving constrained system to get correction and  building trial point
+            //     solving constrained system to get correction and  building trial
+            //     point
             //----------------------------------------------------------------------------
             // obtain correction
             UTOPIA_NO_ALLOC_BEGIN("RMTR::region5");
@@ -348,9 +383,9 @@ namespace utopia {
                 rho = 0.0;
             }
 
-            // update in hessian approx ...
+            // update of hessian approx ...
             // TODO:: could be done in more elegant way....
-            this->update_level(level);
+            this->update_level(level, energy_new);
 
             //----------------------------------------------------------------------------
             //     acceptance of trial point
@@ -372,10 +407,12 @@ namespace utopia {
             delta_converged = this->delta_update(rho, level, this->memory_.s_working[level]);
 
             // TODO:: minimize norm computations
-            // if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE &&
-            // (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) && check_iter_convergence(it, it_success,
-            // level, solve_type)) if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() <
-            // VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) &&
+            // if(this->norm_schedule()==OUTER_CYCLE && this->verbosity_level() <
+            // VERBOSITY_LEVEL_VERY_VERBOSE && (solve_type==POST_SMOOTHING || solve_type
+            // == COARSE_SOLVE) && check_iter_convergence(it, it_success, level,
+            // solve_type)) if(this->norm_schedule()==OUTER_CYCLE &&
+            // this->verbosity_level() < VERBOSITY_LEVEL_VERY_VERBOSE &&
+            // (solve_type==POST_SMOOTHING || solve_type == COARSE_SOLVE) &&
             // check_iter_convergence(it, it_success, level, solve_type))
             // {
             //     make_grad_updates = false;
@@ -385,27 +422,8 @@ namespace utopia {
             make_hess_updates = make_grad_updates;
             UTOPIA_NO_ALLOC_END();
 
-            if (make_grad_updates) {
-                // std::cout<<"grad updated... \n"; s
-                // Vector g_old = memory_.g[level];
-                UTOPIA_NO_ALLOC_BEGIN("RMTR::grad_computation");
-                this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
-                this->memory_.gnorm[level] = this->criticality_measure(level);
-                UTOPIA_NO_ALLOC_END();
+            rho = this->update_local_grad(make_grad_updates, level, rho, energy_new);
 
-                // this is just a safety check
-                if (!std::isfinite(this->memory_.gnorm[level])) {
-                    UTOPIA_NO_ALLOC_BEGIN("RMTR::region8");
-                    rho = 0;
-                    this->memory_.x[level] -= this->memory_.s[level];  // return iterate into its initial state
-                    this->compute_s_global(level, this->memory_.s_working[level]);
-                    this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
-                    this->memory_.gnorm[level] = this->criticality_measure(level);
-                    UTOPIA_NO_ALLOC_END();
-                }
-
-                // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
-            }
             // else
             // {
             //     make_hess_updates = false;
@@ -441,6 +459,7 @@ namespace utopia {
         }
 
         bool level_quit = ((this->criticality_measure_termination(level) == true) || delta_converged) ? true : false;
+
         return level_quit;
     }
 

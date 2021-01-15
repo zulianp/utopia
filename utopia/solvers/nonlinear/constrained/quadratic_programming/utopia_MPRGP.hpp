@@ -64,7 +64,8 @@ namespace utopia {
 
             this->update(A);
 
-            // as it is not clear ATM, how to apply preconditioner, we use it at least to obtain initial guess
+            // as it is not clear ATM, how to apply preconditioner, we use it at least
+            // to obtain initial guess
             if (precond_) {
                 // this is unconstrained step
                 precond_->apply(rhs, sol);
@@ -112,7 +113,8 @@ namespace utopia {
             assert(lb);
             assert(ub);
 
-            // utopia::out() <<x.comm().size() << " " << rhs.comm().size() << " " << lb->comm().size() << " "
+            // utopia::out() <<x.comm().size() << " " << rhs.comm().size() << " " <<
+            // lb->comm().size() << " "
             //           << ub->comm().size() << std::endl;
 
             this->project(*lb, *ub, x);
@@ -191,8 +193,8 @@ namespace utopia {
                 }
 
                 converged = this->check_convergence(it, gnorm, 1, 1);
-                // converged = (it > this->max_it() || gnorm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 ) ? true :
-                // false;
+                // converged = (it > this->max_it() || gnorm < std::min(0.1,
+                // std::sqrt(r_norm0)) * r_norm0 ) ? true : false;
             }
 
             // //cudaProfilerStop();
@@ -288,7 +290,8 @@ namespace utopia {
             //     auto d_x  = const_device_view(x);
             //     auto d_p  = const_device_view(p);
 
-            //     parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+            //     parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) ->
+            //     Scalar
             //     {
             //         Scalar li = d_lb.get(i);
             //         Scalar xi = d_x.get(i);
@@ -304,7 +307,8 @@ namespace utopia {
             //         }
             //     });
 
-            //     parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+            //     parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) ->
+            //     Scalar
             //     {
             //         Scalar ui = d_ub.get(i);
             //         Scalar xi = d_x.get(i);

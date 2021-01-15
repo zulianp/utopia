@@ -1,5 +1,5 @@
-#ifndef UTOPIA_MATRIX_TRANSFER_HPP
-#define UTOPIA_MATRIX_TRANSFER_HPP
+#ifndef UTOPIA_IPR_TRANSFER_HPP
+#define UTOPIA_IPR_TRANSFER_HPP
 
 #include "utopia_Transfer.hpp"
 
@@ -15,12 +15,12 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector>
-    class MatrixTransfer final : public Transfer<Matrix, Vector> {
+    class IPRTransfer final : public MatrixTransfer<Matrix, Vector> {
     public:
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         using Scalar = typename utopia::Traits<Vector>::Scalar;
 
-        MatrixTransfer(const std::shared_ptr<Matrix> &I)
+        IPRTransfer(const std::shared_ptr<Matrix> &I)
             :  // _I(I),
                // _R(transpose(I))
               I_norm_(0.0),
@@ -33,7 +33,7 @@ namespace utopia {
             _Pr = _R;
         }
 
-        MatrixTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P)
+        IPRTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P)
             : _I(I), _R(std::make_shared<Matrix>(transpose(*I))), _Pr(P), I_norm_(0.0), R_norm_(0.0), P_norm_(0.0) {
             assert(I);
             assert(P);
@@ -41,16 +41,16 @@ namespace utopia {
             // std::cout<<"proper transfer down ... \n";
         }
 
-        MatrixTransfer(const std::shared_ptr<Matrix> &I,
-                       const std::shared_ptr<Matrix> &R,
-                       const std::shared_ptr<Matrix> &P)
+        IPRTransfer(const std::shared_ptr<Matrix> &I,
+                    const std::shared_ptr<Matrix> &R,
+                    const std::shared_ptr<Matrix> &P)
             : _I(I), _R(R), _Pr(P), I_norm_(0.0), R_norm_(0.0), P_norm_(0.0) {
             assert(I);
             assert(R);
             assert(P);
         }
 
-        ~MatrixTransfer() override = default;
+        ~IPRTransfer() override = default;
 
         /*=====================================================
                             initialization
@@ -156,8 +156,9 @@ namespace utopia {
                 }
             }
 
-            // THIS works for serial (use it once we have a is_parallel and is_serial query)
-            // each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const Scalar value) {
+            // THIS works for serial (use it once we have a is_parallel and is_serial
+            // query) each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j,
+            // const Scalar value) {
             //     if(x.get(j) != 0. && std::abs(value) > off_diag_tol) {
             //         x_new.set(i, 1.);
             //     }
@@ -220,9 +221,20 @@ namespace utopia {
             return true;
         }
 
-        const Matrix &I() const { return *_I; }
+        const Matrix &I() override {
+            assert(_I);
+            return *_I;
+        }
 
-        const Matrix &R() const { return *_R; }
+        const Matrix &R() override {
+            assert(_R);
+            return *_R;
+        }
+
+        const Matrix &P() override {
+            assert(_Pr);
+            return *_Pr;
+        }
 
         Scalar interpolation_inf_norm() const override { return I_norm_ > 0 ? I_norm_ : norm_infty(*_I); }
 
