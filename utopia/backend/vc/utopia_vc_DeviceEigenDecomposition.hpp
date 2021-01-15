@@ -79,7 +79,7 @@ namespace utopia {
                 }
             }
 
-            UTOPIA_DEVICE_ASSERT(check(mat, eigen_values, eigen_vectors));
+            // UTOPIA_DEVICE_ASSERT(check(mat, eigen_values, eigen_vectors));
         }
 
     private:

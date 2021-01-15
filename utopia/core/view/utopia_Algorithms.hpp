@@ -15,7 +15,7 @@
 #endif  // UTOPIA_WITH_TRILINOS
 
 #ifdef UTOPIA_WITH_VC
-#include "utopia_Vc.hpp"
+#include "utopia_vc_Base.hpp"
 #endif  // UTOPIA_WITH_VC
 
 namespace utopia {

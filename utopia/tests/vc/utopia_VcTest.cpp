@@ -8,6 +8,8 @@
 
 #include "utopia_vc_DeviceEigenDecomposition.hpp"
 
+#include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
+
 namespace utopia {
 
     class VcTest {
@@ -348,12 +350,20 @@ namespace utopia {
             // }
         }
 
+#ifdef UTOPIA_WITH_PETSC
+        void simd_petsc_pbgs() { ProjectedBlockGaussSeidelSweep<PetscMatrix, N> pgs; }
+
+#endif  // UTOPIA_WITH_PETSC
+
         void run() {
             UTOPIA_RUN_TEST(simd_with_vec);
             UTOPIA_RUN_TEST(simd_mat_vec);
             UTOPIA_RUN_TEST(simd_mat_sum);
             UTOPIA_RUN_TEST(simd_mat_det);
             UTOPIA_RUN_TEST(simd_mat_eigs);
+#ifdef UTOPIA_WITH_PETSC
+            UTOPIA_RUN_TEST(simd_petsc_pbgs);
+#endif  // UTOPIA_WITH_PETSC
         }
     };
 

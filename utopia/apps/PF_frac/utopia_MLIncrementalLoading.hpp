@@ -12,6 +12,10 @@
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_make_unique.hpp"
 
+#ifdef UTOPIA_WITH_VC
+#include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
+#endif  // UTOPIA_WITH_VC
+
 #include <memory>
 
 namespace utopia {
@@ -49,6 +53,7 @@ namespace utopia {
             in.get("mprgp_smoother", mprgp_smoother_);
             in.get("hjsmn_smoother", hjsmn_smoother_);
             in.get("block_solver", block_solver_);
+            in.get("use_simd_acc", use_simd_acc_);
 
             init_ml_setup();
 
@@ -159,7 +164,13 @@ namespace utopia {
             } else {
                 auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
 
-                if (block_solver_) {
+#ifdef UTOPIA_WITH_VC
+                // FIXME Only Avx2 for the moment
+                if (use_simd_acc_ && FunctionSpace::NComponents == 4) {
+                    pgs->set_sweeper(utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>());
+                } else
+#endif  // UTOPIA_WITH_VC
+                    if (block_solver_) {
                     InputParameters params;
                     params.set("block_size", FunctionSpace::NComponents);
                     pgs->read(params);
@@ -453,6 +464,7 @@ namespace utopia {
         bool mprgp_smoother_;
         bool hjsmn_smoother_;
         bool block_solver_{true};
+        bool use_simd_acc_{false};
     };
 
 }  // namespace utopia

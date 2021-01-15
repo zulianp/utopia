@@ -4,8 +4,10 @@
 #include <algorithm>
 #include <cassert>
 #include <ostream>
-#include "utopia_Algorithms.hpp"
+
 #include "utopia_Base.hpp"
+
+#include "utopia_Algorithms.hpp"
 
 namespace utopia {
 
