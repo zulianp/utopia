@@ -11,7 +11,9 @@ if(UTOPIA_PETSC)
         cpu_assembler
         cpu_assembler/dmplex
         PF_frac
-        fe)
+        min_problems
+        fe
+    )
 
     set(LOCAL_HEADERS "")
     set(LOCAL_SOURCES "")

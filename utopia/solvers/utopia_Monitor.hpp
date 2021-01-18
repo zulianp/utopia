@@ -15,8 +15,8 @@ namespace utopia {
 
     public:
         /**
-         * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve
-         * process.
+         * @brief      Initialization of nonlinear solver. Includes nice printout and
+         * starts calculating time of solve process.
          *
          * @param[in]  method            The method.
          * @param[in]  status_variables  The status variables.
@@ -32,8 +32,8 @@ namespace utopia {
         virtual void exit_solver(const SizeType &it, const Scalar &convergence_reason) = 0;
 
         /**
-         * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of
-         * gradient and lenght of the step size.
+         * @brief      General function to check convergence in nonlinear solvers. It
+         * checks absolute, relative norm of gradient and lenght of the step size.
          *
          * @param[in]  norm_grad  The norm of the gradient.
          * @param[in]  rel_norm_grad  The relative norm of the gradient.

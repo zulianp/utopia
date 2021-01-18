@@ -40,6 +40,7 @@ namespace utopia {
         }
 
         void read(Input &in) override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::read(...)");
             IncrementalLoadingBase<FunctionSpace>::read(in);
 
             in.get("log_output_path", log_output_path_);
@@ -48,6 +49,7 @@ namespace utopia {
             in.get("save_output", save_output_);
             in.get("mprgp_smoother", mprgp_smoother_);
             in.get("hjsmn_smoother", hjsmn_smoother_);
+            in.get("block_solver", block_solver_);
 
             init_ml_setup();
 
@@ -60,6 +62,8 @@ namespace utopia {
 
             in.get("solver", *rmtr_);
             in.get("second_phase_ts", second_phase_time_stepper_);
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::read(...)");
         }
 
         bool init_ml_setup() {
@@ -127,16 +131,18 @@ namespace utopia {
 
             //////////////////////////////////////////////// init solver
             ///////////////////////////////////////////////////
-            // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER>
-            // >(n_levels_); rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>,
-            // SECOND_ORDER> >(n_levels_);
+            // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector,
+            // TRKornhuberBoxKornhuber<Matrix, Vector>, SECOND_ORDER>
+            // >(n_levels_); rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector,
+            // TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
 
             if (!rmtr_) {
                 rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER>>(
                     n_levels_);
             }
 
-            // auto tr_strategy_fine   = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
+            // auto tr_strategy_fine   =
+            // std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
             // tr_strategy_fine->l1(true);
 
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine;
@@ -154,7 +160,15 @@ namespace utopia {
                 tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
                 // tr_strategy_fine->verbose(true);
             } else {
-                tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+                auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+
+                if (block_solver_) {
+                    InputParameters params;
+                    params.set("block_size", FunctionSpace::NComponents);
+                    pgs->read(params);
+                }
+
+                tr_strategy_fine = pgs;
             }
 
             std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
@@ -169,7 +183,8 @@ namespace utopia {
 
             // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
             // ls->pc_type("bjacobi");
-            // auto tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
+            // auto tr_strategy_coarse =
+            // std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
 
             // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -199,6 +214,8 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////////////////
 
         void init_solution() override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::init_solution(...)");
+
             spaces_.back()->create_vector(this->solution_);
             spaces_.back()->create_vector(this->lb_);
             rename("X", this->solution_);
@@ -225,33 +242,89 @@ namespace utopia {
                 spaces_[l]->create_vector(coarse_sol);
 
                 transfers_[l - 1]->project_down(fine_sol, coarse_sol);
-                spaces_[l]->apply_constraints(coarse_sol);
+
+                std::cout << "coarse_sol: " << size(coarse_sol) << "  \n";
+
+                // spaces_[l]->apply_constraints(coarse_sol);
 
                 // transfers_[l]->restrict(fine_sol, coarse_sol);
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::init_solution(...)");
         }
 
         void write_to_file(FunctionSpace &space, const Scalar &time) override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::write_to_file(...)");
             if (save_output_) {
                 // only finest level
                 IncrementalLoadingBase<FunctionSpace>::write_to_file(space, time);
 
-                // all levels
+                // // all levels
                 // for(auto l=0; l < spaces_.size(); l++){
 
-                //     ProblemType * fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
-                //     Vector & sol  = fun->old_solution();
+                //     ProblemType * fun = dynamic_cast<ProblemType
+                //     *>(level_functions_[l].get()); Vector & sol  = fun->old_solution();
                 //     rename("X", sol);
 
-                //     spaces_[l]->write(this->output_path_+"_l_"+ std::to_string(l)+"_"+std::to_string(time)+".vtr",
+                //     std::cout<<"------ lev: "<< l << "   \n";
+                //     std::cout<<"sol: "<< size(sol) << "  \n";
+
+                //     auto name = this->output_path_+"_lev_"+
+                //     std::to_string(l)+"_time_"+std::to_string(time)+".vtk";
+                //     std::cout<<"------ name: "<< name << " \n";
+
+                //     spaces_[l]->write(name, sol);
+                // }
+
+                // Vector sol = this->solution_;
+
+                // for (auto l = n_levels_ - 1; l > 0; l--)
+                // {
+
+                //     ProblemType * fun_coarse = dynamic_cast<ProblemType
+                //     *>(level_functions_[l-1].get()); Vector sol_coarse  =
+                //     0*fun_coarse->get_eq_constrains_flg();
+
+                //     // transfers_[l - 1]->project_down(sol, sol_coarse);
+                //     transfers_[l - 1]->restrict(sol, sol_coarse);
+
+                //     // L2-fit projection
+                //     // IPTransferNested<Matrix, Vector> * tr_nested =
+                //     dynamic_cast<IPTransferNested<Matrix, Vector> *>(transfers_[l -
+                //     1].get());
+                //     // const Matrix & I = tr_nested->I();
+                //     // Vector s_help = transpose(I)*sol;
+                //     // Matrix II = transpose(I) * I;
+                //     // auto direct_solver =
+                //     std::make_shared<LUDecomposition<PetscMatrix, PetscVector>>();
+                //     // direct_solver->solve(II, s_help, sol_coarse);
+
+                //     spaces_[l-1]->apply_constraints(sol_coarse);
+                //     rename("X", sol_coarse);
+
+                //     auto name = this->output_path_+"_lev_"+
+                //     std::to_string(l-1)+"_time_"+std::to_string(time)+".vtr";
+                //     spaces_[l-1]->write(name,
+                //     sol_coarse);
+
+                //     transfers_[l - 1]->interpolate(sol_coarse, sol);
+                //     auto name2 = this->output_path_+"_lev_up_"+
+                //     std::to_string(l)+"_time_"+std::to_string(time)+".vtr"; rename("X",
+                //     sol); spaces_[l]->apply_constraints(sol); spaces_[l]->write(name2,
                 //     sol);
+
+                //     sol = sol_coarse;
                 // }
 
                 Utopia::instance().set("log_output_path", log_output_path_);
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::write_to_file(...)");
         }
 
         void prepare_for_solve() override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::prepare_for_solve(...)");
+
             for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
                 BC_conditions_[l]->emplace_time_dependent_BC(this->time_);
             }
@@ -287,7 +360,8 @@ namespace utopia {
 
             // if(this->use_constant_pressure_){
             // fe_problem_->setup_constant_pressure_field(press_ts);
-            // std::cout<<"----- yes, constant pressure, "<< press_ts << " ......... \n";
+            // std::cout<<"----- yes, constant pressure, "<< press_ts << " .........
+            // \n";
 
             for (SizeType l = 0; l < n_levels_; l++) {
                 auto *fun = dynamic_cast<ProblemType *>(level_functions_[l].get());
@@ -299,12 +373,17 @@ namespace utopia {
             //         Vector & pressure_vec =  fe_problem_->pressure_field();
             //         // set_nonzero_elem_to(pressure_vec, press_ts);
 
-            //         set_nonzero_elem_to(pressure_vec, (this->time_ * this->pressure_increase_factor_));
+            //         set_nonzero_elem_to(pressure_vec, (this->time_ *
+            //         this->pressure_increase_factor_));
             // }
             // }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::prepare_for_solve(...)");
         }
 
         void update_time_step(const SizeType &conv_reason) override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
+
             if (this->adjust_dt_on_failure_ && conv_reason < 0) {
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->get_old_solution(this->solution_);
@@ -369,9 +448,13 @@ namespace utopia {
                     this->time_step_counter_ += 1;
                 }
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
         }
 
         void run() override {
+            UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::run(...)");
+
             if (!init_) {
                 init_ml_setup();
             }
@@ -382,10 +465,12 @@ namespace utopia {
             this->time_step_counter_ = 0;
             while (this->time_ < this->final_time_) {
                 if (mpi_world_rank() == 0) {
-                    utopia::out() << "###################################################################### \n";
+                    utopia::out() << "#####################################################"
+                                     "################# \n";
                     utopia::out() << "Time-step: " << this->time_step_counter_ << "  time:  " << this->time_
                                   << "  dt:  " << this->dt_ << " \n";
-                    utopia::out() << "###################################################################### \n";
+                    utopia::out() << "#####################################################"
+                                     "################# \n";
                 }
 
                 prepare_for_solve();
@@ -396,6 +481,8 @@ namespace utopia {
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
                 update_time_step(sol_status.reason);
             }
+
+            UTOPIA_TRACE_REGION_END("MLIncrementalLoading::run(...)");
         }
 
     private:
@@ -420,6 +507,7 @@ namespace utopia {
 
         bool mprgp_smoother_;
         bool hjsmn_smoother_;
+        bool block_solver_{true};
     };
 
 }  // namespace utopia

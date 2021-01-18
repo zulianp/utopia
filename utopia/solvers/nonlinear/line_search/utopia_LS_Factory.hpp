@@ -65,7 +65,8 @@ namespace utopia {
     }
 
     /**
-     * @brief      Function to solve nonlinear system with line search Newton solver.
+     * @brief      Function to solve nonlinear system with line search Newton
+     *solver.
      *
      * @param      fun     The fun with nonlinear context.
      * @param      x       The initial guess/ solution.
@@ -86,7 +87,8 @@ namespace utopia {
                                             Vector &x,
                                             const SolverType &tag,
                                             Input &params) {
-        // auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
+        // auto lin_solver = LinearSolverFactory<Matrix,
+        // Vector>::new_linear_solver(params.lin_solver_type());
         auto lin_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>();
         Newton<Matrix, Vector> ls_solver(lin_solver);
         auto strategy = line_search_strategy<Vector>(tag);

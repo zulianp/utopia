@@ -43,8 +43,8 @@ namespace utopia {
      */
 
     /**
-     * @brief      Solves the linear system A * x = rhs. If no params are provided, solver is choosen and set-up by
-     * default.
+     * @brief      Solves the linear system A * x = rhs. If no params are provided,
+     * solver is choosen and set-up by default.
      *
      * @param[in]  A       The A.
      * @param[in]  rhs     The right hand side.

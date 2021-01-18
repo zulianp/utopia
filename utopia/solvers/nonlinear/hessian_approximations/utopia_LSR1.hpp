@@ -98,7 +98,8 @@ namespace utopia {
 
             if (nom / denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom)) {
                 // if(mpi_world_rank()==0 ){
-                //     utopia_warning("L-SR1: Curvature condition not satified. Skipping update. \n");
+                //     utopia_warning("L-SR1: Curvature condition not satified. Skipping
+                //     update. \n");
                 // }
 
                 return false;

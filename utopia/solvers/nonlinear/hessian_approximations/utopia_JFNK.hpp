@@ -20,6 +20,12 @@ namespace utopia {
             x_k_ = x_k;
             g_ = g;
 
+            auto vec_lo = layout(g);
+
+            grad_pertubed_.values(vec_lo, 0.0);
+            ones_.values(vec_lo, 1.0);
+            x_p_.values(vec_lo, 0.0);
+
             this->initialized(true);
         }
 
@@ -42,9 +48,10 @@ namespace utopia {
             return false;
         }
 
+        // TODO:: make more memory efficient
         bool apply_H(const Vector &v, Vector &result) override {
-            Vector aa = std::sqrt(eps_) * (local_values(local_size(v).get(0), 1.0) + x_k_);
-            Scalar sum_a = sum(aa);
+            x_p_ = std::sqrt(eps_) * (ones_ + x_k_);
+            Scalar sum_a = sum(x_p_);
 
             SizeType n_glob = size(result).get(0);
 
@@ -57,12 +64,10 @@ namespace utopia {
                 per_ = sum_a / n_glob;
             }
 
-            Vector x_p = x_k_ + (per_ * v);
+            x_p_ = x_k_ + (per_ * v);
+            fun_.gradient(x_p_, grad_pertubed_);
 
-            Vector grad_pertubed;
-            fun_.gradient(x_p, grad_pertubed);
-
-            result = (1. / per_) * (grad_pertubed - g_);
+            result = (1. / per_) * (grad_pertubed_ - g_);
 
             return true;
         }
@@ -74,7 +79,7 @@ namespace utopia {
     private:
         Scalar eps_;
         const FunctionBase<Vector> &fun_;
-        Vector x_k_, g_;
+        Vector x_k_, g_, ones_, grad_pertubed_, x_p_;
     };
 
 }  // namespace utopia

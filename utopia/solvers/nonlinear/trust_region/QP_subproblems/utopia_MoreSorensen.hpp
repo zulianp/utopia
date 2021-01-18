@@ -7,12 +7,13 @@
 
 namespace utopia {
     /**
-     * @brief      Class for More Sorensen minimization algorithm, where initialization of lambda_0 is based on eigen
-     * sol.
+     * @brief      Class for More Sorensen minimization algorithm, where
+     * initialization of lambda_0 is based on eigen sol.
      *
-     * 			   WARNING:: 	Computation of direction could be more efficient by using cholesky decomposition and store just
-     * factors, but it is a bit anoying to do so with petsc => we solve system 2 \times, which is less efficient, but ok
-     * as this is just proof of concept solver
+     * 			   WARNING:: 	Computation of direction could be more
+     * efficient by using cholesky decomposition and store just factors, but it is a
+     * bit anoying to do so with petsc => we solve system 2 \times, which is less
+     * efficient, but ok as this is just proof of concept solver
      */
     template <class Matrix, class Vector>
     class MoreSorensenEigen final : public TRSubproblem<Matrix, Vector> {
@@ -87,7 +88,8 @@ namespace utopia {
             else
                 s_k.set(0.0);
 
-            // ---------------------- initialization  of lambda_0 ------------------------
+            // ---------------------- initialization  of lambda_0
+            // ------------------------
             eigen_solver_->portion_of_spectrum("smallest_real");
             eigen_solver_->number_of_eigenvalues(1);
             eigen_solver_->solve(H);
@@ -114,7 +116,8 @@ namespace utopia {
                     Scalar s_k_eigen, sk_sk;
                     dots(s_k, eigenvector_, s_k_eigen, s_k, s_k, sk_sk);
 
-                    // we are in hard case, let's find solution on boundary, which is orthogonal to E_1
+                    // we are in hard case, let's find solution on boundary, which is
+                    // orthogonal to E_1
                     //                     because eigenvector is normalized
                     Scalar alpha = this->quadratic_function(
                         1.0, 2.0 * s_k_eigen, sk_sk - (this->current_radius() * this->current_radius()));

@@ -52,6 +52,16 @@ namespace utopia {
             run_qp_solver(pgs);
         }
 
+        void nblockgs_test() const {
+            InputParameters params;
+            params.set("block_size", 2);
+
+            ProjectedGaussSeidel<Matrix, Vector> pgs;
+            pgs.read(params);
+
+            run_qp_solver(pgs);
+        }
+
         void MPRGP_test() const {
             MPGRP<Matrix, Vector> qp_solver;
             run_qp_solver(qp_solver);
@@ -145,8 +155,8 @@ namespace utopia {
 
             // std::cout<<"A: "<< local_size(A).get(0) << "  \n";
             // std::cout<<"Q: "<< local_size(Q).get(0) << "  \n";
-            // std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<   "  \n";
-            // std::cout<<"I: "<< local_size(Ih_fine).get(0) << "  \n";
+            // std::cout<<"R: "<< local_size(R).get(0) << ","<<local_size(R).get(1) <<
+            // "  \n"; std::cout<<"I: "<< local_size(Ih_fine).get(0) << "  \n";
             // std::cout<<"rhs: "<< local_size(rhs).get(0) << "  \n";
 
             R = transpose(R);
@@ -170,9 +180,9 @@ namespace utopia {
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
             interpolation_operators[1] =
-                std::make_shared<MatrixTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(QtIh));
+                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(QtIh));
             interpolation_operators[0] =
-                std::make_shared<MatrixTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(Ih1));
+                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(Ih1));
 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
@@ -201,6 +211,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(pcg_test);
             UTOPIA_RUN_TEST(ngs_test);
             UTOPIA_RUN_TEST(MPRGP_test);
+            UTOPIA_RUN_TEST(nblockgs_test);
         }
 
         void run_GS_QR() {
@@ -253,7 +264,8 @@ namespace utopia {
 
     //     template<class QPSolver>
     //     void run_qp_solver(QPSolver &qp_solver) const {
-    //         QPSolverTestProblem<Matrix, Vector>::run(n, verbose, qp_solver, true);
+    //         QPSolverTestProblem<Matrix, Vector>::run(n, verbose, qp_solver,
+    //         true);
     //     }
 
     //     void pg_new_test()

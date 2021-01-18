@@ -42,6 +42,17 @@ namespace utopia {
     UTOPIA_INLINE_FUNCTION typename Traits<Expr>::SizeType cols(const DeviceTranspose<Expr> &t) {
         return utopia::rows(t.expr());
     }
+
+    template <class Derived>
+    UTOPIA_INLINE_FUNCTION DeviceTranspose<Derived> transpose(const DeviceExpression<Derived> &expr) {
+        return DeviceTranspose<Derived>(expr.derived());
+    }
+
+    template <class Derived>
+    UTOPIA_INLINE_FUNCTION UTOPIA_STORE_CONST(Derived) transpose(const DeviceTranspose<Derived> &expr) {
+        return expr.expr();
+    }
+
 }  // namespace utopia
 
 #endif  // UTOPIA_DEVICE_TRANSPOSE_HPP

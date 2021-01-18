@@ -3,6 +3,9 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 
+#include "utopia_StoreAs.hpp"
+#include "utopia_Unfold.hpp"
+
 namespace utopia {
 
     template <class Expr>

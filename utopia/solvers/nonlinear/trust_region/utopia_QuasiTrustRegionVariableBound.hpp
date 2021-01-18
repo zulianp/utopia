@@ -115,7 +115,9 @@ namespace utopia {
                     tr_subproblem->solve(*multiplication_action, g_help, p_k);
                     this->solution_status_.num_linear_solves++;
                 } else {
-                    utopia_warning("QUasiTrustRegionVariableBound::Set suitable TR subproblem.... \n ");
+                    utopia_warning(
+                        "QUasiTrustRegionVariableBound::Set suitable TR subproblem.... "
+                        "\n ");
                 }
 
                 pred = this->get_pred(g, *multiplication_action, p_k);
@@ -204,14 +206,17 @@ namespace utopia {
             layout_ = layout;
         }
 
-        // void delta_update_new(const Scalar & rho, const Vector & p_k, Scalar & delta, const Vector & Pg)
+        // void delta_update_new(const Scalar & rho, const Vector & p_k, Scalar &
+        // delta, const Vector & Pg)
         // {
         //   Vector Bp_k;
 
-        //   auto multiplication_action = this->hessian_approx_strategy_->build_apply_H();
+        //   auto multiplication_action =
+        //   this->hessian_approx_strategy_->build_apply_H();
         //   multiplication_action->apply(p_k, Bp_k);
 
-        //   Scalar contraction_factor = dot(Pg, p_k)/dot(p_k, Bp_k) * norm_infty(p_k);
+        //   Scalar contraction_factor = dot(Pg, p_k)/dot(p_k, Bp_k) *
+        //   norm_infty(p_k);
         //   // std::cout<<"contraction_factor: "<< contraction_factor << "  \n";
 
         //   contraction_factor = std::abs(contraction_factor);

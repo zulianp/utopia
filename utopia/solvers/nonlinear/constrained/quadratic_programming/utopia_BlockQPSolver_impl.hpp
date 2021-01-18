@@ -59,6 +59,7 @@ namespace utopia {
         // TODO
         assert(false && "IMPLEMENT ME");
 
+        UTOPIA_TRACE_REGION_END("BlockQPSolver::smooth");
         return false;
     }
 
@@ -68,7 +69,11 @@ namespace utopia {
 
         if (rhs.comm().size() == 1) {
             serial_solver_->set_box_constraints(BoxConstraints<Vector>(this->lower_bound(), this->upper_bound()));
-            return serial_solver_->apply(rhs, x);
+
+            auto ok = serial_solver_->apply(rhs, x);
+
+            UTOPIA_TRACE_REGION_END("BlockQPSolver::apply");
+            return ok;
         }
 
         this->init_solver("utopia BlockQPSolver comm.size = " + std::to_string(rhs.comm().size()),
@@ -114,7 +119,8 @@ namespace utopia {
 
         /////////////// global to local ///////////////
 
-        // compute bound difference (ATTENTION !!!! residual_ is used as a temporary buffer)
+        // compute bound difference (ATTENTION !!!! residual_ is used as a temporary
+        // buffer)
         residual_ = this->get_lower_bound() - x;
         global_to_local(residual_, *local_lb_);
 
@@ -167,7 +173,8 @@ namespace utopia {
     //     std::vector<SizeType> nnz(n_local, 0);
 
     //     const SizeType offset = temp.row_range().begin();
-    //     temp.read([&](const SizeType &i, const SizeType &, const Scalar &) { ++nnz[i - offset]; });
+    //     temp.read([&](const SizeType &i, const SizeType &, const Scalar &) {
+    //     ++nnz[i - offset]; });
 
     //     if (!nnz.empty()) {
     //         max_nnz = *std::max_element(nnz.begin(), nnz.end());
@@ -176,7 +183,8 @@ namespace utopia {
     //     local.sparse(serial_layout(n_local, n_local), max_nnz, 0);
 
     //     Write<Matrix> w_(local);
-    //     temp.read([&](const SizeType &i, const SizeType &j, const Scalar &val) { local.set(i, j, val); });
+    //     temp.read([&](const SizeType &i, const SizeType &j, const Scalar &val) {
+    //     local.set(i, j, val); });
     // }
 
     template <class Matrix, class Vector>
@@ -186,6 +194,7 @@ namespace utopia {
 
         if (op->comm().size() == 1) {
             serial_solver_->update(op);
+            UTOPIA_TRACE_REGION_END("BlockQPSolver::update");
             return;
         }
 
@@ -193,6 +202,7 @@ namespace utopia {
         local_block_view(*op, *A_view_ptr);
         // build_local_matrix(*op, *A_view_ptr);
 
+        // serial_solver_->update(std::shared_ptr<const Matrix>(A_view_ptr));
         serial_solver_->update(A_view_ptr);
 
         init_memory(row_layout(*op));
@@ -208,7 +218,8 @@ namespace utopia {
         auto g_view = const_local_view_device(g);
         auto l_view = local_view_device(l);
 
-        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { l_view.set(i, g_view.get(i)); });
+        parallel_for(
+            l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { l_view.set(i, g_view.get(i)); });
     }
 
     template <class Matrix, class Vector>
@@ -222,7 +233,8 @@ namespace utopia {
         auto g_view = local_view_device(g);
         auto l_view = const_local_view_device(l);
 
-        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.set(i, l_view.get(i)); });
+        parallel_for(
+            l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.set(i, l_view.get(i)); });
     }
 
     template <class Matrix, class Vector>
@@ -236,7 +248,8 @@ namespace utopia {
         auto g_view = local_view_device(g);
         auto l_view = const_local_view_device(l);
 
-        parallel_for(l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.add(i, l_view.get(i)); });
+        parallel_for(
+            l.range_device(), UTOPIA_LAMBDA(const SizeType &i) { g_view.add(i, l_view.get(i)); });
     }
 
 }  // namespace utopia

@@ -56,7 +56,8 @@ namespace utopia {
             if (constraints_->has_upper_bound())
                 upbo = *constraints_->upper_bound();
             else
-                utopia::out() << "NonlinSemismoothNewton does not support other types at the moment.... \n";
+                utopia::out() << "NonlinSemismoothNewton does not support other types at "
+                                 "the moment.... \n";
 
             this->linear_solve(G, upbo, Ginvg);
 

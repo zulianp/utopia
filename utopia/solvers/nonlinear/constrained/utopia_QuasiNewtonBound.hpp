@@ -80,7 +80,8 @@ namespace utopia {
                     qp_solver->solve(*multiplication_action, g_minus, s);
                 } else {
                     utopia_error(
-                        "utopia::QuasiNewtonBound: MF solver which is not QPSolver is not suported at the moment... "
+                        "utopia::QuasiNewtonBound: MF solver which is not QPSolver is not "
+                        "suported at the moment... "
                         "\n");
                 }
 

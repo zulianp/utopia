@@ -58,8 +58,8 @@ namespace utopia {
             if (this->has_bound()) {
                 while (it++ < n_sweeps) {
                     step(A, b, x);
-                    std::cout
-                        << "--------------------------------------------- sweep --------------------------------- \n";
+                    std::cout << "--------------------------------------------- sweep "
+                                 "--------------------------------- \n";
                 }
             } else {
                 while (unconstrained_step(A, b, x) && it++ < n_sweeps) {

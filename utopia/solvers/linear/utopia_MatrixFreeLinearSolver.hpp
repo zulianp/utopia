@@ -3,6 +3,7 @@
 
 #include "utopia_Instance.hpp"
 #include "utopia_Logger.hpp"
+#include "utopia_PreconditionedSolverInterface.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_SolverForwardDeclarations.hpp"
 
@@ -11,9 +12,12 @@ namespace utopia {
     template <class Vector>
     class MatrixFreeLinearSolver : virtual public Configurable,
                                    virtual public Clonable,
-                                   virtual public Preconditioner<Vector> {
+                                   virtual public Preconditioner<Vector>,
+                                   virtual public PreconditionedSolverInterface<Vector> {
     public:
         using Preconditioner<Vector>::init_memory;
+        using Preconditioner<Vector>::update;
+        using PreconditionedSolverInterface<Vector>::update;
 
         ~MatrixFreeLinearSolver() override = default;
         virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) = 0;
@@ -62,7 +66,8 @@ namespace utopia {
          * @param[in]  b     The right hand side.
          * @param      x     The initial guess/solution.
          *
-         * @return true if the linear system has been solved up to required tollerance. False otherwise
+         * @return true if the linear system has been solved up to required
+         * tollerance. False otherwise
          */
         bool apply(const Vector &b, Vector &x) override {
             return solve(operator_cast<Vector>(*this->get_operator()), b, x);
@@ -84,7 +89,9 @@ namespace utopia {
     template <class Vector>
     class EmptyPrecondMatrixFreeLinearSolver final : public MatrixFreeLinearSolver<Vector> {
     public:
-        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) { precond_ = precond; }
+        void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override {
+            precond_ = precond;
+        }
 
         bool solve(const Operator<Vector> & /*A*/, const Vector &rhs, Vector &sol) override { return apply(rhs, sol); }
 

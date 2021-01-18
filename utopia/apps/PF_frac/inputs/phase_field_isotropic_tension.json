@@ -9,7 +9,7 @@
     "use_dense_hessian" : false,
     "check_derivatives" : false,
     "tension_test" : true, 
-    "num_time_steps" : 100, 
+    "num_time_steps" : 2, 
     "dt" : 1e-4,     
     "use_mprgp" : true,
     "adjust_dt_on_failure": false, 

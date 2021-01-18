@@ -7,6 +7,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LevelMemory.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_MultiLevelVariableBoundInterface.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
 #include "utopia_IdentityTransfer.hpp"
@@ -62,15 +63,16 @@ namespace utopia {
                 auto d_l = const_device_view(active_lower(level));
                 auto d_x = const_device_view(x);
 
-                Device::parallel_reduce(range(x),
-                                        UTOPIA_LAMBDA(const SizeType i)->SizeType {
-                                            const Scalar xi = d_x.get(i);
-                                            const Scalar li = d_l.get(i);
-                                            const Scalar ui = d_u.get(i);
+                Device::parallel_reduce(
+                    range(x),
+                    UTOPIA_LAMBDA(const SizeType i)->SizeType {
+                        const Scalar xi = d_x.get(i);
+                        const Scalar li = d_l.get(i);
+                        const Scalar ui = d_u.get(i);
 
-                                            return static_cast<SizeType>(xi < li || xi > ui);
-                                        },
-                                        n_terminates);
+                        return static_cast<SizeType>(xi < li || xi > ui);
+                    },
+                    n_terminates);
             }
 
             bool terminate = n_terminates > 0;
@@ -92,18 +94,19 @@ namespace utopia {
                 auto d_ub = const_local_view_device(ub);
                 auto x_view = local_view_device(x);
 
-                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                    Scalar li = d_lb.get(i);
-                    Scalar ui = d_ub.get(i);
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                        Scalar li = d_lb.get(i);
+                        Scalar ui = d_ub.get(i);
 
-                    auto xi = x_view.get(i);
+                        auto xi = x_view.get(i);
 
-                    if (li >= xi) {
-                        x_view.set(i, li);
-                    } else {
-                        x_view.set(i, (ui <= xi) ? ui : xi);
-                    }
-                });
+                        if (li >= xi) {
+                            x_view.set(i, li);
+                        } else {
+                            x_view.set(i, (ui <= xi) ? ui : xi);
+                        }
+                    });
             }
         }
 
@@ -124,7 +127,8 @@ namespace utopia {
 
     protected:
         BoxConstraints box_constraints_;  // constraints on the finest level....
-        bool has_box_constraints_;        // as we can run rmtr with inf. norm also without constraints...
+        bool has_box_constraints_;        // as we can run rmtr with inf. norm also without
+                                          // constraints...
 
         const std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> &transfer_;
 

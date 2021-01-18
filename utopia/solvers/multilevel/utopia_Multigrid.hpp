@@ -118,8 +118,8 @@ namespace utopia {
             update();
         }
 
-        /*! @brief if no galerkin assembly is used but instead set_linear_operators is used.
-                   One can call this update instead of the other one.
+        /*! @brief if no galerkin assembly is used but instead set_linear_operators is
+           used. One can call this update instead of the other one.
          */
         void update() {
             smoothers_.resize(this->n_levels());
@@ -266,7 +266,8 @@ namespace utopia {
             for (SizeType k = 0; k < this->mg_type(); k++) {
                 // presmoothing
                 smoothing(l, r, c, this->pre_smoothing_steps());
-                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
+                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());",
+                // c);
 
                 r_R = r - level(l).A() * c;
 
@@ -275,12 +276,14 @@ namespace utopia {
                 // residual transfer
                 this->transfer(l - 1).restrict(r_R, memory.r[l - 1]);
 
-                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
+                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R,
+                // memory.r[l-1]);", memory.r[l-1]);
 
                 // NEW
                 if (this->must_generate_masks()) {
                     this->apply_mask(l - 1, memory.r[l - 1]);
-                    // UTOPIA_RECORD_VALUE("this->apply_mask(l-1, memory.r[l-1]);", memory.r[l-1]);
+                    // UTOPIA_RECORD_VALUE("this->apply_mask(l-1, memory.r[l-1]);",
+                    // memory.r[l-1]);
                 }
 
                 assert(!empty(memory.r[l - 1]));
@@ -289,7 +292,8 @@ namespace utopia {
 
                 // correction transfer
                 this->transfer(l - 1).interpolate(memory.c[l - 1], c_I);
-                // UTOPIA_RECORD_VALUE("this->transfer(l-1).interpolate(memory.c[l-1], c_I);", c_I);
+                // UTOPIA_RECORD_VALUE("this->transfer(l-1).interpolate(memory.c[l-1],
+                // c_I);", c_I);
 
 #ifndef NDEBUG
                 const Scalar err = norm2(r_R);
@@ -314,7 +318,8 @@ namespace utopia {
                 // postsmoothing
                 smoothing(l, r, c, this->post_smoothing_steps());
 
-                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
+                // UTOPIA_RECORD_VALUE("smoothing(l, r, c,
+                // this->post_smoothing_steps());", c);
 
 #ifndef NDEBUG
                 const Scalar new_err = norm2(r - level(l).A() * c);
@@ -334,7 +339,8 @@ namespace utopia {
         /**
          * @brief      Function implements full multigrid cycle.
          *              TODO:: fix
-         *              - can be used jsut with homegenous BC - due to restriction of RHS
+         *              - can be used jsut with homegenous BC - due to restriction of
+         * RHS
          *
          *
          * @param[in]  rhs   The rhs.

@@ -7,7 +7,8 @@
 
 namespace utopia {
     /**
-     * @brief      Newton Line Search class specified for nonlinear least square eq. \n
+     * @brief      Newton Line Search class specified for nonlinear least square eq.
+     * \n
      *
      */
     template <class Matrix, class Vector>
@@ -24,8 +25,8 @@ namespace utopia {
 
         bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) {
             if (!this->ls_strategy_)
-                std::cerr
-                    << "utopia:: Line-search base:: Missing ls_strategy. Please provide before executing solve. \n";
+                std::cerr << "utopia:: Line-search base:: Missing ls_strategy. Please "
+                             "provide before executing solve. \n";
 
             using namespace utopia;
             this->init_solver("NEWTON LINE SEARCH - normal eq.",
@@ -92,7 +93,8 @@ namespace utopia {
         }
 
     private:
-        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
+        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to
+                                                     obtain step \f$ \alpha_k \f$ */
     };
 
 }  // namespace utopia

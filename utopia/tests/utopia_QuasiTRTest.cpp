@@ -67,7 +67,7 @@ namespace utopia {
                 auto precond = hessian_approx->build_Hinv_precond();
                 lsolver->set_preconditioner(precond);
 
-                QuasiNewton<Vector> solver(hessian_approx, lsolver);
+                QuasiNewton<Matrix, Vector> solver(hessian_approx, lsolver);
 
                 auto line_search = std::make_shared<utopia::Backtracking<Vector> >();
                 solver.set_line_search_strategy(line_search);
@@ -81,7 +81,7 @@ namespace utopia {
                 auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >();
                 auto precond = hessian_approx->build_Hinv_precond();
                 lsolver->set_preconditioner(precond);
-                QuasiNewton<Vector> solver(hessian_approx, lsolver);
+                QuasiNewton<Matrix, Vector> solver(hessian_approx, lsolver);
                 auto line_search = std::make_shared<utopia::Backtracking<Vector> >();
                 solver.set_line_search_strategy(line_search);
 

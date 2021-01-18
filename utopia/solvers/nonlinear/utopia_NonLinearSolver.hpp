@@ -11,8 +11,8 @@
 
 namespace utopia {
     /**
-     * @brief      The base class for all nonlinear solvers. Class provides basic functions used in all nonlinear
-     * solvers.
+     * @brief      The base class for all nonlinear solvers. Class provides basic
+     * functions used in all nonlinear solvers.
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -69,8 +69,8 @@ namespace utopia {
         }
 
         /**
-         * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve
-         * process.
+         * @brief      Initialization of nonlinear solver. Includes nice printout and
+         * starts calculating time of solve process.
          *
          * @param[in]  method            The method.
          * @param[in]  status_variables  The status variables.
@@ -112,8 +112,8 @@ namespace utopia {
         }
 
         /**
-         * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of
-         * gradient and lenght of the step size.
+         * @brief      General function to check convergence in nonlinear solvers. It
+         * checks absolute, relative norm of gradient and lenght of the step size.
          *
          * @param[in]  g_norm  The norm of the gradient.
          * @param[in]  r_norm  The relative norm of the gradient.

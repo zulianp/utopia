@@ -45,6 +45,8 @@ namespace utopia {
          * @return     true
          */
         bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override {
+            UTOPIA_TRACE_REGION_BEGIN("TrustRegionVariableBound::solve(...)");
+
             using namespace utopia;
 
             // passing solver and parameters into subproblem
@@ -179,6 +181,7 @@ namespace utopia {
             // some benchmarking
             TrustRegionBase::print_statistics(it, it_successful);
 
+            UTOPIA_TRACE_REGION_END("TrustRegionVariableBound::solve(...)");
             return false;
         }
 
