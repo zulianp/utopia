@@ -1,6 +1,7 @@
 #include "utopia_FEApps.hpp"
 #include "utopia_ContactApp.hpp"
 #include "utopia_ConvertToDiegoMeshApp.hpp"
+#include "utopia_DescribeMeshApp.hpp"
 #include "utopia_DifferenceApp.hpp"
 #include "utopia_EikonalApp.hpp"
 #include "utopia_ElasticityApp.hpp"
@@ -84,5 +85,6 @@ namespace utopia {
         add_app(MassApp::command(), utopia::make_unique<MassApp>());
         add_app(DifferenceApp::command(), utopia::make_unique<DifferenceApp>());
         add_app(ConvertToDiegoMeshApp::command(), utopia::make_unique<ConvertToDiegoMeshApp>());
+        add_app(DescribeMeshApp::command(), utopia::make_unique<DescribeMeshApp>());
     }
 }  // namespace utopia

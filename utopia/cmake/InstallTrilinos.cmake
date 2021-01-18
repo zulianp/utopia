@@ -62,6 +62,13 @@ if(NOT TRILINOS_FOUND)
         "-DTrilinos_ENABLE_Ifpack2=ON"
         "-DTrilinos_ENABLE_MueLu=ON"
         "-DTrilinos_ENABLE_NOX=ON "
+        "-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON"
+        "-DTpetra_INST_DOUBLE:BOOL=ON"
+        "-DTpetra_INST_INT_LONG:BOOL=ON"
+        "-DTpetra_INST_INT_LONG_LONG:BOOL=OFF"
+        "-DTpetra_INST_COMPLEX_DOUBLE=OFF"
+        "-DTrilinos_ENABLE_TESTS:BOOL=OFF"
+        "-DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=OFF "
         "-DAmesos2_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DIfpack2_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DMueLu_ENABLE_EXPLICIT_INSTANTIATION=ON"
@@ -73,6 +80,27 @@ if(NOT TRILINOS_FOUND)
         "-DTpetra_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON"
         "-DXpetra_ENABLE_EXPLICIT_INSTANTIATION=ON")
+
+    list(
+        APPEND
+        TRILINOS_CMAKE_ARGS
+        "-DTrilinos_ENABLE_STKMesh:BOOL=ON"
+        "-DTrilinos_ENABLE_STKSimd:BOOL=ON"
+        "-DTrilinos_ENABLE_STKIO:BOOL=ON"
+        "-DTrilinos_ENABLE_STKTransfer:BOOL=ON"
+        "-DTrilinos_ENABLE_STKSearch:BOOL=ON"
+        "-DTrilinos_ENABLE_STKUtil:BOOL=ON"
+        "-DTrilinos_ENABLE_STKTopology:BOOL=ON"
+        "-DTrilinos_ENABLE_STKBalance:BOOL=OFF"
+        "-DTrilinos_ENABLE_STKUnit_tests:BOOL=OFF"
+        "-DTrilinos_ENABLE_STKUnit_test_utils:BOOL=OFF"
+        "-DTrilinos_ENABLE_Gtest:BOOL=ON"
+        "-DTrilinos_ENABLE_SEACASExodus:BOOL=ON"
+        "-DTrilinos_ENABLE_SEACASEpu:BOOL=ON"
+        "-DTrilinos_ENABLE_SEACASExodiff:BOOL=ON"
+        "-DTrilinos_ENABLE_SEACASNemspread:BOOL=ON"
+        "-DTrilinos_ENABLE_SEACASNemslice:BOOL=ON"
+        "-DTrilinos_ENABLE_SEACASIoss:BOOL=ON")
 
     # For cuda
     if(UTOPIA_ENABLE_CUDA)
