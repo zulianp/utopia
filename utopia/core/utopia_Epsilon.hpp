@@ -17,7 +17,7 @@ namespace utopia {
         class Epsilon {
         public:
 #ifdef KOKKOS_INLINE_FUNCTION
-            static inline constexpr T value() { return Kokkos::Details::ArithTraits<T>::epsilon(); }
+            static KOKKOS_INLINE_FUNCTION constexpr T value() { return Kokkos::Details::ArithTraits<T>::epsilon(); }
 #else
             static inline T value() { return std::numeric_limits<T>::epsilon(); }
 #endif  // KOKKOS_INLINE_FUNCTION
