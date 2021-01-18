@@ -468,6 +468,15 @@ class MLIncrementalLoading final
       }
     }
 
+    // test of data .........
+    if (auto *fun_finest =
+            dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+      // fun_finest->set_old_solution(this->solution_);
+
+      Scalar elastic_energy = 0.0;
+      level_functions_.back()->elastic_energy(this->solution_, elastic_energy);
+    }
+
     UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
   }
 
