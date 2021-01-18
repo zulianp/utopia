@@ -303,8 +303,8 @@ namespace utopia {
             // un-hard-code
             auto C = this->space_.subspace(PF_component_);
 
-            // auto width =  3.0 * this->space_.mesh().min_spacing();
-            auto width = 0.2;
+            auto width = 3.0 * this->space_.mesh().min_spacing();
+            // auto width = 0.2;
 
             if (mpi_world_rank() == 0) {
                 utopia::out() << "width: " << width << "  \n";

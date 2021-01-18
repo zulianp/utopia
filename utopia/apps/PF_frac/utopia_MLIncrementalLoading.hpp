@@ -459,6 +459,13 @@ namespace utopia {
         void export_energies_csv() {
             if (!csv_file_name_.empty()) {
                 CSVWriter writer{};
+                Scalar elastic_energy = 0.0, fracture_energy = 0.0;
+
+                if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    fun_finest->elastic_energy(this->solution_, elastic_energy);
+                    fun_finest->fracture_energy(this->solution_, fracture_energy);
+                }
+
                 if (mpi_world_rank() == 0) {
                     if (!writer.file_exists(csv_file_name_)) {
                         writer.open_file(csv_file_name_);
@@ -467,14 +474,7 @@ namespace utopia {
                         writer.open_file(csv_file_name_);
                     }
 
-                    if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                        Scalar elastic_energy = 0.0, fracture_energy = 0.0;
-                        fun_finest->elastic_energy(this->solution_, elastic_energy);
-                        fun_finest->fracture_energy(this->solution_, fracture_energy);
-
-                        writer.write_table_row<Scalar>({fracture_energy, fracture_energy});
-                    }
-
+                    writer.write_table_row<Scalar>({elastic_energy, fracture_energy});
                     writer.close_file();
                 }
             }
