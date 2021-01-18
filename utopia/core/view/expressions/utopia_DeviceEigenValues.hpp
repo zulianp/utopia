@@ -3,7 +3,6 @@
 
 #include "utopia_DeviceIdentity.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
-#include "utopia_vc_Base.hpp"
 
 namespace utopia {
 
