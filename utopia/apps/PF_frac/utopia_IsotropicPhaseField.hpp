@@ -14,7 +14,6 @@
 #include "utopia_TensorView4.hpp"
 #include "utopia_Tracer.hpp"
 #include "utopia_Views.hpp"
-
 #include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
 #define UNROLL_FACTOR 4
@@ -378,38 +377,37 @@ class IsotropicPhaseFieldForBrittleFractures final
       auto strain_view = strain.view_device();
       auto differential_view = differential.view_device();
 
-      Device::parallel_reduce(space_.element_range(),
-                              UTOPIA_LAMBDA(const SizeType &i) {
+      Device::parallel_reduce(
+          space_.element_range(),
+          UTOPIA_LAMBDA(const SizeType &i) {
+            CElem c_e;
+            C_view.elem(i, c_e);
 
-                                CElem c_e;
-                                C_view.elem(i, c_e);
+            StaticVector<Scalar, NQuadPoints> c;
+            StaticVector<Scalar, NQuadPoints> c_old;
+            c_view.get(c_e, c);
+            c_old_view.get(c_e, c_old);
 
-                                StaticVector<Scalar, NQuadPoints> c;
-                                StaticVector<Scalar, NQuadPoints> c_old;
-                                c_view.get(c_e, c);
-                                c_old_view.get(c_e, c_old);
+            UElem u_e;
+            U_view.elem(i, u_e);
+            auto el_strain = strain_view.make(u_e);
 
-                                UElem u_e;
-                                U_view.elem(i, u_e);
-                                auto el_strain = strain_view.make(u_e);
+            auto dx = differential_view.make(c_e);
 
-                                auto dx = differential_view.make(c_e);
+            Scalar el_energy = 0.0;
 
-                                Scalar el_energy = 0.0;
+            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+              Scalar tr = trace(el_strain.strain[qp]);
 
-                                for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                                  Scalar tr = trace(el_strain.strain[qp]);
+              el_energy +=
+                  elastic_energy(params_, c[qp], tr, el_strain.strain[qp]) *
+                  dx(qp);
+            }
 
-                                  el_energy +=
-                                      elastic_energy(params_, c[qp], tr,
-                                                     el_strain.strain[qp]) *
-                                      dx(qp);
-                                }
-
-                                assert(el_energy == el_energy);
-                                return el_energy;
-                              },
-                              val);
+            assert(el_energy == el_energy);
+            return el_energy;
+          },
+          val);
     }
 
     val = x_const.comm().sum(val);
@@ -418,6 +416,102 @@ class IsotropicPhaseFieldForBrittleFractures final
 
     UTOPIA_TRACE_REGION_END(
         "IsotropicPhaseFieldForBrittleFractures::elastic_energy");
+    return true;
+  }
+
+  bool fracture_energy(const Vector &x_const, Scalar &val) const {
+    UTOPIA_TRACE_REGION_BEGIN(
+        "IsotropicPhaseFieldForBrittleFractures::fracture_energy");
+
+    USpace U;
+    space_.subspace(1, U);
+    CSpace C = space_.subspace(0);
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    // update local vector x
+    space_.global_to_local(x_const, *local_x_);
+    auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
+    auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+
+    // udpate local pressure field
+    space_.global_to_local(pressure_field_, *local_pressure_field_);
+    auto p_coeff =
+        std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+
+    // update c_old
+    space_.global_to_local(x_old_, *local_c_old_);
+    auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+
+    FEFunction<CSpace> c_old_fun(c_old_coeff);
+    FEFunction<CSpace> press_fun(p_coeff);
+    FEFunction<CSpace> c_fun(c_coeff);
+    FEFunction<USpace> u_fun(u_coeff);
+    ////////////////////////////////////////////////////////////////////////////
+
+    Quadrature q;
+
+    auto c_val = c_fun.value(q);
+    auto c_old = c_old_fun.value(q);
+    auto p_val = press_fun.value(q);
+
+    auto c_grad = c_fun.gradient(q);
+    auto u_val = u_fun.value(q);
+    auto differential = C.differential(q);
+
+    val = 0.0;
+
+    PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
+    // PrincipalStrains<USpace, Quadrature> strain(U, q);
+    // strain.update(x);
+
+    {
+      auto U_view = U.view_device();
+      auto C_view = C.view_device();
+
+      auto c_view = c_val.view_device();
+      auto c_old_view = c_old.view_device();
+      auto p_view = p_val.view_device();
+
+      auto c_grad_view = c_grad.view_device();
+
+      auto differential_view = differential.view_device();
+
+      Device::parallel_reduce(
+          space_.element_range(),
+          UTOPIA_LAMBDA(const SizeType &i) {
+            CElem c_e;
+            C_view.elem(i, c_e);
+
+            StaticVector<Scalar, NQuadPoints> c;
+            StaticVector<Scalar, NQuadPoints> c_old;
+            c_view.get(c_e, c);
+            c_old_view.get(c_e, c_old);
+
+            auto c_grad_el = c_grad_view.make(c_e);
+
+            auto dx = differential_view.make(c_e);
+
+            Scalar el_energy = 0.0;
+
+            // #pragma clang loop unroll_count(U_MIN(NQuadPoints,
+            // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(NQuadPoints,
+            // UNROLL_FACTOR)
+            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+              el_energy +=
+                  fracture_energy(params_, c[qp], c_grad_el[qp]) * dx(qp);
+            }
+
+            assert(el_energy == el_energy);
+            return el_energy;
+          },
+          val);
+    }
+
+    val = x_const.comm().sum(val);
+
+    UTOPIA_TRACE_REGION_END(
+        "IsotropicPhaseFieldForBrittleFractures::fracture_energy");
     return true;
   }
 
@@ -511,98 +605,100 @@ class IsotropicPhaseFieldForBrittleFractures final
       auto g_view = space_.assembly_view_device(g);
       auto ref_strain_u_view = ref_strain_u.view_device();
 
-      Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(
-                                                       const SizeType &i) {
-        StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
-        StaticVector<Scalar, U_NDofs> u_el_vec;
-        StaticVector<Scalar, C_NDofs> c_el_vec;
+      Device::parallel_for(
+          space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
+            StaticVector<Scalar, U_NDofs> u_el_vec;
+            StaticVector<Scalar, C_NDofs> c_el_vec;
 
-        u_el_vec.set(0.0);
-        c_el_vec.set(0.0);
+            u_el_vec.set(0.0);
+            c_el_vec.set(0.0);
 
-        ////////////////////////////////////////////
+            ////////////////////////////////////////////
 
-        UElem u_e;
-        U_view.elem(i, u_e);
-        auto el_strain = strain_view.make(u_e);
-        // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
-        auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
+            UElem u_e;
+            U_view.elem(i, u_e);
+            auto el_strain = strain_view.make(u_e);
+            // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+            auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
-        ////////////////////////////////////////////
+            ////////////////////////////////////////////
 
-        CElem c_e;
-        C_view.elem(i, c_e);
-        StaticVector<Scalar, NQuadPoints> c;
-        c_view.get(c_e, c);
+            CElem c_e;
+            C_view.elem(i, c_e);
+            StaticVector<Scalar, NQuadPoints> c;
+            c_view.get(c_e, c);
 
-        StaticVector<Scalar, NQuadPoints> c_old;
-        c_old_view.get(c_e, c_old);
+            StaticVector<Scalar, NQuadPoints> c_old;
+            c_old_view.get(c_e, c_old);
 
-        StaticVector<Scalar, NQuadPoints> p;
-        p_view.get(c_e, p);
+            StaticVector<Scalar, NQuadPoints> p;
+            p_view.get(c_e, p);
 
-        auto c_grad_el = c_grad_view.make(c_e);
-        auto dx = differential_view.make(c_e);
-        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-        auto c_shape_fun_el = c_shape_view.make(c_e);
+            auto c_grad_el = c_grad_view.make(c_e);
+            auto dx = differential_view.make(c_e);
+            auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+            auto c_shape_fun_el = c_shape_view.make(c_e);
 
-        ////////////////////////////////////////////
+            ////////////////////////////////////////////
 
-        // #pragma clang loop unroll_count(U_MIN(NQuadPoints, UNROLL_FACTOR))
-        // #pragma GCC unroll U_MIN(NQuadPoints, UNROLL_FACTOR)
-        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-          const Scalar tr_strain_u = trace(el_strain.strain[qp]);
+            // #pragma clang loop unroll_count(U_MIN(NQuadPoints,
+            // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(NQuadPoints,
+            // UNROLL_FACTOR)
+            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+              const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-          compute_stress(params_, tr_strain_u, el_strain.strain[qp], stress);
-          stress = (quadratic_degradation(params_, c[qp]) *
-                        (1.0 - params_.regularization) +
-                    params_.regularization) *
-                   stress;
+              compute_stress(params_, tr_strain_u, el_strain.strain[qp],
+                             stress);
+              stress = (quadratic_degradation(params_, c[qp]) *
+                            (1.0 - params_.regularization) +
+                        params_.regularization) *
+                       stress;
 
-          // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
-          // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
-          for (SizeType j = 0; j < U_NDofs; ++j) {
-            auto &&strain_test = u_strain_shape_el(j, qp);
-            u_el_vec(j) += inner(stress, strain_test) * dx(qp);
+              // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
+              // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
+              for (SizeType j = 0; j < U_NDofs; ++j) {
+                auto &&strain_test = u_strain_shape_el(j, qp);
+                u_el_vec(j) += inner(stress, strain_test) * dx(qp);
 
-            if (params_.use_pressure) {
-              u_el_vec(j) += quadratic_degradation(params_, c[qp]) * p[qp] *
-                             sum(diag(strain_test)) * dx(qp);
+                if (params_.use_pressure) {
+                  u_el_vec(j) += quadratic_degradation(params_, c[qp]) * p[qp] *
+                                 sum(diag(strain_test)) * dx(qp);
+                }
+              }
+
+              const Scalar elast = grad_elastic_energy_wrt_c(
+                  params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+
+              // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
+              // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
+              for (SizeType j = 0; j < C_NDofs; ++j) {
+                const Scalar shape_test = c_shape_fun_el(j, qp);
+                const Scalar frac = grad_fracture_energy_wrt_c(
+                    params_, c[qp], c_grad_el[qp], shape_test,
+                    c_grad_shape_el(j, qp));
+
+                if (params_.use_pressure) {
+                  const Scalar der_c_pres =
+                      quadratic_degradation_deriv(params_, c[qp]) * p[qp] *
+                      tr_strain_u * shape_test;
+                  c_el_vec(j) += der_c_pres * dx(qp);
+                }
+
+                c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
+
+                if (params_.use_penalty_irreversibility) {
+                  auto c_cold = c[qp] - c_old[qp];
+                  auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
+                  c_el_vec(j) += params_.penalty_param * c_cold_bracket *
+                                 shape_test * dx(qp);
+                }
+              }
             }
-          }
 
-          const Scalar elast = grad_elastic_energy_wrt_c(
-              params_, c[qp], tr_strain_u, el_strain.strain[qp]);
-
-          // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
-          // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
-          for (SizeType j = 0; j < C_NDofs; ++j) {
-            const Scalar shape_test = c_shape_fun_el(j, qp);
-            const Scalar frac =
-                grad_fracture_energy_wrt_c(params_, c[qp], c_grad_el[qp],
-                                           shape_test, c_grad_shape_el(j, qp));
-
-            if (params_.use_pressure) {
-              const Scalar der_c_pres =
-                  quadratic_degradation_deriv(params_, c[qp]) * p[qp] *
-                  tr_strain_u * shape_test;
-              c_el_vec(j) += der_c_pres * dx(qp);
-            }
-
-            c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
-
-            if (params_.use_penalty_irreversibility) {
-              auto c_cold = c[qp] - c_old[qp];
-              auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
-              c_el_vec(j) +=
-                  params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
-            }
-          }
-        }
-
-        U_view.add_vector(u_e, u_el_vec, g_view);
-        C_view.add_vector(c_e, c_el_vec, g_view);
-      });
+            U_view.add_vector(u_e, u_el_vec, g_view);
+            C_view.add_vector(c_e, c_el_vec, g_view);
+          });
     }
 
     // check before boundary conditions
@@ -725,126 +821,128 @@ class IsotropicPhaseFieldForBrittleFractures final
       auto H_view = space_.assembly_view_device(H);
       auto ref_strain_u_view = ref_strain_u.view_device();
 
-      Device::parallel_for(space_.element_range(), UTOPIA_LAMBDA(
-                                                       const SizeType &i) {
-        // StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
-        StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
-        StaticMatrix<Scalar, Dim, Dim> stress;
+      Device::parallel_for(
+          space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            // StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
+            StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
+            StaticMatrix<Scalar, Dim, Dim> stress;
 
-        MixedElem e;
-        space_view.elem(i, e);
-        el_mat.set(0.0);
+            MixedElem e;
+            space_view.elem(i, e);
+            el_mat.set(0.0);
 
-        ////////////////////////////////////////////
-        UElem u_e;
-        U_view.elem(i, u_e);
-        auto el_strain = strain_view.make(u_e);
-        // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
-        auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
+            ////////////////////////////////////////////
+            UElem u_e;
+            U_view.elem(i, u_e);
+            auto el_strain = strain_view.make(u_e);
+            // auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+            auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
-        ////////////////////////////////////////////
-        CElem c_e;
-        C_view.elem(i, c_e);
-        StaticVector<Scalar, NQuadPoints> c;
-        StaticVector<Scalar, NQuadPoints> p;
-        c_view.get(c_e, c);
-        p_view.get(c_e, p);
+            ////////////////////////////////////////////
+            CElem c_e;
+            C_view.elem(i, c_e);
+            StaticVector<Scalar, NQuadPoints> c;
+            StaticVector<Scalar, NQuadPoints> p;
+            c_view.get(c_e, c);
+            p_view.get(c_e, p);
 
-        auto dx = differential_view.make(c_e);
-        auto c_grad_shape_el = c_grad_shape_view.make(c_e);
-        auto c_shape_fun_el = c_shape_view.make(c_e);
+            auto dx = differential_view.make(c_e);
+            auto c_grad_shape_el = c_grad_shape_view.make(c_e);
+            auto c_shape_fun_el = c_shape_view.make(c_e);
 
-        ////////////////////////////////////////////
-        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-          const Scalar tr_strain_u = trace(el_strain.strain[qp]);
+            ////////////////////////////////////////////
+            for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+              const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-          const Scalar eep =
-              elastic_energy(params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+              const Scalar eep = elastic_energy(params_, c[qp], tr_strain_u,
+                                                el_strain.strain[qp]);
 
-          // pragma GCCunroll(C_NDofs)
-          for (SizeType l = 0; l < C_NDofs; ++l) {
-            const Scalar c_shape_l = c_shape_fun_el(l, qp);
-            auto &&c_grad_l = c_grad_shape_el(l, qp);
+              // pragma GCCunroll(C_NDofs)
+              for (SizeType l = 0; l < C_NDofs; ++l) {
+                const Scalar c_shape_l = c_shape_fun_el(l, qp);
+                auto &&c_grad_l = c_grad_shape_el(l, qp);
 
-            // SYMMETRIC VERSION
-            for (SizeType j = l; j < C_NDofs; ++j) {
-              Scalar val =
-                  bilinear_cc(params_, c[qp], eep, c_shape_fun_el(j, qp),
-                              c_shape_l, c_grad_shape_el(j, qp), c_grad_l) *
-                  dx(qp);
+                // SYMMETRIC VERSION
+                for (SizeType j = l; j < C_NDofs; ++j) {
+                  Scalar val =
+                      bilinear_cc(params_, c[qp], eep, c_shape_fun_el(j, qp),
+                                  c_shape_l, c_grad_shape_el(j, qp), c_grad_l) *
+                      dx(qp);
 
-              if (params_.use_pressure) {
-                val += quadratic_degradation_deriv2(params_, c[qp]) * p[qp] *
-                       tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                  if (params_.use_pressure) {
+                    val += quadratic_degradation_deriv2(params_, c[qp]) *
+                           p[qp] * tr_strain_u * c_shape_fun_el(j, qp) *
+                           c_shape_l * dx(qp);
+                  }
+
+                  if (params_.use_penalty_irreversibility) {
+                    val += params_.penalty_param * c_shape_fun_el(j, qp) *
+                           c_shape_l * dx(qp);
+                  }
+
+                  val = (l == j) ? (0.5 * val) : val;
+
+                  el_mat(l, j) += val;
+                  el_mat(j, l) += val;
+                }
               }
 
-              if (params_.use_penalty_irreversibility) {
-                val += params_.penalty_param * c_shape_fun_el(j, qp) *
-                       c_shape_l * dx(qp);
+              // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
+              // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
+              for (SizeType l = 0; l < U_NDofs; ++l) {
+                auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
+
+                // SYMMETRIC VERSION
+                el_mat(C_NDofs + l, C_NDofs + l) +=
+                    bilinear_uu(params_, c[qp], p_stress_view.stress(l, qp),
+                                u_strain_shape_l) *
+                    dx(qp);
+
+                for (SizeType j = l + 1; j < U_NDofs; ++j) {
+                  const Scalar v =
+                      bilinear_uu(params_, c[qp], p_stress_view.stress(j, qp),
+                                  u_strain_shape_l) *
+                      dx(qp);
+
+                  el_mat(C_NDofs + l, C_NDofs + j) += v;
+                  el_mat(C_NDofs + j, C_NDofs + l) += v;
+                }
               }
 
-              val = (l == j) ? (0.5 * val) : val;
+              //////////////////////////////////////////////////////////////////////////////////////////////////////
+              compute_stress(params_, trace(el_strain.strain[qp]),
+                             el_strain.strain[qp], stress);
 
-              el_mat(l, j) += val;
-              el_mat(j, l) += val;
-            }
-          }
+              // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
+              // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
+              for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
+                // CHANGE (pre-compute/store shape fun)
+                const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
 
-          // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
-          // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
-          for (SizeType l = 0; l < U_NDofs; ++l) {
-            auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
+                // #pragma clang loop unroll_count(U_MIN(U_NDofs,
+                // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(U_NDofs,
+                // UNROLL_FACTOR)
+                for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
+                  auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
-            // SYMMETRIC VERSION
-            el_mat(C_NDofs + l, C_NDofs + l) +=
-                bilinear_uu(params_, c[qp], p_stress_view.stress(l, qp),
-                            u_strain_shape_l) *
-                dx(qp);
+                  Scalar val = bilinear_uc(params_, c[qp], stress, strain_shape,
+                                           c_shape_i) *
+                               dx(qp);
 
-            for (SizeType j = l + 1; j < U_NDofs; ++j) {
-              const Scalar v =
-                  bilinear_uu(params_, c[qp], p_stress_view.stress(j, qp),
-                              u_strain_shape_l) *
-                  dx(qp);
+                  if (params_.use_pressure) {
+                    const Scalar tr_strain_shape = sum(diag(strain_shape));
+                    val += quadratic_degradation_deriv(params_, c[qp]) * p[qp] *
+                           tr_strain_shape * c_shape_i * dx(qp);
+                  }
 
-              el_mat(C_NDofs + l, C_NDofs + j) += v;
-              el_mat(C_NDofs + j, C_NDofs + l) += v;
-            }
-          }
-
-          //////////////////////////////////////////////////////////////////////////////////////////////////////
-          compute_stress(params_, trace(el_strain.strain[qp]),
-                         el_strain.strain[qp], stress);
-
-          // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
-          // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
-          for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
-            // CHANGE (pre-compute/store shape fun)
-            const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
-
-            // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
-            // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
-            for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
-              auto &&strain_shape = u_strain_shape_el(u_i, qp);
-
-              Scalar val =
-                  bilinear_uc(params_, c[qp], stress, strain_shape, c_shape_i) *
-                  dx(qp);
-
-              if (params_.use_pressure) {
-                const Scalar tr_strain_shape = sum(diag(strain_shape));
-                val += quadratic_degradation_deriv(params_, c[qp]) * p[qp] *
-                       tr_strain_shape * c_shape_i * dx(qp);
+                  el_mat(c_i, C_NDofs + u_i) += val;
+                  el_mat(C_NDofs + u_i, c_i) += val;
+                }
               }
-
-              el_mat(c_i, C_NDofs + u_i) += val;
-              el_mat(C_NDofs + u_i, c_i) += val;
             }
-          }
-        }
 
-        space_view.add_matrix(e, el_mat, H_view);
-      });
+            space_view.add_matrix(e, el_mat, H_view);
+          });
     }
 
     // check before boundary conditions
@@ -1056,13 +1154,14 @@ class IsotropicPhaseFieldForBrittleFractures final
       auto d_x_old = const_device_view(x_old_);
 
       auto lb_view = view_device(lb);
-      parallel_for(range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
-        if (i % (Dim + 1) == 0) {
-          lb_view.set(i, d_x_old.get(i));
-        } else {
-          lb_view.set(i, -9e15);
-        }
-      });
+      parallel_for(
+          range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
+            if (i % (Dim + 1) == 0) {
+              lb_view.set(i, d_x_old.get(i));
+            } else {
+              lb_view.set(i, -9e15);
+            }
+          });
     }
   }
 
@@ -1072,13 +1171,14 @@ class IsotropicPhaseFieldForBrittleFractures final
       auto d_x_old = const_device_view(x_old_);
 
       auto g_view = view_device(g);
-      parallel_for(range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
-        if (i % (Dim + 1) == 0) {
-          if (d_x_old.get(i) > params_.crack_set_tol) {
-            g_view.set(i, 0.0);
-          }
-        }
-      });
+      parallel_for(
+          range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
+            if (i % (Dim + 1) == 0) {
+              if (d_x_old.get(i) > params_.crack_set_tol) {
+                g_view.set(i, 0.0);
+              }
+            }
+          });
     }
   }
 
@@ -1090,14 +1190,15 @@ class IsotropicPhaseFieldForBrittleFractures final
       auto d_x = const_device_view(x);
 
       auto g_view = view_device(g);
-      parallel_for(range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
-        if (i % (Dim + 1) == 0) {
-          if (d_x_old.get(i) > params_.crack_set_tol ||
-              d_x.get(i) > params_.crack_set_tol) {
-            g_view.set(i, 0.0);
-          }
-        }
-      });
+      parallel_for(
+          range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
+            if (i % (Dim + 1) == 0) {
+              if (d_x_old.get(i) > params_.crack_set_tol ||
+                  d_x.get(i) > params_.crack_set_tol) {
+                g_view.set(i, 0.0);
+              }
+            }
+          });
     }
   }
 
@@ -1107,22 +1208,24 @@ class IsotropicPhaseFieldForBrittleFractures final
       auto d_x_old = const_device_view(x_old_);
 
       auto val_view = view_device(val);
-      parallel_for(range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
-        if (i % (Dim + 1) == 0) {
-          if (d_x_old.get(i) > params_.crack_set_tol) {
-            val_view.set(i, d_x_old.get(i));
-          }
-        }
-      });
+      parallel_for(
+          range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
+            if (i % (Dim + 1) == 0) {
+              if (d_x_old.get(i) > params_.crack_set_tol) {
+                val_view.set(i, d_x_old.get(i));
+              }
+            }
+          });
 
       auto flg_view = view_device(flg);
-      parallel_for(range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
-        if (i % (Dim + 1) == 0) {
-          if (d_x_old.get(i) > params_.crack_set_tol) {
-            flg_view.set(i, 1.0);
-          }
-        }
-      });
+      parallel_for(
+          range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
+            if (i % (Dim + 1) == 0) {
+              if (d_x_old.get(i) > params_.crack_set_tol) {
+                flg_view.set(i, 1.0);
+              }
+            }
+          });
     }
   }
 
