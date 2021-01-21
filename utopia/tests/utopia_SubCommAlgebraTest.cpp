@@ -157,12 +157,15 @@ namespace utopia {
                 QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
             }
 
-            // {
-            //     auto qp = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            {
+                auto qp = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                qp->use_sweeper(false);
 
-            //     BlockQPSolver<Matrix, Vector> bqp(qp);
-            //     QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
-            // }
+                QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, *qp, true);
+
+                // BlockQPSolver<Matrix, Vector> bqp(qp);
+                // QPSolverTestProblem<Matrix, Vector>::run(this->comm(), 10, false, bqp, true);
+            }
 
             {
                 auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());

@@ -10,25 +10,40 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
+    class BlockQPSolver<Matrix, Vector, PETSC>::Impl {
+    public:
+        std::shared_ptr<QPSolver> serial_solver_;
+        Vector residual_, x_old_, c_;
+        Vector local_residual_, local_correction_;
+        std::shared_ptr<Vector> local_lb_, local_ub_;
+
+        Impl() : local_lb_(std::make_shared<Vector>()), local_ub_(std::make_shared<Vector>()) {}
+
+        Impl(std::shared_ptr<QPSolver> serial_solver)
+            : serial_solver_(std::move(serial_solver)),
+              local_lb_(std::make_shared<Vector>()),
+              local_ub_(std::make_shared<Vector>()) {}
+
+        Impl(const Impl &other) : local_lb_(std::make_shared<Vector>()), local_ub_(std::make_shared<Vector>()) {
+            if (other.serial_solver_) {
+                serial_solver_ = std::shared_ptr<QPSolver>(other.serial_solver_->clone());
+            }
+        }
+    };
+
+    template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC>::~BlockQPSolver() = default;
 
     template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(std::shared_ptr<QPSolver> serial_solver)
-        : serial_solver_(std::move(serial_solver)),
-          local_lb_(std::make_shared<Vector>()),
-          local_ub_(std::make_shared<Vector>()) {}
+        : impl_(utopia::make_unique<Impl>(serial_solver)) {}
 
     template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC>::BlockQPSolver(const BlockQPSolver &other)
         : VariableBoundSolverInterface<Vector>(other),
           PreconditionedSolverInterface<Vector>(other),
           Super(other),
-          local_lb_(std::make_shared<Vector>()),
-          local_ub_(std::make_shared<Vector>()) {
-        if (other.serial_solver_) {
-            serial_solver_ = std::shared_ptr<QPSolver>(other.serial_solver_->clone());
-        }
-    }
+          impl_(utopia::make_unique<Impl>(*other.impl_)) {}
 
     template <class Matrix, class Vector>
     BlockQPSolver<Matrix, Vector, PETSC> *BlockQPSolver<Matrix, Vector, PETSC>::clone() const {
@@ -39,11 +54,8 @@ namespace utopia {
     void BlockQPSolver<Matrix, Vector, PETSC>::read(Input &in) {
         QPSolver::read(in);
 
-        if (serial_solver_) {
-            // bool verb = serial_solver_->verbose();
-            // serial_solver_->read(in);
-            // serial_solver_->verbose(verb);
-            in.get("block_solver", *serial_solver_);
+        if (impl_->serial_solver_) {
+            in.get("block_solver", *impl_->serial_solver_);
         }
     }
 
@@ -69,9 +81,10 @@ namespace utopia {
         UTOPIA_TRACE_REGION_BEGIN("BlockQPSolver::apply");
 
         if (rhs.comm().size() == 1) {
-            serial_solver_->set_box_constraints(BoxConstraints<Vector>(this->lower_bound(), this->upper_bound()));
+            impl_->serial_solver_->set_box_constraints(
+                BoxConstraints<Vector>(this->lower_bound(), this->upper_bound()));
 
-            auto ok = serial_solver_->apply(rhs, x);
+            auto ok = impl_->serial_solver_->apply(rhs, x);
 
             UTOPIA_TRACE_REGION_END("BlockQPSolver::apply");
             return ok;
@@ -82,7 +95,7 @@ namespace utopia {
         // make sure we have both bounds
         this->fill_empty_bounds(layout(x));
 
-        x_old_ = x;
+        impl_->x_old_ = x;
 
         bool converged = false;
 
@@ -93,8 +106,8 @@ namespace utopia {
                 std::cerr << "[Warning] local stepper not converged" << std::endl;
             }
 
-            c_ = x - x_old_;
-            const Scalar diff = norm2(c_);
+            impl_->c_ = x - impl_->x_old_;
+            const Scalar diff = norm2(impl_->c_);
 
             if (this->verbose()) {
                 PrintInfo::print_iter_status(iteration, {diff});
@@ -106,7 +119,7 @@ namespace utopia {
 
             if (converged) break;
 
-            x_old_ = x;
+            impl_->x_old_ = x;
         }
 
         // x.comm().barrier();
@@ -122,42 +135,42 @@ namespace utopia {
 
         // compute bound difference (ATTENTION !!!! residual_ is used as a temporary
         // buffer)
-        residual_ = this->get_lower_bound() - x;
-        global_to_local(residual_, *local_lb_);
+        impl_->residual_ = this->get_lower_bound() - x;
+        global_to_local(impl_->residual_, *impl_->local_lb_);
 
-        residual_ = this->get_upper_bound() - x;
-        global_to_local(this->get_upper_bound(), *local_ub_);
+        impl_->residual_ = this->get_upper_bound() - x;
+        global_to_local(this->get_upper_bound(), *impl_->local_ub_);
 
         // compute residual
-        residual_ = A * x;
-        residual_ = rhs - residual_;
-        global_to_local(residual_, local_residual_);
+        impl_->residual_ = A * x;
+        impl_->residual_ = rhs - impl_->residual_;
+        global_to_local(impl_->residual_, impl_->local_residual_);
 
         ////////////////// solve /////////////////////
 
-        serial_solver_->set_box_constraints(BoxConstraints<Vector>(local_lb_, local_ub_));
+        impl_->serial_solver_->set_box_constraints(BoxConstraints<Vector>(impl_->local_lb_, impl_->local_ub_));
 
-        local_correction_.set(0.0);
+        impl_->local_correction_.set(0.0);
 
-        assert(local_residual_.comm().size() == 1);
-        assert(local_correction_.comm().size() == 1);
-        assert(local_lb_->comm().size() == 1);
-        assert(local_ub_->comm().size() == 1);
-        assert(serial_solver_->get_operator()->comm().size() == 1);
+        assert(impl_->local_residual_.comm().size() == 1);
+        assert(impl_->local_correction_.comm().size() == 1);
+        assert(impl_->local_lb_->comm().size() == 1);
+        assert(impl_->local_ub_->comm().size() == 1);
+        assert(impl_->serial_solver_->get_operator()->comm().size() == 1);
 
-        bool converged = serial_solver_->apply(local_residual_, local_correction_);
+        bool converged = impl_->serial_solver_->apply(impl_->local_residual_, impl_->local_correction_);
 
         ///////////////// local to global /////////////////
 
-        local_to_global_add(local_correction_, x);
+        local_to_global_add(impl_->local_correction_, x);
         return converged;
     }
 
     template <class Matrix, class Vector>
     void BlockQPSolver<Matrix, Vector, PETSC>::init_memory(const Layout &layout) {
         Super::init_memory(layout);
-        local_correction_.zeros(serial_layout(layout.local_size()));
-        assert(serial_solver_);
+        impl_->local_correction_.zeros(serial_layout(layout.local_size()));
+        assert(impl_->serial_solver_);
     }
 
     // template <class Matrix>
@@ -194,7 +207,7 @@ namespace utopia {
         IterativeSolver<Matrix, Vector>::update(op);
 
         if (op->comm().size() == 1) {
-            serial_solver_->update(op);
+            impl_->serial_solver_->update(op);
             UTOPIA_TRACE_REGION_END("BlockQPSolver::update");
             return;
         }
@@ -204,7 +217,7 @@ namespace utopia {
         // build_local_matrix(*op, *A_view_ptr);
 
         // serial_solver_->update(std::shared_ptr<const Matrix>(A_view_ptr));
-        serial_solver_->update(A_view_ptr);
+        impl_->serial_solver_->update(A_view_ptr);
 
         init_memory(row_layout(*op));
         UTOPIA_TRACE_REGION_END("BlockQPSolver::update");

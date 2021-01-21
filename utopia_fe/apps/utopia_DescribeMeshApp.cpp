@@ -35,9 +35,12 @@ namespace utopia {
                 ///////////////////////////// MESH ////////////////////////////////
                 auto side_ptr = elem_ptr->build_side_ptr(i);
 
-                int id = utopia::boundary_id(mesh.get_boundary_info(), elem_ptr, i);
+                auto &bi = mesh.get_boundary_info();
+                int id = utopia::boundary_id(bi, elem_ptr, i);
 
-                std::cout << id << std::endl;
+                auto name = bi.get_sideset_name(id);
+
+                std::cout << id << " " << name << " " << bi.get_id_by_name(name) << std::endl;
             }
         }
 

@@ -40,10 +40,8 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override;
 
     private:
-        std::shared_ptr<QPSolver> serial_solver_;
-        Vector residual_, x_old_, c_;
-        Vector local_residual_, local_correction_;
-        std::shared_ptr<Vector> local_lb_, local_ub_;
+        class Impl;
+        std::unique_ptr<Impl> impl_;
 
         bool step(const Vector &rhs, Vector &x);
 
