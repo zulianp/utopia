@@ -48,6 +48,8 @@ namespace utopia {
     template <class Matrix, class Vector>
     class LSolveApp : public Configurable {
     public:
+        using Scalar = typename Traits<Vector>::Scalar;
+
         void read(Input &in) override {
             Matrix A;
             Vector x, b, oracle;
@@ -95,12 +97,21 @@ namespace utopia {
 
             stats.stop_collect_and_restart("solve");
 
+            Vector r = b - A * x;
+
+            Scalar r_norm = norm2(r);
+            utopia::out() << "norm_residual: " << r_norm << "\n";
+
             write(path_output, x);
 
             stats.stop_collect_and_restart("write");
             stats.describe(utopia::out().stream());
         }
     };
+
+    // using FluyaMatrix = utopia::PetscMatrix;
+    // using FluyaMatrix = utopia::TpetraMatrix;
+    // using LSolver= utopia::KSPSolver<FluyaMatrix, FluyaVector>;
 
     void ls_solve(Input &in) {
 #ifdef UTOPIA_WITH_PETSC
