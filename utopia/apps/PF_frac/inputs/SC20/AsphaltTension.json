@@ -1,8 +1,8 @@
 {
     "app" : "AsphaltTension2d_rmtr",
-    "output-path" : "AsphaltTension2d_rmtr_finest_80_160_l2_ls1/out",
-    "energy_csv_file_name": "AsphaltTension2d_rmtr_finest_80_160_l2_ls1/energies.csv", 
-    "log_output_path": "AsphaltTension2d_rmtr_finest_80_160_l2_ls1/rmtr_log.csv",
+    "output-path" : "AsphaltTension2d_rmtr_finest_80_160_l2_ls025/out",
+    "energy_csv_file_name": "AsphaltTension2d_rmtr_finest_80_160_l2_ls025/energies.csv", 
+    "log_output_path": "AsphaltTension2d_rmtr_finest_80_160_l2_ls025/rmtr_log.csv",
     "nx" : 80,
     "ny" : 160,
     "nz" : 2,
@@ -10,7 +10,7 @@
     "x_max" : 20,
     "y_min" : 0,
     "y_max" : 40,
-    "length_scale" : 1.0,
+    "length_scale" : 0.25,
     "disp_y": 3.0,
     "with_damage" : true,
     "use_dense_hessian" : false,
@@ -21,7 +21,8 @@
     "dt" : 1.0e-2,
     "second_phase_ts" : {
         "dt" : 1.0e-4,
-        "start_time" : 0.74
+        "start_time" : 0.78,
+        "*start_time" : 0.74
     },
     "adjust_dt_on_failure": false,
     "shrinking_factor" : 0.5,

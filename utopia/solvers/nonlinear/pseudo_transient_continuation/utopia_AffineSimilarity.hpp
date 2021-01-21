@@ -13,7 +13,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class AffineSimilarity : public NewtonBase<Matrix, Vector> {
+    class AffineSimilarity : public NewtonBase<Matrix, Vector>, public VariableBoundSolverInterface<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef typename NewtonBase<Matrix, Vector>::Solver Solver;
@@ -26,8 +26,8 @@ namespace utopia {
             const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >())
             : NewtonBase<Matrix, Vector>(linear_solver),
 
-              tau_max_(1e9),
-              tau_min_(1e-9),
+              tau_max_(1e13),
+              tau_min_(1e-13),
               alpha_treshold_(1e-10),
               max_inner_it_(10),
               m_(-1.0),
@@ -176,13 +176,17 @@ namespace utopia {
                         if (residual_monotonicity_test(g_trial, g)) {
                             x = x_trial;
                             converged_inner = true;
-                            utopia::out() << "converged, because of the monotonicity test. \n";
+                            if (mpi_world_rank() == 0) {
+                                utopia::out() << "converged, because of the monotonicity test. \n";
+                            }
                         } else {
                             // this seems to perform better than
                             // performing update also after residual monotonicity is satisfied
                             tau = estimate_tau(g_trial, g, s, tau, s_norm);
                             converged_inner = clamp_tau(tau);
-                            utopia::out() << "converged, clamping  \n";
+                            if (mpi_world_rank() == 0) {
+                                utopia::out() << "converged, clamping  \n";
+                            }
                         }
 
                         if (!converged) {
@@ -190,7 +194,9 @@ namespace utopia {
                             if (tau_diff < 1e-1) {
                                 converged_inner = true;
                                 x = x_trial;
-                                utopia::out() << "converged, because of tau_diff   " << tau_diff << "  \n";
+                                if (mpi_world_rank() == 0) {
+                                    utopia::out() << "converged, because of tau_diff   " << tau_diff << "  \n";
+                                }
                             } else {
                                 tau_old = tau;
                             }
@@ -209,10 +215,13 @@ namespace utopia {
                 // scale back to the initial unknown
                 x = D_inv_ * x;
 
+                this->make_iterate_feasible(x);
+
                 // test wrt untransformed grad...
                 Vector g_test;
                 fun.gradient(x, g_test);
                 g_norm = norm2(g_test);
+                // g_norm = this->criticality_measure_infty(x, g_test);
 
                 // iterative adaptation of diagonal scaling...
                 if (!scaling_init_) {
@@ -228,6 +237,12 @@ namespace utopia {
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, 9e9, s_norm);
+
+                // remove by end of the day
+                if (tau >= 1e9) {
+                    converged = true;
+                }
+
                 it++;
 
             }  // outer solve loop while(!converged)

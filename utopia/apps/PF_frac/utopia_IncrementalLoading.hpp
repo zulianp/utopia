@@ -23,13 +23,16 @@
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MPRGP.hpp"
 #include "utopia_MassMatrixView.hpp"
+#include "utopia_PFMassMatrix.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
+#include "utopia_PseudoContinuationIncludes.hpp"
 #include "utopia_QuasiNewtonBound.hpp"
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 #include "utopia_SampleView.hpp"
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
+// #include "utopia_petsc_Slepc.hpp"
 
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_DM.hpp"
@@ -183,6 +186,7 @@ namespace utopia {
             } else {
                 // tao seems to be faster until it stalls ...
                 // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+                std::cout << "--------- here ------ \n";
                 auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
                 linear_solver->max_it(200);
                 linear_solver->pc_type("bjacobi");
@@ -270,6 +274,9 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::run(...)");
 
             fe_problem_ = std::make_shared<ProblemType>(space_);
+            // just for testing purposes...
+            fe_problem_->use_crack_set_irreversibiblity(true);
+
             this->init(space_);
 
             for (auto t = 1; t < this->num_time_steps_; t++) {
@@ -284,13 +291,52 @@ namespace utopia {
                 prepare_for_solve();
 
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-                auto box = make_lower_bound_constraints(make_ref(this->lb_));
-                tr_solver_->set_box_constraints(box);
-                tr_solver_->solve(*fe_problem_, this->solution_);
-                auto sol_status = tr_solver_->solution_status();
+                // auto box = make_lower_bound_constraints(make_ref(this->lb_));
+                // tr_solver_->set_box_constraints(box);
+                // tr_solver_->solve(*fe_problem_, this->solution_);
+                // auto sol_status = tr_solver_->solution_status();
+                // const auto conv_reason = sol_status.reason;
+
+                auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+                linear_solver->atol(1e-14);
+                linear_solver->max_it(10000);
+                linear_solver->pc_type("ilu");
+
+                // AffineSimilarity<PetscMatrix, PetscVector> solver(linear_solver);
+                ASTRUM<PetscMatrix, PetscVector> solver(linear_solver);
+                // PseudoContinuation<PetscMatrix, PetscVector> solver(linear_solver);
+
+                // assemble mass matrix
+                // TODO:: try with removed c or disp...
+                // // TODO:: add constraint
+                // TODO:: add off-diagonal
+                PFMassMatrix<FunctionSpace> mass_matrix_assembler(space_);
+                PetscMatrix M;
+                mass_matrix_assembler.mass_matrix(M);
+                PetscVector d = diag(M);
+                // d.set(1.0);
+                // M = diag(d);
+
+                // PetscVector d = diag(M);
+                // d.set(1.0);
+                // M = diag(d);
+                solver.set_mass_matrix(M);
+
+                // solver.reset_mass_matrix(false);
+
+                solver.verbose(true);
+                solver.atol(1e-5);
+
+                PetscVector ub = 0.0 * this->lb_;
+                ub.set(1.0);
+                auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
+                solver.set_box_constraints(box);
+
+                solver.solve(*fe_problem_, this->solution_);
+
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                const auto conv_reason = sol_status.reason;
+                const auto conv_reason = 1;
                 update_time_step(conv_reason);
             }
 
