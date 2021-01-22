@@ -238,7 +238,7 @@ namespace utopia {
     template <typename Scalar>
     class FiniteDifference {
     public:
-        FiniteDifference(const Scalar h = 1e-5) : _h(h) {}
+        FiniteDifference(const Scalar h = 1e-7) : _h(h) {}
 
         template <class Fun, class Vector, class Matrix>
         bool hessian(Fun &fun, const Vector &x, Matrix &H, const bool from_grad = true) {
@@ -261,7 +261,7 @@ namespace utopia {
             for (SizeType i = 0; i < n; ++i) {
                 {  // Scoped lock
                     Write<Vector> ewlock(d);
-                    if (i > 0 && r.inside(i - 1)) d.set(i - 1, 0);
+                    if (i > 0 && r.inside(i - 1)) d.set(i - 1, 0.0);
                     if (r.inside(i)) d.set(i, _h);
                 }
 
@@ -270,7 +270,7 @@ namespace utopia {
                 Scalar fmd;
                 fun.value(x - d, fmd);
 
-                if (r.inside(i)) g.set(i, (fpd - fmd) / (2 * _h));
+                if (r.inside(i)) g.set(i, (fpd - fmd) / (2.0 * _h));
             }
         }
 

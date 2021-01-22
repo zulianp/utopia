@@ -308,7 +308,7 @@ namespace utopia {
         }
 
         // this 2 functions need to be moved to BC conditions
-        void apply_zero_constraints_irreversibiblity(Vector &g, const Vector &x) const {
+        virtual void apply_zero_constraints_irreversibiblity(Vector &g, const Vector &x) const {
             {
                 auto d_x_old = const_device_view(x_old_);
                 auto d_x = const_device_view(x);
@@ -354,7 +354,7 @@ namespace utopia {
 
         // we should move this to BC conditions
         // also, will not run efficienetly in parallel
-        void apply_zero_constraints_irreversibiblity(Matrix &H) const {
+        virtual void apply_zero_constraints_irreversibiblity(Matrix &H) const {
             std::vector<SizeType> indices;
             {
                 Read<Vector> r(x_old_);
@@ -370,7 +370,7 @@ namespace utopia {
             set_zero_rows(H, indices, 1.);
         }
 
-        void apply_zero_constraints_irreversibiblity(Matrix &H, const Vector &x) const {
+        virtual void apply_zero_constraints_irreversibiblity(Matrix &H, const Vector &x) const {
             std::vector<SizeType> indices;
             {
                 Read<Vector> r(x_old_);

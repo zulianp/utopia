@@ -68,6 +68,7 @@ namespace utopia {
                     if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
                         x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.25) {
                         f = 1.0;
+                        // f = 0.0;
                     } else {
                         f = 0.0;
                     }
