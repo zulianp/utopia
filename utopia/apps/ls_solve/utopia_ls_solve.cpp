@@ -1,6 +1,7 @@
 #include "utopia_Base.hpp"
 
 #ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_WITH_PETSC
 
 // include edsl components
 #include "utopia.hpp"
@@ -46,7 +47,7 @@ namespace utopia {
     UTOPIA_REGISTER_APP(convert_mm_vector_to_petsc_bin);
 
     template <class Matrix, class Vector>
-    class LSolveApp : public Configurable {
+    class LSSolveApp : public Configurable {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
 
@@ -63,7 +64,8 @@ namespace utopia {
 
             in.get("A", path_A);
             in.get("b", path_b);
-            in.get("path_output", path_output);
+            in.get("oracle", path_oracle);
+            in.get("out", path_output);
 
             if (path_A.empty()) {
                 utopia::err() << "[Error] A undefined!!!\n";
@@ -80,7 +82,7 @@ namespace utopia {
             utopia::read(path_A, A);
 
             if (!path_oracle.empty()) {
-                utopia::read("../data/knf/matrices/NavierStokes-O-0.sln.1", oracle);
+                utopia::read(path_oracle, oracle);
             }
 
             stats.stop_collect_and_restart("read_files");
@@ -90,17 +92,23 @@ namespace utopia {
             KSPSolver<Matrix, Vector> solver;
             solver.read(in);
 
+            // Factorization<Matrix, Vector> solver;
+
             stats.stop_collect_and_restart("read_settings");
+
+            Vector r = b - A * x;
+            Scalar r_norm = norm2(r);
+            utopia::out() << "norm_residual (pre): " << r_norm << "\n";
 
             utopia::out() << "ndofs " << x.size() << std::endl;
             solver.solve(A, b, x);
 
             stats.stop_collect_and_restart("solve");
 
-            Vector r = b - A * x;
+            r = b - A * x;
+            r_norm = norm2(r);
 
-            Scalar r_norm = norm2(r);
-            utopia::out() << "norm_residual: " << r_norm << "\n";
+            utopia::out() << "norm_residual (post): " << r_norm << "\n";
 
             write(path_output, x);
 
@@ -108,10 +116,6 @@ namespace utopia {
             stats.describe(utopia::out().stream());
         }
     };
-
-    // using FluyaMatrix = utopia::PetscMatrix;
-    // using FluyaMatrix = utopia::TpetraMatrix;
-    // using LSolver= utopia::KSPSolver<FluyaMatrix, FluyaVector>;
 
     void ls_solve(Input &in) {
 #ifdef UTOPIA_WITH_PETSC
@@ -123,10 +127,10 @@ namespace utopia {
         in.get("backend", backend);
 
         if (backend == "petsc") {
-            LSolveApp<PetscMatrix, PetscVector> app;
+            LSSolveApp<PetscMatrix, PetscVector> app;
             app.read(in);
         } else {
-            LSolveApp<TpetraMatrix, TpetraVector> app;
+            LSSolveApp<TpetraMatrix, TpetraVector> app;
             app.read(in);
         }
     }
@@ -136,3 +140,4 @@ namespace utopia {
 }  // namespace utopia
 
 #endif  // UTOPIA_WITH_TRILINOS
+#endif  // UTOPIA_WITH_PETSC
