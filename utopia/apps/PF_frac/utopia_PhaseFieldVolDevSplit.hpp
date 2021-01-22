@@ -374,26 +374,32 @@ namespace utopia {
                             }
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
+                            if (this->params_.turn_off_uc_coupling == false ||
+                                this->params_.turn_off_cu_coupling == false) {
+                                StaticMatrix<Scalar, Dim, Dim> stress_positive;
+                                compute_stress_positive(this->params_, el_strain.strain[qp], stress_positive);
 
-                            // StaticMatrix<Scalar, Dim, Dim> stress_positive_mat;
-                            // stress_positive(
-                            //     this->params_, c[qp], el_strain.values[qp], el_strain.vectors[qp],
-                            //     stress_positive_mat);
+                                for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
+                                    const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
+                                    for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
+                                        auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
-                            // for (SizeType c_i = 0; c_i < n_c_fun; ++c_i) {
-                            //     for (SizeType u_i = 0; u_i < n_u_fun; ++u_i) {
-                            //         const Scalar val = bilinear_uc(this->params_,
-                            //                                        c[qp],
-                            //                                        stress_positive_mat,
-                            //                                        0.5 * (u_grad_shape_el(u_i, qp) +
-                            //                                               transpose(u_grad_shape_el(u_i, qp))),
-                            //                                        c_shape_fun_el(c_i, qp)) *
-                            //                            dx(qp);
+                                        Scalar val =
+                                            bilinear_uc(
+                                                this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
+                                            dx(qp);
 
-                            //         el_mat(c_i, C_NDofs + u_i) += val;
-                            //         el_mat(C_NDofs + u_i, c_i) += val;
-                            //     }
-                            // }
+                                        // not symetric, but more numerically stable
+                                        if (this->params_.turn_off_cu_coupling == false) {
+                                            el_mat(c_i, C_NDofs + u_i) += val;
+                                        }
+
+                                        if (this->params_.turn_off_uc_coupling == false) {
+                                            el_mat(C_NDofs + u_i, c_i) += val;
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         space_view.add_matrix(e, el_mat, H_view);
@@ -401,11 +407,11 @@ namespace utopia {
             }
 
             // check before boundary conditions
-            // if(this->check_derivatives_) {
-            this->diff_ctrl_.check_hessian(*this, x_const, H);
-            // }
+            if (this->check_derivatives_) {
+                this->diff_ctrl_.check_hessian(*this, x_const, H);
+            }
 
-            exit(0);
+            // exit(0);
 
             this->space_.apply_constraints(H);
 
@@ -571,6 +577,22 @@ namespace utopia {
 
             stress = (quadratic_degradation(params, phase_field_value) * stress_positive);
             stress += stress_negative;
+        }
+
+        template <class Strain, class Stress>
+        UTOPIA_INLINE_FUNCTION static void compute_stress_positive(const PFFracParameters &params,
+                                                                   const Strain &strain,
+                                                                   Stress &stress_positive) {
+            const Scalar tr = trace(strain);
+            const Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
+
+            const Scalar tr_negative = device::min(tr, 0.0);
+            const Scalar tr_positive = tr - tr_negative;
+
+            const Scalar kappa = params.lambda + (2.0 * params.mu / Dim);
+
+            stress_positive = (kappa * tr_positive * device::identity<Scalar>());
+            stress_positive += (2.0 * params.mu * strain_dev);
         }
 
         template <class Grad>

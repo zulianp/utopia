@@ -1,25 +1,29 @@
 {
-    "app" : "petsc_tension_vol_dev_split_phase_field_2",
-    "output-path" : "tension_amor",
-    "nx" : 2,
-    "ny" : 2,
+    "app" : "petsc_tension_isotropic_phase_field_2",
+    "output-path" : "tension_amor_ASTRUM/out",
+    "nx" : 50,
+    "ny" : 25,
+    "nz" : 2,
     "x_min" : 0,
     "x_max" : 1,
     "y_min" : 0,
-    "y_max" : 1,
+    "y_max" : 0.5,
     "disp" : 1,
-    "with_damage":true,
-    "use_dense_hessian":true,
-    "check_derivatives":true,
-    "diff_controller" : {
-        "spacing" : 1e-7,
-        "hessian_from_grad" : false
-    },
+    "with_damage" : true,
+    "tension_test" : true, 
+    "num_time_steps" : 150, 
+    "dt" : 1e-4,     
+    "use_mprgp" : true,
+    "adjust_dt_on_failure": false, 
+    "shrinking_factor" : 0.5, 
     "solver" : {
         "verbose" : true,
-        "max-it" : 8,
+        "max-it" : 300,
+        "atol": 1e-6, 
         "linear-solver" : {
-            "verbose" : true
+            "verbose" : false, 
+            "atol": 1e-9, 
+            "max-it": 1000
         }
     }
 }
