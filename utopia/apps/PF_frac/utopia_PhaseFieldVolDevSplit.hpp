@@ -290,8 +290,8 @@ namespace utopia {
             // strain.update(x);
 
             PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
-
             PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda);
+            Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
                 auto U_view = U.view_device();
@@ -313,6 +313,7 @@ namespace utopia {
                 auto p_stress_view = p_stress.view_device();
 
                 auto H_view = this->space_.assembly_view_device(H);
+                auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
@@ -329,6 +330,7 @@ namespace utopia {
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
                         auto u_grad_shape_el = v_grad_shape_view.make(u_e);
+                        auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
                         ////////////////////////////////////////////
 
@@ -346,11 +348,7 @@ namespace utopia {
                         const int n_c_fun = c_grad_shape_el.n_functions();
 
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
-                            Scalar sum_eigs = sum(el_strain.values[qp]);
-                            strain_view.split(el_strain, qp, strain_n, strain_p);
-
-                            // const Scalar eep = elastic_energy_positve(this->params_, sum_eigs, strain_p);
-                            const Scalar eep = 0.0;
+                            const Scalar eep = elastic_energy_positive(this->params_, el_strain.strain[qp]);
 
                             for (int l = 0; l < n_c_fun; ++l) {
                                 for (int j = 0; j < n_c_fun; ++j) {
@@ -365,40 +363,37 @@ namespace utopia {
                                 }
                             }
 
+                            // todo - symmetrize
                             for (int l = 0; l < n_u_fun; ++l) {
                                 for (int j = 0; j < n_u_fun; ++j) {
-                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(this->params_,
-                                                                                    c[qp],
-                                                                                    el_strain.vectors[qp],
-                                                                                    el_strain.values[qp],
-                                                                                    p_stress_view.stress(j, qp),
-                                                                                    p_stress_view.C,
-                                                                                    u_grad_shape_el(j, qp),
-                                                                                    u_grad_shape_el(l, qp)) *
-                                                                        dx(qp);
+                                    el_mat(C_NDofs + l, C_NDofs + j) +=
+                                        bilinear_uu(
+                                            this->params_, c[qp], u_grad_shape_el(j, qp), u_grad_shape_el(l, qp)) *
+                                        dx(qp);
                                 }
                             }
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                            StaticMatrix<Scalar, Dim, Dim> stress_positive_mat;
-                            stress_positive(
-                                this->params_, c[qp], el_strain.values[qp], el_strain.vectors[qp], stress_positive_mat);
+                            // StaticMatrix<Scalar, Dim, Dim> stress_positive_mat;
+                            // stress_positive(
+                            //     this->params_, c[qp], el_strain.values[qp], el_strain.vectors[qp],
+                            //     stress_positive_mat);
 
-                            for (SizeType c_i = 0; c_i < n_c_fun; ++c_i) {
-                                for (SizeType u_i = 0; u_i < n_u_fun; ++u_i) {
-                                    const Scalar val = bilinear_uc(this->params_,
-                                                                   c[qp],
-                                                                   stress_positive_mat,
-                                                                   0.5 * (u_grad_shape_el(u_i, qp) +
-                                                                          transpose(u_grad_shape_el(u_i, qp))),
-                                                                   c_shape_fun_el(c_i, qp)) *
-                                                       dx(qp);
+                            // for (SizeType c_i = 0; c_i < n_c_fun; ++c_i) {
+                            //     for (SizeType u_i = 0; u_i < n_u_fun; ++u_i) {
+                            //         const Scalar val = bilinear_uc(this->params_,
+                            //                                        c[qp],
+                            //                                        stress_positive_mat,
+                            //                                        0.5 * (u_grad_shape_el(u_i, qp) +
+                            //                                               transpose(u_grad_shape_el(u_i, qp))),
+                            //                                        c_shape_fun_el(c_i, qp)) *
+                            //                            dx(qp);
 
-                                    el_mat(c_i, C_NDofs + u_i) += val;
-                                    el_mat(C_NDofs + u_i, c_i) += val;
-                                }
-                            }
+                            //         el_mat(c_i, C_NDofs + u_i) += val;
+                            //         el_mat(C_NDofs + u_i, c_i) += val;
+                            //     }
+                            // }
                         }
 
                         space_view.add_matrix(e, el_mat, H_view);
@@ -407,8 +402,10 @@ namespace utopia {
 
             // check before boundary conditions
             // if(this->check_derivatives_) {
-            //     this->diff_ctrl_.check_hessian(*this, x_const, H);
+            this->diff_ctrl_.check_hessian(*this, x_const, H);
             // }
+
+            exit(0);
 
             this->space_.apply_constraints(H);
 
@@ -450,98 +447,6 @@ namespace utopia {
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
             return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress_p, full_strain);
-        }
-
-        template <class EigenVectors, class Eigenvalues, class StressShape, class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const EigenVectors &eigen_vectors,
-                                                         const Eigenvalues &eigen_values,
-                                                         const StressShape &stress,
-                                                         const Tensor4th<Scalar, Dim, Dim, Dim, Dim> &C,
-                                                         const Grad &g_trial,
-                                                         const Grad &g_test) {
-            const Scalar gc = quadratic_degradation(params, phase_field_value);
-
-            // if gc ==1 => c=0, we can just call total linear elastic  (stress(trial), e(test))
-            Scalar tol = 1e-14;
-            if (device::abs(gc - 1.0) <= tol) {
-                auto C_test = 0.5 * (g_test + transpose(g_test));
-                return inner(stress, C_test);
-            }
-
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> proj_pos;
-            positive_projection(eigen_vectors, eigen_values, proj_pos);
-
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;  // proj_neg
-            I4sym.identity_sym();
-
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Jacobian_mult = (I4sym - (1.0 - gc) * proj_pos) * C;
-
-            auto C_test = 0.5 * (g_test + transpose(g_test));
-            auto C_trial = 0.5 * (g_trial + transpose(g_trial));
-            Scalar val = inner(C_trial, contraction(Jacobian_mult, C_test));
-
-            return val;
-        }
-
-        template <class EigenVectors, class Eigenvalues>
-        UTOPIA_INLINE_FUNCTION static void positive_projection(const EigenVectors &eigen_vectors,
-                                                               const Eigenvalues &eigen_values,
-                                                               Tensor4th<Scalar, Dim, Dim, Dim, Dim> &proj_pos) {
-            // decomposition based on Algorithm A from Miehe, Lambrecht; Algorithms for computation
-            // of stresses and elasticity moduli in terms of Seth-Hill's family of generalized strain tensors
-
-            StaticVector<Scalar, Dim> epos;
-            StaticVector<Scalar, Dim> dd;
-
-            for (unsigned int d = 0; d < Dim; ++d) {
-                epos[d] = split_p(eigen_values[d]);
-                dd[d] = eigen_values[d] > 0.0 ? 1.0 : 0.0;
-            }
-
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> Gab, Gba;
-            StaticMatrix<Scalar, Dim, Dim> Ma, Mb;
-
-            proj_pos.set(0.0);
-            for (unsigned int a = 0; a < Dim; ++a) {
-                StaticVector<Scalar, Dim> v;
-                eigen_vectors.col(a, v);
-                Ma = outer(v, v);
-                //   outer
-                proj_pos = proj_pos + (dd[a] * tensor_product<0, 1, 2, 3>(Ma, Ma));
-            }
-
-            for (unsigned int a = 0; a < Dim; ++a) {
-                for (unsigned int b = 0; b < a; ++b) {
-                    StaticVector<Scalar, Dim> v_a, v_b;
-                    eigen_vectors.col(a, v_a);
-                    eigen_vectors.col(b, v_b);
-
-                    Ma = outer(v_a, v_a);
-                    Mb = outer(v_b, v_b);
-
-                    Gab = tensor_product<0, 2, 1, 3>(Ma, Mb) + tensor_product<0, 3, 1, 2>(Ma, Mb);
-                    Gba = tensor_product<0, 2, 1, 3>(Mb, Ma) + tensor_product<0, 3, 1, 2>(Mb, Ma);
-
-                    Scalar theta_ab = 0;
-                    // add tol
-                    // if(eigen_values[a] != eigen_values[b]){
-                    Scalar tol = 1e-14;
-                    if (device::abs(eigen_values[a] - eigen_values[b]) > tol) {
-                        theta_ab = 0.5 * (epos[a] - epos[b]) / (eigen_values[a] - eigen_values[b]);
-                    } else {
-                        theta_ab = 0.25 * (dd[a] + dd[b]);
-                    }
-
-                    proj_pos = proj_pos + (theta_ab * (Gab + Gba));
-                }
-            }
-        }
-
-        template <typename T>
-        UTOPIA_INLINE_FUNCTION static T heavyside(T x) {
-            return x < 0.0 ? 0.0 : 1.0;
         }
 
         template <class Grad>
@@ -595,56 +500,6 @@ namespace utopia {
                                                 params.length_scale * inner(phase_field_grad, grad_test_function));
         }
 
-        template <class EigenValues, class EigenMatrix, class Stress>
-        UTOPIA_INLINE_FUNCTION static void split_stress(const PFFracParameters &params,
-                                                        const Scalar &phase_field_value,
-                                                        const EigenValues &values,
-                                                        const EigenMatrix &mat,
-                                                        Stress &stress) {
-            Scalar tr = sum(values);
-            const Scalar tr_p = split_p(tr);
-            const Scalar tr_n = split_n(tr);
-
-            StaticVector<Scalar, Dim> v;
-
-            stress.set(0.0);
-
-            for (int d = 0; d < Dim; ++d) {
-                const Scalar eig_p = split_p(values[d]);
-                const Scalar eig_n = split_n(values[d]);
-
-                const Scalar val_p =
-                    quadratic_degradation(params, phase_field_value) * (params.lambda * tr_p + 2.0 * params.mu * eig_p);
-                const Scalar val_n = params.lambda * tr_n + 2.0 * params.mu * eig_n;
-
-                // const Scalar val = val_p + val_n;
-                const Scalar val = val_p - val_n;  // NEW CHANGE
-
-                mat.col(d, v);
-                stress += val * outer(v, v);
-            }
-        }
-
-        template <class EigenValues, class EigenMatrix, class Stress>
-        UTOPIA_INLINE_FUNCTION static void stress_positive(const PFFracParameters &params,
-                                                           const Scalar & /*phase_field_value*/,
-                                                           const EigenValues &values,
-                                                           const EigenMatrix &mat,
-                                                           Stress &stress_positive) {
-            Scalar tr = sum(values);
-            const Scalar tr_p = split_p(tr);
-            StaticVector<Scalar, Dim> v;
-            stress_positive.set(0.0);
-
-            for (int d = 0; d < Dim; ++d) {
-                const Scalar eig_p = split_p(values[d]);
-                const Scalar val_p = (params.lambda * tr_p + 2.0 * params.mu * eig_p);
-
-                mat.col(d, v);
-                stress_positive += val_p * outer(v, v);
-            }
-        }
-
         template <class Grad, class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar energy(const PFFracParameters &params,
                                                     // c
@@ -679,6 +534,24 @@ namespace utopia {
             return energy;
         }
 
+        template <class Strain>
+        UTOPIA_INLINE_FUNCTION static Scalar elastic_energy_positive(const PFFracParameters &params,
+                                                                     const Strain &strain) {
+            const Scalar tr = trace(strain);
+            const Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
+
+            const Scalar tr_negative = device::min(tr, 0.0);
+            const Scalar tr_positive = tr - tr_negative;
+
+            const Scalar kappa = params.lambda + (2.0 * params.mu / Dim);
+
+            // energy positive
+            const Scalar energy_positive =
+                (0.5 * kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
+
+            return energy_positive;
+        }
+
         template <class Strain, class Stress>
         UTOPIA_INLINE_FUNCTION static void compute_stress(const PFFracParameters &params,
                                                           const Scalar &phase_field_value,
@@ -687,8 +560,8 @@ namespace utopia {
             const Scalar tr = trace(strain);
             const Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
 
-            const Scalar tr_positive = device::max(tr, 0.0);
-            const Scalar tr_negative = tr - tr_positive;
+            const Scalar tr_negative = device::min(tr, 0.0);
+            const Scalar tr_positive = tr - tr_negative;
 
             const Scalar kappa = params.lambda + (2.0 * params.mu / Dim);
 
@@ -700,9 +573,19 @@ namespace utopia {
             stress += stress_negative;
         }
 
-        UTOPIA_INLINE_FUNCTION static Scalar split_p(const Scalar &x) { return (device::abs(x) + x) / 2; };
+        template <class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
+                                                         const Scalar &phase_field_value,
+                                                         const Grad &g_trial,
+                                                         const Grad &g_test) {
+            const StaticMatrix<Scalar, Dim, Dim> strain_test = 0.5 * (g_test + transpose(g_test));
+            const StaticMatrix<Scalar, Dim, Dim> strain_trial = 0.5 * (g_trial + transpose(g_trial));
 
-        UTOPIA_INLINE_FUNCTION static Scalar split_n(const Scalar &x) { return (device::abs(x) - x) / 2; };
+            StaticMatrix<Scalar, Dim, Dim> stress;
+            compute_stress(params, phase_field_value, strain_trial, stress);
+
+            return inner(stress, strain_test);
+        }
 
         template <class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(const PFFracParameters &params,
@@ -720,27 +603,6 @@ namespace utopia {
             Scalar tr = trace;
             return 0.5 * params.lambda * tr * tr + params.mu * inner(strain, strain);
         }
-
-        // template <class Strain>
-        // UTOPIA_INLINE_FUNCTION static Scalar elastic_energy(const PFFracParameters &params,
-        //                                                     const Scalar &phase_field_value,
-        //                                                     const Scalar &trace,
-        //                                                     const Strain &strain_negative,
-        //                                                     const Strain &strain_positive) {
-        //     const Scalar trace_negative = split_n(trace);
-        //     const Scalar trace_positive = split_p(trace);
-        //     return quadratic_degradation(params, phase_field_value) *
-        //                strain_energy(params, trace_positive, strain_positive) +
-        //            strain_energy(params, trace_negative, strain_negative);
-        // }
-
-        // template <class Strain>
-        // UTOPIA_INLINE_FUNCTION static Scalar elastic_energy_positve(const PFFracParameters &params,
-        //                                                             const Scalar &trace,
-        //                                                             const Strain &strain_positive) {
-        //     const Scalar trace_positive = split_p(trace);
-        //     return strain_energy(params, trace_positive, strain_positive);
-        // }
 
         UTOPIA_INLINE_FUNCTION static Scalar degradation(const PFFracParameters &params, const Scalar &c) {
             Scalar imc = 1.0 - c;

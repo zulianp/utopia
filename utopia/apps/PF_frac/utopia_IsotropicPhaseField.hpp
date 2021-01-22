@@ -883,11 +883,11 @@ namespace utopia {
                             }
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
-                            compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp], stress);
 
                             if (params_.turn_off_uc_coupling == false || params_.turn_off_cu_coupling == false) {
                                 // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
                                 // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
+                                compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp], stress);
                                 for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
                                     // CHANGE (pre-compute/store shape fun)
                                     const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
