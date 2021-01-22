@@ -30,6 +30,7 @@
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MPRGP.hpp"
 #include "utopia_MassMatrixView.hpp"
+#include "utopia_PhaseFieldVolDevSplit.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
@@ -98,6 +99,45 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_tension_isotropic_phase_field_2);
+
+    static void petsc_tension_vol_dev_split_phase_field_2(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
+        PFFracTension2D<FunctionSpace> BC_setup(space);
+        IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
+            space, IC_setup, BC_setup);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_tension_vol_dev_split_phase_field_2);
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
