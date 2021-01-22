@@ -72,6 +72,9 @@ namespace utopia {
                 in.get("mu", mu);
                 in.get("lambda", lambda);
                 in.get("fracture_toughness", fracture_toughness);
+
+                in.get("turn_off_uc_coupling", turn_off_uc_coupling);
+                in.get("turn_off_cu_coupling", turn_off_cu_coupling);
             }
 
             Parameters()
@@ -93,6 +96,7 @@ namespace utopia {
             Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda;
             Scalar regularization, pressure, penalty_param, crack_set_tol;
             bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
+            bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
         };
 
         void read(Input &in) override {
@@ -108,6 +112,9 @@ namespace utopia {
 
         void use_crack_set_irreversibiblity(const bool &flg) { params_.use_crack_set_irreversibiblity = flg; }
         void use_penalty_irreversibility(const bool &flg) { params_.use_penalty_irreversibility = flg; }
+
+        void turn_off_uc_coupling(const bool &flg) { params_.turn_off_uc_coupling = flg; }
+        void turn_off_cu_coupling(const bool &flg) { params_.turn_off_cu_coupling = flg; }
 
         void init_force_field(Input &in) {
             in.get("neumann_bc", [&](Input &in) {
@@ -878,29 +885,37 @@ namespace utopia {
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
                             compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp], stress);
 
-                            // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
-                            // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
-                            for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
-                                // CHANGE (pre-compute/store shape fun)
-                                const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
+                            if (params_.turn_off_uc_coupling == false || params_.turn_off_cu_coupling == false) {
+                                // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
+                                // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
+                                for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
+                                    // CHANGE (pre-compute/store shape fun)
+                                    const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
 
-                                // #pragma clang loop unroll_count(U_MIN(U_NDofs,
-                                // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(U_NDofs,
-                                // UNROLL_FACTOR)
-                                for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
-                                    auto &&strain_shape = u_strain_shape_el(u_i, qp);
+                                    // #pragma clang loop unroll_count(U_MIN(U_NDofs,
+                                    // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(U_NDofs,
+                                    // UNROLL_FACTOR)
+                                    for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
+                                        auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
-                                    Scalar val = bilinear_uc(params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
+                                        Scalar val =
+                                            bilinear_uc(params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
 
-                                    if (params_.use_pressure) {
-                                        const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                        val += quadratic_degradation_deriv(params_, c[qp]) * p[qp] * tr_strain_shape *
-                                               c_shape_i * dx(qp);
+                                        if (params_.use_pressure) {
+                                            const Scalar tr_strain_shape = sum(diag(strain_shape));
+                                            val += quadratic_degradation_deriv(params_, c[qp]) * p[qp] *
+                                                   tr_strain_shape * c_shape_i * dx(qp);
+                                        }
+
+                                        // not symetric, but more numerically stable
+                                        if (params_.turn_off_cu_coupling == false) {
+                                            el_mat(c_i, C_NDofs + u_i) += val;
+                                        }
+
+                                        if (params_.turn_off_uc_coupling == false) {
+                                            el_mat(C_NDofs + u_i, c_i) += val;
+                                        }
                                     }
-
-                                    // not symetric, but more numerically stable
-                                    el_mat(c_i, C_NDofs + u_i) += val;
-                                    // el_mat(C_NDofs + u_i, c_i) += val;
                                 }
                             }
                         }

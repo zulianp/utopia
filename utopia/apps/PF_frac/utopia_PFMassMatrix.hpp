@@ -94,6 +94,7 @@ namespace utopia {
 
                                 for (SizeType j = 0; j < C_NDofs; ++j) {
                                     auto val = c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+
                                     // c-component
                                     el_mat(l, j) += val;
                                 }
@@ -103,10 +104,29 @@ namespace utopia {
                                 auto u_shape_l = u_shape_fun_el(l, qp);
                                 for (SizeType j = 0; j < U_NDofs; ++j) {
                                     auto val = inner(u_shape_fun_el(j, qp), u_shape_l) * dx(qp);
-                                    // disp components
+
                                     el_mat(C_NDofs + l, C_NDofs + j) += val;
                                 }
                             }
+
+                            // // not mass matrix, but to test stuff for of-diag scaling in ASTRUM
+                            // for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
+                            //     const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
+
+                            //     for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
+                            //         auto u_shape_i = u_shape_fun_el(u_i, qp);
+
+                            //         Scalar val = 0.0;
+                            //         if (u_i < 4) {
+                            //             val = inner(u_shape_fun_el(u_i, qp)[0], c_shape_i) * dx(qp);
+                            //         } else {
+                            //             val = inner(u_shape_fun_el(u_i, qp)[1], c_shape_i) * dx(qp);
+                            //         }
+
+                            //         el_mat(c_i, C_NDofs + u_i) += val;
+                            //         el_mat(C_NDofs + u_i, c_i) += val;
+                            //     }
+                            // }
                         }
 
                         space_view.add_matrix(e, el_mat, H_view);

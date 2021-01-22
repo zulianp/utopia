@@ -276,6 +276,8 @@ namespace utopia {
             fe_problem_ = std::make_shared<ProblemType>(space_);
             // just for testing purposes...
             fe_problem_->use_crack_set_irreversibiblity(true);
+            // fe_problem_->turn_off_cu_coupling(true);
+            fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);
 
@@ -313,7 +315,10 @@ namespace utopia {
                 PFMassMatrix<FunctionSpace> mass_matrix_assembler(space_);
                 PetscMatrix M;
                 mass_matrix_assembler.mass_matrix(M);
-                PetscVector d = diag(M);
+                // disp(M);
+                // exit(0);
+
+                // PetscVector d = diag(M);
                 // d.set(1.0);
                 // M = diag(d);
 
