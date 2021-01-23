@@ -77,7 +77,7 @@ namespace utopia {
               time_(0.0),
               final_time_(0.0),
               time_step_counter_(0.0),
-              output_path_("out.vtr"),
+              output_path_("out"),
 
               shrinking_factor_(0.5),
               pressure0_(0.0),
@@ -300,6 +300,9 @@ namespace utopia {
                 tr_solver_->set_box_constraints(box);
                 tr_solver_->atol(1e-8);
                 tr_solver_->max_it(200);
+
+                disp(this->solution_, "this->solution_");
+
                 tr_solver_->solve(*fe_problem_, this->solution_);
                 auto sol_status = tr_solver_->solution_status();
                 const auto conv_reason = sol_status.reason;

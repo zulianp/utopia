@@ -108,7 +108,6 @@ namespace utopia {
         using Mesh = utopia::PetscStructuredGrid<Dim>;
         using Elem = utopia::PetscUniformQuad4;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
-        // using SizeType = FunctionSpace::SizeType;
 
         Comm world;
 

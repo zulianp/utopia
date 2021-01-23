@@ -35,7 +35,8 @@ namespace utopia {
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
 
         // FIXME
-        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
+        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
+        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
@@ -100,6 +101,9 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
 
                         Scalar el_energy = 0.0;
+
+                        // std::cout << "NQuadPoints: " << NQuadPoints << "   \n";
+                        // exit(0);
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             // el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp]) * dx(qp);
@@ -200,16 +204,20 @@ namespace utopia {
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
+
+                        // std::cout << "NQuadPoints:  " << NQuadPoints << " \n";
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
                             compute_stress(
                                 this->params_, c[qp], el_strain.strain[qp], stress_positive, stress_negative);
-                            // const Scalar gc = quadratic_degradation(this->params_, c[qp]);
 
                             for (SizeType j = 0; j < U_NDofs; ++j) {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
+
                                 u_el_vec(j) += inner(stress_positive, strain_test) * dx(qp);
                                 u_el_vec(j) += inner(stress_negative, strain_test) * dx(qp);
                             }
+
+                            // exit(0);
 
                             // const Scalar elast = grad_elastic_energy_wrt_c(this->params_, c[qp],
                             // el_strain.strain[qp]);
@@ -232,8 +240,6 @@ namespace utopia {
             if (this->check_derivatives_) {
                 this->diff_ctrl_.check_grad(*this, x_const, g);
             }
-
-            // exit(0);
 
             this->space_.apply_zero_constraints(g);
 
@@ -359,7 +365,7 @@ namespace utopia {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
                                 for (int j = 0; j < U_NDofs; ++j) {
                                     el_mat(C_NDofs + l, C_NDofs + j) +=
-                                        bilinear_uu(this->params_, c[qp], u_grad_shape_el(j, qp), u_strain_shape_l) *
+                                        bilinear_uu(this->params_, c[qp], u_strain_shape_el(j, qp), u_strain_shape_l) *
                                         dx(qp);
                                 }
                             }
@@ -587,9 +593,15 @@ namespace utopia {
 
             stress_positive = ((kappa * tr_positive) * device::identity<Scalar>());
             stress_positive += ((2.0 * params.mu) * strain_dev);
-            stress_positive = quadratic_degradation(params, phase_field_value) * stress_positive;
+            // stress_positive = quadratic_degradation(params, phase_field_value) * stress_positive;
 
             stress_negative = ((kappa * tr_negative) * device::identity<Scalar>());
+
+            // std::cout << "kappa: " << kappa << "  \n";
+            // disp(stress_positive);
+            // std::cout << " \n \n \n";
+            // disp(stress_negative);
+            // exit(0);
 
             // stress = (quadratic_degradation(params, phase_field_value) * stress_positive) + stress_negative;
         }
@@ -597,9 +609,9 @@ namespace utopia {
         template <class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
                                                          const Scalar &phase_field_value,
-                                                         const Grad &g_trial,
+                                                         const Grad &strain,
                                                          const Grad &strain_test) {
-            const StaticMatrix<Scalar, Dim, Dim> strain = 0.5 * (g_trial + transpose(g_trial));
+            // const StaticMatrix<Scalar, Dim, Dim> strain = 0.5 * (g_trial + transpose(g_trial));
 
             StaticMatrix<Scalar, Dim, Dim> stress_positive, stress_negative;
             compute_stress(params, phase_field_value, strain, stress_positive, stress_negative);
