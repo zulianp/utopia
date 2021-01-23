@@ -65,13 +65,13 @@ namespace utopia {
             auto sampler = utopia::sampler(
                 C, UTOPIA_LAMBDA(const Point &x)->Scalar {
                     Scalar f = 0.0;
-                    // if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
-                    //     x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.25) {
-                    if (x[0] <= 0.5 && x[1] <= 0.5) {
-                        f = 0.5;
+                    if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
+                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.25) {
+                        // if (x[0] <= 0.5 && x[1] <= 0.5) {
+                        f = 1.0;
                         // f = 0.0;
                     } else {
-                        f = 0.5;
+                        f = 0.0;
                     }
                     return f;
                 });

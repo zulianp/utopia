@@ -106,8 +106,8 @@ namespace utopia {
                         // exit(0);
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            // el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp]) * dx(qp);
-                            el_energy += elastic_energy(this->params_, c[qp], el_strain.strain[qp]) * dx(qp);
+                            el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp]) * dx(qp);
+                            // el_energy += elastic_energy(this->params_, c[qp], el_strain.strain[qp]) * dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -217,34 +217,31 @@ namespace utopia {
                                 u_el_vec(j) += inner(stress_negative, strain_test) * dx(qp);
                             }
 
-                            // exit(0);
+                            const Scalar elast = grad_elastic_energy_wrt_c(this->params_, c[qp], el_strain.strain[qp]);
 
-                            // const Scalar elast = grad_elastic_energy_wrt_c(this->params_, c[qp],
-                            // el_strain.strain[qp]);
+                            for (int j = 0; j < C_NDofs; ++j) {
+                                const Scalar shape_test = c_shape_fun_el(j, qp);
+                                const Scalar frac = grad_fracture_energy_wrt_c(
+                                    this->params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
 
-                            // for (int j = 0; j < C_NDofs; ++j) {
-                            //     const Scalar shape_test = c_shape_fun_el(j, qp);
-                            //     const Scalar frac = grad_fracture_energy_wrt_c(
-                            //         this->params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
-
-                            //     c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
-                            // }
+                                c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
+                            }
                         }
 
                         U_view.add_vector(u_e, u_el_vec, g_view);
-                        // C_view.add_vector(c_e, c_el_vec, g_view);
+                        C_view.add_vector(c_e, c_el_vec, g_view);
                     });
             }
 
             // check before boundary conditions
-            if (this->check_derivatives_) {
-                this->diff_ctrl_.check_grad(*this, x_const, g);
-            }
+            // if (this->check_derivatives_) {
+            //     this->diff_ctrl_.check_grad(*this, x_const, g);
+            // }
 
             this->space_.apply_zero_constraints(g);
 
             if (this->params_.use_crack_set_irreversibiblity) {
-                apply_zero_constraints_irreversibiblity(g, x_const);
+                this->apply_zero_constraints_irreversibiblity(g, x_const);
 
                 // // just a test...
                 // auto* p_this =
@@ -345,64 +342,63 @@ namespace utopia {
                         const int n_c_fun = c_grad_shape_el.n_functions();
 
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
-                            // const Scalar eep = elastic_energy_positive(this->params_, el_strain.strain[qp]);
+                            const Scalar eep = elastic_energy_positive(this->params_, el_strain.strain[qp]);
 
-                            // for (int l = 0; l < n_c_fun; ++l) {
-                            //     for (int j = 0; j < n_c_fun; ++j) {
-                            //         el_mat(l, j) += bilinear_cc(this->params_,
-                            //                                     c[qp],
-                            //                                     eep,
-                            //                                     c_shape_fun_el(j, qp),
-                            //                                     c_shape_fun_el(l, qp),
-                            //                                     c_grad_shape_el(j, qp),
-                            //                                     c_grad_shape_el(l, qp)) *
-                            //                         dx(qp);
-                            //     }
-                            // }
+                            for (int l = 0; l < n_c_fun; ++l) {
+                                for (int j = 0; j < n_c_fun; ++j) {
+                                    el_mat(l, j) += bilinear_cc(this->params_,
+                                                                c[qp],
+                                                                eep,
+                                                                c_shape_fun_el(j, qp),
+                                                                c_shape_fun_el(l, qp),
+                                                                c_grad_shape_el(j, qp),
+                                                                c_grad_shape_el(l, qp)) *
+                                                    dx(qp);
+                                }
+                            }
 
                             //
                             for (int l = 0; l < U_NDofs; ++l) {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
                                 for (int j = 0; j < U_NDofs; ++j) {
                                     auto grad_test = u_grad_shape_el(j, qp);
-                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
-
-                                                                            this->params_,
-                                                                            c[qp],
-                                                                            el_strain.strain[qp],
-                                                                            u_grad_shape_el(j, qp),
-                                                                            u_grad_shape_el(l, qp)) *
+                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(this->params_,
+                                                                                    c[qp],
+                                                                                    el_strain.strain[qp],
+                                                                                    u_grad_shape_el(j, qp),
+                                                                                    u_grad_shape_el(l, qp)) *
                                                                         dx(qp);
                                 }
                             }
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
-                            // if (this->params_.turn_off_uc_coupling == false ||
-                            //     this->params_.turn_off_cu_coupling == false) {
-                            //     StaticMatrix<Scalar, Dim, Dim> stress_positive;
-                            //     compute_stress_positive(this->params_, el_strain.strain[qp], stress_positive);
+                            if (this->params_.turn_off_uc_coupling == false ||
+                                this->params_.turn_off_cu_coupling == false) {
+                                StaticMatrix<Scalar, Dim, Dim> stress_positive;
+                                compute_stress_positive(this->params_, el_strain.strain[qp], stress_positive);
 
-                            //     for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
-                            //         const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
-                            //         for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
-                            //             auto &&strain_shape = u_strain_shape_el(u_i, qp);
+                                for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
+                                    const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
+                                    for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
+                                        auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
-                            //             Scalar val =
-                            //                 bilinear_uc(
-                            //                     this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
-                            //                 dx(qp);
+                                        // bilinear_uc has still bug!!!!
+                                        Scalar val =
+                                            bilinear_uc(
+                                                this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
+                                            dx(qp);
 
-                            //             // not symetric, but more numerically stable
-                            //             if (this->params_.turn_off_cu_coupling == false) {
-                            //                 el_mat(c_i, C_NDofs + u_i) += val;
-                            //             }
+                                        // not symetric, but more numerically stable
+                                        if (this->params_.turn_off_cu_coupling == false) {
+                                            el_mat(c_i, C_NDofs + u_i) += val;
+                                        }
 
-                            //             if (this->params_.turn_off_uc_coupling == false) {
-                            //                 el_mat(C_NDofs + u_i, c_i) += val;
-                            //             }
-                            //         }
-                            //     }
-                            // }
+                                        if (this->params_.turn_off_uc_coupling == false) {
+                                            el_mat(C_NDofs + u_i, c_i) += val;
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         space_view.add_matrix(e, el_mat, H_view);
@@ -411,16 +407,13 @@ namespace utopia {
 
             // check before boundary conditions
             // if (this->check_derivatives_) {
-            this->diff_ctrl_.check_hessian(*this, x_const, H);
+            // this->diff_ctrl_.check_hessian(*this, x_const, H);
             // }
-
-            disp(H);
-            exit(0);
 
             this->space_.apply_constraints(H);
 
             if (this->params_.use_crack_set_irreversibiblity) {
-                apply_zero_constraints_irreversibiblity(H, x_const);
+                this->apply_zero_constraints_irreversibiblity(H, x_const);
             }
 
             UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::hessian(...)");
@@ -429,37 +422,37 @@ namespace utopia {
 
         //////////////////////////////////////////
 
-        void apply_zero_constraints_irreversibiblity(Matrix &H, const Vector &x) const override {
-            std::vector<SizeType> indices;
-            {
-                Read<Vector> r(this->x_old_);
-                Read<Vector> r2(x);
+        // void apply_zero_constraints_irreversibiblity(Matrix &H, const Vector &x) const override {
+        //     std::vector<SizeType> indices;
+        //     {
+        //         Read<Vector> r(this->x_old_);
+        //         Read<Vector> r2(x);
 
-                Range range_w = range(this->x_old_);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
-                    if (i % (Dim + 1) == 0) {
-                        indices.push_back(i);
-                    }
-                }
-            }
+        //         Range range_w = range(this->x_old_);
+        //         for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
+        //             if (i % (Dim + 1) == 0) {
+        //                 indices.push_back(i);
+        //             }
+        //         }
+        //     }
 
-            set_zero_rows(H, indices, 1.);
-        }
+        //     set_zero_rows(H, indices, 1.);
+        // }
 
-        void apply_zero_constraints_irreversibiblity(Vector &g, const Vector &x) const override {
-            {
-                auto d_x_old = const_device_view(this->x_old_);
-                auto d_x = const_device_view(x);
+        // void apply_zero_constraints_irreversibiblity(Vector &g, const Vector &x) const override {
+        //     {
+        //         auto d_x_old = const_device_view(this->x_old_);
+        //         auto d_x = const_device_view(x);
 
-                auto g_view = view_device(g);
-                parallel_for(
-                    range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
-                        if (i % (Dim + 1) == 0) {
-                            g_view.set(i, 0.0);
-                        }
-                    });
-            }
-        }
+        //         auto g_view = view_device(g);
+        //         parallel_for(
+        //             range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
+        //                 if (i % (Dim + 1) == 0) {
+        //                     g_view.set(i, 0.0);
+        //                 }
+        //             });
+        //     }
+        // }
 
         template <class GradShape>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const PFFracParameters &params,

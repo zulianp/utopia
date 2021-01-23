@@ -36,22 +36,22 @@ namespace utopia {
             fd.grad(fun, x, gfd);
             bool ok = approxeq(gfd, g, 1e-7);
 
-            // if (!ok) {
-            utopia::err() << "------ Failure -------\n";
-            utopia::err() << "------ Gradient ------\n";
-            utopia::err() << "Expected:\n";
-            rename("g_fd", gfd);
-            disp(gfd);
-            write("G_fd.m", gfd);
+            if (!ok) {
+                utopia::err() << "------ Failure -------\n";
+                utopia::err() << "------ Gradient ------\n";
+                utopia::err() << "Expected:\n";
+                rename("g_fd", gfd);
+                disp(gfd);
+                write("G_fd.m", gfd);
 
-            utopia::err() << "Actual:\n";
-            disp(g);
-            rename("g", const_cast<Vector &>(g));
-            write("G.m", g);
+                utopia::err() << "Actual:\n";
+                disp(g);
+                rename("g", const_cast<Vector &>(g));
+                write("G.m", g);
 
-            utopia::err() << "----------------------\n";
-            assert(false);
-            // }
+                utopia::err() << "----------------------\n";
+                assert(false);
+            }
 
             return ok;
         }

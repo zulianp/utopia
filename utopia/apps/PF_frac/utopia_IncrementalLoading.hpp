@@ -301,7 +301,7 @@ namespace utopia {
                 tr_solver_->atol(1e-8);
                 tr_solver_->max_it(200);
 
-                disp(this->solution_, "this->solution_");
+                // disp(this->solution_, "this->solution_");
 
                 tr_solver_->solve(*fe_problem_, this->solution_);
                 auto sol_status = tr_solver_->solution_status();
