@@ -364,9 +364,15 @@ namespace utopia {
                             for (int l = 0; l < U_NDofs; ++l) {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
                                 for (int j = 0; j < U_NDofs; ++j) {
-                                    el_mat(C_NDofs + l, C_NDofs + j) +=
-                                        bilinear_uu(this->params_, c[qp], u_strain_shape_el(j, qp), u_strain_shape_l) *
-                                        dx(qp);
+                                    auto grad_test = u_grad_shape_el(j, qp);
+                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(
+
+                                                                            this->params_,
+                                                                            c[qp],
+                                                                            el_strain.strain[qp],
+                                                                            u_grad_shape_el(j, qp),
+                                                                            u_grad_shape_el(l, qp)) *
+                                                                        dx(qp);
                                 }
                             }
 
@@ -404,9 +410,12 @@ namespace utopia {
             }
 
             // check before boundary conditions
-            if (this->check_derivatives_) {
-                this->diff_ctrl_.check_hessian(*this, x_const, H);
-            }
+            // if (this->check_derivatives_) {
+            this->diff_ctrl_.check_hessian(*this, x_const, H);
+            // }
+
+            disp(H);
+            exit(0);
 
             this->space_.apply_constraints(H);
 
@@ -593,32 +602,70 @@ namespace utopia {
 
             stress_positive = ((kappa * tr_positive) * device::identity<Scalar>());
             stress_positive += ((2.0 * params.mu) * strain_dev);
-            // stress_positive = quadratic_degradation(params, phase_field_value) * stress_positive;
+            stress_positive = quadratic_degradation(params, phase_field_value) * stress_positive;
 
             stress_negative = ((kappa * tr_negative) * device::identity<Scalar>());
+        }
 
-            // std::cout << "kappa: " << kappa << "  \n";
-            // disp(stress_positive);
-            // std::cout << " \n \n \n";
-            // disp(stress_negative);
-            // exit(0);
+        UTOPIA_INLINE_FUNCTION static bool kroneckerDelta(const SizeType &i, const SizeType &j) {
+            return (i == j) ? 1.0 : 0.0;
+        }
 
-            // stress = (quadratic_degradation(params, phase_field_value) * stress_positive) + stress_negative;
+        UTOPIA_INLINE_FUNCTION static void fill_in_isotropic_elast_tensor(
+            const Scalar &mu,
+            const Scalar &lambda,
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> &elast_tensor) {
+            for (SizeType i = 0; i < Dim; ++i) {
+                for (SizeType j = 0; j < Dim; ++j) {
+                    for (SizeType k = 0; k < Dim; ++k) {
+                        for (SizeType l = 0; l < Dim; ++l) {
+                            Scalar val = lambda * kroneckerDelta(i, j) * kroneckerDelta(k, l);
+                            val += mu * (kroneckerDelta(i, k) * kroneckerDelta(j, l));
+                            val += mu * (kroneckerDelta(i, l) * kroneckerDelta(j, k));
+                            elast_tensor.set(i, j, k, l, val);
+                        }
+                    }
+                }
+            }
         }
 
         template <class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
                                                          const Scalar &phase_field_value,
                                                          const Grad &strain,
-                                                         const Grad &strain_test) {
-            // const StaticMatrix<Scalar, Dim, Dim> strain = 0.5 * (g_trial + transpose(g_trial));
+                                                         const Grad &grad_trial,
+                                                         const Grad &grad_test) {
+            const StaticMatrix<Scalar, Dim, Dim> strain_trial = 0.5 * (grad_trial + transpose(grad_trial));
+            const StaticMatrix<Scalar, Dim, Dim> strain_test = 0.5 * (grad_test + transpose(grad_test));
 
-            StaticMatrix<Scalar, Dim, Dim> stress_positive, stress_negative;
-            compute_stress(params, phase_field_value, strain, stress_positive, stress_negative);
+            // StaticMatrix<Scalar, Dim, Dim> stress_positive, stress_negative;
+            // compute_stress(params, phase_field_value, strain, stress_positive, stress_negative);
 
-            // const Scalar gc = quadratic_degradation(params, phase_field_value);
+            // return (inner(stress_positive, strain_test)) + inner(stress_negative, strain_test);
+            // return (inner(stress_positive, strain_test)) * strain_trial + inner(strain_trial, strain_test);
+            //
 
-            return (inner(stress_positive, strain_test)) + inner(stress_negative, strain_test);
+            const Scalar strain0tr = trace(strain);
+            const Scalar kappa = params.lambda + ((2.0 * params.mu) / Dim);
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;  // proj_neg
+            I4sym.identity_sym();
+
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> elasticity_tensor, Jacobian_neg, Jacobian_pos, Jacobian_mult;
+            fill_in_isotropic_elast_tensor(params.mu, params.lambda, elasticity_tensor);
+
+            if (strain0tr < 0) {
+                Jacobian_neg = kappa * I4sym;
+            }
+
+            Scalar gc = quadratic_degradation(params, phase_field_value);
+
+            Jacobian_pos = elasticity_tensor - Jacobian_neg;
+            Jacobian_mult = gc * Jacobian_pos + Jacobian_neg;
+
+            Scalar val = inner(strain_trial, contraction(Jacobian_mult, strain_test));
+
+            return val;
         }
 
         template <class Strain, class Stress>
