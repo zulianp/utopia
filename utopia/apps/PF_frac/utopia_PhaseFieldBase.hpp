@@ -21,7 +21,7 @@
 
 namespace utopia {
 
-    template <class FunctionSpace>
+    template <class FunctionSpace, int Dim = FunctionSpace::Dim>
     class PFFracParameters : public Configurable {
     public:
         using Scalar = typename FunctionSpace::Scalar;
@@ -50,6 +50,9 @@ namespace utopia {
 
             in.get("turn_off_uc_coupling", turn_off_uc_coupling);
             in.get("turn_off_cu_coupling", turn_off_cu_coupling);
+
+            // seq. faults for some reaons???
+            // kappa = lambda + (2.0 * mu / Dim);
         }
 
         PFFracParameters()
@@ -66,12 +69,37 @@ namespace utopia {
               penalty_param(0.0),
               crack_set_tol(0.97)
 
-        {}
+        {
+            kappa = lambda + (2.0 * mu / Dim);
+        }
 
-        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda;
+        bool kroneckerDelta(const SizeType &i, const SizeType &j) { return (i == j) ? 1.0 : 0.0; }
+
+        void fill_in_isotropic_elast_tensor() {
+            for (SizeType i = 0; i < Dim; ++i) {
+                for (SizeType j = 0; j < Dim; ++j) {
+                    for (SizeType k = 0; k < Dim; ++k) {
+                        for (SizeType l = 0; l < Dim; ++l) {
+                            Scalar val = this->lambda * kroneckerDelta(i, j) * kroneckerDelta(k, l);
+                            val += this->mu * (kroneckerDelta(i, k) * kroneckerDelta(j, l));
+                            val += this->mu * (kroneckerDelta(i, l) * kroneckerDelta(j, k));
+                            elast_tensor.set(i, j, k, l, val);
+                        }
+                    }
+                }
+            }
+
+            I4sym.identity_sym();
+            kappa = lambda + (2.0 * mu / Dim);
+        }
+
+        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa;
         Scalar regularization, pressure, penalty_param, crack_set_tol;
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
+
+        Tensor4th<Scalar, Dim, Dim, Dim, Dim> elast_tensor;
+        Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
     };
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
@@ -104,6 +132,7 @@ namespace utopia {
 
         void read(Input &in) override {
             params_.read(in);
+            // all these sequfault with new xcode???
             // in.get("use_dense_hessian", use_dense_hessian_);
             // in.get("check_derivatives", check_derivatives_);
             // in.get("diff_controller", diff_ctrl_);
