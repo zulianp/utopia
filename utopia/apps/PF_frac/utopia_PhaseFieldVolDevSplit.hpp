@@ -40,8 +40,8 @@ namespace utopia {
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
 
         // FIXME
-        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
-        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
+        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
+        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
@@ -132,7 +132,9 @@ namespace utopia {
                             el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp], tr) * dx(qp);
 
                             if (this->params_.use_pressure) {
-                                el_energy += quadratic_degradation(this->params_, c[qp]) * p[qp] * tr * dx(qp);
+                                el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
+                                                 this->params_, c[qp]) *
+                                             p[qp] * tr * dx(qp);
                             }
                         }
 
@@ -262,14 +264,16 @@ namespace utopia {
 
                             for (int j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test = c_shape_fun_el(j, qp);
-                                const Scalar frac = grad_fracture_energy_wrt_c(
+                                const Scalar frac = PhaseFieldFracBase<FunctionSpace, Dim>::grad_fracture_energy_wrt_c(
                                     this->params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
 
                                 if (this->params_.use_pressure) {
-                                    const Scalar der_c_pres = quadratic_degradation_deriv(this->params_, c[qp]) *
-                                                              p[qp] * tr_strain_u * shape_test;
+                                    const Scalar der_c_pres =
+                                        PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
+                                            this->params_, c[qp]) *
+                                        p[qp] * tr_strain_u * shape_test;
                                     c_el_vec(j) += der_c_pres * dx(qp);
                                 }
                             }
@@ -409,18 +413,20 @@ namespace utopia {
                                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
                                 auto &&c_grad_l = c_grad_shape_el(l, qp);
                                 for (int j = l; j < C_NDofs; ++j) {
-                                    Scalar val = bilinear_cc(this->params_,
-                                                             c[qp],
-                                                             eep,
-                                                             c_shape_fun_el(j, qp),
-                                                             c_shape_l,
-                                                             c_grad_shape_el(j, qp),
-                                                             c_grad_l) *
-                                                 dx(qp);
+                                    Scalar val =
+                                        PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_cc(this->params_,
+                                                                                            c[qp],
+                                                                                            eep,
+                                                                                            c_shape_fun_el(j, qp),
+                                                                                            c_shape_l,
+                                                                                            c_grad_shape_el(j, qp),
+                                                                                            c_grad_l) *
+                                        dx(qp);
 
                                     if (this->params_.use_pressure) {
-                                        val += quadratic_degradation_deriv2(this->params_, c[qp]) * p[qp] *
-                                               tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                        val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(
+                                                   this->params_, c[qp]) *
+                                               p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     }
                                     val = (l == j) ? (0.5 * val) : val;
 
@@ -454,14 +460,15 @@ namespace utopia {
                                         auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
                                         Scalar val =
-                                            bilinear_uc(
+                                            PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uc(
                                                 this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
                                             dx(qp);
 
                                         if (this->params_.use_pressure) {
                                             const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                            val += quadratic_degradation_deriv(this->params_, c[qp]) * p[qp] *
-                                                   tr_strain_shape * c_shape_i * dx(qp);
+                                            val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
+                                                       this->params_, c[qp]) *
+                                                   p[qp] * tr_strain_shape * c_shape_i * dx(qp);
                                         }
 
                                         // not symetric, but more numerically stable... PF is weird thing to work
@@ -532,59 +539,6 @@ namespace utopia {
         //     }
         // }
 
-        template <class GradShape>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const PFFracParameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const Scalar &elastic_energy_p,
-                                                         const Scalar &shape_trial,
-                                                         const Scalar &shape_test,
-                                                         const GradShape &grad_trial,
-                                                         const GradShape &grad_test) {
-            return diffusion_c(params, grad_trial, grad_test) + reaction_c(params, shape_trial, shape_test) +
-                   elastic_deriv_cc(params, phase_field_value, elastic_energy_p, shape_trial, shape_test);
-        }
-
-        template <class Stress, class FullStrain>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uc(const PFFracParameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const Stress &stress_p,
-                                                         const FullStrain &full_strain,
-                                                         const Scalar &c_trial_fun) {
-            return c_trial_fun * inner(quadratic_degradation_deriv(params, phase_field_value) * stress_p, full_strain);
-        }
-
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar diffusion_c(const PFFracParameters &params,
-                                                         const Grad &g_trial,
-                                                         const Grad &g_test) {
-            return params.fracture_toughness * params.length_scale * inner(g_trial, g_test);
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar reaction_c(const PFFracParameters &params,
-                                                        const Scalar &trial,
-                                                        const Scalar &test) {
-            return (params.fracture_toughness / params.length_scale) * trial * test;
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const PFFracParameters &params,
-                                                              const Scalar &phase_field_value,
-                                                              const Scalar &elastic_energy_positive,
-                                                              const Scalar &trial,
-                                                              const Scalar &test) {
-            const Scalar dcc = quadratic_degradation_deriv2(params, phase_field_value);
-            return dcc * trial * elastic_energy_positive * test;
-        }
-
-        template <class Grad, class GradTest>
-        UTOPIA_INLINE_FUNCTION static Scalar grad_fracture_energy_wrt_c(const PFFracParameters &params,
-                                                                        const Scalar &phase_field_value,
-                                                                        const Grad &phase_field_grad,
-                                                                        const Scalar &test_function,
-                                                                        const GradTest &grad_test_function) {
-            return params.fracture_toughness * ((1. / params.length_scale * phase_field_value * test_function) +
-                                                (params.length_scale * inner(phase_field_grad, grad_test_function)));
-        }
-
         template <class Grad, class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar energy(const PFFracParameters &params,
                                                     // c
@@ -593,7 +547,8 @@ namespace utopia {
                                                     // u
                                                     const Strain &strain,
                                                     Scalar &tr) {
-            return fracture_energy(params, phase_field_value, phase_field_grad) +
+            return PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+                       params, phase_field_value, phase_field_grad) +
                    elastic_energy(params, phase_field_value, strain, tr);
         }
 
@@ -616,7 +571,9 @@ namespace utopia {
             const Scalar energy_negative = (0.5 * params.kappa * tr_negative * tr_negative);
 
             const Scalar energy =
-                (quadratic_degradation(params, phase_field_value) * energy_positive) + energy_negative;
+                (PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(params, phase_field_value) *
+                 energy_positive) +
+                energy_negative;
 
             return energy;
         }
@@ -638,13 +595,15 @@ namespace utopia {
             stress = ((params.kappa * tr_positive) * device::identity<Scalar>());
             stress += ((2.0 * params.mu) * strain_dev);
 
-            gc = quadratic_degradation(params, phase_field_value);
+            gc = PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(params, phase_field_value);
             stress = (gc * stress) + ((params.kappa * tr_negative) * device::identity<Scalar>());
 
             // energy positive
             const Scalar energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
-            elast_energy = quadratic_degradation_deriv(params, phase_field_value) * energy_positive;
+            elast_energy =
+                PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(params, phase_field_value) *
+                energy_positive;
         }
 
         template <class Grad>
@@ -661,7 +620,7 @@ namespace utopia {
                 Jacobian_neg = params.kappa * params.I4sym;
             }
 
-            Scalar gc = quadratic_degradation(params, phase_field_value);
+            Scalar gc = PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(params, phase_field_value);
 
             // would be nicer, if this works without 4th order tensor...
             Jacobian_mult = params.elast_tensor - Jacobian_neg;
@@ -689,29 +648,6 @@ namespace utopia {
 
             energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
-        }
-
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(const PFFracParameters &params,
-                                                             const Scalar &phase_field_value,
-                                                             const Grad &phase_field_grad) {
-            return params.fracture_toughness *
-                   ((1. / (2.0 * params.length_scale) * phase_field_value * phase_field_value) +
-                    (params.length_scale / 2.0 * inner(phase_field_grad, phase_field_grad)));
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation(const PFFracParameters &, const Scalar &c) {
-            Scalar imc = 1.0 - c;
-            return imc * imc;
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation_deriv(const PFFracParameters &, const Scalar &c) {
-            Scalar imc = 1.0 - c;
-            return -2.0 * imc;
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation_deriv2(const PFFracParameters &, const Scalar &) {
-            return 2.0;
         }
     };
 

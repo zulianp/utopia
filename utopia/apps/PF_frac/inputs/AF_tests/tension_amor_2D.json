@@ -11,7 +11,7 @@
     "disp" : 1,
     "with_damage" : true,
     "tension_test" : true, 
-    "num_time_steps" : 2, 
+    "num_time_steps" : 100, 
     "dt" : 1e-4,     
     "use_mprgp" : true,
     "adjust_dt_on_failure": false, 

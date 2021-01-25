@@ -51,7 +51,7 @@ namespace utopia {
             in.get("turn_off_uc_coupling", turn_off_uc_coupling);
             in.get("turn_off_cu_coupling", turn_off_cu_coupling);
 
-            // seq. faults for some reaons???
+            // seq. faults for some reason... ???
             // kappa = lambda + (2.0 * mu / Dim);
         }
 
@@ -226,18 +226,6 @@ namespace utopia {
 
         //////////////////////////////////////////
 
-        // template <class GradShape>
-        // UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const PFFracParameters &params,
-        //                                                  const Scalar &phase_field_value,
-        //                                                  const Scalar &elastic_energy,
-        //                                                  const Scalar &shape_trial,
-        //                                                  const Scalar &shape_test,
-        //                                                  const GradShape &grad_trial,
-        //                                                  const GradShape &grad_test) {
-        //     return diffusion_c(params, grad_trial, grad_test) + reaction_c(params, shape_trial, shape_test) +
-        //            elastic_deriv_cc(params, phase_field_value, elastic_energy, shape_trial, shape_test);
-        // }
-
         template <class StressShape, class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
                                                          const Scalar &phase_field_value,
@@ -261,26 +249,54 @@ namespace utopia {
             return (params.fracture_toughness / params.length_scale) * trial * test;
         }
 
-        // template <class Grad, class Strain>
-        // UTOPIA_INLINE_FUNCTION static Scalar energy(const PFFracParameters &params,
-        //                                             // c
-        //                                             const Scalar &phase_field_value,
-        //                                             const Grad &phase_field_grad,
-        //                                             // u
-        //                                             const Scalar &trace,
-        //                                             const Strain &strain) {
-        //     return fracture_energy(params, phase_field_value, phase_field_grad) +
-        //            elastic_energy(params, phase_field_value, trace, strain);
-        // }
+        UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const PFFracParameters &params,
+                                                              const Scalar &phase_field_value,
+                                                              const Scalar &elastic_energy_positive,
+                                                              const Scalar &trial,
+                                                              const Scalar &test) {
+            const Scalar dcc = quadratic_degradation_deriv2(params, phase_field_value);
+            return dcc * trial * elastic_energy_positive * test;
+        }
 
-        // template <class Grad>
-        // UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(const PFFracParameters &params,
-        //                                                      const Scalar &phase_field_value,
-        //                                                      const Grad &phase_field_grad) {
-        //     return params.fracture_toughness *
-        //            (1. / (2.0 * params.length_scale) * phase_field_value * phase_field_value +
-        //             params.length_scale / 2.0 * inner(phase_field_grad, phase_field_grad));
-        // }
+        template <class Grad, class GradTest>
+        UTOPIA_INLINE_FUNCTION static Scalar grad_fracture_energy_wrt_c(const PFFracParameters &params,
+                                                                        const Scalar &phase_field_value,
+                                                                        const Grad &phase_field_grad,
+                                                                        const Scalar &test_function,
+                                                                        const GradTest &grad_test_function) {
+            return params.fracture_toughness * ((1. / params.length_scale * phase_field_value * test_function) +
+                                                (params.length_scale * inner(phase_field_grad, grad_test_function)));
+        }
+
+        template <class Stress, class FullStrain>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uc(const PFFracParameters &params,
+                                                         const Scalar &phase_field_value,
+                                                         const Stress &stress_p,
+                                                         const FullStrain &full_strain,
+                                                         const Scalar &c_trial_fun) {
+            return c_trial_fun * inner(quadratic_degradation_deriv(params, phase_field_value) * stress_p, full_strain);
+        }
+
+        template <class Grad>
+        UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(const PFFracParameters &params,
+                                                             const Scalar &phase_field_value,
+                                                             const Grad &phase_field_grad) {
+            return params.fracture_toughness *
+                   (1. / (2.0 * params.length_scale) * phase_field_value * phase_field_value +
+                    params.length_scale / 2.0 * inner(phase_field_grad, phase_field_grad));
+        }
+
+        template <class GradShape>
+        UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const PFFracParameters &params,
+                                                         const Scalar &phase_field_value,
+                                                         const Scalar &elastic_energy_p,
+                                                         const Scalar &shape_trial,
+                                                         const Scalar &shape_test,
+                                                         const GradShape &grad_trial,
+                                                         const GradShape &grad_test) {
+            return diffusion_c(params, grad_trial, grad_test) + reaction_c(params, shape_trial, shape_test) +
+                   elastic_deriv_cc(params, phase_field_value, elastic_energy_p, shape_trial, shape_test);
+        }
 
         UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation(const PFFracParameters &, const Scalar &c) {
             Scalar imc = 1.0 - c;
