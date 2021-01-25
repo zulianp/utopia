@@ -160,13 +160,13 @@ namespace utopia {
             // );
 
             this->register_experiment("RMTR_first_order_infty", [this]() {
-                auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                auto tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector> >();
                 // auto tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
                 // tr_strategy_fine->use_symmetric_sweep(false);
                 tr_strategy_fine->atol(1e-12);
                 // tr_strategy_fine->verbose(true);
 
-                auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                auto tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector> >();
                 // auto tr_strategy_coarse = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
                 tr_strategy_coarse->atol(1e-12);
 
@@ -321,11 +321,11 @@ namespace utopia {
             // );
 
             this->register_experiment("RMTR_quasi_LBFGS_test_inf_unconstrained", [this]() {
-                auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                auto tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector> >();
                 // tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
                 tr_strategy_fine->atol(1e-12);
 
-                auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                auto tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector> >();
                 // tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector> >());
                 tr_strategy_coarse->atol(1e-12);
 

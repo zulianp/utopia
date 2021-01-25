@@ -12,7 +12,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class MPGRP final : public OperatorBasedQPSolver<Matrix, Vector> {
+    class MPRGP final : public OperatorBasedQPSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -23,7 +23,7 @@ namespace utopia {
         using Super::solve;
         using Super::update;
 
-        MPGRP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
+        MPRGP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {
             OperatorBasedQPSolver<Matrix, Vector>::read(in);
@@ -38,17 +38,17 @@ namespace utopia {
                 os, "power_method_max_it", "int", "Maximum number of iterations used inside of power method.", "10");
         }
 
-        MPGRP *clone() const override { return new MPGRP(*this); }
+        MPRGP *clone() const override { return new MPRGP(*this); }
 
         void update(const Operator<Vector> &A) override {
-            UTOPIA_TRACE_REGION_BEGIN("MPGRP::update");
+            UTOPIA_TRACE_REGION_BEGIN("MPRGP::update");
 
             const auto layout_rhs = row_layout(A);
             if (!initialized_ || !layout_rhs.same(layout_)) {
                 init_memory(layout_rhs);
             }
 
-            UTOPIA_TRACE_REGION_END("MPGRP::update");
+            UTOPIA_TRACE_REGION_END("MPRGP::update");
         }
 
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
@@ -95,7 +95,7 @@ namespace utopia {
             const auto &&lb = constraints.lower_bound();
 
             if (this->verbose()) {
-                this->init_solver("MPGRP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
+                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
             }
 
             const Scalar gamma = 1.0;

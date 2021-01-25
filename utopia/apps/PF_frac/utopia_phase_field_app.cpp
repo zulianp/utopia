@@ -229,7 +229,7 @@ namespace utopia {
             // Newton<PetscMatrix, PetscVector> solver(linear_solver);
             // in.get("solver", solver);
 
-            // auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector> >();
+            // auto qp_solver = std::make_shared<utopia::MPRGP<PetscMatrix, PetscVector> >();
             auto qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
             TrustRegionVariableBound<PetscMatrix, PetscVector> solver(qp_solver);
             auto box = make_lower_bound_constraints(make_ref(irreversibility_constraint));

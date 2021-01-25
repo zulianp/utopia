@@ -44,7 +44,7 @@ namespace utopia {
         }
 
         void run_petsc() {
-            UTOPIA_RUN_TEST(MPGRP_test);
+            UTOPIA_RUN_TEST(MPRGP_test);
             UTOPIA_RUN_TEST(Poisson_test);
             UTOPIA_RUN_TEST(ProjectedGS);
             UTOPIA_RUN_TEST(QuasiTR_constrained);
@@ -70,7 +70,7 @@ namespace utopia {
             // UTOPIA_RUN_TEST(STCG_test);
             // UTOPIA_RUN_TEST(CG_test);
             // UTOPIA_RUN_TEST(ProjectedGS);
-            // UTOPIA_RUN_TEST(MPGRP_test);
+            // UTOPIA_RUN_TEST(MPRGP_test);
 
             // nonlinear solver tests
             // UTOPIA_RUN_TEST(newton_test);
@@ -150,8 +150,8 @@ namespace utopia {
             QP_solve(solver);
         }
 
-        void MPGRP_test() {
-            auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+        void MPRGP_test() {
+            auto QP_solver = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             QP_solver->atol(1e-10);
             QP_solver->max_it(100);
             QP_solver->verbose(verbose_);
@@ -301,7 +301,7 @@ namespace utopia {
 
             // auto subproblem = std::make_shared<utopia::SteihaugToint<Matrix, Vector,
             // HOMEMADE> >();
-            auto subproblem = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+            auto subproblem = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             // subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Vector>
             // >());
             subproblem->atol(1e-14);
@@ -341,7 +341,7 @@ namespace utopia {
                 fun.describe();
             }
 
-            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+            auto qp_solver = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             // auto qp_solver = std::make_shared<utopia::ProjectedGaussSeidel<Matrix,
             // Vector> >();
             qp_solver->atol(1e-10);
@@ -349,7 +349,7 @@ namespace utopia {
             // qp_solver->use_line_search(false);
             qp_solver->verbose(false);
 
-            // auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+            // auto qp_solver = std::make_shared<utopia::MPRGP<Matrix, Vector> >();
             TrustRegionVariableBound<Matrix, Vector> tr_solver(qp_solver);
 
             Vector ub = fun.upper_bound();
@@ -372,7 +372,7 @@ namespace utopia {
             Vector x = fun.initial_guess();
             SizeType memory_size = 10;
 
-            auto qp_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+            auto qp_solver = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             qp_solver->atol(1e-10);
             qp_solver->max_it(n_ * n_);
 
@@ -495,8 +495,8 @@ namespace utopia {
             // // auto tr_strategy_fine =
             // std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector> >();
 
-            // auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>
-            // >(); auto tr_strategy_fine   = std::make_shared<utopia::MPGRP<Matrix,
+            // auto tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>
+            // >(); auto tr_strategy_fine   = std::make_shared<utopia::MPRGP<Matrix,
             // Vector> >();
 
             // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, FIRST_ORDER>
@@ -550,7 +550,7 @@ namespace utopia {
             convert(g, g_tril);
             convert(x, x_tril);
 
-            auto QP_solver = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+            auto QP_solver = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
 
             Vector lb_tril(layout(x_tril), -9e9);
             Vector ub_tril(layout(x_tril), 9e9);
@@ -669,8 +669,8 @@ namespace utopia {
             // get_ML_problem<Matrix, Vector, Poisson3D<Matrix, Vector>>(transfers_tril,
             // level_functions_tril, x_fine);
 
-            auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
-            auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+            auto tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
+            auto tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
 
             // auto rmtr = std::make_shared<RMTR_inf<Matrix, Vector, GALERKIN>
             // >(n_levels_);
@@ -819,10 +819,10 @@ namespace utopia {
             //  auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>
             //  >(n_levels_);
 
-            //  auto tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector>
+            //  auto tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector>
             //  >(); tr_strategy_fine->atol(1e-12);
             // //  tr_strategy_fine->verbose(true);
-            //  auto tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>
+            //  auto tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>
             //  >(); tr_strategy_coarse->atol(1e-12);
 
             //  rmtr->set_coarse_tr_strategy(tr_strategy_coarse);

@@ -69,7 +69,7 @@ namespace utopia {
         }
 
         void MPRGP_test() const {
-            MPGRP<Matrix, Vector> qp_solver;
+            MPRGP<Matrix, Vector> qp_solver;
             run_qp_solver(qp_solver);
 
             auto &&comm = Comm::get_default();
@@ -178,14 +178,14 @@ namespace utopia {
             // Vector Qtrhs = Rot *rhs;
             // Vector Qtx   = Rot *x;
 
-            auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
-            smoother_fine->set_R(R);  // Monotone
+            auto fine_smoother = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            fine_smoother->set_R(R);  // Monotone
 
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
-            // MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);  // QR
+            // MultigridQR<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, num_levels);  // QR
             MonotoneMultigrid<Matrix, Vector> multigrid(
-                smoother_fine, coarse_smoother, direct_solver, num_levels);  // Monotone
+                fine_smoother, coarse_smoother, direct_solver, num_levels);  // Monotone
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
@@ -281,7 +281,7 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = false;
+            const static bool verbose = true;
             const static bool use_masks = false;
 
             int n_levels = 6;
@@ -298,13 +298,18 @@ namespace utopia {
             funs.back()->gradient(x, g);
             funs.back()->hessian(x, H);
 
-            auto smoother_fine = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            // auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+
+            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            // auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            // auto coarse_smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
+            // coarse_smoother->pc_type("bjacobi");
+            // coarse_smoother->ksp_type("cg");
+
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
             // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
 
-            MonotoneMultigrid<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, n_levels);
+            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, n_levels);
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(n_levels - 1);

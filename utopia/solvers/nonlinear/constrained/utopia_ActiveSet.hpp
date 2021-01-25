@@ -39,7 +39,9 @@ namespace utopia {
                 },
                 changed);
 
-            if (verbose_ && changed) {
+            changed = x.comm().sum(changed);
+
+            if (verbose_ && changed && x.comm().rank() == 0) {
                 utopia::out() << "ActiveSet changed: " << changed << std::endl;
             }
 
