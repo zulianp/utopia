@@ -64,7 +64,7 @@ namespace utopia {
               regularization(1e-15),
               pressure(0.0),
               penalty_param(0.0),
-              crack_set_tol(0.93)
+              crack_set_tol(0.97)
 
         {}
 
@@ -137,6 +137,7 @@ namespace utopia {
         PhaseFieldFracBase(FunctionSpace &space) : space_(space) {
             if (params_.length_scale == 0) {
                 params_.length_scale = 2.0 * space.mesh().min_spacing();
+                std::cout << "using ls = " << params_.length_scale << "  \n";
             }
 
             // this computation follows eq. 50 from "On penalization in variational

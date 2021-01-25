@@ -71,33 +71,33 @@ namespace utopia {
 
             bool ok = diff < 1e-7;
 
-            // if (!ok) {
-            std::cerr << "------- Failure -------\n";
-            std::cerr << "------- Hessian -------\n";
+            if (!ok) {
+                std::cerr << "------- Failure -------\n";
+                std::cerr << "------- Hessian -------\n";
 
-            std::cerr << "error: " << diff << std::endl;
+                std::cerr << "error: " << diff << std::endl;
 
-            // std::cerr << "Diff:\n";
-            // disp(diff_mat);
+                std::cerr << "Diff:\n";
+                disp(diff_mat);
 
-            // rename("D", diff_mat);
-            // write("diff_mat.m", diff_mat);
+                rename("D", diff_mat);
+                write("diff_mat.m", diff_mat);
 
-            // rename("H_fd", Hfd);
-            // write("Hfd.m", Hfd);
+                rename("H_fd", Hfd);
+                write("Hfd.m", Hfd);
 
-            rename("h", const_cast<Matrix &>(H));
-            write("H_utopia.m", H);
+                rename("h", const_cast<Matrix &>(H));
+                write("H_utopia.m", H);
 
-            // std::cerr << "Expected:\n";
-            // disp(Hfd);
+                std::cerr << "Expected:\n";
+                disp(Hfd);
 
-            // std::cerr << "Actual:\n";
-            // disp(H);
+                std::cerr << "Actual:\n";
+                disp(H);
 
-            std::cerr << "----------------------\n";
-            assert(false);
-            // }
+                std::cerr << "----------------------\n";
+                assert(false);
+            }
 
             return ok;
         }

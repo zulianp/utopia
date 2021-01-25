@@ -183,13 +183,14 @@ namespace utopia {
             if (this->use_mprgp_) {
                 // MPRGP sucks as a solver, as it can not be preconditioned easily ...
                 qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector>>();
+                qp_solver->max_it(1000);
             } else {
                 // tao seems to be faster until it stalls ...
                 // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-                std::cout << "--------- here ------ \n";
+                // std::cout << "--------- here ------ \n";
                 auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
                 linear_solver->max_it(200);
-                linear_solver->pc_type("bjacobi");
+                linear_solver->pc_type("ilu");
                 qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
             }
 
@@ -276,8 +277,8 @@ namespace utopia {
             fe_problem_ = std::make_shared<ProblemType>(space_);
             // just for testing purposes...
             fe_problem_->use_crack_set_irreversibiblity(true);
-            fe_problem_->turn_off_cu_coupling(true);
-            fe_problem_->turn_off_uc_coupling(true);
+            // fe_problem_->turn_off_cu_coupling(true);
+            // fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);
 
@@ -294,11 +295,11 @@ namespace utopia {
 
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////
                 // auto box = make_lower_bound_constraints(make_ref(this->lb_));
-                PetscVector ub = 0.0 * this->lb_;
-                ub.set(1.0);
-                auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
-                tr_solver_->set_box_constraints(box);
-                tr_solver_->atol(1e-8);
+                // PetscVector ub = 0.0 * this->lb_;
+                // ub.set(1.0);
+                // auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
+                // tr_solver_->set_box_constraints(box);
+                tr_solver_->atol(1e-6);
                 tr_solver_->max_it(200);
 
                 // disp(this->solution_, "this->solution_");
@@ -306,6 +307,26 @@ namespace utopia {
                 tr_solver_->solve(*fe_problem_, this->solution_);
                 auto sol_status = tr_solver_->solution_status();
                 const auto conv_reason = sol_status.reason;
+                // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                // auto hess_approx = std::make_shared<JFNK<utopia::PetscVector>>(*fe_problem_);
+                // auto qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector>>();
+                // qp_solver->max_it(1000);
+
+                // QuasiTrustRegionVariableBound<utopia::PetscVector> tr_solver(hess_approx, qp_solver);
+
+                // // tr_solver.max_it(10);
+                // tr_solver.verbose(true);
+
+                // PetscVector ub = 0.0 * this->lb_;
+                // ub.set(1.0);
+                // auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
+                // tr_solver.set_box_constraints(box);
+
+                // tr_solver.solve(*fe_problem_, this->solution_);
+                // auto sol_status = tr_solver.solution_status();
+                // const auto conv_reason = sol_status.reason;
+
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();

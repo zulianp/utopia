@@ -15,6 +15,10 @@
 
 namespace utopia {
 
+    // optimize 4th order tensor com
+    // add pressure
+    // add kappa-reg.
+
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
     class PhaseFieldVolDevSplit final : public PhaseFieldFracBase<FunctionSpace, Dim>
 
@@ -102,12 +106,8 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        // std::cout << "NQuadPoints: " << NQuadPoints << "   \n";
-                        // exit(0);
-
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp]) * dx(qp);
-                            // el_energy += elastic_energy(this->params_, c[qp], el_strain.strain[qp]) * dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -234,9 +234,9 @@ namespace utopia {
             }
 
             // check before boundary conditions
-            // if (this->check_derivatives_) {
-            //     this->diff_ctrl_.check_grad(*this, x_const, g);
-            // }
+            if (this->check_derivatives_) {
+                this->diff_ctrl_.check_grad(*this, x_const, g);
+            }
 
             this->space_.apply_zero_constraints(g);
 
@@ -382,7 +382,6 @@ namespace utopia {
                                     for (SizeType u_i = 0; u_i < U_NDofs; ++u_i) {
                                         auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
-                                        // bilinear_uc has still bug!!!!
                                         Scalar val =
                                             bilinear_uc(
                                                 this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
@@ -406,9 +405,12 @@ namespace utopia {
             }
 
             // check before boundary conditions
-            // if (this->check_derivatives_) {
+            // // if (this->check_derivatives_) {
             // this->diff_ctrl_.check_hessian(*this, x_const, H);
-            // }
+            // // }
+
+            // // disp(H);
+            // exit(0);
 
             this->space_.apply_constraints(H);
 
@@ -472,7 +474,7 @@ namespace utopia {
                                                          const Stress &stress_p,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress_p, full_strain);
+            return c_trial_fun * inner(quadratic_degradation_deriv(params, phase_field_value) * stress_p, full_strain);
         }
 
         template <class Grad>
@@ -522,8 +524,8 @@ namespace utopia {
                                                                         const Grad &phase_field_grad,
                                                                         const Scalar &test_function,
                                                                         const GradTest &grad_test_function) {
-            return params.fracture_toughness * (1. / params.length_scale * phase_field_value * test_function +
-                                                params.length_scale * inner(phase_field_grad, grad_test_function));
+            return params.fracture_toughness * ((1. / params.length_scale * phase_field_value * test_function) +
+                                                (params.length_scale * inner(phase_field_grad, grad_test_function)));
         }
 
         template <class Grad, class Strain>
@@ -641,10 +643,10 @@ namespace utopia {
             const Scalar strain0tr = trace(strain);
             const Scalar kappa = params.lambda + ((2.0 * params.mu) / Dim);
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;  // proj_neg
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
             I4sym.identity_sym();
 
-            Tensor4th<Scalar, Dim, Dim, Dim, Dim> elasticity_tensor, Jacobian_neg, Jacobian_pos, Jacobian_mult;
+            Tensor4th<Scalar, Dim, Dim, Dim, Dim> elasticity_tensor, Jacobian_neg, Jacobian_mult;
             fill_in_isotropic_elast_tensor(params.mu, params.lambda, elasticity_tensor);
 
             if (strain0tr < 0) {
@@ -653,28 +655,77 @@ namespace utopia {
 
             Scalar gc = quadratic_degradation(params, phase_field_value);
 
-            Jacobian_pos = elasticity_tensor - Jacobian_neg;
-            Jacobian_mult = gc * Jacobian_pos + Jacobian_neg;
+            Jacobian_mult = elasticity_tensor - Jacobian_neg;
+            Jacobian_mult = (gc * Jacobian_mult) + Jacobian_neg;
 
             Scalar val = inner(strain_trial, contraction(Jacobian_mult, strain_test));
 
+            // jsut  a test
+            // Scalar val_h = 0.0;
+            // if (strain0tr < 0) {
+            //     const StaticMatrix<Scalar, Dim, Dim> mat_h =
+            //         ((2.0 * params.mu - kappa) * strain_trial) +
+            //         (params.lambda * strain0tr * (device::identity<Scalar>()));
+            //     val_h = (inner(mat_h, strain_test));
+            // } else {
+            //     const StaticMatrix<Scalar, Dim, Dim> mat_h =
+            //         ((2.0 * params.mu) * strain_trial) + (params.lambda * strain0tr * (device::identity<Scalar>()));
+            //     val_h = (inner(mat_h, strain_test));
+            // }
+
             return val;
         }
+
+        // void apply_zero_constraints_irreversibiblity(Matrix &H, const Vector &x) const {
+        //     std::vector<SizeType> indices;
+        //     {
+        //         Read<Vector> r(this->x_old_);
+        //         Read<Vector> r2(x);
+
+        //         Range range_w = range(this->x_old_);
+        //         for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
+        //             if (i % (Dim + 1) == 0)
+        //                 // (x_old_.get(i) > params_.crack_set_tol || x.get(i) > params_.crack_set_tol)) {
+        //                 indices.push_back(i);
+        //             // }
+        //         }
+        //     }
+
+        //     set_zero_rows(H, indices, 1.);
+        // }
+
+        // // this 2 functions need to be moved to BC conditions
+        // void apply_zero_constraints_irreversibiblity(Vector &g, const Vector &x) const {
+        //     {
+        //         auto d_x_old = const_device_view(this->x_old_);
+        //         auto d_x = const_device_view(x);
+
+        //         auto g_view = view_device(g);
+        //         parallel_for(
+        //             range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
+        //                 if (i % (Dim + 1) == 0) {
+        //                     // if (d_x_old.get(i) > params_.crack_set_tol || d_x.get(i) > params_.crack_set_tol) {
+        //                     g_view.set(i, 0.0);
+        //                     // }
+        //                 }
+        //             });
+        //     }
+        // }
 
         template <class Strain, class Stress>
         UTOPIA_INLINE_FUNCTION static void compute_stress_positive(const PFFracParameters &params,
                                                                    const Strain &strain,
                                                                    Stress &stress_positive) {
             const Scalar tr = trace(strain);
-            const Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
+            const Strain strain_dev = strain - (((1. / Dim) * tr) * device::identity<Scalar>());
 
             const Scalar tr_negative = device::min(tr, 0.0);
             const Scalar tr_positive = tr - tr_negative;
 
-            const Scalar kappa = params.lambda + (2.0 * params.mu / Dim);
+            const Scalar kappa = params.lambda + ((2.0 * params.mu) / Dim);
 
-            stress_positive = (kappa * tr_positive * device::identity<Scalar>());
-            stress_positive += (2.0 * params.mu * strain_dev);
+            stress_positive = ((kappa * tr_positive) * device::identity<Scalar>());
+            stress_positive += ((2.0 * params.mu) * strain_dev);
         }
 
         template <class Grad>
@@ -682,8 +733,8 @@ namespace utopia {
                                                              const Scalar &phase_field_value,
                                                              const Grad &phase_field_grad) {
             return params.fracture_toughness *
-                   (1. / (2.0 * params.length_scale) * phase_field_value * phase_field_value +
-                    params.length_scale / 2.0 * inner(phase_field_grad, phase_field_grad));
+                   ((1. / (2.0 * params.length_scale) * phase_field_value * phase_field_value) +
+                    (params.length_scale / 2.0 * inner(phase_field_grad, phase_field_grad)));
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation(const PFFracParameters &, const Scalar &c) {
