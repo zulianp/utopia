@@ -14,13 +14,14 @@
 #include "utopia_Utils.hpp"
 
 #include "utopia_ActiveSet.hpp"
+#include "utopia_ProjectedGaussSeidelNew.hpp"
 
 #include <cassert>
 #include <ctime>
 
 namespace utopia {
     /**
-     * @brief      The class for Linear Multigrid solver.
+     * @brief      The class for  MonotoneMultigrid solver.
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -58,25 +59,34 @@ namespace utopia {
 
         LevelMemory memory;
 
-        // #define BENCHMARKING_mode
-        // #define CHECK_NUM_PRECISION_mode
-
     public:
         static const int V_CYCLE = 1;
         static const int W_CYCLE = 2;
 
-        /**
-         * @brief      Multigrid class
-         *
-         * @param[in]  smoother       The smoother.
-         * @param[in]  coarse_solver  The direct solver for coarse level.
-         */
         MonotoneMultigrid(const std::shared_ptr<Smoother> &fine_smoother,
                           const std::shared_ptr<Smoother> &coarse_smoother,
                           const std::shared_ptr<Solver> &coarse_solver,
                           const SizeType &num_levels)
             : coarse_solver_(coarse_solver), use_line_search_(false) {
             this->must_generate_masks(true);
+            this->fix_semidefinite_operators(true);
+            init(fine_smoother, coarse_smoother, coarse_solver, num_levels);
+        }
+
+        MonotoneMultigrid(const SizeType &num_levels) {
+            this->must_generate_masks(true);
+            this->fix_semidefinite_operators(true);
+            init(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
+                 std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
+                 std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
+                 num_levels);
+        }
+
+        void init(const std::shared_ptr<Smoother> &fine_smoother,
+                  const std::shared_ptr<Smoother> &coarse_smoother,
+                  const std::shared_ptr<Solver> &coarse_solver,
+                  const SizeType &num_levels) {
+            coarse_solver_ = coarse_solver;
             this->num_levels_ = num_levels;
 
             smoothers_.resize(this->n_levels());
@@ -151,7 +161,7 @@ namespace utopia {
          *
          */
         bool apply(const Vector &rhs, Vector &x_fine) override {
-            Scalar r_norm, /*r0_norm,*/ diff_norm;
+            Scalar r_norm, diff_norm;
             SizeType it = 0;
             bool converged = false;
             bool ok = true;
@@ -329,6 +339,7 @@ namespace utopia {
                     active_set_.verbose(this->verbose());
                     if (active_set_.determine(this->get_box_constraints(), x)) {
                         trunc_transfer->truncate_interpolation(active_set_.indicator());
+
                         this->galerkin_assembly(this->get_operator());
 
                         for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {

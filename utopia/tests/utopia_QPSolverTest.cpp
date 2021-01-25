@@ -275,7 +275,7 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = false;
+            const static bool verbose = true;
             const static bool use_masks = false;
 
             int n_levels = 4;
@@ -293,9 +293,10 @@ namespace utopia {
             funs.back()->hessian(x, H);
 
             auto smoother_fine = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            // auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
-            auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            // auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
 
             MonotoneMultigrid<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, n_levels);
 
@@ -315,8 +316,8 @@ namespace utopia {
 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
-            multigrid.pre_smoothing_steps(3);
-            multigrid.post_smoothing_steps(3);
+            multigrid.pre_smoothing_steps(5);
+            multigrid.post_smoothing_steps(5);
             multigrid.verbose(verbose);
             multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
             multigrid.update(make_ref(H));

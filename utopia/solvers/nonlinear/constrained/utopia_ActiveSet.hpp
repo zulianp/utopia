@@ -33,7 +33,7 @@ namespace utopia {
 
                     d_indicator.set(i, new_ind);
 
-                    return old_ind == new_ind;
+                    return old_ind != new_ind;
                 },
                 changed);
 
@@ -47,10 +47,11 @@ namespace utopia {
         inline void init(const Layout &l) { indicator_.zeros(l); }
         inline const Vector &indicator() const { return indicator_; }
         inline void verbose(const bool verbose) { verbose_ = verbose; }
+        inline void tol(const Scalar tol) { tol_ = tol; }
 
     private:
         Vector indicator_;
-        Scalar tol_{1e-16};
+        Scalar tol_{0};
         bool verbose_{false};
     };
 }  // namespace utopia

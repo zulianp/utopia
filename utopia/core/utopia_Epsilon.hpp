@@ -9,6 +9,7 @@
 #endif  // UTOPIA_WITH_TRILINOS
 
 #include <cmath>
+#include <limits>
 
 namespace utopia {
     namespace device {
