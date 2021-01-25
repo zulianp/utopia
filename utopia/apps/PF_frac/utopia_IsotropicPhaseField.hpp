@@ -1250,6 +1250,8 @@ namespace utopia {
             return pressure_field_;
         }
 
+        void set_dt(const Scalar &dt) { dt_ = dt; }
+
     private:
         FunctionSpace &space_;
         Parameters params_;
@@ -1268,6 +1270,8 @@ namespace utopia {
         std::shared_ptr<Vector> local_x_;
         std::shared_ptr<Vector> local_pressure_field_;
         std::shared_ptr<Vector> local_c_old_;
+
+        Scalar dt_;
     };
 
 }  // namespace utopia

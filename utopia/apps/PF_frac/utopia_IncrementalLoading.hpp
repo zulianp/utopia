@@ -223,6 +223,7 @@ namespace utopia {
 
             BC_.emplace_time_dependent_BC(this->time_);
             space_.apply_constraints(this->solution_);
+            // fe_problem_->set_dt(this->dt_);
 
             if (this->use_pressure_) {
                 auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_);

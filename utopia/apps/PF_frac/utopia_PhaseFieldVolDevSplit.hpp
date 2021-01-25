@@ -8,6 +8,7 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LinearElasticityView.hpp"
+#include "utopia_PFMassMatrix.hpp"
 #include "utopia_PhaseFieldBase.hpp"
 #include "utopia_PrincipalShapeStressView.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
@@ -40,8 +41,8 @@ namespace utopia {
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
 
         // FIXME
-        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
-        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
+        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
+        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
@@ -50,11 +51,17 @@ namespace utopia {
 
         PhaseFieldVolDevSplit(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {
             this->params_.fill_in_isotropic_elast_tensor();
+
+            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
+            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         PhaseFieldVolDevSplit(FunctionSpace &space, const PFFracParameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
+
+            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
+            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         bool value(const Vector &x_const, Scalar &val) const override {
@@ -107,9 +114,6 @@ namespace utopia {
                 Device::parallel_reduce(
                     this->space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i) {
-                        StaticMatrix<Scalar, Dim, Dim> strain_n;
-                        StaticMatrix<Scalar, Dim, Dim> strain_p;
-
                         CElem c_e;
                         C_view.elem(i, c_e);
 
@@ -190,7 +194,6 @@ namespace utopia {
             auto differential = C.differential(q);
             auto press_val = press_fun.value(q);
 
-            auto v_grad_shape = U.shape_grad(q);
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
@@ -209,7 +212,6 @@ namespace utopia {
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
 
-                auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
                 auto ref_strain_u_view = ref_strain_u.view_device();
@@ -218,7 +220,7 @@ namespace utopia {
 
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        StaticMatrix<Scalar, Dim, Dim> stress_positive, stress_negative, stress;
+                        StaticMatrix<Scalar, Dim, Dim> stress;
                         StaticVector<Scalar, U_NDofs> u_el_vec;
                         StaticVector<Scalar, C_NDofs> c_el_vec;
                         Scalar tr_strain_u, gc, elast;
@@ -232,7 +234,6 @@ namespace utopia {
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
                         auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
-                        auto u_grad_shape_el = v_grad_shape_view.make(u_e);
 
                         ////////////////////////////////////////////
 
@@ -318,8 +319,6 @@ namespace utopia {
             this->space_.subspace(1, U);
             CSpace C = this->space_.subspace(0);
 
-            auto &x = const_cast<Vector &>(x_const);
-
             ///////////////////////////////////////////////////////////////////////////
 
             // update local vector x
@@ -345,7 +344,6 @@ namespace utopia {
             auto u_val = u_fun.value(q);
             auto differential = C.differential(q);
 
-            auto v_grad_shape = U.shape_grad(q);
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
@@ -365,7 +363,6 @@ namespace utopia {
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
 
-                auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
@@ -386,7 +383,6 @@ namespace utopia {
                         UElem u_e;
                         U_view.elem(i, u_e);
                         auto el_strain = strain_view.make(u_e);
-                        auto u_grad_shape_el = v_grad_shape_view.make(u_e);
                         auto &&u_strain_shape_el = ref_strain_u_view.make(u_e);
 
                         ////////////////////////////////////////////
