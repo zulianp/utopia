@@ -409,9 +409,6 @@ namespace utopia {
             // this->diff_ctrl_.check_hessian(*this, x_const, H);
             // // }
 
-            // // disp(H);
-            // exit(0);
-
             this->space_.apply_constraints(H);
 
             if (this->params_.use_crack_set_irreversibiblity) {
@@ -423,7 +420,7 @@ namespace utopia {
         }
 
         //////////////////////////////////////////
-
+        // for testing derivatives
         // void apply_zero_constraints_irreversibiblity(Matrix &H, const Vector &x) const override {
         //     std::vector<SizeType> indices;
         //     {
@@ -441,6 +438,7 @@ namespace utopia {
         //     set_zero_rows(H, indices, 1.);
         // }
 
+        // for testing derivatives
         // void apply_zero_constraints_irreversibiblity(Vector &g, const Vector &x) const override {
         //     {
         //         auto d_x_old = const_device_view(this->x_old_);
@@ -655,23 +653,11 @@ namespace utopia {
 
             Scalar gc = quadratic_degradation(params, phase_field_value);
 
+            // would be nicer, if this works without 4th order tensor
             Jacobian_mult = elasticity_tensor - Jacobian_neg;
             Jacobian_mult = (gc * Jacobian_mult) + Jacobian_neg;
 
             Scalar val = inner(strain_trial, contraction(Jacobian_mult, strain_test));
-
-            // jsut  a test
-            // Scalar val_h = 0.0;
-            // if (strain0tr < 0) {
-            //     const StaticMatrix<Scalar, Dim, Dim> mat_h =
-            //         ((2.0 * params.mu - kappa) * strain_trial) +
-            //         (params.lambda * strain0tr * (device::identity<Scalar>()));
-            //     val_h = (inner(mat_h, strain_test));
-            // } else {
-            //     const StaticMatrix<Scalar, Dim, Dim> mat_h =
-            //         ((2.0 * params.mu) * strain_trial) + (params.lambda * strain0tr * (device::identity<Scalar>()));
-            //     val_h = (inner(mat_h, strain_test));
-            // }
 
             return val;
         }

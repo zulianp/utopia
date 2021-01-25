@@ -278,7 +278,7 @@ namespace utopia {
             // just for testing purposes...
             fe_problem_->use_crack_set_irreversibiblity(true);
             // fe_problem_->turn_off_cu_coupling(true);
-            // fe_problem_->turn_off_uc_coupling(true);
+            fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);
 
@@ -299,14 +299,14 @@ namespace utopia {
                 // ub.set(1.0);
                 // auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
                 // tr_solver_->set_box_constraints(box);
-                tr_solver_->atol(1e-6);
-                tr_solver_->max_it(200);
+                // tr_solver_->atol(1e-6);
+                // tr_solver_->max_it(200);
 
-                // disp(this->solution_, "this->solution_");
+                // // disp(this->solution_, "this->solution_");
 
-                tr_solver_->solve(*fe_problem_, this->solution_);
-                auto sol_status = tr_solver_->solution_status();
-                const auto conv_reason = sol_status.reason;
+                // tr_solver_->solve(*fe_problem_, this->solution_);
+                // auto sol_status = tr_solver_->solution_status();
+                // const auto conv_reason = sol_status.reason;
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 // auto hess_approx = std::make_shared<JFNK<utopia::PetscVector>>(*fe_problem_);
@@ -327,33 +327,34 @@ namespace utopia {
                 // auto sol_status = tr_solver.solution_status();
                 // const auto conv_reason = sol_status.reason;
 
-                // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////
+                auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+                linear_solver->atol(1e-14);
+                linear_solver->max_it(10000);
+                linear_solver->pc_type("ilu");
 
-                // auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-                // linear_solver->atol(1e-14);
-                // linear_solver->max_it(10000);
-                // linear_solver->pc_type("ilu");
+                // AffineSimilarity<PetscMatrix, PetscVector> solver(linear_solver);
+                ASTRUM<PetscMatrix, PetscVector> solver(linear_solver);
+                // PseudoContinuation<PetscMatrix, PetscVector> solver(linear_solver);
 
-                // // AffineSimilarity<PetscMatrix, PetscVector> solver(linear_solver);
-                // ASTRUM<PetscMatrix, PetscVector> solver(linear_solver);
-                // // PseudoContinuation<PetscMatrix, PetscVector> solver(linear_solver);
+                // assemble mass matrix
+                PFMassMatrix<FunctionSpace> mass_matrix_assembler(space_);
+                PetscMatrix M;
+                mass_matrix_assembler.mass_matrix(M);
+                solver.set_mass_matrix(M);
 
-                // // assemble mass matrix
-                // PFMassMatrix<FunctionSpace> mass_matrix_assembler(space_);
-                // PetscMatrix M;
-                // mass_matrix_assembler.mass_matrix(M);
-                // solver.set_mass_matrix(M);
+                solver.verbose(true);
+                solver.atol(1e-5);
+                solver.stol(1e-12);
+                // solver.max_it(300);
 
-                // solver.verbose(true);
-                // solver.atol(1e-5);
+                PetscVector ub = 0.0 * this->lb_;
+                ub.set(1.0);
+                auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
+                solver.set_box_constraints(box);
 
-                // PetscVector ub = 0.0 * this->lb_;
-                // ub.set(1.0);
-                // auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
-                // solver.set_box_constraints(box);
-
-                // solver.solve(*fe_problem_, this->solution_);
-                // const auto conv_reason = 1;
+                solver.solve(*fe_problem_, this->solution_);
+                const auto conv_reason = 1;
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 update_time_step(conv_reason);
