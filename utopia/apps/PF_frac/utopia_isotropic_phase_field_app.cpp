@@ -123,7 +123,8 @@ namespace utopia {
 
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
         PFFracTension2D<FunctionSpace> BC_setup(space);
-        // PFFracShear2D<FunctionSpace> BC_setup(space);
+        // InitialCondidtionPFTbar<FunctionSpace> IC_setup(space, 0.0);
+        // PFFracFixAllDisp<FunctionSpace> BC_setup(space);
         IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
             space, IC_setup, BC_setup);
 

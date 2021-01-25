@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PHASE_FIELD_VOL_DEV_SPLIT_HPP
 #define UTOPIA_PHASE_FIELD_VOL_DEV_SPLIT_HPP
 
+#include "utopia_CoefStrainView.hpp"
 #include "utopia_DeviceTensorContraction.hpp"
 #include "utopia_DeviceTensorProduct.hpp"
 #include "utopia_DiffController.hpp"
@@ -61,14 +62,27 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
-            FEFunction<CSpace> c_fun(C, x);
-            FEFunction<USpace> u_fun(U, x);
+            ///////////////////////////////////////////////////////////////////////////
+            // update local vector x
+            this->space_.global_to_local(x_const, *(this->local_x_));
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            // udpate local pressure field
+            this->space_.global_to_local(this->pressure_field_, *(this->local_pressure_field_));
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+
+            FEFunction<CSpace> press_fun(p_coeff);
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+            ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
 
             auto c_val = c_fun.value(q);
             auto c_grad = c_fun.gradient(q);
             auto u_val = u_fun.value(q);
+            auto p_val = press_fun.value(q);
             auto differential = C.differential(q);
 
             val = 0.0;
@@ -81,6 +95,7 @@ namespace utopia {
                 auto c_view = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
                 auto u_view = u_val.view_device();
+                auto p_view = p_val.view_device();
 
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
@@ -95,7 +110,9 @@ namespace utopia {
                         C_view.elem(i, c_e);
 
                         StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> p;
                         c_view.get(c_e, c);
+                        p_view.get(c_e, p);
 
                         UElem u_e;
                         U_view.elem(i, u_e);
@@ -105,9 +122,14 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
 
                         Scalar el_energy = 0.0;
+                        Scalar tr = 0.0;
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp]) * dx(qp);
+                            el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp], tr) * dx(qp);
+
+                            if (this->params_.use_pressure) {
+                                el_energy += quadratic_degradation(this->params_, c[qp]) * p[qp] * tr * dx(qp);
+                            }
                         }
 
                         assert(el_energy == el_energy);
@@ -137,10 +159,22 @@ namespace utopia {
             this->space_.subspace(1, U);
             CSpace C = this->space_.subspace(0);
 
-            auto &x = const_cast<Vector &>(x_const);
+            ///////////////////////////////////////////////////////////////////////////
 
-            FEFunction<CSpace> c_fun(C, x);
-            FEFunction<USpace> u_fun(U, x);
+            // update local vector x
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            // udpate local pressure field
+            this->space_.global_to_local(this->pressure_field_, *(this->local_pressure_field_));
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+
+            FEFunction<CSpace> press_fun(p_coeff);
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+
+            ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
 
@@ -148,17 +182,19 @@ namespace utopia {
             auto c_grad = c_fun.gradient(q);
             auto u_val = u_fun.value(q);
             auto differential = C.differential(q);
+            auto press_val = press_fun.value(q);
 
             auto v_grad_shape = U.shape_grad(q);
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
+                auto p_view = press_val.view_device();
 
                 auto c_view = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
@@ -176,9 +212,10 @@ namespace utopia {
 
                 Device::parallel_for(
                     this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        StaticMatrix<Scalar, Dim, Dim> stress_positive, stress_negative;
+                        StaticMatrix<Scalar, Dim, Dim> stress_positive, stress_negative, stress;
                         StaticVector<Scalar, U_NDofs> u_el_vec;
                         StaticVector<Scalar, C_NDofs> c_el_vec;
+                        Scalar tr_strain_u, gc, elast;
 
                         u_el_vec.set(0.0);
                         c_el_vec.set(0.0);
@@ -198,23 +235,25 @@ namespace utopia {
                         StaticVector<Scalar, NQuadPoints> c;
                         c_view.get(c_e, c);
 
+                        StaticVector<Scalar, NQuadPoints> p;
+                        p_view.get(c_e, p);
+
                         auto c_grad_el = c_grad_view.make(c_e);
                         auto dx = differential_view.make(c_e);
                         auto c_grad_shape_el = c_grad_shape_view.make(c_e);
                         auto c_shape_fun_el = c_shape_view.make(c_e);
 
                         ////////////////////////////////////////////
-
-                        // std::cout << "NQuadPoints:  " << NQuadPoints << " \n";
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
-                            compute_stress(
-                                this->params_, c[qp], el_strain.strain[qp], stress_positive, stress_negative);
+                            compute_stress(this->params_, c[qp], el_strain.strain[qp], stress, tr_strain_u, gc, elast);
 
                             for (SizeType j = 0; j < U_NDofs; ++j) {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
+                                u_el_vec(j) += inner(stress, strain_test) * dx(qp);
 
-                                u_el_vec(j) += inner(stress_positive, strain_test) * dx(qp);
-                                u_el_vec(j) += inner(stress_negative, strain_test) * dx(qp);
+                                if (this->params_.use_pressure) {
+                                    u_el_vec(j) += gc * p[qp] * sum(diag(strain_test)) * dx(qp);
+                                }
                             }
 
                             const Scalar elast = grad_elastic_energy_wrt_c(this->params_, c[qp], el_strain.strain[qp]);
@@ -225,6 +264,12 @@ namespace utopia {
                                     this->params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
+
+                                if (this->params_.use_pressure) {
+                                    const Scalar der_c_pres = quadratic_degradation_deriv(this->params_, c[qp]) *
+                                                              p[qp] * tr_strain_u * shape_test;
+                                    c_el_vec(j) += der_c_pres * dx(qp);
+                                }
                             }
                         }
 
@@ -269,13 +314,28 @@ namespace utopia {
 
             auto &x = const_cast<Vector &>(x_const);
 
-            FEFunction<CSpace> c_fun(C, x);
-            FEFunction<USpace> u_fun(U, x);
+            ///////////////////////////////////////////////////////////////////////////
+
+            // update local vector x
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            // udpate local pressure field
+            this->space_.global_to_local(this->pressure_field_, *(this->local_pressure_field_));
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+
+            FEFunction<CSpace> press_fun(p_coeff);
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+
+            ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
 
             auto c_val = c_fun.value(q);
             auto c_grad = c_fun.gradient(q);
+            auto p_val = press_fun.value(q);
             auto u_val = u_fun.value(q);
             auto differential = C.differential(q);
 
@@ -295,6 +355,7 @@ namespace utopia {
                 auto c_view = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
                 auto u_view = u_val.view_device();
+                auto p_view = p_val.view_device();
 
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
@@ -331,7 +392,9 @@ namespace utopia {
                         CElem c_e;
                         C_view.elem(i, c_e);
                         StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> p;
                         c_view.get(c_e, c);
+                        p_view.get(c_e, p);
 
                         auto dx = differential_view.make(c_e);
                         auto c_grad_shape_el = c_grad_shape_view.make(c_e);
@@ -343,17 +406,25 @@ namespace utopia {
 
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar eep = elastic_energy_positive(this->params_, el_strain.strain[qp]);
+                            const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
                             for (int l = 0; l < n_c_fun; ++l) {
+                                const Scalar c_shape_l = c_shape_fun_el(l, qp);
+                                auto &&c_grad_l = c_grad_shape_el(l, qp);
                                 for (int j = 0; j < n_c_fun; ++j) {
                                     el_mat(l, j) += bilinear_cc(this->params_,
                                                                 c[qp],
                                                                 eep,
                                                                 c_shape_fun_el(j, qp),
-                                                                c_shape_fun_el(l, qp),
+                                                                c_shape_l,
                                                                 c_grad_shape_el(j, qp),
-                                                                c_grad_shape_el(l, qp)) *
+                                                                c_grad_l) *
                                                     dx(qp);
+
+                                    if (this->params_.use_pressure) {
+                                        el_mat(l, j) += quadratic_degradation_deriv2(this->params_, c[qp]) * p[qp] *
+                                                        tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                    }
                                 }
                             }
 
@@ -386,6 +457,12 @@ namespace utopia {
                                             bilinear_uc(
                                                 this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
                                             dx(qp);
+
+                                        if (this->params_.use_pressure) {
+                                            const Scalar tr_strain_shape = sum(diag(strain_shape));
+                                            val += quadratic_degradation_deriv(this->params_, c[qp]) * p[qp] *
+                                                   tr_strain_shape * c_shape_i * dx(qp);
+                                        }
 
                                         // not symetric, but more numerically stable
                                         if (this->params_.turn_off_cu_coupling == false) {
@@ -532,16 +609,18 @@ namespace utopia {
                                                     const Scalar &phase_field_value,
                                                     const Grad &phase_field_grad,
                                                     // u
-                                                    const Strain &strain) {
+                                                    const Strain &strain,
+                                                    Scalar &tr) {
             return fracture_energy(params, phase_field_value, phase_field_grad) +
-                   elastic_energy(params, phase_field_value, strain);
+                   elastic_energy(params, phase_field_value, strain, tr);
         }
 
         template <class Strain>
         UTOPIA_INLINE_FUNCTION static Scalar elastic_energy(const PFFracParameters &params,
                                                             const Scalar &phase_field_value,
-                                                            const Strain &strain) {
-            const Scalar tr = trace(strain);
+                                                            const Strain &strain,
+                                                            Scalar &tr) {
+            tr = trace(strain);
             Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
 
             const Scalar tr_negative = device::min(tr, 0.0);
@@ -598,6 +677,34 @@ namespace utopia {
             stress_positive = quadratic_degradation(params, phase_field_value) * stress_positive;
 
             stress_negative = ((kappa * tr_negative) * device::identity<Scalar>());
+        }
+
+        template <class Strain, class Stress>
+        UTOPIA_INLINE_FUNCTION static void compute_stress(const PFFracParameters &params,
+                                                          const Scalar &phase_field_value,
+                                                          const Strain &strain,
+                                                          Stress &stress,
+                                                          Scalar &tr,
+                                                          Scalar &gc,
+                                                          Scalar &elast_energy) {
+            tr = trace(strain);
+            const Strain strain_dev = strain - (((1. / Dim) * tr) * device::identity<Scalar>());
+
+            const Scalar tr_negative = device::min(tr, 0.0);
+            const Scalar tr_positive = tr - tr_negative;
+
+            const Scalar kappa = params.lambda + ((2.0 * params.mu) / Dim);
+
+            stress = ((kappa * tr_positive) * device::identity<Scalar>());
+            stress += ((2.0 * params.mu) * strain_dev);
+
+            gc = quadratic_degradation(params, phase_field_value);
+            stress = (gc * stress) + ((kappa * tr_negative) * device::identity<Scalar>());
+
+            // energy positive
+            const Scalar energy_positive =
+                (0.5 * kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
+            elast_energy = gc * energy_positive;
         }
 
         UTOPIA_INLINE_FUNCTION static bool kroneckerDelta(const SizeType &i, const SizeType &j) {
