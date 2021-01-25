@@ -275,13 +275,14 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
 
             int n_levels = 4;
+            int n_coarse = 50;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
-            MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, 10, !use_masks);
+            MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
             auto funs = ml_problem.get_functions();
 
             Vector x, g;
@@ -292,8 +293,9 @@ namespace utopia {
             funs.back()->hessian(x, H);
 
             auto smoother_fine = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
-            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            // auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
 
             MonotoneMultigrid<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, n_levels);
 
@@ -309,7 +311,7 @@ namespace utopia {
             interpolation_operators[n_levels - 2] =
                 std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(t->I()));
 
-            Vector lower_bound(layout(g), -200), upper_bound(layout(g), 200.);
+            Vector lower_bound(layout(g), -0.8), upper_bound(layout(g), 200.);
 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);
@@ -320,11 +322,7 @@ namespace utopia {
             multigrid.update(make_ref(H));
             multigrid.apply(g, x);
 
-            double diff0 = norm2(H * x);
-            double diff = norm2(g - H * x);
-            double rel_diff = diff / diff0;
-
-            utopia_test_assert(rel_diff < 1e-8);
+            // disp(x);
         }
 
         void run() {

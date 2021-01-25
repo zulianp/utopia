@@ -326,16 +326,17 @@ namespace utopia {
             if (pre_sm) {
                 if (auto *trunc_transfer =
                         dynamic_cast<IPRTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
-                    active_set_.determine(this->get_box_constraints(), x);
+                    active_set_.verbose(this->verbose());
+                    if (active_set_.determine(this->get_box_constraints(), x)) {
+                        trunc_transfer->truncate_interpolation(active_set_.indicator());
+                        this->galerkin_assembly(this->get_operator());
 
-                    trunc_transfer->truncate_interpolation(active_set_.indicator());
-                    this->galerkin_assembly(this->get_operator());
+                        for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
+                            smoothers_[l]->update(level(l).A_ptr());
+                        }
 
-                    for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
-                        smoothers_[l]->update(level(l).A_ptr());
+                        coarse_solver_->update(level(0).A_ptr());
                     }
-
-                    coarse_solver_->update(level(0).A_ptr());
                 }
 
                 else {
@@ -354,7 +355,7 @@ namespace utopia {
          */
         bool coarse_solve(const Vector &rhs, Vector &x) {
             if (!coarse_solver_->apply(rhs, x)) return false;
-            assert(approxeq(level(0).A() * x, rhs, 1e-6));
+            // assert(approxeq(level(0).A() * x, rhs, 1e-6));
             return true;
         }
 
