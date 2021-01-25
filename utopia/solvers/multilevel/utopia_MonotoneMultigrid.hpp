@@ -8,13 +8,13 @@
 #include "utopia_LinearMultiLevel.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_PrintInfo.hpp"
-#include "utopia_ProjectedGaussSeidelQR.hpp"
 #include "utopia_Recorder.hpp"
 #include "utopia_Smoother.hpp"
 #include "utopia_Utils.hpp"
 
 #include "utopia_ActiveSet.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
+#include "utopia_ProjectedGaussSeidelQR.hpp"
 
 #include <cassert>
 #include <ctime>
@@ -66,13 +66,16 @@ namespace utopia {
                           const std::shared_ptr<Smoother> &coarse_smoother,
                           const std::shared_ptr<Solver> &coarse_solver,
                           const SizeType &num_levels)
-            : coarse_solver_(coarse_solver), use_line_search_(false) {
+            : coarse_solver_(coarse_solver),
+              active_set_(std::make_shared<ActiveSet<Vector>>()),
+              use_line_search_(false) {
             this->must_generate_masks(true);
             this->fix_semidefinite_operators(true);
             init(fine_smoother, coarse_smoother, coarse_solver, num_levels);
         }
 
-        MonotoneMultigrid(const SizeType &num_levels) {
+        MonotoneMultigrid(const SizeType &num_levels)
+            : active_set_(std::make_shared<ActiveSet<Vector>>()), use_line_search_(false) {
             this->must_generate_masks(true);
             this->fix_semidefinite_operators(true);
             init(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
@@ -128,7 +131,7 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override {
             Super::update(op);
 
-            active_set_.init(row_layout(*op));
+            active_set_->init(row_layout(*op));
             this->galerkin_assembly(op);
 
             update();
@@ -335,9 +338,10 @@ namespace utopia {
             if (pre_sm) {
                 if (auto *trunc_transfer =
                         dynamic_cast<IPRTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
-                    active_set_.verbose(this->verbose());
-                    if (active_set_.determine(this->get_box_constraints(), x)) {
-                        trunc_transfer->truncate_interpolation(active_set_.indicator());
+                    ////////////////////////////////////////////////////////////////
+                    // FIXME duplicated code (ProjectedGaussSeidelQR needs changes to avoid this)
+                    if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(fine_smoother)) {
+                        trunc_transfer->truncate_interpolation(pgs_QR->get_active_set());
 
                         this->galerkin_assembly(this->get_operator());
 
@@ -346,6 +350,20 @@ namespace utopia {
                         }
 
                         coarse_solver_->update(level(0).A_ptr());
+                        ////////////////////////////////////////////////////////////////
+                    } else {
+                        active_set_->verbose(this->verbose());
+                        if (active_set_->determine(this->get_box_constraints(), x)) {
+                            trunc_transfer->truncate_interpolation(active_set_->indicator());
+
+                            this->galerkin_assembly(this->get_operator());
+
+                            for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
+                                smoothers_[l]->update(level(l).A_ptr());
+                            }
+
+                            coarse_solver_->update(level(0).A_ptr());
+                        }
                     }
                 }
 
@@ -393,15 +411,19 @@ namespace utopia {
 
         bool use_line_search() const { return use_line_search_; }
 
-        inline ActiveSet<Vector> &active_set() { return active_set_; }
+        inline ActiveSet<Vector> &active_set() { return *active_set_; }
+
+        inline void active_set(const std::shared_ptr<ActiveSet<Vector>> active_set) {
+            active_set_ = std::move(active_set);
+        }
 
     protected:
         std::vector<SmootherPtr> smoothers_;
         std::shared_ptr<Solver> coarse_solver_;
-        ActiveSet<Vector> active_set_;
+        std::shared_ptr<ActiveSet<Vector>> active_set_;
 
     private:
-        bool use_line_search_;
+        bool use_line_search_{false};
     };
 
 }  // namespace utopia

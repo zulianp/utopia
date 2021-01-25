@@ -13,7 +13,9 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
         using Layout = typename Traits<Vector>::Layout;
 
-        inline bool determine(const BoxConstraints<Vector> &c, const Vector &x) {
+        virtual ~ActiveSet() = default;
+
+        virtual bool determine(const BoxConstraints<Vector> &c, const Vector &x) {
             auto d_lb = const_local_view_device(*c.lower_bound());
             auto d_ub = const_local_view_device(*c.upper_bound());
             auto d_x = const_local_view_device(x);
@@ -46,6 +48,7 @@ namespace utopia {
 
         inline void init(const Layout &l) { indicator_.zeros(l); }
         inline const Vector &indicator() const { return indicator_; }
+        inline Vector &indicator() { return indicator_; }
         inline void verbose(const bool verbose) { verbose_ = verbose; }
         inline void tol(const Scalar tol) { tol_ = tol; }
 

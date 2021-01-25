@@ -179,13 +179,13 @@ namespace utopia {
             // Vector Qtx   = Rot *x;
 
             auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
-            // smoother_fine->set_R(R);  // Monotone
+            smoother_fine->set_R(R);  // Monotone
 
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
-            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);  // QR
-            // MonotoneMultigrid<Matrix, Vector> multigrid(
-            // smoother_fine, coarse_smoother, direct_solver, num_levels);  // Monotone
+            // MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);  // QR
+            MonotoneMultigrid<Matrix, Vector> multigrid(
+                smoother_fine, coarse_smoother, direct_solver, num_levels);  // Monotone
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
@@ -198,12 +198,12 @@ namespace utopia {
             multigrid.max_it(40);
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
-            multigrid.verbose(false);
+            multigrid.verbose(true);
 
             // multigrid.mg_type(2);
 
             // This should be somewhere else...
-            multigrid.set_QR(Q, R);  // QR
+            // multigrid.set_QR(Q, R);  // QR
             multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
 
             multigrid.solve(QtAQ, Qtrhs, Qtx);
