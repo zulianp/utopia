@@ -256,8 +256,6 @@ namespace utopia {
                                 }
                             }
 
-                            const Scalar elast = grad_elastic_energy_wrt_c(this->params_, c[qp], el_strain.strain[qp]);
-
                             for (int j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test = c_shape_fun_el(j, qp);
                                 const Scalar frac = grad_fracture_energy_wrt_c(
@@ -343,7 +341,7 @@ namespace utopia {
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
             PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda);
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
@@ -408,37 +406,43 @@ namespace utopia {
                             const Scalar eep = elastic_energy_positive(this->params_, el_strain.strain[qp]);
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-                            for (int l = 0; l < n_c_fun; ++l) {
+                            for (int l = 0; l < C_NDofs; ++l) {
                                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
                                 auto &&c_grad_l = c_grad_shape_el(l, qp);
-                                for (int j = 0; j < n_c_fun; ++j) {
-                                    el_mat(l, j) += bilinear_cc(this->params_,
-                                                                c[qp],
-                                                                eep,
-                                                                c_shape_fun_el(j, qp),
-                                                                c_shape_l,
-                                                                c_grad_shape_el(j, qp),
-                                                                c_grad_l) *
-                                                    dx(qp);
+                                for (int j = l; j < C_NDofs; ++j) {
+                                    Scalar val = bilinear_cc(this->params_,
+                                                             c[qp],
+                                                             eep,
+                                                             c_shape_fun_el(j, qp),
+                                                             c_shape_l,
+                                                             c_grad_shape_el(j, qp),
+                                                             c_grad_l) *
+                                                 dx(qp);
 
                                     if (this->params_.use_pressure) {
-                                        el_mat(l, j) += quadratic_degradation_deriv2(this->params_, c[qp]) * p[qp] *
-                                                        tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                        val += quadratic_degradation_deriv2(this->params_, c[qp]) * p[qp] *
+                                               tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     }
+                                    val = (l == j) ? (0.5 * val) : val;
+
+                                    el_mat(l, j) += val;
+                                    el_mat(j, l) += val;
                                 }
                             }
 
-                            //
-                            for (int l = 0; l < U_NDofs; ++l) {
+                            for (SizeType l = 0; l < U_NDofs; ++l) {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
-                                for (int j = 0; j < U_NDofs; ++j) {
-                                    auto grad_test = u_grad_shape_el(j, qp);
-                                    el_mat(C_NDofs + l, C_NDofs + j) += bilinear_uu(this->params_,
-                                                                                    c[qp],
-                                                                                    el_strain.strain[qp],
-                                                                                    u_grad_shape_el(j, qp),
-                                                                                    u_grad_shape_el(l, qp)) *
-                                                                        dx(qp);
+
+                                for (SizeType j = l; j < U_NDofs; ++j) {
+                                    Scalar val = bilinear_uu(this->params_,
+                                                             c[qp],
+                                                             el_strain.strain[qp],
+                                                             u_strain_shape_el(j, qp),
+                                                             u_strain_shape_l) *
+                                                 dx(qp);
+                                    val = (l == j) ? (0.5 * val) : val;
+                                    el_mat(C_NDofs + l, C_NDofs + j) += val;
+                                    el_mat(C_NDofs + j, C_NDofs + l) += val;
                                 }
                             }
 
@@ -704,7 +708,7 @@ namespace utopia {
             // energy positive
             const Scalar energy_positive =
                 (0.5 * kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
-            elast_energy = gc * energy_positive;
+            elast_energy = quadratic_degradation_deriv(params, phase_field_value) * energy_positive;
         }
 
         UTOPIA_INLINE_FUNCTION static bool kroneckerDelta(const SizeType &i, const SizeType &j) {
@@ -733,18 +737,8 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
                                                          const Scalar &phase_field_value,
                                                          const Grad &strain,
-                                                         const Grad &grad_trial,
-                                                         const Grad &grad_test) {
-            const StaticMatrix<Scalar, Dim, Dim> strain_trial = 0.5 * (grad_trial + transpose(grad_trial));
-            const StaticMatrix<Scalar, Dim, Dim> strain_test = 0.5 * (grad_test + transpose(grad_test));
-
-            // StaticMatrix<Scalar, Dim, Dim> stress_positive, stress_negative;
-            // compute_stress(params, phase_field_value, strain, stress_positive, stress_negative);
-
-            // return (inner(stress_positive, strain_test)) + inner(stress_negative, strain_test);
-            // return (inner(stress_positive, strain_test)) * strain_trial + inner(strain_trial, strain_test);
-            //
-
+                                                         const Grad &strain_trial,
+                                                         const Grad &strain_test) {
             const Scalar strain0tr = trace(strain);
             const Scalar kappa = params.lambda + ((2.0 * params.mu) / Dim);
 
