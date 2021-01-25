@@ -52,6 +52,9 @@ Go to the folder utopia/utopia:
 For compiling the very experimental FE library follow the instructions [HERE](https://bitbucket.org/zulianp/utopia/wiki/Utopia%20FE).
 In the future the Utopia FE library will be removed from this repository and will have its own repo (after a large scale refactoring).
 
+### MacOS Big Sur
+For avoiding problems with cmake define the following env variable `export SYSTEM_VERSION_COMPAT=1`.
+
 ## Contact
 
 - Join us on [slack](https://join.slack.com/t/ics-utopia/signup)
