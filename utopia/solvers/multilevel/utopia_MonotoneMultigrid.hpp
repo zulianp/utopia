@@ -27,8 +27,7 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class MonotoneMultigrid final : public LinearMultiLevel<Matrix, Vector>,
-                                    public VariableBoundSolverInterface<Vector> {
+    class MonotoneMultigrid : public LinearMultiLevel<Matrix, Vector>, public VariableBoundSolverInterface<Vector> {
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
         typedef utopia::IterativeSolver<Matrix, Vector> Smoother;
         using SmootherPtr = std::shared_ptr<Smoother>;
@@ -393,6 +392,8 @@ namespace utopia {
         void use_line_search(const bool val) { use_line_search_ = val; }
 
         bool use_line_search() const { return use_line_search_; }
+
+        inline ActiveSet<Vector> &active_set() { return active_set_; }
 
     protected:
         std::vector<SmootherPtr> smoothers_;

@@ -12,6 +12,7 @@
 #include "utopia_polymorphic_QPSolver.hpp"
 
 #include "utopia_MonotoneMultigrid.hpp"
+#include "utopia_MultigridQR.hpp"
 
 #include "utopia_MultilevelTestProblem1D.hpp"
 #include "utopia_Poisson1D.hpp"
@@ -133,7 +134,7 @@ namespace utopia {
             qp_solver.solve(A, b, x);
         }
 
-        void ProjectedGS_QR() {
+        void MG_QR_test() {
             Vector rhs, x;
             Vector upper_bound, lower_bound;
             Matrix A, R, Q, Ih_fine, Rot;
@@ -178,9 +179,13 @@ namespace utopia {
             // Vector Qtx   = Rot *x;
 
             auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            // smoother_fine->set_R(R);  // Monotone
+
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
-            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);
+            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);  // QR
+            // MonotoneMultigrid<Matrix, Vector> multigrid(
+            // smoother_fine, coarse_smoother, direct_solver, num_levels);  // Monotone
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
@@ -194,10 +199,11 @@ namespace utopia {
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
             multigrid.verbose(false);
+
             // multigrid.mg_type(2);
 
             // This should be somewhere else...
-            multigrid.set_QR(Q, R);
+            multigrid.set_QR(Q, R);  // QR
             multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
 
             multigrid.solve(QtAQ, Qtrhs, Qtx);
@@ -223,7 +229,7 @@ namespace utopia {
             if (mpi_world_size() > 1) return;
 
             print_backend_info();
-            UTOPIA_RUN_TEST(ProjectedGS_QR);
+            UTOPIA_RUN_TEST(MG_QR_test);
         }
 
         QPSolverTest() : n(20) {}
@@ -275,10 +281,10 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
 
-            int n_levels = 4;
+            int n_levels = 6;
             int n_coarse = 50;
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
@@ -321,6 +327,9 @@ namespace utopia {
             multigrid.verbose(verbose);
             multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
             multigrid.update(make_ref(H));
+
+            // avoids flip-floping of active nodes (and Galerkin assembly when nothing changes)
+            multigrid.active_set().tol(1e-15);
             multigrid.apply(g, x);
 
             // disp(x);

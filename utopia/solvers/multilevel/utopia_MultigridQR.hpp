@@ -205,8 +205,8 @@ namespace utopia {
                 }
 
 #ifdef CHECK_NUM_PRECISION_mode
-                if (has_nan_or_inf(x)) {
-                    x = local_zeros(local_size(x));
+                if (has_nan_or_inf(x_fine)) {
+                    x_fine.set(0.0);
                     return true;
                 }
 #else
