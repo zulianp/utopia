@@ -52,16 +52,16 @@ namespace utopia {
         PhaseFieldVolDevSplit(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {
             this->params_.fill_in_isotropic_elast_tensor();
 
-            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
-            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
+            PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
+            mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         PhaseFieldVolDevSplit(FunctionSpace &space, const PFFracParameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
 
-            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
-            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
+            PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
+            mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         bool value(const Vector &x_const, Scalar &val) const override {
@@ -149,6 +149,9 @@ namespace utopia {
             }
 
             val = x.comm().sum(val);
+
+            // Vector diff = x_const - this->x_old_;
+            // val += 1. / (dt_ * mobility_) * dot(M_c_ * diff, x_const);
 
             assert(val == val);
 
@@ -289,6 +292,9 @@ namespace utopia {
             if (this->check_derivatives_) {
                 this->diff_ctrl_.check_grad(*this, x_const, g);
             }
+
+            // Vector diff = x_const - this->x_old_;
+            // g += 1. / (dt_ * mobility_) * M_c_ * diff;
 
             this->space_.apply_zero_constraints(g);
 
@@ -490,6 +496,8 @@ namespace utopia {
             // this->diff_ctrl_.check_hessian(*this, x_const, H);
             // // }
 
+            // H += 1. / (dt_ * mobility_) * M_c_;
+
             this->space_.apply_constraints(H);
 
             if (this->params_.use_crack_set_irreversibiblity) {
@@ -645,6 +653,13 @@ namespace utopia {
             energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
         }
+
+        void set_dt(const Scalar &dt) { dt_ = dt; }
+
+        // private:
+        //     Matrix M_c_;
+        //     Scalar dt_;
+        //     Scalar mobility_ = 1e5;
     };
 
 }  // namespace utopia

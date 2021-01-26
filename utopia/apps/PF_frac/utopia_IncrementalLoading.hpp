@@ -223,7 +223,7 @@ namespace utopia {
 
             BC_.emplace_time_dependent_BC(this->time_);
             space_.apply_constraints(this->solution_);
-            // fe_problem_->set_dt(this->dt_);
+            fe_problem_->set_dt(this->dt_);
 
             if (this->use_pressure_) {
                 auto press_ts = this->pressure0_ + (this->time_ * this->pressure_increase_factor_);
@@ -293,6 +293,9 @@ namespace utopia {
 
                 // fe problem is missing
                 prepare_for_solve();
+                if (t == 1) {
+                    fe_problem_->old_solution(this->solution_);
+                }
 
                 ////////////////////////////////////////////////////////////////////////////////////////////////////////
                 // auto box = make_lower_bound_constraints(make_ref(this->lb_));
