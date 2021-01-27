@@ -107,4 +107,8 @@ namespace utopia {
         block.wrap(M);
         block.update_mirror();
     }
+
+    void local_view(const PetscVector &vec, PetscVector &lv) {
+        // VecGetLocalVector(Vec v,Vec w)
+    }
 }  // namespace utopia
