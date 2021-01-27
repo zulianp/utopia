@@ -11,10 +11,10 @@ namespace utopia {
         void update(const Matrix &mat) {
             ILUDecompose<Matrix>::decompose(mat, decomposition, milu);
 
-            if (mat.comm().size() == 1) {
-                rename("dec", decomposition);
-                write("DEC.m", decomposition);
-            }
+            // if (mat.comm().size() == 1) {
+            //     rename("dec", decomposition);
+            //     write("DEC.m", decomposition);
+            // }
         }
 
         void apply(const Vector &in, Vector &out) { ILUDecompose<Matrix>::apply(decomposition, in, out); }
@@ -97,9 +97,13 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     void ILU<Matrix, Vector, Backend>::update(const std::shared_ptr<const Matrix> &op) {
+        UTOPIA_TRACE_REGION_BEGIN("ILU::update");
+
         Super::update(op);
         impl_->update(*op);
         init_memory(row_layout(*op));
+
+        UTOPIA_TRACE_REGION_END("ILU::update");
     }
 
 }  // namespace utopia

@@ -3,18 +3,15 @@
 #include "utopia_Testing.hpp"
 
 #include "utopia_ILU.hpp"
-#include "utopia_ILU_impl.hpp"
-
 #include "utopia_assemble_laplacian_1D.hpp"
 
 using namespace utopia;
 
 #ifdef UTOPIA_WITH_PETSC
-#include "utopia_petsc_ILUDecompose.hpp"
 
 void petsc_ilu_test() {
     auto comm = PetscCommunicator::get_default();
-    PetscInt n = 20;
+    PetscInt n = 1000;
 
     auto vl = layout(comm, n, n * comm.size());
     PetscMatrix A;
@@ -23,19 +20,21 @@ void petsc_ilu_test() {
 
     PetscVector x(vl, 0.0), b(vl, 1.0);
     ILU<PetscMatrix, PetscVector> ls;
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
+    ls.rtol(1e-6);
+    ls.stol(1e-6);
     ls.solve(A, b, x);
 
-    if (comm.size() == 1) {
-        rename("a", A);
-        write("A.m", A);
-    }
+    // if (comm.size() == 1) {
+    //     rename("a", A);
+    //     write("A.m", A);
+    // }
 }
 
 void petsc_ilu_cg_test() {
     auto comm = PetscCommunicator::get_default();
-    PetscInt n = 20;
+    PetscInt n = 1e4;
 
     auto vl = layout(comm, n, n * comm.size());
     PetscMatrix A;
@@ -50,11 +49,27 @@ void petsc_ilu_cg_test() {
     ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
     ls.apply_gradient_descent_step(true);
 
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
+    ls.rtol(1e-6);
 
     ls.set_preconditioner(ilu);
-    ls.solve(A, b, x);
+
+    // Chrono c;
+    // c.start();
+
+    ls.update(make_ref(A));
+
+    // c.stop();
+
+    // std::cout << "update:\n" << c << std::endl;
+
+    // c.start();
+
+    ls.apply(b, x);
+
+    // c.stop();
+    // std::cout << "solve:\n" << c << std::endl;
 }
 
 #endif  // UTOPIA_WITH_PETSC
