@@ -2,6 +2,9 @@
 #define UTOPIA_VC_BASE_HPP
 
 #include <Vc/Vc>
+#include <cmath>
+
+#include "utopia_Epsilon.hpp"
 
 namespace utopia {
 
@@ -62,6 +65,11 @@ namespace utopia {
         }
 
         template <typename T>
+        inline Vc::Vector<T> sqrt(const Vc::Vector<T> &v) {
+            return std::sqrt(v);
+        }
+
+        template <typename T>
         UTOPIA_INLINE_FUNCTION constexpr bool disjunction(const T v) {
             return Disjunction<T>::eval(v);
         }
@@ -75,6 +83,12 @@ namespace utopia {
         T sum(const Vc::Vector<T> &v) {
             return v.sum();
         }
+
+        template <typename T>
+        class Epsilon<Vc::Vector<T>> {
+        public:
+            static inline constexpr Vc::Vector<T> value() { return Vc::Vector<T>(device::epsilon<T>()); }
+        };
     }  // namespace device
 
 }  // namespace utopia

@@ -2,6 +2,7 @@
 #define UTOPIA_ALGORITHMS_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Epsilon.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
 #ifdef UTOPIA_WITH_TRILINOS
@@ -92,11 +93,6 @@ namespace utopia {
         }
 
         template <typename T>
-        UTOPIA_INLINE_FUNCTION constexpr T epsilon() {
-            return Kokkos::Details::ArithTraits<T>::epsilon();
-        }
-
-        template <typename T>
         UTOPIA_INLINE_FUNCTION constexpr bool signbit(const T &a) {
             return (a < 0) ? true : false;
         }
@@ -179,11 +175,6 @@ namespace utopia {
         template <typename T>
         inline void swap(T &left, T &right) {
             std::swap(left, right);
-        }
-
-        template <typename T>
-        inline T epsilon() {
-            return std::numeric_limits<T>::epsilon();
         }
 
         template <typename T>

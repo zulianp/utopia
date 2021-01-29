@@ -111,7 +111,7 @@ namespace utopia {
 
             this->register_experiment("QuasiNewton_Bound_LBFGS", [this]() {
                 auto hessian_approx = std::make_shared<LBFGS<Vector> >(7);
-                auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+                auto qp_solver = std::make_shared<MPRGP<Matrix, Vector> >();
                 QuasiNewtonBound<Vector> solver(hessian_approx, qp_solver);
                 auto line_search = std::make_shared<utopia::Backtracking<Vector> >();
                 solver.set_line_search_strategy(line_search);
@@ -122,7 +122,7 @@ namespace utopia {
 
             this->register_experiment("QuasiTR_Bound_LBFGS", [this]() {
                 auto hessian_approx = std::make_shared<LBFGS<Vector> >(7);
-                auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+                auto qp_solver = std::make_shared<MPRGP<Matrix, Vector> >();
                 qp_solver->max_it(1000);
                 qp_solver->atol(1e-12);
                 QuasiTrustRegionVariableBound<Vector> solver(hessian_approx, qp_solver);
@@ -134,7 +134,7 @@ namespace utopia {
 
             this->register_experiment("QuasiTR_Bound_LSR1", [this]() {
                 auto hessian_approx = std::make_shared<LSR1<Vector> >(7);
-                auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+                auto qp_solver = std::make_shared<MPRGP<Matrix, Vector> >();
                 qp_solver->max_it(1000);
                 qp_solver->atol(1e-12);
                 QuasiTrustRegionVariableBound<Vector> solver(hessian_approx, qp_solver);

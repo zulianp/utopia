@@ -628,7 +628,6 @@ namespace utopia {
             multigrid.post_smoothing_steps(3);
             multigrid.fix_semidefinite_operators(true);
             multigrid.must_generate_masks(use_masks);
-            ;
             multigrid.verbose(verbose);
 
             multigrid.set_transfer_operators(ml_problem.get_transfer());

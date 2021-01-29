@@ -425,6 +425,8 @@ namespace utopia {
 
         inline bool is_null() const { return vec_.is_null(); }
 
+        inline bool read(const std::string &path) { return read(comm().get(), path); }
+
         bool read(const Teuchos::RCP<const Teuchos::Comm<int> > &comm, const std::string &path);
         bool write(const std::string &path) const;
 

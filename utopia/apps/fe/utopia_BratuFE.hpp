@@ -49,32 +49,33 @@ namespace utopia {
 
             value = 0.0;
 
-            Device::parallel_reduce(space_->element_range(),
-                                    UTOPIA_LAMBDA(const SizeType &i)->Scalar {
-                                        Elem e;
-                                        space_view.elem(i, e);
+            Device::parallel_reduce(
+                space_->element_range(),
+                UTOPIA_LAMBDA(const SizeType &i)->Scalar {
+                    Elem e;
+                    space_view.elem(i, e);
 
-                                        ElementVector coeff;
+                    ElementVector coeff;
 
-                                        x_view.get(e, coeff);
+                    x_view.get(e, coeff);
 
-                                        ElementMatrix el_mat;
-                                        el_mat.set(0.0);
+                    ElementMatrix el_mat;
+                    el_mat.set(0.0);
 
-                                        l_view.assemble(i, e, el_mat);
+                    l_view.assemble(i, e, el_mat);
 
-                                        ElementVector el_vec;
-                                        el_vec = el_mat * coeff;
+                    ElementVector el_vec;
+                    el_vec = el_mat * coeff;
 
-                                        Scalar v = dot(el_vec, coeff);
+                    Scalar v = dot(el_vec, coeff);
 
-                                        el_mat.set(0.0);
-                                        m_view.assemble(i, e, f, el_mat);
+                    el_mat.set(0.0);
+                    m_view.assemble(i, e, f, el_mat);
 
-                                        v += sum(el_mat);
-                                        return v;
-                                    },
-                                    value);
+                    v += sum(el_mat);
+                    return v;
+                },
+                value);
 
             value = x.comm().sum(value);
             return true;
@@ -104,29 +105,30 @@ namespace utopia {
 
                 auto f = UTOPIA_LAMBDA(const Scalar &u)->Scalar { return -lambda_ * device::exp(u); };
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    ElementVector coeff;
+                        ElementVector coeff;
 
-                    x_view.get(e, coeff);
+                        x_view.get(e, coeff);
 
-                    ElementMatrix el_mat;
-                    el_mat.set(0.0);
+                        ElementMatrix el_mat;
+                        el_mat.set(0.0);
 
-                    l_view.assemble(i, e, el_mat);
+                        l_view.assemble(i, e, el_mat);
 
-                    ElementVector el_vec;
-                    el_vec = el_mat * coeff;
+                        ElementVector el_vec;
+                        el_vec = el_mat * coeff;
 
-                    el_mat.set(0.0);
-                    m_view.assemble(i, e, f, el_mat);
+                        el_mat.set(0.0);
+                        m_view.assemble(i, e, f, el_mat);
 
-                    el_vec += row_sum(el_mat);
+                        el_vec += row_sum(el_mat);
 
-                    space_view.add_vector(e, el_vec, g_view);
-                });
+                        space_view.add_vector(e, el_vec, g_view);
+                    });
             }
 
             if (!empty(rhs_)) {
@@ -154,18 +156,19 @@ namespace utopia {
 
                 auto f = UTOPIA_LAMBDA(const Scalar &u)->Scalar { return -lambda_ * device::exp(u); };
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    ElementMatrix el_mat;
-                    el_mat.set(0.0);
+                        ElementMatrix el_mat;
+                        el_mat.set(0.0);
 
-                    l_view.assemble(i, e, el_mat);
-                    m_view.assemble(i, e, f, el_mat);
+                        l_view.assemble(i, e, el_mat);
+                        m_view.assemble(i, e, f, el_mat);
 
-                    space_view.add_matrix(e, el_mat, H_view);
-                });
+                        space_view.add_matrix(e, el_mat, H_view);
+                    });
             }
 
             space_->apply_constraints(H);
@@ -206,16 +209,17 @@ namespace utopia {
                 auto space_view = space_->view_device();
                 auto rhs_view = space_->assembly_view_device(rhs_);
 
-                Device::parallel_for(space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                    Elem e;
-                    space_view.elem(i, e);
+                Device::parallel_for(
+                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        Elem e;
+                        space_view.elem(i, e);
 
-                    ElementVector el_vec;
-                    el_vec.set(0.0);
+                        ElementVector el_vec;
+                        el_vec.set(0.0);
 
-                    proj_view.assemble(i, e, el_vec);
-                    space_view.add_vector(e, el_vec, rhs_view);
-                });
+                        proj_view.assemble(i, e, el_vec);
+                        space_view.add_vector(e, el_vec, rhs_view);
+                    });
             }
 
             space_->apply_constraints(rhs_);

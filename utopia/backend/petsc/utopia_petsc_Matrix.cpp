@@ -936,6 +936,24 @@ namespace utopia {
         }
     }
 
+    void PetscMatrix::row_abs_max(PetscVector &col) const {
+        MPI_Comm comm = communicator();
+
+        if (col.is_null() || col.size() != size().get(0)) {
+            col.destroy();
+            MatCreateVecs(raw_type(), nullptr, &col.raw_type());
+        }
+
+        int size = 0;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1 || !is_mpi()) {
+            MatGetRowMaxAbs(raw_type(), col.raw_type(), nullptr);
+        } else {
+            reduce_rows(col, *this, 0.0, utopia::AbsMax());
+        }
+    }
+
     void PetscMatrix::row_min(PetscVector &col) const {
         MPI_Comm comm = communicator();
 

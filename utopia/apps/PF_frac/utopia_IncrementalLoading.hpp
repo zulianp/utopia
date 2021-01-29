@@ -179,26 +179,20 @@ namespace utopia {
 
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::init_solver(...)");
 
-            // std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
-            // if (this->use_mprgp_) {
-            //     // MPRGP sucks as a solver, as it can not be preconditioned easily ...
-            //     qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector>>();
-            //     qp_solver->max_it(1000);
-            // } else {
-            //     // tao seems to be faster until it stalls ...
-            //     // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-            //     // std::cout << "--------- here ------ \n";
-            //     auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
-            //     linear_solver->max_it(1000);
-            //     linear_solver->pc_type("ilu");
-            //     qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
-            // }
+            std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
+            if (this->use_mprgp_) {
+                // MPRGP sucks as a solver, as it can not be preconditioned easily ...
+                qp_solver = std::make_shared<utopia::MPRGP<PetscMatrix, PetscVector>>();
+            } else {
+                // tao seems to be faster until it stalls ...
+                // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
+                auto linear_solver = std::make_shared<GMRES<PetscMatrix, PetscVector>>();
+                linear_solver->max_it(200);
+                linear_solver->pc_type("bjacobi");
+                qp_solver = std::make_shared<utopia::TaoQPSolver<PetscMatrix, PetscVector>>(linear_solver);
+            }
 
-            auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
-            qp_solver->pc_type("bjacobi");
-
-            // tr_solver_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
-            tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
+            tr_solver_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solver(...)");
         }
@@ -380,8 +374,8 @@ namespace utopia {
         BCSetup<FunctionSpace> &BC_;
 
         std::shared_ptr<ProblemType> fe_problem_;
-        // std::shared_ptr<TrustRegionVariableBound<Matrix, Vector>> tr_solver_;
-        std::shared_ptr<TrustRegion<Matrix, Vector>> tr_solver_;
+        std::shared_ptr<TrustRegionVariableBound<Matrix, Vector>> tr_solver_;
+        // std::shared_ptr<TrustRegion<Matrix, Vector>> tr_solver_;
     };
 
 }  // namespace utopia
