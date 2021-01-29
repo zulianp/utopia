@@ -148,12 +148,12 @@ namespace utopia {
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine;
 
             if (mprgp_smoother_) {
-                tr_strategy_fine = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+                tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             } else if (hjsmn_smoother_) {
                 // auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
                 //     std::make_shared<Factorization<Matrix, Vector>>());
 
-                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPGRP<Matrix, Vector>>());
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix, Vector>>());
 
                 qp->max_it(2);
                 // BlockQPSolver<Matrix, Vector> bqp(qp);
@@ -174,11 +174,11 @@ namespace utopia {
             std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
             if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
                 spaces_[0]->comm().root_print("using redundant qp solver");
-                auto qp = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+                auto qp = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
                 tr_strategy_coarse = std::make_shared<RedundantQPSolver<Matrix, Vector>>(qp, n_coarse_sub_comm_);
                 // tr_strategy_coarse->verbose(true);
             } else {
-                tr_strategy_coarse = std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+                tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             }
 
             // auto ls = std::make_shared<GMRES<Matrix, Vector> >();

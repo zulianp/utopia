@@ -80,7 +80,9 @@ namespace utopia {
                     local_side_idx[1] = 0;
                     return;
                 }
-                default: { UTOPIA_DEVICE_ASSERT(false); }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
             }
         }
 

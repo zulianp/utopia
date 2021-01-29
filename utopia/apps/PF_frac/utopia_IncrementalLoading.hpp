@@ -179,7 +179,7 @@ namespace utopia {
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> qp_solver;
             if (this->use_mprgp_) {
                 // MPRGP sucks as a solver, as it can not be preconditioned easily ...
-                qp_solver = std::make_shared<utopia::MPGRP<PetscMatrix, PetscVector>>();
+                qp_solver = std::make_shared<utopia::MPRGP<PetscMatrix, PetscVector>>();
             } else {
                 // tao seems to be faster until it stalls ...
                 // auto linear_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();

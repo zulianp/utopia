@@ -716,6 +716,7 @@ namespace utopia {
 
         void row_sum(PetscVector &col) const;
         void row_max(PetscVector &col) const;
+        void row_abs_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
         void col_sum(PetscVector &col) const;

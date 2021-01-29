@@ -104,7 +104,7 @@ set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
 )
 
-if(APPLE)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=nonportable-include-path")
 endif()
 

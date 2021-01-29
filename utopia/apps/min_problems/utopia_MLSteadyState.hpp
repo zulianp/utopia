@@ -128,7 +128,7 @@ namespace utopia {
 
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine =
                 std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
-            // std::make_shared<utopia::MPGRP<Matrix, Vector>>();
+            // std::make_shared<utopia::MPRGP<Matrix, Vector>>();
 
             std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse =
                 std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
@@ -234,7 +234,7 @@ namespace utopia {
             // solver.rtol(1e-9);
             // solver.solve(*level_functions_.back(), solution);
 
-            // auto subproblem = std::make_shared<MPGRP<Matrix, Vector>>();
+            // auto subproblem = std::make_shared<MPRGP<Matrix, Vector>>();
             // TrustRegionVariableBound<Matrix, Vector> solver(subproblem);
             // subproblem->atol(1e-14);
             // solver.verbose(true);
