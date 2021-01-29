@@ -26,6 +26,14 @@ namespace utopia {
         in.get("max_gap", max_gap);
     }
 
+    void Obstacle::transform(const USparseMatrix &in, USparseMatrix &out) {
+        out = transpose(output().orthogonal_trafo) * in * output().orthogonal_trafo;
+    }
+
+    void Obstacle::transform(const UVector &in, UVector &out) { out = output().orthogonal_trafo * in; }
+
+    void Obstacle::inverse_transform(const UVector &in, UVector &out) { out = output().orthogonal_trafo * in; }
+
     class Obstacle::Impl : public Configurable {
     public:
         virtual ~Impl() {}
@@ -87,12 +95,13 @@ namespace utopia {
         void finalize_tensors(Obstacle::Output &out) {
             auto &buffers = obstacle->buffers();
 
-            USparseMatrix mass_matrix_x, trafo_x, inverse_trafo_x;
+            USparseMatrix mass_matrix_x, trafo_x;  //, inverse_trafo_x;
             UVector gap_x;
 
             convert_matrix(buffers.mass_matrix, mass_matrix_x);
             convert_matrix(buffers.trafo, trafo_x);
-            convert_matrix(buffers.inverse_trafo, inverse_trafo_x);
+            tensorize(trafo_x, Dim, out.basis_trafo);
+            // convert_matrix(buffers.inverse_trafo, inverse_trafo_x);
 
             convert_tensor(buffers.gap, gap_x);
             convert_tensor(buffers.normal, out.normals);
@@ -110,6 +119,25 @@ namespace utopia {
             normalize(out.normals);
 
             build_orthogonal_transformation(out.is_contact, out.normals, out.orthogonal_trafo);
+
+            // UVector test_normals = out.orthogonal_trafo * out.normals;
+
+            // write("test_normals.m", test_normals);
+
+            replace_zeros(out.is_contact, out.gap);
+        }
+
+        void replace_zeros(const UVector &is_contact, UVector &gap) {
+            auto r = range(gap);
+
+            Read<UVector> r_ic(is_contact);
+            Write<UVector> w_g(gap);
+
+            for (auto i = r.begin(); i < r.end(); ++i) {
+                if (is_contact.get(i) == 0.0) {
+                    gap.set(i, 1e8);
+                }
+            }
         }
 
         void normalize(UVector &normal) {

@@ -23,6 +23,9 @@ namespace utopia {
                       const ObstacleParams &params = ObstacleParams());
 
         bool init(libMesh::MeshBase &obstacle_mesh);
+        void transform(const USparseMatrix &in, USparseMatrix &out);
+        void transform(const UVector &in, UVector &out);
+        void inverse_transform(const UVector &in, UVector &out);
 
         class Impl;
         Obstacle();
