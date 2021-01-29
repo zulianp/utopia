@@ -223,4 +223,92 @@ namespace utopia {
         }
     }
 
+    // void ILUDecompose<PetscMatrix, PETSC>::apply_vi(const PetscMatrix &ilu,
+    //                                                 const PetscVector &lb,
+    //                                                 const PetscVector &ub,
+    //                                                 const PetscVector &b,
+    //                                                 PetscVector &x) {
+    //     PetscVector L_inv_b(layout(b), 0.0), U_ub(layout(b), 0.0);
+    //     x.set(0.0);
+
+    //     auto b_view = const_local_view_device(b);
+    //     auto lb_view = const_local_view_device(lb);
+    //     auto ub_view = const_local_view_device(ub);
+
+    //     auto U_ub_view = local_view_device(U_ub);
+    //     auto L_inv_b_view = local_view_device(L_inv_b);
+    //     auto x_view = local_view_device(x);
+
+    //     PetscSeqAIJRaw m_raw(ilu.raw_type());
+
+    //     PetscInt n = m_raw.n;
+    //     const PetscInt *ia = m_raw.ia;
+    //     const PetscInt *ja = m_raw.ja;
+    //     PetscScalar *array = m_raw.array;
+
+    //     DiagIdx idx;
+    //     idx.init(n, ia, ja);
+
+    //     // Backward substitution
+    //     for (PetscInt i = n - 1; i >= 0; --i) {
+    //         const PetscInt row_end = ia[i + 1];
+    //         const PetscInt row_diag = idx.idx[i];
+
+    //         PetscScalar val = ub_view.get(i);
+
+    //         for (PetscInt k = row_diag + 1; k < row_end; ++k) {
+    //             auto j = ja[k];
+    //             val -= array[k] * U_ub_view.get(j);
+    //         }
+
+    //         U_ub_view.set(i, val / array[row_diag]);
+    //     }
+
+    //     // Forward substitution
+    //     //
+    //     https://algowiki-project.org/en/Forward_substitution#:~:text=Forward%20substitution%20is%20the%20process,math%5DL%5B%2Fmath%5D.
+    //     for (PetscInt i = 0; i < n; ++i) {
+    //         const PetscInt row_begin = ia[i];
+    //         const PetscInt row_diag = idx.idx[i];
+
+    //         // auto lb_i = lb_view.get(i);
+    //         auto ub_i = U_ub_view.get(i);
+
+    //         PetscScalar val = b_view.get(i);
+
+    //         for (PetscInt k = row_begin; k < row_diag; ++k) {
+    //             auto j = ja[k];
+    //             val -= array[k] * L_inv_b_view.get(j);
+    //         }
+
+    //         // L_inv_b_view.set(i, std::max(lb_i, std::min(ub_i, val / array[row_diag])));
+
+    //         L_inv_b_view.set(i, std::min(ub_i, val / array[row_diag]));
+
+    //         // L_inv_b_view.set(i, val / array[row_diag]);
+    //     }
+
+    //     // Backward substitution
+    //     //
+    //     https://algowiki-project.org/en/Backward_substitution#:~:text=Backward%20substitution%20is%20a%20procedure,is%20a%20lower%20triangular%20matrix.
+    //     for (PetscInt i = n - 1; i >= 0; --i) {
+    //         const PetscInt row_end = ia[i + 1];
+    //         const PetscInt row_diag = idx.idx[i];
+
+    //         // auto lb_i = lb_view.get(i);
+    //         auto ub_i = ub_view.get(i);
+
+    //         PetscScalar val = L_inv_b_view.get(i);
+
+    //         for (PetscInt k = row_diag + 1; k < row_end; ++k) {
+    //             auto j = ja[k];
+    //             val -= array[k] * x_view.get(j);
+    //         }
+
+    //         // x_view.set(i, std::max(lb_i, std::min(ub_i, val / array[row_diag])));
+
+    //         x_view.set(i, std::min(ub_i, val / array[row_diag]));
+    //     }
+    // }
+
 }  // namespace utopia

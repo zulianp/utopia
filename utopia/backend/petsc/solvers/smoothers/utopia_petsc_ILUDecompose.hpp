@@ -11,7 +11,13 @@ namespace utopia {
     class ILUDecompose<PetscMatrix, PETSC> {
     public:
         static void decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified);
-        static void apply(const PetscMatrix &ilu, const PetscVector &in, PetscVector &out);
+        static void apply(const PetscMatrix &ilu, const PetscVector &b, PetscVector &x);
+
+        // static void apply_vi(const PetscMatrix &ilu,
+        //                      const PetscVector &lb,
+        //                      const PetscVector &ub,
+        //                      const PetscVector &b,
+        //                      PetscVector &x);
     };
 
 }  // namespace utopia
