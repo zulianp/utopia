@@ -41,8 +41,8 @@ namespace utopia {
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
 
         // FIXME
-        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
-        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
+        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
+        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
@@ -52,16 +52,16 @@ namespace utopia {
         PhaseFieldVolDevSplit(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {
             this->params_.fill_in_isotropic_elast_tensor();
 
-            PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
-            mass_matrix_assembler.mass_matrix_only_c(M_c_);
+            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
+            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         PhaseFieldVolDevSplit(FunctionSpace &space, const PFFracParameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
 
-            PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
-            mass_matrix_assembler.mass_matrix_only_c(M_c_);
+            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
+            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         bool value(const Vector &x_const, Scalar &val) const override {
@@ -135,10 +135,20 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp], tr) * dx(qp);
 
+                            // if (this->params_.use_pressure) {
+                            //     el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
+                            //                      this->params_, c[qp]) *
+                            //                  p[qp] * tr * dx(qp);
+                            // }
+
+                            // if (this->params_.use_pressure) {
+                            //     // indicator function is assumed to be c
+                            //     el_energy -= c[qp] * p[qp] * tr * dx(qp);
+                            // }
+
                             if (this->params_.use_pressure) {
-                                el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
-                                                 this->params_, c[qp]) *
-                                             p[qp] * tr * dx(qp);
+                                // indicator function is assumed to be c^2
+                                el_energy -= c[qp] * c[qp] * p[qp] * tr * dx(qp);
                             }
                         }
 
@@ -261,8 +271,18 @@ namespace utopia {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
 
+                                // if (this->params_.use_pressure) {
+                                //     u_el_vec(j) += gc * p[qp] * sum(diag(strain_test)) * dx(qp);
+                                // }
+
+                                // if (this->params_.use_pressure) {
+                                //     // indicator function is assumed to be c
+                                //     u_el_vec(j) -= c[qp] * p[qp] * sum(diag(strain_test)) * dx(qp);
+                                // }
+
                                 if (this->params_.use_pressure) {
-                                    u_el_vec(j) += gc * p[qp] * sum(diag(strain_test)) * dx(qp);
+                                    // indicator function is assumed to be c^2
+                                    u_el_vec(j) -= c[qp] * c[qp] * p[qp] * sum(diag(strain_test)) * dx(qp);
                                 }
                             }
 
@@ -273,12 +293,23 @@ namespace utopia {
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
 
+                                // if (this->params_.use_pressure) {
+                                //     const Scalar der_c_pres =
+                                //         PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
+                                //             this->params_, c[qp]) *
+                                //         p[qp] * tr_strain_u * shape_test;
+                                //     c_el_vec(j) += der_c_pres * dx(qp);
+                                // }
+
+                                // if (this->params_.use_pressure) {
+                                //     // indicator function is assumed to be c
+                                //     c_el_vec(j) -= p[qp] * tr_strain_u * shape_test * dx(qp);
+                                // }
+
                                 if (this->params_.use_pressure) {
-                                    const Scalar der_c_pres =
-                                        PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
-                                            this->params_, c[qp]) *
-                                        p[qp] * tr_strain_u * shape_test;
-                                    c_el_vec(j) += der_c_pres * dx(qp);
+                                    // indicator function is assumed to be c^2
+                                    // c_el_vec(j) -= 2.0 * c[qp] * p[qp] * tr_strain_u * dx(qp);
+                                    c_el_vec(j) -= 2.0 * c[qp] * p[qp] * tr_strain_u * shape_test * dx(qp);
                                 }
                             }
                         }
@@ -425,11 +456,18 @@ namespace utopia {
                                                                                             c_grad_l) *
                                         dx(qp);
 
+                                    // if (this->params_.use_pressure) {
+                                    //     val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(
+                                    //                this->params_, c[qp]) *
+                                    //            p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                    // }
+
                                     if (this->params_.use_pressure) {
-                                        val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(
-                                                   this->params_, c[qp]) *
-                                               p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                        // indicator c^2
+                                        // val -= 2.0 * p[qp] * tr_strain_u * dx(qp);
+                                        val -= 2.0 * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     }
+
                                     val = (l == j) ? (0.5 * val) : val;
 
                                     el_mat(l, j) += val;
@@ -466,11 +504,22 @@ namespace utopia {
                                                 this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
                                             dx(qp);
 
+                                        // if (this->params_.use_pressure) {
+                                        //     const Scalar tr_strain_shape = sum(diag(strain_shape));
+                                        //     val += PhaseFieldFracBase<FunctionSpace,
+                                        //     Dim>::quadratic_degradation_deriv(
+                                        //                this->params_, c[qp]) *
+                                        //            p[qp] * tr_strain_shape * c_shape_i * dx(qp);
+                                        // }
+
+                                        // if (this->params_.use_pressure) {
+                                        //     const Scalar tr_strain_shape = sum(diag(strain_shape));
+                                        //     val -= p[qp] * tr_strain_shape * c_shape_i * dx(qp);
+                                        // }
+
                                         if (this->params_.use_pressure) {
                                             const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                            val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
-                                                       this->params_, c[qp]) *
-                                                   p[qp] * tr_strain_shape * c_shape_i * dx(qp);
+                                            val -= 2.0 * c[qp] * p[qp] * tr_strain_shape * c_shape_i * dx(qp);
                                         }
 
                                         // not symetric, but more numerically stable... PF is weird thing to work
@@ -654,7 +703,7 @@ namespace utopia {
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
         }
 
-        void set_dt(const Scalar &dt) { dt_ = dt; }
+        // void set_dt(const Scalar &dt) { dt_ = dt; }
 
         // private:
         //     Matrix M_c_;

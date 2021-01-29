@@ -64,6 +64,8 @@ namespace utopia {
               fracture_toughness(0.001),
               mu(80.0),
               lambda(120.0),
+              // mu(100.0),
+              // lambda(100.0),
               regularization(1e-15),
               pressure(0.0),
               penalty_param(0.0),
@@ -166,6 +168,7 @@ namespace utopia {
         PhaseFieldFracBase(FunctionSpace &space) : space_(space) {
             if (params_.length_scale == 0) {
                 params_.length_scale = 2.0 * space.mesh().min_spacing();
+                // params_.length_scale = 3.0 * space.mesh().min_spacing();
                 // std::cout << "using ls = " << params_.length_scale << "  \n";
             }
 
