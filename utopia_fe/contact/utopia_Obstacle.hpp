@@ -31,10 +31,13 @@ namespace utopia {
         class Output {
         public:
             UVector gap;
+            UVector normals;
             USparseMatrix orthogonal_trafo;
 
             USparseMatrix basis_trafo;
             UVector mass_vector;
+            UVector inverse_mass_vector;
+            UVector is_contact;
         };
 
         inline Output &output() { return output_; }

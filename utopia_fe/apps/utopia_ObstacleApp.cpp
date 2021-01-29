@@ -38,7 +38,9 @@ namespace utopia {
             obs.assemble(mesh.mesh(), space.space()[0].dof_map(), params);
 
             write("obstacle.e", obstacle_mesh.mesh());
-            write("obs_sol.e", space.space()[0], obs.output().gap);
+            write("obs_gap.e", space.space()[0], obs.output().gap);
+            write("obs_normals.e", space.space()[0], obs.output().normals);
+            write("obs_is_contact.e", space.space()[0], obs.output().is_contact);
         }
 
         ObstacleProblem(libMesh::Parallel::Communicator &comm)

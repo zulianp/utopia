@@ -2,6 +2,7 @@
 
 #include "moonolith_obstacle.hpp"
 
+#include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_make_unique.hpp"
 
 #include "moonolith_affine_transform.hpp"
@@ -87,19 +88,28 @@ namespace utopia {
             auto &buffers = obstacle->buffers();
 
             USparseMatrix mass_matrix_x, trafo_x, inverse_trafo_x;
-            UVector gap_x, weighted_normal;
+            UVector gap_x;
 
             convert_matrix(buffers.mass_matrix, mass_matrix_x);
             convert_matrix(buffers.trafo, trafo_x);
             convert_matrix(buffers.inverse_trafo, inverse_trafo_x);
 
             convert_tensor(buffers.gap, gap_x);
-            convert_tensor(buffers.normal, weighted_normal);
+            convert_tensor(buffers.normal, out.normals);
+            convert_tensor(buffers.is_contact, out.is_contact);
 
-            // tensorize(gap_x, Dim, out.gap);
+            UVector mass_vector = sum(mass_matrix_x, 1);
+
+            tensorize(Dim, mass_vector);
+            e_pseudo_inv(mass_vector, out.inverse_mass_vector, 1e-15);
 
             // FIXME
-            out.gap = gap_x;
+            out.gap = e_mul(out.inverse_mass_vector, gap_x);
+            out.normals = e_mul(out.inverse_mass_vector, out.normals);
+
+            normalize(out.normals);
+
+            build_orthogonal_transformation(out.is_contact, out.normals, out.orthogonal_trafo);
         }
 
         void normalize(UVector &normal) {
@@ -112,7 +122,11 @@ namespace utopia {
                     n[d] = normal.get(i + d);
                 }
 
-                n /= length(n);
+                auto len_n = length(n);
+
+                if (len_n == 0.0) continue;
+
+                n /= len_n;
 
                 for (int d = 0; d < Dim; ++d) {
                     normal.set(i + d, n[d]);
@@ -120,39 +134,38 @@ namespace utopia {
             }
         }
 
-        void build_orthogonal_transformation(const UVector &normal, USparseMatrix &trafo) {
+        void build_orthogonal_transformation(const UVector &is_contact, const UVector &normal, USparseMatrix &trafo) {
             trafo.sparse(square_matrix_layout(layout(normal)), Dim, 0);
 
             moonolith::HouseholderTransformation<double, Dim> H;
             auto r = range(normal);
 
-            Read<UVector> r_normal(normal);
+            Read<UVector> r_normal(normal), r_ic(is_contact);
             Write<USparseMatrix> w_ot(trafo, utopia::LOCAL);
 
             moonolith::Vector<double, Dim> n;
             for (auto i = r.begin(); i < r.end(); i += Dim) {
-                for (int d = 0; d < Dim; ++d) {
-                    n[d] = normal.get(i + d);
-                }
-
-                auto len = length(n);
-                assert(len > 0.0);
-
-                n /= len;
-
-                // for (int d = 0; d < Dim; ++d) {
-                //     normal.set(i + d, n[d]);
-                // }
-
-                n.x -= 1.0;
-
-                len = length(n);
-
-                if (approxeq(len, 0.0, 1e-15)) {
+                if (is_contact.get(i) == 0.0) {
                     H.identity();
                 } else {
+                    for (int d = 0; d < Dim; ++d) {
+                        n[d] = normal.get(i + d);
+                    }
+
+                    auto len = length(n);
+                    assert(len > 0.0);
+
                     n /= len;
-                    H.init(n);
+                    n.x -= 1.0;
+
+                    len = length(n);
+
+                    if (approxeq(len, 0.0, 1e-15)) {
+                        H.identity();
+                    } else {
+                        n /= len;
+                        H.init(n);
+                    }
                 }
 
                 assert(approxeq(std::abs(measure(H)), 1.0, 1e-8));
