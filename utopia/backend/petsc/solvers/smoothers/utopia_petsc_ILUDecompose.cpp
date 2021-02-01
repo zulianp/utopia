@@ -2,6 +2,7 @@
 #include "utopia_petsc.hpp"
 
 #include <vector>
+#include "utopia_Views.hpp"
 
 namespace utopia {
 
@@ -310,5 +311,165 @@ namespace utopia {
     //         x_view.set(i, std::min(ub_i, val / array[row_diag]));
     //     }
     // }
+
+    template <class Block>
+    void block_decompose_aux(const PetscMatrix &mat,
+                             const int block_size,
+                             std::vector<Block> &diag,
+                             PetscMatrix &out,
+                             bool sort_columns = true) {
+        PetscMatrix l_mat;
+        local_block_view(mat, l_mat);
+
+        out.copy(l_mat);
+
+        PetscSeqAIJRaw m_raw(out.raw_type());
+
+        PetscInt n = m_raw.n;
+        const PetscInt *ia = m_raw.ia;
+        const PetscInt *ja = m_raw.ja;
+        PetscScalar *array = m_raw.array;
+
+        auto n_blocks = n / block_size;
+
+        std::vector<PetscInt> row_ptr(n_blocks + 1, 0);
+        std::vector<PetscInt> block_pattern(n_blocks);
+
+        for (PetscInt block_i = 0; block_i < n_blocks; block_i++) {
+            const PetscInt offset_i = block_i * block_size;
+
+            for (PetscInt i = offset_i; i < offset_i + block_size; ++i) {
+                const PetscInt row_begin = ia[i];
+                const PetscInt row_end = ia[i + 1];
+
+                for (PetscInt k = row_begin; k < row_end; ++k) {
+                    PetscInt j = ja[k];
+                    PetscInt block_j = j / block_size;
+
+                    if (block_pattern[block_j] == 0) {
+                        ++row_ptr[block_i + 1];
+                        block_pattern[block_j] = 1.0;
+                    }
+                }
+            }
+
+            for (PetscInt i = offset_i; i < offset_i + block_size; ++i) {
+                const PetscInt row_begin = ia[i];
+                const PetscInt row_end = ia[i + 1];
+
+                for (PetscInt k = row_begin; k < row_end; ++k) {
+                    PetscInt j = ja[k];
+                    PetscInt block_j = j / block_size;
+                    block_pattern[block_j] = 0;
+                }
+            }
+        }
+
+        for (PetscInt i = 0; i < n_blocks; ++i) {
+            row_ptr[i + 1] += row_ptr[i];
+        }
+
+        std::vector<PetscInt> col_idx(row_ptr[n_blocks], 0);
+        std::vector<PetscInt> count(n_blocks, 0);
+
+        for (PetscInt block_i = 0; block_i < n_blocks; block_i++) {
+            const PetscInt offset_i = block_i * block_size;
+
+            for (PetscInt i = offset_i; i < offset_i + block_size; ++i) {
+                const PetscInt row_begin = ia[i];
+                const PetscInt row_end = ia[i + 1];
+
+                for (PetscInt k = row_begin; k < row_end; ++k) {
+                    PetscInt j = ja[k];
+                    PetscInt block_j = j / block_size;
+
+                    if (block_pattern[block_j] == 0) {
+                        block_pattern[block_j] = 1.0;
+                        PetscInt idx_offset = row_ptr[block_i] + count[block_i];
+                        col_idx[idx_offset] = block_j;
+                        ++count[block_i];
+                    }
+                }
+            }
+
+            for (PetscInt i = offset_i; i < offset_i + block_size; ++i) {
+                const PetscInt row_begin = ia[i];
+                const PetscInt row_end = ia[i + 1];
+
+                for (PetscInt k = row_begin; k < row_end; ++k) {
+                    PetscInt j = ja[k];
+                    PetscInt block_j = j / block_size;
+                    block_pattern[block_j] = 0;
+                }
+            }
+
+            if (sort_columns) {
+                std::sort(&col_idx[row_ptr[block_i]], &col_idx[row_ptr[block_i + 1] - 1]);
+            }
+        }
+
+        const PetscInt block_size_2 = block_size * block_size;
+        std::vector<PetscScalar> values(row_ptr[n_blocks] * block_size_2, 0.0);
+
+        for (PetscInt block_i = 0; block_i < n_blocks; block_i++) {
+            const PetscInt offset_i = block_i * block_size;
+            const PetscInt block_row_begin = row_ptr[block_i];
+            const PetscInt block_row_end = row_ptr[block_i + 1];
+
+            for (PetscInt i = offset_i; i < offset_i + block_size; ++i) {
+                const PetscInt row_begin = ia[i];
+                const PetscInt row_end = ia[i + 1];
+                const PetscInt sub_i = i - offset_i;
+
+                PetscInt current_block = block_row_begin;
+
+                for (PetscInt k = row_begin; k < row_end; ++k) {
+                    const PetscInt j = ja[k];
+                    const PetscScalar value = array[k];
+
+                    const PetscInt block_j = j / block_size;
+                    const PetscInt sub_j = j - block_j * block_size;
+
+                    PetscInt k_block = current_block;
+                    for (; k_block < block_row_end; ++k_block) {
+                        if (col_idx[k_block] == block_j) {
+                            current_block = k_block;
+                            break;
+                        }
+                    }
+
+                    assert(col_idx[k_block] == block_j);
+
+                    values[k_block * block_size_2 + (sub_i * block_size) + sub_j] = value;
+                }
+            }
+        }
+
+        // for (PetscInt block_i = 0; block_i < n_blocks; block_i++) {
+        //     const PetscInt row_begin = row_ptr[block_i];
+        //     const PetscInt row_end = row_ptr[block_i + 1];
+
+        //     for (PetscInt k = row_begin; k < row_end; ++k) {
+        //         std::cout << block_i << " " << col_idx[k] << "\n";
+
+        //         for (PetscInt sub_i = 0; sub_i < block_size; ++sub_i) {
+        //             for (PetscInt sub_j = 0; sub_j < block_size; ++sub_j) {
+        //                 std::cout << values[k * block_size_2 + (sub_i * block_size) + sub_j] << " ";
+        //             }
+
+        //             std::cout << "\n";
+        //         }
+
+        //         std::cout << "\n";
+        //     }
+        // }
+    }
+
+    void ILUDecompose<PetscMatrix, PETSC>::block_decompose(const PetscMatrix &mat,
+                                                           PetscMatrix &out,
+                                                           const bool modified) {
+        std::vector<StaticMatrix<PetscScalar, 2, 2>> diag;
+        block_decompose_aux(mat, 2, diag, out);
+    }
 
 }  // namespace utopia

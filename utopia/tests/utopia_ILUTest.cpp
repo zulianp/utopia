@@ -67,6 +67,42 @@ void petsc_ilu_cg_test() {
     ls.apply(b, x);
 }
 
+void petsc_block_ilu_test() {
+    auto comm = PetscCommunicator::get_default();
+    PetscInt n = 1e6 * 2;
+    PetscInt n_global = n * comm.size();
+
+    auto vl = layout(comm, n, n_global);
+    PetscMatrix A;
+    A.sparse(square_matrix_layout(vl), 3, 2);
+
+    PetscVector x(vl, 0.0), b(vl, 0.0);
+    assemble_poisson_problem_1D(1.0, A, b, false);
+
+    Chrono c;
+
+    c.start();
+
+    PetscMatrix ilu;
+    ILUDecompose<PetscMatrix, PETSC>::block_decompose(A, ilu, false);
+
+    c.stop();
+
+    // std::cout << '\n' << c << '\n' << std::endl;
+
+    // disp(ilu);
+
+    // auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
+    // ilu->max_it(10);
+
+    // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
+    // ls.apply_gradient_descent_step(true);
+
+    // ls.verbose(true);
+    // ls.atol(1e-6);
+    // ls.rtol(1e-6);
+}
+
 // void petsc_ilu_vi_test() {
 //     auto comm = PetscCommunicator::get_default();
 //     PetscInt n = 20;
@@ -155,6 +191,7 @@ void ilu() {
 #ifdef UTOPIA_WITH_PETSC
     UTOPIA_RUN_TEST(petsc_ilu_test);
     UTOPIA_RUN_TEST(petsc_ilu_cg_test);
+    UTOPIA_RUN_TEST(petsc_block_ilu_test);
     // UTOPIA_RUN_TEST(petsc_ilu_vi_test);
 #endif  // UTOPIA_WITH_PETSC
 }

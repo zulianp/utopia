@@ -10,6 +10,7 @@ namespace utopia {
     template <>
     class ILUDecompose<PetscMatrix, PETSC> {
     public:
+        static void block_decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified);
         static void decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified);
         static void apply(const PetscMatrix &ilu, const PetscVector &b, PetscVector &x);
 
