@@ -138,24 +138,27 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp], tr) * dx(qp);
 
-                            // if (this->params_.use_pressure) {
-                            //     el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
-                            //                      this->params_, c[qp]) *
-                            //                  p[qp] * tr * dx(qp);
-                            // }
+                            if (this->params_.use_pressure) {
+                                el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
+                                                 this->params_, c[qp]) *
+                                             p[qp] * tr * dx(qp);
+                            }
 
                             // if (this->params_.use_pressure) {
                             //     // indicator function is assumed to be c
                             //     el_energy -= c[qp] * p[qp] * tr * dx(qp);
                             // }
 
-                            if (this->params_.use_pressure) {
-                                // indicator function is assumed to be c^2
-                                el_energy -= c[qp] * c[qp] * p[qp] * tr * dx(qp);
-                            }
+                            // if (this->params_.use_pressure) {
+                            //     // indicator function is assumed to be c^2
+                            //     el_energy -= c[qp] * c[qp] * p[qp] * tr * dx(qp);
+                            // }
 
-                            auto c_diff = c[qp] - c_old[qp];
-                            el_energy += 0.5 * mobility_ * 1. / dt_ * c_diff * c_diff * dx(qp);
+                            if (this->params_.use_mobility) {
+                                auto c_diff = c[qp] - c_old[qp];
+                                el_energy +=
+                                    0.5 * this->params_.mobility * (1. / this->get_dt()) * c_diff * c_diff * dx(qp);
+                            }
                         }
 
                         assert(el_energy == el_energy);
@@ -284,19 +287,19 @@ namespace utopia {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
 
-                                // if (this->params_.use_pressure) {
-                                //     u_el_vec(j) += gc * p[qp] * sum(diag(strain_test)) * dx(qp);
-                                // }
+                                if (this->params_.use_pressure) {
+                                    u_el_vec(j) += gc * p[qp] * sum(diag(strain_test)) * dx(qp);
+                                }
 
                                 // if (this->params_.use_pressure) {
                                 //     // indicator function is assumed to be c
                                 //     u_el_vec(j) -= c[qp] * p[qp] * sum(diag(strain_test)) * dx(qp);
                                 // }
 
-                                if (this->params_.use_pressure) {
-                                    // indicator function is assumed to be c^2
-                                    u_el_vec(j) -= c[qp] * c[qp] * p[qp] * sum(diag(strain_test)) * dx(qp);
-                                }
+                                // if (this->params_.use_pressure) {
+                                //     // indicator function is assumed to be c^2
+                                //     u_el_vec(j) -= c[qp] * c[qp] * p[qp] * sum(diag(strain_test)) * dx(qp);
+                                // }
                             }
 
                             for (int j = 0; j < C_NDofs; ++j) {
@@ -306,27 +309,30 @@ namespace utopia {
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
 
-                                // if (this->params_.use_pressure) {
-                                //     const Scalar der_c_pres =
-                                //         PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
-                                //             this->params_, c[qp]) *
-                                //         p[qp] * tr_strain_u * shape_test;
-                                //     c_el_vec(j) += der_c_pres * dx(qp);
-                                // }
+                                if (this->params_.use_pressure) {
+                                    const Scalar der_c_pres =
+                                        PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
+                                            this->params_, c[qp]) *
+                                        p[qp] * tr_strain_u * shape_test;
+                                    c_el_vec(j) += der_c_pres * dx(qp);
+                                }
 
                                 // if (this->params_.use_pressure) {
                                 //     // indicator function is assumed to be c
                                 //     c_el_vec(j) -= p[qp] * tr_strain_u * shape_test * dx(qp);
                                 // }
 
-                                auto c_diff = c[qp] - c_old[qp];
-                                c_el_vec(j) += mobility_ * 1. / dt_ * c_diff * shape_test * dx(qp);
-
-                                if (this->params_.use_pressure) {
-                                    // indicator function is assumed to be c^2
-                                    // c_el_vec(j) -= 2.0 * c[qp] * p[qp] * tr_strain_u * dx(qp);
-                                    c_el_vec(j) -= 2.0 * c[qp] * p[qp] * tr_strain_u * shape_test * dx(qp);
+                                if (this->params_.use_mobility) {
+                                    auto c_diff = c[qp] - c_old[qp];
+                                    c_el_vec(j) +=
+                                        this->params_.mobility * (1. / this->get_dt()) * c_diff * shape_test * dx(qp);
                                 }
+
+                                // if (this->params_.use_pressure) {
+                                //     // indicator function is assumed to be c^2
+                                //     // c_el_vec(j) -= 2.0 * c[qp] * p[qp] * tr_strain_u * dx(qp);
+                                //     c_el_vec(j) -= 2.0 * c[qp] * p[qp] * tr_strain_u * shape_test * dx(qp);
+                                // }
                             }
                         }
 
@@ -469,19 +475,23 @@ namespace utopia {
                                                                                             c_grad_l) *
                                         dx(qp);
 
-                                    // if (this->params_.use_pressure) {
-                                    //     val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(
-                                    //                this->params_, c[qp]) *
-                                    //            p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
-                                    // }
-
                                     if (this->params_.use_pressure) {
-                                        // indicator c^2
-                                        // val -= 2.0 * p[qp] * tr_strain_u * dx(qp);
-                                        val -= 2.0 * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                        val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(
+                                                   this->params_, c[qp]) *
+                                               p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     }
 
-                                    val += mobility_ * 1. / dt_ * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                    // if (this->params_.use_pressure) {
+                                    //     // indicator c^2
+                                    //     // val -= 2.0 * p[qp] * tr_strain_u * dx(qp);
+                                    //     val -= 2.0 * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l *
+                                    //     dx(qp);
+                                    // }
+
+                                    if (this->params_.use_mobility) {
+                                        val += this->params_.mobility * (1. / this->get_dt()) * c_shape_fun_el(j, qp) *
+                                               c_shape_l * dx(qp);
+                                    }
 
                                     val = (l == j) ? (0.5 * val) : val;
 
@@ -519,23 +529,22 @@ namespace utopia {
                                                 this->params_, c[qp], stress_positive, strain_shape, c_shape_i) *
                                             dx(qp);
 
-                                        // if (this->params_.use_pressure) {
-                                        //     const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                        //     val += PhaseFieldFracBase<FunctionSpace,
-                                        //     Dim>::quadratic_degradation_deriv(
-                                        //                this->params_, c[qp]) *
-                                        //            p[qp] * tr_strain_shape * c_shape_i * dx(qp);
-                                        // }
+                                        if (this->params_.use_pressure) {
+                                            const Scalar tr_strain_shape = sum(diag(strain_shape));
+                                            val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
+                                                       this->params_, c[qp]) *
+                                                   p[qp] * tr_strain_shape * c_shape_i * dx(qp);
+                                        }
 
                                         // if (this->params_.use_pressure) {
                                         //     const Scalar tr_strain_shape = sum(diag(strain_shape));
                                         //     val -= p[qp] * tr_strain_shape * c_shape_i * dx(qp);
                                         // }
 
-                                        if (this->params_.use_pressure) {
-                                            const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                            val -= 2.0 * c[qp] * p[qp] * tr_strain_shape * c_shape_i * dx(qp);
-                                        }
+                                        // if (this->params_.use_pressure) {
+                                        //     const Scalar tr_strain_shape = sum(diag(strain_shape));
+                                        //     val -= 2.0 * c[qp] * p[qp] * tr_strain_shape * c_shape_i * dx(qp);
+                                        // }
 
                                         // not symetric, but more numerically stable... PF is weird thing to work
                                         // with....
@@ -715,16 +724,6 @@ namespace utopia {
             energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
         }
-
-        void set_dt(const Scalar &dt) { dt_ = dt; }
-
-    private:
-        Scalar dt_;
-        // this is more of an inverse of mobility than mobility ...
-        // Scalar mobility_ = 1e-3;  // fully broken at 180
-        // Scalar mobility_ = 1e-6;  // fully broken at 36
-        Scalar mobility_ = 1e-5;  // fully broken at 45
-        // Scalar mobility_ = 1e-7;  //
     };
 
 }  // namespace utopia

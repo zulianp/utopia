@@ -124,10 +124,10 @@ namespace utopia {
                 C, UTOPIA_LAMBDA(const Point &x)->Scalar {
                     Scalar f = 0.0;
                     if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
-                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.6 && x[1] > 0.3) {
+                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] > 0.3 && x[1] < 0.5) {
                         f = 1.0;
-                    } else if ((x[0] > 0.35) && (x[0] < 0.65) && (x[1] > 0.65 - this->space_.mesh().min_spacing()) &&
-                               (x[1] < 0.65 + this->space_.mesh().min_spacing())) {
+                    } else if ((x[0] > 0.4) && (x[0] < 0.6) && (x[1] > 0.7 - this->space_.mesh().min_spacing()) &&
+                               (x[1] < 0.7 + this->space_.mesh().min_spacing())) {
                         f = 1.0;
                     } else {
                         f = 0.0;

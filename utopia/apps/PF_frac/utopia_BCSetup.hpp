@@ -125,7 +125,7 @@ namespace utopia {
             using Point = typename FunctionSpace::Point;
             this->space_.reset_bc();
 
-            for (int d = 0; d < Dim + 1; ++d) {
+            for (int d = 1; d < Dim + 1; ++d) {
                 this->space_.emplace_dirichlet_condition(
                     SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
@@ -133,10 +133,45 @@ namespace utopia {
                     SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+                    SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
 
                 this->space_.emplace_dirichlet_condition(
-                    SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+            }
+        }
+    };
+
+    template <class FunctionSpace>
+    class PFFracFixAllDispComp2D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        PFFracFixAllDispComp2D(FunctionSpace &space) : BCSetup<FunctionSpace>(space) {}
+
+        void emplace_time_dependent_BC(const Scalar & /*time*/) override {
+            static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            for (int d = 0; d < Dim + 1; ++d) {
+                if (d == 1) {
+                    this->space_.emplace_dirichlet_condition(
+                        SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 1e-5; }, d);
+                } else {
+                    this->space_.emplace_dirichlet_condition(
+                        SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+                }
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
             }
         }
     };

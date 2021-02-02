@@ -160,7 +160,7 @@ namespace utopia {
         stats.start();
 
         InitialCondidtionPFTbar<FunctionSpace> IC_setup(space, 0.0);
-        PFFracFixAllDisp4Sides<FunctionSpace> BC_setup(space);
+        PFFracFixAllDispComp2D<FunctionSpace> BC_setup(space);
         IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
             space, IC_setup, BC_setup);
 

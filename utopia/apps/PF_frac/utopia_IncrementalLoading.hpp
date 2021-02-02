@@ -194,9 +194,9 @@ namespace utopia {
 
             // tr_solver_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
 
-            auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
-            // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
-            // qp_solver->pc_type("bjacobi");
+            // auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
+            auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
+            qp_solver->pc_type("bjacobi");
             tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solver(...)");
@@ -308,7 +308,7 @@ namespace utopia {
                 // auto box = make_box_constaints(make_ref(this->lb_), make_ref(ub));
                 // tr_solver_->set_box_constraints(box);
                 // tr_solver_->atol(1e-6);
-                // tr_solver_->max_it(500);
+                // tr_solver_->max_it(200);
 
                 // disp(this->solution_, "this->solution_");
 

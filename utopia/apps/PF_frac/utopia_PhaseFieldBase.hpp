@@ -69,7 +69,9 @@ namespace utopia {
               regularization(1e-15),
               pressure(0.0),
               penalty_param(0.0),
-              crack_set_tol(0.97)
+              crack_set_tol(0.97),
+              // mobility(1e-5)
+              mobility(1e-6)
 
         {
             kappa = lambda + (2.0 * mu / Dim);
@@ -96,9 +98,10 @@ namespace utopia {
         }
 
         Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa;
-        Scalar regularization, pressure, penalty_param, crack_set_tol;
+        Scalar regularization, pressure, penalty_param, crack_set_tol, mobility;
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
+        bool use_mobility{true};
 
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> elast_tensor;
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
@@ -453,6 +456,10 @@ namespace utopia {
             return pressure_field_;
         }
 
+        void set_dt(const Scalar &dt) { dt_ = dt; }
+
+        Scalar get_dt() const { return dt_; }
+
     protected:
         FunctionSpace &space_;
         PFFracParameters params_;
@@ -471,6 +478,8 @@ namespace utopia {
         std::shared_ptr<Vector> local_x_;
         std::shared_ptr<Vector> local_pressure_field_;
         std::shared_ptr<Vector> local_c_old_;
+
+        Scalar dt_;
     };
 
 }  // namespace utopia
