@@ -51,17 +51,11 @@ namespace utopia {
 
         PhaseFieldVolDevSplit(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {
             this->params_.fill_in_isotropic_elast_tensor();
-
-            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
-            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         PhaseFieldVolDevSplit(FunctionSpace &space, const PFFracParameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
-
-            // PFMassMatrix<FunctionSpace> mass_matrix_assembler(this->space_);
-            // mass_matrix_assembler.mass_matrix_only_c(M_c_);
         }
 
         bool value(const Vector &x_const, Scalar &val) const override {
@@ -83,7 +77,12 @@ namespace utopia {
             this->space_.global_to_local(this->pressure_field_, *(this->local_pressure_field_));
             auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
 
+            // update c_old
+            this->space_.global_to_local(this->x_old_, *this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
+
             FEFunction<CSpace> press_fun(p_coeff);
+            FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> c_fun(c_coeff);
             FEFunction<USpace> u_fun(u_coeff);
             ////////////////////////////////////////////////////////////////////////////
@@ -91,6 +90,7 @@ namespace utopia {
             Quadrature q;
 
             auto c_val = c_fun.value(q);
+            auto c_old = c_old_fun.value(q);
             auto c_grad = c_fun.gradient(q);
             auto u_val = u_fun.value(q);
             auto p_val = press_fun.value(q);
@@ -102,6 +102,7 @@ namespace utopia {
             {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
+                auto c_old_view = c_old.view_device();
 
                 auto c_view = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
@@ -119,8 +120,10 @@ namespace utopia {
 
                         StaticVector<Scalar, NQuadPoints> c;
                         StaticVector<Scalar, NQuadPoints> p;
+                        StaticVector<Scalar, NQuadPoints> c_old;
                         c_view.get(c_e, c);
                         p_view.get(c_e, p);
+                        c_old_view.get(c_e, c_old);
 
                         UElem u_e;
                         U_view.elem(i, u_e);
@@ -150,6 +153,9 @@ namespace utopia {
                                 // indicator function is assumed to be c^2
                                 el_energy -= c[qp] * c[qp] * p[qp] * tr * dx(qp);
                             }
+
+                            auto c_diff = c[qp] - c_old[qp];
+                            el_energy += 0.5 * mobility_ * 1. / dt_ * c_diff * c_diff * dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -159,9 +165,6 @@ namespace utopia {
             }
 
             val = x.comm().sum(val);
-
-            // Vector diff = x_const - this->x_old_;
-            // val += 1. / (dt_ * mobility_) * dot(M_c_ * diff, x_const);
 
             assert(val == val);
 
@@ -193,15 +196,21 @@ namespace utopia {
             this->space_.global_to_local(this->pressure_field_, *(this->local_pressure_field_));
             auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
 
+            // update c_old
+            this->space_.global_to_local(this->x_old_, *this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
+
             FEFunction<CSpace> press_fun(p_coeff);
             FEFunction<CSpace> c_fun(c_coeff);
             FEFunction<USpace> u_fun(u_coeff);
+            FEFunction<CSpace> c_old_fun(c_old_coeff);
 
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
 
             auto c_val = c_fun.value(q);
+            auto c_old = c_old_fun.value(q);
             auto c_grad = c_fun.gradient(q);
             auto u_val = u_fun.value(q);
             auto differential = C.differential(q);
@@ -216,6 +225,7 @@ namespace utopia {
             {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
+                auto c_old_view = c_old.view_device();
                 auto p_view = press_val.view_device();
 
                 auto c_view = c_val.view_device();
@@ -257,6 +267,9 @@ namespace utopia {
 
                         StaticVector<Scalar, NQuadPoints> p;
                         p_view.get(c_e, p);
+
+                        StaticVector<Scalar, NQuadPoints> c_old;
+                        c_old_view.get(c_e, c_old);
 
                         auto c_grad_el = c_grad_view.make(c_e);
                         auto dx = differential_view.make(c_e);
@@ -306,6 +319,9 @@ namespace utopia {
                                 //     c_el_vec(j) -= p[qp] * tr_strain_u * shape_test * dx(qp);
                                 // }
 
+                                auto c_diff = c[qp] - c_old[qp];
+                                c_el_vec(j) += mobility_ * 1. / dt_ * c_diff * shape_test * dx(qp);
+
                                 if (this->params_.use_pressure) {
                                     // indicator function is assumed to be c^2
                                     // c_el_vec(j) -= 2.0 * c[qp] * p[qp] * tr_strain_u * dx(qp);
@@ -323,9 +339,6 @@ namespace utopia {
             if (this->check_derivatives_) {
                 this->diff_ctrl_.check_grad(*this, x_const, g);
             }
-
-            // Vector diff = x_const - this->x_old_;
-            // g += 1. / (dt_ * mobility_) * M_c_ * diff;
 
             this->space_.apply_zero_constraints(g);
 
@@ -468,6 +481,8 @@ namespace utopia {
                                         val -= 2.0 * p[qp] * tr_strain_u * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
                                     }
 
+                                    val += mobility_ * 1. / dt_ * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+
                                     val = (l == j) ? (0.5 * val) : val;
 
                                     el_mat(l, j) += val;
@@ -544,8 +559,6 @@ namespace utopia {
             // // if (this->check_derivatives_) {
             // this->diff_ctrl_.check_hessian(*this, x_const, H);
             // // }
-
-            // H += 1. / (dt_ * mobility_) * M_c_;
 
             this->space_.apply_constraints(H);
 
@@ -703,12 +716,15 @@ namespace utopia {
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
         }
 
-        // void set_dt(const Scalar &dt) { dt_ = dt; }
+        void set_dt(const Scalar &dt) { dt_ = dt; }
 
-        // private:
-        //     Matrix M_c_;
-        //     Scalar dt_;
-        //     Scalar mobility_ = 1e5;
+    private:
+        Scalar dt_;
+        // this is more of an inverse of mobility than mobility ...
+        // Scalar mobility_ = 1e-3;  // fully broken at 180
+        // Scalar mobility_ = 1e-6;  // fully broken at 36
+        Scalar mobility_ = 1e-5;  // fully broken at 45
+        // Scalar mobility_ = 1e-7;  //
     };
 
 }  // namespace utopia

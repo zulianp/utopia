@@ -70,8 +70,10 @@ namespace utopia {
                         // if (x[0] <= 0.5 && x[1] <= 0.5) {
                         // f = 1.0;
                         f = 1.0;
+                        // f = 0.5;
                     } else {
                         f = 0.0;
+                        // f = 0.5;
                     }
                     return f;
                 });

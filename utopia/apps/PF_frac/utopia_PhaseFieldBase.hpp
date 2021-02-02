@@ -168,8 +168,8 @@ namespace utopia {
         PhaseFieldFracBase(FunctionSpace &space) : space_(space) {
             if (params_.length_scale == 0) {
                 params_.length_scale = 2.0 * space.mesh().min_spacing();
-                // params_.length_scale = 3.0 * space.mesh().min_spacing();
-                // std::cout << "using ls = " << params_.length_scale << "  \n";
+                // params_.length_scale = 2.0;
+                std::cout << "using ls = " << params_.length_scale << "  \n";
             }
 
             // this computation follows eq. 50 from "On penalization in variational
