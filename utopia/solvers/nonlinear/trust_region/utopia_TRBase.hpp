@@ -2,6 +2,7 @@
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 
 #include <algorithm>
+#include "utopia_CiteUtopia.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NumericalTollerance.hpp"
 #include "utopia_TRSubproblem.hpp"
@@ -92,7 +93,7 @@ namespace utopia {
      *
      */
     template <class Vector>
-    class TrustRegionBase : public TrustRegionParams<Vector> {
+    class TrustRegionBase : public TrustRegionParams<Vector>, public AuthoredWork<Kopanicakova2020Thesis> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;

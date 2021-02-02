@@ -127,7 +127,6 @@ namespace utopia {
 
         // FIXME
         using Shape = typename FunctionSpace::Shape;
-        // using Quadrature = utopia::Quadrature<Shape, 2*(Shape::Order -1)>;
         using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
 
         static const int C_NDofs = CSpace::NDofs;
@@ -137,10 +136,9 @@ namespace utopia {
 
         void read(Input &in) override {
             params_.read(in);
-            // all these sequfault with new xcode???
-            // in.get("use_dense_hessian", use_dense_hessian_);
-            // in.get("check_derivatives", check_derivatives_);
-            // in.get("diff_controller", diff_ctrl_);
+            in.get("use_dense_hessian", use_dense_hessian_);
+            in.get("check_derivatives", check_derivatives_);
+            in.get("diff_controller", diff_ctrl_);
             init_force_field(in);
         }
 
@@ -172,7 +170,9 @@ namespace utopia {
             if (params_.length_scale == 0) {
                 params_.length_scale = 2.0 * space.mesh().min_spacing();
                 // params_.length_scale = 2.0;
-                std::cout << "using ls = " << params_.length_scale << "  \n";
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "using ls = " << params_.length_scale << "  \n";
+                }
             }
 
             // this computation follows eq. 50 from "On penalization in variational
