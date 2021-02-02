@@ -194,9 +194,9 @@ namespace utopia {
 
             // tr_solver_ = std::make_shared<TrustRegionVariableBound<PetscMatrix, PetscVector>>(qp_solver);
 
-            // auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
-            auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
-            qp_solver->pc_type("bjacobi");
+            auto qp_solver = std::make_shared<utopia::Lanczos<PetscMatrix, PetscVector>>();
+            // auto qp_solver = std::make_shared<utopia::SteihaugToint<PetscMatrix, PetscVector>>();
+            // qp_solver->pc_type("bjacobi");
             tr_solver_ = std::make_shared<TrustRegion<PetscMatrix, PetscVector>>(qp_solver);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solver(...)");

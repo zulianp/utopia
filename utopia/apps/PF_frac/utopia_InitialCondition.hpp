@@ -158,7 +158,7 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
-    class InitialCondidtionPFSneddon : public InitialCondition<FunctionSpace> {
+    class InitialCondidtionPFParallelFrac3D : public InitialCondition<FunctionSpace> {
     public:
         // using Comm           = typename FunctionSpace::Comm;
         using Mesh = typename FunctionSpace::Mesh;
@@ -171,7 +171,7 @@ namespace utopia {
         using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
         static const int NNodes = Elem::NNodes;
 
-        InitialCondidtionPFSneddon(FunctionSpace &space, const SizeType &PF_component)
+        InitialCondidtionPFParallelFrac3D(FunctionSpace &space, const SizeType &PF_component)
             : InitialCondition<FunctionSpace>(space), PF_component_(PF_component) {}
 
         void init(PetscVector &x) override {
@@ -183,8 +183,11 @@ namespace utopia {
                     Scalar f = 0.0;
                     Scalar h = this->space_.mesh().min_spacing();
 
-                    if (x[0] > 0.55 && x[0] < 0.7 && x[1] > (0.4) && x[1] < (0.6) && x[2] < (0.6 + h) &&
-                        x[2] > (0.6 - h)) {
+                    if (x[0] > 5.5 && x[0] < 7.0 && x[1] > (4.0 - h) && x[1] < (4.0 + h) && x[2] < (6 + h) &&
+                        x[2] > (6 - h)) {
+                        f = 1.0;
+                    } else if (x[0] > (2.6 - h) && x[0] < (2.6 + h) && x[1] > 3.8 && x[1] < 5.5 && x[2] < (4.0 + h) &&
+                               x[2] > (4.0 - h)) {
                         f = 1.0;
                     } else {
                         f = 0.0;

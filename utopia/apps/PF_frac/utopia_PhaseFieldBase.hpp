@@ -61,7 +61,7 @@ namespace utopia {
               d(1.0),
               f(1.0),
               length_scale(0.0),
-              fracture_toughness(0.001),
+              fracture_toughness(1e-3),
               mu(80.0),
               lambda(120.0),
               // mu(100.0),
@@ -161,9 +161,9 @@ namespace utopia {
                         force_field_.set(0.0);
                     }
 
-                    NeumannBoundaryCondition<FunctionSpace> bc(space_);
-                    bc.read(in);
-                    bc.apply(force_field_);
+                    // NeumannBoundaryCondition<FunctionSpace> bc(space_);
+                    // bc.read(in);
+                    // bc.apply(force_field_);
                 });
             });
         }
