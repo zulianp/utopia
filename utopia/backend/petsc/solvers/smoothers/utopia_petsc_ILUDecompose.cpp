@@ -4,6 +4,8 @@
 #include <vector>
 #include "utopia_Views.hpp"
 
+#include "utopia_CRSToBlockCRS.hpp"
+
 namespace utopia {
 
     class DiagIdx {
