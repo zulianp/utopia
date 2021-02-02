@@ -254,11 +254,11 @@ namespace utopia {
         UTOPIA_FUNCTION ArrayView(T *data, const SizeType &rows, const SizeType &cols)
             : data_(data, rows * cols), rows_(rows), cols_(cols) {}
 
-        UTOPIA_FUNCTION ArrayView() : data_(nullptr) {}
+        UTOPIA_FUNCTION ArrayView() : data_() {}
 
         UTOPIA_INLINE_FUNCTION bool is_null() const { return data_.is_null(); }
 
-        inline void set_data(const T *data) { data_.set_data(data); }
+        inline void set_data(T *data) { data_.set_data(data); }
         inline void set_size(const SizeType rows, const SizeType cols) {
             rows_ = rows;
             cols_ = cols;

@@ -101,6 +101,66 @@ namespace utopia {
         ilu_apply(crs, b_array, L_inv_b_array, x_array);
     }
 
-    void ILUDecompose<PetscMatrix, PETSC>::block_decompose(const PetscMatrix &, PetscMatrix &, const bool) {}
+    template <int BlockSize>
+    void crs_block_matrix(PetscMatrix &in, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out) {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
+        PetscMatrix l_mat;
+        local_block_view(in, l_mat);
+
+        // perform copy
+        // out.copy(l_mat);
+
+        PetscSeqAIJRaw m_raw(l_mat.raw_type());
+        PetscInt n = m_raw.n;
+        PetscInt nnz = m_raw.ia[n];
+
+        const PetscInt *ia = m_raw.ia;
+        const PetscInt *ja = m_raw.ja;
+        PetscScalar *array = m_raw.array;
+
+        ScalarView values(array, nnz);
+        IndexView row_ptr(ia, n + 1);
+        IndexView colidx(ja, nnz);
+
+        CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+        convert(crs, out);
+    }
+
+    template void crs_block_matrix<2>(PetscMatrix &, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &);
+    template void crs_block_matrix<3>(PetscMatrix &, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &);
+    template void crs_block_matrix<4>(PetscMatrix &, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &);
+    // template <int BlockSize>
+    // void block_decompose_aux(const PetscMatrix &mat, PetscMatrix &, const bool) {}
+
+    // void ILUDecompose<PetscMatrix, PETSC>::block_decompose(const PetscMatrix &in,
+    //                                                        CRSMatrix<ScalarView, IndexView, BlockSize> &out,
+    //                                                        const bool) {
+    //     using ScalarView = utopia::ArrayView<PetscScalar>;
+    //     using IndexView = utopia::ArrayView<const PetscInt>;
+
+    //     PetscMatrix l_mat;
+    //     local_block_view(in, l_mat);
+
+    //     // perform copy
+    //     // out.copy(l_mat);
+
+    //     PetscSeqAIJRaw m_raw(l_mat.raw_type());
+    //     PetscInt n = m_raw.n;
+    //     PetscInt nnz = m_raw.ia[n];
+
+    //     const PetscInt *ia = m_raw.ia;
+    //     const PetscInt *ja = m_raw.ja;
+    //     PetscScalar *array = m_raw.array;
+
+    //     ScalarView values(array, nnz);
+    //     IndexView row_ptr(ia, n + 1);
+    //     IndexView colidx(ja, nnz);
+
+    //     CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+    //     convert(crs, out);
+    //     ilu_decompose(crs, modified);
+    // }
 
 }  // namespace utopia

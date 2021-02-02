@@ -9,6 +9,7 @@ using namespace utopia;
 
 #ifdef UTOPIA_WITH_PETSC
 
+#include "utopia_ILUDecompose.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
 
 void petsc_ilu_test() {
@@ -83,8 +84,12 @@ void petsc_block_ilu_test() {
 
     c.start();
 
-    PetscMatrix ilu;
-    ILUDecompose<PetscMatrix, PETSC>::block_decompose(A, ilu, false);
+    PetscMatrix local_A;
+    local_block_view(A, local_A);
+
+    CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> block_mat;
+    crs_block_matrix(local_A, block_mat);
+    ilu_decompose(block_mat);
 
     c.stop();
 

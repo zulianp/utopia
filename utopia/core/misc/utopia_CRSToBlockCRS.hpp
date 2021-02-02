@@ -12,14 +12,18 @@
 
 namespace utopia {
 
-    template <class ScalarView, class IndexView, int BlockSize>
+    template <class ScalarView,
+              class IndexView,
+              int BlockSize,
+              class OutScalarView = ScalarView,
+              class OutIndexView = IndexView>
     class CRSToBlockCRS {
     public:
-        using Scalar = typename Traits<ScalarView>::ValueType;
-        using SizeType = typename Traits<IndexView>::ValueType;
+        using Scalar = typename std::remove_const<typename Traits<ScalarView>::ValueType>::type;
+        using SizeType = typename std::remove_const<typename Traits<IndexView>::ValueType>::type;
 
         static void apply(const CRSMatrix<ScalarView, IndexView, 1> &in,
-                          CRSMatrix<ScalarView, IndexView, BlockSize> &out,
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
                           const bool sort_columns = true) {
             apply(in.rows(), &in.row_ptr()[0], &in.colidx()[0], &in.values()[0], out, sort_columns);
         }
@@ -28,7 +32,7 @@ namespace utopia {
                           const SizeType *ia,
                           const SizeType *ja,
                           const Scalar *array,
-                          CRSMatrix<ScalarView, IndexView, BlockSize> &out,
+                          CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
                           const bool sort_columns = true) {
             static const int BlockSize_2 = BlockSize * BlockSize;
             auto n_blocks = n / BlockSize;
@@ -125,14 +129,13 @@ namespace utopia {
                            const SizeType *ia,
                            const SizeType *ja,
                            const Scalar *array,
-                           CRSMatrix<ScalarView, IndexView, BlockSize> &out) {
+                           CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
             static const int BlockSize_2 = BlockSize * BlockSize;
 
             UTOPIA_UNUSED(n);
 
             const SizeType n_blocks = out.rows();
-
-            assert(n_blocks == BlockSize * n);
+            assert(n == (BlockSize * n_blocks));
 
             auto &row_ptr = out.row_ptr();
             auto &colidx = out.colidx();
@@ -175,10 +178,10 @@ namespace utopia {
         }
     };
 
-    template <class ScalarView, class IndexView, int BlockSize>
+    template <class ScalarView, class IndexView, int BlockSize, class OutScalarView, class OutIndexView>
     void convert(const CRSMatrix<ScalarView, IndexView, 1> &mat,
-                 CRSMatrix<ScalarView, IndexView, BlockSize> &block_mat) {
-        CRSToBlockCRS<ScalarView, IndexView, BlockSize>::apply(mat, block_mat);
+                 CRSMatrix<OutScalarView, OutIndexView, BlockSize> &block_mat) {
+        CRSToBlockCRS<ScalarView, IndexView, BlockSize, OutScalarView, OutIndexView>::apply(mat, block_mat);
     }
 
 }  // namespace utopia

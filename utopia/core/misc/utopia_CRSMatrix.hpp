@@ -70,6 +70,9 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION const IndexView &colidx() const { return colidx_; }
         UTOPIA_INLINE_FUNCTION const ScalarView &values() const { return values_; }
 
+        UTOPIA_INLINE_FUNCTION const Scalar *block(const SizeType i) const { return &values_[i * BlockSize2]; }
+        UTOPIA_INLINE_FUNCTION Scalar *block(const SizeType i) { return &values_[i * BlockSize2]; }
+
         UTOPIA_INLINE_FUNCTION void set_cols(const SizeType n_cols) { n_cols_ = n_cols; }
 
     private:
@@ -83,8 +86,8 @@ namespace utopia {
     class Traits<CRSMatrix<S, I, BlockSize> > {
     public:
         static const int Backend = HOMEMADE;
-        using Scalar = typename Traits<I>::Scalar;
-        using SizeType = typename Traits<I>::SizeType;
+        using Scalar = typename Traits<I>::ValueType;
+        using SizeType = typename Traits<I>::ValueType;
     };
 
 }  // namespace utopia

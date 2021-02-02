@@ -223,15 +223,15 @@ namespace utopia {
             Block d_inv, e;
             BlockView d, air, arj, aij;
 
-            d.set_size(BlockSize, BlockSize);
-            air.set_size(BlockSize, BlockSize);
-            arj.set_size(BlockSize, BlockSize);
-            aij.set_size(BlockSize, BlockSize);
+            d.raw_type().set_size(BlockSize, BlockSize);
+            air.raw_type().set_size(BlockSize, BlockSize);
+            arj.raw_type().set_size(BlockSize, BlockSize);
+            aij.raw_type().set_size(BlockSize, BlockSize);
 
             for (SizeType r = 0; r < n_blocks - 1; ++r) {
                 const SizeType row_end = ia[r + 1];
                 const SizeType k = idx.idx[r];
-                d.set_data(in_out.block(k));
+                d.raw_type().set_data(in_out.block(k));
                 d_inv = inv(d);
 
                 for (SizeType ki = k + 1; ki < row_end; ++ki) {
@@ -240,8 +240,7 @@ namespace utopia {
                     auto ir = idx.find_before_diag(i, r);
                     if (ir == -1) continue;
 
-                    auto ii = idx.idx[i];
-                    air.set_data(in_out.block(ir));
+                    air.raw_type().set_data(in_out.block(ir));
 
                     e = (d_inv * air);
 
@@ -250,10 +249,10 @@ namespace utopia {
 
                         auto ij = idx.find(i, j);
 
-                        arj.set_data(in_out.block(rj));
+                        arj.raw_type().set_data(in_out.block(rj));
 
                         if (ij != -1) {
-                            aij.set_data(in_out.block(ij));
+                            aij.raw_type().set_data(in_out.block(ij));
                             aij -= e * arj;
                         }
                     }
@@ -276,7 +275,11 @@ namespace utopia {
             DiagIdx idx;
             idx.init(n_blocks, &ia[0], &ja[0]);
 
-            Block d, d_inv;
+            Block d_inv;
+            BlockView d;
+
+            d.raw_type().set_size(BlockSize, BlockSize);
+
             StaticVector<Scalar, BlockSize> val;
 
             // Forward substitution
@@ -285,8 +288,7 @@ namespace utopia {
                 const SizeType row_begin = ia[i];
                 const SizeType row_diag = idx.idx[i];
 
-                const Scalar *d_array = ilu.block(row_diag);
-                device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
+                d.raw_type().set_data(ilu.block(row_diag));
                 d_inv = inv(d);
 
                 for (SizeType bi = 0; bi < BlockSize; ++bi) {
@@ -320,8 +322,7 @@ namespace utopia {
                 const SizeType row_diag = idx.idx[i];
                 const SizeType row_end = ia[i + 1];
 
-                const Scalar *d_array = ilu.block(row_diag);
-                device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
+                d.raw_type().set_data(ilu.block(row_diag));
                 d_inv = inv(d);
 
                 for (SizeType bi = 0; bi < BlockSize; ++bi) {
