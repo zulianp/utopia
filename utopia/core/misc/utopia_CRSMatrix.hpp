@@ -79,6 +79,14 @@ namespace utopia {
         SizeType n_cols_{-1};
     };
 
+    template <typename S, typename I, int BlockSize>
+    class Traits<CRSMatrix<S, I, BlockSize> > {
+    public:
+        static const int Backend = HOMEMADE;
+        using Scalar = typename Traits<I>::Scalar;
+        using SizeType = typename Traits<I>::SizeType;
+    };
+
 }  // namespace utopia
 
 #endif  // UTOPIA_CRS_MATRIX_HPP

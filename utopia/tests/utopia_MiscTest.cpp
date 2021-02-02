@@ -3,6 +3,7 @@
 #include "utopia.hpp"
 #include "utopia_CRSToBlockCRS.hpp"
 #include "utopia_FactoryMethod.hpp"
+#include "utopia_ILUDecompose.hpp"
 
 namespace utopia {
 

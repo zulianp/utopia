@@ -36,7 +36,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION bool is_null() const { return data_ == nullptr; }
 
         UTOPIA_FUNCTION ArrayView() : data_(nullptr) {}
-        UTOPIA_FUNCTION ArrayView(T *data, const T &size) : data_(data), size_(size) {}
+        UTOPIA_FUNCTION ArrayView(T *data, const SizeType &size) : data_(data), size_(size) {}
 
         template <typename OtherT, Size_t... SizeArgs>
         UTOPIA_INLINE_FUNCTION void copy(const ArrayView<OtherT, SizeArgs...> &other) {
