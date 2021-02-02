@@ -51,6 +51,9 @@ namespace utopia {
             in.get("turn_off_uc_coupling", turn_off_uc_coupling);
             in.get("turn_off_cu_coupling", turn_off_cu_coupling);
 
+            in.get("mobility", mobility);
+            in.get("use_mobility", use_mobility);
+
             // seq. faults for some reason... ???
             kappa = lambda + (2.0 * mu / Dim);
         }

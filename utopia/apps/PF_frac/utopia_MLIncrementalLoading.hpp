@@ -98,6 +98,9 @@ namespace utopia {
                     fun->use_crack_set_irreversibiblity(true);
                 }
 
+                // testing stuff
+                fun->turn_off_cu_coupling(true);
+
                 level_functions_[i] = fun;
 
                 auto bc = std::make_shared<BCType>(*spaces_[i]);
@@ -149,41 +152,39 @@ namespace utopia {
 
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine;
 
-            // if (mprgp_smoother_) {
-            //     tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
-            // } else if (hjsmn_smoother_) {
-            //     // auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
-            //     //     std::make_shared<Factorization<Matrix, Vector>>());
+            if (mprgp_smoother_) {
+                tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
+            } else if (hjsmn_smoother_) {
+                // auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
+                //     std::make_shared<Factorization<Matrix, Vector>>());
 
-            //     auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix,
-            //     Vector>>());
+                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix, Vector>>());
 
-            //     qp->max_it(2);
-            //     // BlockQPSolver<Matrix, Vector> bqp(qp);
-            //     tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
-            //     // tr_strategy_fine->verbose(true);
-            // } else {
-            //     auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+                qp->max_it(2);
+                // BlockQPSolver<Matrix, Vector> bqp(qp);
+                tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
+                // tr_strategy_fine->verbose(true);
+            } else {
+                auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
 
-            //     if (block_solver_) {
-            //         InputParameters params;
-            //         params.set("block_size", FunctionSpace::NComponents);
-            //         pgs->read(params);
-            //     }
+                if (block_solver_) {
+                    InputParameters params;
+                    params.set("block_size", FunctionSpace::NComponents);
+                    pgs->read(params);
+                }
 
-            tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
-
-            // }
+                tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+            }
 
             std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
-            // if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
-            //     spaces_[0]->comm().root_print("using redundant qp solver");
-            //     auto qp = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
-            //     tr_strategy_coarse = std::make_shared<RedundantQPSolver<Matrix, Vector>>(qp, n_coarse_sub_comm_);
-            //     // tr_strategy_coarse->verbose(true);
-            // } else {
-            tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
-            // }
+            if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
+                spaces_[0]->comm().root_print("using redundant qp solver");
+                auto qp = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
+                tr_strategy_coarse = std::make_shared<RedundantQPSolver<Matrix, Vector>>(qp, n_coarse_sub_comm_);
+                // tr_strategy_coarse->verbose(true);
+            } else {
+                tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
+            }
 
             // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
             // ls->pc_type("bjacobi");
