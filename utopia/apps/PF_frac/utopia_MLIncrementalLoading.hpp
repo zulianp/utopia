@@ -149,39 +149,41 @@ namespace utopia {
 
             std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> tr_strategy_fine;
 
-            if (mprgp_smoother_) {
-                tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
-            } else if (hjsmn_smoother_) {
-                // auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
-                //     std::make_shared<Factorization<Matrix, Vector>>());
+            // if (mprgp_smoother_) {
+            //     tr_strategy_fine = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
+            // } else if (hjsmn_smoother_) {
+            //     // auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(
+            //     //     std::make_shared<Factorization<Matrix, Vector>>());
 
-                auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix, Vector>>());
+            //     auto qp = std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<MPRGP<Matrix,
+            //     Vector>>());
 
-                qp->max_it(2);
-                // BlockQPSolver<Matrix, Vector> bqp(qp);
-                tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
-                // tr_strategy_fine->verbose(true);
-            } else {
-                auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+            //     qp->max_it(2);
+            //     // BlockQPSolver<Matrix, Vector> bqp(qp);
+            //     tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
+            //     // tr_strategy_fine->verbose(true);
+            // } else {
+            //     auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
 
-                if (block_solver_) {
-                    InputParameters params;
-                    params.set("block_size", FunctionSpace::NComponents);
-                    pgs->read(params);
-                }
+            //     if (block_solver_) {
+            //         InputParameters params;
+            //         params.set("block_size", FunctionSpace::NComponents);
+            //         pgs->read(params);
+            //     }
 
-                tr_strategy_fine = pgs;
-            }
+            tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+
+            // }
 
             std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
-            if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
-                spaces_[0]->comm().root_print("using redundant qp solver");
-                auto qp = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
-                tr_strategy_coarse = std::make_shared<RedundantQPSolver<Matrix, Vector>>(qp, n_coarse_sub_comm_);
-                // tr_strategy_coarse->verbose(true);
-            } else {
-                tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
-            }
+            // if (n_coarse_sub_comm_ > 1 && n_coarse_sub_comm_ >= spaces_[0]->comm().size()) {
+            //     spaces_[0]->comm().root_print("using redundant qp solver");
+            //     auto qp = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
+            //     tr_strategy_coarse = std::make_shared<RedundantQPSolver<Matrix, Vector>>(qp, n_coarse_sub_comm_);
+            //     // tr_strategy_coarse->verbose(true);
+            // } else {
+            tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
+            // }
 
             // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
             // ls->pc_type("bjacobi");
@@ -387,8 +389,13 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
 
             if (this->adjust_dt_on_failure_ && conv_reason < 0) {
+                this->time_ -= this->dt_;
+                this->dt_ = this->dt_ * this->shrinking_factor_;
+                this->time_ += this->dt_;
+
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->get_old_solution(this->solution_);
+                    fun_finest->set_dt(this->dt_);
                 }
 
                 // reset sol on all levels - important for BC conditions mostly s
@@ -405,17 +412,18 @@ namespace utopia {
 
                     transfers_[l - 1]->project_down(fine_sol, coarse_sol);
                     spaces_[l]->apply_constraints(coarse_sol);
+                    fun_fine->set_dt(this->dt_);
+                    fun_coarse->set_dt(this->dt_);
+
                     // transfers_[l]->restrict(fine_sol, coarse_sol);
                 }
 
-                this->time_ -= this->dt_;
-                this->dt_ = this->dt_ * this->shrinking_factor_;
-                this->time_ += this->dt_;
             } else {
                 // std::cout<<"------- yes, updating...  \n";
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->set_old_solution(this->solution_);
+                    fun_finest->set_dt(this->dt_);
                 }
 
                 // update sol on all levels
@@ -432,6 +440,9 @@ namespace utopia {
 
                     transfers_[l - 1]->project_down(fine_sol, coarse_sol);
                     spaces_[l]->apply_constraints(coarse_sol);
+                    fun_coarse->set_dt(this->dt_);
+                    fun_fine->set_dt(this->dt_);
+
                     // transfers_[l]->restrict(fine_sol, coarse_sol);
                 }
 
@@ -451,34 +462,34 @@ namespace utopia {
                 }
             }
 
-            this->export_energies_csv();
+            // this->export_energies_csv();
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
         }
 
-        void export_energies_csv() {
-            if (!csv_file_name_.empty()) {
-                CSVWriter writer{};
-                Scalar elastic_energy = 0.0, fracture_energy = 0.0;
+        // void export_energies_csv() {
+        //     if (!csv_file_name_.empty()) {
+        //         CSVWriter writer{};
+        //         Scalar elastic_energy = 0.0, fracture_energy = 0.0;
 
-                if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                    fun_finest->elastic_energy(this->solution_, elastic_energy);
-                    fun_finest->fracture_energy(this->solution_, fracture_energy);
-                }
+        //         if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+        //             fun_finest->elastic_energy(this->solution_, elastic_energy);
+        //             fun_finest->fracture_energy(this->solution_, fracture_energy);
+        //         }
 
-                if (mpi_world_rank() == 0) {
-                    if (!writer.file_exists(csv_file_name_)) {
-                        writer.open_file(csv_file_name_);
-                        writer.write_table_row<std::string>({"elastic_energy", "fracture_energy"});
-                    } else {
-                        writer.open_file(csv_file_name_);
-                    }
+        //         if (mpi_world_rank() == 0) {
+        //             if (!writer.file_exists(csv_file_name_)) {
+        //                 writer.open_file(csv_file_name_);
+        //                 writer.write_table_row<std::string>({"elastic_energy", "fracture_energy"});
+        //             } else {
+        //                 writer.open_file(csv_file_name_);
+        //             }
 
-                    writer.write_table_row<Scalar>({elastic_energy, fracture_energy});
-                    writer.close_file();
-                }
-            }
-        }
+        //             writer.write_table_row<Scalar>({elastic_energy, fracture_energy});
+        //             writer.close_file();
+        //         }
+        //     }
+        // }
 
         void run() override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::run(...)");
@@ -502,6 +513,12 @@ namespace utopia {
                 }
 
                 prepare_for_solve();
+
+                if (this->time_ == this->dt_) {
+                    auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
+                    fun_finest->old_solution(this->solution_);
+                    fun_finest->set_dt(this->dt_);
+                }
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
                 rmtr_->solve(this->solution_);

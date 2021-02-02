@@ -1,0 +1,35 @@
+{
+    "app" : "petsc_pressure_net_2_rmtr_vol_dev",
+    "output-path" : "amor_test_ML/out",
+    "nx" : 100,
+    "ny" : 50,
+    "n_levels": 2,
+    "x_min" : 0,
+    "x_max" : 1,
+    "y_min" : 0,
+    "y_max" : 0.5,
+    "disp" : 1,
+    "num_time_steps" : 100, 
+    "dt" : 1e-4,     
+    "use_mprgp" : true,
+    "adjust_dt_on_failure": false,
+    "solver" : {
+        "verbose" : true,
+        "max-it" : 100,
+        "atol": 1e-5, 
+        "max_coarse_it": 2,
+        "max_sucessful_coarse_it": 1,
+        "pre_smoothing_steps" : 2,
+        "post_smoothing_steps": 2,
+        "grad_smoothess_termination" : 1e-6,
+        "max_sucessful_smoothing_it": 1,
+        "max_QP_smoothing_it": 10,
+        "max_QP_coarse_it": 1000,
+        "linear-solver" : {
+            "verbose" : false,
+            "atol": 1e-9,
+            "max-it": 1000
+        }
+    }
+    }
+}
