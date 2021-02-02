@@ -68,6 +68,8 @@ namespace utopia {
         ArrayView &operator=(const ArrayView &other) = default;
         ArrayView(const ArrayView &other) = default;
 
+        inline void set_data(T *data) { data_ = data; }
+
     private:
         T *data_;
         Size_t size_{0};
@@ -255,6 +257,12 @@ namespace utopia {
         UTOPIA_FUNCTION ArrayView() : data_(nullptr) {}
 
         UTOPIA_INLINE_FUNCTION bool is_null() const { return data_.is_null(); }
+
+        inline void set_data(const T *data) { data_.set_data(data); }
+        inline void set_size(const SizeType rows, const SizeType cols) {
+            rows_ = rows;
+            cols_ = cols;
+        }
 
     private:
         ArrayView<T> data_;

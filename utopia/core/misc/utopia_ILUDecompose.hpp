@@ -220,16 +220,18 @@ namespace utopia {
             DiagIdx idx;
             idx.init(n_blocks, &ia[0], &ja[0]);
 
-            Block d, d_inv, e;
-            BlockView air, arj, aij;
+            Block d_inv, e;
+            BlockView d, air, arj, aij;
+
+            d.set_size(BlockSize, BlockSize);
+            air.set_size(BlockSize, BlockSize);
+            arj.set_size(BlockSize, BlockSize);
+            aij.set_size(BlockSize, BlockSize);
 
             for (SizeType r = 0; r < n_blocks - 1; ++r) {
                 const SizeType row_end = ia[r + 1];
                 const SizeType k = idx.idx[r];
-                Scalar *d_array = in_out.block(k);
-
-                device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
-
+                d.set_data(in_out.block(k));
                 d_inv = inv(d);
 
                 for (SizeType ki = k + 1; ki < row_end; ++ki) {
@@ -239,7 +241,7 @@ namespace utopia {
                     if (ir == -1) continue;
 
                     auto ii = idx.idx[i];
-                    air.raw_type() = ArrayViewT(in_out.block(ir), BlockSize, BlockSize);
+                    air.set_data(in_out.block(ir));
 
                     e = (d_inv * air);
 
@@ -248,10 +250,10 @@ namespace utopia {
 
                         auto ij = idx.find(i, j);
 
-                        arj.raw_type() = ArrayViewT(in_out.block(rj), BlockSize, BlockSize);
+                        arj.set_data(in_out.block(rj));
 
                         if (ij != -1) {
-                            aij.raw_type() = ArrayViewT(in_out.block(ij), BlockSize, BlockSize);
+                            aij.set_data(in_out.block(ij));
                             aij -= e * arj;
                         }
                     }
@@ -287,8 +289,8 @@ namespace utopia {
                 device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
                 d_inv = inv(d);
 
-                for (SizeType b = 0; b < BlockSize; ++b) {
-                    val[b] = b[i_offset + b];
+                for (SizeType bi = 0; bi < BlockSize; ++bi) {
+                    val[bi] = b[i_offset + bi];
                 }
 
                 for (SizeType k = row_begin; k < row_diag; ++k) {
@@ -307,8 +309,8 @@ namespace utopia {
                 }
 
                 auto expr = d_inv * val;
-                for (SizeType b = 0; b < BlockSize; ++b) {
-                    L_inv_b[i_offset + b] = expr(b);
+                for (SizeType bi = 0; bi < BlockSize; ++bi) {
+                    L_inv_b[i_offset + bi] = expr(bi);
                 }
             }
 
@@ -322,8 +324,8 @@ namespace utopia {
                 device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
                 d_inv = inv(d);
 
-                for (SizeType b = 0; b < BlockSize; ++b) {
-                    val[b] = L_inv_b[i_offset + b];
+                for (SizeType bi = 0; bi < BlockSize; ++bi) {
+                    val[bi] = L_inv_b[i_offset + bi];
                 }
 
                 for (SizeType k = row_diag + 1; k < row_end; ++k) {
@@ -342,8 +344,8 @@ namespace utopia {
                 }
 
                 auto expr = d_inv * val;
-                for (SizeType b = 0; b < BlockSize; ++b) {
-                    x[i_offset + b] = expr(b);
+                for (SizeType bi = 0; bi < BlockSize; ++bi) {
+                    x[i_offset + bi] = expr(bi);
                 }
             }
         }
