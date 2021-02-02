@@ -161,12 +161,15 @@ namespace utopia {
         using Matrix = typename FunctionSpace::Matrix;
 
         IncrementalLoading(FunctionSpace &space, InitialCondition<FunctionSpace> &IC, BCSetup<FunctionSpace> &BC)
-            : space_(space), IC_(IC), BC_(BC) {}
+            : space_(space), IC_(IC), BC_(BC) {
+            fe_problem_ = std::make_shared<ProblemType>(space_);
+        }
 
         void read(Input &in) override {
             IncrementalLoadingBase<FunctionSpace>::read(in);
             IC_.read(in);
             BC_.read(in);
+
             fe_problem_->read(in);
 
             init_solver();
@@ -278,7 +281,6 @@ namespace utopia {
         void run() override {
             UTOPIA_TRACE_REGION_BEGIN("IncrementalLoading::run(...)");
 
-            fe_problem_ = std::make_shared<ProblemType>(space_);
             // just for testing purposes...
             fe_problem_->use_crack_set_irreversibiblity(true);
             fe_problem_->turn_off_cu_coupling(true);

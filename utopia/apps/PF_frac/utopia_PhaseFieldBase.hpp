@@ -52,7 +52,7 @@ namespace utopia {
             in.get("turn_off_cu_coupling", turn_off_cu_coupling);
 
             // seq. faults for some reason... ???
-            // kappa = lambda + (2.0 * mu / Dim);
+            kappa = lambda + (2.0 * mu / Dim);
         }
 
         PFFracParameters()
