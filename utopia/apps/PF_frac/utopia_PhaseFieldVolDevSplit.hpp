@@ -41,8 +41,11 @@ namespace utopia {
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
 
         // FIXME
-        using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
+        // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 2>;
         // using Quadrature = utopia::Quadrature<typename FunctionSpace::Shape, 0>;
+
+        using Shape = typename FunctionSpace::Shape;
+        using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
