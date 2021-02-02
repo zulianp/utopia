@@ -73,7 +73,7 @@ namespace utopia {
         using IndexView = utopia::ArrayView<const PetscInt>;
 
         PetscVector L_inv_b(layout(b), 0.0);
-        x.set(0.0);
+        // x.set(0.0);
 
         auto b_view = const_local_view_device(b);
         auto L_inv_b_view = local_view_device(L_inv_b);
@@ -95,10 +95,10 @@ namespace utopia {
         CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
 
         auto b_array = b_view.array();
-        auto L_array = L_inv_b_view.array();
+        auto L_inv_b_array = L_inv_b_view.array();
         auto x_array = x_view.array();
 
-        ilu_apply(crs, b_array, L_array, x_array);
+        ilu_apply(crs, b_array, L_inv_b_array, x_array);
     }
 
     void ILUDecompose<PetscMatrix, PETSC>::block_decompose(const PetscMatrix &, PetscMatrix &, const bool) {}

@@ -250,7 +250,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION const T *end() const { return data_.end(); }
 
         UTOPIA_FUNCTION ArrayView(T *data, const SizeType &rows, const SizeType &cols)
-            : data_(data), rows_(rows), cols_(cols) {}
+            : data_(data, rows * cols), rows_(rows), cols_(cols) {}
 
         UTOPIA_FUNCTION ArrayView() : data_(nullptr) {}
 

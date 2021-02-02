@@ -197,6 +197,158 @@ namespace utopia {
         }
     };
 
+    template <class ScalarView, class IndexView, int BlockSize>
+    class ILUDecompose<CRSMatrix<ScalarView, IndexView, BlockSize>, HOMEMADE> {
+    public:
+        using CRSMatrix = utopia::CRSMatrix<ScalarView, IndexView, BlockSize>;
+        using Scalar = typename std::remove_const<typename CRSMatrix::Scalar>::type;
+        using SizeType = typename std::remove_const<typename CRSMatrix::SizeType>::type;
+        using DiagIdx = utopia::DiagIdx<SizeType>;
+        using Block = utopia::StaticMatrix<Scalar, BlockSize, BlockSize>;
+        using ArrayViewT = utopia::ArrayView<Scalar, DYNAMIC_SIZE, DYNAMIC_SIZE>;
+        using BlockView = utopia::TensorView<ArrayViewT, 2>;
+
+        static const int BlockSize2 = BlockSize * BlockSize;
+
+        static bool decompose(CRSMatrix &in_out, const bool modified) {
+            SizeType n_blocks = in_out.rows();
+
+            auto &ia = in_out.row_ptr();
+            auto &ja = in_out.colidx();
+            auto &array = in_out.values();
+
+            DiagIdx idx;
+            idx.init(n_blocks, &ia[0], &ja[0]);
+
+            Block d, d_inv, e;
+            BlockView air, arj, aij;
+
+            for (SizeType r = 0; r < n_blocks - 1; ++r) {
+                const SizeType row_end = ia[r + 1];
+                const SizeType k = idx.idx[r];
+                Scalar *d_array = in_out.block(k);
+
+                device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
+
+                d_inv = inv(d);
+
+                for (SizeType ki = k + 1; ki < row_end; ++ki) {
+                    auto i = ja[ki];
+
+                    auto ir = idx.find_before_diag(i, r);
+                    if (ir == -1) continue;
+
+                    auto ii = idx.idx[i];
+                    air.raw_type() = ArrayViewT(in_out.block(ir), BlockSize, BlockSize);
+
+                    e = (d_inv * air);
+
+                    for (SizeType rj = k + 1; rj < row_end; ++rj) {
+                        auto j = ja[rj];
+
+                        auto ij = idx.find(i, j);
+
+                        arj.raw_type() = ArrayViewT(in_out.block(rj), BlockSize, BlockSize);
+
+                        if (ij != -1) {
+                            aij.raw_type() = ArrayViewT(in_out.block(ij), BlockSize, BlockSize);
+                            aij -= e * arj;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        template <class ConstVector, class Vector>
+        static void apply(const CRSMatrix &ilu, const ConstVector &b, Vector &L_inv_b, Vector &x) {
+            device::fill(0.0, L_inv_b);
+            device::fill(0.0, x);
+
+            SizeType n_blocks = ilu.rows();
+            auto &ia = ilu.row_ptr();
+            auto &ja = ilu.colidx();
+            auto &array = ilu.values();
+
+            DiagIdx idx;
+            idx.init(n_blocks, &ia[0], &ja[0]);
+
+            Block d, d_inv;
+            StaticVector<Scalar, BlockSize> val;
+
+            // Forward substitution
+            for (SizeType i = 0; i < n_blocks; ++i) {
+                const SizeType i_offset = i * BlockSize;
+                const SizeType row_begin = ia[i];
+                const SizeType row_diag = idx.idx[i];
+
+                const Scalar *d_array = ilu.block(row_diag);
+                device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
+                d_inv = inv(d);
+
+                for (SizeType b = 0; b < BlockSize; ++b) {
+                    val[b] = b[i_offset + b];
+                }
+
+                for (SizeType k = row_begin; k < row_diag; ++k) {
+                    const SizeType j = ja[k];
+                    const SizeType k_offset = k * BlockSize2;
+                    const SizeType j_offset = j * BlockSize;
+
+                    // Matrix-vector multiplication (in the block)
+                    for (SizeType bi = 0; bi < BlockSize; ++bi) {
+                        const SizeType k_offset_bi = k_offset + bi * BlockSize;
+
+                        for (SizeType bj = 0; bj < BlockSize; ++bj) {
+                            val[bi] -= array[k_offset_bi + bj] * L_inv_b[j_offset + bj];
+                        }
+                    }
+                }
+
+                auto expr = d_inv * val;
+                for (SizeType b = 0; b < BlockSize; ++b) {
+                    L_inv_b[i_offset + b] = expr(b);
+                }
+            }
+
+            // // Backward substitution
+            for (SizeType i = n_blocks - 1; i >= 0; --i) {
+                const SizeType i_offset = i * BlockSize;
+                const SizeType row_diag = idx.idx[i];
+                const SizeType row_end = ia[i + 1];
+
+                const Scalar *d_array = ilu.block(row_diag);
+                device::copy(d_array, d_array + BlockSize2, d.raw_type().begin());
+                d_inv = inv(d);
+
+                for (SizeType b = 0; b < BlockSize; ++b) {
+                    val[b] = L_inv_b[i_offset + b];
+                }
+
+                for (SizeType k = row_diag + 1; k < row_end; ++k) {
+                    const SizeType j = ja[k];
+                    const SizeType k_offset = k * BlockSize2;
+                    const SizeType j_offset = j * BlockSize;
+
+                    // Matrix-vector multiplication (in the block)
+                    for (SizeType bi = 0; bi < BlockSize; ++bi) {
+                        const SizeType k_offset_bi = k_offset + bi * BlockSize;
+
+                        for (SizeType bj = 0; bj < BlockSize; ++bj) {
+                            val[bi] -= array[k_offset_bi + bj] * x[j_offset + bj];
+                        }
+                    }
+                }
+
+                auto expr = d_inv * val;
+                for (SizeType b = 0; b < BlockSize; ++b) {
+                    x[i_offset + b] = expr(b);
+                }
+            }
+        }
+    };  // namespace utopia
+
     template <class Matrix>
     bool ilu_decompose(Matrix &mat, const bool modified = false) {
         return ILUDecompose<Matrix>::decompose(mat, modified);
