@@ -156,7 +156,7 @@ namespace utopia {
 
         void init_force_field(Input &in) {
             in.get("neumann_bc", [&](Input &in) {
-                in.get_all([&](Input &in) {
+                in.get_all([&](Input & /*in*/) {
                     if (empty(force_field_)) {
                         space_.create_vector(force_field_);
                         force_field_.set(0.0);
@@ -233,7 +233,11 @@ namespace utopia {
             return true;
         }
 
-        //////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////
+        virtual bool fracture_energy(const Vector &x_const, Scalar &val) const = 0;
+        virtual bool elastic_energy(const Vector &x_const, Scalar &val) const = 0;
+
+        ////////////////////////////////////////////////////////////////////////////////////
 
         template <class StressShape, class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
@@ -263,7 +267,7 @@ namespace utopia {
                                                               const Scalar &elastic_energy_positive,
                                                               const Scalar &trial,
                                                               const Scalar &test) {
-            const Scalar dcc = quadratic_degradation_deriv2(params, phase_field_value);
+            const Scalar dcc = (1.0 - params.regularization) * quadratic_degradation_deriv2(params, phase_field_value);
             return dcc * trial * elastic_energy_positive * test;
         }
 

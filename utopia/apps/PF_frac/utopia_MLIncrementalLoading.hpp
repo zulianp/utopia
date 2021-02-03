@@ -463,34 +463,34 @@ namespace utopia {
                 }
             }
 
-            // this->export_energies_csv();
+            this->export_energies_csv();
 
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
         }
 
-        // void export_energies_csv() {
-        //     if (!csv_file_name_.empty()) {
-        //         CSVWriter writer{};
-        //         Scalar elastic_energy = 0.0, fracture_energy = 0.0;
+        void export_energies_csv() {
+            if (!csv_file_name_.empty()) {
+                CSVWriter writer{};
+                Scalar elastic_energy = 0.0, fracture_energy = 0.0;
 
-        //         if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-        //             fun_finest->elastic_energy(this->solution_, elastic_energy);
-        //             fun_finest->fracture_energy(this->solution_, fracture_energy);
-        //         }
+                if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    fun_finest->elastic_energy(this->solution_, elastic_energy);
+                    fun_finest->fracture_energy(this->solution_, fracture_energy);
+                }
 
-        //         if (mpi_world_rank() == 0) {
-        //             if (!writer.file_exists(csv_file_name_)) {
-        //                 writer.open_file(csv_file_name_);
-        //                 writer.write_table_row<std::string>({"elastic_energy", "fracture_energy"});
-        //             } else {
-        //                 writer.open_file(csv_file_name_);
-        //             }
+                if (mpi_world_rank() == 0) {
+                    if (!writer.file_exists(csv_file_name_)) {
+                        writer.open_file(csv_file_name_);
+                        writer.write_table_row<std::string>({"elastic_energy", "fracture_energy"});
+                    } else {
+                        writer.open_file(csv_file_name_);
+                    }
 
-        //             writer.write_table_row<Scalar>({elastic_energy, fracture_energy});
-        //             writer.close_file();
-        //         }
-        //     }
-        // }
+                    writer.write_table_row<Scalar>({elastic_energy, fracture_energy});
+                    writer.close_file();
+                }
+            }
+        }
 
         void run() override {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::run(...)");

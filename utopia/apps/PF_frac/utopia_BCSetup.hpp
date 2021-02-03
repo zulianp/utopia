@@ -260,7 +260,7 @@ namespace utopia {
         void read(Input &in) override { in.get("disp_x", disp_x_); }
 
         void emplace_time_dependent_BC(const Scalar &time) override {
-            static const int Dim = FunctionSpace::Dim;
+            // static const int Dim = FunctionSpace::Dim;
 
             using Point = typename FunctionSpace::Point;
             this->space_.reset_bc();
