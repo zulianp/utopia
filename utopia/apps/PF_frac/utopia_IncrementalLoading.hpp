@@ -219,7 +219,7 @@ namespace utopia {
             }
 
             space_.apply_constraints(this->solution_);
-            fe_problem_->old_solution(this->solution_);
+            fe_problem_->set_old_solution(this->solution_);
 
             UTOPIA_TRACE_REGION_END("IncrementalLoading::init_solution(...)");
         }
@@ -268,7 +268,7 @@ namespace utopia {
                     this->write_to_file(space_, this->time_);
                 }
 
-                fe_problem_->old_solution(this->solution_);
+                fe_problem_->set_old_solution(this->solution_);
 
                 // increment time step
                 this->time_ += this->dt_;
@@ -284,7 +284,7 @@ namespace utopia {
             // just for testing purposes...
             fe_problem_->use_crack_set_irreversibiblity(true);
             fe_problem_->turn_off_cu_coupling(true);
-            // fe_problem_->turn_off_uc_coupling(true);
+            fe_problem_->turn_off_uc_coupling(true);
 
             this->init(space_);
 
@@ -299,7 +299,7 @@ namespace utopia {
                 // fe problem is missing
                 prepare_for_solve();
                 if (t == 1) {
-                    fe_problem_->old_solution(0.0 * this->solution_);
+                    fe_problem_->set_old_solution(this->solution_);
                     fe_problem_->set_dt(this->dt_);
                 }
 

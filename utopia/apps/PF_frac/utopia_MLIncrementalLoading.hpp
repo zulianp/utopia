@@ -234,7 +234,7 @@ namespace utopia {
             spaces_.back()->apply_constraints(this->solution_);
 
             if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                fun_finest->old_solution(this->solution_);
+                fun_finest->set_old_solution(this->solution_);
             }
 
             // adding sol to all levels
@@ -517,7 +517,7 @@ namespace utopia {
 
                 if (this->time_ == this->dt_) {
                     auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
-                    fun_finest->old_solution(this->solution_);
+                    fun_finest->set_old_solution(this->solution_);
                     fun_finest->set_dt(this->dt_);
                 }
 

@@ -123,11 +123,11 @@ namespace utopia {
 
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
         PFFracTension2D<FunctionSpace> BC_setup(space);
-        // IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
-        //     space, IC_setup, BC_setup);
-
-        IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(
+        IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
             space, IC_setup, BC_setup);
+
+        // IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(
+        //     space, IC_setup, BC_setup);
 
         time_stepper.read(in);
         time_stepper.run();

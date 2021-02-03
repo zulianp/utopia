@@ -234,8 +234,10 @@ namespace utopia {
         }
 
         ////////////////////////////////////////////////////////////////////////////////////
-        virtual bool fracture_energy(const Vector &x_const, Scalar &val) const = 0;
-        virtual bool elastic_energy(const Vector &x_const, Scalar &val) const = 0;
+        virtual bool fracture_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
+        virtual bool elastic_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
+
+        virtual void update_history_field(const Vector & /*x_const*/) const {}
 
         ////////////////////////////////////////////////////////////////////////////////////
 
@@ -325,13 +327,14 @@ namespace utopia {
             return 2.0;
         }
 
-        void old_solution(const Vector &x_old) { x_old_ = x_old; }
-
         Vector &old_solution() { return x_old_; }
 
         void get_old_solution(Vector &x) const { x = x_old_; }
 
-        void set_old_solution(const Vector &x) { x_old_ = x; }
+        void set_old_solution(const Vector &x) {
+            x_old_ = x;
+            update_history_field(x_old_);
+        }
 
         void build_irreversility_constraint(Vector &lb) {
             {

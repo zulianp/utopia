@@ -312,8 +312,6 @@ namespace utopia {
             val = 0.0;
 
             PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
-            // PrincipalStrains<USpace, Quadrature> strain(U, q);
-            // strain.update(x);
 
             {
                 auto U_view = U.view_device();
