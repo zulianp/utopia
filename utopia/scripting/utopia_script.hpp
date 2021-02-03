@@ -122,18 +122,18 @@ namespace scripting {
         VectorImpl* impl_;
     };
 
-    class Layout {
-    public:
-        using LayoutImpl = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
+    // class Layout {
+    // public:
+    //     using LayoutImpl = utopia::Layout<Communicator, 1, LocalSizeType, SizeType>;
 
-        Layout();
-        ~Layout();
+    //     Layout();
+    //     ~Layout();
 
-        Layout serial_layout(const SizeType& size);
+    //     Layout serial_layout(const SizeType& size);
 
-    private:
-        LayoutImpl* impl_;
-    };
+    // private:
+    //     LayoutImpl* impl_;
+    // };
 
     class Communicator {
     public:

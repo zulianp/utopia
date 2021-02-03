@@ -8,10 +8,10 @@
 #include <iostream>
 
 namespace scripting {
-    Layout::Layout() : impl_(nullptr) {}
+    // Layout::Layout() : impl_(nullptr) {}
 
-    Layout::~Layout() { delete impl_; }
+    // Layout::~Layout() { delete impl_; }
 
-    Layout Layout::serial_layout(const SizeType &size) {}
+    // Layout Layout::serial_layout(const SizeType &size) {}
 
 }  // namespace scripting
