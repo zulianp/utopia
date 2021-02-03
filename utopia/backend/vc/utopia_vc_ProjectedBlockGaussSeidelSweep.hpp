@@ -125,32 +125,23 @@ namespace utopia {
             auto &colidx = block_crs.colidx();
 
             const SizeType n_blocks = row_ptr.size() - 1;
-
             SIMDType r_simd, c_simd, LRc_simd, mat_simd;
-
-            BlockView aij;
-            aij.raw_type().set_size(BlockSize, BlockSize);
 
             auto f = [&](const SizeType &block_i) {
                 const SizeType row_end = row_ptr[block_i + 1];
                 const SizeType b_offset = block_i * BlockSize;
 
-                for (SizeType d = 0; d < BlockSize; ++d) {
-                    SizeType i = b_offset + d;
-                    r_simd[d] = this->r_[i];
-                }
+                r_simd.load(&this->r_[b_offset], Vc::Unaligned);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
                     if (colidx[j] == block_i) continue;
 
-                    for (SizeType d = 0; d < BlockSize; ++d) {
-                        c_simd[d] = this->c_[colidx[j] * BlockSize + d];
-                    }
+                    c_simd.load(&this->c_[colidx[j] * BlockSize], Vc::Unaligned);
 
-                    aij.raw_type().set_data(block_crs.block(j));
+                    auto *aij = block_crs.block(j);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        mat_simd.load(&(aij(d, 0)), Vc::Unaligned);
+                        mat_simd.load(&aij[d * BlockSize], Vc::Unaligned);
                         LRc_simd[d] = (mat_simd * c_simd).sum();
                     }
 
@@ -187,29 +178,21 @@ namespace utopia {
             SmallMatrix d_temp, d_inv_temp;
             SIMDType r_simd, c_simd, LRc_simd, mat_simd;
 
-            BlockView aij;
-            aij.raw_type().set_size(BlockSize, BlockSize);
-
             auto f = [&](const SizeType &block_i) {
                 const SizeType row_end = row_ptr[block_i + 1];
                 const SizeType b_offset = block_i * BlockSize;
 
-                for (SizeType d = 0; d < BlockSize; ++d) {
-                    SizeType i = b_offset + d;
-                    r_simd[d] = this->r_[i];
-                }
+                r_simd.load(&this->r_[b_offset], Vc::Unaligned);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
                     if (colidx[j] == block_i) continue;
 
-                    for (SizeType d = 0; d < BlockSize; ++d) {
-                        c_simd[d] = this->c_[colidx[j] * BlockSize + d];
-                    }
+                    c_simd.load(&this->c_[colidx[j] * BlockSize], Vc::Unaligned);
 
-                    aij.raw_type().set_data(block_crs.block(j));
+                    auto *aij = block_crs.block(j);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        mat_simd.load(&(aij(d, 0)), Vc::Unaligned);
+                        mat_simd.load(&aij[d * BlockSize], Vc::Unaligned);
                         LRc_simd[d] = (mat_simd * c_simd).sum();
                     }
 
