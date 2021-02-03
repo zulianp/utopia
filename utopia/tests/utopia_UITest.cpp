@@ -27,7 +27,7 @@ namespace utopia {
         generic_stream(*is_ptr);
     }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
     void symbolic_expr() {
         {
             SymbolicFunction f("x + y + z");
@@ -47,7 +47,7 @@ namespace utopia {
         }
     }
 
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
     void input_parameters() {
         InputParameters in;
@@ -75,27 +75,27 @@ namespace utopia {
     void newton_ui() {
         const std::string data_path = Utopia::instance().get("data_path");
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 
         // auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE>>();
         auto cg = std::make_shared<ConjugateGradient<PetscMatrix, PetscVector>>();
         Newton<PetscMatrix, PetscVector> newton(cg);
 
-#ifdef WITH_JSON
+#ifdef UTOPIA_WITH_JSON
         newton.import("Newton", data_path + "/json/default.json");
-#endif  // WITH_JSON
+#endif  // UTOPIA_WITH_JSON
 
         newton.import("Newton", data_path + "/xml/default.xml");
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
     }
 
     static void ui() {
         UTOPIA_RUN_TEST(xml_stream);
         UTOPIA_RUN_TEST(input_parameters);
         UTOPIA_RUN_TEST(newton_ui);
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
         UTOPIA_RUN_TEST(symbolic_expr);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(ui);

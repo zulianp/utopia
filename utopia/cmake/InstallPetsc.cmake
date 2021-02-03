@@ -23,6 +23,7 @@ if(NOT PETSC_FOUND)
         ${PETSC_CONFIG_ARGS}
         --with-mpi=1
         --download-scalapack=yes
+        # --with-scalapack=1 --with-scalapack-dir=/opt/local
         --download-hypre=yes
         --with-cxx-dialect=C++11
         -download-superlu_dist=yes

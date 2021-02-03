@@ -6,7 +6,7 @@
 
 namespace utopia {
 
-#ifdef WITH_CPP14
+#ifdef UTOPIA_WITH_CPP14
 
     using std::make_unique;
 
@@ -17,7 +17,7 @@ namespace utopia {
         return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
     }
 
-#endif  // WITH_CPP14
+#endif  // UTOPIA_WITH_CPP14
 
     template <typename T>
     inline std::shared_ptr<T> unique_to_shared(std::unique_ptr<T> &ptr) {

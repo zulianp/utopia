@@ -5,7 +5,7 @@
 #include "utopia_Testing.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_trilinos.hpp"
 #endif
 
@@ -583,21 +583,21 @@ namespace utopia {
     };
 
     static void algebra() {
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         DenseAlgebraTest<BlasMatrixd, BlasVectord>().run();
         SerialAlgebraTest<BlasMatrixd, BlasVectord>().run();
         SparseAlgebraTest<BlasMatrixd, BlasVectord>().run();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         DenseAlgebraTest<PetscMatrix, PetscVector>().run();
         SparseAlgebraTest<PetscMatrix, PetscVector>().run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         VectorAlgebraTest<TpetraVector>().run();
         SparseAlgebraTest<TpetraMatrix, TpetraVector>().run();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(algebra);

@@ -24,11 +24,11 @@ namespace utopia {
         static std::string command() { return "-transfer"; }
 
     private:
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
         std::shared_ptr<SymbolicFunction> fun;
 #else
         std::shared_ptr<ConstantCoefficient<double, 0> > fun;
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
         bool fun_is_constant;
         bool write_operators_to_disk;

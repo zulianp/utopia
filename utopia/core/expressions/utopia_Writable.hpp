@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 22/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_WRITABLE_HPP
 #define UTOPIA_UTOPIA_WRITABLE_HPP
 
@@ -45,7 +41,7 @@ namespace utopia {
          * @param[in]  value    The value.
          */
         inline void set(const SizeType row, const SizeType col, const Scalar value) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             assert(row < (SizeType)size(derived()).get(0));
             assert(col < (SizeType)size(derived()).get(1));
 
@@ -63,7 +59,7 @@ namespace utopia {
          * @param[in]  value    The value.
          */
         inline void add(const SizeType row, const SizeType col, const Scalar value) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             assert(row < (SizeType)size(derived()).get(0));
             assert(col < (SizeType)size(derived()).get(1));
 
@@ -83,7 +79,7 @@ namespace utopia {
         // inline void set(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const
         // std::vector<Scalar> &values)
         // {
-        //     assert_enabled(is_write_locked());
+        //     utopia_lock_check_assert(is_write_locked());
         //     Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), rows, columns, values);
         // }
 
@@ -91,7 +87,7 @@ namespace utopia {
         inline void add_matrix(const std::vector<Ordinal> &rows,
                                const std::vector<Ordinal> &columns,
                                const std::vector<Scalar> &values) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend>::add_matrix(
                 derived().implementation(), rows, columns, values);
         }
@@ -99,7 +95,7 @@ namespace utopia {
         inline void set_matrix(const std::vector<SizeType> &rows,
                                const std::vector<SizeType> &columns,
                                const std::vector<Scalar> &values) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(
                 derived().implementation(), rows, columns, values);
         }
@@ -108,7 +104,7 @@ namespace utopia {
         inline void set_matrix(const std::vector<Ordinal> &rows,
                                const std::vector<Ordinal> &columns,
                                const std::vector<Scalar> &values) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(
                 derived().implementation(), rows, columns, values);
         }
@@ -116,7 +112,7 @@ namespace utopia {
         // template<class Rows, class Cols, class Values>
         // inline void set_matrix(const Rows &rows, Cols &cols, const Values &values)
         // {
-        //     assert_enabled(is_write_locked());
+        //     utopia_lock_check_assert(is_write_locked());
         //     // Backend<Scalar, Traits<Implementation>::Backend>::set_matrix(derived().implementation(), rows,
         //     columns, values);
 
@@ -133,7 +129,7 @@ namespace utopia {
 
         template <class Rows, class Cols, class Values>
         inline void set_matrix(const Rows &rows, Cols &cols, const Values &values) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
 
             auto n_rows = rows.size();
             auto n_cols = cols.size();
@@ -157,7 +153,7 @@ namespace utopia {
         inline void set_matrix(std::initializer_list<RowT> rows,
                                std::initializer_list<ColT> cols,
                                std::initializer_list<ScalarT> values) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
 
             using std::copy;
             std::vector<SizeType> vrows(rows.size()), vcols(cols.size());
@@ -200,7 +196,7 @@ namespace utopia {
          * @param[in]  value  The value.
          */
         inline void set(const SizeType index, const Scalar value) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), index, value);
         }
@@ -218,7 +214,7 @@ namespace utopia {
          * @param[in]  value  The value.
          */
         inline void add(const SizeType index, const Scalar value) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), index, value);
         }
@@ -233,13 +229,13 @@ namespace utopia {
          */
         template <typename Ordinal>
         inline void set(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend>::set(derived().implementation(), indices, values);
         }
 
         template <typename Ordinal>
         inline void add(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values) {
-            assert_enabled(is_write_locked());
+            utopia_lock_check_assert(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend>::add(derived().implementation(), indices, values);
         }
 

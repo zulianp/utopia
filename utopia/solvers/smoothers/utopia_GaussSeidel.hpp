@@ -205,7 +205,7 @@ namespace utopia {
             return true;
         }
 
-    NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         void init(const Matrix &A) {
             d = diag(A);
 

@@ -433,7 +433,7 @@ namespace utopia {
             return (norm2(g_trial) < norm2(g)) ? true : false;
         }
 
-        NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         void update_scaling_matrices(const Vector &x_old, const Vector &x_new) {
             Vector x_scaling(layout(x_old), 1.0);
 

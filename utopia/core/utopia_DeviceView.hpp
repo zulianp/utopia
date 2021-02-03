@@ -171,6 +171,11 @@ namespace utopia {
     }
 
     template <class Derived, int Order>
+    inline LocalViewDevice<const Derived, Order> local_view_device(const Tensor<Derived, Order> &t) {
+        return t.derived();
+    }
+
+    template <class Derived, int Order>
     inline LocalViewDevice<const Derived, Order> const_local_view_device(const Tensor<Derived, Order> &t) {
         return t.derived();
     }

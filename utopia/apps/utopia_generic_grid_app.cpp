@@ -4,6 +4,7 @@
 #include "utopia_petsc_Base.hpp"
 
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3, 14, 0)
 
 #include "petscfe.h"
 #include "utopia_Algorithms.hpp"
@@ -163,26 +164,27 @@ namespace utopia {
             // auto fun_view = fun.view_device();
             auto dx_view = dx.view_device();
 
-            Device::parallel_for(space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                Elem e;
-                space_view.elem(i, e);
+            Device::parallel_for(
+                space.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    Elem e;
+                    space_view.elem(i, e);
 
-                auto g = grad_view.make(e);
-                auto dx = dx_view.make(e);
+                    auto g = grad_view.make(e);
+                    auto dx = dx_view.make(e);
 
-                ElementMatrix el_mat;
-                el_mat.set(0.0);
+                    ElementMatrix el_mat;
+                    el_mat.set(0.0);
 
-                for (PetscInt qp = 0; qp < Quadrature::NPoints; ++qp) {
-                    for (PetscInt i = 0; i < Elem::NFunctions; ++i) {
-                        for (PetscInt j = 0; j < Elem::NFunctions; ++j) {
-                            el_mat(i, j) += inner(g(i, qp), g(j, qp)) * dx(qp);
+                    for (PetscInt qp = 0; qp < Quadrature::NPoints; ++qp) {
+                        for (PetscInt i = 0; i < Elem::NFunctions; ++i) {
+                            for (PetscInt j = 0; j < Elem::NFunctions; ++j) {
+                                el_mat(i, j) += inner(g(i, qp), g(j, qp)) * dx(qp);
+                            }
                         }
                     }
-                }
 
-                space_view.add_matrix(e, el_mat, H_view);
-            });
+                    space_view.add_matrix(e, el_mat, H_view);
+                });
         }
 
         stats.stop_and_collect("assembly");
@@ -194,4 +196,8 @@ namespace utopia {
     UTOPIA_REGISTER_APP(dmplex_test);
 }  // namespace utopia
 
+#else
+#warning "FIXME DMPlex interface changed"
+
+#endif  // UTOPIA_PETSC_VERSION_LESS_THAN(3, 14, 0)
 #endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 12, 4)

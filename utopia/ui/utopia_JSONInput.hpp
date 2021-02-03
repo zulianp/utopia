@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_JSON
+#ifdef UTOPIA_WITH_JSON
 
 #include <memory>
 #include "utopia_Input.hpp"
@@ -42,5 +42,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // WITH_JSON
+#endif  // UTOPIA_WITH_JSON
 #endif  // UTOPIA_JSON_STREAM_HPP

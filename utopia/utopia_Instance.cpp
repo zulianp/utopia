@@ -11,17 +11,17 @@
 
 #include "utopia_Reporter.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include "utopia_trilinos_Library.hpp"
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Library.hpp"
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
 #include <mpi.h>
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 #include <cassert>
 #include <iostream>
@@ -29,15 +29,15 @@
 namespace utopia {
 
     void Utopia::Init(int argc, char *argv[]) {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         instance().add_library(utopia::make_unique<PetscLibrary>());
 #endif
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         instance().add_library(utopia::make_unique<TrilinosLibrary>());
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         if (instance().libraries_.empty()) {
             MPI_Init(&argc, &argv);
         }
@@ -80,11 +80,11 @@ namespace utopia {
             ret += l->finalize();
         }
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         if (instance().libraries_.empty()) {
             ret += MPI_Finalize();
         }
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
         instance().libraries_.clear();
 
@@ -123,7 +123,7 @@ namespace utopia {
 
     void Utopia::Abort() {
         int error_code = -1;
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         MPI_Abort(MPI_COMM_WORLD, error_code);
 #else
         exit(error_code);

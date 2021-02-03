@@ -47,7 +47,7 @@ namespace utopia {
 
         bool step(const Vector &rhs, Vector &x);
 
-    NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         static void global_to_local(const Vector &g, Vector &l);
         static void local_to_global(const Vector &l, Vector &g);
         static void local_to_global_add(const Vector &l, Vector &g);

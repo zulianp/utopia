@@ -35,9 +35,9 @@ namespace utopia {
         inline constexpr static SolverType lu_decomposition() { return "lu_decomposition"; }
         inline constexpr static SolverType cholesky_decomposition() { return "cholesky_decomposition"; }
 
-        // #ifdef WITH_UMFPACK
+        // #ifdef UTOPIA_WITH_UMFPACK
         inline constexpr static SolverPackage umfpack() { return "umfpack"; }
-        // #endif //WITH_UMFPACK
+        // #endif //UTOPIA_WITH_UMFPACK
 
         // #ifdef PETSC_HAVE_MUMPS
         inline constexpr static SolverPackage mumps() { return "mumps"; }

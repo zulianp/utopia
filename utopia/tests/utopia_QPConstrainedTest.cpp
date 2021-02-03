@@ -67,7 +67,7 @@ namespace utopia {
             // );
 
             // works only for petsc
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             this->register_experiment("ProjectedTao_Test", [this]() {
                 auto lin_solver = std::make_shared<GMRES<Matrix, Vector> >();
                 TaoQPSolver<Matrix, Vector> solver(lin_solver);
@@ -76,7 +76,7 @@ namespace utopia {
 
                 run_test(this->test_functions_, solver, "ProjectedTao_Test", this->verbose_);
             });
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
         }
 
     private:
@@ -171,7 +171,7 @@ namespace utopia {
     };
 
     static void qp_constrained() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         int verbosity_level = 1;
         const int n_global = 20;
         bool alg_verbose = false;
@@ -183,19 +183,19 @@ namespace utopia {
         QPConstrainedBenchmark<PetscMatrix, PetscVector> bench_petsc(n_global, alg_verbose);
         bench_petsc.set_verbosity_level(verbosity_level);
         bench_petsc.run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-        // #ifdef WITH_TRILINOS
+        // #ifdef UTOPIA_WITH_TRILINOS
         //     QPConstrainedBenchmark<TpetraMatrixd, TpetraVectord> bench_tril(n_global, alg_verbose);
         // 	bench_tril.set_verbosity_level(verbosity_level);
         // 	bench_tril.run();
-        // #endif //WITH_TRILINOS
+        // #endif //UTOPIA_WITH_TRILINOS
 
-        // #ifdef WITH_BLAS
+        // #ifdef UTOPIA_WITH_BLAS
         // 	QPConstrainedBenchmark<BlasMatrixd, BlasVectord> bench_blas(n_global, alg_verbose);
         // 	bench_blas.set_verbosity_level(verbosity_level);
         // 	bench_blas.run();
-        // #endif //WITH_BLAS
+        // #endif //UTOPIA_WITH_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_constrained);

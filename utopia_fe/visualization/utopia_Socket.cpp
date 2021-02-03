@@ -17,7 +17,7 @@
 #include "utopia_fe_config.hpp"
 #include "utopia_libmesh_Types.hpp"
 
-#ifdef WITH_BOOST
+#ifdef UTOPIA_WITH_BOOST
 
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
@@ -448,7 +448,9 @@ namespace utopia {
                 plot_lines(3, 24, &points[0], name);
                 break;
             }
-            default: { break; }
+            default: {
+                break;
+            }
         }
     }
 
@@ -556,4 +558,4 @@ namespace utopia {
     }
 }  // namespace utopia
 
-#endif  // WITH_BOOST
+#endif  // UTOPIA_WITH_BOOST

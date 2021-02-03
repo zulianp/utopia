@@ -1,7 +1,7 @@
 #include "utopia_petsc_trilinos.hpp"
 
-#ifdef WITH_TRILINOS
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_TRILINOS
+#ifdef UTOPIA_WITH_PETSC
 
 #include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
@@ -15,5 +15,5 @@ namespace utopia {
 }  // namespace utopia
 
 #endif  // not def KOKKOS_ENABLE_CUDA
-#endif  // WITH_PETSC
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_WITH_TRILINOS

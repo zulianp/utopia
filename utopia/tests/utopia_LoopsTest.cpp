@@ -58,18 +58,18 @@ namespace utopia {
     };
 
     static void loops() {
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         // Serial backend
         run_serial_test<Loops<BlasMatrixd, BlasVectord>>();
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         run_parallel_test<Loops<PetscMatrix, PetscVector>>();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         run_parallel_test<Loops<TpetraMatrixd, TpetraVectord>>();
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(loops);

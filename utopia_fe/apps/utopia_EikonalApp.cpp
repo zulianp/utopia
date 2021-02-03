@@ -34,11 +34,11 @@ namespace utopia {
         const double diffusivity = 1.;
         const double forcing_term = 5.;
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
         auto f = symbolic("5 * sqrt(x^2 + y^2 + z^2)");
 #else
         auto f = coeff(forcing_term);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
         // discretization parameters
         const auto elem_type = libMesh::QUAD8;

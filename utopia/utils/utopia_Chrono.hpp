@@ -41,9 +41,9 @@ namespace utopia {
         TimePoint start_, end_;
         DurationMillis duration_{};
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         double mpi_start_{}, mpi_end_{}, mpi_duration_{};
-#endif  // WITH_MPI
+#endif  // UTOPIA_WITH_MPI
 
 #ifdef WIN32
         LARGE_INTEGER _frequency;

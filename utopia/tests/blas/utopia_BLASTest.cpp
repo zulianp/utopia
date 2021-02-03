@@ -1,7 +1,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
 
 #include "utopia.hpp"
 #include "utopia_TestProblems.hpp"
@@ -124,7 +124,7 @@ namespace utopia {
     }
 
     void blas_solver_test() {
-#ifdef WITH_LAPACK
+#ifdef UTOPIA_WITH_LAPACK
         auto lapackSolver = std::make_shared<LUDecomposition<BlasMatrixd, BlasVectord> >();
         BlasVectord x0({3.0, -2.0});
 
@@ -135,7 +135,7 @@ namespace utopia {
 
         x0.values(serial_layout(10), 2.0);
         newtonSolver.solve(fun2, x0);
-#endif  // WITH_LAPACK
+#endif  // UTOPIA_WITH_LAPACK
     }
 
     void blas_inplace_test() {
@@ -424,4 +424,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(blas);
 }  // namespace utopia
 
-#endif  // WITH_BLAS
+#endif  // UTOPIA_WITH_BLAS

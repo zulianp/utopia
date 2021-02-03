@@ -1,12 +1,13 @@
-if(ENABLE_MARS)
+if(UTOPIA_ENABLE_MARS)
     find_package(MARS)
     if(MARS_FOUND)
         utopiafe_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
         target_include_directories(utopia_fe PUBLIC ${MARS_INCLUDES})
         target_link_libraries(utopia_fe ${MARS_LIBRARIES})
-        set(WITH_MARS TRUE PARENT_SCOPE)
+        set(WITH_MARS
+            TRUE
+            PARENT_SCOPE)
     else()
         message(WARNING "could not find MARS")
     endif()
-
 endif()

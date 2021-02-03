@@ -13,18 +13,20 @@ endif(NOT CMAKE_BUILD_TYPE)
 # To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 
-option(ENABLE_SANITIZER "check for memory access problems" OFF)
-option(ENABLE_BOOST "enable boost features" OFF)
-option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
-option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
-option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers"
-       ON)
-option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers"
+option(UTOPIA_ENABLE_SANITIZER "check for memory access problems" OFF)
+option(UTOPIA_ENABLE_BOOST "enable boost features" OFF)
+option(UTOPIA_ENABLE_MOONOLITH_PROFILER
+       "enable moonolith profiling capabilities" OFF)
+option(UTOPIA_ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" ON)
+option(UTOPIA_ENABLE_MOOSE_ENV_MODE
+       "Allows to use the moose installation compilers" ON)
+option(UTOPIA_ENABLE_TRILINOS_ALGEBRA
+       "Allows to use the moose installation compilers" OFF)
+option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
+option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
-option(ENABLE_MARS "Tries to use mars backend" OFF)
-option(ENABLE_INTREPID2 "Tries to use the intrepid2 related features" OFF)
-option(ENABLE_NEW_TRANSFER "Use new transfer features" ON)
-option(INSTALL_LIBMESH "install libmesh" OFF)
+option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
+option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 # ##############################################################################
@@ -56,18 +58,18 @@ if(LINUX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-if(ENABLE_TRILINOS_ALGEBRA)
-    set(WITH_TRILINOS_ALGEBRA TRUE)
+if(UTOPIA_ENABLE_TRILINOS_ALGEBRA)
+    set(UTOPIA_WITH_TRILINOS_ALGEBRA TRUE)
 endif()
 
-if(ENABLE_NEW_TRANSFER)
-    set(WITH_NEW_TRANSFER TRUE)
+if(UTOPIA_ENABLE_NEW_TRANSFER)
+    set(UTOPIA_WITH_NEW_TRANSFER TRUE)
 endif()
 
 set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
 set(UTOPIA_FE_CMAKES_PATH ${UTOPIA_FE_ROOT_PATH}/libcmake)
 
-if(ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
         set(CMAKE_CXX_FLAGS_DEBUG
             "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
@@ -175,11 +177,11 @@ list(
     tests
     apps)
 
-if(INSTALL_LIBMESH)
+if(UTOPIA_INSTALL_LIBMESH)
     include(InstallLIBMESH)
 endif()
 
-if(ENABLE_INTREPID2)
+if(UTOPIA_ENABLE_INTREPID2)
     list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
 endif()
 

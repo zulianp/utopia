@@ -33,12 +33,13 @@ namespace utopia {
         bool apply(const Vector &b, Vector &x) override;
         void init_memory(const Layout &layout) override;
         void update(const std::shared_ptr<const Matrix> &op) override;
+        void fallback_solver(const std::shared_ptr<LinearSolver> &fallback_solver);
 
     private:
-        class Buffers;
+        class Details;
 
         std::shared_ptr<LinearSolver> linear_solver_;
-        std::unique_ptr<Buffers> buffers_;
+        std::unique_ptr<Details> details_;
     };
 
 }  // namespace utopia

@@ -1,9 +1,9 @@
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
 
-if(TRY_WITH_EIGEN_3)
+if(UTOPIA_ENABLE_EIGEN_3)
     find_package(Eigen3)
     if(EIGEN3_FOUND)
-        set(WITH_EIGEN_3 ON PARENT_SCOPE)
+        set(UTOPIA_WITH_EIGEN_3 ON PARENT_SCOPE)
         target_include_directories(utopia PRIVATE ${EIGEN3_INCLUDE_DIR})
     endif()
 endif()

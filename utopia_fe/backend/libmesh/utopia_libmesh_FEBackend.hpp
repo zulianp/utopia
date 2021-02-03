@@ -189,7 +189,7 @@ namespace utopia {
                 cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
             }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             template <class S>
             inline void operator()(
                 const int,
@@ -213,7 +213,7 @@ namespace utopia {
                 libMesh::DirichletBoundary d_bc(bt, vars, lambda);
                 cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
             }
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
             template <class T>
             void strong_enforce(
@@ -342,7 +342,7 @@ namespace utopia {
             return var.get(ctx.block_id());
         }
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
         static QValues<double> apply(const SymbolicFunction &fun, const AssemblyContext<LIBMESH_TAG> &ctx) {
             const auto &xyz = ctx.test()[0]->get_xyz();
             auto n_quad_points = xyz.size();
@@ -358,7 +358,7 @@ namespace utopia {
 
             return ret;
         }
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
         static auto determinant(const QValues<LMDenseMatrix> &mats, const AssemblyContext<LIBMESH_TAG> &ctx)
             -> QValues<double> {

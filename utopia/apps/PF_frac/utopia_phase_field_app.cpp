@@ -23,7 +23,7 @@
 #include "utopia_TrivialPreconditioners.hpp"
 #include "utopia_TrustRegionVariableBound.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 
@@ -35,7 +35,7 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_impl.hpp"
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
 #include <cmath>
 #include <random>

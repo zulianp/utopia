@@ -24,7 +24,7 @@ namespace utopia {
 
         inline int size() const override { return comm_->getSize(); }
 
-#ifdef WITH_MPI
+#ifdef UTOPIA_WITH_MPI
         MPI_Comm raw_comm() const override;
         explicit TrilinosCommunicator(MPI_Comm comm);
         static TrilinosCommunicator self();

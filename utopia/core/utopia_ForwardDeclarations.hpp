@@ -134,10 +134,10 @@ namespace utopia {
     template <class Expr>
     class Determinant;
 
-#ifdef WITH_OPENCL
+#ifdef UTOPIA_WITH_OPENCL
     template <class Expr, int Order>
     class Evaluate;
-#endif  // WITH_OPENCL
+#endif  // UTOPIA_WITH_OPENCL
 
     template <class Matrix, class Vector, int Backend>
     class QuadraticFunction;

@@ -2,7 +2,7 @@
 
 #include "utopia_ContactSolver.hpp"
 
-#ifndef WITH_TRILINOS_ALGEBRA
+#ifndef UTOPIA_WITH_TRILINOS_ALGEBRA
 
 #include "utopia_ContactStabilizedNewmark.hpp"
 #include "utopia_ContactStress.hpp"
@@ -169,7 +169,7 @@ namespace utopia {
             sc.set_linear_solver(std::make_shared<GMRES<USparseMatrix, UVector>>("bjacobi"));
         }
 
-#ifdef WITH_M3ELINSOL
+#ifdef UTOPIA_WITH_M3ELINSOL
 
         if (sim_in.use_amg()) {
             auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
@@ -185,7 +185,7 @@ namespace utopia {
             sc.set_use_ssn(true);
         }
 
-#endif  // WITH_M3ELINSOL
+#endif  // UTOPIA_WITH_M3ELINSOL
 
         sc.solve_steady();
     }
@@ -216,7 +216,7 @@ namespace utopia {
             sc.set_linear_solver(std::make_shared<GMRES<USparseMatrix, UVector>>("bjacobi"));
         }
 
-#ifdef WITH_M3ELINSOL
+#ifdef UTOPIA_WITH_M3ELINSOL
 
         if (sim_in.use_amg()) {
             auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
@@ -232,7 +232,7 @@ namespace utopia {
             sc.set_use_ssn(true);
         }
 
-#endif  // WITH_M3ELINSOL
+#endif  // UTOPIA_WITH_M3ELINSOL
 
         sc.initial_condition(1.);
         sc.solve_dynamic(params.n_transient_steps);
@@ -258,4 +258,4 @@ namespace utopia {
     void ContactApp::run(const std::string &path) { std::cerr << "DOING nothing for trilinos algebra" << std::endl; }
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS_ALGEBRA
+#endif  // UTOPIA_WITH_TRILINOS_ALGEBRA

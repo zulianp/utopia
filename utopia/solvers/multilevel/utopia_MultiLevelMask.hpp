@@ -64,7 +64,7 @@ namespace utopia {
         std::vector<Vector> masks_;
         bool active_{false};
 
-    NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         static void generate_mask_from_matrix(const Matrix &A,
                                               Vector &mask,
                                               const Scalar on_value,

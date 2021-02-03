@@ -270,7 +270,7 @@ namespace utopia {
     void SemiGeometricMultigrid::update(const std::shared_ptr<const USparseMatrix> &op) {
         mg.update(op);
 
-#ifndef WITH_TRILINOS_ALGEBRA
+#ifndef UTOPIA_WITH_TRILINOS_ALGEBRA
 
         // hacky
         if (is_block_solver_) {
@@ -279,7 +279,7 @@ namespace utopia {
             }
         }
 
-#endif  // WITH_TRILINOS_ALGEBRA
+#endif  // UTOPIA_WITH_TRILINOS_ALGEBRA
     }
 
     bool SemiGeometricMultigrid::apply(const UVector &rhs, UVector &sol) { return mg.apply(rhs, sol); }

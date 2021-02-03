@@ -3,7 +3,7 @@
 
 #include "utopia_Config.hpp"
 
-#ifdef WITH_TRILINOS_BELOS
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
 
 #include "Belos_config.h"
 
@@ -101,7 +101,7 @@ namespace utopia {
 
 }  // namespace utopia
 
-#else  // WITH_TRILINOS_BELOS
+#else  // UTOPIA_WITH_TRILINOS_BELOS
 #error "Trilinos was not configured with Belos, hence you cannot use the utopia::BelosSolver."
-#endif  // WITH_TRILINOS_BELOS
+#endif  // UTOPIA_WITH_TRILINOS_BELOS
 #endif  // UTOPIA_BELOS_SOLVERS_HPP

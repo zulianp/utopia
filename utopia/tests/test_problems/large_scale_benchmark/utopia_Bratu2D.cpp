@@ -1,7 +1,7 @@
 #include "utopia_Bratu2D.hpp"
 #include "utopia_TestFunctions.hpp"
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
 
 namespace utopia {
 
@@ -402,4 +402,4 @@ namespace utopia {
     template class Bratu2D<PetscMatrix, PetscVector, PETSC>;
 }  // namespace utopia
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC

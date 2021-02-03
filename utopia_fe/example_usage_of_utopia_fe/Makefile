@@ -3,13 +3,13 @@ include $(UTOPIA_FE_INSTALLATION_PATH)/config/utopia_fe_config.makefile
 
 INCLUDES:=$(UTOPIA_FE_INCLUDES)
 LIBS:=$(UTOPIA_FE_LIBRARIES)
-DEFS:=$(UTOPIA_FE_DEFS)	
-CXX:=$(UTOPIA_FE_CXX_COMPILER)	
-CC:=$(UTOPIA_FE_C_COMPILER)	
-CXX_FLAGS:=$(UTOPIA_FE_CXX_FLAGS) $(CXX_FLAGS) -g -std=c++11
+DEFS:=$(UTOPIA_FE_DEFS)
+CXX:=$(UTOPIA_FE_CXX_COMPILER)
+CC:=$(UTOPIA_FE_C_COMPILER)
+CXX_FLAGS:=$(UTOPIA_FE_CXX_FLAGS) $(CXX_FLAGS) -g -std=c++14
 
 
-all: assemble  
+all: assemble
 # sphere_mg
 
 assemble: utopia_fe_assembly_example.cpp  $(UTOPIA_FE_INSTALLATION_PATH)/lib/libutopia_fe.a
@@ -22,10 +22,10 @@ clean:
 	rm -f assemble sphere_mg
 
 run_assemble: assemble
-	mpiexec -np 3 ./assemble	
+	mpiexec -np 3 ./assemble
 
 # run_sphere_mg: sphere_mg
 # 	mpiexec -np 3 ./sphere_mg
-	
+
 .PHONY: clean run
-	
+

@@ -51,16 +51,16 @@ namespace utopia {
         }
 
         // Parallel benchmarks
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         run_all_benchmarks<PetscMatrix, PetscVector>("petsc");
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
         run_all_benchmarks<TpetraMatrixd, TpetraVectord>("trilinos");
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
         // Serial benchmarks
-#ifdef WITH_BLAS
+#ifdef UTOPIA_WITH_BLAS
         if (mpi_world_size() == 1) {
             run_all_benchmarks<BlasMatrixd, BlasVectord>("homemade");
         }

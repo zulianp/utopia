@@ -161,7 +161,7 @@ namespace utopia {
         utopia::convert(p_mat, utopia_mat);
     }
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TpetraVectord &utopia_vec) {
         // FIXME inefficient
         PetscVector temp;
@@ -180,7 +180,7 @@ namespace utopia {
         utopia::convert(temp, utopia_mat);
     }
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS
 
     inline void convert(USparseMatrix &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
         using namespace libMesh;

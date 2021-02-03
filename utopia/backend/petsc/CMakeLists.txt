@@ -30,30 +30,30 @@ if(PETSC_FOUND)
         endif()
     endif()
 
-    set(WITH_PETSC TRUE)
+    set(UTOPIA_WITH_PETSC TRUE)
 else()
     message(WARNING "[Warning] Petsc not found")
-    set(WITH_PETSC FALSE)
+    set(UTOPIA_WITH_PETSC FALSE)
 endif()
 
 
 
-if(PETSC_FOUND AND TRY_WITH_SLEPC)
+if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
     find_package(SLEPc)
     if(SLEPC_FOUND)
         list(APPEND UTOPIA_THIRDPARTY_INCLUDES ${SLEPC_INCLUDES})
         list(APPEND UTOPIA_THIRDPARTY_LIBRARIES ${SLEPC_LIBRARIES})
         message(STATUS "Slepc FOUND")
-        set(WITH_SLEPC TRUE)
+        set(UTOPIA_WITH_SLEPC TRUE)
     else()
         message(WARNING "[Warning] Slepc not found")
-        set(WITH_SLEPC FALSE)
+        set(UTOPIA_WITH_SLEPC FALSE)
     endif()
 endif()
 
 
 if(SLEPC_FOUND)
-    set(WITH_SLEPC ON PARENT_SCOPE)
+    set(UTOPIA_WITH_SLEPC ON PARENT_SCOPE)
     set(UTOPIA_SLEPC TRUE PARENT_SCOPE)
 endif()
 
@@ -61,7 +61,7 @@ endif()
 # set-up module
 if(PETSC_FOUND)
     set(UTOPIA_PETSC TRUE PARENT_SCOPE)
-    set(WITH_PETSC ON PARENT_SCOPE)
+    set(UTOPIA_WITH_PETSC ON PARENT_SCOPE)
 
     list(APPEND PETSC_MODULES
         .
@@ -77,13 +77,13 @@ if(PETSC_FOUND)
         solvers/nonlinear/line_search
         )
 
-    if(WITH_SLEPC)
+    if(UTOPIA_WITH_SLEPC)
         list(APPEND PETSC_MODULES
             solvers/eigensolvers
         )
     endif()
 
-    if(ENABLE_PASSO_EXTENSIONS)
+    if(UTOPIA_ENABLE_PASSO_EXTENSIONS)
         list(APPEND PETSC_MODULES
                 external
             )

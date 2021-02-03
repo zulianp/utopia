@@ -8,7 +8,7 @@
 #include "utopia_Operators.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
 #endif
 
@@ -65,14 +65,16 @@ namespace utopia {
     }
 
     template <class Left>
-    UTOPIA_INLINE_FUNCTION DeviceBinary<DeviceNumber<typename Left::Scalar>, Left, Multiplies> operator
-        *(const DeviceExpression<Left> &left, const typename Left::Scalar &right) {
+    UTOPIA_INLINE_FUNCTION DeviceBinary<DeviceNumber<typename Left::Scalar>, Left, Multiplies> operator*(
+        const DeviceExpression<Left> &left,
+        const typename Left::Scalar &right) {
         return DeviceBinary<DeviceNumber<typename Left::Scalar>, Left, Multiplies>(right, left.derived());
     }
 
     template <class Right>
-    UTOPIA_INLINE_FUNCTION DeviceBinary<DeviceNumber<typename Right::Scalar>, Right, Multiplies> operator
-        *(const typename Right::Scalar &left, const DeviceExpression<Right> &right) {
+    UTOPIA_INLINE_FUNCTION DeviceBinary<DeviceNumber<typename Right::Scalar>, Right, Multiplies> operator*(
+        const typename Right::Scalar &left,
+        const DeviceExpression<Right> &right) {
         return DeviceBinary<DeviceNumber<typename Right::Scalar>, Right, Multiplies>(left, right.derived());
     }
 

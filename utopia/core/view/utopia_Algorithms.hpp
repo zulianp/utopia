@@ -4,7 +4,7 @@
 #include "utopia_Base.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include <Kokkos_ArithTraits.hpp>
 #include <Kokkos_Atomic.hpp>
 #include <Kokkos_Core.hpp>

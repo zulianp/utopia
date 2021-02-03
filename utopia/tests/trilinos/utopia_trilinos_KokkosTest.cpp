@@ -1,7 +1,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 #include <algorithm>
 #include "utopia.hpp"
 #include "utopia_Testing.hpp"
@@ -199,4 +199,4 @@ namespace utopia {
     UTOPIA_REGISTER_TEST_FUNCTION(kokkos);
 }  // namespace utopia
 
-#endif  // WITH_TRILINOS
+#endif  // UTOPIA_WITH_TRILINOS

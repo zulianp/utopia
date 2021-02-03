@@ -370,7 +370,7 @@ namespace utopia {
 
         inline void l1(const bool val) { l1_ = val; }
 
-        NVCC_PRIVATE
+        UTOPIA_NVCC_PRIVATE
         bool use_line_search_{false};
         bool use_symmetric_sweep_{true};
         bool l1_{false};

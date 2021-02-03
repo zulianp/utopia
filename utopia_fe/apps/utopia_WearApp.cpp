@@ -153,7 +153,7 @@ namespace utopia {
 
                         auto u = trial(V[coord]);
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
                         std::string expr = "0";
                         is.get("value", expr);
                         auto g = symbolic(expr);
@@ -161,7 +161,7 @@ namespace utopia {
                         double value = 0;
                         is.get("value", value);
                         auto g = coeff(value);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
                         init_constraints(constraints(boundary_conditions(u == g, {side_set})));
                     });

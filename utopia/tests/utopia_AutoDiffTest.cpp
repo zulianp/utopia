@@ -197,14 +197,14 @@
 //     };
 
 //     void autodiff() {
-// #ifdef WITH_BLAS
+// #ifdef UTOPIA_WITH_BLAS
 //         AutoDiffTest<BlasMatrixd, BlasVectord>().run();
-// #endif  // WITH_BLAS
+// #endif  // UTOPIA_WITH_BLAS
 
 //         // FIXME this test fails (but then do we really want these features?)
-//         // #ifdef WITH_PETSC
+//         // #ifdef UTOPIA_WITH_PETSC
 //         //         AutoDiffTest<PetscMatrix, PetscVector>().run();
-//         // #endif  // WITH_PETSC
+//         // #endif  // UTOPIA_WITH_PETSC
 //     }
 
 //     UTOPIA_REGISTER_TEST_FUNCTION(autodiff);

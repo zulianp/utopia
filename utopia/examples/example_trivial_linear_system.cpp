@@ -92,11 +92,11 @@ int main(const int argc, char* argv[]) {
 
     // Use certain Matrix or Vector depending
     // on what back-end we have installed on our system.
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     using MatrixT = TpetraMatrixd;
     using VectorT = TpetraVectord;
 #else

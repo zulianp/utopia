@@ -32,8 +32,8 @@ namespace utopia {
         // from_mesh->comm().barrier();
         // if(from_mesh->comm().rank() == 0) { moonolith::logger() << "assemble_volume_transfer" << std::endl; }
 
-#ifdef WITH_NEW_TRANSFER
-#warning "enabling new transfer features with WITH_NEW_TRANSFER"
+#ifdef UTOPIA_WITH_NEW_TRANSFER
+#warning "enabling new transfer features with UTOPIA_WITH_NEW_TRANSFER"
         if (use_biorth && !use_interpolation) {
             from_mesh->comm().barrier();
             if (from_mesh->comm().rank() == 0) {
@@ -65,7 +65,7 @@ namespace utopia {
             B = std::move(*op->matrix());
             return true;
         }
-#endif  // WITH_NEW_TRANSFER
+#endif  // UTOPIA_WITH_NEW_TRANSFER
 
         std::shared_ptr<LocalAssembler> assembler;
 

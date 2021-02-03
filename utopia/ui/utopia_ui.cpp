@@ -26,7 +26,7 @@ namespace utopia {
             return ret_ptr;
 
         } else
-#ifdef WITH_JSON
+#ifdef UTOPIA_WITH_JSON
             if (path.extension() == "json") {
 
             auto ret = new JSONInput();
@@ -34,7 +34,7 @@ namespace utopia {
             ret->open(path);
             return ret_ptr;
         } else
-#endif  // WITH_JSON
+#endif  // UTOPIA_WITH_JSON
         {
             std::cerr << "[Error] format not supported" << std::endl;
             return nullptr;

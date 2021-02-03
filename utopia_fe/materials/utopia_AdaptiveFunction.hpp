@@ -42,12 +42,12 @@ namespace utopia {
         }
 
         bool eval(const Vector &, Vector &result) override {
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             auto f = symbolic(value_);
 #else
             double value = atof(value_.c_str());
             auto f = coeff(value);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
 
             // std::cout<<"Ciao"<<std::endl;
             if (type_ == "surface") {

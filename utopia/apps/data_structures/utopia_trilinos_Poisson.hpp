@@ -3,7 +3,7 @@
 #include "utopia_TestFunctions.hpp"
 #include "utopia_Views.hpp"
 
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
 
 namespace utopia {
     template <typename Matrix, typename Vector, int Backend = Traits<Vector>::Backend>
@@ -591,4 +591,4 @@ namespace utopia {
     };
 }  // namespace utopia
 
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC

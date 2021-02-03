@@ -1,6 +1,6 @@
 #include "utopia_SymbolicFunction.hpp"
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
 
 #include "tinyexpr.h"
 #include "utopia_make_unique.hpp"
@@ -127,4 +127,4 @@ namespace utopia {
     }
 }  // namespace utopia
 
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR

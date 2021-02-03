@@ -1,15 +1,15 @@
 #ifndef UTOPIA_FE_CONFIG_HPP
-#define UTOPIA_FE_CONFIG_HPP 
+#define UTOPIA_FE_CONFIG_HPP
 
 #include "utopia_Config.hpp"
 
-#cmakedefine WITH_BOOST
-#cmakedefine WITH_INTREPID2
-#cmakedefine WITH_NEW_TRANSFER
+#cmakedefine UTOPIA_WITH_BOOST
+#cmakedefine UTOPIA_WITH_INTREPID2
+#cmakedefine UTOPIA_WITH_NEW_TRANSFER
 
-#ifdef WITH_TRILINOS
-#cmakedefine WITH_TRILINOS_ALGEBRA
-#endif //WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
+#cmakedefine UTOPIA_WITH_TRILINOS_ALGEBRA
+#endif //UTOPIA_WITH_TRILINOS
 
 
 #endif //UTOPIA_FE_CONFIG_HPP

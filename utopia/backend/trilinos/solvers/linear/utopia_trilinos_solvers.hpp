@@ -4,7 +4,7 @@
 #include "utopia_PreconditionedSolver.hpp"
 //#include "utopia_trilinos_LinearSolverFactory.hpp"
 
-#ifdef WITH_TRILINOS_BELOS
+#ifdef UTOPIA_WITH_TRILINOS_BELOS
 #include "utopia_Belos_solver.hpp"
 #endif
 

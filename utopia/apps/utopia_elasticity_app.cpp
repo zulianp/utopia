@@ -277,11 +277,11 @@ namespace utopia {
         FunctionSpace space;
         space.read(in);
 
-        space.mesh().set_field_names({
-            "disp_x",
-            "disp_y",
-            "disp_z",
-        });
+        // space.mesh().set_field_names({
+        //     "disp_x",
+        //     "disp_y",
+        //     "disp_z",
+        // });
 
         UTOPIA_PETSC_COLLECTIVE_MEMUSAGE("space.read(in)");
 
@@ -322,9 +322,11 @@ namespace utopia {
         auto space_x = space.subspace(0);
         auto space_y = space.subspace(1);
 
-        space_x.sample(x, UTOPIA_LAMBDA(const Point &x) { return -x[0] * x[0] * 100; });
+        space_x.sample(
+            x, UTOPIA_LAMBDA(const Point &x) { return -x[0] * x[0] * 100; });
 
-        space_y.sample(x, UTOPIA_LAMBDA(const Point &x) { return x[1] * x[1] * 100; });
+        space_y.sample(
+            x, UTOPIA_LAMBDA(const Point &x) { return x[1] * x[1] * 100; });
 
         space.apply_constraints(x);
 
@@ -344,9 +346,11 @@ namespace utopia {
 
         assert(norm_diff < 1e-10);
 
-        space_x.sample(x, UTOPIA_LAMBDA(const Point &x) { return -x[0] * x[0] * 200; });
+        space_x.sample(
+            x, UTOPIA_LAMBDA(const Point &x) { return -x[0] * x[0] * 200; });
 
-        space_y.sample(x, UTOPIA_LAMBDA(const Point &x) { return x[1] * x[1] * 200; });
+        space_y.sample(
+            x, UTOPIA_LAMBDA(const Point &x) { return x[1] * x[1] * 200; });
 
         lin_elast.apply(x, y);
 

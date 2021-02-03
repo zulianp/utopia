@@ -3,7 +3,7 @@
 
 #include "utopia_Base.hpp"
 
-#ifdef WITH_SLEPC
+#ifdef UTOPIA_WITH_SLEPC
 
 #include "utopia_petsc_Eval_Cond.hpp"
 #include "utopia_petsc_Slepc.hpp"
@@ -56,5 +56,5 @@ namespace utopia {
     }
 }  // namespace utopia
 
-#endif  // WITH_SLEPC
+#endif  // UTOPIA_WITH_SLEPC
 #endif  // UTOPIA_PETSC_EVAL_COND_IMPL_HPP

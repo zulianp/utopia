@@ -3,7 +3,7 @@
 
 // #include "utopia_fe_base.hpp"
 
-// #ifndef WITH_TRILINOS_ALGEBRA
+// #ifndef UTOPIA_WITH_TRILINOS_ALGEBRA
 
 // #include "utopia_LameeParameters.hpp"
 // #include "utopia_ElasticMaterial.hpp"
@@ -158,7 +158,7 @@
 
 //                         auto u = trial(V[coord]);
 
-// #ifdef WITH_TINY_EXPR
+// #ifdef UTOPIA_WITH_TINY_EXPR
 //                         std::string expr = "0";
 //                         is.get("value", expr);
 //                         auto g = symbolic(expr);
@@ -166,7 +166,7 @@
 //                         double value = 0;
 //                         is.get("value", value);
 //                         auto g = coeff(value);
-// #endif //WITH_TINY_EXPR
+// #endif //UTOPIA_WITH_TINY_EXPR
 
 //                         init_constraints(constraints(
 //                             boundary_conditions(u == g, {side_set})
@@ -555,4 +555,4 @@
 //     {}
 // }
 
-// #endif //WITH_TRILINOS_ALGEBRA
+// #endif //UTOPIA_WITH_TRILINOS_ALGEBRA

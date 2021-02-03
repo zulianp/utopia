@@ -11,7 +11,7 @@
 //#include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_FEFunction.hpp"
 
-#ifdef WITH_INTREPID2
+#ifdef UTOPIA_WITH_INTREPID2
 #include <utopia_Intrepid2_Assembler.hpp>
 #include "utopia_Intrepid2Backend.hpp"
 
@@ -71,4 +71,4 @@ namespace utopia {
     void Intrepid2Test::run(Input &in) {}
 }  // namespace utopia
 
-#endif  // WITH_INTREPID2
+#endif  // UTOPIA_WITH_INTREPID2

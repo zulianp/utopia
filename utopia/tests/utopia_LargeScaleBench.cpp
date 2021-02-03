@@ -101,7 +101,7 @@ namespace utopia {
                 run_tr(this->test_functions_, solver, "NewtonTest_BiCGStab_HOMEMADE_GS", this->verbose_);
             });
 
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
             this->register_experiment("NewtonTest_GMRES_backtracking", [this]() {
                 auto lin_solver = std::make_shared<utopia::GMRES<Matrix, Vector> >();
                 lin_solver->set_preconditioner(std::make_shared<GaussSeidel<Matrix, Vector> >());
@@ -215,7 +215,7 @@ namespace utopia {
     };
 
     static void unconstrained_large_scale() {
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
         int verbosity_level = 1;
         const int n_global = 10;
         bool alg_verbose = false;
@@ -227,7 +227,7 @@ namespace utopia {
         LargeScaleUnconstrainedBenchmark<PetscMatrix, PetscVector> bench1(n_global, alg_verbose);
         bench1.set_verbosity_level(verbosity_level);
         bench1.run();
-#endif  // WITH_PETSC
+#endif  // UTOPIA_WITH_PETSC
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(unconstrained_large_scale);

@@ -101,7 +101,7 @@ namespace utopia {
 
             transfer_operator->read(is);
 
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             std::string expr = "x";
             is.get("function", expr);
 
@@ -121,7 +121,7 @@ namespace utopia {
             fun_is_constant = true;
 
             fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
         });
 
         c.stop();
@@ -161,11 +161,11 @@ namespace utopia {
             BiCGStab<USparseMatrix, UVector> solver;
             solver.solve(mass_mat_master, fun_master_h, fun_master);
         } else {
-#ifdef WITH_TINY_EXPR
+#ifdef UTOPIA_WITH_TINY_EXPR
             fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
 #else
             fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->expr());
-#endif  // WITH_TINY_EXPR
+#endif  // UTOPIA_WITH_TINY_EXPR
         }
 
         c.stop();
