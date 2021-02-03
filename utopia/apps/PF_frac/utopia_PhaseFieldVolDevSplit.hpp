@@ -17,14 +17,16 @@
 
 namespace utopia {
 
+    template <class T, int NumQPPoints>
+    struct ElementalHistoryDrivingForce {
+        StaticVector<T, NumQPPoints> H_;
+    };
+
     // optimize 4th order tensor com
     // add pressure
     // add kappa-reg.
-
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
-    class PhaseFieldVolDevSplit final : public PhaseFieldFracBase<FunctionSpace, Dim>
-
-    {
+    class PhaseFieldVolDevSplit final : public PhaseFieldFracBase<FunctionSpace, Dim> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
@@ -54,11 +56,29 @@ namespace utopia {
 
         PhaseFieldVolDevSplit(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {
             this->params_.fill_in_isotropic_elast_tensor();
+
+            const SizeType local_elems = this->space_.element_range().end() - this->space_.element_range().begin();
+            history_.reserve(local_elems);
+
+            for (SizeType i = 0; i < local_elems; ++i) {
+                history_.push_back(make_unique<ElementalHistoryDrivingForce<Scalar, NQuadPoints>>());
+            }
         }
 
         PhaseFieldVolDevSplit(FunctionSpace &space, const PFFracParameters &params)
             : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {
             this->params_.fill_in_isotropic_elast_tensor();
+
+            const SizeType local_elems = this->space_.element_range().end() - this->space_.element_range().begin();
+            history_.reserve(local_elems);
+
+            for (SizeType i = 0; i < local_elems; ++i) {
+                history_.push_back(make_unique<ElementalHistoryDrivingForce<Scalar, NQuadPoints>>());
+
+                for (SizeType qp = 0; qp < NQuadPoints; qp++) {
+                    history_[i]->H_[qp] = -9e9;
+                }
+            }
         }
 
         bool value(const Vector &x_const, Scalar &val) const override {
@@ -100,7 +120,7 @@ namespace utopia {
             auto differential = C.differential(q);
 
             val = 0.0;
-            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
 
             {
                 auto U_view = U.view_device();
@@ -135,27 +155,43 @@ namespace utopia {
 
                         auto dx = differential_view.make(c_e);
 
-                        Scalar el_energy = 0.0;
+                        Scalar el_energy = 0.0, elastic_energy_positive = 0.0, elastic_energy_negative = 0.0;
                         Scalar tr = 0.0;
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            el_energy += energy(this->params_, c[qp], c_grad_el[qp], el_strain.strain[qp], tr) * dx(qp);
+                            // adding contribution of fracture energy
+                            el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+                                             this->params_, c[qp], c_grad_el[qp]) *
+                                         dx(qp);
+
+                            elastic_energy(this->params_,
+                                           c[qp],
+                                           el_strain.strain[qp],
+                                           tr,
+                                           elastic_energy_positive,
+                                           elastic_energy_negative);
+
+                            Scalar H = 0.0;
+
+                            // taking care of irreversibility
+                            if (history_[i]->H_[qp] >= elastic_energy_positive) {
+                                H = history_[i]->H_[qp];
+                            } else {
+                                H = elastic_energy_positive;
+                            }
+
+                            // adding contribution of elastic energy
+                            el_energy +=
+                                ((PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(this->params_, c[qp]) *
+                                  H) +
+                                 elastic_energy_negative) *
+                                dx(qp);
 
                             if (this->params_.use_pressure) {
                                 el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
                                                  this->params_, c[qp]) *
                                              p[qp] * tr * dx(qp);
                             }
-
-                            // if (this->params_.use_pressure) {
-                            //     // indicator function is assumed to be c
-                            //     el_energy -= c[qp] * p[qp] * tr * dx(qp);
-                            // }
-
-                            // if (this->params_.use_pressure) {
-                            //     // indicator function is assumed to be c^2
-                            //     el_energy -= c[qp] * c[qp] * p[qp] * tr * dx(qp);
-                            // }
 
                             if (this->params_.use_mobility) {
                                 auto c_diff = c[qp] - c_old[qp];
@@ -171,11 +207,82 @@ namespace utopia {
             }
 
             val = x.comm().sum(val);
-
             assert(val == val);
 
             UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::value(...)");
             return true;
+        }
+
+        void update_history_field(const Vector &x_const) const override {
+            UTOPIA_TRACE_REGION_BEGIN("update_history_field::value(...)");
+
+            std::cout << "------ updating --- \n";
+
+            USpace U;
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
+
+            ///////////////////////////////////////////////////////////////////////////
+            // update local vector x
+            this->space_.global_to_local(x_const, *(this->local_x_));
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+            ////////////////////////////////////////////////////////////////////////////
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto u_val = u_fun.value(q);
+
+            Scalar val = 0.0;
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
+
+            {
+                auto U_view = U.view_device();
+                auto C_view = C.view_device();
+                auto c_view = c_val.view_device();
+                auto u_view = u_val.view_device();
+                auto strain_view = strain.view_device();
+
+                Device::parallel_reduce(
+                    this->space_.element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i) {
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
+
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto el_strain = strain_view.make(u_e);
+
+                        Scalar el_energy = 0.0, elastic_energy_positive = 0.0, elastic_energy_negative = 0.0;
+                        Scalar tr = 0.0;
+
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            elastic_energy(this->params_,
+                                           c[qp],
+                                           el_strain.strain[qp],
+                                           tr,
+                                           elastic_energy_positive,
+                                           elastic_energy_negative);
+
+                            if (history_[i]->H_[qp] <= elastic_energy_positive) {
+                                history_[i]->H_[qp] = elastic_energy_positive;
+                            }
+                        }
+
+                        assert(el_energy == el_energy);
+                        return el_energy;
+                    },
+                    val);
+            }
+
+            UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::value(...)");
         }
 
         bool elastic_energy(const Vector &x_const, Scalar &val) const override {
@@ -205,7 +312,7 @@ namespace utopia {
             auto differential = C.differential(q);
 
             val = 0.0;
-            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
 
             {
                 auto U_view = U.view_device();
@@ -234,10 +341,10 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
 
                         Scalar el_energy = 0.0;
-                        Scalar tr = 0.0;
+                        Scalar tr = 0.0, dummy = 0.0;
 
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            el_energy += elastic_energy(this->params_, c[qp], el_strain.strain[qp], tr) * dx(qp);
+                            el_energy += elastic_energy(this->params_, c[qp], el_strain.strain[qp], tr, dummy) * dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -304,7 +411,6 @@ namespace utopia {
                         UElem u_e;
                         U_view.elem(i, u_e);
                         auto c_grad_el = c_grad_view.make(c_e);
-
                         auto dx = differential_view.make(c_e);
 
                         Scalar el_energy = 0.0;
@@ -436,6 +542,19 @@ namespace utopia {
                         ////////////////////////////////////////////
                         for (int qp = 0; qp < NQuadPoints; ++qp) {
                             compute_stress(this->params_, c[qp], el_strain.strain[qp], stress, tr_strain_u, gc, elast);
+
+                            Scalar H = 0.0;
+
+                            // taking care of irreversibility
+                            if (history_[i]->H_[qp] >= elast) {
+                                H = history_[i]->H_[qp];
+                            } else {
+                                H = elast;
+                            }
+
+                            elast = PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(this->params_,
+                                                                                                        c[qp]) *
+                                    H;
 
                             for (SizeType j = 0; j < U_NDofs; ++j) {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
@@ -615,6 +734,22 @@ namespace utopia {
                             compute_positive_quantities(
                                 this->params_, el_strain.strain[qp], stress_positive, tr_strain_u, eep);
 
+                            // // if (history_[i]->H_[qp] == 0.0) {
+                            // //     history_[i]->H_[qp] = eep;
+                            // // } else {
+                            // if (history_[i]->H_[qp] < eep) {
+                            //     history_[i]->H_[qp] = eep;
+                            // }
+                            // // }
+                            Scalar H = 0.0;
+
+                            // taking care of irreversibility
+                            if (history_[i]->H_[qp] >= eep) {
+                                H = history_[i]->H_[qp];
+                            } else {
+                                H = eep;
+                            }
+
                             for (int l = 0; l < C_NDofs; ++l) {
                                 const Scalar c_shape_l = c_shape_fun_el(l, qp);
                                 auto &&c_grad_l = c_grad_shape_el(l, qp);
@@ -622,7 +757,7 @@ namespace utopia {
                                     Scalar val =
                                         PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_cc(this->params_,
                                                                                             c[qp],
-                                                                                            eep,
+                                                                                            H,
                                                                                             c_shape_fun_el(j, qp),
                                                                                             c_shape_l,
                                                                                             c_grad_shape_el(j, qp),
@@ -775,17 +910,20 @@ namespace utopia {
                                                     const Grad &phase_field_grad,
                                                     // u
                                                     const Strain &strain,
-                                                    Scalar &tr) {
+                                                    Scalar &tr,
+                                                    Scalar &elastic_positive) {
             return PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
                        params, phase_field_value, phase_field_grad) +
-                   elastic_energy(params, phase_field_value, strain, tr);
+                   elastic_energy(params, phase_field_value, strain, tr, elastic_positive);
         }
 
         template <class Strain>
-        UTOPIA_INLINE_FUNCTION static Scalar elastic_energy(const PFFracParameters &params,
-                                                            const Scalar &phase_field_value,
-                                                            const Strain &strain,
-                                                            Scalar &tr) {
+        UTOPIA_INLINE_FUNCTION static void elastic_energy(const PFFracParameters &params,
+                                                          const Scalar &phase_field_value,
+                                                          const Strain &strain,
+                                                          Scalar &tr,
+                                                          Scalar &energy_positive,
+                                                          Scalar &energy_negative) {
             tr = trace(strain);
             Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
 
@@ -796,7 +934,27 @@ namespace utopia {
             Scalar tr2dv = trace(strain_dev2);
 
             // energy positive
-            const Scalar energy_positive = (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * tr2dv);
+            energy_positive = (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * tr2dv);
+            energy_negative = (0.5 * params.kappa * tr_negative * tr_negative);
+        }
+
+        template <class Strain>
+        UTOPIA_INLINE_FUNCTION static Scalar elastic_energy(const PFFracParameters &params,
+                                                            const Scalar &phase_field_value,
+                                                            const Strain &strain,
+                                                            Scalar &tr,
+                                                            Scalar &energy_positive) {
+            tr = trace(strain);
+            Strain strain_dev = strain - ((1. / Dim) * tr * device::identity<Scalar>());
+
+            const Scalar tr_negative = device::min(tr, 0.0);
+            const Scalar tr_positive = tr - tr_negative;
+
+            const Strain strain_dev2 = transpose(strain_dev) * strain_dev;
+            Scalar tr2dv = trace(strain_dev2);
+
+            // energy positive
+            energy_positive = (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * tr2dv);
             const Scalar energy_negative = (0.5 * params.kappa * tr_negative * tr_negative);
 
             const Scalar energy =
@@ -814,7 +972,7 @@ namespace utopia {
                                                           Stress &stress,
                                                           Scalar &tr,
                                                           Scalar &gc,
-                                                          Scalar &elast_energy) {
+                                                          Scalar &elastic_energy_positive) {
             tr = trace(strain);
             const Strain strain_dev = strain - (((1. / Dim) * tr) * device::identity<Scalar>());
 
@@ -827,12 +985,15 @@ namespace utopia {
             gc = PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(params, phase_field_value);
             stress = (gc * stress) + ((params.kappa * tr_negative) * device::identity<Scalar>());
 
-            // energy positive
-            const Scalar energy_positive =
+            elastic_energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
-            elast_energy =
-                PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(params, phase_field_value) *
-                energy_positive;
+
+            // energy positive
+            // const Scalar energy_positive =
+            //     (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
+            // elast_energy =
+            //     PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(params, phase_field_value) *
+            //     energy_positive;
         }
 
         template <class Grad>
@@ -878,6 +1039,9 @@ namespace utopia {
             energy_positive =
                 (0.5 * params.kappa * tr_positive * tr_positive) + (params.mu * inner(strain_dev, strain_dev));
         }
+
+    protected:
+        std::vector<std::unique_ptr<ElementalHistoryDrivingForce<Scalar, NQuadPoints>>> history_;
     };
 
 }  // namespace utopia
