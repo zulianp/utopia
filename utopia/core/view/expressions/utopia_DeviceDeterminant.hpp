@@ -12,7 +12,7 @@ namespace utopia {
     template <class Expr>
     class DeviceDeterminant {
     public:
-        using Scalar = typename Traits<Expr>::Scalar;
+        using Scalar = typename std::remove_const<typename Traits<Expr>::Scalar>::type;
         using SizeType = typename Traits<Expr>::SizeType;
 
         UTOPIA_INLINE_FUNCTION static Scalar apply(const Expr &t) {

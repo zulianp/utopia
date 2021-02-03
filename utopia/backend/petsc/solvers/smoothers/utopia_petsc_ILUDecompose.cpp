@@ -42,7 +42,7 @@ namespace utopia {
         PetscErrorCode err{0};
     };
 
-    void ILUDecompose<PetscMatrix, PETSC>::decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified) {
+    bool ILUDecompose<PetscMatrix, PETSC>::decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified) {
         using ScalarView = utopia::ArrayView<PetscScalar>;
         using IndexView = utopia::ArrayView<const PetscInt>;
 
@@ -65,7 +65,7 @@ namespace utopia {
         IndexView colidx(ja, nnz);
 
         CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
-        ilu_decompose(crs, modified);
+        return ilu_decompose(crs, modified);
     }
 
     void ILUDecompose<PetscMatrix, PETSC>::apply(const PetscMatrix &ilu, const PetscVector &b, PetscVector &x) {
@@ -138,36 +138,48 @@ namespace utopia {
                                       CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &);
     template void crs_block_matrix<4>(const PetscMatrix &,
                                       CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &);
-    // template <int BlockSize>
-    // void block_decompose_aux(const PetscMatrix &mat, PetscMatrix &, const bool) {}
 
-    // void ILUDecompose<PetscMatrix, PETSC>::block_decompose(const PetscMatrix &in,
-    //                                                        CRSMatrix<ScalarView, IndexView, BlockSize> &out,
-    //                                                        const bool) {
-    //     using ScalarView = utopia::ArrayView<PetscScalar>;
-    //     using IndexView = utopia::ArrayView<const PetscInt>;
+    bool ILUDecompose<PetscMatrix, PETSC>::update(const PetscMatrix &mat) { return decompose(mat, ilu_, modified_); }
 
-    //     PetscMatrix l_mat;
-    //     local_block_view(in, l_mat);
+    void ILUDecompose<PetscMatrix, PETSC>::apply(const PetscVector &b, PetscVector &x) { apply(ilu_, b, x); }
 
-    //     // perform copy
-    //     // out.copy(l_mat);
+    void ILUDecompose<PetscMatrix, PETSC>::read(Input &in) { in.get("modified", modified_); }
 
-    //     PetscSeqAIJRaw m_raw(l_mat.raw_type());
-    //     PetscInt n = m_raw.n;
-    //     PetscInt nnz = m_raw.ia[n];
+    template <int BlockSize>
+    bool BlockILUAlgorithm<PetscMatrix, BlockSize>::update(const PetscMatrix &mat) {
+        UTOPIA_TRACE_REGION_BEGIN("BlockILUAlgorithm::update(...)");
+        PetscMatrix local_A;
+        local_block_view(mat, local_A);
+        crs_block_matrix(local_A, ilu_);
 
-    //     const PetscInt *ia = m_raw.ia;
-    //     const PetscInt *ja = m_raw.ja;
-    //     PetscScalar *array = m_raw.array;
+        L_inv_b_.zeros(row_layout(mat));
+        bool ok = ilu_decompose(ilu_);
 
-    //     ScalarView values(array, nnz);
-    //     IndexView row_ptr(ia, n + 1);
-    //     IndexView colidx(ja, nnz);
+        UTOPIA_TRACE_REGION_END("BlockILUAlgorithm::update(...)");
+        return ok;
+    }
 
-    //     CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
-    //     convert(crs, out);
-    //     ilu_decompose(crs, modified);
-    // }
+    template <int BlockSize>
+    void BlockILUAlgorithm<PetscMatrix, BlockSize>::apply(const PetscVector &b, PetscVector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("BlockILUAlgorithm::apply(...)");
+        auto b_view = const_local_view_device(b);
+        auto L_inv_b_view = local_view_device(L_inv_b_);
+        auto x_view = local_view_device(x);
+
+        auto b_array = b_view.array();
+        auto x_array = x_view.array();
+        auto L_inv_b_array = L_inv_b_view.array();
+
+        ilu_apply(ilu_, b_array, L_inv_b_array, x_array);
+
+        UTOPIA_TRACE_REGION_END("BlockILUAlgorithm::apply(...)");
+    }
+
+    template <int BlockSize>
+    void BlockILUAlgorithm<PetscMatrix, BlockSize>::read(Input &) {}
+
+    template class BlockILUAlgorithm<PetscMatrix, 2>;
+    template class BlockILUAlgorithm<PetscMatrix, 3>;
+    template class BlockILUAlgorithm<PetscMatrix, 4>;
 
 }  // namespace utopia

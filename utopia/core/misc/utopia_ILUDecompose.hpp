@@ -208,6 +208,9 @@ namespace utopia {
         using ArrayViewT = utopia::ArrayView<Scalar, DYNAMIC_SIZE, DYNAMIC_SIZE>;
         using BlockView = utopia::TensorView<ArrayViewT, 2>;
 
+        using ConstArrayViewT = utopia::ArrayView<const Scalar, DYNAMIC_SIZE, DYNAMIC_SIZE>;
+        using ConstBlockView = utopia::TensorView<ConstArrayViewT, 2>;
+
         static const int BlockSize2 = BlockSize * BlockSize;
 
         static bool decompose(CRSMatrix &in_out, const bool modified) {
@@ -278,7 +281,7 @@ namespace utopia {
             idx.init(n_blocks, &ia[0], &ja[0]);
 
             Block d_inv;
-            BlockView d;
+            ConstBlockView d;
 
             d.raw_type().set_size(BlockSize, BlockSize);
 

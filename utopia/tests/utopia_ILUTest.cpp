@@ -69,43 +69,28 @@ void petsc_ilu_cg_test() {
 }
 
 void petsc_block_ilu_test() {
-    auto comm = PetscCommunicator::get_default();
-    PetscInt n = 1e6 * 2;
-    PetscInt n_global = n * comm.size();
+    // auto comm = PetscCommunicator::get_default();
+    // PetscInt n = 1000;
 
-    auto vl = layout(comm, n, n_global);
-    PetscMatrix A;
-    A.sparse(square_matrix_layout(vl), 3, 2);
+    // auto vl = layout(comm, n, n * comm.size());
+    // PetscMatrix A;
+    // A.sparse(square_matrix_layout(vl), 3, 2);
 
-    PetscVector x(vl, 0.0), b(vl, 0.0);
-    assemble_poisson_problem_1D(1.0, A, b, false);
+    // PetscVector x(vl, 0.0), b(vl, 1.0);
 
-    Chrono c;
+    // assemble_laplacian_1D(A, true);
+    // // assemble_poisson_problem_1D(1.0, A, b);
 
-    c.start();
-
-    PetscMatrix local_A;
-    local_block_view(A, local_A);
-
-    CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> block_mat;
-    crs_block_matrix(local_A, block_mat);
-    ilu_decompose(block_mat);
-
-    c.stop();
-
-    // std::cout << '\n' << c << '\n' << std::endl;
-
-    // disp(ilu);
-
-    // auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
-    // ilu->max_it(10);
-
-    // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
-    // ls.apply_gradient_descent_step(true);
+    // InputParameters params;
+    // params.set("block_size", 2);
+    // ILU<PetscMatrix, PetscVector> ls;
+    // ls.read(params);
 
     // ls.verbose(true);
     // ls.atol(1e-6);
     // ls.rtol(1e-6);
+    // ls.stol(1e-6);
+    // ls.solve(A, b, x);
 }
 
 #endif  // UTOPIA_WITH_PETSC

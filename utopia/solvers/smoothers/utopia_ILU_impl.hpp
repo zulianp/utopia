@@ -8,22 +8,31 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     class ILU<Matrix, Vector, Backend>::Impl final : public Configurable {
     public:
-        void update(const Matrix &mat) {
-            ILUDecompose<Matrix>::decompose(mat, decomposition, milu);
+        void update(const Matrix &mat) { algo_->update(mat); }
 
-            // if (mat.comm().size() == 1) {
-            //     rename("dec", decomposition);
-            //     write("DEC.m", decomposition);
-            // }
+        void apply(const Vector &in, Vector &out) { algo_->apply(in, out); }
+
+        void read(Input &in) override {
+            int block_size = 1;
+            in.get("block_size", block_size);
+
+            if (block_size == 2) {
+                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
+            } else if (block_size == 3) {
+                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
+            } else if (block_size == 4) {
+                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+            }
+
+            in.get("milu", milu);
         }
 
-        void apply(const Vector &in, Vector &out) { ILUDecompose<Matrix>::apply(decomposition, in, out); }
-
-        void read(Input &in) override { in.get("milu", milu); }
+        Impl() : algo_(utopia::make_unique<ILUDecompose<Matrix>>()) {}
 
         Matrix decomposition;
         Vector residual, correction;
         bool milu{false};
+        std::unique_ptr<ILUAlgorithm<Matrix, Vector>> algo_;
     };
 
     template <class Matrix, class Vector, int Backend>
