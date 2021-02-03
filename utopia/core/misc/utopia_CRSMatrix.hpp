@@ -31,14 +31,14 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION const Scalar &value(const SizeType i) const { return values_[i]; }
 
             UTOPIA_INLINE_FUNCTION Scalar *block(const SizeType i) const { return &values_[i * BlockSize2]; }
-            UTOPIA_INLINE_FUNCTION SizeType n_blocks() const { return length / BlockSize; }
+            UTOPIA_INLINE_FUNCTION SizeType n_blocks() const { return length / BlockSize2; }
 
             UTOPIA_INLINE_FUNCTION const SizeType &colidx(const SizeType i) const { return colidx_[i]; }
 
             UTOPIA_INLINE_FUNCTION SizeType &colidx(const SizeType i) { return colidx_[i]; }
 
-            UTOPIA_INLINE_FUNCTION SparseRowView(Scalar *values, const SizeType *colidx, const SizeType &length)
-                : values_(values), colidx_(colidx), length(length) {}
+            UTOPIA_INLINE_FUNCTION SparseRowView(Scalar *values, SizeType *colidx, const SizeType &length)
+                : length(length), values_(values), colidx_(colidx) {}
 
             const SizeType length;
 
@@ -52,7 +52,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION SparseRowView row(const SizeType i) {
             return SparseRowView(&values_[row_ptr_[i] * BlockSize2],
-                                 &colidx_[row_ptr_[i]] * BlockSize2,
+                                 &colidx_[row_ptr_[i]],
                                  (row_ptr_[i + 1] - row_ptr_[i]) * BlockSize2);
         }
 

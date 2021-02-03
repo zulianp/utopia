@@ -102,7 +102,8 @@ namespace utopia {
     }
 
     template <int BlockSize>
-    void crs_block_matrix(PetscMatrix &in, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out) {
+    void crs_block_matrix(const PetscMatrix &in,
+                          CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out) {
         using ScalarView = utopia::ArrayView<PetscScalar>;
         using IndexView = utopia::ArrayView<const PetscInt>;
 
@@ -125,12 +126,18 @@ namespace utopia {
         IndexView colidx(ja, nnz);
 
         CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+        out.row_ptr().clear();
+        out.colidx().clear();
+        out.values().clear();
         convert(crs, out);
     }
 
-    template void crs_block_matrix<2>(PetscMatrix &, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &);
-    template void crs_block_matrix<3>(PetscMatrix &, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &);
-    template void crs_block_matrix<4>(PetscMatrix &, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &);
+    template void crs_block_matrix<2>(const PetscMatrix &,
+                                      CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &);
+    template void crs_block_matrix<3>(const PetscMatrix &,
+                                      CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &);
+    template void crs_block_matrix<4>(const PetscMatrix &,
+                                      CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &);
     // template <int BlockSize>
     // void block_decompose_aux(const PetscMatrix &mat, PetscMatrix &, const bool) {}
 

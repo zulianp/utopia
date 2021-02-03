@@ -9,7 +9,8 @@
 namespace utopia {
 
     template <int BlockSize>
-    void crs_block_matrix(PetscMatrix &in, CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out);
+    void crs_block_matrix(const PetscMatrix &in,
+                          CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out);
 
     template <>
     class ILUDecompose<PetscMatrix, PETSC> {

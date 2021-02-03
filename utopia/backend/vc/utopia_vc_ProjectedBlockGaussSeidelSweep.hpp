@@ -5,7 +5,11 @@
 #include "utopia_VectorView.hpp"
 #include "utopia_Views.hpp"
 
+#include "utopia_CRSMatrix.hpp"
+#include "utopia_CRSToBlockCRS.hpp"
 #include "utopia_ProjectedBlockGaussSeidelSweep.hpp"
+
+#include "utopia_petsc_ILUDecompose.hpp"
 
 #include <map>
 #include <type_traits>
@@ -33,6 +37,8 @@ namespace utopia {
 
         using SmallMatrix = utopia::StaticMatrix<Scalar, BlockSize, BlockSize>;
         using Block = SmallMatrix;  // utopia::StaticVector<SIMDType, BlockSize>;
+        using ArrayViewT = utopia::ArrayView<Scalar, DYNAMIC_SIZE, DYNAMIC_SIZE>;
+        using BlockView = utopia::TensorView<ArrayViewT, 2>;
 
         static_assert(BlockSize == 4, "Must fix this class to work with other types than avx2 with doubles");
 
@@ -61,77 +67,28 @@ namespace utopia {
 
         void init_from_local_matrix(const Matrix &mat) override {
             UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
+            crs_block_matrix<BlockSize>(mat, block_crs);
 
-            const SizeType n_rows = mat.rows();
-            const SizeType n_blocks = n_rows / BlockSize;
+            auto n_blocks = block_crs.rows();
 
-            assert(n_blocks * BlockSize == n_rows && "Rows must be a multiple of BlockSize");
+            inv_diag_.resize(n_blocks);
+            diag_.resize(n_blocks);
 
-            if (n_blocks != SizeType(diag_.size())) {
-                diag_.resize(n_blocks);
-                inv_diag_.resize(n_blocks);
-                row_ptr_.resize(n_blocks + 1);
-            }
+            BlockView d;
+            d.raw_type().set_size(BlockSize, BlockSize);
 
-            std::fill(row_ptr_.begin(), row_ptr_.end(), SizeType(0));
+            for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
+                auto row = block_crs.row(block_i);
 
-            SizeType n_off_diag_entries = 0;
-
-            // FIXME use unorderd map which should be faster
-            // std::unordered_map<std::pair<SizeType, SizeType>, SizeType> block_counted;
-            std::map<std::pair<SizeType, SizeType>, SizeType> block_counted;
-
-            mat.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-                BlockIdx block(i, j);
-
-                assert(block.i < SizeType(diag_.size()));
-
-                if (block.is_diag()) {
-                    diag_[block.i](block.sub_i, block.sub_j) = a_ij;
-
-                    assert(a_ij != 0.0 || block.sub_i != block.sub_j);
-                } else {
-                    auto ij = std::make_pair(std::pair<SizeType, SizeType>(block.i, block.j), n_off_diag_entries);
-                    auto ret = block_counted.insert(ij);
-
-                    if (ret.second) {
-                        ++row_ptr_[block.i + 1];
-                        ++n_off_diag_entries;
+                for (SizeType k = 0; k < row.n_blocks(); ++k) {
+                    if (row.colidx(k) == block_i) {
+                        d.raw_type().set_data(row.block(k));
+                        diag_[block_i].copy(d);
+                        inv_diag_[block_i] = inv(diag_[block_i]);
+                        break;
                     }
                 }
-            });
-
-            for (SizeType b = 0; b < n_blocks; ++b) {
-                assert(det(diag_[b]) > 0);
-                inv_diag_[b] = inv(diag_[b]);
             }
-
-            for (SizeType i = 0; i < n_blocks; ++i) {
-                row_ptr_[i + 1] += row_ptr_[i];
-            }
-
-            assert(n_off_diag_entries == row_ptr_.back());
-
-            if (n_off_diag_entries != SizeType(values_.size())) {
-                values_.resize(n_off_diag_entries);
-                col_idx_.resize(n_off_diag_entries);
-            }
-
-            for (auto &A : values_) {
-                A.set(Scalar(0.0));
-            }
-
-            mat.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-                BlockIdx block(i, j);
-
-                if (!block.is_diag()) {
-                    auto it = block_counted.find(std::pair<SizeType, SizeType>(block.i, block.j));
-
-                    assert(it->second < SizeType(col_idx_.size()));
-                    col_idx_[it->second] = block.j;
-                    values_[it->second](block.sub_i, block.sub_j) = a_ij;
-                }
-            });
 
             UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
         }
@@ -164,36 +121,46 @@ namespace utopia {
 
     private:
         void apply_unconstrained() {
-            const SizeType n_blocks = row_ptr_.size() - 1;
+            auto &row_ptr = block_crs.row_ptr();
+            auto &colidx = block_crs.colidx();
+
+            const SizeType n_blocks = row_ptr.size() - 1;
 
             SIMDType r_simd, c_simd, LRc_simd, mat_simd;
 
-            auto f = [&](const SizeType &b) {
-                const SizeType row_end = row_ptr_[b + 1];
+            BlockView aij;
+            aij.raw_type().set_size(BlockSize, BlockSize);
+
+            auto f = [&](const SizeType &block_i) {
+                const SizeType row_end = row_ptr[block_i + 1];
+                const SizeType b_offset = block_i * BlockSize;
 
                 for (SizeType d = 0; d < BlockSize; ++d) {
-                    SizeType i = b * BlockSize + d;
+                    SizeType i = b_offset + d;
                     r_simd[d] = this->r_[i];
                 }
 
-                for (SizeType j = row_ptr_[b]; j < row_end; ++j) {
+                for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
+                    if (colidx[j] == block_i) continue;
+
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        c_simd[d] = this->c_[col_idx_[j] * BlockSize + d];
+                        c_simd[d] = this->c_[colidx[j] * BlockSize + d];
                     }
 
-                    const auto &LR = values_[j];
+                    aij.raw_type().set_data(block_crs.block(j));
+
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        mat_simd.load(&(LR(d, 0)), Vc::Unaligned);
+                        mat_simd.load(&(aij(d, 0)), Vc::Unaligned);
                         LRc_simd[d] = (mat_simd * c_simd).sum();
                     }
 
                     r_simd -= LRc_simd;
                 }
 
-                const auto &D_inv = inv_diag_[b];
+                const auto &D_inv = inv_diag_[block_i];
                 for (SizeType d = 0; d < BlockSize; ++d) {
                     mat_simd.load(&(D_inv(d, 0)), Vc::Unaligned);
-                    SizeType i = b * BlockSize + d;
+                    SizeType i = b_offset + d;
                     this->c_[i] = (mat_simd * r_simd).sum();
                 }
             };
@@ -212,45 +179,55 @@ namespace utopia {
         }
 
         void apply() {
-            const SizeType n_blocks = row_ptr_.size() - 1;
+            auto &row_ptr = block_crs.row_ptr();
+            auto &colidx = block_crs.colidx();
+
+            const SizeType n_blocks = row_ptr.size() - 1;
 
             SmallMatrix d_temp, d_inv_temp;
             SIMDType r_simd, c_simd, LRc_simd, mat_simd;
 
-            auto f = [&](const SizeType &b) {
-                const SizeType row_end = row_ptr_[b + 1];
+            BlockView aij;
+            aij.raw_type().set_size(BlockSize, BlockSize);
+
+            auto f = [&](const SizeType &block_i) {
+                const SizeType row_end = row_ptr[block_i + 1];
+                const SizeType b_offset = block_i * BlockSize;
 
                 for (SizeType d = 0; d < BlockSize; ++d) {
-                    SizeType i = b * BlockSize + d;
+                    SizeType i = b_offset + d;
                     r_simd[d] = this->r_[i];
                 }
 
-                for (SizeType j = row_ptr_[b]; j < row_end; ++j) {
+                for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
+                    if (colidx[j] == block_i) continue;
+
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        c_simd[d] = this->c_[col_idx_[j] * BlockSize + d];
+                        c_simd[d] = this->c_[colidx[j] * BlockSize + d];
                     }
 
-                    const auto &LR = values_[j];
+                    aij.raw_type().set_data(block_crs.block(j));
+
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        mat_simd.load(&(LR(d, 0)), Vc::Unaligned);
+                        mat_simd.load(&(aij(d, 0)), Vc::Unaligned);
                         LRc_simd[d] = (mat_simd * c_simd).sum();
                     }
 
                     r_simd -= LRc_simd;
                 }
 
-                const auto &D_inv = inv_diag_[b];
+                const auto &D_inv = inv_diag_[block_i];
                 for (SizeType d = 0; d < BlockSize; ++d) {
                     mat_simd.load(&(D_inv(d, 0)), Vc::Unaligned);
-                    SizeType i = b * BlockSize + d;
+                    SizeType i = b_offset + d;
                     this->c_[i] = (mat_simd * r_simd).sum();
                 }
 
-                d_temp.copy(diag_[b]);
+                d_temp.copy(diag_[block_i]);
 
                 bool constrained = false;
                 for (SizeType d = 0; d < BlockSize; ++d) {
-                    SizeType i = b * BlockSize + d;
+                    SizeType i = b_offset + d;
                     auto c_i = this->c_[i];
                     if (c_i > this->lb_[i] && c_i < this->ub_[i]) continue;
 
@@ -267,7 +244,7 @@ namespace utopia {
                     d_inv_temp = inv(d_temp);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        SizeType i = b * BlockSize + d;
+                        SizeType i = b_offset + d;
                         mat_simd.load(&(d_inv_temp(d, 0)), Vc::Unaligned);
                         this->c_[i] = (mat_simd * r_simd).sum();
                     }
@@ -289,9 +266,7 @@ namespace utopia {
 
         std::vector<Block> diag_;
         std::vector<Block> inv_diag_;
-        std::vector<Block> values_;
-        std::vector<SizeType> row_ptr_;
-        std::vector<SizeType> col_idx_;
+        CRSMatrix<std::vector<Scalar>, std::vector<SizeType>, BlockSize> block_crs;
     };
 }  // namespace utopia
 

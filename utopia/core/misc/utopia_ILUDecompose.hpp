@@ -211,11 +211,13 @@ namespace utopia {
         static const int BlockSize2 = BlockSize * BlockSize;
 
         static bool decompose(CRSMatrix &in_out, const bool modified) {
+            UTOPIA_UNUSED(modified);
+
             SizeType n_blocks = in_out.rows();
 
             auto &ia = in_out.row_ptr();
             auto &ja = in_out.colidx();
-            auto &array = in_out.values();
+            // auto &array = in_out.values();
 
             DiagIdx idx;
             idx.init(n_blocks, &ia[0], &ja[0]);
