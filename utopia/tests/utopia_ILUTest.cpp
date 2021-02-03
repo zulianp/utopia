@@ -26,7 +26,7 @@ void petsc_ilu_test() {
     // assemble_poisson_problem_1D(1.0, A, b);
 
     ILU<PetscMatrix, PetscVector> ls;
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-6);
     ls.stol(1e-6);
@@ -51,7 +51,7 @@ void petsc_ilu_cg_test() {
     ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
     ls.apply_gradient_descent_step(true);
 
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-6);
 
@@ -69,28 +69,31 @@ void petsc_ilu_cg_test() {
 }
 
 void petsc_block_ilu_test() {
-    // auto comm = PetscCommunicator::get_default();
-    // PetscInt n = 1000;
+    auto comm = PetscCommunicator::get_default();
+    PetscInt n = 12;
 
-    // auto vl = layout(comm, n, n * comm.size());
-    // PetscMatrix A;
-    // A.sparse(square_matrix_layout(vl), 3, 2);
+    auto vl = layout(comm, n, n * comm.size());
+    PetscMatrix A;
+    A.sparse(square_matrix_layout(vl), 3, 2);
 
-    // PetscVector x(vl, 0.0), b(vl, 1.0);
+    PetscVector x(vl, 0.0), b(vl, 1.0);
 
-    // assemble_laplacian_1D(A, true);
-    // // assemble_poisson_problem_1D(1.0, A, b);
+    assemble_laplacian_1D(A, true);
+    // assemble_poisson_problem_1D(1.0, A, b);
 
-    // InputParameters params;
-    // params.set("block_size", 2);
-    // ILU<PetscMatrix, PetscVector> ls;
-    // ls.read(params);
+    InputParameters params;
+    params.set("block_size", 2);
+    // params.set("print_matrices", true);
+    ILU<PetscMatrix, PetscVector> ls;
+    ls.read(params);
 
     // ls.verbose(true);
-    // ls.atol(1e-6);
-    // ls.rtol(1e-6);
-    // ls.stol(1e-6);
-    // ls.solve(A, b, x);
+    ls.atol(1e-6);
+    ls.rtol(1e-6);
+    ls.stol(1e-6);
+    ls.max_it(40);
+    ls.update(make_ref(A));
+    ls.apply(b, x);
 }
 
 #endif  // UTOPIA_WITH_PETSC

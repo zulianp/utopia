@@ -152,8 +152,16 @@ namespace utopia {
         local_block_view(mat, local_A);
         crs_block_matrix(local_A, ilu_);
 
+        if (print_matrices_) {
+            disp(ilu_);
+        }
+
         L_inv_b_.zeros(row_layout(mat));
         bool ok = ilu_decompose(ilu_);
+
+        if (print_matrices_) {
+            disp(ilu_);
+        }
 
         UTOPIA_TRACE_REGION_END("BlockILUAlgorithm::update(...)");
         return ok;
@@ -176,7 +184,9 @@ namespace utopia {
     }
 
     template <int BlockSize>
-    void BlockILUAlgorithm<PetscMatrix, BlockSize>::read(Input &) {}
+    void BlockILUAlgorithm<PetscMatrix, BlockSize>::read(Input &in) {
+        in.get("print_matrices", print_matrices_);
+    }
 
     template class BlockILUAlgorithm<PetscMatrix, 2>;
     template class BlockILUAlgorithm<PetscMatrix, 3>;

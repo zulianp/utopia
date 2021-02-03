@@ -24,14 +24,13 @@ namespace utopia {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
             }
 
-            in.get("milu", milu);
+            algo_->read(in);
         }
 
         Impl() : algo_(utopia::make_unique<ILUDecompose<Matrix>>()) {}
 
         Matrix decomposition;
         Vector residual, correction;
-        bool milu{false};
         std::unique_ptr<ILUAlgorithm<Matrix, Vector>> algo_;
     };
 

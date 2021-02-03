@@ -237,6 +237,7 @@ namespace utopia {
                 const SizeType row_end = ia[r + 1];
                 const SizeType k = idx.idx[r];
                 d.raw_type().set_data(in_out.block(k));
+                assert(std::abs(det(d)) > 0);
                 d_inv = inv(d);
 
                 for (SizeType ki = k + 1; ki < row_end; ++ki) {
@@ -248,6 +249,7 @@ namespace utopia {
                     air.raw_type().set_data(in_out.block(ir));
 
                     e = (d_inv * air);
+                    air.copy(e);
 
                     for (SizeType rj = k + 1; rj < row_end; ++rj) {
                         auto j = ja[rj];
@@ -296,30 +298,34 @@ namespace utopia {
                 d.raw_type().set_data(ilu.block(row_diag));
                 d_inv = inv(d);
 
-                for (SizeType bi = 0; bi < BlockSize; ++bi) {
-                    val[bi] = b[i_offset + bi];
+                for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
+                    val[sub_i] = b[i_offset + sub_i];
                 }
 
                 for (SizeType k = row_begin; k < row_diag; ++k) {
                     const SizeType j = ja[k];
-                    const SizeType k_offset = k * BlockSize2;
                     const SizeType j_offset = j * BlockSize;
 
+                    auto *block = ilu.block(k);
+
                     // Matrix-vector multiplication (in the block)
-                    for (SizeType bi = 0; bi < BlockSize; ++bi) {
-                        const SizeType k_offset_bi = k_offset + bi * BlockSize;
+                    for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
+                        const SizeType k_offset_sub_i = sub_i * BlockSize;
 
                         for (SizeType bj = 0; bj < BlockSize; ++bj) {
-                            val[bi] -= array[k_offset_bi + bj] * L_inv_b[j_offset + bj];
+                            val[sub_i] -= block[k_offset_sub_i + bj] * L_inv_b[j_offset + bj];
                         }
                     }
                 }
 
                 auto expr = d_inv * val;
-                for (SizeType bi = 0; bi < BlockSize; ++bi) {
-                    L_inv_b[i_offset + bi] = expr(bi);
+                for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
+                    L_inv_b[i_offset + sub_i] = expr(sub_i);
                 }
             }
+
+            // x.copy(L_inv_b);
+            // return;
 
             // // Backward substitution
             for (SizeType i = n_blocks - 1; i >= 0; --i) {
@@ -330,8 +336,8 @@ namespace utopia {
                 d.raw_type().set_data(ilu.block(row_diag));
                 d_inv = inv(d);
 
-                for (SizeType bi = 0; bi < BlockSize; ++bi) {
-                    val[bi] = L_inv_b[i_offset + bi];
+                for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
+                    val[sub_i] = L_inv_b[i_offset + sub_i];
                 }
 
                 for (SizeType k = row_diag + 1; k < row_end; ++k) {
@@ -339,19 +345,21 @@ namespace utopia {
                     const SizeType k_offset = k * BlockSize2;
                     const SizeType j_offset = j * BlockSize;
 
-                    // Matrix-vector multiplication (in the block)
-                    for (SizeType bi = 0; bi < BlockSize; ++bi) {
-                        const SizeType k_offset_bi = k_offset + bi * BlockSize;
+                    auto *block = ilu.block(k);
 
-                        for (SizeType bj = 0; bj < BlockSize; ++bj) {
-                            val[bi] -= array[k_offset_bi + bj] * x[j_offset + bj];
+                    // Matrix-vector multiplication (in the block)
+                    for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
+                        const SizeType k_offset_sub_i = sub_i * BlockSize;
+
+                        for (SizeType sub_j = 0; sub_j < BlockSize; ++sub_j) {
+                            val[sub_i] -= block[k_offset_sub_i + sub_j] * x[j_offset + sub_j];
                         }
                     }
                 }
 
                 auto expr = d_inv * val;
-                for (SizeType bi = 0; bi < BlockSize; ++bi) {
-                    x[i_offset + bi] = expr(bi);
+                for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
+                    x[i_offset + sub_i] = expr(sub_i);
                 }
             }
         }

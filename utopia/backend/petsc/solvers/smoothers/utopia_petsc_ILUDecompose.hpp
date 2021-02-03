@@ -38,6 +38,7 @@ namespace utopia {
     private:
         CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> ilu_;
         PetscVector L_inv_b_;
+        bool print_matrices_{false};
     };
 
 }  // namespace utopia
