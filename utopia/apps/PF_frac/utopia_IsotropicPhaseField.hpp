@@ -716,26 +716,6 @@ namespace utopia {
                                 }
                             }
 
-                            // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
-                            // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
-                            // for (SizeType l = 0; l < U_NDofs; ++l) {
-                            //     auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
-
-                            //     // SYMMETRIC VERSION
-                            //     el_mat(C_NDofs + l, C_NDofs + l) +=
-                            //         bilinear_uu(this->params_, c[qp], p_stress_view.stress(l, qp), u_strain_shape_l)
-                            //         * dx(qp);
-
-                            //     for (SizeType j = l + 1; j < U_NDofs; ++j) {
-                            //         const Scalar v =
-                            //             bilinear_uu(this->params_, c[qp], p_stress_view.stress(j, qp),
-                            //             u_strain_shape_l) * dx(qp);
-
-                            //         el_mat(C_NDofs + l, C_NDofs + j) += v;
-                            //         el_mat(C_NDofs + j, C_NDofs + l) += v;
-                            //     }
-                            // }
-
                             for (SizeType l = 0; l < U_NDofs; ++l) {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
