@@ -4,6 +4,12 @@
 #include "utopia_DeviceExpression.hpp"
 #include "utopia_Views.hpp"
 
+#include "utopia_MultiVariateElement.hpp"
+#include "utopia_UniformHex8.hpp"
+#include "utopia_UniformQuad4.hpp"
+
+#include "utopia_simd_common.hpp"
+
 #include <Vc/Vc>
 #include <vector>
 
@@ -12,6 +18,22 @@ namespace utopia {
     namespace simd {
         template <typename T, int Dim, typename...>
         class Vector {};
+
+        template <typename T, int Rows, int Cols>
+        class Matrix {
+        public:
+            static const int Size = Rows * Cols;
+            T data_[Size];
+
+            void set(const T &val) {
+                for (int i = 0; i < Size; ++i) {
+                    data_[i] = val;
+                }
+            }
+
+            T &operator()(const int i, const int j) { return data_[i * Rows + j]; }
+            const T &operator()(const int i, const int j) const { return data_[i * Rows + j]; }
+        };
     }  // namespace simd
 
     template <typename T, int Dim, typename... Args>
@@ -27,9 +49,19 @@ namespace utopia {
         }
 
         template <typename T>
+        inline T integrate(const T &v) {
+            return sum(v);
+        }
+
+        template <typename T>
+        inline T integrate(const Vc::Vector<T> &v) {
+            return v.sum();
+        }
+
+        template <typename T>
         class Vector<T, 2> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
-            T data_[2] = {Zero<T>::value(), Zero<T>::value()};
+            T data_[2] = {simd::Zero<T>::value(), simd::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
             inline constexpr const T &x() const { return data_[0]; }
@@ -60,7 +92,7 @@ namespace utopia {
         template <typename T>
         class Vector<T, 3> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
-            T data_[3] = {Zero<T>::value(), Zero<T>::value(), Zero<T>::value()};
+            T data_[3] = {simd::Zero<T>::value(), simd::Zero<T>::value(), simd::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
             inline constexpr const T &x() const { return data_[0]; }
@@ -96,6 +128,11 @@ namespace utopia {
         };
 
         template <typename T, int Dim>
+        inline T inner(const Vector<T, Dim> &l, const Vector<T, Dim> &r) {
+            return dot(l, r);
+        }
+
+        template <typename T, int Dim>
         class Quadrature {
         public:
             using Point = simd::Vector<T, Dim>;
@@ -121,6 +158,39 @@ namespace utopia {
         template <typename T>
         class Gauss {
         public:
+            class Quad {
+            public:
+                inline static void set(Quadrature<T, 2> &q, const int idx, const T &x, const T &y) {
+                    q.points[idx][0] = x;
+                    q.points[idx][1] = y;
+                }
+
+                static bool get(const int order, Quadrature<T, 2> &q) {
+                    switch (order) {
+                        case 0:
+                        case 1:
+                        case 2: {
+                            set(q, 0, 0.5, 0.5);
+                            set(q, 1, 0.9304589153964795245728880523899, 0.5);
+                            set(q, 2, 0.72780186391809642112479237299488, 0.074042673347699754349082179816666);
+                            set(q, 3, 0.72780186391809642112479237299488, 0.92595732665230024565091782018333);
+                            set(q, 4, 0.13418502421343273531598225407969, 0.18454360551162298687829339850317);
+                            set(q, 5, 0.13418502421343273531598225407969, 0.81545639448837701312170660149683);
+
+                            q.weights[0] = 0.28571428571428571428571428571428;
+                            q.weights[1] = 0.10989010989010989010989010989011;
+                            q.weights[2] = 0.14151805175188302631601261486295;
+                            q.weights[3] = 0.14151805175188302631601261486295;
+                            q.weights[4] = 0.16067975044591917148618518733485;
+                            q.weights[5] = 0.16067975044591917148618518733485;
+                            return true;
+                        }
+                        default:
+                            return false;
+                    }
+                }
+            };
+
             class Hex {
             public:
                 inline static void set(Quadrature<T, 3> &q, const int idx, const T &x, const T &y, const T &z) {
@@ -209,6 +279,65 @@ namespace utopia {
             using VectorType = Vc::Vector<T>;
             static const int block_size = VectorType::Size;
 
+            template <int Dim>
+            static void vectorize(simd::Quadrature<T, Dim> &q_scalar, simd::Quadrature<VectorType, Dim> &q) {
+                int n_points = q_scalar.weights.size();
+                int n_blocks = n_points / block_size;
+                int n_defect = n_points - n_blocks * block_size;
+
+                int n_simd_blocks = n_blocks + (n_defect != 0);
+
+                q.resize(n_simd_blocks);
+
+                for (int i = 0; i < n_blocks; ++i) {
+                    int q_offset = i * block_size;
+
+                    for (int k = 0; k < block_size; ++k) {
+                        int q_idx = q_offset + k;
+
+                        for (int d = 0; d < Dim; ++d) {
+                            q.points[i][d][k] = q_scalar.points[q_idx][d];
+                        }
+
+                        q.weights[i][k] = q_scalar.weights[q_idx];
+                    }
+                }
+
+                if (n_defect) {
+                    for (int k = 0; k < n_defect; ++k) {
+                        int q_idx = n_blocks * block_size + k;
+
+                        for (int d = 0; d < Dim; ++d) {
+                            q.points[n_blocks][d][k] = q_scalar.points[q_idx][d];
+                        }
+
+                        q.weights[n_blocks][k] = q_scalar.weights[q_idx];
+                    }
+
+                    for (int k = n_defect; k < block_size; ++k) {
+                        for (int d = 0; d < Dim; ++d) {
+                            q.points[n_blocks][d][k] = Zero<T>::value();
+                        }
+
+                        q.weights[n_blocks][k] = Zero<T>::value();
+                    }
+                }
+            }
+
+            class Quad {
+            public:
+                static bool get(const int order, simd::Quadrature<VectorType, 2> &q) {
+                    Quadrature<T, 2> q_scalar;
+
+                    if (!Gauss<T>::Quad::get(order, q_scalar)) {
+                        return false;
+                    }
+
+                    vectorize(q_scalar, q);
+                    return true;
+                }
+            };
+
             class Hex {
             public:
                 static bool get(const int order, simd::Quadrature<VectorType, 3> &q) {
@@ -218,49 +347,35 @@ namespace utopia {
                         return false;
                     }
 
-                    int n_points = q_scalar.weights.size();
-                    int n_blocks = n_points / block_size;
-                    int n_defect = n_points - n_blocks * block_size;
-
-                    int n_simd_blocks = n_blocks + (n_defect != 0);
-
-                    q.resize(n_simd_blocks);
-
-                    for (int i = 0; i < n_blocks; ++i) {
-                        int q_offset = i * block_size;
-
-                        for (int k = 0; k < block_size; ++k) {
-                            int q_idx = q_offset + k;
-
-                            q.points[i][0][k] = q_scalar.points[q_idx][0];
-                            q.points[i][1][k] = q_scalar.points[q_idx][1];
-                            q.points[i][2][k] = q_scalar.points[q_idx][2];
-                            q.weights[i][k] = q_scalar.weights[q_idx];
-                        }
-                    }
-
-                    if (n_defect) {
-                        for (int k = 0; k < n_defect; ++k) {
-                            int q_idx = n_blocks * block_size + k;
-
-                            q.points[n_blocks][0][k] = q_scalar.points[q_idx][0];
-                            q.points[n_blocks][1][k] = q_scalar.points[q_idx][1];
-                            q.points[n_blocks][2][k] = q_scalar.points[q_idx][2];
-                            q.weights[n_blocks][k] = q_scalar.weights[q_idx];
-                        }
-
-                        for (int k = n_defect; k < block_size; ++k) {
-                            q.points[n_blocks][0][k] = Zero<T>::value();
-                            q.points[n_blocks][1][k] = Zero<T>::value();
-                            q.points[n_blocks][2][k] = Zero<T>::value();
-                            q.weights[n_blocks][k] = Zero<T>::value();
-                        }
-                    }
-
+                    vectorize(q_scalar, q);
                     return true;
                 }
             };
         };
+
+        template <typename...>
+        class QuadratureDB {};
+
+        template <typename T, typename QT>
+        class QuadratureDB<UniformHex8<T>, QT> {
+        public:
+            template <class Q>
+            static bool get(const int order, Q &q) {
+                return Gauss<QT>::Hex::get(order, q);
+            }
+        };
+
+        template <typename T, typename QT>
+        class QuadratureDB<UniformQuad4<T>, QT> {
+        public:
+            template <class Q>
+            static bool get(const int order, Q &q) {
+                return Gauss<QT>::Quad::get(order, q);
+            }
+        };
+
+        template <typename Elem, int NVar, typename QT>
+        class QuadratureDB<MultiVariateElem<Elem, NVar>, QT> : public QuadratureDB<Elem, QT> {};
 
     }  // namespace simd
 }  // namespace utopia

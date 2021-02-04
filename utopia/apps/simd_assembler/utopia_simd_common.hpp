@@ -14,7 +14,7 @@ namespace utopia {
         template <typename T>
         struct Zero {
             static void apply(T *data, ptrdiff_t count) { std::memset(data, 0, sizeof(T) * count); }
-            inline static constexpr T make() { return static_cast<T>(0); }
+            inline static constexpr T value() { return static_cast<T>(0); }
         };
 
         template <typename T>
@@ -43,7 +43,7 @@ namespace utopia {
                 }
             }
 
-            inline static Vc::Vector<T> make() { return Vc::Vector<T>::Zero(); }
+            inline static Vc::Vector<T> value() { return Vc::Vector<T>::Zero(); }
         };
 
         template <typename... Args>

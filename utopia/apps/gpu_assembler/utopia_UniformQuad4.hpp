@@ -124,17 +124,21 @@ namespace utopia {
 
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g) {
-            const auto x = p[0];
-            const auto y = p[1];
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+
+            static const Scalar one = One<Scalar>::value();
 
             switch (i) {
                 case 0: {
-                    g[0] = y - 1.;
-                    g[1] = x - 1.;
+                    g[0] = y - one;
+                    g[1] = x - one;
                     return;
                 }
                 case 1: {
-                    g[0] = 1. - y;
+                    g[0] = one - y;
                     g[1] = -x;
                     return;
                 }
@@ -145,7 +149,7 @@ namespace utopia {
                 }
                 case 3: {
                     g[0] = -y;
-                    g[1] = (1. - x);
+                    g[1] = (one - x);
                     return;
                 }
                 default: {

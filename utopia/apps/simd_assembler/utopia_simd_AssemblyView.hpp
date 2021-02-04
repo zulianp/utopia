@@ -3,9 +3,37 @@
 
 #include "utopia_AssemblyView.hpp"
 #include "utopia_LaplacianView.hpp"
+#include "utopia_ProjectionView.hpp"
+
 #include "utopia_simd_Quadrature.hpp"
 
 namespace utopia {
+
+    namespace simd {
+        template <class Elem, typename T>
+        struct FETraits {
+            static const int Dim = Elem::Dim;
+            using Scalar = T;
+            using FunValue = Scalar;
+            using Point = simd::Vector<T, Dim>;
+            using GradValue = simd::Vector<T, Dim>;
+            using STGradX = simd::Vector<T, Dim - 1>;
+        };
+
+        template <class Elem, int NVar, typename T>
+        struct FETraits<MultiVariateElem<Elem, NVar>, T> {
+            static const int Dim = Elem::Dim;
+            using Scalar = T;
+            using FunValue = Scalar;
+            using Point = simd::Vector<T, Dim>;
+            using GradValue = simd::Matrix<T, NVar, Dim>;
+            using STGradX = simd::Vector<T, Dim - 1>;
+        };
+
+        template <class Elem, typename T>
+        struct FETraits<MultiVariateElem<Elem, 1>, T> : FETraits<Elem, T> {};
+
+    }  // namespace simd
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -13,8 +41,8 @@ namespace utopia {
     class PhysicalGradient<Elem, simd::Quadrature<T, Dim_>, typename Elem::MemType> {
     public:
         static const int Dim = Dim_;
-        using Scalar = typename Elem::Scalar;
-        using GradValue = typename Elem::GradValue;
+        using Scalar = typename simd::FETraits<Elem, T>::Scalar;
+        using GradValue = typename simd::FETraits<Elem, T>::GradValue;
         using Quadrature = simd::Quadrature<T, Dim_>;
 
         UTOPIA_INLINE_FUNCTION PhysicalGradient(const Quadrature &q) : q_(q), elem_(nullptr) {}
@@ -221,6 +249,75 @@ namespace utopia {
             mat_.set(0.0);
             assemble(g, dx, mat_);
         }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <class Mesh, int NComponents, typename T, int Dim_, class Function, typename... Args>
+    class Projection<FunctionSpace<Mesh, NComponents, Args...>, simd::Quadrature<T, Dim_>, Function> {
+    public:
+        using Quadrature = simd::Quadrature<T, Dim_>;
+        using QPoint = typename Quadrature::Point;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Vector = typename FunctionSpace::Vector;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Point = typename FunctionSpace::Point;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+
+        using Differential = utopia::Differential<FunctionSpace, Quadrature>;
+        using ShapeFunction = utopia::ShapeFunction<FunctionSpace, Quadrature>;
+        using PhysicalPoint = utopia::PhysicalPoint<FunctionSpace, Quadrature>;
+
+        class ViewDevice {
+        public:
+            using PhysicalPointView = typename PhysicalPoint::ViewDevice;
+            using ShapeFunctionView = typename ShapeFunction::ViewDevice;
+            using DifferentialView = typename Differential::ViewDevice;
+
+            template <typename SizeType, class Elem, class Accumulator>
+            UTOPIA_INLINE_FUNCTION void assemble(const SizeType & /*i*/, const Elem &e, Accumulator &acc) const {
+                auto dx = dx_.make(e);
+                auto shape = shape_fun_.make(e);
+                auto points = point_.make(e);
+
+                Point p;
+                const int n = shape.n_points();
+                const int n_fun = shape.n_functions();
+
+                for (int k = 0; k < n; ++k) {
+                    points.get(k, p);
+                    for (int j = 0; j < n_fun; ++j) {
+                        acc(j) += simd::integrate(fun_(p) * shape(j, k) * dx(k));
+                    }
+                }
+            }
+
+            ViewDevice(Function fun,
+                       const PhysicalPointView &points,
+                       const ShapeFunctionView &shape_fun,
+                       const DifferentialView &dx)
+                : fun_(std::move(fun)), point_(points), shape_fun_(shape_fun), dx_(dx) {}
+
+            Function fun_;
+            PhysicalPointView point_;
+            ShapeFunctionView shape_fun_;
+            DifferentialView dx_;
+        };
+
+        Projection(const FunctionSpace &space, const Quadrature &q, Function fun)
+            : fun_(std::move(fun)), point_(space, q), shape_fun_(space, q), dx_(space, q) {}
+
+        ViewDevice view_device() const {
+            return ViewDevice(fun_, point_.view_device(), shape_fun_.view_device(), dx_.view_device());
+        }
+
+    private:
+        Function fun_;
+        PhysicalPoint point_;
+        ShapeFunction shape_fun_;
+        Differential dx_;
     };
 
 }  // namespace utopia
