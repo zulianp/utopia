@@ -10,8 +10,6 @@
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LinearElasticityView.hpp"
 #include "utopia_PhaseFieldBase.hpp"
-#include "utopia_PrincipalShapeStressView.hpp"
-#include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_StrainView.hpp"
 #include "utopia_TensorView4.hpp"
 #include "utopia_Tracer.hpp"
@@ -216,7 +214,7 @@ namespace utopia {
 
             val = 0.0;
 
-            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             {
                 auto U_view = U.view_device();
@@ -311,7 +309,7 @@ namespace utopia {
 
             val = 0.0;
 
-            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             {
                 auto U_view = U.view_device();
@@ -412,7 +410,7 @@ namespace utopia {
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
@@ -615,7 +613,7 @@ namespace utopia {
             auto c_grad_shape = C.shape_grad(q);
 
             // value based
-            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             // reference based
             ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda);
@@ -721,7 +719,7 @@ namespace utopia {
 
                                 for (SizeType j = l; j < U_NDofs; ++j) {
                                     Scalar val =
-                                        bilinear_uu(
+                                        PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
                                             this->params_, c[qp], p_stress_view.stress(j, qp), u_strain_shape_l) *
                                         dx(qp);
 
@@ -805,7 +803,8 @@ namespace utopia {
                                                          const Scalar &shape_prod,
                                                          const GradShape &grad_trial,
                                                          const GradShape &grad_test) {
-            return diffusion_c(params, grad_trial, grad_test) + reaction_c(params, shape_prod) +
+            return PhaseFieldFracBase<FunctionSpace, Dim>::diffusion_c(params, grad_trial, grad_test) +
+                   reaction_c(params, shape_prod) +
                    elastic_deriv_cc(params, phase_field_value, elastic_energy, shape_prod);
         }
 
@@ -829,25 +828,6 @@ namespace utopia {
                                                          const Scalar &c_trial_fun) {
             return PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(params, phase_field_value) *
                    c_trial_fun * inner(stress, full_strain);
-        }
-
-        template <class StressShape, class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const Parameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const StressShape &stress,
-                                                         const Grad &strain_test) {
-            const Scalar gc =
-                ((1.0 - params.regularization) *
-                     PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(params, phase_field_value) +
-                 params.regularization);
-            return inner(gc * stress, strain_test);
-        }
-
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar diffusion_c(const Parameters &params,
-                                                         const Grad &g_trial,
-                                                         const Grad &g_test) {
-            return params.fracture_toughness * params.length_scale * inner(g_trial, g_test);
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar reaction_c(const Parameters &params,
