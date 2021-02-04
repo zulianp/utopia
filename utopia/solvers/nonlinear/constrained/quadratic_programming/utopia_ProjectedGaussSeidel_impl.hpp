@@ -4,8 +4,11 @@
 #include "utopia_Algorithms.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
-#include "utopia_ProjectedGaussSeidelSweep.hpp"
 #include "utopia_make_unique.hpp"
+
+#include "utopia_ProjectedGaussSeidelSweep.hpp"
+
+#include "utopia_ProjectedBlockGaussSeidelSweep.hpp"
 
 namespace utopia {
 
@@ -19,13 +22,18 @@ namespace utopia {
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
         : VariableBoundSolverInterface<Vector>(other),
+          PreconditionedSolverInterface<Vector>(other),
           Super(other),
           use_line_search_(other.use_line_search_),
           use_symmetric_sweep_(other.use_symmetric_sweep_),
           l1_(other.l1_),
           n_local_sweeps_(other.n_local_sweeps_),
           check_s_norm_each_(other.check_s_norm_each_),
-          use_sweeper_(other.use_sweeper_) {}
+          use_sweeper_(other.use_sweeper_) {
+        if (other.sweeper_) {
+            sweeper_ = std::unique_ptr<ProjectedGaussSeidelSweep<Matrix>>(other.sweeper_->clone());
+        }
+    }
 
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC> *ProjectedGaussSeidel<Matrix, Vector, PETSC>::clone() const {
@@ -51,6 +59,17 @@ namespace utopia {
         in.get("l1", l1_);
         in.get("use_sweeper", use_sweeper_);
         in.get("check_s_norm_each", check_s_norm_each_);
+
+        int block_size = 0;
+        in.get("block_size", block_size);
+
+        if (block_size == 2) {
+            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 2>>();
+        } else if (block_size == 3) {
+            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 3>>();
+        } else if (block_size == 4) {
+            sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 4>>();
+        }
     }
 
     template <class Matrix, class Vector>
@@ -291,6 +310,7 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     bool ProjectedGaussSeidel<Matrix, Vector, PETSC>::unconstrained_step(const Matrix &A, const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::unconstrained_step(...)");
         r = A * x;
         r = b - r;
 
@@ -303,10 +323,12 @@ namespace utopia {
             alpha = dot(c, r) / dot(Ac, c);
 
             if (std::isinf(alpha)) {
+                UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::unconstrained_step(...)");
                 return true;
             }
 
             if (std::isnan(alpha)) {
+                UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::unconstrained_step(...)");
                 return false;
             }
 
@@ -318,11 +340,15 @@ namespace utopia {
         }
 
         x += alpha * c;
+
+        UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::unconstrained_step(...)");
         return true;
     }
 
     template <class Matrix, class Vector>
     bool ProjectedGaussSeidel<Matrix, Vector, PETSC>::step(const Matrix &A, const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::step(...)");
+
         r = A * x;
         r = b - r;
 
@@ -366,10 +392,12 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
 
             if (std::isinf(alpha)) {
+                UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::step(...)");
                 return true;
             }
 
             if (std::isnan(alpha)) {
+                UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::step(...)");
                 return false;
             }
 
@@ -400,11 +428,14 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
         }
 
+        UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::step(...)");
         return true;
     }
 
     template <class Matrix, class Vector>
     void ProjectedGaussSeidel<Matrix, Vector, PETSC>::init_memory(const Layout &layout) {
+        UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::init_memory(...)");
+
         Super::init_memory(layout);
 
         if (!use_sweeper_) {
@@ -423,10 +454,14 @@ namespace utopia {
             is_c_.zeros(layout);
             descent_dir.zeros(layout);
         }
+
+        UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::init_memory(...)");
     }
 
     template <class Matrix, class Vector>
     void ProjectedGaussSeidel<Matrix, Vector, PETSC>::init(const Matrix &A) {
+        UTOPIA_TRACE_REGION_BEGIN("ProjectedGaussSeidel::init(...)");
+
         auto A_layout = row_layout(A);
         const bool reset = empty(c) || !A_layout.same(layout(c));
 
@@ -441,7 +476,7 @@ namespace utopia {
 
         if (use_sweeper_) {
             if (!sweeper_) {
-                sweeper_ = utopia::make_unique<ProjectedGaussSeidelSweep<Scalar, SizeType> >();
+                sweeper_ = utopia::make_unique<ProjectedScalarGaussSeidelSweep<Matrix>>();
             }
 
             sweeper_->symmetric(use_symmetric_sweep_);
@@ -471,6 +506,8 @@ namespace utopia {
 
             e_pseudo_inv(d, d_inv, 0.0);
         }
+
+        UTOPIA_TRACE_REGION_END("ProjectedGaussSeidel::init(...)");
     }
 
     template <class Matrix, class Vector>

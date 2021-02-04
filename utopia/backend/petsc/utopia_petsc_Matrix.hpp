@@ -130,7 +130,8 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////
         void init_empty(const PetscCommunicator &comm) { wrapper_ = std::make_shared<PetscMatrixMemory>(comm.get()); }
 
-        // nvcc has problems with a default argument for PetscMatrix(const PetscCommunicator &comm), so we trick it by forwarding the default constructor to the constructor with the default argument
+        // nvcc has problems with a default argument for PetscMatrix(const PetscCommunicator &comm), so we trick it by
+        // forwarding the default constructor to the constructor with the default argument
         PetscMatrix() : PetscMatrix(PetscCommunicator::get_default()) {}
         PetscMatrix(const PetscCommunicator &comm /*= PetscCommunicator::get_default() */) : comm_(comm) {
             init_empty(comm);
@@ -715,6 +716,7 @@ namespace utopia {
 
         void row_sum(PetscVector &col) const;
         void row_max(PetscVector &col) const;
+        void row_abs_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
         void col_sum(PetscVector &col) const;

@@ -163,20 +163,24 @@ namespace utopia {
         }
 
         // bottom == before / top == after
-        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space_time(space,
-                   UTOPIA_LAMBDA(const Point &p)->Scalar {
-                       static const auto pi = device::pi<Scalar>();
-                       const Scalar x = p[0];
-                       const Scalar y = p[1];
-                       return pi * device::sin(pi * x) * (device::cos(pi * y) + pi * device::sin(pi * y));
-                   },
-                   in);
+        space_time(
+            space,
+            UTOPIA_LAMBDA(const Point &p)->Scalar {
+                static const auto pi = device::pi<Scalar>();
+                const Scalar x = p[0];
+                const Scalar y = p[1];
+                return pi * device::sin(pi * x) * (device::cos(pi * y) + pi * device::sin(pi * y));
+            },
+            in);
     }
 
     UTOPIA_REGISTER_APP(space_time_2);
@@ -210,17 +214,23 @@ namespace utopia {
         }
 
         // back == before / front == after
-        space.emplace_dirichlet_condition(SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 10.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 10.0; });
 
-        space.emplace_dirichlet_condition(SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space.emplace_dirichlet_condition(SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
+        space.emplace_dirichlet_condition(
+            SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; });
 
-        space_time(space, UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, in);
+        space_time(
+            space, UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, in);
     }
 
     UTOPIA_REGISTER_APP(space_time_3);

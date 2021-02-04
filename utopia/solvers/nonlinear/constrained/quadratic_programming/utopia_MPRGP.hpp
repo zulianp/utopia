@@ -12,7 +12,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class MPGRP final : public OperatorBasedQPSolver<Matrix, Vector> {
+    class MPRGP final : public OperatorBasedQPSolver<Matrix, Vector> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -23,7 +23,7 @@ namespace utopia {
         using Super::solve;
         using Super::update;
 
-        MPGRP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
+        MPRGP() : eps_eig_est_(1e-1), power_method_max_it_(10) {}
 
         void read(Input &in) override {
             OperatorBasedQPSolver<Matrix, Vector>::read(in);
@@ -38,17 +38,17 @@ namespace utopia {
                 os, "power_method_max_it", "int", "Maximum number of iterations used inside of power method.", "10");
         }
 
-        MPGRP *clone() const override { return new MPGRP(*this); }
+        MPRGP *clone() const override { return new MPRGP(*this); }
 
         void update(const Operator<Vector> &A) override {
-            UTOPIA_TRACE_REGION_BEGIN("MPGRP::update");
+            UTOPIA_TRACE_REGION_BEGIN("MPRGP::update");
 
             const auto layout_rhs = row_layout(A);
             if (!initialized_ || !layout_rhs.same(layout_)) {
                 init_memory(layout_rhs);
             }
 
-            UTOPIA_TRACE_REGION_END("MPGRP::update");
+            UTOPIA_TRACE_REGION_END("MPRGP::update");
         }
 
         bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override {
@@ -64,7 +64,8 @@ namespace utopia {
 
             this->update(A);
 
-            // as it is not clear ATM, how to apply preconditioner, we use it at least to obtain initial guess
+            // as it is not clear ATM, how to apply preconditioner, we use it at least
+            // to obtain initial guess
             if (precond_) {
                 // this is unconstrained step
                 precond_->apply(rhs, sol);
@@ -94,7 +95,7 @@ namespace utopia {
             const auto &&lb = constraints.lower_bound();
 
             if (this->verbose()) {
-                this->init_solver("MPGRP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
+                this->init_solver("MPRGP comm_size: " + std::to_string(rhs.comm().size()), {"it", "|| g ||"});
             }
 
             const Scalar gamma = 1.0;
@@ -112,7 +113,8 @@ namespace utopia {
             assert(lb);
             assert(ub);
 
-            // utopia::out() <<x.comm().size() << " " << rhs.comm().size() << " " << lb->comm().size() << " "
+            // utopia::out() <<x.comm().size() << " " << rhs.comm().size() << " " <<
+            // lb->comm().size() << " "
             //           << ub->comm().size() << std::endl;
 
             this->project(*lb, *ub, x);
@@ -191,8 +193,8 @@ namespace utopia {
                 }
 
                 converged = this->check_convergence(it, gnorm, 1, 1);
-                // converged = (it > this->max_it() || gnorm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 ) ? true :
-                // false;
+                // converged = (it > this->max_it() || gnorm < std::min(0.1,
+                // std::sqrt(r_norm0)) * r_norm0 ) ? true : false;
             }
 
             // //cudaProfilerStop();
@@ -288,7 +290,8 @@ namespace utopia {
             //     auto d_x  = const_device_view(x);
             //     auto d_p  = const_device_view(p);
 
-            //     parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+            //     parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) ->
+            //     Scalar
             //     {
             //         Scalar li = d_lb.get(i);
             //         Scalar xi = d_x.get(i);
@@ -304,7 +307,8 @@ namespace utopia {
             //         }
             //     });
 
-            //     parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) -> Scalar
+            //     parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) ->
+            //     Scalar
             //     {
             //         Scalar ui = d_ub.get(i);
             //         Scalar xi = d_x.get(i);

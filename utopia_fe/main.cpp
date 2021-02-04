@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "utopia_libmesh.hpp"
 #include "par_moonolith.hpp"
 #include "utopia.hpp"
+#include "utopia_libmesh.hpp"
 
 #include "utopia_Socket.hpp"
 
@@ -16,13 +16,15 @@ using namespace utopia;
 using namespace std;
 using namespace libMesh;
 
-int main(int argc, char *argv[])
-{
-    //For debugginh with ddt
+int main(int argc, char *argv[]) {
+    // For debugginh with ddt
     MPI_Init(&argc, &argv);
     PETSC_COMM_WORLD = MPI_COMM_WORLD;
 
     Utopia::Init(argc, argv);
+    // moonolith::Moonolith::Init(argc, argv, PETSC_COMM_WORLD);
+    moonolith::Moonolith::instance().verbose(true);
+
     MOONOLITH_PROFILING_BEGIN();
 
     {
@@ -31,37 +33,35 @@ int main(int argc, char *argv[])
         FEApps apps;
         FETests tests;
 
-        //REMOVE ME once adaptivity works
+        // REMOVE ME once adaptivity works
         utopia::Utopia::instance().set("disable-adaptivity", "true");
 
-        for(int i = 1; i < argc; ++i) {
-            const int ip1 = i+1;
+        for (int i = 1; i < argc; ++i) {
+            const int ip1 = i + 1;
 
-            if(argv[i] == std::string("-verbose")) {
+            if (argv[i] == std::string("-verbose")) {
                 Utopia::instance().set("verbose", "true");
                 continue;
-            } else if(argv[i] == std::string("-h")) {
+            } else if (argv[i] == std::string("-h")) {
                 std::cout << "--------------------------------------------" << std::endl;
                 std::cout << "--------------------------------------------" << std::endl;
                 apps.print_usage(std::cout);
                 tests.print_usage(std::cout);
 
-
                 std::cout << "--------------------------------------------" << std::endl;
                 std::cout << "--------------------------------------------" << std::endl;
-            } else if(argv[i] == std::string("-output_path")) {
+            } else if (argv[i] == std::string("-output_path")) {
                 utopia::Utopia::instance().set("output_path", argv[ip1]);
                 std::cout << "setting output_path to: " << argv[ip1] << std::endl;
-            } else if(argv[i] == std::string("-data_path")) {
+            } else if (argv[i] == std::string("-data_path")) {
                 utopia::Utopia::instance().set("data_path", argv[ip1]);
                 std::cout << "setting data_path to: " << argv[ip1] << std::endl;
-            } else if(argv[i] == std::string("-disable-adaptivity")) {
+            } else if (argv[i] == std::string("-disable-adaptivity")) {
                 utopia::Utopia::instance().set("disable-adaptivity", "true");
-            } else if(argv[i] == std::string("-enable-adaptivity")) {
+            } else if (argv[i] == std::string("-enable-adaptivity")) {
                 utopia::Utopia::instance().set("disable-adaptivity", "false");
             }
         }
-
 
         apps.run(init.comm(), argc, argv);
         tests.run(init.comm(), argc, argv);
@@ -70,5 +70,3 @@ int main(int argc, char *argv[])
     MOONOLITH_PROFILING_END();
     return Utopia::Finalize();
 }
-
-

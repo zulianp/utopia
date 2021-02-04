@@ -414,7 +414,9 @@ namespace utopia {
                     return;
                 }
 
-                default: { UTOPIA_DEVICE_ASSERT(false); }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
             }
         }
 

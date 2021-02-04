@@ -106,12 +106,53 @@ namespace utopia {
                 TraceSummary::header(f_summary);
             }
 
+            auto size = summary_.size();
+
+            std::vector<double> values;
+            values.reserve(size);
+
             for (auto it = summary_.cbegin(); it != summary_.cend(); ++it) {
                 f_summary << it->first << ";" << rank << ";";
                 it->second.describe(f_summary);
+
+                values.push_back(it->second.seconds());
             }
 
             f_summary.close();
+
+#ifdef UTOPIA_WITH_MPI
+
+            const int mpi_size = mpi_world_size();
+            std::vector<double> mean(size), min(size), max(size), variance(size);
+
+            MPI_Allreduce(&values[0], &mean[0], size, MPIType<double>::value(), MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(&values[0], &min[0], size, MPIType<double>::value(), MPI_MIN, MPI_COMM_WORLD);
+            MPI_Allreduce(&values[0], &max[0], size, MPIType<double>::value(), MPI_MAX, MPI_COMM_WORLD);
+
+            for (std::size_t i = 0; i < size; ++i) {
+                mean[i] /= mpi_size;
+
+                auto x = mean[i] - values[i];
+                variance[i] = x * x / mpi_size;
+            }
+
+            MPI_Allreduce(MPI_IN_PLACE, &variance[0], size, MPIType<double>::value(), MPI_SUM, MPI_COMM_WORLD);
+
+            if (rank == 0) {
+                std::ofstream f_balancing("balancing.csv");
+
+                f_balancing << "Class;Mean;Variance;Min;Max\n";
+
+                std::size_t idx = 0;
+                for (auto it = summary_.cbegin(); it != summary_.cend(); ++it) {
+                    f_balancing << it->first << ";" << mean[idx] << ";" << variance[idx] << ";" << min[idx] << ";"
+                                << max[idx] << "\n";
+                    ++idx;
+                }
+
+                f_balancing.close();
+            }
+#endif  // UTOPIA_WITH_MPI
         }
     }
 }  // namespace utopia

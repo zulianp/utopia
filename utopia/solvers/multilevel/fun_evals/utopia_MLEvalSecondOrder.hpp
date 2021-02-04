@@ -73,6 +73,14 @@ namespace utopia {
             return true;
         }
 
+        inline bool compute_gradient(const SizeType &level,
+                                     const ExtendedFunction<Matrix, Vector> &fun,
+                                     const Vector &x,
+                                     const Vector &s_global,
+                                     const Scalar & /*energy*/) {
+            return this->compute_gradient(level, fun, x, s_global);
+        }
+
         inline Scalar compute_gradient_energy(const SizeType &level,
                                               const ExtendedFunction<Matrix, Vector> &fun,
                                               const Vector &x,

@@ -5,6 +5,8 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_IPRTransfer.hpp"
+#include "utopia_IPRTruncatedTransfer.hpp"
 #include "utopia_IdentityTransfer.hpp"
 #include "utopia_LevelMemory.hpp"
 #include "utopia_LinearSolver.hpp"
@@ -32,16 +34,17 @@ namespace utopia {
 
             const SizeType n_levels = layouts.size();
             help_loc_.resize(n_levels);
+
             for (SizeType l = 0; l < n_levels; l++) {
                 help_loc_[l].zeros(layouts[l]);
             }
 
             if (this->box_constraints_.has_lower_bound()) {
-                constraints_memory_.active_lower[finest_level] = *(this->box_constraints_.lower_bound());
+                constraints_memory_.active_lower[finest_level - 1] = *(this->box_constraints_.lower_bound());
             }
 
             if (this->box_constraints_.has_upper_bound()) {
-                constraints_memory_.active_upper[finest_level] = *(this->box_constraints_.upper_bound());
+                constraints_memory_.active_upper[finest_level - 1] = *(this->box_constraints_.upper_bound());
             }
         }
 
@@ -51,10 +54,16 @@ namespace utopia {
                              const Scalar& /*delta_fine*/) {
             auto finer_level = level + 1;
 
-            if (auto* mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector>*>(this->transfer_[level].get()))
-            // if(IPTransferNested<Matrix, Vector>* mat_transfer =  dynamic_cast<IPTransferNested<Matrix, Vector>* >
-            // (this->transfer_[level].get()))
-            {
+            // if (auto* mat_transfer = dynamic_cast<IPRTransfer<Matrix, Vector>*>(
+            //         this->transfer_[level].get()))
+            // if (auto* mat_transfer =
+            //         dynamic_cast<IPRTruncatedTransfer<Matrix, Vector>*>(
+            //             this->transfer_[level].get())) {
+            //   const Matrix& R = mat_transfer->R();
+            //   exit(0);
+            // }
+
+            if (auto* mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector>*>(this->transfer_[level].get())) {
                 this->help_[finer_level] = constraints_memory_.active_lower[finer_level] - x_finer_level;
                 this->help_loc_[finer_level] = constraints_memory_.active_upper[finer_level] - x_finer_level;
 
@@ -93,6 +102,7 @@ namespace utopia {
                                 min_value = (min_value < ub_min) ? min_value : ub_min;
                             }
                         }
+
                         constraints_memory_.active_lower[level].set(i, max_value);
                         constraints_memory_.active_upper[level].set(i, min_value);
                     }
@@ -103,8 +113,11 @@ namespace utopia {
 
             }  // dynamic cast test
             else {
-                utopia_error("TRBoundsKornhuber:: box - box - transfer operators not supported. \n ");
-                utopia::out() << "--------- error ---------- \n";
+                utopia_error(
+                    "TRBoundsKornhuber:: box - box - transfer operators not supported. "
+                    "\n ");
+                std::cout << "--------- error ---------- \n";
+                exit(0);
             }
         }
 

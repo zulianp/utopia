@@ -51,6 +51,10 @@ namespace utopia {
 
         inline void l1(const bool val) { l1_ = val; }
 
+        inline void set_sweeper(std::unique_ptr<ProjectedGaussSeidelSweep<Matrix> > &&sweeper) {
+            sweeper_ = std::move(sweeper);
+        }
+
     protected:
         virtual bool step(const Matrix &A, const Vector &b, Vector &x);
         virtual bool unconstrained_step(const Matrix &A, const Vector &b, Vector &x);
@@ -68,7 +72,7 @@ namespace utopia {
         Vector is_c_;
 
         bool use_sweeper_{true};
-        std::unique_ptr<ProjectedGaussSeidelSweep<Scalar, SizeType> > sweeper_;
+        std::unique_ptr<ProjectedGaussSeidelSweep<Matrix> > sweeper_;
 
         /// residual must be computed outside
         void apply_local_sweeps(const Matrix &A, const Vector &r, const Vector &lb, const Vector &ub, Vector &c) const;

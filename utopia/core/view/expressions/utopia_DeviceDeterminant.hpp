@@ -1,7 +1,10 @@
 #ifndef UTOPIA_DEVICE_DETERMINANT_HPP
 #define UTOPIA_DEVICE_DETERMINANT_HPP
 
+#include "utopia_ViewForwardDeclarations.hpp"
+
 #include "utopia_Algorithms.hpp"
+#include "utopia_DeviceTranspose.hpp"
 #include "utopia_ViewTraits.hpp"
 
 namespace utopia {
@@ -17,7 +20,7 @@ namespace utopia {
             const SizeType cols = t.cols();
 
             if (rows > cols) {
-                return psuedo_det(cols, rows, transpose(t));
+                return psuedo_det(cols, rows, utopia::transpose(t));
             } else if (cols > rows) {
                 return psuedo_det(rows, cols, t);
             } else {
@@ -40,7 +43,7 @@ namespace utopia {
                 }
 
                 case 2: {
-                    auto mult = t * transpose(t);
+                    auto mult = t * utopia::transpose(t);
 
                     const Scalar m01 = mult(0, 1);
 
@@ -48,7 +51,7 @@ namespace utopia {
                 }
 
                 case 3: {
-                    auto mult = t * transpose(t);
+                    auto mult = t * utopia::transpose(t);
 
                     const Scalar m01 = mult(0, 1);
                     const Scalar m02 = mult(0, 2);
@@ -58,7 +61,7 @@ namespace utopia {
                 }
 
                 case 4: {
-                    auto mult = t * transpose(t);
+                    auto mult = t * utopia::transpose(t);
 
                     const Scalar m01 = mult(0, 1);
                     const Scalar m02 = mult(0, 2);

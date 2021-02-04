@@ -164,11 +164,12 @@ namespace utopia {
                     }
                 }
 
-                // this->transfers_[i] = std::make_shared<IPTransfer<Matrix, Vector> >( std::make_shared<Matrix>(I));
-                // this->transfers_[i] = std::make_shared<MatrixTransfer<Matrix, Vector> >(
+                // this->transfers_[i] = std::make_shared<IPTransfer<Matrix, Vector> >(
+                // std::make_shared<Matrix>(I)); this->transfers_[i] =
+                // std::make_shared<IPRTransfer<Matrix, Vector> >(
                 // std::make_shared<Matrix>(I));
-                this->transfers_[i] = std::make_shared<MatrixTransfer<Matrix, Vector> >(std::make_shared<Matrix>(I),
-                                                                                        std::make_shared<Matrix>(P));
+                this->transfers_[i] = std::make_shared<IPRTransfer<Matrix, Vector> >(std::make_shared<Matrix>(I),
+                                                                                     std::make_shared<Matrix>(P));
             }
 
             for (auto l = 0; l < n_levels; l++) {
@@ -178,4 +179,5 @@ namespace utopia {
         }
     };
 }  // namespace utopia
+
 #endif

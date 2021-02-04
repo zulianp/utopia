@@ -28,18 +28,22 @@
 //         virtual ~Smoother() {}
 
 //         /**
-//          * @brief      Single sweep. Function needs to be provided by actual smoothers.
+//          * @brief      Single sweep. Function needs to be provided by actual
+//          smoothers.
 //          * @return
 //          */
 //         virtual bool smooth(const Vector &rhs, Vector &x) = 0;
 
-//         // virtual void update(const std::shared_ptr<const Operator<Vector> > &) = 0;
+//         // virtual void update(const std::shared_ptr<const Operator<Vector> >
+//         &) = 0;
 
 //         /**
-//          * @brief      Quick interface for smoothing with projecting constraints.
+//          * @brief      Quick interface for smoothing with projecting
+//          constraints.
 //          */
-//         // virtual bool nonlinear_smooth(const Matrix &/*A*/, const Vector &/*rhs*/, const Vector& /*ub*/, const
-//         Vector& /*lb*/, Vector &/*x*/, std::vector<SizeType>& /*zero_rows*/){ return 0; }
+//         // virtual bool nonlinear_smooth(const Matrix &/*A*/, const Vector
+//         &/*rhs*/, const Vector& /*ub*/, const Vector& /*lb*/, Vector &/*x*/,
+//         std::vector<SizeType>& /*zero_rows*/){ return 0; }
 
 //         /**
 //          * @brief      Get number of sweeps.
@@ -78,7 +82,8 @@
 //          *
 //          * @return     omega  The relaxation parameter.
 //          */
-//         virtual void relaxation_parameter(const Scalar & relaxation_parameter)
+//         virtual void relaxation_parameter(const Scalar &
+//         relaxation_parameter)
 //         {
 //             _relaxation_parameter = relaxation_parameter;
 //         }
@@ -93,8 +98,9 @@
 
 //         virtual void print_usage(std::ostream &os) const override
 //         {
-//             this->print_param_usage(os, "sweeps", "int", "Number of smoothing steps.", "1.0");
-//             this->print_param_usage(os, "relaxation_parameter", "real", "Relaxation parameter.", "1.0");
+//             this->print_param_usage(os, "sweeps", "int", "Number of smoothing
+//             steps.", "1.0"); this->print_param_usage(os,
+//             "relaxation_parameter", "real", "Relaxation parameter.", "1.0");
 //         }
 
 //     private:

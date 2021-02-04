@@ -8,6 +8,8 @@
 #include "utopia_Tensor.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
+#include "utopia_TensorView.hpp"
+
 #include <utility>
 
 namespace utopia {

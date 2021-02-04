@@ -3,12 +3,15 @@
 
 #include "utopia_Algorithms.hpp"
 #include "utopia_BoxConstraints.hpp"
+#include "utopia_BoxKornhuberTruncation.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_DeviceView.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_LevelMemory.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_MultiLevelVariableBoundInterface.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_TRBoundsGelmanMandel.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -92,7 +95,8 @@ namespace utopia {
         BoxConstraints box_bounds_;
     };
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // //
     // // // // // // // // // // // // // // //
     template <class Matrix, class Vector>
     using TRGrattonBoxGelmanMandel =
@@ -102,7 +106,12 @@ namespace utopia {
     using TRGrattonBoxKornhuber =
         utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, BoxKornhuber<Matrix, Vector>>;
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    template <class Matrix, class Vector>
+    using TRGrattonBoxKornhuberTruncation = utopia::
+        TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, BoxKornhuberTruncation<Matrix, Vector>>;
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // //
     // // // // // // // // // // // // // // //
     template <class Matrix, class Vector>
     using TRKornhuberBoxGelmanMandel =
@@ -112,7 +121,12 @@ namespace utopia {
     using TRKornhuberBoxKornhuber =
         utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsKornhuber<Matrix, Vector>, BoxKornhuber<Matrix, Vector>>;
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    template <class Matrix, class Vector>
+    using TRKornhuberBoxKornhuberTruncation = utopia::
+        TRBoxMixConstraints<Matrix, Vector, TRBoundsKornhuber<Matrix, Vector>, BoxKornhuberTruncation<Matrix, Vector>>;
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // //
     // // // // // // // // // // // // // // //
     template <class Matrix, class Vector>
     using TRGelmanMandelBoxGelmanMandel = utopia::
@@ -121,6 +135,12 @@ namespace utopia {
     template <class Matrix, class Vector>
     using TRGelmanMandelBoxKornhuber =
         utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGelmanMandel<Matrix, Vector>, BoxKornhuber<Matrix, Vector>>;
+
+    template <class Matrix, class Vector>
+    using TRGelmanMandelBoxKornhuberTruncation = utopia::TRBoxMixConstraints<Matrix,
+                                                                             Vector,
+                                                                             TRBoundsGelmanMandel<Matrix, Vector>,
+                                                                             BoxKornhuberTruncation<Matrix, Vector>>;
 
 }  // namespace utopia
 #endif  // UTOPIA_BOX_TR_CONSTRAINTS_COMBINED_HPP

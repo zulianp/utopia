@@ -54,7 +54,9 @@ namespace utopia {
                 case 3: {
                     return (1 - x);
                 }
-                default: { return 0.0; }
+                default: {
+                    return 0.0;
+                }
             }
         }
 
@@ -258,7 +260,9 @@ namespace utopia {
                     local_side_idx[1] = 0;
                     return;
                 }
-                default: { UTOPIA_DEVICE_ASSERT(false); }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
             }
         }
 

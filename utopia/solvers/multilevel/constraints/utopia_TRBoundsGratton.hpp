@@ -47,19 +47,21 @@ namespace utopia {
                 auto help_view = local_view_device(this->help_[finer_level]);
                 auto help_loc_view = local_view_device(this->help_loc_[finer_level]);
 
-                parallel_for(local_range_device(this->help_[finer_level]), UTOPIA_LAMBDA(const SizeType &i) {
-                    auto delta_m = d_x_finer.get(i) - delta_fine;
-                    auto delta_p = d_x_finer.get(i) + delta_fine;
+                parallel_for(
+                    local_range_device(this->help_[finer_level]), UTOPIA_LAMBDA(const SizeType &i) {
+                        auto delta_m = d_x_finer.get(i) - delta_fine;
+                        auto delta_p = d_x_finer.get(i) + delta_fine;
 
-                    auto lbi = d_tr_lb.get(i);
-                    auto ubi = d_tr_ub.get(i);
+                        auto lbi = d_tr_lb.get(i);
+                        auto ubi = d_tr_ub.get(i);
 
-                    help_view.set(i, device::max(lbi, delta_m));
-                    help_loc_view.set(i, device::min(ubi, delta_p));
-                });
+                        help_view.set(i, device::max(lbi, delta_m));
+                        help_loc_view.set(i, device::min(ubi, delta_p));
+                    });
             }
 
-            //------------------------ we should take into account  positive and negative elements projection
+            //------------------------ we should take into account  positive and
+            // negative elements projection
             // separatelly -----------------
             this->transfer_[level]->project_down_positive_negative(
                 this->help_[finer_level], help_loc_[finer_level], constraints_memory_.active_lower[level]);

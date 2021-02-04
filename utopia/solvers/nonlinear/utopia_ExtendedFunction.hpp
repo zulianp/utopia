@@ -9,9 +9,11 @@
 
 namespace utopia {
     /**
-     * @brief      Class for Nonlinear Function, all application context needed by solver is usually provided inside of
-     * this functions. In optimization settings, user needs to supply value(energy), gradient, hessian. Difference,
-     * between Function and ExtendedFunction is that here, we make use of additional informations to improve convergence
+     * @brief      Class for Nonlinear Function, all application context needed by
+     * solver is usually provided inside of this functions. In optimization
+     * settings, user needs to supply value(energy), gradient, hessian. Difference,
+     * between Function and ExtendedFunction is that here, we make use of additional
+     * informations to improve convergence
      *
      * @tparam     Matrix
      * @tparam     Vector
@@ -34,7 +36,7 @@ namespace utopia {
         bool value(const Vector & /*point*/, Scalar & /*value*/) const override = 0;
 
         // Copy of vec...
-        Vector initial_guess() const { return _x_eq_values; }
+        virtual Vector initial_guess() const { return _x_eq_values; }
 
         virtual Layout layout() const { return utopia::layout(_x_eq_values); }
 
@@ -97,14 +99,15 @@ namespace utopia {
                 auto d_flg = const_local_view_device(_eq_constrains_flg);
                 auto x_view = local_view_device(x);
 
-                parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                    Scalar flg = d_flg.get(i);
+                parallel_for(
+                    local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                        Scalar flg = d_flg.get(i);
 
-                    // TODO:: use abs with eps tolerance
-                    if (flg == 1.0) {
-                        x_view.set(i, 0.0);
-                    }
-                });
+                        // TODO:: use abs with eps tolerance
+                        if (flg == 1.0) {
+                            x_view.set(i, 0.0);
+                        }
+                    });
             }
 
             UTOPIA_NO_ALLOC_END();

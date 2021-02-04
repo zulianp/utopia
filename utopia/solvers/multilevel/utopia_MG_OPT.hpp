@@ -29,7 +29,9 @@ namespace utopia {
 
     public:
         bool solve(Vector & /*x_h*/) override {
-            utopia_error("MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) instead .... \n");
+            utopia_error(
+                "MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) "
+                "instead .... \n");
             return false;
         }
 

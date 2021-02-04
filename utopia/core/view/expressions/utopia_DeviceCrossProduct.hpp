@@ -37,7 +37,9 @@ namespace utopia {
                     return (left_(0) * right_(1)) - (left_(1) * right_(0));
                 }
 
-                default: { return 0; }
+                default: {
+                    return 0;
+                }
             }
         }
 

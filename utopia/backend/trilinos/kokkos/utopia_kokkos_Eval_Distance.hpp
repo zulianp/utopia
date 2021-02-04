@@ -33,12 +33,13 @@ namespace utopia {
 
             Scalar ret = 0.;
 
-            Kokkos::parallel_reduce(l_data.extent(0),
-                                    KOKKOS_LAMBDA(const int i, Scalar &val) {
-                                        const Scalar x = l_data(i, 0) - r_data(i, 0);
-                                        val += x * x;
-                                    },
-                                    ret);
+            Kokkos::parallel_reduce(
+                l_data.extent(0),
+                KOKKOS_LAMBDA(const int i, Scalar &val) {
+                    const Scalar x = l_data(i, 0) - r_data(i, 0);
+                    val += x * x;
+                },
+                ret);
 
             if (finalize_reduction) {
                 return finalize(ret);
@@ -68,12 +69,13 @@ namespace utopia {
 
             Scalar ret = 0.;
 
-            Kokkos::parallel_reduce(l_data.extent(0),
-                                    KOKKOS_LAMBDA(const int i, Scalar &val) {
-                                        const Scalar x = l_data(i, 0) - r_data(i, 0);
-                                        val += Kokkos::Details::ArithTraits<Scalar>::abs(x);
-                                    },
-                                    ret);
+            Kokkos::parallel_reduce(
+                l_data.extent(0),
+                KOKKOS_LAMBDA(const int i, Scalar &val) {
+                    const Scalar x = l_data(i, 0) - r_data(i, 0);
+                    val += Kokkos::Details::ArithTraits<Scalar>::abs(x);
+                },
+                ret);
 
             return ret;
         }
@@ -99,13 +101,13 @@ namespace utopia {
 
             Scalar ret = 0.;
 
-            Kokkos::parallel_reduce(l_data.extent(0),
-                                    KOKKOS_LAMBDA(const int i, Scalar &val) {
-                                        const Scalar x = l_data(i, 0) - r_data(i, 0);
-                                        val = KokkosOp<Scalar, Max>::apply(
-                                            val, Kokkos::Details::ArithTraits<Scalar>::abs(x));
-                                    },
-                                    ret);
+            Kokkos::parallel_reduce(
+                l_data.extent(0),
+                KOKKOS_LAMBDA(const int i, Scalar &val) {
+                    const Scalar x = l_data(i, 0) - r_data(i, 0);
+                    val = KokkosOp<Scalar, Max>::apply(val, Kokkos::Details::ArithTraits<Scalar>::abs(x));
+                },
+                ret);
 
             return ret;
         }

@@ -1,8 +1,8 @@
 #ifndef UTOPIA_MULTILEVEL_MASK_HPP
 #define UTOPIA_MULTILEVEL_MASK_HPP
 
+#include "utopia_IPRTransfer.hpp"
 #include "utopia_Level.hpp"
-#include "utopia_MatrixTransfer.hpp"
 #include "utopia_MultiLevelBase.hpp"
 #include "utopia_Recorder.hpp"
 
@@ -77,7 +77,8 @@ namespace utopia {
             // {
             //     auto mask_view = view_device(mask);
 
-            //     A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const Scalar &value) {
+            //     A.read(UTOPIA_LAMBDA(const SizeType &i, const SizeType &j, const
+            //     Scalar &value) {
             //         if (i == j) return;
 
             //         if (device::abs(value) > off_diag_tol) {

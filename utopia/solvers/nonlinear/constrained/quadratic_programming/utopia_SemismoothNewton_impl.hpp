@@ -157,7 +157,8 @@ namespace utopia {
 
             changed = b.comm().sum(changed);
 
-            // maybe there is a more efficent way than copy everything but this is probably ok
+            // maybe there is a more efficent way than copy everything but this is
+            // probably ok
             mat.same_nnz_pattern_copy(A);
             set_zero_rows(mat, active, 1.0);
 

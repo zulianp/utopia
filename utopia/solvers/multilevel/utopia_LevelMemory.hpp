@@ -23,6 +23,35 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
+    class JFNKLevelMemory {
+        using Scalar = typename Traits<Vector>::Scalar;
+        using SizeType = typename Traits<Vector>::SizeType;
+        using Layout = typename Traits<Vector>::Layout;
+
+    public:
+        void init_memory(const std::vector<Layout> &layouts) {
+            const SizeType n_levels = layouts.size();
+            x.resize(n_levels);
+            g.resize(n_levels);
+
+            res.resize(n_levels);
+            rhs.resize(n_levels);
+            c.resize(n_levels);
+
+            for (SizeType l = 0; l < n_levels; l++) {
+                x[l].zeros(layouts[l]);
+                g[l].zeros(layouts[l]);
+
+                res[l].zeros(layouts[l]);
+                rhs[l].zeros(layouts[l]);
+                c[l].zeros(layouts[l]);
+            }
+        }
+
+        std::vector<Vector> x, rhs, g, res, c;
+    };
+
+    template <class Matrix, class Vector>
     class RMTRLevelMemory {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;

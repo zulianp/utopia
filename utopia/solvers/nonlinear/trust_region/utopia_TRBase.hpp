@@ -87,7 +87,8 @@ namespace utopia {
     };
 
     /**
-     * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
+     * @brief      Base class for all TR solvers. Contains all general routines
+     * related to TR solvers.
      *
      */
     template <class Vector>
@@ -305,7 +306,8 @@ namespace utopia {
             }
         }
 
-        // virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar &radius)
+        // virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar
+        // &radius)
         // {
         //     if(rho >= eta2_)
         //     {
@@ -320,7 +322,8 @@ namespace utopia {
         /*!
         \details
         TR radius initialization
-        - returns false - choice of tr radius was given by user, alg respect it and doesn't change
+        - returns false - choice of tr radius was given by user, alg respect it and
+        doesn't change
 
         @note
         \param x_k                - initial guess/ current iterate

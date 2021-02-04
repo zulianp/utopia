@@ -7,6 +7,7 @@
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_InexactNewtonInterface.hpp"
 #include "utopia_Monitor.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_PreconditionedSolver.hpp"
@@ -14,17 +15,8 @@
 
 namespace utopia {
 
-    enum InexactNewtonForcingStartegies {
-        ZERO = 0,
-        CAI = 1,
-        DEMBO = 2,
-        SUPERLINEAR = 3,
-        QUADRATIC = 4,
-        QUADRATIC_2 = 5
-    };
-
     template <class Matrix, class Vector>
-    class NewtonBase : public NonLinearSolver<Vector> {
+    class NewtonBase : public NonLinearSolver<Vector>, public InexactNewtonInterface<Vector> {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
@@ -35,9 +27,9 @@ namespace utopia {
 
         NewtonBase(std::shared_ptr<Solver> linear_solver)
             : NonLinearSolver<Vector>(),
+              InexactNewtonInterface<Vector>(),
               linear_solver_(std::move(linear_solver)),
-              check_diff_(false),
-              forcing_strategy_(InexactNewtonForcingStartegies::ZERO) {}
+              check_diff_(false) {}
 
         ~NewtonBase() override = default;
 
@@ -49,12 +41,6 @@ namespace utopia {
             fun.reset_rhs();
             return converged;
         }
-
-        virtual void forcing_strategy(const InexactNewtonForcingStartegies &strategy) { forcing_strategy_ = strategy; }
-
-        virtual InexactNewtonForcingStartegies forcing_strategy() { return forcing_strategy_; }
-
-        virtual bool has_forcing_strategy() { return (forcing_strategy_ > 0) ? true : false; }
 
         /**
          * @brief      Enables the differentiation control.
@@ -136,32 +122,11 @@ namespace utopia {
             return linear_solver_->apply(rhs, sol);
         }
 
-        virtual Scalar estimate_ls_atol(const Scalar &gnorm, const Scalar &it) {
-            if (forcing_strategy_ == InexactNewtonForcingStartegies::CAI) {
-                return 10e-4 * gnorm;
-            } else if (forcing_strategy_ == InexactNewtonForcingStartegies::DEMBO) {
-                return (gnorm * std::min(std::sqrt(gnorm), 1. / (it + 1)));
-            } else if (forcing_strategy_ == InexactNewtonForcingStartegies::SUPERLINEAR) {
-                return (gnorm * std::min(std::sqrt(gnorm), 0.5));
-            } else if (forcing_strategy_ == InexactNewtonForcingStartegies::QUADRATIC) {
-                return (gnorm * std::min(gnorm, 1. / (it + 1)));
-            } else if (forcing_strategy_ == InexactNewtonForcingStartegies::QUADRATIC_2) {
-                return (gnorm * std::min(gnorm, 0.5));
-            } else {
-                utopia_error("utopia::Newton:: invalid choice of forcing strategy.... \n");
-                return 0.0;
-            }
-
-            return 0.0;
-        }
-
         void init_memory(const Layout &layout) { linear_solver_->init_memory(layout); }
 
         std::shared_ptr<Solver> linear_solver_; /*!< Linear solver parameters. */
         DiffController controller_;
         bool check_diff_; /*!< Enable differentiation control. */
-
-        InexactNewtonForcingStartegies forcing_strategy_;
     };
 }  // namespace utopia
 

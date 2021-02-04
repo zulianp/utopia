@@ -35,11 +35,11 @@ namespace utopia {
         ~QPConstrainedBenchmark() override { test_functions_.clear(); }
 
         void initialize() override {
-            this->register_experiment("MPGRP_Test", [this]() {
-                MPGRP<Matrix, Vector> solver;
+            this->register_experiment("MPRGP_Test", [this]() {
+                MPRGP<Matrix, Vector> solver;
 
                 solver.verbose(true);
-                run_test(this->test_functions_, solver, "MPGRP_Test", this->verbose_);
+                run_test(this->test_functions_, solver, "MPRGP_Test", this->verbose_);
             });
 
             this->register_experiment("ProjectedGradient_Test", [this]() {
