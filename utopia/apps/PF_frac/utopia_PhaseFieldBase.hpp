@@ -69,10 +69,10 @@ namespace utopia {
               lambda(120.0),
               // mu(100.0),
               // lambda(100.0),
-              regularization(1e-15),
+              regularization(1e-10),
               pressure(0.0),
               penalty_param(0.0),
-              crack_set_tol(0.97),
+              crack_set_tol(0.93),
               // mobility(1e-5)
               mobility(1e-6)
 
