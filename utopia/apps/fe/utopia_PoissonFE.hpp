@@ -14,6 +14,14 @@
 #include "utopia_NodalInterpolateView.hpp"
 #include "utopia_QuadratureView.hpp"
 
+#ifdef UTOPIA_WITH_VC
+// #define USE_SIMD_ASSEMBLY
+#endif
+
+#ifdef USE_SIMD_ASSEMBLY
+#include "utopia_simd_Assembler.hpp"
+#endif  // USE_SIMD_ASSEMBLY
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -26,7 +34,14 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Elem = typename FunctionSpace::Elem;
+
+#ifdef USE_SIMD_ASSEMBLY
+        using SIMDType = Vc::Vector<Scalar>;
+        using Quadrature = simd::Quadrature<SIMDType, Elem::Dim>;
+#else
         using Quadrature = utopia::Quadrature<Elem, 2 * (Elem::Order - 1)>;
+#endif  // USE_SIMD_ASSEMBLY
+
         using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
         using ScaledMassMatrix = utopia::ScaledMassMatrix<FunctionSpace, Quadrature>;
         using Coefficient = utopia::Coefficient<FunctionSpace>;
@@ -91,16 +106,6 @@ namespace utopia {
                         const int n_qp = grad.n_points();
                         const int n_fun = grad.n_functions();
 
-                        // for(SizeType k = 0; k < n; ++k) {
-                        //     for(SizeType j = 0; j < grad.n_functions(); ++j) {
-                        //         for(SizeType l = 0; l < grad.n_functions(); ++l) {
-                        //             const auto g_test  = grad(j, k);
-                        //             const auto g_trial = grad(l, k);
-                        //             el_vec(j) += LKernel::apply(1.0, coeff(l), g_trial, g_test, dx(k));
-                        //         }
-                        //     }
-                        // }
-
                         for (int k = 0; k < n_qp; ++k) {
                             for (int j = 0; j < n_fun; ++j) {
                                 const auto g_test = grad(j, k);
@@ -148,7 +153,7 @@ namespace utopia {
                 // auto x_view = space_->assembly_view_device(x);
                 auto g_view = space_->assembly_view_device(g);
 
-                auto l_view = laplacian_.view_device();
+                auto l_view = laplacian_->view_device();
                 auto coeff_view = x_coeff_->view_device();
 
                 Device::parallel_for(
@@ -199,7 +204,7 @@ namespace utopia {
                 auto space_view = space_->view_device();
 
                 auto H_view = space_->assembly_view_device(H);
-                auto l_view = laplacian_.view_device();
+                auto l_view = laplacian_->view_device();
 
                 Device::parallel_for(
                     space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
@@ -233,48 +238,55 @@ namespace utopia {
         template <class Fun>
         void init_forcing_function(Fun fun) {
             space_->create_vector(rhs_);
-            Projection<FunctionSpace, Quadrature, Fun> proj(*space_, quadrature_, fun);
+            // Projection<FunctionSpace, Quadrature, Fun> proj(*space_, quadrature_, fun);
 
-            auto proj_view = proj.view_device();
+            // auto proj_view = proj.view_device();
 
-            {
-                auto space_view = space_->view_device();
-                auto rhs_view = space_->assembly_view_device(rhs_);
+            // {
+            //     auto space_view = space_->view_device();
+            //     auto rhs_view = space_->assembly_view_device(rhs_);
 
-                Device::parallel_for(
-                    space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-                        Elem e;
-                        space_view.elem(i, e);
+            //     Device::parallel_for(
+            //         space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+            //             Elem e;
+            //             space_view.elem(i, e);
 
-                        ElementVector el_vec;
-                        el_vec.set(0.0);
+            //             ElementVector el_vec;
+            //             el_vec.set(0.0);
 
-                        proj_view.assemble(i, e, el_vec);
-                        space_view.add_vector(e, el_vec, rhs_view);
-                    });
-            }
+            //             proj_view.assemble(i, e, el_vec);
+            //             space_view.add_vector(e, el_vec, rhs_view);
+            //         });
+            // }
 
             space_->apply_constraints(rhs_);
         }
 
         PoissonFE(FunctionSpace &space)
-            : space_(utopia::make_ref(space)),
-              quadrature_(),
-              laplacian_(space, quadrature_),
-              x_coeff_(utopia::make_unique<Coefficient>(space)) {}
+            : quadrature_(), space_(utopia::make_ref(space)), laplacian_(nullptr), x_coeff_(nullptr) {
+            init();
+        }
 
         PoissonFE(const std::shared_ptr<FunctionSpace> &space)
-            : space_(space),
-              quadrature_(),
-              laplacian_(*space, quadrature_),
-              x_coeff_(utopia::make_unique<Coefficient>(space)) {}
+            : quadrature_(), space_(space), laplacian_(nullptr), x_coeff_(nullptr) {
+            init();
+        }
 
     private:
-        std::shared_ptr<FunctionSpace> space_;
         Quadrature quadrature_;
-        Laplacian laplacian_;
+        std::shared_ptr<FunctionSpace> space_;
+        std::unique_ptr<Laplacian> laplacian_;
         std::unique_ptr<Coefficient> x_coeff_;
         Vector rhs_;
+
+        void init() {
+#ifdef USE_SIMD_ASSEMBLY
+            simd::Gauss<SIMDType>::Hex::get(2 * (Elem::Order - 1), quadrature_);
+#else
+            laplacian_ = utopia::make_unique<Laplacian>(*space_, quadrature_);
+            x_coeff_ = utopia::make_unique<Coefficient>(*space_);
+#endif  // USE_SIMD_ASSEMBLY
+        }
     };
 }  // namespace utopia
 

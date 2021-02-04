@@ -9,6 +9,7 @@ list(
     view
     view/expressions
     console
-    misc)
+    misc
+    traits)
 
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${CORE_MODULES}")

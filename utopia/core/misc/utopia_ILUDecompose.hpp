@@ -277,7 +277,6 @@ namespace utopia {
             SizeType n_blocks = ilu.rows();
             auto &ia = ilu.row_ptr();
             auto &ja = ilu.colidx();
-            auto &array = ilu.values();
 
             DiagIdx idx;
             idx.init(n_blocks, &ia[0], &ja[0]);
@@ -324,9 +323,6 @@ namespace utopia {
                 }
             }
 
-            // x.copy(L_inv_b);
-            // return;
-
             // // Backward substitution
             for (SizeType i = n_blocks - 1; i >= 0; --i) {
                 const SizeType i_offset = i * BlockSize;
@@ -342,7 +338,6 @@ namespace utopia {
 
                 for (SizeType k = row_diag + 1; k < row_end; ++k) {
                     const SizeType j = ja[k];
-                    const SizeType k_offset = k * BlockSize2;
                     const SizeType j_offset = j * BlockSize;
 
                     auto *block = ilu.block(k);

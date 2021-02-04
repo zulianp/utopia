@@ -195,14 +195,14 @@ endif()
 message(
     STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
-if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+if(UTOPIA_ENABLE_SANITIZER)
+    # if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
-        set(UTOPIA_DEV_FLAGS
-            "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
-        )
+    set(UTOPIA_DEV_FLAGS
+        "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
+    )
 
-    endif()
+    # endif()
 endif()
 
 if(UTOPIA_ENABLE_LOCK_CHECKING)

@@ -134,7 +134,7 @@ namespace utopia {
                     return;
                 }
                 case 1: {
-                    g[0] = 1 - y;
+                    g[0] = 1. - y;
                     g[1] = -x;
                     return;
                 }
@@ -145,7 +145,7 @@ namespace utopia {
                 }
                 case 3: {
                     g[0] = -y;
-                    g[1] = (1 - x);
+                    g[1] = (1. - x);
                     return;
                 }
                 default: {
