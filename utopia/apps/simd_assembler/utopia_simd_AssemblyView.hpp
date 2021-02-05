@@ -394,7 +394,7 @@ namespace utopia {
             return values_[qp_idx * NFunctions + fun_num];
         }
 
-        UTOPIA_INLINE_FUNCTION std::size_t n_points() const { return values_.size(); }
+        UTOPIA_INLINE_FUNCTION std::size_t n_points() const { return values_.size() / NFunctions; }
 
         UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions() { return NFunctions; }
 

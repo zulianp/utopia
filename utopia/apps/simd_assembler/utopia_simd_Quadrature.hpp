@@ -167,8 +167,10 @@ namespace utopia {
                             //     return true;
                             // }
 
-                        default:
-                            break;
+                        default: {
+                            assert(false);
+                            return false;
+                        }
                     }
 
                     return false;
@@ -198,8 +200,10 @@ namespace utopia {
                             q.weights[5] = 0.16067975044591917148618518733485;
                             return true;
                         }
-                        default:
+                        default: {
+                            assert(false);
                             return false;
+                        }
                     }
                 }
             };
@@ -273,8 +277,10 @@ namespace utopia {
                             return true;
                         }
 
-                        default:
+                        default: {
+                            assert(false);
                             return false;
+                        }
                     }
                 }
             };

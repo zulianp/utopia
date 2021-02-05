@@ -92,13 +92,12 @@ namespace utopia {
                 y.set(0.0);
             }
 
-            Quadrature quadrature;
             auto &&space_view = space_.view_device();
 
             x_coeff_->update(x);
 
             // LinearElasticity<FunctionSpace, Quadrature> elast(space_, quadrature, mu_, lambda_);
-            Strain<FunctionSpace, Quadrature> strain(space_, quadrature);
+            Strain<FunctionSpace, Quadrature> strain(space_, quadrature_);
 
             {
                 auto x_view = x_coeff_->view_device();
@@ -121,6 +120,8 @@ namespace utopia {
                         const SizeType n_qp = strain.n_points();
                         const SizeType n_fun = strain.n_functions();
 
+                        assert(n_qp > 0);
+
                         // taking advantage of symmetry
                         for (SizeType qp = 0; qp < n_qp; ++qp) {
                             const auto dx_qp = dx(qp);
@@ -128,14 +129,20 @@ namespace utopia {
                             for (SizeType j = 0; j < n_fun; ++j) {
                                 auto &&strain_test = strain(j, qp);
 
-                                el_vec(j) += simd::integrate(
+                                const auto v_jj = simd::integrate(
                                     LEKernel::strain_apply(mu_, lambda_, strain_test, strain_test, dx_qp) * coeff(j));
+
+                                assert(v_jj == v_jj);
+
+                                el_vec(j) += v_jj;
 
                                 for (SizeType l = j + 1; l < n_fun; ++l) {
                                     auto &&strain_trial = strain(l, qp);
 
                                     const auto v = simd::integrate(
                                         LEKernel::strain_apply(mu_, lambda_, strain_trial, strain_test, dx_qp));
+
+                                    assert(v == v);
 
                                     el_vec(l) += v * coeff(j);
                                     el_vec(j) += v * coeff(l);
@@ -228,8 +235,9 @@ namespace utopia {
             x_coeff_ = utopia::make_unique<Coefficient>(space_);
 
 #ifdef USE_SIMD_ASSEMBLY
-            utopia::out() << "Using SIMD based PoissonFE\n";
+            utopia::out() << "Using SIMD based LinearElasticityFE\n";
             simd::QuadratureDB<Elem, SIMDType>::get(2 * (Elem::Order - 1), quadrature_);
+            utopia::out() << "simd lanes: " << SIMDType::Size << ", qp: " << quadrature_.n_points() << '\n';
 #endif  // USE_SIMD_ASSEMBLY
 
             grad_ = utopia::make_unique<PhysicalGradient<FunctionSpace, Quadrature>>(space_, quadrature_);
