@@ -84,6 +84,8 @@ namespace utopia {
         inline const Comm &comm() const override { return space_.comm(); }
 
         bool apply(const Vector &x, Vector &y) const override {
+            UTOPIA_TRACE_REGION_BEGIN("LinearElasticityFE::apply(...)");
+
             // const Comm &comm = space_.comm();
 
             if (y.empty()) {
@@ -156,6 +158,8 @@ namespace utopia {
 
             space_.copy_at_constrained_dofs(x, y);
             assert(check_with_matrix(x, y));
+
+            UTOPIA_TRACE_REGION_END("LinearElasticityFE::apply(...)");
             return true;
         }
 
