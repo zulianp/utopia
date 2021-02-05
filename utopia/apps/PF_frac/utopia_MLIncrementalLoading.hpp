@@ -79,6 +79,8 @@ namespace utopia {
             level_functions_.resize(n_levels_);
             auto fun = std::make_shared<ProblemType>(*spaces_[0]);
             fun->use_crack_set_irreversibiblity(false);
+            fun->turn_off_cu_coupling(true);
+            // fun->turn_off_uc_coupling(true);
             level_functions_[0] = fun;
 
             BC_conditions_.resize(n_levels_);
@@ -97,6 +99,8 @@ namespace utopia {
                 } else {
                     fun->use_crack_set_irreversibiblity(true);
                 }
+                fun->turn_off_cu_coupling(true);
+                // fun->turn_off_uc_coupling(true);
 
                 // testing stuff
                 fun->turn_off_cu_coupling(true);
@@ -142,8 +146,17 @@ namespace utopia {
             // TRBoundsGratton<Matrix, Vector>, SECOND_ORDER> >(n_levels_);
 
             if (!rmtr_) {
-                rmtr_ =
-                    std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, GALERKIN>>(n_levels_);
+                rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER>>(
+                    n_levels_);
+                // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(
+                //     n_levels_);
+
+                // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
+                // SECOND_ORDER>>(
+                //     n_levels_);
+
+                // rmtr_ = std::make_shared<
+                //     RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>(n_levels_);
             }
 
             // auto tr_strategy_fine   =
@@ -165,13 +178,13 @@ namespace utopia {
                 tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
                 // tr_strategy_fine->verbose(true);
             } else {
-                auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+                // auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
 
-                if (block_solver_) {
-                    InputParameters params;
-                    params.set("block_size", FunctionSpace::NComponents);
-                    pgs->read(params);
-                }
+                // if (block_solver_) {
+                //     InputParameters params;
+                //     params.set("block_size", FunctionSpace::NComponents);
+                //     pgs->read(params);
+                // }
 
                 tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
             }
@@ -186,10 +199,9 @@ namespace utopia {
                 tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             }
 
-            // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
+            // auto ls = std::make_shared<GMRES<Matrix, Vector>>();
             // ls->pc_type("bjacobi");
-            // auto tr_strategy_coarse =
-            // std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
+            // tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector>>(ls);
 
             // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -223,6 +235,7 @@ namespace utopia {
 
             spaces_.back()->create_vector(this->solution_);
             spaces_.back()->create_vector(this->lb_);
+            spaces_.back()->create_vector(this->ub_);
             rename("X", this->solution_);
 
             IC_->init(this->solution_);
@@ -338,7 +351,7 @@ namespace utopia {
             spaces_.back()->apply_constraints(this->solution_);
 
             if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                fun_finest->build_irreversility_constraint(this->lb_);
+                fun_finest->build_irreversility_constraint(this->lb_, this->ub_);
             }
 
             for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
@@ -395,6 +408,7 @@ namespace utopia {
                 this->time_ += this->dt_;
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->get_old_solution(this->solution_);
                     fun_finest->set_dt(this->dt_);
                 }
@@ -418,11 +432,11 @@ namespace utopia {
 
                     // transfers_[l]->restrict(fine_sol, coarse_sol);
                 }
-
             } else {
                 // std::cout<<"------- yes, updating...  \n";
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->set_old_solution(this->solution_);
                     fun_finest->set_dt(this->dt_);
                 }
@@ -522,6 +536,10 @@ namespace utopia {
                 }
 
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // constraints
+                auto box = make_box_constaints(make_ref(this->lb_), make_ref(this->ub_));
+                rmtr_->set_box_constraints(box);
+
                 rmtr_->solve(this->solution_);
                 auto sol_status = rmtr_->solution_status();
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -545,7 +563,9 @@ namespace utopia {
         std::shared_ptr<ICType> IC_;
         std::string log_output_path_;
 
-        std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, GALERKIN>> rmtr_;
+        std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER>> rmtr_;
+        // std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>> rmtr_;
+        // std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER>> rmtr_;
 
         bool save_output_;
 

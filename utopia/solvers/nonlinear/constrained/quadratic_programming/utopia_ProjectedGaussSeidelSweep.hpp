@@ -192,12 +192,20 @@ namespace utopia {
             for (SizeType i = 0; i < n_rows; ++i) {
                 Scalar val = this->r_[i];
 
-                const SizeType row_end = row_ptr_[i + 1];
-                for (SizeType j = row_ptr_[i]; j < row_end; ++j) {
-                    val -= values_[j] * this->c_[col_idx_[j]];
+                // project on boundary if negative diagonal entry
+                if (d_inv_[i] <= 0.0) {
+                    if (val == 0.0) {
+                        this->c_[i] = 0.0;
+                    } else {
+                        this->c_[i] = (val > 0.0) ? this->lb_[i] : this->ub_[i];
+                    }
+                } else {
+                    const SizeType row_end = row_ptr_[i + 1];
+                    for (SizeType j = row_ptr_[i]; j < row_end; ++j) {
+                        val -= values_[j] * this->c_[col_idx_[j]];
+                    }
+                    this->c_[i] = device::max(this->lb_[i], device::min(d_inv_[i] * val, this->ub_[i]));
                 }
-
-                this->c_[i] = device::max(this->lb_[i], device::min(d_inv_[i] * val, this->ub_[i]));
             }
 
             if (this->symmetric_) {
@@ -206,12 +214,20 @@ namespace utopia {
                 for (SizeType i = n_rows - 1; i >= 0; --i) {
                     Scalar val = this->r_[i];
 
-                    const SizeType row_end = row_ptr_[i + 1];
-                    for (SizeType j = row_ptr_[i]; j < row_end; ++j) {
-                        val -= values_[j] * this->c_[col_idx_[j]];
+                    // project on boundary if negative diagonal entry
+                    if (d_inv_[i] <= 0.0) {
+                        if (val == 0.0) {
+                            this->c_[i] = 0.0;
+                        } else {
+                            this->c_[i] = (val > 0.0) ? this->lb_[i] : this->ub_[i];
+                        }
+                    } else {
+                        const SizeType row_end = row_ptr_[i + 1];
+                        for (SizeType j = row_ptr_[i]; j < row_end; ++j) {
+                            val -= values_[j] * this->c_[col_idx_[j]];
+                        }
+                        this->c_[i] = device::max(this->lb_[i], device::min(d_inv_[i] * val, this->ub_[i]));
                     }
-
-                    this->c_[i] = device::max(this->lb_[i], device::min(d_inv_[i] * val, this->ub_[i]));
                 }
             }
         }

@@ -170,6 +170,8 @@ namespace utopia {
                 val += dot(x_const, this->force_field_);
             }
 
+            this->add_pf_constraints(x_const);
+
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::value");
             return true;
         }
@@ -542,12 +544,6 @@ namespace utopia {
             // fully broken case is treated as Dirichlet BC
             if (this->params_.use_crack_set_irreversibiblity) {
                 this->apply_zero_constraints_irreversibiblity(g, x_const);
-
-                // // just a test...
-                // auto* p_this =
-                // const_cast<IsotropicPhaseFieldForBrittleFractures<FunctionSpace>
-                // *>(this); add_irr_values_markers(p_this->_x_eq_values,
-                // p_this->_eq_constrains_flg);
             }
 
             // static int iter = 0;
@@ -785,14 +781,11 @@ namespace utopia {
                 this->apply_zero_constraints_irreversibiblity(H, x_const);
             }
 
-            // static int iter = 0;
-            // write("H" + std::to_string(iter++) + ".m", H);
-
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::hessian");
             return true;
         }
 
-        //////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         template <class GradShape>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const Parameters &params,

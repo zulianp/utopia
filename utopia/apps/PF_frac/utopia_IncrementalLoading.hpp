@@ -146,6 +146,7 @@ namespace utopia {
 
         Vector solution_;
         Vector lb_;  // this is quite particular for PF-frac
+        Vector ub_;  // this is quite particular for PF-frac
     };
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

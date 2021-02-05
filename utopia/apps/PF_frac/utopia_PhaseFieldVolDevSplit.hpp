@@ -174,6 +174,8 @@ namespace utopia {
 
             assert(val == val);
 
+            this->add_pf_constraints(x_const);
+
             UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::value(...)");
             return true;
         }

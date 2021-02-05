@@ -47,6 +47,12 @@ namespace utopia {
 
         UTOPIA_NO_ALLOC_BEGIN("RMTR::region1");
         while (!converged) {
+            // just for PF-frac stuff
+            if (!this->skip_BC_checks()) {
+                this->make_iterate_feasible(this->function(fine_level), this->memory_.x[fine_level]);
+                this->handle_equality_constraints();
+            }
+
             if (this->cycle_type() == MULTIPLICATIVE_CYCLE)
                 this->multiplicative_cycle(fine_level);
             else {

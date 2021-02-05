@@ -282,9 +282,15 @@ namespace utopia {
 
         MLIncrementalLoading<FunctionSpace,
                              IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
-                             PFFracFixAllDisp<FunctionSpace>,
+                             PFFracFixAllDisp4Sides<FunctionSpace>,
                              InitialCondidtionPFFracNet2D<FunctionSpace> >
             time_stepper(space);
+
+        // MLIncrementalLoading<FunctionSpace,
+        //                      PhaseFieldVolDevSplit<FunctionSpace>,
+        //                      PFFracFixAllDisp4Sides<FunctionSpace>,
+        //                      InitialCondidtionPFFracNet2D<FunctionSpace> >
+        //     time_stepper(space);
 
         time_stepper.read(in);
         time_stepper.run();

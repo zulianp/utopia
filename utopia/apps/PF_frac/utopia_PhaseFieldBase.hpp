@@ -104,7 +104,7 @@ namespace utopia {
         Scalar regularization, pressure, penalty_param, crack_set_tol, mobility;
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
-        bool use_mobility{true};
+        bool use_mobility{false};
 
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> elast_tensor;
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
@@ -136,6 +136,10 @@ namespace utopia {
         static const int U_NDofs = USpace::NDofs;
 
         static const int NQuadPoints = Quadrature::NPoints;
+
+        // using ExtendedFunction<typename FunctionSpace::Matrix, typename
+        // FunctionSpace::Vector>::get_eq_constrains_flg; using ExtendedFunction<typename FunctionSpace::Matrix,
+        //                        typename FunctionSpace::Vector>::get_eq_constrains_values;
 
         void read(Input &in) override {
             params_.read(in);
@@ -352,6 +356,51 @@ namespace utopia {
             }
         }
 
+        void build_irreversility_constraint(Vector &lb, Vector &ub) {
+            {
+                auto d_x_old = const_device_view(x_old_);
+
+                auto lb_view = view_device(lb);
+                auto ub_view = view_device(ub);
+                parallel_for(
+                    range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            lb_view.set(i, d_x_old.get(i));
+                            ub_view.set(i, 1.0);
+                        } else {
+                            lb_view.set(i, -9e15);
+                            ub_view.set(i, 9e15);
+                        }
+                    });
+            }
+        }
+
+        void make_iterate_feasible(const Vector &lb, const Vector &ub, Vector &x) {
+            {
+                auto d_x_old = view_device(x);
+
+                auto lb_view = const_device_view(lb);
+                auto ub_view = const_device_view(ub);
+                parallel_for(
+                    range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            Scalar li = lb_view.get(i);
+                            Scalar ui = ub_view.get(i);
+                            auto xi = d_x_old.get(i);
+                            // if (li >= xi) {
+                            //     d_x_old.set(i, li);
+                            // }
+                            if (ui <= xi) {
+                                d_x_old.set(i, ui);
+                            }
+                            // else {
+                            //     // d_x_old.set(i, (ui <= xi) ? ui : xi);
+                            // }
+                        }
+                    });
+            }
+        }
+
         // this 2 functions need to be moved to BC conditions
         void apply_zero_constraints_irreversibiblity(Vector &g) const {
             {
@@ -412,6 +461,43 @@ namespace utopia {
                         }
                     });
             }
+        }
+
+        // this 2 functions need to be moved to BC conditions
+        void add_irr_values_markers(Vector &val, Vector &flg, const Vector &x_current) const {
+            {
+                auto d_x_old = const_device_view(x_current);
+
+                auto val_view = view_device(val);
+                parallel_for(
+                    range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            if (d_x_old.get(i) > params_.crack_set_tol) {
+                                val_view.set(i, d_x_old.get(i));
+                            }
+                        }
+                    });
+
+                auto flg_view = view_device(flg);
+                parallel_for(
+                    range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            if (d_x_old.get(i) > params_.crack_set_tol) {
+                                flg_view.set(i, 1.0);
+                            }
+                        }
+                    });
+            }
+        }
+
+        void add_pf_constraints(const Vector &x_current) const {
+            auto *p_this = const_cast<PhaseFieldFracBase<FunctionSpace> *>(this);
+
+            Vector &bc_flgs = p_this->get_eq_constrains_flg();
+            Vector &bc_values = p_this->get_eq_constrains_values();
+            p_this->space_.apply_constraints(bc_values);
+            p_this->space_.build_constraints_markers(bc_flgs);
+            p_this->add_irr_values_markers(bc_values, bc_flgs, x_current);
         }
 
         // we should move this to BC conditions

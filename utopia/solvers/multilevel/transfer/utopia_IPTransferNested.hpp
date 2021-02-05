@@ -21,12 +21,7 @@ namespace utopia {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
 
         IPTransferNested(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P)
-            : _I(I),
-              // _R(std::make_shared<Matrix>(transpose(*I))),
-              _Pr(P),
-              I_norm_(1.0),
-              R_norm_(1.0),
-              P_norm_(1.0) {
+            : _I(I), _Pr(P), _R(std::make_shared<Matrix>(transpose(*I))), I_norm_(1.0), R_norm_(1.0), P_norm_(1.0) {
             assert(I);
             assert(P);
         }
@@ -152,8 +147,8 @@ namespace utopia {
         }
 
         const Matrix &R() override {
-            assert(_I);
-            _R = std::make_shared<Matrix>(transpose(*_I));
+            assert(_R);
+            // _R = std::make_shared<Matrix>(transpose(*_I));
             return *_R;
         }
 
