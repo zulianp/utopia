@@ -14,24 +14,9 @@
 #include "utopia_NodalInterpolateView.hpp"
 #include "utopia_QuadratureView.hpp"
 
-#ifdef UTOPIA_WITH_VC
-#define USE_SIMD_ASSEMBLY
-#endif
-
-#ifdef USE_SIMD_ASSEMBLY
-#include "utopia_simd_Assembler.hpp"
-#endif  // USE_SIMD_ASSEMBLY
+#include "utopia_AppBase.hpp"
 
 namespace utopia {
-
-#ifndef USE_SIMD_ASSEMBLY
-    namespace simd {
-        template <typename T>
-        inline T integrate(const T v) {
-            return v;
-        }
-    }   // namespace simd
-#endif  // USE_SIMD_ASSEMBLY
 
     template <class FunctionSpace>
     class PoissonFE final : public Function<typename FunctionSpace::Matrix, typename FunctionSpace::Vector>,
@@ -299,11 +284,11 @@ namespace utopia {
             x_coeff_ = utopia::make_unique<Coefficient>(*space_);
 
 #ifdef USE_SIMD_ASSEMBLY
+            utopia::out() << "Using SIMD based PoissonFE\n";
             simd::QuadratureDB<Elem, SIMDType>::get(2 * (Elem::Order - 1), quadrature_);
-#else
-            laplacian_ = utopia::make_unique<Laplacian>(*space_, quadrature_);
-
 #endif  // USE_SIMD_ASSEMBLY
+
+            laplacian_ = utopia::make_unique<Laplacian>(*space_, quadrature_);
         }
     };
 }  // namespace utopia

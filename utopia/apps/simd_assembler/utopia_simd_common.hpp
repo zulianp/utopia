@@ -64,8 +64,14 @@ namespace utopia {
         template <typename T, int Rows, int Cols>
         class Matrix {
         public:
+            enum { StoreAs = UTOPIA_BY_REFERENCE };
+
             static const int Size = Rows * Cols;
             T data_[Size];
+
+            inline static constexpr int rows() { return Rows; }
+
+            inline static constexpr int cols() { return Cols; }
 
             void set(const T &val) {
                 for (int i = 0; i < Size; ++i) {
@@ -85,7 +91,39 @@ namespace utopia {
                 return ret;
             }
 
+            friend inline DeviceTranspose<Matrix> transpose(const Matrix &mat) { return mat; }
+
+            template <typename Derived>
+            friend inline DeviceBinary<Derived, Matrix, Plus> operator+(const DeviceExpression<Derived> &l,
+                                                                        const Matrix &r) {
+                return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
+            }
+
+            template <typename Derived>
+            friend inline DeviceBinary<Derived, Matrix, Plus> operator+(const Matrix &r,
+                                                                        const DeviceExpression<Derived> &l) {
+                return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
+            }
+
+            template <class Expr>
+            UTOPIA_INLINE_FUNCTION Matrix &operator=(const DeviceExpression<Expr> &expr) {
+                DeviceAssign<Matrix, Expr>::apply(*this, expr.derived());
+                return *this;
+            }
+
             friend inline constexpr T inner(const Matrix &l, const Matrix &r) { return dot(l, r); }
+            friend inline constexpr T trace(const Matrix &m) {
+                auto n = std::min(Rows, Cols);
+
+                T ret = 0.0;
+                for (int i = 0; i < n; ++i) {
+                    ret += m(i, i);
+                }
+
+                return ret;
+            }
+
+            inline std::string get_class() const { return "simd::Matrix"; }
         };
     }  // namespace simd
 
@@ -93,6 +131,14 @@ namespace utopia {
     class Traits<simd::Vector<T, Dim, Args...>> {
     public:
         using Scalar = T;
+    };
+
+    template <typename T, int Rows, int Cols>
+    class Traits<simd::Matrix<T, Rows, Cols>> {
+    public:
+        using Scalar = T;
+        using SizeType = int;
+        static const int Order = 2;
     };
 
     namespace simd {
@@ -112,8 +158,15 @@ namespace utopia {
         }
 
         template <typename T>
+        inline Vc::Vector<T> inner(const Vc::Vector<T> &l, const Vc::Vector<T> &r) {
+            return l * r;
+        }
+
+        template <typename T>
         class Vector<T, 2> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
+            enum { StoreAs = UTOPIA_BY_REFERENCE };
+
             T data_[2] = {simd::Zero<T>::value(), simd::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
@@ -140,11 +193,19 @@ namespace utopia {
             friend inline constexpr T dot(const Vector &l, const Vector &r) { return l.x() * r.x() + l.y() * r.y(); }
 
             friend void disp(const Vector &v, std::ostream &os = std::cout) { os << v.x() << " " << v.y() << "\n"; }
+
+            void set(const T &val) {
+                for (int i = 0; i < 2; ++i) {
+                    data_[i] = val;
+                }
+            }
         };
 
         template <typename T>
         class Vector<T, 3> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
+            enum { StoreAs = UTOPIA_BY_REFERENCE };
+
             T data_[3] = {simd::Zero<T>::value(), simd::Zero<T>::value(), simd::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
@@ -178,11 +239,35 @@ namespace utopia {
             friend void disp(const Vector &v, std::ostream &os = std::cout) {
                 os << v.x() << " " << v.y() << " " << v.z() << "\n";
             }
+
+            void set(const T &val) {
+                for (int i = 0; i < 3; ++i) {
+                    data_[i] = val;
+                }
+            }
         };
 
         template <typename T, int Dim>
         inline T inner(const Vector<T, Dim> &l, const Vector<T, Dim> &r) {
             return dot(l, r);
+        }
+
+        template <typename Array, typename T2, int Cols>
+        inline auto operator*(const TensorView<Array, 2> &mat, const Vector<T2, Cols> &x)
+            -> Vector<decltype(mat(0, 0) * T2()), Array::Rows> {
+            using RetT = decltype(mat(0, 0) * T2());
+
+            Vector<RetT, Array::Rows> ret;
+
+            for (int i = 0; i < static_cast<int>(Array::Rows); ++i) {
+                ret[i] = Zero<RetT>::value();
+
+                for (int j = 0; j < Cols; ++j) {
+                    ret[i] += mat(i, j) * x[j];
+                }
+            }
+
+            return ret;
         }
 
     }  // namespace simd

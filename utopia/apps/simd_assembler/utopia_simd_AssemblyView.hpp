@@ -4,6 +4,7 @@
 #include "utopia_AssemblyView.hpp"
 #include "utopia_LaplacianView.hpp"
 #include "utopia_ProjectionView.hpp"
+#include "utopia_StrainView.hpp"
 
 #include "utopia_simd_Quadrature.hpp"
 
@@ -24,7 +25,7 @@ namespace utopia {
         struct FETraits<MultiVariateElem<Elem, NVar>, T> {
             static const int Dim = Elem::Dim;
             using Scalar = T;
-            using FunValue = Scalar;
+            using FunValue = simd::Vector<T, NVar>;
             using Point = simd::Vector<T, Dim>;
             using GradValue = simd::Matrix<T, NVar, Dim>;
             using STGradX = simd::Vector<T, Dim - 1>;
@@ -219,10 +220,10 @@ namespace utopia {
             for (int k = 0; k < n; ++k) {
                 for (int j = 0; j < n_fun; ++j) {
                     const auto g_test = grad(j, k);
-                    mat(j, j) += dot(g_test, g_test) * dx(k);
+                    mat(j, j) += simd::integrate(dot(g_test, g_test) * dx(k));
 
                     for (int l = j + 1; l < n_fun; ++l) {
-                        const auto v = dot(g_test, grad(l, k)) * dx(k);
+                        const auto v = simd::integrate(dot(g_test, grad(l, k)) * dx(k));
                         mat(j, l) += v;
                         mat(l, j) += v;
                     }
@@ -319,6 +320,134 @@ namespace utopia {
         ShapeFunction shape_fun_;
         Differential dx_;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <class Elem, typename T, int Dim_, class MemType>
+    class ShapeFunction<Elem, simd::Quadrature<T, Dim_>, MemType> {
+    public:
+        using Quadrature = simd::Quadrature<T, Dim_>;
+        static const int Dim = Dim_;
+        using Scalar = typename Elem::Scalar;
+        using Point = typename Elem::Point;
+        using FunValue = typename simd::FETraits<Elem, T>::FunValue;
+
+        UTOPIA_INLINE_FUNCTION ShapeFunction(const Quadrature &q) : q_(q), elem_(nullptr) {}
+
+        UTOPIA_INLINE_FUNCTION FunValue get(const int fun_num, const int qp_idx) const {
+            return elem_->fun(fun_num, q_.point(qp_idx));
+        }
+
+        UTOPIA_INLINE_FUNCTION FunValue operator()(const int fun_num, const int qp_idx) const {
+            return get(fun_num, qp_idx);
+        }
+
+        UTOPIA_INLINE_FUNCTION std::size_t n_points() const { return q_.n_points(); }
+
+        UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions() { return Elem::NFunctions; }
+
+        UTOPIA_INLINE_FUNCTION ShapeFunction make(const Elem &elem) const {
+            ShapeFunction pp(q_);
+            pp.elem_ = &elem;
+            return pp;
+        }
+
+    private:
+        const Quadrature &q_;
+        const Elem *elem_;
+    };
+
+    template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
+    class ShapeFunction<FunctionSpace<Mesh, NComponents, Args...>, simd::Quadrature<T, Dim_>> {
+    public:
+        using Quadrature = simd::Quadrature<T, Dim_>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+
+        using ViewDevice = utopia::ShapeFunction<Elem, typename Quadrature::ViewDevice>;
+        using ViewHost = utopia::ShapeFunction<Elem, typename Quadrature::ViewHost>;
+
+        ShapeFunction(const FunctionSpace &, const Quadrature &q) : q_(q) {}
+
+        ViewDevice view_device() const { return ViewDevice(q_.view_device()); }
+
+        ViewHost view_host() const { return ViewHost(q_.view_host()); }
+
+    private:
+        const Quadrature &q_;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    template <class Elem, typename T, int Dim_, class MemType, typename... Args>
+    class StrainView<Elem, simd::Quadrature<T, Dim_>, MemType, Args...> {
+    public:
+        using Quadrature = simd::Quadrature<T, Dim_>;
+        static const int Dim = Dim_;
+        using GradValue = typename simd::FETraits<Elem, T>::GradValue;
+
+        static const std::size_t NFunctions = Elem::NFunctions;
+
+        UTOPIA_INLINE_FUNCTION StrainView(const Vc::vector<GradValue> &values) : values_(values) {}
+
+        UTOPIA_INLINE_FUNCTION const GradValue &operator()(const int fun_num, const int qp_idx) const {
+            return values_[qp_idx * NFunctions + fun_num];
+        }
+
+        UTOPIA_INLINE_FUNCTION std::size_t n_points() const { return values_.size(); }
+
+        UTOPIA_INLINE_FUNCTION constexpr static std::size_t n_functions() { return NFunctions; }
+
+        UTOPIA_INLINE_FUNCTION const StrainView &make(const Elem & /*elem*/) const { return *this; }
+
+    private:
+        const Vc::vector<GradValue> &values_;
+    };
+
+    template <class FunctionSpace, typename T, int Dim_>
+    class Strain<FunctionSpace, simd::Quadrature<T, Dim_>> {
+    public:
+        using Quadrature = simd::Quadrature<T, Dim_>;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+
+        using ViewDevice = utopia::StrainView<Elem, typename Quadrature::ViewDevice>;
+        using ViewHost = utopia::StrainView<Elem, typename Quadrature::ViewHost>;
+
+        using GradValue = typename simd::FETraits<Elem, T>::GradValue;
+
+        static const std::size_t NFunctions = Elem::NFunctions;
+
+        Strain(const FunctionSpace &space, const Quadrature &q) : values_() { init(space, q); }
+
+        ViewDevice view_device() const { return ViewDevice(values_); }
+
+    private:
+        // ArrayView<GradValue, NQPoints, NFunctions> values_;
+        Vc::vector<GradValue> values_;
+
+        void init(const FunctionSpace &space, const Quadrature &q) {
+            PhysicalGradient<FunctionSpace, Quadrature> grad(space, q);
+
+            auto grad_view = grad.view_host();
+
+            Elem e;
+            space.elem(0, e);
+
+            auto g = grad_view.make(e);
+
+            const std::size_t n_qp = q.n_points();
+            values_.resize(n_qp * NFunctions);
+
+            for (std::size_t qp = 0; qp < n_qp; ++qp) {
+                for (std::size_t i = 0; i < g.n_functions(); ++i) {
+                    auto g_i = g(i, qp);
+                    values_[qp * NFunctions + i] = 0.5 * (g_i + transpose(g_i));
+                }
+            }
+        }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////
 
 }  // namespace utopia
 

@@ -28,7 +28,7 @@ namespace utopia {
         using JacobianInverse = utopia::StaticMatrix<Scalar, Dim, PhysicalDim>;
 
         template <typename Point>
-        UTOPIA_INLINE_FUNCTION static Scalar fun(const int i, const Point &p) {
+        UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar {
             return RefTri3::fun(i, p);
         }
 
@@ -144,7 +144,7 @@ namespace utopia {
 
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const {
-            RefPoint g_ref;
+            Grad g_ref;
             RefTri3::grad(i, p, g_ref);
             g = jacobian_inverse_ * g_ref;
         }

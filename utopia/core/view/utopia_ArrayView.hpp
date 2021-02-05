@@ -135,6 +135,8 @@ namespace utopia {
     class ArrayView<T, Rows_, Cols_> final {
     public:
         using SizeType = Size_t;
+        static const SizeType Rows = Rows_;
+        static const SizeType Cols = Cols_;
         static const SizeType Size = Rows_ * Cols_;
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType size() const { return Size; }
