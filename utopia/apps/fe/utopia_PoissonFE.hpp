@@ -61,8 +61,9 @@ namespace utopia {
 
         static const int Dim = Elem::Dim;
         static const int NNodes = Elem::NNodes;
-        using ElementMatrix = utopia::StaticMatrix<Scalar, NNodes, NNodes>;
-        using ElementVector = utopia::StaticVector<Scalar, NNodes>;
+        static const int NFunctions = Elem::NFunctions;
+        using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
+        using ElementVector = utopia::StaticVector<Scalar, NFunctions>;
         using Point = typename FunctionSpace::Point;
 
         using LKernel = utopia::LaplacianKernel<Scalar>;

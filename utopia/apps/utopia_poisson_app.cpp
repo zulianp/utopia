@@ -322,8 +322,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_poisson_3);
 
-// FIXME Skip for now, not supported
-#ifndef USE_SIMD_ASSEMBLY
+    // // FIXME Skip for now, not supported
+    // #ifndef USE_SIMD_ASSEMBLY
 
     static void petsc_dm_mvar_poisson_2(Input &in) {
         static const int Dim = 2;
@@ -357,6 +357,6 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_dm_mvar_poisson_3);
 
-#endif  // USE_SIMD_ASSEMBLY
+    // #endif  // USE_SIMD_ASSEMBLY
 
 }  // namespace utopia

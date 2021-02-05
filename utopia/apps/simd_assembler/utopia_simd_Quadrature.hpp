@@ -1,9 +1,6 @@
 #ifndef UTOPIA_SIMD_QUADRATURE_HPP
 #define UTOPIA_SIMD_QUADRATURE_HPP
 
-#include "utopia_DeviceExpression.hpp"
-#include "utopia_Views.hpp"
-
 #include "utopia_MultiVariateElement.hpp"
 #include "utopia_UniformHex8.hpp"
 #include "utopia_UniformQuad4.hpp"
@@ -16,121 +13,6 @@
 namespace utopia {
 
     namespace simd {
-        template <typename T, int Dim, typename...>
-        class Vector {};
-
-        template <typename T, int Rows, int Cols>
-        class Matrix {
-        public:
-            static const int Size = Rows * Cols;
-            T data_[Size];
-
-            void set(const T &val) {
-                for (int i = 0; i < Size; ++i) {
-                    data_[i] = val;
-                }
-            }
-
-            T &operator()(const int i, const int j) { return data_[i * Rows + j]; }
-            const T &operator()(const int i, const int j) const { return data_[i * Rows + j]; }
-        };
-    }  // namespace simd
-
-    template <typename T, int Dim, typename... Args>
-    class Traits<simd::Vector<T, Dim, Args...>> {
-    public:
-        using Scalar = T;
-    };
-
-    namespace simd {
-        template <typename T>
-        T sum(const T v) {
-            return v;
-        }
-
-        template <typename T>
-        inline T integrate(const T &v) {
-            return sum(v);
-        }
-
-        template <typename T>
-        inline T integrate(const Vc::Vector<T> &v) {
-            return v.sum();
-        }
-
-        template <typename T>
-        class Vector<T, 2> final /*: public DeviceExpression<Vector<T, 3>>*/ {
-        public:
-            T data_[2] = {simd::Zero<T>::value(), simd::Zero<T>::value()};
-
-            inline T &x() { return data_[0]; }
-            inline constexpr const T &x() const { return data_[0]; }
-
-            inline T &y() { return data_[1]; }
-            inline constexpr const T &y() const { return data_[1]; }
-
-            inline constexpr Vector operator*(const T &scale) { return {x() * scale, y() * scale}; }
-
-            inline constexpr const T &operator()(const int idx) const { return data_[idx]; }
-            inline T &operator()(const int idx) { return data_[idx]; }
-
-            inline constexpr const T &operator[](const int idx) const { return data_[idx]; }
-            inline T &operator[](const int idx) { return data_[idx]; }
-
-            inline constexpr Vector operator+=(const Vector &other) {
-                x() += other.x();
-                y() += other.y();
-
-                return *this;
-            }
-
-            friend inline constexpr T dot(const Vector &l, const Vector &r) { return l.x() * r.x() + l.y() * r.y(); }
-
-            friend void disp(const Vector &v, std::ostream &os = std::cout) { os << v.x() << " " << v.y() << "\n"; }
-        };
-
-        template <typename T>
-        class Vector<T, 3> final /*: public DeviceExpression<Vector<T, 3>>*/ {
-        public:
-            T data_[3] = {simd::Zero<T>::value(), simd::Zero<T>::value(), simd::Zero<T>::value()};
-
-            inline T &x() { return data_[0]; }
-            inline constexpr const T &x() const { return data_[0]; }
-
-            inline T &y() { return data_[1]; }
-            inline constexpr const T &y() const { return data_[1]; }
-
-            inline T &z() { return data_[2]; }
-            inline constexpr const T &z() const { return data_[2]; }
-
-            inline constexpr Vector operator*(const T &scale) { return {x() * scale, y() * scale, z() * scale}; }
-
-            inline constexpr const T &operator()(const int idx) const { return data_[idx]; }
-            inline T &operator()(const int idx) { return data_[idx]; }
-
-            inline constexpr const T &operator[](const int idx) const { return data_[idx]; }
-            inline T &operator[](const int idx) { return data_[idx]; }
-
-            inline constexpr Vector operator+=(const Vector &other) {
-                x() += other.x();
-                y() += other.y();
-                z() += other.z();
-                return *this;
-            }
-
-            friend inline constexpr T dot(const Vector &l, const Vector &r) {
-                return l.x() * r.x() + l.y() * r.y() + l.z() * r.z();
-            }
-
-            friend void disp(const Vector &v, std::ostream &os = std::cout) {
-                os << v.x() << " " << v.y() << " " << v.z() << "\n";
-            }
-        };
-
-        template <typename T, int Dim>
-        inline T inner(const Vector<T, Dim> &l, const Vector<T, Dim> &r) {
-            return dot(l, r);
-        }
 
         template <typename T, int Dim>
         class Quadrature {
@@ -380,4 +262,5 @@ namespace utopia {
 
     }  // namespace simd
 }  // namespace utopia
+
 #endif  // UTOPIA_SIMD_QUADRATURE_HPP

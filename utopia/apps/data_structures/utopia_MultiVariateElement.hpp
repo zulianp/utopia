@@ -5,6 +5,10 @@
 #include "utopia_ElemTraits.hpp"
 #include "utopia_Quadrature.hpp"
 
+#ifdef UTOPIA_WITH_VC
+#include "utopia_simd_common.hpp"
+#endif  // UTOPIA_WITH_VC
+
 #include <utility>
 
 namespace utopia {
@@ -66,6 +70,26 @@ namespace utopia {
                 g(dim, d) = univ_g[d];
             }
         }
+
+#ifdef UTOPIA_WITH_VC
+
+        template <typename Point, typename T>
+        UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, simd::Matrix<T, NVariables, Dim> &g) const {
+            const int univ_i = i % NNodes;
+
+            simd::Vector<T, Dim> univ_g;
+            univar_elem_.grad(univ_i, p, univ_g);
+
+            const int dim = i / NNodes;
+
+            g.set(0.0);
+
+            for (int d = 0; d < Dim; ++d) {
+                g(dim, d) = univ_g[d];
+            }
+        }
+
+#endif  // UTOPIA_WITH_VC
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine() { return Elem::is_affine(); }
 
