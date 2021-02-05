@@ -29,7 +29,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 
@@ -84,7 +84,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 
@@ -140,7 +140,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 
@@ -194,7 +194,7 @@ namespace utopia {
         }
 
     private:
-        Quadrature q_;
+        const Quadrature &q_;
         const Elem *elem_;
     };
 

@@ -15,7 +15,7 @@
 #include "utopia_QuadratureView.hpp"
 
 #ifdef UTOPIA_WITH_VC
-// #define USE_SIMD_ASSEMBLY
+#define USE_SIMD_ASSEMBLY
 #endif
 
 #ifdef USE_SIMD_ASSEMBLY
@@ -47,8 +47,10 @@ namespace utopia {
 #ifdef USE_SIMD_ASSEMBLY
         using SIMDType = Vc::Vector<Scalar>;
         using Quadrature = simd::Quadrature<SIMDType, Elem::Dim>;
+        using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
 #else
         using Quadrature = utopia::Quadrature<Elem, 2 * (Elem::Order - 1)>;
+        using GradValue = typename Elem::GradValue;
 #endif  // USE_SIMD_ASSEMBLY
 
         using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
@@ -81,6 +83,8 @@ namespace utopia {
         inline const Comm &comm() const override { return space_->comm(); }
 
         bool apply(const Vector &x, Vector &y) const override {
+            UTOPIA_TRACE_REGION_BEGIN("PoissonFE::apply(...)");
+
             if (empty(y)) {
                 space_->create_vector(y);
             } else {
@@ -102,6 +106,7 @@ namespace utopia {
 
                 Device::parallel_for(
                     space_->element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        GradValue g_test, g_trial;
                         Elem e;
                         ElementVector coeff, el_vec;
                         space_view.elem(i, e);
@@ -117,11 +122,11 @@ namespace utopia {
 
                         for (int k = 0; k < n_qp; ++k) {
                             for (int j = 0; j < n_fun; ++j) {
-                                const auto g_test = grad(j, k);
+                                grad.get(j, k, g_test);
                                 el_vec(j) += simd::integrate(LKernel::apply(1.0, g_test, g_test, dx(k)) * coeff(j));
 
                                 for (int l = j + 1; l < n_fun; ++l) {
-                                    const auto g_trial = grad(l, k);
+                                    grad.get(l, k, g_trial);
                                     const Scalar v = simd::integrate(LKernel::apply(1.0, g_trial, g_test, dx(k)));
 
                                     el_vec(j) += v * coeff(l);
@@ -136,6 +141,7 @@ namespace utopia {
 
             space_->copy_at_constrained_dofs(x, y);
 
+            UTOPIA_TRACE_REGION_END("PoissonFE::apply(...)");
             return false;
         }
 
