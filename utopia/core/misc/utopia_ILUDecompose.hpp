@@ -216,11 +216,10 @@ namespace utopia {
         static bool decompose(CRSMatrix &in_out, const bool modified) {
             UTOPIA_UNUSED(modified);
 
-            SizeType n_blocks = in_out.rows();
+            const SizeType n_blocks = in_out.rows();
 
             auto &ia = in_out.row_ptr();
             auto &ja = in_out.colidx();
-            // auto &array = in_out.values();
 
             DiagIdx idx;
             idx.init(n_blocks, &ia[0], &ja[0]);
@@ -311,8 +310,8 @@ namespace utopia {
                     for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
                         const SizeType k_offset_sub_i = sub_i * BlockSize;
 
-                        for (SizeType bj = 0; bj < BlockSize; ++bj) {
-                            val[sub_i] -= block[k_offset_sub_i + bj] * L_inv_b[j_offset + bj];
+                        for (SizeType sub_j = 0; sub_j < BlockSize; ++sub_j) {
+                            val[sub_i] -= block[k_offset_sub_i + sub_j] * L_inv_b[j_offset + sub_j];
                         }
                     }
                 }

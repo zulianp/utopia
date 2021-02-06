@@ -112,6 +112,39 @@ namespace utopia {
         }
     }
 
+    template <class Matrix>
+    void assemble_vector2_laplacian_1D(Matrix &m, const bool bc = false) {
+        // n x n matrix with maximum 3 entries x row
+        Write<Matrix> w(m);
+        Range r = row_range(m);
+        auto n = size(m).get(0);
+
+        const double block_d[2 * 2] = {4.0, 2.0, 2.0, 4.0};
+        const double block_o[2 * 2] = {-1.0, -1.0, -1.0, -1.0};
+
+        for (SizeType i = r.begin(); i != r.end(); i += 2) {
+            if (i == 0 || i == n - 2) {
+                m.set(i, i, 1.0);
+                m.set(i + 1, i + 1, 1.0);
+                continue;
+            }
+
+            for (SizeType b_i = 0; b_i < 2; ++b_i) {
+                for (SizeType b_j = 0; b_j < 2; ++b_j) {
+                    m.set(i + b_i, i + b_j, block_d[b_i * 2 + b_j]);
+
+                    if (i >= 2) {
+                        m.set(i + b_i, i - 2 + b_j, block_o[b_i * 2 + b_j]);
+                    }
+
+                    if (i < n - 2) {
+                        m.set(i + b_i, i + 2 + b_j, block_o[b_i * 2 + b_j]);
+                    }
+                }
+            }
+        }
+    }
+
     template <class Matrix, class Vector>
     void assemble_poisson_problem_1D(const typename Traits<Vector>::Scalar &f,
                                      Matrix &A,

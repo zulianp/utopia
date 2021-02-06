@@ -30,7 +30,12 @@ void petsc_ilu_test() {
     ls.atol(1e-6);
     ls.rtol(1e-6);
     ls.stol(1e-6);
+    ls.max_it(10);
     ls.solve(A, b, x);
+
+    PetscVector r = b - A * x;
+    PetscScalar norm_r = norm1(r);
+    disp(norm_r);
 }
 
 void petsc_ilu_cg_test() {
@@ -46,7 +51,8 @@ void petsc_ilu_cg_test() {
     assemble_poisson_problem_1D(1.0, A, b, false);
 
     auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
-    ilu->max_it(10);
+    ilu->max_it(5);
+    // ilu->verbose(true);
 
     ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
     ls.apply_gradient_descent_step(true);
@@ -68,17 +74,50 @@ void petsc_ilu_cg_test() {
     ls.apply(b, x);
 }
 
+template <class Matrix>
+void assemble_vector2_coupled_laplacian_1D(Matrix &m, const bool bc = false) {
+    // n x n matrix with maximum 3 entries x row
+    Write<Matrix> w(m);
+    Range r = row_range(m);
+    auto n = size(m).get(0);
+
+    const double block_d[2 * 2] = {6.0, 2.0, 2.0, 6.0};
+    const double block_o[2 * 2] = {-1.0, -1.0, -1.0, -1.0};
+
+    for (SizeType i = r.begin(); i != r.end(); i += 2) {
+        if (i == 0 || i == n - 2) {
+            m.set(i, i, 1.0);
+            m.set(i + 1, i + 1, 1.0);
+            continue;
+        }
+
+        for (SizeType b_i = 0; b_i < 2; ++b_i) {
+            for (SizeType b_j = 0; b_j < 2; ++b_j) {
+                m.set(i + b_i, i + b_j, block_d[b_i * 2 + b_j]);
+
+                if (i >= 2) {
+                    m.set(i + b_i, i - 2 + b_j, block_o[b_i * 2 + b_j]);
+                }
+
+                if (i < n - 2) {
+                    m.set(i + b_i, i + 2 + b_j, block_o[b_i * 2 + b_j]);
+                }
+            }
+        }
+    }
+}
+
 void petsc_block_ilu_test() {
     auto comm = PetscCommunicator::get_default();
-    PetscInt n = 12;
+    PetscInt n = 2000;
 
     auto vl = layout(comm, n, n * comm.size());
     PetscMatrix A;
-    A.sparse(square_matrix_layout(vl), 3, 2);
+    A.sparse(square_matrix_layout(vl), 6, 4);
 
     PetscVector x(vl, 0.0), b(vl, 1.0);
 
-    assemble_laplacian_1D(A, true);
+    assemble_vector2_coupled_laplacian_1D(A, true);
     // assemble_poisson_problem_1D(1.0, A, b);
 
     InputParameters params;
@@ -86,14 +125,25 @@ void petsc_block_ilu_test() {
     // params.set("print_matrices", true);
     ILU<PetscMatrix, PetscVector> ls;
     ls.read(params);
+    // auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
+    // ilu->read(params);
+    // ilu->max_it(5);
 
-    // ls.verbose(true);
+    // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
+    // ls.apply_gradient_descent_step(true);
+    // ls.set_preconditioner(ilu);
+
+    ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-6);
     ls.stol(1e-6);
-    ls.max_it(40);
+    ls.max_it(100);
     ls.update(make_ref(A));
     ls.apply(b, x);
+
+    PetscVector r = b - A * x;
+    PetscScalar norm_r = norm1(r);
+    disp(norm_r);
 }
 
 #endif  // UTOPIA_WITH_PETSC

@@ -13,10 +13,12 @@ namespace utopia {
         void apply(const Vector &in, Vector &out) { algo_->apply(in, out); }
 
         void read(Input &in) override {
-            int block_size = 1;
+            int block_size = 0;
             in.get("block_size", block_size);
 
-            if (block_size == 2) {
+            if (block_size == 1) {
+                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
+            } else if (block_size == 2) {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
             } else if (block_size == 3) {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();

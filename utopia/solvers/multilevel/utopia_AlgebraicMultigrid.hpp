@@ -37,6 +37,7 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
             in.get("n_coarsening_steps", n_coarsening_steps_);
+            algo_.read(in);
         }
 
         bool apply(const Vector &rhs, Vector &sol) override { return algo_.apply(rhs, sol); }

@@ -188,6 +188,7 @@ namespace utopia {
         in.get("print_matrices", print_matrices_);
     }
 
+    template class BlockILUAlgorithm<PetscMatrix, 1>;
     template class BlockILUAlgorithm<PetscMatrix, 2>;
     template class BlockILUAlgorithm<PetscMatrix, 3>;
     template class BlockILUAlgorithm<PetscMatrix, 4>;
