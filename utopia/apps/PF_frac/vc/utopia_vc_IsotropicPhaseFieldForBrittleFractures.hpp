@@ -219,6 +219,8 @@ namespace utopia {
             Quadrature q;
             simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
 
+            ////////////////////////////////////////////////////////////////////////////
+
             auto c_val = c_fun.value(q);
             auto c_old = c_old_fun.value(q);
             auto p_val = press_fun.value(q);
@@ -319,6 +321,8 @@ namespace utopia {
             Quadrature q;
             simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
 
+            ////////////////////////////////////////////////////////////////////////////
+
             auto c_val = c_fun.value(q);
             auto c_old = c_old_fun.value(q);
             auto p_val = press_fun.value(q);
@@ -416,6 +420,9 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
+            simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
+
+            ////////////////////////////////////////////////////////////////////////////
 
             auto c_val = c_fun.value(q);
             auto c_old = c_old_fun.value(q);
@@ -610,6 +617,9 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
+            simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
+
+            ////////////////////////////////////////////////////////////////////////////
 
             auto c_val = c_fun.value(q);
             auto p_val = press_fun.value(q);
