@@ -34,6 +34,9 @@
 
 #endif  // UTOPIA_WITH_PETSC
 
+// FIXME
+#ifndef USE_SIMD_ASSEMBLY
+
 #include <cmath>
 
 namespace utopia {
@@ -471,3 +474,5 @@ namespace utopia {
     UTOPIA_REGISTER_APP(petsc_sample);
 
 }  // namespace utopia
+
+#endif  // USE_SIMD_ASSEMBLY

@@ -15,7 +15,7 @@ namespace utopia {
     class DeviceMultiply : public DeviceExpression<DeviceMultiply<Left, Right>> {
     public:
         using SizeType = typename Traits<Left>::SizeType;
-        using Scalar = typename Traits<Left>::Scalar;
+        using Scalar = typename std::remove_const<typename Traits<Left>::Scalar>::type;
 
         UTOPIA_INLINE_FUNCTION DeviceMultiply(const Left &left, const Right &right) : left_(left), right_(right) {
             // UTOPIA_DEVICE_ASSERT(left.cols() == right.size());

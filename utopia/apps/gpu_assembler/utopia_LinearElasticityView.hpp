@@ -1,6 +1,7 @@
 #ifndef UTOPIA_LINEAR_ELASTICITY_VIEW_HPP
 #define UTOPIA_LINEAR_ELASTICITY_VIEW_HPP
 
+#include "utopia_AppBase.hpp"
 #include "utopia_LaplacianView.hpp"
 
 namespace utopia {
@@ -11,33 +12,33 @@ namespace utopia {
     template <typename Scalar>
     class LinearElasticityKernel {
     public:
-        template <class Strain>
-        UTOPIA_INLINE_FUNCTION static Scalar strain_apply(const Scalar &mu,
-                                                          const Scalar &lambda,
-                                                          const Strain &e_i,
-                                                          const Strain &e_j,
-                                                          const Scalar &dx) {
-            return ((2. * mu) * inner(e_i, e_j) + (lambda)*inner(trace(e_i), trace(e_j))) * dx;
+        template <class Strain, class DX>
+        UTOPIA_INLINE_FUNCTION static auto strain_apply(const Scalar &mu,
+                                                        const Scalar &lambda,
+                                                        const Strain &e_i,
+                                                        const Strain &e_j,
+                                                        const DX &dx) -> decltype(dx * lambda) {
+            return ((2. * mu) * inner(e_i, e_j) + lambda * trace(e_i) * trace(e_j)) * dx;
         }
 
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &mu,
-                                                   const Scalar &lambda,
-                                                   const Grad &g_i,
-                                                   const Grad &g_j,
-                                                   const Scalar &dx) {
+        template <class Grad, class DX>
+        UTOPIA_INLINE_FUNCTION static auto apply(const Scalar &mu,
+                                                 const Scalar &lambda,
+                                                 const Grad &g_i,
+                                                 const Grad &g_j,
+                                                 const DX &dx) -> decltype(dx * lambda) {
             auto e_i = 0.5 * (transpose(g_i) + g_i);
             auto e_j = 0.5 * (transpose(g_j) + g_j);
             return strain_apply(mu, lambda, e_i, e_j, dx);
         }
 
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &mu,
-                                                   const Scalar &lambda,
-                                                   const Scalar &c_i,
-                                                   const Grad &g_i,
-                                                   const Grad &g_j,
-                                                   const Scalar &dx) {
+        template <class Grad, class DX>
+        UTOPIA_INLINE_FUNCTION static auto apply(const Scalar &mu,
+                                                 const Scalar &lambda,
+                                                 const Scalar &c_i,
+                                                 const Grad &g_i,
+                                                 const Grad &g_j,
+                                                 const DX &dx) -> decltype(dx * lambda) {
             return apply(mu, lambda, g_i, g_j, dx) * c_i;
         }
     };
@@ -64,8 +65,11 @@ namespace utopia {
         ViewDevice view_device() const { return ViewDevice(mat_); }
 
         template <class Grad, class DX>
-        UTOPIA_INLINE_FUNCTION Scalar
-        kernel(const Grad &grad, const DX &dx, const SizeType &i, const SizeType &j, const SizeType &qp) const {
+        UTOPIA_INLINE_FUNCTION auto kernel(const Grad &grad,
+                                           const DX &dx,
+                                           const SizeType &i,
+                                           const SizeType &j,
+                                           const SizeType &qp) const -> decltype(dx(0)) {
             return LinearElasticityKernel<Scalar>::apply(
                 rescaling_ * mu_, rescaling_ * lambda_, grad(i, qp), grad(j, qp), dx(qp));
         }
@@ -79,10 +83,10 @@ namespace utopia {
                 // pragma GCCunroll(NDofs)
                 for (int j = 0; j < n_fun; ++j) {
                     // const auto g_test = grad(j, k);
-                    mat(j, j) += kernel(grad, dx, j, j, k);
+                    mat(j, j) += simd::integrate(kernel(grad, dx, j, j, k));
 
                     for (int l = j + 1; l < n_fun; ++l) {
-                        const auto v = kernel(grad, dx, l, j, k);
+                        const auto v = simd::integrate(kernel(grad, dx, l, j, k));
                         mat(j, l) += v;
                         mat(l, j) += v;
                     }

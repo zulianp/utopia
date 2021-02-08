@@ -50,6 +50,7 @@ namespace utopia {
             in.get("mprgp_smoother", mprgp_smoother_);
             in.get("hjsmn_smoother", hjsmn_smoother_);
             in.get("block_solver", block_solver_);
+            in.get("use_simd", use_simd_);
 
             in.get("energy_csv_file_name", csv_file_name_);
 
@@ -183,6 +184,7 @@ namespace utopia {
                 if (block_solver_) {
                     InputParameters params;
                     params.set("block_size", FunctionSpace::NComponents);
+                    params.set("use_simd", use_simd_);
                     pgs->read(params);
                 }
 
@@ -574,7 +576,7 @@ namespace utopia {
         bool mprgp_smoother_;
         bool hjsmn_smoother_;
         bool block_solver_{true};
-
+        bool use_simd_{false};
         std::string csv_file_name_;
     };
 

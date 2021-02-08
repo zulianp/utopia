@@ -3,6 +3,7 @@
 
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_Elem.hpp"
+#include "utopia_Literal.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Quad4.hpp"
 #include "utopia_Views.hpp"
@@ -19,30 +20,32 @@ namespace utopia {
             const Scalar y = p[1];
             const Scalar z = p[2];
 
+            const Scalar one = One<Scalar>::value();
+
             switch (i) {
                 case 0: {
-                    return (1.0 - x) * (1.0 - y) * (1.0 - z);
+                    return (one - x) * (one - y) * (one - z);
                 }
                 case 1: {
-                    return x * (1.0 - y) * (1.0 - z);
+                    return x * (one - y) * (one - z);
                 }
                 case 2: {
-                    return x * y * (1.0 - z);
+                    return x * y * (one - z);
                 }
                 case 3: {
-                    return (1.0 - x) * y * (1.0 - z);
+                    return (one - x) * y * (one - z);
                 }
                 case 4: {
-                    return (1.0 - x) * (1.0 - y) * z;
+                    return (one - x) * (one - y) * z;
                 }
                 case 5: {
-                    return x * (1.0 - y) * z;
+                    return x * (one - y) * z;
                 }
                 case 6: {
                     return x * y * z;
                 }
                 case 7: {
-                    return (1.0 - x) * y * z;
+                    return (one - x) * y * z;
                 }
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
@@ -588,8 +591,8 @@ namespace utopia {
             h_[2] = 0.0;
         }
 
-        template <class H>
-        UTOPIA_INLINE_FUNCTION void set(const Point &translation, const H &h) {
+        template <class Tr, class H>
+        UTOPIA_INLINE_FUNCTION void set(const Tr &translation, const H &h) {
             translation_(0) = translation(0);
             translation_(1) = translation(1);
             translation_(2) = translation(2);

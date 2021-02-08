@@ -10,6 +10,10 @@
 
 #include "utopia_ProjectedBlockGaussSeidelSweep.hpp"
 
+#ifdef UTOPIA_WITH_VC
+#include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
+#endif  // UTOPIA_WITH_VC
+
 namespace utopia {
 
     template <class Matrix, class Vector>
@@ -63,7 +67,15 @@ namespace utopia {
         int block_size = 0;
         in.get("block_size", block_size);
 
-        if (block_size == 2) {
+#ifdef UTOPIA_WITH_VC
+        bool use_simd = false;
+        in.get("use_simd", use_simd);
+
+        if (use_simd) {
+            sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
+        } else
+#endif  // UTOPIA_WITH_VC
+            if (block_size == 2) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 2>>();
         } else if (block_size == 3) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 3>>();
