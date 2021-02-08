@@ -64,8 +64,12 @@
 namespace utopia {
 
     template <class FunctionSpace>
+#ifdef UTOPIA_WITH_VC
     using FractureModel = utopia::VcIsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
-    // using FractureModel = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
+#else
+    using FractureModel = utopia::IsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
+#endif
+
     // using FractureModel = utopia::PhaseFieldVolDevSplit<FunctionSpace>;
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
