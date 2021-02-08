@@ -79,7 +79,7 @@ namespace utopia {
             level_functions_.resize(n_levels_);
             auto fun = std::make_shared<ProblemType>(*spaces_[0]);
             fun->use_crack_set_irreversibiblity(false);
-            fun->turn_off_cu_coupling(true);
+            // fun->turn_off_cu_coupling(true);
             // fun->turn_off_uc_coupling(true);
             level_functions_[0] = fun;
 
@@ -99,11 +99,11 @@ namespace utopia {
                 } else {
                     fun->use_crack_set_irreversibiblity(true);
                 }
-                fun->turn_off_cu_coupling(true);
+                // fun->turn_off_cu_coupling(true);
                 // fun->turn_off_uc_coupling(true);
 
                 // testing stuff
-                fun->turn_off_cu_coupling(true);
+                // fun->turn_off_cu_coupling(true);
 
                 level_functions_[i] = fun;
 
@@ -178,15 +178,15 @@ namespace utopia {
                 tr_strategy_fine = std::make_shared<utopia::BlockQPSolver<Matrix, Vector>>(qp);
                 // tr_strategy_fine->verbose(true);
             } else {
-                // auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+                auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
 
-                // if (block_solver_) {
-                //     InputParameters params;
-                //     params.set("block_size", FunctionSpace::NComponents);
-                //     pgs->read(params);
-                // }
+                if (block_solver_) {
+                    InputParameters params;
+                    params.set("block_size", FunctionSpace::NComponents);
+                    pgs->read(params);
+                }
 
-                tr_strategy_fine = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
+                tr_strategy_fine = pgs;
             }
 
             std::shared_ptr<QPSolver<Matrix, Vector>> tr_strategy_coarse;
