@@ -28,6 +28,16 @@ namespace utopia {
 
     ///////////////////////////////////////////
 
+    class Kopanicakova2020Thesis {};
+
+    template <>
+    class Cite<Kopanicakova2020Thesis> {
+    public:
+        static BibTeX bibtex();
+    };
+
+    ///////////////////////////////////////////
+
 }  // namespace utopia
 
 #endif  // UTOPIA_CITE_UTOPIA_HPP

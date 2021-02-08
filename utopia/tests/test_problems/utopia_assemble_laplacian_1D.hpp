@@ -123,7 +123,7 @@ namespace utopia {
         const double block_o[2 * 2] = {-1.0, -1.0, -1.0, -1.0};
 
         for (SizeType i = r.begin(); i != r.end(); i += 2) {
-            if (i == 0 || i == n - 2) {
+            if (bc && (i == 0 || i == n - 2)) {
                 m.set(i, i, 1.0);
                 m.set(i + 1, i + 1, 1.0);
                 continue;

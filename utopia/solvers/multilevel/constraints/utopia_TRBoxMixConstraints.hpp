@@ -142,5 +142,9 @@ namespace utopia {
                                                                              TRBoundsGelmanMandel<Matrix, Vector>,
                                                                              BoxKornhuberTruncation<Matrix, Vector>>;
 
+    template <class Matrix, class Vector>
+    using TRGrattonBoxGratton =
+        utopia::TRBoxMixConstraints<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, TRBoundsGratton<Matrix, Vector>>;
+
 }  // namespace utopia
 #endif  // UTOPIA_BOX_TR_CONSTRAINTS_COMBINED_HPP

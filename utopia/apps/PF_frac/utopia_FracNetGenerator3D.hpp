@@ -184,8 +184,9 @@ namespace utopia {
             const T beta = distr_angle_beta(generator);
 
             // TODO(Alena) WHY WAS NOT THIS USED?
-            // auto max_l = std::max(std::max(params.x_min, params.y_min), params.z_min);
-            // auto min_l = std::min(std::min(params.x_max, params.y_max), params.z_max);
+            // auto max_l = std::max(std::max(params.x_min, params.y_min),
+            // params.z_min); auto min_l = std::min(std::min(params.x_max,
+            // params.y_max), params.z_max);
 
             // std::uniform_real_distribution<> distr_length(max_l, min_l);
             std::uniform_real_distribution<> distr_length(0, 1);
@@ -366,7 +367,7 @@ namespace utopia {
             result.z = A.x * B.y - A.y * B.x;
         }
 
-    private:
+    public:
         std::vector<Point3D<T>> points_;
     };
 
@@ -393,7 +394,63 @@ namespace utopia {
         void read(Input &in) override {
             in.get("num_fracs", num_fracs_);
             // in.get("pressure0", pressure0_);
+
+            in.get("coord_csv_file_name", csv_file_name_);
             sampler_params_.read(in);
+        }
+
+        void export_coords_csv(const std::vector<Paralleloid<Scalar>> &paralleloids) {
+            if (!csv_file_name_.empty()) {
+                CSVWriter writer{};
+                if (mpi_world_rank() == 0) {
+                    if (!writer.file_exists(csv_file_name_)) {
+                        writer.open_file(csv_file_name_);
+                        writer.write_table_row<std::string>({"frac-id", "C1x", "C1y", "C1x", "C2x", "C2y", "C2x",
+                                                             "C3x",     "C3y", "C3x", "C4x", "C4y", "C4x", "C5x",
+                                                             "C5y",     "C5x", "C6x", "C6y", "C6x", "C7x", "C7y",
+                                                             "C7x",     "C8x", "C8y", "C8x"});
+                    } else {
+                        writer.open_file(csv_file_name_);
+                    }
+
+                    for (std::size_t id = 0; id < paralleloids.size(); id++) {
+                        writer.write_table_row<Scalar>({Scalar(id),
+                                                        paralleloids[id].points_[0].x,
+                                                        paralleloids[id].points_[0].y,
+                                                        paralleloids[id].points_[0].z,
+
+                                                        paralleloids[id].points_[1].x,
+                                                        paralleloids[id].points_[1].y,
+                                                        paralleloids[id].points_[1].z,
+
+                                                        paralleloids[id].points_[2].x,
+                                                        paralleloids[id].points_[2].y,
+                                                        paralleloids[id].points_[2].z,
+
+                                                        paralleloids[id].points_[3].x,
+                                                        paralleloids[id].points_[3].y,
+                                                        paralleloids[id].points_[3].z,
+
+                                                        paralleloids[id].points_[4].x,
+                                                        paralleloids[id].points_[4].y,
+                                                        paralleloids[id].points_[4].z,
+
+                                                        paralleloids[id].points_[5].x,
+                                                        paralleloids[id].points_[5].y,
+                                                        paralleloids[id].points_[5].z,
+
+                                                        paralleloids[id].points_[6].x,
+                                                        paralleloids[id].points_[6].y,
+                                                        paralleloids[id].points_[6].z,
+
+                                                        paralleloids[id].points_[7].x,
+                                                        paralleloids[id].points_[7].y,
+                                                        paralleloids[id].points_[7].z});
+                    }
+
+                    writer.close_file();
+                }
+            }
         }
 
         void init(PetscVector &x) override {
@@ -412,6 +469,8 @@ namespace utopia {
             for (auto r = 0; r < num_fracs_; r++) {
                 paralleloids.push_back(Paralleloid<Scalar>(width, sampler_params_));
             }
+
+            this->export_coords_csv(paralleloids);
 
             auto sampler = utopia::sampler(C, [&paralleloids](const Point &x) -> Scalar {
                 for (std::size_t r = 0; r < paralleloids.size(); r++) {
@@ -440,6 +499,9 @@ namespace utopia {
     private:
         SizeType PF_component_;
         SizeType num_fracs_;
+
+        std::string csv_file_name_;
+
         FracNetSamplerParams3D<Scalar> sampler_params_;
     };
 

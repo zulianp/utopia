@@ -2,6 +2,7 @@
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 
 #include <algorithm>
+#include "utopia_CiteUtopia.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NumericalTollerance.hpp"
 #include "utopia_TRSubproblem.hpp"
@@ -92,7 +93,7 @@ namespace utopia {
      *
      */
     template <class Vector>
-    class TrustRegionBase : public TrustRegionParams<Vector> {
+    class TrustRegionBase : public TrustRegionParams<Vector>, public AuthoredWork<Kopanicakova2020Thesis> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -288,9 +289,9 @@ namespace utopia {
                 if (rho < this->eta1()) {
                     radius = radius * this->gamma1();
                 } else if (rho > this->eta2()) {
-                    Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius);
+                    // Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius);
 
-                    // Scalar intermediate = this->gamma2() * radius;
+                    Scalar intermediate = this->gamma2() * radius;
                     radius = std::min(intermediate, this->delta_max());
                 }
             }

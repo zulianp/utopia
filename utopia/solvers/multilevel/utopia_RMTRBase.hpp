@@ -26,7 +26,8 @@ namespace utopia {
     template <class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTRBase : public NonlinearMultiLevelBase<Matrix, Vector>,
                      public RMTRParams<Vector>,
-                     public AuthoredWork<Kopanicakova2020Recursive> {
+                     public AuthoredWork<Kopanicakova2020Recursive>,
+                     public AuthoredWork<Kopanicakova2020Thesis> {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
