@@ -11,6 +11,7 @@ if(UTOPIA_PETSC)
         cpu_assembler
         cpu_assembler/dmplex
         PF_frac
+        PF_frac/vc
         min_problems
         fe
         ls_solve)

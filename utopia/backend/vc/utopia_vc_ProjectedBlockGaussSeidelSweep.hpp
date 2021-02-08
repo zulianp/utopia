@@ -84,6 +84,7 @@ namespace utopia {
                     if (row.colidx(k) == block_i) {
                         d.raw_type().set_data(row.block(k));
                         diag_[block_i].copy(d);
+                        assert(std::abs(det(diag_[block_i])) > 0);
                         inv_diag_[block_i] = inv(diag_[block_i]);
                         break;
                     }

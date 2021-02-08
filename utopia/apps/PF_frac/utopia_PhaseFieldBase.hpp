@@ -245,26 +245,27 @@ namespace utopia {
 
         ////////////////////////////////////////////////////////////////////////////////////
 
-        template <class StressShape, class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const StressShape &stress,
-                                                         const Grad &strain_test) {
-            const Scalar gc = ((1.0 - params.regularization) * quadratic_degradation(params, phase_field_value) +
-                               params.regularization);
+        template <typename PhaseFieldValue, class StressShape, class Grad>
+        UTOPIA_INLINE_FUNCTION static PhaseFieldValue bilinear_uu(const PFFracParameters &params,
+                                                                  const PhaseFieldValue &phase_field_value,
+                                                                  const StressShape &stress,
+                                                                  const Grad &strain_test) {
+            const auto gc = ((1.0 - params.regularization) * quadratic_degradation(params, phase_field_value) +
+                             params.regularization);
             return inner(gc * stress, strain_test);
         }
 
         template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar diffusion_c(const PFFracParameters &params,
-                                                         const Grad &g_trial,
-                                                         const Grad &g_test) {
+        UTOPIA_INLINE_FUNCTION static auto diffusion_c(const PFFracParameters &params,
+                                                       const Grad &g_trial,
+                                                       const Grad &g_test) {
             return params.fracture_toughness * params.length_scale * inner(g_trial, g_test);
         }
 
-        UTOPIA_INLINE_FUNCTION static Scalar reaction_c(const PFFracParameters &params,
-                                                        const Scalar &trial,
-                                                        const Scalar &test) {
+        template <typename FunValue>
+        UTOPIA_INLINE_FUNCTION static FunValue reaction_c(const PFFracParameters &params,
+                                                          const FunValue &trial,
+                                                          const FunValue &test) {
             return (params.fracture_toughness / params.length_scale) * trial * test;
         }
 
@@ -277,12 +278,13 @@ namespace utopia {
             return dcc * trial * elastic_energy_positive * test;
         }
 
-        template <class Grad, class GradTest>
-        UTOPIA_INLINE_FUNCTION static Scalar grad_fracture_energy_wrt_c(const PFFracParameters &params,
-                                                                        const Scalar &phase_field_value,
-                                                                        const Grad &phase_field_grad,
-                                                                        const Scalar &test_function,
-                                                                        const GradTest &grad_test_function) {
+        template <typename PhaseFieldValue, class Grad, typename TestFunction, class GradTest>
+        UTOPIA_INLINE_FUNCTION static PhaseFieldValue grad_fracture_energy_wrt_c(
+            const PFFracParameters &params,
+            const PhaseFieldValue &phase_field_value,
+            const Grad &phase_field_grad,
+            const TestFunction &test_function,
+            const GradTest &grad_test_function) {
             return params.fracture_toughness * ((1. / params.length_scale * phase_field_value * test_function) +
                                                 (params.length_scale * inner(phase_field_grad, grad_test_function)));
         }
@@ -296,10 +298,10 @@ namespace utopia {
             return c_trial_fun * inner(quadratic_degradation_deriv(params, phase_field_value) * stress_p, full_strain);
         }
 
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(const PFFracParameters &params,
-                                                             const Scalar &phase_field_value,
-                                                             const Grad &phase_field_grad) {
+        template <typename PhaseFieldValue, class Grad>
+        UTOPIA_INLINE_FUNCTION static PhaseFieldValue fracture_energy(const PFFracParameters &params,
+                                                                      const PhaseFieldValue &phase_field_value,
+                                                                      const Grad &phase_field_grad) {
             return params.fracture_toughness *
                    (1. / (2.0 * params.length_scale) * phase_field_value * phase_field_value +
                     params.length_scale / 2.0 * inner(phase_field_grad, phase_field_grad));
@@ -317,17 +319,20 @@ namespace utopia {
                    elastic_deriv_cc(params, phase_field_value, elastic_energy_p, shape_trial, shape_test);
         }
 
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation(const PFFracParameters &, const Scalar &c) {
-            Scalar imc = 1.0 - c;
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C quadratic_degradation(const PFFracParameters &, const C &c) {
+            C imc = 1.0 - c;
             return imc * imc;
         }
 
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation_deriv(const PFFracParameters &, const Scalar &c) {
-            Scalar imc = 1.0 - c;
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C quadratic_degradation_deriv(const PFFracParameters &, const C &c) {
+            C imc = 1.0 - c;
             return -2.0 * imc;
         }
 
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation_deriv2(const PFFracParameters &, const Scalar &) {
+        template <typename C>
+        UTOPIA_INLINE_FUNCTION static C quadratic_degradation_deriv2(const PFFracParameters &, const C &) {
             return 2.0;
         }
 

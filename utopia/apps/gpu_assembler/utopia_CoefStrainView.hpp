@@ -33,7 +33,8 @@ namespace utopia {
 
             grad_.get(elem, ret.strain);
 
-            for (std::size_t qp = 0; qp < NQuadPoints; ++qp) {
+            const SizeType n_qp = grad_.n_points();
+            for (SizeType qp = 0; qp < n_qp; ++qp) {
                 ret.strain[qp].symmetrize();
             }
 

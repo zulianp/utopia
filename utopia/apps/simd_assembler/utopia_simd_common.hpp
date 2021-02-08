@@ -5,6 +5,8 @@
 #include "utopia_DeviceExpression.hpp"
 #include "utopia_Views.hpp"
 
+#include "utopia_DeviceIdentity.hpp"
+
 namespace utopia {
     namespace simd {
 
@@ -105,10 +107,50 @@ namespace utopia {
                 return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
             }
 
+            // friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const Matrix &left, const T &right) {
+            //     return DeviceBinary<Number<T>, Matrix, Multiplies>(right, left);
+            // }
+
+            // friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const T &left, const Matrix &right) {
+            //     return DeviceBinary<Number<T>, Matrix, Multiplies>(left, right);
+            // }
+
             template <class Expr>
             UTOPIA_INLINE_FUNCTION Matrix &operator=(const DeviceExpression<Expr> &expr) {
                 DeviceAssign<Matrix, Expr>::apply(*this, expr.derived());
                 return *this;
+            }
+
+            UTOPIA_INLINE_FUNCTION Matrix &operator+=(const Matrix &expr) {
+                for (int i = 0; i < Size; ++i) {
+                    data_[i] += expr.data_[i];
+                }
+                // for (int i = 0; i < Rows; ++i) {
+                //     for (int j = 0; j < Cols; ++j) {
+                //         (*this)(i, j) += expr(i, j);
+                //     }
+                // }
+                return *this;
+            }
+
+            UTOPIA_INLINE_FUNCTION Matrix &operator*=(const T &factor) {
+                for (auto &d : data_) {
+                    d *= factor;
+                }
+
+                return *this;
+            }
+
+            friend inline Matrix operator*(const Matrix &left, const T &right) {
+                Matrix ret = left;
+                ret *= right;
+                return ret;
+            }
+
+            friend inline Matrix operator*(const T &right, const Matrix &left) {
+                Matrix ret = left;
+                ret *= right;
+                return ret;
             }
 
             friend inline constexpr T inner(const Matrix &l, const Matrix &r) { return dot(l, r); }
@@ -121,6 +163,20 @@ namespace utopia {
                 }
 
                 return ret;
+            }
+
+            void symmetrize() {
+                assert(Rows == Cols);
+                for (int i = 0; i < Rows; ++i) {
+                    for (int j = i + 1; j < Cols; ++j) {
+                        auto &a_ij = (*this)(i, j);
+                        auto &a_ji = (*this)(j, i);
+                        const auto val = 0.5 * (a_ij + a_ji);
+
+                        a_ij = val;
+                        a_ji = val;
+                    }
+                }
             }
 
             inline std::string get_class() const { return "simd::Matrix"; }
@@ -140,6 +196,20 @@ namespace utopia {
         using SizeType = int;
         static const int Order = 2;
     };
+
+    template <typename T>
+    class Traits<Vc::Vector<T>> {
+    public:
+        using Scalar = Vc::Vector<T>;
+        using SizeType = int;
+    };
+
+    template <typename T, class Right>
+    inline DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies> operator*(
+        const Vc::Vector<T> &left,
+        const DeviceExpression<Right> &right) {
+        return DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies>(left, right.derived());
+    }
 
     namespace simd {
         template <typename T>

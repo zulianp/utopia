@@ -1,3 +1,4 @@
+
 {
     "app" : "petsc_isotropic_phase_field_3d",
     "output-path" : "RMTR_3d_net",
@@ -26,7 +27,7 @@
     "n_coarse_sub_comm": 1,
     "num_fracs" : 100,
     "n_levels": 3,
-    "use_simd" : true,
+    "use_simd" : false,
     "*block_solver" : false,
     "fracture_toughness":1e-3,
     "pressure0" : 0.1,
