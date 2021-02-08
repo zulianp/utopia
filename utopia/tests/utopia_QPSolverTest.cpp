@@ -198,7 +198,7 @@ namespace utopia {
             multigrid.max_it(40);
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
-            multigrid.verbose(true);
+            // multigrid.verbose(true);
 
             // multigrid.mg_type(2);
 
@@ -281,7 +281,7 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
 
             int n_levels = 6;

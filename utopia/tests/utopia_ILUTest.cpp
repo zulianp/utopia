@@ -28,14 +28,17 @@ void petsc_ilu_test() {
     ILU<PetscMatrix, PetscVector> ls;
     // ls.verbose(true);
     ls.atol(1e-6);
-    ls.rtol(1e-6);
-    ls.stol(1e-6);
-    ls.max_it(10);
+    ls.rtol(1e-7);
+    ls.stol(1e-7);
+    ls.max_it(100);
+
     ls.solve(A, b, x);
 
     PetscVector r = b - A * x;
     PetscScalar norm_r = norm1(r);
-    disp(norm_r);
+    // disp(norm_r);
+
+    utopia_test_assert(norm_r < 1e-5);
 }
 
 void petsc_ilu_cg_test() {
@@ -59,7 +62,8 @@ void petsc_ilu_cg_test() {
 
     // ls.verbose(true);
     ls.atol(1e-6);
-    ls.rtol(1e-6);
+    ls.rtol(1e-7);
+    ls.stol(1e-7);
 
     // if (comm.size() == 1) {
     //     rename("a", A);
@@ -72,6 +76,10 @@ void petsc_ilu_cg_test() {
     ls.set_preconditioner(ilu);
     ls.update(make_ref(A));
     ls.apply(b, x);
+
+    PetscVector r = b - A * x;
+    PetscScalar norm_r = norm1(r);
+    utopia_test_assert(norm_r < 1e-5);
 }
 
 template <class Matrix>
@@ -85,7 +93,7 @@ void assemble_vector2_coupled_laplacian_1D(Matrix &m, const bool bc = false) {
     const double block_o[2 * 2] = {-1.0, -1.0, -1.0, -1.0};
 
     for (SizeType i = r.begin(); i != r.end(); i += 2) {
-        if (i == 0 || i == n - 2) {
+        if (bc && (i == 0 || i == n - 2)) {
             m.set(i, i, 1.0);
             m.set(i + 1, i + 1, 1.0);
             continue;
@@ -132,18 +140,18 @@ void petsc_block_ilu_test() {
     // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
     // ls.apply_gradient_descent_step(true);
     // ls.set_preconditioner(ilu);
-
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
-    ls.rtol(1e-6);
-    ls.stol(1e-6);
-    ls.max_it(100);
+    ls.rtol(1e-8);
+    ls.stol(1e-8);
+    ls.max_it(n);
     ls.update(make_ref(A));
     ls.apply(b, x);
 
     PetscVector r = b - A * x;
     PetscScalar norm_r = norm1(r);
-    disp(norm_r);
+
+    utopia_test_assert(norm_r < 1e-5);
 }
 
 #endif  // UTOPIA_WITH_PETSC

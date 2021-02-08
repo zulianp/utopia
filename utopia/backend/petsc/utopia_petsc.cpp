@@ -112,10 +112,10 @@ namespace utopia {
         block.update_mirror();
     }
 
-    void local_view(const PetscVector &vec, PetscVector &lv) {
-        assert(false);
-        UTOPIA_UNUSED(vec);
-        UTOPIA_UNUSED(lv);
-        // VecGetLocalVector(Vec v,Vec w)
-    }
+    // void local_view(const PetscVector &vec, PetscVector &lv) {
+    //     assert(false);
+    //     UTOPIA_UNUSED(vec);
+    //     UTOPIA_UNUSED(lv);
+    //     // VecGetLocalVector(Vec v,Vec w)
+    // }
 }  // namespace utopia
