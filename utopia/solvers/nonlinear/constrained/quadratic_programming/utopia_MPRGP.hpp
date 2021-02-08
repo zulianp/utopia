@@ -100,7 +100,7 @@ namespace utopia {
 
             const Scalar gamma = 1.0;
             const Scalar alpha_bar = 1.95 / this->get_normA(A);
-            Scalar pAp, beta_beta, fi_fi, gp_dot;
+            Scalar pAp, beta_beta, fi_fi, gp_dot, g_betta, beta_Abeta;
 
             SizeType it = 0;
             bool converged = false;
@@ -113,27 +113,12 @@ namespace utopia {
             assert(lb);
             assert(ub);
 
-            // utopia::out() <<x.comm().size() << " " << rhs.comm().size() << " " <<
-            // lb->comm().size() << " "
-            //           << ub->comm().size() << std::endl;
-
             this->project(*lb, *ub, x);
-            // x = Ax;
 
             A.apply(x, Ax);
             g = Ax - rhs;
 
-            // std::cout<<"loc_size-lb: "<< local_size(*lb).get(0) << "  \n";
-            // std::cout<<"loc_size-ub: "<< local_size(*ub).get(0) << "  \n";
-            // std::cout<<"loc_size-g: "<< local_size(g).get(0) << "  \n";
-            // std::cout<<"loc_size-x: "<< local_size(x).get(0) << "  \n";
-            // std::cout<<"loc_size-fi: "<< local_size(fi).get(0) << "  \n";
-
             this->get_fi(x, g, *lb, *ub, fi);
-
-            // std::cout<<"----------------------- \n";
-            // exit(0);
-
             this->get_beta(x, g, *lb, *ub, beta);
 
             gp = fi + beta;
@@ -146,6 +131,11 @@ namespace utopia {
                     A.apply(p, Ap);
 
                     dots(p, Ap, pAp, g, p, gp_dot);
+
+                    // detecting negative curvature
+                    if (pAp <= 0.0) {
+                        return true;
+                    }
 
                     alpha_cg = gp_dot / pAp;
                     y = x - alpha_cg * p;
@@ -171,7 +161,14 @@ namespace utopia {
                     }
                 } else {
                     A.apply(beta, Abeta);
-                    alpha_cg = dot(g, beta) / dot(beta, Abeta);
+
+                    dots(g, beta, g_betta, beta, Abeta, beta_Abeta);
+                    // detecting negative curvature
+                    if (beta_Abeta <= 0.0) {
+                        return true;
+                    }
+
+                    alpha_cg = g_betta / beta_Abeta;
                     x = x - alpha_cg * beta;
                     g = g - alpha_cg * Abeta;
 

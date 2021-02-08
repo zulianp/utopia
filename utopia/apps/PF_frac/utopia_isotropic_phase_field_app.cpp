@@ -30,6 +30,7 @@
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_MPRGP.hpp"
 #include "utopia_MassMatrixView.hpp"
+#include "utopia_PhaseFieldVolDevSplit.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
@@ -58,7 +59,8 @@
 
 namespace utopia {
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void petsc_tension_isotropic_phase_field_2(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -98,7 +100,125 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_tension_isotropic_phase_field_2);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    static void petsc_tension_vol_dev_split_phase_field_2(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
+        PFFracTension2D<FunctionSpace> BC_setup(space);
+        // IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
+        //     space, IC_setup, BC_setup);
+
+        IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(
+            space, IC_setup, BC_setup);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_tension_vol_dev_split_phase_field_2);
+
+    static void petsc_t_bar_vol_dev_split_phase_field_2(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        InitialCondidtionPFTbar<FunctionSpace> IC_setup(space, 0.0);
+        PFFracFixAllDispComp2D<FunctionSpace> BC_setup(space);
+        IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
+            space, IC_setup, BC_setup);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_t_bar_vol_dev_split_phase_field_2);
+
+    static void petsc_parallel_frac_vol_dev_split_PF_3D(Input &in) {
+        static const int Dim = 3;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        InitialCondidtionPFParallelFrac3D<FunctionSpace> IC_setup(space, 0.0);
+        PFFracFixAllDisp3D<FunctionSpace> BC_setup(space);
+        IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
+            space, IC_setup, BC_setup);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_parallel_frac_vol_dev_split_PF_3D);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void petsc_pressure_Tbar_isotropic_phase_field_2(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -137,7 +257,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_pressure_Tbar_isotropic_phase_field_2);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void petsc_pressure_net_2_rmtr(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -165,6 +286,12 @@ namespace utopia {
                              InitialCondidtionPFFracNet2D<FunctionSpace> >
             time_stepper(space);
 
+        // MLIncrementalLoading<FunctionSpace,
+        //                      PhaseFieldVolDevSplit<FunctionSpace>,
+        //                      PFFracFixAllDisp4Sides<FunctionSpace>,
+        //                      InitialCondidtionPFFracNet2D<FunctionSpace> >
+        // time_stepper(space);
+
         time_stepper.read(in);
         time_stepper.run();
 
@@ -177,7 +304,130 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_pressure_net_2_rmtr);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void petsc_pressure_net_2_rmtr_vol_dev(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             PhaseFieldVolDevSplit<FunctionSpace>,
+                             // IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             PFFracTension2D<FunctionSpace>,
+                             InitialCondidtionPFTension<FunctionSpace> >
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_pressure_net_2_rmtr_vol_dev);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void tbar_rmtr_vol_dev(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             PhaseFieldVolDevSplit<FunctionSpace>,
+                             PFFracFixAllDispComp2D<FunctionSpace>,
+                             InitialCondidtionPFTbar<FunctionSpace> >
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(tbar_rmtr_vol_dev);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void par_frac_3d_rmtr_vol_dev(Input &in) {
+        static const int Dim = 3;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             PhaseFieldVolDevSplit<FunctionSpace>,
+                             PFFracFixAllDisp3D<FunctionSpace>,
+                             InitialCondidtionPFParallelFrac3D<FunctionSpace> >
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(par_frac_3d_rmtr_vol_dev);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void petsc_tension_phase_field_2_rmtr(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -217,7 +467,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_tension_phase_field_2_rmtr);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void AsphaltTension2d_rmtr(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -257,7 +508,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(AsphaltTension2d_rmtr);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void mixed2d_rmtr(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -297,7 +549,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(mixed2d_rmtr);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void frac_plate_rmtr(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -337,7 +590,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(frac_plate_rmtr);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void petsc_pressure_network_isotropic_phase_field_2(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;
@@ -377,7 +631,8 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(petsc_pressure_network_isotropic_phase_field_2);
 
-    // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void petsc_isotropic_phase_field_3d(Input &in) {
         static const int Dim = 3;
         static const int NVars = Dim + 1;

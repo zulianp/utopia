@@ -1,6 +1,8 @@
 #ifndef UTOPIA_DM_RMTR_SETUP_HPP
 #define UTOPIA_DM_RMTR_SETUP_HPP
 
+#include <memory>
+
 #include "utopia_BlockQPSolver.hpp"
 #include "utopia_IPTransfer.hpp"
 #include "utopia_Input.hpp"
@@ -11,8 +13,6 @@
 #include "utopia_PFMassMatrix.hpp"
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_make_unique.hpp"
-
-#include <memory>
 
 namespace utopia {
 
@@ -51,6 +51,8 @@ namespace utopia {
             in.get("hjsmn_smoother", hjsmn_smoother_);
             in.get("block_solver", block_solver_);
 
+            in.get("energy_csv_file_name", csv_file_name_);
+
             init_ml_setup();
 
             for (std::size_t l = 0; l < level_functions_.size(); l++) {
@@ -77,6 +79,8 @@ namespace utopia {
             level_functions_.resize(n_levels_);
             auto fun = std::make_shared<ProblemType>(*spaces_[0]);
             fun->use_crack_set_irreversibiblity(false);
+            // fun->turn_off_cu_coupling(true);
+            // fun->turn_off_uc_coupling(true);
             level_functions_[0] = fun;
 
             BC_conditions_.resize(n_levels_);
@@ -95,6 +99,11 @@ namespace utopia {
                 } else {
                     fun->use_crack_set_irreversibiblity(true);
                 }
+                // fun->turn_off_cu_coupling(true);
+                // fun->turn_off_uc_coupling(true);
+
+                // testing stuff
+                // fun->turn_off_cu_coupling(true);
 
                 level_functions_[i] = fun;
 
@@ -139,6 +148,15 @@ namespace utopia {
             if (!rmtr_) {
                 rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER>>(
                     n_levels_);
+                // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(
+                //     n_levels_);
+
+                // rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
+                // SECOND_ORDER>>(
+                //     n_levels_);
+
+                // rmtr_ = std::make_shared<
+                //     RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>(n_levels_);
             }
 
             // auto tr_strategy_fine   =
@@ -181,10 +199,9 @@ namespace utopia {
                 tr_strategy_coarse = std::make_shared<utopia::MPRGP<Matrix, Vector>>();
             }
 
-            // auto ls = std::make_shared<GMRES<Matrix, Vector> >();
+            // auto ls = std::make_shared<GMRES<Matrix, Vector>>();
             // ls->pc_type("bjacobi");
-            // auto tr_strategy_coarse =
-            // std::make_shared<utopia::SemismoothNewton<Matrix, Vector> >(ls);
+            // tr_strategy_coarse = std::make_shared<utopia::SemismoothNewton<Matrix, Vector>>(ls);
 
             // rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
             rmtr_->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
@@ -218,6 +235,7 @@ namespace utopia {
 
             spaces_.back()->create_vector(this->solution_);
             spaces_.back()->create_vector(this->lb_);
+            spaces_.back()->create_vector(this->ub_);
             rename("X", this->solution_);
 
             IC_->init(this->solution_);
@@ -229,7 +247,7 @@ namespace utopia {
             spaces_.back()->apply_constraints(this->solution_);
 
             if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                fun_finest->old_solution(this->solution_);
+                fun_finest->set_old_solution(this->solution_);
             }
 
             // adding sol to all levels
@@ -333,7 +351,7 @@ namespace utopia {
             spaces_.back()->apply_constraints(this->solution_);
 
             if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
-                fun_finest->build_irreversility_constraint(this->lb_);
+                fun_finest->build_irreversility_constraint(this->lb_, this->ub_);
             }
 
             for (std::size_t l = 0; l < BC_conditions_.size(); l++) {
@@ -385,8 +403,14 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("MLIncrementalLoading::update_time_step(...)");
 
             if (this->adjust_dt_on_failure_ && conv_reason < 0) {
+                this->time_ -= this->dt_;
+                this->dt_ = this->dt_ * this->shrinking_factor_;
+                this->time_ += this->dt_;
+
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->get_old_solution(this->solution_);
+                    fun_finest->set_dt(this->dt_);
                 }
 
                 // reset sol on all levels - important for BC conditions mostly s
@@ -403,17 +427,18 @@ namespace utopia {
 
                     transfers_[l - 1]->project_down(fine_sol, coarse_sol);
                     spaces_[l]->apply_constraints(coarse_sol);
+                    fun_fine->set_dt(this->dt_);
+                    fun_coarse->set_dt(this->dt_);
+
                     // transfers_[l]->restrict(fine_sol, coarse_sol);
                 }
-
-                this->time_ -= this->dt_;
-                this->dt_ = this->dt_ * this->shrinking_factor_;
-                this->time_ += this->dt_;
             } else {
                 // std::cout<<"------- yes, updating...  \n";
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    fun_finest->make_iterate_feasible(this->lb_, this->ub_, this->solution_);
                     fun_finest->set_old_solution(this->solution_);
+                    fun_finest->set_dt(this->dt_);
                 }
 
                 // update sol on all levels
@@ -430,6 +455,9 @@ namespace utopia {
 
                     transfers_[l - 1]->project_down(fine_sol, coarse_sol);
                     spaces_[l]->apply_constraints(coarse_sol);
+                    fun_coarse->set_dt(this->dt_);
+                    fun_fine->set_dt(this->dt_);
+
                     // transfers_[l]->restrict(fine_sol, coarse_sol);
                 }
 
@@ -449,7 +477,33 @@ namespace utopia {
                 }
             }
 
+            this->export_energies_csv();
+
             UTOPIA_TRACE_REGION_END("MLIncrementalLoading::update_time_step(...)");
+        }
+
+        void export_energies_csv() {
+            if (!csv_file_name_.empty()) {
+                CSVWriter writer{};
+                Scalar elastic_energy = 0.0, fracture_energy = 0.0;
+
+                if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
+                    fun_finest->elastic_energy(this->solution_, elastic_energy);
+                    fun_finest->fracture_energy(this->solution_, fracture_energy);
+                }
+
+                if (mpi_world_rank() == 0) {
+                    if (!writer.file_exists(csv_file_name_)) {
+                        writer.open_file(csv_file_name_);
+                        writer.write_table_row<std::string>({"elastic_energy", "fracture_energy"});
+                    } else {
+                        writer.open_file(csv_file_name_);
+                    }
+
+                    writer.write_table_row<Scalar>({elastic_energy, fracture_energy});
+                    writer.close_file();
+                }
+            }
         }
 
         void run() override {
@@ -475,7 +529,17 @@ namespace utopia {
 
                 prepare_for_solve();
 
+                if (this->time_ == this->dt_) {
+                    auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get());
+                    fun_finest->set_old_solution(this->solution_);
+                    fun_finest->set_dt(this->dt_);
+                }
+
                 // ////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // constraints
+                auto box = make_box_constaints(make_ref(this->lb_), make_ref(this->ub_));
+                rmtr_->set_box_constraints(box);
+
                 rmtr_->solve(this->solution_);
                 auto sol_status = rmtr_->solution_status();
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -500,6 +564,8 @@ namespace utopia {
         std::string log_output_path_;
 
         std::shared_ptr<RMTR_inf<Matrix, Vector, TRBoundsGratton<Matrix, Vector>, SECOND_ORDER>> rmtr_;
+        // std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>> rmtr_;
+        // std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, SECOND_ORDER>> rmtr_;
 
         bool save_output_;
 
@@ -508,6 +574,8 @@ namespace utopia {
         bool mprgp_smoother_;
         bool hjsmn_smoother_;
         bool block_solver_{true};
+
+        std::string csv_file_name_;
     };
 
 }  // namespace utopia

@@ -112,6 +112,107 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
+    class PFFracFixAllDisp4Sides : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        PFFracFixAllDisp4Sides(FunctionSpace &space) : BCSetup<FunctionSpace>(space) {}
+
+        void emplace_time_dependent_BC(const Scalar & /*time*/) override {
+            static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            for (int d = 1; d < Dim + 1; ++d) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+            }
+        }
+    };
+
+    template <class FunctionSpace>
+    class PFFracFixAllDisp3D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        PFFracFixAllDisp3D(FunctionSpace &space) : BCSetup<FunctionSpace>(space) {}
+
+        void emplace_time_dependent_BC(const Scalar & /*time*/) override {
+            static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            for (int d = 1; d < Dim + 1; ++d) {
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::front(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::back(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+            }
+        }
+    };
+
+    template <class FunctionSpace>
+    class PFFracFixAllDispComp2D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        PFFracFixAllDispComp2D(FunctionSpace &space) : BCSetup<FunctionSpace>(space) {}
+
+        void emplace_time_dependent_BC(const Scalar & /*time*/) override {
+            static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            for (int d = 0; d < Dim + 1; ++d) {
+                if (d == 1) {
+                    this->space_.emplace_dirichlet_condition(
+                        SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 1e-5; }, d);
+                } else {
+                    this->space_.emplace_dirichlet_condition(
+                        SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+                }
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::top(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+
+                this->space_.emplace_dirichlet_condition(
+                    SideSet::bottom(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, d);
+            }
+        }
+    };
+
+    template <class FunctionSpace>
     class PFFracTension2D : public BCSetup<FunctionSpace> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
@@ -145,6 +246,40 @@ namespace utopia {
 
     private:
         Scalar disp_y_;
+    };
+
+    template <class FunctionSpace>
+    class PFFracShear2D : public BCSetup<FunctionSpace> {
+    public:
+        using Scalar = typename FunctionSpace::Scalar;
+        using Vector = typename FunctionSpace::Vector;
+
+        PFFracShear2D(FunctionSpace &space, const Scalar &disp_x = 1.0)
+            : BCSetup<FunctionSpace>(space), disp_x_(disp_x) {}
+
+        void read(Input &in) override { in.get("disp_x", disp_x_); }
+
+        void emplace_time_dependent_BC(const Scalar &time) override {
+            // static const int Dim = FunctionSpace::Dim;
+
+            using Point = typename FunctionSpace::Point;
+            this->space_.reset_bc();
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 2);
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return disp_x_ * time; }, 2);
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::left(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+
+            this->space_.emplace_dirichlet_condition(
+                SideSet::right(), UTOPIA_LAMBDA(const Point &)->Scalar { return 0.0; }, 1);
+        }
+
+    private:
+        Scalar disp_x_;
     };
 
     template <class FunctionSpace>

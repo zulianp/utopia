@@ -8,7 +8,9 @@
 namespace utopia {
 
     template <class Vector>
-    class HessianApproximation : public virtual Clonable, public virtual Configurable {
+    class HessianApproximation : public virtual Clonable,
+                                 public virtual Configurable,
+                                 public AuthoredWork<Kopanicakova2020Thesis> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
