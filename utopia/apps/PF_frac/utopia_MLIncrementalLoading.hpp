@@ -261,10 +261,8 @@ namespace utopia {
 
                 transfers_[l - 1]->project_down(fine_sol, coarse_sol);
 
-                std::cout << "coarse_sol: " << size(coarse_sol) << "  \n";
-
+                // std::cout << "coarse_sol: " << size(coarse_sol) << "  \n";
                 // spaces_[l]->apply_constraints(coarse_sol);
-
                 // transfers_[l]->restrict(fine_sol, coarse_sol);
             }
 

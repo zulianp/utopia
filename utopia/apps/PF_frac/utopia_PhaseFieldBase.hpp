@@ -255,7 +255,138 @@ namespace utopia {
         virtual bool elastic_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
 
         // compute total crack volume (TCV), so we can compare to exact solution
-        virtual bool compute_tcv(const Vector &x_const, Scalar &error) const { return false; }
+        virtual bool compute_tcv(const Vector &x_const, Scalar &error) const {
+            UTOPIA_TRACE_REGION_BEGIN("PFBase::compute_tcv");
+
+            Scalar tcv_exact = 0.0;
+            Scalar computed_tcv = 0.0;
+
+            USpace U;
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
+
+            CSpace U1 = this->space_.subspace(1);
+            CSpace U2 = this->space_.subspace(2);
+            CSpace U3 = this->space_.subspace(3);
+
+            ///////////////////////////////////////////////////////////////////////////
+
+            // update local vector x
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            auto u_coeff1 = std::make_shared<Coefficient<CSpace>>(U1, this->local_x_);
+            auto u_coeff2 = std::make_shared<Coefficient<CSpace>>(U2, this->local_x_);
+            auto u_coeff3 = std::make_shared<Coefficient<CSpace>>(U3, this->local_x_);
+
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+
+            FEFunction<CSpace> u1_fun(u_coeff1);
+            FEFunction<CSpace> u2_fun(u_coeff2);
+            FEFunction<CSpace> u3_fun(u_coeff3);
+
+            ////////////////////////////////////////////////////////////////////////////
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto u_val = u_fun.value(q);
+
+            auto u1_val = u1_fun.value(q);
+            auto u2_val = u2_fun.value(q);
+            auto u3_val = u3_fun.value(q);
+
+            auto differential = C.differential(q);
+
+            {
+                auto U_view = U.view_device();
+                auto C_view = C.view_device();
+                auto U1_view = U1.view_device();
+                auto U2_view = U2.view_device();
+                auto U3_view = U3.view_device();
+
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto u_view = u_val.view_device();
+
+                auto u1_view = u1_val.view_device();
+                auto u2_view = u2_val.view_device();
+                auto u3_view = u3_val.view_device();
+
+                auto differential_view = differential.view_device();
+
+                Device::parallel_reduce(
+                    this->space_.element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> u1;
+                        StaticVector<Scalar, NQuadPoints> u2;
+                        StaticVector<Scalar, NQuadPoints> u3;
+
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+                        c_view.get(c_e, c);
+
+                        CElem u1_e;
+                        U1_view.elem(i, u1_e);
+                        u1_view.get(u1_e, u1);
+
+                        CElem u2_e;
+                        U2_view.elem(i, u2_e);
+                        u2_view.get(u2_e, u2);
+
+                        CElem u3_e;
+                        U3_view.elem(i, u3_e);
+                        u3_view.get(u3_e, u3);
+
+                        auto c_grad_el = c_grad_view.make(c_e);
+
+                        auto dx = differential_view.make(c_e);
+
+                        Scalar tcv_mine = 0.0;
+
+                        // TCV = \int_\Omega u \cdot \nabla \phi
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            if (Dim == 2) {
+                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1))) * dx(qp);
+                            } else {
+                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1)) +
+                                             (u3[qp] * c_grad_el[qp](2))) *
+                                            dx(qp);
+                            }
+                        }
+
+                        assert(tcv_mine == tcv_mine);
+                        return tcv_mine;
+                    },
+                    computed_tcv);
+            }
+
+            computed_tcv = x_const.comm().sum(computed_tcv);
+            assert(computed_tcv == computed_tcv);
+
+            // params depends on initial fracture lenght and pressure
+            const Scalar l_0 = 1.0;
+            const Scalar p = 1e-3;
+
+            if (Dim == 2) {
+                tcv_exact = 2.0 * p * l_0 * l_0 * (1.0 - this->params_.nu * this->params_.nu) * PI / this->params_.E;
+            } else {
+                tcv_exact =
+                    16.0 * p * l_0 * l_0 * l_0 * (1.0 - this->params_.nu * this->params_.nu) / this->params_.E / 3.0;
+            }
+
+            error = device::abs(computed_tcv - tcv_exact);
+            if (mpi_world_rank() == 0) {
+                std::cout << "computed_tcv: " << computed_tcv << "  exact: " << tcv_exact << "  error: " << error
+                          << "\n ";
+            }
+            UTOPIA_TRACE_REGION_END("PFBase::compute_tcv");
+            return true;
+        }
 
         virtual void update_history_field(const Vector & /*x_const*/) const {}
 
