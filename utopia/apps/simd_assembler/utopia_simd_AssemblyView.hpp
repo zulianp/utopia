@@ -436,6 +436,8 @@ namespace utopia {
             auto g = grad_view.make(e);
 
             const std::size_t n_qp = q.n_points();
+            assert(n_qp > 0);
+
             values_.resize(n_qp * NFunctions);
 
             for (std::size_t qp = 0; qp < n_qp; ++qp) {

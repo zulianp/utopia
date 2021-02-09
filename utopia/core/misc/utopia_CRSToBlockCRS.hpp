@@ -25,13 +25,14 @@ namespace utopia {
         static void apply(const CRSMatrix<ScalarView, IndexView, 1> &in,
                           CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
                           const bool sort_columns = true) {
-            apply(in.rows(), &in.row_ptr()[0], &in.colidx()[0], &in.values()[0], out, sort_columns);
+            apply(in.rows(), in.row_ptr(), in.colidx(), in.values(), out, sort_columns);
         }
 
+        template <typename IA, typename JA, typename Array>
         static void apply(const SizeType n,
-                          const SizeType *ia,
-                          const SizeType *ja,
-                          const Scalar *array,
+                          const IA &ia,
+                          const JA &ja,
+                          const Array &array,
                           CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
                           const bool sort_columns = true) {
             static const int BlockSize_2 = BlockSize * BlockSize;
@@ -130,10 +131,11 @@ namespace utopia {
             update(n, ia, ja, array, out);
         }
 
+        template <typename IA, typename JA, typename Array>
         static void update(const SizeType n,
-                           const SizeType *ia,
-                           const SizeType *ja,
-                           const Scalar *array,
+                           const IA &ia,
+                           const JA &ja,
+                           const Array &array,
                            CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
             static const int BlockSize_2 = BlockSize * BlockSize;
 
