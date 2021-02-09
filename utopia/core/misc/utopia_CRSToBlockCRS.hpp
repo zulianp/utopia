@@ -36,6 +36,8 @@ namespace utopia {
                           const bool sort_columns = true) {
             static const int BlockSize_2 = BlockSize * BlockSize;
             auto n_blocks = n / BlockSize;
+            assert(n_blocks * BlockSize == n);
+            assert(n > 0);
 
             out.set_cols(n_blocks);
 
@@ -58,8 +60,11 @@ namespace utopia {
                         SizeType j = ja[k];
                         SizeType block_j = j / BlockSize;
 
+                        assert(block_j < SizeType(block_pattern.size()));
+
                         if (block_pattern[block_j] == 0) {
-                            ++row_ptr[block_i + 1];
+                            assert((block_i + 1) < SizeType(row_ptr.size()));
+                            row_ptr[block_i + 1]++;
                             block_pattern[block_j] = 1.0;
                         }
                     }

@@ -71,7 +71,7 @@ namespace utopia {
         bool use_simd = false;
         in.get("use_simd", use_simd);
 
-        if (use_simd) {
+        if (use_simd && block_size == VcProjectedBlockGaussSeidelSweep<Matrix>::BlockSize) {
             sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
         } else
 #endif  // UTOPIA_WITH_VC
@@ -497,8 +497,10 @@ namespace utopia {
             local_block_view(A, A_local);
 
             if (reset) {
+                assert(sweeper_);
                 sweeper_->init_from_local_matrix(A_local);
             } else {
+                assert(sweeper_);
                 sweeper_->update_from_local_matrix(A_local);
             }
 
