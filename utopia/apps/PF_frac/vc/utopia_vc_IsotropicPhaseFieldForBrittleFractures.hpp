@@ -21,6 +21,8 @@
 #define UNROLL_FACTOR 4
 #define U_MIN(a, b) ((a) < (b) ? (a) : (b))
 
+// #define ENABLE_ASTRUM_CONDITIONS
+
 namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
@@ -144,16 +146,17 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
                         for (SizeType qp = 0; qp < n_qp; ++qp) {
+                            auto dx_qp = dx(qp);
                             auto tr = trace(el_strain[qp]);
                             if (this->params_.use_pressure) {
                                 el_energy +=
                                     simd::integrate(PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
                                                         this->params_, c[qp]) *
-                                                    p[qp] * tr * dx(qp));
+                                                    p[qp] * tr * dx_qp);
                             }
 
-                            el_energy += simd::integrate(
-                                energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain[qp]) * dx(qp));
+                            el_energy +=
+                                simd::integrate(energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain[qp]) * dx_qp);
 
                             if (this->params_.use_penalty_irreversibility) {
                                 auto c_cold = c[qp] - c_old[qp];
@@ -163,7 +166,7 @@ namespace utopia {
                                 c_cold_bracket.setZeroInverted(c_mask);
 
                                 el_energy += simd::integrate(this->params_.penalty_param / 2.0 * c_cold_bracket *
-                                                             c_cold_bracket * dx(qp));
+                                                             c_cold_bracket * dx_qp);
                             }
                         }
 
@@ -467,11 +470,11 @@ namespace utopia {
                 Vc::vector<CGradValue> c_grad_el(n_qp);
                 Vc::vector<UGradValue> el_strain(n_qp);
 
-                Device::parallel_for(this->space_.element_range(), [&](const SizeType &i) {
-                    simd::Matrix<SIMDType, Dim, Dim> stress;
-                    StaticVector<Scalar, U_NDofs> u_el_vec;
-                    StaticVector<Scalar, C_NDofs> c_el_vec;
+                simd::Matrix<SIMDType, Dim, Dim> stress;
+                StaticVector<Scalar, U_NDofs> u_el_vec;
+                StaticVector<Scalar, C_NDofs> c_el_vec;
 
+                Device::parallel_for(this->space_.element_range(), [&](const SizeType &i) {
                     u_el_vec.set(0.0);
                     c_el_vec.set(0.0);
 
@@ -502,6 +505,7 @@ namespace utopia {
                     ////////////////////////////////////////////
 
                     for (SizeType qp = 0; qp < n_qp; ++qp) {
+                        const auto dx_qp = dx(qp);
                         auto tr_strain_u = trace(el_strain[qp]);
 
                         compute_stress(this->params_, tr_strain_u, el_strain[qp], stress);
@@ -511,10 +515,10 @@ namespace utopia {
 
                         for (SizeType j = 0; j < U_NDofs; ++j) {
                             auto &&strain_test = u_strain_shape_el(j, qp);
-                            u_el_vec(j) += simd::integrate(inner(stress, strain_test) * dx(qp));
+                            u_el_vec(j) += simd::integrate(inner(stress, strain_test) * dx_qp);
 
                             if (this->params_.use_pressure) {
-                                u_el_vec(j) += simd::integrate(gc_qp * p[qp] * trace(strain_test) * dx(qp));
+                                u_el_vec(j) += simd::integrate(gc_qp * p[qp] * trace(strain_test) * dx_qp);
                             }
                         }
 
@@ -530,10 +534,10 @@ namespace utopia {
                                     PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(this->params_,
                                                                                                         c[qp]) *
                                     p[qp] * tr_strain_u * shape_test;
-                                c_el_vec(j) += simd::integrate(der_c_pres * dx(qp));
+                                c_el_vec(j) += simd::integrate(der_c_pres * dx_qp);
                             }
 
-                            c_el_vec(j) += simd::integrate((elast * shape_test + frac) * dx(qp));
+                            c_el_vec(j) += simd::integrate((elast * shape_test + frac) * dx_qp);
 
                             if (this->params_.use_penalty_irreversibility) {
                                 auto c_cold = c[qp] - c_old[qp];
@@ -543,7 +547,7 @@ namespace utopia {
                                 c_cold_bracket.setZeroInverted(c_mask);
 
                                 c_el_vec(j) +=
-                                    simd::integrate(this->params_.penalty_param * c_cold_bracket * shape_test * dx(qp));
+                                    simd::integrate(this->params_.penalty_param * c_cold_bracket * shape_test * dx_qp);
                             }
                         }
                     }
@@ -653,11 +657,8 @@ namespace utopia {
                 auto strain_view = strain.view_device();
                 auto differential_view = differential.view_device();
 
-                // auto v_grad_shape_view = v_grad_shape.view_device();
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
-
-                // FIXME
                 auto p_stress_view = p_stress.view_device();
 
                 auto H_view = this->space_.assembly_view_device(H);
@@ -668,11 +669,10 @@ namespace utopia {
                 Vc::vector<SIMDType> p(n_qp, 0.0);
                 Vc::vector<UGradValue> el_strain(n_qp);
 
-                Device::parallel_for(this->space_.element_range(), [&](const SizeType &i) {
-                    // StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
-                    StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
-                    simd::Matrix<SIMDType, Dim, Dim> stress;
+                StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
+                simd::Matrix<SIMDType, Dim, Dim> stress;
 
+                Device::parallel_for(this->space_.element_range(), [&](const SizeType &i) {
                     MixedElem e;
                     space_view.elem(i, e);
                     el_mat.set(0.0);
@@ -697,6 +697,7 @@ namespace utopia {
                     ////////////////////////////////////////////
                     for (SizeType qp = 0; qp < n_qp; ++qp) {
                         const auto tr_strain_u = trace(el_strain[qp]);
+                        const auto dx_qp = dx(qp);
 
                         const auto eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain[qp]);
 
@@ -709,24 +710,19 @@ namespace utopia {
                             for (SizeType j = l; j < C_NDofs; ++j) {
                                 const auto c_shape_j_l_prod = c_shape_fun_el(j, qp) * c_shape_l;
 
-                                auto val = bilinear_cc(this->params_,
-                                                       c[qp],
-                                                       eep,
-                                                       // c_shape_j,
-                                                       // c_shape_l,
-                                                       c_shape_j_l_prod,
-                                                       c_grad_shape_el(j, qp),
-                                                       c_grad_l) *
-                                           dx(qp);
+                                auto val =
+                                    bilinear_cc(
+                                        this->params_, c[qp], eep, c_shape_j_l_prod, c_grad_shape_el(j, qp), c_grad_l) *
+                                    dx_qp;
 
                                 if (this->params_.use_pressure) {
                                     val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(
                                                this->params_, c[qp]) *
-                                           p[qp] * tr_strain_u * c_shape_j_l_prod * dx(qp);
+                                           p[qp] * tr_strain_u * c_shape_j_l_prod * dx_qp;
                                 }
 
                                 if (this->params_.use_penalty_irreversibility) {
-                                    val += this->params_.penalty_param * c_shape_j_l_prod * dx(qp);
+                                    val += this->params_.penalty_param * c_shape_j_l_prod * dx_qp;
                                 }
 
                                 auto val_integr = simd::integrate((l == j) ? (0.5 * val) : val);
@@ -742,7 +738,7 @@ namespace utopia {
                             for (SizeType j = l; j < U_NDofs; ++j) {
                                 auto val = PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
                                                this->params_, c[qp], p_stress_view(j, qp), u_strain_shape_l) *
-                                           dx(qp);
+                                           dx_qp;
 
                                 auto val_integr = simd::integrate((l == j) ? (0.5 * val) : val);
                                 el_mat(C_NDofs + l, C_NDofs + j) += val_integr;
@@ -751,9 +747,9 @@ namespace utopia {
                         }
 
                         //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                        if (this->params_.turn_off_uc_coupling == false ||
-                            this->params_.turn_off_cu_coupling == false) {
+#ifdef ENABLE_ASTRUM_CONDITIONS
+                        if (!this->params_.turn_off_uc_coupling || !this->params_.turn_off_cu_coupling) {
+#endif  // ENABLE_ASTRUM_CONDITIONS
                             compute_stress(this->params_, tr_strain_u, el_strain[qp], stress);
                             for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
                                 // CHANGE (pre-compute/store shape fun)
@@ -763,13 +759,13 @@ namespace utopia {
                                     auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
                                     auto val =
-                                        bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
+                                        bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx_qp;
 
                                     if (this->params_.use_pressure) {
                                         const auto tr_strain_shape = trace(strain_shape);
                                         val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
                                                    this->params_, c[qp]) *
-                                               p[qp] * tr_strain_shape * c_shape_i * dx(qp);
+                                               p[qp] * tr_strain_shape * c_shape_i * dx_qp;
                                     }
 
                                     // not symetric, but more numerically stable
@@ -782,7 +778,9 @@ namespace utopia {
                                     }
                                 }
                             }
+#ifdef ENABLE_ASTRUM_CONDITIONS
                         }
+#endif  // ENABLE_ASTRUM_CONDITIONS
                     }
 
                     space_view.add_matrix(e, el_mat, H_view);
@@ -910,6 +908,7 @@ namespace utopia {
 }  // namespace utopia
 
 // clean-up macros
+#undef ENABLE_ASTRUM_CONDITIONS
 #undef UNROLL_FACTOR
 #undef U_MIN
 #endif

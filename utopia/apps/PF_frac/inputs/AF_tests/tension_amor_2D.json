@@ -1,8 +1,8 @@
 {
     "app" : "petsc_tension_vol_dev_split_phase_field_2",
     "output-path" : "amor_test/out",
-    "nx" : 100,
-    "ny" : 50,
+    "nx" : 101,
+    "ny" : 51,
     "nz" : 0,
     "x_min" : 0,
     "x_max" : 1,
@@ -10,18 +10,19 @@
     "y_max" : 0.5,
     "disp" : 1,
     "*mobility": 1e-9,
-    "num_time_steps" : 40, 
-    "dt" : 1e-4,     
+    "num_time_steps" : 40,
+    "dt" : 1e-4,
     "use_mprgp" : true,
-    "adjust_dt_on_failure": false, 
-    "shrinking_factor" : 0.5, 
+    "adjust_dt_on_failure": false,
+    "shrinking_factor" : 0.5,
+    "block_solver" : false,
     "solver" : {
         "verbose" : true,
         "max-it" : 200,
-        "atol": 1e-6, 
+        "atol": 1e-6,
         "linear-solver" : {
-            "verbose" : false, 
-            "atol": 1e-9, 
+            "verbose" : false,
+            "atol": 1e-9,
             "max-it": 1000
         }
     }
