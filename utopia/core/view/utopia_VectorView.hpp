@@ -158,7 +158,7 @@ namespace utopia {
         UTOPIA_FUNCTION constexpr TensorView(const TensorView &other) : view_(other.view_) {}
 
         template <class... Args>
-        TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
+        TensorView(const DelegateArgs &, Args &&...args) : view_(std::forward<Args>(args)...) {}
 
         template <class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr) {

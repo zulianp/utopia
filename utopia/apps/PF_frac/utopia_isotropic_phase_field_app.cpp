@@ -123,7 +123,10 @@ namespace utopia {
 
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
         PFFracTension2D<FunctionSpace> BC_setup(space);
-        IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
+        // IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace> > time_stepper(
+        //     space, IC_setup, BC_setup);
+
+        IncrementalLoading<FunctionSpace, IsotropicPhaseFieldForBrittleFractures<FunctionSpace> > time_stepper(
             space, IC_setup, BC_setup);
 
         time_stepper.read(in);
@@ -283,6 +286,12 @@ namespace utopia {
                              InitialCondidtionPFFracNet2D<FunctionSpace> >
             time_stepper(space);
 
+        // MLIncrementalLoading<FunctionSpace,
+        //                      PhaseFieldVolDevSplit<FunctionSpace>,
+        //                      PFFracFixAllDisp4Sides<FunctionSpace>,
+        //                      InitialCondidtionPFFracNet2D<FunctionSpace> >
+        // time_stepper(space);
+
         time_stepper.read(in);
         time_stepper.run();
 
@@ -319,8 +328,8 @@ namespace utopia {
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             PhaseFieldVolDevSplit<FunctionSpace>,
-                             // IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             // PhaseFieldVolDevSplit<FunctionSpace>,
+                             IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
                              PFFracTension2D<FunctionSpace>,
                              InitialCondidtionPFTension<FunctionSpace> >
             time_stepper(space);
@@ -336,6 +345,87 @@ namespace utopia {
     }
 
     UTOPIA_REGISTER_APP(petsc_pressure_net_2_rmtr_vol_dev);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void petsc_shneddon2D(Input &in) {
+        static const int Dim = 2;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformQuad4;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+        // using SizeType = FunctionSpace::SizeType;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             PFFracFixAllDisp4Sides<FunctionSpace>,
+                             InitialCondidtionPFSneddon<FunctionSpace> >
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_shneddon2D);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
+    static void petsc_shneddon3D(Input &in) {
+        static const int Dim = 3;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             PFFracFixAllDisp3D<FunctionSpace>,
+                             InitialCondidtionPFSneddon<FunctionSpace> >
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_shneddon3D);
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //

@@ -42,6 +42,70 @@
 namespace utopia {
 
     template <class FunctionSpace>
+    class InitialCondidtionPFSneddon : public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+        static const int Dim = FunctionSpace::Dim;
+
+        InitialCondidtionPFSneddon(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component) {}
+
+        void init(PetscVector &x) override {
+            auto C = this->space_.subspace(PF_component_);
+
+            auto sampler = utopia::sampler(
+                C, UTOPIA_LAMBDA(const Point &x)->Scalar {
+                    const Scalar l_0 = 1.0;
+                    const Scalar thickness = 3.0 * this->space_.mesh().min_spacing();
+
+                    Scalar r_squared = 0.0;
+
+                    if (Dim == 2) {
+                        r_squared = x[0] * x[0];
+                    } else {
+                        r_squared = (x[0] * x[0]) + (x[2] * x[2]);
+                    }
+
+                    Scalar f = 0.0;
+                    if ((r_squared <= l_0 * l_0) && ((device::abs(2.0 * x[1]) <= thickness))) {
+                        f = 1.0;
+                    } else {
+                        f = 0.0;
+                    }
+                    return f;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+    };
+
+    template <class FunctionSpace>
     class InitialCondidtionPFTension : public InitialCondition<FunctionSpace> {
     public:
         // using Comm           = typename FunctionSpace::Comm;

@@ -100,7 +100,7 @@ namespace utopia {
             auto differential = C.differential(q);
 
             val = 0.0;
-            PrincipalStrains<USpace, Quadrature> strain(u_fun.coefficient(), q);
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
 
             {
                 auto U_view = U.view_device();
@@ -174,7 +174,160 @@ namespace utopia {
 
             assert(val == val);
 
+            this->add_pf_constraints(x_const);
+
             UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::value(...)");
+            return true;
+        }
+
+        bool elastic_energy(const Vector &x_const, Scalar &val) const override {
+            UTOPIA_TRACE_REGION_BEGIN("PhaseFieldVolDevSplit::elastic_energy(...)");
+
+            USpace U;
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
+
+            auto &x = const_cast<Vector &>(x_const);
+
+            ///////////////////////////////////////////////////////////////////////////
+            // update local vector x
+            this->space_.global_to_local(x_const, *(this->local_x_));
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+            ////////////////////////////////////////////////////////////////////////////
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto u_val = u_fun.value(q);
+            auto differential = C.differential(q);
+
+            val = 0.0;
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
+
+            {
+                auto U_view = U.view_device();
+                auto C_view = C.view_device();
+
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto u_view = u_val.view_device();
+
+                auto strain_view = strain.view_device();
+                auto differential_view = differential.view_device();
+
+                Device::parallel_reduce(
+                    this->space_.element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i) {
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
+
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto el_strain = strain_view.make(u_e);
+
+                        auto dx = differential_view.make(c_e);
+
+                        Scalar el_energy = 0.0;
+                        Scalar tr = 0.0;
+
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            el_energy += elastic_energy(this->params_, c[qp], el_strain.strain[qp], tr) * dx(qp);
+                        }
+
+                        assert(el_energy == el_energy);
+                        return el_energy;
+                    },
+                    val);
+            }
+
+            val = x.comm().sum(val);
+
+            assert(val == val);
+
+            UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::elastic energy(...)");
+            return true;
+        }
+
+        bool fracture_energy(const Vector &x_const, Scalar &val) const override {
+            UTOPIA_TRACE_REGION_BEGIN("PhaseFieldVolDevSplit::fracture_energy(...)");
+
+            USpace U;
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
+
+            auto &x = const_cast<Vector &>(x_const);
+
+            ///////////////////////////////////////////////////////////////////////////
+            // update local vector x
+            this->space_.global_to_local(x_const, *(this->local_x_));
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+            ////////////////////////////////////////////////////////////////////////////
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto u_val = u_fun.value(q);
+            auto differential = C.differential(q);
+
+            val = 0.0;
+
+            {
+                auto U_view = U.view_device();
+                auto C_view = C.view_device();
+
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto u_view = u_val.view_device();
+
+                auto differential_view = differential.view_device();
+
+                Device::parallel_reduce(
+                    this->space_.element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i) {
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+
+                        StaticVector<Scalar, NQuadPoints> c;
+                        c_view.get(c_e, c);
+
+                        UElem u_e;
+                        U_view.elem(i, u_e);
+                        auto c_grad_el = c_grad_view.make(c_e);
+
+                        auto dx = differential_view.make(c_e);
+
+                        Scalar el_energy = 0.0;
+
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+                                             this->params_, c[qp], c_grad_el[qp]) *
+                                         dx(qp);
+                        }
+
+                        assert(el_energy == el_energy);
+                        return el_energy;
+                    },
+                    val);
+            }
+
+            val = x.comm().sum(val);
+
+            assert(val == val);
+
+            UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::fracture_energy(...)");
             return true;
         }
 

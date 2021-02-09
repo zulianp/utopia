@@ -47,6 +47,8 @@ namespace utopia {
             in.get("mu", mu);
             in.get("lambda", lambda);
             in.get("fracture_toughness", fracture_toughness);
+            in.get("nu", nu);
+            in.get("E", E);
 
             in.get("turn_off_uc_coupling", turn_off_uc_coupling);
             in.get("turn_off_cu_coupling", turn_off_cu_coupling);
@@ -56,6 +58,15 @@ namespace utopia {
 
             // seq. faults for some reason... ???
             kappa = lambda + (2.0 * mu / Dim);
+
+            if (nu != 0.0 && E != 0.0) {
+                mu = E / (2.0 * (1. + nu));
+                lambda = (2.0 * nu * mu) / (1.0 - (2.0 * nu));
+
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "mu: " << mu << "  lambda: " << lambda << "  Gc: " << fracture_toughness << "  \n";
+                }
+            }
         }
 
         PFFracParameters()
@@ -69,10 +80,12 @@ namespace utopia {
               lambda(120.0),
               // mu(100.0),
               // lambda(100.0),
-              regularization(1e-15),
+              nu(0.0),
+              E(0.0),
+              regularization(1e-10),
               pressure(0.0),
               penalty_param(0.0),
-              crack_set_tol(0.97),
+              crack_set_tol(0.93),
               // mobility(1e-5)
               mobility(1e-6)
 
@@ -100,11 +113,11 @@ namespace utopia {
             kappa = lambda + (2.0 * mu / Dim);
         }
 
-        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa;
+        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E;
         Scalar regularization, pressure, penalty_param, crack_set_tol, mobility;
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
-        bool use_mobility{true};
+        bool use_mobility{false};
 
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> elast_tensor;
         Tensor4th<Scalar, Dim, Dim, Dim, Dim> I4sym;
@@ -137,6 +150,10 @@ namespace utopia {
 
         static const int NQuadPoints = Quadrature::NPoints;
 
+        // using ExtendedFunction<typename FunctionSpace::Matrix, typename
+        // FunctionSpace::Vector>::get_eq_constrains_flg; using ExtendedFunction<typename FunctionSpace::Matrix,
+        //                        typename FunctionSpace::Vector>::get_eq_constrains_values;
+
         void read(Input &in) override {
             params_.read(in);
             in.get("use_dense_hessian", use_dense_hessian_);
@@ -156,7 +173,7 @@ namespace utopia {
 
         void init_force_field(Input &in) {
             in.get("neumann_bc", [&](Input &in) {
-                in.get_all([&](Input &in) {
+                in.get_all([&](Input & /*in*/) {
                     if (empty(force_field_)) {
                         space_.create_vector(force_field_);
                         force_field_.set(0.0);
@@ -233,7 +250,16 @@ namespace utopia {
             return true;
         }
 
-        //////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////
+        virtual bool fracture_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
+        virtual bool elastic_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
+
+        // compute total crack volume (TCV), so we can compare to exact solution
+        virtual bool compute_tcv(const Vector &x_const, Scalar &error) const { return false; }
+
+        virtual void update_history_field(const Vector & /*x_const*/) const {}
+
+        ////////////////////////////////////////////////////////////////////////////////////
 
         template <class StressShape, class Grad>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const PFFracParameters &params,
@@ -263,7 +289,7 @@ namespace utopia {
                                                               const Scalar &elastic_energy_positive,
                                                               const Scalar &trial,
                                                               const Scalar &test) {
-            const Scalar dcc = quadratic_degradation_deriv2(params, phase_field_value);
+            const Scalar dcc = (1.0 - params.regularization) * quadratic_degradation_deriv2(params, phase_field_value);
             return dcc * trial * elastic_energy_positive * test;
         }
 
@@ -321,13 +347,14 @@ namespace utopia {
             return 2.0;
         }
 
-        void old_solution(const Vector &x_old) { x_old_ = x_old; }
-
         Vector &old_solution() { return x_old_; }
 
         void get_old_solution(Vector &x) const { x = x_old_; }
 
-        void set_old_solution(const Vector &x) { x_old_ = x; }
+        void set_old_solution(const Vector &x) {
+            x_old_ = x;
+            update_history_field(x_old_);
+        }
 
         void build_irreversility_constraint(Vector &lb) {
             {
@@ -340,6 +367,51 @@ namespace utopia {
                             lb_view.set(i, d_x_old.get(i));
                         } else {
                             lb_view.set(i, -9e15);
+                        }
+                    });
+            }
+        }
+
+        void build_irreversility_constraint(Vector &lb, Vector &ub) {
+            {
+                auto d_x_old = const_device_view(x_old_);
+
+                auto lb_view = view_device(lb);
+                auto ub_view = view_device(ub);
+                parallel_for(
+                    range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            lb_view.set(i, d_x_old.get(i));
+                            ub_view.set(i, 1.0);
+                        } else {
+                            lb_view.set(i, -9e15);
+                            ub_view.set(i, 9e15);
+                        }
+                    });
+            }
+        }
+
+        void make_iterate_feasible(const Vector &lb, const Vector &ub, Vector &x) {
+            {
+                auto d_x_old = view_device(x);
+
+                auto lb_view = const_device_view(lb);
+                auto ub_view = const_device_view(ub);
+                parallel_for(
+                    range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            Scalar li = lb_view.get(i);
+                            Scalar ui = ub_view.get(i);
+                            auto xi = d_x_old.get(i);
+                            // if (li >= xi) {
+                            //     d_x_old.set(i, li);
+                            // }
+                            if (ui <= xi) {
+                                d_x_old.set(i, ui);
+                            }
+                            // else {
+                            //     // d_x_old.set(i, (ui <= xi) ? ui : xi);
+                            // }
                         }
                     });
             }
@@ -405,6 +477,43 @@ namespace utopia {
                         }
                     });
             }
+        }
+
+        // this 2 functions need to be moved to BC conditions
+        void add_irr_values_markers(Vector &val, Vector &flg, const Vector &x_current) const {
+            {
+                auto d_x_old = const_device_view(x_current);
+
+                auto val_view = view_device(val);
+                parallel_for(
+                    range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            if (d_x_old.get(i) > params_.crack_set_tol) {
+                                val_view.set(i, d_x_old.get(i));
+                            }
+                        }
+                    });
+
+                auto flg_view = view_device(flg);
+                parallel_for(
+                    range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
+                        if (i % (Dim + 1) == 0) {
+                            if (d_x_old.get(i) > params_.crack_set_tol) {
+                                flg_view.set(i, 1.0);
+                            }
+                        }
+                    });
+            }
+        }
+
+        void add_pf_constraints(const Vector &x_current) const {
+            auto *p_this = const_cast<PhaseFieldFracBase<FunctionSpace> *>(this);
+
+            Vector &bc_flgs = p_this->get_eq_constrains_flg();
+            Vector &bc_values = p_this->get_eq_constrains_values();
+            p_this->space_.apply_constraints(bc_values);
+            p_this->space_.build_constraints_markers(bc_flgs);
+            p_this->add_irr_values_markers(bc_values, bc_flgs, x_current);
         }
 
         // we should move this to BC conditions

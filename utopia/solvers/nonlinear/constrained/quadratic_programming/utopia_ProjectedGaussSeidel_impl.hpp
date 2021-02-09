@@ -255,7 +255,6 @@ namespace utopia {
             sweeper_->set_bounds(lb_view.array(), ub_view.array());
             sweeper_->set_correction_view(c_view.array());
             sweeper_->apply(this->n_local_sweeps());
-
         } else {
             auto &&r_view = const_local_view_device(r);
             auto &&lb_view = const_local_view_device(lb);

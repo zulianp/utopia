@@ -1,6 +1,7 @@
 #ifndef UTOPIA_PHASE_FIELD_HPP
 #define UTOPIA_PHASE_FIELD_HPP
 
+#include "utopia_CoefStrainView.hpp"
 #include "utopia_DeviceTensorContraction.hpp"
 #include "utopia_DeviceTensorProduct.hpp"
 #include "utopia_DiffController.hpp"
@@ -8,8 +9,7 @@
 #include "utopia_FEFunction.hpp"
 #include "utopia_GradInterpolate.hpp"
 #include "utopia_LinearElasticityView.hpp"
-#include "utopia_PrincipalShapeStressView.hpp"
-#include "utopia_PrincipalStrainsView.hpp"
+#include "utopia_PhaseFieldBase.hpp"
 #include "utopia_StrainView.hpp"
 #include "utopia_TensorView4.hpp"
 #include "utopia_Tracer.hpp"
@@ -22,8 +22,7 @@
 namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
-    class IsotropicPhaseFieldForBrittleFractures final
-        : public ExtendedFunction<typename FunctionSpace::Matrix, typename FunctionSpace::Vector> {
+    class IsotropicPhaseFieldForBrittleFractures final : public PhaseFieldFracBase<FunctionSpace, Dim> {
     public:
         using Scalar = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
@@ -37,6 +36,7 @@ namespace utopia {
         using UElem = typename USpace::ViewDevice::Elem;
         using CElem = typename CSpace::ViewDevice::Elem;
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
+        using Parameters = utopia::PFFracParameters<FunctionSpace>;
 
         // FIXME
         using Shape = typename FunctionSpace::Shape;
@@ -47,173 +47,34 @@ namespace utopia {
         static const int U_NDofs = USpace::NDofs;
 
         static const int NQuadPoints = Quadrature::NPoints;
+        const Scalar PI = 3.141592653589793238463;
 
-        class Parameters : public Configurable {
-        public:
-            void read(Input &in) override {
-                in.get("a", a);
-                in.get("b", b);
-                in.get("d", d);
-                in.get("f", f);
-                in.get("length_scale", length_scale);
-                in.get("fracture_toughness", fracture_toughness);
-                in.get("mu", mu);
-                in.get("lambda", lambda);
-                in.get("regularization", regularization);
-                in.get("pressure", pressure);
-                in.get("use_pressure", use_pressure);
-
-                in.get("use_penalty_irreversibility", use_penalty_irreversibility);
-                in.get("penalty_param", penalty_param);
-
-                in.get("use_crack_set_irreversibiblity", use_crack_set_irreversibiblity);
-                in.get("crack_set_tol", crack_set_tol);
-
-                in.get("mu", mu);
-                in.get("lambda", lambda);
-                in.get("fracture_toughness", fracture_toughness);
-
-                in.get("turn_off_uc_coupling", turn_off_uc_coupling);
-                in.get("turn_off_cu_coupling", turn_off_cu_coupling);
-            }
-
-            Parameters()
-                : a(1.0),
-                  b(1.0),
-                  d(1.0),
-                  f(1.0),
-                  length_scale(0.0),
-                  fracture_toughness(0.001),
-                  mu(80.0),
-                  lambda(120.0),
-                  regularization(1e-10),
-                  pressure(0.0),
-                  penalty_param(0.0),
-                  crack_set_tol(0.93)
-
-            {}
-
-            Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda;
-            Scalar regularization, pressure, penalty_param, crack_set_tol;
-            bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
-            bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
-        };
-
-        void read(Input &in) override {
-            params_.read(in);
-            in.get("use_dense_hessian", use_dense_hessian_);
-            in.get("check_derivatives", check_derivatives_);
-            in.get("diff_controller", diff_ctrl_);
-            init_force_field(in);
-        }
-
-        // this is a bit of hack
-        void set_pressure(const Scalar &pressure) { params_.pressure = pressure; }
-
-        void use_crack_set_irreversibiblity(const bool &flg) { params_.use_crack_set_irreversibiblity = flg; }
-        void use_penalty_irreversibility(const bool &flg) { params_.use_penalty_irreversibility = flg; }
-
-        void turn_off_uc_coupling(const bool &flg) { params_.turn_off_uc_coupling = flg; }
-        void turn_off_cu_coupling(const bool &flg) { params_.turn_off_cu_coupling = flg; }
-
-        void init_force_field(Input &in) {
-            in.get("neumann_bc", [&](Input &in) {
-                in.get_all([&](Input &in) {
-                    if (empty(force_field_)) {
-                        space_.create_vector(force_field_);
-                        force_field_.set(0.0);
-                    }
-
-                    NeumannBoundaryCondition<FunctionSpace> bc(space_);
-                    bc.read(in);
-                    bc.apply(force_field_);
-                });
-            });
-        }
-
-        IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space)
-            : space_(space), use_dense_hessian_(false), check_derivatives_(false) {
-            if (params_.length_scale == 0) {
-                params_.length_scale = 2.0 * space.mesh().min_spacing();
-            }
-
-            // this computation follows eq. 50 from "On penalization in variational
-            // phase-field models of britlle fracture, Gerasimov, Lorenzis"
-            if (params_.use_penalty_irreversibility) {
-                Scalar tol = 1e-3;
-                Scalar tol2 = tol * tol;
-                params_.penalty_param = params_.fracture_toughness / params_.length_scale * (1.0 / tol2 - 1.0);
-            }
-
-            // in case of constant pressure field
-            // if(params_.pressure){
-            params_.use_pressure = true;
-            setup_constant_pressure_field(params_.pressure);
-            // }
-
-            // needed for ML setup
-            space_.create_vector(this->_x_eq_values);
-            space_.create_vector(this->_eq_constrains_flg);
-
-            this->local_x_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_x_);
-
-            this->local_pressure_field_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_pressure_field_);
-
-            this->local_c_old_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_c_old_);
-        }
+        IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {}
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space, const Parameters &params)
-            : space_(space), params_(params), use_dense_hessian_(false), check_derivatives_(false) {
-            this->local_x_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_x_);
-
-            this->local_pressure_field_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_pressure_field_);
-
-            this->local_c_old_ = std::make_shared<Vector>();
-            space_.create_local_vector(*this->local_c_old_);
-        }
-
-        void use_dense_hessian(const bool val) { use_dense_hessian_ = val; }
-
-        inline bool initialize_hessian(Matrix &H, Matrix & /*H_pre*/) const override {
-            // if(use_dense_hessian_) {
-            //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
-            // } else {
-            space_.create_matrix(H);
-            // }
-            return true;
-        }
-
-        inline bool update(const Vector & /*x*/) override {
-            // x_coeff_.update(x);
-            return true;
-        }
+            : PhaseFieldFracBase<FunctionSpace, Dim>(space, params) {}
 
         bool value(const Vector &x_const, Scalar &val) const override {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::value");
 
             USpace U;
-            space_.subspace(1, U);
-            CSpace C = space_.subspace(0);
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
 
             ///////////////////////////////////////////////////////////////////////////
 
             // update local vector x
-            space_.global_to_local(x_const, *local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
 
             // udpate local pressure field
-            space_.global_to_local(pressure_field_, *local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+            this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
 
             // update c_old
-            space_.global_to_local(x_old_, *local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+            this->space_.global_to_local(this->x_old_, *this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -233,9 +94,7 @@ namespace utopia {
 
             val = 0.0;
 
-            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
-            // PrincipalStrains<USpace, Quadrature> strain(U, q);
-            // strain.update(x);
+            CoefStrain<USpace, Quadrature> strain(u_fun.coefficient(), q);
 
             {
                 auto U_view = U.view_device();
@@ -252,7 +111,7 @@ namespace utopia {
                 auto differential_view = differential.view_device();
 
                 Device::parallel_reduce(
-                    space_.element_range(),
+                    this->space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i) {
                         // StaticMatrix<Scalar, Dim, Dim> strain_n;
                         // StaticMatrix<Scalar, Dim, Dim> strain_p;
@@ -281,16 +140,19 @@ namespace utopia {
                         // UNROLL_FACTOR)
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             Scalar tr = trace(el_strain.strain[qp]);
-                            if (params_.use_pressure) {
-                                el_energy += quadratic_degradation(params_, c[qp]) * p[qp] * tr * dx(qp);
+                            if (this->params_.use_pressure) {
+                                el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
+                                                 this->params_, c[qp]) *
+                                             p[qp] * tr * dx(qp);
                             }
 
-                            el_energy += energy(params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
+                            el_energy += energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain.strain[qp]) * dx(qp);
 
-                            if (params_.use_penalty_irreversibility) {
+                            if (this->params_.use_penalty_irreversibility) {
                                 auto c_cold = c[qp] - c_old[qp];
                                 auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
-                                el_energy += params_.penalty_param / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
+                                el_energy +=
+                                    this->params_.penalty_param / 2.0 * c_cold_bracket * c_cold_bracket * dx(qp);
                             }
                         }
 
@@ -304,36 +166,38 @@ namespace utopia {
 
             assert(val == val);
 
-            if (!empty(force_field_)) {
-                // MAYBE -= dot(x_const, force_field_);
-                val += dot(x_const, force_field_);
+            if (!empty(this->force_field_)) {
+                // MAYBE -= dot(x_const, this->force_field_);
+                val += dot(x_const, this->force_field_);
             }
+
+            // this->add_pf_constraints(x_const);
 
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::value");
             return true;
         }
 
-        bool elastic_energy(const Vector &x_const, Scalar &val) const {
+        bool elastic_energy(const Vector &x_const, Scalar &val) const override {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::elastic_energy");
 
             USpace U;
-            space_.subspace(1, U);
-            CSpace C = space_.subspace(0);
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
 
             ///////////////////////////////////////////////////////////////////////////
 
             // update local vector x
-            space_.global_to_local(x_const, *local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
 
             // udpate local pressure field
-            space_.global_to_local(pressure_field_, *local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+            this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
 
             // update c_old
-            space_.global_to_local(x_old_, *local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+            this->space_.global_to_local(this->x_old_, *this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -353,7 +217,7 @@ namespace utopia {
 
             val = 0.0;
 
-            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             {
                 auto U_view = U.view_device();
@@ -370,7 +234,7 @@ namespace utopia {
                 auto differential_view = differential.view_device();
 
                 Device::parallel_reduce(
-                    space_.element_range(),
+                    this->space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i) {
                         CElem c_e;
                         C_view.elem(i, c_e);
@@ -391,7 +255,7 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             Scalar tr = trace(el_strain.strain[qp]);
 
-                            el_energy += elastic_energy(params_, c[qp], tr, el_strain.strain[qp]) * dx(qp);
+                            el_energy += elastic_energy(this->params_, c[qp], tr, el_strain.strain[qp]) * dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -408,27 +272,157 @@ namespace utopia {
             return true;
         }
 
-        bool fracture_energy(const Vector &x_const, Scalar &val) const {
-            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::fracture_energy");
+        bool compute_tcv(const Vector &x_const, Scalar &error) const override {
+            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::compute_tcv");
+
+            Scalar tcv_exact = 0.0;
+            Scalar computed_tcv = 0.0;
 
             USpace U;
-            space_.subspace(1, U);
-            CSpace C = space_.subspace(0);
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
+
+            CSpace U1 = this->space_.subspace(1);
+            CSpace U2 = this->space_.subspace(2);
+            CSpace U3 = this->space_.subspace(3);
 
             ///////////////////////////////////////////////////////////////////////////
 
             // update local vector x
-            space_.global_to_local(x_const, *local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+
+            auto u_coeff1 = std::make_shared<Coefficient<CSpace>>(U1, this->local_x_);
+            auto u_coeff2 = std::make_shared<Coefficient<CSpace>>(U2, this->local_x_);
+            auto u_coeff3 = std::make_shared<Coefficient<CSpace>>(U3, this->local_x_);
+
+            FEFunction<CSpace> c_fun(c_coeff);
+            FEFunction<USpace> u_fun(u_coeff);
+
+            FEFunction<CSpace> u1_fun(u_coeff1);
+            FEFunction<CSpace> u2_fun(u_coeff2);
+            FEFunction<CSpace> u3_fun(u_coeff3);
+
+            ////////////////////////////////////////////////////////////////////////////
+
+            Quadrature q;
+
+            auto c_val = c_fun.value(q);
+            auto c_grad = c_fun.gradient(q);
+            auto u_val = u_fun.value(q);
+
+            auto u1_val = u1_fun.value(q);
+            auto u2_val = u2_fun.value(q);
+            auto u3_val = u3_fun.value(q);
+
+            auto differential = C.differential(q);
+
+            {
+                auto U_view = U.view_device();
+                auto C_view = C.view_device();
+                auto U1_view = U1.view_device();
+                auto U2_view = U2.view_device();
+                auto U3_view = U3.view_device();
+
+                auto c_view = c_val.view_device();
+                auto c_grad_view = c_grad.view_device();
+                auto u_view = u_val.view_device();
+
+                auto u1_view = u1_val.view_device();
+                auto u2_view = u2_val.view_device();
+                auto u3_view = u3_val.view_device();
+
+                auto differential_view = differential.view_device();
+
+                Device::parallel_reduce(
+                    this->space_.element_range(),
+                    UTOPIA_LAMBDA(const SizeType &i) {
+                        StaticVector<Scalar, NQuadPoints> c;
+                        StaticVector<Scalar, NQuadPoints> u1;
+                        StaticVector<Scalar, NQuadPoints> u2;
+                        StaticVector<Scalar, NQuadPoints> u3;
+
+                        CElem c_e;
+                        C_view.elem(i, c_e);
+                        c_view.get(c_e, c);
+
+                        CElem u1_e;
+                        U1_view.elem(i, u1_e);
+                        u1_view.get(u1_e, u1);
+
+                        CElem u2_e;
+                        U2_view.elem(i, u2_e);
+                        u2_view.get(u2_e, u2);
+
+                        CElem u3_e;
+                        U3_view.elem(i, u3_e);
+                        u3_view.get(u3_e, u3);
+
+                        auto c_grad_el = c_grad_view.make(c_e);
+
+                        auto dx = differential_view.make(c_e);
+
+                        Scalar tcv_mine = 0.0;
+
+                        // TCV = \int_\Omega u \cdot \nabla \phi
+                        for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
+                            if (Dim == 2) {
+                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1))) * dx(qp);
+                            } else {
+                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1)) +
+                                             (u3[qp] * c_grad_el[qp](2))) *
+                                            dx(qp);
+                            }
+                        }
+
+                        assert(tcv_mine == tcv_mine);
+                        return tcv_mine;
+                    },
+                    computed_tcv);
+            }
+
+            computed_tcv = x_const.comm().sum(computed_tcv);
+            assert(computed_tcv == computed_tcv);
+
+            // params depends on initial fracture lenght and pressure
+            const Scalar l_0 = 1.0;
+            const Scalar p = 1e-3;
+
+            if (Dim == 2) {
+                tcv_exact = 2.0 * p * l_0 * l_0 * (1.0 - this->params_.nu * this->params_.nu) * PI / this->params_.E;
+            } else {
+                tcv_exact =
+                    16.0 * p * l_0 * l_0 * l_0 * (1.0 - this->params_.nu * this->params_.nu) / this->params_.E / 3.0;
+            }
+
+            error = device::abs(computed_tcv - tcv_exact);
+            std::cout << "computed_tcv: " << computed_tcv << "  exact: " << tcv_exact << "  error: " << error << "\n ";
+            UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::compute_tcv");
+            return true;
+        }
+
+        bool fracture_energy(const Vector &x_const, Scalar &val) const override {
+            UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::fracture_energy");
+
+            USpace U;
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
+
+            ///////////////////////////////////////////////////////////////////////////
+
+            // update local vector x
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
 
             // udpate local pressure field
-            space_.global_to_local(pressure_field_, *local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+            this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
 
             // update c_old
-            space_.global_to_local(x_old_, *local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+            this->space_.global_to_local(this->x_old_, *this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -448,9 +442,7 @@ namespace utopia {
 
             val = 0.0;
 
-            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
-            // PrincipalStrains<USpace, Quadrature> strain(U, q);
-            // strain.update(x);
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             {
                 auto U_view = U.view_device();
@@ -465,7 +457,7 @@ namespace utopia {
                 auto differential_view = differential.view_device();
 
                 Device::parallel_reduce(
-                    space_.element_range(),
+                    this->space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i) {
                         CElem c_e;
                         C_view.elem(i, c_e);
@@ -485,7 +477,9 @@ namespace utopia {
                         // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(NQuadPoints,
                         // UNROLL_FACTOR)
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            el_energy += fracture_energy(params_, c[qp], c_grad_el[qp]) * dx(qp);
+                            el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+                                             this->params_, c[qp], c_grad_el[qp]) *
+                                         dx(qp);
                         }
 
                         assert(el_energy == el_energy);
@@ -504,29 +498,29 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::gradient");
 
             if (empty(g)) {
-                space_.create_vector(g);
+                this->space_.create_vector(g);
             } else {
                 g.set(0.0);
             }
 
             USpace U;
-            space_.subspace(1, U);
-            CSpace C = space_.subspace(0);
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
 
             ///////////////////////////////////////////////////////////////////////////
 
             // update local vector x
-            space_.global_to_local(x_const, *local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
 
             // udpate local pressure field
-            space_.global_to_local(pressure_field_, *local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+            this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
 
             // update c_old
-            space_.global_to_local(x_old_, *local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+            this->space_.global_to_local(this->x_old_, *this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -534,17 +528,6 @@ namespace utopia {
             FEFunction<USpace> u_fun(u_coeff);
 
             ////////////////////////////////////////////////////////////////////////////
-
-            // auto &x = const_cast<Vector &>(x_const);
-
-            // auto &x_old = const_cast<Vector &>(x_old_);
-            // FEFunction<CSpace> c_old_fun(C, x_old);
-
-            // auto &press = const_cast<Vector &>(pressure_field_);
-            // FEFunction<CSpace> press_fun(C, press);
-
-            // FEFunction<CSpace> c_fun(C, x);
-            // FEFunction<USpace> u_fun(U, x);
 
             Quadrature q;
 
@@ -560,11 +543,7 @@ namespace utopia {
             auto c_shape = C.shape(q);
             auto c_grad_shape = C.shape_grad(q);
 
-            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
-
-            // PrincipalStrains<USpace, Quadrature> strain(U, q);
-            // strain.update(x);
-
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
@@ -585,11 +564,11 @@ namespace utopia {
                 auto c_shape_view = c_shape.view_device();
                 auto c_grad_shape_view = c_grad_shape.view_device();
 
-                auto g_view = space_.assembly_view_device(g);
+                auto g_view = this->space_.assembly_view_device(g);
                 auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(
-                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         StaticMatrix<Scalar, Dim, Dim> stress;  //, strain_p;
                         StaticVector<Scalar, U_NDofs> u_el_vec;
                         StaticVector<Scalar, C_NDofs> c_el_vec;
@@ -631,10 +610,11 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-                            compute_stress(params_, tr_strain_u, el_strain.strain[qp], stress);
-                            stress = (quadratic_degradation(params_, c[qp]) * (1.0 - params_.regularization) +
-                                      params_.regularization) *
-                                     stress;
+                            compute_stress(this->params_, tr_strain_u, el_strain.strain[qp], stress);
+                            Scalar gc_qp =
+                                PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(this->params_, c[qp]);
+                            stress =
+                                (gc_qp * (1.0 - this->params_.regularization) + this->params_.regularization) * stress;
 
                             // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
                             // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
@@ -642,34 +622,35 @@ namespace utopia {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
 
-                                if (params_.use_pressure) {
-                                    u_el_vec(j) +=
-                                        quadratic_degradation(params_, c[qp]) * p[qp] * sum(diag(strain_test)) * dx(qp);
+                                if (this->params_.use_pressure) {
+                                    u_el_vec(j) += gc_qp * p[qp] * sum(diag(strain_test)) * dx(qp);
                                 }
                             }
 
                             const Scalar elast =
-                                grad_elastic_energy_wrt_c(params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                                grad_elastic_energy_wrt_c(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
 
                             // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
                             // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
                             for (SizeType j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test = c_shape_fun_el(j, qp);
-                                const Scalar frac = grad_fracture_energy_wrt_c(
-                                    params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
+                                const Scalar frac = PhaseFieldFracBase<FunctionSpace, Dim>::grad_fracture_energy_wrt_c(
+                                    this->params_, c[qp], c_grad_el[qp], shape_test, c_grad_shape_el(j, qp));
 
-                                if (params_.use_pressure) {
+                                if (this->params_.use_pressure) {
                                     const Scalar der_c_pres =
-                                        quadratic_degradation_deriv(params_, c[qp]) * p[qp] * tr_strain_u * shape_test;
+                                        PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
+                                            this->params_, c[qp]) *
+                                        p[qp] * tr_strain_u * shape_test;
                                     c_el_vec(j) += der_c_pres * dx(qp);
                                 }
 
                                 c_el_vec(j) += (elast * shape_test + frac) * dx(qp);
 
-                                if (params_.use_penalty_irreversibility) {
+                                if (this->params_.use_penalty_irreversibility) {
                                     auto c_cold = c[qp] - c_old[qp];
                                     auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
-                                    c_el_vec(j) += params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
+                                    c_el_vec(j) += this->params_.penalty_param * c_cold_bracket * shape_test * dx(qp);
                                 }
                             }
                         }
@@ -680,26 +661,20 @@ namespace utopia {
             }
 
             // check before boundary conditions
-            if (check_derivatives_) {
-                diff_ctrl_.check_grad(*this, x_const, g);
+            if (this->check_derivatives_) {
+                this->diff_ctrl_.check_grad(*this, x_const, g);
             }
 
-            if (!empty(force_field_)) {
-                // MAYBE g -= force_field_;
-                g += force_field_;
+            if (!empty(this->force_field_)) {
+                // MAYBE g -= this->force_field_;
+                g += this->force_field_;
             }
 
-            space_.apply_zero_constraints(g);
+            this->space_.apply_zero_constraints(g);
 
             // fully broken case is treated as Dirichlet BC
-            if (params_.use_crack_set_irreversibiblity) {
-                apply_zero_constraints_irreversibiblity(g, x_const);
-
-                // // just a test...
-                // auto* p_this =
-                // const_cast<IsotropicPhaseFieldForBrittleFractures<FunctionSpace>
-                // *>(this); add_irr_values_markers(p_this->_x_eq_values,
-                // p_this->_eq_constrains_flg);
+            if (this->params_.use_crack_set_irreversibiblity) {
+                this->apply_zero_constraints_irreversibiblity(g, x_const);
             }
 
             // static int iter = 0;
@@ -714,17 +689,17 @@ namespace utopia {
 
             if (empty(H)) {
                 // if(use_dense_hessian_) {
-                //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
+                //     H = local_zeros({this->space_.n_dofs(), this->space_.n_dofs()}); //FIXME
                 // } else {
-                space_.create_matrix(H);
+                this->space_.create_matrix(H);
                 // }
             } else {
                 H *= 0.0;
             }
 
             USpace U;
-            space_.subspace(1, U);
-            CSpace C = space_.subspace(0);
+            this->space_.subspace(1, U);
+            CSpace C = this->space_.subspace(0);
 
             // auto &x     = const_cast<Vector &>(x_const);t
             // auto &press = const_cast<Vector &>(pressure_field_);
@@ -732,17 +707,17 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             // update local vector x
-            space_.global_to_local(x_const, *local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, local_x_);
+            this->space_.global_to_local(x_const, *this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
 
             // udpate local pressure field
-            space_.global_to_local(pressure_field_, *local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, local_pressure_field_);
+            this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
 
             // update c_old
-            space_.global_to_local(x_old_, *local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, local_c_old_);
+            this->space_.global_to_local(this->x_old_, *this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -765,17 +740,16 @@ namespace utopia {
             auto c_grad_shape = C.shape_grad(q);
 
             // value based
-            PrincipalStrains<USpace, Quadrature> strain(u_coeff, q);
-            // strain.update(x);
+            CoefStrain<USpace, Quadrature> strain(u_coeff, q);
 
             // reference based
-            PrincipalShapeStress<USpace, Quadrature> p_stress(U, q, params_.mu, params_.lambda);
+            ShapeStress<USpace, Quadrature> p_stress(U, q, this->params_.mu, this->params_.lambda);
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
-                auto space_view = space_.view_device();
+                auto space_view = this->space_.view_device();
 
                 auto c_view = c_val.view_device();
                 auto p_view = p_val.view_device();
@@ -793,11 +767,11 @@ namespace utopia {
                 // FIXME
                 auto p_stress_view = p_stress.view_device();
 
-                auto H_view = space_.assembly_view_device(H);
+                auto H_view = this->space_.assembly_view_device(H);
                 auto ref_strain_u_view = ref_strain_u.view_device();
 
                 Device::parallel_for(
-                    space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
                         // StaticMatrix<Scalar, Dim, Dim> strain_n, strain_p;
                         StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
                         StaticMatrix<Scalar, Dim, Dim> stress;
@@ -829,7 +803,7 @@ namespace utopia {
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
-                            const Scalar eep = elastic_energy(params_, c[qp], tr_strain_u, el_strain.strain[qp]);
+                            const Scalar eep = elastic_energy(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
 
                             // pragma GCCunroll(C_NDofs)
                             for (SizeType l = 0; l < C_NDofs; ++l) {
@@ -838,22 +812,26 @@ namespace utopia {
 
                                 // SYMMETRIC VERSION
                                 for (SizeType j = l; j < C_NDofs; ++j) {
-                                    Scalar val = bilinear_cc(params_,
+                                    const Scalar c_shape_j_l_prod = c_shape_fun_el(j, qp) * c_shape_l;
+
+                                    Scalar val = bilinear_cc(this->params_,
                                                              c[qp],
                                                              eep,
-                                                             c_shape_fun_el(j, qp),
-                                                             c_shape_l,
+                                                             // c_shape_j,
+                                                             // c_shape_l,
+                                                             c_shape_j_l_prod,
                                                              c_grad_shape_el(j, qp),
                                                              c_grad_l) *
                                                  dx(qp);
 
-                                    if (params_.use_pressure) {
-                                        val += quadratic_degradation_deriv2(params_, c[qp]) * p[qp] * tr_strain_u *
-                                               c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                    if (this->params_.use_pressure) {
+                                        val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(
+                                                   this->params_, c[qp]) *
+                                               p[qp] * tr_strain_u * c_shape_j_l_prod * dx(qp);
                                     }
 
-                                    if (params_.use_penalty_irreversibility) {
-                                        val += params_.penalty_param * c_shape_fun_el(j, qp) * c_shape_l * dx(qp);
+                                    if (this->params_.use_penalty_irreversibility) {
+                                        val += this->params_.penalty_param * c_shape_j_l_prod * dx(qp);
                                     }
 
                                     val = (l == j) ? (0.5 * val) : val;
@@ -863,31 +841,29 @@ namespace utopia {
                                 }
                             }
 
-                            // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
-                            // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
                             for (SizeType l = 0; l < U_NDofs; ++l) {
                                 auto &&u_strain_shape_l = u_strain_shape_el(l, qp);
 
-                                // SYMMETRIC VERSION
-                                el_mat(C_NDofs + l, C_NDofs + l) +=
-                                    bilinear_uu(params_, c[qp], p_stress_view.stress(l, qp), u_strain_shape_l) * dx(qp);
-
-                                for (SizeType j = l + 1; j < U_NDofs; ++j) {
-                                    const Scalar v =
-                                        bilinear_uu(params_, c[qp], p_stress_view.stress(j, qp), u_strain_shape_l) *
+                                for (SizeType j = l; j < U_NDofs; ++j) {
+                                    Scalar val =
+                                        PhaseFieldFracBase<FunctionSpace, Dim>::bilinear_uu(
+                                            this->params_, c[qp], p_stress_view.stress(j, qp), u_strain_shape_l) *
                                         dx(qp);
 
-                                    el_mat(C_NDofs + l, C_NDofs + j) += v;
-                                    el_mat(C_NDofs + j, C_NDofs + l) += v;
+                                    val = (l == j) ? (0.5 * val) : val;
+                                    el_mat(C_NDofs + l, C_NDofs + j) += val;
+                                    el_mat(C_NDofs + j, C_NDofs + l) += val;
                                 }
                             }
 
                             //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                            if (params_.turn_off_uc_coupling == false || params_.turn_off_cu_coupling == false) {
+                            if (this->params_.turn_off_uc_coupling == false ||
+                                this->params_.turn_off_cu_coupling == false) {
                                 // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
                                 // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
-                                compute_stress(params_, trace(el_strain.strain[qp]), el_strain.strain[qp], stress);
+
+                                compute_stress(this->params_, tr_strain_u, el_strain.strain[qp], stress);
                                 for (SizeType c_i = 0; c_i < C_NDofs; ++c_i) {
                                     // CHANGE (pre-compute/store shape fun)
                                     const Scalar c_shape_i = c_shape_fun_el(c_i, qp);
@@ -899,20 +875,21 @@ namespace utopia {
                                         auto &&strain_shape = u_strain_shape_el(u_i, qp);
 
                                         Scalar val =
-                                            bilinear_uc(params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
+                                            bilinear_uc(this->params_, c[qp], stress, strain_shape, c_shape_i) * dx(qp);
 
-                                        if (params_.use_pressure) {
+                                        if (this->params_.use_pressure) {
                                             const Scalar tr_strain_shape = sum(diag(strain_shape));
-                                            val += quadratic_degradation_deriv(params_, c[qp]) * p[qp] *
-                                                   tr_strain_shape * c_shape_i * dx(qp);
+                                            val += PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(
+                                                       this->params_, c[qp]) *
+                                                   p[qp] * tr_strain_shape * c_shape_i * dx(qp);
                                         }
 
                                         // not symetric, but more numerically stable
-                                        if (params_.turn_off_cu_coupling == false) {
+                                        if (this->params_.turn_off_cu_coupling == false) {
                                             el_mat(c_i, C_NDofs + u_i) += val;
                                         }
 
-                                        if (params_.turn_off_uc_coupling == false) {
+                                        if (this->params_.turn_off_uc_coupling == false) {
                                             el_mat(C_NDofs + u_i, c_i) += val;
                                         }
                                     }
@@ -925,35 +902,34 @@ namespace utopia {
             }
 
             // check before boundary conditions
-            if (check_derivatives_) {
-                diff_ctrl_.check_hessian(*this, x_const, H);
+            if (this->check_derivatives_) {
+                this->diff_ctrl_.check_hessian(*this, x_const, H);
             }
 
-            space_.apply_constraints(H);
+            this->space_.apply_constraints(H);
 
-            if (params_.use_crack_set_irreversibiblity) {
-                apply_zero_constraints_irreversibiblity(H, x_const);
+            if (this->params_.use_crack_set_irreversibiblity) {
+                this->apply_zero_constraints_irreversibiblity(H, x_const);
             }
-
-            // static int iter = 0;
-            // write("H" + std::to_string(iter++) + ".m", H);
 
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::hessian");
             return true;
         }
 
-        //////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         template <class GradShape>
         UTOPIA_INLINE_FUNCTION static Scalar bilinear_cc(const Parameters &params,
                                                          const Scalar &phase_field_value,
                                                          const Scalar &elastic_energy,
-                                                         const Scalar &shape_trial,
-                                                         const Scalar &shape_test,
+                                                         // const Scalar &shape_trial,
+                                                         // const Scalar &shape_test,
+                                                         const Scalar &shape_prod,
                                                          const GradShape &grad_trial,
                                                          const GradShape &grad_test) {
-            return diffusion_c(params, grad_trial, grad_test) + reaction_c(params, shape_trial, shape_test) +
-                   elastic_deriv_cc(params, phase_field_value, elastic_energy, shape_trial, shape_test);
+            return PhaseFieldFracBase<FunctionSpace, Dim>::diffusion_c(params, grad_trial, grad_test) +
+                   reaction_c(params, shape_prod) +
+                   elastic_deriv_cc(params, phase_field_value, elastic_energy, shape_prod);
         }
 
         // (sigma+(phi_u), epsilon(u)) * g'_c * phi_c
@@ -963,7 +939,8 @@ namespace utopia {
                                                          const Stress &stress_p,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return ((1.0 - params.regularization) * quadratic_degradation_deriv(params, phase_field_value)) *
+            return ((1.0 - params.regularization) *
+                    PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(params, phase_field_value)) *
                    c_trial_fun * inner(stress_p, full_strain);
         }
 
@@ -973,53 +950,27 @@ namespace utopia {
                                                          const Stress &stress,
                                                          const FullStrain &full_strain,
                                                          const Scalar &c_trial_fun) {
-            return quadratic_degradation_deriv(params, phase_field_value) * c_trial_fun * inner(stress, full_strain);
-        }
-
-        // template<class StressShape, class Grad>
-        // UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(
-        //     const Parameters &params,
-        //     const Scalar &phase_field_value,
-        //     const StressShape &stress,
-        //     const Grad &g_test)
-        // {
-        //     const Scalar gc = ((1.0 - params.regularization) *
-        //     quadratic_degradation(params, phase_field_value) +
-        //     params.regularization); auto C_test  = 0.5 * (g_test  +
-        //     transpose(g_test)); return inner(gc * stress, C_test);
-        // }
-
-        template <class StressShape, class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar bilinear_uu(const Parameters &params,
-                                                         const Scalar &phase_field_value,
-                                                         const StressShape &stress,
-                                                         const Grad &strain_test) {
-            const Scalar gc = ((1.0 - params.regularization) * quadratic_degradation(params, phase_field_value) +
-                               params.regularization);
-            // auto C_test  = 0.5 * (g_test  + transpose(g_test));
-            return inner(gc * stress, strain_test);
-        }
-
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar diffusion_c(const Parameters &params,
-                                                         const Grad &g_trial,
-                                                         const Grad &g_test) {
-            return params.fracture_toughness * params.length_scale * inner(g_trial, g_test);
+            return PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(params, phase_field_value) *
+                   c_trial_fun * inner(stress, full_strain);
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar reaction_c(const Parameters &params,
-                                                        const Scalar &trial,
-                                                        const Scalar &test) {
-            return (params.fracture_toughness / params.length_scale) * trial * test;
+                                                        // const Scalar &trial,
+                                                        // const Scalar &test,
+                                                        const Scalar &shape_prod) {
+            return (params.fracture_toughness / params.length_scale) * shape_prod;
         }
 
         UTOPIA_INLINE_FUNCTION static Scalar elastic_deriv_cc(const Parameters &params,
                                                               const Scalar &phase_field_value,
                                                               const Scalar &elastic_energy,
-                                                              const Scalar &trial,
-                                                              const Scalar &test) {
-            const Scalar dcc = (1.0 - params.regularization) * quadratic_degradation_deriv2(params, phase_field_value);
-            return dcc * trial * elastic_energy * test;
+                                                              // const Scalar &trial,
+                                                              // const Scalar &test
+                                                              const Scalar &shape_prod) {
+            const Scalar dcc =
+                (1.0 - params.regularization) *
+                PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv2(params, phase_field_value);
+            return dcc * shape_prod * elastic_energy;
         }
 
         template <class Strain>
@@ -1027,18 +978,9 @@ namespace utopia {
                                                                        const Scalar &phase_field_value,
                                                                        const Scalar &trace,
                                                                        const Strain &strain) {
-            return (quadratic_degradation_deriv(params, phase_field_value) * (1.0 - params.regularization)) *
+            return (PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(params, phase_field_value) *
+                    (1.0 - params.regularization)) *
                    strain_energy(params, trace, strain);
-        }
-
-        template <class Grad, class GradTest>
-        UTOPIA_INLINE_FUNCTION static Scalar grad_fracture_energy_wrt_c(const Parameters &params,
-                                                                        const Scalar &phase_field_value,
-                                                                        const Grad &phase_field_grad,
-                                                                        const Scalar &test_function,
-                                                                        const GradTest &grad_test_function) {
-            return params.fracture_toughness * (1. / params.length_scale * phase_field_value * test_function +
-                                                params.length_scale * inner(phase_field_grad, grad_test_function));
         }
 
         template <class Strain, class Stress>
@@ -1057,17 +999,9 @@ namespace utopia {
                                                     // u
                                                     const Scalar &trace,
                                                     const Strain &strain) {
-            return fracture_energy(params, phase_field_value, phase_field_grad) +
+            return PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+                       params, phase_field_value, phase_field_grad) +
                    elastic_energy(params, phase_field_value, trace, strain);
-        }
-
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar fracture_energy(const Parameters &params,
-                                                             const Scalar &phase_field_value,
-                                                             const Grad &phase_field_grad) {
-            return params.fracture_toughness *
-                   (1. / (2.0 * params.length_scale) * phase_field_value * phase_field_value +
-                    params.length_scale / 2.0 * inner(phase_field_grad, phase_field_grad));
         }
 
         template <class Strain>
@@ -1082,196 +1016,11 @@ namespace utopia {
                                                             const Scalar &phase_field_value,
                                                             const Scalar &trace,
                                                             const Strain &strain) {
-            return (quadratic_degradation(params, phase_field_value) * (1.0 - params.regularization) +
+            return (PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(params, phase_field_value) *
+                        (1.0 - params.regularization) +
                     params.regularization) *
                    strain_energy(params, trace, strain);
         }
-
-        UTOPIA_INLINE_FUNCTION static Scalar degradation(const Parameters &params, const Scalar &c) {
-            Scalar imc = 1.0 - c;
-            Scalar res = params.f + imc * params.d;
-            imc *= imc;
-            res += params.b * imc;
-            imc *= imc;  // FIXME
-
-            res += params.a * imc;
-            return res;
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation(const Parameters &, const Scalar &c) {
-            Scalar imc = 1.0 - c;
-            return imc * imc;
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation_deriv(const Parameters &, const Scalar &c) {
-            Scalar imc = 1.0 - c;
-            return -2.0 * imc;
-        }
-
-        UTOPIA_INLINE_FUNCTION static Scalar quadratic_degradation_deriv2(const Parameters &, const Scalar &) {
-            return 2.0;
-        }
-
-        void old_solution(const Vector &x_old) { x_old_ = x_old; }
-
-        Vector &old_solution() { return x_old_; }
-
-        void get_old_solution(Vector &x) const { x = x_old_; }
-
-        void set_old_solution(const Vector &x) { x_old_ = x; }
-
-        void build_irreversility_constraint(Vector &lb) {
-            {
-                auto d_x_old = const_device_view(x_old_);
-
-                auto lb_view = view_device(lb);
-                parallel_for(
-                    range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
-                        if (i % (Dim + 1) == 0) {
-                            lb_view.set(i, d_x_old.get(i));
-                        } else {
-                            lb_view.set(i, -9e15);
-                        }
-                    });
-            }
-        }
-
-        // this 2 functions need to be moved to BC conditions
-        void apply_zero_constraints_irreversibiblity(Vector &g) const {
-            {
-                auto d_x_old = const_device_view(x_old_);
-
-                auto g_view = view_device(g);
-                parallel_for(
-                    range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
-                        if (i % (Dim + 1) == 0) {
-                            if (d_x_old.get(i) > params_.crack_set_tol) {
-                                g_view.set(i, 0.0);
-                            }
-                        }
-                    });
-            }
-        }
-
-        // this 2 functions need to be moved to BC conditions
-        void apply_zero_constraints_irreversibiblity(Vector &g, const Vector &x) const {
-            {
-                auto d_x_old = const_device_view(x_old_);
-                auto d_x = const_device_view(x);
-
-                auto g_view = view_device(g);
-                parallel_for(
-                    range_device(g), UTOPIA_LAMBDA(const SizeType &i) {
-                        if (i % (Dim + 1) == 0) {
-                            if (d_x_old.get(i) > params_.crack_set_tol || d_x.get(i) > params_.crack_set_tol) {
-                                g_view.set(i, 0.0);
-                            }
-                        }
-                    });
-            }
-        }
-
-        // this 2 functions need to be moved to BC conditions
-        void add_irr_values_markers(Vector &val, Vector &flg) const {
-            {
-                auto d_x_old = const_device_view(x_old_);
-
-                auto val_view = view_device(val);
-                parallel_for(
-                    range_device(val), UTOPIA_LAMBDA(const SizeType &i) {
-                        if (i % (Dim + 1) == 0) {
-                            if (d_x_old.get(i) > params_.crack_set_tol) {
-                                val_view.set(i, d_x_old.get(i));
-                            }
-                        }
-                    });
-
-                auto flg_view = view_device(flg);
-                parallel_for(
-                    range_device(flg), UTOPIA_LAMBDA(const SizeType &i) {
-                        if (i % (Dim + 1) == 0) {
-                            if (d_x_old.get(i) > params_.crack_set_tol) {
-                                flg_view.set(i, 1.0);
-                            }
-                        }
-                    });
-            }
-        }
-
-        // we should move this to BC conditions
-        // also, will not run efficienetly in parallel
-        void apply_zero_constraints_irreversibiblity(Matrix &H) const {
-            std::vector<SizeType> indices;
-            {
-                Read<Vector> r(x_old_);
-
-                Range range_w = range(x_old_);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
-                    if (i % (Dim + 1) == 0 && x_old_.get(i) > params_.crack_set_tol) {
-                        indices.push_back(i);
-                    }
-                }
-            }
-
-            set_zero_rows(H, indices, 1.);
-        }
-
-        void apply_zero_constraints_irreversibiblity(Matrix &H, const Vector &x) const {
-            std::vector<SizeType> indices;
-            {
-                Read<Vector> r(x_old_);
-                Read<Vector> r2(x);
-
-                Range range_w = range(x_old_);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
-                    if (i % (Dim + 1) == 0 &&
-                        (x_old_.get(i) > params_.crack_set_tol || x.get(i) > params_.crack_set_tol)) {
-                        indices.push_back(i);
-                    }
-                }
-            }
-
-            set_zero_rows(H, indices, 1.);
-        }
-
-        void pressure_field(const Vector &pressure_field) { pressure_field_ = pressure_field; }
-
-        void setup_constant_pressure_field(const Scalar &p_val) {
-            if (empty(pressure_field_)) {
-                space_.create_vector(pressure_field_);
-            }
-
-            pressure_field_.set(p_val);
-        }
-
-        Vector &pressure_field() {
-            if (empty(pressure_field_)) space_.create_vector(pressure_field_);
-
-            return pressure_field_;
-        }
-
-        void set_dt(const Scalar &dt) { dt_ = dt; }
-
-    private:
-        FunctionSpace &space_;
-        Parameters params_;
-        DiffController<Matrix, Vector> diff_ctrl_;
-
-        bool use_dense_hessian_;
-        bool check_derivatives_;
-
-        Vector x_old_;           // stores old solution  - used for treatment of
-                                 // irreversibility constraint
-        Vector pressure_field_;  // stores heterogenous pressure field - ideally, this
-                                 // vector would have lower size than all 4 variables
-
-        Vector force_field_;
-
-        std::shared_ptr<Vector> local_x_;
-        std::shared_ptr<Vector> local_pressure_field_;
-        std::shared_ptr<Vector> local_c_old_;
-
-        Scalar dt_;
     };
 
 }  // namespace utopia
