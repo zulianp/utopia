@@ -257,6 +257,7 @@ namespace utopia {
         // compute total crack volume (TCV), so we can compare to exact solution
         virtual bool compute_tcv(const Vector &x_const, Scalar &error) const {
             UTOPIA_TRACE_REGION_BEGIN("PFBase::compute_tcv");
+            const Scalar PI = 3.141592653589793238463;
 
             Scalar tcv_exact = 0.0;
             Scalar computed_tcv = 0.0;

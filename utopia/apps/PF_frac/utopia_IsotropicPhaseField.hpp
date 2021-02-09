@@ -47,7 +47,6 @@ namespace utopia {
         static const int U_NDofs = USpace::NDofs;
 
         static const int NQuadPoints = Quadrature::NPoints;
-        const Scalar PI = 3.141592653589793238463;
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {}
 
