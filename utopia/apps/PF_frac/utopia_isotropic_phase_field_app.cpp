@@ -389,6 +389,46 @@ namespace utopia {
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
     // // // // // // // // //
+    static void petsc_shneddon3D(Input &in) {
+        static const int Dim = 3;
+        static const int NVars = Dim + 1;
+
+        using Comm = utopia::PetscCommunicator;
+        using Mesh = utopia::PetscStructuredGrid<Dim>;
+        using Elem = utopia::PetscUniformHex8;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NVars, Elem>;
+
+        Comm world;
+
+        MPITimeStatistics stats(world);
+        stats.start();
+
+        FunctionSpace space;
+        space.read(in);
+        stats.stop_and_collect("space-creation");
+
+        stats.start();
+
+        MLIncrementalLoading<FunctionSpace,
+                             IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             PFFracFixAllDisp3D<FunctionSpace>,
+                             InitialCondidtionPFSneddon<FunctionSpace> >
+            time_stepper(space);
+
+        time_stepper.read(in);
+        time_stepper.run();
+
+        stats.stop_collect_and_restart("end");
+
+        space.comm().root_print(std::to_string(space.n_dofs()) + " dofs");
+        stats.stop_and_collect("output");
+        stats.describe(std::cout);
+    }
+
+    UTOPIA_REGISTER_APP(petsc_shneddon3D);
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // //
+    // // // // // // // // //
     static void tbar_rmtr_vol_dev(Input &in) {
         static const int Dim = 2;
         static const int NVars = Dim + 1;

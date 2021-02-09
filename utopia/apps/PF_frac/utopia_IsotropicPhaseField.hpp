@@ -284,6 +284,7 @@ namespace utopia {
 
             CSpace U1 = this->space_.subspace(1);
             CSpace U2 = this->space_.subspace(2);
+            CSpace U3 = this->space_.subspace(3);
 
             ///////////////////////////////////////////////////////////////////////////
 
@@ -294,12 +295,14 @@ namespace utopia {
 
             auto u_coeff1 = std::make_shared<Coefficient<CSpace>>(U1, this->local_x_);
             auto u_coeff2 = std::make_shared<Coefficient<CSpace>>(U2, this->local_x_);
+            auto u_coeff3 = std::make_shared<Coefficient<CSpace>>(U3, this->local_x_);
 
             FEFunction<CSpace> c_fun(c_coeff);
             FEFunction<USpace> u_fun(u_coeff);
 
             FEFunction<CSpace> u1_fun(u_coeff1);
             FEFunction<CSpace> u2_fun(u_coeff2);
+            FEFunction<CSpace> u3_fun(u_coeff3);
 
             ////////////////////////////////////////////////////////////////////////////
 
@@ -311,6 +314,7 @@ namespace utopia {
 
             auto u1_val = u1_fun.value(q);
             auto u2_val = u2_fun.value(q);
+            auto u3_val = u3_fun.value(q);
 
             auto differential = C.differential(q);
 
@@ -319,6 +323,7 @@ namespace utopia {
                 auto C_view = C.view_device();
                 auto U1_view = U1.view_device();
                 auto U2_view = U2.view_device();
+                auto U3_view = U3.view_device();
 
                 auto c_view = c_val.view_device();
                 auto c_grad_view = c_grad.view_device();
@@ -326,6 +331,7 @@ namespace utopia {
 
                 auto u1_view = u1_val.view_device();
                 auto u2_view = u2_val.view_device();
+                auto u3_view = u3_val.view_device();
 
                 auto differential_view = differential.view_device();
 
@@ -335,6 +341,7 @@ namespace utopia {
                         StaticVector<Scalar, NQuadPoints> c;
                         StaticVector<Scalar, NQuadPoints> u1;
                         StaticVector<Scalar, NQuadPoints> u2;
+                        StaticVector<Scalar, NQuadPoints> u3;
 
                         CElem c_e;
                         C_view.elem(i, c_e);
@@ -348,6 +355,10 @@ namespace utopia {
                         U2_view.elem(i, u2_e);
                         u2_view.get(u2_e, u2);
 
+                        CElem u3_e;
+                        U3_view.elem(i, u3_e);
+                        u3_view.get(u3_e, u3);
+
                         auto c_grad_el = c_grad_view.make(c_e);
 
                         auto dx = differential_view.make(c_e);
@@ -356,8 +367,13 @@ namespace utopia {
 
                         // TCV = \int_\Omega u \cdot \nabla \phi
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
-                            // tcv_mine += u[qp] * c_grad_el[qp] * dx(qp);
-                            tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1))) * dx(qp);
+                            if (Dim == 2) {
+                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1))) * dx(qp);
+                            } else {
+                                tcv_mine += ((u1[qp] * c_grad_el[qp](0)) + (u2[qp] * c_grad_el[qp](1)) +
+                                             (u3[qp] * c_grad_el[qp](2))) *
+                                            dx(qp);
+                            }
                         }
 
                         assert(tcv_mine == tcv_mine);
@@ -381,9 +397,7 @@ namespace utopia {
             }
 
             error = device::abs(computed_tcv - tcv_exact);
-
-            std::cout << "computed_tcv: " << computed_tcv << "  exact: " << tcv_exact << "  error: " << error << "  \n";
-
+            std::cout << "computed_tcv: " << computed_tcv << "  exact: " << tcv_exact << "  error: " << error << "\n ";
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::compute_tcv");
             return true;
         }
