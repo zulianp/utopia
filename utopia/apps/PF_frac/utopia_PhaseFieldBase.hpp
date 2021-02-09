@@ -47,6 +47,8 @@ namespace utopia {
             in.get("mu", mu);
             in.get("lambda", lambda);
             in.get("fracture_toughness", fracture_toughness);
+            in.get("nu", nu);
+            in.get("E", E);
 
             in.get("turn_off_uc_coupling", turn_off_uc_coupling);
             in.get("turn_off_cu_coupling", turn_off_cu_coupling);
@@ -56,6 +58,15 @@ namespace utopia {
 
             // seq. faults for some reason... ???
             kappa = lambda + (2.0 * mu / Dim);
+
+            if (nu != 0.0 && E != 0.0) {
+                mu = E / (2.0 * (1. + nu));
+                lambda = (2.0 * nu * mu) / (1.0 - (2.0 * nu));
+
+                if (mpi_world_rank() == 0) {
+                    utopia::out() << "mu: " << mu << "  lambda: " << lambda << "  Gc: " << fracture_toughness << "  \n";
+                }
+            }
         }
 
         PFFracParameters()
@@ -69,6 +80,8 @@ namespace utopia {
               lambda(120.0),
               // mu(100.0),
               // lambda(100.0),
+              nu(0.0),
+              E(0.0),
               regularization(1e-10),
               pressure(0.0),
               penalty_param(0.0),
@@ -100,7 +113,7 @@ namespace utopia {
             kappa = lambda + (2.0 * mu / Dim);
         }
 
-        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa;
+        Scalar a, b, d, f, length_scale, fracture_toughness, mu, lambda, kappa, nu, E;
         Scalar regularization, pressure, penalty_param, crack_set_tol, mobility;
         bool use_penalty_irreversibility{false}, use_crack_set_irreversibiblity{false}, use_pressure{false};
         bool turn_off_uc_coupling{false}, turn_off_cu_coupling{false};
@@ -240,6 +253,9 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////
         virtual bool fracture_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
         virtual bool elastic_energy(const Vector & /*x_const*/, Scalar & /*val*/) const = 0;
+
+        // compute total crack volume (TCV), so we can compare to exact solution
+        virtual bool compute_tcv(const Vector &x_const, Scalar &error) const { return false; }
 
         virtual void update_history_field(const Vector & /*x_const*/) const {}
 

@@ -180,11 +180,11 @@ namespace utopia {
             } else {
                 auto pgs = std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
 
-                if (block_solver_) {
-                    InputParameters params;
-                    params.set("block_size", FunctionSpace::NComponents);
-                    pgs->read(params);
-                }
+                // if (block_solver_) {
+                //     InputParameters params;
+                //     params.set("block_size", FunctionSpace::NComponents);
+                //     pgs->read(params);
+                // }
 
                 tr_strategy_fine = pgs;
             }
@@ -485,22 +485,23 @@ namespace utopia {
         void export_energies_csv() {
             if (!csv_file_name_.empty()) {
                 CSVWriter writer{};
-                Scalar elastic_energy = 0.0, fracture_energy = 0.0;
+                Scalar elastic_energy = 0.0, fracture_energy = 0.0, error_tcv = 0.0;
 
                 if (auto *fun_finest = dynamic_cast<ProblemType *>(level_functions_.back().get())) {
                     fun_finest->elastic_energy(this->solution_, elastic_energy);
                     fun_finest->fracture_energy(this->solution_, fracture_energy);
+                    fun_finest->compute_tcv(this->solution_, error_tcv);
                 }
 
                 if (mpi_world_rank() == 0) {
                     if (!writer.file_exists(csv_file_name_)) {
                         writer.open_file(csv_file_name_);
-                        writer.write_table_row<std::string>({"elastic_energy", "fracture_energy"});
+                        writer.write_table_row<std::string>({"time", "elastic_energy", "fracture_energy", "error_tcv"});
                     } else {
                         writer.open_file(csv_file_name_);
                     }
 
-                    writer.write_table_row<Scalar>({elastic_energy, fracture_energy});
+                    writer.write_table_row<Scalar>({this->time_, elastic_energy, fracture_energy, error_tcv});
                     writer.close_file();
                 }
             }
