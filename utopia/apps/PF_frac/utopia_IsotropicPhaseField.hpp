@@ -172,7 +172,7 @@ namespace utopia {
                 val += dot(x_const, this->force_field_);
             }
 
-            this->add_pf_constraints(x_const);
+            // this->add_pf_constraints(x_const);
 
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::value");
             return true;

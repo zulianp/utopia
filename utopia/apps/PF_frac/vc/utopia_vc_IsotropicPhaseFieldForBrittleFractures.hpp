@@ -182,7 +182,7 @@ namespace utopia {
                 val += dot(x_const, this->force_field_);
             }
 
-            this->add_pf_constraints(x_const);
+            // this->add_pf_constraints(x_const);
 
             UTOPIA_TRACE_REGION_END("VcIsotropicPhaseFieldForBrittleFractures::value");
             return true;
@@ -468,7 +468,7 @@ namespace utopia {
                 Vc::vector<UGradValue> el_strain(n_qp);
 
                 Device::parallel_for(this->space_.element_range(), [&](const SizeType &i) {
-                    simd::Matrix<SIMDType, Dim, Dim> stress;  //, strain_p;
+                    simd::Matrix<SIMDType, Dim, Dim> stress;
                     StaticVector<Scalar, U_NDofs> u_el_vec;
                     StaticVector<Scalar, C_NDofs> c_el_vec;
 
