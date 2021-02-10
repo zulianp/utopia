@@ -69,11 +69,38 @@ namespace utopia {
                 return *this;
             }
 
+            inline constexpr Vector &operator/=(const Vector &other) {
+                for (int i = 0; i < N; ++i) {
+                    Ops::in_place_divide(other.block(i), block(i));
+                }
+
+                return *this;
+            }
+
             inline constexpr Vector &operator+=(const Vector &other) {
                 for (int i = 0; i < N; ++i) {
                     Ops::in_place_add(other.block(i), block(i));
                 }
 
+                return *this;
+            }
+
+            inline constexpr Vector &set(const int idx, const SIMDType &val) {
+                Ops::store(val, block(idx));
+                return *this;
+            }
+
+            inline constexpr Vector &add(const int idx, const SIMDType &val) {
+                Ops::in_place_add(val, block(idx));
+                return *this;
+            }
+            inline constexpr Vector &add(const int idx, const T &val) {
+                Ops::in_place_add(val, block(idx));
+                return *this;
+            }
+
+            inline constexpr Vector &divide(const int idx, const T &val) {
+                Ops::in_place_divide(val, block(idx));
                 return *this;
             }
 
@@ -83,6 +110,11 @@ namespace utopia {
                 }
 
                 return *this;
+            }
+
+            inline void axpy(const int idx, const T &alpha, const SIMDType &x) {
+                auto alpha_x = alpha * x;
+                add(idx, alpha_x);
             }
 
             inline friend constexpr Vector operator+(const Vector &l, const Vector &r) {

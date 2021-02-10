@@ -607,7 +607,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION const Point &translation() const { return translation_; }
 
     private:
-        Scalar h_[3];
+        Point h_;
         Point translation_;
     };
 

@@ -10,7 +10,7 @@
 #include "utopia_AppRunner.hpp"
 #include "utopia_Literal.hpp"
 
-#include "utopia_UniformHex8.hpp"
+#include "utopia_simd_UniformHex8.hpp"
 
 // std
 #include <cmath>
@@ -111,7 +111,7 @@ void simd_fe_v2(Input &in) {
     /////////////////////////////////////////////////
 
     std::cout << expected_value << " == " << actual_value << std::endl;
-    std::cout << elapsed_simd << " < " << elapsed_serial << " speed up " << (elapsed_serial / elapsed_simd)
+    std::cout << elapsed_simd << " < " << elapsed_serial << " speed up " << (elapsed_serial / elapsed_simd) << " X"
               << std::endl;
 
     utopia_test_assert(approxeq(expected_value, actual_value, 1e-10));
@@ -132,7 +132,7 @@ void simd_fe_v2(Input &in) {
     Scalar t[3] = {1.0, 1.0, 1.0};
 
     simd_v2::Vector<Scalar, 3> g, p_global;
-    UniformHex8<Scalar> hex;
+    simd_v2::UniformHex8<Scalar> hex;
     hex.set(t, h);
 
     for (int qp = 0; qp < q.n_points(); ++qp) {
@@ -146,11 +146,11 @@ void simd_fe_v2(Input &in) {
         std::cout << "--------------\n";
     }
 
-    // hex.grad(0, q.point(0), g);
-    // hex.point(q.point(0), p_global);
+    hex.grad(0, q.point(0), g);
+    hex.point(q.point(0), p_global);
 
-    // disp(g);
-    // disp(p_global);
+    disp(g);
+    disp(p_global);
 
     // PhysicalGradient<UniformHex8<double>, simd_v2::Quadrature<SIMDType, 3>> pg(q);
     // Differential<UniformHex8<double>, simd_v2::Quadrature<SIMDType, 3>> dx(q);

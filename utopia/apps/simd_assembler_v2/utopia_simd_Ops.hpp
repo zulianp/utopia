@@ -92,6 +92,16 @@ namespace utopia {
                 }
             }
 
+            UTOPIA_INLINE_FUNCTION static void divide(const T* left, const T* right, T* result) {
+                for (int i = 0; i < Lanes; ++i) {
+                    result[i] = left[i] / right[i];
+                }
+            }
+
+            UTOPIA_INLINE_FUNCTION static void in_place_divide(const T* denominator, T* result) {
+                divide(result, denominator, result);
+            }
+
             UTOPIA_INLINE_FUNCTION static void scale(const T& val, T* result) {
                 for (int l = 0; l < Lanes; ++l) {
                     result[l] *= val;
@@ -154,6 +164,15 @@ namespace utopia {
             inline static void in_place_add(const T* val, T* result) { add(result, val, result); }
             inline static void subtract(const T* l, const T* r, T* result) { store(load(l) - load(r), result); }
             inline static void in_place_subtract(const T* val, T* result) { subtract(result, val, result); }
+
+            inline static void divide(const T* left, const T* right, T* result) {
+                store(load(left) / load(right), result);
+            }
+
+            inline static void divide(const T* left, const T& right, T* result) { store(load(left) / right, result); }
+
+            inline static void in_place_divide(const T* denominator, T* result) { divide(result, denominator, result); }
+            inline static void in_place_divide(const T& denominator, T* result) { divide(result, denominator, result); }
 
             inline static void scale(const T& val, T* result) { store(load(result) * val, result); }
             inline static void scale(const SIMDType& val, T* result) { store(load(result) * val, result); }
