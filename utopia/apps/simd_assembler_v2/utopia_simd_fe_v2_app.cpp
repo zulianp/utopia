@@ -18,19 +18,21 @@
 using namespace utopia;
 
 void simd_fe_v2(Input &in) {
-    using Scalar = float;
+    using Scalar = double;
     static constexpr int Dim = 3;
     static constexpr int Lanes = Vc::Vector<Scalar>::Size;
-    using SIMDType = Vc::Vector<Scalar>;
-    using Vector3 = simd_v2::Vector<Scalar, Dim>;
-    // using Vector3 = simd_v1::Vector<SIMDType, Dim>;
+
+    // using Vector3 = simd_v2::Vector<Scalar, Dim>;
+    using Vector3 = simd_v2::Vector<Scalar, Dim, simd_v2::Auto<Scalar, Lanes>>;
+    using SIMDType = Vector3::SIMDType;
+    // using Vector3 = simd_v1::Vector< Vc::Vector<Scalar>, Dim>;
 
     long repeat = 10000;
     in.get("repeat", repeat);
     Chrono c;
 
     /////////////////////////////////////////////////
-    //// Standard Version
+    //// Standard Version (This code should be also vectorizable by the compiler)
     /////////////////////////////////////////////////
 
     Scalar expected_value = 0.0;
@@ -88,7 +90,8 @@ void simd_fe_v2(Input &in) {
 
         c.start();
 
-        SIMDType dot_v = Scalar(0.);
+        SIMDType dot_v;
+        dot_v = Scalar(0.);
         for (long r = 0; r < repeat; ++r) {
             v1 = v1 * Scalar(0.1);
             v2 = v2 * Scalar(0.1);
@@ -104,7 +107,7 @@ void simd_fe_v2(Input &in) {
     }
     /////////////////////////////////////////////////
 
-    // std::cout << expected_value << " == " << actual_value << std::endl;
+    std::cout << expected_value << " == " << actual_value << std::endl;
     std::cout << elapsed_simd << " < " << elapsed_serial << " speed up " << (elapsed_serial / elapsed_simd)
               << std::endl;
 

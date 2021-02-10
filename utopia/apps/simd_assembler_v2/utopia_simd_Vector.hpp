@@ -1,6 +1,8 @@
 #ifndef UTOPIA_SIMD_VECTOR_HPP
 #define UTOPIA_SIMD_VECTOR_HPP
 
+#include "utopia_simd_Ops.hpp"
+
 namespace utopia {
 
     namespace simd_v2 {
@@ -8,13 +10,14 @@ namespace utopia {
         /**
          * Storage will be N * Lanes
          */
-        template <typename T, int N_, int Lanes_ = Vc::Vector<T>::Size>
+        template <typename T, int N_, typename SIMDType_ = Vc::Vector<T>>
         class Vector final {
         public:
-            using SIMDType = Vc::Vector<T>;
+            using SIMDType = SIMDType_;
             static constexpr int N = N_;
-            static constexpr int Lanes = Lanes_;
+            static constexpr int Lanes = SIMDType::Size;
             static constexpr int Size = N * Lanes;
+            using Ops = utopia::simd_v2::Ops<SIMDType>;
 
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
@@ -23,10 +26,8 @@ namespace utopia {
 
             template <typename Factor>
             inline void scale(const Factor &factor) {
-                SIMDType temp;
                 for (int i = 0; i < N; ++i) {
-                    temp = load(i) * factor;
-                    store(i, temp);
+                    Ops::scale(factor, block(i));
                 }
             }
 
@@ -37,31 +38,42 @@ namespace utopia {
                 return ret;
             }
 
-            // inline constexpr const T &operator()(const int idx) const { return data[idx]; }
-            // inline constexpr T &operator()(const int idx) { return data[idx]; }
-
             inline T &operator()(const int component, const int lane) { return data[component * Lanes + lane]; }
 
             inline constexpr const T &operator()(const int component, const int lane) const {
                 return data[component * Lanes + lane];
             }
 
-            inline constexpr SIMDType load(const int idx) const {
+            inline constexpr const T *block(const int idx) const {
                 assert(idx < N);
-                assert(idx > 0);
+                assert(idx >= 0);
 
-                return SIMDType(&data[idx * Lanes], Vc::Aligned);
+                return &data[idx * Lanes];
             }
-            inline void store(const int idx, const SIMDType &v) {
+
+            inline T *block(const int idx) {
                 assert(idx < N);
-                assert(idx > 0);
-
-                v.store(&data[idx * Lanes], Vc::Aligned);
+                assert(idx >= 0);
+                return &data[idx * Lanes];
             }
+
+            // inline constexpr SIMDType load(const int idx) const {
+            //     assert(idx < N);
+            //     assert(idx >= 0);
+
+            //     return SIMDType(&data[idx * Lanes], Vc::Aligned);
+            // }
+            // inline void store(const int idx, const SIMDType &v) {
+            //     assert(idx < N);
+            //     assert(idx >= 0);
+
+            //     v.store(&data[idx * Lanes], Vc::Aligned);
+            // }
 
             inline constexpr Vector operator+=(const Vector &other) {
                 for (int i = 0; i < N; ++i) {
-                    store(i, this->load(i) + other.load(i));
+                    // store(i, this->load(i) + other.load(i));
+                    Ops::in_place_add(other.block(i), block(i));
                 }
 
                 return *this;
@@ -69,7 +81,8 @@ namespace utopia {
 
             inline constexpr Vector operator-=(const Vector &other) {
                 for (int i = 0; i < N; ++i) {
-                    store(i, this->load(i) - other.load(i));
+                    // store(i, this->load(i) - other.load(i));
+                    Ops::in_place_subtract(other.block(i), block(i));
                 }
 
                 return *this;
@@ -82,10 +95,8 @@ namespace utopia {
             }
 
             friend inline constexpr SIMDType dot(const Vector &l, const Vector &r) {
-                SIMDType ret = T(0);
-                for (int i = 0; i < N; ++i) {
-                    ret += l.load(i) * r.load(i);
-                }
+                SIMDType ret;
+                Ops::template dot<N>(l.data, r.data, ret);
                 return ret;
             }
 
@@ -127,12 +138,13 @@ namespace utopia {
     //     return ret;
     // }
 
-    template <typename T, int N, int Lanes>
-    class Traits<simd_v2::Vector<T, N, Lanes>> {
+    template <typename T, int N, typename SIMDType_>
+    class Traits<simd_v2::Vector<T, N, SIMDType_>> {
     public:
         using Scalar = T;
         using SizeType = int;
-        using SIMDType = Vc::Vector<T>;
+        using SIMDType = SIMDType_;
+        static const int Order = 1;
     };
 
 }  // namespace utopia
