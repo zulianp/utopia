@@ -68,12 +68,15 @@ namespace utopia {
         in.get("block_size", block_size);
 
 #ifdef UTOPIA_WITH_VC
+        // FIXME
+#ifdef UTOPIA_WITH_PETSC
         bool use_simd = false;
         in.get("use_simd", use_simd);
 
         if (use_simd && block_size == VcProjectedBlockGaussSeidelSweep<Matrix>::BlockSize) {
             sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
         } else
+#endif  // UTOPIA_WITH_PETSC
 #endif  // UTOPIA_WITH_VC
             if (block_size == 2) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 2>>();
