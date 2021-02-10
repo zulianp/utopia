@@ -25,8 +25,8 @@ namespace utopia {
             inline void scale(const Factor &factor) {
                 SIMDType temp;
                 for (int i = 0; i < N; ++i) {
-                    temp = get(i) * factor;
-                    set(i, temp);
+                    temp = load(i) * factor;
+                    store(i, temp);
                 }
             }
 
@@ -37,26 +37,57 @@ namespace utopia {
                 return ret;
             }
 
-            inline constexpr const T &operator()(const int idx) const { return data[idx]; }
+            // inline constexpr const T &operator()(const int idx) const { return data[idx]; }
+            // inline constexpr T &operator()(const int idx) { return data[idx]; }
 
-            inline constexpr SIMDType get(const int idx) const { return SIMDType(&data[idx * Lanes], Vc::Aligned); }
-            inline void set(const int idx, const SIMDType &v) { v.store(&data[idx * Lanes], Vc::Aligned); }
+            inline T &operator()(const int component, const int lane) { return data[component * Lanes + lane]; }
 
-            // inline T &operator()(const int idx) { return data[idx]; }
+            inline constexpr const T &operator()(const int component, const int lane) const {
+                return data[component * Lanes + lane];
+            }
 
-            // inline constexpr const T &operator[](const int idx) const { return data[idx]; }
-            // inline T &operator[](const int idx) { return data[idx]; }
+            inline constexpr SIMDType load(const int idx) const {
+                assert(idx < N);
+                assert(idx > 0);
 
-            // inline constexpr Vector operator+=(const Vector &other) {
-            //     x() += other.x();
-            //     y() += other.y();
-            //     z() += other.z();
-            //     return *this;
-            // }
+                return SIMDType(&data[idx * Lanes], Vc::Aligned);
+            }
+            inline void store(const int idx, const SIMDType &v) {
+                assert(idx < N);
+                assert(idx > 0);
 
-            // friend inline constexpr T dot(const Vector &l, const Vector &r) {
-            //     return l.x() * r.x() + l.y() * r.y() + l.z() * r.z();
-            // }
+                v.store(&data[idx * Lanes], Vc::Aligned);
+            }
+
+            inline constexpr Vector operator+=(const Vector &other) {
+                for (int i = 0; i < N; ++i) {
+                    store(i, this->load(i) + other.load(i));
+                }
+
+                return *this;
+            }
+
+            inline constexpr Vector operator-=(const Vector &other) {
+                for (int i = 0; i < N; ++i) {
+                    store(i, this->load(i) - other.load(i));
+                }
+
+                return *this;
+            }
+
+            inline friend constexpr Vector operator+(const Vector &l, const Vector &r) {
+                Vector ret = l;
+                ret += r;
+                return ret;
+            }
+
+            friend inline constexpr SIMDType dot(const Vector &l, const Vector &r) {
+                SIMDType ret = T(0);
+                for (int i = 0; i < N; ++i) {
+                    ret += l.load(i) * r.load(i);
+                }
+                return ret;
+            }
 
             friend void disp(const Vector &v, std::ostream &os = std::cout) {
                 for (int i = 0; i < Size; i += Lanes) {

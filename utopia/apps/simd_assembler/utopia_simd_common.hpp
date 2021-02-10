@@ -235,6 +235,7 @@ namespace utopia {
         template <typename T>
         class Vector<T, 2> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
+            using SIMDType = T;
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
             T data_[2] = {simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value()};
@@ -274,6 +275,7 @@ namespace utopia {
         template <typename T>
         class Vector<T, 3> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
+            using SIMDType = T;
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
             T data_[3] = {simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value()};
