@@ -57,18 +57,19 @@ namespace utopia {
                 return &data[idx * Lanes];
             }
 
-            // inline constexpr SIMDType load(const int idx) const {
-            //     assert(idx < N);
-            //     assert(idx >= 0);
+            // inline constexpr Vector operator*=(const Vector &other) {
+            //     for (int i = 0; i < N; ++i) {
+            //         // store(i, this->load(i) + other.load(i));
+            //         Ops::in_place_mult(other.block(i), block(i));
+            //     }
 
-            //     return SIMDType(&data[idx * Lanes], Vc::Aligned);
+            //     return *this;
             // }
-            // inline void store(const int idx, const SIMDType &v) {
-            //     assert(idx < N);
-            //     assert(idx >= 0);
 
-            //     v.store(&data[idx * Lanes], Vc::Aligned);
-            // }
+            inline constexpr Vector operator*=(const T &other) {
+                scale(other);
+                return *this;
+            }
 
             inline constexpr Vector operator+=(const Vector &other) {
                 for (int i = 0; i < N; ++i) {
@@ -94,13 +95,20 @@ namespace utopia {
                 return ret;
             }
 
+            inline void dot(const Vector &other, SIMDType &result) const {
+                Ops::template dot<N>(data, other.data, result);
+            }
+
             friend inline constexpr SIMDType dot(const Vector &l, const Vector &r) {
                 SIMDType ret;
-                Ops::template dot<N>(l.data, r.data, ret);
+                l.dot(r, ret);
                 return ret;
             }
 
-            friend inline constexpr SIMDType inner(const Vector &l, const Vector &r) { return dot(l, r); }
+            friend inline constexpr SIMDType inner(const Vector &l, const Vector &r) {
+                SIMDType ret;
+                l.dot(r, ret);
+            }
 
             friend void disp(const Vector &v, std::ostream &os = std::cout) {
                 for (int i = 0; i < Size; i += Lanes) {

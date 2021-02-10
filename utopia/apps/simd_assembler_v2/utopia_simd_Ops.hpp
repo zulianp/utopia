@@ -82,20 +82,20 @@ namespace utopia {
                 }
             }
 
-            inline static void scale(const T& val, T* result) {
+            UTOPIA_INLINE_FUNCTION static void scale(const T& val, T* result) {
                 for (int l = 0; l < Lanes; ++l) {
                     result[l] *= val;
                 }
             }
 
-            inline static void scale(const SIMDType& val, T* result) {
+            UTOPIA_INLINE_FUNCTION static void scale(const SIMDType& val, T* result) {
                 for (int l = 0; l < Lanes; ++l) {
                     result[l] *= val[l];
                 }
             }
 
             template <int N>
-            inline static void dot(const T* left, const T* right, SIMDType& ret) {
+            UTOPIA_INLINE_FUNCTION static void dot(const T* left, const T* right, SIMDType& ret) {
                 for (int l = 0; l < Lanes; ++l) {
                     ret.data[l] = left[l] * right[l];
                 }

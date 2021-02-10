@@ -25,7 +25,8 @@ void simd_fe_v2(Input &in) {
     // using Vector3 = simd_v2::Vector<Scalar, Dim>;
     using Vector3 = simd_v2::Vector<Scalar, Dim, simd_v2::Auto<Scalar, Lanes>>;
     using SIMDType = Vector3::SIMDType;
-    // using Vector3 = simd_v1::Vector< Vc::Vector<Scalar>, Dim>;
+    // using Vector3 = simd_v1::Vector<Vc::Vector<Scalar>, Dim>;
+    // using SIMDType = Vc::Vector<Scalar>;
 
     long repeat = 10000;
     in.get("repeat", repeat);
@@ -90,13 +91,15 @@ void simd_fe_v2(Input &in) {
 
         c.start();
 
-        SIMDType dot_v;
+        SIMDType dot_v;  //, temp;
         dot_v = Scalar(0.);
         for (long r = 0; r < repeat; ++r) {
-            v1 = v1 * Scalar(0.1);
-            v2 = v2 * Scalar(0.1);
+            v1 *= Scalar(0.1);
+            v2 *= Scalar(0.1);
             v1 += v2;
 
+            // v1.dot(v2, temp);
+            // dot_v += temp;
             dot_v += dot(v1, v2);
         }
 
