@@ -133,28 +133,28 @@ namespace utopia {
 
             switch (i) {
                 case 0: {
-                    g[0] = y - one;
-                    g[1] = x - one;
+                    g.set(0, y - one);
+                    g.set(1, x - one);
                     return;
                 }
                 case 1: {
-                    g[0] = one - y;
-                    g[1] = -x;
+                    g.set(0, one - y);
+                    g.set(1, -x);
                     return;
                 }
                 case 2: {
-                    g[0] = y;
-                    g[1] = x;
+                    g.set(0, y);
+                    g.set(1, x);
                     return;
                 }
                 case 3: {
-                    g[0] = -y;
-                    g[1] = (one - x);
+                    g.set(0, -y);
+                    g.set(1, (one)-x);
                     return;
                 }
                 default: {
-                    g[0] = 0.0;
-                    g[1] = 0.0;
+                    g.set(0, 0.0);
+                    g.set(1, 0.0);
                     return;
                 }
             }

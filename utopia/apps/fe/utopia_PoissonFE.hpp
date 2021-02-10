@@ -16,6 +16,11 @@
 
 #include "utopia_AppBase.hpp"
 
+#ifdef USE_SIMD_ASSEMBLY
+#include "utopia_simd_Assembler_v2.hpp"
+// #define USE_SIMD_POISSON_FE
+#endif  // USE_SIMD_ASSEMBLY
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -27,16 +32,25 @@ namespace utopia {
         using Vector = typename FunctionSpace::Vector;
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
-        using Elem = typename FunctionSpace::Elem;
+        // using Elem = typename FunctionSpace::Elem;
+        static const int Dim = FunctionSpace::Elem::Dim;
 
-#ifdef USE_SIMD_ASSEMBLY
+#ifdef USE_SIMD_POISSON_FE
+        // using SIMDType = Vc::Vector<Scalar>;
+        // using Quadrature = simd::Quadrature<SIMDType, Elem::Dim>;
+        // using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
+
         using SIMDType = Vc::Vector<Scalar>;
-        using Quadrature = simd::Quadrature<SIMDType, Elem::Dim>;
-        using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
+        using Elem = typename simd_v2::SIMDConvert<typename FunctionSpace::Elem>::Type;
+        using Quadrature = simd_v2::Quadrature<Scalar, Dim>;
+        using GradValue = typename simd_v2::FETraits<Elem, Scalar>::GradValue;
+
 #else
+        using Elem = typename FunctionSpace::Elem;
         using Quadrature = utopia::Quadrature<Elem, 2 * (Elem::Order - 1)>;
         using GradValue = typename Elem::GradValue;
-#endif  // USE_SIMD_ASSEMBLY
+
+#endif  // USE_SIMD_POISSON_FE
 
         using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
         using ScaledMassMatrix = utopia::ScaledMassMatrix<FunctionSpace, Quadrature>;
@@ -44,7 +58,6 @@ namespace utopia {
 
         using Device = typename FunctionSpace::Device;
 
-        static const int Dim = Elem::Dim;
         static const int NNodes = Elem::NNodes;
         static const int NFunctions = Elem::NFunctions;
         using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
@@ -283,10 +296,11 @@ namespace utopia {
         void init() {
             x_coeff_ = utopia::make_unique<Coefficient>(*space_);
 
-#ifdef USE_SIMD_ASSEMBLY
+#ifdef USE_SIMD_POISSON_FE
             utopia::out() << "Using SIMD based PoissonFE\n";
-            simd::QuadratureDB<Elem, SIMDType>::get(2 * (Elem::Order - 1), quadrature_);
-#endif  // USE_SIMD_ASSEMBLY
+            // simd::QuadratureDB<Elem, SIMDType>::get(2 * (Elem::Order - 1), quadrature_);
+            simd_v2::QuadratureDB<Elem, Scalar>::get(2 * (Elem::Order - 1), quadrature_);
+#endif  // USE_SIMD_POISSON_FE
 
             laplacian_ = utopia::make_unique<Laplacian>(*space_, quadrature_);
         }

@@ -21,16 +21,16 @@ void simd_fe(Input &in) {
     int order = 1;
     in.get("order", order);
 
-    simd::Quadrature<SIMDType, 3> q_vec;
+    simd_v1::Quadrature<SIMDType, 3> q_vec;
 
-    if (!simd::Gauss<SIMDType>::Hex::get(order, q_vec)) {
+    if (!simd_v1::Gauss<SIMDType>::Hex::get(order, q_vec)) {
         std::cerr << "[Error] could not find quadrature for order " << order << "\n";
         assert(false);
         return;
     }
 
-    simd::Vector<double, 3> h{1.0, 1.0, 1.0}, t{1.0, 1.0, 1.0};
-    simd::Vector<SIMDType, 3> g, p_global;
+    simd_v1::Vector<double, 3> h{1.0, 1.0, 1.0}, t{1.0, 1.0, 1.0};
+    simd_v1::Vector<SIMDType, 3> g, p_global;
     UniformHex8<double> hex;
     hex.set(t, h);
 
@@ -53,8 +53,8 @@ void simd_fe(Input &in) {
     disp(g);
     disp(p_global);
 
-    PhysicalGradient<UniformHex8<double>, simd::Quadrature<SIMDType, 3>> pg(q_vec);
-    Differential<UniformHex8<double>, simd::Quadrature<SIMDType, 3>> dx(q_vec);
+    PhysicalGradient<UniformHex8<double>, simd_v1::Quadrature<SIMDType, 3>> pg(q_vec);
+    Differential<UniformHex8<double>, simd_v1::Quadrature<SIMDType, 3>> dx(q_vec);
 
     auto gp_e = pg.make(hex);
     auto dx_e = dx.make(hex);

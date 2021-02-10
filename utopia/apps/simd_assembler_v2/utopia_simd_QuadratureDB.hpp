@@ -9,13 +9,16 @@
 #include "utopia_UniformHex8.hpp"
 #include "utopia_UniformQuad4.hpp"
 
+#include "utopia_simd_UniformHex8.hpp"
+#include "utopia_simd_UniformQuad4.hpp"
+
 namespace utopia {
     namespace simd_v2 {
         template <typename...>
         class QuadratureDB {};
 
         template <typename T, typename QT>
-        class QuadratureDB<UniformHex8<T>, QT> {
+        class QuadratureDB<utopia::UniformHex8<T>, QT> {
         public:
             template <class Q>
             static bool get(const int order, Q &q) {
@@ -24,7 +27,25 @@ namespace utopia {
         };
 
         template <typename T, typename QT>
-        class QuadratureDB<UniformQuad4<T>, QT> {
+        class QuadratureDB<utopia::UniformQuad4<T>, QT> {
+        public:
+            template <class Q>
+            static bool get(const int order, Q &q) {
+                return Gauss<QT>::Quad::get(order, q);
+            }
+        };
+
+        template <typename T, typename QT>
+        class QuadratureDB<simd_v2::UniformHex8<T>, QT> {
+        public:
+            template <class Q>
+            static bool get(const int order, Q &q) {
+                return Gauss<QT>::Hex::get(order, q);
+            }
+        };
+
+        template <typename T, typename QT>
+        class QuadratureDB<simd_v2::UniformQuad4<T>, QT> {
         public:
             template <class Q>
             static bool get(const int order, Q &q) {

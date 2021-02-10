@@ -63,30 +63,32 @@ namespace utopia {
             const Scalar y = p[1];
             // const Scalar t = p[2];
 
+            const auto one = One<Scalar>::value();
+
             switch (i) {
                 case 0: {
-                    return -(1.0 - x) * (1.0 - y);
+                    return -(one - x) * (one - y);
                 }
                 case 1: {
-                    return -x * (1.0 - y);
+                    return -x * (one - y);
                 }
                 case 2: {
                     return -x * y;
                 }
                 case 3: {
-                    return -(1.0 - x) * y;
+                    return -(one - x) * y;
                 }
                 case 4: {
-                    return (1.0 - x) * (1.0 - y);
+                    return (one - x) * (one - y);
                 }
                 case 5: {
-                    return x * (1.0 - y);
+                    return x * (one - y);
                 }
                 case 6: {
                     return x * y;
                 }
                 case 7: {
-                    return (1.0 - x) * y;
+                    return (one - x) * y;
                 }
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
@@ -260,6 +262,9 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g) {
             using Scalar = typename Traits<Point>::Scalar;
 
+            const auto one = One<Scalar>::value();
+            const auto zero = Zero<Scalar>::value();
+
             const Scalar x = p[0];
             const Scalar y = p[1];
             const Scalar z = p[2];
@@ -267,72 +272,72 @@ namespace utopia {
             switch (i) {
                 // f = (1.0 - x) * (1.0 - y) * (1.0 - z);
                 case 0: {
-                    g[0] = -(1.0 - y) * (1.0 - z);
-                    g[1] = -(1.0 - x) * (1.0 - z);
-                    g[2] = -(1.0 - x) * (1.0 - y);
+                    g.set(0, -(one - y) * (one - z));
+                    g.set(1, -(one - x) * (one - z));
+                    g.set(2, -(one - x) * (one - y));
                     return;
                 }
 
-                // f = x * (1.0 - y) * (1.0 - z);
+                // f = x * (one - y) * (one - z);
                 case 1: {
-                    g[0] = (1.0 - y) * (1.0 - z);
-                    g[1] = -x * (1.0 - z);
-                    g[2] = -x * (1.0 - y);
+                    g.set(0, (one - y) * (one - z));
+                    g.set(1, -x * (one - z));
+                    g.set(2, -x * (one - y));
                     return;
                 }
 
-                // f = x * y * (1.0 - z);
+                // f = x * y * (one - z);
                 case 2: {
-                    g[0] = y * (1.0 - z);
-                    g[1] = x * (1.0 - z);
-                    g[2] = -x * y;
+                    g.set(0, y * (one - z));
+                    g.set(1, x * (one - z));
+                    g.set(2, -x * y);
                     return;
                 }
 
-                // f = (1.0 - x) * y * (1.0 - z);
+                // f = (one - x) * y * (one - z);
                 case 3: {
-                    g[0] = -y * (1.0 - z);
-                    g[1] = (1.0 - x) * (1.0 - z);
-                    g[2] = -(1.0 - x) * y;
+                    g.set(0, -y * (one - z));
+                    g.set(1, (one - x) * (one - z));
+                    g.set(2, -(one - x) * y);
                     return;
                 }
 
-                // f = (1.0 - x) * (1.0 - y) * z;
+                // f = (one - x) * (one - y) * z;
                 case 4: {
-                    g[0] = -(1.0 - y) * z;
-                    g[1] = -(1.0 - x) * z;
-                    g[2] = (1.0 - x) * (1.0 - y);
+                    g.set(0, -(one - y) * z);
+                    g.set(1, -(one - x) * z);
+                    g.set(2, (one - x) * (one - y));
                     return;
                 }
 
-                // f = x * (1.0 - y) * z;
+                // f = x * (one - y) * z;
                 case 5: {
-                    g[0] = (1.0 - y) * z;
-                    g[1] = -x * z;
-                    g[2] = x * (1.0 - y);
+                    g.set(0, (one - y) * z);
+                    g.set(1, -x * z);
+                    g.set(2, x * (one - y));
                     return;
                 }
 
                 // f = x * y * z;
                 case 6: {
-                    g[0] = y * z;
-                    g[1] = x * z;
-                    g[2] = x * y;
+                    g.set(0, y * z);
+                    g.set(1, x * z);
+                    g.set(2, x * y);
                     return;
                 }
 
-                // f = (1.0 - x) * y * z;
+                // f = (one - x) * y * z;
                 case 7: {
-                    g[0] = -y * z;
-                    g[1] = (1.0 - x) * z;
-                    g[2] = (1.0 - x) * y;
+                    g.set(0, -y * z);
+                    g.set(1, (one - x) * z);
+                    g.set(2, (one - x) * y);
                     return;
                 }
 
                 default: {
-                    g[0] = 0.0;
-                    g[1] = 0.0;
-                    g[2] = 0.0;
+                    g.set(0, zero);
+                    g.set(1, zero);
+                    g.set(2, zero);
                     return;
                 }
             }

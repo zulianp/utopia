@@ -81,6 +81,8 @@ namespace utopia {
                 }
             }
 
+            void set(const int i, const T &val) { data_[i] = val; }
+
             inline T &operator()(const int i, const int j) { return data_[i * Rows + j]; }
             constexpr const T &operator()(const int i, const int j) const { return data_[i * Rows + j]; }
 
@@ -270,6 +272,8 @@ namespace utopia {
                     data_[i] = val;
                 }
             }
+
+            void set(const int i, const T &val) { data_[i] = val; }
         };
 
         template <typename T>
@@ -317,6 +321,8 @@ namespace utopia {
                     data_[i] = val;
                 }
             }
+
+            void set(const int i, const T &val) { data_[i] = val; }
         };
 
         template <typename T, int Dim>
@@ -345,9 +351,9 @@ namespace utopia {
     }  // namespace simd_v1
 }  // namespace utopia
 
-namespace utopia {
-    namespace simd = utopia::simd_v1;
-    // namespace simd = utopia::simd_v2;
-}  // namespace utopia
+// namespace utopia {
+// namespace simd = utopia::simd_v1;
+// namespace simd = utopia::simd_v2;
+// }  // namespace utopia
 
 #endif  // UTOPIA_SIMD_COMMON_HPP

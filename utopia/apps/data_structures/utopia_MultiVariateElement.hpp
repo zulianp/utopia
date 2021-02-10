@@ -6,7 +6,8 @@
 #include "utopia_Quadrature.hpp"
 
 #ifdef UTOPIA_WITH_VC
-#include "utopia_simd_common.hpp"
+#include "utopia_simd_Matrix.hpp"
+#include "utopia_simd_Vector.hpp"
 #endif  // UTOPIA_WITH_VC
 
 #include <utility>
@@ -74,21 +75,21 @@ namespace utopia {
 #ifdef UTOPIA_WITH_VC
 
         template <typename T>
-        UTOPIA_INLINE_FUNCTION auto fun(const int i, const simd::Vector<T, Dim> &p) const
-            -> simd::Vector<T, NVariables> {
+        UTOPIA_INLINE_FUNCTION auto fun(const int i, const simd_v2::Vector<T, Dim> &p) const
+            -> simd_v2::Vector<T, NVariables> {
             const int univ_i = i % NNodes;
             const int dim = i / NNodes;
-            simd::Vector<T, NVariables> f;
+            simd_v2::Vector<T, NVariables> f;
             f.set(0.0);
             f[dim] = univar_elem_.fun(univ_i, p);
             return f;
         }
 
         template <typename Point, typename T>
-        UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, simd::Matrix<T, NVariables, Dim> &g) const {
+        UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, simd_v2::Matrix<T, NVariables, Dim> &g) const {
             const int univ_i = i % NNodes;
 
-            simd::Vector<T, Dim> univ_g;
+            simd_v2::Vector<T, Dim> univ_g;
             univar_elem_.grad(univ_i, p, univ_g);
 
             const int dim = i / NNodes;

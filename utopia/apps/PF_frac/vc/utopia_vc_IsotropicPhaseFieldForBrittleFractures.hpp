@@ -16,6 +16,8 @@
 #include "utopia_Views.hpp"
 #include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
+#include "utopia_IsotropicPhaseField.hpp"
+
 #include "utopia_AppBase.hpp"
 
 #define UNROLL_FACTOR 4
@@ -23,6 +25,11 @@
 
 // #define ENABLE_ASTRUM_CONDITIONS
 
+#ifdef USE_SIMD_ASSEMBLY
+// #define USE_SIMD_PHASE_FIELD
+#endif
+
+#ifdef USE_SIMD_PHASE_FIELD
 namespace utopia {
 
     template <class FunctionSpace, int Dim = FunctionSpace::Dim>
@@ -906,6 +913,13 @@ namespace utopia {
     };
 
 }  // namespace utopia
+
+#else
+namespace utopia {
+    template <class FunctionSpace>
+    using VcIsotropicPhaseFieldForBrittleFractures = IsotropicPhaseFieldForBrittleFractures<FunctionSpace>;
+}
+#endif  // USE_SIMD_PHASE_FIELD
 
 // clean-up macros
 #undef ENABLE_ASTRUM_CONDITIONS

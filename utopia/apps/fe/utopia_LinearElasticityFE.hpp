@@ -30,6 +30,10 @@
 
 #include "utopia_AppBase.hpp"
 
+#ifdef USE_SIMD_ASSEMBLY
+// #define USE_SIMD_LINEAR_ELASTICITY_FE
+#endif
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -51,7 +55,7 @@ namespace utopia {
         using ElementMatrix = utopia::StaticMatrix<Scalar, NFunctions, NFunctions>;
         using ElementVector = utopia::StaticVector<Scalar, NFunctions>;
 
-#ifdef USE_SIMD_ASSEMBLY
+#ifdef USE_SIMD_LINEAR_ELASTICITY_FE
         using SIMDType = Vc::Vector<Scalar>;
         // using SIMDType = Scalar;
         using Quadrature = simd::Quadrature<SIMDType, Elem::Dim>;
@@ -59,7 +63,7 @@ namespace utopia {
 #else
         using Quadrature = utopia::Quadrature<Elem, 2 * (Elem::Order - 1)>;
         using GradValue = typename Elem::GradValue;
-#endif  // USE_SIMD_ASSEMBLY
+#endif  // USE_SIMD_LINEAR_ELASTICITY_FE
 
         using Coefficient = utopia::Coefficient<FunctionSpace>;
         using LEKernel = utopia::LinearElasticityKernel<Scalar>;
@@ -238,11 +242,11 @@ namespace utopia {
         void init() {
             x_coeff_ = utopia::make_unique<Coefficient>(space_);
 
-#ifdef USE_SIMD_ASSEMBLY
+#ifdef USE_SIMD_LINEAR_ELASTICITY_FE
             utopia::out() << "Using SIMD based LinearElasticityFE\n";
             simd::QuadratureDB<Elem, SIMDType>::get(2 * (Elem::Order - 1), quadrature_);
             utopia::out() << "simd lanes: " << SIMDType::Size << ", qp: " << quadrature_.n_points() << '\n';
-#endif  // USE_SIMD_ASSEMBLY
+#endif  // USE_SIMD_LINEAR_ELASTICITY_FE
 
             grad_ = utopia::make_unique<PhysicalGradient<FunctionSpace, Quadrature>>(space_, quadrature_);
             differential_ = utopia::make_unique<Differential<FunctionSpace, Quadrature>>(space_, quadrature_);

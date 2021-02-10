@@ -6,15 +6,14 @@
 #include "utopia_Views.hpp"
 
 namespace utopia {
+    template <typename T>
+    class Traits<Vc::Vector<T>> {
+    public:
+        using Scalar = Vc::Vector<T>;
+        using SizeType = int;
+    };
 
     namespace simd_v2 {
-
-        template <typename T>
-        class Traits<Vc::Vector<T>> {
-        public:
-            using Scalar = Vc::Vector<T>;
-            using SizeType = int;
-        };
 
         template <typename T>
         struct ScalarType {

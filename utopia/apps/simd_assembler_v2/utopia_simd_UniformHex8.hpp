@@ -239,8 +239,8 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION constexpr static Scalar reference_measure() { return 1.0; }
 
             UTOPIA_INLINE_FUNCTION Scalar measure() const {
-                UTOPIA_DEVICE_ASSERT(h_.prod() > 0.0);
-                return h_.prod();
+                UTOPIA_DEVICE_ASSERT(h_[0] * h_[1] * h_[2] > 0.0);
+                return h_[0] * h_[1] * h_[2];
             }
 
             template <typename RefPoint, typename PhysicalPoint>
