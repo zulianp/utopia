@@ -17,6 +17,17 @@ namespace utopia {
             T data[Size];
 
             Auto() = default;
+            constexpr Auto(const T* data) {
+                for (int i = 0; i < Size; ++i) {
+                    this->data[i] = data[i];
+                }
+            }
+
+            constexpr Auto(const T& value) {
+                for (int i = 0; i < Size; ++i) {
+                    this->data[i] = value;
+                }
+            }
 
             void copy(const T* in) {
                 for (int i = 0; i < Size; ++i) {
