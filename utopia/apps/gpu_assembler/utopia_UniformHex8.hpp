@@ -16,11 +16,11 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar {
             using Scalar = typename Traits<Point>::Scalar;
 
-            const Scalar x = p[0];
-            const Scalar y = p[1];
-            const Scalar z = p[2];
+            const auto x = p[0];
+            const auto y = p[1];
+            const auto z = p[2];
 
-            const Scalar one = One<Scalar>::value();
+            const auto one = One<Scalar>::value();
 
             switch (i) {
                 case 0: {
@@ -593,9 +593,9 @@ namespace utopia {
 
         template <class Tr, class H>
         UTOPIA_INLINE_FUNCTION void set(const Tr &translation, const H &h) {
-            translation_(0) = translation(0);
-            translation_(1) = translation(1);
-            translation_(2) = translation(2);
+            translation_[0] = translation[0];
+            translation_[1] = translation[1];
+            translation_[2] = translation[2];
 
             h_[0] = h[0];
             h_[1] = h[1];

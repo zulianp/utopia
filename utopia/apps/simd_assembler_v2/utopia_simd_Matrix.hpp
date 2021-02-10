@@ -7,18 +7,24 @@
 
 #include "utopia_DeviceIdentity.hpp"
 
+#include "utopia_simd_Ops.hpp"
+
 namespace utopia {
     namespace simd_v2 {
 
         // template <typename T, int Dim, typename...>
         // class Vector {};
 
-        template <typename T, int Rows, int Cols, int Lanes = Vc::Vector<T>::Size>
+        template <typename T, int Rows, int Cols, class SIMDType = Vc::Vector<T>>
         class Matrix {
         public:
-            using SIMDType = Vc::Vector<T>;
+            // using SIMDType = Vc::Vector<T>;
+
+            static const int Lanes = SIMDType::Size;
             static const int N = Rows * Cols;
             static const int Size = N * Lanes;
+
+            using Ops = utopia::simd_v2::Ops<SIMDType>;
 
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
@@ -29,53 +35,53 @@ namespace utopia {
 
             inline static constexpr int cols() { return Cols; }
 
-            inline T &operator()(const int component, const int lane) {
+            inline T &ref(const int component, const int lane) {
                 assert(component < N);
                 assert(lane < Lanes);
                 return data[component * Lanes + lane];
             }
 
-            inline constexpr const T &operator()(const int component, const int lane) const {
+            inline constexpr const T &get(const int component, const int lane) const {
                 assert(component < N);
                 assert(lane < Lanes);
 
                 return data[component * Lanes + lane];
             }
 
-            inline constexpr const T &operator()(const int component_i, const int component_j, const int lane) const {
+            inline constexpr const T &get(const int component_i, const int component_j, const int lane) const {
                 return (*this)(component_i * Rows + component_j, lane);
             }
 
-            inline constexpr SIMDType load(const int idx) const {
+            inline constexpr T *block(const int idx) const {
                 assert(idx < N);
                 assert(idx >= 0);
 
-                return SIMDType(&data[idx * Lanes], Vc::Aligned);
+                return &data[idx * Lanes];
             }
 
-            inline void store(const int idx, const SIMDType &v) {
-                assert(idx < N);
-                assert(idx >= 0);
-
-                v.store(&data[idx * Lanes], Vc::Aligned);
-            }
-
-            inline constexpr SIMDType load(const int i, const int j) const {
+            inline constexpr T *block(const int i, const int j) const {
                 assert(i < Rows);
                 assert(j < Cols);
                 assert(i >= 0);
                 assert(j >= 0);
 
-                return load(i * Rows + j);
+                return block(i * Rows + j);
             }
 
-            inline void store(const int i, const int j, const SIMDType &v) {
+            inline T *block(const int idx) {
+                assert(idx < N);
+                assert(idx >= 0);
+
+                return &data[idx * Lanes];
+            }
+
+            inline T *block(const int i, const int j) {
                 assert(i < Rows);
                 assert(j < Cols);
                 assert(i >= 0);
                 assert(j >= 0);
 
-                store(i * Rows + j, v);
+                return block(i * Rows + j);
             }
 
             void set(const T &val) {
@@ -84,17 +90,20 @@ namespace utopia {
                 }
             }
 
+            inline void dot(const Matrix &other, SIMDType &result) const {
+                Ops::template dot<N>(data, other.data, result);
+            }
+
             friend inline constexpr SIMDType dot(const Matrix &l, const Matrix &r) {
-                SIMDType ret = T(0);
-
-                for (int i = 0; i < N; ++i) {
-                    ret += l.load(i) * r.load(i);
-                }
-
+                SIMDType ret;
+                l.dot(r, ret);
                 return ret;
             }
 
-            friend inline constexpr SIMDType inner(const Matrix &l, const Matrix &r) { return dot(l, r); }
+            friend inline constexpr SIMDType inner(const Matrix &l, const Matrix &r) {
+                SIMDType ret;
+                l.dot(r, ret);
+            }
 
             // friend inline DeviceTranspose<Matrix> transpose(const Matrix &mat) { return mat; }
 
@@ -139,11 +148,18 @@ namespace utopia {
             template <typename Factor>
             inline void scale(const Factor &factor) {
                 for (int i = 0; i < N; ++i) {
-                    store(i, load(i) * factor);
+                    Ops::scale(factor, block(i));
                 }
             }
 
-            UTOPIA_INLINE_FUNCTION Matrix &operator*=(const T &factor) {
+            template <typename Factor>
+            inline Matrix operator*(const Factor &factor) {
+                Matrix ret = *this;
+                ret.scale(factor);
+                return ret;
+            }
+
+            inline Matrix &operator*=(const T &factor) {
                 scale(factor);
 
                 return *this;
@@ -189,12 +205,7 @@ namespace utopia {
 
                 for (int i = 0; i < Rows; ++i) {
                     for (int j = i + 1; j < Cols; ++j) {
-                        auto a_ij = load(i, j);
-                        auto a_ji = load(j, i);
-
-                        const auto val = 0.5 * (a_ij + a_ji);
-                        store(i, j, val);
-                        store(j, i, val);
+                        Ops::add_scale_store(0.5, block(i, j), block(j, i));
                     }
                 }
             }
@@ -203,11 +214,12 @@ namespace utopia {
         };
     }  // namespace simd_v2
 
-    template <typename T, int Rows, int Cols>
-    class Traits<simd_v2::Matrix<T, Rows, Cols>> {
+    template <typename T, int Rows, int Cols, typename SIMDType_>
+    class Traits<simd_v2::Matrix<T, Rows, Cols, SIMDType_>> {
     public:
-        using Scalar = T;
         using SizeType = int;
+        using Primitive = T;
+        using Scalar = SIMDType_;
         static const int Order = 2;
     };
 

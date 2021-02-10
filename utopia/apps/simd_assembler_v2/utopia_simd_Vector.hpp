@@ -38,9 +38,11 @@ namespace utopia {
                 return ret;
             }
 
-            inline T &operator()(const int component, const int lane) { return data[component * Lanes + lane]; }
+            inline SIMDType operator[](const int idx) const { return Ops::construct(block(idx)); }
 
-            inline constexpr const T &operator()(const int component, const int lane) const {
+            inline T &ref(const int component, const int lane) { return data[component * Lanes + lane]; }
+
+            inline constexpr const T &get(const int component, const int lane) const {
                 return data[component * Lanes + lane];
             }
 
@@ -57,32 +59,26 @@ namespace utopia {
                 return &data[idx * Lanes];
             }
 
-            // inline constexpr Vector operator*=(const Vector &other) {
-            //     for (int i = 0; i < N; ++i) {
-            //         // store(i, this->load(i) + other.load(i));
-            //         Ops::in_place_mult(other.block(i), block(i));
-            //     }
-
-            //     return *this;
-            // }
-
-            inline constexpr Vector operator*=(const T &other) {
+            inline constexpr Vector &operator*=(const T &other) {
                 scale(other);
                 return *this;
             }
 
-            inline constexpr Vector operator+=(const Vector &other) {
+            inline constexpr Vector &operator/=(const T &other) {
+                scale(1. / other);
+                return *this;
+            }
+
+            inline constexpr Vector &operator+=(const Vector &other) {
                 for (int i = 0; i < N; ++i) {
-                    // store(i, this->load(i) + other.load(i));
                     Ops::in_place_add(other.block(i), block(i));
                 }
 
                 return *this;
             }
 
-            inline constexpr Vector operator-=(const Vector &other) {
+            inline constexpr Vector &operator-=(const Vector &other) {
                 for (int i = 0; i < N; ++i) {
-                    // store(i, this->load(i) - other.load(i));
                     Ops::in_place_subtract(other.block(i), block(i));
                 }
 
@@ -149,9 +145,9 @@ namespace utopia {
     template <typename T, int N, typename SIMDType_>
     class Traits<simd_v2::Vector<T, N, SIMDType_>> {
     public:
-        using Scalar = T;
+        using Primitive = T;
+        using Scalar = SIMDType_;
         using SizeType = int;
-        using SIMDType = SIMDType_;
         static const int Order = 1;
     };
 

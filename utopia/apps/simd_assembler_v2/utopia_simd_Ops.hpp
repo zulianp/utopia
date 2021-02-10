@@ -16,14 +16,13 @@ namespace utopia {
             static constexpr int Size = Size_;
             T data[Size];
 
-            Auto() = default;
             constexpr Auto(const T* data) {
                 for (int i = 0; i < Size; ++i) {
                     this->data[i] = data[i];
                 }
             }
 
-            constexpr Auto(const T& value) {
+            constexpr Auto(const T& value = 0) {
                 for (int i = 0; i < Size; ++i) {
                     this->data[i] = value;
                 }
@@ -117,6 +116,19 @@ namespace utopia {
                     }
                 }
             }
+
+            UTOPIA_INLINE_FUNCTION void add_scale(const T& factor, const T* left, const T* right, T* result) {
+                for (int l = 0; l < Lanes; ++l) {
+                    result[l] = factor * (left[l] + right[l]);
+                }
+            }
+
+            UTOPIA_INLINE_FUNCTION void add_scale_store(const T& factor, T* left, T* right) {
+                for (int l = 0; l < Lanes; ++l) {
+                    left[l] = factor * (left[l] + right[l]);
+                    right[l] = left[l];
+                }
+            }
         };
 
     }  // namespace simd_v2
@@ -153,6 +165,16 @@ namespace utopia {
                 for (int i = 1; i < N; ++i) {
                     ret += load(&l[i * Lanes]) * load(&r[i * Lanes]);
                 }
+            }
+
+            inline void add_scale(const T& factor, const T* l, const T* r, T* result) {
+                store(factor * (load(l) + load(r)), result);
+            }
+
+            inline void add_scale_store(const T& factor, T* l, T* r) {
+                auto res = factor * (load(l) + load(r));
+                store(res, l);
+                store(res, r);
             }
         };
 

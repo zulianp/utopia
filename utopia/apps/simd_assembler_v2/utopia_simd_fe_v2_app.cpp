@@ -2,7 +2,7 @@
 
 // #include "utopia_simd_Assembler.hpp"
 #include "utopia_simd_Assembler_v2.hpp"
-// #include "utopia_simd_Quadrature_v2.hpp"
+#include "utopia_simd_Quadrature_v2.hpp"
 
 #include "utopia_ui.hpp"
 
@@ -10,7 +10,7 @@
 #include "utopia_AppRunner.hpp"
 #include "utopia_Literal.hpp"
 
-// #include "utopia_UniformHex8.hpp"
+#include "utopia_UniformHex8.hpp"
 
 // std
 #include <cmath>
@@ -22,8 +22,8 @@ void simd_fe_v2(Input &in) {
     static constexpr int Dim = 3;
     static constexpr int Lanes = Vc::Vector<Scalar>::Size;
 
-    // using Vector3 = simd_v2::Vector<Scalar, Dim>;
-    using Vector3 = simd_v2::Vector<Scalar, Dim, simd_v2::Auto<Scalar, Lanes>>;
+    using Vector3 = simd_v2::Vector<Scalar, Dim>;
+    // using Vector3 = simd_v2::Vector<Scalar, Dim, simd_v2::Auto<Scalar, Lanes>>;
     using SIMDType = Vector3::SIMDType;
     // using Vector3 = simd_v1::Vector<Vc::Vector<Scalar>, Dim>;
     // using SIMDType = Vc::Vector<Scalar>;
@@ -117,45 +117,43 @@ void simd_fe_v2(Input &in) {
     utopia_test_assert(approxeq(expected_value, actual_value, 1e-10));
     utopia_test_assert(elapsed_simd < elapsed_serial);
 
-    // using SIMDType = Vc::Vector<double>;
+    int order = 1;
+    in.get("order", order);
 
-    // int order = 1;
-    // in.get("order", order);
+    simd_v2::Quadrature<Scalar, 3> q;
 
-    // simd_v1::Quadrature<SIMDType, 3> q_vec;
+    if (!simd_v2::Gauss<Scalar>::Hex::get(order, q)) {
+        std::cerr << "[Error] could not find quadrature for order " << order << "\n";
+        assert(false);
+        return;
+    }
 
-    // if (!simd_v1::Gauss<SIMDType>::Hex::get(order, q_vec)) {
-    //     std::cerr << "[Error] could not find quadrature for order " << order << "\n";
-    //     assert(false);
-    //     return;
-    // }
+    Scalar h[3] = {1.0, 1.0, 1.0};
+    Scalar t[3] = {1.0, 1.0, 1.0};
 
-    // simd_v2::Vector<double, 3> h{1.0, 1.0, 1.0}, t{1.0, 1.0, 1.0};
-    // simd_v2::Vector<SIMDType, 3> g, p_global;
-    // UniformHex8<double> hex;
-    // hex.set(t, h);
+    simd_v2::Vector<Scalar, 3> g, p_global;
+    UniformHex8<Scalar> hex;
+    hex.set(t, h);
 
-    // // RefHex8 hex;
-    // // auto one = One<double>::value();
-    // for (int qp = 0; qp < q_vec.n_points(); ++qp) {
-    //     std::cout << "--------------\n";
+    for (int qp = 0; qp < q.n_points(); ++qp) {
+        std::cout << "--------------\n";
 
-    //     for (int i = 0; i < 8; ++i) {
-    //         auto fi = hex.fun(i, q_vec.point(qp));
-    //         std::cout << fi << std::endl;
-    //     }
+        for (int i = 0; i < 8; ++i) {
+            auto fi = hex.fun(i, q.point(qp));
+            std::cout << fi << std::endl;
+        }
 
-    //     std::cout << "--------------\n";
-    // }
+        std::cout << "--------------\n";
+    }
 
-    // hex.grad(0, q_vec.point(0), g);
-    // hex.point(q_vec.point(0), p_global);
+    // hex.grad(0, q.point(0), g);
+    // hex.point(q.point(0), p_global);
 
     // disp(g);
     // disp(p_global);
 
-    // PhysicalGradient<UniformHex8<double>, simd_v2::Quadrature<SIMDType, 3>> pg(q_vec);
-    // Differential<UniformHex8<double>, simd_v2::Quadrature<SIMDType, 3>> dx(q_vec);
+    // PhysicalGradient<UniformHex8<double>, simd_v2::Quadrature<SIMDType, 3>> pg(q);
+    // Differential<UniformHex8<double>, simd_v2::Quadrature<SIMDType, 3>> dx(q);
 
     // auto gp_e = pg.make(hex);
     // auto dx_e = dx.make(hex);
