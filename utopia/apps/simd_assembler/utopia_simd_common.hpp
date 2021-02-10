@@ -8,7 +8,7 @@
 #include "utopia_DeviceIdentity.hpp"
 
 namespace utopia {
-    namespace simd {
+    namespace simd_v1 {
 
         template <typename T>
         struct ScalarType {
@@ -179,18 +179,18 @@ namespace utopia {
                 }
             }
 
-            inline std::string get_class() const { return "simd::Matrix"; }
+            inline std::string get_class() const { return "simd_v1::Matrix"; }
         };
-    }  // namespace simd
+    }  // namespace simd_v1
 
     template <typename T, int Dim, typename... Args>
-    class Traits<simd::Vector<T, Dim, Args...>> {
+    class Traits<simd_v1::Vector<T, Dim, Args...>> {
     public:
         using Scalar = T;
     };
 
     template <typename T, int Rows, int Cols>
-    class Traits<simd::Matrix<T, Rows, Cols>> {
+    class Traits<simd_v1::Matrix<T, Rows, Cols>> {
     public:
         using Scalar = T;
         using SizeType = int;
@@ -211,7 +211,7 @@ namespace utopia {
         return DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies>(left, right.derived());
     }
 
-    namespace simd {
+    namespace simd_v1 {
         template <typename T>
         T sum(const T v) {
             return v;
@@ -237,7 +237,7 @@ namespace utopia {
         public:
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
-            T data_[2] = {simd::Zero<T>::value(), simd::Zero<T>::value()};
+            T data_[2] = {simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
             inline constexpr const T &x() const { return data_[0]; }
@@ -276,7 +276,7 @@ namespace utopia {
         public:
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
-            T data_[3] = {simd::Zero<T>::value(), simd::Zero<T>::value(), simd::Zero<T>::value()};
+            T data_[3] = {simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
             inline constexpr const T &x() const { return data_[0]; }
@@ -340,7 +340,12 @@ namespace utopia {
             return ret;
         }
 
-    }  // namespace simd
+    }  // namespace simd_v1
+}  // namespace utopia
+
+namespace utopia {
+    namespace simd = utopia::simd_v1;
+    // namespace simd = utopia::simd_v2;
 }  // namespace utopia
 
 #endif  // UTOPIA_SIMD_COMMON_HPP

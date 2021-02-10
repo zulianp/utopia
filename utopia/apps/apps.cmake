@@ -17,7 +17,7 @@ if(UTOPIA_PETSC)
         ls_solve)
 
     if(UTOPIA_ENABLE_VC)
-        list(APPEND APPS_MODULES simd_assembler)
+        list(APPEND APPS_MODULES simd_assembler simd_assembler_v2)
     endif()
 
     set(LOCAL_HEADERS "")

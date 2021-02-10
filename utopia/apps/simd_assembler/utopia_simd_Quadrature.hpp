@@ -14,12 +14,12 @@
 
 namespace utopia {
 
-    namespace simd {
+    namespace simd_v1 {
 
         template <typename T, int Dim>
         class Quadrature {
         public:
-            using Point = simd::Vector<T, Dim>;
+            using Point = simd_v1::Vector<T, Dim>;
             using ViewDevice = Quadrature;
             using ViewHost = Quadrature;
 
@@ -284,7 +284,7 @@ namespace utopia {
                     }
                 }
             };
-        };  // namespace simd
+        };  // namespace simd_v1
 
         template <typename T>
         class Gauss<Vc::Vector<T>> {
@@ -293,14 +293,14 @@ namespace utopia {
             static const int block_size = VectorType::Size;
 
             template <int Dim>
-            static void vectorize(simd::Quadrature<T, Dim> &q_scalar, simd::Quadrature<VectorType, Dim> &q) {
+            static void vectorize(simd_v1::Quadrature<T, Dim> &q_scalar, simd_v1::Quadrature<VectorType, Dim> &q) {
                 int n_points = q_scalar.weights.size();
                 int n_blocks = n_points / block_size;
                 int n_defect = n_points - n_blocks * block_size;
 
-                int n_simd_blocks = n_blocks + (n_defect != 0);
+                int n_simd_v1_blocks = n_blocks + (n_defect != 0);
 
-                q.resize(n_simd_blocks);
+                q.resize(n_simd_v1_blocks);
 
                 for (int i = 0; i < n_blocks; ++i) {
                     int q_offset = i * block_size;
@@ -339,7 +339,7 @@ namespace utopia {
 
             class Tri {
             public:
-                static bool get(const int order, simd::Quadrature<VectorType, 2> &q) {
+                static bool get(const int order, simd_v1::Quadrature<VectorType, 2> &q) {
                     Quadrature<T, 2> q_scalar;
 
                     if (!Gauss<T>::Tri::get(order, q_scalar)) {
@@ -353,7 +353,7 @@ namespace utopia {
 
             class Quad {
             public:
-                static bool get(const int order, simd::Quadrature<VectorType, 2> &q) {
+                static bool get(const int order, simd_v1::Quadrature<VectorType, 2> &q) {
                     Quadrature<T, 2> q_scalar;
 
                     if (!Gauss<T>::Quad::get(order, q_scalar)) {
@@ -367,7 +367,7 @@ namespace utopia {
 
             class Hex {
             public:
-                static bool get(const int order, simd::Quadrature<VectorType, 3> &q) {
+                static bool get(const int order, simd_v1::Quadrature<VectorType, 3> &q) {
                     Quadrature<T, 3> q_scalar;
 
                     if (!Gauss<T>::Hex::get(order, q_scalar)) {
@@ -422,7 +422,7 @@ namespace utopia {
         template <typename Elem, int NVar, typename QT>
         class QuadratureDB<MultiVariateElem<Elem, NVar>, QT> : public QuadratureDB<Elem, QT> {};
 
-    }  // namespace simd
+    }  // namespace simd_v1
 }  // namespace utopia
 
 #endif  // UTOPIA_SIMD_QUADRATURE_HPP
