@@ -89,6 +89,8 @@ namespace utopia {
                 return ret;
             }
 
+            friend inline constexpr SIMDType inner(const Vector &l, const Vector &r) { return dot(l, r); }
+
             friend void disp(const Vector &v, std::ostream &os = std::cout) {
                 for (int i = 0; i < Size; i += Lanes) {
                     os << "[ ";
@@ -106,11 +108,6 @@ namespace utopia {
             }
         };
     }  // namespace simd_v2
-
-    // template <typename T, int Dim>
-    // inline T inner(const Vector<T, Dim> &l, const Vector<T, Dim> &r) {
-    //     return dot(l, r);
-    // }
 
     // template <typename Array, typename T2, int Cols>
     // inline auto operator*(const TensorView<Array, 2> &mat, const Vector<T2, Cols> &x)
@@ -134,6 +131,7 @@ namespace utopia {
     class Traits<simd_v2::Vector<T, N, Lanes>> {
     public:
         using Scalar = T;
+        using SizeType = int;
         using SIMDType = Vc::Vector<T>;
     };
 

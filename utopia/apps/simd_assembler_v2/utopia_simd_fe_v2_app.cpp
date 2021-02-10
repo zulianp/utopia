@@ -1,15 +1,16 @@
 #include "utopia_Base.hpp"
+
+#include "utopia_simd_Assembler.hpp"
+#include "utopia_simd_Assembler_v2.hpp"
+#include "utopia_simd_Quadrature.hpp"
+
 #include "utopia_ui.hpp"
 
 // include edsl components
 #include "utopia_AppRunner.hpp"
 #include "utopia_Literal.hpp"
-#include "utopia_simd_Quadrature.hpp"
 
 // #include "utopia_UniformHex8.hpp"
-
-#include "utopia_simd_Assembler.hpp"
-#include "utopia_simd_Assembler_v2.hpp"
 
 // std
 #include <cmath>

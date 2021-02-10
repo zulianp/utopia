@@ -1,6 +1,10 @@
 #ifndef UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 #define UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_WITH_PETSC
+
 #include "utopia_Algorithms.hpp"
 #include "utopia_VectorView.hpp"
 #include "utopia_Views.hpp"
@@ -260,4 +264,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
+#endif
 #endif  // UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
