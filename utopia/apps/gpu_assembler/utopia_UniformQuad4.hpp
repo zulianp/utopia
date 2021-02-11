@@ -335,8 +335,10 @@ namespace utopia {
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const {
             RefQuad4::grad(i, p, g);
-            g[0] /= h_[0];
-            g[1] /= h_[1];
+            // g[0] /= h_[0];
+            // g[1] /= h_[1];
+            g.divide(0, h_[0]);
+            g.divide(1, h_[1]);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine() { return true; }
@@ -367,10 +369,10 @@ namespace utopia {
             h_[1] = 0.0;
         }
 
-        template <class H>
-        UTOPIA_INLINE_FUNCTION void set(const StaticVector2<Scalar> &translation, const H &h) {
-            translation_(0) = translation(0);
-            translation_(1) = translation(1);
+        template <class Tr, class H>
+        UTOPIA_INLINE_FUNCTION void set(const Tr &translation, const H &h) {
+            translation_[0] = translation[0];
+            translation_[1] = translation[1];
 
             h_[0] = h[0];
             h_[1] = h[1];

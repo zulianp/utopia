@@ -111,6 +111,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void set(const SizeType &i, const Scalar &value) { view_[i] = value; }
 
         UTOPIA_INLINE_FUNCTION void add(const SizeType &i, const Scalar &value) { view_[i] += value; }
+        UTOPIA_INLINE_FUNCTION void divide(const SizeType &i, const Scalar &value) { view_[i] /= value; }
 
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha) { device::scale(alpha, view_); }
 
@@ -158,7 +159,7 @@ namespace utopia {
         UTOPIA_FUNCTION constexpr TensorView(const TensorView &other) : view_(other.view_) {}
 
         template <class... Args>
-        TensorView(const DelegateArgs &, Args &&...args) : view_(std::forward<Args>(args)...) {}
+        TensorView(const DelegateArgs &, Args &&... args) : view_(std::forward<Args>(args)...) {}
 
         template <class Expr>
         UTOPIA_FUNCTION TensorView(const DeviceExpression<Expr> &expr) {

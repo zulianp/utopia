@@ -32,15 +32,15 @@ namespace utopia {
             using Type = simd_v2::UniformHex8<T>;
         };
 
-        template <class T>
-        struct SIMDConvert<utopia::simd_v2::UniformQuad4<T>> {
-            using Type = simd_v2::UniformQuad4<T>;
-        };
+        // template <class T>
+        // struct SIMDConvert<utopia::simd_v2::UniformQuad4<T>> {
+        //     using Type = simd_v2::UniformQuad4<T>;
+        // };
 
-        template <class T>
-        struct SIMDConvert<utopia::simd_v2::UniformHex8<T>> {
-            using Type = simd_v2::UniformHex8<T>;
-        };
+        // template <class T>
+        // struct SIMDConvert<utopia::simd_v2::UniformHex8<T>> {
+        //     using Type = simd_v2::UniformHex8<T>;
+        // };
 
         template <class T, int NVar>
         struct SIMDConvert<MultiVariateElem<T, NVar>> {
@@ -76,10 +76,11 @@ namespace utopia {
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class Elem, typename T, int Dim_>
-    class PhysicalGradient<Elem, simd_v2::Quadrature<T, Dim_>, typename Elem::MemType> {
+    template <class Elem_, typename T, int Dim_>
+    class PhysicalGradient<Elem_, simd_v2::Quadrature<T, Dim_>, typename Elem_::MemType> {
     public:
         static const int Dim = Dim_;
+        using Elem = typename simd_v2::SIMDConvert<Elem_>::Type;
         using Scalar = typename simd_v2::FETraits<Elem, T>::Scalar;
         using GradValue = typename simd_v2::FETraits<Elem, T>::GradValue;
         using Quadrature = simd_v2::Quadrature<T, Dim_>;

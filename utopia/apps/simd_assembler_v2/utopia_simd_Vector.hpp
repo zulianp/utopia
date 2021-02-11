@@ -145,6 +145,7 @@ namespace utopia {
             friend inline constexpr SIMDType inner(const Vector &l, const Vector &r) {
                 SIMDType ret;
                 l.dot(r, ret);
+                return ret;
             }
 
             friend void disp(const Vector &v, std::ostream &os = std::cout) {

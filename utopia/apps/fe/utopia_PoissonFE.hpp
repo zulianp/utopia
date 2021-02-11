@@ -18,7 +18,7 @@
 
 #ifdef USE_SIMD_ASSEMBLY
 #include "utopia_simd_Assembler_v2.hpp"
-// #define USE_SIMD_POISSON_FE
+#define USE_SIMD_POISSON_FE
 #endif  // USE_SIMD_ASSEMBLY
 
 namespace utopia {

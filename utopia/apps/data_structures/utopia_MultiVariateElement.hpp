@@ -97,7 +97,7 @@ namespace utopia {
             g.set(0.0);
 
             for (int d = 0; d < Dim; ++d) {
-                g(dim, d) = univ_g[d];
+                g.set(dim, d, univ_g[d]);
             }
         }
 

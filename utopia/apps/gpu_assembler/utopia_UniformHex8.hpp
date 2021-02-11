@@ -540,9 +540,13 @@ namespace utopia {
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const {
             RefHex8::grad(i, p, g);
-            g[0] /= h_[0];
-            g[1] /= h_[1];
-            g[2] /= h_[2];
+            // g[0] /= h_[0];
+            // g[1] /= h_[1];
+            // g[2] /= h_[2];
+
+            g.divide(0, h_[0]);
+            g.divide(1, h_[1]);
+            g.divide(2, h_[2]);
         }
 
         // space-time spatial gradient
@@ -578,9 +582,13 @@ namespace utopia {
 
         template <typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const {
-            out[0] = in[0] * h_[0] + translation_[0];
-            out[1] = in[1] * h_[1] + translation_[1];
-            out[2] = in[2] * h_[2] + translation_[2];
+            // out[0] = in[0] * h_[0] + translation_[0];
+            // out[1] = in[1] * h_[1] + translation_[1];
+            // out[2] = in[2] * h_[2] + translation_[2];
+
+            for (int i = 0; i < 3; ++i) {
+                out.set(i, in[i] * h_[i] + translation_[i]);
+            }
         }
 
         template <typename PhysicalPoint>

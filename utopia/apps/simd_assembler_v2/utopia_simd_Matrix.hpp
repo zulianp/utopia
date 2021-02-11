@@ -28,8 +28,10 @@ namespace utopia {
 
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
-            static constexpr size_t data_alignment() { return SIMDType::MemoryAlignment; }
-            alignas(data_alignment()) T data[Size];
+            // static constexpr size_t data_alignment() { return SIMDType::MemoryAlignment; }
+            // alignas(data_alignment())
+
+            T data[Size];
 
             inline static constexpr int rows() { return Rows; }
 
@@ -90,6 +92,8 @@ namespace utopia {
                 }
             }
 
+            void set(const int i, const int j, const SIMDType &val) { Ops::store(val, block(i, j)); }
+
             inline void dot(const Matrix &other, SIMDType &result) const {
                 Ops::template dot<N>(data, other.data, result);
             }
@@ -103,6 +107,7 @@ namespace utopia {
             friend inline constexpr SIMDType inner(const Matrix &l, const Matrix &r) {
                 SIMDType ret;
                 l.dot(r, ret);
+                return ret;
             }
 
             // friend inline DeviceTranspose<Matrix> transpose(const Matrix &mat) { return mat; }

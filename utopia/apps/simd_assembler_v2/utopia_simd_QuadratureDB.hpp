@@ -35,23 +35,23 @@ namespace utopia {
             }
         };
 
-        template <typename T, typename QT>
-        class QuadratureDB<simd_v2::UniformHex8<T>, QT> {
-        public:
-            template <class Q>
-            static bool get(const int order, Q &q) {
-                return Gauss<QT>::Hex::get(order, q);
-            }
-        };
+        // template <typename T, typename QT>
+        // class QuadratureDB<simd_v2::UniformHex8<T>, QT> {
+        // public:
+        //     template <class Q>
+        //     static bool get(const int order, Q &q) {
+        //         return Gauss<QT>::Hex::get(order, q);
+        //     }
+        // };
 
-        template <typename T, typename QT>
-        class QuadratureDB<simd_v2::UniformQuad4<T>, QT> {
-        public:
-            template <class Q>
-            static bool get(const int order, Q &q) {
-                return Gauss<QT>::Quad::get(order, q);
-            }
-        };
+        // template <typename T, typename QT>
+        // class QuadratureDB<simd_v2::UniformQuad4<T>, QT> {
+        // public:
+        //     template <class Q>
+        //     static bool get(const int order, Q &q) {
+        //         return Gauss<QT>::Quad::get(order, q);
+        //     }
+        // };
 
         template <typename T, typename QT>
         class QuadratureDB<Tri3<T>, QT> {
