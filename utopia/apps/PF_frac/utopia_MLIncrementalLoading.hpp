@@ -57,10 +57,14 @@ namespace utopia {
             init_ml_setup();
 
             for (std::size_t l = 0; l < level_functions_.size(); l++) {
+                assert(level_functions_[l]);
+                assert(BC_conditions_[l]);
+
                 level_functions_[l]->read(in);
                 BC_conditions_[l]->read(in);
             }
 
+            assert(IC_);
             IC_->read(in);
 
             in.get("solver", *rmtr_);

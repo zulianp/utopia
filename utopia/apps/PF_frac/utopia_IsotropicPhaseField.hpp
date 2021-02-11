@@ -16,6 +16,8 @@
 #include "utopia_Views.hpp"
 #include "utopia_petsc_NeumannBoundaryConditions.hpp"
 
+#include "utopia_AppBase.hpp"
+
 #define UNROLL_FACTOR 4
 #define U_MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -41,12 +43,19 @@ namespace utopia {
         // FIXME
         using Shape = typename FunctionSpace::Shape;
         // using Quadrature = utopia::Quadrature<Shape, 2*(Shape::Order -1)>;
+        // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
+
+        // #ifdef USE_SIMD_ASSEMBLY
+        //         using SIMDType = Vc::Vector<Scalar>;
+        //         using Quadrature = simd::Quadrature<SIMDType, Dim>;
+        //         // using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
+        // #else
         using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
+        static const int NQuadPoints = Quadrature::NPoints;
+        // #endif  // USE_SIMD_ASSEMBLY
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
-
-        static const int NQuadPoints = Quadrature::NPoints;
 
         IsotropicPhaseFieldForBrittleFractures(FunctionSpace &space) : PhaseFieldFracBase<FunctionSpace, Dim>(space) {}
 
@@ -112,9 +121,6 @@ namespace utopia {
                 Device::parallel_reduce(
                     this->space_.element_range(),
                     UTOPIA_LAMBDA(const SizeType &i) {
-                        // StaticMatrix<Scalar, Dim, Dim> strain_n;
-                        // StaticMatrix<Scalar, Dim, Dim> strain_p;
-
                         CElem c_e;
                         C_view.elem(i, c_e);
 
@@ -133,10 +139,6 @@ namespace utopia {
                         auto dx = differential_view.make(c_e);
 
                         Scalar el_energy = 0.0;
-
-                        // #pragma clang loop unroll_count(U_MIN(NQuadPoints,
-                        // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(NQuadPoints,
-                        // UNROLL_FACTOR)
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             Scalar tr = trace(el_strain.strain[qp]);
                             if (this->params_.use_pressure) {
@@ -342,9 +344,6 @@ namespace utopia {
 
                         Scalar el_energy = 0.0;
 
-                        // #pragma clang loop unroll_count(U_MIN(NQuadPoints,
-                        // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(NQuadPoints,
-                        // UNROLL_FACTOR)
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             el_energy += PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
                                              this->params_, c[qp], c_grad_el[qp]) *
@@ -473,9 +472,6 @@ namespace utopia {
 
                         ////////////////////////////////////////////
 
-                        // #pragma clang loop unroll_count(U_MIN(NQuadPoints,
-                        // UNROLL_FACTOR)) #pragma GCC unroll U_MIN(NQuadPoints,
-                        // UNROLL_FACTOR)
                         for (SizeType qp = 0; qp < NQuadPoints; ++qp) {
                             const Scalar tr_strain_u = trace(el_strain.strain[qp]);
 
@@ -485,8 +481,6 @@ namespace utopia {
                             stress =
                                 (gc_qp * (1.0 - this->params_.regularization) + this->params_.regularization) * stress;
 
-                            // #pragma clang loop unroll_count(U_MIN(U_NDofs, UNROLL_FACTOR))
-                            // #pragma GCC unroll U_MIN(U_NDofs, UNROLL_FACTOR)
                             for (SizeType j = 0; j < U_NDofs; ++j) {
                                 auto &&strain_test = u_strain_shape_el(j, qp);
                                 u_el_vec(j) += inner(stress, strain_test) * dx(qp);
@@ -499,8 +493,6 @@ namespace utopia {
                             const Scalar elast =
                                 grad_elastic_energy_wrt_c(this->params_, c[qp], tr_strain_u, el_strain.strain[qp]);
 
-                            // #pragma clang loop unroll_count(U_MIN(C_NDofs, UNROLL_FACTOR))
-                            // #pragma GCC unroll U_MIN(C_NDofs, UNROLL_FACTOR)
                             for (SizeType j = 0; j < C_NDofs; ++j) {
                                 const Scalar shape_test = c_shape_fun_el(j, qp);
                                 const Scalar frac = PhaseFieldFracBase<FunctionSpace, Dim>::grad_fracture_energy_wrt_c(
@@ -545,9 +537,6 @@ namespace utopia {
             if (this->params_.use_crack_set_irreversibiblity) {
                 this->apply_zero_constraints_irreversibiblity(g, x_const);
             }
-
-            // static int iter = 0;
-            // write("g" + std::to_string(iter++) + ".m", g);
 
             UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::gradient");
             return true;

@@ -251,7 +251,8 @@ namespace utopia {
         class Extent {
         public:
             template <typename S>
-            UTOPIA_INLINE_FUNCTION static auto apply(const NDimArray &in, const S &s) -> decltype(in.extent(s)) {
+            UTOPIA_INLINE_FUNCTION static constexpr auto apply(const NDimArray &in, const S &s)
+                -> decltype(in.extent(s)) {
                 return in.extent(s);
             }
         };

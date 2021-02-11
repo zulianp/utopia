@@ -1550,6 +1550,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_mm);
             UTOPIA_RUN_TEST(trilinos_m_tm);
             UTOPIA_RUN_TEST(trilinos_diag);
+
+            // FIXME This tests fails when using adress sanitizer inside trilinos (CMAKE_BUILD_TYPE=ASAN)
             UTOPIA_RUN_TEST(trilinos_read);
 
             UTOPIA_RUN_TEST(trilinos_rect_matrix);
@@ -1565,6 +1567,7 @@ namespace utopia {
 
             UTOPIA_RUN_TEST(trilinos_rmtr);
 
+            // FIXME This tests fails when using adress sanitizer inside trilinos (CMAKE_BUILD_TYPE=ASAN)
             UTOPIA_RUN_TEST(trilinos_transpose);
 
             UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);

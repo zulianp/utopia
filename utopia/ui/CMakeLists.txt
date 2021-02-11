@@ -1,32 +1,36 @@
 set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 
-find_path(TINY_EXPR_DIR
-    NAMES tinyexpr.h
-    HINTS ${EXTERNAL_DIR}/tinyexpr
-          ${TINY_EXPR_DIR}
-          $ENV{TINY_EXPR_DIR}
-          ${INSTALL_DIR}/tinyexpr
-          $ENV{INSTALL_DIR}/tinyexpr
-)
+if(UTOPIA_ENABLE_TINY_EXPR)
 
-if(TINY_EXPR_DIR)
-    # tinyexpr
-    add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
-    target_include_directories(tinyexpr PUBLIC $<BUILD_INTERFACE:${TINY_EXPR_DIR}>)
-    set(UTOPIA_WITH_TINY_EXPR ON PARENT_SCOPE)
-    set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
+    find_path(
+        TINY_EXPR_DIR
+        NAMES tinyexpr.h
+        HINTS ${EXTERNAL_DIR}/tinyexpr ${TINY_EXPR_DIR} $ENV{TINY_EXPR_DIR}
+              ${INSTALL_DIR}/tinyexpr $ENV{INSTALL_DIR}/tinyexpr)
 
-    install(TARGETS tinyexpr
-        EXPORT UtopiaTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
+    if(TINY_EXPR_DIR)
+        # tinyexpr
+        add_library(tinyexpr ${TINY_EXPR_DIR}/tinyexpr.c)
+        target_include_directories(tinyexpr
+                                   PUBLIC $<BUILD_INTERFACE:${TINY_EXPR_DIR}>)
+        set(UTOPIA_WITH_TINY_EXPR
+            ON
+            PARENT_SCOPE)
+        set(UTOPIA_ADDITIONAL_COMPONENTS ";tinyexpr")
+
+        install(
+            TARGETS tinyexpr
+            EXPORT UtopiaTargets
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib)
+    endif()
 endif()
 
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
-#hidden dependencies
-target_include_directories(utopia SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
+# hidden dependencies
+target_include_directories(utopia SYSTEM
+                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
 # target_compile_options(utopia PRIVATE "-Wno-cast-function-type")
 
 if(WIN32)
@@ -37,18 +41,19 @@ if(TARGET tinyexpr)
     target_link_libraries(utopia PUBLIC tinyexpr)
 endif()
 
-find_path(JSON_DIR
+find_path(
+    JSON_DIR
     NAMES json.hpp
-    HINTS ${EXTERNAL_DIR}/json
-          ${JSON_DIR}
-          $ENV{JSON_DIR}
-          ${INSTALL_DIR}/json
+    HINTS ${EXTERNAL_DIR}/json ${JSON_DIR} $ENV{JSON_DIR} ${INSTALL_DIR}/json
           $ENV{INSTALL_DIR}/json
-    PATH_SUFFIXES single_include/nlohmann
-)
+    PATH_SUFFIXES single_include/nlohmann)
 if(JSON_DIR)
     target_include_directories(utopia SYSTEM PRIVATE ${JSON_DIR})
-    set(UTOPIA_WITH_JSON ON PARENT_SCOPE)
+    set(UTOPIA_WITH_JSON
+        ON
+        PARENT_SCOPE)
 endif()
 
-set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS}${UTOPIA_ADDITIONAL_COMPONENTS}" PARENT_SCOPE)
+set(UTOPIA_COMPONENTS
+    "${UTOPIA_COMPONENTS}${UTOPIA_ADDITIONAL_COMPONENTS}"
+    PARENT_SCOPE)

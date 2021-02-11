@@ -1,5 +1,5 @@
-#ifndef UTOPIA_SIMD_ASSEMBLY_VIEW_HPP
-#define UTOPIA_SIMD_ASSEMBLY_VIEW_HPP
+#ifndef UTOPIA_SIMD_ASSEMBLY_VIEW_V2_HPP
+#define UTOPIA_SIMD_ASSEMBLY_VIEW_V2_HPP
 
 #include "utopia_AssemblyView.hpp"
 #include "utopia_CoefStrainView.hpp"
@@ -10,45 +10,82 @@
 #include "utopia_ProjectionView.hpp"
 #include "utopia_StrainView.hpp"
 
-#include "utopia_simd_Quadrature.hpp"
+#include "utopia_simd_QuadratureDB.hpp"
+#include "utopia_simd_Quadrature_v2.hpp"
+#include "utopia_simd_Traits.hpp"
+#include "utopia_simd_UniformHex8.hpp"
+#include "utopia_simd_UniformQuad4.hpp"
 
 namespace utopia {
 
-    namespace simd_v1 {
+    namespace simd_v2 {
+        // template <class T>
+        // struct SIMDConvert {};
+
+        // template <class T>
+        // struct SIMDConvert<utopia::UniformQuad4<T>> {
+        //     using Type = simd_v2::UniformQuad4<T>;
+        // };
+
+        // template <class T>
+        // struct SIMDConvert<utopia::UniformHex8<T>> {
+        //     using Type = simd_v2::UniformHex8<T>;
+        // };
+
+        // // template <class T>
+        // // struct SIMDConvert<utopia::simd_v2::UniformQuad4<T>> {
+        // //     using Type = simd_v2::UniformQuad4<T>;
+        // // };
+
+        // // template <class T>
+        // // struct SIMDConvert<utopia::simd_v2::UniformHex8<T>> {
+        // //     using Type = simd_v2::UniformHex8<T>;
+        // // };
+
+        // template <class T, int NVar>
+        // struct SIMDConvert<MultiVariateElem<T, NVar>> {
+        //     using Type = utopia::MultiVariateElem<typename SIMDConvert<T>::Type, NVar>;
+        // };
+
         template <class Elem, typename T>
         struct FETraits {
             static const int Dim = Elem::Dim;
+            using Point = simd_v2::Vector<T, Dim>;
             using Scalar = T;
-            using FunValue = Scalar;
-            using Point = simd_v1::Vector<T, Dim>;
-            using GradValue = simd_v1::Vector<T, Dim>;
-            using STGradX = simd_v1::Vector<T, Dim - 1>;
+            using SIMDType = typename Traits<Point>::Scalar;
+
+            using FunValue = SIMDType;
+            using GradValue = Point;
+            // using STGradX = simd_v2::Vector<T, Dim - 1>;
         };
 
         template <class Elem, int NVar, typename T>
         struct FETraits<MultiVariateElem<Elem, NVar>, T> {
             static const int Dim = Elem::Dim;
-            using Scalar = T;
-            using FunValue = simd_v1::Vector<T, NVar>;
-            using Point = simd_v1::Vector<T, Dim>;
-            using GradValue = simd_v1::Matrix<T, NVar, Dim>;
-            using STGradX = simd_v1::Vector<T, Dim - 1>;
+            using Point = simd_v2::Vector<T, Dim>;
+            using Scalar = typename Traits<T>::Scalar;
+            using FunValue = simd_v2::Vector<T, NVar>;
+            using GradValue = simd_v2::Matrix<T, NVar, Dim>;
+
+            // using STGradX = simd_v2::Vector<T, Dim - 1>;
         };
 
         template <class Elem, typename T>
         struct FETraits<MultiVariateElem<Elem, 1>, T> : FETraits<Elem, T> {};
 
-    }  // namespace simd_v1
+    }  // namespace simd_v2
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    template <class Elem, typename T, int Dim_>
-    class PhysicalGradient<Elem, simd_v1::Quadrature<T, Dim_>, typename Elem::MemType> {
+    template <class Elem_, typename T, int Dim_>
+    class PhysicalGradient<Elem_, simd_v2::Quadrature<T, Dim_>, typename Elem_::MemType> {
     public:
         static const int Dim = Dim_;
-        using Scalar = typename simd_v1::FETraits<Elem, T>::Scalar;
-        using GradValue = typename simd_v1::FETraits<Elem, T>::GradValue;
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        // using Elem = typename simd_v2::SIMDConvert<Elem_>::Type;
+        using Elem = Elem_;
+        using Scalar = typename simd_v2::FETraits<Elem, T>::Scalar;
+        using GradValue = typename simd_v2::FETraits<Elem, T>::GradValue;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
 
         UTOPIA_INLINE_FUNCTION PhysicalGradient(const Quadrature &q) : q_(q), elem_(nullptr) {}
 
@@ -79,9 +116,9 @@ namespace utopia {
     };
 
     template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    class PhysicalGradient<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class PhysicalGradient<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
@@ -101,11 +138,11 @@ namespace utopia {
     ////////////////////////////////////////////////////////////////////////////////////////
 
     template <class Elem, typename T, int Dim_>
-    class Differential<Elem, simd_v1::Quadrature<T, Dim_>, typename Elem::MemType> {
+    class Differential<Elem, simd_v2::Quadrature<T, Dim_>, typename Elem::MemType> {
     public:
         static const int Dim = Dim_;
-        using Scalar = T;
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        using Scalar = typename Quadrature::Scalar;
 
         UTOPIA_INLINE_FUNCTION Differential(const Quadrature &q) : q_(q), elem_(nullptr) {}
 
@@ -130,9 +167,9 @@ namespace utopia {
     };
 
     template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    class Differential<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class Differential<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
@@ -149,12 +186,12 @@ namespace utopia {
         const Quadrature &q_;
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////
 
     template <class Elem, typename T, int Dim_>
-    class PhysicalPoint<Elem, simd_v1::Quadrature<T, Dim_>, typename Elem::MemType> {
+    class PhysicalPoint<Elem, simd_v2::Quadrature<T, Dim_>, typename Elem::MemType> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         static const int Dim = Dim_;
 
         UTOPIA_INLINE_FUNCTION PhysicalPoint(const Quadrature &q) : q_(q), elem_(nullptr) {}
@@ -178,9 +215,9 @@ namespace utopia {
     };
 
     template <class Mesh, int NComponents, typename T, int Dim_, class... Args>
-    class PhysicalPoint<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class PhysicalPoint<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
@@ -194,12 +231,12 @@ namespace utopia {
         const Quadrature &q_;
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////
 
     template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    class Laplacian<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class Laplacian<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Scalar = typename FunctionSpace::Scalar;
         using SizeType = typename FunctionSpace::SizeType;
@@ -220,10 +257,10 @@ namespace utopia {
             for (int k = 0; k < n; ++k) {
                 for (int j = 0; j < n_fun; ++j) {
                     const auto g_test = grad(j, k);
-                    mat(j, j) += simd_v1::integrate(dot(g_test, g_test) * dx(k));
+                    mat(j, j) += simd_v2::integrate(dot(g_test, g_test) * dx(k));
 
                     for (int l = j + 1; l < n_fun; ++l) {
-                        const auto v = simd_v1::integrate(dot(g_test, grad(l, k)) * dx(k));
+                        const auto v = simd_v2::integrate(dot(g_test, grad(l, k)) * dx(k));
                         mat(j, l) += v;
                         mat(l, j) += v;
                     }
@@ -252,12 +289,12 @@ namespace utopia {
         }
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////
 
     template <class Mesh, int NComponents, typename T, int Dim_, class Function, typename... Args>
-    class Projection<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>, Function> {
+    class Projection<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>, Function> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using QPoint = typename Quadrature::Point;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Vector = typename FunctionSpace::Vector;
@@ -290,7 +327,7 @@ namespace utopia {
                 for (int k = 0; k < n; ++k) {
                     points.get(k, p);
                     for (int j = 0; j < n_fun; ++j) {
-                        acc(j) += simd_v1::integrate(fun_(p) * shape(j, k) * dx(k));
+                        acc(j) += simd_v2::integrate(fun_(p) * shape(j, k) * dx(k));
                     }
                 }
             }
@@ -321,16 +358,16 @@ namespace utopia {
         Differential dx_;
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////
 
     template <class Elem, typename T, int Dim_, class MemType>
-    class ShapeFunction<Elem, simd_v1::Quadrature<T, Dim_>, MemType> {
+    class ShapeFunction<Elem, simd_v2::Quadrature<T, Dim_>, MemType> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         static const int Dim = Dim_;
         using Scalar = typename Elem::Scalar;
         using Point = typename Elem::Point;
-        using FunValue = typename simd_v1::FETraits<Elem, T>::FunValue;
+        using FunValue = typename simd_v2::FETraits<Elem, T>::FunValue;
 
         UTOPIA_INLINE_FUNCTION ShapeFunction(const Quadrature &q) : q_(q), elem_(nullptr) {}
 
@@ -358,9 +395,9 @@ namespace utopia {
     };
 
     template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    class ShapeFunction<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class ShapeFunction<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
@@ -377,14 +414,14 @@ namespace utopia {
         const Quadrature &q_;
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////
 
     template <class Elem, typename T, int Dim_, class MemType, typename... Args>
-    class StrainView<Elem, simd_v1::Quadrature<T, Dim_>, MemType, Args...> {
+    class StrainView<Elem, simd_v2::Quadrature<T, Dim_>, MemType, Args...> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         static const int Dim = Dim_;
-        using GradValue = typename simd_v1::FETraits<Elem, T>::GradValue;
+        using GradValue = typename simd_v2::FETraits<Elem, T>::GradValue;
 
         static const std::size_t NFunctions = Elem::NFunctions;
 
@@ -405,15 +442,15 @@ namespace utopia {
     };
 
     template <class FunctionSpace, typename T, int Dim_>
-    class Strain<FunctionSpace, simd_v1::Quadrature<T, Dim_>> {
+    class Strain<FunctionSpace, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
 
         using ViewDevice = utopia::StrainView<Elem, typename Quadrature::ViewDevice>;
         using ViewHost = utopia::StrainView<Elem, typename Quadrature::ViewHost>;
 
-        using GradValue = typename simd_v1::FETraits<Elem, T>::GradValue;
+        using GradValue = typename simd_v2::FETraits<Elem, T>::GradValue;
 
         static const std::size_t NFunctions = Elem::NFunctions;
 
@@ -443,13 +480,14 @@ namespace utopia {
             for (std::size_t qp = 0; qp < n_qp; ++qp) {
                 for (std::size_t i = 0; i < g.n_functions(); ++i) {
                     auto g_i = g(i, qp);
-                    values_[qp * NFunctions + i] = 0.5 * (g_i + transpose(g_i));
+                    values_[qp * NFunctions + i] = g_i;
+                    values_[qp * NFunctions + i].symmetrize();
                 }
             }
         }
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////
 
     template <class FunctionSpaceView,
               class CoefficientView,
@@ -498,9 +536,9 @@ namespace utopia {
     };
 
     template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    class NodalInterpolate<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class NodalInterpolate<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Elem = typename FunctionSpace::ViewDevice::Elem;
         using ShapeFunction = utopia::ShapeFunction<FunctionSpace, Quadrature>;
@@ -529,7 +567,7 @@ namespace utopia {
         ShapeFunction shape_fun_;
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template <class FunctionSpaceView,
               class CoefficientView,
@@ -542,12 +580,12 @@ namespace utopia {
     class GradInterpolateView<FunctionSpaceView,
                               CoefficientView,
                               GradView,
-                              simd_v1::Quadrature<T, Dim_>,
+                              simd_v2::Quadrature<T, Dim_>,
                               Elem,
                               MemType,
                               Args...> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         static const int Dim = Dim_;
         using Scalar = typename Elem::Scalar;
         // using SizeType = typename Elem::SizeType;
@@ -615,9 +653,9 @@ namespace utopia {
     };
 
     template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    class CoefStrain<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class CoefStrain<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Vector = typename FunctionSpace::Vector;
         using GradInterpolate = utopia::GradInterpolate<FunctionSpace, Quadrature>;
@@ -640,9 +678,9 @@ namespace utopia {
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    class ShapeStress<FunctionSpace<Mesh, NComponents, Args...>, simd_v1::Quadrature<T, Dim_>> {
+    class ShapeStress<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
     public:
-        using Quadrature = simd_v1::Quadrature<T, Dim_>;
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
         using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
         using Vector = typename FunctionSpace::Vector;
         using Scalar = typename FunctionSpace::Scalar;
@@ -650,7 +688,7 @@ namespace utopia {
         using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
 
         using Elem = typename FunctionSpace::ViewDevice::Elem;
-        using GradValue = typename simd_v1::FETraits<Elem, T>::GradValue;
+        using GradValue = typename simd_v2::FETraits<Elem, T>::GradValue;
         static const int Dim = Elem::Dim;
 
         static const int NFunctions = Elem::NFunctions;
@@ -718,8 +756,8 @@ namespace utopia {
                 }
             }
         }
-    };  // namespace utopia
+    };
 
 }  // namespace utopia
 
-#endif  // UTOPIA_SIMD_ASSEMBLY_VIEW_HPP
+#endif  // UTOPIA_SIMD_ASSEMBLY_VIEW_V2_HPP

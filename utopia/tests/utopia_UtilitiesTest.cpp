@@ -317,6 +317,7 @@ namespace utopia {
         // FIXME
         if (mpi_world_size() == 1) {
 #ifdef UTOPIA_WITH_TRILINOS
+            // FIXME This tests fails when using adress sanitizer inside trilinos (CMAKE_BUILD_TYPE=ASAN)
             BlockTest<TpetraMatrixd, TpetraVectord>().run();
 #endif  // UTOPIA_WITH_TRILINOS
         }

@@ -7,7 +7,8 @@
 #endif  // UTOPIA_WITH_VC
 
 #ifdef USE_SIMD_ASSEMBLY
-#include "utopia_simd_Assembler.hpp"
+// #include "utopia_simd_Assembler.hpp"
+#include "utopia_simd_Assembler_v2.hpp"
 #endif  // USE_SIMD_ASSEMBLY
 
 namespace utopia {

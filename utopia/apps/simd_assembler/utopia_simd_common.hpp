@@ -5,8 +5,10 @@
 #include "utopia_DeviceExpression.hpp"
 #include "utopia_Views.hpp"
 
+#include "utopia_DeviceIdentity.hpp"
+
 namespace utopia {
-    namespace simd {
+    namespace simd_v1 {
 
         template <typename T>
         struct ScalarType {
@@ -79,6 +81,8 @@ namespace utopia {
                 }
             }
 
+            void set(const int i, const T &val) { data_[i] = val; }
+
             inline T &operator()(const int i, const int j) { return data_[i * Rows + j]; }
             constexpr const T &operator()(const int i, const int j) const { return data_[i * Rows + j]; }
 
@@ -105,10 +109,50 @@ namespace utopia {
                 return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
             }
 
+            // friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const Matrix &left, const T &right) {
+            //     return DeviceBinary<Number<T>, Matrix, Multiplies>(right, left);
+            // }
+
+            // friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const T &left, const Matrix &right) {
+            //     return DeviceBinary<Number<T>, Matrix, Multiplies>(left, right);
+            // }
+
             template <class Expr>
             UTOPIA_INLINE_FUNCTION Matrix &operator=(const DeviceExpression<Expr> &expr) {
                 DeviceAssign<Matrix, Expr>::apply(*this, expr.derived());
                 return *this;
+            }
+
+            UTOPIA_INLINE_FUNCTION Matrix &operator+=(const Matrix &expr) {
+                for (int i = 0; i < Size; ++i) {
+                    data_[i] += expr.data_[i];
+                }
+                // for (int i = 0; i < Rows; ++i) {
+                //     for (int j = 0; j < Cols; ++j) {
+                //         (*this)(i, j) += expr(i, j);
+                //     }
+                // }
+                return *this;
+            }
+
+            UTOPIA_INLINE_FUNCTION Matrix &operator*=(const T &factor) {
+                for (auto &d : data_) {
+                    d *= factor;
+                }
+
+                return *this;
+            }
+
+            friend inline Matrix operator*(const Matrix &left, const T &right) {
+                Matrix ret = left;
+                ret *= right;
+                return ret;
+            }
+
+            friend inline Matrix operator*(const T &right, const Matrix &left) {
+                Matrix ret = left;
+                ret *= right;
+                return ret;
             }
 
             friend inline constexpr T inner(const Matrix &l, const Matrix &r) { return dot(l, r); }
@@ -123,25 +167,53 @@ namespace utopia {
                 return ret;
             }
 
-            inline std::string get_class() const { return "simd::Matrix"; }
+            void symmetrize() {
+                assert(Rows == Cols);
+                for (int i = 0; i < Rows; ++i) {
+                    for (int j = i + 1; j < Cols; ++j) {
+                        auto &a_ij = (*this)(i, j);
+                        auto &a_ji = (*this)(j, i);
+                        const auto val = 0.5 * (a_ij + a_ji);
+
+                        a_ij = val;
+                        a_ji = val;
+                    }
+                }
+            }
+
+            inline std::string get_class() const { return "simd_v1::Matrix"; }
         };
-    }  // namespace simd
+    }  // namespace simd_v1
 
     template <typename T, int Dim, typename... Args>
-    class Traits<simd::Vector<T, Dim, Args...>> {
+    class Traits<simd_v1::Vector<T, Dim, Args...>> {
     public:
         using Scalar = T;
     };
 
     template <typename T, int Rows, int Cols>
-    class Traits<simd::Matrix<T, Rows, Cols>> {
+    class Traits<simd_v1::Matrix<T, Rows, Cols>> {
     public:
         using Scalar = T;
         using SizeType = int;
         static const int Order = 2;
     };
 
-    namespace simd {
+    template <typename T>
+    class Traits<Vc::Vector<T>> {
+    public:
+        using Scalar = Vc::Vector<T>;
+        using SizeType = int;
+    };
+
+    template <typename T, class Right>
+    inline DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies> operator*(
+        const Vc::Vector<T> &left,
+        const DeviceExpression<Right> &right) {
+        return DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies>(left, right.derived());
+    }
+
+    namespace simd_v1 {
         template <typename T>
         T sum(const T v) {
             return v;
@@ -165,9 +237,10 @@ namespace utopia {
         template <typename T>
         class Vector<T, 2> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
+            using SIMDType = T;
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
-            T data_[2] = {simd::Zero<T>::value(), simd::Zero<T>::value()};
+            T data_[2] = {simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
             inline constexpr const T &x() const { return data_[0]; }
@@ -199,14 +272,17 @@ namespace utopia {
                     data_[i] = val;
                 }
             }
+
+            void set(const int i, const T &val) { data_[i] = val; }
         };
 
         template <typename T>
         class Vector<T, 3> final /*: public DeviceExpression<Vector<T, 3>>*/ {
         public:
+            using SIMDType = T;
             enum { StoreAs = UTOPIA_BY_REFERENCE };
 
-            T data_[3] = {simd::Zero<T>::value(), simd::Zero<T>::value(), simd::Zero<T>::value()};
+            T data_[3] = {simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value(), simd_v1::Zero<T>::value()};
 
             inline T &x() { return data_[0]; }
             inline constexpr const T &x() const { return data_[0]; }
@@ -245,6 +321,8 @@ namespace utopia {
                     data_[i] = val;
                 }
             }
+
+            void set(const int i, const T &val) { data_[i] = val; }
         };
 
         template <typename T, int Dim>
@@ -270,7 +348,12 @@ namespace utopia {
             return ret;
         }
 
-    }  // namespace simd
+    }  // namespace simd_v1
 }  // namespace utopia
+
+// namespace utopia {
+// namespace simd = utopia::simd_v1;
+// namespace simd = utopia::simd_v2;
+// }  // namespace utopia
 
 #endif  // UTOPIA_SIMD_COMMON_HPP
