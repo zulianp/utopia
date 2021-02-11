@@ -19,7 +19,7 @@
 
 using namespace utopia;
 
-using Scalar = float;
+using Scalar = double;
 static constexpr int Lanes = Vc::Vector<Scalar>::Size;
 using Vector3 = simd_v2::Vector<Scalar, 3>;
 using Vector2 = simd_v2::Vector<Scalar, 2>;
