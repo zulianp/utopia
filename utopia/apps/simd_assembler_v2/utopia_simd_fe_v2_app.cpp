@@ -256,7 +256,6 @@ void simd_fe_test(Input &in) {
     Scalar h[2] = {1.0, 1.0};
     Scalar t[2] = {1.0, 1.0};
 
-    simd_v2::Vector<Scalar, 2> g, p_global;
     simd_v2::UniformQuad4<Scalar> quad;
     quad.set(t, h);
 

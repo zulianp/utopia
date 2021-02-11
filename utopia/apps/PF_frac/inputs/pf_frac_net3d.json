@@ -26,7 +26,7 @@
     "n_coarse_sub_comm": 1,
     "num_fracs" : 100,
     "n_levels": 2,
-    "use_simd" : true,
+    "use_simd" : false,
     "block_solver" : true,
     "fracture_toughness":1e-3,
     "pressure0" : 0.1,
