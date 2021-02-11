@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "utopia_Views.hpp"
+#include "utopia_simd_Ops.hpp"
 #include "utopia_simd_Vector.hpp"
 
 namespace utopia {
@@ -29,6 +30,7 @@ namespace utopia {
                 weights.resize(n);
             }
 
+            inline Point &point(const int i) { return points[i]; }
             inline const Point &point(const int i) const { return points[i]; }
             inline const T &weight(const int i) const { return weights[i]; }
         };
@@ -292,20 +294,44 @@ namespace utopia {
             using ViewDevice = Quadrature;
             using ViewHost = Quadrature;
 
-            std::vector<Point> points;
-            std::vector<SIMDType> weights;
+            using Ops = utopia::simd_v2::Ops<SIMDType>;
 
-            inline int n_points() const { return weights.size(); }
+            static constexpr int Lanes = Point::Lanes;
+
+            inline int n_points() const { return points.size(); }
             inline const Quadrature &view_device() const { return *this; }
             inline const Quadrature &view_host() const { return *this; }
 
             void resize(int n) {
                 points.resize(n);
-                weights.resize(n);
+                weights.resize(n * Lanes);
             }
 
-            inline const Point &point(const int i) const { return points[i]; }
-            inline const SIMDType &weight(const int i) const { return weights[i]; }
+            inline const Point &point(const int i) const {
+                assert(i < n_points());
+                return points[i];
+            }
+
+            inline Point &point(const int i) {
+                assert(i < n_points());
+                return points[i];
+            }
+
+            inline SIMDType weight(const int i) const {
+                assert(i < n_points());
+                return Ops::construct(&weights[i * Lanes]);
+            }
+
+            inline void set_weight(const int i, const int lane, const T &value) {
+                assert(i < n_points());
+                assert(lane < Lanes);
+                assert(i * Lanes + lane < int(weights.size()));
+                weights[i * Lanes + lane] = value;
+            }
+
+        private:
+            std::vector<Point> points;
+            std::vector<T> weights;
         };
 
         template <typename T, typename SIMDType = Vc::Vector<T>>
@@ -331,10 +357,10 @@ namespace utopia {
                         int q_idx = q_offset + k;
 
                         for (int d = 0; d < Dim; ++d) {
-                            q.points[i].ref(d, k) = q_scalar.points[q_idx][d];
+                            q.point(i).ref(d, k) = q_scalar.points[q_idx][d];
                         }
 
-                        q.weights[i][k] = q_scalar.weights[q_idx];
+                        q.set_weight(i, k, q_scalar.weights[q_idx]);
                     }
                 }
 
@@ -343,18 +369,18 @@ namespace utopia {
                         int q_idx = n_blocks * block_size + k;
 
                         for (int d = 0; d < Dim; ++d) {
-                            q.points[n_blocks].ref(d, k) = q_scalar.points[q_idx][d];
+                            q.point(n_blocks).ref(d, k) = q_scalar.points[q_idx][d];
                         }
 
-                        q.weights[n_blocks][k] = q_scalar.weights[q_idx];
+                        q.set_weight(n_blocks, k, q_scalar.weights[q_idx]);
                     }
 
                     for (int k = n_defect; k < block_size; ++k) {
                         for (int d = 0; d < Dim; ++d) {
-                            q.points[n_blocks].ref(d, k) = Zero<T>::value();
+                            q.point(n_blocks).ref(d, k) = Zero<T>::value();
                         }
 
-                        q.weights[n_blocks][k] = Zero<T>::value();
+                        q.set_weight(n_blocks, k, Zero<T>::value());
                     }
                 }
             }

@@ -19,12 +19,14 @@
 
 using namespace utopia;
 
-using Scalar = float;
+using Scalar = double;
+// using Scalar = float;
 static constexpr int Lanes = Vc::Vector<Scalar>::Size;
 using Vector3 = simd_v2::Vector<Scalar, 3>;
 using Vector2 = simd_v2::Vector<Scalar, 2>;
 
-// using Vector3 = simd_v2::Vector<Scalar, Dim, simd_v2::Auto<Scalar, Lanes>>;
+// using Vector2 = simd_v2::Vector<Scalar, 2, simd_v2::Auto<Scalar, Lanes>>;
+// using Vector3 = simd_v2::Vector<Scalar, 3, simd_v2::Auto<Scalar, Lanes>>;
 
 // using Vector3 = simd_v1::Vector<Vc::Vector<Scalar>, Dim>;
 // using SIMDType = Vc::Vector<Scalar>;
@@ -45,31 +47,38 @@ void simd_fe_v2(Input &in) {
     double elapsed_serial = 0.0;
 
     {
-        Scalar v1[Lanes][Dim];
-        Scalar v2[Lanes][Dim];
+        // __attribute__((__aligned__(32))) Scalar v1[Dim][Lanes];
+        // __attribute__((__aligned__(32))) Scalar v2[Dim][Lanes];
+        // __attribute__((__aligned__(32))) Scalar dot_v[Lanes];
+
+        Scalar v1[Dim][Lanes];
+        Scalar v2[Dim][Lanes];
         Scalar dot_v[Lanes];
 
         for (int l = 0; l < Lanes; ++l) {
             dot_v[l] = 0.0;
-            for (int i = 0; i < Dim; ++i) {
-                v1[l][i] = Scalar(1.0);
-                v2[l][i] = Scalar(3.0);
+        }
+
+        for (int i = 0; i < Dim; ++i) {
+            for (int l = 0; l < Lanes; ++l) {
+                v1[i][l] = Scalar(1.0);
+                v2[i][l] = Scalar(3.0);
             }
         }
 
         c.start();
         for (long r = 0; r < repeat; ++r) {
-            for (int l = 0; l < Lanes; ++l) {
-                for (int i = 0; i < Dim; ++i) {
-                    v1[l][i] *= Scalar(0.1);
-                    v2[l][i] *= Scalar(0.1);
-                    v1[l][i] += v2[l][i];
+            for (int i = 0; i < Dim; ++i) {
+                for (int l = 0; l < Lanes; ++l) {
+                    v1[i][l] *= Scalar(0.1);
+                    v2[i][l] *= Scalar(0.1);
+                    v1[i][l] += v2[i][l];
                 }
             }
 
-            for (int l = 0; l < Lanes; ++l) {
-                for (int i = 0; i < Dim; ++i) {
-                    dot_v[l] += v1[l][i] * v2[l][i];
+            for (int i = 0; i < Dim; ++i) {
+                for (int l = 0; l < Lanes; ++l) {
+                    dot_v[l] += v1[i][l] * v2[i][l];
                 }
             }
         }
@@ -141,7 +150,6 @@ void simd_fe_hex_v2(Input &in) {
     Scalar h[3] = {1.0, 1.0, 1.0};
     Scalar t[3] = {1.0, 1.0, 1.0};
 
-    simd_v2::Vector<Scalar, 3> g, p_global;
     simd_v2::UniformHex8<Scalar> hex;
     hex.set(t, h);
 
@@ -156,6 +164,15 @@ void simd_fe_hex_v2(Input &in) {
         std::cout << "--------------\n";
     }
 
+    auto p = q.point(0);
+    std::cout << "alignof: " << alignof(p) << " sizeof: " << sizeof(p) << std::endl;
+
+    for (int i = 0; i < 3; ++i) {
+        auto v = p[i] * h[i] + t[i];
+        std::cout << (v) << std::endl;
+    }
+
+    Vector3 g, p_global;
     hex.grad(0, q.point(0), g);
     hex.point(q.point(0), p_global);
 
@@ -194,7 +211,7 @@ void simd_fe_quad_v2(Input &in) {
     Scalar h[2] = {1.0, 1.0};
     Scalar t[2] = {1.0, 1.0};
 
-    simd_v2::Vector<Scalar, 2> g, p_global;
+    Vector2 g, p_global;
     simd_v2::UniformQuad4<Scalar> quad;
     quad.set(t, h);
 
@@ -228,3 +245,46 @@ void simd_fe_quad_v2(Input &in) {
 }
 
 UTOPIA_REGISTER_APP(simd_fe_quad_v2);
+
+void simd_fe_test(Input &in) {
+    int order = 1;
+    in.get("order", order);
+
+    simd_v2::Quadrature<Scalar, 2> q;
+
+    if (!simd_v2::Gauss<Scalar>::Quad::get(order, q)) {
+        std::cerr << "[Error] could not find quadrature for order " << order << "\n";
+        assert(false);
+        return;
+    }
+
+    Scalar h[2] = {1.0, 1.0};
+    Scalar t[2] = {1.0, 1.0};
+
+    simd_v2::Vector<Scalar, 2> g, p_global;
+    simd_v2::UniformQuad4<Scalar> quad;
+    quad.set(t, h);
+
+    // SIMDType p;
+
+    for (int qp = 0; qp < q.n_points(); ++qp) {
+        std::cout << "--------------\n";
+
+        std::cout << "HERE" << std::endl;
+        simd_v2::Vector<Scalar, 2> &p = q.point(qp);
+        std::cout << "alignof: " << alignof(p) << " sizeof: " << sizeof(p) << std::endl;
+        std::cout << "THERE" << std::endl;
+
+        auto x = p[0];
+        std::cout << "alignof: " << alignof(x) << " sizeof: " << sizeof(x) << std::endl;
+
+        for (int i = 0; i < 4; ++i) {
+            auto fi = quad.fun(i, p);
+            std::cout << fi << std::endl;
+        }
+
+        std::cout << "--------------\n";
+    }
+}
+
+UTOPIA_REGISTER_APP(simd_fe_test);

@@ -11,7 +11,9 @@ namespace utopia {
          * Storage will be N * Lanes
          */
         template <typename T, int N_, typename SIMDType_ = Vc::Vector<T>>
-        class Vector final {
+        class
+            // __attribute__((__packed__))
+            Vector final {
         public:
             using SIMDType = SIMDType_;
             static constexpr int N = N_;
@@ -19,10 +21,11 @@ namespace utopia {
             static constexpr int Size = N * Lanes;
             using Ops = utopia::simd_v2::Ops<SIMDType>;
 
-            enum { StoreAs = UTOPIA_BY_REFERENCE };
+            // enum { StoreAs = UTOPIA_BY_REFERENCE };
 
-            static constexpr size_t data_alignment() { return SIMDType::MemoryAlignment; }
-            alignas(data_alignment()) T data[N * Lanes];
+            // static constexpr size_t data_alignment() { return SIMDType::MemoryAlignment; }
+            // alignas(data_alignment())
+            T data[N * Lanes];
 
             template <typename Factor>
             inline void scale(const Factor &factor) {
@@ -40,9 +43,15 @@ namespace utopia {
 
             inline SIMDType operator[](const int idx) const { return Ops::construct(block(idx)); }
 
-            inline T &ref(const int component, const int lane) { return data[component * Lanes + lane]; }
+            inline T &ref(const int component, const int lane) {
+                assert(component < N);
+                assert(lane < Lanes);
+                return data[component * Lanes + lane];
+            }
 
             inline constexpr const T &get(const int component, const int lane) const {
+                assert(component < N);
+                assert(lane < Lanes);
                 return data[component * Lanes + lane];
             }
 
@@ -151,7 +160,9 @@ namespace utopia {
             }
 
             void set(const T &val) {
-                for (auto &d : data) d = val;
+                for (int i = 0; i < Size; ++i) {
+                    data[i] = val;
+                }
             }
         };
     }  // namespace simd_v2

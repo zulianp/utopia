@@ -3,6 +3,8 @@
 
 #include "utopia_Base.hpp"
 
+#define UTOPIA_VC_DEFAULT_ALIGN Vc::Unaligned
+
 namespace utopia {
     namespace simd_v2 {
 
@@ -157,9 +159,11 @@ namespace utopia {
             using SIMDType = Vc::Vector<T>;
             static constexpr int Lanes = SIMDType::Size;
 
+            inline static SIMDType construct(T* v) { return load(v); }
             inline static SIMDType construct(const T* v) { return load(v); }
-            inline static SIMDType load(const T* v) { return SIMDType(v, Vc::Aligned); }
-            inline static void store(const SIMDType& in, T* out) { in.store(out, Vc::Aligned); }
+            inline static SIMDType load(T* v) { return SIMDType(v, UTOPIA_VC_DEFAULT_ALIGN); }
+            inline static SIMDType load(const T* v) { return SIMDType(v, UTOPIA_VC_DEFAULT_ALIGN); }
+            inline static void store(const SIMDType& in, T* out) { in.store(out, UTOPIA_VC_DEFAULT_ALIGN); }
             inline static void add(const T* l, const T* r, T* result) { store(load(l) + load(r), result); }
             inline static void in_place_add(const T* val, T* result) { add(result, val, result); }
             inline static void subtract(const T* l, const T* r, T* result) { store(load(l) - load(r), result); }
