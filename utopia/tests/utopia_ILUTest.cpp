@@ -9,6 +9,7 @@ using namespace utopia;
 
 #ifdef UTOPIA_WITH_PETSC
 
+#include "utopia_ILUDecompose.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
 
 void petsc_ilu_test() {
@@ -25,11 +26,19 @@ void petsc_ilu_test() {
     // assemble_poisson_problem_1D(1.0, A, b);
 
     ILU<PetscMatrix, PetscVector> ls;
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
-    ls.rtol(1e-6);
-    ls.stol(1e-6);
+    ls.rtol(1e-7);
+    ls.stol(1e-7);
+    ls.max_it(100);
+
     ls.solve(A, b, x);
+
+    PetscVector r = b - A * x;
+    PetscScalar norm_r = norm1(r);
+    // disp(norm_r);
+
+    utopia_test_assert(norm_r < 1e-5);
 }
 
 void petsc_ilu_cg_test() {
@@ -45,14 +54,16 @@ void petsc_ilu_cg_test() {
     assemble_poisson_problem_1D(1.0, A, b, false);
 
     auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
-    ilu->max_it(10);
+    ilu->max_it(5);
+    // ilu->verbose(true);
 
     ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
     ls.apply_gradient_descent_step(true);
 
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
-    ls.rtol(1e-6);
+    ls.rtol(1e-7);
+    ls.stol(1e-7);
 
     // if (comm.size() == 1) {
     //     rename("a", A);
@@ -65,89 +76,83 @@ void petsc_ilu_cg_test() {
     ls.set_preconditioner(ilu);
     ls.update(make_ref(A));
     ls.apply(b, x);
+
+    PetscVector r = b - A * x;
+    PetscScalar norm_r = norm1(r);
+    utopia_test_assert(norm_r < 1e-5);
 }
 
-// void petsc_ilu_vi_test() {
-//     auto comm = PetscCommunicator::get_default();
-//     PetscInt n = 20;
-//     PetscInt n_global = n * comm.size();
+template <class Matrix>
+void assemble_vector2_coupled_laplacian_1D(Matrix &m, const bool bc = false) {
+    // n x n matrix with maximum 3 entries x row
+    Write<Matrix> w(m);
+    Range r = row_range(m);
+    auto n = size(m).get(0);
 
-//     auto vl = layout(comm, n, n_global);
-//     PetscMatrix A;
-//     A.sparse(square_matrix_layout(vl), 3, 2);
+    const double block_d[2 * 2] = {6.0, 2.0, 2.0, 6.0};
+    const double block_o[2 * 2] = {-1.0, -1.0, -1.0, -1.0};
 
-//     // auto h = 1. / (n_global - 1);
-//     auto h = 1.;
-//     assemble_laplacian_1D_with_scaling(A, h, true);
+    for (SizeType i = r.begin(); i != r.end(); i += 2) {
+        if (bc && (i == 0 || i == n - 2)) {
+            m.set(i, i, 1.0);
+            m.set(i + 1, i + 1, 1.0);
+            continue;
+        }
 
-//     PetscVector x(vl, 0.0), b(vl, 1.0 * h);
-//     PetscVector c(vl, 0.0), r(vl, 0.0);
-//     PetscVector lb(vl, -1), ub(vl, 40);
+        for (SizeType b_i = 0; b_i < 2; ++b_i) {
+            for (SizeType b_j = 0; b_j < 2; ++b_j) {
+                m.set(i + b_i, i + b_j, block_d[b_i * 2 + b_j]);
 
-//     {
-//         Write<PetscVector> w(b);
-//         auto r = b.range();
+                if (i >= 2) {
+                    m.set(i + b_i, i - 2 + b_j, block_o[b_i * 2 + b_j]);
+                }
 
-//         if (r.inside(0)) {
-//             b.set(0, 1.0);
-//         }
+                if (i < n - 2) {
+                    m.set(i + b_i, i + 2 + b_j, block_o[b_i * 2 + b_j]);
+                }
+            }
+        }
+    }
+}
 
-//         if (r.inside(n_global - 1)) {
-//             b.set(n_global - 1, 1.0);
-//         }
-//     }
+void petsc_block_ilu_test() {
+    auto comm = PetscCommunicator::get_default();
+    PetscInt n = 2000;
 
-//     PetscMatrix ilu;
-//     ILUDecompose<PetscMatrix>::decompose(A, ilu, true);
+    auto vl = layout(comm, n, n * comm.size());
+    PetscMatrix A;
+    A.sparse(square_matrix_layout(vl), 6, 4);
 
-//     PetscVector dlb, dub;
-//     for (SizeType i = 0; i < 100; ++i) {
-//         dlb = lb - x;
-//         dub = ub - x;
+    PetscVector x(vl, 0.0), b(vl, 1.0);
 
-//         r = A * x;
-//         r = b - r;
+    assemble_vector2_coupled_laplacian_1D(A, true);
+    // assemble_poisson_problem_1D(1.0, A, b);
 
-//         c.set(0.0);
-//         ILUDecompose<PetscMatrix>::apply_vi(ilu, dlb, dub, r, c);
-//         // ILUDecompose<PetscMatrix>::apply(ilu, r, c);
+    InputParameters params;
+    params.set("block_size", 2);
+    // params.set("print_matrices", true);
+    ILU<PetscMatrix, PetscVector> ls;
+    ls.read(params);
+    // auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
+    // ilu->read(params);
+    // ilu->max_it(5);
 
-//         x += c;
+    // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
+    // ls.apply_gradient_descent_step(true);
+    // ls.set_preconditioner(ilu);
+    // ls.verbose(true);
+    ls.atol(1e-6);
+    ls.rtol(1e-8);
+    ls.stol(1e-8);
+    ls.max_it(n);
+    ls.update(make_ref(A));
+    ls.apply(b, x);
 
-//         PetscScalar norm_c = norm2(c);
-//         PetscScalar norm_r = norm2(r);
-//         utopia::out() << i << ") norm_r: " << norm_r << ", norm_c: " << norm_c << "\n";
+    PetscVector r = b - A * x;
+    PetscScalar norm_r = norm1(r);
 
-//         if (norm_c < 1e-8) break;
-//     }
-
-//     rename("x", x);
-//     write("X.m", x);
-
-//     rename("a", A);
-//     write("A.m", A);
-
-//     rename("b", b);
-//     write("B.m", b);
-
-//     rename("m", ilu);
-//     write("M.m", ilu);
-
-//     // disp(x);
-//     // auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
-//     // ilu->max_it(10);
-
-//     // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
-//     // ls.apply_gradient_descent_step(true);
-
-//     // // ls.verbose(true);
-//     // ls.atol(1e-6);
-//     // ls.rtol(1e-6);
-
-//     // ls.set_preconditioner(ilu);
-//     // ls.update(make_ref(A));
-//     // ls.apply(b, x);
-// }
+    utopia_test_assert(norm_r < 1e-5);
+}
 
 #endif  // UTOPIA_WITH_PETSC
 
@@ -155,6 +160,7 @@ void ilu() {
 #ifdef UTOPIA_WITH_PETSC
     UTOPIA_RUN_TEST(petsc_ilu_test);
     UTOPIA_RUN_TEST(petsc_ilu_cg_test);
+    UTOPIA_RUN_TEST(petsc_block_ilu_test);
     // UTOPIA_RUN_TEST(petsc_ilu_vi_test);
 #endif  // UTOPIA_WITH_PETSC
 }

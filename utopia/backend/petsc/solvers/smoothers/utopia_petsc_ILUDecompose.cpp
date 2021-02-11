@@ -2,76 +2,12 @@
 #include "utopia_petsc.hpp"
 
 #include <vector>
+#include "utopia_Views.hpp"
+
+#include "utopia_CRSToBlockCRS.hpp"
+#include "utopia_ILUDecompose.hpp"
 
 namespace utopia {
-
-    class DiagIdx {
-    public:
-        void init(PetscInt n, const PetscInt *ia, const PetscInt *ja) {
-            idx.resize(n);
-            this->ia = ia;
-            this->ja = ja;
-
-            for (PetscInt r = 0; r < n - 1; ++r) {
-                const PetscInt row_end = ia[r + 1];
-
-                PetscInt k;
-                bool has_diag = false;
-                for (k = ia[r]; k < row_end; ++k) {
-                    if (ja[k] == r) {
-                        has_diag = true;
-                        break;
-                    }
-                }
-
-                assert(has_diag);
-
-                idx[r] = k;
-            }
-        }
-
-        auto find_before_diag(const PetscInt i, const PetscInt j) const -> PetscInt {
-            PetscInt search_end = idx[i];
-            PetscInt row_begin = ia[i];
-
-            // maybe binary search?
-            for (PetscInt k = row_begin; k < search_end; ++k) {
-                if (ja[k] == j) {
-                    return k;
-                }
-            }
-
-            return -1;
-        };
-
-        auto find_after_diag(const PetscInt i, const PetscInt j) const -> PetscInt {
-            PetscInt search_begin = idx[i];
-            PetscInt row_end = ia[i + 1];
-
-            // maybe binary search?
-            for (PetscInt k = search_begin; k < row_end; ++k) {
-                if (ja[k] == j) {
-                    return k;
-                }
-            }
-
-            return -1;
-        };
-
-        auto find(const PetscInt i, const PetscInt j) const -> PetscInt {
-            if (i == j) return idx[i];
-
-            if (j < i) {
-                return find_before_diag(i, j);
-            } else {
-                return find_after_diag(i, j);
-            }
-        };
-
-        std::vector<PetscInt> idx;
-        const PetscInt *ia;
-        const PetscInt *ja;
-    };
 
     class PetscSeqAIJRaw {
     public:
@@ -106,8 +42,10 @@ namespace utopia {
         PetscErrorCode err{0};
     };
 
-    template <typename Apply_IJ>
-    void decompose_aux(Apply_IJ apply_ij, const PetscMatrix &mat, PetscMatrix &out) {
+    bool ILUDecompose<PetscMatrix, PETSC>::decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified) {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
         PetscMatrix l_mat;
         local_block_view(mat, l_mat);
 
@@ -116,65 +54,26 @@ namespace utopia {
 
         PetscSeqAIJRaw m_raw(out.raw_type());
         PetscInt n = m_raw.n;
+        PetscInt nnz = m_raw.ia[n];
+
         const PetscInt *ia = m_raw.ia;
         const PetscInt *ja = m_raw.ja;
         PetscScalar *array = m_raw.array;
 
-        DiagIdx idx;
-        idx.init(n, ia, ja);
+        ScalarView values(array, nnz);
+        IndexView row_ptr(ia, n + 1);
+        IndexView colidx(ja, nnz);
 
-        for (PetscInt r = 0; r < n - 1; ++r) {
-            const PetscInt row_end = ia[r + 1];
-            const PetscInt k = idx.idx[r];
-            const PetscScalar d = 1. / array[k];
-
-            for (PetscInt ki = k + 1; ki < row_end; ++ki) {
-                auto i = ja[ki];
-
-                auto ir = idx.find_before_diag(i, r);
-                if (ir == -1) continue;
-
-                auto ii = idx.idx[i];
-
-                PetscScalar e = (array[ir] *= d);
-
-                for (PetscInt rj = k + 1; rj < row_end; ++rj) {
-                    auto j = ja[rj];
-
-                    auto ij = idx.find(i, j);
-                    apply_ij(ii, ij, rj, e, array);
-                }
-            }
-        }
-    }
-
-    void ILUDecompose<PetscMatrix, PETSC>::decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified) {
-        if (modified) {
-            decompose_aux(
-                [](const PetscInt ii, const PetscInt ij, const PetscInt rj, const PetscScalar &e, PetscScalar *a) {
-                    if (ij != -1) {
-                        a[ij] -= e * a[rj];
-                    } else {
-                        a[ii] -= e * a[rj];
-                    }
-                },
-                mat,
-                out);
-        } else {
-            decompose_aux(
-                [](const PetscInt, const PetscInt ij, const PetscInt rj, const PetscScalar &e, PetscScalar *a) {
-                    if (ij != -1) {
-                        a[ij] -= e * a[rj];
-                    }
-                },
-                mat,
-                out);
-        }
+        CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
+        return ilu_decompose(crs, modified);
     }
 
     void ILUDecompose<PetscMatrix, PETSC>::apply(const PetscMatrix &ilu, const PetscVector &b, PetscVector &x) {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
         PetscVector L_inv_b(layout(b), 0.0);
-        x.set(0.0);
+        // x.set(0.0);
 
         auto b_view = const_local_view_device(b);
         auto L_inv_b_view = local_view_device(L_inv_b);
@@ -183,132 +82,115 @@ namespace utopia {
         PetscSeqAIJRaw m_raw(ilu.raw_type());
 
         PetscInt n = m_raw.n;
+        PetscInt nnz = m_raw.ia[n];
+
         const PetscInt *ia = m_raw.ia;
         const PetscInt *ja = m_raw.ja;
         PetscScalar *array = m_raw.array;
 
-        DiagIdx idx;
-        idx.init(n, ia, ja);
+        ScalarView values(array, nnz);
+        IndexView row_ptr(ia, n + 1);
+        IndexView colidx(ja, nnz);
 
-        // Forward substitution
-        // https://algowiki-project.org/en/Forward_substitution#:~:text=Forward%20substitution%20is%20the%20process,math%5DL%5B%2Fmath%5D.
-        for (PetscInt i = 0; i < n; ++i) {
-            const PetscInt row_begin = ia[i];
-            const PetscInt row_diag = idx.idx[i];
+        CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
 
-            PetscScalar val = b_view.get(i);
+        auto b_array = b_view.array();
+        auto L_inv_b_array = L_inv_b_view.array();
+        auto x_array = x_view.array();
 
-            for (PetscInt k = row_begin; k < row_diag; ++k) {
-                auto j = ja[k];
-                val -= array[k] * L_inv_b_view.get(j);
-            }
-
-            L_inv_b_view.set(i, val / array[row_diag]);
-        }
-
-        // Backward substitution
-        // https://algowiki-project.org/en/Backward_substitution#:~:text=Backward%20substitution%20is%20a%20procedure,is%20a%20lower%20triangular%20matrix.
-        for (PetscInt i = n - 1; i >= 0; --i) {
-            const PetscInt row_end = ia[i + 1];
-            const PetscInt row_diag = idx.idx[i];
-
-            PetscScalar val = L_inv_b_view.get(i);
-
-            for (PetscInt k = row_diag + 1; k < row_end; ++k) {
-                auto j = ja[k];
-                val -= array[k] * x_view.get(j);
-            }
-
-            x_view.set(i, val / array[row_diag]);
-        }
+        ilu_apply(crs, b_array, L_inv_b_array, x_array);
     }
 
-    // void ILUDecompose<PetscMatrix, PETSC>::apply_vi(const PetscMatrix &ilu,
-    //                                                 const PetscVector &lb,
-    //                                                 const PetscVector &ub,
-    //                                                 const PetscVector &b,
-    //                                                 PetscVector &x) {
-    //     PetscVector L_inv_b(layout(b), 0.0), U_ub(layout(b), 0.0);
-    //     x.set(0.0);
+    template <int BlockSize>
+    void crs_block_matrix(const PetscMatrix &in,
+                          CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out) {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
 
-    //     auto b_view = const_local_view_device(b);
-    //     auto lb_view = const_local_view_device(lb);
-    //     auto ub_view = const_local_view_device(ub);
+        PetscMatrix l_mat;
+        local_block_view(in, l_mat);
 
-    //     auto U_ub_view = local_view_device(U_ub);
-    //     auto L_inv_b_view = local_view_device(L_inv_b);
-    //     auto x_view = local_view_device(x);
+        // perform copy
+        // out.copy(l_mat);
 
-    //     PetscSeqAIJRaw m_raw(ilu.raw_type());
+        PetscSeqAIJRaw m_raw(l_mat.raw_type());
+        PetscInt n = m_raw.n;
+        PetscInt nnz = m_raw.ia[n];
 
-    //     PetscInt n = m_raw.n;
-    //     const PetscInt *ia = m_raw.ia;
-    //     const PetscInt *ja = m_raw.ja;
-    //     PetscScalar *array = m_raw.array;
+        const PetscInt *ia = m_raw.ia;
+        const PetscInt *ja = m_raw.ja;
+        PetscScalar *array = m_raw.array;
 
-    //     DiagIdx idx;
-    //     idx.init(n, ia, ja);
+        ScalarView values(array, nnz);
+        IndexView row_ptr(ia, n + 1);
+        IndexView colidx(ja, nnz);
 
-    //     // Backward substitution
-    //     for (PetscInt i = n - 1; i >= 0; --i) {
-    //         const PetscInt row_end = ia[i + 1];
-    //         const PetscInt row_diag = idx.idx[i];
+        CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+        out.row_ptr().clear();
+        out.colidx().clear();
+        out.values().clear();
+        convert(crs, out);
+    }
 
-    //         PetscScalar val = ub_view.get(i);
+    template void crs_block_matrix<2>(const PetscMatrix &,
+                                      CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &);
+    template void crs_block_matrix<3>(const PetscMatrix &,
+                                      CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &);
+    template void crs_block_matrix<4>(const PetscMatrix &,
+                                      CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &);
 
-    //         for (PetscInt k = row_diag + 1; k < row_end; ++k) {
-    //             auto j = ja[k];
-    //             val -= array[k] * U_ub_view.get(j);
-    //         }
+    bool ILUDecompose<PetscMatrix, PETSC>::update(const PetscMatrix &mat) { return decompose(mat, ilu_, modified_); }
 
-    //         U_ub_view.set(i, val / array[row_diag]);
-    //     }
+    void ILUDecompose<PetscMatrix, PETSC>::apply(const PetscVector &b, PetscVector &x) { apply(ilu_, b, x); }
 
-    //     // Forward substitution
-    //     //
-    //     https://algowiki-project.org/en/Forward_substitution#:~:text=Forward%20substitution%20is%20the%20process,math%5DL%5B%2Fmath%5D.
-    //     for (PetscInt i = 0; i < n; ++i) {
-    //         const PetscInt row_begin = ia[i];
-    //         const PetscInt row_diag = idx.idx[i];
+    void ILUDecompose<PetscMatrix, PETSC>::read(Input &in) { in.get("modified", modified_); }
 
-    //         // auto lb_i = lb_view.get(i);
-    //         auto ub_i = U_ub_view.get(i);
+    template <int BlockSize>
+    bool BlockILUAlgorithm<PetscMatrix, BlockSize>::update(const PetscMatrix &mat) {
+        UTOPIA_TRACE_REGION_BEGIN("BlockILUAlgorithm::update(...)");
+        PetscMatrix local_A;
+        local_block_view(mat, local_A);
+        crs_block_matrix(local_A, ilu_);
 
-    //         PetscScalar val = b_view.get(i);
+        if (print_matrices_) {
+            disp(ilu_);
+        }
 
-    //         for (PetscInt k = row_begin; k < row_diag; ++k) {
-    //             auto j = ja[k];
-    //             val -= array[k] * L_inv_b_view.get(j);
-    //         }
+        L_inv_b_.zeros(row_layout(mat));
+        bool ok = ilu_decompose(ilu_);
 
-    //         // L_inv_b_view.set(i, std::max(lb_i, std::min(ub_i, val / array[row_diag])));
+        if (print_matrices_) {
+            disp(ilu_);
+        }
 
-    //         L_inv_b_view.set(i, std::min(ub_i, val / array[row_diag]));
+        UTOPIA_TRACE_REGION_END("BlockILUAlgorithm::update(...)");
+        return ok;
+    }
 
-    //         // L_inv_b_view.set(i, val / array[row_diag]);
-    //     }
+    template <int BlockSize>
+    void BlockILUAlgorithm<PetscMatrix, BlockSize>::apply(const PetscVector &b, PetscVector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("BlockILUAlgorithm::apply(...)");
+        auto b_view = const_local_view_device(b);
+        auto L_inv_b_view = local_view_device(L_inv_b_);
+        auto x_view = local_view_device(x);
 
-    //     // Backward substitution
-    //     //
-    //     https://algowiki-project.org/en/Backward_substitution#:~:text=Backward%20substitution%20is%20a%20procedure,is%20a%20lower%20triangular%20matrix.
-    //     for (PetscInt i = n - 1; i >= 0; --i) {
-    //         const PetscInt row_end = ia[i + 1];
-    //         const PetscInt row_diag = idx.idx[i];
+        auto b_array = b_view.array();
+        auto x_array = x_view.array();
+        auto L_inv_b_array = L_inv_b_view.array();
 
-    //         // auto lb_i = lb_view.get(i);
-    //         auto ub_i = ub_view.get(i);
+        ilu_apply(ilu_, b_array, L_inv_b_array, x_array);
 
-    //         PetscScalar val = L_inv_b_view.get(i);
+        UTOPIA_TRACE_REGION_END("BlockILUAlgorithm::apply(...)");
+    }
 
-    //         for (PetscInt k = row_diag + 1; k < row_end; ++k) {
-    //             auto j = ja[k];
-    //             val -= array[k] * x_view.get(j);
-    //         }
+    template <int BlockSize>
+    void BlockILUAlgorithm<PetscMatrix, BlockSize>::read(Input &in) {
+        in.get("print_matrices", print_matrices_);
+    }
 
-    //         // x_view.set(i, std::max(lb_i, std::min(ub_i, val / array[row_diag])));
-
-    //         x_view.set(i, std::min(ub_i, val / array[row_diag]));
-    //     }
-    // }
+    template class BlockILUAlgorithm<PetscMatrix, 1>;
+    template class BlockILUAlgorithm<PetscMatrix, 2>;
+    template class BlockILUAlgorithm<PetscMatrix, 3>;
+    template class BlockILUAlgorithm<PetscMatrix, 4>;
 
 }  // namespace utopia

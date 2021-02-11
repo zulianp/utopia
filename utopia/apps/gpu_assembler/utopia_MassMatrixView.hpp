@@ -6,6 +6,8 @@
 #include "utopia_LaplacianView.hpp"
 #include "utopia_NodalInterpolateView.hpp"
 
+#include "utopia_AppBase.hpp"
+
 namespace utopia {
 
     template <class Elem>
@@ -97,10 +99,10 @@ namespace utopia {
             for (int k = 0; k < n; ++k) {
                 for (int j = 0; j < n_fun; ++j) {
                     const auto g_test = fun(j, k);
-                    mat(j, j) += inner(g_test, g_test) * dx(k);
+                    mat(j, j) += simd::integrate(inner(g_test, g_test) * dx(k));
 
                     for (int l = j + 1; l < n_fun; ++l) {
-                        const auto v = inner(g_test, fun(l, k)) * dx(k);
+                        const auto v = simd::integrate(inner(g_test, fun(l, k)) * dx(k));
                         mat(j, l) += v;
                         mat(l, j) += v;
                     }

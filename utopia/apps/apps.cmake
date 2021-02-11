@@ -15,6 +15,10 @@ if(UTOPIA_PETSC)
         fe
         ls_solve)
 
+    if(UTOPIA_ENABLE_VC)
+        list(APPEND APPS_MODULES simd_assembler)
+    endif()
+
     set(LOCAL_HEADERS "")
     set(LOCAL_SOURCES "")
     find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS

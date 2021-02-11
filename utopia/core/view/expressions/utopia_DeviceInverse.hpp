@@ -3,12 +3,14 @@
 
 #include "utopia_DeviceDeterminant.hpp"
 
+#include <type_traits>
+
 namespace utopia {
 
     template <class Expr>
     class DeviceInverse : public DeviceExpression<DeviceInverse<Expr>> {
     public:
-        using Scalar = typename Traits<Expr>::Scalar;
+        using Scalar = typename std::remove_const<typename Traits<Expr>::Scalar>::type;
         using SizeType = typename Traits<Expr>::SizeType;
 
         UTOPIA_INLINE_FUNCTION DeviceInverse(const Expr &expr) : expr_(expr) {}

@@ -10,6 +10,18 @@
 
 namespace utopia {
 
+    template <class Matrix, class Vector>
+    class ILUAlgorithm : public Configurable {
+    public:
+        virtual ~ILUAlgorithm() = default;
+        virtual bool update(const Matrix &mat) = 0;
+        virtual void apply(const Vector &b, Vector &x) = 0;
+        void read(Input &) override {}
+    };
+
+    template <class Matrix, int BlockSize>
+    class BlockILUAlgorithm {};
+
     template <class Matrix, int Backend = Traits<Matrix>::Backend>
     class ILUDecompose {};
 

@@ -47,6 +47,7 @@ public:
     in.get("mprgp_smoother", mprgp_smoother_);
     in.get("hjsmn_smoother", hjsmn_smoother_);
     in.get("block_solver", block_solver_);
+    in.get("use_simd", use_simd_);
 
     in.get("energy_csv_file_name", csv_file_name_);
 
@@ -184,11 +185,12 @@ public:
       auto pgs =
           std::make_shared<utopia::ProjectedGaussSeidel<Matrix, Vector>>();
 
-      // if (block_solver_) {
-      //     InputParameters params;
-      //     params.set("block_size", FunctionSpace::NComponents);
-      //     pgs->read(params);
-      // }
+      if (block_solver_) {
+        InputParameters params;
+        params.set("block_size", FunctionSpace::NComponents);
+        params.set("use_simd", use_simd_);
+        pgs->read(params);
+      }
 
       tr_strategy_fine = pgs;
     }
@@ -261,7 +263,7 @@ public:
     }
 
     // adding sol to all levels
-    for (auto l = n_levels_ - 1; l > 0; l--) {
+    for (SizeType l = n_levels_ - 1; l > 0; l--) {
       auto *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
       Vector &fine_sol = fun_fine->old_solution();
 
@@ -428,7 +430,7 @@ public:
       }
 
       // reset sol on all levels - important for BC conditions mostly s
-      for (auto l = n_levels_ - 1; l > 0; l--) {
+      for (SizeType l = n_levels_ - 1; l > 0; l--) {
         auto *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
         Vector &fine_sol = fun_fine->old_solution();
 
@@ -459,7 +461,7 @@ public:
       }
 
       // update sol on all levels
-      for (auto l = n_levels_ - 1; l > 0; l--) {
+      for (SizeType l = n_levels_ - 1; l > 0; l--) {
         auto *fun_fine = dynamic_cast<ProblemType *>(level_functions_[l].get());
         Vector &fine_sol = fun_fine->old_solution();
 
@@ -605,6 +607,7 @@ private:
   bool mprgp_smoother_;
   bool hjsmn_smoother_;
   bool block_solver_{true};
+  bool use_simd_{false};
 
   std::string csv_file_name_;
 };

@@ -3,13 +3,15 @@
 
 #include "utopia_Expression.hpp"
 
+#include <type_traits>
+
 namespace utopia {
 
     template <class Expr_>
     class Inverse : public Expression<Inverse<Expr_> > {
     public:
         using Expr = Expr_;
-        using Scalar = typename Expr::Scalar;
+        using Scalar = typename std::remove_const<typename Expr::Scalar>::type;
 
         static const int Order = Expr::Order;
 
