@@ -32,6 +32,7 @@ namespace utopia {
                 }
 
                 assert(has_diag);
+                UTOPIA_UNUSED(has_diag);
 
                 idx[r] = k;
             }

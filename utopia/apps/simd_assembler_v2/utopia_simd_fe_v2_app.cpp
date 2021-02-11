@@ -124,8 +124,8 @@ void simd_fe_v2(Input &in) {
 UTOPIA_REGISTER_APP(simd_fe_v2);
 
 void simd_fe_hex_v2(Input &in) {
-    static constexpr int Dim = 3;
-    using SIMDType = Vector3::SIMDType;
+    // static constexpr int Dim = 3;
+    // using SIMDType = Vector3::SIMDType;
 
     int order = 1;
     in.get("order", order);

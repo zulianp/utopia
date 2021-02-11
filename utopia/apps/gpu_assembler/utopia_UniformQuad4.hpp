@@ -13,21 +13,25 @@ namespace utopia {
     public:
         template <typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar {
+            using Scalar = typename Traits<Point>::Scalar;
+
             const auto x = p[0];
             const auto y = p[1];
 
+            static const auto one = One<Scalar>::value();
+
             switch (i) {
                 case 0: {
-                    return (1 - x) * (1 - y);
+                    return (one - x) * (one - y);
                 }
                 case 1: {
-                    return x * (1 - y);
+                    return x * (one - y);
                 }
                 case 2: {
                     return x * y;
                 }
                 case 3: {
-                    return (1 - x) * y;
+                    return (one - x) * y;
                 }
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
