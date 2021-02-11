@@ -8,6 +8,7 @@
 #include "utopia_DeviceIdentity.hpp"
 
 #include "utopia_simd_Ops.hpp"
+#include "utopia_simd_Vector.hpp"
 
 namespace utopia {
     namespace simd_v2 {
@@ -54,14 +55,23 @@ namespace utopia {
                 return (*this)(component_i * Rows + component_j, lane);
             }
 
-            inline constexpr T *block(const int idx) const {
+            inline constexpr const T *block(const int idx) const {
                 assert(idx < N);
                 assert(idx >= 0);
 
                 return &data[idx * Lanes];
             }
 
-            inline constexpr T *block(const int i, const int j) const {
+            inline T *block(const int i, const int j) {
+                assert(i < Rows);
+                assert(j < Cols);
+                assert(i >= 0);
+                assert(j >= 0);
+
+                return block(i * Rows + j);
+            }
+
+            inline constexpr const T *block(const int i, const int j) const {
                 assert(i < Rows);
                 assert(j < Cols);
                 assert(i >= 0);
@@ -77,14 +87,8 @@ namespace utopia {
                 return &data[idx * Lanes];
             }
 
-            inline T *block(const int i, const int j) {
-                assert(i < Rows);
-                assert(j < Cols);
-                assert(i >= 0);
-                assert(j >= 0);
-
-                return block(i * Rows + j);
-            }
+            inline SIMDType load(const int i, const int j) const { return Ops::construct(block(i, j)); }
+            inline SIMDType operator()(const int i, const int j) const { return Ops::construct(block(i, j)); }
 
             void set(const T &val) {
                 for (int i = 0; i < Size; ++i) {
@@ -110,45 +114,47 @@ namespace utopia {
                 return ret;
             }
 
-            // friend inline DeviceTranspose<Matrix> transpose(const Matrix &mat) { return mat; }
+            friend inline DeviceTranspose<Matrix> transpose(const Matrix &mat) { return mat; }
 
-            // template <typename Derived>
-            // friend inline DeviceBinary<Derived, Matrix, Plus> operator+(const DeviceExpression<Derived> &l,
-            //                                                             const Matrix &r) {
-            //     return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
-            // }
+            template <typename Derived>
+            friend inline DeviceBinary<Derived, Matrix, Plus> operator+(const DeviceExpression<Derived> &l,
+                                                                        const Matrix &r) {
+                return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
+            }
 
-            // template <typename Derived>
-            // friend inline DeviceBinary<Derived, Matrix, Plus> operator+(const Matrix &r,
-            //                                                             const DeviceExpression<Derived> &l) {
-            //     return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
-            // }
+            template <typename Derived>
+            friend inline DeviceBinary<Derived, Matrix, Plus> operator+(const Matrix &r,
+                                                                        const DeviceExpression<Derived> &l) {
+                return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
+            }
 
-            // friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const Matrix &left, const T &right) {
-            //     return DeviceBinary<Number<T>, Matrix, Multiplies>(right, left);
-            // }
+            friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const Matrix &left, const T &right) {
+                return DeviceBinary<Number<T>, Matrix, Multiplies>(right, left);
+            }
 
-            // friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const T &left, const Matrix &right) {
-            //     return DeviceBinary<Number<T>, Matrix, Multiplies>(left, right);
-            // }
+            friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const T &left, const Matrix &right) {
+                return DeviceBinary<Number<T>, Matrix, Multiplies>(left, right);
+            }
 
-            // template <class Expr>
-            // UTOPIA_INLINE_FUNCTION Matrix &operator=(const DeviceExpression<Expr> &expr) {
-            //     DeviceAssign<Matrix, Expr>::apply(*this, expr.derived());
-            //     return *this;
-            // }
+            friend inline DeviceMultiply<Matrix, Vector<T, Cols, SIMDType>> operator*(
+                const Matrix &left,
+                const Vector<T, Cols, SIMDType> &right) {
+                return DeviceMultiply<Matrix, Vector<T, Cols, SIMDType>>(left, right);
+            }
 
-            // UTOPIA_INLINE_FUNCTION Matrix &operator+=(const Matrix &expr) {
-            //     for (int i = 0; i < Size; ++i) {
-            //         data[i] += expr.data[i];
-            //     }
-            //     // for (int i = 0; i < Rows; ++i) {
-            //     //     for (int j = 0; j < Cols; ++j) {
-            //     //         (*this)(i, j) += expr(i, j);
-            //     //     }
-            //     // }
-            //     return *this;
-            // }
+            template <class Expr>
+            inline Matrix &operator=(const DeviceExpression<Expr> &expr) {
+                DeviceAssign<Matrix, Expr>::apply(*this, expr.derived());
+                return *this;
+            }
+
+            inline Matrix &operator+=(const Matrix &expr) {
+                for (int i = 0; i < N; ++i) {
+                    auto block_i = block(i);
+                    Ops::store(Ops::load(block_i), Ops::load(expr.block(i)), block_i);
+                }
+                return *this;
+            }
 
             template <typename Factor>
             inline void scale(const Factor &factor) {
@@ -157,44 +163,53 @@ namespace utopia {
                 }
             }
 
-            template <typename Factor>
-            inline Matrix operator*(const Factor &factor) {
-                Matrix ret = *this;
-                ret.scale(factor);
-                return ret;
+            // inline Matrix operator*(const T &factor) {
+            //     Matrix ret = *this;
+            //     ret.scale(factor);
+            //     return ret;
+            // }
+
+            // inline Matrix operator*(const SIMDType &factor) {
+            //     Matrix ret = *this;
+            //     ret.scale(factor);
+            //     return ret;
+            // }
+
+            inline Matrix &operator*=(const SIMDType &factor) {
+                scale(factor);
+                return *this;
             }
 
             inline Matrix &operator*=(const T &factor) {
                 scale(factor);
-
                 return *this;
             }
 
-            friend inline Matrix operator*(const Matrix &left, const T &right) {
-                Matrix ret = left;
-                ret *= right;
-                return ret;
-            }
+            // friend inline Matrix operator*(const Matrix &left, const T &right) {
+            //     Matrix ret = left;
+            //     ret *= right;
+            //     return ret;
+            // }
 
-            friend inline Matrix operator*(const Matrix &left, const SIMDType &right) {
-                Matrix ret = left;
-                ret *= right;
-                return ret;
-            }
+            // friend inline Matrix operator*(const Matrix &left, const SIMDType &right) {
+            //     Matrix ret = left;
+            //     ret *= right;
+            //     return ret;
+            // }
 
-            friend inline Matrix operator*(const T &right, const Matrix &left) {
-                Matrix ret = left;
-                ret *= right;
-                return ret;
-            }
+            // friend inline Matrix operator*(const T &right, const Matrix &left) {
+            //     Matrix ret = left;
+            //     ret *= right;
+            //     return ret;
+            // }
 
-            friend inline Matrix operator*(const SIMDType &right, const Matrix &left) {
-                Matrix ret = left;
-                ret *= right;
-                return ret;
-            }
+            // friend inline Matrix operator*(const SIMDType &right, const Matrix &left) {
+            //     Matrix ret = left;
+            //     ret *= right;
+            //     return ret;
+            // }
 
-            friend inline constexpr T trace(const Matrix &m) {
+            friend inline constexpr SIMDType trace(const Matrix &m) {
                 constexpr auto n = std::min(Rows, Cols);
 
                 SIMDType ret = T(0);

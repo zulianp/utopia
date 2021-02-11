@@ -108,6 +108,7 @@ namespace utopia {
         bool use_direct_solver = true;
         bool debug_matrices = false;
         bool matrix_free = false;
+        bool save_files = false;
 
         std::string output_path = "X.vtr";
 
@@ -115,6 +116,7 @@ namespace utopia {
         in.get("use_direct_solver", use_direct_solver);
         in.get("debug_matrices", debug_matrices);
         in.get("matrix_free", matrix_free);
+        in.get("save_files", save_files);
 
         Comm &comm = space.comm();
         MPITimeStatistics stats(comm);
@@ -274,15 +276,18 @@ namespace utopia {
         }
 
         //////////////////////////////////////////
-        stats.start();
-        rename("x", x);
-        space.write(output_path, x);
-        stats.stop_and_collect("write");
+        if (save_files) {
+            stats.start();
+            rename("x", x);
+            space.write(output_path, x);
+            stats.stop_and_collect("write");
+        }
         //////////////////////////////////////////
 
         if (comm.rank() == 0) {
             utopia::out() << "n_dofs: " << space.n_dofs() << std::endl;
         }
+
         stats.describe(std::cout);
     }
 

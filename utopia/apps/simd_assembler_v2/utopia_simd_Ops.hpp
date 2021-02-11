@@ -165,7 +165,10 @@ namespace utopia {
             inline static SIMDType load(const T* v) { return SIMDType(v, UTOPIA_VC_DEFAULT_ALIGN); }
             inline static void store(const SIMDType& in, T* out) { in.store(out, UTOPIA_VC_DEFAULT_ALIGN); }
             inline static void add(const T* l, const T* r, T* result) { store(load(l) + load(r), result); }
+            inline static void add(const SIMDType& l, const T* r, T* result) { store(l + load(r), result); }
+            inline static void add(const T* l, const SIMDType& r, T* result) { store(load(l) + r, result); }
             inline static void in_place_add(const T* val, T* result) { add(result, val, result); }
+            inline static void in_place_add(const SIMDType& val, T* result) { add(result, val, result); }
             inline static void subtract(const T* l, const T* r, T* result) { store(load(l) - load(r), result); }
             inline static void in_place_subtract(const T* val, T* result) { subtract(result, val, result); }
 
@@ -190,11 +193,11 @@ namespace utopia {
                 }
             }
 
-            inline void add_scale(const T& factor, const T* l, const T* r, T* result) {
+            inline static void add_scale(const T& factor, const T* l, const T* r, T* result) {
                 store(factor * (load(l) + load(r)), result);
             }
 
-            inline void add_scale_store(const T& factor, T* l, T* r) {
+            inline static void add_scale_store(const T& factor, T* l, T* r) {
                 auto res = factor * (load(l) + load(r));
                 store(res, l);
                 store(res, r);

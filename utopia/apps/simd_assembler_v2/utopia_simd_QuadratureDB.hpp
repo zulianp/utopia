@@ -17,62 +17,62 @@ namespace utopia {
         template <typename...>
         class QuadratureDB {};
 
-        template <typename T, typename QT>
-        class QuadratureDB<utopia::UniformHex8<T>, QT> {
+        template <typename T>
+        class QuadratureDB<utopia::UniformHex8<T>> {
         public:
             template <class Q>
             static bool get(const int order, Q &q) {
-                return Gauss<QT>::Hex::get(order, q);
+                return Gauss<T>::Hex::get(order, q);
             }
         };
 
-        template <typename T, typename QT>
-        class QuadratureDB<utopia::UniformQuad4<T>, QT> {
+        template <typename T>
+        class QuadratureDB<utopia::UniformQuad4<T>> {
         public:
             template <class Q>
             static bool get(const int order, Q &q) {
-                return Gauss<QT>::Quad::get(order, q);
+                return Gauss<T>::Quad::get(order, q);
             }
         };
 
-        // template <typename T, typename QT>
-        // class QuadratureDB<simd_v2::UniformHex8<T>, QT> {
+        // template <typename T>
+        // class QuadratureDB<simd_v2::UniformHex8<T>> {
         // public:
         //     template <class Q>
         //     static bool get(const int order, Q &q) {
-        //         return Gauss<QT>::Hex::get(order, q);
+        //         return Gauss<T>::Hex::get(order, q);
         //     }
         // };
 
-        // template <typename T, typename QT>
-        // class QuadratureDB<simd_v2::UniformQuad4<T>, QT> {
+        // template <typename T>
+        // class QuadratureDB<simd_v2::UniformQuad4<T>> {
         // public:
         //     template <class Q>
         //     static bool get(const int order, Q &q) {
-        //         return Gauss<QT>::Quad::get(order, q);
+        //         return Gauss<T>::Quad::get(order, q);
         //     }
         // };
 
-        template <typename T, typename QT>
-        class QuadratureDB<Tri3<T>, QT> {
+        template <typename T>
+        class QuadratureDB<Tri3<T>> {
         public:
             template <class Q>
             static bool get(const int order, Q &q) {
-                return Gauss<QT>::Tri::get(order, q);
+                return Gauss<T>::Tri::get(order, q);
             }
         };
 
-        // template <typename T, typename QT>
-        // class QuadratureDB<Tet4<T>, QT> {
+        // template <typename T>
+        // class QuadratureDB<Tet4<T>> {
         // public:
         //     template <class Q>
         //     static bool get(const int order, Q &q) {
-        //         return Gauss<QT>::Tet::get(order, q);
+        //         return Gauss<T>::Tet::get(order, q);
         //     }
         // };
 
-        template <typename Elem, int NVar, typename QT>
-        class QuadratureDB<MultiVariateElem<Elem, NVar>, QT> : public QuadratureDB<Elem, QT> {};
+        template <typename Elem, int NVar>
+        class QuadratureDB<MultiVariateElem<Elem, NVar>> : public QuadratureDB<Elem> {};
     }  // namespace simd_v2
 }  // namespace utopia
 
