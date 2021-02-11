@@ -26,12 +26,6 @@ static constexpr int Lanes = Vc::Vector<Scalar>::Size;
 using Vector3 = simd_v2::Vector<Scalar, 3>;
 using Vector2 = simd_v2::Vector<Scalar, 2>;
 
-// using Vector2 = simd_v2::Vector<Scalar, 2, simd_v2::Auto<Scalar, Lanes>>;
-// using Vector3 = simd_v2::Vector<Scalar, 3, simd_v2::Auto<Scalar, Lanes>>;
-
-// using Vector3 = simd_v1::Vector<Vc::Vector<Scalar>, Dim>;
-// using SIMDType = Vc::Vector<Scalar>;
-
 void simd_fe_v2(Input &in) {
     static constexpr int Dim = 3;
     using SIMDType = Vector3::SIMDType;
@@ -166,7 +160,7 @@ void simd_fe_hex_v2(Input &in) {
     }
 
     auto p = q.point(0);
-    std::cout << "alignof: " << alignof(p) << " sizeof: " << sizeof(p) << std::endl;
+    // std::cout << "alignof: " << alignof(p) << " sizeof: " << sizeof(p) << std::endl;
 
     for (int i = 0; i < 3; ++i) {
         auto v = p[i] * h[i] + t[i];
@@ -271,13 +265,13 @@ void simd_fe_test(Input &in) {
     for (int qp = 0; qp < q.n_points(); ++qp) {
         std::cout << "--------------\n";
 
-        std::cout << "HERE" << std::endl;
+        // std::cout << "HERE" << std::endl;
         simd_v2::Vector<Scalar, 2> &p = q.point(qp);
-        std::cout << "alignof: " << alignof(p) << " sizeof: " << sizeof(p) << std::endl;
-        std::cout << "THERE" << std::endl;
+        // std::cout << "alignof: " << alignof(p) << " sizeof: " << sizeof(p) << std::endl;
+        // std::cout << "THERE" << std::endl;
 
-        auto x = p[0];
-        std::cout << "alignof: " << alignof(x) << " sizeof: " << sizeof(x) << std::endl;
+        // auto x = p[0];
+        // std::cout << "alignof: " << alignof(x) << " sizeof: " << sizeof(x) << std::endl;
 
         for (int i = 0; i < 4; ++i) {
             auto fi = quad.fun(i, p);

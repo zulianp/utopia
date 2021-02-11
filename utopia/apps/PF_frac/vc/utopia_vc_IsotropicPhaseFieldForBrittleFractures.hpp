@@ -81,16 +81,16 @@ namespace utopia {
 
             // update local vector x
             this->space_.global_to_local(x_const, *this->local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace> >(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_x_);
 
             // udpate local pressure field
             this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_pressure_field_);
 
             // update c_old
             this->space_.global_to_local(this->x_old_, *this->local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -209,16 +209,16 @@ namespace utopia {
 
             // update local vector x
             this->space_.global_to_local(x_const, *this->local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace> >(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_x_);
 
             // udpate local pressure field
             this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_pressure_field_);
 
             // update c_old
             this->space_.global_to_local(this->x_old_, *this->local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -311,16 +311,16 @@ namespace utopia {
 
             // update local vector x
             this->space_.global_to_local(x_const, *this->local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace> >(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_x_);
 
             // udpate local pressure field
             this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_pressure_field_);
 
             // update c_old
             this->space_.global_to_local(this->x_old_, *this->local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -411,16 +411,16 @@ namespace utopia {
 
             // update local vector x
             this->space_.global_to_local(x_const, *this->local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace> >(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_x_);
 
             // udpate local pressure field
             this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_pressure_field_);
 
             // update c_old
             this->space_.global_to_local(this->x_old_, *this->local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -609,16 +609,16 @@ namespace utopia {
 
             // update local vector x
             this->space_.global_to_local(x_const, *this->local_x_);
-            auto u_coeff = std::make_shared<Coefficient<USpace>>(U, this->local_x_);
-            auto c_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_x_);
+            auto u_coeff = std::make_shared<Coefficient<USpace> >(U, this->local_x_);
+            auto c_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_x_);
 
             // udpate local pressure field
             this->space_.global_to_local(this->pressure_field_, *this->local_pressure_field_);
-            auto p_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_pressure_field_);
+            auto p_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_pressure_field_);
 
             // update c_old
             this->space_.global_to_local(this->x_old_, *this->local_c_old_);
-            auto c_old_coeff = std::make_shared<Coefficient<CSpace>>(C, this->local_c_old_);
+            auto c_old_coeff = std::make_shared<Coefficient<CSpace> >(C, this->local_c_old_);
 
             FEFunction<CSpace> c_old_fun(c_old_coeff);
             FEFunction<CSpace> press_fun(p_coeff);
@@ -677,12 +677,21 @@ namespace utopia {
                 Vc::vector<UGradValue> el_strain(n_qp);
 
                 StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
+
+                StaticMatrix<Scalar, U_NDofs, U_NDofs> u_mat;
+                StaticMatrix<Scalar, C_NDofs, C_NDofs> c_mat;
+                StaticMatrix<Scalar, C_NDofs, U_NDofs> cu_mat;
+
                 simd_v2::Matrix<Scalar, Dim, Dim> stress;
 
                 Device::parallel_for(this->space_.element_range(), [&](const SizeType &i) {
                     MixedElem e;
                     space_view.elem(i, e);
-                    el_mat.set(0.0);
+                    // el_mat.set(0.0);
+
+                    u_mat.set(0.0);
+                    c_mat.set(0.0);
+                    cu_mat.set(0.0);
 
                     ////////////////////////////////////////////
                     UElem u_e;
@@ -734,8 +743,11 @@ namespace utopia {
 
                                 auto val_integr = simd_v2::integrate((l == j) ? (0.5 * val) : val);
 
-                                el_mat(l, j) += val_integr;
-                                el_mat(j, l) += val_integr;
+                                // el_mat(l, j) += val_integr;
+                                // el_mat(j, l) += val_integr;
+
+                                c_mat(l, j) += val_integr;
+                                c_mat(j, l) += val_integr;
                             }
                         }
 
@@ -748,8 +760,11 @@ namespace utopia {
                                            dx_qp;
 
                                 auto val_integr = simd_v2::integrate((l == j) ? (0.5 * val) : val);
-                                el_mat(C_NDofs + l, C_NDofs + j) += val_integr;
-                                el_mat(C_NDofs + j, C_NDofs + l) += val_integr;
+                                // el_mat(C_NDofs + l, C_NDofs + j) += val_integr;
+                                // el_mat(C_NDofs + j, C_NDofs + l) += val_integr;
+
+                                u_mat(l, j) += val_integr;
+                                u_mat(j, l) += val_integr;
                             }
                         }
 
@@ -777,11 +792,13 @@ namespace utopia {
 
                                     // not symetric, but more numerically stable
                                     if (this->params_.turn_off_cu_coupling == false) {
-                                        el_mat(c_i, C_NDofs + u_i) += simd_v2::integrate(val);
+                                        // el_mat(c_i, C_NDofs + u_i) += simd_v2::integrate(val);
+                                        cu_mat(c_i, u_i) += simd_v2::integrate(val);
                                     }
 
                                     if (this->params_.turn_off_uc_coupling == false) {
-                                        el_mat(C_NDofs + u_i, c_i) += simd_v2::integrate(val);
+                                        // el_mat(C_NDofs + u_i, c_i) += simd_v2::integrate(val);
+                                        cu_mat(C_NDofs + u_i, c_i) += simd_v2::integrate(val);
                                     }
                                 }
                             }
@@ -789,6 +806,11 @@ namespace utopia {
                         }
 #endif  // ENABLE_ASTRUM_CONDITIONS
                     }
+
+                    el_mat.set_matrix(0, 0, c_mat);
+                    el_mat.set_matrix(C_NDofs, C_NDofs, u_mat);
+                    el_mat.set_matrix(C_NDofs, 0, transpose(cu_mat));
+                    el_mat.set_matrix(0, C_NDofs, cu_mat);
 
                     space_view.add_matrix(e, el_mat, H_view);
                 });
