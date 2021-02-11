@@ -113,6 +113,9 @@ RUN cd /utopia/utopia/build && cmake .. -DUTOPIA_SCRIPTING=ON \
 
 RUN cd /utopia/utopia/build && make -j
 
-COPY ./hello_utopia_torch.py  /utopia/utopia/build/scripting/hello_utopia_torch.py
-RUN cd /utopia/utopia/build/scripting && python hello_utopia_torch.py
+COPY ./build/testing_swig.py  /utopia/utopia/build/scripting
+COPY ./build/utopia_swig_python.cpp  /utopia/utopia/build/scripting
+RUN rm -f script.sh
+
+RUN cd /utopia/utopia/build/scripting 
 CMD ["/bin/sh"]
