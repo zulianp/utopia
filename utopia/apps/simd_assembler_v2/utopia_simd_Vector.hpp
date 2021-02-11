@@ -41,7 +41,7 @@ namespace utopia {
                 return ret;
             }
 
-            inline SIMDType operator[](const int idx) const { return Ops::construct(block(idx)); }
+            inline CONST_SIMD_RET SIMDType operator[](const int idx) const { return Ops::construct(block(idx)); }
 
             inline T &ref(const int component, const int lane) {
                 assert(component < N);
@@ -167,24 +167,6 @@ namespace utopia {
             }
         };
     }  // namespace simd_v2
-
-    // template <typename Array, typename T2, int Cols>
-    // inline auto operator*(const TensorView<Array, 2> &mat, const Vector<T2, Cols> &x)
-    //     -> Vector<decltype(mat(0, 0) * T2()), Array::Rows> {
-    //     using RetT = decltype(mat(0, 0) * T2());
-
-    //     Vector<RetT, Array::Rows> ret;
-
-    //     for (int i = 0; i < static_cast<int>(Array::Rows); ++i) {
-    //         ret[i] = Zero<RetT>::value();
-
-    //         for (int j = 0; j < Cols; ++j) {
-    //             ret[i] += mat(i, j) * x[j];
-    //         }
-    //     }
-
-    //     return ret;
-    // }
 
     template <typename T, int N, typename SIMDType_>
     class Traits<simd_v2::Vector<T, N, SIMDType_>> {

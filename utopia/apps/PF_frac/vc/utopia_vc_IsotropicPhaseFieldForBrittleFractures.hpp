@@ -26,7 +26,7 @@
 // #define ENABLE_ASTRUM_CONDITIONS
 
 #ifdef USE_SIMD_ASSEMBLY
-// #define USE_SIMD_PHASE_FIELD
+#define USE_SIMD_PHASE_FIELD
 #endif
 
 #ifdef USE_SIMD_PHASE_FIELD
@@ -55,10 +55,10 @@ namespace utopia {
         // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
 
         using SIMDType = Vc::Vector<Scalar>;
-        using Quadrature = simd::Quadrature<SIMDType, Dim>;
-        using CGradValue = typename simd::FETraits<CElem, SIMDType>::GradValue;
-        using UGradValue = typename simd::FETraits<UElem, SIMDType>::GradValue;
-        // using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
+        using Quadrature = simd_v2::Quadrature<Scalar, Dim>;
+        using CGradValue = typename simd_v2::FETraits<CElem, Scalar>::GradValue;
+        using UGradValue = typename simd_v2::FETraits<UElem, Scalar>::GradValue;
+        // using GradValue = typename simd_v2::FETraits<Elem, SIMDType>::GradValue;
         // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
 
         static const int C_NDofs = CSpace::NDofs;
@@ -99,7 +99,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
-            simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
+            simd_v2::QuadratureDB<Shape>::get(2 * Shape::Order, q);
 
             auto c_val = c_fun.value(q);
             auto c_old = c_old_fun.value(q);
@@ -157,13 +157,13 @@ namespace utopia {
                             auto tr = trace(el_strain[qp]);
                             if (this->params_.use_pressure) {
                                 el_energy +=
-                                    simd::integrate(PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
-                                                        this->params_, c[qp]) *
-                                                    p[qp] * tr * dx_qp);
+                                    simd_v2::integrate(PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation(
+                                                           this->params_, c[qp]) *
+                                                       p[qp] * tr * dx_qp);
                             }
 
-                            el_energy +=
-                                simd::integrate(energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain[qp]) * dx_qp);
+                            el_energy += simd_v2::integrate(
+                                energy(this->params_, c[qp], c_grad_el[qp], tr, el_strain[qp]) * dx_qp);
 
                             if (this->params_.use_penalty_irreversibility) {
                                 auto c_cold = c[qp] - c_old[qp];
@@ -172,8 +172,8 @@ namespace utopia {
                                 // auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
                                 c_cold_bracket.setZeroInverted(c_mask);
 
-                                el_energy += simd::integrate(this->params_.penalty_param / 2.0 * c_cold_bracket *
-                                                             c_cold_bracket * dx_qp);
+                                el_energy += simd_v2::integrate(this->params_.penalty_param / 2.0 * c_cold_bracket *
+                                                                c_cold_bracket * dx_qp);
                             }
                         }
 
@@ -227,7 +227,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
-            simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
+            simd_v2::QuadratureDB<Shape>::get(2 * Shape::Order, q);
 
             ////////////////////////////////////////////////////////////////////////////
 
@@ -283,7 +283,7 @@ namespace utopia {
                             auto tr = trace(el_strain[qp]);
 
                             el_energy +=
-                                simd::integrate(elastic_energy(this->params_, c[qp], tr, el_strain[qp]) * dx(qp));
+                                simd_v2::integrate(elastic_energy(this->params_, c[qp], tr, el_strain[qp]) * dx(qp));
                         }
 
                         assert(el_energy == el_energy);
@@ -329,7 +329,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
-            simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
+            simd_v2::QuadratureDB<Shape>::get(2 * Shape::Order, q);
 
             ////////////////////////////////////////////////////////////////////////////
 
@@ -377,9 +377,9 @@ namespace utopia {
                         Scalar el_energy = 0.0;
 
                         for (SizeType qp = 0; qp < n_qp; ++qp) {
-                            el_energy += simd::integrate(PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
-                                                             this->params_, c[qp], c_grad_el[qp]) *
-                                                         dx(qp));
+                            el_energy += simd_v2::integrate(PhaseFieldFracBase<FunctionSpace, Dim>::fracture_energy(
+                                                                this->params_, c[qp], c_grad_el[qp]) *
+                                                            dx(qp));
                         }
 
                         assert(el_energy == el_energy);
@@ -430,7 +430,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
-            simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
+            simd_v2::QuadratureDB<Shape>::get(2 * Shape::Order, q);
 
             ////////////////////////////////////////////////////////////////////////////
 
@@ -477,7 +477,7 @@ namespace utopia {
                 Vc::vector<CGradValue> c_grad_el(n_qp);
                 Vc::vector<UGradValue> el_strain(n_qp);
 
-                simd::Matrix<SIMDType, Dim, Dim> stress;
+                simd_v2::Matrix<Scalar, Dim, Dim> stress;
                 StaticVector<Scalar, U_NDofs> u_el_vec;
                 StaticVector<Scalar, C_NDofs> c_el_vec;
 
@@ -522,10 +522,10 @@ namespace utopia {
 
                         for (SizeType j = 0; j < U_NDofs; ++j) {
                             auto &&strain_test = u_strain_shape_el(j, qp);
-                            u_el_vec(j) += simd::integrate(inner(stress, strain_test) * dx_qp);
+                            u_el_vec(j) += simd_v2::integrate(inner(stress, strain_test) * dx_qp);
 
                             if (this->params_.use_pressure) {
-                                u_el_vec(j) += simd::integrate(gc_qp * p[qp] * trace(strain_test) * dx_qp);
+                                u_el_vec(j) += simd_v2::integrate(gc_qp * p[qp] * trace(strain_test) * dx_qp);
                             }
                         }
 
@@ -541,10 +541,10 @@ namespace utopia {
                                     PhaseFieldFracBase<FunctionSpace, Dim>::quadratic_degradation_deriv(this->params_,
                                                                                                         c[qp]) *
                                     p[qp] * tr_strain_u * shape_test;
-                                c_el_vec(j) += simd::integrate(der_c_pres * dx_qp);
+                                c_el_vec(j) += simd_v2::integrate(der_c_pres * dx_qp);
                             }
 
-                            c_el_vec(j) += simd::integrate((elast * shape_test + frac) * dx_qp);
+                            c_el_vec(j) += simd_v2::integrate((elast * shape_test + frac) * dx_qp);
 
                             if (this->params_.use_penalty_irreversibility) {
                                 auto c_cold = c[qp] - c_old[qp];
@@ -553,8 +553,8 @@ namespace utopia {
                                 // auto c_cold_bracket = c_cold < 0.0 ? c_cold : 0.0;
                                 c_cold_bracket.setZeroInverted(c_mask);
 
-                                c_el_vec(j) +=
-                                    simd::integrate(this->params_.penalty_param * c_cold_bracket * shape_test * dx_qp);
+                                c_el_vec(j) += simd_v2::integrate(this->params_.penalty_param * c_cold_bracket *
+                                                                  shape_test * dx_qp);
                             }
                         }
                     }
@@ -628,7 +628,7 @@ namespace utopia {
             ////////////////////////////////////////////////////////////////////////////
 
             Quadrature q;
-            simd::QuadratureDB<Shape, SIMDType>::get(2 * Shape::Order, q);
+            simd_v2::QuadratureDB<Shape>::get(2 * Shape::Order, q);
 
             ////////////////////////////////////////////////////////////////////////////
 
@@ -677,7 +677,7 @@ namespace utopia {
                 Vc::vector<UGradValue> el_strain(n_qp);
 
                 StaticMatrix<Scalar, U_NDofs + C_NDofs, U_NDofs + C_NDofs> el_mat;
-                simd::Matrix<SIMDType, Dim, Dim> stress;
+                simd_v2::Matrix<Scalar, Dim, Dim> stress;
 
                 Device::parallel_for(this->space_.element_range(), [&](const SizeType &i) {
                     MixedElem e;
@@ -732,7 +732,7 @@ namespace utopia {
                                     val += this->params_.penalty_param * c_shape_j_l_prod * dx_qp;
                                 }
 
-                                auto val_integr = simd::integrate((l == j) ? (0.5 * val) : val);
+                                auto val_integr = simd_v2::integrate((l == j) ? (0.5 * val) : val);
 
                                 el_mat(l, j) += val_integr;
                                 el_mat(j, l) += val_integr;
@@ -747,7 +747,7 @@ namespace utopia {
                                                this->params_, c[qp], p_stress_view(j, qp), u_strain_shape_l) *
                                            dx_qp;
 
-                                auto val_integr = simd::integrate((l == j) ? (0.5 * val) : val);
+                                auto val_integr = simd_v2::integrate((l == j) ? (0.5 * val) : val);
                                 el_mat(C_NDofs + l, C_NDofs + j) += val_integr;
                                 el_mat(C_NDofs + j, C_NDofs + l) += val_integr;
                             }
@@ -777,11 +777,11 @@ namespace utopia {
 
                                     // not symetric, but more numerically stable
                                     if (this->params_.turn_off_cu_coupling == false) {
-                                        el_mat(c_i, C_NDofs + u_i) += simd::integrate(val);
+                                        el_mat(c_i, C_NDofs + u_i) += simd_v2::integrate(val);
                                     }
 
                                     if (this->params_.turn_off_uc_coupling == false) {
-                                        el_mat(C_NDofs + u_i, c_i) += simd::integrate(val);
+                                        el_mat(C_NDofs + u_i, c_i) += simd_v2::integrate(val);
                                     }
                                 }
                             }

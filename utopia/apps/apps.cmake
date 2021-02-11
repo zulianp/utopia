@@ -19,13 +19,14 @@ if(UTOPIA_PETSC)
     if(UTOPIA_ENABLE_VC)
         # Requires petsc
         list(APPEND APPS_MODULES simd_assembler)
+        list(APPEND APPS_MODULES simd_assembler_v2)
     endif()
 
 endif()
 
 if(UTOPIA_ENABLE_VC)
-    # Does not require petsc for now
-    list(APPEND APPS_MODULES simd_assembler_v2)
+    # Does not require petsc for now list(APPEND APPS_MODULES
+    # module_that_does_not_require_petsc)
 endif()
 
 set(LOCAL_HEADERS "")

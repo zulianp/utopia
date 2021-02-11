@@ -52,8 +52,9 @@ namespace utopia {
             static const int Dim = Elem::Dim;
             using Point = simd_v2::Vector<T, Dim>;
             using Scalar = T;
+            using SIMDType = typename Traits<Point>::Scalar;
 
-            using FunValue = Scalar;
+            using FunValue = SIMDType;
             using GradValue = Point;
             // using STGradX = simd_v2::Vector<T, Dim - 1>;
         };
@@ -187,48 +188,48 @@ namespace utopia {
 
     // ////////////////////////////////////////////////////////////////////////////////////////
 
-    // template <class Elem, typename T, int Dim_>
-    // class PhysicalPoint<Elem, simd_v2::Quadrature<T, Dim_>, typename Elem::MemType> {
-    // public:
-    //     using Quadrature = simd_v2::Quadrature<T, Dim_>;
-    //     static const int Dim = Dim_;
+    template <class Elem, typename T, int Dim_>
+    class PhysicalPoint<Elem, simd_v2::Quadrature<T, Dim_>, typename Elem::MemType> {
+    public:
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        static const int Dim = Dim_;
 
-    //     UTOPIA_INLINE_FUNCTION PhysicalPoint(const Quadrature &q) : q_(q), elem_(nullptr) {}
+        UTOPIA_INLINE_FUNCTION PhysicalPoint(const Quadrature &q) : q_(q), elem_(nullptr) {}
 
-    //     template <class Point>
-    //     UTOPIA_INLINE_FUNCTION void get(const int qp_idx, Point &p) const {
-    //         elem_->point(q_.point(qp_idx), p);
-    //     }
+        template <class Point>
+        UTOPIA_INLINE_FUNCTION void get(const int qp_idx, Point &p) const {
+            elem_->point(q_.point(qp_idx), p);
+        }
 
-    //     UTOPIA_INLINE_FUNCTION std::size_t size() const { return q_.n_points(); }
+        UTOPIA_INLINE_FUNCTION std::size_t size() const { return q_.n_points(); }
 
-    //     UTOPIA_INLINE_FUNCTION PhysicalPoint make(const Elem &elem) const {
-    //         PhysicalPoint pp(q_);
-    //         pp.elem_ = &elem;
-    //         return pp;
-    //     }
+        UTOPIA_INLINE_FUNCTION PhysicalPoint make(const Elem &elem) const {
+            PhysicalPoint pp(q_);
+            pp.elem_ = &elem;
+            return pp;
+        }
 
-    // private:
-    //     const Quadrature &q_;
-    //     const Elem *elem_;
-    // };
+    private:
+        const Quadrature &q_;
+        const Elem *elem_;
+    };
 
-    // template <class Mesh, int NComponents, typename T, int Dim_, class... Args>
-    // class PhysicalPoint<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
-    // public:
-    //     using Quadrature = simd_v2::Quadrature<T, Dim_>;
-    //     using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
-    //     using Elem = typename FunctionSpace::ViewDevice::Elem;
+    template <class Mesh, int NComponents, typename T, int Dim_, class... Args>
+    class PhysicalPoint<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
+    public:
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
 
-    //     using ViewDevice = utopia::PhysicalPoint<Elem, typename Quadrature::ViewDevice>;
+        using ViewDevice = utopia::PhysicalPoint<Elem, typename Quadrature::ViewDevice>;
 
-    //     PhysicalPoint(const FunctionSpace &, const Quadrature &q) : q_(q) {}
+        PhysicalPoint(const FunctionSpace &, const Quadrature &q) : q_(q) {}
 
-    //     ViewDevice view_device() const { return ViewDevice(q_.view_device()); }
+        ViewDevice view_device() const { return ViewDevice(q_.view_device()); }
 
-    // private:
-    //     const Quadrature &q_;
-    // };
+    private:
+        const Quadrature &q_;
+    };
 
     // ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -290,72 +291,72 @@ namespace utopia {
 
     // ////////////////////////////////////////////////////////////////////////////////////////
 
-    // template <class Mesh, int NComponents, typename T, int Dim_, class Function, typename... Args>
-    // class Projection<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>, Function> {
-    // public:
-    //     using Quadrature = simd_v2::Quadrature<T, Dim_>;
-    //     using QPoint = typename Quadrature::Point;
-    //     using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
-    //     using Vector = typename FunctionSpace::Vector;
-    //     using Scalar = typename FunctionSpace::Scalar;
-    //     using Point = typename FunctionSpace::Point;
-    //     using SizeType = typename FunctionSpace::SizeType;
-    //     using Elem = typename FunctionSpace::ViewDevice::Elem;
-    //     static const int NNodes = Elem::NNodes;
+    template <class Mesh, int NComponents, typename T, int Dim_, class Function, typename... Args>
+    class Projection<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>, Function> {
+    public:
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        using QPoint = typename Quadrature::Point;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Vector = typename FunctionSpace::Vector;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Point = typename FunctionSpace::Point;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
 
-    //     using Differential = utopia::Differential<FunctionSpace, Quadrature>;
-    //     using ShapeFunction = utopia::ShapeFunction<FunctionSpace, Quadrature>;
-    //     using PhysicalPoint = utopia::PhysicalPoint<FunctionSpace, Quadrature>;
+        using Differential = utopia::Differential<FunctionSpace, Quadrature>;
+        using ShapeFunction = utopia::ShapeFunction<FunctionSpace, Quadrature>;
+        using PhysicalPoint = utopia::PhysicalPoint<FunctionSpace, Quadrature>;
 
-    //     class ViewDevice {
-    //     public:
-    //         using PhysicalPointView = typename PhysicalPoint::ViewDevice;
-    //         using ShapeFunctionView = typename ShapeFunction::ViewDevice;
-    //         using DifferentialView = typename Differential::ViewDevice;
+        class ViewDevice {
+        public:
+            using PhysicalPointView = typename PhysicalPoint::ViewDevice;
+            using ShapeFunctionView = typename ShapeFunction::ViewDevice;
+            using DifferentialView = typename Differential::ViewDevice;
 
-    //         template <typename SizeType, class Elem, class Accumulator>
-    //         UTOPIA_INLINE_FUNCTION void assemble(const SizeType & /*i*/, const Elem &e, Accumulator &acc) const {
-    //             auto dx = dx_.make(e);
-    //             auto shape = shape_fun_.make(e);
-    //             auto points = point_.make(e);
+            template <typename SizeType, class Elem, class Accumulator>
+            UTOPIA_INLINE_FUNCTION void assemble(const SizeType & /*i*/, const Elem &e, Accumulator &acc) const {
+                auto dx = dx_.make(e);
+                auto shape = shape_fun_.make(e);
+                auto points = point_.make(e);
 
-    //             Point p;
-    //             const int n = shape.n_points();
-    //             const int n_fun = shape.n_functions();
+                Point p;
+                const int n = shape.n_points();
+                const int n_fun = shape.n_functions();
 
-    //             for (int k = 0; k < n; ++k) {
-    //                 points.get(k, p);
-    //                 for (int j = 0; j < n_fun; ++j) {
-    //                     acc(j) += simd_v2::integrate(fun_(p) * shape(j, k) * dx(k));
-    //                 }
-    //             }
-    //         }
+                for (int k = 0; k < n; ++k) {
+                    points.get(k, p);
+                    for (int j = 0; j < n_fun; ++j) {
+                        acc(j) += simd_v2::integrate(fun_(p) * shape(j, k) * dx(k));
+                    }
+                }
+            }
 
-    //         ViewDevice(Function fun,
-    //                    const PhysicalPointView &points,
-    //                    const ShapeFunctionView &shape_fun,
-    //                    const DifferentialView &dx)
-    //             : fun_(std::move(fun)), point_(points), shape_fun_(shape_fun), dx_(dx) {}
+            ViewDevice(Function fun,
+                       const PhysicalPointView &points,
+                       const ShapeFunctionView &shape_fun,
+                       const DifferentialView &dx)
+                : fun_(std::move(fun)), point_(points), shape_fun_(shape_fun), dx_(dx) {}
 
-    //         Function fun_;
-    //         PhysicalPointView point_;
-    //         ShapeFunctionView shape_fun_;
-    //         DifferentialView dx_;
-    //     };
+            Function fun_;
+            PhysicalPointView point_;
+            ShapeFunctionView shape_fun_;
+            DifferentialView dx_;
+        };
 
-    //     Projection(const FunctionSpace &space, const Quadrature &q, Function fun)
-    //         : fun_(std::move(fun)), point_(space, q), shape_fun_(space, q), dx_(space, q) {}
+        Projection(const FunctionSpace &space, const Quadrature &q, Function fun)
+            : fun_(std::move(fun)), point_(space, q), shape_fun_(space, q), dx_(space, q) {}
 
-    //     ViewDevice view_device() const {
-    //         return ViewDevice(fun_, point_.view_device(), shape_fun_.view_device(), dx_.view_device());
-    //     }
+        ViewDevice view_device() const {
+            return ViewDevice(fun_, point_.view_device(), shape_fun_.view_device(), dx_.view_device());
+        }
 
-    // private:
-    //     Function fun_;
-    //     PhysicalPoint point_;
-    //     ShapeFunction shape_fun_;
-    //     Differential dx_;
-    // };
+    private:
+        Function fun_;
+        PhysicalPoint point_;
+        ShapeFunction shape_fun_;
+        Differential dx_;
+    };
 
     // ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -488,275 +489,274 @@ namespace utopia {
 
     // ////////////////////////////////////////////////////////////////////////////////////////
 
-    // template <class FunctionSpaceView,
-    //           class CoefficientView,
-    //           class ShapeFunView,
-    //           class QuadratureView,
-    //           class Elem = typename FunctionSpaceView::Elem,
-    //           class MemType = typename Elem::MemType,
-    //           typename...>
-    // class VcNodalInterpolateView {
-    // public:
-    //     static const int Dim = Elem::Dim;
-    //     using Scalar = typename Elem::Scalar;
-    //     // using SizeType = typename Elem::SizeType;
-    //     using Point = utopia::StaticVector<Scalar, Dim>;
-    //     // using Eval = utopia::StaticVector<typename Elem::FunValue, QuadratureView::NPoints>;
-    //     using Coeff = utopia::StaticVector<Scalar, Elem::NFunctions>;
+    template <class FunctionSpaceView,
+              class CoefficientView,
+              class ShapeFunView,
+              class QuadratureView,
+              class Elem = typename FunctionSpaceView::Elem,
+              class MemType = typename Elem::MemType,
+              typename...>
+    class VcNodalInterpolateView {
+    public:
+        static const int Dim = Elem::Dim;
+        using Scalar = typename Elem::Scalar;
+        // using SizeType = typename Elem::SizeType;
+        using Point = utopia::StaticVector<Scalar, Dim>;
+        // using Eval = utopia::StaticVector<typename Elem::FunValue, QuadratureView::NPoints>;
+        using Coeff = utopia::StaticVector<Scalar, Elem::NFunctions>;
 
-    //     UTOPIA_INLINE_FUNCTION VcNodalInterpolateView(const CoefficientView &coeff, const ShapeFunView &fun)
-    //         : coeff_(coeff), fun_(fun), elem_(nullptr) {}
+        UTOPIA_INLINE_FUNCTION VcNodalInterpolateView(const CoefficientView &coeff, const ShapeFunView &fun)
+            : coeff_(coeff), fun_(fun), elem_(nullptr) {}
 
-    //     UTOPIA_INLINE_FUNCTION std::size_t size() const { return fun_.n_points(); }
+        UTOPIA_INLINE_FUNCTION std::size_t size() const { return fun_.n_points(); }
 
-    //     template <class Values>
-    //     UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Values &values) const {
-    //         Coeff elem_coeff;
-    //         coeff_.get(elem, elem_coeff);
+        template <class Values>
+        UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Values &values) const {
+            Coeff elem_coeff;
+            coeff_.get(elem, elem_coeff);
 
-    //         auto &&shape_i = fun_.make(elem);
+            auto &&shape_i = fun_.make(elem);
 
-    //         const std::size_t n = shape_i.n_points();
-    //         for (std::size_t k = 0; k < n; ++k) {
-    //             values[k] = shape_i(0, k) * elem_coeff(0);
+            const std::size_t n = shape_i.n_points();
+            for (std::size_t k = 0; k < n; ++k) {
+                values[k] = shape_i(0, k) * elem_coeff(0);
 
-    //             for (std::size_t j = 1; j < shape_i.n_functions(); ++j) {
-    //                 values[k] += shape_i(j, k) * elem_coeff(j);
-    //             }
-    //         }
-    //     }
+                for (std::size_t j = 1; j < shape_i.n_functions(); ++j) {
+                    values[k] += shape_i(j, k) * elem_coeff(j);
+                }
+            }
+        }
 
-    //     const ShapeFunView &fun() const { return fun_; }
+        const ShapeFunView &fun() const { return fun_; }
 
-    // private:
-    //     CoefficientView coeff_;
-    //     ShapeFunView fun_;
-    //     const Elem *elem_;
-    // };
+    private:
+        CoefficientView coeff_;
+        ShapeFunView fun_;
+        const Elem *elem_;
+    };
 
-    // template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    // class NodalInterpolate<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
-    // public:
-    //     using Quadrature = simd_v2::Quadrature<T, Dim_>;
-    //     using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
-    //     using Elem = typename FunctionSpace::ViewDevice::Elem;
-    //     using ShapeFunction = utopia::ShapeFunction<FunctionSpace, Quadrature>;
+    template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
+    class NodalInterpolate<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
+    public:
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+        using ShapeFunction = utopia::ShapeFunction<FunctionSpace, Quadrature>;
 
-    //     using Vector = typename FunctionSpace::Vector;
-    //     using CoefficientViewDevice = typename utopia::Coefficient<FunctionSpace>::ViewDevice;
-    //     using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
-    //     using Coefficient = utopia::Coefficient<FunctionSpace>;
+        using Vector = typename FunctionSpace::Vector;
+        using CoefficientViewDevice = typename utopia::Coefficient<FunctionSpace>::ViewDevice;
+        using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
+        using Coefficient = utopia::Coefficient<FunctionSpace>;
 
-    //     using ViewDevice = utopia::VcNodalInterpolateView<FunctionSpaceViewDevice,
-    //                                                       CoefficientViewDevice,
-    //                                                       typename ShapeFunction::ViewDevice,
-    //                                                       typename Quadrature::ViewDevice>;
-    //     NodalInterpolate(const FunctionSpace &space, const Quadrature &q)
-    //         : coeff_(std::make_shared<Coefficient>(space)), shape_fun_(space, q) {}
+        using ViewDevice = utopia::VcNodalInterpolateView<FunctionSpaceViewDevice,
+                                                          CoefficientViewDevice,
+                                                          typename ShapeFunction::ViewDevice,
+                                                          typename Quadrature::ViewDevice>;
+        NodalInterpolate(const FunctionSpace &space, const Quadrature &q)
+            : coeff_(std::make_shared<Coefficient>(space)), shape_fun_(space, q) {}
 
-    //     NodalInterpolate(const std::shared_ptr<Coefficient> &coeff, const Quadrature &q)
-    //         : coeff_(coeff), shape_fun_(coeff->space(), q) {}
+        NodalInterpolate(const std::shared_ptr<Coefficient> &coeff, const Quadrature &q)
+            : coeff_(coeff), shape_fun_(coeff->space(), q) {}
 
-    //     ViewDevice view_device() const { return ViewDevice(coeff_->view_device(), shape_fun_.view_device()); }
+        ViewDevice view_device() const { return ViewDevice(coeff_->view_device(), shape_fun_.view_device()); }
 
-    //     void update(const Vector &vec) { coeff_->update(vec); }
+        void update(const Vector &vec) { coeff_->update(vec); }
 
-    // private:
-    //     std::shared_ptr<Coefficient> coeff_;
-    //     ShapeFunction shape_fun_;
-    // };
+    private:
+        std::shared_ptr<Coefficient> coeff_;
+        ShapeFunction shape_fun_;
+    };
 
     // ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // template <class FunctionSpaceView,
-    //           class CoefficientView,
-    //           class GradView,
-    //           typename T,
-    //           int Dim_,
-    //           class Elem,
-    //           class MemType,
-    //           typename... Args>
-    // class GradInterpolateView<FunctionSpaceView,
-    //                           CoefficientView,
-    //                           GradView,
-    //                           simd_v2::Quadrature<T, Dim_>,
-    //                           Elem,
-    //                           MemType,
-    //                           Args...> {
-    // public:
-    //     using Quadrature = simd_v2::Quadrature<T, Dim_>;
-    //     static const int Dim = Dim_;
-    //     using Scalar = typename Elem::Scalar;
-    //     // using SizeType = typename Elem::SizeType;
-    //     using Point = utopia::StaticVector<Scalar, Dim>;
-    //     using Coeff = utopia::StaticVector<Scalar, Elem::NFunctions>;
+    template <class FunctionSpaceView,
+              class CoefficientView,
+              class GradView,
+              typename T,
+              int Dim_,
+              class Elem,
+              class MemType,
+              typename... Args>
+    class GradInterpolateView<FunctionSpaceView,
+                              CoefficientView,
+                              GradView,
+                              simd_v2::Quadrature<T, Dim_>,
+                              Elem,
+                              MemType,
+                              Args...> {
+    public:
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        static const int Dim = Dim_;
+        using Scalar = typename Elem::Scalar;
+        // using SizeType = typename Elem::SizeType;
+        using Point = utopia::StaticVector<Scalar, Dim>;
+        using Coeff = utopia::StaticVector<Scalar, Elem::NFunctions>;
 
-    //     UTOPIA_INLINE_FUNCTION GradInterpolateView(const CoefficientView &coeff, const GradView &grad)
-    //         : coeff_(coeff), grad_(grad), elem_(nullptr) {}
+        UTOPIA_INLINE_FUNCTION GradInterpolateView(const CoefficientView &coeff, const GradView &grad)
+            : coeff_(coeff), grad_(grad), elem_(nullptr) {}
 
-    //     UTOPIA_INLINE_FUNCTION std::size_t size() const { return grad_.n_points(); }
+        UTOPIA_INLINE_FUNCTION std::size_t size() const { return grad_.n_points(); }
 
-    //     template <class Values>
-    //     UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Values &values) const {
-    //         Coeff elem_coeff;
-    //         coeff_.get(elem, elem_coeff);
+        template <class Values>
+        UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Values &values) const {
+            Coeff elem_coeff;
+            coeff_.get(elem, elem_coeff);
 
-    //         auto grad_i = grad_.make(elem);
+            auto grad_i = grad_.make(elem);
 
-    //         const int n = grad_i.n_points();
-    //         for (int k = 0; k < n; ++k) {
-    //             values[k] = grad_i(0, k) * elem_coeff(0);
+            const int n = grad_i.n_points();
+            for (int k = 0; k < n; ++k) {
+                values[k] = grad_i(0, k) * elem_coeff(0);
 
-    //             for (std::size_t j = 1; j < grad_i.n_functions(); ++j) {
-    //                 values[k] += grad_i(j, k) * elem_coeff(j);
-    //             }
-    //         }
-    //     }
+                for (std::size_t j = 1; j < grad_i.n_functions(); ++j) {
+                    values[k] += grad_i(j, k) * elem_coeff(j);
+                }
+            }
+        }
 
-    //     const GradView &grad() const { return grad_; }
+        const GradView &grad() const { return grad_; }
 
-    // private:
-    //     CoefficientView coeff_;
-    //     GradView grad_;
-    //     const Elem *elem_;
-    // };
+    private:
+        CoefficientView coeff_;
+        GradView grad_;
+        const Elem *elem_;
+    };
 
-    // ////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////
 
-    // template <class FunctionSpaceView,
-    //           class GradInterpolateView,
-    //           class Elem = typename FunctionSpaceView::Elem,
-    //           class MemType = typename Elem::MemType,
-    //           typename...>
-    // class VcCoefStrainView {
-    // public:
-    //     static const int Dim = Elem::Dim;
+    template <class FunctionSpaceView,
+              class GradInterpolateView,
+              class Elem = typename FunctionSpaceView::Elem,
+              class MemType = typename Elem::MemType,
+              typename...>
+    class VcCoefStrainView {
+    public:
+        static const int Dim = Elem::Dim;
 
-    //     using Scalar = typename Elem::Scalar;
-    //     using GradValue = typename Elem::GradValue;
+        using Scalar = typename Elem::Scalar;
+        using GradValue = typename Elem::GradValue;
 
-    //     VcCoefStrainView(const GradInterpolateView &grad) : grad_(grad) {}
+        VcCoefStrainView(const GradInterpolateView &grad) : grad_(grad) {}
 
-    //     template <class Strain>
-    //     UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Strain &strain) const {
-    //         grad_.get(elem, strain);
+        template <class Strain>
+        UTOPIA_INLINE_FUNCTION void get(const Elem &elem, Strain &strain) const {
+            grad_.get(elem, strain);
 
-    //         const SizeType n_qp = grad_.size();
-    //         for (SizeType qp = 0; qp < n_qp; ++qp) {
-    //             strain[qp].symmetrize();
-    //         }
-    //     }
+            const SizeType n_qp = grad_.size();
+            for (SizeType qp = 0; qp < n_qp; ++qp) {
+                strain[qp].symmetrize();
+            }
+        }
 
-    // private:
-    //     GradInterpolateView grad_;
-    // };
+    private:
+        GradInterpolateView grad_;
+    };
 
-    // template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    // class CoefStrain<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
-    // public:
-    //     using Quadrature = simd_v2::Quadrature<T, Dim_>;
-    //     using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
-    //     using Vector = typename FunctionSpace::Vector;
-    //     using GradInterpolate = utopia::GradInterpolate<FunctionSpace, Quadrature>;
+    template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
+    class CoefStrain<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
+    public:
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Vector = typename FunctionSpace::Vector;
+        using GradInterpolate = utopia::GradInterpolate<FunctionSpace, Quadrature>;
 
-    //     using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
-    //     using GradInterpolateViewDevice = typename GradInterpolate::ViewDevice;
+        using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
+        using GradInterpolateViewDevice = typename GradInterpolate::ViewDevice;
 
-    //     using ViewDevice = utopia::VcCoefStrainView<FunctionSpaceViewDevice, GradInterpolateViewDevice>;
+        using ViewDevice = utopia::VcCoefStrainView<FunctionSpaceViewDevice, GradInterpolateViewDevice>;
 
-    //     CoefStrain(const std::shared_ptr<Coefficient<FunctionSpace>> &coeff, const Quadrature &q) : grad_(coeff, q)
-    //     {}
+        CoefStrain(const std::shared_ptr<Coefficient<FunctionSpace>> &coeff, const Quadrature &q) : grad_(coeff, q) {}
 
-    //     inline ViewDevice view_device() const { return ViewDevice(grad_.view_device()); }
+        inline ViewDevice view_device() const { return ViewDevice(grad_.view_device()); }
 
-    //     inline void update(const Vector &x) { grad_.update(x); }
+        inline void update(const Vector &x) { grad_.update(x); }
 
-    // private:
-    //     GradInterpolate grad_;
-    // };
+    private:
+        GradInterpolate grad_;
+    };
 
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
-    // class ShapeStress<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
-    // public:
-    //     using Quadrature = simd_v2::Quadrature<T, Dim_>;
-    //     using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
-    //     using Vector = typename FunctionSpace::Vector;
-    //     using Scalar = typename FunctionSpace::Scalar;
+    template <class Mesh, int NComponents, typename T, int Dim_, typename... Args>
+    class ShapeStress<FunctionSpace<Mesh, NComponents, Args...>, simd_v2::Quadrature<T, Dim_>> {
+    public:
+        using Quadrature = simd_v2::Quadrature<T, Dim_>;
+        using FunctionSpace = utopia::FunctionSpace<Mesh, NComponents, Args...>;
+        using Vector = typename FunctionSpace::Vector;
+        using Scalar = typename FunctionSpace::Scalar;
 
-    //     using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
+        using FunctionSpaceViewDevice = typename FunctionSpace::ViewDevice;
 
-    //     using Elem = typename FunctionSpace::ViewDevice::Elem;
-    //     using GradValue = typename simd_v2::FETraits<Elem, T>::GradValue;
-    //     static const int Dim = Elem::Dim;
+        using Elem = typename FunctionSpace::ViewDevice::Elem;
+        using GradValue = typename simd_v2::FETraits<Elem, T>::GradValue;
+        static const int Dim = Elem::Dim;
 
-    //     static const int NFunctions = Elem::NFunctions;
+        static const int NFunctions = Elem::NFunctions;
 
-    //     class ViewDevice {
-    //     public:
-    //         ViewDevice() = default;
-    //         ViewDevice(ViewDevice &&other) = default;
+        class ViewDevice {
+        public:
+            ViewDevice() = default;
+            ViewDevice(ViewDevice &&other) = default;
 
-    //         ViewDevice(const ViewDevice &other) {
-    //             const int n = other.stress.size();
-    //             stress.resize(n);
+            ViewDevice(const ViewDevice &other) {
+                const int n = other.stress.size();
+                stress.resize(n);
 
-    //             for (int i = 0; i < n; ++i) {
-    //                 stress[i] = other.stress[i];
-    //             }
-    //         }
+                for (int i = 0; i < n; ++i) {
+                    stress[i] = other.stress[i];
+                }
+            }
 
-    //         inline void resize(const int n_qp) { stress.resize(n_qp * NFunctions); }
+            inline void resize(const int n_qp) { stress.resize(n_qp * NFunctions); }
 
-    //         inline GradValue &operator()(const int fun, const int qp) { return stress[qp * NFunctions + fun]; }
+            inline GradValue &operator()(const int fun, const int qp) { return stress[qp * NFunctions + fun]; }
 
-    //         inline const GradValue &operator()(const int fun, const int qp) const {
-    //             return stress[qp * NFunctions + fun];
-    //         }
+            inline const GradValue &operator()(const int fun, const int qp) const {
+                return stress[qp * NFunctions + fun];
+            }
 
-    //     private:
-    //         Vc::vector<GradValue> stress;
-    //     };
+        private:
+            Vc::vector<GradValue> stress;
+        };
 
-    //     ShapeStress(const FunctionSpace &space, const Quadrature &q, const Scalar &mu, const Scalar &lambda)
+        ShapeStress(const FunctionSpace &space, const Quadrature &q, const Scalar &mu, const Scalar &lambda)
 
-    //     {
-    //         compute_aggregate_stress(space, q, mu, lambda);
-    //     }
+        {
+            compute_aggregate_stress(space, q, mu, lambda);
+        }
 
-    //     inline const ViewDevice &view_device() const { return view_device_; }
+        inline const ViewDevice &view_device() const { return view_device_; }
 
-    // private:
-    //     ViewDevice view_device_;
+    private:
+        ViewDevice view_device_;
 
-    //     void compute_aggregate_stress(const FunctionSpace &space,
-    //                                   const Quadrature &q,
-    //                                   const Scalar &mu,
-    //                                   const Scalar &lambda) {
-    //         PhysicalGradient<FunctionSpace, Quadrature> grad(space, q);
-    //         auto grad_view = grad.view_host();
+        void compute_aggregate_stress(const FunctionSpace &space,
+                                      const Quadrature &q,
+                                      const Scalar &mu,
+                                      const Scalar &lambda) {
+            PhysicalGradient<FunctionSpace, Quadrature> grad(space, q);
+            auto grad_view = grad.view_host();
 
-    //         int n_qp = q.n_points();
-    //         view_device_.resize(n_qp);
+            int n_qp = q.n_points();
+            view_device_.resize(n_qp);
 
-    //         Elem e;
-    //         space.elem(0, e);
+            Elem e;
+            space.elem(0, e);
 
-    //         auto g = grad_view.make(e);
+            auto g = grad_view.make(e);
 
-    //         GradValue strain;
+            GradValue strain;
 
-    //         for (SizeType i = 0; i < e.n_functions(); ++i) {
-    //             for (int k = 0; k < n_qp; ++k) {
-    //                 g.get(i, k, strain);
-    //                 strain.symmetrize();
+            for (SizeType i = 0; i < e.n_functions(); ++i) {
+                for (int k = 0; k < n_qp; ++k) {
+                    g.get(i, k, strain);
+                    strain.symmetrize();
 
-    //                 view_device_(i, k) = 2.0 * mu * strain + lambda * trace(strain) * (device::identity<Scalar>());
-    //             }
-    //         }
-    //     }
-    // };
+                    view_device_(i, k) = 2.0 * mu * strain + lambda * trace(strain) * (device::identity<Scalar>());
+                }
+            }
+        }
+    };
 
 }  // namespace utopia
 

@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 
 #define UTOPIA_VC_DEFAULT_ALIGN Vc::Unaligned
+#define CONST_SIMD_RET const
 
 namespace utopia {
     namespace simd_v2 {

@@ -19,8 +19,6 @@ namespace utopia {
         template <typename T, int Rows, int Cols, class SIMDType = Vc::Vector<T>>
         class Matrix {
         public:
-            // using SIMDType = Vc::Vector<T>;
-
             static const int Lanes = SIMDType::Size;
             static const int N = Rows * Cols;
             static const int Size = N * Lanes;
@@ -88,7 +86,10 @@ namespace utopia {
             }
 
             inline SIMDType load(const int i, const int j) const { return Ops::construct(block(i, j)); }
-            inline SIMDType operator()(const int i, const int j) const { return Ops::construct(block(i, j)); }
+
+            inline CONST_SIMD_RET SIMDType operator()(const int i, const int j) const {
+                return Ops::construct(block(i, j));
+            }
 
             void set(const T &val) {
                 for (int i = 0; i < Size; ++i) {
@@ -114,6 +115,19 @@ namespace utopia {
                 return ret;
             }
 
+            template <typename Derived>
+            friend inline constexpr SIMDType inner(const DeviceExpression<Derived> &l, const Matrix &r) {
+                auto &&d = l.derived();
+                SIMDType ret = T(0);
+
+                for (int i = 0; i < Rows; ++i) {
+                    for (int j = 0; j < Cols; ++j) {
+                        ret += d(i, j) * r(i, j);
+                    }
+                }
+                return ret;
+            }
+
             friend inline DeviceTranspose<Matrix> transpose(const Matrix &mat) { return mat; }
 
             template <typename Derived>
@@ -128,12 +142,19 @@ namespace utopia {
                 return DeviceBinary<Derived, Matrix, Plus>(l.derived(), r);
             }
 
-            friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const Matrix &left, const T &right) {
-                return DeviceBinary<Number<T>, Matrix, Multiplies>(right, left);
+            friend inline DeviceBinary<DeviceNumber<T>, Matrix, Multiplies> operator*(const Matrix &left,
+                                                                                      const T &right) {
+                return DeviceBinary<DeviceNumber<T>, Matrix, Multiplies>(right, left);
             }
 
-            friend inline DeviceBinary<Number<T>, Matrix, Multiplies> operator*(const T &left, const Matrix &right) {
-                return DeviceBinary<Number<T>, Matrix, Multiplies>(left, right);
+            friend inline DeviceBinary<DeviceNumber<T>, Matrix, Multiplies> operator*(const T &left,
+                                                                                      const Matrix &right) {
+                return DeviceBinary<DeviceNumber<T>, Matrix, Multiplies>(left, right);
+            }
+
+            friend inline DeviceBinary<DeviceNumber<SIMDType>, Matrix, Multiplies> operator*(const SIMDType &left,
+                                                                                             const Matrix &right) {
+                return DeviceBinary<DeviceNumber<SIMDType>, Matrix, Multiplies>(left, right);
             }
 
             friend inline DeviceMultiply<Matrix, Vector<T, Cols, SIMDType>> operator*(
@@ -144,7 +165,25 @@ namespace utopia {
 
             template <class Expr>
             inline Matrix &operator=(const DeviceExpression<Expr> &expr) {
-                DeviceAssign<Matrix, Expr>::apply(*this, expr.derived());
+                auto &&d = expr.derived();
+                for (int i = 0; i < Rows; ++i) {
+                    for (int j = 0; j < Cols; ++j) {
+                        Ops::store(d(i, j), block(i, j));
+                    }
+                }
+
+                return *this;
+            }
+
+            template <class Expr>
+            inline Matrix &operator+=(const DeviceExpression<Expr> &expr) {
+                auto &&d = expr.derived();
+                for (int i = 0; i < Rows; ++i) {
+                    for (int j = 0; j < Cols; ++j) {
+                        Ops::in_place_add(d(i, j), block(i, j));
+                    }
+                }
+
                 return *this;
             }
 
@@ -163,18 +202,6 @@ namespace utopia {
                 }
             }
 
-            // inline Matrix operator*(const T &factor) {
-            //     Matrix ret = *this;
-            //     ret.scale(factor);
-            //     return ret;
-            // }
-
-            // inline Matrix operator*(const SIMDType &factor) {
-            //     Matrix ret = *this;
-            //     ret.scale(factor);
-            //     return ret;
-            // }
-
             inline Matrix &operator*=(const SIMDType &factor) {
                 scale(factor);
                 return *this;
@@ -184,30 +211,6 @@ namespace utopia {
                 scale(factor);
                 return *this;
             }
-
-            // friend inline Matrix operator*(const Matrix &left, const T &right) {
-            //     Matrix ret = left;
-            //     ret *= right;
-            //     return ret;
-            // }
-
-            // friend inline Matrix operator*(const Matrix &left, const SIMDType &right) {
-            //     Matrix ret = left;
-            //     ret *= right;
-            //     return ret;
-            // }
-
-            // friend inline Matrix operator*(const T &right, const Matrix &left) {
-            //     Matrix ret = left;
-            //     ret *= right;
-            //     return ret;
-            // }
-
-            // friend inline Matrix operator*(const SIMDType &right, const Matrix &left) {
-            //     Matrix ret = left;
-            //     ret *= right;
-            //     return ret;
-            // }
 
             friend inline constexpr SIMDType trace(const Matrix &m) {
                 constexpr auto n = std::min(Rows, Cols);
@@ -243,12 +246,12 @@ namespace utopia {
         static const int Order = 2;
     };
 
-    // template <typename T, class Right>
-    // inline DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies> operator*(
-    //     const Vc::Vector<T> &left,
-    //     const DeviceExpression<Right> &right) {
-    //     return DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies>(left, right.derived());
-    // }
+    template <typename T, class Right>
+    inline DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies> operator*(
+        const Vc::Vector<T> &left,
+        const DeviceExpression<Right> &right) {
+        return DeviceBinary<DeviceNumber<Vc::Vector<T>>, Right, Multiplies>(left, right.derived());
+    }
 
 }  // namespace utopia
 

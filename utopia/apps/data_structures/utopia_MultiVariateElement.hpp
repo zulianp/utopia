@@ -81,7 +81,7 @@ namespace utopia {
             const int dim = i / NNodes;
             simd_v2::Vector<T, NVariables> f;
             f.set(0.0);
-            f[dim] = univar_elem_.fun(univ_i, p);
+            f.set(dim, univar_elem_.fun(univ_i, p));
             return f;
         }
 

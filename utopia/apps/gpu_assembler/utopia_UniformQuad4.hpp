@@ -349,14 +349,14 @@ namespace utopia {
 
         template <typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const {
-            out[0] = in[0] * h_[0] + translation_[0];
-            out[1] = in[1] * h_[1] + translation_[1];
+            out.set(0, in[0] * h_[0] + translation_[0]);
+            out.set(1, in[1] * h_[1] + translation_[1]);
         }
 
         template <typename PhysicalPoint, typename RefPoint>
         UTOPIA_INLINE_FUNCTION void inverse_transform(const PhysicalPoint &in, RefPoint &out) const {
-            out[0] = (in[0] - translation_[0]) / h_[0];
-            out[1] = (in[1] - translation_[1]) / h_[1];
+            out.set(0, (in[0] - translation_[0]) / h_[0]);
+            out.set(1, (in[1] - translation_[1]) / h_[1]);
         }
 
         UTOPIA_INLINE_FUNCTION UniformQuad4(const Scalar &hx, const Scalar &hy) {
