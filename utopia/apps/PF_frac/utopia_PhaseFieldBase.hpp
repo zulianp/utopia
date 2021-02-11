@@ -575,7 +575,7 @@ namespace utopia {
                 parallel_for(
                     range_device(lb), UTOPIA_LAMBDA(const SizeType &i) {
                         if (i % (Dim + 1) == 0) {
-                            Scalar li = lb_view.get(i);
+                            // Scalar li = lb_view.get(i);
                             Scalar ui = ub_view.get(i);
                             auto xi = d_x_old.get(i);
                             // if (li >= xi) {
