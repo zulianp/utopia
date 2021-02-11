@@ -137,10 +137,9 @@ namespace utopia {
         InitialCondidtionPFTension<FunctionSpace> IC_setup(space, 0.0);
         PFFracTension2D<FunctionSpace> BC_setup(space);
 
-        IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, IC_setup, BC_setup);
+        // IncrementalLoading<FunctionSpace, FractureModel<FunctionSpace>> time_stepper(space, IC_setup, BC_setup);
 
-        // IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace>> time_stepper(space, IC_setup,
-        // BC_setup);
+        IncrementalLoading<FunctionSpace, PhaseFieldVolDevSplit<FunctionSpace>> time_stepper(space, IC_setup, BC_setup);
 
         time_stepper.read(in);
         time_stepper.run();
@@ -304,7 +303,7 @@ namespace utopia {
             time_stepper(space);
 
         // MLIncrementalLoading<FunctionSpace,
-        //                      FractureModel<FunctionSpace>,
+        //                      PhaseFieldVolDevSplit<FunctionSpace>,
         //                      PFFracFixAllDisp4Sides<FunctionSpace>,
         //                      InitialCondidtionPFFracNet2D<FunctionSpace> >
         // time_stepper(space);
@@ -345,8 +344,8 @@ namespace utopia {
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             // FractureModel<FunctionSpace>,
-                             IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             FractureModel<FunctionSpace>,
+                             // PhaseFieldVolDevSplit<FunctionSpace>,
                              PFFracTension2D<FunctionSpace>,
                              InitialCondidtionPFTension<FunctionSpace>>
             time_stepper(space);
@@ -387,7 +386,7 @@ namespace utopia {
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             FractureModel<FunctionSpace>,
                              PFFracFixAllDisp4Sides<FunctionSpace>,
                              InitialCondidtionPFSneddon<FunctionSpace>>
             time_stepper(space);
@@ -427,7 +426,7 @@ namespace utopia {
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             IsotropicPhaseFieldForBrittleFractures<FunctionSpace>,
+                             FractureModel<FunctionSpace>,
                              // PhaseFieldVolDevSplit<FunctionSpace>,
                              PFFracFixAllDisp3D<FunctionSpace>,
                              InitialCondidtionPFSneddon<FunctionSpace>>
@@ -467,7 +466,8 @@ namespace utopia {
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             FractureModel<FunctionSpace>,
+                             // FractureModel<FunctionSpace>,
+                             PhaseFieldVolDevSplit<FunctionSpace>,
                              PFFracFixAllDispComp2D<FunctionSpace>,
                              InitialCondidtionPFTbar<FunctionSpace>>
             time_stepper(space);
@@ -508,7 +508,8 @@ namespace utopia {
         stats.start();
 
         MLIncrementalLoading<FunctionSpace,
-                             FractureModel<FunctionSpace>,
+                             // FractureModel<FunctionSpace>,
+                             PhaseFieldVolDevSplit<FunctionSpace>,
                              PFFracFixAllDisp3D<FunctionSpace>,
                              InitialCondidtionPFParallelFrac3D<FunctionSpace>>
             time_stepper(space);
