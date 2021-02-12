@@ -639,6 +639,8 @@ namespace utopia {
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
+                UTOPIA_TRACE_REGION_BEGIN("vcIsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
+
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
                 auto space_view = this->space_.view_device();
@@ -790,6 +792,8 @@ namespace utopia {
 
                     space_view.add_matrix(e, el_mat, H_view);
                 });
+
+                UTOPIA_TRACE_REGION_END("vcIsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
             }
 
             // check before boundary conditions
