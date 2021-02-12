@@ -129,11 +129,11 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION ArrayView2D &raw_type() { return view_; }
         UTOPIA_INLINE_FUNCTION const ArrayView2D &raw_type() const { return view_; }
 
-        UTOPIA_INLINE_FUNCTION SizeType rows() const { return device::extent(view_, 0); }
+        UTOPIA_INLINE_FUNCTION constexpr SizeType rows() const { return device::extent(view_, 0); }
 
-        UTOPIA_INLINE_FUNCTION SizeType cols() const { return device::extent(view_, 1); }
+        UTOPIA_INLINE_FUNCTION constexpr SizeType cols() const { return device::extent(view_, 1); }
 
-        UTOPIA_INLINE_FUNCTION SizeType size() const { return view_.size(); }
+        UTOPIA_INLINE_FUNCTION constexpr SizeType size() const { return view_.size(); }
 
         UTOPIA_INLINE_FUNCTION Scalar &operator()(const SizeType &i, const SizeType &j) { return view_(i, j); }
 

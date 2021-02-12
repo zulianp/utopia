@@ -1,30 +1,25 @@
-#ifndef UTOPIA_SIMD_QUADRATURE_HPP
-#define UTOPIA_SIMD_QUADRATURE_HPP
-
-#include "utopia_MultiVariateElement.hpp"
-// #include "utopia_Tet4.hpp"
-#include "utopia_Tri3.hpp"
-#include "utopia_UniformHex8.hpp"
-#include "utopia_UniformQuad4.hpp"
-
-#include "utopia_simd_common.hpp"
+#ifndef UTOPIA_SIMD_QUADRATURE_V2_HPP
+#define UTOPIA_SIMD_QUADRATURE_V2_HPP
 
 #include <Vc/Vc>
 #include <vector>
 
+#include "utopia_Views.hpp"
+#include "utopia_simd_Ops.hpp"
+#include "utopia_simd_Vector.hpp"
+
 namespace utopia {
 
-    namespace simd_v1 {
-
+    namespace serial {
         template <typename T, int Dim>
         class Quadrature {
         public:
-            using Point = simd_v1::Vector<T, Dim>;
+            using Point = utopia::StaticVector<T, Dim>;
             using ViewDevice = Quadrature;
             using ViewHost = Quadrature;
 
-            Vc::vector<Point> points;
-            Vc::vector<T> weights;
+            std::vector<Point> points;
+            std::vector<T> weights;
 
             inline int n_points() const { return weights.size(); }
             inline const Quadrature &view_device() const { return *this; }
@@ -35,6 +30,7 @@ namespace utopia {
                 weights.resize(n);
             }
 
+            inline Point &point(const int i) { return points[i]; }
             inline const Point &point(const int i) const { return points[i]; }
             inline const T &weight(const int i) const { return weights[i]; }
         };
@@ -284,23 +280,75 @@ namespace utopia {
                     }
                 }
             };
-        };  // namespace simd_v1
+        };
 
-        template <typename T>
-        class Gauss<Vc::Vector<T>> {
+    }  // namespace serial
+
+    namespace simd_v2 {
+
+        template <typename T, int Dim, class SIMDType = Vc::Vector<T>>
+        class Quadrature {
         public:
-            using VectorType = Vc::Vector<T>;
-            static const int block_size = VectorType::Size;
+            using Scalar = SIMDType;
+            using Point = utopia::simd_v2::Vector<T, Dim, SIMDType>;
+            using ViewDevice = Quadrature;
+            using ViewHost = Quadrature;
+
+            using Ops = utopia::simd_v2::Ops<SIMDType>;
+
+            static constexpr int Lanes = Point::Lanes;
+
+            inline int n_points() const { return points.size(); }
+            inline const Quadrature &view_device() const { return *this; }
+            inline const Quadrature &view_host() const { return *this; }
+
+            void resize(int n) {
+                points.resize(n);
+                weights.resize(n * Lanes);
+            }
+
+            inline const Point &point(const int i) const {
+                assert(i < n_points());
+                return points[i];
+            }
+
+            inline Point &point(const int i) {
+                assert(i < n_points());
+                return points[i];
+            }
+
+            inline SIMDType weight(const int i) const {
+                assert(i < n_points());
+                return Ops::construct(&weights[i * Lanes]);
+            }
+
+            inline void set_weight(const int i, const int lane, const T &value) {
+                assert(i < n_points());
+                assert(lane < Lanes);
+                assert(i * Lanes + lane < int(weights.size()));
+                weights[i * Lanes + lane] = value;
+            }
+
+        private:
+            std::vector<Point> points;
+            std::vector<T> weights;
+        };
+
+        template <typename T, typename SIMDType = Vc::Vector<T>>
+        class Gauss {
+        public:
+            static const int block_size = SIMDType::Size;
 
             template <int Dim>
-            static void vectorize(simd_v1::Quadrature<T, Dim> &q_scalar, simd_v1::Quadrature<VectorType, Dim> &q) {
+            static void vectorize(utopia::serial::Quadrature<T, Dim> &q_scalar,
+                                  utopia::simd_v2::Quadrature<T, Dim> &q) {
                 int n_points = q_scalar.weights.size();
                 int n_blocks = n_points / block_size;
                 int n_defect = n_points - n_blocks * block_size;
 
-                int n_simd_v1_blocks = n_blocks + (n_defect != 0);
+                int n_simd_v2_blocks = n_blocks + (n_defect != 0);
 
-                q.resize(n_simd_v1_blocks);
+                q.resize(n_simd_v2_blocks);
 
                 for (int i = 0; i < n_blocks; ++i) {
                     int q_offset = i * block_size;
@@ -309,10 +357,10 @@ namespace utopia {
                         int q_idx = q_offset + k;
 
                         for (int d = 0; d < Dim; ++d) {
-                            q.points[i][d][k] = q_scalar.points[q_idx][d];
+                            q.point(i).ref(d, k) = q_scalar.points[q_idx][d];
                         }
 
-                        q.weights[i][k] = q_scalar.weights[q_idx];
+                        q.set_weight(i, k, q_scalar.weights[q_idx]);
                     }
                 }
 
@@ -321,28 +369,28 @@ namespace utopia {
                         int q_idx = n_blocks * block_size + k;
 
                         for (int d = 0; d < Dim; ++d) {
-                            q.points[n_blocks][d][k] = q_scalar.points[q_idx][d];
+                            q.point(n_blocks).ref(d, k) = q_scalar.points[q_idx][d];
                         }
 
-                        q.weights[n_blocks][k] = q_scalar.weights[q_idx];
+                        q.set_weight(n_blocks, k, q_scalar.weights[q_idx]);
                     }
 
                     for (int k = n_defect; k < block_size; ++k) {
                         for (int d = 0; d < Dim; ++d) {
-                            q.points[n_blocks][d][k] = Zero<T>::value();
+                            q.point(n_blocks).ref(d, k) = Zero<T>::value();
                         }
 
-                        q.weights[n_blocks][k] = Zero<T>::value();
+                        q.set_weight(n_blocks, k, Zero<T>::value());
                     }
                 }
             }
 
             class Tri {
             public:
-                static bool get(const int order, simd_v1::Quadrature<VectorType, 2> &q) {
-                    Quadrature<T, 2> q_scalar;
+                static bool get(const int order, simd_v2::Quadrature<T, 2> &q) {
+                    utopia::serial::Quadrature<T, 2> q_scalar;
 
-                    if (!Gauss<T>::Tri::get(order, q_scalar)) {
+                    if (!utopia::serial::Gauss<T>::Tri::get(order, q_scalar)) {
                         return false;
                     }
 
@@ -353,10 +401,10 @@ namespace utopia {
 
             class Quad {
             public:
-                static bool get(const int order, simd_v1::Quadrature<VectorType, 2> &q) {
-                    Quadrature<T, 2> q_scalar;
+                static bool get(const int order, simd_v2::Quadrature<T, 2> &q) {
+                    utopia::serial::Quadrature<T, 2> q_scalar;
 
-                    if (!Gauss<T>::Quad::get(order, q_scalar)) {
+                    if (!utopia::serial::Gauss<T>::Quad::get(order, q_scalar)) {
                         return false;
                     }
 
@@ -367,10 +415,10 @@ namespace utopia {
 
             class Hex {
             public:
-                static bool get(const int order, simd_v1::Quadrature<VectorType, 3> &q) {
-                    Quadrature<T, 3> q_scalar;
+                static bool get(const int order, simd_v2::Quadrature<T, 3> &q) {
+                    utopia::serial::Quadrature<T, 3> q_scalar;
 
-                    if (!Gauss<T>::Hex::get(order, q_scalar)) {
+                    if (!utopia::serial::Gauss<T>::Hex::get(order, q_scalar)) {
                         return false;
                     }
 
@@ -380,49 +428,7 @@ namespace utopia {
             };
         };
 
-        template <typename...>
-        class QuadratureDB {};
-
-        template <typename T, typename QT>
-        class QuadratureDB<UniformHex8<T>, QT> {
-        public:
-            template <class Q>
-            static bool get(const int order, Q &q) {
-                return Gauss<QT>::Hex::get(order, q);
-            }
-        };
-
-        template <typename T, typename QT>
-        class QuadratureDB<UniformQuad4<T>, QT> {
-        public:
-            template <class Q>
-            static bool get(const int order, Q &q) {
-                return Gauss<QT>::Quad::get(order, q);
-            }
-        };
-
-        template <typename T, typename QT>
-        class QuadratureDB<Tri3<T>, QT> {
-        public:
-            template <class Q>
-            static bool get(const int order, Q &q) {
-                return Gauss<QT>::Tri::get(order, q);
-            }
-        };
-
-        // template <typename T, typename QT>
-        // class QuadratureDB<Tet4<T>, QT> {
-        // public:
-        //     template <class Q>
-        //     static bool get(const int order, Q &q) {
-        //         return Gauss<QT>::Tet::get(order, q);
-        //     }
-        // };
-
-        template <typename Elem, int NVar, typename QT>
-        class QuadratureDB<MultiVariateElem<Elem, NVar>, QT> : public QuadratureDB<Elem, QT> {};
-
-    }  // namespace simd_v1
+    }  // namespace simd_v2
 }  // namespace utopia
 
-#endif  // UTOPIA_SIMD_QUADRATURE_HPP
+#endif  // UTOPIA_SIMD_QUADRATURE_V2_HPP

@@ -1,6 +1,10 @@
 #ifndef UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 #define UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_WITH_PETSC
+
 #include "utopia_Algorithms.hpp"
 #include "utopia_VectorView.hpp"
 #include "utopia_Views.hpp"
@@ -84,6 +88,7 @@ namespace utopia {
                     if (row.colidx(k) == block_i) {
                         d.raw_type().set_data(row.block(k));
                         diag_[block_i].copy(d);
+                        assert(std::abs(det(diag_[block_i])) > 0);
                         inv_diag_[block_i] = inv(diag_[block_i]);
                         break;
                     }
@@ -259,4 +264,5 @@ namespace utopia {
     };
 }  // namespace utopia
 
+#endif
 #endif  // UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
