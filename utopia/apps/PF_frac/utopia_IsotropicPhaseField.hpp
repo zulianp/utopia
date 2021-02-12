@@ -42,17 +42,8 @@ namespace utopia {
 
         // FIXME
         using Shape = typename FunctionSpace::Shape;
-        // using Quadrature = utopia::Quadrature<Shape, 2*(Shape::Order -1)>;
-        // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
-
-        // #ifdef USE_SIMD_ASSEMBLY
-        //         using SIMDType = Vc::Vector<Scalar>;
-        //         using Quadrature = simd::Quadrature<SIMDType, Dim>;
-        //         // using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
-        // #else
         using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
         static const int NQuadPoints = Quadrature::NPoints;
-        // #endif  // USE_SIMD_ASSEMBLY
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;

@@ -49,18 +49,12 @@ namespace utopia {
         using CElem = typename CSpace::ViewDevice::Elem;
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
         using Parameters = utopia::PFFracParameters<FunctionSpace>;
-
-        // FIXME
         using Shape = typename FunctionSpace::Shape;
-        // using Quadrature = utopia::Quadrature<Shape, 2*(Shape::Order -1)>;
-        // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
 
         using SIMDType = Vc::Vector<Scalar>;
         using Quadrature = simd_v2::Quadrature<Scalar, Dim>;
-        using CGradValue = typename simd_v2::FETraits<CElem, Scalar>::GradValue;
-        using UGradValue = typename simd_v2::FETraits<UElem, Scalar>::GradValue;
-        // using GradValue = typename simd_v2::FETraits<Elem, SIMDType>::GradValue;
-        // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
+        using CGradValue = typename simd_v2::FETraits<CElem>::GradValue;
+        using UGradValue = typename simd_v2::FETraits<UElem>::GradValue;
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;

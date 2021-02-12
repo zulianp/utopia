@@ -98,29 +98,33 @@ namespace utopia {
             f_summary.close();
             f_problematic.close();
         } else {
-            std::ofstream f_summary("summary." + std::to_string(mpi_world_rank()) + ".csv");
-
             const int rank = mpi_world_rank();
-            if (rank == 0) {
-                f_summary << "Class;MPI rank;";
-                TraceSummary::header(f_summary);
+            const bool export_to_csv = !only_root_export_ || rank == 0;
+            const auto size = summary_.size();
+
+            if (export_to_csv) {
+                std::ofstream f_summary("summary." + std::to_string(mpi_world_rank()) + ".csv");
+
+                if (rank == 0) {
+                    f_summary << "Class;MPI rank;";
+                    TraceSummary::header(f_summary);
+                }
+
+                for (auto it = summary_.cbegin(); it != summary_.cend(); ++it) {
+                    f_summary << it->first << ";" << rank << ";";
+                    it->second.describe(f_summary);
+                }
+
+                f_summary.close();
             }
 
-            auto size = summary_.size();
-
+#ifdef UTOPIA_WITH_MPI
             std::vector<double> values;
             values.reserve(size);
 
             for (auto it = summary_.cbegin(); it != summary_.cend(); ++it) {
-                f_summary << it->first << ";" << rank << ";";
-                it->second.describe(f_summary);
-
                 values.push_back(it->second.seconds());
             }
-
-            f_summary.close();
-
-#ifdef UTOPIA_WITH_MPI
 
             const int mpi_size = mpi_world_size();
             std::vector<double> mean(size), min(size), max(size), variance(size);

@@ -36,17 +36,12 @@ namespace utopia {
         static const int Dim = FunctionSpace::Elem::Dim;
 
 #ifdef USE_SIMD_POISSON_FE
-        // using SIMDType = Vc::Vector<Scalar>;
-        // using Quadrature = simd::Quadrature<SIMDType, Elem::Dim>;
-        // using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
-
         using SIMDType = Vc::Vector<Scalar>;
         using Quadrature = simd_v2::Quadrature<Scalar, Dim>;
-        using GradValue = typename simd_v2::FETraits<Elem, Scalar>::GradValue;
+        using GradValue = typename simd_v2::FETraits<Elem>::GradValue;
 #else
         using Quadrature = utopia::Quadrature<Elem, 2 * (Elem::Order - 1)>;
         using GradValue = typename Elem::GradValue;
-
 #endif  // USE_SIMD_POISSON_FE
 
         using Laplacian = utopia::Laplacian<FunctionSpace, Quadrature>;
@@ -295,7 +290,6 @@ namespace utopia {
 
 #ifdef USE_SIMD_POISSON_FE
             utopia::out() << "Using SIMD based PoissonFE\n";
-            // simd::QuadratureDB<Elem, SIMDType>::get(2 * (Elem::Order - 1), quadrature_);
             simd_v2::QuadratureDB<Elem>::get(2 * (Elem::Order - 1), quadrature_);
 #endif  // USE_SIMD_POISSON_FE
 
