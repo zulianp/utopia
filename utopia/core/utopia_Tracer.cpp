@@ -13,7 +13,9 @@ namespace utopia {
         return l += mpi_world_size();
     }
 
-    Tracer::Tracer() : full_trace_(false) { start_time_ = std::chrono::high_resolution_clock::now(); }
+    Tracer::Tracer() : full_trace_(false), only_root_export_(true) {
+        start_time_ = std::chrono::high_resolution_clock::now();
+    }
 
     Tracer &Tracer::instance() {
         static Tracer instance;
