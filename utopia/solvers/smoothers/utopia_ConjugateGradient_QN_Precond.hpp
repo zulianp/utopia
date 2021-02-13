@@ -29,7 +29,11 @@ namespace utopia {
         using Super::update;
 
         ConjugateGradientQNPrecond(const std::shared_ptr<HessianApproximation> &hessian_approx)
-            : hessian_approx_strategy_(hessian_approx) {}
+            : hessian_approx_strategy_(hessian_approx) {
+            if (hessian_approx_strategy_->memory_size() % 2 != 0) {
+                utopia_error("Sampling strategy requires m to be devisible by 2");
+            }
+        }
 
         void reset_initial_guess(const bool val) { reset_initial_guess_ = val; }
         inline void apply_gradient_descent_step(const bool val) { apply_gradient_descent_step_ = val; }
@@ -56,10 +60,8 @@ namespace utopia {
 
             initialized_ = true;
             layout_ = layout;
-
-            std::cout << "---- init again???? \n";
-            // NOTE, we are using dummy variables....
             hessian_approx_strategy_->initialize(r, q);
+            memory_indices_.resize(hessian_approx_strategy_->memory_size());
         }
 
         void print_usage(std::ostream &os) const override {
@@ -200,7 +202,8 @@ namespace utopia {
                 r -= q;
 
                 // store hessian approx (x, x is dummy variable here... )
-                hessian_approx_strategy_->update(alpha_p, q, x, x);
+                // hessian_approx_strategy_->update(alpha_p, q, x, x);
+                this->update_memory(it, hessian_approx_strategy_->memory_size(), alpha_p, q);
 
                 rho_1 = rho;
                 UTOPIA_NO_ALLOC_END();
@@ -232,6 +235,8 @@ namespace utopia {
 
             z.set(0.0);
             z_new.set(0.0);
+
+            cycle_ = 1;
 
             // auto precond = this->get_preconditioner();
 
@@ -276,17 +281,15 @@ namespace utopia {
                     break;
                 }
 
-                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region4");
-                x += alpha * p;
-                UTOPIA_NO_ALLOC_END();
+                alpha_p = alpha * p;
+                q = alpha * Ap;
 
-                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region4.1");
-                r_new = r - alpha * Ap;
-                UTOPIA_NO_ALLOC_END();
-
-                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region4.2");
+                x += alpha_p;
+                r_new = r - q;
                 r_norm = norm2(r_new);
-                UTOPIA_NO_ALLOC_END();
+
+                // store hessian approx (x, x is dummy variable here... )
+                // hessian_approx_strategy_->update(alpha_p, q, x, x);
 
                 if (r_norm <= this->atol()) {
                     if (this->verbose()) {
@@ -330,6 +333,38 @@ namespace utopia {
             }
         }
 
+        void update_memory(const SizeType &current_iterate, const SizeType &m, const Vector &s, const Vector &y) {
+            if (!uniform_sampling_curvature_) {
+                hessian_approx_strategy_->update(s, y, s, s);
+            } else {
+                if (current_iterate < m) {
+                    hessian_approx_strategy_->update(s, y, s, s);
+                    memory_indices_[current_iterate] = current_iterate;
+                } else {
+                    Scalar l = current_iterate / (std::pow(2, cycle_)) - m / 2.0 + 1;
+                    if ((l == std::floor<SizeType>(l)) && l <= m / 2.0) {
+                        SizeType k_prime = (2.0 * l - 1) * std::pow(2.0, cycle_ - 1);
+                        SizeType replace_index = findInVector(memory_indices_, k_prime);
+                        memory_indices_[replace_index] = current_iterate;
+                        // update - which does not exist yet ...
+                        hessian_approx_strategy_->replace_at_update_inv(current_iterate - 1, s, y);
+                        if (l == m / 2.0) {
+                            cycle_ += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        SizeType findInVector(const std::vector<SizeType> &vector, const SizeType &element) {
+            auto it = std::find(vector.begin(), vector.end(), element);
+            if (it != vector.end()) {
+                return distance(vector.begin(), it);
+            } else {
+                return -1;
+            }
+        }
+
         bool reset_initial_guess_{false};
         bool initialized_{false};
         bool apply_gradient_descent_step_{false};
@@ -339,6 +374,10 @@ namespace utopia {
         Vector r, p, q, Ap, alpha_p, r_new, z, z_new;
         std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
         bool hessian_approx_init_{false};
+        SizeType cycle_{1};
+
+        std::vector<SizeType> memory_indices_;
+        bool uniform_sampling_curvature_{true};
     };
 }  // namespace utopia
 

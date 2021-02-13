@@ -45,6 +45,8 @@ namespace utopia {
 
         ~HessianApproximation() override = default;
 
+        virtual SizeType memory_size() const { return 0; }
+
         // TODO:: override in childs
         bool is_approx_fully_built() { return false; }
 
@@ -65,6 +67,11 @@ namespace utopia {
                             const Vector & /* y */,
                             const Vector & /* x */,
                             const Vector & /* g */) = 0;
+
+        virtual bool replace_at_update_inv(const SizeType & /*index*/, const Vector & /*s*/, const Vector & /*y*/) {
+            utopia_error("replace_at_update_inv  not implemented") return false;
+        }
+
         virtual void reset() = 0;
 
         HessianApproximation<Vector> *clone() const override = 0;

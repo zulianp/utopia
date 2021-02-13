@@ -227,10 +227,9 @@ namespace utopia {
             // std::cout << "--------- print ---------- \n";
 
             // auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
-            Scalar memory_size = 36;
+            Scalar memory_size = 20;
             auto lfgbs_precond = std::make_shared<LBFGS<Vector>>(memory_size);
             auto linear_solver = std::make_shared<ConjugateGradientQNPrecond<Matrix, Vector, HOMEMADE>>(lfgbs_precond);
-            std::cout << "Just CG --- \n";
             linear_solver->verbose(true);
             // jfnk_mg_->max_it(1);
             // jfnk_mg_->verbose(false);

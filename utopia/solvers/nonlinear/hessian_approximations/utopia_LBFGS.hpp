@@ -22,7 +22,7 @@ namespace utopia {
               theta_(1.0),
               gamma_(1.0),
               theta_min_(1.0),
-              skip_update_treshold_(1e-14),
+              skip_update_treshold_(1e-15),
               damping_tech_(NOCEDAL),
               scaling_tech_(ADAPTIVE) {}
 
@@ -249,6 +249,42 @@ namespace utopia {
             return true;
         }
 
+        bool replace_at_update_inv(const SizeType &index, const Vector &s, const Vector &y) override {
+            if (!this->initialized()) {
+                utopia_error("L-BFGS::update: Initialization needs to be done before updating. \n");
+                return false;
+            }
+
+            if (index > m_ or index > current_m_) {
+                utopia_error("L-BFGS::update: inndex does not exist  \n");
+                return false;
+            }
+
+            y_hat_ = y;
+
+            // we do not skip any update at this point...
+            // TODO:: fix
+            bool skip_update = init_damping(y, s, y_hat_);
+
+            // if (skip_update) {
+            //     this->init_scaling_factors(y_hat_, s);
+            //     return true;
+            // }
+
+            Scalar denom = dot(y_hat_, s);
+
+            // replacing stuff
+            Y_[index] = y_hat_;
+            S_[index] = s;
+            rho_[index] = 1. / denom;
+            yts_[index] = denom;
+
+            // updating the factors...
+            this->init_scaling_factors(y_hat_, s);
+
+            return true;
+        }
+
         bool apply_Hinv(const Vector &g, Vector &q) override {
             if (!this->initialized()) {
                 utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n");
@@ -354,7 +390,7 @@ namespace utopia {
 
         void memory_size(const SizeType &m) { m_ = m; }
 
-        SizeType memory_size() const { return m_; }
+        SizeType memory_size() const override { return m_; }
 
         Scalar theta_min() const { return theta_min_; }
 
