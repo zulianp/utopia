@@ -262,14 +262,12 @@ namespace utopia {
 
             y_hat_ = y;
 
-            // we do not skip any update at this point...
-            // TODO:: fix
             bool skip_update = init_damping(y, s, y_hat_);
 
-            // if (skip_update) {
-            //     this->init_scaling_factors(y_hat_, s);
-            //     return true;
-            // }
+            if (skip_update) {
+                this->init_scaling_factors(y_hat_, s);
+                return true;
+            }
 
             Scalar denom = dot(y_hat_, s);
 

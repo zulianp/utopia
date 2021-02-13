@@ -228,8 +228,9 @@ namespace utopia {
 
             // auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
             Scalar memory_size = 20;
-            auto lfgbs_precond = std::make_shared<LBFGS<Vector>>(memory_size);
-            auto linear_solver = std::make_shared<ConjugateGradientQNPrecond<Matrix, Vector, HOMEMADE>>(lfgbs_precond);
+            auto lbfgs_precond = std::make_shared<LBFGS<Vector>>(memory_size);
+            auto linear_solver = std::make_shared<ConjugateGradientQNPrecond<Matrix, Vector, HOMEMADE>>(lbfgs_precond);
+            linear_solver->sample_curvature_uniformly(true);
             linear_solver->verbose(true);
             // jfnk_mg_->max_it(1);
             // jfnk_mg_->verbose(false);

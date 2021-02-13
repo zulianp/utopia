@@ -64,6 +64,9 @@ namespace utopia {
             memory_indices_.resize(hessian_approx_strategy_->memory_size());
         }
 
+        void sample_curvature_uniformly(const bool &flg) { uniform_sampling_curvature_ = flg; }
+        bool sample_curvature_uniformly() const { return uniform_sampling_curvature_; }
+
         void print_usage(std::ostream &os) const override {
             OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
             this->print_param_usage(
@@ -347,7 +350,7 @@ namespace utopia {
                         SizeType replace_index = findInVector(memory_indices_, k_prime);
                         memory_indices_[replace_index] = current_iterate;
                         // update - which does not exist yet ...
-                        hessian_approx_strategy_->replace_at_update_inv(current_iterate - 1, s, y);
+                        hessian_approx_strategy_->replace_at_update_inv(replace_index, s, y);
                         if (l == m / 2.0) {
                             cycle_ += 1;
                         }
