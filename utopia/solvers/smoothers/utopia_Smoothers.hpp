@@ -3,6 +3,7 @@
 
 #include "utopia_Chebyshev3level.hpp"
 #include "utopia_ConjugateGradient.hpp"
+#include "utopia_ConjugateGradient_QN_Precond.hpp"
 #include "utopia_GaussSeidel.hpp"
 #include "utopia_NonLinearJacobi.hpp"
 #include "utopia_NonLinearSmoother.hpp"

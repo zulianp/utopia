@@ -146,6 +146,9 @@ namespace utopia {
                 return false;
             }
 
+            // std::cout << "---- bla ---- \n";
+            // std::cout << "m_ " << m_ << "  \n";
+
             if (m_ == 0) {
                 return true;
             }
@@ -155,6 +158,8 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_BEGIN("LBFGS1");
             bool skip_update = init_damping(y, s, y_hat_);
             // UTOPIA_NO_ALLOC_END();
+
+            // std::cout << "skip_update: " << skip_update << "  \n";
 
             if (skip_update) {
                 // std::cout << "update skipped! \n";
@@ -239,6 +244,8 @@ namespace utopia {
                 stp_[i] = dot(S_[i], P_[i]);
             }
 
+            // std::cout << "update_ current_m_: " << current_m_ << "  \n";
+
             return true;
         }
 
@@ -246,6 +253,8 @@ namespace utopia {
             if (!this->initialized()) {
                 utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n");
             }
+
+            // std::cout << "current_m_: " << current_m_ << "  \n";
 
             SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
             std::vector<Scalar> alpha_inv(current_memory_size);
@@ -489,6 +498,9 @@ namespace utopia {
     private:
         bool init_damping_nocedal(const Vector &y, const Vector &s, Vector &y_hat) {
             bool skip_update = false;
+
+            // std::cout << "dot(y, s): " << dot(y, s) << "  \n";
+
             if (dot(y, s) < skip_update_treshold_) {
                 // if(mpi_world_rank()==0){
                 //     utopia_warning("L-BFGS-B: Curvature condition not satified.
