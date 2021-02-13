@@ -29,8 +29,10 @@ namespace utopia {
         using Super::update;
 
         ConjugateGradientQNPrecond(const std::shared_ptr<HessianApproximation> &hessian_approx)
-            : hessian_approx_strategy_(hessian_approx) {
-            if (hessian_approx_strategy_->memory_size() % 2 != 0) {
+            : hessian_approx_strategy_new_(hessian_approx) {
+            hessian_approx_strategy_old_ = std::shared_ptr<HessianApproximation>(hessian_approx_strategy_new_->clone());
+
+            if (hessian_approx_strategy_new_->memory_size() % 2 != 0) {
                 utopia_error("Sampling strategy requires m to be devisible by 2");
             }
         }
@@ -60,8 +62,9 @@ namespace utopia {
 
             initialized_ = true;
             layout_ = layout;
-            hessian_approx_strategy_->initialize(r, q);
-            memory_indices_.resize(hessian_approx_strategy_->memory_size());
+            hessian_approx_strategy_new_->initialize(r, q);
+            hessian_approx_strategy_old_->initialize(r, q);
+            memory_indices_.resize(hessian_approx_strategy_new_->memory_size());
         }
 
         void sample_curvature_uniformly(const bool &flg) { uniform_sampling_curvature_ = flg; }
@@ -147,12 +150,8 @@ namespace utopia {
                 gradient_descent_step(A, b, x);
             }
 
-            // r = b - A * x;
-            UTOPIA_NO_ALLOC_BEGIN("CG:region1");
             A.apply(x, r);
             r = b - r;
-            UTOPIA_NO_ALLOC_END();
-            // }
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||"});
             bool converged = false;
@@ -169,22 +168,14 @@ namespace utopia {
 
                 if (it > 0) {
                     beta = rho / rho_1;
-                    UTOPIA_NO_ALLOC_BEGIN("CG:region2");
                     p = r + beta * p;
-                    UTOPIA_NO_ALLOC_END();
                 } else {
-                    UTOPIA_NO_ALLOC_BEGIN("CG:region3");
                     p = r;
-                    UTOPIA_NO_ALLOC_END();
                 }
 
-                UTOPIA_NO_ALLOC_BEGIN("CG:region4");
                 // q = A * p;
                 A.apply(p, q);
-
                 Scalar dot_pq = dot(p, q);
-
-                UTOPIA_NO_ALLOC_END();
 
                 if (dot_pq == 0.) {
                     // TODO handle properly
@@ -193,7 +184,6 @@ namespace utopia {
                     break;
                 }
 
-                UTOPIA_NO_ALLOC_BEGIN("CG:region5");
                 alpha = rho / dot_pq;
 
                 // x += alpha * p;
@@ -206,10 +196,9 @@ namespace utopia {
 
                 // store hessian approx (x, x is dummy variable here... )
                 // hessian_approx_strategy_->update(alpha_p, q, x, x);
-                this->update_memory(it, hessian_approx_strategy_->memory_size(), alpha_p, q);
+                this->update_memory(it, hessian_approx_strategy_new_->memory_size(), alpha_p, q);
 
                 rho_1 = rho;
-                UTOPIA_NO_ALLOC_END();
 
                 if ((it % check_norm_each) == 0) {
                     // r =
@@ -240,11 +229,11 @@ namespace utopia {
             z_new.set(0.0);
 
             cycle_ = 1;
-
-            // auto precond = this->get_preconditioner();
+            // this does not work..
+            // hessian_approx_strategy_old_ = hessian_approx_strategy_new_;
+            hessian_approx_strategy_old_ = std::shared_ptr<HessianApproximation>(hessian_approx_strategy_new_->clone());
 
             if (empty(x) || size(x) != size(b)) {
-                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region0");
                 x.zeros(layout(b));
             } else {
                 assert(local_size(x) == local_size(b));
@@ -258,26 +247,22 @@ namespace utopia {
                 gradient_descent_step(A, b, x);
             }
 
-            UTOPIA_NO_ALLOC_BEGIN("CG_pre:region1");
             A.apply(x, r);
             r = b - r;
-            UTOPIA_NO_ALLOC_END();
 
-            UTOPIA_NO_ALLOC_BEGIN("CG_pre:region2");
-            // precond->apply(r, z);
-            hessian_approx_strategy_->apply_Hinv(r, z);
+            hessian_approx_strategy_old_->apply_Hinv(r, z);
             p = z;
-            UTOPIA_NO_ALLOC_END();
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||"});
             bool stop = false;
 
+            // A.apply(p, Ap);
+            // Scalar Q_old = 0.5 * dot(p, Ap) - dot(p, b);
+            // Scalar Q_new = 0.0;
+
             while (!stop) {
-                // Ap = A*p;
-                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region3");
                 A.apply(p, Ap);
                 alpha = dot(r, z) / dot(p, Ap);
-                UTOPIA_NO_ALLOC_END();
 
                 if (std::isinf(alpha) || std::isnan(alpha)) {
                     stop = this->check_convergence(it, r_norm, 1, 1);
@@ -292,7 +277,7 @@ namespace utopia {
                 r_norm = norm2(r_new);
 
                 // store hessian approx (x, x is dummy variable here... )
-                // hessian_approx_strategy_->update(alpha_p, q, x, x);
+                this->update_memory(it, hessian_approx_strategy_new_->memory_size(), alpha_p, q);
 
                 if (r_norm <= this->atol()) {
                     if (this->verbose()) {
@@ -303,27 +288,40 @@ namespace utopia {
                     break;
                 }
 
-                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region5");
                 z_new.set(0.0);
-                // precond->apply(r_new, z_new);
-                hessian_approx_strategy_->apply_Hinv(r_new, z_new);
-
-                // std::cout << "norm(r_new): " << norm2(r_new) << "  z_new" << norm2(z_new) << "  \n";
+                hessian_approx_strategy_old_->apply_Hinv(r_new, z_new);
 
                 beta = dot(z_new, r_new) / dot(z, r);
-                UTOPIA_NO_ALLOC_END();
 
-                UTOPIA_NO_ALLOC_BEGIN("CG_pre:region5.1");
                 p = z_new + beta * p;
                 r = r_new;
                 z = z_new;
-                UTOPIA_NO_ALLOC_END();
 
                 if (this->verbose()) {
                     PrintInfo::print_iter_status(it, {r_norm});
                 }
 
                 stop = this->check_convergence(it, r_norm, 1, 1);
+
+                // if (!stop) {
+                // A.apply(p, Ap);
+                //     Q_new = 0.5 * dot(p, Ap) - dot(p, b);
+
+                //     Scalar Q_q = (it + 1) * (1. - Q_old / Q_new);
+                //     // Scalar Q_q = (it + 1) * (1. - Q_new / Q_old);
+                //     if (mpi_world_rank() == 1) {
+                //         std::cout << "Q_new " << Q_new << "   old: " << Q_old << "  \n";
+                //     }
+
+                //     if (Q_q <= 0.5) {
+                //         stop = true;
+                //         if (mpi_world_rank() == 1) {
+                //             std::cout << "exit " << Q_q << "  \n";
+                //         }
+                //     }
+                //     Q_old = Q_new;
+                // }
+
                 it++;
             }
 
@@ -338,10 +336,10 @@ namespace utopia {
 
         void update_memory(const SizeType &current_iterate, const SizeType &m, const Vector &s, const Vector &y) {
             if (!uniform_sampling_curvature_) {
-                hessian_approx_strategy_->update(s, y, s, s);
+                hessian_approx_strategy_new_->update(s, y, s, s);
             } else {
                 if (current_iterate < m) {
-                    hessian_approx_strategy_->update(s, y, s, s);
+                    hessian_approx_strategy_new_->update(s, y, s, s);
                     memory_indices_[current_iterate] = current_iterate;
                 } else {
                     Scalar l = current_iterate / (std::pow(2, cycle_)) - m / 2.0 + 1;
@@ -350,7 +348,7 @@ namespace utopia {
                         SizeType replace_index = findInVector(memory_indices_, k_prime);
                         memory_indices_[replace_index] = current_iterate;
                         // update - which does not exist yet ...
-                        hessian_approx_strategy_->replace_at_update_inv(replace_index, s, y);
+                        hessian_approx_strategy_new_->replace_at_update_inv(replace_index, s, y);
                         if (l == m / 2.0) {
                             cycle_ += 1;
                         }
@@ -375,7 +373,8 @@ namespace utopia {
 
         // This fields are not to be copied anywhere
         Vector r, p, q, Ap, alpha_p, r_new, z, z_new;
-        std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
+        std::shared_ptr<HessianApproximation> hessian_approx_strategy_new_;
+        std::shared_ptr<HessianApproximation> hessian_approx_strategy_old_;
         bool hessian_approx_init_{false};
         SizeType cycle_{1};
 

@@ -140,6 +140,7 @@ namespace utopia {
 
         inline LBFGS<Vector> *clone() const override { return new LBFGS<Vector>(*this); }
 
+        // TODO:: make faster version for when only inverse is needed
         bool update(const Vector &s, const Vector &y, const Vector & /*x*/, const Vector & /* g */) override {
             if (!this->initialized()) {
                 utopia_error("BFGS::update: Initialization needs to be done before updating. \n");
@@ -275,7 +276,7 @@ namespace utopia {
             Y_[index] = y_hat_;
             S_[index] = s;
             rho_[index] = 1. / denom;
-            yts_[index] = denom;
+            // yts_[index] = denom;
 
             // updating the factors...
             this->init_scaling_factors(y_hat_, s);
