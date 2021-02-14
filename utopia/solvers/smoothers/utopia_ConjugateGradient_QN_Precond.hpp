@@ -70,6 +70,9 @@ namespace utopia {
         void sample_curvature_uniformly(const bool &flg) { uniform_sampling_curvature_ = flg; }
         bool sample_curvature_uniformly() const { return uniform_sampling_curvature_; }
 
+        void sample_only_once(const bool &flg) { sample_only_once_ = flg; }
+        bool sample_only_once() const { return sample_only_once_; }
+
         void print_usage(std::ostream &os) const override {
             OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
             this->print_param_usage(
@@ -185,10 +188,6 @@ namespace utopia {
                 }
 
                 alpha = rho / dot_pq;
-
-                // x += alpha * p;
-                // r -= alpha * q;
-
                 alpha_p = alpha * p;
                 q = alpha * q;
                 x += alpha_p;
@@ -218,20 +217,27 @@ namespace utopia {
             }
 
             hessian_approx_init_ = true;
+            if (sample_only_once_) {
+                hessian_approx_strategy_old_ =
+                    std::shared_ptr<HessianApproximation>(hessian_approx_strategy_new_->clone());
+            }
+
             return converged;
         }
 
         bool preconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x) {
             SizeType it = 0;
             Scalar beta = 0., alpha = 1., r_norm = 9e9;
+            Scalar pAp, rz;
 
             z.set(0.0);
             z_new.set(0.0);
 
             cycle_ = 1;
-            // this does not work..
-            // hessian_approx_strategy_old_ = hessian_approx_strategy_new_;
-            hessian_approx_strategy_old_ = std::shared_ptr<HessianApproximation>(hessian_approx_strategy_new_->clone());
+            if (!sample_only_once_) {
+                hessian_approx_strategy_old_ =
+                    std::shared_ptr<HessianApproximation>(hessian_approx_strategy_new_->clone());
+            }
 
             if (empty(x) || size(x) != size(b)) {
                 x.zeros(layout(b));
@@ -256,15 +262,18 @@ namespace utopia {
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||"});
             bool stop = false;
 
-            // A.apply(p, Ap);
-            // Scalar Q_old = 0.5 * dot(p, Ap) - dot(p, b);
-            // Scalar Q_new = 0.0;
-
             while (!stop) {
                 A.apply(p, Ap);
-                alpha = dot(r, z) / dot(p, Ap);
+                dots(r, z, rz, p, Ap, pAp);
+                alpha = rz / pAp;
 
                 if (std::isinf(alpha) || std::isnan(alpha)) {
+                    stop = this->check_convergence(it, r_norm, 1, 1);
+                    break;
+                }
+
+                // checking negative curvature
+                if (pAp <= 0.0) {
                     stop = this->check_convergence(it, r_norm, 1, 1);
                     break;
                 }
@@ -277,7 +286,9 @@ namespace utopia {
                 r_norm = norm2(r_new);
 
                 // store hessian approx (x, x is dummy variable here... )
-                this->update_memory(it, hessian_approx_strategy_new_->memory_size(), alpha_p, q);
+                if (!sample_only_once_) {
+                    this->update_memory(it, hessian_approx_strategy_new_->memory_size(), alpha_p, q);
+                }
 
                 if (r_norm <= this->atol()) {
                     if (this->verbose()) {
@@ -302,25 +313,6 @@ namespace utopia {
                 }
 
                 stop = this->check_convergence(it, r_norm, 1, 1);
-
-                // if (!stop) {
-                // A.apply(p, Ap);
-                //     Q_new = 0.5 * dot(p, Ap) - dot(p, b);
-
-                //     Scalar Q_q = (it + 1) * (1. - Q_old / Q_new);
-                //     // Scalar Q_q = (it + 1) * (1. - Q_new / Q_old);
-                //     if (mpi_world_rank() == 1) {
-                //         std::cout << "Q_new " << Q_new << "   old: " << Q_old << "  \n";
-                //     }
-
-                //     if (Q_q <= 0.5) {
-                //         stop = true;
-                //         if (mpi_world_rank() == 1) {
-                //             std::cout << "exit " << Q_q << "  \n";
-                //         }
-                //     }
-                //     Q_old = Q_new;
-                // }
 
                 it++;
             }
@@ -380,6 +372,7 @@ namespace utopia {
 
         std::vector<SizeType> memory_indices_;
         bool uniform_sampling_curvature_{true};
+        bool sample_only_once_{true};
     };
 }  // namespace utopia
 

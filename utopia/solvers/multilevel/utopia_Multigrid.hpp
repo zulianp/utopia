@@ -36,7 +36,7 @@ namespace utopia {
 
         using Super = utopia::LinearMultiLevel<Matrix, Vector>;
 
-        typedef struct {
+        typedef struct LevelMemory {
             std::vector<Vector> r, c, c_I, r_R;
 
             void init(const int n_levels) {

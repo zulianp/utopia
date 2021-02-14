@@ -110,8 +110,12 @@ namespace utopia {
         void output_to_VTK(const Vector &x, const std::string file_name = "Poisson3D.vtk") {
             PetscViewer viewer;
 
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 14, 0)
+            PetscViewerVTKOpen(PETSC_COMM_WORLD, file_name.c_str(), FILE_MODE_WRITE, &viewer);
+#else
             PetscViewerASCIIOpen(PETSC_COMM_WORLD, file_name.c_str(), &viewer);
             PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_VTK);
+#endif
             DMView(da_, viewer);
             PetscObjectSetName((PetscObject)raw_type(x), "x");
             VecView(raw_type(x), viewer);
