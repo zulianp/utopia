@@ -716,6 +716,7 @@ namespace utopia {
 
         void row_sum(PetscVector &col) const;
         void row_max(PetscVector &col) const;
+        void row_abs_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
         void col_sum(PetscVector &col) const;
@@ -837,6 +838,7 @@ namespace utopia {
 
         void inverse(PetscMatrix &result) const;
 
+        void convert_to_mat_baij(const PetscInt block_size, PetscMatrix &output);
         void convert_to_mat_baij(const SizeType block_size);
 
         bool is_initialized_as(MPI_Comm comm,

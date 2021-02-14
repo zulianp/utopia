@@ -28,7 +28,7 @@ namespace utopia {
         using JacobianInverse = utopia::StaticMatrix<Scalar, Dim, PhysicalDim>;
 
         template <typename Point>
-        UTOPIA_INLINE_FUNCTION static Scalar fun(const int i, const Point &p) {
+        UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar {
             return RefTri3::fun(i, p);
         }
 
@@ -80,7 +80,9 @@ namespace utopia {
                     local_side_idx[1] = 0;
                     return;
                 }
-                default: { UTOPIA_DEVICE_ASSERT(false); }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
             }
         }
 
@@ -142,9 +144,18 @@ namespace utopia {
 
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const {
-            RefPoint g_ref;
+            Grad g_ref;
             RefTri3::grad(i, p, g_ref);
-            g = jacobian_inverse_ * g_ref;
+
+            const int rows = jacobian_inverse_.rows();
+            const int cols = jacobian_inverse_.cols();
+            // g = jacobian_inverse_ * g_ref;
+            for (int r = 0; r < rows; ++r) {
+                g.set(r, Zero<Scalar>::value());
+                for (int c = 0; c < cols; ++c) {
+                    g.add(r, jacobian_inverse_(r, c) * g_ref[c]);
+                }
+            }
         }
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine() { return true; }

@@ -61,9 +61,9 @@ namespace utopia {
 
         inline const std::vector<SizeType> &get_indices_related_to_BC() const { return indices_eq_constraints_; }
 
-        Vector &get_eq_constrains_flg() { return _eq_constrains_flg; }
+        virtual Vector &get_eq_constrains_flg() { return _eq_constrains_flg; }
 
-        Vector &get_eq_constrains_values() { return _x_eq_values; }
+        virtual Vector &get_eq_constrains_values() { return _x_eq_values; }
 
         virtual bool set_equality_constrains(const Vector &eq_constrains_flg, const Vector &x_in) {
             _x_eq_values = x_in;

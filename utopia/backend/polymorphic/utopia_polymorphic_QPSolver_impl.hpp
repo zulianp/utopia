@@ -43,14 +43,14 @@ namespace utopia {
         QPSolverPtr find(const std::string &backend, const std::string &type) const {
             auto b_it = solvers.find(backend);
             if (b_it == solvers.end()) {
-                std::cerr << "[Error] backend " << backend << " not found using default" << std::endl;
+                utopia::err() << "[Error] backend " << backend << " not found using default" << std::endl;
                 return default_solver();
             }
 
             auto s_it = b_it->second.find(type);
 
             if (s_it == b_it->second.end()) {
-                std::cerr << "[Error] solver " << type << " not found using default" << std::endl;
+                utopia::err() << "[Error] solver " << type << " not found using default" << std::endl;
 
                 // if(b_it->second.empty()) {
                 return default_solver();

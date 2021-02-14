@@ -215,7 +215,7 @@ namespace utopia {
         //     auto hess_approx = std::make_shared<ApproxType>(memory_size);
         //     auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix,
         //     Vector> >();
-        //     // auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+        //     // auto qp_solver = std::make_shared<MPRGP<Matrix, Vector> >();
         //     // qp_solver->memory_size(10);
 
         //     QuasiTrustRegionVariableBound<Vector> tr_solver(hess_approx,
@@ -267,7 +267,7 @@ namespace utopia {
             Vector ub(layout(x), 0.01);
             auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-            auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+            auto qp_solver = std::make_shared<MPRGP<Matrix, Vector> >();
             qp_solver->verbose(false);
             qp_solver->max_it(_n);
             qp_solver->atol(1e-14);
@@ -337,7 +337,7 @@ namespace utopia {
 
             // auto hess_approx = std::make_shared<JFNK<Vector>>(fun);
 
-            auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+            auto qp_solver = std::make_shared<MPRGP<Matrix, Vector> >();
             qp_solver->max_it(_n);
             qp_solver->atol(1e-14);
 
@@ -369,7 +369,7 @@ namespace utopia {
             auto hess_approx = std::make_shared<ApproxType>(memory_size);
             // auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix,
             // Vector> >();
-            auto qp_solver = std::make_shared<MPGRP<Matrix, Vector> >();
+            auto qp_solver = std::make_shared<MPRGP<Matrix, Vector> >();
             qp_solver->max_it(_n);
 
             QuasiNewtonBound<Vector> solver(hess_approx, qp_solver);

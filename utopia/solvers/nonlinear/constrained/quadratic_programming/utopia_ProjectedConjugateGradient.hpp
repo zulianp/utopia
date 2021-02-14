@@ -19,7 +19,10 @@ namespace utopia {
 
         ProjectedConjugateGradient() = default;
 
-        ProjectedConjugateGradient(const ProjectedConjugateGradient &) = default;
+        ProjectedConjugateGradient(const ProjectedConjugateGradient &other)
+            : VariableBoundSolverInterface<Vector>(other),
+              PreconditionedSolverInterface<Vector>(other),
+              QPSolver<Matrix, Vector>(other) {}
 
         inline ProjectedConjugateGradient *clone() const override {
             auto ptr = new ProjectedConjugateGradient(*this);

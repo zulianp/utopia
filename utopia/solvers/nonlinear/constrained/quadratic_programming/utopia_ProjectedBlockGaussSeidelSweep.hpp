@@ -69,7 +69,7 @@ namespace utopia {
                     // store diagonal block (invert later)
                     diag_[block.i](block.sub_i, block.sub_j) = a_ij;
 
-                    assert(a_ij != 0.0 || block.sub_i != block.sub_j);
+                    assert(a_ij != 0.0 || block.sub_i != block.sub_j || block.i != block.j);
                 } else {
                     if (a_ij != 0.0) {
                         ++row_ptr_[i + 1];
@@ -79,7 +79,7 @@ namespace utopia {
             });
 
             for (SizeType b = 0; b < n_blocks; ++b) {
-                assert(det(diag_[b]) > 0);
+                assert(std::abs(det(diag_[b])) > 0);
                 inv_diag_[b] = inv(diag_[b]);
             }
 

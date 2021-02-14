@@ -50,7 +50,9 @@ namespace utopia {
                 case 2: {
                     return 1;
                 }
-                default: { return 0.0; }
+                default: {
+                    return 0.0;
+                }
             }
 
             return 0.0;
@@ -83,30 +85,30 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static void grad_x_partial_t(const int /*i*/, const Point &, Deriv &dst) {
             // project t coordinates to 0
             UTOPIA_DEVICE_ASSERT_CXX14(dst.size() == 1);
-            dst[0] = 0;
+            dst.set(0, 0);
         }
 
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &, Grad &g) {
             switch (i) {
                 case 0: {
-                    g[0] = -1.;
-                    g[1] = -1.;
+                    g.set(0, -1.);
+                    g.set(1, -1.);
                     return;
                 }
                 case 1: {
-                    g[0] = 1;
-                    g[1] = 0;
+                    g.set(0, 1);
+                    g.set(1, 0);
                     return;
                 }
                 case 2: {
-                    g[0] = 0;
-                    g[1] = 1;
+                    g.set(0, 0);
+                    g.set(1, 1);
                     return;
                 }
                 default: {
-                    g[0] = 0.0;
-                    g[1] = 0.0;
+                    g.set(0, 0.0);
+                    g.set(1, 0.0);
                     return;
                 }
             }

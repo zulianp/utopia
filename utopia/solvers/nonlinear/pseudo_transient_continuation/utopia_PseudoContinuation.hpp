@@ -18,7 +18,7 @@ namespace utopia {
      *
      */
     template <class Matrix, class Vector>
-    class PseudoContinuation final : public NewtonBase<Matrix, Vector> {
+    class PseudoContinuation final : public NewtonBase<Matrix, Vector>, public VariableBoundSolverInterface<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
@@ -92,12 +92,13 @@ namespace utopia {
             if (this->verbose()) PrintInfo::print_iter_status(it, {g_norm, tau, 0.0});
 
             while (!converged) {
-                H_damped = H + 1. / tau * I_;
+                H_damped = H + (1. / tau * I_);
 
                 s = 0 * x;
                 this->linear_solve(H_damped, -1.0 * g, s);
 
                 x += s;
+                this->make_iterate_feasible(x);
 
                 fun.gradient(x, g);
 

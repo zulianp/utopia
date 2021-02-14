@@ -13,21 +13,25 @@ namespace utopia {
     public:
         template <typename Point>
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar {
+            using Scalar = typename Traits<Point>::Scalar;
+
             const auto x = p[0];
             const auto y = p[1];
 
+            static const auto one = One<Scalar>::value();
+
             switch (i) {
                 case 0: {
-                    return (1 - x) * (1 - y);
+                    return (one - x) * (one - y);
                 }
                 case 1: {
-                    return x * (1 - y);
+                    return x * (one - y);
                 }
                 case 2: {
                     return x * y;
                 }
                 case 3: {
-                    return (1 - x) * y;
+                    return (one - x) * y;
                 }
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
@@ -54,7 +58,9 @@ namespace utopia {
                 case 3: {
                     return (1 - x);
                 }
-                default: { return 0.0; }
+                default: {
+                    return 0.0;
+                }
             }
         }
 
@@ -122,33 +128,37 @@ namespace utopia {
 
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g) {
-            const auto x = p[0];
-            const auto y = p[1];
+            using Scalar = typename Traits<Point>::Scalar;
+
+            const Scalar x = p[0];
+            const Scalar y = p[1];
+
+            static const Scalar one = One<Scalar>::value();
 
             switch (i) {
                 case 0: {
-                    g[0] = y - 1.;
-                    g[1] = x - 1.;
+                    g.set(0, y - one);
+                    g.set(1, x - one);
                     return;
                 }
                 case 1: {
-                    g[0] = 1 - y;
-                    g[1] = -x;
+                    g.set(0, one - y);
+                    g.set(1, -x);
                     return;
                 }
                 case 2: {
-                    g[0] = y;
-                    g[1] = x;
+                    g.set(0, y);
+                    g.set(1, x);
                     return;
                 }
                 case 3: {
-                    g[0] = -y;
-                    g[1] = (1 - x);
+                    g.set(0, -y);
+                    g.set(1, (one)-x);
                     return;
                 }
                 default: {
-                    g[0] = 0.0;
-                    g[1] = 0.0;
+                    g.set(0, 0.0);
+                    g.set(1, 0.0);
                     return;
                 }
             }
@@ -258,7 +268,9 @@ namespace utopia {
                     local_side_idx[1] = 0;
                     return;
                 }
-                default: { UTOPIA_DEVICE_ASSERT(false); }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
             }
         }
 
@@ -323,8 +335,10 @@ namespace utopia {
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const {
             RefQuad4::grad(i, p, g);
-            g[0] /= h_[0];
-            g[1] /= h_[1];
+            // g[0] /= h_[0];
+            // g[1] /= h_[1];
+            g.divide(0, h_[0]);
+            g.divide(1, h_[1]);
         }
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine() { return true; }
@@ -335,14 +349,14 @@ namespace utopia {
 
         template <typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const {
-            out[0] = in[0] * h_[0] + translation_[0];
-            out[1] = in[1] * h_[1] + translation_[1];
+            out.set(0, in[0] * h_[0] + translation_[0]);
+            out.set(1, in[1] * h_[1] + translation_[1]);
         }
 
         template <typename PhysicalPoint, typename RefPoint>
         UTOPIA_INLINE_FUNCTION void inverse_transform(const PhysicalPoint &in, RefPoint &out) const {
-            out[0] = (in[0] - translation_[0]) / h_[0];
-            out[1] = (in[1] - translation_[1]) / h_[1];
+            out.set(0, (in[0] - translation_[0]) / h_[0]);
+            out.set(1, (in[1] - translation_[1]) / h_[1]);
         }
 
         UTOPIA_INLINE_FUNCTION UniformQuad4(const Scalar &hx, const Scalar &hy) {
@@ -355,10 +369,10 @@ namespace utopia {
             h_[1] = 0.0;
         }
 
-        template <class H>
-        UTOPIA_INLINE_FUNCTION void set(const StaticVector2<Scalar> &translation, const H &h) {
-            translation_(0) = translation(0);
-            translation_(1) = translation(1);
+        template <class Tr, class H>
+        UTOPIA_INLINE_FUNCTION void set(const Tr &translation, const H &h) {
+            translation_[0] = translation[0];
+            translation_[1] = translation[1];
 
             h_[0] = h[0];
             h_[1] = h[1];

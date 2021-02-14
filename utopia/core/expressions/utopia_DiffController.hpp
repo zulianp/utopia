@@ -87,13 +87,13 @@ namespace utopia {
                 write("Hfd.m", Hfd);
 
                 rename("h", const_cast<Matrix &>(H));
-                write("H.m", H);
+                write("H_utopia.m", H);
 
-                // std::cerr << "Expected:\n";
-                // disp(Hfd);
+                std::cerr << "Expected:\n";
+                disp(Hfd);
 
-                // std::cerr << "Actual:\n";
-                // disp(H);
+                std::cerr << "Actual:\n";
+                disp(H);
 
                 std::cerr << "----------------------\n";
                 assert(false);

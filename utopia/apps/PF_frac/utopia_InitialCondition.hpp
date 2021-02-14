@@ -42,6 +42,72 @@
 namespace utopia {
 
     template <class FunctionSpace>
+    class InitialCondidtionPFSneddon : public InitialCondition<FunctionSpace> {
+    public:
+        // using Comm           = typename FunctionSpace::Comm;
+        using Mesh = typename FunctionSpace::Mesh;
+        using Elem = typename FunctionSpace::Shape;
+        using ElemView = typename FunctionSpace::ViewDevice::Elem;
+        using SizeType = typename FunctionSpace::SizeType;
+        using Scalar = typename FunctionSpace::Scalar;
+        using Dev = typename FunctionSpace::Device;
+        using Point = typename FunctionSpace::Point;
+        using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
+        static const int NNodes = Elem::NNodes;
+        static const int Dim = FunctionSpace::Dim;
+
+        InitialCondidtionPFSneddon(FunctionSpace &space, const SizeType &PF_component)
+            : InitialCondition<FunctionSpace>(space), PF_component_(PF_component), l_0_(1.0) {}
+
+        void read(Input &in) override { in.get("l_0", l_0_); }
+
+        void init(PetscVector &x) override {
+            auto C = this->space_.subspace(PF_component_);
+
+            auto sampler = utopia::sampler(
+                C, UTOPIA_LAMBDA(const Point &x)->Scalar {
+                    const Scalar thickness = 3.0 * this->space_.mesh().min_spacing();
+
+                    Scalar r_squared = 0.0;
+
+                    if (Dim == 2) {
+                        r_squared = x[0] * x[0];
+                    } else {
+                        r_squared = (x[0] * x[0]) + (x[2] * x[2]);
+                    }
+
+                    Scalar f = 0.0;
+                    if ((r_squared <= l_0_ * l_0_) && ((device::abs(2.0 * x[1]) <= thickness))) {
+                        f = 1.0;
+                    } else {
+                        f = 0.0;
+                    }
+                    return f;
+                });
+
+            {
+                auto C_view = C.view_device();
+                auto sampler_view = sampler.view_device();
+                auto x_view = this->space_.assembly_view_device(x);
+
+                Dev::parallel_for(
+                    this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
+                        ElemViewScalar e;
+                        C_view.elem(i, e);
+
+                        StaticVector<Scalar, NNodes> s;
+                        sampler_view.assemble(e, s);
+                        C_view.set_vector(e, s, x_view);
+                    });
+            }
+        }
+
+    private:
+        SizeType PF_component_;
+        Scalar l_0_;
+    };
+
+    template <class FunctionSpace>
     class InitialCondidtionPFTension : public InitialCondition<FunctionSpace> {
     public:
         // using Comm           = typename FunctionSpace::Comm;
@@ -66,10 +132,14 @@ namespace utopia {
                 C, UTOPIA_LAMBDA(const Point &x)->Scalar {
                     Scalar f = 0.0;
                     if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
-                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.5) {
+                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.25) {
+                        // if (x[0] <= 0.5 && x[1] <= 0.5) {
+                        // f = 1.0;
                         f = 1.0;
+                        // f = 0.5;
                     } else {
                         f = 0.0;
+                        // f = 0.5;
                     }
                     return f;
                 });
@@ -120,9 +190,9 @@ namespace utopia {
                 C, UTOPIA_LAMBDA(const Point &x)->Scalar {
                     Scalar f = 0.0;
                     if (x[0] > (0.5 - this->space_.mesh().min_spacing()) &&
-                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] < 0.5 && x[1] > 0.3) {
+                        x[0] < (0.5 + this->space_.mesh().min_spacing()) && x[1] > 0.3 && x[1] < 0.5) {
                         f = 1.0;
-                    } else if ((x[0] > 0.3) && (x[0] < 0.7) && (x[1] > 0.7 - this->space_.mesh().min_spacing()) &&
+                    } else if ((x[0] > 0.4) && (x[0] < 0.6) && (x[1] > 0.7 - this->space_.mesh().min_spacing()) &&
                                (x[1] < 0.7 + this->space_.mesh().min_spacing())) {
                         f = 1.0;
                     } else {
@@ -154,7 +224,7 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
-    class InitialCondidtionPFSneddon : public InitialCondition<FunctionSpace> {
+    class InitialCondidtionPFParallelFrac3D : public InitialCondition<FunctionSpace> {
     public:
         // using Comm           = typename FunctionSpace::Comm;
         using Mesh = typename FunctionSpace::Mesh;
@@ -167,7 +237,7 @@ namespace utopia {
         using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
         static const int NNodes = Elem::NNodes;
 
-        InitialCondidtionPFSneddon(FunctionSpace &space, const SizeType &PF_component)
+        InitialCondidtionPFParallelFrac3D(FunctionSpace &space, const SizeType &PF_component)
             : InitialCondition<FunctionSpace>(space), PF_component_(PF_component) {}
 
         void init(PetscVector &x) override {
@@ -179,13 +249,15 @@ namespace utopia {
                     Scalar f = 0.0;
                     Scalar h = this->space_.mesh().min_spacing();
 
-                    if (x[0] > 0.55 && x[0] < 0.7 && x[1] > (0.4) && x[1] < (0.6) && x[2] < (0.6 + h) &&
+                    if (x[0] > 0.55 && x[0] < 0.70 && x[1] > (0.40 - h) && x[1] < (0.40 + h) && x[2] < (0.6 + h) &&
                         x[2] > (0.6 - h)) {
+                        f = 1.0;
+                    } else if (x[0] > (0.26 - h) && x[0] < (0.26 + h) && x[1] > 0.38 && x[1] < 0.55 &&
+                               x[2] < (0.40 + h) && x[2] > (0.40 - h)) {
                         f = 1.0;
                     } else {
                         f = 0.0;
                     }
-
                     return f;
                 });
 
@@ -303,8 +375,8 @@ namespace utopia {
             // un-hard-code
             auto C = this->space_.subspace(PF_component_);
 
-            // auto width =  3.0 * this->space_.mesh().min_spacing();
-            auto width = 0.2;
+            auto width = 3.0 * this->space_.mesh().min_spacing();
+            // auto width = 0.2;
 
             if (mpi_world_rank() == 0) {
                 utopia::out() << "width: " << width << "  \n";

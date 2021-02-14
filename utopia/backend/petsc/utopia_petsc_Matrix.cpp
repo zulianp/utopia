@@ -936,6 +936,24 @@ namespace utopia {
         }
     }
 
+    void PetscMatrix::row_abs_max(PetscVector &col) const {
+        MPI_Comm comm = communicator();
+
+        if (col.is_null() || col.size() != size().get(0)) {
+            col.destroy();
+            MatCreateVecs(raw_type(), nullptr, &col.raw_type());
+        }
+
+        int size = 0;
+        MPI_Comm_size(comm, &size);
+
+        if (size == 1 || !is_mpi()) {
+            MatGetRowMaxAbs(raw_type(), col.raw_type(), nullptr);
+        } else {
+            reduce_rows(col, *this, 0.0, utopia::AbsMax());
+        }
+    }
+
     void PetscMatrix::row_min(PetscVector &col) const {
         MPI_Comm comm = communicator();
 
@@ -1214,21 +1232,27 @@ namespace utopia {
         check_error(MatAXPY(raw_type(), alpha, x.raw_type(), DIFFERENT_NONZERO_PATTERN));
     }
 
+    void PetscMatrix::convert_to_mat_baij(const PetscInt block_size, PetscMatrix &output) {
+        auto ls = local_size();
+        auto gs = size();
+
+        output.mat_baij_init(
+            communicator(), ls.get(0), ls.get(1), gs.get(0), gs.get(1), PETSC_DEFAULT, PETSC_DEFAULT, block_size);
+
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+        output.write_lock(utopia::AUTO);
+        output.write_unlock(utopia::AUTO);
+#endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
+
+        check_error(MatCopy(raw_type(), output.raw_type(), DIFFERENT_NONZERO_PATTERN));
+    }
+
     void PetscMatrix::convert_to_mat_baij(const PetscInt block_size) {
         auto ls = local_size();
         auto gs = size();
 
         PetscMatrix temp;
-        temp.mat_baij_init(
-            communicator(), ls.get(0), ls.get(1), gs.get(0), gs.get(1), PETSC_DEFAULT, PETSC_DEFAULT, block_size);
-
-#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-        temp.write_lock(utopia::AUTO);
-        temp.write_unlock(utopia::AUTO);
-#endif  // UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 11, 0)
-
-        check_error(MatCopy(raw_type(), temp.raw_type(), DIFFERENT_NONZERO_PATTERN));
-
+        convert_to_mat_baij(block_size, temp);
         *this = std::move(temp);
     }
 
