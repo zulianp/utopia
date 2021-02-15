@@ -103,9 +103,11 @@ namespace utopia {
             const int rank = mpi_world_rank();
             const bool export_to_csv = !only_root_export_ || rank == 0;
             const auto size = summary_.size();
+            const int mpi_size = mpi_world_size();
 
             if (export_to_csv) {
-                std::ofstream f_summary("summary." + std::to_string(mpi_world_rank()) + ".csv");
+                std::ofstream f_summary("summary." + std::to_string(mpi_size) + "." + std::to_string(mpi_world_rank()) +
+                                        ".csv");
 
                 if (rank == 0) {
                     f_summary << "Class;MPI rank;";
@@ -128,7 +130,6 @@ namespace utopia {
                 values.push_back(it->second.seconds());
             }
 
-            const int mpi_size = mpi_world_size();
             std::vector<double> mean(size), min(size), max(size), variance(size);
 
             MPI_Allreduce(&values[0], &mean[0], size, MPIType<double>::value(), MPI_SUM, MPI_COMM_WORLD);
@@ -145,7 +146,7 @@ namespace utopia {
             MPI_Allreduce(MPI_IN_PLACE, &variance[0], size, MPIType<double>::value(), MPI_SUM, MPI_COMM_WORLD);
 
             if (rank == 0) {
-                std::ofstream f_balancing("balancing.csv");
+                std::ofstream f_balancing("balancing." + std::to_string(mpi_size) + ".csv");
 
                 f_balancing << "Class;Mean;Variance;Min;Max\n";
 
