@@ -111,11 +111,13 @@ RUN cd /utopia/utopia/build && cmake .. -DUTOPIA_SCRIPTING=ON \
     -DCMAKE_SHARED_LINKER_FLAGS:STRING="-shared" \
     -DBUILD_SHARED_LIBS=ON 
 
-RUN cd /utopia/utopia/build && make -j
+RUN cd /utopia/utopia/build && make complete -j
 
 COPY ./build/testing_swig.py  /utopia/utopia/build/scripting
-COPY ./build/utopia_swig_python.cpp  /utopia/utopia/build/scripting
-RUN rm -f script.sh
+# COPY ./build/utopia_swig_python.cpp  /utopia/utopia/build/scripting
+# COPY ./CMakeLists.txt /utopia/utopia/build/CMakeLists.txt
+RUN  rm -f script.sh
+RUN mkdir /utopia/utopia/build/scripting/tesi
 
 RUN cd /utopia/utopia/build/scripting 
 CMD ["/bin/sh"]
