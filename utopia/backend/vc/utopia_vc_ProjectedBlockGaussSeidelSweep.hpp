@@ -214,6 +214,7 @@ namespace utopia {
 
             static const auto alignment = Vc::Unaligned;
             // static const auto alignment = Vc::Aligned;
+            bool coord_is_constrained[BlockSize];
 
             auto f = [&](const SizeType &block_i) {
                 const SizeType row_end = row_ptr[block_i + 1];
@@ -243,24 +244,29 @@ namespace utopia {
                     this->c_[i] = (mat_simd * r_simd).sum();
                 }
 
-                d_temp.copy(diag_[block_i]);
-
                 bool constrained = false;
                 for (SizeType d = 0; d < BlockSize; ++d) {
                     SizeType i = b_offset + d;
                     auto c_i = this->c_[i];
-                    if (c_i > this->lb_[i] && c_i < this->ub_[i]) continue;
 
-                    constrained = true;
-
-                    r_simd[d] = device::max(this->lb_[i], device::min(c_i, this->ub_[i]));
-
-                    for (SizeType d_j = 0; d_j < BlockSize; ++d_j) {
-                        d_temp(d, d_j) = d_j == d;
+                    // Yes it is an assignment...
+                    if ((coord_is_constrained[d] = !(c_i > this->lb_[i] && c_i < this->ub_[i]))) {
+                        constrained = true;
+                        r_simd[d] = device::max(this->lb_[i], device::min(c_i, this->ub_[i]));
                     }
                 }
 
                 if (constrained) {
+                    d_temp.copy(diag_[block_i]);
+
+                    for (SizeType d = 0; d < BlockSize; ++d) {
+                        if (coord_is_constrained[d]) {
+                            for (SizeType d_j = 0; d_j < BlockSize; ++d_j) {
+                                d_temp(d, d_j) = d_j == d;
+                            }
+                        }
+                    }
+
                     d_inv_temp = inv(d_temp);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
