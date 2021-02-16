@@ -8,8 +8,8 @@ print(x)
 u.init()
 
 b = u.Vector()
-b.c_set(1,10)
-b.c_set(3,10)
+b.set(1,10)
+b.set(3,10)
 b.disp()
 
 A = u.SparseMatrix()
