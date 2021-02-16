@@ -131,6 +131,11 @@ namespace utopia {
             update(n, ia, ja, array, out);
         }
 
+        static void update(const CRSMatrix<ScalarView, IndexView, 1> &in,
+                           CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out) {
+            update(in.rows(), in.row_ptr(), in.colidx(), in.values(), out);
+        }
+
         template <typename IA, typename JA, typename Array>
         static void update(const SizeType n,
                            const IA &ia,
@@ -144,8 +149,8 @@ namespace utopia {
             const SizeType n_blocks = out.rows();
             assert(n == (BlockSize * n_blocks));
 
-            auto &row_ptr = out.row_ptr();
-            auto &colidx = out.colidx();
+            const auto &row_ptr = out.row_ptr();
+            const auto &colidx = out.colidx();
             auto &values = out.values();
             device::fill(0.0, values);
 
@@ -322,8 +327,8 @@ namespace utopia {
             const SizeType n_blocks = out.rows();
             assert(n == (BlockSize * n_blocks));
 
-            auto &row_ptr = out.row_ptr();
-            auto &colidx = out.colidx();
+            const auto &row_ptr = out.row_ptr();
+            const auto &colidx = out.colidx();
             auto &values = out.values();
             device::fill(0.0, values);
 
@@ -365,6 +370,13 @@ namespace utopia {
                 }
             }
         }
+
+        template <typename Diag>
+        static void update_split_diag(const CRSMatrix<ScalarView, IndexView, 1> &in,
+                                      CRSMatrix<OutScalarView, OutIndexView, BlockSize> &out,
+                                      Diag &diag) {
+            update_split_diag(in.rows(), in.row_ptr(), in.colidx(), in.values(), out, diag);
+        }
     };
 
     template <class ScalarView, class IndexView, int BlockSize, class OutScalarView, class OutIndexView>
@@ -378,6 +390,14 @@ namespace utopia {
                             CRSMatrix<OutScalarView, OutIndexView, BlockSize> &block_mat,
                             DiagView &diag) {
         CRSToBlockCRS<ScalarView, IndexView, BlockSize, OutScalarView, OutIndexView>::apply_split_diag(
+            mat, block_mat, diag);
+    }
+
+    template <class ScalarView, class IndexView, int BlockSize, class OutScalarView, class OutIndexView, class DiagView>
+    void convert_split_diag_update(const CRSMatrix<ScalarView, IndexView, 1> &mat,
+                                   CRSMatrix<OutScalarView, OutIndexView, BlockSize> &block_mat,
+                                   DiagView &diag) {
+        CRSToBlockCRS<ScalarView, IndexView, BlockSize, OutScalarView, OutIndexView>::update_split_diag(
             mat, block_mat, diag);
     }
 

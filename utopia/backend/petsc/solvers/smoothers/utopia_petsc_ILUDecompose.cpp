@@ -158,6 +158,32 @@ namespace utopia {
         convert_split_diag(crs, out, diag);
     }
 
+    template <int BlockSize>
+    void crs_block_matrix_update(const PetscMatrix &in,
+                                 CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out,
+                                 std::vector<PetscReal> &diag) {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
+        PetscMatrix l_mat;
+        local_block_view(in, l_mat);
+
+        PetscSeqAIJRaw m_raw(l_mat.raw_type());
+        PetscInt n = m_raw.n;
+        PetscInt nnz = m_raw.ia[n];
+
+        const PetscInt *ia = m_raw.ia;
+        const PetscInt *ja = m_raw.ja;
+        PetscScalar *array = m_raw.array;
+
+        ScalarView values(array, nnz);
+        IndexView row_ptr(ia, n + 1);
+        IndexView colidx(ja, nnz);
+
+        CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+        convert_split_diag_update(crs, out, diag);
+    }
+
     template void crs_block_matrix<2>(const PetscMatrix &,
                                       CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &);
     template void crs_block_matrix<3>(const PetscMatrix &,
@@ -176,6 +202,18 @@ namespace utopia {
     template void crs_block_matrix_split_diag<4>(const PetscMatrix &,
                                                  CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &,
                                                  std::vector<PetscReal> &);
+
+    template void crs_block_matrix_update<2>(const PetscMatrix &,
+                                             CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &,
+                                             std::vector<PetscReal> &);
+
+    template void crs_block_matrix_update<3>(const PetscMatrix &,
+                                             CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &,
+                                             std::vector<PetscReal> &);
+
+    template void crs_block_matrix_update<4>(const PetscMatrix &,
+                                             CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &,
+                                             std::vector<PetscReal> &);
 
     bool ILUDecompose<PetscMatrix, PETSC>::update(const PetscMatrix &mat) { return decompose(mat, ilu_, modified_); }
 

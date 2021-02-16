@@ -85,6 +85,10 @@ namespace utopia {
         } else if (block_size == 4) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 4>>();
         }
+
+        if (sweeper_) {
+            sweeper_->read(in);
+        }
     }
 
     template <class Matrix, class Vector>

@@ -47,7 +47,13 @@ namespace utopia {
 
         static_assert(BlockSize == 4, "Must fix this class to work with other types than avx2 with doubles");
 
-        VcProjectedBlockGaussSeidelSweep *clone() const override { return new VcProjectedBlockGaussSeidelSweep(); }
+        VcProjectedBlockGaussSeidelSweep *clone() const override {
+            auto ptr = utopia::make_unique<VcProjectedBlockGaussSeidelSweep>();
+            ptr->on_update_keep_nnz_pattern_ = on_update_keep_nnz_pattern_;
+            return ptr.release();
+        }
+
+        void read(Input &in) override { in.get("on_update_keep_nnz_pattern", on_update_keep_nnz_pattern_); }
 
         class BlockIdx {
         public:
@@ -70,55 +76,28 @@ namespace utopia {
             inline constexpr bool is_first() const { return sub_i == 0 && sub_j == 0; }
         };
 
-        // void init_from_local_matrix(const Matrix &mat) override {
-        //     UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
-        //     crs_block_matrix<BlockSize>(mat, block_crs);
-
-        //     auto n_blocks = block_crs.rows();
-
-        //     inv_diag_.resize(n_blocks);
-        //     diag_.resize(n_blocks);
-
-        //     BlockView d;
-        //     d.raw_type().set_size(BlockSize, BlockSize);
-
-        //     for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
-        //         auto row = block_crs.row(block_i);
-
-        //         for (SizeType k = 0; k < row.n_blocks(); ++k) {
-        //             if (row.colidx(k) == block_i) {
-        //                 d.raw_type().set_data(row.block(k));
-        //                 diag_[block_i].copy(d);
-        //                 assert(std::abs(det(diag_[block_i])) > 0);
-        //                 inv_diag_[block_i] = inv(diag_[block_i]);
-        //                 break;
-        //             }
-        //         }
-        //     }
-
-        //     UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
-        // }
-
         void init_from_local_matrix(const Matrix &mat) override {
             UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
-            crs_block_matrix_split_diag<BlockSize>(mat, block_crs, diag_split_);
+            if (diag_.empty() || !on_update_keep_nnz_pattern_) {
+                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_crs");
+                crs_block_matrix_split_diag<BlockSize>(mat, block_crs, diag_);
+                inv_diag_.resize(block_crs.rows());
+                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_crs");
+            } else {
+                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::update_crs");
+                crs_block_matrix_update<BlockSize>(mat, block_crs, diag_);
+                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::update_crs");
+            }
 
             auto n_blocks = block_crs.rows();
-
-            inv_diag_.resize(n_blocks);
-            diag_.resize(n_blocks);
 
             BlockView d;
             d.raw_type().set_size(BlockSize, BlockSize);
 
             for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
-                // auto row = block_crs.row(block_i);
-
-                d.raw_type().set_data(&diag_split_[block_i * BlockSize_2]);
-
-                diag_[block_i].copy(d);
-                assert(std::abs(det(diag_[block_i])) > 0);
-                inv_diag_[block_i] = inv(diag_[block_i]);
+                d.raw_type().set_data(&diag_[block_i * BlockSize_2]);
+                assert(std::abs(det(d)) > 0);
+                inv_diag_[block_i] = inv(d);
             }
 
             UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
@@ -168,8 +147,6 @@ namespace utopia {
                 r_simd.load(&this->r_[b_offset], alignment);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    // if (colidx[j] == block_i) continue;
-
                     c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
 
                     auto *aij = block_crs.block(j);
@@ -212,6 +189,9 @@ namespace utopia {
             SmallMatrix d_temp, d_inv_temp;
             SIMDType r_simd, c_simd, LRc_simd, mat_simd;
 
+            BlockView d;
+            d.raw_type().set_size(BlockSize, BlockSize);
+
             static const auto alignment = Vc::Unaligned;
             // static const auto alignment = Vc::Aligned;
             bool coord_is_constrained[BlockSize];
@@ -223,8 +203,6 @@ namespace utopia {
                 r_simd.load(&this->r_[b_offset], alignment);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    // if (colidx[j] == block_i) continue;
-
                     c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
 
                     auto *aij = block_crs.block(j);
@@ -257,7 +235,8 @@ namespace utopia {
                 }
 
                 if (constrained) {
-                    d_temp.copy(diag_[block_i]);
+                    d.raw_type().set_data(&diag_[block_i * BlockSize_2]);
+                    d_temp.copy(d);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
                         if (coord_is_constrained[d]) {
@@ -290,10 +269,13 @@ namespace utopia {
             }
         }
 
-        std::vector<Scalar> diag_split_;
-        std::vector<Block> diag_;
+        void on_update_keep_nnz_pattern(const bool val) { on_update_keep_nnz_pattern_ = val; }
+
+    private:
+        std::vector<Scalar> diag_;
         std::vector<Block> inv_diag_;
         CRSMatrix<std::vector<Scalar>, std::vector<SizeType>, BlockSize> block_crs;
+        bool on_update_keep_nnz_pattern_{false};
     };
 }  // namespace utopia
 
