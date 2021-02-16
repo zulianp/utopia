@@ -112,7 +112,7 @@ namespace utopia {
             d.raw_type().set_size(BlockSize, BlockSize);
 
             for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
-                auto row = block_crs.row(block_i);
+                // auto row = block_crs.row(block_i);
 
                 d.raw_type().set_data(&diag_split_[block_i * BlockSize_2]);
 
