@@ -12,6 +12,11 @@ namespace utopia {
     void crs_block_matrix(const PetscMatrix &in,
                           CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out);
 
+    template <int BlockSize>
+    void crs_block_matrix_split_diag(const PetscMatrix &in,
+                                     CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out,
+                                     std::vector<PetscReal> &diag);
+
     template <>
     class ILUDecompose<PetscMatrix, PETSC> final : public ILUAlgorithm<PetscMatrix, PetscVector> {
     public:

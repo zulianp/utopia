@@ -38,6 +38,7 @@ namespace utopia {
 
         using SIMDType = MatrixSIMDType<Matrix>;
         static const int BlockSize = static_cast<int>(SIMDType::Size);
+        static const int BlockSize_2 = BlockSize * BlockSize;
 
         using SmallMatrix = utopia::StaticMatrix<Scalar, BlockSize, BlockSize>;
         using Block = SmallMatrix;  // utopia::StaticVector<SIMDType, BlockSize>;
@@ -69,9 +70,38 @@ namespace utopia {
             inline constexpr bool is_first() const { return sub_i == 0 && sub_j == 0; }
         };
 
+        // void init_from_local_matrix(const Matrix &mat) override {
+        //     UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
+        //     crs_block_matrix<BlockSize>(mat, block_crs);
+
+        //     auto n_blocks = block_crs.rows();
+
+        //     inv_diag_.resize(n_blocks);
+        //     diag_.resize(n_blocks);
+
+        //     BlockView d;
+        //     d.raw_type().set_size(BlockSize, BlockSize);
+
+        //     for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
+        //         auto row = block_crs.row(block_i);
+
+        //         for (SizeType k = 0; k < row.n_blocks(); ++k) {
+        //             if (row.colidx(k) == block_i) {
+        //                 d.raw_type().set_data(row.block(k));
+        //                 diag_[block_i].copy(d);
+        //                 assert(std::abs(det(diag_[block_i])) > 0);
+        //                 inv_diag_[block_i] = inv(diag_[block_i]);
+        //                 break;
+        //             }
+        //         }
+        //     }
+
+        //     UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
+        // }
+
         void init_from_local_matrix(const Matrix &mat) override {
             UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
-            crs_block_matrix<BlockSize>(mat, block_crs);
+            crs_block_matrix_split_diag<BlockSize>(mat, block_crs, diag_split_);
 
             auto n_blocks = block_crs.rows();
 
@@ -84,15 +114,11 @@ namespace utopia {
             for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
                 auto row = block_crs.row(block_i);
 
-                for (SizeType k = 0; k < row.n_blocks(); ++k) {
-                    if (row.colidx(k) == block_i) {
-                        d.raw_type().set_data(row.block(k));
-                        diag_[block_i].copy(d);
-                        assert(std::abs(det(diag_[block_i])) > 0);
-                        inv_diag_[block_i] = inv(diag_[block_i]);
-                        break;
-                    }
-                }
+                d.raw_type().set_data(&diag_split_[block_i * BlockSize_2]);
+
+                diag_[block_i].copy(d);
+                assert(std::abs(det(diag_[block_i])) > 0);
+                inv_diag_[block_i] = inv(diag_[block_i]);
             }
 
             UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
@@ -142,7 +168,7 @@ namespace utopia {
                 r_simd.load(&this->r_[b_offset], alignment);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    if (colidx[j] == block_i) continue;
+                    // if (colidx[j] == block_i) continue;
 
                     c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
 
@@ -196,7 +222,7 @@ namespace utopia {
                 r_simd.load(&this->r_[b_offset], alignment);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    if (colidx[j] == block_i) continue;
+                    // if (colidx[j] == block_i) continue;
 
                     c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
 
@@ -258,6 +284,7 @@ namespace utopia {
             }
         }
 
+        std::vector<Scalar> diag_split_;
         std::vector<Block> diag_;
         std::vector<Block> inv_diag_;
         CRSMatrix<std::vector<Scalar>, std::vector<SizeType>, BlockSize> block_crs;
