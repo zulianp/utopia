@@ -1,3 +1,7 @@
+#if 1
+#include "utopia_vc_ProjectedBlockGaussSeidelSweep_crahes_on_daint.hpp"
+#else
+
 #ifndef UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 #define UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 
@@ -281,3 +285,4 @@ namespace utopia {
 
 #endif
 #endif  // UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
+#endif

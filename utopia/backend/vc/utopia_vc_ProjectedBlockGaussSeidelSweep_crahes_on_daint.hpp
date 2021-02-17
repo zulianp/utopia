@@ -217,8 +217,7 @@ namespace utopia {
                 const auto &D_inv = inv_diag_[block_i];
                 for (SizeType d = 0; d < BlockSize; ++d) {
                     mat_simd.load(&(D_inv(d, 0)), alignment);
-                    SizeType i = b_offset + d;
-                    c_simd[i] = (mat_simd * r_simd).sum();
+                    c_simd[d] = (mat_simd * r_simd).sum();
                 }
 
                 l_simd.load(&this->lb_[b_offset], alignment);
