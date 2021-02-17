@@ -7,11 +7,11 @@ import subprocess
 
 # num_nodes = (4, 5, 6, 7, 8, 12, 16, 20, 24, 28, 32)
 num_nodes = (1, 2, 4, 8)
-inputFile = '$SCRATCH/Sneddon3D_small.json'
+inputFile = '$SCRATCH/Sneddon_small.json'
 basedir = 'Sneddon3D_XC40_small'
 
 # num_nodes = (40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256)
-# inputFile = '$SCRATCH/Sneddon3D.json'
+# inputFile = '$SCRATCH/Sneddon_large.json'
 # basedir = 'Sneddon3D_XC40_large'
 
 
