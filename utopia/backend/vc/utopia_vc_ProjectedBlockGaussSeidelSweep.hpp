@@ -187,14 +187,13 @@ namespace utopia {
             const SizeType n_blocks = row_ptr.size() - 1;
 
             SmallMatrix d_temp, d_inv_temp;
-            SIMDType r_simd, c_simd, LRc_simd, mat_simd;
+            SIMDType r_simd, c_simd, LRc_simd, mat_simd, l_simd, u_simd;
 
             BlockView d;
             d.raw_type().set_size(BlockSize, BlockSize);
 
             static const auto alignment = Vc::Unaligned;
             // static const auto alignment = Vc::Aligned;
-            bool coord_is_constrained[BlockSize];
 
             auto f = [&](const SizeType &block_i) {
                 const SizeType row_end = row_ptr[block_i + 1];
@@ -219,27 +218,27 @@ namespace utopia {
                 for (SizeType d = 0; d < BlockSize; ++d) {
                     mat_simd.load(&(D_inv(d, 0)), alignment);
                     SizeType i = b_offset + d;
-                    this->c_[i] = (mat_simd * r_simd).sum();
+                    c_simd[i] = (mat_simd * r_simd).sum();
                 }
 
-                bool constrained = false;
-                for (SizeType d = 0; d < BlockSize; ++d) {
-                    SizeType i = b_offset + d;
-                    auto c_i = this->c_[i];
+                l_simd.load(&this->lb_[b_offset], alignment);
+                u_simd.load(&this->ub_[b_offset], alignment);
 
-                    // Yes it is an assignment...
-                    if ((coord_is_constrained[d] = !(c_i > this->lb_[i] && c_i < this->ub_[i]))) {
-                        constrained = true;
-                        r_simd[d] = device::max(this->lb_[i], device::min(c_i, this->ub_[i]));
-                    }
-                }
+                auto mask_l = c_simd <= l_simd;
+                auto mask_u = c_simd >= u_simd;
+                auto mask_r = mask_l | mask_u;
 
-                if (constrained) {
+                if (mask_r.isNotEmpty()) {
+                    l_simd.setZeroInverted(mask_l);
+                    u_simd.setZeroInverted(mask_u);
+                    r_simd.setZero(mask_r);
+                    r_simd += l_simd + u_simd;
+
                     d.raw_type().set_data(&diag_[block_i * BlockSize_2]);
                     d_temp.copy(d);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
-                        if (coord_is_constrained[d]) {
+                        if (mask_r[d]) {
                             for (SizeType d_j = 0; d_j < BlockSize; ++d_j) {
                                 d_temp(d, d_j) = d_j == d;
                             }
@@ -253,6 +252,8 @@ namespace utopia {
                         mat_simd.load(&(d_inv_temp(d, 0)), alignment);
                         this->c_[i] = (mat_simd * r_simd).sum();
                     }
+                } else {
+                    c_simd.store(&this->c_[b_offset], alignment);
                 }
             };
 
