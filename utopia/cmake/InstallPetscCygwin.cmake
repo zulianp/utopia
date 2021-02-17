@@ -82,5 +82,5 @@ if(NOT PETSC_FOUND)
 
     set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-    # set(PETSC_DIR ${PETSC_INSTALL_DIR})
+    set(PETSC_DIR ${PETSC_INSTALL_DIR})
 endif()
