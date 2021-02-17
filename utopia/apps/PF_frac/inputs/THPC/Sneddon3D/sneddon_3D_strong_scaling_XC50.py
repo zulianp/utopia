@@ -8,10 +8,10 @@ import subprocess
 # num_nodes = (4, 5, 6, 7, 8, 12, 16, 20, 24, 28, 32)
 num_nodes = (1, 2, 4, 8)
 inputFile = '$SCRATCH/Sneddon3D_small.json'
-basedir = 'Sneddon3D_small'
+basedir = 'Sneddon3D_XC50_small'
 # num_nodes = (40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256)
 # inputFile = '$SCRATCH/Sneddon3D.json'
-# basedir = 'Sneddon3D_large'
+# basedir = 'Sneddon3D_XC50_large'
 
 
 for nodes in num_nodes:
@@ -21,9 +21,9 @@ for nodes in num_nodes:
         os.makedirs(dirname)
     with open(os.path.join(dirname, jobfile), 'w') as scriptfile:
         scriptfile.write(f"""#!/bin/bash
-#SBATCH --job-name=utopia_Sneddon3d_strong_scaling
+#SBATCH --job-name=SS_Sneddon3D_XC50_small
 #SBATCH --output=output_%j.out
-#SBATCH --time=02:30:00
+#SBATCH --time=00:50:00
 #SBATCH --nodes={nodes}
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=12

@@ -1,4 +1,4 @@
-{
+q{
     "app" : "petsc_shneddon3D",
     "output-path" : "Sneddon3D_small",
     "save_output": false,
