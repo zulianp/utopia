@@ -234,6 +234,10 @@ if(UTOPIA_ENABLE_CXX14_FEATURES)
     set(UTOPIA_WITH_CPP14 TRUE)
 endif()
 
+if(CYGWIN)
+    include(InstallPetscCygwin)
+endif()
+
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
 include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
@@ -428,7 +432,10 @@ if(UTOPIA_INSTALL_TRILINOS)
     include(InstallTrilinos)
 endif()
 
-if(UTOPIA_INSTALL_PETSC)
+if(UTOPIA_INSTALL_PETSC AND UTOPIA_ENABLE_CYGWIN)
+    include(InstallPetsc)
+
+else()
     include(InstallPetsc)
 endif()
 
