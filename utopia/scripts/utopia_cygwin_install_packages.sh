@@ -2,6 +2,9 @@ lynx -source rawgit.com/transcode-open/apt-cyg/master/apt-cyg > apt-cyg
 if ! type "$apt-cyg" > /dev/null; then
   install apt-cyg /bin
 fi
+apt-cyg install autoconf
+apt-cyg install automake
+apt-cyg install clang
 apt-cyg install gcc-fortran
 apt-cyg install gcc-g++
 apt-cyg install gdb
@@ -14,3 +17,4 @@ apt-cyg install libopenblas
 apt-cyg install liblapack-devel
 apt-cyg install python
 apt-cyg install doxygen
+apt-cyg install zlib
