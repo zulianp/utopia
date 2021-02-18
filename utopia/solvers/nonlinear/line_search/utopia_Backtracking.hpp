@@ -45,8 +45,9 @@ namespace utopia {
         Scalar c2() const { return c2_; }
 
         /**
-         * @brief      Get the alpha_k on given iterate. We are using quadratic and qubic interpolation as part of
-         * backtracking. For checking decrease conditions, we are using Wolfe conditions.
+         * @brief      Get the alpha_k on given iterate. We are using quadratic and
+         * qubic interpolation as part of backtracking. For checking decrease
+         * conditions, we are using Wolfe conditions.
          *
          * @param      fun      The fun with eval.
          * @param[in]  g        The gradient.
@@ -83,7 +84,7 @@ namespace utopia {
             if (dg >= 0.0) {
                 if (mpi_world_rank() == 0) {
                     std::cerr << "utopia::LS::backtracking:: d is not descent direction \n";
-                    assert(false);
+                    return false;
                 }
 
                 alpha = 0.0;
@@ -174,7 +175,8 @@ namespace utopia {
         }
 
     private:
-        Scalar c2_; /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
+        Scalar c2_; /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 =
+                       10^{-4} \f$.  */
         Vector x_k;
     };
 }  // namespace utopia

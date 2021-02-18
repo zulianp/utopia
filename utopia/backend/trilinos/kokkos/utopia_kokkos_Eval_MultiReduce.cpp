@@ -163,12 +163,13 @@ namespace utopia {
             Tuple<Scalar, 2> tuple_result{};
             tuple_result.init(0.0);
 
-            Kokkos::parallel_reduce(d11.extent(0),
-                                    KOKKOS_LAMBDA(const int i, Tuple<Scalar, 2> &t) {
-                                        t[0] += d11(i, 0) * d12(i, 0);
-                                        t[1] += d21(i, 0) * d22(i, 0);
-                                    },
-                                    tuple_result);
+            Kokkos::parallel_reduce(
+                d11.extent(0),
+                KOKKOS_LAMBDA(const int i, Tuple<Scalar, 2> &t) {
+                    t[0] += d11(i, 0) * d12(i, 0);
+                    t[1] += d21(i, 0) * d22(i, 0);
+                },
+                tuple_result);
 
             result[0] = tuple_result[0];
             result[1] = tuple_result[1];
@@ -213,13 +214,14 @@ namespace utopia {
             Tuple<Scalar, 3> tuple_result{};
             tuple_result.init(0.0);
 
-            Kokkos::parallel_reduce(d11.extent(0),
-                                    KOKKOS_LAMBDA(const int i, Tuple<Scalar, 3> &t) {
-                                        t[0] += d11(i, 0) * d12(i, 0);
-                                        t[1] += d21(i, 0) * d22(i, 0);
-                                        t[2] += d31(i, 0) * d32(i, 0);
-                                    },
-                                    tuple_result);
+            Kokkos::parallel_reduce(
+                d11.extent(0),
+                KOKKOS_LAMBDA(const int i, Tuple<Scalar, 3> &t) {
+                    t[0] += d11(i, 0) * d12(i, 0);
+                    t[1] += d21(i, 0) * d22(i, 0);
+                    t[2] += d31(i, 0) * d32(i, 0);
+                },
+                tuple_result);
 
             result[0] = tuple_result[0];
             result[1] = tuple_result[1];

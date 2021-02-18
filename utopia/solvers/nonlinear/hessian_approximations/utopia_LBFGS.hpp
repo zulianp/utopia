@@ -22,7 +22,7 @@ namespace utopia {
               theta_(1.0),
               gamma_(1.0),
               theta_min_(1.0),
-              skip_update_treshold_(1e-12),
+              skip_update_treshold_(1e-14),
               damping_tech_(NOCEDAL),
               scaling_tech_(ADAPTIVE) {}
 
@@ -37,6 +37,15 @@ namespace utopia {
 
             SY_point_wise_.clear();
             YY_point_wise_.clear();
+        }
+
+        SizeType current_m() { return current_m_; }
+
+        bool is_approx_fully_built() {
+            if (current_m_ < m_)
+                return false;
+            else
+                return true;
         }
 
         void initialize(const Vector &x_k, const Vector &g) override {
@@ -148,6 +157,7 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_END();
 
             if (skip_update) {
+                // std::cout << "update skipped! \n";
                 // UTOPIA_NO_ALLOC_BEGIN("LBFGS2");
                 this->init_scaling_factors(y_hat_, s);
                 // std::cout<<"updating..... \n";
@@ -318,6 +328,9 @@ namespace utopia {
 
             SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_;
 
+            // std::cout << "current_memory_size: " << current_memory_size << " \n";
+            // std::cout << "m: " << m_ << "  \n";
+
             this->apply_H0(v, result);
 
             for (auto i = 0; i < current_memory_size; i++) {
@@ -478,7 +491,8 @@ namespace utopia {
             bool skip_update = false;
             if (dot(y, s) < skip_update_treshold_) {
                 // if(mpi_world_rank()==0){
-                //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n");
+                //     utopia_warning("L-BFGS-B: Curvature condition not satified.
+                //     Skipping update. \n");
                 // }
 
                 skip_update = true;

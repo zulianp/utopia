@@ -192,8 +192,9 @@ namespace utopia {
             p = 0.5 * b - A * x;
             UTOPIA_NO_ALLOC_END();
 
-            // This will always create a copy (A * x needs to put the result somewhere, unless the backend
-            // specialization is used and does not allocate anything) a better way would be to use a third vector p = b
+            // This will always create a copy (A * x needs to put the result somewhere,
+            // unless the backend specialization is used and does not allocate anything)
+            // a better way would be to use a third vector p = b
             // - A * x;
             b = b - A * x;
 
@@ -209,15 +210,16 @@ namespace utopia {
             D.identity(mat_layout);
             Vector v = diag(I);
 
-            // I do not know how relevant are these tests, as sparsity pattern might be different...
-            // create same_sparsity_copy()
+            // I do not know how relevant are these tests, as sparsity pattern might be
+            // different... create same_sparsity_copy()
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy1");
             // FIME
             // D = I;
             // UTOPIA_NO_ALLOC_END();
 
             // UTOPIA_NO_ALLOC_BEGIN("mat_copy2");
-            // FIXME this it is equivalent to making a copy (but it could be treated as an AXPY)
+            // FIXME this it is equivalent to making a copy (but it could be treated as
+            // an AXPY)
             D = -1.0 * I;
             D = -I;
             // UTOPIA_NO_ALLOC_END();
@@ -236,8 +238,8 @@ namespace utopia {
 
             D += Matrix(diag(v));
 
-            // The next lines seem to crash when using Trilinos/Code coverage info/specific version of Kokkos/Tpetra
-            // #ifndef UTOPIA_WITH_CODE_COVERAGE
+            // The next lines seem to crash when using Trilinos/Code coverage
+            // info/specific version of Kokkos/Tpetra #ifndef UTOPIA_WITH_CODE_COVERAGE
 
             UTOPIA_NO_ALLOC_BEGIN("mat_copy5");  //
             // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatDiagonalSet.html#MatDiagonalSet
@@ -251,8 +253,8 @@ namespace utopia {
                            // UTOPIA_NO_ALLOC_END();
 
             // #else
-            // #warning "FIXME: D += diag(v) test si commented out because it generates errors with code-coverage
-            // instrumentation" #endif
+            // #warning "FIXME: D += diag(v) test si commented out because it generates
+            // errors with code-coverage instrumentation" #endif
         }
 
         void e_mul_test() {
@@ -454,7 +456,8 @@ namespace utopia {
         }
 
         void multi_axpy() {
-            // Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number, Vec>>>
+            // Assign<Vec, Minus<Plus<Vec, Multiplies<Number, Vec>>, Multiplies<Number,
+            // Vec>>>
             Vector a(vec_layout, 2.);
             Vector b(vec_layout, 2.);
             Vector c(vec_layout, 2.);

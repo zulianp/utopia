@@ -10,8 +10,9 @@
 
 namespace utopia {
     /**
-     * @brief      The class helping to print-out information about solver: initialization messages, prinitning
-     * iteration status, time-stats and exit/convergance messages. It also helps pass solution and informations about
+     * @brief      The class helping to print-out information about solver:
+     * initialization messages, prinitning iteration status, time-stats and
+     * exit/convergance messages. It also helps pass solution and informations about
      * solve back into FEM packages.
      */
     class ConvergenceReason {
@@ -52,8 +53,9 @@ namespace utopia {
                 if (convergence_reason == CONVERGED_ITERATING) {
                     std::cout << "\033[1;32m  NonlinearSolver converged in " << num_it << " iterations.\033[0m\n";
                 } else if (convergence_reason == DIVERGED_MAX_IT) {
-                    std::cerr << "\033[1;31m [Error] Nonlinear solver: Maximum number of iteration reached (" << num_it
-                              << "). \033[0m\n";
+                    std::cerr << "\033[1;31m [Error] Nonlinear solver: Maximum number of "
+                                 "iteration reached ("
+                              << num_it << "). \033[0m\n";
                 } else if (convergence_reason == CONVERGED_SNORM_RELATIVE) {
                     std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it
                               << ", (step_length< tol). \033[0m\n";

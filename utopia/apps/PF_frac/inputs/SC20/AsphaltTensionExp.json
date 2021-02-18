@@ -13,6 +13,7 @@
     "*disp":0.068,
     "*length_scale": 0.5,
     "with_damage" : true,
+    "block_solver" : true,
     "use_dense_hessian" : false,
     "check_derivatives" : false,
     "num_time_steps" : 500,

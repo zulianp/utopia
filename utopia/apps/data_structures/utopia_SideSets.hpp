@@ -83,7 +83,9 @@ namespace utopia {
                     return tensor_index[0] == (dims[0] - 1);
                 }
 
-                default: { return false; }
+                default: {
+                    return false;
+                }
             }
         }
     };
@@ -120,7 +122,9 @@ namespace utopia {
                     return tensor_index[1] == (dims[1] - 1);
                 }
 
-                default: { return false; }
+                default: {
+                    return false;
+                }
             }
         }
     };
@@ -166,7 +170,9 @@ namespace utopia {
                     return tensor_index[2] == (dims[2] - 1);
                 }
 
-                default: { return false; }
+                default: {
+                    return false;
+                }
             }
         }
     };

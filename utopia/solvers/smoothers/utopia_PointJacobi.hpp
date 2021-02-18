@@ -6,9 +6,10 @@
 namespace utopia {
 
     /**
-     * @brief Good example on how to implement a Linear Solver, Preconditioner, and Smoother
-     * within utopia. Precomputations are done in the update method, and, in order to avoid
-     * costly allocations, possible temporaries are stored as member variables.
+     * @brief Good example on how to implement a Linear Solver, Preconditioner, and
+     * Smoother within utopia. Precomputations are done in the update method, and,
+     * in order to avoid costly allocations, possible temporaries are stored as
+     * member variables.
      */
     template <class Matrix, class Vector>
     class PointJacobi final : public IterativeSolver<Matrix, Vector> {

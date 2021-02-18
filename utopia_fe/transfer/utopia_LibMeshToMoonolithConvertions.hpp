@@ -1259,6 +1259,85 @@ namespace utopia {
     }
 
     template <int Dim>
+    inline void extract_surface(const libMesh::MeshBase &in,
+                                moonolith::Mesh<double, Dim> &out_mesh,
+                                const std::vector<int> &tags = std::vector<int>()) {
+        const bool select_all = tags.empty();  // FOR them moment tags are ignored
+        out_mesh.clear();
+
+        std::unordered_map<libMesh::dof_id_type, moonolith::Integer> mapping;
+        long n_local_elems = 0;
+        long n_nodes = 0;
+
+        for (const auto &elem_ptr : in.active_local_element_ptr_range()) {
+            const std::size_t n_sides = elem_ptr->n_sides();
+
+            for (std::size_t i = 0; i < n_sides; ++i) {
+                if ((elem_ptr->neighbor_ptr(i) != libmesh_nullptr)) {
+                    continue;
+                }
+
+                n_local_elems++;
+
+                auto side_ptr = elem_ptr->build_side_ptr(i);
+
+                const std::size_t n_side_nodes = side_ptr->n_nodes();
+
+                for (std::size_t k = 0; k < n_side_nodes; ++k) {
+                    auto node_id = side_ptr->node_id(k);
+
+                    auto it = mapping.find(node_id);
+
+                    if (it == mapping.end()) {
+                        mapping[node_id] = n_nodes++;
+                    }
+                }
+            }
+        }
+
+        out_mesh.resize(n_local_elems, n_nodes);
+
+        for (const auto &m : mapping) {
+            make(in.node_ref(m.first), out_mesh.node(m.second));
+        }
+
+        std::size_t elem_idx = 0;
+        for (const auto &elem_ptr : in.active_local_element_ptr_range()) {
+            const std::size_t n_sides = elem_ptr->n_sides();
+
+            for (std::size_t i = 0; i < n_sides; ++i) {
+                if ((elem_ptr->neighbor_ptr(i) != libmesh_nullptr)) {
+                    continue;
+                }
+
+                ///////////////////////////// MESH ////////////////////////////////
+                auto side_ptr = elem_ptr->build_side_ptr(i);
+                auto &e = out_mesh.elem(elem_idx);
+
+                e.type = convert(side_ptr->type());
+                e.block = utopia::boundary_id(in.get_boundary_info(), elem_ptr, i);
+                e.is_affine = side_ptr->has_affine_map();
+                // e.global_idx = side_ptr->id();
+
+                const std::size_t n_side_nodes = side_ptr->n_nodes();
+
+                e.nodes.resize(n_side_nodes);
+
+                for (std::size_t k = 0; k < n_side_nodes; ++k) {
+                    auto node_id = side_ptr->node_id(k);
+                    auto it = mapping.find(node_id);
+                    assert(it != mapping.end());
+                    e.nodes[k] = it->second;
+                }
+
+                elem_idx++;
+            }
+        }
+
+        out_mesh.finalize();
+    }
+
+    template <int Dim>
     inline void extract_trace_space(const libMesh::MeshBase &in,
                                     const libMesh::DofMap &dof_map,
                                     unsigned int var_num,

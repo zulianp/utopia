@@ -19,6 +19,12 @@ namespace utopia {
     };
 
     template <typename T>
+    class One {
+    public:
+        UTOPIA_INLINE_FUNCTION static constexpr T value() { return static_cast<T>(1); }
+    };
+
+    template <typename T>
     class Math {
     public:
         inline static T abs(const T &x) { return std::abs(x); }

@@ -19,7 +19,10 @@ namespace utopia {
 
         ProjectedConjugateGradient() = default;
 
-        ProjectedConjugateGradient(const ProjectedConjugateGradient &) = default;
+        ProjectedConjugateGradient(const ProjectedConjugateGradient &other)
+            : VariableBoundSolverInterface<Vector>(other),
+              PreconditionedSolverInterface<Vector>(other),
+              QPSolver<Matrix, Vector>(other) {}
 
         inline ProjectedConjugateGradient *clone() const override {
             auto ptr = new ProjectedConjugateGradient(*this);
@@ -73,25 +76,26 @@ namespace utopia {
                     auto wk_view = local_view_device(wk);
                     auto zk_view = local_view_device(zk);
 
-                    parallel_for(local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
-                        const auto elem = x_view.get(i);
+                    parallel_for(
+                        local_range_device(x), UTOPIA_LAMBDA(const SizeType &i) {
+                            const auto elem = x_view.get(i);
 
-                        Scalar val = 0.;
-                        if (device::approxeq(elem, ub_view.get(i), device::epsilon<Scalar>()) ||
-                            device::approxeq(elem, lb_view.get(i), device::epsilon<Scalar>())) {
-                            val = device::max(uk_view.get(i), Scalar(0));
-                        } else {
-                            val = uk_view.get(i);
-                        }
+                            Scalar val = 0.;
+                            if (device::approxeq(elem, ub_view.get(i), device::epsilon<Scalar>()) ||
+                                device::approxeq(elem, lb_view.get(i), device::epsilon<Scalar>())) {
+                                val = device::max(uk_view.get(i), Scalar(0));
+                            } else {
+                                val = uk_view.get(i);
+                            }
 
-                        if (val == 0) {
-                            zk_view.set(i, device::max(pk_view.get(i), Scalar(0)));
-                        } else {
-                            zk_view.set(i, pk_view.get(i));
-                        }
+                            if (val == 0) {
+                                zk_view.set(i, device::max(pk_view.get(i), Scalar(0)));
+                            } else {
+                                zk_view.set(i, pk_view.get(i));
+                            }
 
-                        wk_view.set(i, val);
-                    });
+                            wk_view.set(i, val);
+                        });
                 }
 
                 Apk = A * pk;

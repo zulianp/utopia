@@ -1,22 +1,23 @@
 {
-    "linear-solver" : {
+    "linear-solver": {
         "solver_type": "CG",
-        "atol"    : 1e-16,
-        "rtol"    : 1e-8,
-        "stol"    : 1e-16,
-        "max-it" : 1000,
-        "verbose" : false,
-        "enable_flexible_gmres" : false,
-        "enable_adv_opt" : true,
-        "estimate_cond_num" : true,
-        "use_single_red" : false,
-        "solver_package" : "trilinos",
-        "preconditioner" : {
-            "enable_direct_precond" : true,
-            "precond_side" : "left",
-            "precond_type" : "ILUT",
-            "muelu" : {
-            "cycle_type" : "V" }
+        "atol": 1e-16,
+        "rtol": 1e-8,
+        "stol": 1e-16,
+        "max-it": 1000,
+        "verbose": false,
+        "enable_flexible_gmres": false,
+        "enable_adv_opt": true,
+        "estimate_cond_num": true,
+        "use_single_red": false,
+        "solver_package": "trilinos",
+        "preconditioner": {
+            "enable_direct_precond": true,
+            "precond_side": "left",
+            "precond_type": "ILUT",
+            "muelu": {
+                "cycle_type": "V"
+            }
         }
     }
 }

@@ -71,7 +71,8 @@ namespace utopia {
         bool set_hessian_approximation_strategies(const std::vector<HessianApproxPtr> &strategies) {
             if (strategies.size() != this->n_levels()) {
                 utopia_error(
-                    "utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of strategies does not equal "
+                    "utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of "
+                    "strategies does not equal "
                     "with levels in ML hierarchy. \n");
             }
 
@@ -88,7 +89,8 @@ namespace utopia {
                 hessian_approxs_[level] = strategy;
             } else {
                 utopia_error(
-                    "utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. "
+                    "utopia::QuasiRMTR::set_tr_strategy:: Requested level exceeds number "
+                    "of levels in ML hierarchy. "
                     "\n");
             }
 
@@ -116,7 +118,8 @@ namespace utopia {
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies) {
             if (strategies.size() != this->n_levels()) {
                 utopia_error(
-                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML "
+                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be "
+                    "equal to number of levels in ML "
                     "hierarchy. \n");
             }
 
@@ -150,19 +153,24 @@ namespace utopia {
             bool flg = RMTRBase::check_initialization();
 
             if (static_cast<SizeType>(tr_subproblems_.size()) != this->n_levels()) {
-                utopia_error("utopia::RMTR_l2_quasi:: number of level QP solvers and levels not equal. \n");
+                utopia_error(
+                    "utopia::RMTR_l2_quasi:: number of level QP solvers and levels not "
+                    "equal. \n");
                 flg = false;
             }
 
             if (static_cast<SizeType>(hessian_approxs_.size()) != this->n_levels()) {
-                utopia_error("utopia::RMTR_l2_quasi:: number of hessian approxiations and levels do not match. \n");
+                utopia_error(
+                    "utopia::RMTR_l2_quasi:: number of hessian approxiations and levels "
+                    "do not match. \n");
                 flg = false;
             }
 
             return flg;
         }
 
-        // -------------------------- tr radius managment ---------------------------------------------
+        // -------------------------- tr radius managment
+        // ---------------------------------------------
         /**
          * @brief      Updates delta on given level
          *
@@ -247,7 +255,8 @@ namespace utopia {
             return true;
         }
 
-        // -------------------------- Matrix free stuff ----------------------------------------
+        // -------------------------- Matrix free stuff
+        // ----------------------------------------
         Scalar get_pred(const SizeType &level) override {
             UTOPIA_NO_ALLOC_BEGIN("RMTR::get_pred1");
             Scalar l_term = dot(this->ml_derivs_.g[level], this->memory_.s[level]);
@@ -260,9 +269,9 @@ namespace utopia {
             return (-l_term - 0.5 * qp_term);
         }
 
-        bool update_level(const SizeType &level) override {
+        bool update_level(const SizeType &level, const Scalar &energy_new) override {
             this->memory_.help[level] = this->ml_derivs_.g[level];
-            this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level]);
+            this->get_multilevel_gradient(this->function(level), level, this->memory_.s_working[level], energy_new);
             this->ml_derivs_.y[level] = this->ml_derivs_.g[level] - this->memory_.help[level];
 
             // swap back....
@@ -278,7 +287,8 @@ namespace utopia {
             // {
             if (solve_type == PRE_SMOOTHING || solve_type == COARSE_SOLVE) {
                 hessian_approxs_[level]->reset();
-                // hessian_approxs_[level]->initialize(this->memory_.x[level], this->ml_derivs_.g[level]);
+                // hessian_approxs_[level]->initialize(this->memory_.x[level],
+                // this->ml_derivs_.g[level]);
             }
             // }
         }
@@ -301,8 +311,8 @@ namespace utopia {
         }
 
         /**
-         * @brief      THis check guarantees that iterates at a lower level remain in the TR radius defined at the finer
-         * level
+         * @brief      THis check guarantees that iterates at a lower level remain in
+         * the TR radius defined at the finer level
          *
          * @param[in]  corr_norm  The norm of sum of all corrections on given level
          * @param[in]  level      The level

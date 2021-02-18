@@ -48,10 +48,9 @@ namespace utopia {
             } else {
                 // TODO:: check for other transfers
                 // todo:: this version probably does not work on GPU
-                if (auto* mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector>*>(this->transfer_[level].get()))
-                // if(IPTransferNested<Matrix, Vector>* mat_transfer =  dynamic_cast<IPTransferNested<Matrix,
-                // Vector>* > (this->transfer_[level].get()))
-                {
+                // if (auto* mat_transfer = dynamic_cast<MatrixTransfer<Matrix, Vector>*>(this->transfer_[level].get()))
+                if (IPTransferNested<Matrix, Vector>* mat_transfer =
+                        dynamic_cast<IPTransferNested<Matrix, Vector>*>(this->transfer_[level].get())) {
                     {
                         auto d_x_finer = const_device_view(x_finer_level);
                         auto d_tr_lb = const_device_view(constraints_memory_.active_lower[finer_level]);
@@ -120,7 +119,7 @@ namespace utopia {
                 }  // dynamic cast test
                 else {
                     utopia_error("TRBoundsKornhuber:: transfer operators not supported. \n ");
-                    utopia::out() << "--------- error ---------- \n";
+                    std::cout << "--------- error ---------- \n";
                 }
 
             }  // level check

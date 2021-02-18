@@ -42,8 +42,8 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector, class WantedMatrix, class WantedVector, class Solver>
-    class CrossBackendLinearSolverAndSmoother
-        : public IterativeSolver<Matrix, Vector>  //, public Smoother<Matrix, Vector>
+    class CrossBackendLinearSolverAndSmoother : public IterativeSolver<Matrix,
+                                                                       Vector>  //, public Smoother<Matrix, Vector>
     {
     public:
         ~CrossBackendLinearSolverAndSmoother() override {}

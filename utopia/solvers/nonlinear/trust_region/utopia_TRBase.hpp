@@ -2,6 +2,7 @@
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 
 #include <algorithm>
+#include "utopia_CiteUtopia.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NumericalTollerance.hpp"
 #include "utopia_TRSubproblem.hpp"
@@ -87,11 +88,12 @@ namespace utopia {
     };
 
     /**
-     * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
+     * @brief      Base class for all TR solvers. Contains all general routines
+     * related to TR solvers.
      *
      */
     template <class Vector>
-    class TrustRegionBase : public TrustRegionParams<Vector> {
+    class TrustRegionBase : public TrustRegionParams<Vector>, public AuthoredWork<Kopanicakova2020Thesis> {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
         using Layout = typename Traits<Vector>::Layout;
@@ -287,9 +289,9 @@ namespace utopia {
                 if (rho < this->eta1()) {
                     radius = radius * this->gamma1();
                 } else if (rho > this->eta2()) {
-                    Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius);
+                    // Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius);
 
-                    // Scalar intermediate = this->gamma2() * radius;
+                    Scalar intermediate = this->gamma2() * radius;
                     radius = std::min(intermediate, this->delta_max());
                 }
             }
@@ -305,7 +307,8 @@ namespace utopia {
             }
         }
 
-        // virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar &radius)
+        // virtual void delta_update_inf(const Scalar &rho, const Vector &p_k, Scalar
+        // &radius)
         // {
         //     if(rho >= eta2_)
         //     {
@@ -320,7 +323,8 @@ namespace utopia {
         /*!
         \details
         TR radius initialization
-        - returns false - choice of tr radius was given by user, alg respect it and doesn't change
+        - returns false - choice of tr radius was given by user, alg respect it and
+        doesn't change
 
         @note
         \param x_k                - initial guess/ current iterate

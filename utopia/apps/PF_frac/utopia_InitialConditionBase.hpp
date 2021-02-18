@@ -9,7 +9,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class InitialCondition : public Configurable {
+    class InitialCondition : virtual public Configurable {
     public:
         InitialCondition(FunctionSpace &space) : space_(space) {}
 

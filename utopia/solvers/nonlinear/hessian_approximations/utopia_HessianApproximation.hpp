@@ -8,7 +8,9 @@
 namespace utopia {
 
     template <class Vector>
-    class HessianApproximation : public virtual Clonable, public virtual Configurable {
+    class HessianApproximation : public virtual Clonable,
+                                 public virtual Configurable,
+                                 public AuthoredWork<Kopanicakova2020Thesis> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
@@ -42,6 +44,9 @@ namespace utopia {
         HessianApproximation() : num_tol_(1e-12) {}
 
         ~HessianApproximation() override = default;
+
+        // TODO:: override in childs
+        bool is_approx_fully_built() { return false; }
 
         virtual void initialize(const Vector &x_k, const Vector & /* g */) {
             comm_ = std::shared_ptr<Communicator>(x_k.comm().clone());
@@ -105,7 +110,8 @@ namespace utopia {
             };
 
             return std::make_shared<FunctionOperator>(*this, my_func);
-            // return std::make_shared<FunctionOperator>(*this, &HessianApproximation::apply_Hinv);
+            // return std::make_shared<FunctionOperator>(*this,
+            // &HessianApproximation::apply_Hinv);
         }
 
         std::shared_ptr<FunctionPreconditioner<Vector> > build_Hinv_precond() {

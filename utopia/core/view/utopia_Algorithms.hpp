@@ -2,6 +2,7 @@
 #define UTOPIA_ALGORITHMS_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Epsilon.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
 
 #ifdef UTOPIA_WITH_TRILINOS
@@ -12,7 +13,11 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#endif
+#endif  // UTOPIA_WITH_TRILINOS
+
+#ifdef UTOPIA_WITH_VC
+#include "utopia_vc_Base.hpp"
+#endif  // UTOPIA_WITH_VC
 
 namespace utopia {
     namespace device {
@@ -85,11 +90,6 @@ namespace utopia {
         template <typename T>
         UTOPIA_INLINE_FUNCTION T atan2(const T &a, const T &b) {
             return ::atan2(a, b);
-        }
-
-        template <typename T>
-        UTOPIA_INLINE_FUNCTION constexpr T epsilon() {
-            return Kokkos::Details::ArithTraits<T>::epsilon();
         }
 
         template <typename T>
@@ -178,11 +178,6 @@ namespace utopia {
         }
 
         template <typename T>
-        inline T epsilon() {
-            return std::numeric_limits<T>::epsilon();
-        }
-
-        template <typename T>
         inline bool signbit(const T &a) {
             return std::signbit(a);
         }
@@ -256,7 +251,8 @@ namespace utopia {
         class Extent {
         public:
             template <typename S>
-            UTOPIA_INLINE_FUNCTION static auto apply(const NDimArray &in, const S &s) -> decltype(in.extent(s)) {
+            UTOPIA_INLINE_FUNCTION static constexpr auto apply(const NDimArray &in, const S &s)
+                -> decltype(in.extent(s)) {
                 return in.extent(s);
             }
         };

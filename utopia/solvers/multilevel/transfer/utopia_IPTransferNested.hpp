@@ -15,7 +15,7 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector>
-    class IPTransferNested final : public Transfer<Matrix, Vector> {
+    class IPTransferNested final : public MatrixTransfer<Matrix, Vector> {
     public:
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         using Scalar = typename utopia::Traits<Vector>::Scalar;
@@ -141,7 +141,21 @@ namespace utopia {
             return true;
         }
 
-        const Matrix &I() const { return *_I; }
+        const Matrix &I() override {
+            assert(_I);
+            return *_I;
+        }
+
+        const Matrix &P() override {
+            assert(_Pr);
+            return *_Pr;
+        }
+
+        const Matrix &R() override {
+            assert(_I);
+            _R = std::make_shared<Matrix>(transpose(*_I));
+            return *_R;
+        }
 
         void handle_equality_constraints(const Vector &is_constrained) override {
             assert(_I);
@@ -169,6 +183,7 @@ namespace utopia {
     private:
         std::shared_ptr<Matrix> _I;  // _R;
         std::shared_ptr<Matrix> _Pr;
+        std::shared_ptr<Matrix> _R;
         Scalar I_norm_, R_norm_, P_norm_;
     };
 

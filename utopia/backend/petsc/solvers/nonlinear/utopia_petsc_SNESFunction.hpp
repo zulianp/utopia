@@ -18,13 +18,11 @@ namespace utopia {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
 
     public:
-        // PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker =
-        // local_zeros(1), const Vector & rhs = local_zeros(1)) :
-        PETSCUtopiaNonlinearFunction(SNES snes,
-                                     const Vector &x_init = Vector(),
-                                     const Vector &bc_marker = Vector(),
-                                     const Vector &rhs = Vector())
-            : ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), snes_(snes) {}
+        // PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init =
+        // local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector &
+        // rhs = local_zeros(1)) :
+        PETSCUtopiaNonlinearFunction(SNES snes, const Vector &x_init = Vector(), const Vector &bc_marker = Vector())
+            : ExtendedFunction<Matrix, Vector>(x_init, bc_marker), snes_(snes) {}
 
         bool gradient(const Vector &x, Vector &g) const override {
             // initialization of gradient vector...
@@ -44,7 +42,8 @@ namespace utopia {
         }
 
         bool value(const Vector &x, typename Vector::Scalar &result) const override {
-            // hack to have fresh energy (MOOSE post-processor does things in strange way )
+            // hack to have fresh energy (MOOSE post-processor does things in strange
+            // way )
             Vector grad = 0 * x;
             this->gradient(x, grad);
 

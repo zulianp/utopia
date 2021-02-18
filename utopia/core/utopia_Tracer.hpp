@@ -139,6 +139,8 @@ namespace utopia {
 
         inline TraceSummary() : count_allocs_(0), invokations_(0), seconds_(0) {}
 
+        inline double seconds() const { return seconds_; }
+
     private:
         Allocations::Counter count_allocs_;
         Allocations::Counter invokations_;

@@ -97,6 +97,8 @@ namespace utopia {
         }
 
         bool value(const Vector &x_const, Scalar &val) const override {
+            UTOPIA_TRACE_REGION_BEGIN("PhaseFieldForBrittleFractures::value(...)");
+
             USpace U;
             space_.subspace(1, U);
             CSpace C = space_.subspace(0);
@@ -168,10 +170,14 @@ namespace utopia {
             val = x.comm().sum(val);
 
             assert(val == val);
+
+            UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::value(...)");
             return true;
         }
 
         bool gradient(const Vector &x_const, Vector &g) const override {
+            UTOPIA_TRACE_REGION_BEGIN("PhaseFieldForBrittleFractures::gradient(...)");
+
             if (empty(g)) {
                 space_.create_vector(g);
             } else {
@@ -289,10 +295,14 @@ namespace utopia {
 
             // static int iter = 0;
             // write("g" + std::to_string(iter++) + ".m", g);
+
+            UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::gradient(...)");
             return true;
         }
 
         bool hessian(const Vector &x_const, Matrix &H) const override {
+            UTOPIA_TRACE_REGION_BEGIN("PhaseFieldForBrittleFractures::hessian(...)");
+
             if (empty(H)) {
                 // if(use_dense_hessian_) {
                 //     H = local_zeros({space_.n_dofs(), space_.n_dofs()}); //FIXME
@@ -450,6 +460,8 @@ namespace utopia {
 
             // static int iter = 0;
             // write("H" + std::to_string(iter++) + ".m", H);
+
+            UTOPIA_TRACE_REGION_END("PhaseFieldForBrittleFractures::hessian(...)");
             return true;
         }
 

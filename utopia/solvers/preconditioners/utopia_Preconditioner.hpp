@@ -15,7 +15,8 @@
 #include <memory>
 #include <utility>
 
-// #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
+// #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename
+// utopia::Traits<Tensor>::Vector, 1>
 
 namespace utopia {
 

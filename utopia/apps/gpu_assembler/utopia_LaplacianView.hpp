@@ -11,20 +11,20 @@ namespace utopia {
     template <typename Scalar>
     class LaplacianKernel {
     public:
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &diff_coeff,
-                                                   const Grad &g_trial,
-                                                   const Grad &g_test,
-                                                   const Scalar &dx) {
+        template <class Grad, typename DX>
+        UTOPIA_INLINE_FUNCTION static auto apply(const Scalar &diff_coeff,
+                                                 const Grad &g_trial,
+                                                 const Grad &g_test,
+                                                 const DX &dx) -> decltype(dx * diff_coeff) {
             return diff_coeff * inner(g_trial, g_test) * dx;
         }
 
-        template <class Grad>
-        UTOPIA_INLINE_FUNCTION static Scalar apply(const Scalar &diff_coeff,
-                                                   const Scalar &c_trial,
-                                                   const Grad &g_trial,
-                                                   const Grad &g_test,
-                                                   const Scalar &dx) {
+        template <class Grad, typename CTrial, typename DX>
+        UTOPIA_INLINE_FUNCTION static auto apply(const Scalar &diff_coeff,
+                                                 const CTrial &c_trial,
+                                                 const Grad &g_trial,
+                                                 const Grad &g_test,
+                                                 const DX &dx) -> decltype(dx * diff_coeff) {
             return diff_coeff * c_trial * inner(g_trial, g_test) * dx;
         }
     };

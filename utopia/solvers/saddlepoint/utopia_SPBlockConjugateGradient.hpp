@@ -19,7 +19,8 @@ namespace utopia {
         | B 		D 		0   | | lagr  | = | 0     |
     m := master, s := slave
     It uses the schur complement
-    Warning: rows with boundary conditions in B_t and D_t have to be handled outside.
+    Warning: rows with boundary conditions in B_t and D_t have to be handled
+    outside.
 
     */
     template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>

@@ -17,6 +17,7 @@
 #include "utopia_QuasiNewton.hpp"
 
 #include "utopia_ConstrainedIncludes.hpp"
+#include "utopia_InexactNewtonInterface.hpp"
 #include "utopia_LineSearchIncludes.hpp"
 #include "utopia_PseudoContinuationIncludes.hpp"
 #include "utopia_TrustRegionIncludes.hpp"

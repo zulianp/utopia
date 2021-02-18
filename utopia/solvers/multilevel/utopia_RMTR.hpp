@@ -34,7 +34,8 @@ namespace utopia {
         using Fun = typename RMTRBase::Fun;
 
         static_assert(!utopia::is_derivative_free<CONSISTENCY_LEVEL>::value,
-                      "utopia::RMTR_l2 does not support derivative free computations. Please use QuasiRMTR. ");
+                      "utopia::RMTR_l2 does not support derivative free "
+                      "computations. Please use QuasiRMTR. ");
 
     public:
         /**
@@ -103,7 +104,8 @@ namespace utopia {
                 _tr_subproblems[level] = strategy;
             } else {
                 utopia_error(
-                    "utopia::RMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n");
+                    "utopia::RMTR::set_tr_strategy:: Requested level exceeds number of "
+                    "levels in ML hierarchy. \n");
             }
 
             return true;
@@ -112,7 +114,8 @@ namespace utopia {
         bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies) {
             if (static_cast<SizeType>(strategies.size()) != this->n_levels()) {
                 utopia_error(
-                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML "
+                    "utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be "
+                    "equal to number of levels in ML "
                     "hierarchy. \n");
             }
 
@@ -145,14 +148,17 @@ namespace utopia {
             bool flg = RMTRBase::check_initialization();
 
             if (static_cast<SizeType>(_tr_subproblems.size()) != this->n_levels()) {
-                utopia_error("utopia::RMTR_l2:: number of level QP solvers and levels not equal. \n");
+                utopia_error(
+                    "utopia::RMTR_l2:: number of level QP solvers and levels not equal. "
+                    "\n");
                 flg = false;
             }
 
             return flg;
         }
 
-        // -------------------------- tr radius managment ---------------------------------------------
+        // -------------------------- tr radius managment
+        // ---------------------------------------------
         /**
          * @brief      Updates delta on given level
          *
@@ -211,8 +217,8 @@ namespace utopia {
         }
 
         /**
-         * @brief      THis check guarantees that iterates at a lower level remain in the TR radius defined at the finer
-         * level
+         * @brief      THis check guarantees that iterates at a lower level remain in
+         * the TR radius defined at the finer level
          *
          * @param[in]  corr_norm  The norm of sum of all corrections on given level
          * @param[in]  level      The level
@@ -232,7 +238,8 @@ namespace utopia {
             return (Rg_norm >= this->grad_smoothess_termination() * g_norm) ? true : false;
         }
 
-        //----------------------------- QP solve -----------------------------------------------------------------
+        //----------------------------- QP solve
+        //-----------------------------------------------------------------
 
         /**
          * @brief      Solves TR subroblem for given level

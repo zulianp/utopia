@@ -13,13 +13,15 @@
 namespace utopia {
     /**
      * @brief      The Newton solver.
-     *             Solver doesn't contain any globalization strategy, but it is possible to set-up damping parameter.
+     *             Solver doesn't contain any globalization strategy, but it is
+     * possible to set-up damping parameter.
      *
      *             The new iterate is obtained as:
      *              \f$ x_{k+1} = x_{k} - \alpha * H(x_k)^{-1} g(x_k), \f$ \n
      *              where \f$ \alpha  \f$ is duming parameter,
      *                    \f$ g  \f$ is gradient and \f$ H  \f$ is Hessian.
-     *              Default value of \f$ \alpha  \f$ is 1, therefore full Newton step.
+     *              Default value of \f$ \alpha  \f$ is 1, therefore full Newton
+     * step.
      *
      * Example usage:
      * @snippet tests/utopia_SolverTest.cpp Newton CG example
@@ -78,7 +80,9 @@ namespace utopia {
                             dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->linear_solver_.get())) {
                         iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
                     } else {
-                        utopia_error("utopia::Newton::you can not use inexact Newton with exact linear solver. ");
+                        utopia_error(
+                            "utopia::Newton::you can not use inexact Newton with exact "
+                            "linear solver. ");
                     }
                 }
 
@@ -174,7 +178,8 @@ namespace utopia {
 
     private:
         Scalar alpha_;                            /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
+        std::shared_ptr<LSStrategy> ls_strategy_; /*!< Strategy used in order to
+                                                     obtain step \f$ \alpha_k \f$ */
         Vector grad_neg_, step_, grad_;
     };
 
