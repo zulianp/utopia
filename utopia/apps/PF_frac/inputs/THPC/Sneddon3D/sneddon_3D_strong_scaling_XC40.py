@@ -18,8 +18,8 @@ import subprocess
 
 # cannot use whole node
 # num_nodes = (50, 48, 56, 64)
-# tasks_per_node=18
-num_nodes = (80, 96, 112, 128, 160, 192, 224, 256)
+
+num_nodes = (50, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256)
 tasks_per_node=36
 
 inputFile = '$SCRATCH/Sneddon_large.json'

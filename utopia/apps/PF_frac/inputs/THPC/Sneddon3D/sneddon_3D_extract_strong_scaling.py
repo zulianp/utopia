@@ -35,4 +35,4 @@ for d in allData:
         v['efficiencyTotal'] = v['speedupTotal'] * allData[0]['numNodes']/d['numNodes']
         v['efficiencyMean'] = v['speedupMean'] * allData[0]['numNodes']/d['numNodes']
 
-        csv_out.write(f',{v['time']},{v["speedupMean"]},{v["speedupTotal"]},{v["efficiencyMean"]},{v["efficiencyTotal"]}')
+        csv_out.write(f',{v["time"]},{v["speedupMean"]},{v["speedupTotal"]},{v["efficiencyMean"]},{v["efficiencyTotal"]}')
