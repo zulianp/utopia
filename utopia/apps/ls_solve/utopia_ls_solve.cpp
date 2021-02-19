@@ -9,6 +9,10 @@
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
 
+#include "utopia_Agglomerate.hpp"
+#include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_ILU.hpp"
+
 #include "utopia_MPITimeStatistics.hpp"
 
 // std
@@ -61,11 +65,19 @@ namespace utopia {
             stats.start();
 
             std::string path_A, path_b, path_oracle, path_output = "out.mm";
+            bool use_amg = true;
+            int block_size = 1;
+            bool write_matlab = false;
+            bool rescale_with_diag = false;
 
             in.get("A", path_A);
             in.get("b", path_b);
             in.get("oracle", path_oracle);
             in.get("out", path_output);
+            in.get("use_amg", use_amg);
+            in.get("block_size", block_size);
+            in.get("write_matlab", write_matlab);
+            in.get("rescale_with_diag", rescale_with_diag);
 
             if (path_A.empty()) {
                 utopia::err() << "[Error] A undefined!!!\n";
@@ -87,12 +99,48 @@ namespace utopia {
 
             stats.stop_collect_and_restart("read_files");
 
+            if (write_matlab) {
+                rename("a", A);
+                write("A.m", A);
+
+                rename("b", b);
+                write("B.m", b);
+            }
+
+            if (rescale_with_diag) {
+                Vector d = diag(A);
+                e_pseudo_inv(d, d);
+                A.diag_scale_left(d);
+                b = e_mul(d, b);
+            }
+
             x.zeros(row_layout(A));
 
-            KSPSolver<Matrix, Vector> solver;
-            solver.read(in);
+            std::shared_ptr<LinearSolver<Matrix, Vector>> solver;
 
-            // Factorization<Matrix, Vector> solver;
+            if (use_amg) {
+                auto smoother = std::make_shared<ILU<Matrix, Vector>>();
+                auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+                // coarse_solver->verbose(true);
+
+                // std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
+                auto agglomerator = std::make_shared<Agglomerate<Matrix>>();
+
+                auto amg = std::make_shared<AlgebraicMultigrid<Matrix, Vector>>(smoother, coarse_solver, agglomerator);
+
+                InputParameters inner_params;
+                inner_params.set("block_size", block_size);
+                coarse_solver->read(inner_params);
+                smoother->read(inner_params);
+
+                solver = amg;
+            } else {
+                // solver = std::make_shared<KSPSolver<Matrix, Vector>>();
+                solver = std::make_shared<ILU<Matrix, Vector>>();
+                // solver = std::make_shared<Factorization<Matrix, Vector>>();
+            }
+
+            solver->read(in);
 
             stats.stop_collect_and_restart("read_settings");
 
@@ -101,7 +149,7 @@ namespace utopia {
             utopia::out() << "norm_residual (pre): " << r_norm << "\n";
 
             utopia::out() << "ndofs " << x.size() << std::endl;
-            solver.solve(A, b, x);
+            solver->solve(A, b, x);
 
             stats.stop_collect_and_restart("solve");
 
@@ -130,8 +178,9 @@ namespace utopia {
             LSSolveApp<PetscMatrix, PetscVector> app;
             app.read(in);
         } else {
-            LSSolveApp<TpetraMatrix, TpetraVector> app;
-            app.read(in);
+            // AMG does not support Trilinos yet
+            // LSSolveApp<TpetraMatrix, TpetraVector> app;
+            // app.read(in);
         }
     }
 

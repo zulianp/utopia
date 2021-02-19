@@ -13,59 +13,108 @@ namespace utopia {
         using Scalar = typename Traits::Scalar;
         using SizeType = typename Traits::SizeType;
         using IndexArray = typename Traits::IndexArray;
+        using ScalarArray = typename Traits::ScalarArray;
         using Vector = typename Traits::Vector;
 
-        Agglomerate *clone() const override { return new Agglomerate(); }
+        Agglomerate *clone() const override { return new Agglomerate(*this); }
+
+        void read(Input &in) override {
+            in.get("bmax", bmax_);
+            in.get("weight", weight_);
+            in.get("verbose", verbose_);
+        }
 
         void create_prolongator(const Matrix &in, Matrix &prolongator) override {
             using namespace utopia;
 
-            Vector am;
-            in.row_abs_max(am);
             auto rr = row_range(in);
 
             Matrix in_local;
             local_block_view(in, in_local);
 
-            IndexArray count(rr.extent(), 0);
-            IndexArray fine_to_coarse_idx(rr.extent(), 0);
-
-            std::vector<bool> aggregated(rr.extent(), false);
-
+            IndexArray parent(rr.extent(), -1);
             SizeType n_coarse_rows = 0;
 
+            ScalarArray a_max(rr.extent(), 0);
+
+            // Global a_max_i
+            // in.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
+            //     if (i != j) {
+            //         auto local_i = i - rr.begin();
+            //         a_max[local_i] = device::max(a_max[local_i], device::abs(a_ij));
+            //     }
+            // });
+
+            // Local a_max_i
+            in_local.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
+                if (i != j) {
+                    a_max[i] = device::max(a_max[i], device::abs(a_ij));
+                }
+            });
+
             {
-                auto am_view = const_local_view_device(am);
+                for (SizeType i = 0; i < rr.extent(); ++i) {
+                    if (parent[i] != -1) continue;
+                    parent[i] = n_coarse_rows;
 
-                SizeType last_row = -1;
-                SizeType coarse_row = -1;
+                    RowView<const Matrix> row_view(in_local, i);
+                    SizeType n_values = row_view.n_values();
 
-                in_local.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
-                    if (aggregated[i]) return;
+                    Scalar a_max_i = a_max[i];
 
-                    if (last_row != i) {
-                        if (last_row >= 0) aggregated[last_row] = true;
+                    SizeType count = 0;
+                    for (SizeType k = 0; k < n_values; ++k) {
+                        const SizeType j = row_view.col(k);
+                        const Scalar a_ij = row_view.get(k);
 
-                        last_row = i;
-                        ++coarse_row;
+                        if (weight_ * a_max_i < device::abs(a_ij) && parent[j] == -1) {
+                            parent[j] = n_coarse_rows;
+                            count++;
+                        }
+
+                        if (count >= bmax_) {
+                            break;
+                        }
                     }
 
-                    auto a_max = am_view.get(i);
-                    auto &count_i = count[i];
+                    if (count == 0) {
+                        // This node is not a cluster center
+                        parent[i] = -1;
 
-                    if (i != j) {
-                        if (weight * a_max < device::abs(a_ij) && count_i < max_agg && !aggregated[j]) {
-                            aggregated[j] = true;
-                            ++count_i;
-                            fine_to_coarse_idx[j] = coarse_row;
+                        Scalar max_aij = 0;
+                        SizeType arg_max_j = -1;
+                        for (SizeType k = 0; k < n_values; ++k) {
+                            const SizeType j = row_view.col(k);
+                            const Scalar a_ij = std::abs(row_view.get(k));
+
+                            if (a_ij > max_aij) {
+                                arg_max_j = j;
+                                max_aij = a_ij;
+                            }
                         }
-                    } else {
-                        fine_to_coarse_idx[i] = coarse_row;
 
-                        ++count_i;
+                        if (arg_max_j != -1) {
+                            parent[i] = parent[arg_max_j];
+                        }
+
+                    } else {
                         ++n_coarse_rows;
                     }
-                });
+                }
+
+                SizeType n_not_aggr = 0;
+                for (SizeType i = 0; i < rr.extent(); ++i) {
+                    if (parent[i] != -1) continue;
+
+                    parent[i] = n_coarse_rows++;
+                    ++n_not_aggr;
+                }
+
+                if (verbose_) {
+                    in.comm().synched_print("n_not_aggr: " + std::to_string(n_not_aggr) +
+                                            ", n_coarse_rows: " + std::to_string(n_coarse_rows) + "/" +
+                                            std::to_string(in.local_rows()) + "\n");
+                }
             }
 
             auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows, in.rows(), Traits::determine());
@@ -78,13 +127,18 @@ namespace utopia {
                 auto coarse_offset = prolongator.col_range().begin();
 
                 for (SizeType i = 0; i < n; ++i) {
-                    prolongator.set(rr.begin() + i, coarse_offset + fine_to_coarse_idx[i], 1.0);
+                    prolongator.set(rr.begin() + i, coarse_offset + parent[i], 1.0);
                 }
             }
         }
 
-        SizeType max_agg{3};
-        Scalar weight{1. / 3};
+        inline void verbose(const bool val) { verbose_ = val; }
+
+    private:
+        SizeType bmax_{3};
+        // SizeType bmin_{5};
+        Scalar weight_{1. / 3};
+        bool verbose_{true};
     };
 
 }  // namespace utopia

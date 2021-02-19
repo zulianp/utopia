@@ -42,7 +42,7 @@ namespace utopia {
 
             out.set_cols(n_blocks);
 
-            std::vector<SizeType> block_pattern(n_blocks);
+            std::vector<SizeType> block_pattern(n_blocks, 0.0);
 
             auto &row_ptr = out.row_ptr();
             auto &colidx = out.colidx();
@@ -129,6 +129,8 @@ namespace utopia {
             values.resize(row_ptr[n_blocks] * BlockSize_2);
 
             update(n, ia, ja, array, out);
+
+            assert(out.is_valid());
         }
 
         static void update(const CRSMatrix<ScalarView, IndexView, 1> &in,

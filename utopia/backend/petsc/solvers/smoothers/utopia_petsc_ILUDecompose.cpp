@@ -65,6 +65,20 @@ namespace utopia {
         IndexView colidx(ja, nnz);
 
         CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
+
+        assert(crs.is_valid());
+
+#ifndef NDEBUG
+        const PetscScalar orginal_min = (mat.comm().size() == 1) ? mat.min() : l_mat.min();
+        const PetscScalar orginal_max = (mat.comm().size() == 1) ? mat.max() : l_mat.max();
+
+        const PetscScalar crs_min = crs.min();
+        const PetscScalar crs_max = crs.max();
+
+        assert(orginal_min == crs_min);
+        assert(orginal_max == crs_max);
+#endif
+
         return ilu_decompose(crs, modified);
     }
 
@@ -127,6 +141,19 @@ namespace utopia {
         out.colidx().clear();
         out.values().clear();
         convert(crs, out);
+
+        assert(out.is_valid());
+
+#ifndef NDEBUG
+        const PetscScalar orginal_min = (in.comm().size() == 1) ? in.min() : l_mat.min();
+        const PetscScalar orginal_max = (in.comm().size() == 1) ? in.max() : l_mat.max();
+
+        const PetscScalar out_min = out.min();
+        const PetscScalar out_max = out.max();
+
+        assert(orginal_min == out_min);
+        assert(orginal_max == out_max);
+#endif
     }
 
     template <int BlockSize>
