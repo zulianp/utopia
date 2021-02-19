@@ -1,5 +1,6 @@
 import os
 import subprocess
+import math
 
 num_nodes = (1, 2, 4, 8, 16, 32, 64, 128, 256, 512)
 tasks_per_node=36
