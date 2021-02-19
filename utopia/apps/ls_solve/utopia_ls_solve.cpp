@@ -99,19 +99,19 @@ namespace utopia {
 
             stats.stop_collect_and_restart("read_files");
 
+            if (rescale_with_diag) {
+                Vector d = diag(A);
+                e_pseudo_inv(d, d);
+                A.diag_scale_left(d);
+                b = e_mul(d, b);
+            }
+
             if (write_matlab) {
                 rename("a", A);
                 write("A.m", A);
 
                 rename("b", b);
                 write("B.m", b);
-            }
-
-            if (rescale_with_diag) {
-                Vector d = diag(A);
-                e_pseudo_inv(d, d);
-                A.diag_scale_left(d);
-                b = e_mul(d, b);
             }
 
             x.zeros(row_layout(A));
