@@ -32,11 +32,11 @@ namespace utopia {
         AlgebraicMultigrid(const AlgebraicMultigrid &other)
             : algo_(other.algo_),
               agglomerator_(std::shared_ptr<MatrixAgglomerator<Matrix>>(other.agglomerator_->clone())),
-              n_coarsening_steps_(other.n_coarsening_steps_) {}
+              n_levels_(other.n_levels_) {}
 
         void read(Input &in) override {
             Super::read(in);
-            in.get("n_coarsening_steps", n_coarsening_steps_);
+            in.get("n_levels", n_levels_);
             algo_.read(in);
         }
 
@@ -46,14 +46,13 @@ namespace utopia {
             Super::update(op);
 
             //////////////////////////////////////////////////////////////////
-            SizeType n_levels = n_coarsening_steps_;
-            std::vector<std::shared_ptr<Transfer>> transfers(n_levels - 1);
-            std::vector<std::shared_ptr<const Matrix>> matrices(n_levels);
-            matrices[n_levels - 1] = op;
+            std::vector<std::shared_ptr<Transfer>> transfers(n_levels_ - 1);
+            std::vector<std::shared_ptr<const Matrix>> matrices(n_levels_);
+            matrices[n_levels_ - 1] = op;
 
             auto last_mat = op;
 
-            for (SizeType l = n_levels - 2; l >= 0; --l) {
+            for (SizeType l = n_levels_ - 2; l >= 0; --l) {
                 auto A = std::make_shared<Matrix>();
                 auto P = std::make_shared<Matrix>();
                 agglomerator_->create_prolongator(*last_mat, *P);
@@ -87,7 +86,7 @@ namespace utopia {
     private:
         Multigrid<Matrix, Vector> algo_;
         std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator_;
-        SizeType n_coarsening_steps_{1};
+        SizeType n_levels_{2};
     };
 
 }  // namespace utopia
