@@ -70,6 +70,7 @@ namespace utopia {
             int block_size = 1;
             bool write_matlab = false;
             bool rescale_with_diag = false;
+            bool use_ksp = false;
 
             in.get("A", path_A);
             in.get("b", path_b);
@@ -79,6 +80,11 @@ namespace utopia {
             in.get("block_size", block_size);
             in.get("write_matlab", write_matlab);
             in.get("rescale_with_diag", rescale_with_diag);
+            in.get("use_ksp", use_ksp);
+
+            if (use_ksp) {
+                use_amg = false;
+            }
 
             if (path_A.empty()) {
                 utopia::err() << "[Error] A undefined!!!\n";
@@ -101,8 +107,8 @@ namespace utopia {
             stats.stop_collect_and_restart("read_files");
 
             if (rescale_with_diag) {
-                Vector d = diag(A);
-                e_pseudo_inv(d, d);
+                Vector d = 1. / diag(A);
+                // e_pseudo_inv(d, d);
                 A.diag_scale_left(d);
                 b = e_mul(d, b);
             }
@@ -121,6 +127,10 @@ namespace utopia {
 
             if (use_amg) {
                 auto smoother = std::make_shared<ILU<Matrix, Vector>>();
+                // auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
+                // smoother->pc_type("ilu");
+                // smoother->ksp_type("richardson");
+
                 // auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
                 auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
                 std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
@@ -146,8 +156,11 @@ namespace utopia {
 
                 solver = amg;
             } else {
-                // solver = std::make_shared<KSPSolver<Matrix, Vector>>();
-                solver = std::make_shared<ILU<Matrix, Vector>>();
+                if (use_ksp) {
+                    solver = std::make_shared<KSPSolver<Matrix, Vector>>();
+                } else {
+                    solver = std::make_shared<ILU<Matrix, Vector>>();
+                }
                 // solver = std::make_shared<Factorization<Matrix, Vector>>();
             }
 

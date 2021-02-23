@@ -82,6 +82,11 @@ namespace utopia {
         const SizeType *ja;
     };
 
+    /*
+     * Try this LDU instead
+     * (L + Id) * D (U + Id) x = b; x = (U + Id)^{-1} * D^{-1} * (L + Id)^{-1} b
+     */
+
     template <class ScalarView, class IndexView>
     class ILUDecompose<CRSMatrix<ScalarView, IndexView, 1>, HOMEMADE> {
     public:

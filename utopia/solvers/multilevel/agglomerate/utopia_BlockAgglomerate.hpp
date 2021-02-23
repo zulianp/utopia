@@ -153,7 +153,7 @@ namespace utopia {
     private:
         SizeType bmax_{3};
         // SizeType bmin_{5};
-        SizeType component_{0};
+        SizeType component_{BlockSize - 1};
         Scalar weight_{1. / 3};
         bool verbose_{true};
     };
