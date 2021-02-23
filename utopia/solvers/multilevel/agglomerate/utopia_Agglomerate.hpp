@@ -25,6 +25,8 @@ namespace utopia {
         }
 
         void create_prolongator(const Matrix &in, Matrix &prolongator) override {
+            UTOPIA_TRACE_REGION_BEGIN("Agglomerate::create_prolongator");
+
             using namespace utopia;
 
             auto rr = row_range(in);
@@ -130,6 +132,8 @@ namespace utopia {
                     prolongator.set(rr.begin() + i, coarse_offset + parent[i], 1.0);
                 }
             }
+
+            UTOPIA_TRACE_REGION_END("Agglomerate::create_prolongator");
         }
 
         inline void verbose(const bool val) { verbose_ = val; }

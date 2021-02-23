@@ -10,6 +10,7 @@
 #include "utopia_trilinos.hpp"
 
 #include "utopia_Agglomerate.hpp"
+#include "utopia_BlockAgglomerate.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_ILU.hpp"
 
@@ -123,8 +124,17 @@ namespace utopia {
                 auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
                 // coarse_solver->verbose(true);
 
-                // std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
-                auto agglomerator = std::make_shared<Agglomerate<Matrix>>();
+                std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
+
+                if (block_size == 2) {
+                    agglomerator = std::make_shared<BlockAgglomerate<Matrix, 2>>();
+                } else if (block_size == 3) {
+                    agglomerator = std::make_shared<BlockAgglomerate<Matrix, 3>>();
+                } else if (block_size == 4) {
+                    agglomerator = std::make_shared<BlockAgglomerate<Matrix, 4>>();
+                } else {
+                    agglomerator = std::make_shared<Agglomerate<Matrix>>();
+                }
 
                 auto amg = std::make_shared<AlgebraicMultigrid<Matrix, Vector>>(smoother, coarse_solver, agglomerator);
 
