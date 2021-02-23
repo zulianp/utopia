@@ -121,9 +121,8 @@ namespace utopia {
 
             if (use_amg) {
                 auto smoother = std::make_shared<ILU<Matrix, Vector>>();
+                // auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
                 auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
-                // coarse_solver->verbose(true);
-
                 std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
 
                 if (block_size == 2) {
@@ -140,6 +139,8 @@ namespace utopia {
 
                 InputParameters inner_params;
                 inner_params.set("block_size", block_size);
+                inner_params.set("use_simd", true);
+                inner_params.set("use_line_search", true);
                 coarse_solver->read(inner_params);
                 smoother->read(inner_params);
 
