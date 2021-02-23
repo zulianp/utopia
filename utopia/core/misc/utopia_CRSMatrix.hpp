@@ -85,6 +85,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION CRSMatrix() = default;
 
+        UTOPIA_INLINE_FUNCTION SizeType n_blocks() const { return values_.size() / BlockSize2; }
         UTOPIA_INLINE_FUNCTION SizeType nnz() const { return values_.size(); }
         UTOPIA_INLINE_FUNCTION SizeType cols() const { return n_cols_; }
         UTOPIA_INLINE_FUNCTION SizeType rows() const { return row_ptr_.size() - 1; }
