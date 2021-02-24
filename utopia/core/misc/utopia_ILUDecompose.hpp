@@ -7,6 +7,7 @@
 #include "utopia_CRSToBlockCRS.hpp"
 #include "utopia_ILU.hpp"
 
+#include <cmath>
 #include <vector>
 
 namespace utopia {
@@ -81,6 +82,11 @@ namespace utopia {
         const SizeType *ja;
     };
 
+    /*
+     * Try this LDU instead
+     * (L + Id) * D (U + Id) x = b; x = (U + Id)^{-1} * D^{-1} * (L + Id)^{-1} b
+     */
+
     template <class ScalarView, class IndexView>
     class ILUDecompose<CRSMatrix<ScalarView, IndexView, 1>, HOMEMADE> {
     public:
@@ -130,14 +136,22 @@ namespace utopia {
                 const SizeType row_begin = ia[i];
                 const SizeType row_diag = idx.idx[i];
 
+                assert(array[row_diag] != 0.0);
+
                 Scalar val = b[i];
+                assert(std::isfinite(val));
 
                 for (SizeType k = row_begin; k < row_diag; ++k) {
                     auto j = ja[k];
+                    assert(j < n);
+
                     val -= array[k] * L_inv_b[j];
                 }
 
                 L_inv_b[i] = val / array[row_diag];
+
+                assert(L_inv_b[i] == L_inv_b[i]);
+                assert(std::isfinite(L_inv_b[i]));
             }
 
             // Backward substitution
@@ -145,6 +159,8 @@ namespace utopia {
             for (SizeType i = n - 1; i >= 0; --i) {
                 const SizeType row_end = ia[i + 1];
                 const SizeType row_diag = idx.idx[i];
+
+                assert(array[row_diag] != 0.0);
 
                 Scalar val = L_inv_b[i];
 
@@ -154,6 +170,7 @@ namespace utopia {
                 }
 
                 x[i] = val / array[row_diag];
+                assert(x[i] == x[i]);
             }
         }
 
@@ -173,6 +190,8 @@ namespace utopia {
                 const SizeType row_end = ia[r + 1];
                 const SizeType k = idx.idx[r];
                 const Scalar d = 1. / array[k];
+
+                assert(array[k] != 0.0);
 
                 for (SizeType ki = k + 1; ki < row_end; ++ki) {
                     auto i = ja[ki];
@@ -237,7 +256,15 @@ namespace utopia {
                 const SizeType row_end = ia[r + 1];
                 const SizeType k = idx.idx[r];
                 d.raw_type().set_data(in_out.block(k));
-                assert(std::abs(det(d)) > 0);
+
+#ifndef NDEBUG
+                Scalar det_d = std::abs(det(d));
+                if (!(det_d > 0)) {
+                    disp(det_d);
+                    disp(d);
+                    assert(det_d > 0);
+                }
+#endif
                 d_inv = inv(d);
 
                 for (SizeType ki = k + 1; ki < row_end; ++ki) {
@@ -295,6 +322,7 @@ namespace utopia {
                 const SizeType row_diag = idx.idx[i];
 
                 d.raw_type().set_data(ilu.block(row_diag));
+                assert(std::abs(det(d)) > 0);
                 d_inv = inv(d);
 
                 for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {
@@ -330,6 +358,7 @@ namespace utopia {
                 const SizeType row_end = ia[i + 1];
 
                 d.raw_type().set_data(ilu.block(row_diag));
+                assert(std::abs(det(d)) > 0);
                 d_inv = inv(d);
 
                 for (SizeType sub_i = 0; sub_i < BlockSize; ++sub_i) {

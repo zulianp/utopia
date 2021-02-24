@@ -42,17 +42,8 @@ namespace utopia {
 
         // FIXME
         using Shape = typename FunctionSpace::Shape;
-        // using Quadrature = utopia::Quadrature<Shape, 2*(Shape::Order -1)>;
-        // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
-
-        // #ifdef USE_SIMD_ASSEMBLY
-        //         using SIMDType = Vc::Vector<Scalar>;
-        //         using Quadrature = simd::Quadrature<SIMDType, Dim>;
-        //         // using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
-        // #else
         using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
         static const int NQuadPoints = Quadrature::NPoints;
-        // #endif  // USE_SIMD_ASSEMBLY
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
@@ -605,6 +596,8 @@ namespace utopia {
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
+                UTOPIA_TRACE_REGION_BEGIN("IsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
+
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
                 auto space_view = this->space_.view_device();
@@ -757,6 +750,8 @@ namespace utopia {
 
                         space_view.add_matrix(e, el_mat, H_view);
                     });
+
+                UTOPIA_TRACE_REGION_END("IsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
             }
 
             // check before boundary conditions

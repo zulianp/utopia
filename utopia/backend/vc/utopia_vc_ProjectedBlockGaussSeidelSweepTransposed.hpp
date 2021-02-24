@@ -1,5 +1,5 @@
-#ifndef UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
-#define UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
+#ifndef UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_TRANSPOSED_HPP
+#define UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_TRANSPOSED_HPP
 
 #include "utopia_Base.hpp"
 
@@ -26,7 +26,7 @@ namespace utopia {
 
     // Slower than original non-vectorized version
     template <class Matrix>
-    class VcProjectedBlockGaussSeidelSweep final : public ProjectedGaussSeidelSweep<Matrix> {
+    class VcProjectedBlockGaussSeidelSweepTransposed final : public ProjectedGaussSeidelSweep<Matrix> {
     public:
         using Scalar = typename Traits<Matrix>::Scalar;
         using SizeType = typename Traits<Matrix>::SizeType;
@@ -47,60 +47,57 @@ namespace utopia {
 
         static_assert(BlockSize == 4, "Must fix this class to work with other types than avx2 with doubles");
 
-        VcProjectedBlockGaussSeidelSweep *clone() const override {
-            auto ptr = utopia::make_unique<VcProjectedBlockGaussSeidelSweep>();
+        VcProjectedBlockGaussSeidelSweepTransposed *clone() const override {
+            auto ptr = utopia::make_unique<VcProjectedBlockGaussSeidelSweepTransposed>();
             ptr->on_update_keep_nnz_pattern_ = on_update_keep_nnz_pattern_;
             return ptr.release();
         }
 
         void read(Input &in) override { in.get("on_update_keep_nnz_pattern", on_update_keep_nnz_pattern_); }
 
-        class BlockIdx {
-        public:
-            constexpr BlockIdx(const SizeType i_scalar, const SizeType j_scalar)
-                : i(i_scalar / BlockSize),
-                  sub_i(i_scalar - i * BlockSize),
-                  j(j_scalar / BlockSize),
-                  sub_j(j_scalar - j * BlockSize) {
-                assert(sub_j < BlockSize);
-                assert(sub_i < BlockSize);
-            }
-
-            SizeType i;
-            SizeType sub_i;
-
-            SizeType j;
-            SizeType sub_j;
-
-            inline constexpr bool is_diag() const { return i == j; }
-            inline constexpr bool is_first() const { return sub_i == 0 && sub_j == 0; }
-        };
-
         void init_from_local_matrix(const Matrix &mat) override {
-            UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
+            UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweepTransposed::init_from_local_matrix");
             if (diag_.empty() || !on_update_keep_nnz_pattern_) {
-                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_crs");
+                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweepTransposed::init_crs");
                 crs_block_matrix_split_diag<BlockSize>(mat, block_crs, diag_);
                 inv_diag_.resize(block_crs.rows());
-                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_crs");
+                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweepTransposed::init_crs");
             } else {
-                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::update_crs");
+                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweepTransposed::update_crs");
                 crs_block_matrix_update<BlockSize>(mat, block_crs, diag_);
-                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::update_crs");
+                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweepTransposed::update_crs");
             }
 
-            auto n_blocks = block_crs.rows();
+            auto n_block_rows = block_crs.rows();
+            auto n_blocks = block_crs.n_blocks();
 
             BlockView d;
             d.raw_type().set_size(BlockSize, BlockSize);
 
-            for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
+            for (SizeType k = 0; k < n_blocks; ++k) {
+                d.raw_type().set_data(block_crs.block(k));
+
+                for (int d1 = 0; d1 < BlockSize; ++d1) {
+                    for (int d2 = d1 + 1; d2 < BlockSize; ++d2) {
+                        std::swap(d(d1, d2), d(d2, d1));
+                    }
+                }
+            }
+
+            for (SizeType block_i = 0; block_i < n_block_rows; ++block_i) {
                 d.raw_type().set_data(&diag_[block_i * BlockSize_2]);
+
+                for (int d1 = 0; d1 < BlockSize; ++d1) {
+                    for (int d2 = d1 + 1; d2 < BlockSize; ++d2) {
+                        std::swap(d(d1, d2), d(d2, d1));
+                    }
+                }
+
                 assert(std::abs(det(d)) > 0);
                 inv_diag_[block_i] = inv(d);
             }
 
-            UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
+            UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweepTransposed::init_from_local_matrix");
         }
 
         void update_from_local_matrix(const Matrix &local_diag_block) override {
@@ -108,34 +105,39 @@ namespace utopia {
         }
 
         void apply(const SizeType &times) override {
-            UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::apply(...)");
+            UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweepTransposed::apply(...)");
 
             for (SizeType t = 0; t < times; ++t) {
                 apply();
             }
 
-            UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::apply(...)");
+            UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweepTransposed::apply(...)");
         }
 
         void apply_unconstrained(const SizeType &times) override {
-            UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::apply_unconstrained(...)");
+            UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweepTransposed::apply_unconstrained(...)");
 
             for (SizeType t = 0; t < times; ++t) {
                 apply_unconstrained();
             }
 
-            UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::apply_unconstrained(...)");
+            UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweepTransposed::apply_unconstrained(...)");
         }
 
-        VcProjectedBlockGaussSeidelSweep() = default;
+        VcProjectedBlockGaussSeidelSweepTransposed() = default;
 
     private:
         void apply_unconstrained() {
             auto &row_ptr = block_crs.row_ptr();
             auto &colidx = block_crs.colidx();
 
-            const SizeType n_blocks = row_ptr.size() - 1;
-            SIMDType r_simd, c_simd, LRc_simd, mat_simd;
+            const SizeType n_block_rows = row_ptr.size() - 1;
+
+            SIMDType r_simd, c_simd, mat_simd;
+            Scalar r_v[BlockSize] = {0, 0, 0, 0};
+
+            BlockView d;
+            d.raw_type().set_size(BlockSize, BlockSize);
 
             static const auto alignment = Vc::Unaligned;
             // static const auto alignment = Vc::Aligned;
@@ -146,35 +148,40 @@ namespace utopia {
 
                 r_simd.load(&this->r_[b_offset], alignment);
 
-                for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
-
-                    auto *aij = block_crs.block(j);
+                for (SizeType k = row_ptr[block_i]; k < row_end; ++k) {
+                    auto *aij = block_crs.block(k);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
                         mat_simd.load(&aij[d * BlockSize], alignment);
-                        LRc_simd[d] = (mat_simd * c_simd).sum();
+                        r_simd -= (this->c_[colidx[k] * BlockSize + d] * mat_simd);
                     }
-
-                    r_simd -= LRc_simd;
                 }
 
                 const auto &D_inv = inv_diag_[block_i];
-                for (SizeType d = 0; d < BlockSize; ++d) {
+
+                ////////////////////////////////////////////////
+
+                mat_simd.load(&(D_inv(0, 0)), alignment);
+                r_simd.store(r_v, alignment);
+
+                c_simd = mat_simd * r_v[0];
+
+                for (SizeType d = 1; d < BlockSize; ++d) {
                     mat_simd.load(&(D_inv(d, 0)), alignment);
-                    SizeType i = b_offset + d;
-                    this->c_[i] = (mat_simd * r_simd).sum();
+                    c_simd += mat_simd * r_v[d];
                 }
+
+                c_simd.store(&this->c_[b_offset], alignment);
             };
 
-            for (SizeType b = 0; b < n_blocks; ++b) {
+            for (SizeType b = 0; b < n_block_rows; ++b) {
                 f(b);
             }
 
             if (this->symmetric_) {
                 static_assert(std::is_signed<SizeType>::value, "needs to be a signed integer");
 
-                for (SizeType b = n_blocks - 1; b >= 0; --b) {
+                for (SizeType b = n_block_rows - 1; b >= 0; --b) {
                     f(b);
                 }
             }
@@ -184,10 +191,11 @@ namespace utopia {
             auto &row_ptr = block_crs.row_ptr();
             auto &colidx = block_crs.colidx();
 
-            const SizeType n_blocks = row_ptr.size() - 1;
+            const SizeType n_block_rows = row_ptr.size() - 1;
 
             SmallMatrix d_temp, d_inv_temp;
-            SIMDType r_simd, c_simd, LRc_simd, mat_simd, l_simd, u_simd;
+            SIMDType r_simd, c_simd, mat_simd, l_simd, u_simd;
+            Scalar r_v[BlockSize] = {0, 0, 0, 0};
 
             BlockView d;
             d.raw_type().set_size(BlockSize, BlockSize);
@@ -201,24 +209,30 @@ namespace utopia {
 
                 r_simd.load(&this->r_[b_offset], alignment);
 
-                for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
-
-                    auto *aij = block_crs.block(j);
+                for (SizeType k = row_ptr[block_i]; k < row_end; ++k) {
+                    auto *aij = block_crs.block(k);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
                         mat_simd.load(&aij[d * BlockSize], alignment);
-                        LRc_simd[d] = (mat_simd * c_simd).sum();
+                        r_simd -= (this->c_[colidx[k] * BlockSize + d] * mat_simd);
                     }
-
-                    r_simd -= LRc_simd;
                 }
 
                 const auto &D_inv = inv_diag_[block_i];
-                for (SizeType d = 0; d < BlockSize; ++d) {
+
+                ////////////////////////////////////////////////
+
+                mat_simd.load(&(D_inv(0, 0)), alignment);
+                r_simd.store(r_v, alignment);
+
+                c_simd = mat_simd * r_v[0];
+
+                for (SizeType d = 1; d < BlockSize; ++d) {
                     mat_simd.load(&(D_inv(d, 0)), alignment);
-                    c_simd[d] = (mat_simd * r_simd).sum();
+                    c_simd += mat_simd * r_v[d];
                 }
+
+                ////////////////////////////////////////////////
 
                 l_simd.load(&this->lb_[b_offset], alignment);
                 u_simd.load(&this->ub_[b_offset], alignment);
@@ -239,31 +253,38 @@ namespace utopia {
                     for (SizeType d = 0; d < BlockSize; ++d) {
                         if (mask_r[d]) {
                             for (SizeType d_j = 0; d_j < BlockSize; ++d_j) {
-                                d_temp(d, d_j) = d_j == d;
+                                d_temp(d_j, d) = d_j == d;
                             }
                         }
                     }
 
                     d_inv_temp = inv(d_temp);
 
-                    for (SizeType d = 0; d < BlockSize; ++d) {
-                        SizeType i = b_offset + d;
+                    ////////////////////////////////////////////////
+                    mat_simd.load(&(d_inv_temp(0, 0)), alignment);
+                    r_simd.store(r_v, alignment);
+
+                    c_simd = mat_simd * r_v[0];
+
+                    for (SizeType d = 1; d < BlockSize; ++d) {
                         mat_simd.load(&(d_inv_temp(d, 0)), alignment);
-                        this->c_[i] = (mat_simd * r_simd).sum();
+                        c_simd += mat_simd * r_v[d];
                     }
-                } else {
-                    c_simd.store(&this->c_[b_offset], alignment);
+
+                    ////////////////////////////////////////////////
                 }
+
+                c_simd.store(&this->c_[b_offset], alignment);
             };
 
-            for (SizeType b = 0; b < n_blocks; ++b) {
+            for (SizeType b = 0; b < n_block_rows; ++b) {
                 f(b);
             }
 
             if (this->symmetric_) {
                 static_assert(std::is_signed<SizeType>::value, "needs to be a signed integer");
 
-                for (SizeType b = n_blocks - 1; b >= 0; --b) {
+                for (SizeType b = n_block_rows - 1; b >= 0; --b) {
                     f(b);
                 }
             }
@@ -280,4 +301,4 @@ namespace utopia {
 }  // namespace utopia
 
 #endif
-#endif  // UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
+#endif  // UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_TRANSPOSED_HPP

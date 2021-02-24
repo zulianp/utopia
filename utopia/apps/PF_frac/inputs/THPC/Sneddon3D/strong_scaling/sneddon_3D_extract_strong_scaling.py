@@ -2,15 +2,13 @@ import csv
 import glob
 
 # excecute this script inside the base directory that was used in the submit_jobs script
-# i.e. the working directory should be in such a way that ./*nodes/summary.0.csv is found
+# i.e. the working directory should be in such a way that ./*nodes/summary.*.0.csv is found
 
 allData = []
 for filename in sorted(glob.glob('[0-9]*nodes/summary.*.0.csv')):
-    numNodes = int(filename[0:4])
-    # uncomment if you want all results and not only the one with a cube domain
-    if numNodes not in (1, 8, 64, 512):
-        continue
+    numNodes = int(filename[0:3])
     print(f'numNodes={numNodes}')
+    # print(filename)
 
     with open(filename) as f:
         allRows = [(r[0], r[2], r[5], r[3]) for r in csv.reader(f, delimiter=';')]
@@ -23,13 +21,18 @@ for filename in sorted(glob.glob('[0-9]*nodes/summary.*.0.csv')):
             assert(abs(r['mean']-r['total']/r['count']) < 1e-3)
         allData.append({'numNodes': numNodes, 'data': allRows})
 
-csv_out = open('weak_scaling.csv', 'w')
+csv_out = open('strong_scaling.csv', 'w')
 csv_out.write('nodes,')
-csv_out.write(','.join([f'{k}_efficiency_mean,{k}_efficiency_total' for k in allData[0]['data'].keys()]))
+csv_out.write(','.join([f'{k}_time,{k}_speedup_mean,{k}_speedup_total,{k}_efficiency_mean,{k}_efficiency_total' for k in allData[0]['data'].keys()]))
+
 for d in allData:
     csv_out.write(f'\n{d["numNodes"]}')
-    for k,v in d['data'].items():
-        v['efficiencyTotal'] = allData[0]['data'][k]['total'] / v['total']
-        v['efficiencyMean'] = allData[0]['data'][k]['mean'] / v['mean']
-        csv_out.write(f',{v["efficiencyMean"]},{v["efficiencyTotal"]}')
 
+    for k,v in d['data'].items():
+        v['time'] = v['total']
+        v['speedupTotal'] = allData[0]['data'][k]['total'] / v['total']
+        v['speedupMean'] = allData[0]['data'][k]['mean'] / v['mean']
+        v['efficiencyTotal'] = v['speedupTotal'] * allData[0]['numNodes']/d['numNodes']
+        v['efficiencyMean'] = v['speedupMean'] * allData[0]['numNodes']/d['numNodes']
+
+        csv_out.write(f',{v["time"]},{v["speedupMean"]},{v["speedupTotal"]},{v["efficiencyMean"]},{v["efficiencyTotal"]}')

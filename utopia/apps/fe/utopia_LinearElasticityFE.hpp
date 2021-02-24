@@ -56,14 +56,9 @@ namespace utopia {
         using ElementVector = utopia::StaticVector<Scalar, NFunctions>;
 
 #ifdef USE_SIMD_LINEAR_ELASTICITY_FE
-        // using SIMDType = Vc::Vector<Scalar>;
-        // // using SIMDType = Scalar;
-        // using Quadrature = simd::Quadrature<SIMDType, Elem::Dim>;
-        // using GradValue = typename simd::FETraits<Elem, SIMDType>::GradValue;
         using SIMDType = Vc::Vector<Scalar>;
         using Quadrature = simd_v2::Quadrature<Scalar, Dim>;
-        using GradValue = typename simd_v2::FETraits<Elem, Scalar>::GradValue;
-
+        using GradValue = typename simd_v2::FETraits<Elem>::GradValue;
 #else
         using Quadrature = utopia::Quadrature<Elem, 2 * (Elem::Order - 1)>;
         using GradValue = typename Elem::GradValue;

@@ -65,6 +65,20 @@ namespace utopia {
         IndexView colidx(ja, nnz);
 
         CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
+
+        assert(crs.is_valid());
+
+#ifndef NDEBUG
+        const PetscScalar orginal_min = (mat.comm().size() == 1) ? mat.min() : l_mat.min();
+        const PetscScalar orginal_max = (mat.comm().size() == 1) ? mat.max() : l_mat.max();
+
+        const PetscScalar crs_min = crs.min();
+        const PetscScalar crs_max = crs.max();
+
+        assert(orginal_min == crs_min);
+        assert(orginal_max == crs_max);
+#endif
+
         return ilu_decompose(crs, modified);
     }
 
@@ -110,9 +124,6 @@ namespace utopia {
         PetscMatrix l_mat;
         local_block_view(in, l_mat);
 
-        // perform copy
-        // out.copy(l_mat);
-
         PetscSeqAIJRaw m_raw(l_mat.raw_type());
         PetscInt n = m_raw.n;
         PetscInt nnz = m_raw.ia[n];
@@ -130,6 +141,74 @@ namespace utopia {
         out.colidx().clear();
         out.values().clear();
         convert(crs, out);
+
+        assert(out.is_valid());
+
+#ifndef NDEBUG
+        const PetscScalar orginal_min = (in.comm().size() == 1) ? in.min() : l_mat.min();
+        const PetscScalar orginal_max = (in.comm().size() == 1) ? in.max() : l_mat.max();
+
+        const PetscScalar out_min = out.min();
+        const PetscScalar out_max = out.max();
+
+        assert(orginal_min == out_min);
+        assert(orginal_max == out_max);
+#endif
+    }
+
+    template <int BlockSize>
+    void crs_block_matrix_split_diag(const PetscMatrix &in,
+                                     CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out,
+                                     std::vector<PetscReal> &diag) {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
+        PetscMatrix l_mat;
+        local_block_view(in, l_mat);
+
+        PetscSeqAIJRaw m_raw(l_mat.raw_type());
+        PetscInt n = m_raw.n;
+        PetscInt nnz = m_raw.ia[n];
+
+        const PetscInt *ia = m_raw.ia;
+        const PetscInt *ja = m_raw.ja;
+        PetscScalar *array = m_raw.array;
+
+        ScalarView values(array, nnz);
+        IndexView row_ptr(ia, n + 1);
+        IndexView colidx(ja, nnz);
+
+        CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+        out.row_ptr().clear();
+        out.colidx().clear();
+        out.values().clear();
+        convert_split_diag(crs, out, diag);
+    }
+
+    template <int BlockSize>
+    void crs_block_matrix_update(const PetscMatrix &in,
+                                 CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out,
+                                 std::vector<PetscReal> &diag) {
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+
+        PetscMatrix l_mat;
+        local_block_view(in, l_mat);
+
+        PetscSeqAIJRaw m_raw(l_mat.raw_type());
+        PetscInt n = m_raw.n;
+        PetscInt nnz = m_raw.ia[n];
+
+        const PetscInt *ia = m_raw.ia;
+        const PetscInt *ja = m_raw.ja;
+        PetscScalar *array = m_raw.array;
+
+        ScalarView values(array, nnz);
+        IndexView row_ptr(ia, n + 1);
+        IndexView colidx(ja, nnz);
+
+        CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+        convert_split_diag_update(crs, out, diag);
     }
 
     template void crs_block_matrix<2>(const PetscMatrix &,
@@ -138,6 +217,30 @@ namespace utopia {
                                       CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &);
     template void crs_block_matrix<4>(const PetscMatrix &,
                                       CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &);
+
+    template void crs_block_matrix_split_diag<2>(const PetscMatrix &,
+                                                 CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &,
+                                                 std::vector<PetscReal> &);
+
+    template void crs_block_matrix_split_diag<3>(const PetscMatrix &,
+                                                 CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &,
+                                                 std::vector<PetscReal> &);
+
+    template void crs_block_matrix_split_diag<4>(const PetscMatrix &,
+                                                 CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &,
+                                                 std::vector<PetscReal> &);
+
+    template void crs_block_matrix_update<2>(const PetscMatrix &,
+                                             CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 2> &,
+                                             std::vector<PetscReal> &);
+
+    template void crs_block_matrix_update<3>(const PetscMatrix &,
+                                             CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 3> &,
+                                             std::vector<PetscReal> &);
+
+    template void crs_block_matrix_update<4>(const PetscMatrix &,
+                                             CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 4> &,
+                                             std::vector<PetscReal> &);
 
     bool ILUDecompose<PetscMatrix, PETSC>::update(const PetscMatrix &mat) { return decompose(mat, ilu_, modified_); }
 

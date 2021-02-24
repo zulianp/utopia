@@ -89,8 +89,6 @@ namespace utopia {
             // UTOPIA_NO_ALLOC_BEGIN("MPRGP");
             // //cudaProfilerStart();
 
-            // Scalar r_norm0 = norm2(rhs);
-
             const auto &&ub = constraints.upper_bound();
             const auto &&lb = constraints.lower_bound();
 
@@ -107,8 +105,6 @@ namespace utopia {
             Scalar gnorm;
 
             Scalar alpha_cg, alpha_f, beta_sc;
-
-            // this->get_projection(x, *lb, *ub, Ax);
 
             assert(lb);
             assert(ub);
@@ -221,30 +217,6 @@ namespace utopia {
                         d_fi.set(i, (li < xi && xi < ui) ? gi : Scalar(0.0));
                     });
             }
-
-            // {
-
-            //     auto d_lb = const_device_view(lb);
-            //     auto d_ub = const_device_view(ub);
-            //     auto d_x  = const_device_view(x);
-            //     auto d_g  = const_device_view(g);
-
-            //     parallel_each_write(fi, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-            //     {
-            //         Scalar li = d_lb.get(i);
-            //         Scalar ui = d_ub.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar gi = d_g.get(i);
-
-            //         if(li < xi && xi < ui){
-            //             return gi;
-            //         }
-            //         else{
-            //             return 0.0;
-            //         }
-
-            //     });
-            // }
         }
 
         Scalar get_alpha_f(const Vector &x,
@@ -280,50 +252,6 @@ namespace utopia {
             }
 
             return multi_min(help_f1, help_f2);
-
-            // {
-            //     auto d_lb = const_device_view(lb);
-            //     auto d_ub = const_device_view(ub);
-            //     auto d_x  = const_device_view(x);
-            //     auto d_p  = const_device_view(p);
-
-            //     parallel_each_write(help_f1, UTOPIA_LAMBDA(const SizeType i) ->
-            //     Scalar
-            //     {
-            //         Scalar li = d_lb.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar pi = d_p.get(i);
-
-            //         if(pi > 0)
-            //         {
-            //             return (xi-li)/pi;
-            //         }
-            //         else
-            //         {
-            //             return 1e15;
-            //         }
-            //     });
-
-            //     parallel_each_write(help_f2, UTOPIA_LAMBDA(const SizeType i) ->
-            //     Scalar
-            //     {
-            //         Scalar ui = d_ub.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar pi = d_p.get(i);
-
-            //         if(pi < 0)
-            //         {
-            //             return (xi-ui)/pi;
-            //         }
-            //         else
-            //         {
-            //             return 1e15;
-            //         }
-
-            //     });
-            // }
-
-            // return multi_min(help_f1, help_f2);
         }
 
         void get_beta(const Vector &x, const Vector &g, const Vector &lb, const Vector &ub, Vector &beta) const {
@@ -350,34 +278,6 @@ namespace utopia {
                         d_beta.set(i, val);
                     });
             }
-
-            // {
-            //     auto d_lb = const_device_view(lb);
-            //     auto d_ub = const_device_view(ub);
-            //     auto d_x  = const_device_view(x);
-            //     auto d_g  = const_device_view(g);
-
-            //     parallel_each_write(beta, UTOPIA_LAMBDA(const SizeType i) -> Scalar
-            //     {
-            //         Scalar li = d_lb.get(i);
-            //         Scalar ui = d_ub.get(i);
-            //         Scalar xi = d_x.get(i);
-            //         Scalar gi = d_g.get(i);
-
-            //         if(device::abs(li -  xi) < 1e-14)
-            //         {
-            //             return device::min(0.0, gi);
-            //         }
-            //         else if(device::abs(ui -  xi) < 1e-14)
-            //         {
-            //             return device::max(0.0, gi);
-            //         }
-            //         else
-            //         {
-            //             return 0.0;
-            //         }
-            //     });
-            // }
         }
 
     private:

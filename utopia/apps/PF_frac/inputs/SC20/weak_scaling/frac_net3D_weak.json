@@ -26,6 +26,8 @@
     "pressure0" : 50,
     "pressure_increase_factor" : 1,
     "dt" : 100,
+    "use_simd" : true,
+    "block_solver" : true,
     "second_phase_ts" : {
         "dt" : 0.1,
         "start_time" : 500.0

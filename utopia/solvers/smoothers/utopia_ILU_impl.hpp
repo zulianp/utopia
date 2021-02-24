@@ -60,11 +60,19 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     bool ILU<Matrix, Vector, Backend>::smooth(const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("ILU::smooth");
         auto &A = *this->get_operator();
-        A.apply(x, impl_->residual);
-        impl_->residual = b - impl_->residual;
-        impl_->apply(impl_->residual, impl_->correction);
-        x += impl_->correction;
+
+        SizeType n_sweeps = this->sweeps();
+
+        for (int i = 0; i < n_sweeps; ++i) {
+            A.apply(x, impl_->residual);
+            impl_->residual = b - impl_->residual;
+            impl_->apply(impl_->residual, impl_->correction);
+            x += impl_->correction;
+        }
+
+        UTOPIA_TRACE_REGION_END("ILU::smooth");
         return true;
     }
 
@@ -76,11 +84,19 @@ namespace utopia {
             this->init_solver("ILU", {" it. ", "|| residual ||"});
         }
 
+        auto &A = *this->get_operator();
+
         bool converged = false;
 
         int iteration = 0;
         while (!converged) {
-            smooth(b, x);
+            // smooth(b, x);
+
+            A.apply(x, impl_->residual);
+            impl_->residual = b - impl_->residual;
+            impl_->apply(impl_->residual, impl_->correction);
+            x += impl_->correction;
+
             const Scalar norm_r = norm2(impl_->residual);
 
             if (this->verbose()) {
