@@ -269,12 +269,16 @@ namespace utopia {
 
                 if (std::isinf(alpha) || std::isnan(alpha)) {
                     stop = this->check_convergence(it, r_norm, 1, 1);
+                    gradient_descent_step(A, b, x);
+                    std::cout << "---- nan --- \n";
                     break;
                 }
 
                 // checking negative curvature
                 if (pAp <= 0.0) {
                     stop = this->check_convergence(it, r_norm, 1, 1);
+                    gradient_descent_step(A, b, x);
+                    std::cout << "---- negative curvature check  --- \n";
                     break;
                 }
 

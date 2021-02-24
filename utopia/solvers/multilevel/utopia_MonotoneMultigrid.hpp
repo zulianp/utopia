@@ -43,7 +43,7 @@ namespace utopia {
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
 
-        typedef struct {
+        typedef struct LevelMemory {
             std::vector<Vector> r, x, rhs;
 
             void init(const int n_levels) {

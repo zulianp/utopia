@@ -181,6 +181,9 @@ namespace utopia {
 #ifdef CHECK_NUM_PRECISION_mode
                 if (has_nan_or_inf(this->memory_.x[n_levels - 1]) == 1) {
                     this->memory_.x[n_levels - 1].set(0.0);
+                    if (mpi_world_rank() == 0) {
+                        utopia::out() << "   nan or inf .... \n";
+                    }
                     return true;
                 }
 #endif
@@ -193,7 +196,9 @@ namespace utopia {
                 rel_norm = r_norm / r0_norm;
 
                 // print iteration status on every iteration
-                if (this->verbose()) PrintInfo::print_iter_status(it, {r_norm, rel_norm});
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {r_norm, rel_norm});
+                }
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, r_norm, rel_norm, 1);
@@ -275,7 +280,7 @@ namespace utopia {
 
         bool level_solve(const SizeType &level, const Vector &rhs, Vector &x, const SizeType &sweeps = 1000) {
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
-            mf_lin_solvers_[level]->verbose(false);
+            // mf_lin_solvers_[level]->verbose(false);
             mf_lin_solvers_[level]->max_it(sweeps);
             return mf_lin_solvers_[level]->solve(*multiplication_action, rhs, x);
         }
