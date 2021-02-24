@@ -52,7 +52,9 @@ for d in allData:
 
     for k in methods:
         v = d['data'][k]
-        v['area'] = 100.0*(v['max'] - v['min'])/main_time
+        a =  100.0*(v['max'] - v['min'])/main_time
+        v['area'] =a
+        print(f'{k}:{a}')
         # v['area'] = (v['var'])
         csv_out.write(f',{v["area"]}')
 

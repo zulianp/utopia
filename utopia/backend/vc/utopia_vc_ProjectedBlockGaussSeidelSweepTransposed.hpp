@@ -128,54 +128,63 @@ namespace utopia {
 
     private:
         void apply_unconstrained() {
-            assert(false && "IMPLEMENT ME");
-            // auto &row_ptr = block_crs.row_ptr();
-            // auto &colidx = block_crs.colidx();
+            auto &row_ptr = block_crs.row_ptr();
+            auto &colidx = block_crs.colidx();
 
-            // const SizeType n_blocks = row_ptr.size() - 1;
-            // SIMDType r_simd, c_simd, LRc_simd, mat_simd;
+            const SizeType n_block_rows = row_ptr.size() - 1;
 
-            // static const auto alignment = Vc::Unaligned;
-            // // static const auto alignment = Vc::Aligned;
+            SIMDType r_simd, c_simd, mat_simd;
+            Scalar r_v[BlockSize] = {0, 0, 0, 0};
 
-            // auto f = [&](const SizeType &block_i) {
-            //     const SizeType row_end = row_ptr[block_i + 1];
-            //     const SizeType b_offset = block_i * BlockSize;
+            BlockView d;
+            d.raw_type().set_size(BlockSize, BlockSize);
 
-            //     r_simd.load(&this->r_[b_offset], alignment);
+            static const auto alignment = Vc::Unaligned;
+            // static const auto alignment = Vc::Aligned;
 
-            //     for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-            //         c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
+            auto f = [&](const SizeType &block_i) {
+                const SizeType row_end = row_ptr[block_i + 1];
+                const SizeType b_offset = block_i * BlockSize;
 
-            //         auto *aij = block_crs.block(j);
+                r_simd.load(&this->r_[b_offset], alignment);
 
-            //         for (SizeType d = 0; d < BlockSize; ++d) {
-            //             mat_simd.load(&aij[d * BlockSize], alignment);
-            //             LRc_simd[d] = (mat_simd * c_simd).sum();
-            //         }
+                for (SizeType k = row_ptr[block_i]; k < row_end; ++k) {
+                    auto *aij = block_crs.block(k);
 
-            //         r_simd -= LRc_simd;
-            //     }
+                    for (SizeType d = 0; d < BlockSize; ++d) {
+                        mat_simd.load(&aij[d * BlockSize], alignment);
+                        r_simd -= (this->c_[colidx[k] * BlockSize + d] * mat_simd);
+                    }
+                }
 
-            //     const auto &D_inv = inv_diag_[block_i];
-            //     for (SizeType d = 0; d < BlockSize; ++d) {
-            //         mat_simd.load(&(D_inv(d, 0)), alignment);
-            //         SizeType i = b_offset + d;
-            //         this->c_[i] = (mat_simd * r_simd).sum();
-            //     }
-            // };
+                const auto &D_inv = inv_diag_[block_i];
 
-            // for (SizeType b = 0; b < n_blocks; ++b) {
-            //     f(b);
-            // }
+                ////////////////////////////////////////////////
 
-            // if (this->symmetric_) {
-            //     static_assert(std::is_signed<SizeType>::value, "needs to be a signed integer");
+                mat_simd.load(&(D_inv(0, 0)), alignment);
+                r_simd.store(r_v, alignment);
 
-            //     for (SizeType b = n_blocks - 1; b >= 0; --b) {
-            //         f(b);
-            //     }
-            // }
+                c_simd = mat_simd * r_v[0];
+
+                for (SizeType d = 1; d < BlockSize; ++d) {
+                    mat_simd.load(&(D_inv(d, 0)), alignment);
+                    c_simd += mat_simd * r_v[d];
+                }
+
+                c_simd.store(&this->c_[b_offset], alignment);
+            };
+
+            for (SizeType b = 0; b < n_block_rows; ++b) {
+                f(b);
+            }
+
+            if (this->symmetric_) {
+                static_assert(std::is_signed<SizeType>::value, "needs to be a signed integer");
+
+                for (SizeType b = n_block_rows - 1; b >= 0; --b) {
+                    f(b);
+                }
+            }
         }
 
         void apply() {
