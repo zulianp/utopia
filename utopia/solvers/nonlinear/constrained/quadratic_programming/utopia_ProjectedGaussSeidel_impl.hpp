@@ -75,8 +75,8 @@ namespace utopia {
         in.get("use_simd", use_simd);
 
         if (use_simd && block_size == VcProjectedBlockGaussSeidelSweep<Matrix>::BlockSize) {
-            // sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
-            sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweepTransposed<Matrix>>();
+            sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
+            // sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweepTransposed<Matrix>>();
         } else
 #endif  // UTOPIA_WITH_PETSC
 #endif  // UTOPIA_WITH_VC
