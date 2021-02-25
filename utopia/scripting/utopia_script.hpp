@@ -4,6 +4,8 @@
 //#include "utopia_AbstractVector.hpp"
 namespace utopia {
     // Forward declarations
+
+
     template <typename Scalar, typename SizeType>
     class AbstractVector;
 
@@ -13,11 +15,16 @@ namespace utopia {
     template <typename Scalar, typename SizeType>
     class AlgebraFactory;
 
-    class Clonable;
-    class Communicator;
-    class SelfCommunicator;
-
+    template <class Comm, int Order, typename LocalSizeType_, typename SizeType_>
     class Layout;
+
+    // class Clonable
+    class Communicator;
+    // class SelfCommunicator;
+
+
+    //template <class Comm, typename LocalSizeType_, typename SizeType_>
+    //class Layout;
 
 }  // namespace utopia
 
@@ -25,120 +32,114 @@ namespace scripting {
 
     using Scalar = double;
     using SizeType = int;
+    using LocalSizeType = int;
     using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
+    //using Communicator = utopia::Communicator;
+    //using Layout = utopia::Layout<Communicator, LocalSizeType, SizeType>;
   
 
     void init();
     void finalize();
     void print_info();
 
-
-    class Clonable {
+    class Communicator {
     public:
-        virtual ~Clonable() = default;
+        using CommunicatorImpl = utopia::Communicator;
 
-        /** @brief This method copies the relevant
-         * settings but does not have to copy all the state variables
-         * such as buffers. Maybe we should change its name to somthing
-         * more suitable ...
-         */
-        virtual Clonable* clone() const = 0;
+        Communicator();
+        ~Communicator();
+      
+    private:
+        CommunicatorImpl* impl_;
     };
 
-    class Communicator : public Clonable {
-    public:
-        ~Communicator() override = default;
-        virtual int rank() const = 0;
-        virtual int size() const = 0;
-        Communicator *clone() const override = 0;
-        virtual void barrier() const = 0;
+    class Layout {
+        public:
+            using LayoutImpl = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
+        
+        Layout(const Communicator *comm, int Order, LocalSizeType local_size, SizeType global_size);
+        ~Layout();
 
-        virtual bool same(const Communicator &other) const { return size() == other.size(); }
-        virtual bool conjunction(const bool &val) const = 0;
-        virtual bool disjunction(const bool &val) const = 0;
-        inline bool is_root() const { return rank() == 0; }
+        private:
+            const Communicator *comm;
+            int Order;
+            LocalSizeType local_size;
+            SizeType global_size; 
     };
 
-    class SelfCommunicator : public Communicator {
+    class Vector {
     public:
-        int rank() const noexcept override { return 0; }
-        int size() const noexcept override { return 1; }
+        using VectorImpl = utopia::AbstractVector<Scalar, SizeType>;
 
-        inline static SelfCommunicator world() { return SelfCommunicator(); }
+        Vector(); // Layout layout, Scalar value
+        ~Vector();
+        void print_info();
+        void set(const Scalar &val);
 
-        inline static SelfCommunicator self() { return SelfCommunicator(); }
-
-        void barrier() const override {}
-
-        SelfCommunicator *clone() const noexcept override { return new SelfCommunicator(); }
-
-        inline static SelfCommunicator &get_default() {
-            static SelfCommunicator instance_;
-            return instance_;
-        }
-
-        inline bool conjunction(const bool &val) const override { return val; }
-
-        inline bool disjunction(const bool &val) const override { return val; }
+    private:
+        VectorImpl* impl_;
+       // Layout l;
+        Scalar value;
     };
+
+    // class Clonable {
+    // public:
+    //     virtual ~Clonable() = default;
+
+    //     /** @brief This method copies the relevant
+    //      * settings but does not have to copy all the state variables
+    //      * such as buffers. Maybe we should change its name to somthing
+    //      * more suitable ...
+    //      */
+    //     virtual Clonable* clone() const = 0;
+    // };
+
+    // class Communicator : public Clonable {
+    // public:
+    //     ~Communicator() override = default;
+    //     virtual int rank() const = 0;
+    //     virtual int size() const = 0;
+    //     Communicator *clone() const override = 0;
+    //     virtual void barrier() const = 0;
+
+    //     virtual bool same(const Communicator &other) const { return size() == other.size(); }
+    //     virtual bool conjunction(const bool &val) const = 0;
+    //     virtual bool disjunction(const bool &val) const = 0;
+    //     inline bool is_root() const { return rank() == 0; }
+    // };
+
+    // class SelfCommunicator : public Communicator {
+    // public:
+    //     int rank() const noexcept override { return 0; }
+    //     int size() const noexcept override { return 1; }
+
+    //     inline static SelfCommunicator world() { return SelfCommunicator(); }
+
+    //     inline static SelfCommunicator self() { return SelfCommunicator(); }
+
+    //     void barrier() const override {}
+
+    //     SelfCommunicator *clone() const noexcept override { return new SelfCommunicator(); }
+
+    //     inline static SelfCommunicator &get_default() {
+    //         static SelfCommunicator instance_;
+    //         return instance_;
+    //     }
+
+    //     inline bool conjunction(const bool &val) const override { return val; }
+
+    //     inline bool disjunction(const bool &val) const override { return val; }
+    // };
+
+
 
     // class Layout {
     // public:
-    //     using SizeType = SizeType_;
-    //     using LocalSizeType = LocalSizeType_;
-
-    //     inline LocalSizeType_ &local_size(const int i = 0) {
-    //         assert(i < Order);
-    //         return local_size_[i];
-    //     }
-
-    //     inline const LocalSizeType_ &local_size(const int i = 0) const {
-    //         assert(i < Order);
-    //         return local_size_[i];
-    //     }
-
-    //     inline SizeType &size(const int i = 0) {
-    //         assert(i < Order);
-    //         return size_[i];
-    //     }
-
-    //     inline const SizeType &size(const int i = 0) const {
-    //         assert(i < Order);
-    //         return size_[i];
-    //     }
-
-    //     inline bool same_local_size(const Layout &other) const {
-    //         for (int i = 0; i < Order; ++i) {
-    //             if (local_size_[i] != other.local_size(i)) {
-    //                 return false;
-    //             }
-    //         }
-
-    //         return true;
-    //     }
-
-    //     inline bool same_size(const Layout &other) const {
-    //         for (int i = 0; i < Order; ++i) {
-    //             if (size_[i] != other.size(i)) {
-    //                 return false;
-    //             }
-    //         }
-
-    //         return true;
-    //     }
-
-    //     /// collective (communicator of this is used for the computation)
-    //     inline bool same(const Layout &other) const {
-    //         if (!comm().same(other.comm())) return false;
-    //         if (!same_size(other)) return false;
-
-    //         return comm().conjunction(same_local_size(other));
-    //     }
-
-    //     const SelfCommunicator &comm() const { return comm_; }
+   
+    //     const Comm &comm() const { return comm_; }
 
     //     template <typename... Args>
-    //     Layout(SelfCommunicator comm, Args &&... args) : comm_(std::move(comm)) {
+    //     Layout(Comm comm, Args &&... args) : comm_(std::move(comm)) {
     //         init(std::forward<Args>(args)...);
     //     }
 
@@ -148,7 +149,6 @@ namespace scripting {
     //             size_[i] = 0;
     //         }
     //     }
-
 
     //     template <class OtherComm, typename OtherSizeType, typename OtherLocalSizeType>
     //     Layout(const Layout<OtherComm, Order, OtherLocalSizeType, OtherSizeType> &other) : comm_(other.comm()) {
@@ -191,13 +191,6 @@ namespace scripting {
     //     SizeType size_[Order];
     // };
 
-
-
-
-    // inline Layout<SelfCommunicator, 1, SizeType> serial_layout(const SizeType &size) {
-    //     return Layout<SelfCommunicator, 1, SizeType>(SelfCommunicator(), size, size);
-    // }
-
     
     class SparseMatrix {
     public:
@@ -210,20 +203,6 @@ namespace scripting {
     private:
         MatrixImpl* impl_;
     };
-
-    class Vector {
-    public:
-        using VectorImpl = utopia::AbstractVector<Scalar, SizeType>;
-
-        Vector();
-        ~Vector();
-        void print_info();
-        void set(const Scalar &val);
-
-    private:
-        VectorImpl* impl_;
-    };
-
 
     
 

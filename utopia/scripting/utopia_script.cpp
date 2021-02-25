@@ -39,6 +39,7 @@ namespace scripting {
         init(argc, &argv_ptr);
     }
 
+
     void print_info() { utopia::out() << "Utopia\nversion: " << UTOPIA_VERSION << std::endl; }
 
     void finalize() { utopia::Utopia::Finalize(); }
@@ -54,10 +55,32 @@ namespace scripting {
         impl_ = mat.get();
         mat.release();
     }
-    
+
     SparseMatrix::~SparseMatrix() { delete impl_; }
 
     void SparseMatrix::print_info() { utopia::out() << "SparseMatrix::print()" << std::endl; }
+
+
+    Communicator::Communicator() : impl_(nullptr) {
+        auto comm = Factory::new_communicator();
+
+        if(!comm) {
+            utopia::out() << "[Error] Communicator could not be constructed" << std::endl;
+            return; 
+        }
+        impl_ = comm.get();
+        comm.release();
+    }
+
+    Communicator::~Communicator() {delete impl_;}
+
+    Layout::Layout(const Communicator *comm_var, int Order_var, LocalSizeType local_size_var, SizeType global_size_var) {
+        comm_var = new Communicator();
+        auto comm = comm_var;
+        local_size = local_size_var;
+        global_size = global_size_var;
+        int Order = Order_var;
+    }
 
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
