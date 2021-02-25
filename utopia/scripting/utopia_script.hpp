@@ -65,6 +65,7 @@ namespace scripting {
             int Order;
             LocalSizeType local_size;
             SizeType global_size; 
+            LayoutImpl * impl_;
     };
 
     class Vector {

@@ -75,8 +75,22 @@ namespace scripting {
     Communicator::~Communicator() {delete impl_;}
 
     Layout::Layout(const Communicator *comm_var, int Order_var, LocalSizeType local_size_var, SizeType global_size_var) {
-        comm_var = new Communicator();
-        auto comm = comm_var;
+       
+    // impl_->utopia::Communicator = *comm_var;
+    // impl_->Order = Order_var;
+    // impl_->local_size = local_size_var;
+    // impl_->global_size = global_size_var;
+    //impl_ = utopia::layout(&comm_var, Order_var, local_size_var, global_size_var);
+
+
+
+
+        // auto layout = utopia::layout(*comm_var, Order_var, local_size_var, global_size_var);
+
+        // impl_ = layout.get();
+        // layout.release();
+
+        *comm = *comm_var;
         local_size = local_size_var;
         global_size = global_size_var;
         int Order = Order_var;
