@@ -1,10 +1,12 @@
 #include "utopia_script.hpp"
+#include <iostream>
+#include "../utopia.hpp"
 #include "utopia.hpp"
+#include "utopia_AbstractVector.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_ObjectFactory.hpp"
 #include "utopia_Version.hpp"
-
-#include <iostream>
+#include "utopia_script.hpp"
 
 namespace utopia {
 
@@ -52,7 +54,7 @@ namespace scripting {
         impl_ = mat.get();
         mat.release();
     }
-
+    
     SparseMatrix::~SparseMatrix() { delete impl_; }
 
     void SparseMatrix::print_info() { utopia::out() << "SparseMatrix::print()" << std::endl; }
@@ -72,5 +74,6 @@ namespace scripting {
     Vector::~Vector() { delete impl_; }
 
     void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
+    void Vector::set(const Scalar &val) { impl_->set(val); }
 
 }  // namespace scripting
