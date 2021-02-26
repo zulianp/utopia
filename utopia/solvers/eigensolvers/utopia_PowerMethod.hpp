@@ -6,10 +6,9 @@
 
 namespace utopia {
 
-    // TODO:: see if there is more appropriate interface to be used...
+    // TODO:: see if there is more appropriate interface to be used... such as EigenSolver...
     /**
      * @brief      Power method
-     * @tparam     Matrix
      * @tparam     Vector
      */
     template <class Vector>
@@ -19,11 +18,19 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
 
     public:
-        PowerMethod() : tol_(1e-5), max_it_(5) {}
+        PowerMethod() {}
 
         PowerMethod(const PowerMethod &other) : tol_(other.tol_), max_it_(other.max_it_) {}
 
-        void read(Input &in) override { in.get("use_rand_vec_init", use_rand_vec_init_); }
+        void read(Input &in) override {
+            in.get("use_rand_vec_init", use_rand_vec_init_);
+            in.get("verbose", verbose_);
+            in.get("tol", tol_);
+            in.get("max_it", max_it_);
+        }
+
+        bool verbose() const { return verbose_; }
+        void verbose(const bool &flg) { verbose_ = flg; }
 
         void tol(const Scalar &tol) { tol_ = tol; }
         Scalar tol() const { return tol_; }
@@ -38,24 +45,19 @@ namespace utopia {
             assert(layout.local_size() > 0);
 
             // resets all buffers in case the size has changed
-            help_f1.zeros(layout);
+            help.zeros(layout);
             eigenvector_.zeros(layout);
-            fi_.zeros(layout);
 
             initialized_ = true;
             layout_ = layout;
         }
 
-        void print_usage(std::ostream &os) const override {
-            // OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
-        }
+        void print_usage(std::ostream & /*os*/) const override {}
 
         PowerMethod *clone() const override { return new PowerMethod(*this); }
 
-        // void copy(const PowerMethod &other) { Super::operator=(other); }
-
         Scalar get_max_eig(const Operator<Vector> &A, const Vector &rhs, const Scalar &shift = 0.0) {
-            // Super simple power method to estimate the biggest eigenvalue
+            // Super simple power method to estimate the largest eigenvalue
             assert(!empty(eigenvector_));
 
             if (use_rand_vec_init_ == true) {
@@ -67,11 +69,15 @@ namespace utopia {
 
                         d_eigenvector_.set(i, val);
                     });
-            } else if (norm2(eigenvector_) == 0) {
+            }
+            // for first it, we use IG for eigenvector to be rhs
+            // for all next its, we use eigenvector computed on previous run
+            // unless specified to be random, then we reinit
+            else if (norm2(eigenvector_) == 0) {
                 eigenvector_ = rhs;
             }
 
-            get_max_eig(A, shift);
+            return get_max_eig(A, shift);
         }
 
         Scalar get_max_eig(const Operator<Vector> &A, const Scalar &shift = 0.0) {
@@ -80,47 +86,42 @@ namespace utopia {
 
             SizeType it = 0;
             bool converged = false;
-            Scalar gnorm, lambda = 0.0, lambda_old;
+            Scalar lambda = 0.0, lambda_old;
 
             while (!converged) {
-                help_f1 = eigenvector_;
-                A.apply(help_f1, eigenvector_);
+                help = eigenvector_;
+                A.apply(help, eigenvector_);
 
-                // todo:: verify
+                // todo:: verify sign
                 if (shift != 0.0) {
-                    eigenvector_ - shift *help_f1;
+                    eigenvector_ = eigenvector_ - shift * help;
                 }
 
-                eigenvector_ = Scalar(1.0 / Scalar(norm2(eigenvector_))) * eigenvector_;
+                lambda = norm2(eigenvector_);
+                eigenvector_ = (1. / lambda) * eigenvector_;
 
                 lambda_old = lambda;
-
-                A.apply(eigenvector_, help_f1);
-                lambda = dot(eigenvector_, help_f1);
-
-                fi_ = eigenvector_ - help_f1;
-                gnorm = norm2(fi_);
-
-                converged = ((gnorm < tol_) || (std::abs(lambda_old - lambda) < tol_) || it > max_it_) ? true : false;
+                converged = ((device::abs(lambda_old - lambda) < tol_) || it > max_it_) ? true : false;
 
                 it = it + 1;
             }
 
-            if (this->verbose() && mpi_world_rank() == 0)
+            if (this->verbose() && mpi_world_rank() == 0) {
                 utopia::out() << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
+            }
 
             return lambda;
         }
 
         bool initialized_{false};
         Layout layout_;
-        Scalar tol_;
-        SizeType max_it_;
-
+        Scalar tol_{1e-2};
+        SizeType max_it_{5};
+        bool verbose_{false};
         bool use_rand_vec_init_{false};
 
         // This fields are not to be copied anywhere
-        Vector help_f1, eigenvector_, fi_;
+        Vector help, eigenvector_;
     };
 }  // namespace utopia
 
