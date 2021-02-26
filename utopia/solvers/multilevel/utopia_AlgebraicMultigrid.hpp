@@ -47,9 +47,15 @@ namespace utopia {
             }
         }
 
-        bool apply(const Vector &rhs, Vector &sol) override { return algo_.apply(rhs, sol); }
+        bool apply(const Vector &rhs, Vector &sol) override {
+            UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigrid::apply");
+            return algo_.apply(rhs, sol);
+            UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::apply");
+        }
 
         void update(const std::shared_ptr<const Matrix> &op) override {
+            UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigrid::update");
+
             Super::update(op);
 
             //////////////////////////////////////////////////////////////////
@@ -85,6 +91,8 @@ namespace utopia {
             algo_.set_linear_operators(matrices);
             algo_.set_perform_galerkin_assembly(false);
             algo_.update();
+
+            UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::update");
         }
 
         void verbose(const bool &val) override {

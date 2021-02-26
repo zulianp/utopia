@@ -108,7 +108,6 @@ namespace utopia {
 
             if (rescale_with_diag) {
                 Vector d = 1. / diag(A);
-                // e_pseudo_inv(d, d);
                 A.diag_scale_left(d);
                 b = e_mul(d, b);
             }
@@ -126,10 +125,10 @@ namespace utopia {
             std::shared_ptr<LinearSolver<Matrix, Vector>> solver;
 
             if (use_amg) {
-                auto smoother = std::make_shared<ILU<Matrix, Vector>>();
-                // auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
-                // smoother->pc_type("ilu");
-                // smoother->ksp_type("richardson");
+                // auto smoother = std::make_shared<ILU<Matrix, Vector>>();
+                auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
+                smoother->pc_type("ilu");
+                smoother->ksp_type("richardson");
 
                 // auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
                 auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
