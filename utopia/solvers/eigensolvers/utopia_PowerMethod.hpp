@@ -76,10 +76,29 @@ namespace utopia {
                 eigenvector_ = rhs;
             }
 
-            return get_max_eig(A);
+            return compute_max_eig(A);
         }
 
         Scalar get_max_eig(const Operator<Vector> &A) {
+            // Super simple power method to estimate the largest eigenvalue
+            assert(!empty(eigenvector_));
+
+            if (use_rand_vec_init_ == true || norm2(eigenvector_) == 0) {
+                auto d_eigenvector_ = local_view_device(eigenvector_);
+
+                parallel_for(
+                    local_range_device(eigenvector_), UTOPIA_LAMBDA(const SizeType i) {
+                        const Scalar val = ((Scalar)std::rand() / (RAND_MAX)) + 1;
+
+                        d_eigenvector_.set(i, val);
+                    });
+            }
+
+            return compute_max_eig(A);
+        }
+
+    private:
+        Scalar compute_max_eig(const Operator<Vector> &A) {
             // normalize IG
             eigenvector_ = Scalar(1. / norm2(eigenvector_)) * eigenvector_;
 
@@ -102,7 +121,6 @@ namespace utopia {
             if (this->verbose() && mpi_world_rank() == 0) {
                 utopia::out() << "Power method converged in " << it << " iterations. Largest eig: " << lambda << "  \n";
             }
-
             return lambda;
         }
 

@@ -88,6 +88,8 @@ namespace utopia {
             if (!initialized_ || !layout_rhs.same(layout_)) {
                 init_memory(layout_rhs);
             }
+
+            init_eigs(A);
         }
 
         Chebyshev3level *clone() const override { return new Chebyshev3level(*this); }
@@ -104,15 +106,18 @@ namespace utopia {
             return true;
         }
 
+        void init_eigs(const Operator<Vector> &A) {
+            // std::cout << "--- eigs init --- \n";
+            this->eigMax_ = scale_max_eig_ * power_method_.get_max_eig(A);
+            this->eigMin_ = scale_min_eig_ * this->eigMax_;
+        }
+
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
-            Scalar eigMax = scale_max_eig_ * power_method_.get_max_eig(A, b);
-            Scalar eigMin = scale_min_eig_ * eigMax;
+            std::cout << "eigMax " << this->eigMax_ << "  \n";
+            std::cout << "eigMin " << this->eigMin_ << "  \n";
 
-            std::cout << "eigMax " << eigMax << "  \n";
-            std::cout << "eigMin " << eigMin << "  \n";
-
-            Scalar avg_eig = (eigMax + eigMin) / 2.0;
-            Scalar diff_eig = (eigMax - eigMin) / 2.0;
+            Scalar avg_eig = (this->eigMax_ + this->eigMin_) / 2.0;
+            Scalar diff_eig = (this->eigMax_ - this->eigMin_) / 2.0;
 
             A.apply(x, help_);
             r_ = help_ - b;
@@ -163,6 +168,7 @@ namespace utopia {
         bool initialized_{false};
         Layout layout_;
         Scalar scale_max_eig_{1.2}, scale_min_eig_{0.06};
+        Scalar eigMax_, eigMin_;
 
         // This fields are not to be copied anywhere
         Vector r_, p_, help_;

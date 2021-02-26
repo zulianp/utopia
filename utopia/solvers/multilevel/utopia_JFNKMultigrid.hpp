@@ -55,6 +55,9 @@ namespace utopia {
 
         void update(const Vector &s, const Vector &y, const Vector &x, const Vector &g) {
             hessian_approxs_[this->n_levels() - 1]->update(s, y, x, g);
+            auto multiplication_action = hessian_approxs_[this->n_levels() - 1]->build_apply_H();
+            mf_lin_solvers_[this->n_levels() - 1]->update(*multiplication_action);
+
             this->memory_.x[this->n_levels() - 1] = x;
             this->memory_.g[this->n_levels() - 1] = g;
 
@@ -67,6 +70,10 @@ namespace utopia {
 
                 hessian_approxs_[l - 1]->update(
                     this->memory_.x[l - 1], this->memory_.g[l - 1], this->memory_.x[l - 1], this->memory_.g[l - 1]);
+
+                // update should be here, as changes with Newton it, not with update...
+                auto multiplication_action = hessian_approxs_[l - 1]->build_apply_H();
+                mf_lin_solvers_[l - 1]->update(*multiplication_action);
             }
         }
 
@@ -79,6 +86,9 @@ namespace utopia {
             this->memory_.g[this->n_levels() - 1] = g;
 
             hessian_approxs_[this->n_levels() - 1]->initialize(x, g);
+            // update should be here, as changes with Newton it, not with update...
+            auto multiplication_action = hessian_approxs_[this->n_levels() - 1]->build_apply_H();
+            mf_lin_solvers_[this->n_levels() - 1]->update(*multiplication_action);
 
             // passing down info regarding current newton iterate
             for (auto l = this->n_levels() - 1; l > 0; l--) {
@@ -86,6 +96,10 @@ namespace utopia {
                 this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
                 this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.g[l - 1]);
                 hessian_approxs_[l - 1]->initialize(this->memory_.x[l - 1], this->memory_.g[l - 1]);
+
+                // update should be here, as changes with Newton it, not with update...
+                auto multiplication_action = hessian_approxs_[l - 1]->build_apply_H();
+                mf_lin_solvers_[l - 1]->update(*multiplication_action);
             }
         }
 
