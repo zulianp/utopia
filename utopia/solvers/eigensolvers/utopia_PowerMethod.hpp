@@ -45,7 +45,6 @@ namespace utopia {
             assert(layout.local_size() > 0);
 
             // resets all buffers in case the size has changed
-            help.zeros(layout);
             eigenvector_.zeros(layout);
 
             initialized_ = true;
@@ -56,7 +55,7 @@ namespace utopia {
 
         PowerMethod *clone() const override { return new PowerMethod(*this); }
 
-        Scalar get_max_eig(const Operator<Vector> &A, const Vector &rhs, const Scalar &shift = 0.0) {
+        Scalar get_max_eig(const Operator<Vector> &A, const Vector &rhs) {
             // Super simple power method to estimate the largest eigenvalue
             assert(!empty(eigenvector_));
 
@@ -77,31 +76,25 @@ namespace utopia {
                 eigenvector_ = rhs;
             }
 
-            return get_max_eig(A, shift);
+            return get_max_eig(A);
         }
 
-        Scalar get_max_eig(const Operator<Vector> &A, const Scalar &shift = 0.0) {
+        Scalar get_max_eig(const Operator<Vector> &A) {
             // normalize IG
             eigenvector_ = Scalar(1. / norm2(eigenvector_)) * eigenvector_;
 
             SizeType it = 0;
             bool converged = false;
-            Scalar lambda = 0.0, lambda_old;
+            Scalar lambda = 0.0, lambda_old = 0.0;
 
             while (!converged) {
-                help = eigenvector_;
-                A.apply(help, eigenvector_);
-
-                // todo:: verify sign
-                if (shift != 0.0) {
-                    eigenvector_ = eigenvector_ - shift * help;
-                }
+                A.apply(eigenvector_, eigenvector_);
 
                 lambda = norm2(eigenvector_);
                 eigenvector_ = (1. / lambda) * eigenvector_;
 
-                lambda_old = lambda;
                 converged = ((device::abs(lambda_old - lambda) < tol_) || it > max_it_) ? true : false;
+                lambda_old = lambda;
 
                 it = it + 1;
             }
@@ -121,7 +114,7 @@ namespace utopia {
         bool use_rand_vec_init_{false};
 
         // This fields are not to be copied anywhere
-        Vector help, eigenvector_;
+        Vector eigenvector_;
     };
 }  // namespace utopia
 

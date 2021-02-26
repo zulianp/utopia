@@ -64,6 +64,9 @@ namespace utopia {
         void scale_min_eig(const Scalar scale_min_eig) { scale_min_eig_ = scale_min_eig; }
         Scalar scale_min_eig() const { return scale_min_eig_; }
 
+        bool check_norms() const { return check_norms_; }
+        void check_norms(const bool &check_norms) { check_norms_ = check_norms; }
+
         void init_memory(const Layout &layout) override {
             assert(layout.local_size() > 0);
             OperatorBasedLinearSolver<Matrix, Vector>::init_memory(layout);
@@ -93,6 +96,15 @@ namespace utopia {
         Chebyshev3level *clone() const override { return new Chebyshev3level(*this); }
 
         void copy(const Chebyshev3level &other) { Super::operator=(other); }
+
+        bool smooth(const Vector &rhs, Vector &x) override {
+            SizeType temp = this->max_it();
+            this->max_it(this->sweeps());
+            this->check_norms(false);
+            solve(operator_cast<Vector>(*this->get_operator()), rhs, x);
+            this->max_it(temp);
+            return true;
+        }
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
             Scalar eigMax = scale_max_eig_ * power_method_.get_max_eig(A, b);
@@ -128,13 +140,18 @@ namespace utopia {
                 A.apply(p_, help_);
                 r_ = r_ + (alpha * help_);
 
-                r_norm = norm2(r_);
+                if (this->check_norms()) {
+                    r_norm = norm2(r_);
+                } else {
+                    r_norm = 9e9;
+                }
+
+                converged = this->check_convergence(it, r_norm, 1, 1);
 
                 if (this->verbose()) {
                     PrintInfo::print_iter_status(it, {r_norm});
                 }
 
-                converged = this->check_convergence(it, r_norm, 1, 1);
                 it++;
             }
 
@@ -143,6 +160,7 @@ namespace utopia {
 
     private:
         bool initialized_{false};
+        bool check_norms_{true};
         Layout layout_;
         Scalar scale_max_eig_{1.2}, scale_min_eig_{0.06};
 
