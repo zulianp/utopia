@@ -17,7 +17,7 @@ using namespace utopia;
 
 void petsc_ilu_test() {
     auto comm = PetscCommunicator::get_default();
-    PetscInt n = 1000;
+    PetscInt n = 100;
 
     auto vl = layout(comm, n, n * comm.size());
     PetscMatrix A;
@@ -29,15 +29,15 @@ void petsc_ilu_test() {
     // assemble_poisson_problem_1D(1.0, A, b);
 
     ILU<PetscMatrix, PetscVector> ls;
-    // ls.verbose(true);
+    ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-7);
     ls.stol(1e-7);
     ls.max_it(100);
 
-    // InputParameters params;
-    // params.set("use_dilu", true);
-    // ls.read(params);
+    InputParameters params;
+    params.set("use_dilu", true);
+    ls.read(params);
 
     ls.solve(A, b, x);
 

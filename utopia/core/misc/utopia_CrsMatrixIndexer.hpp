@@ -118,15 +118,16 @@ namespace utopia {
                     const SizeType row_begin_tr = row_ptr[j];
                     const SizeType row_end_tr = row_ptr[j + 1];
 
-                    const SizeType *it = std::lower_bound(colidx + row_begin_tr, colidx + row_end_tr, j);
-                    SizeType k_tr = -1;
+                    const SizeType *it = std::lower_bound(colidx + row_begin_tr, colidx + row_end_tr, i);
 
-                    if (it != (colidx + row_end_tr) && j == *it) {
-                        k_tr = (it - colidx);
+                    if (it != (colidx + row_end_tr) && i == *it) {
+                        const SizeType k_tr = (it - colidx);
+                        idx_[k_tr] = k;
+                        idx_[k] = k_tr;
+
+                        assert(colidx[k] == j);
+                        assert(colidx[k_tr] == i);
                     }
-
-                    idx_[k] = k_tr;
-                    idx_[k_tr] = k;
                 }
             }
         }

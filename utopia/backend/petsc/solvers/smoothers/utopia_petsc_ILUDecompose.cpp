@@ -84,7 +84,6 @@ namespace utopia {
 
         PetscCrsView crs_view(l_mat.raw_type());
         PetscInt n = crs_view.rows();
-        PetscInt nnz = crs_view.nnz();
 
         auto row_ptr = crs_view.row_ptr();
         auto colidx = crs_view.colidx();
