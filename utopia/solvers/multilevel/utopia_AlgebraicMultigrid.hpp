@@ -49,8 +49,9 @@ namespace utopia {
 
         bool apply(const Vector &rhs, Vector &sol) override {
             UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigrid::apply");
-            return algo_.apply(rhs, sol);
+            bool ok = algo_.apply(rhs, sol);
             UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::apply");
+            return ok;
         }
 
         void update(const std::shared_ptr<const Matrix> &op) override {
