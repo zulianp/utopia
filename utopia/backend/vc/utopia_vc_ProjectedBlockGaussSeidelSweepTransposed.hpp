@@ -136,6 +136,8 @@ namespace utopia {
             SIMDType r_simd, c_simd, mat_simd;
             Scalar r_v[BlockSize] = {0, 0, 0, 0};
 
+            SIMDType temp_c[BlockSize];
+
             BlockView d;
             d.raw_type().set_size(BlockSize, BlockSize);
 
@@ -152,8 +154,12 @@ namespace utopia {
                     auto *aij = block_crs.block(k);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
+                        temp_c[d] = this->c_[colidx[k] * BlockSize + d];
+                    }
+
+                    for (SizeType d = 0; d < BlockSize; ++d) {
                         mat_simd.load(&aij[d * BlockSize], alignment);
-                        r_simd -= (this->c_[colidx[k] * BlockSize + d] * mat_simd);
+                        r_simd -= (temp_c[d] * mat_simd);
                     }
                 }
 

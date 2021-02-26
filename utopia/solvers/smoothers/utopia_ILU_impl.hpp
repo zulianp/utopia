@@ -1,6 +1,7 @@
 #ifndef UTOPIA_ILU_IMPL_HPP
 #define UTOPIA_ILU_IMPL_HPP
 
+// #include "utopia_DILUDecompose_impl.hpp"
 #include "utopia_ILU.hpp"
 
 namespace utopia {
@@ -24,6 +25,9 @@ namespace utopia {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
             } else if (block_size == 4) {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+            } else {
+                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
+                // algo_ = utopia::make_unique<DILUAlgoritm<Matrix>>();
             }
 
             algo_->read(in);

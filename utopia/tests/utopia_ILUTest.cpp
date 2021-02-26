@@ -10,6 +10,7 @@ using namespace utopia;
 #ifdef UTOPIA_WITH_PETSC
 
 #include "utopia_ILUDecompose.hpp"
+#include "utopia_petsc_DILUAlgorithm.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
 
 void petsc_ilu_test() {

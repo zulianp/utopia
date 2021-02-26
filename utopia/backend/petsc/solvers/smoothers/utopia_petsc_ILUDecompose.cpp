@@ -7,40 +7,9 @@
 #include "utopia_CRSToBlockCRS.hpp"
 #include "utopia_ILUDecompose.hpp"
 
+#include "utopia_petsc_CrsView.hpp"
+
 namespace utopia {
-
-    class PetscSeqAIJRaw {
-    public:
-        PetscSeqAIJRaw(Mat raw_mat) : raw_mat(raw_mat) {
-            err = MatGetRowIJ(raw_mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
-            assert(err == 0);
-            assert(done == PETSC_TRUE);
-
-            if (!done) {
-                utopia::err()
-                    << "PetscMatrix::read_petsc_seqaij_impl(const Op &op): MatGetRowIJ failed to provide what "
-                       "was asked.\n";
-                abort();
-            }
-
-            MatSeqAIJGetArray(raw_mat, &array);
-        }
-
-        ~PetscSeqAIJRaw() {
-            MatSeqAIJRestoreArray(raw_mat, &array);
-            err = MatRestoreRowIJ(raw_mat, 0, PETSC_FALSE, PETSC_FALSE, &n, &ia, &ja, &done);
-            assert(err == 0);
-            UTOPIA_UNUSED(err);
-        }
-
-        Mat raw_mat;
-        PetscInt n = 0;
-        const PetscInt *ia{nullptr};
-        const PetscInt *ja{nullptr};
-        PetscScalar *array{nullptr};
-        PetscBool done;
-        PetscErrorCode err{0};
-    };
 
     bool ILUDecompose<PetscMatrix, PETSC>::decompose(const PetscMatrix &mat, PetscMatrix &out, const bool modified) {
         using ScalarView = utopia::ArrayView<PetscScalar>;
@@ -52,17 +21,13 @@ namespace utopia {
         // perform copy
         out.copy(l_mat);
 
-        PetscSeqAIJRaw m_raw(out.raw_type());
-        PetscInt n = m_raw.n;
-        PetscInt nnz = m_raw.ia[n];
+        PetscCrsView crs_view(out.raw_type());
+        PetscInt n = crs_view.rows();
+        PetscInt nnz = crs_view.nnz();
 
-        const PetscInt *ia = m_raw.ia;
-        const PetscInt *ja = m_raw.ja;
-        PetscScalar *array = m_raw.array;
-
-        ScalarView values(array, nnz);
-        IndexView row_ptr(ia, n + 1);
-        IndexView colidx(ja, nnz);
+        auto row_ptr = crs_view.row_ptr();
+        auto colidx = crs_view.colidx();
+        auto values = crs_view.values();
 
         CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
 
@@ -93,18 +58,13 @@ namespace utopia {
         auto L_inv_b_view = local_view_device(L_inv_b);
         auto x_view = local_view_device(x);
 
-        PetscSeqAIJRaw m_raw(ilu.raw_type());
+        PetscCrsView crs_view(ilu.raw_type());
+        PetscInt n = crs_view.rows();
+        PetscInt nnz = crs_view.nnz();
 
-        PetscInt n = m_raw.n;
-        PetscInt nnz = m_raw.ia[n];
-
-        const PetscInt *ia = m_raw.ia;
-        const PetscInt *ja = m_raw.ja;
-        PetscScalar *array = m_raw.array;
-
-        ScalarView values(array, nnz);
-        IndexView row_ptr(ia, n + 1);
-        IndexView colidx(ja, nnz);
+        auto row_ptr = crs_view.row_ptr();
+        auto colidx = crs_view.colidx();
+        auto values = crs_view.values();
 
         CRSMatrix<ScalarView, IndexView> crs(row_ptr, colidx, values, n);
 
@@ -124,17 +84,13 @@ namespace utopia {
         PetscMatrix l_mat;
         local_block_view(in, l_mat);
 
-        PetscSeqAIJRaw m_raw(l_mat.raw_type());
-        PetscInt n = m_raw.n;
-        PetscInt nnz = m_raw.ia[n];
+        PetscCrsView crs_view(l_mat.raw_type());
+        PetscInt n = crs_view.rows();
+        PetscInt nnz = crs_view.nnz();
 
-        const PetscInt *ia = m_raw.ia;
-        const PetscInt *ja = m_raw.ja;
-        PetscScalar *array = m_raw.array;
-
-        ScalarView values(array, nnz);
-        IndexView row_ptr(ia, n + 1);
-        IndexView colidx(ja, nnz);
+        auto row_ptr = crs_view.row_ptr();
+        auto colidx = crs_view.colidx();
+        auto values = crs_view.values();
 
         CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
         out.row_ptr().clear();
@@ -166,17 +122,13 @@ namespace utopia {
         PetscMatrix l_mat;
         local_block_view(in, l_mat);
 
-        PetscSeqAIJRaw m_raw(l_mat.raw_type());
-        PetscInt n = m_raw.n;
-        PetscInt nnz = m_raw.ia[n];
+        PetscCrsView crs_view(l_mat.raw_type());
+        PetscInt n = crs_view.rows();
+        PetscInt nnz = crs_view.nnz();
 
-        const PetscInt *ia = m_raw.ia;
-        const PetscInt *ja = m_raw.ja;
-        PetscScalar *array = m_raw.array;
-
-        ScalarView values(array, nnz);
-        IndexView row_ptr(ia, n + 1);
-        IndexView colidx(ja, nnz);
+        auto row_ptr = crs_view.row_ptr();
+        auto colidx = crs_view.colidx();
+        auto values = crs_view.values();
 
         CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
         out.row_ptr().clear();
@@ -195,17 +147,13 @@ namespace utopia {
         PetscMatrix l_mat;
         local_block_view(in, l_mat);
 
-        PetscSeqAIJRaw m_raw(l_mat.raw_type());
-        PetscInt n = m_raw.n;
-        PetscInt nnz = m_raw.ia[n];
+        PetscCrsView crs_view(l_mat.raw_type());
+        PetscInt n = crs_view.rows();
+        PetscInt nnz = crs_view.nnz();
 
-        const PetscInt *ia = m_raw.ia;
-        const PetscInt *ja = m_raw.ja;
-        PetscScalar *array = m_raw.array;
-
-        ScalarView values(array, nnz);
-        IndexView row_ptr(ia, n + 1);
-        IndexView colidx(ja, nnz);
+        auto row_ptr = crs_view.row_ptr();
+        auto colidx = crs_view.colidx();
+        auto values = crs_view.values();
 
         CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
         convert_split_diag_update(crs, out, diag);
