@@ -74,27 +74,32 @@ namespace scripting {
 
     Communicator::~Communicator() {delete impl_;}
 
-    Layout::Layout(const Communicator *comm_var, int Order_var, LocalSizeType local_size_var, SizeType global_size_var) {
-       
-    // impl_->utopia::Communicator = *comm_var;
-    // impl_->Order = Order_var;
-    // impl_->local_size = local_size_var;
-    // impl_->global_size = global_size_var;
-    //impl_ = utopia::layout(&comm_var, Order_var, local_size_var, global_size_var);
+    Layout::Layout(const Communicator &comm, int Order, LocalSizeType local_size, SizeType global_size) : 
+    impl_(nullptr), (), Order_(Order), global_size_(global_size) {
+           auto layout = Factory::new_layout();
 
+        if (!layout) {
+            utopia::out() << "[Error] Vector could not be constructed" << std::endl;
+            return;
+        }
 
-
-
-        // auto layout = utopia::layout(*comm_var, Order_var, local_size_var, global_size_var);
-
-        // impl_ = layout.get();
-        // layout.release();
-
-        *comm = *comm_var;
-        local_size = local_size_var;
-        global_size = global_size_var;
-        int Order = Order_var;
+        impl_ = layout.get();
+        layout.release();
     }
+
+    
+    // //  Layout(const Layout<utopia::Communicator, Order, LocalSizeType, SizeType> &other) : comm_(other.comm()),  
+    // //  Order_(Order), local_size_(local_size); global_size_(global_size)  {}
+
+    //  //  Layout(const Layout<utopia::Communicator, Order, LocalSizeType, SizeType> &other) : comm_(other.comm()),  
+    // //  Order_(Order), local_size_(local_size); global_size_(global_size)  {}
+    // Layout(const Layout<utopia::Communicator, Order, LocalSizeType, SizeType> &other) : comm_(other.comm()) {
+    //         std::copy(&other.local_size(0), &other.local_size(0) + Order, local_size_);
+    //     }
+
+
+
+std::copy(&other.local_size(0), &other.local_size(0) + Order, local_size_);
 
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();

@@ -5,7 +5,6 @@
 namespace utopia {
     // Forward declarations
 
-
     template <typename Scalar, typename SizeType>
     class AbstractVector;
 
@@ -28,7 +27,7 @@ namespace scripting {
     using SizeType = int;
     using LocalSizeType = int;
     using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
-    using Comm = utopia::Communicator;
+    //using Comm = utopia::Communicator;
     //using Layout = utopia::Layout<Communicator, LocalSizeType, SizeType>;
   
 
@@ -49,17 +48,20 @@ namespace scripting {
 
     class Layout {
         public:
-            using LayoutImpl = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
+            //using LayoutImpl = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
         
         Layout(const Communicator &comm, int Order, LocalSizeType local_size, SizeType global_size);
         ~Layout();
 
         private:
+           // LayoutImpl * impl_;
             const Communicator &comm_;
-            int Order;
+            int Order_;
             LocalSizeType local_size_;
             SizeType global_size_; 
-            LayoutImpl * impl_;
+        //     Comm comm_;
+        // LocalSizeType local_size_[Order];
+        // SizeType size_[Order];
     };
 
     class Vector {
