@@ -41,20 +41,25 @@ namespace scripting {
 
         Communicator();
         ~Communicator();
+
+        // CommunicatorImpl get_impl() const
+        // {
+        //     return *impl_;
+        // }
       
-    private:
+    public:
         CommunicatorImpl* impl_;
     };
 
     class Layout {
         public:
-            //using LayoutImpl = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
+            using LayoutImpl = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
         
         Layout(const Communicator &comm, int Order, LocalSizeType local_size, SizeType global_size);
         ~Layout();
 
         private:
-           // LayoutImpl * impl_;
+            LayoutImpl * impl_;
             const Communicator &comm_;
             int Order_;
             LocalSizeType local_size_;

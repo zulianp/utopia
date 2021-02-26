@@ -75,8 +75,12 @@ namespace scripting {
     Communicator::~Communicator() {delete impl_;}
 
     Layout::Layout(const Communicator &comm, int Order, LocalSizeType local_size, SizeType global_size) : 
-    impl_(nullptr), (), Order_(Order), global_size_(global_size) {
-           auto layout = Factory::new_layout();
+    
+        impl_(nullptr), comm_(comm), Order_(Order), local_size_(local_size), global_size_(global_size) {
+
+            // TODO:: replace *comm_.impl_ with get method 
+
+            auto layout = std::make_unique<LayoutImpl>(*comm_.impl_, local_size_, global_size_); 
 
         if (!layout) {
             utopia::out() << "[Error] Vector could not be constructed" << std::endl;
@@ -87,19 +91,14 @@ namespace scripting {
         layout.release();
     }
 
+    Layout::~Layout() {delete impl_;}
+
     
-    // //  Layout(const Layout<utopia::Communicator, Order, LocalSizeType, SizeType> &other) : comm_(other.comm()),  
-    // //  Order_(Order), local_size_(local_size); global_size_(global_size)  {}
-
-    //  //  Layout(const Layout<utopia::Communicator, Order, LocalSizeType, SizeType> &other) : comm_(other.comm()),  
-    // //  Order_(Order), local_size_(local_size); global_size_(global_size)  {}
-    // Layout(const Layout<utopia::Communicator, Order, LocalSizeType, SizeType> &other) : comm_(other.comm()) {
-    //         std::copy(&other.local_size(0), &other.local_size(0) + Order, local_size_);
-    //     }
 
 
 
-std::copy(&other.local_size(0), &other.local_size(0) + Order, local_size_);
+
+
 
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
