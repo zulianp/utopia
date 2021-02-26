@@ -52,11 +52,14 @@ namespace utopia {
             g0_norm = norm2(g);
             g_norm = g0_norm;
 
+            Scalar E;
+            fun.value(x, E);
+
             QuasiNewtonBase<Vector>::init_memory(x, g);
 
             if (this->verbose_) {
-                this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
-                PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
+                this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "E", "r_norm", "|| p_k || ", "alpha"});
+                PrintInfo::print_iter_status(it, {g_norm, E, r_norm, s_norm});
             }
             it++;
 
@@ -106,8 +109,10 @@ namespace utopia {
                 this->update(s, y, x, g);
                 // UTOPIA_NO_ALLOC_END();
 
+                fun.value(x, E);
+
                 // print iteration status on every iteration
-                if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha});
+                if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, E, r_norm, s_norm, alpha});
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);

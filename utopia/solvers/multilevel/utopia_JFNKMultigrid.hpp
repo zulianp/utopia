@@ -47,33 +47,10 @@ namespace utopia {
             return jfnk;
         }
 
-        void read(Input &in) override {
-            NonlinearMultiLevelInterface<Matrix, Vector>::read(in);
-
-            // if (_smoother) {
-            //   in.get("smoother", *_smoother);
-            // }
-            // if (_coarse_solver) {
-            //   in.get("coarse_solver", *_coarse_solver);
-            // }
-            // if (_ls_strategy) {
-            //   in.get("ls_strategy", *_ls_strategy);
-            // }
-        }
+        void read(Input &in) override { NonlinearMultiLevelInterface<Matrix, Vector>::read(in); }
 
         void print_usage(std::ostream &os) const override {
             NonlinearMultiLevelInterface<Matrix, Vector>::print_usage(os);
-
-            // this->print_param_usage(os, "coarse_solver", "NewtonBase",
-            //                         "Input parameters for coarse level QP
-            // solvers.",
-            //                         "-");
-            // this->print_param_usage(os, "smoother", "NewtonBase",
-            //                         "Input parameters for fine level QP solver.",
-            //                         "-");
-            // this->print_param_usage(os, "ls_strategy", "LSStrategy",
-            //                         "Input parameters for line-search strategy.",
-            //                         "-");
         }
 
         void update(const Vector &s, const Vector &y, const Vector &x, const Vector &g) {
@@ -83,12 +60,6 @@ namespace utopia {
 
             for (auto l = this->n_levels() - 1; l > 0; l--) {
                 this->transfer(l - 1).project_down(this->memory_.x[l], this->memory_.x[l - 1]);
-
-                // this->make_iterate_feasible(this->function(l - 1),
-                //                             this->memory_.x[l - 1]);
-
-                // this->transfer(l - 1).restrict(this->memory_.g[l],
-                //                                this->memory_.g[l - 1]);
 
                 this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
 
@@ -109,19 +80,11 @@ namespace utopia {
 
             hessian_approxs_[this->n_levels() - 1]->initialize(x, g);
 
+            // passing down info regarding current newton iterate
             for (auto l = this->n_levels() - 1; l > 0; l--) {
                 this->transfer(l - 1).project_down(this->memory_.x[l], this->memory_.x[l - 1]);
-
-                // this->make_iterate_feasible(this->function(l - 1),
-                //                             this->memory_.x[l - 1]);
-
-                // this->transfer(l - 1).restrict(this->memory_.g[l],
-                //                                this->memory_.g[l - 1]);
-
                 this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
-
                 this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.g[l - 1]);
-
                 hessian_approxs_[l - 1]->initialize(this->memory_.x[l - 1], this->memory_.g[l - 1]);
             }
         }
@@ -136,8 +99,6 @@ namespace utopia {
                 assert(mf_lin_solvers_[l]);
                 assert(hessian_approxs_[l]);
                 mf_lin_solvers_[l]->init_memory(this->local_level_layouts_[l]);
-                // hessian_approxs_[l]->initialize(this->memory_.x[l],
-                // this->memory_.g[l]);
             }
 
             init_mem_ = true;
@@ -192,7 +153,6 @@ namespace utopia {
                 this->memory_.res[n_levels - 1] -= rhs;
 
                 r_norm = norm2(this->memory_.res[n_levels - 1]);
-
                 rel_norm = r_norm / r0_norm;
 
                 // print iteration status on every iteration
@@ -280,7 +240,7 @@ namespace utopia {
 
         bool level_solve(const SizeType &level, const Vector &rhs, Vector &x, const SizeType &sweeps = 1000) {
             auto multiplication_action = hessian_approxs_[level]->build_apply_H();
-            // mf_lin_solvers_[level]->verbose(false);
+
             mf_lin_solvers_[level]->max_it(sweeps);
             return mf_lin_solvers_[level]->solve(*multiplication_action, rhs, x);
         }

@@ -40,9 +40,9 @@ namespace utopia {
             this->print_param_usage(os, "c2", "double", "Constant used for Wolfe conditions.", "1e-8");
         }
 
-        void c2(const Scalar &c) { c2_ = c; }
+        void c2(const Scalar &c) override { c2_ = c; }
 
-        Scalar c2() const { return c2_; }
+        Scalar c2() const override { return c2_; }
 
         /**
          * @brief      Get the alpha_k on given iterate. We are using quadratic and

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "utopia_MatrixFreeLinearSolver.hpp"
+#include "utopia_PowerMethod.hpp"
 
 namespace utopia {
 
@@ -36,7 +37,27 @@ namespace utopia {
             OperatorBasedLinearSolver<Matrix, Vector>::read(in);
             in.get("eig_comp_tol", eps_eig_est_);
             in.get("power_method_max_it", power_method_max_it_);
+
+            in.get("power_method_tol", eps_eig_est_);
+            in.get("scale_max_eig", scale_max_eig_);
+            in.get("scale_min_eig", scale_min_eig_);
+            in.get("use_rand_vec_init", use_rand_vec_init_);
         }
+
+        void power_method_tol(const Scalar &tol) { eps_eig_est_ = tol; }
+        Scalar power_method_tol() const { return eps_eig_est_; }
+
+        void power_method_max_it(const SizeType &power_method_max_it) { power_method_max_it_ = power_method_max_it; }
+        SizeType power_method_max_it() const { return power_method_max_it_; }
+
+        void use_rand_vec_init(const bool &use_rand_vec_init) { use_rand_vec_init_ = use_rand_vec_init; }
+        bool use_rand_vec_init() const { return use_rand_vec_init_; }
+
+        void scale_max_eig(const Scalar scale_max_eig) { scale_max_eig_ = scale_max_eig; }
+        Scalar scale_max_eig() const { return scale_max_eig_; }
+
+        void scale_min_eig(const Scalar scale_min_eig) { scale_min_eig_ = scale_min_eig; }
+        Scalar scale_min_eig() const { return scale_min_eig_; }
 
         void init_memory(const Layout &layout) override {
             assert(layout.local_size() > 0);
@@ -45,7 +66,7 @@ namespace utopia {
             // resets all buffers in case the size has changed
             r_.zeros(layout);
             help_f1.zeros(layout);
-            help_f2.zeros(layout);
+            eigenvector_.zeros(layout);
             fi_.zeros(layout);
             p_.zeros(layout);
 
@@ -73,15 +94,14 @@ namespace utopia {
         }
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
-            // std::cout << "----------- here ------------- \n";
-            Scalar eigMax = 1.1 * this->get_max_eig(A);
-            Scalar eigMin = eigMax / 30;
+            Scalar eigMax = scale_max_eig_ * this->get_max_eig(A, b);
+            Scalar eigMin = scale_min_eig_ * eigMax;
 
             Scalar avg_eig = (eigMax + eigMin) / 2.0;
             Scalar diff_eig = (eigMax - eigMin) / 2.0;
 
-            A.apply(x, help_f2);
-            r_ = help_f2 - b;
+            A.apply(x, help_f1);
+            r_ = help_f1 - b;
 
             SizeType it = 0;
             Scalar r_norm = 9e9, alpha = 0.0, beta = 0.0;
@@ -92,18 +112,20 @@ namespace utopia {
                     p_ = -1.0 * r_;
                     alpha = 1.0 / avg_eig;
                 } else if (it == 1) {
-                    beta = 0.5 * (diff_eig * alpha) * (diff_eig * alpha);
+                    Scalar diff_eig_alpha = (diff_eig * alpha);
+                    beta = 0.5 * diff_eig_alpha * diff_eig_alpha;
                     alpha = 1.0 / (avg_eig - beta);
                     p_ = -1.0 * r_ + (beta * p_);
                 } else {
-                    beta = 0.25 * (diff_eig * alpha) * (diff_eig * alpha);
+                    Scalar diff_eig_alpha = (diff_eig * alpha);
+                    beta = 0.25 * diff_eig_alpha;
                     alpha = 1.0 / (avg_eig - beta);
                     p_ = -1.0 * r_ + (beta * p_);
                 }
 
                 x = x + (alpha * p_);
-                A.apply(p_, help_f2);
-                r_ = r_ + (alpha * help_f2);
+                A.apply(p_, help_f1);
+                r_ = r_ + (alpha * help_f1);
 
                 r_norm = norm2(r_);
 
@@ -119,38 +141,41 @@ namespace utopia {
         }
 
     private:
-        Scalar get_max_eig(const Operator<Vector> &A) {
+        Scalar get_max_eig(const Operator<Vector> &A, const Vector &rhs) {
             // Super simple power method to estimate the biggest eigenvalue
-            assert(!empty(help_f2));
+            assert(!empty(eigenvector_));
 
-            // TODO:: setup random vector - using device
-            // help_f2.set(1.0);
-            {
-                auto d_help_f2 = local_view_device(help_f2);
+            if (use_rand_vec_init_ == true) {
+                auto d_eigenvector_ = local_view_device(eigenvector_);
 
                 parallel_for(
-                    local_range_device(help_f2), UTOPIA_LAMBDA(const SizeType i) {
+                    local_range_device(eigenvector_), UTOPIA_LAMBDA(const SizeType i) {
                         const Scalar val = ((Scalar)std::rand() / (RAND_MAX)) + 1;
 
-                        d_help_f2.set(i, val);
+                        d_eigenvector_.set(i, val);
                     });
+            } else if (norm2(eigenvector_) == 0) {
+                eigenvector_ = rhs;
             }
+
+            // normalize IG
+            eigenvector_ = Scalar(1. / norm2(eigenvector_)) * eigenvector_;
 
             SizeType it = 0;
             bool converged = false;
             Scalar gnorm, lambda = 0.0, lambda_old;
 
             while (!converged) {
-                help_f1 = help_f2;
-                A.apply(help_f1, help_f2);
-                help_f2 = Scalar(1.0 / Scalar(norm2(help_f2))) * help_f2;
+                help_f1 = eigenvector_;
+                A.apply(help_f1, eigenvector_);
+                eigenvector_ = Scalar(1.0 / Scalar(norm2(eigenvector_))) * eigenvector_;
 
                 lambda_old = lambda;
 
-                A.apply(help_f2, help_f1);
-                lambda = dot(help_f2, help_f1);
+                A.apply(eigenvector_, help_f1);
+                lambda = dot(eigenvector_, help_f1);
 
-                fi_ = help_f2 - help_f1;
+                fi_ = eigenvector_ - help_f1;
                 gnorm = norm2(fi_);
 
                 converged = ((gnorm < eps_eig_est_) || (std::abs(lambda_old - lambda) < eps_eig_est_) ||
@@ -172,8 +197,13 @@ namespace utopia {
         Scalar eps_eig_est_;
         SizeType power_method_max_it_;
 
+        Scalar scale_max_eig_{1.2}, scale_min_eig_{0.06};
+        bool use_rand_vec_init_{false};
+
         // This fields are not to be copied anywhere
-        Vector r_, p_, help_f1, help_f2, fi_;
+        Vector r_, p_, help_f1, eigenvector_, fi_;
+
+        PowerMethod<Vector> power_method_;
     };
 }  // namespace utopia
 

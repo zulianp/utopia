@@ -56,9 +56,10 @@ namespace utopia {
             SizeType n_glob = size(result).get(0);
 
             Scalar per_ = 0.0;
+            Scalar norm_v = norm2(v);
 
-            if (norm2(v) > eps_) {
-                per_ = 1. / (n_glob * Scalar(norm2(v)));
+            if (norm_v > eps_) {
+                per_ = 1. / (n_glob * norm_v);
                 per_ *= sum_a;
             } else {
                 per_ = sum_a / n_glob;
