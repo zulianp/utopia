@@ -10,6 +10,9 @@ namespace utopia {
      * @brief      Conjugate Gradient solver prejonditioned with Quasi-Newton Hessian approximation of inverse
      *             Implementation follows paper: "Automatic preconditioning by limited memory quasi-Newton updating by
      *             Morales and Nocedal"
+     *
+     *             Uses heuristic to shift spectrum, if matrix is negative definite
+     *
      * @tparam     Matrix
      * @tparam     Vector
      */
@@ -80,18 +83,38 @@ namespace utopia {
         }
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
+            Scalar pAp_pp = 0.0;
+            bool flg;
+
             if (hessian_approx_init_) {
-                return preconditioned_solve(A, b, x);
+                flg = preconditioned_solve(A, b, x, pAp_pp);
             } else {
-                return unpreconditioned_solve(A, b, x);
+                flg = unpreconditioned_solve(A, b, x, pAp_pp);
             }
+
+            while (pAp_pp != 0.0) {
+                shift_ = 5.0 * device::max(-pAp_pp, shift_);
+                utopia::out() << "------ shifting eig: " << shift_ << " \n";
+                flg = preconditioned_solve(A, b, x, pAp_pp);
+            }
+
+            return flg;
         }
 
         void update(const Operator<Vector> &A) override {
+            // utopia::out() << "--- update coarse ----- \n";
+
             const auto layout_rhs = row_layout(A);
 
             if (!initialized_ || !layout_rhs.same(layout_)) {
                 init_memory(layout_rhs);
+            }
+
+            shift_ = 0.0;
+
+            // reset precond as operator changed
+            if (reset_precond_update_) {
+                hessian_approx_init_ = false;
             }
         }
 
@@ -108,10 +131,17 @@ namespace utopia {
               reset_initial_guess_(other.reset_initial_guess_),
               apply_gradient_descent_step_(other.apply_gradient_descent_step_) {}
 
+        bool reset_precond_update() const { return reset_precond_update_; }
+        void reset_precond_update(const bool &flg) { reset_precond_update_ = flg; }
+
     private:
         bool check_solution(const Operator<Vector> &A, const Vector &x, const Vector &b) const {
             Vector r;
             A.apply(x, r);
+            if (shift_ != 0.0) {
+                r += shift_ * x;
+            }
+
             r -= b;
 
             const Scalar r_norm = norm2(r);
@@ -128,14 +158,20 @@ namespace utopia {
 
         void gradient_descent_step(const Operator<Vector> &A, const Vector &b, Vector &x) {
             A.apply(x, r);
+            if (shift_ != 0.0) {
+                r += shift_ * x;
+            }
+
             //-grad = b - A * x
             r = b - r;
             x += r;
         }
 
-        bool unpreconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x) {
+        bool unpreconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x, Scalar &pAp_pp) {
             SizeType it = 0;
             Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
+
+            pAp_pp = 0.0;
 
             assert(!empty(b));
 
@@ -154,6 +190,9 @@ namespace utopia {
             }
 
             A.apply(x, r);
+            if (shift_ != 0.0) {
+                r += shift_ * x;
+            }
             r = b - r;
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||"});
@@ -178,12 +217,18 @@ namespace utopia {
 
                 // q = A * p;
                 A.apply(p, q);
+                if (shift_ != 0.0) {
+                    q += shift_ * p;
+                }
+
                 Scalar dot_pq = dot(p, q);
 
-                if (dot_pq == 0.) {
-                    // TODO handle properly
-                    utopia_warning("prevented division by zero");
-                    converged = true;
+                // checking for negative curvature
+                if (dot_pq <= 0.0) {
+                    this->check_convergence(it, r_norm, 1, 1);
+                    gradient_descent_step(A, b, x);
+                    utopia::out() << "---- negative curvature check failed --- \n";
+                    pAp_pp = dot_pq / dot(p, p);
                     break;
                 }
 
@@ -222,13 +267,17 @@ namespace utopia {
                     std::shared_ptr<HessianApproximation>(hessian_approx_strategy_new_->clone());
             }
 
+            std::cout << "max_it_coarse_grid: " << it << "   \n";
+
             return converged;
         }
 
-        bool preconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x) {
+        bool preconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x, Scalar &pAp_pp) {
             SizeType it = 0;
             Scalar beta = 0., alpha = 1., r_norm = 9e9;
             Scalar pAp, rz;
+
+            pAp_pp = 0.0;
 
             z.set(0.0);
             z_new.set(0.0);
@@ -254,6 +303,10 @@ namespace utopia {
             }
 
             A.apply(x, r);
+            if (shift_ != 0.0) {
+                r += shift_ * x;
+            }
+
             r = b - r;
 
             hessian_approx_strategy_old_->apply_Hinv(r, z);
@@ -264,13 +317,17 @@ namespace utopia {
 
             while (!stop) {
                 A.apply(p, Ap);
+                if (shift_ != 0.0) {
+                    Ap += shift_ * p;
+                }
+
                 dots(r, z, rz, p, Ap, pAp);
                 alpha = rz / pAp;
 
                 if (std::isinf(alpha) || std::isnan(alpha)) {
                     stop = this->check_convergence(it, r_norm, 1, 1);
                     gradient_descent_step(A, b, x);
-                    std::cout << "---- nan --- \n";
+                    utopia::out() << "---- nan --- \n";
                     break;
                 }
 
@@ -278,7 +335,8 @@ namespace utopia {
                 if (pAp <= 0.0) {
                     stop = this->check_convergence(it, r_norm, 1, 1);
                     gradient_descent_step(A, b, x);
-                    std::cout << "---- negative curvature check  --- \n";
+                    utopia::out() << "---- negative curvature check failed --- \n";
+                    pAp_pp = pAp / dot(p, p);
                     break;
                 }
 
@@ -320,6 +378,8 @@ namespace utopia {
 
                 it++;
             }
+
+            // std::cout << "max_it_coarse_grid: " << it << "   \n";
 
             if (r_norm <= this->atol()) {
                 // FIXME sometimes this fails for some reason
@@ -377,6 +437,10 @@ namespace utopia {
         std::vector<SizeType> memory_indices_;
         bool uniform_sampling_curvature_{true};
         bool sample_only_once_{true};
+
+        bool reset_precond_update_{true};
+
+        Scalar shift_{0.0};
     };
 }  // namespace utopia
 

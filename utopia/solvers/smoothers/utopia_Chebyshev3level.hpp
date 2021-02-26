@@ -100,7 +100,6 @@ namespace utopia {
             SizeType temp = this->max_it();
             this->max_it(this->sweeps());
             this->norm_frequency(0);
-            this->verbose(true);
             solve(operator_cast<Vector>(*this->get_operator()), rhs, x);
             this->max_it(temp);
             return true;
@@ -113,8 +112,8 @@ namespace utopia {
         }
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
-            std::cout << "eigMax " << this->eigMax_ << "  \n";
-            std::cout << "eigMin " << this->eigMin_ << "  \n";
+            // utopia::out() << "eigMax " << this->eigMax_ << "  \n";
+            // utopia::out() << "eigMin " << this->eigMin_ << "  \n";
 
             Scalar avg_eig = (this->eigMax_ + this->eigMin_) / 2.0;
             Scalar diff_eig = (this->eigMax_ - this->eigMin_) / 2.0;
@@ -154,9 +153,9 @@ namespace utopia {
 
                 converged = this->check_convergence(it, r_norm, 1, 1);
 
-                // if (this->verbose()) {
-                PrintInfo::print_iter_status(it, {r_norm});
-                // }
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {r_norm});
+                }
 
                 it++;
             }
