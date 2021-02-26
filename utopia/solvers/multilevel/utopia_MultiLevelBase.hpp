@@ -112,7 +112,7 @@ namespace utopia {
          *
          * @param[in]  mg_type_in  Choice of MG cycle.
          */
-        inline void mg_type(const bool mg_type_in) { mg_type_ = mg_type_in; }
+        inline void mg_type(const SizeType &mg_type_in) { mg_type_ = mg_type_in; }
 
         /**
          * @return     Number of pre-smoothing steps.
@@ -127,7 +127,7 @@ namespace utopia {
         /**
          * @return     Type of MG cycle.
          */
-        inline bool mg_type() const { return mg_type_; }
+        inline SizeType mg_type() const { return mg_type_; }
 
         /**
          * @return     Type of MG cycle.

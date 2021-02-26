@@ -148,12 +148,16 @@ namespace utopia {
                     return true;
                 }
 #endif
-
-                multiplication_action_finest->apply(this->memory_.x[n_levels - 1], this->memory_.res[n_levels - 1]);
-                this->memory_.res[n_levels - 1] -= rhs;
-
-                r_norm = norm2(this->memory_.res[n_levels - 1]);
-                rel_norm = r_norm / r0_norm;
+                if (this->compute_norm(it) || this->verbose()) {
+                    // todo:: check if not needed anywhere else
+                    multiplication_action_finest->apply(this->memory_.x[n_levels - 1], this->memory_.res[n_levels - 1]);
+                    this->memory_.res[n_levels - 1] -= rhs;
+                    r_norm = norm2(this->memory_.res[n_levels - 1]);
+                    rel_norm = r_norm / r0_norm;
+                } else {
+                    r_norm = 9e9;
+                    rel_norm = 1.0;
+                }
 
                 // print iteration status on every iteration
                 if (this->verbose()) {
@@ -208,23 +212,30 @@ namespace utopia {
 
     private:
         bool multiplicative_cycle(const SizeType &l) {
+            std::cout << "----- level: " << l << "  \n";
+
             // PRE-SMOOTHING
             this->level_solve(l, this->memory_.rhs[l], this->memory_.x[l], this->pre_smoothing_steps());
-
             this->compute_residual(l, this->memory_.x[l]);
-
             this->transfer(l - 1).restrict(this->memory_.res[l], this->memory_.rhs[l - 1]);
 
-            this->memory_.x[l - 1].set(0.0);
             if (l == 1) {
+                std::cout << "--- coarse grid ----- \n";
+                this->memory_.x[l - 1].set(0.0);
                 this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.rhs[l - 1]);
 
                 const SizeType coarse_grid_its = this->memory_.rhs[l - 1].size();
 
                 this->level_solve(l - 1, this->memory_.rhs[l - 1], this->memory_.x[l - 1], coarse_grid_its);
+                std::cout << "---- end of coarse grid ----- \n";
             } else {
-                this->multiplicative_cycle(l - 1);
+                this->memory_.x[l - 1].set(0.0);
+
+                for (SizeType k = 0; k < this->mg_type(); k++) {
+                    this->multiplicative_cycle(l - 1);
+                }
             }
+            std::cout << "----- level: " << l << "  \n";
 
             // interpolate
             this->transfer(l - 1).interpolate(this->memory_.x[l - 1], this->memory_.c[l]);

@@ -34,6 +34,9 @@ namespace utopia {
             this->initialize(x, g);
         }
 
+        Scalar eps() const { return eps_; }
+        void eps(const Scalar &eps) { eps_ = eps; }
+
         inline JFNK<Vector> *clone() const override { return new JFNK<Vector>(*this); }
 
         bool update(const Vector & /*s*/, const Vector & /*y*/, const Vector &x, const Vector &g) override {
