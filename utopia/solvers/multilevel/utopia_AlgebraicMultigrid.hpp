@@ -10,8 +10,10 @@ namespace utopia {
     template <class Matrix>
     class MatrixAgglomerator : public Clonable, public Configurable {
     public:
+        using Transfer = utopia::Transfer<Matrix, typename Traits<Matrix>::Vector>;
+
         virtual ~MatrixAgglomerator() = default;
-        virtual void create_prolongator(const Matrix &in, Matrix &prolongator) = 0;
+        virtual std::shared_ptr<Transfer> create_transfer(const Matrix &in) = 0;
         virtual void read(Input &) override {}
         MatrixAgglomerator *clone() const override = 0;
     };
@@ -68,23 +70,15 @@ namespace utopia {
 
             for (SizeType l = n_levels_ - 2; l >= 0; --l) {
                 auto A = std::make_shared<Matrix>();
-                auto P = std::make_shared<Matrix>();
-                agglomerator_->create_prolongator(*last_mat, *P);
 
-                auto temp_mat = std::make_shared<Matrix>(transpose(*P) * (*last_mat) * (*P));
+                auto t = agglomerator_->create_transfer(*last_mat);
 
-                // algo_.fix_semidefinite_operator(*temp_mat);
+                auto temp_mat = std::make_shared<Matrix>();
+                t->restrict(*last_mat, *temp_mat);
 
-                transfers[l] = std::make_shared<IPRTransfer<Matrix, Vector>>(P);
+                transfers[l] = t;
                 matrices[l] = temp_mat;
                 last_mat = temp_mat;
-
-                if (this->verbose()) {
-                    auto coarsening_factor = P->rows() / Scalar(P->cols());
-                    if (op->comm().rank() == 0) {
-                        out() << "coarsening_factor(" << l << "): " << coarsening_factor << "\n";
-                    }
-                }
             }
 
             //////////////////////////////////////////////////////////////////
