@@ -6,13 +6,13 @@ namespace utopia {
 
     class PetscCrsView::Impl {
     public:
-        Impl(Mat raw_mat) : raw_mat(raw_mat) { init(raw_mat); }
+        Impl() = default;
+        Impl(Mat raw_mat) { init(raw_mat); }
+        ~Impl() { destroy(); }
 
-        ~Impl() {
-            MatSeqAIJRestoreArray(raw_mat, &array);
-            err = MatRestoreRowIJ(raw_mat, 0, PETSC_FALSE, PETSC_FALSE, &rows, &ia, &ja, &done);
-            assert(err == 0);
-            UTOPIA_UNUSED(err);
+        void set(Mat raw_mat) {
+            destroy();
+            init(raw_mat);
         }
 
         Mat raw_mat{nullptr};
@@ -25,6 +25,16 @@ namespace utopia {
         PetscErrorCode err{0};
 
     private:
+        void destroy() {
+            if (raw_mat) {
+                MatSeqAIJRestoreArray(raw_mat, &array);
+                err = MatRestoreRowIJ(raw_mat, 0, PETSC_FALSE, PETSC_FALSE, &rows, &ia, &ja, &done);
+                assert(err == 0);
+                UTOPIA_UNUSED(err);
+                raw_mat = nullptr;
+            }
+        }
+
         void init(Mat raw_mat) {
             this->raw_mat = raw_mat;
 
@@ -48,8 +58,10 @@ namespace utopia {
     };
 
     PetscCrsView::PetscCrsView(Mat raw_mat) : impl_(std::make_shared<Impl>(raw_mat)) {}
-
+    PetscCrsView::PetscCrsView() : impl_(std::make_shared<Impl>()) {}
     PetscCrsView::~PetscCrsView() = default;
+
+    void PetscCrsView::set(Mat raw_mat) { impl_->set(raw_mat); }
 
     PetscInt PetscCrsView::nnz() const { return impl_->ia[impl_->rows]; }
 

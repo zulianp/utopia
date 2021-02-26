@@ -13,6 +13,8 @@ using namespace utopia;
 #include "utopia_petsc_DILUAlgorithm.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
 
+#include "utopia_DILUDecompose_impl.hpp"
+
 void petsc_ilu_test() {
     auto comm = PetscCommunicator::get_default();
     PetscInt n = 1000;
@@ -27,7 +29,7 @@ void petsc_ilu_test() {
     // assemble_poisson_problem_1D(1.0, A, b);
 
     ILU<PetscMatrix, PetscVector> ls;
-    // ls.verbose(true);
+    ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-7);
     ls.stol(1e-7);
@@ -40,6 +42,43 @@ void petsc_ilu_test() {
     // disp(norm_r);
 
     utopia_test_assert(norm_r < 1e-5);
+}
+
+void petsc_dilu_test() {
+    auto comm = PetscCommunicator::get_default();
+    PetscInt n = 1000;
+
+    auto vl = layout(comm, n, n * comm.size());
+    PetscMatrix A;
+    A.sparse(square_matrix_layout(vl), 3, 2);
+
+    PetscVector x(vl, 0.0), b(vl, 1.0);
+
+    assemble_laplacian_1D(A, true);
+    // assemble_poisson_problem_1D(1.0, A, b);
+    using CrsMatrix_t = CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, 1>;
+    using Vector_t = ArrayView<PetscScalar>;
+
+    CrsMatrix_t crs;
+    crs_block_matrix(A, crs);
+
+    DILUAlgorithm<CrsMatrix_t, Vector_t> dilu;
+    dilu.update(crs);
+
+    // ILU<PetscMatrix, PetscVector> ls;
+    // // ls.verbose(true);
+    // ls.atol(1e-6);
+    // ls.rtol(1e-7);
+    // ls.stol(1e-7);
+    // ls.max_it(100);
+
+    // ls.solve(A, b, x);
+
+    // PetscVector r = b - A * x;
+    // PetscScalar norm_r = norm1(r);
+    // // disp(norm_r);
+
+    // utopia_test_assert(norm_r < 1e-5);
 }
 
 void petsc_ilu_cg_test() {
@@ -162,6 +201,7 @@ void ilu() {
     UTOPIA_RUN_TEST(petsc_ilu_test);
     UTOPIA_RUN_TEST(petsc_ilu_cg_test);
     UTOPIA_RUN_TEST(petsc_block_ilu_test);
+    UTOPIA_RUN_TEST(petsc_dilu_test);
     // UTOPIA_RUN_TEST(petsc_ilu_vi_test);
 #endif  // UTOPIA_WITH_PETSC
 }

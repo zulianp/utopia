@@ -99,24 +99,29 @@ namespace utopia {
         void init(const SizeType n, SizeType nnz, const SizeType *row_ptr, const SizeType *colidx) {
             idx_.resize(nnz);
 
+            std::fill(std::begin(idx_), std::end(idx_), -1);
+
             for (SizeType i = 0; i < n; ++i) {
-                auto row_begin = row_ptr[i];
-                auto row_end = row_ptr[i + 1];
+                const auto row_begin = row_ptr[i];
+                const auto row_end = row_ptr[i + 1];
 
                 for (SizeType k = row_begin; k < row_end; ++k) {
-                    auto j = colidx[k];
+                    if (idx_[k] != -1) continue;
 
-                    auto row_begin_tr = row_ptr[j];
-                    auto row_end_tr = row_ptr[j + 1];
+                    const auto j = colidx[k];
 
-                    auto first = std::lower_bound(colidx + row_begin_tr, colidx + row_end_tr, j);
+                    const auto row_begin_tr = row_ptr[j];
+                    const auto row_end_tr = row_ptr[j + 1];
+
+                    const auto it = std::lower_bound(colidx + row_begin_tr, colidx + row_end_tr, j);
                     SizeType k_tr = -1;
 
-                    if (first != (colidx + row_end_tr) && j == colidx[*first]) {
-                        k_tr = *first;
+                    if (it != (colidx + row_end_tr) && j == *it) {
+                        k_tr = (it - colidx);
                     }
 
                     idx_[k] = k_tr;
+                    idx_[k_tr] = k;
                 }
             }
         }

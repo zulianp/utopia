@@ -10,8 +10,10 @@
 namespace utopia {
     class PetscCrsView {
     public:
+        PetscCrsView();
         PetscCrsView(Mat raw_mat);
         ~PetscCrsView();
+        void set(Mat raw_mat);
 
         ArrayView<const PetscInt> row_ptr() const;
         ArrayView<const PetscInt> colidx() const;
@@ -26,6 +28,13 @@ namespace utopia {
 
     private:
         std::shared_ptr<Impl> impl_;
+    };
+
+    template <>
+    class Traits<PetscCrsView> {
+    public:
+        using Scalar = PetscScalar;
+        using SizeType = PetscInt;
     };
 }  // namespace utopia
 

@@ -1,7 +1,7 @@
 #ifndef UTOPIA_ILU_IMPL_HPP
 #define UTOPIA_ILU_IMPL_HPP
 
-// #include "utopia_DILUDecompose_impl.hpp"
+#include "utopia_DILUDecompose.hpp"
 #include "utopia_ILU.hpp"
 
 namespace utopia {
@@ -9,6 +9,9 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     class ILU<Matrix, Vector, Backend>::Impl final : public Configurable {
     public:
+        // using DefaultILU_t = utopia::DILUAlgorithm<Matrix, Vector>;
+        using DefaultILU_t = utopia::ILUDecompose<Matrix>;
+
         void update(const Matrix &mat) { algo_->update(mat); }
 
         void apply(const Vector &in, Vector &out) { algo_->apply(in, out); }
@@ -17,23 +20,24 @@ namespace utopia {
             int block_size = 0;
             in.get("block_size", block_size);
 
-            if (block_size == 1) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
-            } else if (block_size == 2) {
+            // if (block_size == 1) {
+            //     algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
+            // } else
+            if (block_size == 2) {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
             } else if (block_size == 3) {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
             } else if (block_size == 4) {
                 algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
-            } else {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
-                // algo_ = utopia::make_unique<DILUAlgoritm<Matrix>>();
             }
+            //  else {
+            //     algo_ = utopia::make_unique<DefaultILU_t>();
+            // }
 
             algo_->read(in);
         }
 
-        Impl() : algo_(utopia::make_unique<ILUDecompose<Matrix>>()) {}
+        Impl() : algo_(utopia::make_unique<DefaultILU_t>()) {}
 
         Matrix decomposition;
         Vector residual, correction;
