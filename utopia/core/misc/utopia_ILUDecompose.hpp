@@ -7,81 +7,12 @@
 #include "utopia_CRSToBlockCRS.hpp"
 #include "utopia_ILU.hpp"
 
+#include "utopia_CrsMatrixIndexer.hpp"
+
 #include <cmath>
 #include <vector>
 
 namespace utopia {
-
-    template <typename SizeType>
-    class DiagIdx {
-    public:
-        void init(SizeType n, const SizeType *ia, const SizeType *ja) {
-            idx.resize(n);
-            this->ia = ia;
-            this->ja = ja;
-
-            for (SizeType r = 0; r < n - 1; ++r) {
-                const SizeType row_end = ia[r + 1];
-
-                SizeType k;
-                bool has_diag = false;
-                for (k = ia[r]; k < row_end; ++k) {
-                    if (ja[k] == r) {
-                        has_diag = true;
-                        break;
-                    }
-                }
-
-                assert(has_diag);
-                UTOPIA_UNUSED(has_diag);
-
-                idx[r] = k;
-            }
-        }
-
-        auto find_before_diag(const SizeType i, const SizeType j) const -> SizeType {
-            SizeType search_end = idx[i];
-            SizeType row_begin = ia[i];
-
-            // maybe binary search?
-            for (SizeType k = row_begin; k < search_end; ++k) {
-                if (ja[k] == j) {
-                    return k;
-                }
-            }
-
-            return -1;
-        };
-
-        auto find_after_diag(const SizeType i, const SizeType j) const -> SizeType {
-            SizeType search_begin = idx[i];
-            SizeType row_end = ia[i + 1];
-
-            // maybe binary search?
-            for (SizeType k = search_begin; k < row_end; ++k) {
-                if (ja[k] == j) {
-                    return k;
-                }
-            }
-
-            return -1;
-        };
-
-        auto find(const SizeType i, const SizeType j) const -> SizeType {
-            if (i == j) return idx[i];
-
-            if (j < i) {
-                return find_before_diag(i, j);
-            } else {
-                return find_after_diag(i, j);
-            }
-        };
-
-        std::vector<SizeType> idx;
-        const SizeType *ia;
-        const SizeType *ja;
-    };
-
     /*
      * Try this LDU instead
      * (L + Id) * D (U + Id) x = b; x = (U + Id)^{-1} * D^{-1} * (L + Id)^{-1} b
@@ -93,7 +24,7 @@ namespace utopia {
         using CRSMatrix = utopia::CRSMatrix<ScalarView, IndexView, 1>;
         using Scalar = typename std::remove_const<typename CRSMatrix::Scalar>::type;
         using SizeType = typename std::remove_const<typename CRSMatrix::SizeType>::type;
-        using DiagIdx = utopia::DiagIdx<SizeType>;
+        using DiagIndexer = utopia::CrsDiagIndexer<SizeType>;
 
         static bool decompose(CRSMatrix &in_out, const bool modified) {
             if (modified) {
@@ -127,14 +58,14 @@ namespace utopia {
             auto &ja = ilu.colidx();
             auto &array = ilu.values();
 
-            DiagIdx idx;
+            DiagIndexer idx;
             idx.init(n, &ia[0], &ja[0]);
 
             // Forward substitution
             // https://algowiki-project.org/en/Forward_substitution#:~:text=Forward%20substitution%20is%20the%20process,math%5DL%5B%2Fmath%5D.
             for (SizeType i = 0; i < n; ++i) {
                 const SizeType row_begin = ia[i];
-                const SizeType row_diag = idx.idx[i];
+                const SizeType row_diag = idx.diag(i);
 
                 assert(array[row_diag] != 0.0);
 
@@ -158,7 +89,7 @@ namespace utopia {
             // https://algowiki-project.org/en/Backward_substitution#:~:text=Backward%20substitution%20is%20a%20procedure,is%20a%20lower%20triangular%20matrix.
             for (SizeType i = n - 1; i >= 0; --i) {
                 const SizeType row_end = ia[i + 1];
-                const SizeType row_diag = idx.idx[i];
+                const SizeType row_diag = idx.diag(i);
 
                 assert(array[row_diag] != 0.0);
 
@@ -183,12 +114,12 @@ namespace utopia {
             auto &ja = in_out.colidx();
             auto &array = in_out.values();
 
-            DiagIdx idx;
+            DiagIndexer idx;
             idx.init(n, &ia[0], &ja[0]);
 
             for (SizeType r = 0; r < n - 1; ++r) {
                 const SizeType row_end = ia[r + 1];
-                const SizeType k = idx.idx[r];
+                const SizeType k = idx.diag(r);
                 const Scalar d = 1. / array[k];
 
                 assert(array[k] != 0.0);
@@ -196,10 +127,10 @@ namespace utopia {
                 for (SizeType ki = k + 1; ki < row_end; ++ki) {
                     auto i = ja[ki];
 
-                    auto ir = idx.find_before_diag(i, r);
+                    auto ir = idx.find(i, r);
                     if (ir == -1) continue;
 
-                    auto ii = idx.idx[i];
+                    auto ii = idx.diag(i);
 
                     Scalar e = (array[ir] *= d);
 
@@ -223,7 +154,7 @@ namespace utopia {
         using CRSMatrix = utopia::CRSMatrix<ScalarView, IndexView, BlockSize>;
         using Scalar = typename std::remove_const<typename CRSMatrix::Scalar>::type;
         using SizeType = typename std::remove_const<typename CRSMatrix::SizeType>::type;
-        using DiagIdx = utopia::DiagIdx<SizeType>;
+        using DiagIndexer = utopia::CrsDiagIndexer<SizeType>;
         using Block = utopia::StaticMatrix<Scalar, BlockSize, BlockSize>;
         using ArrayViewT = utopia::ArrayView<Scalar, DYNAMIC_SIZE, DYNAMIC_SIZE>;
         using BlockView = utopia::TensorView<ArrayViewT, 2>;
@@ -241,7 +172,7 @@ namespace utopia {
             auto &ia = in_out.row_ptr();
             auto &ja = in_out.colidx();
 
-            DiagIdx idx;
+            DiagIndexer idx;
             idx.init(n_blocks, &ia[0], &ja[0]);
 
             Block d_inv, e;
@@ -254,7 +185,7 @@ namespace utopia {
 
             for (SizeType r = 0; r < n_blocks - 1; ++r) {
                 const SizeType row_end = ia[r + 1];
-                const SizeType k = idx.idx[r];
+                const SizeType k = idx.diag(r);
                 d.raw_type().set_data(in_out.block(k));
 
 #ifndef NDEBUG
@@ -270,7 +201,7 @@ namespace utopia {
                 for (SizeType ki = k + 1; ki < row_end; ++ki) {
                     auto i = ja[ki];
 
-                    auto ir = idx.find_before_diag(i, r);
+                    auto ir = idx.find(i, r);
                     if (ir == -1) continue;
 
                     air.raw_type().set_data(in_out.block(ir));
@@ -305,7 +236,7 @@ namespace utopia {
             auto &ia = ilu.row_ptr();
             auto &ja = ilu.colidx();
 
-            DiagIdx idx;
+            DiagIndexer idx;
             idx.init(n_blocks, &ia[0], &ja[0]);
 
             Block d_inv;
@@ -319,7 +250,7 @@ namespace utopia {
             for (SizeType i = 0; i < n_blocks; ++i) {
                 const SizeType i_offset = i * BlockSize;
                 const SizeType row_begin = ia[i];
-                const SizeType row_diag = idx.idx[i];
+                const SizeType row_diag = idx.diag(i);
 
                 d.raw_type().set_data(ilu.block(row_diag));
                 assert(std::abs(det(d)) > 0);
@@ -354,7 +285,7 @@ namespace utopia {
             // // Backward substitution
             for (SizeType i = n_blocks - 1; i >= 0; --i) {
                 const SizeType i_offset = i * BlockSize;
-                const SizeType row_diag = idx.idx[i];
+                const SizeType row_diag = idx.diag(i);
                 const SizeType row_end = ia[i + 1];
 
                 d.raw_type().set_data(ilu.block(row_diag));
