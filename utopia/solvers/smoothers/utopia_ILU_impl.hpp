@@ -20,19 +20,27 @@ namespace utopia {
             int block_size = 0;
             in.get("block_size", block_size);
 
-            // if (block_size == 1) {
-            //     algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
-            // } else
-            if (block_size == 2) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
-            } else if (block_size == 3) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
-            } else if (block_size == 4) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+            bool use_dilu = false;
+
+            in.get("use_dilu", use_dilu);
+
+            if (use_dilu) {
+                algo_ = utopia::make_unique<DILUAlgorithm<Matrix, Vector>>();
+            } else {
+                // if (block_size == 1) {
+                //     algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
+                // } else
+                if (block_size == 2) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
+                } else if (block_size == 3) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
+                } else if (block_size == 4) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+                }
+                //  else {
+                //     algo_ = utopia::make_unique<DefaultILU_t>();
+                // }
             }
-            //  else {
-            //     algo_ = utopia::make_unique<DefaultILU_t>();
-            // }
 
             algo_->read(in);
         }
