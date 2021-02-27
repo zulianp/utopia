@@ -94,7 +94,10 @@ namespace utopia {
 
         Chebyshev3level *clone() const override { return new Chebyshev3level(*this); }
 
-        void copy(const Chebyshev3level &other) { Super::operator=(other); }
+        void copy(const Chebyshev3level &other) {
+            Super::operator=(other);
+            // power_method_ = other.power_method_;
+        }
 
         bool smooth(const Vector &rhs, Vector &x) override {
             SizeType temp = this->max_it();
@@ -108,18 +111,21 @@ namespace utopia {
         void init_eigs(const Operator<Vector> &A) {
             // std::cout << "--- eigs init --- \n";
             this->eigMax_ = scale_max_eig_ * power_method_.get_max_eig(A);
+            // this->eigMax_ = scale_max_eig_ * 8.0;
             this->eigMin_ = scale_min_eig_ * this->eigMax_;
+
+            // utopia::out() << "eigMax " << this->eigMax_ << "  \n";
+            // utopia::out() << "eigMin " << this->eigMin_ << "  \n";
         }
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
-            // utopia::out() << "eigMax " << this->eigMax_ << "  \n";
-            // utopia::out() << "eigMin " << this->eigMin_ << "  \n";
-
             Scalar avg_eig = (this->eigMax_ + this->eigMin_) / 2.0;
             Scalar diff_eig = (this->eigMax_ - this->eigMin_) / 2.0;
 
             A.apply(x, help_);
             r_ = help_ - b;
+
+            // std::cout << "r_: " << norm2(r_) << "  \n";
 
             SizeType it = 0;
             Scalar r_norm = 9e9, alpha = 0.0, beta = 0.0;
@@ -151,13 +157,12 @@ namespace utopia {
                     r_norm = 9e9;
                 }
 
+                it++;
                 converged = this->check_convergence(it, r_norm, 1, 1);
 
                 if (this->verbose()) {
                     PrintInfo::print_iter_status(it, {r_norm});
                 }
-
-                it++;
             }
 
             return true;

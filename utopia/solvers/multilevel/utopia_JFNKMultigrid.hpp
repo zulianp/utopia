@@ -64,8 +64,10 @@ namespace utopia {
             for (auto l = this->n_levels() - 1; l > 0; l--) {
                 this->transfer(l - 1).project_down(this->memory_.x[l], this->memory_.x[l - 1]);
 
-                this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
+                // added
+                this->make_iterate_feasible(this->function(l), this->memory_.x[l]);
 
+                this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
                 this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.g[l - 1]);
 
                 hessian_approxs_[l - 1]->update(
@@ -93,6 +95,8 @@ namespace utopia {
             // passing down info regarding current newton iterate
             for (auto l = this->n_levels() - 1; l > 0; l--) {
                 this->transfer(l - 1).project_down(this->memory_.x[l], this->memory_.x[l - 1]);
+                this->make_iterate_feasible(this->function(l), this->memory_.x[l]);
+
                 this->function(l - 1).gradient(this->memory_.x[l - 1], this->memory_.g[l - 1]);
                 this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.g[l - 1]);
                 hessian_approxs_[l - 1]->initialize(this->memory_.x[l - 1], this->memory_.g[l - 1]);
@@ -232,11 +236,15 @@ namespace utopia {
             this->level_solve(l, this->memory_.rhs[l], this->memory_.x[l], this->pre_smoothing_steps());
             this->compute_residual(l, this->memory_.x[l]);
             this->transfer(l - 1).restrict(this->memory_.res[l], this->memory_.rhs[l - 1]);
+            this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.rhs[l - 1]);
+
+            // std::cout << "r_fine: " << norm2(this->memory_.res[l]) << "   restricted "
+            //           << norm2(this->memory_.rhs[l - 1]) << " \n";
 
             if (l == 1) {
                 // std::cout << "--- coarse grid ----- \n";
                 this->memory_.x[l - 1].set(0.0);
-                this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.rhs[l - 1]);
+                // this->zero_correction_related_to_equality_constrain(this->function(l - 1), memory_.rhs[l - 1]);
 
                 const SizeType coarse_grid_its = this->memory_.rhs[l - 1].size();
 

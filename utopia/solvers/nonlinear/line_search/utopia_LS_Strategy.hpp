@@ -26,8 +26,8 @@ namespace utopia {
             : c1_(1e-4),
               c2_(0.9),
               max_it_(50),
-              rho_(0.75),
-              alpha_min_(1e-9){
+              rho_(0.5),
+              alpha_min_(1e-7){
 
               };
 

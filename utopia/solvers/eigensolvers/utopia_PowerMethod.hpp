@@ -56,7 +56,6 @@ namespace utopia {
         PowerMethod *clone() const override { return new PowerMethod(*this); }
 
         Scalar get_max_eig(const Operator<Vector> &A, const Vector &rhs) {
-            // Super simple power method to estimate the largest eigenvalue
             assert(!empty(eigenvector_));
 
             if (use_rand_vec_init_ == true) {
@@ -76,11 +75,12 @@ namespace utopia {
                 eigenvector_ = rhs;
             }
 
+            // eigenvector_.set(1.0);
+
             return compute_max_eig(A);
         }
 
         Scalar get_max_eig(const Operator<Vector> &A) {
-            // Super simple power method to estimate the largest eigenvalue
             assert(!empty(eigenvector_));
 
             if (use_rand_vec_init_ == true || norm2(eigenvector_) == 0) {
@@ -94,13 +94,20 @@ namespace utopia {
                     });
             }
 
+            // eigenvector_.set(1.0);
+
             return compute_max_eig(A);
         }
 
     private:
+        // Super simple power method to estimate the largest eigenvalue
         Scalar compute_max_eig(const Operator<Vector> &A) {
             // normalize IG
             eigenvector_ = Scalar(1. / norm2(eigenvector_)) * eigenvector_;
+
+            if (this->verbose() && mpi_world_rank() == 0) {
+                utopia::out() << "-------- Power method converged--------  \n";
+            }
 
             SizeType it = 0;
             bool converged = false;
@@ -111,11 +118,14 @@ namespace utopia {
 
                 lambda = norm2(eigenvector_);
                 eigenvector_ = (1. / lambda) * eigenvector_;
+                it = it + 1;
 
                 converged = ((device::abs(lambda_old - lambda) < tol_) || it > max_it_) ? true : false;
+                if (this->verbose() && mpi_world_rank() == 0) {
+                    utopia::out() << "it " << it << " lambda:  " << lambda << "  (lambda_old - lambda)  "
+                                  << device::abs(lambda_old - lambda) << "  \n";
+                }
                 lambda_old = lambda;
-
-                it = it + 1;
             }
 
             if (this->verbose() && mpi_world_rank() == 0) {
@@ -127,7 +137,7 @@ namespace utopia {
         bool initialized_{false};
         Layout layout_;
         Scalar tol_{1e-2};
-        SizeType max_it_{5};
+        SizeType max_it_{30};
         bool verbose_{false};
         bool use_rand_vec_init_{false};
 

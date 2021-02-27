@@ -267,7 +267,7 @@ namespace utopia {
                     std::shared_ptr<HessianApproximation>(hessian_approx_strategy_new_->clone());
             }
 
-            std::cout << "max_it_coarse_grid: " << it << "   \n";
+            // std::cout << "max_it_coarse_grid: " << it << "   \n";
 
             return converged;
         }

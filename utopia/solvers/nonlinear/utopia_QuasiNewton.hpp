@@ -52,6 +52,7 @@ namespace utopia {
             g0_norm = norm2(g);
             g_norm = g0_norm;
 
+            // Scalar E = 9e9;
             Scalar E;
             fun.value(x, E);
 
@@ -69,7 +70,9 @@ namespace utopia {
                 if (this->has_forcing_strategy()) {
                     if (auto *iterative_solver =
                             dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->mf_linear_solver_.get())) {
-                        iterative_solver->atol(this->estimate_ls_atol(g_norm, it));
+                        auto es_tol = this->estimate_ls_atol(g_norm, it);
+                        iterative_solver->atol(es_tol);
+                        iterative_solver->stol(es_tol);
                     } else {
                         utopia_error(
                             "utopia::Newton::you can not use inexact Newton with exact "
