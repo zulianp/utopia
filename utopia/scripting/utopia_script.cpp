@@ -78,9 +78,7 @@ namespace scripting {
     
         impl_(nullptr), comm_(comm), Order_(Order), local_size_(local_size), global_size_(global_size) {
 
-            // TODO:: replace *comm_.impl_ with get method 
-
-            auto layout = std::make_unique<LayoutImpl>(*comm_.impl_, local_size_, global_size_); 
+            auto layout = std::make_unique<LayoutImpl>(*comm_.get_communicator(), local_size_, global_size_); 
 
         if (!layout) {
             utopia::out() << "[Error] Vector could not be constructed" << std::endl;

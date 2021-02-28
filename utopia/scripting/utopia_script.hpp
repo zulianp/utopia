@@ -42,12 +42,11 @@ namespace scripting {
         Communicator();
         ~Communicator();
 
-        // CommunicatorImpl get_impl() const
-        // {
-        //     return *impl_;
-        // }
+        CommunicatorImpl * get_communicator() const {
+            return impl_;
+        }
       
-    public:
+    private:
         CommunicatorImpl* impl_;
     };
 
