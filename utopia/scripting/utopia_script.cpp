@@ -109,9 +109,12 @@ namespace scripting {
     Vector::~Vector() { delete impl_; }
 
     void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
-    void Vector::values(const Layout &l, const Scalar &value) { 
-        std::cout << "inside layout" << std::endl;    
-        impl_->values(l, value); 
+    void Vector::values(const Layout &l, const Scalar &value) {  
+        auto ll = *l.get_layout();
+        impl_->values(ll, value); 
     }
+    // void Vector::disp(const AbstractVector<Scalar, SizeType> &v) {
+    //     v.describe();
+    // }
 
 }  // namespace scripting
