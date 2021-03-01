@@ -16,6 +16,8 @@
 
 #include "utopia_MPITimeStatistics.hpp"
 
+#include "utopia_petsc_DILUAlgorithm.hpp"
+
 // std
 #include <cmath>
 
@@ -134,7 +136,6 @@ namespace utopia {
                     ksp->pc_type("ilu");
                     ksp->ksp_type("richardson");
                     smoother = ksp;
-
                 } else {
                     smoother = std::make_shared<ILU<Matrix, Vector>>();
                 }
@@ -169,7 +170,6 @@ namespace utopia {
                 } else {
                     solver = std::make_shared<ILU<Matrix, Vector>>();
                 }
-                // solver = std::make_shared<Factorization<Matrix, Vector>>();
             }
 
             solver->read(in);

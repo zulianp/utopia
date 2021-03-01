@@ -9,8 +9,8 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     class ILU<Matrix, Vector, Backend>::Impl final : public Configurable {
     public:
-        // using DefaultILU_t = utopia::DILUAlgorithm<Matrix, Vector>;
-        using DefaultILU_t = utopia::ILUDecompose<Matrix>;
+        using DefaultILU_t = utopia::DILUAlgorithm<Matrix, Vector>;
+        // using DefaultILU_t = utopia::ILUDecompose<Matrix>;
 
         void update(const Matrix &mat) { algo_->update(mat); }
 
@@ -20,14 +20,21 @@ namespace utopia {
             int block_size = 0;
             in.get("block_size", block_size);
 
-            if (block_size == 2) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
-            } else if (block_size == 3) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
-            } else if (block_size == 4) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+            bool use_ilu0 = false;
+            in.get("use_ilu0", use_ilu0);
+
+            if (use_ilu0) {
+                algo_ = utopia::make_unique<ILUDecompose<Matrix>>();
             } else {
-                algo_ = utopia::make_unique<DefaultILU_t>();
+                if (block_size == 2) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
+                } else if (block_size == 3) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
+                } else if (block_size == 4) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+                } else if (!algo_) {
+                    algo_ = utopia::make_unique<DefaultILU_t>();
+                }
             }
 
             algo_->read(in);

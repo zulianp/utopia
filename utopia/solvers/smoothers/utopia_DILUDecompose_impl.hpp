@@ -46,13 +46,64 @@ namespace utopia {
 
     template <class Matrix, class Vector>
     bool DILUAlgorithm<Matrix, Vector>::update(const Matrix &mat) {
+        UTOPIA_TRACE_REGION_BEGIN("DILUAlgorithm::update");
+
         mat_ = utopia::make_ref(mat);
         decompose(mat, d_);
+
+        UTOPIA_TRACE_REGION_END("DILUAlgorithm::update");
         return false;
     }
 
+    // template <class Matrix, class Vector>
+    // void DILUAlgorithm<Matrix, Vector>::apply(const Vector &b, Vector &x) {
+    //     UTOPIA_TRACE_REGION_BEGIN("DILUAlgorithm::apply");
+
+    //     const SizeType n = mat_->rows();
+
+    //     auto &&ia = mat_->row_ptr();
+    //     auto &&ja = mat_->colidx();
+    //     auto &&array = mat_->values();
+
+    //     L_inv_b_.resize(n);
+
+    //     device::fill(0.0, L_inv_b_);
+    //     device::fill(0.0, x);
+
+    //     // Forward substitution
+    //     for (SizeType i = 0; i < n; ++i) {
+    //         Scalar val = b[i] / d_[i];
+
+    //         for (SizeType k = ia[i]; k < diag_idx_.diag(i); ++k) {
+    //             const SizeType j = ja[k];
+    //             val -= array[k] * L_inv_b_[j] / d_[i];
+    //         }
+
+    //         // If array or x have large values then d_ is better inside?
+    //         L_inv_b_[i] = val;
+    //     }
+
+    //     // Backward substitution
+    //     for (SizeType i = n - 1; i >= 0; --i) {
+    //         Scalar val = 0.0;
+
+    //         for (SizeType k = diag_idx_.diag(i) + 1; k < ia[i + 1]; ++k) {
+    //             const SizeType j = ja[k];
+    //             val += array[k] * L_inv_b_[j] / d_[i];
+    //         }
+
+    //         // If array or x have large values then d_ is better inside?
+    //         x[i] = L_inv_b_[i] - val;
+    //     }
+
+    //     UTOPIA_TRACE_REGION_END("DILUAlgorithm::apply");
+    // }
+
+    // Works with laplacian
     template <class Matrix, class Vector>
     void DILUAlgorithm<Matrix, Vector>::apply(const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("DILUAlgorithm::apply");
+
         const SizeType n = mat_->rows();
 
         auto &&ia = mat_->row_ptr();
@@ -62,7 +113,7 @@ namespace utopia {
         L_inv_b_.resize(n);
 
         device::fill(0.0, L_inv_b_);
-        device::fill(0.0, x);
+        // device::fill(0.0, x);
 
         // Forward substitution
         for (SizeType i = 0; i < n; ++i) {
@@ -89,6 +140,8 @@ namespace utopia {
             // If array or x have large values then d_ is better inside?
             x[i] = L_inv_b_[i] - val / d_[i];
         }
+
+        UTOPIA_TRACE_REGION_END("DILUAlgorithm::apply");
     }
 
     template <class Matrix, class Vector>

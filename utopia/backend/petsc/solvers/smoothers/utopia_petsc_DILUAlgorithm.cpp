@@ -17,7 +17,12 @@ namespace utopia {
         using IndexView = utopia::ArrayView<const PetscInt>;
 
         bool update(const PetscMatrix &mat) {
-            local_block_view(mat, local_mat);
+            if (mat.comm().size() == 1) {
+                local_mat.copy(mat);
+            } else {
+                local_block_view(mat, local_mat);
+            }
+
             crs_view.set(local_mat.raw_type());
             return dilu.update(crs_view);
         }
@@ -27,11 +32,30 @@ namespace utopia {
         DILUAlgorithm<PetscCrsView, ScalarView> dilu;
     };
 
-    DILUAlgorithm<PetscMatrix, PetscVector>::DILUAlgorithm() : impl_(utopia::make_unique<Impl>()) {}
+    void DILUAlgorithm<PetscMatrix, PetscVector>::init() {
+        impl_ = utopia::make_unique<Impl>();
+        if (!impl_) {
+            utopia::err() << "[Error] DILUAlgorithm<PetscMatrix, PetscVector>::construct: impl_ == nullptr\n";
+            Utopia::Abort();
+        } else {
+            // utopia::out() << "[Status] init called\n";
+        }
+    }
+
+    DILUAlgorithm<PetscMatrix, PetscVector>::DILUAlgorithm() : Super() { init(); }
 
     DILUAlgorithm<PetscMatrix, PetscVector>::~DILUAlgorithm() {}
 
-    bool DILUAlgorithm<PetscMatrix, PetscVector>::update(const PetscMatrix &mat) { return impl_->update(mat); }
+    bool DILUAlgorithm<PetscMatrix, PetscVector>::update(const PetscMatrix &mat) {
+        assert(impl_);
+        if (impl_) {
+            return impl_->update(mat);
+        } else {
+            utopia::err() << "[Error] DILUAlgorithm<PetscMatrix, PetscVector>::update(...): impl_ == nullptr\n";
+            Utopia::Abort();
+            return false;
+        }
+    }
 
     void DILUAlgorithm<PetscMatrix, PetscVector>::apply(const PetscVector &b, PetscVector &x) {
         auto x_view = local_view_device(x);
@@ -39,7 +63,14 @@ namespace utopia {
 
         auto x_array = x_view.array();
 
-        impl_->dilu.apply(b_view.array(), x_array);
+        assert(impl_);
+
+        if (impl_) {
+            impl_->dilu.apply(b_view.array(), x_array);
+        } else {
+            utopia::err() << "[Error] DILUAlgorithm<PetscMatrix, PetscVector>::apply(...): impl_ == nullptr\n";
+            Utopia::Abort();
+        }
     }
 
     void DILUAlgorithm<PetscMatrix, PetscVector>::read(Input &) {}

@@ -12,6 +12,8 @@ namespace utopia {
     template <>
     class DILUAlgorithm<PetscMatrix, PetscVector> final : public ILUAlgorithm<PetscMatrix, PetscVector> {
     public:
+        using Super = utopia::ILUAlgorithm<PetscMatrix, PetscVector>;
+
         bool update(const PetscMatrix &mat) override;
         void apply(const PetscVector &b, PetscVector &x) override;
         void read(Input &) override;
@@ -19,10 +21,11 @@ namespace utopia {
         DILUAlgorithm();
         ~DILUAlgorithm();
 
-        class Impl;
-
     private:
+        class Impl;
         std::unique_ptr<Impl> impl_;
+
+        void init();
     };
 
 }  // namespace utopia
