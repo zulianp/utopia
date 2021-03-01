@@ -147,7 +147,7 @@ namespace utopia {
         SizeType bmax_{3};
         // SizeType bmin_{5};
         Scalar weight_{1. / 3};
-        bool verbose_{true};
+        bool verbose_{false};
     };
 
 }  // namespace utopia

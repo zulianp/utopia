@@ -179,7 +179,7 @@ void petsc_block_ilu_test() {
     // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
     // ls.apply_gradient_descent_step(true);
     // ls.set_preconditioner(ilu);
-    ls.verbose(true);
+    // ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-8);
     ls.stol(1e-8);
