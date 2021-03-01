@@ -1,5 +1,5 @@
 # InstallPetsc.cmake
-
+if(NOT CYGWIN)
 if(NOT PETSC_FOUND)
     # git clone -b maint https://gitlab.com/petsc/petsc.git petsc
     include(ExternalProject)
@@ -81,4 +81,5 @@ if(NOT PETSC_FOUND)
     set_target_properties(petsc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
     # set(PETSC_DIR ${PETSC_INSTALL_DIR})
+endif()
 endif()
