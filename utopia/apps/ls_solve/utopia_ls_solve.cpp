@@ -74,6 +74,7 @@ namespace utopia {
             bool rescale_with_diag = false;
             bool use_ksp = false;
             bool use_ksp_smoother = true;
+            bool convert_to_block_matrix = false;
 
             in.get("A", path_A);
             in.get("b", path_b);
@@ -85,6 +86,7 @@ namespace utopia {
             in.get("rescale_with_diag", rescale_with_diag);
             in.get("use_ksp", use_ksp);
             in.get("use_ksp_smoother", use_ksp_smoother);
+            in.get("convert_to_block_matrix", convert_to_block_matrix);
 
             if (use_ksp) {
                 use_amg = false;
@@ -115,6 +117,14 @@ namespace utopia {
                 A.diag_scale_left(d);
                 b = e_mul(d, b);
             }
+
+            if (convert_to_block_matrix) {
+                Matrix A_temp;
+                A.convert_to_mat_baij(block_size, A_temp);
+                A = std::move(A_temp);
+            }
+
+            utopia::out() << "Matrix::type() " << A.type() << '\n';
 
             if (write_matlab) {
                 rename("a", A);
