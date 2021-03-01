@@ -24,7 +24,7 @@ namespace utopia {
 
         IterativeSolver() : atol_(1e-9), rtol_(1e-9), stol_(1e-11), max_it_(1000), norm_freq_(1.0) {}
 
-        IterativeSolver(const IterativeSolver &other) = default;
+        // IterativeSolver(const IterativeSolver &other) = default;
         IterativeSolver(IterativeSolver &&other) = default;
         IterativeSolver &operator=(const IterativeSolver &) = default;
         IterativeSolver &operator=(IterativeSolver &&) = default;
@@ -68,6 +68,23 @@ namespace utopia {
         Scalar get_time() { return _time.get_seconds(); }
 
         IterativeSolver<Matrix, Vector> *clone() const override = 0;
+
+        void copy(const IterativeSolver<Matrix, Vector> &other) {
+            atol_ = other.atol_;
+            rtol_ = other.rtol_;
+            stol_ = other.stol_;
+            max_it_ = other.max_it_;
+            verbose_ = other.verbose_;
+            norm_freq_ = other.norm_freq_;
+        }
+
+        IterativeSolver<Matrix, Vector>(const IterativeSolver<Matrix, Vector> &other)
+            : atol_(other.atol_),
+              rtol_(other.rtol_),
+              stol_(other.stol_),
+              max_it_(other.max_it_),
+              verbose_(other.verbose_),
+              norm_freq_(other.norm_freq_) {}
 
     protected:
         /**

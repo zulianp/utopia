@@ -24,7 +24,6 @@ namespace utopia {
         using HessianApproximation = utopia::HessianApproximation<Vector>;
 
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
-        // using Preconditioner = utopia::Preconditioner<Vector>;
 
     public:
         using Super = utopia::OperatorBasedLinearSolver<Matrix, Vector>;
@@ -123,13 +122,26 @@ namespace utopia {
         void copy(const ConjugateGradientQNPrecond &other) {
             Super::operator=(other);
             reset_initial_guess_ = other.reset_initial_guess_;
+            apply_gradient_descent_step_ = other.apply_gradient_descent_step_;
+
+            // check if only settings get copied, or whole vecs...
+            hessian_approx_strategy_new_ = other.hessian_approx_strategy_new_;
+            hessian_approx_strategy_old_ = other.hessian_approx_strategy_old_;
+            uniform_sampling_curvature_ = other.uniform_sampling_curvature_;
+            sample_only_once_ = other.sample_only_once_;
+            reset_precond_update_ = other.reset_precond_update_;
         }
 
         ConjugateGradientQNPrecond(const ConjugateGradientQNPrecond &other)
             : PreconditionedSolverInterface<Vector>(other),
               Super(other),
               reset_initial_guess_(other.reset_initial_guess_),
-              apply_gradient_descent_step_(other.apply_gradient_descent_step_) {}
+              apply_gradient_descent_step_(other.apply_gradient_descent_step_),
+              hessian_approx_strategy_new_(other.hessian_approx_strategy_new_),
+              hessian_approx_strategy_old_(other.hessian_approx_strategy_old_),
+              uniform_sampling_curvature_(other.uniform_sampling_curvature_),
+              sample_only_once_(other.sample_only_once_),
+              reset_precond_update_(other.reset_precond_update_) {}
 
         bool reset_precond_update() const { return reset_precond_update_; }
         void reset_precond_update(const bool &flg) { reset_precond_update_ = flg; }
@@ -431,6 +443,7 @@ namespace utopia {
         Vector r, p, q, Ap, alpha_p, r_new, z, z_new;
         std::shared_ptr<HessianApproximation> hessian_approx_strategy_new_;
         std::shared_ptr<HessianApproximation> hessian_approx_strategy_old_;
+
         bool hessian_approx_init_{false};
         SizeType cycle_{1};
 

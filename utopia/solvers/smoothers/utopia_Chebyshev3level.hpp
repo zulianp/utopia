@@ -28,7 +28,11 @@ namespace utopia {
 
         Chebyshev3level() {}
 
-        Chebyshev3level(const Chebyshev3level &other) : PreconditionedSolverInterface<Vector>(other) {}
+        Chebyshev3level(const Chebyshev3level &other)
+            : OperatorBasedLinearSolver<Matrix, Vector>(other),
+              scale_max_eig_(other.scale_max_eig_),
+              scale_min_eig_(other.scale_min_eig_),
+              power_method_(other.power_method_) {}
 
         void read(Input &in) override {
             OperatorBasedLinearSolver<Matrix, Vector>::read(in);
@@ -96,7 +100,9 @@ namespace utopia {
 
         void copy(const Chebyshev3level &other) {
             Super::operator=(other);
-            // power_method_ = other.power_method_;
+            power_method_ = other.power_method_;
+            scale_max_eig_ = other.scale_max_eig_;
+            scale_min_eig_ = other.scale_min_eig_;
         }
 
         bool smooth(const Vector &rhs, Vector &x) override {
@@ -109,13 +115,8 @@ namespace utopia {
         }
 
         void init_eigs(const Operator<Vector> &A) {
-            // std::cout << "--- eigs init --- \n";
             this->eigMax_ = scale_max_eig_ * power_method_.get_max_eig(A);
-            // this->eigMax_ = scale_max_eig_ * 8.0;
             this->eigMin_ = scale_min_eig_ * this->eigMax_;
-
-            // utopia::out() << "eigMax " << this->eigMax_ << "  \n";
-            // utopia::out() << "eigMin " << this->eigMin_ << "  \n";
         }
 
         bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override {
@@ -124,8 +125,6 @@ namespace utopia {
 
             A.apply(x, help_);
             r_ = help_ - b;
-
-            // std::cout << "r_: " << norm2(r_) << "  \n";
 
             SizeType it = 0;
             Scalar r_norm = 9e9, alpha = 0.0, beta = 0.0;

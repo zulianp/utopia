@@ -20,7 +20,11 @@ namespace utopia {
     public:
         PowerMethod() {}
 
-        PowerMethod(const PowerMethod &other) : tol_(other.tol_), max_it_(other.max_it_) {}
+        PowerMethod(const PowerMethod &other)
+            : tol_(other.tol_),
+              max_it_(other.max_it_),
+              verbose_(other.verbose_),
+              use_rand_vec_init_(other.use_rand_vec_init_) {}
 
         void read(Input &in) override {
             in.get("use_rand_vec_init", use_rand_vec_init_);
@@ -54,6 +58,13 @@ namespace utopia {
         void print_usage(std::ostream & /*os*/) const override {}
 
         PowerMethod *clone() const override { return new PowerMethod(*this); }
+
+        void copy(const PowerMethod &other) {
+            tol_ = other.tol_;
+            max_it_ = other.max_it_;
+            verbose_ = other.verbose_;
+            use_rand_vec_init_ = other.use_rand_vec_init_;
+        }
 
         Scalar get_max_eig(const Operator<Vector> &A, const Vector &rhs) {
             assert(!empty(eigenvector_));
@@ -104,7 +115,6 @@ namespace utopia {
         Scalar compute_max_eig(const Operator<Vector> &A) {
             // normalize IG
             eigenvector_ = Scalar(1. / norm2(eigenvector_)) * eigenvector_;
-
             if (this->verbose() && mpi_world_rank() == 0) {
                 utopia::out() << "-------- Power method converged--------  \n";
             }

@@ -42,6 +42,11 @@ namespace utopia {
 
         ~OperatorBasedLinearSolver() override = default;
 
+        OperatorBasedLinearSolver() = default;
+
+        OperatorBasedLinearSolver<Matrix, Vector>(const OperatorBasedLinearSolver<Matrix, Vector> &other)
+            : MatrixFreeLinearSolver<Vector>(other), PreconditionedSolver<Matrix, Vector>(other) {}
+
         bool solve(const Matrix &A, const Vector &b, Vector &x) override {
             update(make_ref(A));
             return solve(operator_cast<Vector>(A), b, x);
