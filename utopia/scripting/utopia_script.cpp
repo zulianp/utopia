@@ -92,7 +92,7 @@ namespace scripting {
     Layout::~Layout() {delete impl_;}
 
     
-    Vector::Vector(Layout &layout, Scalar value) : impl_(nullptr), layout_(layout), value_(value) {
+    Vector::Vector() : impl_(nullptr)  {
         
         auto vec = Factory::new_vector();
 
@@ -101,6 +101,7 @@ namespace scripting {
             return;
         }
 
+
         impl_ = vec.get();
         vec.release();
     }
@@ -108,6 +109,9 @@ namespace scripting {
     Vector::~Vector() { delete impl_; }
 
     void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
-    void Vector::values(const Layout &l, const Scalar &value) { impl_->values(l, value); }
+    void Vector::values(const Layout &l, const Scalar &value) { 
+        std::cout << "inside layout" << std::endl;    
+        impl_->values(l, value); 
+    }
 
 }  // namespace scripting
