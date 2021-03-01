@@ -8,11 +8,14 @@
 namespace utopia {
 
     template <class Matrix>
-    class MatrixAgglomerator : public Clonable {
+    class MatrixAgglomerator : public Clonable, public Configurable {
     public:
+        using Transfer = utopia::Transfer<Matrix, typename Traits<Matrix>::Vector>;
+
         virtual ~MatrixAgglomerator() = default;
-        virtual void create_prolongator(const Matrix &in, Matrix &prolongator) = 0;
-        virtual MatrixAgglomerator *clone() const = 0;
+        virtual std::shared_ptr<Transfer> create_transfer(const Matrix &in) = 0;
+        virtual void read(Input &) override {}
+        MatrixAgglomerator *clone() const override = 0;
     };
 
     template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
@@ -27,56 +30,69 @@ namespace utopia {
         using SmootherPtr = std::shared_ptr<Smoother>;
         using Scalar = typename Traits<Matrix>::Scalar;
 
+        using Super::verbose;
+
         AlgebraicMultigrid *clone() const override { return new AlgebraicMultigrid(*this); }
 
         AlgebraicMultigrid(const AlgebraicMultigrid &other)
             : algo_(other.algo_),
               agglomerator_(std::shared_ptr<MatrixAgglomerator<Matrix>>(other.agglomerator_->clone())),
-              n_coarsening_steps_(other.n_coarsening_steps_) {}
+              n_levels_(other.n_levels_) {}
 
         void read(Input &in) override {
             Super::read(in);
-            in.get("n_coarsening_steps", n_coarsening_steps_);
+            in.get("n_levels", n_levels_);
             algo_.read(in);
+
+            if (agglomerator_) {
+                in.get("agglomerator", *agglomerator_);
+            }
         }
 
-        bool apply(const Vector &rhs, Vector &sol) override { return algo_.apply(rhs, sol); }
+        bool apply(const Vector &rhs, Vector &sol) override {
+            UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigrid::apply");
+            bool ok = algo_.apply(rhs, sol);
+            UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::apply");
+            return ok;
+        }
 
         void update(const std::shared_ptr<const Matrix> &op) override {
+            UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigrid::update");
+
             Super::update(op);
 
             //////////////////////////////////////////////////////////////////
-            SizeType n_levels = n_coarsening_steps_;
-            std::vector<std::shared_ptr<Transfer>> transfers(n_levels - 1);
-            std::vector<std::shared_ptr<const Matrix>> matrices(n_levels);
-            matrices[n_levels - 1] = op;
+            std::vector<std::shared_ptr<Transfer>> transfers(n_levels_ - 1);
+            std::vector<std::shared_ptr<const Matrix>> matrices(n_levels_);
+            matrices[n_levels_ - 1] = op;
 
             auto last_mat = op;
 
-            for (SizeType l = n_levels - 2; l >= 0; --l) {
+            for (SizeType l = n_levels_ - 2; l >= 0; --l) {
                 auto A = std::make_shared<Matrix>();
-                auto P = std::make_shared<Matrix>();
-                agglomerator_->create_prolongator(*last_mat, *P);
 
-                last_mat = std::make_shared<Matrix>(transpose(*P) * (*last_mat) * (*P));
+                auto t = agglomerator_->create_transfer(*last_mat);
 
-                transfers[l] = std::make_shared<IPRTransfer<Matrix, Vector>>(P);
-                matrices[l] = last_mat;
+                auto temp_mat = std::make_shared<Matrix>();
+                t->restrict(*last_mat, *temp_mat);
 
-                if (this->verbose()) {
-                    auto coarsening_factor = P->rows() / Scalar(P->cols());
-                    if (op->comm().rank() == 0) {
-                        out() << "coarsening_factor(" << l << "): " << coarsening_factor << "\n";
-                    }
-                }
+                transfers[l] = t;
+                matrices[l] = temp_mat;
+                last_mat = temp_mat;
             }
 
             //////////////////////////////////////////////////////////////////
             algo_.set_transfer_operators(transfers);
             algo_.set_linear_operators(matrices);
             algo_.set_perform_galerkin_assembly(false);
-            algo_.verbose(true);
             algo_.update();
+
+            UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::update");
+        }
+
+        void verbose(const bool &val) override {
+            Super::verbose(val);
+            algo_.verbose(false);
         }
 
         AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother,
@@ -87,7 +103,7 @@ namespace utopia {
     private:
         Multigrid<Matrix, Vector> algo_;
         std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator_;
-        SizeType n_coarsening_steps_{1};
+        SizeType n_levels_{2};
     };
 
 }  // namespace utopia

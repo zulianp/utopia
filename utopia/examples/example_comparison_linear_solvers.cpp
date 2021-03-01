@@ -33,7 +33,7 @@ void measure_solver(Matrix& A, Vector& b, const string& solver_name) {
     auto& comm = b.comm();
 
     c.start();
-    // Setting a conditioner is important with iterative linear solver.
+    // Setting a preconditioner is important with iterative linear solver.
     // The more a problem is bad conditioned, that is the more the difference
     // between the largest and small eigenvalues is significant, the more
     // the solution will deviate from the exact solution.
@@ -154,7 +154,6 @@ void test_linear_solver() {
         measure_solver<PointJacobi<Matrix, Vector>>(A, b, "PointJacobi");
         measure_solver<GMRES<Matrix, Vector>>(A, b, "GMRES");
         measure_solver<SteihaugToint<Matrix, Vector>>(A, b, "SteihaugToint");
-
     }
 }
 
@@ -165,11 +164,11 @@ int main(const int argc, char* argv[]) {
     using namespace utopia;
 
 // Checking which backend is active.
-#ifdef WITH_PETSC
+#ifdef UTOPIA_WITH_PETSC
     using MatrixT = PetscMatrix;
     using VectorT = PetscVector;
 #else
-#ifdef WITH_TRILINOS
+#ifdef UTOPIA_WITH_TRILINOS
     using MatrixT = TpetraMatrixd;
     using VectorT = TpetraVectord;
 #else

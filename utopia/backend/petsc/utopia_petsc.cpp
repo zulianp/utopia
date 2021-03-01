@@ -21,6 +21,7 @@
 #include "utopia_petsc_impl.hpp"
 
 #include "utopia_ILU_impl.hpp"
+#include "utopia_petsc_DILUAlgorithm.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
 
 // explicit instantiations

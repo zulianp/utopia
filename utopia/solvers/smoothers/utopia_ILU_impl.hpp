@@ -1,6 +1,7 @@
 #ifndef UTOPIA_ILU_IMPL_HPP
 #define UTOPIA_ILU_IMPL_HPP
 
+#include "utopia_DILUDecompose.hpp"
 #include "utopia_ILU.hpp"
 
 namespace utopia {
@@ -8,6 +9,9 @@ namespace utopia {
     template <class Matrix, class Vector, int Backend>
     class ILU<Matrix, Vector, Backend>::Impl final : public Configurable {
     public:
+        using DefaultILU_t = utopia::DILUAlgorithm<Matrix, Vector>;
+        // using DefaultILU_t = utopia::ILUDecompose<Matrix>;
+
         void update(const Matrix &mat) { algo_->update(mat); }
 
         void apply(const Vector &in, Vector &out) { algo_->apply(in, out); }
@@ -16,20 +20,37 @@ namespace utopia {
             int block_size = 0;
             in.get("block_size", block_size);
 
-            if (block_size == 1) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 1>>();
-            } else if (block_size == 2) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
-            } else if (block_size == 3) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
-            } else if (block_size == 4) {
-                algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+            // bool use_ilu0 = false;
+            bool use_ilu0 = true;
+            in.get("use_ilu0", use_ilu0);
+
+            if (use_ilu0) {
+                if (block_size == 2) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 2>>();
+                } else if (block_size == 3) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 3>>();
+                } else if (block_size == 4) {
+                    algo_ = utopia::make_unique<BlockILUAlgorithm<Matrix, 4>>();
+                } else if (!algo_) {
+                    algo_ = utopia::make_unique<ILUDecompose<Matrix>>();
+                }
+
+            } else {
+                if (block_size == 2) {
+                    algo_ = utopia::make_unique<BlockDILUAlgorithm<Matrix, Vector, 2>>();
+                } else if (block_size == 3) {
+                    algo_ = utopia::make_unique<BlockDILUAlgorithm<Matrix, Vector, 3>>();
+                } else if (block_size == 4) {
+                    algo_ = utopia::make_unique<BlockDILUAlgorithm<Matrix, Vector, 4>>();
+                } else if (!algo_) {
+                    algo_ = utopia::make_unique<DefaultILU_t>();
+                }
             }
 
             algo_->read(in);
         }
 
-        Impl() : algo_(utopia::make_unique<ILUDecompose<Matrix>>()) {}
+        Impl() : algo_(utopia::make_unique<DefaultILU_t>()) {}
 
         Matrix decomposition;
         Vector residual, correction;
@@ -60,11 +81,19 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     bool ILU<Matrix, Vector, Backend>::smooth(const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("ILU::smooth");
         auto &A = *this->get_operator();
-        A.apply(x, impl_->residual);
-        impl_->residual = b - impl_->residual;
-        impl_->apply(impl_->residual, impl_->correction);
-        x += impl_->correction;
+
+        SizeType n_sweeps = this->sweeps();
+
+        for (int i = 0; i < n_sweeps; ++i) {
+            A.apply(x, impl_->residual);
+            impl_->residual = b - impl_->residual;
+            impl_->apply(impl_->residual, impl_->correction);
+            x += impl_->correction;
+        }
+
+        UTOPIA_TRACE_REGION_END("ILU::smooth");
         return true;
     }
 
@@ -76,11 +105,19 @@ namespace utopia {
             this->init_solver("ILU", {" it. ", "|| residual ||"});
         }
 
+        auto &A = *this->get_operator();
+
         bool converged = false;
 
         int iteration = 0;
         while (!converged) {
-            smooth(b, x);
+            // smooth(b, x);
+
+            A.apply(x, impl_->residual);
+            impl_->residual = b - impl_->residual;
+            impl_->apply(impl_->residual, impl_->correction);
+            x += impl_->correction;
+
             const Scalar norm_r = norm2(impl_->residual);
 
             if (this->verbose()) {
