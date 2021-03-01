@@ -92,13 +92,8 @@ namespace scripting {
     Layout::~Layout() {delete impl_;}
 
     
-
-
-
-
-
-
-    Vector::Vector() : impl_(nullptr) {
+    Vector::Vector(Layout &layout, Scalar value) : impl_(nullptr), layout_(layout), value_(value) {
+        
         auto vec = Factory::new_vector();
 
         if (!vec) {
@@ -113,6 +108,6 @@ namespace scripting {
     Vector::~Vector() { delete impl_; }
 
     void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
-    void Vector::set(const Scalar &val) { impl_->set(val); }
+    void Vector::values(const Layout &l, const Scalar &value) { impl_->values(l, value); }
 
 }  // namespace scripting

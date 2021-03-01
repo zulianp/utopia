@@ -27,6 +27,7 @@ namespace scripting {
     using SizeType = int;
     using LocalSizeType = int;
     using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
+    // using Layout = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
     //using Comm = utopia::Communicator;
     //using Layout = utopia::Layout<Communicator, LocalSizeType, SizeType>;
   
@@ -63,23 +64,21 @@ namespace scripting {
             int Order_;
             LocalSizeType local_size_;
             SizeType global_size_; 
-        //     Comm comm_;
-        // LocalSizeType local_size_[Order];
-        // SizeType size_[Order];
     };
 
     class Vector {
     public:
         using VectorImpl = utopia::AbstractVector<Scalar, SizeType>;
+        using Layout = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
 
-        Vector(); // Layout layout, Scalar value
+        Vector(Layout &l, Scalar value_); // Layout layout, Scalar value
         ~Vector();
         void print_info();
-        void set(const Scalar &val);
+        void values(const Layout &l, const Scalar &value);
 
     private:
         VectorImpl* impl_;
-       // Layout l;
+        Layout &layout_;
         Scalar value_;
     };
 
