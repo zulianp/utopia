@@ -75,4 +75,84 @@ namespace utopia {
 
     void DILUAlgorithm<PetscMatrix, PetscVector>::read(Input &) {}
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template <int BlockSize>
+    class BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::Impl {
+    public:
+        using ScalarView = utopia::ArrayView<PetscScalar>;
+        using IndexView = utopia::ArrayView<const PetscInt>;
+        using CrsMatrix_t = utopia::CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize>;
+
+        bool update(const PetscMatrix &mat) {
+            PetscMatrix local_mat;
+            local_block_view(mat, local_mat);
+            crs_block_matrix(local_mat, block_mat);
+            return dilu.update(block_mat);
+        }
+
+        CrsMatrix_t block_mat;
+        BlockDILUAlgorithm<CrsMatrix_t, ScalarView, BlockSize> dilu;
+    };
+
+    template <int BlockSize>
+    void BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::init() {
+        impl_ = utopia::make_unique<Impl>();
+        if (!impl_) {
+            utopia::err()
+                << "[Error] BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::construct: impl_ == nullptr\n";
+            Utopia::Abort();
+        } else {
+            // utopia::out() << "[Status] init called\n";
+        }
+    }
+
+    template <int BlockSize>
+    BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::BlockDILUAlgorithm() : Super() {
+        init();
+    }
+
+    template <int BlockSize>
+    BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::~BlockDILUAlgorithm() {}
+
+    template <int BlockSize>
+    bool BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::update(const PetscMatrix &mat) {
+        assert(impl_);
+        if (impl_) {
+            return impl_->update(mat);
+        } else {
+            utopia::err()
+                << "[Error] BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::update(...): impl_ == nullptr\n";
+            Utopia::Abort();
+            return false;
+        }
+    }
+
+    template <int BlockSize>
+    void BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::apply(const PetscVector &b, PetscVector &x) {
+        auto x_view = local_view_device(x);
+        auto b_view = local_view_device(const_cast<PetscVector &>(b));
+
+        auto x_array = x_view.array();
+
+        assert(impl_);
+
+        if (impl_) {
+            impl_->dilu.apply(b_view.array(), x_array);
+        } else {
+            utopia::err()
+                << "[Error] BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::apply(...): impl_ == nullptr\n";
+            Utopia::Abort();
+        }
+    }
+
+    template <int BlockSize>
+    void BlockDILUAlgorithm<PetscMatrix, PetscVector, BlockSize>::read(Input &) {}
+
+    template class BlockDILUAlgorithm<PetscMatrix, PetscVector, 1>;
+    template class BlockDILUAlgorithm<PetscMatrix, PetscVector, 2>;
+    template class BlockDILUAlgorithm<PetscMatrix, PetscVector, 3>;
+    template class BlockDILUAlgorithm<PetscMatrix, PetscVector, 4>;
+
 }  // namespace utopia

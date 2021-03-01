@@ -17,8 +17,6 @@ namespace utopia {
         using Scalar = typename Traits<Matrix>::Scalar;
         using SizeType = typename Traits<Matrix>::SizeType;
 
-        bool decompose(const Matrix &in, std::vector<Scalar> &d);
-
         bool update(const Matrix &mat) override;
         void apply(const Vector &b, Vector &x) override;
         void read(Input &) override;
@@ -26,6 +24,32 @@ namespace utopia {
     private:
         std::shared_ptr<const Matrix> mat_;
         std::vector<Scalar> d_, L_inv_b_;
+
+        CrsDiagIndexer<SizeType> diag_idx_;
+        CrsTransposeIndexer<SizeType> transpose_idx_;
+    };
+
+    template <class Matrix, class Vector, int BlockSize>
+    class BlockDILUAlgorithm final : public ILUAlgorithm<Matrix, Vector> {
+    public:
+        using Scalar = typename Traits<Matrix>::Scalar;
+        using SizeType = typename Traits<Matrix>::SizeType;
+        using ArrayViewT = utopia::ArrayView<const Scalar, DYNAMIC_SIZE, DYNAMIC_SIZE>;
+        using BlockView = utopia::TensorView<ArrayViewT, 2>;
+        using VectorView = utopia::TensorView<ArrayView<Scalar, DYNAMIC_SIZE>, 1>;
+        using ConstVectorView = utopia::TensorView<ArrayView<const Scalar, DYNAMIC_SIZE>, 1>;
+
+        static const int BlockSize_2 = BlockSize * BlockSize;
+        using Block = utopia::StaticMatrix<Scalar, BlockSize, BlockSize>;
+
+        bool update(const Matrix &mat) override;
+        void apply(const Vector &b, Vector &x) override;
+        void read(Input &) override;
+
+    private:
+        std::shared_ptr<const Matrix> mat_;
+        std::vector<Block> d_;
+        std::vector<Scalar> L_inv_b_;
 
         CrsDiagIndexer<SizeType> diag_idx_;
         CrsTransposeIndexer<SizeType> transpose_idx_;
