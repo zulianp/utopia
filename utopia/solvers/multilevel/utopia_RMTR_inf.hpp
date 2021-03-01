@@ -245,7 +245,6 @@ namespace utopia {
                                    int> = 0>
         void execute_truncation(const SizeType & /*level*/) {}
 
-
         // TODO:: it should not be necessary
         void make_ml_iterate_feasible(const SizeType &level) override {
             // this->make_iterate_feasible(this->memory_.x[level]);
@@ -254,13 +253,14 @@ namespace utopia {
             this->get_projection(this->active_lower(level), this->active_upper(level), this->memory_.x[level]);
         }
 
-    public:  // nvcc requires it to be public when using lambda
-        template <class T = MLConstraints,
-                  std::enable_if_t<std::is_same<T, TRGrattonBoxKornhuberTruncation<Matrix, Vector> >::value ||
-                                       std::is_same<T, TRKornhuberBoxKornhuberTruncation<Matrix, Vector> >::value ||
-                                       std::is_same<T, TRGelmanMandelBoxKornhuberTruncation<Matrix, Vector> >::value,
-                                   int> _nvcc_needs_a_name = 0>
-        void execute_truncation(const SizeType &level) {
+        UTOPIA_NVCC_PRIVATE  // nvcc requires it to be public when using lambda
+            template <
+                class T = MLConstraints,
+                std::enable_if_t<std::is_same<T, TRGrattonBoxKornhuberTruncation<Matrix, Vector> >::value ||
+                                     std::is_same<T, TRKornhuberBoxKornhuberTruncation<Matrix, Vector> >::value ||
+                                     std::is_same<T, TRGelmanMandelBoxKornhuberTruncation<Matrix, Vector> >::value,
+                                 int> _nvcc_needs_a_name = 0>
+            void execute_truncation(const SizeType &level) {
             // truncate_interpolation
             if (level == this->n_levels() - 1) {
                 Vector active_flgs = 0.0 * this->memory_.x[level];
@@ -309,6 +309,7 @@ namespace utopia {
 
             }  // level check
         }
+
         bool solve_qp_subproblem(const SizeType &level, const bool &flg) override {
             Scalar radius = this->memory_.delta[level];
 
