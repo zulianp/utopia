@@ -529,6 +529,7 @@ namespace utopia {
             // assert(same_type(other) && "TYPE " );
             // assert(this->has_ghosts() && "GHOST" );
 
+            // maybe we should check this only in parallel
             assert((same_type(other) || this->has_ghosts()) &&
                    "Inconsistent vector types. Handle types properly before copying");
             assert(local_size() == other.local_size() &&

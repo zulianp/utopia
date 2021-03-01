@@ -114,6 +114,8 @@ namespace utopia {
             // reset precond as operator changed
             if (reset_precond_update_) {
                 hessian_approx_init_ = false;
+                // memory_indices_.clear();
+                // memory_indices_.resize(hessian_approx_strategy_new_->memory_size());
             }
         }
 
@@ -184,6 +186,7 @@ namespace utopia {
             Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 
             pAp_pp = 0.0;
+            cycle_ = 1;
 
             assert(!empty(b));
 
