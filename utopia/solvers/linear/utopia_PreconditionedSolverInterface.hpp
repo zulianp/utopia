@@ -6,7 +6,9 @@
 
 namespace utopia {
     template <class Vector>
-    class PreconditionedSolverInterface : virtual public Configurable, virtual public Clonable {
+    class PreconditionedSolverInterface : virtual public Configurable,
+                                          virtual public Clonable,
+                                          virtual public Monitor<Vector> {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;

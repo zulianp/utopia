@@ -17,7 +17,7 @@ namespace utopia {
      * @tparam     Vector
      */
     template <class Matrix, class Vector>
-    class IterativeSolver : public LinearSolver<Matrix, Vector>, public Monitor<Vector> {
+    class IterativeSolver : public LinearSolver<Matrix, Vector>, virtual public Monitor<Vector> {
     public:
         using Scalar = typename utopia::Traits<Matrix>::Scalar;
         using SizeType = typename utopia::Traits<Matrix>::SizeType;
