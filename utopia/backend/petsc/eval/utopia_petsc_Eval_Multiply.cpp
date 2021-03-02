@@ -8,7 +8,7 @@ namespace utopia {
     inline static bool check_error(const SizeType err) { return PetscErrorHandler::Check(err); }
 
     void PetscEvalTripleMatrixProduct::ptap(PetscMatrix &result, const PetscMatrix &A, const PetscMatrix &P) {
-        if (!A.is_cuda() && (result.is_alias(A) || result.is_alias(P))) {
+        if (!A.is_cuda() && !A.is_block() && (result.is_alias(A) || result.is_alias(P))) {
             Mat temp = result.raw_type();
 
             check_error(MatPtAP(A.raw_type(), P.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.raw_type()));
@@ -17,8 +17,6 @@ namespace utopia {
         } else {
             MatDestroy(&result.raw_type());
 
-            // assert(A.same_type(P));
-
             if (A.is_cuda()) {
                 m_utopia_status_once(
                     "MatPtAP does not work properly with the cusparse backend. Workaround implemented.");
@@ -26,6 +24,17 @@ namespace utopia {
                 check_error(MatPtAP(A.raw_type(), P.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp));
                 check_error(MatConvert(temp, A.type(), MAT_INITIAL_MATRIX, &result.raw_type()));
                 MatDestroy(&temp);
+            } else if (A.is_block()) {
+                m_utopia_status_once("MatPtAP does not work properly with the matbaij type. Workaround implemented.");
+
+                Mat temp;
+                check_error(MatConvert(A.raw_type(), P.type(), MAT_INITIAL_MATRIX, &temp));
+
+                check_error(MatPtAP(temp, P.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp));
+                check_error(MatConvert(temp, A.type(), MAT_INITIAL_MATRIX, &result.raw_type()));
+
+                MatDestroy(&temp);
+
             } else {
                 check_error(MatPtAP(A.raw_type(), P.raw_type(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.raw_type()));
             }

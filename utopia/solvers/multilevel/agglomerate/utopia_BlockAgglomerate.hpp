@@ -148,6 +148,10 @@ namespace utopia {
                 }
             }
 
+            // if (in.is_block()) {
+            //     prolongator->convert_to_mat_baij(BlockSize);
+            // }
+
             UTOPIA_TRACE_REGION_END("BlockAgglomerate::create_prolongator");
             return std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
         }

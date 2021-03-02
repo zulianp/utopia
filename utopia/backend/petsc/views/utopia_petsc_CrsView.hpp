@@ -4,11 +4,12 @@
 #include <memory>
 
 #include "utopia_ArrayView.hpp"
+#include "utopia_Describable.hpp"
 
 #include "petscmat.h"
 
 namespace utopia {
-    class PetscCrsView {
+    class PetscCrsView : public Describable {
     public:
         PetscCrsView();
         PetscCrsView(Mat raw_mat);
@@ -25,6 +26,8 @@ namespace utopia {
         PetscInt rows() const;
 
         class Impl;
+
+        void describe(std::ostream &os = std::cout) const override;
 
     private:
         std::shared_ptr<Impl> impl_;
