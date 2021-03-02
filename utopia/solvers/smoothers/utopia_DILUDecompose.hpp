@@ -20,6 +20,7 @@ namespace utopia {
         bool update(const Matrix &mat) override;
         void apply(const Vector &b, Vector &x) override;
         void read(Input &) override;
+        inline DILUAlgorithm *clone() const override { return new DILUAlgorithm(); }
 
     private:
         std::shared_ptr<const Matrix> mat_;
@@ -45,6 +46,8 @@ namespace utopia {
         bool update(const Matrix &mat) override;
         void apply(const Vector &b, Vector &x) override;
         void read(Input &) override;
+
+        inline BlockDILUAlgorithm *clone() const override { return new BlockDILUAlgorithm(); }
 
     private:
         std::shared_ptr<const Matrix> mat_;

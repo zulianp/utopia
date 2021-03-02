@@ -129,7 +129,7 @@ void assemble_vector2_coupled_laplacian_1D(Matrix &m, const bool bc = false) {
     auto n = size(m).get(0);
 
     const double block_d[2 * 2] = {6.0, 2.0, 2.0, 6.0};
-    const double block_o[2 * 2] = {-1.0, -1.0, -1.0, -1.0};
+    const double block_o[2 * 2] = {-1.0, -0.5, -1.0, -0.5};
 
     for (SizeType i = r.begin(); i != r.end(); i += 2) {
         if (bc && (i == 0 || i == n - 2)) {
@@ -156,7 +156,7 @@ void assemble_vector2_coupled_laplacian_1D(Matrix &m, const bool bc = false) {
 
 void petsc_block_ilu_test() {
     auto comm = PetscCommunicator::get_default();
-    PetscInt n = 2000;
+    PetscInt n = 20000;
 
     auto vl = layout(comm, n, n * comm.size());
     PetscMatrix A;
@@ -165,20 +165,13 @@ void petsc_block_ilu_test() {
     PetscVector x(vl, 0.0), b(vl, 1.0);
 
     assemble_vector2_coupled_laplacian_1D(A, true);
-    // assemble_poisson_problem_1D(1.0, A, b);
 
     InputParameters params;
     params.set("block_size", 2);
     // params.set("print_matrices", true);
     ILU<PetscMatrix, PetscVector> ls;
     ls.read(params);
-    // auto ilu = std::make_shared<ILU<PetscMatrix, PetscVector>>();
-    // ilu->read(params);
-    // ilu->max_it(5);
 
-    // ConjugateGradient<PetscMatrix, PetscVector, HOMEMADE> ls;
-    // ls.apply_gradient_descent_step(true);
-    // ls.set_preconditioner(ilu);
     // ls.verbose(true);
     ls.atol(1e-6);
     ls.rtol(1e-8);

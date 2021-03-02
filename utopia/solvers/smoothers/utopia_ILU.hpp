@@ -11,12 +11,13 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class ILUAlgorithm : public Configurable {
+    class ILUAlgorithm : public Configurable, public Clonable {
     public:
         virtual ~ILUAlgorithm() = default;
         virtual bool update(const Matrix &mat) = 0;
         virtual void apply(const Vector &b, Vector &x) = 0;
         void read(Input &) override {}
+        ILUAlgorithm *clone() const override = 0;
     };
 
     template <class Matrix, int BlockSize>

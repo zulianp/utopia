@@ -18,6 +18,8 @@ namespace utopia {
         void apply(const PetscVector &b, PetscVector &x) override;
         void read(Input &) override;
 
+        inline DILUAlgorithm *clone() const override { return new DILUAlgorithm(); }
+
         DILUAlgorithm();
         ~DILUAlgorithm();
 
@@ -37,6 +39,8 @@ namespace utopia {
         bool update(const PetscMatrix &mat) override;
         void apply(const PetscVector &b, PetscVector &x) override;
         void read(Input &) override;
+
+        inline BlockDILUAlgorithm *clone() const override { return new BlockDILUAlgorithm(); }
 
         BlockDILUAlgorithm();
         ~BlockDILUAlgorithm();

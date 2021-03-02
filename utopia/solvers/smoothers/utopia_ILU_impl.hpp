@@ -20,8 +20,8 @@ namespace utopia {
             int block_size = 0;
             in.get("block_size", block_size);
 
-            // bool use_ilu0 = false;
-            bool use_ilu0 = true;
+            bool use_ilu0 = false;
+            // bool use_ilu0 = true;
             in.get("use_ilu0", use_ilu0);
 
             if (use_ilu0) {
@@ -36,7 +36,9 @@ namespace utopia {
                 }
 
             } else {
-                if (block_size == 2) {
+                if (block_size == 1) {
+                    algo_ = utopia::make_unique<BlockDILUAlgorithm<Matrix, Vector, 1>>();
+                } else if (block_size == 2) {
                     algo_ = utopia::make_unique<BlockDILUAlgorithm<Matrix, Vector, 2>>();
                 } else if (block_size == 3) {
                     algo_ = utopia::make_unique<BlockDILUAlgorithm<Matrix, Vector, 3>>();
@@ -65,7 +67,9 @@ namespace utopia {
 
     template <class Matrix, class Vector, int Backend>
     ILU<Matrix, Vector, Backend> *ILU<Matrix, Vector, Backend>::clone() const {
-        return new ILU();
+        auto ptr = utopia::make_unique<ILU>();
+        ptr->impl_->algo_ = std::unique_ptr<ILUAlgorithm<Matrix, Vector>>(impl_->algo_->clone());
+        return ptr.release();
     }
 
     template <class Matrix, class Vector, int Backend>
@@ -124,7 +128,7 @@ namespace utopia {
                 PrintInfo::print_iter_status(iteration, {norm_r});
             }
 
-            converged = this->check_convergence(iteration, 1, 1, norm_r);
+            converged = this->check_convergence(iteration, 1, norm_r, 1);
             ++iteration;
 
             if (converged) break;
