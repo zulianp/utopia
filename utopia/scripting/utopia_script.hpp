@@ -69,18 +69,15 @@ namespace scripting {
     class Vector {
     public:
         using VectorImpl = utopia::AbstractVector<Scalar, SizeType>;
-        // using Layout = utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
-
+     
         Vector();
         ~Vector();
         void print_info();
         void values(const Layout &l, const Scalar &value);
-        
+        void describe() const;     
 
     private:
         VectorImpl* impl_;
-        //Layout &layout_;
-        //Scalar value_;
     };
 
     

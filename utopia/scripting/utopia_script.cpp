@@ -101,7 +101,6 @@ namespace scripting {
             return;
         }
 
-
         impl_ = vec.get();
         vec.release();
     }
@@ -113,7 +112,17 @@ namespace scripting {
         auto ll = *l.get_layout();
         impl_->values(ll, value); 
     }
-    // void Vector::disp(const AbstractVector<Scalar, SizeType> &v) {
+
+     void Vector::describe() const {
+            std::cout << utopia::Traits<Vector>::backend_info().get_name() << " (vector)" << std::endl;
+            impl_->describe();
+    } 
+
+
+
+
+
+    // void disp(const AbstractVector<Scalar, SizeType> &v) {
     //     v.describe();
     // }
 
