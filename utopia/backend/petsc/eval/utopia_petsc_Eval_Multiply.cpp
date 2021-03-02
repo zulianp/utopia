@@ -25,7 +25,7 @@ namespace utopia {
                 check_error(MatConvert(temp, A.type(), MAT_INITIAL_MATRIX, &result.raw_type()));
                 MatDestroy(&temp);
             } else if (A.is_block()) {
-                m_utopia_status_once("MatPtAP does not work properly with the matbaij type. Workaround implemented.");
+                m_utopia_status_once("MatPtAP does not work with the matbaij type. Workaround with copy implemented.");
 
                 Mat temp;
                 check_error(MatConvert(A.raw_type(), P.type(), MAT_INITIAL_MATRIX, &temp));

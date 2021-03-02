@@ -92,7 +92,7 @@ namespace utopia {
 
         void verbose(const bool &val) override {
             Super::verbose(val);
-            algo_.verbose(false);
+            algo_.verbose(val);
         }
 
         AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother,
