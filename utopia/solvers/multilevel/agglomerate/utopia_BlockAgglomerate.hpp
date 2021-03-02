@@ -22,6 +22,7 @@ namespace utopia {
         using IndexArray = typename Traits::IndexArray;
         using ScalarArray = typename Traits::ScalarArray;
         using Vector = typename Traits::Vector;
+        using Transfer = utopia::Transfer<Matrix, Vector>;
 
         using BlockMatrix = utopia::CRSMatrix<std::vector<Scalar>, std::vector<SizeType>, BlockSize>;
 
@@ -36,9 +37,11 @@ namespace utopia {
 
         inline Scalar block_weight(const Scalar *block) const { return block[component_ * BlockSize + component_]; }
 
-        void create_prolongator(const Matrix &in, Matrix &prolongator) override {
+        std::shared_ptr<Transfer> create_transfer(const Matrix &in) override {
             UTOPIA_TRACE_REGION_BEGIN("BlockAgglomerate::create_prolongator");
             using namespace utopia;
+
+            auto prolongator = std::make_shared<Matrix>();
 
             auto rr = row_range(in);
 
@@ -130,22 +133,23 @@ namespace utopia {
             }
 
             auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows * BlockSize, in.rows(), Traits::determine());
-            prolongator.sparse(pl, 1, 1);
+            prolongator->sparse(pl, 1, 1);
 
             {
-                Write<Matrix> w(prolongator);
-                auto coarse_offset = prolongator.col_range().begin();
+                Write<Matrix> w(*prolongator);
+                auto coarse_offset = prolongator->col_range().begin();
 
                 for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
                     for (int sub_i = 0; sub_i < BlockSize; ++sub_i) {
-                        prolongator.set(rr.begin() + block_i * BlockSize + sub_i,
-                                        coarse_offset + parent[block_i] * BlockSize + sub_i,
-                                        1.0);
+                        prolongator->set(rr.begin() + block_i * BlockSize + sub_i,
+                                         coarse_offset + parent[block_i] * BlockSize + sub_i,
+                                         1.0);
                     }
                 }
             }
 
             UTOPIA_TRACE_REGION_END("BlockAgglomerate::create_prolongator");
+            return std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
         }
 
         inline void verbose(const bool val) { verbose_ = val; }
@@ -155,7 +159,7 @@ namespace utopia {
         // SizeType bmin_{5};
         SizeType component_{BlockSize - 1};
         Scalar weight_{1. / 3};
-        bool verbose_{true};
+        bool verbose_{false};
     };
 
 }  // namespace utopia

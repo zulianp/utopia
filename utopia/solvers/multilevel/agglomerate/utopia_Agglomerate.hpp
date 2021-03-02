@@ -15,6 +15,7 @@ namespace utopia {
         using IndexArray = typename Traits::IndexArray;
         using ScalarArray = typename Traits::ScalarArray;
         using Vector = typename Traits::Vector;
+        using Transfer = utopia::Transfer<Matrix, Vector>;
 
         Agglomerate *clone() const override { return new Agglomerate(*this); }
 
@@ -24,10 +25,12 @@ namespace utopia {
             in.get("verbose", verbose_);
         }
 
-        void create_prolongator(const Matrix &in, Matrix &prolongator) override {
+        std::shared_ptr<Transfer> create_transfer(const Matrix &in) override {
             UTOPIA_TRACE_REGION_BEGIN("Agglomerate::create_prolongator");
 
             using namespace utopia;
+
+            auto prolongator = std::make_shared<Matrix>();
 
             auto rr = row_range(in);
 
@@ -120,20 +123,22 @@ namespace utopia {
             }
 
             auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows, in.rows(), Traits::determine());
-            prolongator.sparse(pl, 1, 1);
+            prolongator->sparse(pl, 1, 1);
 
             {
-                Write<Matrix> w(prolongator);
+                Write<Matrix> w(*prolongator);
 
                 auto n = rr.extent();
-                auto coarse_offset = prolongator.col_range().begin();
+                auto coarse_offset = prolongator->col_range().begin();
 
                 for (SizeType i = 0; i < n; ++i) {
-                    prolongator.set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                    prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
                 }
             }
 
             UTOPIA_TRACE_REGION_END("Agglomerate::create_prolongator");
+
+            return std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
         }
 
         inline void verbose(const bool val) { verbose_ = val; }
@@ -142,7 +147,7 @@ namespace utopia {
         SizeType bmax_{3};
         // SizeType bmin_{5};
         Scalar weight_{1. / 3};
-        bool verbose_{true};
+        bool verbose_{false};
     };
 
 }  // namespace utopia

@@ -16,6 +16,8 @@
 
 #include "utopia_MPITimeStatistics.hpp"
 
+#include "utopia_petsc_DILUAlgorithm.hpp"
+
 // std
 #include <cmath>
 
@@ -71,6 +73,8 @@ namespace utopia {
             bool write_matlab = false;
             bool rescale_with_diag = false;
             bool use_ksp = false;
+            bool use_ksp_smoother = true;
+            bool convert_to_block_matrix = false;
 
             in.get("A", path_A);
             in.get("b", path_b);
@@ -81,6 +85,8 @@ namespace utopia {
             in.get("write_matlab", write_matlab);
             in.get("rescale_with_diag", rescale_with_diag);
             in.get("use_ksp", use_ksp);
+            in.get("use_ksp_smoother", use_ksp_smoother);
+            in.get("convert_to_block_matrix", convert_to_block_matrix);
 
             if (use_ksp) {
                 use_amg = false;
@@ -108,10 +114,17 @@ namespace utopia {
 
             if (rescale_with_diag) {
                 Vector d = 1. / diag(A);
-                // e_pseudo_inv(d, d);
                 A.diag_scale_left(d);
                 b = e_mul(d, b);
             }
+
+            if (convert_to_block_matrix) {
+                Matrix A_temp;
+                A.convert_to_mat_baij(block_size, A_temp);
+                A = std::move(A_temp);
+            }
+
+            utopia::out() << "Matrix::type() " << A.type() << '\n';
 
             if (write_matlab) {
                 rename("a", A);
@@ -126,10 +139,16 @@ namespace utopia {
             std::shared_ptr<LinearSolver<Matrix, Vector>> solver;
 
             if (use_amg) {
-                auto smoother = std::make_shared<ILU<Matrix, Vector>>();
-                // auto smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
-                // smoother->pc_type("ilu");
-                // smoother->ksp_type("richardson");
+                std::shared_ptr<IterativeSolver<Matrix, Vector>> smoother;
+
+                if (use_ksp_smoother) {
+                    auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
+                    ksp->pc_type("ilu");
+                    ksp->ksp_type("richardson");
+                    smoother = ksp;
+                } else {
+                    smoother = std::make_shared<ILU<Matrix, Vector>>();
+                }
 
                 // auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
                 auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
@@ -161,7 +180,6 @@ namespace utopia {
                 } else {
                     solver = std::make_shared<ILU<Matrix, Vector>>();
                 }
-                // solver = std::make_shared<Factorization<Matrix, Vector>>();
             }
 
             solver->read(in);
