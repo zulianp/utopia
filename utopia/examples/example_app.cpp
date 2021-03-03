@@ -20,10 +20,16 @@ void solve(utopia::Input &in) {
     using namespace utopia;
     using LinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
 
+    Options opts;
+
     Path path_A = "A.bin", path_b = "b.bin", path_x = "out.bin";
-    in.get("A", path_A);
-    in.get("b", path_b);
-    in.get("x", path_x);
+    opts.add_option("A", path_A, "Path to system matrix (.bin or .mm)")
+        .add_option("b", path_b, "Path to the right-hand side")
+        .add_option("x", path_x, "Path to the output file");
+
+    if (!opts.parse(in)) {
+        return;
+    }
 
     Matrix_t A;
     Vector_t b, x;

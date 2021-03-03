@@ -3,6 +3,7 @@
 
 #include "utopia.hpp"
 #include "utopia_AppRunner.hpp"
+#include "utopia_Options.hpp"
 
 namespace utopia {
 

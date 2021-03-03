@@ -4,7 +4,7 @@
 
 namespace utopia {
 
-    void InputParameters::init(const int argc, char *argv[]) {
+    void InputParameters::init(const int argc, char *argv[], const bool verbose) {
         std::string key;
         std::string value;
         std::size_t key_len = 0;
@@ -50,7 +50,7 @@ namespace utopia {
             }
         }
 
-        if (mpi_world_rank() == 0) {
+        if (verbose && mpi_world_rank() == 0) {
             describe(std::cout);
         }
     }
