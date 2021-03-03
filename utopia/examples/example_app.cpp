@@ -20,21 +20,22 @@ void solve(utopia::Input &in) {
     using namespace utopia;
     using LinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
 
-    Options opts;
-
+    Matrix_t A;
+    Vector_t b, x;
     LinearSolver_t solver;
     Path path_A = "A.bin", path_b = "b.bin", path_x = "out.bin";
+
+    Options opts;
     opts.add_option("A", path_A, "Path to system matrix (.bin or .mm)")
         .add_option("b", path_b, "Path to the right-hand side")
         .add_option("x", path_x, "Path to the output file")
-        .add_option("linear_solver", solver, "Customize the solver (only works with JSON config file)");
+        .add_option("linear_solver",
+                    solver,
+                    "Customize the solver (only works with JSON config file)\ne.g. @file settings.json");
 
     if (!opts.parse(in)) {
         return;
     }
-
-    Matrix_t A;
-    Vector_t b, x;
 
     if (!read(path_A, A) || !read(path_b, b)) {
         err() << "Unable to read input\n";
