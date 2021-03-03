@@ -809,6 +809,16 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
+    void KSPSolver<Matrix, Vector, PETSC>::factor_set_pivot_in_blocks(const bool val) {
+        PC pc;
+        auto ierr = KSPGetPC(ksp_->implementation(), &pc);
+        assert(ierr == 0);
+        UTOPIA_UNUSED(ierr);
+
+        PCFactorSetPivotInBlocks(pc, val ? PETSC_TRUE : PETSC_FALSE);
+    }
+
+    template <typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::pc_type(const std::string &pc_type) {
         ksp_->pc_type(pc_type);
     }

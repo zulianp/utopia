@@ -7,6 +7,7 @@
 #include "utopia_CRSToBlockCRS.hpp"
 #include "utopia_ILUDecompose.hpp"
 
+#include "utopia_petsc_BlockCrsView.hpp"
 #include "utopia_petsc_CrsView.hpp"
 
 namespace utopia {
@@ -82,18 +83,19 @@ namespace utopia {
         PetscMatrix l_mat;
         local_block_view(in, l_mat);
 
-        PetscCrsView crs_view(l_mat.raw_type());
-        PetscInt n = crs_view.rows();
 
-        auto row_ptr = crs_view.row_ptr();
-        auto colidx = crs_view.colidx();
-        auto values = crs_view.values();
+            PetscCrsView crs_view(l_mat.raw_type());
+            PetscInt n = crs_view.rows();
 
-        CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
-        out.row_ptr().clear();
-        out.colidx().clear();
-        out.values().clear();
-        convert(crs, out);
+            auto row_ptr = crs_view.row_ptr();
+            auto colidx = crs_view.colidx();
+            auto values = crs_view.values();
+
+            CRSMatrix<ScalarView, IndexView, 1> crs(row_ptr, colidx, values, n);
+            out.row_ptr().clear();
+            out.colidx().clear();
+            out.values().clear();
+            convert(crs, out);
 
         assert(out.is_valid());
 

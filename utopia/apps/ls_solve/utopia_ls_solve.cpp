@@ -151,7 +151,15 @@ namespace utopia {
                 }
 
                 // auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-                auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+                std::shared_ptr<LinearSolver<Matrix, Vector>> coarse_solver;
+                if (convert_to_block_matrix) {
+                    auto gmres = std::make_shared<GMRES<Matrix, Vector>>("ilu");
+                    gmres->factor_set_pivot_in_blocks(true);
+                    coarse_solver = gmres;
+                } else {
+                    coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+                }
+
                 std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
 
                 if (block_size == 2) {
@@ -176,8 +184,22 @@ namespace utopia {
                 solver = amg;
             } else {
                 if (use_ksp) {
-                    solver = std::make_shared<KSPSolver<Matrix, Vector>>();
+                    auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
+                    ksp->factor_set_pivot_in_blocks(convert_to_block_matrix);
+                    solver = ksp;
                 } else {
+                    // auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();
+                    // auto ilu = std::make_shared<ILU<Matrix, Vector>>();
+
+                    // InputParameters inner_params;
+                    // inner_params.set("block_size", block_size);
+
+                    // ilu->read(inner_params);
+                    // ilu->max_it(1);
+
+                    // ksp->set_preconditioner(ilu);
+                    // solver = ksp;
+
                     solver = std::make_shared<ILU<Matrix, Vector>>();
                 }
             }

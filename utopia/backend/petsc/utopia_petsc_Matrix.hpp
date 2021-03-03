@@ -852,6 +852,9 @@ namespace utopia {
         bool same_type(const PetscMatrix &other) const;
         bool is_cuda() const;
 
+        static bool is_block(Mat mat);
+        bool is_block() const;
+
         void convert_from(const Mat &mat);
         void convert_to(Mat &mat) const;
 

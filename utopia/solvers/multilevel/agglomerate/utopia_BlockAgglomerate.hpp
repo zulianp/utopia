@@ -124,16 +124,16 @@ namespace utopia {
                     parent[block_i] = n_coarse_rows++;
                     ++n_not_aggr;
                 }
-
-                if (verbose_) {
-                    in.comm().synched_print("n_not_aggr: " + std::to_string(n_not_aggr) +
-                                            ", n_coarse_rows: " + std::to_string(n_coarse_rows) + "/" +
-                                            std::to_string(in.local_rows()) + "\n");
-                }
             }
 
             auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows * BlockSize, in.rows(), Traits::determine());
             prolongator->sparse(pl, 1, 1);
+
+            if (verbose_) {
+                in.comm().synched_print(
+                    std::to_string(prolongator->rows()) + " -> " + std::to_string(prolongator->cols()) +
+                    ", coarsening factor: " + std::to_string(prolongator->rows() / float(prolongator->cols())) + '\n');
+            }
 
             {
                 Write<Matrix> w(*prolongator);
@@ -147,6 +147,10 @@ namespace utopia {
                     }
                 }
             }
+
+            // if (in.is_block()) {
+            //     prolongator->convert_to_mat_baij(BlockSize);
+            // }
 
             UTOPIA_TRACE_REGION_END("BlockAgglomerate::create_prolongator");
             return std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
