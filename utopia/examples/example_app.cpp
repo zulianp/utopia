@@ -25,7 +25,7 @@ void solve(utopia::Input &in) {
     LinearSolver_t solver;
     Path path_A = "A.bin", path_b = "b.bin", path_x = "out.bin";
 
-    Options opts;
+    Options opts;  // ./example_app -app solve  --show
     opts.add_option("A", path_A, "Path to system matrix (.bin or .mm)")
         .add_option("b", path_b, "Path to the right-hand side")
         .add_option("x", path_x, "Path to the output file")
