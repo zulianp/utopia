@@ -7,7 +7,7 @@ namespace utopia {
     template <typename T>
     class TypeToString {
     public:
-        static constexpr const char *get() { return "Undefined"; }
+        static constexpr const char *get() { return "object"; }
     };
 
 #define UTOPIA_DEFINE_SUBS_TYPE_TO_STRING(T, Name)          \
@@ -23,6 +23,8 @@ namespace utopia {
     UTOPIA_DEFINE_TYPE_TO_STRING(float);
     UTOPIA_DEFINE_TYPE_TO_STRING(int);
     UTOPIA_DEFINE_TYPE_TO_STRING(bool);
+    UTOPIA_DEFINE_TYPE_TO_STRING(long);
+
     UTOPIA_DEFINE_SUBS_TYPE_TO_STRING(std::string, "string");
     UTOPIA_DEFINE_SUBS_TYPE_TO_STRING(utopia::Path, "path");
 

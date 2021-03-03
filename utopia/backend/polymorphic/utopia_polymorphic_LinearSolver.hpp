@@ -2,17 +2,20 @@
 #define UTOPIA_POLYMORPHIC_LINEAR_SOLVER_HPP
 
 #include <memory>
+#include "utopia_Describable.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class OmniLinearSolver : public LinearSolver<Matrix, Vector> {
+    class OmniLinearSolver : public LinearSolver<Matrix, Vector>, public Describable {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> Super;
+
+        inline void describe(std::ostream &os) const override { os << "OmniLinearSolver"; }
 
     public:
         OmniLinearSolver();

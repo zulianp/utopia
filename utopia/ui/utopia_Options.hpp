@@ -9,8 +9,36 @@
 #include "utopia_TypeToString.hpp"
 
 #include <iostream>
+#include <type_traits>
 
 namespace utopia {
+
+    template <typename T, bool IsFundamental = std::is_fundamental<T>::value>
+    class DescribeObject {};
+
+    template <typename T>
+    class DescribeObject<T, true> {
+    public:
+        inline static std::ostream &apply(const T &obj, std::ostream &os) {
+            os << obj;
+            return os;
+        }
+    };
+
+    template <class T>
+    class DescribeObject<T, false> {
+    public:
+        static_assert(std::is_base_of<Describable, T>::value, "class T must be a subclass of Describable");
+        inline static std::ostream &apply(const Describable &obj, std::ostream &os) {
+            obj.describe(os);
+            return os;
+        }
+    };
+
+    template <typename T>
+    inline static std::ostream &describe_object(const T &obj, std::ostream &os) {
+        return DescribeObject<T>::apply(obj, os);
+    }
 
     class Options final : public Configurable, public Describable {
     public:
@@ -25,7 +53,9 @@ namespace utopia {
             void read(Input &in) override { in.get(key, ref); }
 
             void describe(std::ostream &os) const override {
-                os << '-' << key << " <" << TypeToString<T>::get() << ">\tdefault: " << ref << "\t\t";
+                os << '-' << key << " <" << TypeToString<T>::get() << ">\tdefault: ";
+                describe_object(ref, os);
+                os << "\t\t";
                 os << explanation << "\n";
             }
 

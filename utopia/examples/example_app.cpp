@@ -22,10 +22,12 @@ void solve(utopia::Input &in) {
 
     Options opts;
 
+    LinearSolver_t solver;
     Path path_A = "A.bin", path_b = "b.bin", path_x = "out.bin";
     opts.add_option("A", path_A, "Path to system matrix (.bin or .mm)")
         .add_option("b", path_b, "Path to the right-hand side")
-        .add_option("x", path_x, "Path to the output file");
+        .add_option("x", path_x, "Path to the output file")
+        .add_option("linear_solver", solver, "Customize the solver (only works with JSON config file)");
 
     if (!opts.parse(in)) {
         return;
@@ -43,10 +45,6 @@ void solve(utopia::Input &in) {
     assert(!A.empty());
 
     x.zeros(layout(b));
-
-    LinearSolver_t solver;
-    solver.read(in);
-
     solver.solve(A, b, x);
 
     if (!write(path_x, x)) {
