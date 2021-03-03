@@ -72,6 +72,8 @@ namespace utopia {
 
         bool is_dir() const;
         bool make_dir(const int permissions = 0777);
+
+        inline std::string &raw_type() { return path_; }
     };
 
 }  // namespace utopia

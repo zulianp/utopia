@@ -63,7 +63,7 @@ namespace utopia {
         }
 
         inline static LinearSolverPtr default_linear_solver() {
-            auto ls = utopia::make_unique<PolymorphicLinearSolver<Matrix, Vector>>();
+            auto ls = utopia::make_unique<OmniLinearSolver<Matrix, Vector>>();
             InputParameters in;
             in.set("type", Solver::direct());
             ls->read(in);

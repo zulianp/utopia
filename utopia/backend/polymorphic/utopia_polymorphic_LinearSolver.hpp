@@ -8,16 +8,16 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class PolymorphicLinearSolver : public LinearSolver<Matrix, Vector> {
+    class OmniLinearSolver : public LinearSolver<Matrix, Vector> {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> Super;
 
     public:
-        PolymorphicLinearSolver();
-        ~PolymorphicLinearSolver() override;
-        PolymorphicLinearSolver *clone() const override;
+        OmniLinearSolver();
+        ~OmniLinearSolver() override;
+        OmniLinearSolver *clone() const override;
         bool apply(const Vector &rhs, Vector &sol) override;
         void update(const std::shared_ptr<const Matrix> &mat) override;
         void read(Input &in) override;

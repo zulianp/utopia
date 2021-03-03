@@ -45,6 +45,11 @@ namespace utopia {
             }
         }
 
+        for (SizeType r = 0; r < n; ++r) {
+            assert(d_[r] != 0.0);
+            d_[r] = 1. / d_[r];
+        }
+
         UTOPIA_TRACE_REGION_END("DILUAlgorithm::update");
         return false;
     }
@@ -74,7 +79,7 @@ namespace utopia {
             }
 
             // If array or x have large values then d_ is better inside?
-            L_inv_b_[i] = val / d_[i];
+            L_inv_b_[i] = d_[i] * val;
         }
 
         // Backward substitution
@@ -87,7 +92,7 @@ namespace utopia {
             }
 
             // If array or x have large values then d_ is better inside?
-            x[i] = L_inv_b_[i] - val / d_[i];
+            x[i] = L_inv_b_[i] - d_[i] * val;
         }
 
         UTOPIA_TRACE_REGION_END("DILUAlgorithm::apply");
