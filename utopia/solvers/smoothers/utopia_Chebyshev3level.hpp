@@ -119,6 +119,7 @@ namespace utopia {
         }
 
     private:
+    UTOPIA_NVCC_PRIVATE // override with public, when compiling with nvcc
         Scalar get_max_eig(const Operator<Vector> &A) {
             // Super simple power method to estimate the biggest eigenvalue
             assert(!empty(help_f2));
@@ -167,6 +168,7 @@ namespace utopia {
             return lambda;
         }
 
+    private:
         bool initialized_{false};
         Layout layout_;
         Scalar eps_eig_est_;
