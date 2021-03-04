@@ -51,7 +51,7 @@ namespace scripting {
         public:
             using LayoutImpl = const utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
         
-        Layout(const Communicator &comm, int Order, LocalSizeType local_size, SizeType global_size);
+        Layout(const Communicator &comm, LocalSizeType local_size, SizeType global_size);
         ~Layout();
 
         LayoutImpl *get_layout() const {
@@ -60,10 +60,6 @@ namespace scripting {
 
         private:
             const LayoutImpl * impl_;
-            const Communicator &comm_;
-            int Order_;
-            LocalSizeType local_size_;
-            SizeType global_size_; 
     };
 
     class Vector {
@@ -74,7 +70,10 @@ namespace scripting {
         ~Vector();
         void print_info();
         void values(const Layout &l, const Scalar &value);
-        void describe() const;     
+        //void describe() const; 
+        void add(const SizeType &i, const Scalar &value);  
+        void axpy(Scalar alpha, Vector *x);  
+        void describe() const; 
 
     private:
         VectorImpl* impl_;
@@ -88,6 +87,7 @@ namespace scripting {
         SparseMatrix();
         ~SparseMatrix();
         void print_info();
+        
 
     private:
         MatrixImpl* impl_;

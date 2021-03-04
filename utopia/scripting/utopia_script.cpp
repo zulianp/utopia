@@ -74,11 +74,11 @@ namespace scripting {
 
     Communicator::~Communicator() {delete impl_;}
 
-    Layout::Layout(const Communicator &comm, int Order, LocalSizeType local_size, SizeType global_size) : 
+    Layout::Layout(const Communicator &comm, LocalSizeType local_size, SizeType global_size) : 
     
-        impl_(nullptr), comm_(comm), Order_(Order), local_size_(local_size), global_size_(global_size) {
+        impl_(nullptr) {
 
-            auto layout = std::make_unique<LayoutImpl>(*comm_.get_communicator(), local_size_, global_size_); 
+            auto layout = std::make_unique<LayoutImpl>(*comm.get_communicator(), local_size, global_size); 
 
         if (!layout) {
             utopia::out() << "[Error] Vector could not be constructed" << std::endl;
@@ -112,9 +112,12 @@ namespace scripting {
         auto ll = *l.get_layout();
         impl_->values(ll, value); 
     }
+    void Vector::add(const SizeType &i, const Scalar &value) { impl_->add(i, value); }  
+    void Vector::axpy(Scalar alpha, Vector *x) {
+        impl_->axpy(alpha, *x->impl_);
+    }  
 
-     void Vector::describe() const {
-            std::cout << utopia::Traits<Vector>::backend_info().get_name() << " (vector)" << std::endl;
+    void Vector::describe() const {
             impl_->describe();
     } 
 
