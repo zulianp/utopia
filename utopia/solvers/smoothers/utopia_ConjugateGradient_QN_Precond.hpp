@@ -204,11 +204,21 @@ namespace utopia {
                 gradient_descent_step(A, b, x);
             }
 
-            A.apply(x, r);
+            if (norm2(x) > 1e-14) {
+                A.apply(x, r);
+            } else {
+                r = x;
+            }
             if (shift_ != 0.0) {
                 r += shift_ * x;
             }
             r = b - r;
+
+            r_norm = norm2(r);
+
+            if (this->verbose()) {
+                PrintInfo::print_iter_status(it, {r_norm});
+            }
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||"});
             bool converged = false;
@@ -258,22 +268,15 @@ namespace utopia {
                 this->update_memory(it, hessian_approx_strategy_new_->memory_size(), alpha_p, q);
 
                 rho_1 = rho;
+                it++;
 
-                if ((it % check_norm_each) == 0) {
-                    // r =
-                    // A.apply(x, r);
-                    // r = b - r;
+                r_norm = norm2(r);
 
-                    r_norm = norm2(r);
-
-                    if (this->verbose()) {
-                        PrintInfo::print_iter_status(it, {r_norm});
-                    }
-
-                    converged = this->check_convergence(it, r_norm, 1, 1);
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {r_norm});
                 }
 
-                it++;
+                converged = this->check_convergence(it, r_norm, 1, 1);
             }
 
             hessian_approx_init_ = true;
@@ -317,7 +320,11 @@ namespace utopia {
                 gradient_descent_step(A, b, x);
             }
 
-            A.apply(x, r);
+            if (norm2(x) > 1e-14) {
+                A.apply(x, r);
+            } else {
+                r = x;
+            }
             if (shift_ != 0.0) {
                 r += shift_ * x;
             }
@@ -384,14 +391,13 @@ namespace utopia {
                 p = z_new + beta * p;
                 r = r_new;
                 z = z_new;
+                it++;
 
                 if (this->verbose()) {
                     PrintInfo::print_iter_status(it, {r_norm});
                 }
 
                 stop = this->check_convergence(it, r_norm, 1, 1);
-
-                it++;
             }
 
             // std::cout << "max_it_coarse_grid: " << it << "   \n";

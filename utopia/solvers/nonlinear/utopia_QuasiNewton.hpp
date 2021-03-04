@@ -62,7 +62,6 @@ namespace utopia {
                 this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "E", "r_norm", "|| p_k || ", "alpha"});
                 PrintInfo::print_iter_status(it, {g_norm, E, r_norm, s_norm});
             }
-            it++;
 
             UTOPIA_NO_ALLOC_BEGIN("Quasi_Newton");
             while (!converged) {
@@ -82,6 +81,7 @@ namespace utopia {
 
                 // UTOPIA_NO_ALLOC_BEGIN("Quasi1");
                 g_minus = -1.0 * g;
+                s.set(0.0);
                 this->linear_solve(g_minus, s);
                 // UTOPIA_NO_ALLOC_END();
 
@@ -113,14 +113,15 @@ namespace utopia {
                 // UTOPIA_NO_ALLOC_END();
 
                 fun.value(x, E);
+                it++;
 
                 // print iteration status on every iteration
-                if (this->verbose_) PrintInfo::print_iter_status(it, {g_norm, E, r_norm, s_norm, alpha});
+                if (this->verbose_) {
+                    PrintInfo::print_iter_status(it, {g_norm, E, r_norm, s_norm, alpha});
+                }
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
-
-                it++;
             }
             UTOPIA_NO_ALLOC_END();
 
