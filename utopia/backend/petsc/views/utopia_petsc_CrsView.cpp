@@ -33,7 +33,7 @@ namespace utopia {
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 13, 4)
                     MatSeqBAIJRestoreArray(raw_mat, &array);
 #else
-                    err() << "[Error] MATBAIJ not supported\n";
+                    utopia::err() << "[Error] MATBAIJ not supported\n";
 #endif
                 } else {
                     MatSeqAIJRestoreArray(raw_mat, &array);
@@ -68,7 +68,7 @@ namespace utopia {
 #if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 13, 4)
                 MatSeqBAIJGetArray(raw_mat, &array);
 #else
-                err() << "[Error] MATBAIJ not supported\n";
+                utopia::err() << "[Error] MATBAIJ not supported\n";
 #endif
             } else {
                 MatSeqAIJGetArray(raw_mat, &array);
