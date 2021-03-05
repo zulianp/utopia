@@ -75,6 +75,9 @@ namespace utopia {
         void sample_only_once(const bool &flg) { sample_only_once_ = flg; }
         bool sample_only_once() const { return sample_only_once_; }
 
+        bool use_shift() const { return use_shift_; }
+        void use_shift(const bool &use_shift) { use_shift_ = use_shift; }
+
         void print_usage(std::ostream &os) const override {
             OperatorBasedLinearSolver<Matrix, Vector>::print_usage(os);
             this->print_param_usage(
@@ -91,10 +94,14 @@ namespace utopia {
                 flg = unpreconditioned_solve(A, b, x, pAp_pp);
             }
 
-            while (pAp_pp != 0.0) {
-                shift_ = 5.0 * device::max(-pAp_pp, shift_);
-                utopia::out() << "------ shifting eig: " << shift_ << " \n";
-                flg = preconditioned_solve(A, b, x, pAp_pp);
+            if (use_shift_) {
+                while (pAp_pp != 0.0) {
+                    shift_ = 5.0 * device::max(-pAp_pp, shift_);
+                    if (mpi_world_rank() == 0) {
+                        utopia::out() << "------------ shifting eig: " << shift_ << " \n";
+                    }
+                    flg = preconditioned_solve(A, b, x, pAp_pp);
+                }
             }
 
             return flg;
@@ -222,8 +229,6 @@ namespace utopia {
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||"});
             bool converged = false;
-
-            SizeType check_norm_each = 1;
 
             while (!converged) {
                 rho = dot(r, r);
@@ -463,6 +468,8 @@ namespace utopia {
         bool reset_precond_update_{true};
 
         Scalar shift_{0.0};
+
+        bool use_shift_{true};
     };
 }  // namespace utopia
 
