@@ -9,6 +9,8 @@
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
 
+#include "utopia_petsc_CrsView.hpp"
+
 #include "utopia_Agglomerate.hpp"
 #include "utopia_BlockAgglomerate.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"

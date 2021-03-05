@@ -1,143 +1,10 @@
 #ifndef UTOPIA_AGGLOMERATE_HPP
 #define UTOPIA_AGGLOMERATE_HPP
 
+#include "utopia_AdditiveCorrectionTransfer.hpp"
 #include "utopia_AlgebraicMultigrid.hpp"
 
 namespace utopia {
-
-    template <class Matrix, class Vector>
-    class AdditiveCorrectionTransfer final : public Transfer<Matrix, Vector> {
-    public:
-        using Scalar = typename utopia::Traits<Vector>::Scalar;
-        using SizeType = typename utopia::Traits<Vector>::SizeType;
-        using IndexArray = typename utopia::Traits<Vector>::IndexArray;
-
-        bool interpolate(const Vector &x_coarse, Vector &x_fine) const override {
-            auto vl = layout(x_coarse);
-            assert(vl.local_rows() == n_coarse_local_);
-
-            assert(!empty(x_fine));
-
-            auto x_coarse_view = local_view_device(x_coarse);
-            auto x_fine_view = local_view_device(x_fine);
-
-            for (SizeType i = 0; i < n_coarse_local_; ++i) {
-                x_fine_view.set(i, x_coarse_view.get(parent_[i]));
-            }
-
-            return false;
-        }
-
-        bool restrict(const Vector &x_fine, Vector &x_coarse) const override {
-            auto vl = layout(x_fine);
-
-            const SizeType n_fine = vl.rows();
-
-            if (empty(x_coarse)) {
-                x_coarse.zeros(layout(x_fine.comm(), n_coarse_local_, n_coarse_global_));
-            } else {
-                x_coarse.set(0.0);
-            }
-
-            auto x_fine_view = local_view_device(x_fine);
-            auto x_coarse_view = local_view_device(x_coarse);
-            for (SizeType i = 0; i < n_fine; ++i) {
-                x_coarse_view.add(parent_[i], x_fine_view.get(i));
-            }
-
-            return true;
-        }
-
-        bool restrict(const Matrix & /*M_fine*/, Matrix & /*M_coarse*/) const override {
-            assert(false);
-
-            // IndexArray d_nnz(n_coarse_local_, 0);
-            // // FIXME when doing a proper parallel version
-            // auto &o_nnz = d_nnz;
-
-            // PetscCrsView crs_fine(M_fine.raw_type());
-
-            // std::vector<bool> touched(n_coarse_local_, false);
-
-            // const SizeType n_fine = M_fine.local_rows();
-
-            // for (SizeType i = 0; i < n_fine; ++i) {
-            //     const auto &&row = crs_fine.row(i);
-            //     const SizeType n_values = row.n_blocks();
-            //     const SizeType parent_i = parent_[i];
-
-            //     for (SizeType k = 0; k < n_values; ++k) {
-            //         const SizeType j = row.colidx(k);
-            //         const SizeType parent_j = parent_[j];
-
-            //         if (!touched[parent_j]) {
-            //             touched[parent_j] = true;
-            //             ++d_nnz[parent_i];
-            //         }
-            //     }
-
-            //     for (SizeType k = 0; k < n_values; ++k) {
-            //         const SizeType j = row.colidx(k);
-            //         const SizeType parent_j = parent_[j];
-            //         touched[parent_j] = false;
-            //     }
-            // }
-
-            // if (BlockSize > 1) {
-            //     assert(false && "IMPLEMENT ME");
-            //     return false;
-            // } else {
-            // M_coarse.sparse(layout(M_fine.comm(), n_coarse_local_, n_coarse_local_, n_coarse_global_,
-            // n_coarse_global_),
-            //                 d_nnz,
-            //                 o_nnz);
-            // }
-
-            return false;
-        }
-
-        bool boolean_restrict_or(const Vector &, Vector &) override {
-            assert(false && "IMPLENT ME");
-            return false;
-        }
-
-        bool project_down(const Vector &, Vector &) const override {
-            assert(false && "IMPLENT ME");
-            return false;
-        }
-
-        bool project_down_positive_negative(const Vector &, const Vector &, Vector &) override {
-            assert(false && "IMPLENT ME");
-            return false;
-        }
-
-        void init_memory() override {}
-        Scalar interpolation_inf_norm() const override {
-            assert(false && "IMPLENT ME");
-            return -1.0;
-        }
-        Scalar projection_inf_norm() const override {
-            assert(false && "IMPLENT ME");
-            return -1.0;
-        }
-        Scalar restriction_inf_norm() const override {
-            assert(false && "IMPLENT ME");
-            return -1.0;
-        }
-
-        void handle_equality_constraints(const Vector &) override { assert(false && "IMPLENT ME"); }
-
-        IndexArray &parent() { return parent_; }
-
-        void set_size(const SizeType n_coarse_local, SizeType n_coarse_global) {
-            n_coarse_local_ = n_coarse_local;
-            n_coarse_global_ = n_coarse_global;
-        }
-
-    private:
-        SizeType n_coarse_local_{-1}, n_coarse_global_{-1};
-        IndexArray parent_;
-    };
 
     template <class Matrix, int Backend = Traits<Matrix>::Backend>
     class Agglomerate final : public MatrixAgglomerator<Matrix> {
@@ -157,14 +24,13 @@ namespace utopia {
             in.get("bmax", bmax_);
             in.get("weight", weight_);
             in.get("verbose", verbose_);
+            in.get("use_additive_correction", use_additive_correction_);
         }
 
         std::shared_ptr<Transfer> create_transfer(const Matrix &in) override {
             UTOPIA_TRACE_REGION_BEGIN("Agglomerate::create_prolongator");
 
             using namespace utopia;
-
-            auto prolongator = std::make_shared<Matrix>();
 
             auto rr = row_range(in);
 
@@ -250,29 +116,42 @@ namespace utopia {
                 }
             }
 
-            auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows, in.rows(), Traits::determine());
-            prolongator->sparse(pl, 1, 1);
+            std::shared_ptr<Transfer> ret;
 
-            if (verbose_) {
-                in.comm().synched_print(
-                    std::to_string(prolongator->rows()) + " -> " + std::to_string(prolongator->cols()) +
-                    ", coarsening factor: " + std::to_string(prolongator->rows() / float(prolongator->cols())) + '\n');
-            }
+            if (use_additive_correction_) {
+                auto act = std::make_shared<AdditiveCorrectionTransfer<Matrix, Vector>>();
+                act->parent() = std::move(parent);
 
-            {
-                Write<Matrix> w(*prolongator);
+                SizeType n_global_coarse_row = in.comm().sum(n_coarse_rows);
+                act->set_size(n_coarse_rows, n_global_coarse_row);
+                ret = act;
+            } else {
+                auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows, in.rows(), Traits::determine());
 
-                auto n = rr.extent();
-                auto coarse_offset = prolongator->col_range().begin();
+                auto prolongator = std::make_shared<Matrix>();
+                prolongator->sparse(pl, 1, 1);
 
-                for (SizeType i = 0; i < n; ++i) {
-                    prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                if (verbose_) {
+                    in.comm().synched_print(std::to_string(prolongator->rows()) + " -> " +
+                                            std::to_string(prolongator->cols()) + ", coarsening factor: " +
+                                            std::to_string(prolongator->rows() / float(prolongator->cols())) + '\n');
                 }
+
+                {
+                    Write<Matrix> w(*prolongator);
+
+                    auto n = rr.extent();
+                    auto coarse_offset = prolongator->col_range().begin();
+
+                    for (SizeType i = 0; i < n; ++i) {
+                        prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                    }
+                }
+                ret = std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
             }
 
             UTOPIA_TRACE_REGION_END("Agglomerate::create_prolongator");
-
-            return std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
+            return ret;
         }
 
         inline void verbose(const bool val) { verbose_ = val; }
@@ -282,6 +161,7 @@ namespace utopia {
         // SizeType bmin_{5};
         Scalar weight_{1. / 3};
         bool verbose_{false};
+        bool use_additive_correction_{false};
     };
 
 }  // namespace utopia
