@@ -831,6 +831,32 @@ namespace utopia {
         UTOPIA_REPORT_ALLOC("PetscMatrix::mat_baij_init");
     }
 
+    void PetscMatrix::mat_baij_init(MPI_Comm comm,
+                                    SizeType rows_local,
+                                    SizeType cols_local,
+                                    SizeType rows_global,
+                                    SizeType cols_global,
+                                    const IndexArray &d_nnz,
+                                    const IndexArray &o_nnz,
+                                    SizeType block_size) {
+        destroy();
+        check_error(MatCreateBAIJ(comm,
+                                  block_size,
+                                  rows_local,
+                                  cols_local,
+                                  rows_global,
+                                  cols_global,
+                                  -1,
+                                  &d_nnz[0],
+                                  -1,
+                                  &o_nnz[0],
+                                  &raw_type()));
+
+        check_error(MatZeroEntries(raw_type()));
+
+        update_mirror();
+    }
+
     bool PetscMatrix::has_nan_or_inf() const {
         int has_nan = 0;
         const Scalar *values;

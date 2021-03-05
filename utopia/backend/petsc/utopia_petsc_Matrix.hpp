@@ -816,6 +816,15 @@ namespace utopia {
                            SizeType o_nnz,
                            SizeType block_size);
 
+        void mat_baij_init(MPI_Comm comm,
+                           SizeType rows_local,
+                           SizeType cols_local,
+                           SizeType rows_global,
+                           SizeType cols_global,
+                           const IndexArray &d_nnz,
+                           const IndexArray &o_nnz,
+                           SizeType block_size);
+
         void nest(MPI_Comm comm,
                   SizeType nr,
                   const IS is_row[],
