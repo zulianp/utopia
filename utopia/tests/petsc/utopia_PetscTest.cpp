@@ -1305,6 +1305,30 @@ namespace utopia {
         zero_rows_to_identity(m, 1e-10);
     }
 
+    void petsc_block_matrix() {
+        using IndexArray = Traits<PetscMatrix>::IndexArray;
+        using ScalarArray = Traits<PetscMatrix>::ScalarArray;
+        auto ml = square_matrix_layout(serial_layout(4));
+
+        IndexArray d_nnz = {2, 2}, o_nnz = {0, 0};
+        ScalarArray diag = {2.0, 0.0, 0.0, 2.0};
+        ScalarArray offdiag = {-1.0, 0.0, 0.0, -1.0};
+
+        PetscMatrix mat;
+        mat.block_sparse(ml, d_nnz, o_nnz, 2);
+
+        {
+            Write<PetscMatrix> w(mat);
+            mat.c_set_block(0, 0, &diag[0]);
+            mat.c_set_block(0, 1, &offdiag[0]);
+            mat.c_set_block(1, 1, &diag[0]);
+            mat.c_set_block(1, 0, &offdiag[0]);
+        }
+
+        PetscScalar actual = sum(mat);
+        utopia_test_assert(approxeq(actual, 4.0));
+    }
+
     static void petsc_specific() {
         UTOPIA_RUN_TEST(petsc_memcheck);
         UTOPIA_RUN_TEST(petsc_line_search);
@@ -1351,6 +1375,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_conversion);
         UTOPIA_RUN_TEST(petsc_sparse_matrix_accessors);
         UTOPIA_RUN_TEST(local_diag_block);
+        UTOPIA_RUN_TEST(petsc_block_matrix);
 
         // serial tests
 #ifdef PETSC_HAVE_MUMPS

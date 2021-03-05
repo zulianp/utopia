@@ -228,6 +228,14 @@ namespace utopia {
             check_error(MatSetValue(implementation(), i, j, value, INSERT_VALUES));
         }
 
+        inline void c_set_block(const SizeType &i, const SizeType &j, const Scalar *block) {
+            check_error(MatSetValuesBlocked(implementation(), 1, &i, 1, &j, block, INSERT_VALUES));
+        }
+
+        inline void c_add_block(const SizeType &i, const SizeType &j, const Scalar *block) {
+            check_error(MatSetValuesBlocked(implementation(), 1, &i, 1, &j, block, ADD_VALUES));
+        }
+
         inline void c_add(const SizeType &i, const SizeType &j, const Scalar &value) override {
             check_error(MatSetValue(implementation(), i, j, value, ADD_VALUES));
         }
@@ -334,6 +342,21 @@ namespace utopia {
                        layout.size(1),
                        d_nnz,
                        o_nnz);
+        }
+
+        inline void block_sparse(const MatrixLayout &layout,
+                                 const IndexArray &d_nnz,
+                                 const IndexArray &o_nnz,
+                                 const SizeType block_size) {
+            comm_ = layout.comm();
+            mat_baij_init(comm().get(),
+                          layout.local_size(0),
+                          layout.local_size(1),
+                          layout.size(0),
+                          layout.size(1),
+                          d_nnz,
+                          o_nnz,
+                          block_size);
         }
 
         void identity(const Scalar &diag = 1.0);
