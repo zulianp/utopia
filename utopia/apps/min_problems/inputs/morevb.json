@@ -22,7 +22,7 @@
         "grad_smoothess_termination" : 1e-6,
         "max_sucessful_smoothing_it": 1,
         "max_QP_smoothing_it": 1,
-        "max_QP_coarse_it": 1000,
+        "max_QP_coarse_it": 10000,
         "linear-solver" : {
             "verbose" : false,
             "atol": 1e-12,

@@ -122,8 +122,8 @@ namespace utopia {
             if (!rmtr_) {
                 //
                 // TRGrattonBoxKornhuberTruncation
-                rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(
-                    n_levels_);
+                rmtr_ = std::make_shared<
+                    RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>(n_levels_);
                 // TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(n_levels_);
                 // TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>(n_levels_);
             }
@@ -219,25 +219,8 @@ namespace utopia {
             auto box = fine_fun->box_constraints();
 
             // make sure solution is feasible
-            solution = 20 * (*box.lower_bound());
-            // rmtr_->delta0(1.0);
-
-            // Vector sol_copy = solution;
-
-            // {
-            //     Read<Vector> r(*box.lower_bound());
-            //     Read<Vector> r3(sol_copy);
-            //     Write<Vector> r2(solution);
-
-            //     Range range_w = range(solution);
-            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
-            //         auto lb_val = box.lower_bound()->get(i);
-            //         auto x_val = sol_copy.get(i);
-            //         if (x_val <= lb_val) {
-            //             solution.set(lb_val);
-            //         }
-            //     }
-            // }
+            solution = 20. * (*box.lower_bound());
+            rmtr_->delta0(10);
 
             rmtr_->set_box_constraints(box);
             rmtr_->solve(solution);
@@ -298,7 +281,7 @@ namespace utopia {
         std::string output_path_;
 
         // std::shared_ptr<RMTR_inf<Matrix, Vector, %TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>
-        std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>
+        std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>
             // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
             // GALERKIN>> RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix,
             // Vector>,

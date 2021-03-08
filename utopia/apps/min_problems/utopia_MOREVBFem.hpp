@@ -345,33 +345,10 @@ namespace utopia {
 
                     const auto PI = 3.14159265358979323846;
 
-                    const auto r = std::sqrt((x * x) + (y * y));
-                    const auto theta = 1. / std::tan(y / x);
-
-                    // if (r == 0) {
-                    //     return 3.6;
-                    // } else {
-                    // auto result = std::sin(2. * PI / r + PI / 2. - theta);
-                    // result += r * (r + 1) / (r - 2);
-                    // result -= (3. * r) + 3.6;
-
-                    // const auto help1 = (x - 7.0 / 16.0);
-                    // const auto help2 = (y - 7.0 / 16.0);
-
-                    // const auto term1 = -8.0 * help1 * help1;
-                    // const auto term2 = -8.0 * help2 * help2;
-
                     auto result = std::sin(5. * PI * x) * std::sin(PI * y);
                     result *= std::sin(PI * (1. - x)) * std::sin(PI * (1. - y));
 
-                    // if (x == 0.0 || y == 0 || x == 1.0 || y == 1.0) {
-                    //     result = 0.0;
-                    // }
-
-                    // result += std::cos(2.0 * PI * r);
-
                     return result;
-                    // }
                 });
 
             {
@@ -392,59 +369,6 @@ namespace utopia {
 
             this->constraints_ = make_lower_bound_constraints(std::make_shared<Vector>(lb));
         }
-
-        // void init_constraints() {
-        //     // ToDO:: fix based on example
-        //     Vector lb;
-        //     space_.create_vector(lb);
-
-        //     using Point = typename FunctionSpace::Point;
-        //     using Dev = typename FunctionSpace::Device;
-        //     using Mesh = typename FunctionSpace::Mesh;
-        //     using Elem = typename FunctionSpace::Shape;
-        //     using ElemViewScalar = typename utopia::FunctionSpace<Mesh, 1, Elem>::ViewDevice::Elem;
-        //     static const int NNodes = Elem::NNodes;
-
-        //     auto C = this->space_;
-
-        //     auto sampler = utopia::sampler(
-        //         C, UTOPIA_LAMBDA(const Point &coords)->Scalar {
-        //             auto x = coords[0];
-        //             auto y = coords[1];
-
-        //             auto result = 0.0;
-
-        //             if (x == 0.5) {
-        //                 auto c = ((y - 0.5) * (y - 0.5)) - 1.0 + (1.3 * 1.3);
-        //                 auto b = 2.0 * 1.3;
-        //                 result = (-b + device::sqrt(b * b - 4.0 * c)) / 2.0;
-        //                 result *= -1.0;
-        //             } else {
-        //                 result = -9e9;
-        //                 // result = -1;
-        //             }
-
-        //             return result;
-        //         });
-
-        //     {
-        //         auto C_view = C.view_device();
-        //         auto sampler_view = sampler.view_device();
-        //         auto x_view = this->space_.assembly_view_device(lb);
-
-        //         Dev::parallel_for(
-        //             this->space_.element_range(), UTOPIA_LAMBDA(const SizeType &i) {
-        //                 ElemViewScalar e;
-        //                 C_view.elem(i, e);
-
-        //                 StaticVector<Scalar, NNodes> s;
-        //                 sampler_view.assemble(e, s);
-        //                 C_view.set_vector(e, s, x_view);
-        //             });
-        //     }
-
-        //     this->constraints_ = make_lower_bound_constraints(std::make_shared<Vector>(lb));
-        // }
 
     public:
         Vector initial_guess() const override {
