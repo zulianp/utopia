@@ -219,11 +219,11 @@ namespace utopia {
             auto box = fine_fun->box_constraints();
 
             // make sure solution is feasible
-            solution = 20. * (*box.lower_bound());
-            rmtr_->delta0(10);
-
-            rmtr_->set_box_constraints(box);
-            rmtr_->solve(solution);
+            // solution = 20. * (*box.lower_bound());
+            solution = (*box.lower_bound());
+            // rmtr_->delta0(10);
+            // rmtr_->set_box_constraints(box);
+            // rmtr_->solve(solution);
             // auto sol_status = rmtr_->solution_status();
 
             // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
@@ -237,12 +237,13 @@ namespace utopia {
             // solver.rtol(1e-9);
             // solver.solve(*level_functions_.back(), solution);
 
-            // auto subproblem = std::make_shared<MPRGP<Matrix, Vector>>();
-            // TrustRegionVariableBound<Matrix, Vector> solver(subproblem);
-            // subproblem->atol(1e-14);
-            // solver.verbose(true);
-            // solver.set_box_constraints(box);
-            // solver.solve(*fine_fun, solution);
+            // MPRGP is super slow...
+            auto subproblem = std::make_shared<MPRGP<Matrix, Vector>>();
+            TrustRegionVariableBound<Matrix, Vector> solver(subproblem);
+            subproblem->atol(1e-14);
+            solver.verbose(true);
+            solver.set_box_constraints(box);
+            solver.solve(*fine_fun, solution);
 
             // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
             // subproblem->pc_type("asm");
