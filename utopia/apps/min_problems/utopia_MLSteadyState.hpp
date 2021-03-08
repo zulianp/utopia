@@ -120,8 +120,10 @@ namespace utopia {
             //////////////////////////////////////////////////////
 
             if (!rmtr_) {
-                rmtr_ = std::make_shared<
-                    RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>(n_levels_);
+                //
+                // TRGrattonBoxKornhuberTruncation
+                rmtr_ = std::make_shared<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(
+                    n_levels_);
                 // TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>(n_levels_);
                 // TRGrattonBoxGelmanMandel<Matrix, Vector>, GALERKIN>>(n_levels_);
             }
@@ -212,13 +214,31 @@ namespace utopia {
             this->init(*spaces_[n_levels_ - 1], solution);
             prepare_for_solve(solution);
 
-            // solution = level_functions_.back()->initial_guess();
-
             auto *fine_fun =
                 dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(level_functions_.back().get());
             auto box = fine_fun->box_constraints();
 
+            // make sure solution is feasible
+            solution = 20 * (*box.lower_bound());
             // rmtr_->delta0(1.0);
+
+            // Vector sol_copy = solution;
+
+            // {
+            //     Read<Vector> r(*box.lower_bound());
+            //     Read<Vector> r3(sol_copy);
+            //     Write<Vector> r2(solution);
+
+            //     Range range_w = range(solution);
+            //     for (SizeType i = range_w.begin(); i != range_w.end(); i++) {
+            //         auto lb_val = box.lower_bound()->get(i);
+            //         auto x_val = sol_copy.get(i);
+            //         if (x_val <= lb_val) {
+            //             solution.set(lb_val);
+            //         }
+            //     }
+            // }
+
             rmtr_->set_box_constraints(box);
             rmtr_->solve(solution);
             // auto sol_status = rmtr_->solution_status();
@@ -239,18 +259,21 @@ namespace utopia {
             // subproblem->atol(1e-14);
             // solver.verbose(true);
             // solver.set_box_constraints(box);
-            // solver.solve(*level_functions_.back(), solution);
+            // solver.solve(*fine_fun, solution);
 
-            // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+            // auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>();
             // subproblem->pc_type("asm");
             // Newton<Matrix, Vector> solver(subproblem);
             // solver.verbose(true);
-            // solution.set(1.0);
             // solver.solve(*level_functions_.back(), solution);
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+            // rename("X", *box.lower_bound());
+            // write_to_file(*spaces_[n_levels_ - 1], *box.lower_bound());
             write_to_file(*spaces_[n_levels_ - 1], solution);
+
+            // write_to_file(*spaces_[n_levels_ - 1], solution);
 
             // auto lb = box.lower_bound();
             // write_to_file(*spaces_[n_levels_ - 1], *lb);
@@ -274,7 +297,8 @@ namespace utopia {
         std::string log_output_path_;
         std::string output_path_;
 
-        std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>
+        // std::shared_ptr<RMTR_inf<Matrix, Vector, %TRGrattonBoxKornhuberTruncation<Matrix, Vector>, GALERKIN>>
+        std::shared_ptr<RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>, GALERKIN>>
             // RMTR_inf<Matrix, Vector, TRGrattonBoxKornhuber<Matrix, Vector>,
             // GALERKIN>> RMTR_inf<Matrix, Vector, TRGrattonBoxGelmanMandel<Matrix,
             // Vector>,
