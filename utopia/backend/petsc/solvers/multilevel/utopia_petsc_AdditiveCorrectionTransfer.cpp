@@ -12,12 +12,17 @@ namespace utopia {
         auto vl = layout(x_coarse);
         assert(vl.local_size(0) == n_coarse_local_);
 
-        assert(!empty(x_fine));
+        PetscInt n_fine = parent_.size();
+
+        if (empty(x_fine)) {
+            auto vl = layout(x_coarse.comm(), n_fine, PETSC_DETERMINE);
+            x_fine.zeros(vl);
+        }
 
         auto x_coarse_view = local_view_device(x_coarse);
         auto x_fine_view = local_view_device(x_fine);
 
-        for (SizeType i = 0; i < n_coarse_local_; ++i) {
+        for (SizeType i = 0; i < n_fine; ++i) {
             x_fine_view.set(i, x_coarse_view.get(parent_[i]));
         }
 
@@ -47,6 +52,7 @@ namespace utopia {
 
     bool AdditiveCorrectionTransfer<PetscMatrix, PetscVector>::restrict(const PetscMatrix &mat_fine,
                                                                         PetscMatrix &mat_coarse) const {
+        UTOPIA_TRACE_REGION_BEGIN("AdditiveCorrectionTransfer::restrict");
         IndexArray d_nnz(n_coarse_local_, 0);
         // // FIXME when doing a proper parallel version
         IndexArray o_nnz(n_coarse_local_, 0);
@@ -61,9 +67,12 @@ namespace utopia {
             const SizeType n_values = row.length;
             const SizeType parent_i = parent_[i];
 
+            // if (parent_i < 0) continue;
+
             for (SizeType k = 0; k < n_values; ++k) {
                 const SizeType j = row.colidx(k);
                 const SizeType parent_j = parent_[j];
+                // if (parent_j < 0) continue;
 
                 if (!touched[parent_j]) {
                     touched[parent_j] = true;
@@ -74,6 +83,8 @@ namespace utopia {
             for (SizeType k = 0; k < n_values; ++k) {
                 const SizeType j = row.colidx(k);
                 const SizeType parent_j = parent_[j];
+                // if (parent_j < 0) continue;
+
                 touched[parent_j] = false;
             }
         }
@@ -95,13 +106,15 @@ namespace utopia {
 
                 const PetscScalar val = row.value(k);
                 // add to offdiagonals
+
                 mat_coarse.c_add(coarse_i, coarse_j, val);
 
                 // add also to diagonal
-                mat_coarse.c_add(coarse_i, coarse_i, val);
+                // mat_coarse.c_add(coarse_i, coarse_i, val);
             }
         }
 
+        UTOPIA_TRACE_REGION_END("AdditiveCorrectionTransfer::restrict");
         return false;
     }
 

@@ -42,6 +42,15 @@ namespace utopia {
 
             ScalarArray a_max(rr.extent(), 0);
 
+            if (!use_additive_correction_) {
+                for (SizeType i = 0; i < rr.extent(); ++i) {
+                    RowView<const Matrix> row_view(in_local, i);
+                    if (row_view.n_values() == 1) {
+                        parent[i] = -2;
+                    }
+                }
+            }
+
             // Global a_max_i
             // in.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
             //     if (i != j) {
@@ -60,6 +69,7 @@ namespace utopia {
             {
                 for (SizeType i = 0; i < rr.extent(); ++i) {
                     if (parent[i] != -1) continue;
+
                     parent[i] = n_coarse_rows;
 
                     RowView<const Matrix> row_view(in_local, i);
@@ -107,12 +117,10 @@ namespace utopia {
                     }
                 }
 
-                SizeType n_not_aggr = 0;
                 for (SizeType i = 0; i < rr.extent(); ++i) {
                     if (parent[i] != -1) continue;
 
                     parent[i] = n_coarse_rows++;
-                    ++n_not_aggr;
                 }
             }
 
@@ -144,9 +152,12 @@ namespace utopia {
                     auto coarse_offset = prolongator->col_range().begin();
 
                     for (SizeType i = 0; i < n; ++i) {
-                        prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                        if (parent[i] >= 0) {
+                            prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                        }
                     }
                 }
+
                 ret = std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
             }
 
@@ -155,6 +166,7 @@ namespace utopia {
         }
 
         inline void verbose(const bool val) { verbose_ = val; }
+        inline void use_additive_correction(const bool val) { use_additive_correction_ = val; }
 
     private:
         SizeType bmax_{3};

@@ -37,14 +37,14 @@ namespace utopia {
         AlgebraicMultigrid *clone() const override { return new AlgebraicMultigrid(*this); }
 
         AlgebraicMultigrid(const AlgebraicMultigrid &other)
-            : algo_(other.algo_),
+            : algorithm_(other.algorithm_),
               agglomerator_(std::shared_ptr<MatrixAgglomerator<Matrix>>(other.agglomerator_->clone())),
               n_levels_(other.n_levels_) {}
 
         void read(Input &in) override {
             Super::read(in);
             in.get("n_levels", n_levels_);
-            algo_.read(in);
+            algorithm_.read(in);
 
             if (agglomerator_) {
                 in.get("agglomerator", *agglomerator_);
@@ -53,7 +53,7 @@ namespace utopia {
 
         bool apply(const Vector &rhs, Vector &sol) override {
             UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigrid::apply");
-            bool ok = algo_.apply(rhs, sol);
+            bool ok = algorithm_.apply(rhs, sol);
             UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::apply");
             return ok;
         }
@@ -84,31 +84,34 @@ namespace utopia {
             }
 
             //////////////////////////////////////////////////////////////////
-            algo_.set_transfer_operators(transfers);
-            algo_.set_linear_operators(matrices);
-            algo_.set_perform_galerkin_assembly(false);
-            algo_.update();
+            algorithm_.set_transfer_operators(transfers);
+            algorithm_.set_linear_operators(matrices);
+            algorithm_.set_perform_galerkin_assembly(false);
+            algorithm_.update();
 
             UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::update");
         }
 
         void verbose(const bool &val) override {
             Super::verbose(val);
-            algo_.verbose(val);
+            algorithm_.verbose(val);
         }
 
         void max_it(const SizeType &max_it_in) override {
             Super::max_it(max_it_in);
-            algo_.max_it(max_it_in);
+            algorithm_.max_it(max_it_in);
         }
 
         AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother,
                            const std::shared_ptr<Solver> &coarse_solver,
                            const std::shared_ptr<MatrixAgglomerator<Matrix>> &agglomerator)
-            : algo_(smoother, coarse_solver), agglomerator_(agglomerator) {}
+            : algorithm_(smoother, coarse_solver), agglomerator_(agglomerator) {}
+
+        inline const Multigrid<Matrix, Vector> &algorithm() const { return algorithm_; }
+        inline Multigrid<Matrix, Vector> &algorithm() { return algorithm_; }
 
     private:
-        Multigrid<Matrix, Vector> algo_;
+        Multigrid<Matrix, Vector> algorithm_;
         std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator_;
         SizeType n_levels_{2};
     };

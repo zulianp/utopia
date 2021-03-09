@@ -5,58 +5,118 @@
 #include "utopia_ILU.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-using namespace utopia;
-
-#ifdef UTOPIA_WITH_PETSC
-
 #include "utopia_Agglomerate.hpp"
 #include "utopia_ILUDecompose.hpp"
+
+#ifdef UTOPIA_WITH_PETSC
+#include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
-
-void petsc_amg_test() {
-    auto comm = PetscCommunicator::get_default();
-    PetscInt n = 1000;
-
-    auto vl = layout(comm, n, n * comm.size());
-    PetscMatrix A;
-    A.sparse(square_matrix_layout(vl), 3, 2);
-
-    PetscVector x(vl, 0.0), b(vl, 1.0);
-
-    assemble_laplacian_1D(A, true);
-
-    // auto smoother = std::make_shared<GaussSeidel<PetscMatrix, PetscVector>>();
-    auto smoother = std::make_shared<ILU<PetscMatrix, PetscVector>>();
-    auto coarse_solver = std::make_shared<ILU<PetscMatrix, PetscVector>>();
-    // auto coarse_solver = std::make_shared<Factorization<PetscMatrix, PetscVector>>();
-    auto agglomerator = std::make_shared<Agglomerate<PetscMatrix>>();
-
-    AlgebraicMultigrid<PetscMatrix, PetscVector> ls(smoother, coarse_solver, agglomerator);
-    InputParameters params;
-    params.set("n_levels", 5);
-
-    ls.read(params);
-
-    // ls.verbose(true);
-    ls.atol(1e-6);
-    ls.rtol(1e-7);
-    ls.stol(1e-7);
-    ls.max_it(100);
-
-    ls.solve(A, b, x);
-
-    PetscVector r = b - A * x;
-    PetscScalar norm_r = norm1(r);
-    // disp(norm_r);
-
-    utopia_test_assert(norm_r < 1e-5);
-}
-
 #endif  // UTOPIA_WITH_PETSC
+
+using namespace utopia;
+
+template <class Matrix, class Vector>
+class AMGTest {
+public:
+    using Traits = utopia::Traits<Vector>;
+    using Scalar = typename Traits::Scalar;
+    using SizeType = typename Traits::SizeType;
+    using Comm = typename Traits::Communicator;
+
+    SizeType n_levels{6};
+    SizeType n_dofs = 100;
+
+    void run() {
+        UTOPIA_RUN_TEST(test_amg_add_corr);
+        UTOPIA_RUN_TEST(test_amg);
+    }
+
+    void test_amg() {
+        // auto smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+        auto smoother = std::make_shared<ILU<Matrix, Vector>>();
+        // auto coarse_solver = std::make_shared<ILU<Matrix, Vector>>();
+        auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+        auto agglomerator = std::make_shared<Agglomerate<Matrix>>();
+
+        AlgebraicMultigrid<Matrix, Vector> amg(smoother, coarse_solver, agglomerator);
+        InputParameters params;
+        params.set("n_levels", n_levels);
+        amg.read(params);
+
+        test_1D("amg_interp", amg);
+    }
+
+    void test_amg_add_corr() {
+        // auto smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+        auto smoother = std::make_shared<ILU<Matrix, Vector>>();
+        // auto coarse_solver = std::make_shared<ILU<Matrix, Vector>>();
+        auto coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
+        auto agglomerator = std::make_shared<Agglomerate<Matrix>>();
+        agglomerator->use_additive_correction(true);
+
+        AlgebraicMultigrid<Matrix, Vector> amg(smoother, coarse_solver, agglomerator);
+        InputParameters params;
+        params.set("n_levels", n_levels);
+        amg.read(params);
+
+        test_1D("add_corr", amg);
+    }
+
+    template <class AMG>
+    void test_1D(const std::string &name, AMG &amg) {
+        UTOPIA_UNUSED(name);
+
+        auto comm = Comm::get_default();
+
+        auto vl = layout(comm, n_dofs, n_dofs * comm.size());
+        Matrix A;
+        A.sparse(square_matrix_layout(vl), 3, 2);
+
+        Vector x(vl, 0.0), b(vl, 2.0);
+
+        assemble_laplacian_1D(A, true);
+
+        auto rr = b.range();
+
+        {
+            Write<Vector> w(b);
+
+            if (rr.inside(0)) {
+                b.set(0, 0);
+            }
+
+            if (rr.inside(b.size() - 1)) {
+                b.set(b.size() - 1, 0);
+            }
+        }
+
+        amg.verbose(true);
+        amg.atol(1e-6);
+        amg.rtol(1e-7);
+        amg.stol(1e-7);
+        amg.max_it(100);
+
+        // amg.solve(A, b, x);
+
+        amg.update(make_ref(A));
+
+        // for (SizeType i = 0; i < n_levels; ++i) {
+        //     auto &Ai = amg.algorithm().level(i).A();
+        //     rename("a" + std::to_string(i) + "_" + name, const_cast<Matrix &>(Ai));
+        //     write("A" + std::to_string(i) + "_" + name + ".m", Ai);
+        // }
+
+        amg.apply(b, x);
+
+        Vector r = b - A * x;
+        Scalar norm_r = norm1(r);
+        utopia_test_assert(norm_r < 1e-5);
+    }
+};
 
 void amg() {
 #ifdef UTOPIA_WITH_PETSC
-    UTOPIA_RUN_TEST(petsc_amg_test);
+    AMGTest<PetscMatrix, PetscVector>().run();
 #endif  // UTOPIA_WITH_PETSC
 }
 
