@@ -22,7 +22,7 @@
 namespace utopia {
     namespace device {
 
-#ifdef KOKKOS_INLINE_FUNCTION
+#ifdef UTOPIA_WITH_TRILINOS
 
         template <typename T>
         UTOPIA_INLINE_FUNCTION constexpr T isnan(const T &v) {
