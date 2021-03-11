@@ -25,6 +25,16 @@ namespace utopia {
         in.get("variable_number", variable_number);
         in.get("gap_negative_bound", gap_negative_bound);
         in.get("gap_positive_bound", gap_positive_bound);
+
+        in.get("surfaces", [this](Input &in) {
+            in.get_all([this](Input &in) {
+                int tag = -1;
+                in.get("tag", tag);
+                if (tag >= 0) {
+                    this->tags.insert(tag);
+                }
+            });
+        });
     }
 
     void Obstacle::transform(const USparseMatrix &in, USparseMatrix &out) {
@@ -71,7 +81,7 @@ namespace utopia {
             extract_trace_space(mesh, dof_map, params.variable_number, space);
 
             obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
-            obstacle->assemble({}, space);
+            obstacle->assemble(params.tags, space);
 
             finalize_tensors(output);
             return true;

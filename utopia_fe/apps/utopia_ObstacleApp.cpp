@@ -7,6 +7,15 @@
 #include "utopia_UIScalarSampler.hpp"
 #include "utopia_ui.hpp"
 
+#include "utopia_Agglomerate.hpp"
+#include "utopia_BlockAgglomerate.hpp"
+#include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_ILU.hpp"
+
+#include "utopia_MPITimeStatistics.hpp"
+#include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
+#include "utopia_petsc_DILUAlgorithm.hpp"
+
 #include "utopia_Obstacle.hpp"
 
 #include "libmesh/boundary_mesh.h"
@@ -46,14 +55,55 @@ namespace utopia {
             model_ =
                 std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(std::move(model), std::move(forcing_function));
 
+            int block_size = mesh.mesh().spatial_dimension();
+            bool use_amg = true;
+            in.get("use_amg", use_amg);
+
             std::string qp_solver_type = "pgs";
             in.get("qp-solver", [&qp_solver_type](Input &in) { in.get("type", qp_solver_type); });
 
             if (qp_solver_type == "ssnewton") {
-                auto ksp = std::make_shared<KSPSolver<USparseMatrix, UVector>>();
-                ksp->pc_type("hypre");
+                if (use_amg) {
+                    std::shared_ptr<IterativeSolver<USparseMatrix, UVector>> smoother;
+                    auto ksp = std::make_shared<KSPSolver<USparseMatrix, UVector>>();
+                    ksp->pc_type("ilu");
+                    ksp->ksp_type("richardson");
+                    smoother = ksp;
 
-                qp_solver_ = std::make_shared<SemismoothNewton<USparseMatrix, UVector>>(ksp);
+                    std::shared_ptr<LinearSolver<USparseMatrix, UVector>> coarse_solver;
+                    coarse_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+
+                    std::shared_ptr<MatrixAgglomerator<USparseMatrix>> agglomerator;
+
+                    if (block_size == 2) {
+                        agglomerator = std::make_shared<BlockAgglomerate<USparseMatrix, 2>>();
+                    } else if (block_size == 3) {
+                        agglomerator = std::make_shared<BlockAgglomerate<USparseMatrix, 3>>();
+                    } else if (block_size == 4) {
+                        agglomerator = std::make_shared<BlockAgglomerate<USparseMatrix, 4>>();
+                    } else {
+                        agglomerator = std::make_shared<Agglomerate<USparseMatrix>>();
+                    }
+
+                    auto amg = std::make_shared<AlgebraicMultigrid<USparseMatrix, UVector>>(
+                        smoother, coarse_solver, agglomerator);
+
+                    InputParameters inner_params;
+                    inner_params.set("block_size", block_size);
+                    inner_params.set("use_simd", true);
+                    inner_params.set("use_line_search", true);
+                    coarse_solver->read(inner_params);
+                    smoother->read(inner_params);
+                    amg->verbose(true);
+
+                    in.get("amg", *amg);
+
+                    qp_solver_ = std::make_shared<SemismoothNewton<USparseMatrix, UVector>>(amg);
+                } else {
+                    auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+                    qp_solver_ = std::make_shared<SemismoothNewton<USparseMatrix, UVector>>(linear_solver);
+                }
+
             } else {
                 qp_solver_ = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
             }
@@ -89,15 +139,21 @@ namespace utopia {
             constr.fill_empty_bounds(layout(g_c));
             qp_solver_->set_box_constraints(constr);
 
+            // Output
+            {
+                write("obstacle.e", obstacle_mesh.mesh());
+                UVector gap_zeroed = e_mul(obs.output().is_contact, obs.output().gap);
+                write("obs_gap.e", space.space()[0], gap_zeroed);
+                write("obs_normals.e", space.space()[0], obs.output().normals);
+                write("obs_is_contact.e", space.space()[0], obs.output().is_contact);
+            }
+
             qp_solver_->solve(H_c, g_c, x_c);
 
             obs.inverse_transform(x_c, x);
 
-            write("obstacle.e", obstacle_mesh.mesh());
-            write("obs_gap.e", space.space()[0], obs.output().gap);
-            write("obs_normals.e", space.space()[0], obs.output().normals);
-            write("obs_is_contact.e", space.space()[0], obs.output().is_contact);
-            write("obs_sol.e", space.space()[0], x);
+            // Output
+            { write("obs_sol.e", space.space()[0], x); }
         }
 
         ObstacleProblem(libMesh::Parallel::Communicator &comm)

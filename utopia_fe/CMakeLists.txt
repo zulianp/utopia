@@ -412,6 +412,10 @@ write_basic_package_version_file(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake
         DESTINATION lib/cmake/)
 
+add_executable(utopia_fe_test test.cpp)
+target_link_libraries(utopia_fe_test utopia_fe)
+include(tests/tests.cmake)
+
 # ##############################################################################
 
 add_custom_target(apps)
