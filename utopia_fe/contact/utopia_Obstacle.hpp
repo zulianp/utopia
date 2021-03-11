@@ -13,7 +13,8 @@ namespace utopia {
         void read(Input &in) override;
 
         int variable_number{0};
-        double max_gap{0.1};
+        double gap_negative_bound{-0.0001};
+        double gap_positive_bound{0.1};
     };
 
     class Obstacle {

@@ -46,7 +46,18 @@ namespace utopia {
             model_ =
                 std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(std::move(model), std::move(forcing_function));
 
-            qp_solver_ = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
+            std::string qp_solver_type = "pgs";
+            in.get("qp-solver", [&qp_solver_type](Input &in) { in.get("type", qp_solver_type); });
+
+            if (qp_solver_type == "ssnewton") {
+                auto ksp = std::make_shared<KSPSolver<USparseMatrix, UVector>>();
+                ksp->pc_type("hypre");
+
+                qp_solver_ = std::make_shared<SemismoothNewton<USparseMatrix, UVector>>(ksp);
+            } else {
+                qp_solver_ = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
+            }
+
             in.get("qp-solver", *qp_solver_);
         }
 

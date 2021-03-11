@@ -23,7 +23,8 @@ namespace utopia {
 
     void ObstacleParams::read(Input &in) {
         in.get("variable_number", variable_number);
-        in.get("max_gap", max_gap);
+        in.get("gap_negative_bound", gap_negative_bound);
+        in.get("gap_positive_bound", gap_positive_bound);
     }
 
     void Obstacle::transform(const USparseMatrix &in, USparseMatrix &out) {
@@ -69,7 +70,7 @@ namespace utopia {
             SpaceT space(mesh_ptr);
             extract_trace_space(mesh, dof_map, params.variable_number, space);
 
-            obstacle->set_max_gap(params.max_gap);
+            obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
             obstacle->assemble({}, space);
 
             finalize_tensors(output);
@@ -122,7 +123,7 @@ namespace utopia {
 
             // UVector test_normals = out.orthogonal_trafo * out.normals;
 
-            // write("test_normals.m", test_normals);
+            write("gap.m", out.gap);
 
             replace_zeros(out.is_contact, out.gap);
         }
