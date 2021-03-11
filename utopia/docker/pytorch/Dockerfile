@@ -113,7 +113,6 @@ RUN cd /utopia/utopia/build && cmake .. -DUTOPIA_SCRIPTING=ON \
 
 RUN cd /utopia/utopia/build && make -j
 RUN  rm -f script.sh
-RUN mkdir /utopia/utopia/build/scripting/tesi
 
 RUN cd /utopia/utopia/build/scripting 
 CMD ["/bin/sh"]
