@@ -26,7 +26,7 @@ namespace scripting {
     using Scalar = double;
     using SizeType = int;
     using LocalSizeType = int;
-    using Factory = utopia::AlgebraFactory<Scalar, SizeType>;  
+    using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
 
     void init();
     void finalize();
@@ -39,47 +39,43 @@ namespace scripting {
         Communicator();
         ~Communicator();
 
-        CommunicatorImpl * get_communicator() const {
-            return impl_;
-        }
-      
+        CommunicatorImpl *get_communicator() const { return impl_; }
+
     private:
-        CommunicatorImpl* impl_;
+        CommunicatorImpl *impl_;
     };
 
     class Layout {
-        public:
-            using LayoutImpl = const utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
-        
+    public:
+        using LayoutImpl = const utopia::Layout<utopia::Communicator, 1, LocalSizeType, SizeType>;
+
         Layout(const Communicator &comm, LocalSizeType local_size, SizeType global_size);
         ~Layout();
 
-        LayoutImpl *get_layout() const {
-            return impl_;
-        }
+        LayoutImpl *get_layout() const { return impl_; }
 
-        private:
-            const LayoutImpl * impl_;
+    private:
+        const LayoutImpl *impl_;
     };
 
     class Vector {
     public:
         using VectorImpl = utopia::AbstractVector<Scalar, SizeType>;
-     
+
         Vector();
         ~Vector();
         void print_info();
         void values(const Layout &l, const Scalar &value);
-        //void describe() const; 
-        void add(const SizeType &i, const Scalar &value);  
-        void axpy(Scalar alpha, Vector *x);  
-        void describe() const; 
+        // void describe() const;
+        void add(const SizeType &i, const Scalar &value);
+        void axpy(Scalar alpha, Vector *x);
+        void describe() const;
+        bool equals(const Vector *other, const Scalar tol) const;
 
     private:
-        VectorImpl* impl_;
+        VectorImpl *impl_;
     };
 
-    
     class SparseMatrix {
     public:
         using MatrixImpl = utopia::AbstractMatrix<Scalar, SizeType>;
@@ -87,16 +83,11 @@ namespace scripting {
         SparseMatrix();
         ~SparseMatrix();
         void print_info();
-        
 
     private:
-        MatrixImpl* impl_;
+        MatrixImpl *impl_;
     };
 
-    
 }  // namespace scripting
-
-
-
 
 #endif  // UTOPIA_SCRIPT_HPP

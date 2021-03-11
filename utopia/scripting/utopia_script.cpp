@@ -39,7 +39,6 @@ namespace scripting {
         init(argc, &argv_ptr);
     }
 
-
     void print_info() { utopia::out() << "Utopia\nversion: " << UTOPIA_VERSION << std::endl; }
 
     void finalize() { utopia::Utopia::Finalize(); }
@@ -60,25 +59,24 @@ namespace scripting {
 
     void SparseMatrix::print_info() { utopia::out() << "SparseMatrix::print()" << std::endl; }
 
-
     Communicator::Communicator() : impl_(nullptr) {
         auto comm = Factory::new_communicator();
 
-        if(!comm) {
+        if (!comm) {
             utopia::out() << "[Error] Communicator could not be constructed" << std::endl;
-            return; 
+            return;
         }
         impl_ = comm.get();
         comm.release();
     }
 
-    Communicator::~Communicator() {delete impl_;}
+    Communicator::~Communicator() { delete impl_; }
 
-    Layout::Layout(const Communicator &comm, LocalSizeType local_size, SizeType global_size) : 
-    
-        impl_(nullptr) {
+    Layout::Layout(const Communicator &comm, LocalSizeType local_size, SizeType global_size)
+        :
 
-            auto layout = std::make_unique<LayoutImpl>(*comm.get_communicator(), local_size, global_size); 
+          impl_(nullptr) {
+        auto layout = std::make_unique<LayoutImpl>(*comm.get_communicator(), local_size, global_size);
 
         if (!layout) {
             utopia::out() << "[Error] Vector could not be constructed" << std::endl;
@@ -89,11 +87,9 @@ namespace scripting {
         layout.release();
     }
 
-    Layout::~Layout() {delete impl_;}
+    Layout::~Layout() { delete impl_; }
 
-    
-    Vector::Vector() : impl_(nullptr)  {
-        
+    Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
 
         if (!vec) {
@@ -108,25 +104,13 @@ namespace scripting {
     Vector::~Vector() { delete impl_; }
 
     void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
-    void Vector::values(const Layout &l, const Scalar &value) {  
+    void Vector::values(const Layout &l, const Scalar &value) {
         auto ll = *l.get_layout();
-        impl_->values(ll, value); 
+        impl_->values(ll, value);
     }
-    void Vector::add(const SizeType &i, const Scalar &value) { impl_->add(i, value); }  
-    void Vector::axpy(Scalar alpha, Vector *x) {
-        impl_->axpy(alpha, *x->impl_);
-    }  
-
-    void Vector::describe() const {
-            impl_->describe();
-    } 
-
-
-
-
-
-    // void disp(const AbstractVector<Scalar, SizeType> &v) {
-    //     v.describe();
-    // }
+    void Vector::add(const SizeType &i, const Scalar &value) { impl_->add(i, value); }
+    void Vector::axpy(Scalar alpha, Vector *x) { impl_->axpy(alpha, *x->impl_); }
+    void Vector::describe() const { impl_->describe(); }
+    bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
 
 }  // namespace scripting
