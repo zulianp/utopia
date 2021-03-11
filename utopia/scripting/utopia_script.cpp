@@ -112,5 +112,6 @@ namespace scripting {
     void Vector::axpy(Scalar alpha, Vector *x) { impl_->axpy(alpha, *x->impl_); }
     void Vector::describe() const { impl_->describe(); }
     bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
+    Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
 
 }  // namespace scripting

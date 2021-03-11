@@ -66,9 +66,9 @@ namespace scripting {
         ~Vector();
         void print_info();
         void values(const Layout &l, const Scalar &value);
-        // void describe() const;
         void add(const SizeType &i, const Scalar &value);
         void axpy(Scalar alpha, Vector *x);
+        Scalar dot(const Vector *x) const;
         void describe() const;
         bool equals(const Vector *other, const Scalar tol) const;
 

@@ -55,5 +55,19 @@ class TestUtopiaVector(unittest.TestCase):
 
 		self.assertFalse(c.equals(test,0), False)	
 
+	def test_vector_dot_product(self):
+		u.init()
+		
+		comm = u.Communicator()
+		l = u.Layout(comm, 10, 10)
+		
+		a = u.Vector()
+		a.values(l, 10)	
+
+		b = u.Vector()
+		b.values(l, 10)	
+
+		self.assertTrue(a.dot(b), 1000.0)	
+
 if __name__ == '__main__':
     unittest.main()
