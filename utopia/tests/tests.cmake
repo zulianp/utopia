@@ -4,6 +4,7 @@ list(
     APPEND
     TEST_MODULES
     .
+
     test_problems
     test_problems/unconstrained_benchmark
     test_problems/constrained_benchmark
@@ -11,6 +12,7 @@ list(
     test_problems/PTC_benchmark)
 
 list(APPEND TEST_MODULES deprecated)
+list(APPEND TEST_MODULES python) 
 
 # if(TARGET utopia_petsc) list(APPEND TEST_MODULES petsc) endif()
 
