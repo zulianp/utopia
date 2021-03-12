@@ -6,7 +6,9 @@
 
 #include "utopia_libmesh_MeshInitializer.hpp"
 
+// All libmesh includes
 #include "libmesh/mesh_base.h"
+#include "libmesh/namebased_io.h"
 #include "libmesh/parallel.h"
 #include "libmesh/parallel_mesh.h"
 #include "libmesh/replicated_mesh.h"
@@ -27,8 +29,6 @@ namespace utopia {
 
             std::shared_ptr<libMesh::Parallel::Communicator> comm_do_not_use_;
         };
-
-        Mesh::Mesh() : impl_(utopia::make_unique<Impl>()) { impl_->init(Traits<UVector>::Communicator::get_default()); }
 
         Mesh::~Mesh() {}
 
@@ -65,6 +65,16 @@ namespace utopia {
         void Mesh::init_replicated() {
             impl_->mesh = std::make_shared<libMesh::ReplicatedMesh>(*impl_->comm_do_not_use_);
         }
+
+        void Mesh::read(const Path &path) {
+            if (empty()) {
+                init_distributed();
+            }
+
+            impl_->mesh->read(path.to_string());
+        }
+
+        void Mesh::write(const Path &path) { libMesh::NameBasedIO(*impl_->mesh).write(path.to_string()); }
 
     }  // namespace libmesh
 

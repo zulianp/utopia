@@ -6,26 +6,24 @@
 #include "utopia_Input.hpp"
 #include "utopia_Mesh.hpp"
 
-namespace libMesh {
-    class MeshBase;
+#include "utopia_fe_base.hpp"
 
-    namespace Parallel {
-        class Communicator;
-    }
-
-}  // namespace libMesh
+#include "utopia_libmesh_ForwardDeclarations.hpp"
 
 namespace utopia {
 
-    namespace libmesh {
+    template <>
+    class Traits<utopia::libmesh::Mesh> : public Traits<UVector> {};
 
-        class MeshInitializer;
+    namespace libmesh {
 
         class Mesh final : public Configurable, public Describable {
         public:
-            Mesh();
             ~Mesh();
-            Mesh(const Communicator &comm);
+            Mesh(const Communicator &comm = Traits<Mesh>::Communicator::get_default());
+
+            void read(const Path &path);
+            void write(const Path &path);
 
             void read(Input &in) override;
             void describe(std::ostream &os) const override;

@@ -1,7 +1,8 @@
 #ifndef UTOPIA_LIBMESH_MESH_INITIALIZER_HPP
 #define UTOPIA_LIBMESH_MESH_INITIALIZER_HPP
 
-#include "utopia_libmesh_Mesh.hpp"
+#include "utopia_Input.hpp"
+#include "utopia_libmesh_ForwardDeclarations.hpp"
 
 namespace utopia {
     namespace libmesh {
@@ -15,6 +16,8 @@ namespace utopia {
             Mesh &mesh_;
 
             class Build;
+            class Shift;
+            class Scale;
         };
 
     }  // namespace libmesh

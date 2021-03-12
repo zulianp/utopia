@@ -1,4 +1,4 @@
-utopiafe_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
+utopiafe_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".;old")
 find_package(LIBMESH)
 
 if(LIBMESH_FOUND)

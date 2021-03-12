@@ -2,6 +2,7 @@
 
 #include "utopia_ui.hpp"
 
+#include "utopia_libmesh_FunctionSpace_new.hpp"
 #include "utopia_libmesh_Mesh.hpp"
 
 using namespace utopia;
@@ -18,6 +19,20 @@ void lm_create_mesh() {
     mesh.read(params);
 }
 
-void lm() { UTOPIA_RUN_TEST(lm_create_mesh); }
+void lm_create_function_space() {
+    using FunctionSpace_t = utopia::libmesh::FunctionSpace;
+
+    InputParameters params;
+    params.set("system_type", "linear_implicit");
+    params.set("show", true);
+
+    FunctionSpace_t space;
+    space.read(params);
+}
+
+void lm() {
+    UTOPIA_RUN_TEST(lm_create_mesh);
+    UTOPIA_RUN_TEST(lm_create_function_space);
+}
 
 UTOPIA_REGISTER_TEST_FUNCTION(lm);
