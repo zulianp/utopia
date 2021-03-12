@@ -184,7 +184,7 @@ namespace utopia {
             void describe(std::ostream &os) const override { os << "Sys"; }
 
             std::string system_name{"main"};
-            std::string system_type{"linear_implicit"};
+            std::string system_type{"explicit"};
 
             std::vector<Var> vars;
             std::vector<BC> bcs;
@@ -280,11 +280,6 @@ namespace utopia {
             ret.impl_->space = wrapper();
             return ret;
         }
-
-        // FunctionSpace::SizeType FunctionSpace::n_local_dofs() const {
-        //     assert(impl_->systems);
-        //     return impl_->systems->n_active_dofs();
-        // }
 
         FunctionSubspace::FunctionSubspace() : impl_(std::make_shared<Impl>()) {}
 
