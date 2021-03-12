@@ -5,6 +5,9 @@ namespace libMesh {
     class MeshBase;
     class EquationSystems;
 
+    template <typename T>
+    class NumericVector;
+
     namespace Parallel {
         class Communicator;
     }

@@ -2,6 +2,8 @@
 
 #include "utopia_Options.hpp"
 
+#include "utopia_libmesh_ConvertTensor.hpp"
+
 #include <cstdlib>
 
 // All libmesh includes
@@ -11,6 +13,7 @@
 #include "libmesh/equation_systems.h"
 #include "libmesh/explicit_system.h"
 #include "libmesh/linear_implicit_system.h"
+#include "libmesh/namebased_io.h"
 #include "libmesh/nonlinear_implicit_system.h"
 #include "libmesh/parsed_function.h"
 #include "libmesh/reference_counter.h"
@@ -184,13 +187,13 @@ namespace utopia {
             void describe(std::ostream &os) const override { os << "Sys"; }
 
             std::string system_name{"main"};
-            std::string system_type{"explicit"};
+            std::string system_type{"linear_implicit"};
 
             std::vector<Var> vars;
             std::vector<BC> bcs;
         };
 
-        FunctionSpace::FunctionSpace(const Communicator &comm) : impl_(utopia::make_unique<Impl>()) {
+        FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {
             impl_->mesh = std::make_shared<Mesh>(comm);
         }
 
@@ -226,6 +229,15 @@ namespace utopia {
             impl_->systems->init();
         }
 
+        void FunctionSpace::write(const Path &path, const Vector &x) {
+            assert(impl_->systems);
+
+            auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
+            convert(x, *sys.solution);
+
+            libMesh::NameBasedIO(impl_->mesh->raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
+        }
+
         void FunctionSpace::describe(std::ostream &os) const {}
 
         std::shared_ptr<Mesh> FunctionSpace::mesh_ptr() const { return impl_->mesh; }
@@ -237,6 +249,34 @@ namespace utopia {
         libMesh::EquationSystems &FunctionSpace::raw_type() {
             assert(impl_->systems);
             return *impl_->systems;
+        }
+
+        void FunctionSpace::create_matrix(Matrix &mat) const {
+            using IndexSet = Traits<Vector>::IndexSet;
+
+            auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
+            auto &dof_map = sys.get_dof_map();
+
+            auto vl = layout(comm(), dof_map.n_local_dofs(), dof_map.n_local_dofs());
+            auto ml = square_matrix_layout(vl);
+
+            IndexSet d_nnz, o_nnz;
+            convert(dof_map.get_n_nz(), d_nnz);
+            convert(dof_map.get_n_oz(), o_nnz);
+
+            mat.sparse(ml, d_nnz, o_nnz);
+        }
+
+        void FunctionSpace::create_vector(Vector &vec) const {
+            using IndexSet = Traits<Vector>::IndexSet;
+            auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
+            auto &dof_map = sys.get_dof_map();
+
+            IndexSet index;
+            convert(dof_map.get_send_list(), index);
+
+            auto vl = layout(comm(), dof_map.n_local_dofs(), dof_map.n_dofs());
+            vec.ghosted(vl, index);
         }
 
         std::shared_ptr<FunctionSpaceWrapper> FunctionSpace::wrapper() { return impl_; }

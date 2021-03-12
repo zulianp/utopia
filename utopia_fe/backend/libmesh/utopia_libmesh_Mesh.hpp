@@ -20,15 +20,18 @@ namespace utopia {
         class Mesh final : public Configurable, public Describable {
         public:
             using SizeType = Traits<Mesh>::SizeType;
+            using Comm = Traits<Mesh>::Communicator;
 
             ~Mesh();
-            Mesh(const Communicator &comm = Traits<Mesh>::Communicator::get_default());
+            Mesh(const Comm &comm = Comm::get_default());
 
             void read(const Path &path);
             void write(const Path &path);
 
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
+
+            const Comm &comm() const;
 
             libMesh::MeshBase &raw_type();
             const libMesh::MeshBase &raw_type() const;

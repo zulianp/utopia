@@ -36,16 +36,23 @@ namespace utopia {
 
         class FunctionSpace : public Configurable, public Describable, public Traits<FunctionSpace> {
         public:
-            FunctionSpace(const Communicator &comm = Traits<FunctionSpace>::Communicator::get_default());
+            using Vector = Traits<FunctionSpace>::Vector;
+            using Matrix = Traits<FunctionSpace>::Matrix;
+            using Comm = Traits<FunctionSpace>::Communicator;
+
+            FunctionSpace(const Comm &comm = Comm::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
             ~FunctionSpace();
 
+            void write(const Path &path, const Vector &x);
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
 
             std::shared_ptr<Mesh> mesh_ptr() const;
             const Mesh &mesh() const;
             Mesh &mesh();
+
+            inline const Comm &comm() const { return mesh().comm(); }
 
             libMesh::EquationSystems &raw_type();
 
@@ -64,6 +71,9 @@ namespace utopia {
             SizeType n_systems() const;
             // access other spaces (auxiliry systems)
             FunctionSubspace auxiliary_space(const SizeType i);
+
+            void create_matrix(Matrix &mat) const;
+            void create_vector(Vector &vec) const;
 
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;

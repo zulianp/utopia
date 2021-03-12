@@ -21,18 +21,20 @@ namespace utopia {
         public:
             std::shared_ptr<libMesh::MeshBase> mesh;
 
-            void init(const Communicator &in_comm) {
+            void init(const Comm &in_comm) {
+                comm = in_comm;
                 comm_do_not_use_ = std::make_shared<libMesh::Parallel::Communicator>(in_comm.raw_comm());
             }
 
             inline bool empty() const { return !mesh; }
 
+            Comm comm;
             std::shared_ptr<libMesh::Parallel::Communicator> comm_do_not_use_;
         };
 
         Mesh::~Mesh() {}
 
-        Mesh::Mesh(const Communicator &comm) : impl_(utopia::make_unique<Impl>()) { impl_->init(comm); }
+        Mesh::Mesh(const Comm &comm) : impl_(utopia::make_unique<Impl>()) { impl_->init(comm); }
 
         void Mesh::read(Input &in) {
             UTOPIA_UNUSED(in);
@@ -45,6 +47,8 @@ namespace utopia {
                 init_distributed();
             }
         }
+
+        const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
         bool Mesh::empty() const { return impl_->empty(); }
 
@@ -60,7 +64,10 @@ namespace utopia {
             return *impl_->mesh;
         }
 
-        void Mesh::wrap(const std::shared_ptr<libMesh::MeshBase> &mesh) { impl_->mesh = mesh; }
+        void Mesh::wrap(const std::shared_ptr<libMesh::MeshBase> &mesh) {
+            impl_->comm.set(mesh->comm().get());
+            impl_->mesh = mesh;
+        }
 
         void Mesh::init_distributed() {
             assert(impl_->comm_do_not_use_);
