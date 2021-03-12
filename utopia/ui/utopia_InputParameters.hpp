@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace utopia {
 
@@ -147,6 +148,49 @@ namespace utopia {
             }
         }
     };
+
+    template <class Arg>
+    inline std::pair<std::string, Arg> param(const std::string &key, Arg &&value) {
+        return {key, std::forward<Arg>(value)};
+    }
+
+    inline std::pair<std::string, std::string> param(const std::string &key, const char *value) { return {key, value}; }
+
+    template <class First>
+    inline void param_set(InputParameters &params, std::pair<std::string, First> &&p) {
+        params.set(std::forward<std::string>(p.first), std::forward<First>(p.second));
+    }
+
+    inline void param_set(InputParameters &params, std::pair<std::string, InputParameters> &&p) {
+        params.set(std::move(p.first), std::make_shared<InputParameters>(std::move(p.second)));
+    }
+
+    template <class First>
+    inline void param_append(InputParameters &params, std::pair<std::string, First> &&first) {
+        param_set(params, std::forward<std::pair<std::string, First>>(first));
+    }
+
+    template <class First, class... Args>
+    inline void param_append(InputParameters &params,
+                             std::pair<std::string, First> &&first,
+                             std::pair<std::string, Args> &&... list) {
+        params.set(std::forward<std::string>(first.first), std::forward<First>(first.second));
+        param_append(params, std::forward<std::pair<std::string, Args>>(list)...);
+    }
+
+    template <class... Args>
+    inline InputParameters param_list(std::pair<std::string, Args> &&... list) {
+        InputParameters ret;
+        param_append(ret, std::forward<std::pair<std::string, Args>>(list)...);
+        return ret;
+    }
+
+    template <class Arg>
+    inline InputParameters param_list(std::pair<std::string, Arg> &&p) {
+        InputParameters ret;
+        param_set(ret, std::forward<std::pair<std::string, Arg>>(p));
+        return ret;
+    }
 }  // namespace utopia
 
 #endif  // UTOPIA_INPUT_PARAMETERS_HPP

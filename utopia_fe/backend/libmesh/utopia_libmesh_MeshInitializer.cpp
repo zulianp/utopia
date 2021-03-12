@@ -187,7 +187,7 @@ namespace utopia {
                 libMesh::MeshTools::Generation::build_sphere(
                     u_mesh,
                     radius,
-                    refinements,  // const unsigned int nr = 2,
+                    std::max(1, refinements),
                     libMesh::Utility::string_to_enum<libMesh::ElemType>(elem_type)
                     // const unsigned int    n_smooth = 2,
                     // const bool   flat = true
