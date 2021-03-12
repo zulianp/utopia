@@ -66,8 +66,8 @@ void lm_create_function_space() {
     using FunctionSpace_t = utopia::libmesh::FunctionSpace;
 
     InputParameters params;
-    params.set("system_type", "linear_implicit");
-    params.set("show", true);
+    params.set("system_type", "explicit");
+    // params.set("show", true);
 
     // auto params = param_list(param("system_type", "linear_implicit"),
     //                          param("show", true),
@@ -75,6 +75,10 @@ void lm_create_function_space() {
 
     FunctionSpace_t space;
     space.read(params);
+
+    auto s0 = space[0];
+
+    std::cout << s0.n_local_dofs() << " " << s0.n_dofs() << std::endl;
 }
 
 void lm() {

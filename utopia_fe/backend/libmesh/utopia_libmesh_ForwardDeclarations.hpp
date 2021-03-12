@@ -3,6 +3,7 @@
 
 namespace libMesh {
     class MeshBase;
+    class EquationSystems;
 
     namespace Parallel {
         class Communicator;
@@ -15,6 +16,8 @@ namespace utopia {
         class Mesh;
         class MeshInitializer;
         class FunctionSpace;
+
+        class FunctionSubspace;
     }  // namespace libmesh
 }  // namespace utopia
 
