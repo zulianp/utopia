@@ -101,9 +101,16 @@ namespace utopia {
 
         inline void set(const std::string &key, const std::string &val) { aux_set(key, val); }
 
-        inline void set(const std::string &key, std::shared_ptr<Input> &in) { nodes_[key] = in; }
+        inline void set(const std::string &key, const std::shared_ptr<Input> &in) { nodes_[key] = in; }
 
         void describe(std::ostream &os) const { aux_describe(os, 0); }
+
+        inline InputParameters() {}
+        InputParameters(InputParameters &&other)
+            : Input(std::move(other)),
+              values_(std::move(other.values_)),
+              nodes_(std::move(other.nodes_)),
+              aux_root_(std::move(other.aux_root_)) {}
 
     private:
         std::map<std::string, std::unique_ptr<IConvertible>> values_;

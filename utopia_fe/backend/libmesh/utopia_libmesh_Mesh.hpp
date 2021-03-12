@@ -19,6 +19,8 @@ namespace utopia {
 
         class Mesh final : public Configurable, public Describable {
         public:
+            using SizeType = Traits<Mesh>::SizeType;
+
             ~Mesh();
             Mesh(const Communicator &comm = Traits<Mesh>::Communicator::get_default());
 
@@ -32,6 +34,8 @@ namespace utopia {
             const libMesh::MeshBase &raw_type() const;
             void wrap(const std::shared_ptr<libMesh::MeshBase> &mesh);
             bool empty() const;
+
+            void unit_cube(const SizeType &nx = 10, const SizeType &ny = 10, const SizeType &nz = 10);
 
         private:
             class Impl;

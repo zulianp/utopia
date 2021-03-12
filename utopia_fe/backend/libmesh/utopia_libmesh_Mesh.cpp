@@ -50,19 +50,30 @@ namespace utopia {
 
         void Mesh::describe(std::ostream &os) const { UTOPIA_UNUSED(os); }
 
-        libMesh::MeshBase &Mesh::raw_type() { return *impl_->mesh; }
+        libMesh::MeshBase &Mesh::raw_type() {
+            assert(impl_->mesh);
+            return *impl_->mesh;
+        }
 
-        const libMesh::MeshBase &Mesh::raw_type() const { return *impl_->mesh; }
+        const libMesh::MeshBase &Mesh::raw_type() const {
+            assert(impl_->mesh);
+            return *impl_->mesh;
+        }
 
         void Mesh::wrap(const std::shared_ptr<libMesh::MeshBase> &mesh) { impl_->mesh = mesh; }
 
         void Mesh::init_distributed() {
+            assert(impl_->comm_do_not_use_);
             impl_->mesh = std::make_shared<libMesh::DistributedMesh>(*impl_->comm_do_not_use_);
         }
 
-        void Mesh::init_serial() { impl_->mesh = std::make_shared<libMesh::SerialMesh>(*impl_->comm_do_not_use_); }
+        void Mesh::init_serial() {
+            assert(impl_->comm_do_not_use_);
+            impl_->mesh = std::make_shared<libMesh::SerialMesh>(*impl_->comm_do_not_use_);
+        }
 
         void Mesh::init_replicated() {
+            assert(impl_->comm_do_not_use_);
             impl_->mesh = std::make_shared<libMesh::ReplicatedMesh>(*impl_->comm_do_not_use_);
         }
 
@@ -76,6 +87,16 @@ namespace utopia {
 
         void Mesh::write(const Path &path) { libMesh::NameBasedIO(*impl_->mesh).write(path.to_string()); }
 
+        void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
+            InputParameters params;
+            params.set("type", "cube");
+            params.set("nx", nx);
+            params.set("ny", ny);
+            params.set("nz", nz);
+
+            MeshInitializer init(*this);
+            init.read(params);
+        }
     }  // namespace libmesh
 
 }  // namespace utopia
