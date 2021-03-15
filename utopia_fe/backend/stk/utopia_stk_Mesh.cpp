@@ -76,14 +76,14 @@ namespace utopia {
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
-        ::stk::mesh::BulkData &Mesh::raw_type() {
+        ::stk::mesh::BulkData &Mesh::bulk_data() const {
             assert(impl_->bulk_data);
             return *impl_->bulk_data;
         }
 
-        const ::stk::mesh::BulkData &Mesh::raw_type() const {
-            assert(impl_->bulk_data);
-            return *impl_->bulk_data;
+        ::stk::mesh::MetaData &Mesh::meta_data() const {
+            assert(impl_->meta_data);
+            return *impl_->meta_data;
         }
 
         void Mesh::wrap(const std::shared_ptr<::stk::mesh::MetaData> &meta_data,

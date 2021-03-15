@@ -35,8 +35,8 @@ namespace utopia {
 
             const Comm &comm() const;
 
-            ::stk::mesh::BulkData &raw_type();
-            const ::stk::mesh::BulkData &raw_type() const;
+            ::stk::mesh::BulkData &bulk_data() const;
+            ::stk::mesh::MetaData &meta_data() const;
 
             void wrap(const std::shared_ptr<::stk::mesh::MetaData> &meta_data,
                       const std::shared_ptr<::stk::mesh::BulkData> &bulk_data);
