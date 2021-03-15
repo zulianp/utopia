@@ -1,14 +1,15 @@
 # tests.cmake
 
 if(UTOPIA_ENABLE_STK)
-    # if(TARGET utopia_stk)
     list(APPEND TEST_MODULES stk)
-    target_link_libraries(utopia_fe_test utopia_stk)
-    # endif()
 endif()
 
 if(UTOPIA_ENABLE_LIBMESH)
     list(APPEND TEST_MODULES libmesh)
+endif()
+
+if(UTOPIA_ENABLE_MOONOLITH)
+    list(APPEND TEST_MODULES moonolith)
 endif()
 
 set(LOCAL_HEADERS "")

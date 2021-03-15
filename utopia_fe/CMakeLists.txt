@@ -457,6 +457,11 @@ if(TARGET utopia_stk)
     target_link_libraries(utopia_fe_exec utopia_stk)
 endif()
 
+if(TARGET utopia_moonolith)
+    target_link_libraries(utopia_fe_test utopia_moonolith)
+    target_link_libraries(utopia_fe_exec utopia_moonolith)
+endif()
+
 include(tests/tests.cmake)
 
 if(UTOPIA_ENABLE_LIBMESH)

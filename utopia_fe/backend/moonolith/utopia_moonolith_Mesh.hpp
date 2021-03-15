@@ -36,10 +36,7 @@ namespace utopia {
             const Comm &comm() const;
 
             template <int Dim>
-            ::moonolith::Mesh<Scalar, Dim> &raw_type();
-
-            template <int Dim>
-            const ::moonolith::Mesh<Scalar, Dim> &raw_type() const;
+            const std::shared_ptr<::moonolith::Mesh<Scalar, Dim>> raw_type() const;
 
             template <int Dim>
             void wrap(const std::shared_ptr<::moonolith::Mesh<Scalar, Dim>> &mesh);

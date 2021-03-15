@@ -1,9 +1,10 @@
-utopiafe_add_module(utopia_stk ${CMAKE_CURRENT_SOURCE_DIR} ".")
 
 find_package(Trilinos NO_MODULE NO_CMAKE_ENVIRONMENT_PATH
              NO_SYSTEM_ENVIRONMENT_PATH HINTS $ENV{TRILINOS_DIR})
 
 if(Trilinos_FOUND)
+    utopiafe_add_module(utopia_stk ${CMAKE_CURRENT_SOURCE_DIR} ".")
+
     target_include_directories(utopia_stk BEFORE
                                PUBLIC ${Trilinos_INCLUDE_DIRS})
 

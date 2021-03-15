@@ -1,35 +1,93 @@
 #include "utopia_moonolith_Mesh.hpp"
+#include "moonolith_Mesh.hpp"
 #include "par_moonolith.hpp"
+
+#include "moonolith_tri_mesh_reader.hpp"
+#include "moonolith_vtu_mesh_writer.hpp"
+
+#include <functional>
 
 namespace utopia {
 
     namespace moonolith {
-        class Mesh::Impl {};
 
-        Mesh::~Mesh() {}
+        class Mesh::Impl {
+        public:
+            using IMesh = ::moonolith::IMesh<Scalar>;
+            using Mesh1 = ::moonolith::Mesh<Mesh::Scalar, 1>;
+            using Mesh2 = ::moonolith::Mesh<Mesh::Scalar, 2>;
+            using Mesh3 = ::moonolith::Mesh<Mesh::Scalar, 3>;
 
-        Mesh::Mesh(const Comm &comm) {}
+            Comm comm;
+            std::shared_ptr<IMesh> mesh;
 
-        bool Mesh::read(const Path &path) {}
+            template <class MeshD>
+            void wrap(const std::shared_ptr<MeshD> &mesh_d) {
+                this->mesh = mesh_d;
 
-        bool Mesh::write(const Path &path) const {}
+                dim = []() -> SizeType { return MeshD::Dim; };
+                n_elements = [mesh_d]() -> SizeType { return mesh_d->n_elements(); };
+                n_nodes = [mesh_d]() -> SizeType { return mesh_d->n_nodes(); };
+                write = [mesh_d](const Path &path) -> bool {
+                    ::moonolith::VTUMeshWriter<MeshD> writer;
+                    return writer.write(path.to_string(), *mesh_d);
+                };
+            }
+
+            std::function<SizeType()> dim;
+            std::function<SizeType()> n_elements;
+            std::function<SizeType()> n_nodes;
+            std::function<bool(const Path &path)> write;
+        };
+
+        Mesh::~Mesh() = default;
+
+        Mesh::Mesh(const Comm &comm) : impl_(utopia::make_unique<Impl>()) { impl_->comm = comm; }
+
+        bool Mesh::read(const Path &path) {
+            ::moonolith::TriMeshReader<Impl::Mesh3> reader;
+            auto mesh = std::make_shared<Impl::Mesh3>(impl_->comm.raw_comm());
+
+            if (reader.read(path.to_string(), *mesh)) {
+                mesh->set_manifold_dim(2);
+                impl_->wrap(mesh);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        bool Mesh::write(const Path &path) const { return impl_->write(path); }
 
         void Mesh::read(Input &in) {}
 
         void Mesh::describe(std::ostream &os) const {}
 
-        const Mesh::Comm &Mesh::comm() const {}
+        const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
         template <int Dim>
-        ::moonolith::Mesh<Mesh::Scalar, Dim> &Mesh::raw_type() {}
+        const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, Dim>> Mesh::raw_type() const {
+            if (Dim != impl_->dim()) {
+                assert(false && "Trying to read wrong dimension");
+            }
+
+            return std::dynamic_pointer_cast<::moonolith::Mesh<Mesh::Scalar, Dim>>(impl_->mesh);
+        }
 
         template <int Dim>
-        const ::moonolith::Mesh<Mesh::Scalar, Dim> &Mesh::raw_type() const {}
+        void Mesh::wrap(const std::shared_ptr<::moonolith::Mesh<Scalar, Dim>> &mesh) {
+            impl_->wrap(mesh);
+        }
 
-        template <int Dim>
-        void Mesh::wrap(const std::shared_ptr<::moonolith::Mesh<Scalar, Dim>> &mesh) {}
+        bool Mesh::empty() const { return !static_cast<bool>(impl_->mesh); }
 
-        bool Mesh::empty() const {}
+        template void Mesh::wrap(const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 1>> &);
+        template void Mesh::wrap(const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 2>> &);
+        template void Mesh::wrap(const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 3>> &);
+
+        template const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 1>> Mesh::raw_type() const;
+        template const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 2>> Mesh::raw_type() const;
+        template const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 3>> Mesh::raw_type() const;
 
     }  // namespace moonolith
 }  // namespace utopia
