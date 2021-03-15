@@ -30,7 +30,8 @@ option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
-option(UTOPIA_ENABLE_STK "Enable the stk functionalities" ON)
+option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
+option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 
 # ##############################################################################
 # ##############################################################################
@@ -197,6 +198,10 @@ if(UTOPIA_ENABLE_LIBMESH)
 
 endif()
 
+if(UTOPIA_ENABLE_MOONOLITH)
+    list(APPEND UTOPIA_FE_MODULES backend/moonolith)
+endif()
+
 if(UTOPIA_ENABLE_STK)
     list(APPEND UTOPIA_FE_MODULES backend/stk)
 endif()
@@ -205,7 +210,7 @@ if(UTOPIA_ENABLE_MARS)
     list(APPEND UTOPIA_FE_MODULES backend/mars)
 endif()
 
-list(APPEND UTOPIA_FE_MODULES base tests)
+list(APPEND UTOPIA_FE_MODULES base tests interoperability)
 
 if(UTOPIA_INSTALL_LIBMESH)
     include(InstallLIBMESH)

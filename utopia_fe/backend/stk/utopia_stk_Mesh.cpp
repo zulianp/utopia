@@ -6,20 +6,6 @@
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
-//  stk::ParallelMachine pm = FluyaEnv::self().parallel_comm();
-
-//     metaData_ = std::make_unique<MetaData>();
-//     bulkData_ = std::make_unique<BulkData>(*metaData_, pm, BulkData::NO_AUTO_AURA);
-// //    bulkData_ = std::make_unique<BulkData>(*metaData_, pm, BulkData::AUTO_AURA);
-//     ioBroker_ = std::make_unique<stk::io::StkMeshIoBroker>(pm);
-//     ioBroker_->set_bulk_data(*bulkData_);
-
-//     // untested, auto decomposition of the mesh
-// //    ioBroker_->property_add(Ioss::Property("DECOMPOSITION_METHOD", "rcb"));
-
-//     inputMeshIdx_ = ioBroker_->add_mesh_database(inputDBName_, stk::io::READ_MESH);
-//     ioBroker_->create_input_mesh();
-
 namespace utopia {
     namespace stk {
 
@@ -46,7 +32,7 @@ namespace utopia {
             try {
                 Impl::IOBroker io_broker(comm);
                 io_broker.set_bulk_data(*bulk_data);
-                io_broker.property_add(Ioss::Property("DECOMPOSITION_METHOD", "rcb"));
+                // io_broker.property_add(Ioss::Property("DECOMPOSITION_METHOD", "rcb"));
                 io_broker.add_mesh_database(path.to_string(), ::stk::io::READ_MESH);
                 io_broker.create_input_mesh();
                 io_broker.populate_mesh();
@@ -71,7 +57,6 @@ namespace utopia {
                 Impl::IOBroker io_broker(comm);
                 io_broker.set_bulk_data(bulk_data);
                 auto out_id = io_broker.create_output_mesh(path.to_string(), ::stk::io::WRITE_RESTART);
-                // io_broker.set_active_mesh(out_id);
                 io_broker.write_output_mesh(out_id);
                 return true;
 
