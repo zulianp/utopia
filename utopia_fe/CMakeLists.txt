@@ -205,7 +205,7 @@ if(UTOPIA_ENABLE_MARS)
     list(APPEND UTOPIA_FE_MODULES backend/mars)
 endif()
 
-list(APPEND UTOPIA_FE_MODULES backend/mars tests)
+list(APPEND UTOPIA_FE_MODULES base tests)
 
 if(UTOPIA_INSTALL_LIBMESH)
     include(InstallLIBMESH)

@@ -14,6 +14,14 @@ if(Trilinos_FOUND)
     target_link_libraries(utopia_stk INTERFACE ${Trilinos_TPL_LIBRARIES})
     target_link_libraries(utopia_stk INTERFACE ${Trilinos_LIBRARIES})
 
+    target_include_directories(utopia_stk BEFORE
+                               PUBLIC ${CMAKE_SOURCE_DIR}/base)
+
+    target_include_directories(utopia_stk BEFORE
+                               PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+    target_include_directories(utopia_stk BEFORE PUBLIC ${CMAKE_BINARY_DIR})
+
     set(Trilinos_LIBRARIES
         ${Trilinos_LIBRARIES}
         PARENT_SCOPE)
