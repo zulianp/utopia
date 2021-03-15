@@ -13,7 +13,9 @@ void stk_moonolith_convert() {
     using MeshTo = utopia::moonolith::Mesh;
 
     MeshFrom mesh_from;
-    utopia_test_assert(mesh_from.read("../data/knf/pump/membrane.e"));
+    utopia_test_assert(mesh_from.read("../data/knf/rectangle_4_tris.e"));
+
+    mesh_from.describe(std::cout);
 
     MeshTo mesh_to;
     convert_mesh(mesh_from, mesh_to);

@@ -72,7 +72,7 @@ namespace utopia {
             read(path);
         }
 
-        void Mesh::describe(std::ostream &os) const {}
+        void Mesh::describe(std::ostream &os) const { impl_->bulk_data->dump_all_mesh_info(os); }
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
