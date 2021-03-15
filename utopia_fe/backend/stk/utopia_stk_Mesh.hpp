@@ -28,7 +28,7 @@ namespace utopia {
             Mesh(const Comm &comm = Comm::get_default());
 
             bool read(const Path &path);
-            bool write(const Path &path);
+            bool write(const Path &path) const;
 
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
@@ -37,10 +37,11 @@ namespace utopia {
 
             ::stk::mesh::BulkData &raw_type();
             const ::stk::mesh::BulkData &raw_type() const;
-            void wrap(const std::shared_ptr<::stk::mesh::BulkData> &mesh);
-            bool empty() const;
 
-            void unit_cube(const SizeType &nx = 10, const SizeType &ny = 10, const SizeType &nz = 10);
+            void wrap(const std::shared_ptr<::stk::mesh::MetaData> &meta_data,
+                      const std::shared_ptr<::stk::mesh::BulkData> &bulk_data);
+
+            bool empty() const;
 
         private:
             class Impl;

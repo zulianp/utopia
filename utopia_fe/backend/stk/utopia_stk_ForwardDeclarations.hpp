@@ -4,7 +4,8 @@
 namespace stk {
     namespace mesh {
         class BulkData;
-    }
+        class MetaData;
+    }  // namespace mesh
 }  // namespace stk
 
 namespace utopia {

@@ -43,24 +43,42 @@ namespace utopia {
             auto meta_data = std::make_shared<Impl::MetaData>();
             auto bulk_data = std::make_shared<Impl::BulkData>(*meta_data, comm, Impl::BulkData::NO_AUTO_AURA);
 
-            impl_->meta_data = meta_data;
-            impl_->bulk_data = bulk_data;
+            try {
+                Impl::IOBroker io_broker(comm);
+                io_broker.set_bulk_data(*bulk_data);
+                io_broker.property_add(Ioss::Property("DECOMPOSITION_METHOD", "rcb"));
+                io_broker.add_mesh_database(path.to_string(), ::stk::io::READ_MESH);
+                io_broker.create_input_mesh();
+                io_broker.populate_mesh();
+                io_broker.populate_field_data();
 
-            Impl::IOBroker io_broker(comm);
-            io_broker.set_bulk_data(*bulk_data);
-            io_broker.add_mesh_database(path.to_string(), ::stk::io::READ_MESH);
-            io_broker.create_input_mesh();
-            io_broker.populate_mesh();
+                impl_->meta_data = meta_data;
+                impl_->bulk_data = bulk_data;
+
+                return true;
+            } catch (const std::exception &ex) {
+                utopia::err() << "Mesh::read(\"" << path.to_string() << "\") error: " << ex.what() << '\n';
+                assert(false);
+                return false;
+            }
         }
 
-        bool Mesh::write(const Path &path) {
+        bool Mesh::write(const Path &path) const {
             auto comm = impl_->comm.raw_comm();
-            auto bulk_data = impl_->bulk_data;
+            auto &bulk_data = *impl_->bulk_data;
 
-            Impl::IOBroker io_broker(comm);
-            io_broker.set_bulk_data(*bulk_data);
-            auto out_id = io_broker.create_output_mesh(path.to_string(), ::stk::io::WRITE_RESULTS);
-            io_broker.process_output_request(out_id, 0);
+            try {
+                Impl::IOBroker io_broker(comm);
+                io_broker.set_bulk_data(bulk_data);
+                auto out_id = io_broker.create_output_mesh(path.to_string(), ::stk::io::WRITE_RESTART);
+                // io_broker.set_active_mesh(out_id);
+                io_broker.write_output_mesh(out_id);
+                return true;
+
+            } catch (const std::exception &ex) {
+                utopia::err() << "Mesh::write(\"" << path.to_string() << "\") error: " << ex.what() << '\n';
+                return false;
+            }
         }
 
         void Mesh::read(Input &in) {
@@ -71,14 +89,25 @@ namespace utopia {
 
         void Mesh::describe(std::ostream &os) const {}
 
-        const Mesh::Comm &Mesh::comm() const {}
+        const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
-        ::stk::mesh::BulkData &Mesh::raw_type() {}
-        const ::stk::mesh::BulkData &Mesh::raw_type() const {}
-        void Mesh::wrap(const std::shared_ptr<::stk::mesh::BulkData> &mesh) {}
-        bool Mesh::empty() const {}
+        ::stk::mesh::BulkData &Mesh::raw_type() {
+            assert(impl_->bulk_data);
+            return *impl_->bulk_data;
+        }
 
-        void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {}
+        const ::stk::mesh::BulkData &Mesh::raw_type() const {
+            assert(impl_->bulk_data);
+            return *impl_->bulk_data;
+        }
+
+        void Mesh::wrap(const std::shared_ptr<::stk::mesh::MetaData> &meta_data,
+                        const std::shared_ptr<::stk::mesh::BulkData> &bulk_data) {
+            impl_->meta_data = meta_data;
+            impl_->bulk_data = bulk_data;
+        }
+
+        bool Mesh::empty() const { return !static_cast<bool>(impl_->bulk_data); }
 
     }  // namespace stk
 }  // namespace utopia
