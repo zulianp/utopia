@@ -51,6 +51,11 @@ if(Trilinos_FOUND)
         ${CMAKE_Fortran_COMPILER}
         PARENT_SCOPE)
 
+    set(UTOPIA_WITH_STK TRUE)
+    set(UTOPIA_WITH_STK
+        TRUE
+        PARENT_SCOPE)
+
 else()
     message(WARNING "[Warning] did not find Trilinos")
 endif()

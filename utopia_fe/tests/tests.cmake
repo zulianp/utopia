@@ -1,6 +1,12 @@
 # tests.cmake
 
-list(APPEND TEST_MODULES stk libmesh)
+if(UTOPIA_ENABLE_STK)
+    list(APPEND TEST_MODULES stk)
+endif()
+
+if(UTOPIA_ENABLE_LIBMESH)
+    list(APPEND TEST_MODULES libmesh)
+endif()
 
 set(LOCAL_HEADERS "")
 set(LOCAL_SOURCES "")

@@ -22,6 +22,8 @@
 #include "utopia_SDCTest.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
 
+#include "utopia_ui.hpp"
+
 namespace utopia {
 
     void FETests::print_usage(std::ostream &os) const {

@@ -29,6 +29,9 @@ option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
 option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
+option(UTOPIA_ENABLE_STK "Enable the stk functionalities" ON)
+
 # ##############################################################################
 # ##############################################################################
 # ##############################################################################
@@ -174,28 +177,35 @@ macro(add_utopiafe_app app_name)
     # include)
 endmacro(add_utopiafe_app)
 
-list(
-    APPEND
-    UTOPIA_FE_MODULES
-    backend/stk
-    multiphysics
-    fractures
-    wear
-    ui
-    multigrid
-    transfer
-    visualization
-    backend/libmesh
-    intersection
-    # backend/homemade
-    backend/mars
-    contact
-    materials
-    functions
-    core
-    base
-    tests
-    apps)
+if(UTOPIA_ENABLE_LIBMESH)
+    list(
+        APPEND
+        UTOPIA_FE_MODULES
+        old/multiphysics
+        old/fractures
+        old/wear
+        old/ui
+        old/multigrid
+        old/transfer
+        old/visualization
+        backend/libmesh
+        old/intersection
+        old/contact
+        old/materials
+        old/functions
+        old/core)
+
+endif()
+
+if(UTOPIA_ENABLE_STK)
+    list(APPEND UTOPIA_FE_MODULES backend/stk)
+endif()
+
+if(UTOPIA_ENABLE_MARS)
+    list(APPEND UTOPIA_FE_MODULES backend/mars)
+endif()
+
+list(APPEND UTOPIA_FE_MODULES backend/mars tests)
 
 if(UTOPIA_INSTALL_LIBMESH)
     include(InstallLIBMESH)
@@ -232,7 +242,7 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
 set(TOP_LEVEL 1)
 add_executable(utopia_fe_exec EXCLUDE_FROM_ALL main.cpp ${LOCAL_HEADERS})
-target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
+# target_link_libraries(utopia_fe_exec PRIVATE utopia_fe ${UTOPIA_FE_APPS})
 
 # --------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------
@@ -435,14 +445,18 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake
 add_executable(utopia_fe_test test.cpp)
 
 target_link_libraries(utopia_fe_test utopia_fe)
+target_link_libraries(utopia_fe_exec utopia_fe)
 
 if(TARGET utopia_stk)
     target_link_libraries(utopia_fe_test utopia_stk)
-    add_executable(utopia_stk_exec ${CMAKE_SOURCE_DIR}/main_utopia_stk.cpp)
-    target_link_libraries(utopia_stk_exec PRIVATE utopia_stk)
+    target_link_libraries(utopia_fe_exec utopia_stk)
 endif()
 
 include(tests/tests.cmake)
+
+if(UTOPIA_ENABLE_LIBMESH)
+    include(old/apps/apps.cmake)
+endif()
 
 # ##############################################################################
 

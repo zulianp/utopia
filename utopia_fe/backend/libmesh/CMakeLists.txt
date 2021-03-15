@@ -6,12 +6,18 @@ if(LIBMESH_FOUND)
     target_include_directories(utopia_fe BEFORE PUBLIC ${LIBMESH_INCLUDE_DIRS})
 
     target_link_libraries(utopia_fe INTERFACE ${LIBMESH_LIBRARIES}) #
-    target_include_directories(utopia_fe PRIVATE ${PROJECT_SOURCE_DIR}/rapidxml)
+    target_include_directories(utopia_fe
+                               PRIVATE ${PROJECT_SOURCE_DIR}/old/rapidxml)
 
     set(LIBMESH_INCLUDE_DIRS
         ${LIBMESH_INCLUDE_DIRS}
         PARENT_SCOPE)
     set(LIBMESH_LIBRARIES
         ${LIBMESH_LIBRARIES}
+        PARENT_SCOPE)
+
+    set(UTOPIA_WITH_LIBMESH TRUE)
+    set(UTOPIA_WITH_LIBMESH
+        TRUE
         PARENT_SCOPE)
 endif()
