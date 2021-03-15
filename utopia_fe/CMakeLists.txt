@@ -145,10 +145,11 @@ function(utopiafe_add_module module_name libraryRootDir subDirs)
     find_project_files(${libraryRootDir} "${subDirs}" LOCAL_HEADERS
                        LOCAL_SOURCES)
     target_sources(${module_name} PRIVATE ${LOCAL_SOURCES})
-    # install(FILES ${LOCAL_HEADERS} DESTINATION include)
+    install(FILES ${LOCAL_HEADERS} DESTINATION include)
     foreach(MODULE ${subDirs})
-        # target_include_directories( ${module_name} BEFORE PUBLIC
-        # $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+        target_include_directories(
+            ${module_name} BEFORE
+            PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
         target_link_directories(${module_name} PUBLIC
                                 ${libraryRootDir}/${MODULE})
     endforeach(MODULE)
@@ -460,6 +461,11 @@ endif()
 if(TARGET utopia_moonolith)
     target_link_libraries(utopia_fe_test utopia_moonolith)
     target_link_libraries(utopia_fe_exec utopia_moonolith)
+endif()
+
+if(TARGET utopia_interop)
+    target_link_libraries(utopia_fe_test utopia_interop)
+    target_link_libraries(utopia_fe_exec utopia_interop)
 endif()
 
 include(tests/tests.cmake)

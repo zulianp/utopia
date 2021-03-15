@@ -6,9 +6,6 @@ namespace utopia {
     template <class... Args>
     class Mesh {};
 
-    template <class MeshIn, class MeshOut>
-    class ConvertMesh {};
-
 }  // namespace utopia
 
 #endif  // UTOPIA_MESH_HPP
