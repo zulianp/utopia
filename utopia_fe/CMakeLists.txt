@@ -133,6 +133,25 @@ function(utopiafe_add_library libraryRootDir subDirs)
     endforeach(MODULE)
 endfunction()
 
+function(utopiafe_add_module module_name libraryRootDir subDirs)
+    set(LOCAL_HEADERS "")
+    set(LOCAL_SOURCES "")
+
+    add_library(${module_name})
+    find_project_files(${libraryRootDir} "${subDirs}" LOCAL_HEADERS
+                       LOCAL_SOURCES)
+    target_sources(${module_name} PRIVATE ${LOCAL_SOURCES})
+    # install(FILES ${LOCAL_HEADERS} DESTINATION include)
+    foreach(MODULE ${subDirs})
+        # target_include_directories( ${module_name} BEFORE PUBLIC
+        # $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
+        target_link_directories(${module_name} PUBLIC
+                                ${libraryRootDir}/${MODULE})
+    endforeach(MODULE)
+
+    # target_link_libraries(utopia_fe PUBLIC ${module_name})
+endfunction()
+
 macro(add_utopiafe_app app_name)
     add_library(${app_name} EXCLUDE_FROM_ALL STATIC ${LOCAL_SOURCES})
     target_include_directories(
@@ -158,6 +177,7 @@ endmacro(add_utopiafe_app)
 list(
     APPEND
     UTOPIA_FE_MODULES
+    backend/stk
     multiphysics
     fractures
     wear
@@ -413,7 +433,15 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UtopiaFEConfig.cmake
         DESTINATION lib/cmake/)
 
 add_executable(utopia_fe_test test.cpp)
+
 target_link_libraries(utopia_fe_test utopia_fe)
+
+if(TARGET utopia_stk)
+    target_link_libraries(utopia_fe_test utopia_stk)
+    add_executable(utopia_stk_exec ${CMAKE_SOURCE_DIR}/main_utopia_stk.cpp)
+    target_link_libraries(utopia_stk_exec PRIVATE utopia_stk)
+endif()
+
 include(tests/tests.cmake)
 
 # ##############################################################################
@@ -424,6 +452,6 @@ add_dependencies(apps utopia_fe utopia_fe_exec)
 # ##############################################################################
 
 add_custom_target(complete)
-add_dependencies(complete apps)
+add_dependencies(complete apps utopia_fe_test)
 
 # ##############################################################################

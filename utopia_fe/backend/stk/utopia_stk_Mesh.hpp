@@ -1,21 +1,23 @@
-#ifndef UTOPIA_LIBMESH_MESH_HPP
-#define UTOPIA_LIBMESH_MESH_HPP
+#ifndef UTOPIA_STK_MESH_HPP
+#define UTOPIA_STK_MESH_HPP
 
 #include "utopia_Communicator.hpp"
 #include "utopia_Describable.hpp"
 #include "utopia_Input.hpp"
-#include "utopia_Mesh.hpp"
+// #include "utopia_Mesh.hpp"
 
 #include "utopia_fe_base.hpp"
 
-#include "utopia_libmesh_ForwardDeclarations.hpp"
+#include "utopia_stk_ForwardDeclarations.hpp"
+
+#include <memory>
 
 namespace utopia {
 
     template <>
-    class Traits<utopia::libmesh::Mesh> : public Traits<UVector> {};
+    class Traits<utopia::stk::Mesh> : public Traits<UVector> {};
 
-    namespace libmesh {
+    namespace stk {
 
         class Mesh final : public Configurable, public Describable {
         public:
@@ -33,9 +35,9 @@ namespace utopia {
 
             const Comm &comm() const;
 
-            libMesh::MeshBase &raw_type();
-            const libMesh::MeshBase &raw_type() const;
-            void wrap(const std::shared_ptr<libMesh::MeshBase> &mesh);
+            ::stk::mesh::BulkData &raw_type();
+            const ::stk::mesh::BulkData &raw_type() const;
+            void wrap(const std::shared_ptr<::stk::mesh::BulkData> &mesh);
             bool empty() const;
 
             void unit_cube(const SizeType &nx = 10, const SizeType &ny = 10, const SizeType &nz = 10);
@@ -43,17 +45,9 @@ namespace utopia {
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
-
-            friend class MeshInitializer;
-            void init_distributed();
-            void init_serial();
-            void init_replicated();
         };
 
-    }  // namespace libmesh
-
-    using LMMesh = utopia::libmesh::Mesh;
-
+    }  // namespace stk
 }  // namespace utopia
 
-#endif  // UTOPIA_LIBMESH_MESH_HPP
+#endif  // UTOPIA_STK_MESH_HPP

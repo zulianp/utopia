@@ -1,6 +1,11 @@
 # tests.cmake
 
-list(APPEND UTOPIA_FE_TEST_SOURCES
-     ${CMAKE_SOURCE_DIR}/tests/utopia_NewLibMeshInterfaceTest.cpp)
+list(APPEND TEST_MODULES stk libmesh)
 
-target_sources(utopia_fe_test PRIVATE ${UTOPIA_FE_TEST_SOURCES})
+set(LOCAL_HEADERS "")
+set(LOCAL_SOURCES "")
+
+find_project_files(${CMAKE_CURRENT_SOURCE_DIR}/tests "${TEST_MODULES}"
+                   LOCAL_HEADERS LOCAL_SOURCES)
+
+target_sources(utopia_fe_test PRIVATE ${LOCAL_SOURCES})

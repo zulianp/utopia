@@ -84,15 +84,19 @@ namespace utopia {
             impl_->mesh = std::make_shared<libMesh::ReplicatedMesh>(*impl_->comm_do_not_use_);
         }
 
-        void Mesh::read(const Path &path) {
+        bool Mesh::read(const Path &path) {
             if (empty()) {
                 init_distributed();
             }
 
             impl_->mesh->read(path.to_string());
+            return true;
         }
 
-        void Mesh::write(const Path &path) { libMesh::NameBasedIO(*impl_->mesh).write(path.to_string()); }
+        bool Mesh::write(const Path &path) {
+            libMesh::NameBasedIO(*impl_->mesh).write(path.to_string());
+            return true;
+        }
 
         void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
             InputParameters params;
