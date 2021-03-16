@@ -1,9 +1,12 @@
 #include "utopia_moonolith_Mesh.hpp"
-#include "moonolith_Mesh.hpp"
-#include "par_moonolith.hpp"
 
+#include "utopia_Options.hpp"
+
+// Moonolith includes
+#include "moonolith_Mesh.hpp"
 #include "moonolith_tri_mesh_reader.hpp"
 #include "moonolith_vtu_mesh_writer.hpp"
+#include "par_moonolith.hpp"
 
 #include <functional>
 
@@ -59,7 +62,16 @@ namespace utopia {
 
         bool Mesh::write(const Path &path) const { return impl_->write(path); }
 
-        void Mesh::read(Input &in) {}
+        void Mesh::read(Input &in) {
+            Path path;
+            if (!Options().add_option("path", path, "Path to the mesh. Format supported is .tri.").parse(in)) {
+                return;
+            }
+
+            if (!read(path)) {
+                return;
+            }
+        }
 
         void Mesh::describe(std::ostream &os) const {}
 

@@ -1,22 +1,46 @@
 #include "utopia_moonolith_FunctionSpace.hpp"
 
+#include "moonolith_function_space.hpp"
+#include "moonolith_mesh.hpp"
+#include "moonolith_vtu_mesh_writer.hpp"
+
 #include <memory>
 
 namespace utopia {
     namespace moonolith {
+        template <int Dim>
+        using MoonolithMesh = ::moonolith::Mesh<FunctionSpace::Scalar, Dim>;
 
         template <int Dim>
-        using MoonolithFunctionSpace = ::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, Dim>>;
+        using MoonolithFunctionSpace = ::moonolith::FunctionSpace<MoonolithMesh<Dim>>;
 
         class FunctionSpace::Impl {
         public:
             template <int Dim>
             void wrap(const std::shared_ptr<MoonolithFunctionSpace<Dim>> &ptr) {
                 space = ptr;
+
+                manifold_dim = [ptr]() -> int { return Dim; };
+                n_dofs = [ptr]() -> SizeType { return ptr->dof_map().n_dofs(); };
+                n_local_dofs = [ptr]() -> SizeType { return ptr->dof_map().n_local_dofs(); };
+                write = [ptr](const Path &path, const Vector &x) -> bool {
+                    ::moonolith::VTUMeshWriter<MoonolithMesh<Dim>> writer;
+                    auto x_view = local_view_device(x);
+                    return writer.write(path.to_string(), ptr->mesh(), x_view);
+                };
+
+                describe = [ptr](std::ostream &os) { os << "dim: " << Dim; };
             }
 
             std::shared_ptr<Mesh> mesh;
-            std::shared_ptr<void> space;
+            std::shared_ptr<::moonolith::IFunctionSpace> space;
+
+            // Prototype based programming
+            std::function<int()> manifold_dim;
+            std::function<SizeType()> n_dofs;
+            std::function<SizeType()> n_local_dofs;
+            std::function<bool(const Path &, const Vector &)> write;
+            std::function<void(std::ostream &os)> describe;
         };
 
         FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {
@@ -29,9 +53,47 @@ namespace utopia {
 
         FunctionSpace::~FunctionSpace() = default;
 
-        void FunctionSpace::write(const Path &path, const Vector &x) {}
-        void FunctionSpace::read(Input &in) {}
-        void FunctionSpace::describe(std::ostream &os) const {}
+        bool FunctionSpace::write(const Path &path, const Vector &x) { return impl_->write(path, x); }
+
+        void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) {
+            impl_->mesh = mesh;
+            switch (mesh->spatial_dimension()) {
+                case 1: {
+                    auto space = std::make_shared<MoonolithFunctionSpace<1>>(mesh->raw_type<1>());
+                    space->make_iso_parametric();
+                    impl_->wrap(space);
+                    break;
+                }
+
+                case 2: {
+                    auto space = std::make_shared<MoonolithFunctionSpace<2>>(mesh->raw_type<2>());
+                    space->make_iso_parametric();
+                    impl_->wrap(space);
+                    break;
+                }
+
+                case 3: {
+                    auto space = std::make_shared<MoonolithFunctionSpace<3>>(mesh->raw_type<3>());
+                    space->make_iso_parametric();
+                    impl_->wrap(space);
+                    break;
+                }
+
+                default: {
+                    utopia::err() << "FunctionSpace::read: unsupported dimension\n";
+                    Utopia::Abort();
+                    break;
+                }
+            }
+        }
+
+        void FunctionSpace::read(Input &in) {
+            auto mesh = std::make_shared<Mesh>();
+            mesh->read(in);
+            init(mesh);
+        }
+
+        void FunctionSpace::describe(std::ostream &os) const { impl_->describe(os); }
 
         std::shared_ptr<Mesh> FunctionSpace::mesh_ptr() const { return impl_->mesh; }
 
@@ -46,15 +108,24 @@ namespace utopia {
         }
 
         template <int Dim>
-        ::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, Dim>> &FunctionSpace::raw_type() {}
+        std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, Dim>>>
+        FunctionSpace::raw_type() const {
+            assert(Dim == impl_->manifold_dim());
+            return std::dynamic_pointer_cast<MoonolithFunctionSpace<Dim>>(impl_->space);
+        }
 
-        FunctionSpace::SizeType FunctionSpace::n_dofs() const {}
-        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const {}
+        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->n_dofs(); }
+        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return impl_->n_local_dofs(); }
 
         // Explicit instantiations
-        template ::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 1>> &FunctionSpace::raw_type();
-        template ::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 2>> &FunctionSpace::raw_type();
-        template ::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 3>> &FunctionSpace::raw_type();
+        template std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 1>>>
+        FunctionSpace::raw_type() const;
+
+        template std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 2>>>
+        FunctionSpace::raw_type() const;
+
+        template std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 3>>>
+        FunctionSpace::raw_type() const;
 
     }  // namespace moonolith
 }  // namespace utopia

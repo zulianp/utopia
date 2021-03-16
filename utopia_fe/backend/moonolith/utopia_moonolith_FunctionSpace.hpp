@@ -20,7 +20,9 @@ namespace utopia {
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
             ~FunctionSpace();
 
-            void write(const Path &path, const Vector &x);
+            void init(const std::shared_ptr<Mesh> &mesh);
+
+            bool write(const Path &path, const Vector &x);
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
 
@@ -31,7 +33,7 @@ namespace utopia {
             inline const Comm &comm() const { return mesh().comm(); }
 
             template <int Dim>
-            ::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, Dim>> &raw_type();
+            std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, Dim>>> raw_type() const;
 
             SizeType n_dofs() const;
             SizeType n_local_dofs() const;
