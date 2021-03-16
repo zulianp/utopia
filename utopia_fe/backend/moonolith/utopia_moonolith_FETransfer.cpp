@@ -64,7 +64,7 @@ namespace utopia {
             std::shared_ptr<Matrix> mass_matrix;
 
             /// Basis transformation used for second order fe
-            std::shared_ptr<Matrix> basis_transfom_matrix;
+            std::shared_ptr<Matrix> basis_transform_matrix;
 
             /// Full transformation
             std::shared_ptr<Matrix> transfer_matrix;
@@ -72,14 +72,14 @@ namespace utopia {
             void create_matrices() {
                 coupling_matrix = std::make_shared<Matrix>();
                 mass_matrix = std::make_shared<Matrix>();
-                basis_transfom_matrix = std::make_shared<Matrix>();
+                basis_transform_matrix = std::make_shared<Matrix>();
                 transfer_matrix = std::make_shared<Matrix>();
             }
 
             void clear_matrices() {
                 coupling_matrix = nullptr;
                 mass_matrix = nullptr;
-                basis_transfom_matrix = nullptr;
+                basis_transform_matrix = nullptr;
                 transfer_matrix = nullptr;
             }
 
@@ -98,7 +98,7 @@ namespace utopia {
 
                 auto &B = *data.coupling_matrix;
                 auto &D = *data.mass_matrix;
-                auto &Q = *data.basis_transfom_matrix;
+                auto &Q = *data.basis_transform_matrix;
                 auto &T = *data.transfer_matrix;
 
                 utopia::convert(t.buffers.B.get(), B);
@@ -124,8 +124,11 @@ namespace utopia {
                     } else {
                         assert(false && "IMPLEMENT ME");
                         // tensorize(T_x, opts.n_var, T);
+                        return false;
                     }
                 }
+
+                return true;
             }
         };
 
@@ -321,18 +324,51 @@ namespace utopia {
 
         void FETransfer::describe(std::ostream &) const {}
 
-        bool FETransfer::apply(const Vector &from, Vector &to) const {}
+        bool FETransfer::apply(const Vector &from, Vector &to) const {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
 
-        bool FETransfer::apply_transpose(const Vector &from, Vector &to) const {}
+        bool FETransfer::apply_transpose(const Vector &from, Vector &to) const {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
 
-        Size FETransfer::size() const {}
+        Size FETransfer::size() const {
+            if (empty()) {
+                return {0};
+            } else {
+                return impl_->data.coupling_matrix->size();
+            }
+        }
 
-        Size FETransfer::local_size() const {}
+        Size FETransfer::local_size() const {
+            if (empty()) {
+                return {0};
+            } else {
+                return impl_->data.coupling_matrix->local_size();
+            }
+        }
 
         bool FETransfer::write(const Path &) const { return false; }
 
-        FETransfer::Communicator &FETransfer::comm() {}
-        const FETransfer::Communicator &FETransfer::comm() const {}
+        FETransfer::Communicator &FETransfer::comm() {
+            if (empty()) {
+                static Communicator self(Communicator::self());
+                return self;
+            } else {
+                return impl_->data.coupling_matrix->comm();
+            }
+        }
+
+        const FETransfer::Communicator &FETransfer::comm() const {
+            if (empty()) {
+                static Communicator self(Communicator::self());
+                return self;
+            } else {
+                return impl_->data.coupling_matrix->comm();
+            }
+        }
 
     }  // namespace moonolith
 
