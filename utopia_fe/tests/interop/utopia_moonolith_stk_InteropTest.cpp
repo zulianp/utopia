@@ -15,8 +15,6 @@ void stk_moonolith_convert() {
     MeshFrom mesh_from;
     utopia_test_assert(mesh_from.read("../data/knf/rectangle_4_tris.e"));
 
-    mesh_from.describe(std::cout);
-
     MeshTo mesh_to;
     convert_mesh(mesh_from, mesh_to);
     utopia_test_assert(mesh_to.write("membrane.vtu"));

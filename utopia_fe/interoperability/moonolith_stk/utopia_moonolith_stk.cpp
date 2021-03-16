@@ -74,6 +74,8 @@ namespace utopia {
         }
 
         static void apply(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out) {
+            assert(in.comm().size() == 1 && "IMPLEMENT PARALLEL VERSION");
+
             auto &meta_data = in.meta_data();
             auto &bulk_data = in.bulk_data();
 
