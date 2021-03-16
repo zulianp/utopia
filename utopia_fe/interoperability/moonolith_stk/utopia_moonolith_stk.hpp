@@ -1,7 +1,9 @@
 #ifndef UTOPIA_MOONOLITH_STK_HPP
 #define UTOPIA_MOONOLITH_STK_HPP
 
+#include "utopia_ConvertFunctionSpace.hpp"
 #include "utopia_ConvertMesh.hpp"
+
 #include "utopia_moonolith_ForwardDeclarations.hpp"
 #include "utopia_stk_ForwardDeclarations.hpp"
 
@@ -18,6 +20,12 @@ namespace utopia {
     // public:
     //     static void apply(const utopia::moonolith::Mesh &in, utopia::stk::Mesh &out);
     // };
+
+    template <>
+    class ConvertFunctionSpace<utopia::stk::FunctionSpace, utopia::moonolith::FunctionSpace> {
+    public:
+        static void apply(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out);
+    };
 }  // namespace utopia
 
 #endif  // UTOPIA_MOONOLITH_STK_HPP

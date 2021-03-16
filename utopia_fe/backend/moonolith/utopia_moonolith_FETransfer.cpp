@@ -1,0 +1,351 @@
+#include "utopia_moonolith_FETransfer.hpp"
+
+#include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_Options.hpp"
+#include "utopia_make_unique.hpp"
+#include "utopia_moonolith_ConvertTensor.hpp"
+
+// All Moonolith includes
+#include "moonolith_communicator.hpp"
+#include "moonolith_par_l2_assembler_no_covering.hpp"
+#include "moonolith_par_l2_transfer.hpp"
+#include "moonolith_par_volume_surface_l2_transfer.hpp"
+#include "par_moonolith_config.hpp"
+
+#include <vector>
+
+namespace utopia {
+
+    namespace moonolith {
+
+        // FIXME move somewhere public
+        class FETransferOptions : public Configurable {
+        public:
+            virtual ~FETransferOptions() = default;
+
+            void read(Input &in) override {
+                if (!Options()  //
+                         .add_option("verbose", verbose, "Verbose output during computation.")
+                         .add_option("n_var",
+                                     n_var,
+                                     "Number of dimensions of vector function. Useful with tensor-product spaces.")
+                         .parse(in)) {
+                    return;
+                }
+
+                in.get("coupling", [this](Input &in) {
+                    in.get_all([this](Input &in) {
+                        int from = -1, to = -1;
+
+                        in.get("from", from);
+                        in.get("to", to);
+
+                        assert(from != -1);
+                        assert(to != -1);
+
+                        tags.emplace_back(from, to);
+                    });
+                });
+            }
+
+            bool verbose{false};
+            bool has_covering{true};
+            int n_var{1};
+            std::vector<std::pair<int, int>> tags;
+        };
+
+        template <class Matrix>
+        class FETransferData {
+        public:
+            /// From Petrov-Galerkin assembly
+            std::shared_ptr<Matrix> coupling_matrix;
+
+            /// Mass matrix assembly typically diagonal
+            std::shared_ptr<Matrix> mass_matrix;
+
+            /// Basis transformation used for second order fe
+            std::shared_ptr<Matrix> basis_transfom_matrix;
+
+            /// Full transformation
+            std::shared_ptr<Matrix> transfer_matrix;
+
+            void create_matrices() {
+                coupling_matrix = std::make_shared<Matrix>();
+                mass_matrix = std::make_shared<Matrix>();
+                basis_transfom_matrix = std::make_shared<Matrix>();
+                transfer_matrix = std::make_shared<Matrix>();
+            }
+
+            void clear_matrices() {
+                coupling_matrix = nullptr;
+                mass_matrix = nullptr;
+                basis_transfom_matrix = nullptr;
+                transfer_matrix = nullptr;
+            }
+
+            inline bool empty() const { return !static_cast<bool>(coupling_matrix); }
+        };
+
+        class FETransferPrepareData {
+        public:
+            using Matrix_t = Traits<FunctionSpace>::Matrix;
+            using Vector_t = Traits<FunctionSpace>::Vector;
+            using Scalar_t = Traits<FunctionSpace>::Scalar;
+
+            template <class TransferAssembler>
+            static bool apply(const FETransferOptions &opts, TransferAssembler &t, FETransferData<Matrix_t> &data) {
+                data.create_matrices();
+
+                auto &B = *data.coupling_matrix;
+                auto &D = *data.mass_matrix;
+                auto &Q = *data.basis_transfom_matrix;
+                auto &T = *data.transfer_matrix;
+
+                utopia::convert(t.buffers.B.get(), B);
+                utopia::convert(t.buffers.D.get(), D);
+                utopia::convert(t.buffers.Q.get(), Q);
+
+                if (!empty(Q)) {
+                    m_utopia_warning_once("using sum(D, 1) instead of diag(D)");
+
+                    // handle_constraints_pre_process(data);
+
+                    Vector_t d_inv = sum(D, 1);
+
+                    e_pseudo_inv(d_inv, d_inv, 1e-12);
+
+                    Matrix_t D_tilde_inv = diag(d_inv);
+                    Matrix_t T_x = Q * D_tilde_inv * B;
+
+                    // handle_constraints_post_process(data, T_x);
+
+                    if (opts.n_var == 1) {
+                        T = T_x;
+                    } else {
+                        assert(false && "IMPLEMENT ME");
+                        // tensorize(T_x, opts.n_var, T);
+                    }
+                }
+            }
+        };
+
+        template <int Dim, int DimFrom, int DimTo = Dim>
+        class FETransferAux final {
+        public:
+            using Matrix_t = Traits<FunctionSpace>::Matrix;
+            using Vector_t = Traits<FunctionSpace>::Vector;
+            using Scalar_t = Traits<FunctionSpace>::Scalar;
+
+            static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from,
+                              const FunctionSpace &to,
+                              FETransferData<Matrix_t> &data) {
+                auto &m_from = *from.raw_type<Dim>();
+                auto &m_to = *to.raw_type<Dim>();
+
+                ::moonolith::Communicator comm = m_from.mesh().comm();
+                comm.barrier();
+
+                bool ok = true;
+
+                if (opts.has_covering) {
+                    ::moonolith::ParL2Transfer<Scalar_t,
+                                               Dim,
+                                               ::moonolith::StaticMax<DimFrom, 1>::value,
+                                               ::moonolith::StaticMax<DimTo, 1>::value>
+                        assembler(comm);
+
+                    if (opts.tags.empty()) {
+                        if (!assembler.assemble(m_from, m_to)) {
+                            ok = false;
+                        }
+                    } else {
+                        if (!assembler.assemble(m_from, m_to, opts.tags)) {
+                            ok = false;
+                        }
+                    }
+
+                    if (ok) {
+                        FETransferPrepareData::apply(opts, assembler, data);
+                    }
+
+                } else {
+                    ::moonolith::ParL2TransferNoCovering<Scalar_t,
+                                                         Dim,
+                                                         ::moonolith::StaticMax<DimFrom, 1>::value,
+                                                         ::moonolith::StaticMax<DimTo, 1>::value>
+                        assembler(comm);
+
+                    if (!assembler.assemble(m_from, m_to)) {
+                        ok = false;
+                    }
+
+                    if (ok) {
+                        FETransferPrepareData::apply(opts, assembler, data);
+                    }
+                }
+
+                return ok;
+            }
+        };
+
+        class InvalidFETransferAux {
+        public:
+            using Matrix_t = Traits<FunctionSpace>::Matrix;
+
+            static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from,
+                              const FunctionSpace &to,
+                              FETransferData<Matrix_t> &data) {
+                assert(false && "invalid dimensions");
+                return false;
+            }
+        };
+
+        template <int Dim>
+        class LowerDimFETransferAux {
+        public:
+            using Matrix_t = Traits<FunctionSpace>::Matrix;
+            using Vector_t = Traits<FunctionSpace>::Vector;
+            using Scalar_t = Traits<FunctionSpace>::Scalar;
+
+            static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from,
+                              const FunctionSpace &to,
+                              FETransferData<Matrix_t> &data) {
+                // moonolith::Communicator comm = master.mesh().comm();
+                // comm.barrier();
+
+                // if (comm.is_root()) {
+                //     moonolith::logger() << "ConvertTransferAlgorithm::apply(...)/Vol2Surf begin" << std::endl;
+                // }
+
+                // moonolith::ParVolumeSurfaceL2Transfer<double, Dim> assembler(comm);
+
+                // if (opts.tags.empty()) {
+                //     if (!assembler.assemble(master, slave)) {
+                //         return false;
+                //     }
+                // } else {
+                //     // if(!assembler.assemble(master, slave, opts.tags)) {
+                //     //     return false;
+                //     // }
+                //     std::cerr << "[Error] not implemented" << std::endl;
+                //     assert(false && "implement me!!!");
+                // }
+
+                // prepare_data(opts, assembler, data);
+
+                // comm.barrier();
+
+                // if (comm.is_root()) {
+                //     moonolith::logger() << "ConvertTransferAlgorithm:apply(...)/Vol2Surf end" << std::endl;
+                // }
+
+                return true;
+            }
+        };
+
+        template <>
+        class FETransferAux<1, 1, 0> final : public InvalidFETransferAux {};
+
+        template <>
+        class FETransferAux<0, 0, 0> final : public InvalidFETransferAux {};
+
+        template <>
+        class FETransferAux<2, 2, 1> final : public LowerDimFETransferAux<2> {};
+
+        template <>
+        class FETransferAux<3, 3, 2> final : public LowerDimFETransferAux<3> {};
+
+        template <int Dim>
+        class FETransferDispatch final {
+        public:
+            using Matrix_t = Traits<FunctionSpace>::Matrix;
+            using Vector_t = Traits<FunctionSpace>::Vector;
+            using Scalar_t = Traits<FunctionSpace>::Scalar;
+
+            static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from,
+                              const FunctionSpace &to,
+                              FETransferData<Matrix_t> &data) {
+                if (from.mesh().manifold_dimension() < Dim) {
+                    if (to.mesh().manifold_dimension() < Dim) {
+                        // surf to surf
+                        assert(Dim > 1);
+                        return FETransferAux<Dim, Dim - 1, Dim - 1>::apply(opts, from, to, data);
+                    } else {
+                        // Vol 2 surf
+                        assert(Dim > 1);
+                        return FETransferAux<Dim, Dim, Dim - 1>::apply(opts, from, to, data);
+                    }
+                } else {
+                    // vol 2 vol
+                    FETransferAux<Dim, Dim, Dim>::apply(opts, from, to, data);
+                }
+
+                return true;
+            }
+        };
+
+        class FETransfer::Impl {
+        public:
+            FETransferOptions opts;
+            FETransferData<Matrix> data;
+        };
+
+        FETransfer::FETransfer() : impl_(utopia::make_unique<Impl>()) {}
+        FETransfer::~FETransfer() = default;
+
+        void FETransfer::read(Input &in) { impl_->opts.read(in); }
+
+        bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
+            UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
+
+            bool has_intersection = false;
+
+            switch (from->mesh().spatial_dimension()) {
+                case 1: {
+                    has_intersection = FETransferDispatch<1>::apply(impl_->opts, *from, *to, impl_->data);
+                    break;
+                }
+                case 2: {
+                    has_intersection = FETransferDispatch<2>::apply(impl_->opts, *from, *to, impl_->data);
+                    break;
+                }
+                case 3: {
+                    has_intersection = FETransferDispatch<3>::apply(impl_->opts, *from, *to, impl_->data);
+                    break;
+                }
+                default: {
+                    assert(false && "Case not handled");
+                    Utopia::Abort();
+                }
+            }
+
+            UTOPIA_TRACE_REGION_END("FETransfer::init");
+            return has_intersection;
+        }
+
+        void FETransfer::clear() { impl_->data.clear_matrices(); }
+
+        bool FETransfer::empty() const { return impl_->data.empty(); }
+
+        void FETransfer::describe(std::ostream &) const {}
+
+        bool FETransfer::apply(const Vector &from, Vector &to) const {}
+
+        bool FETransfer::apply_transpose(const Vector &from, Vector &to) const {}
+
+        Size FETransfer::size() const {}
+
+        Size FETransfer::local_size() const {}
+
+        bool FETransfer::write(const Path &) const { return false; }
+
+        FETransfer::Communicator &FETransfer::comm() {}
+        const FETransfer::Communicator &FETransfer::comm() const {}
+
+    }  // namespace moonolith
+
+}  // namespace utopia

@@ -44,6 +44,7 @@ namespace utopia {
             bool empty() const;
 
             int spatial_dimension() const;
+            int manifold_dimension() const;
 
         private:
             class Impl;

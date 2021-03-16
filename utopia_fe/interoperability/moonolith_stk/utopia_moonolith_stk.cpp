@@ -4,6 +4,9 @@
 #include "utopia_moonolith_Mesh.hpp"
 #include "utopia_stk_Mesh.hpp"
 
+#include "utopia_moonolith_FunctionSpace.hpp"
+#include "utopia_stk_FunctionSpace.hpp"
+
 // Moonolith
 #include "moonolith_elem_type.hpp"
 #include "moonolith_mesh.hpp"
@@ -31,6 +34,7 @@ namespace utopia {
         using Scalar_t = Traits<utopia::stk::Mesh>::Scalar;
         using Size_t = Traits<utopia::stk::Mesh>::SizeType;
         using MoonolithMesh_t = ::moonolith::Mesh<Scalar_t, Dim>;
+        using MoonolithFunctionSpace_t = ::moonolith::FunctionSpace<::moonolith::Mesh<Scalar_t, Dim>>;
         using MetaData_t = ::stk::mesh::MetaData;
         using BulkData_t = ::stk::mesh::BulkData;
 
@@ -73,14 +77,20 @@ namespace utopia {
             }
         }
 
+        static void copy_meta_info(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out) {
+            auto m_space = out.raw_type<Dim>();
+            m_space->dof_map().set_n_local_dofs(in.mesh().n_local_nodes());
+            m_space->dof_map().set_n_dofs(in.mesh().n_nodes());
+        }
+
         static void apply(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out) {
             assert(in.comm().size() == 1 && "IMPLEMENT PARALLEL VERSION");
 
             auto &meta_data = in.meta_data();
             auto &bulk_data = in.bulk_data();
 
-            const Size_t n_elements = in.n_elements();
-            const Size_t n_nodes = in.n_nodes();
+            // const Size_t n_elements = in.n_elements();
+            // const Size_t n_nodes = in.n_nodes();
             const Size_t n_local_elements = in.n_local_elements();
             const Size_t n_local_nodes = in.n_local_nodes();
 
@@ -150,7 +160,7 @@ namespace utopia {
     void ConvertMesh<utopia::stk::Mesh, utopia::moonolith::Mesh>::apply(const utopia::stk::Mesh &in,
                                                                         utopia::moonolith::Mesh &out) {
         auto &meta_data = in.meta_data();
-        auto &bulk_data = in.bulk_data();
+        // auto &bulk_data = in.bulk_data();
 
         const int dim = meta_data.spatial_dimension();
 
@@ -167,6 +177,37 @@ namespace utopia {
 
             case 3: {
                 ConvertMeshSTK2Moonolith<3>::apply(in, out);
+                break;
+            }
+            default: {
+                Utopia::Abort();
+            }
+        }
+    }
+
+    void ConvertFunctionSpace<utopia::stk::FunctionSpace, utopia::moonolith::FunctionSpace>::apply(
+        const utopia::stk::FunctionSpace &in,
+        utopia::moonolith::FunctionSpace &out) {
+        auto m_mesh = std::make_shared<utopia::moonolith::Mesh>(in.comm());
+        convert_mesh(in.mesh(), *m_mesh);
+
+        out.init(m_mesh);
+
+        const int dim = in.mesh().spatial_dimension();
+
+        switch (dim) {
+            case 1: {
+                ConvertMeshSTK2Moonolith<1>::copy_meta_info(in, out);
+                break;
+            }
+
+            case 2: {
+                ConvertMeshSTK2Moonolith<2>::copy_meta_info(in, out);
+                break;
+            }
+
+            case 3: {
+                ConvertMeshSTK2Moonolith<3>::copy_meta_info(in, out);
                 break;
             }
             default: {

@@ -29,6 +29,7 @@ namespace utopia {
                 this->mesh = mesh_d;
 
                 spatial_dimension = []() -> int { return MeshD::Dim; };
+                manifold_dimension = [mesh_d]() -> int { return mesh_d->manifold_dim(); };
                 n_elements = [mesh_d]() -> SizeType { return mesh_d->n_elements(); };
                 n_nodes = [mesh_d]() -> SizeType { return mesh_d->n_nodes(); };
                 write = [mesh_d](const Path &path) -> bool {
@@ -38,6 +39,7 @@ namespace utopia {
             }
 
             std::function<int()> spatial_dimension;
+            std::function<int()> manifold_dimension;
             std::function<SizeType()> n_elements;
             std::function<SizeType()> n_nodes;
             std::function<bool(const Path &path)> write;
@@ -104,6 +106,11 @@ namespace utopia {
         int Mesh::spatial_dimension() const {
             assert(impl_->mesh);
             return impl_->spatial_dimension();
+        }
+
+        int Mesh::manifold_dimension() const {
+            assert(impl_->mesh);
+            return impl_->manifold_dimension();
         }
 
     }  // namespace moonolith
