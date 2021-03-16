@@ -42,6 +42,13 @@ namespace utopia {
                       const std::shared_ptr<::stk::mesh::BulkData> &bulk_data);
 
             bool empty() const;
+            int spatial_dimension() const;
+
+            SizeType n_elements() const;
+            SizeType n_nodes() const;
+
+            SizeType n_local_elements() const;
+            SizeType n_local_nodes() const;
 
         private:
             class Impl;

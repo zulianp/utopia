@@ -43,6 +43,8 @@ namespace utopia {
 
             bool empty() const;
 
+            int spatial_dimension() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

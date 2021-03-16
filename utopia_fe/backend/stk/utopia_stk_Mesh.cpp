@@ -4,6 +4,7 @@
 
 #include <stk_io/StkMeshIoBroker.hpp>
 #include <stk_mesh/base/BulkData.hpp>
+#include <stk_mesh/base/Comm.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
 namespace utopia {
@@ -18,6 +19,25 @@ namespace utopia {
             Comm comm;
             std::shared_ptr<MetaData> meta_data;
             std::shared_ptr<BulkData> bulk_data;
+
+            SizeType n_elements{-1};
+            SizeType n_nodes{-1};
+            SizeType n_local_elements{-1};
+            SizeType n_local_nodes{-1};
+
+            void compute_mesh_stats() {
+                std::vector<size_t> entity_counts;
+                ::stk::mesh::comm_mesh_counts(*bulk_data, entity_counts);
+
+                n_elements = entity_counts[::stk::topology::ELEMENT_RANK];
+                n_nodes = entity_counts[::stk::topology::NODE_RANK];
+
+                // FIXME
+                n_local_elements = n_elements;
+                n_local_nodes = n_nodes;
+
+                // const stk::topology theTopo = part->topology();
+            }
         };
 
         Mesh::~Mesh() = default;
@@ -40,6 +60,8 @@ namespace utopia {
 
                 impl_->meta_data = meta_data;
                 impl_->bulk_data = bulk_data;
+
+                impl_->compute_mesh_stats();
 
                 return true;
             } catch (const std::exception &ex) {
@@ -90,9 +112,26 @@ namespace utopia {
                         const std::shared_ptr<::stk::mesh::BulkData> &bulk_data) {
             impl_->meta_data = meta_data;
             impl_->bulk_data = bulk_data;
+
+            if (!empty()) {
+                impl_->compute_mesh_stats();
+            }
         }
 
         bool Mesh::empty() const { return !static_cast<bool>(impl_->bulk_data); }
+
+        int Mesh::spatial_dimension() const {
+            assert(impl_->meta_data);
+            return impl_->meta_data->spatial_dimension();
+        }
+
+        Mesh::SizeType Mesh::n_elements() const { return impl_->n_elements; }
+
+        Mesh::SizeType Mesh::n_nodes() const { return impl_->n_nodes; }
+
+        Mesh::SizeType Mesh::n_local_elements() const { return impl_->n_local_elements; }
+
+        Mesh::SizeType Mesh::n_local_nodes() const { return impl_->n_local_nodes; }
 
     }  // namespace stk
 }  // namespace utopia

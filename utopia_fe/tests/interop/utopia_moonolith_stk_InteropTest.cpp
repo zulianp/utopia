@@ -19,7 +19,7 @@ void stk_moonolith_convert() {
 
     MeshTo mesh_to;
     convert_mesh(mesh_from, mesh_to);
-    // utopia_test_assert(mesh_to.write("membrane.vtu"));
+    utopia_test_assert(mesh_to.write("membrane.vtu"));
 }
 
 void interop() { UTOPIA_RUN_TEST(stk_moonolith_convert); }

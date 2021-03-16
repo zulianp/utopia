@@ -25,7 +25,7 @@ namespace utopia {
             void wrap(const std::shared_ptr<MeshD> &mesh_d) {
                 this->mesh = mesh_d;
 
-                dim = []() -> SizeType { return MeshD::Dim; };
+                spatial_dimension = []() -> int { return MeshD::Dim; };
                 n_elements = [mesh_d]() -> SizeType { return mesh_d->n_elements(); };
                 n_nodes = [mesh_d]() -> SizeType { return mesh_d->n_nodes(); };
                 write = [mesh_d](const Path &path) -> bool {
@@ -34,7 +34,7 @@ namespace utopia {
                 };
             }
 
-            std::function<SizeType()> dim;
+            std::function<int()> spatial_dimension;
             std::function<SizeType()> n_elements;
             std::function<SizeType()> n_nodes;
             std::function<bool(const Path &path)> write;
@@ -67,7 +67,7 @@ namespace utopia {
 
         template <int Dim>
         const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, Dim>> Mesh::raw_type() const {
-            if (Dim != impl_->dim()) {
+            if (Dim != impl_->spatial_dimension()) {
                 assert(false && "Trying to read wrong dimension");
             }
 
@@ -88,6 +88,11 @@ namespace utopia {
         template const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 1>> Mesh::raw_type() const;
         template const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 2>> Mesh::raw_type() const;
         template const std::shared_ptr<::moonolith::Mesh<Mesh::Scalar, 3>> Mesh::raw_type() const;
+
+        int Mesh::spatial_dimension() const {
+            assert(impl_->mesh);
+            return impl_->spatial_dimension();
+        }
 
     }  // namespace moonolith
 }  // namespace utopia
