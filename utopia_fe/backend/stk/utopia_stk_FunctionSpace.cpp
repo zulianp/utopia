@@ -59,8 +59,10 @@ namespace utopia {
             return *impl_->mesh;
         }
 
-        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->mesh->n_nodes(); }
-        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return impl_->mesh->n_local_nodes(); }
+        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->mesh->n_nodes() * impl_->n_var; }
+        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const {
+            return impl_->mesh->n_local_nodes() * impl_->n_var;
+        }
 
         void FunctionSpace::create_vector(Vector &v) { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
 
@@ -83,23 +85,24 @@ namespace utopia {
             const ::stk::mesh::Selector selector = meta_data.locally_owned_part();
             const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, selector);
 
+            // Slow but for the moment it will do...
             const SizeType nln = mesh().n_local_nodes();
             std::vector<std::unordered_set<SizeType>> node2node(nln);
 
             for (auto *b_ptr : node_buckets) {
-                auto &b = *b_ptr;
-                auto length = b.size();
+                const auto &b = *b_ptr;
+                const auto length = b.size();
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
-                    Entity_t elem = b[k];
-                    auto node_ids = bulk_data.begin_nodes(elem);
+                    const Entity_t elem = b[k];
+                    const auto node_ids = bulk_data.begin_nodes(elem);
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                     for (Size_t i = 0; i < n_nodes; ++i) {
-                        auto node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
+                        const auto node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
 
                         for (Size_t j = 0; j < n_nodes; ++j) {
-                            auto node_j = utopia::stk::convert_entity_to_index(node_ids[j]);
+                            const auto node_j = utopia::stk::convert_entity_to_index(node_ids[j]);
                             node2node[node_i].insert(node_j);
                         }
                     }
@@ -111,7 +114,11 @@ namespace utopia {
                 d_nnz[i] = node2node[i].size();
             }
 
-            m.sparse(ml, d_nnz, o_nnz);
+            if (impl_->n_var == 1) {
+                m.sparse(ml, d_nnz, o_nnz);
+            } else {
+                m.block_sparse(ml, d_nnz, o_nnz, impl_->n_var);
+            }
         }
 
     }  // namespace stk
