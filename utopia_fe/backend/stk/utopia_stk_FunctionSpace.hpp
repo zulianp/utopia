@@ -40,6 +40,10 @@ namespace utopia {
             // void create_matrix(Matrix &mat) const;
             // void create_vector(Vector &vec) const;
 
+            void create_vector(Vector &v);
+            void create_local_vector(Vector &v);
+            void create_matrix(Matrix &m);
+
         private:
             class Impl;
             std::shared_ptr<Impl> impl_;
