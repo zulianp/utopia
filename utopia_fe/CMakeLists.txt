@@ -355,6 +355,8 @@ append_list_to_string_for_makefile(
 append_list_to_string_for_makefile(CONFIG_CONTENT "" "\n" "-I"
                                    "${MOONOLITH_INCLUDES}")
 
+message("MOONOLITH_INCLUDES=${MOONOLITH_INCLUDES}")
+
 append_list_to_string_for_makefile(
     CONFIG_CONTENT
     "UTOPIA_FE_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib -lutopia_fe " " " "-l"

@@ -123,9 +123,9 @@ namespace utopia {
             return impl_->manifold_dimension();
         }
 
-        Mesh::SizeType Mesh::n_nodes() const { impl_->n_nodes(); }
+        Mesh::SizeType Mesh::n_nodes() const { return impl_->n_nodes(); }
 
-        Mesh::SizeType Mesh::n_local_nodes() const { impl_->n_local_nodes(); }
+        Mesh::SizeType Mesh::n_local_nodes() const { return impl_->n_local_nodes(); }
 
     }  // namespace moonolith
 }  // namespace utopia

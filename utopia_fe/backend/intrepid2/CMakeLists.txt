@@ -1,10 +1,15 @@
-find_package(Intrepid2)
-if(INTREPID2_FOUND)
-    utopiafe_add_library(${CMAKE_CURRENT_SOURCE_DIR} ".")
-    target_link_libraries(utopia_fe PUBLIC intrepid2)
-    set(UTOPIA_WITH_INTREPID2
-        TRUE
-        PARENT_SCOPE)
-else()
-    message(WARNING "could not find Intrepid2")
+if(UTOPIA_ENABLE_STK)
+    find_package(Intrepid2)
+    if(Intrepid2_FOUND)
+        utopiafe_add_module(utopia_intrepid2 ${CMAKE_CURRENT_SOURCE_DIR} ".")
+        target_link_libraries(utopia_fe PUBLIC intrepid2)
+
+        set(UTOPIA_WITH_INTREPID2 TRUE)
+
+        set(UTOPIA_WITH_INTREPID2
+            TRUE
+            PARENT_SCOPE)
+    else()
+        message(WARNING "could not find Intrepid2")
+    endif()
 endif()
