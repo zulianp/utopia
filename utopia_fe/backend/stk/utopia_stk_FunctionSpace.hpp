@@ -14,6 +14,7 @@ namespace utopia {
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
             using Scalar = Traits<FunctionSpace>::Scalar;
+            using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
 
             FunctionSpace(const Comm &comm = Comm::get_default());

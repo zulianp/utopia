@@ -1,11 +1,16 @@
 #include "utopia_stk_FunctionSpace.hpp"
 
-#include <memory>
+#include "utopia_Options.hpp"
+
+#include "utopia_stk_Commons.hpp"
 
 // All stk includes
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/Comm.hpp>
 #include <stk_mesh/base/MetaData.hpp>
+
+#include <memory>
+#include <unordered_set>
 
 namespace utopia {
     namespace stk {
@@ -13,6 +18,7 @@ namespace utopia {
         class FunctionSpace::Impl {
         public:
             std::shared_ptr<Mesh> mesh;
+            int n_var{1};
         };
 
         FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {
@@ -33,6 +39,10 @@ namespace utopia {
             auto mesh = std::make_shared<Mesh>();
             mesh->read(in);
             init(mesh);
+
+            if (!Options().add_option("n_var", impl_->n_var, "Number of variables per node.").parse(in)) {
+                return;
+            }
         }
 
         void FunctionSpace::describe(std::ostream &os) const {}
@@ -73,9 +83,35 @@ namespace utopia {
             const ::stk::mesh::Selector selector = meta_data.locally_owned_part();
             const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, selector);
 
+            const SizeType nln = mesh().n_local_nodes();
+            std::vector<std::unordered_set<SizeType>> node2node(nln);
+
             for (auto *b_ptr : node_buckets) {
                 auto &b = *b_ptr;
+                auto length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    Entity_t elem = b[k];
+                    auto node_ids = bulk_data.begin_nodes(elem);
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                    for (Size_t i = 0; i < n_nodes; ++i) {
+                        auto node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
+
+                        for (Size_t j = 0; j < n_nodes; ++j) {
+                            auto node_j = utopia::stk::convert_entity_to_index(node_ids[j]);
+                            node2node[node_i].insert(node_j);
+                        }
+                    }
+                }
             }
+
+            IndexSet d_nnz(nln, 0), o_nnz(nln, 0);
+            for (SizeType i = 0; i < nln; ++i) {
+                d_nnz[i] = node2node[i].size();
+            }
+
+            m.sparse(ml, d_nnz, o_nnz);
         }
 
     }  // namespace stk

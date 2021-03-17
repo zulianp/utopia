@@ -5,6 +5,7 @@
 #include "utopia_stk_Mesh.hpp"
 
 #include "utopia_moonolith_FunctionSpace.hpp"
+#include "utopia_stk_Commons.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
 // Moonolith
@@ -37,8 +38,6 @@ namespace utopia {
         using MoonolithFunctionSpace_t = ::moonolith::FunctionSpace<::moonolith::Mesh<Scalar_t, Dim>>;
         using MetaData_t = ::stk::mesh::MetaData;
         using BulkData_t = ::stk::mesh::BulkData;
-
-        inline static Size_t convert_entity_to_index(::stk::mesh::Entity entity) { return entity.local_offset() - 1; }
 
         static int convert_to_manifold_dim(::moonolith::ElemType type) {
             switch (type) {
@@ -109,7 +108,7 @@ namespace utopia {
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t node = b[k];
-                    auto moonolith_index = convert_entity_to_index(node);
+                    auto moonolith_index = utopia::stk::convert_entity_to_index(node);
                     auto &p = m_mesh->node(moonolith_index);
 
                     const Scalar_t *points = (const Scalar_t *)::stk::mesh::field_data(*coords, node);
@@ -133,7 +132,7 @@ namespace utopia {
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     // get the current node entity and extract the id to fill it into the field
                     Entity_t elem = b[k];
-                    const Size_t elem_idx = convert_entity_to_index(elem) - n_local_nodes;
+                    const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                     auto &e = m_mesh->elem(elem_idx);
@@ -146,7 +145,7 @@ namespace utopia {
                     auto node_ids = bulk_data.begin_nodes(elem);
 
                     for (Size_t i = 0; i < n_nodes; ++i) {
-                        e.nodes[i] = convert_entity_to_index(node_ids[i]);
+                        e.nodes[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
                     }
                 }
             }
