@@ -46,6 +46,9 @@ namespace utopia {
             int spatial_dimension() const;
             int manifold_dimension() const;
 
+            SizeType n_nodes() const;
+            SizeType n_local_nodes() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

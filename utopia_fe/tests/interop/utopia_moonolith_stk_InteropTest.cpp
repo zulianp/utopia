@@ -4,6 +4,7 @@
 #include "utopia_stk_Mesh.hpp"
 
 #include "utopia_moonolith_FunctionSpace.hpp"
+#include "utopia_moonolith_stk_FETransfer.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
 #include "utopia_ui.hpp"
@@ -39,9 +40,24 @@ void stk_moonolith_convert_space() {
     utopia_test_assert(space_to.mesh().write("membrane_2.vtu"));
 }
 
+void stk_moonolith_fe_transfer() {
+    using FunctionSpace_t = utopia::stk::FunctionSpace;
+
+    FunctionSpace_t space_from, space_to;
+
+    auto params = param_list(param("path", "../data/knf/rectangle_4_tris.e"));
+
+    space_from.read(params);
+    space_to.read(params);
+
+    utopia::stk::FETransfer transfer;
+    utopia_test_assert(transfer.init(make_ref(space_from), make_ref(space_to)));
+}
+
 void interop() {
     UTOPIA_RUN_TEST(stk_moonolith_convert_mesh);
     UTOPIA_RUN_TEST(stk_moonolith_convert_space);
+    UTOPIA_RUN_TEST(stk_moonolith_fe_transfer);
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(interop);

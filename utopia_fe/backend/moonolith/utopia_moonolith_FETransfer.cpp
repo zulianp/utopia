@@ -29,6 +29,9 @@ namespace utopia {
                          .add_option("n_var",
                                      n_var,
                                      "Number of dimensions of vector function. Useful with tensor-product spaces.")
+                         .add_option("clear_non_essential_matrices",
+                                     clear_non_essential_matrices,
+                                     "Keeps only the final transfer matrix in memory and deletes the rest.")
                          .parse(in)) {
                     return;
                 }
@@ -52,6 +55,7 @@ namespace utopia {
             bool has_covering{true};
             int n_var{1};
             std::vector<std::pair<int, int>> tags;
+            bool clear_non_essential_matrices{true};
         };
 
         template <class Matrix>
@@ -105,6 +109,7 @@ namespace utopia {
                 utopia::convert(t.buffers.D.get(), D);
                 utopia::convert(t.buffers.Q.get(), Q);
 
+                bool ok = false;
                 if (!empty(Q)) {
                     m_utopia_warning_once("using sum(D, 1) instead of diag(D)");
 
@@ -121,14 +126,20 @@ namespace utopia {
 
                     if (opts.n_var == 1) {
                         T = T_x;
+                        ok = true;
+                        if (opts.clear_non_essential_matrices) {
+                            data.coupling_matrix = nullptr;
+                            data.mass_matrix = nullptr;
+                            data.basis_transform_matrix = nullptr;
+                        }
+
                     } else {
                         assert(false && "IMPLEMENT ME");
                         // tensorize(T_x, opts.n_var, T);
-                        return false;
                     }
                 }
 
-                return true;
+                return ok;
             }
         };
 
@@ -325,13 +336,21 @@ namespace utopia {
         void FETransfer::describe(std::ostream &) const {}
 
         bool FETransfer::apply(const Vector &from, Vector &to) const {
-            assert(false && "IMPLEMENT ME");
-            return false;
+            if (!empty()) {
+                to = (*impl_->data.transfer_matrix) * from;
+                return true;
+            } else {
+                return false;
+            }
         }
 
         bool FETransfer::apply_transpose(const Vector &from, Vector &to) const {
-            assert(false && "IMPLEMENT ME");
-            return false;
+            if (!empty()) {
+                to = transpose(*impl_->data.transfer_matrix) * from;
+                return true;
+            } else {
+                return false;
+            }
         }
 
         Size FETransfer::size() const {
@@ -354,6 +373,7 @@ namespace utopia {
 
         FETransfer::Communicator &FETransfer::comm() {
             if (empty()) {
+                assert(false);
                 static Communicator self(Communicator::self());
                 return self;
             } else {
@@ -363,6 +383,7 @@ namespace utopia {
 
         const FETransfer::Communicator &FETransfer::comm() const {
             if (empty()) {
+                assert(false);
                 static Communicator self(Communicator::self());
                 return self;
             } else {
