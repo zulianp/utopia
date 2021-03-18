@@ -3,14 +3,11 @@
 
 namespace utopia {
     template <class FunctionSpace, class FE>
-    class CreateFE {
-    public:
-        // apply
-    };
+    class CreateFE {};
 
     template <class FunctionSpace, class FE>
-    inline void create_fe(const FunctionSpace &space, FE &fe) {
-        CreateFE<FunctionSpace, FE>::apply(space, fe);
+    inline void create_fe(const FunctionSpace &space, FE &fe, int order = 0) {
+        CreateFE<FunctionSpace, FE>::apply(space, fe, order);
     }
 }  // namespace utopia
 
