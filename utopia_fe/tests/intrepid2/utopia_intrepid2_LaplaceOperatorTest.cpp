@@ -5,9 +5,9 @@
 
 using namespace utopia;
 
-using HGradFE = utopia::intrepid2::HGradFE<double>;
+using FE = utopia::intrepid2::FE<double>;
 
-static std::shared_ptr<HGradFE> make_ref_tet() {
+static std::shared_ptr<FE> make_ref_tet() {
     double tet[1 * 4 * 3] = {
         // p0
         0.0,
@@ -31,7 +31,7 @@ static std::shared_ptr<HGradFE> make_ref_tet() {
     int n_nodes = 4;
     int n_dims = 3;
 
-    HGradFE::DynRankView cell_points("cell_points", n_cells, n_nodes, n_dims);
+    FE::DynRankView cell_points("cell_points", n_cells, n_nodes, n_dims);
 
     for (int c = 0; c < n_cells; ++c) {
         for (int n = 0; n < n_nodes; ++n) {
@@ -43,7 +43,7 @@ static std::shared_ptr<HGradFE> make_ref_tet() {
 
     shards::CellTopology cell_type = shards::getCellTopologyData<shards::Tetrahedron<>>();
 
-    auto fe_ptr = std::make_shared<HGradFE>();
+    auto fe_ptr = std::make_shared<FE>();
     fe_ptr->init(cell_type, cell_points);
     return fe_ptr;
 }
@@ -61,7 +61,7 @@ void intrepid2_laplace_operator() {
 
     intrepid2::Assemble<LaplaceOperator<double>> assembler(lapl, fe_ptr);
     assembler.init();
-    assembler.describe(std::cout);
+    // assembler.describe(std::cout);
 }
 
 void uintrepid2() {

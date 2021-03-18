@@ -54,10 +54,10 @@ void stk_moonolith_fe_transfer() {
     utopia_test_assert(transfer.init(make_ref(space_from), make_ref(space_to)));
 }
 
-void interop() {
+void interop_moonolith_stk() {
     UTOPIA_RUN_TEST(stk_moonolith_convert_mesh);
     UTOPIA_RUN_TEST(stk_moonolith_convert_space);
     UTOPIA_RUN_TEST(stk_moonolith_fe_transfer);
 }
 
-UTOPIA_REGISTER_TEST_FUNCTION(interop);
+UTOPIA_REGISTER_TEST_FUNCTION(interop_moonolith_stk);
