@@ -46,7 +46,7 @@ void poisson_problem() {
     create_fe(space, *fe_ptr, 2);
 
     LaplaceOperator<Scalar_t> lapl{1.0};
-    intrepid2::Assemble<LaplaceOperator<Scalar_t>> assembler(lapl, fe_ptr);
+    utopia::intrepid2::Assemble<LaplaceOperator<Scalar_t>> assembler(lapl, fe_ptr);
     assembler.init();
 
     // local to global
