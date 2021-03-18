@@ -470,6 +470,11 @@ if(TARGET utopia_interop)
     target_link_libraries(utopia_fe_exec utopia_interop)
 endif()
 
+if(TARGET utopia_intrepid2)
+    target_link_libraries(utopia_fe_test utopia_intrepid2)
+    target_link_libraries(utopia_fe_exec utopia_intrepid2)
+endif()
+
 include(tests/tests.cmake)
 
 if(UTOPIA_ENABLE_LIBMESH)
