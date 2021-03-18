@@ -41,7 +41,7 @@ namespace utopia {
             Assemble(Op op, const std::shared_ptr<FE> &fe) : op_(std::move(op)), fe_(fe) {}
 
             void init() {
-                stiffness_matrix_ =
+                element_matrices_ =
                     DynRankView("stiffness_matrix", fe_->num_cells(), fe_->num_fields(), fe_->num_fields());
 
                 DynRankView grad_x_measure(
@@ -49,10 +49,10 @@ namespace utopia {
 
                 Kokkos::deep_copy(grad_x_measure, fe_->grad);
                 FunctionSpaceTools::template multiplyMeasure<Scalar>(grad_x_measure, fe_->measure, fe_->grad);
-                FunctionSpaceTools::template integrate<Scalar>(stiffness_matrix_, fe_->grad, grad_x_measure);
+                FunctionSpaceTools::template integrate<Scalar>(element_matrices_, fe_->grad, grad_x_measure);
 
                 // Only works if coeff is a scalar
-                // KokkosBlas::scal(stiffness_matrix_, op_.coeff, stiffness_matrix_);
+                // KokkosBlas::scal(element_matrices_, op_.coeff, element_matrices_);
             }
 
             void describe(std::ostream &os) const override {
@@ -65,7 +65,7 @@ namespace utopia {
                     os << c << ")\n";
                     for (SizeType i = 0; i < num_fields; ++i) {
                         for (SizeType j = 0; j < num_fields; ++j) {
-                            os << stiffness_matrix_(c, i, j) << " ";
+                            os << element_matrices_(c, i, j) << " ";
                         }
 
                         os << '\n';
@@ -75,10 +75,12 @@ namespace utopia {
                 }
             }
 
+            inline const DynRankView &element_matrices() const { return element_matrices_; }
+
             // NVCC_PRIVATE :
             Op op_;
             std::shared_ptr<FE> fe_;
-            DynRankView stiffness_matrix_;
+            DynRankView element_matrices_;
         };
 
     }  // namespace intrepid2

@@ -1,5 +1,9 @@
 #include "utopia_stk_intrepid2.hpp"
 
+#ifdef UTOPIA_WITH_PETSC
+#include "utopia_petsc_Matrix.hpp"
+#endif
+
 #include "utopia_stk_Commons.hpp"
 
 #include "utopia_intrepid2_FE.hpp"
@@ -102,7 +106,74 @@ namespace utopia {
         fe.init(topo, cell_points, degree);
     }
 
-    // Explicit instantations
+    // Explicit instantation
     template class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
+
+#ifdef UTOPIA_WITH_PETSC
+    template <typename Scalar>
+    void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix>::apply(
+        const utopia::stk::FunctionSpace &space,
+        const ::Kokkos::DynRankView<Scalar> &element_matrices,
+        PetscMatrix &matrix) {
+        // Type defs
+        using IndexArray_t = Traits<PetscMatrix>::IndexArray;
+        using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
+        using Size_t = Traits<PetscMatrix>::SizeType;
+
+        using Bucket_t = ::stk::mesh::Bucket;
+        using BucketVector_t = ::stk::mesh::BucketVector;
+        using Entity_t = ::stk::mesh::Entity;
+
+        if (matrix.empty()) {
+            space.create_matrix(matrix);
+        } else {
+            matrix *= 0.0;
+        }
+
+        auto &meta_data = space.mesh().meta_data();
+        auto &bulk_data = space.mesh().bulk_data();
+
+        ::stk::mesh::Selector s_universal = meta_data.universal_part();
+        const BucketVector_t &elem_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, s_universal);
+
+        Write<PetscMatrix> w(matrix);
+
+        const SizeType nn = element_matrices.extent(1);
+        IndexArray_t idx(nn);
+        ScalarArray_t val(nn);
+
+        Size_t n_local_nodes = space.mesh().n_local_nodes();
+
+        for (const auto &ib : elem_buckets) {
+            const Bucket_t &b = *ib;
+            const Bucket_t::size_type length = b.size();
+
+            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                // get the current node entity and extract the id to fill it into the field
+                Entity_t elem = b[k];
+                const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+                const Size_t n_nodes = bulk_data.num_nodes(elem);
+                UTOPIA_UNUSED(n_nodes);
+
+                assert(nn == n_nodes);
+
+                auto node_ids = bulk_data.begin_nodes(elem);
+
+                for (Size_t i = 0; i < nn; ++i) {
+                    idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+
+                    for (Size_t j = 0; j < nn; ++j) {
+                        val[i * nn + j] = element_matrices(elem_idx, i, j);
+                    }
+                }
+
+                matrix.add_matrix(idx, idx, val);
+            }
+        }
+    }
+
+    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;
+
+#endif
 
 }  // namespace utopia

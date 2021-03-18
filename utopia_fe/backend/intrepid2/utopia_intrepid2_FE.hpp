@@ -90,7 +90,7 @@ namespace utopia {
             template <class BasisType>
             void init_aux(const BasisType &basis) {
                 auto spatial_dimension = type.getDimension();
-                auto num_nodes = type.getNodeCount();
+                // auto num_nodes = type.getNodeCount();
                 auto num_qp = cubature->getNumPoints();
                 auto num_cells = cell_nodes.extent(0);
                 auto n_fun = basis.getCardinality();

@@ -64,14 +64,14 @@ namespace utopia {
             return impl_->mesh->n_local_nodes() * impl_->n_var;
         }
 
-        void FunctionSpace::create_vector(Vector &v) { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
+        void FunctionSpace::create_vector(Vector &v) const { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
 
-        void FunctionSpace::create_local_vector(Vector &v) {
+        void FunctionSpace::create_local_vector(Vector &v) const {
             // FIXME
             v.zeros(layout(comm(), n_local_dofs(), n_dofs()));
         }
 
-        void FunctionSpace::create_matrix(Matrix &m) {
+        void FunctionSpace::create_matrix(Matrix &m) const {
             using Bucket_t = ::stk::mesh::Bucket;
             using BucketVector_t = ::stk::mesh::BucketVector;
             using Entity_t = ::stk::mesh::Entity;
@@ -120,6 +120,12 @@ namespace utopia {
                 m.block_sparse(ml, d_nnz, o_nnz, impl_->n_var);
             }
         }
+
+        void FunctionSpace::apply_constraints(Matrix &) {}
+
+        void FunctionSpace::apply_constraints(Vector &) {}
+
+        void FunctionSpace::apply_constraints(Matrix &, Vector &) {}
 
     }  // namespace stk
 }  // namespace utopia

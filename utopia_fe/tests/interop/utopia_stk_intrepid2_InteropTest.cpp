@@ -16,9 +16,12 @@ using namespace utopia;
 
 void poisson_problem() {
     using FunctionSpace_t = utopia::stk::FunctionSpace;
-    using FE_t = utopia::intrepid2::FE<double>;
+    using Scalar_t = Traits<FunctionSpace_t>::Scalar;
+    using FE_t = utopia::intrepid2::FE<Scalar_t>;
 
-    auto params = param_list(param("path", "../data/knf/pump/membrane.e"));
+    auto params = param_list(param("path",
+                                   // "../data/knf/pump/membrane.e"
+                                   "../data/knf/rectangle_4_tris.e"));
 
     FunctionSpace_t space;
     space.read(params);
@@ -29,9 +32,15 @@ void poisson_problem() {
     auto fe_ptr = std::make_shared<FE_t>();
     create_fe(space, *fe_ptr, 0);
 
-    LaplaceOperator<double> lapl{1.0};
-    intrepid2::Assemble<LaplaceOperator<double>> assembler(lapl, fe_ptr);
+    LaplaceOperator<Scalar_t> lapl{1.0};
+    intrepid2::Assemble<LaplaceOperator<Scalar_t>> assembler(lapl, fe_ptr);
     assembler.init();
+
+    // local to global
+    USparseMatrix mat;
+    local_to_global(space, assembler.element_matrices(), mat);
+
+    write("poisson_problem.m", mat);
 
     // c.stop();
     // std::cout << c << std::endl;
