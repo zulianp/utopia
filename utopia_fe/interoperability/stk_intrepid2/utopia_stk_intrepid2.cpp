@@ -40,8 +40,10 @@ namespace utopia {
                 return ::shards::getCellTopologyData<::shards::Hexahedron<27>>();
             case ::stk::topology::TET_4:
                 return ::shards::getCellTopologyData<::shards::Tetrahedron<>>();
-            default:
+            default: {
+                assert(false);
                 return ::shards::getCellTopologyData<::shards::Node>();
+            }
         }
     }
 

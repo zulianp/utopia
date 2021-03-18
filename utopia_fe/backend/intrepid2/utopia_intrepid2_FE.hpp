@@ -13,6 +13,7 @@
 #include <Intrepid2_Cubature.hpp>
 #include <Intrepid2_DefaultCubatureFactory.hpp>
 #include <Intrepid2_FunctionSpaceTools.hpp>
+#include <Intrepid2_HGRAD_HEX_C1_FEM.hpp>
 #include <Intrepid2_HGRAD_TET_C1_FEM.hpp>
 #include <Intrepid2_HGRAD_TRI_C1_FEM.hpp>
 
@@ -31,6 +32,7 @@ namespace utopia {
             using CellTopology = ::shards::CellTopology;
             using Tet = ::Intrepid2::Basis_HGRAD_TET_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using Tri = ::Intrepid2::Basis_HGRAD_TRI_C1_FEM<ExecutionSpace, Scalar, Scalar>;
+            using Hex = ::Intrepid2::Basis_HGRAD_HEX_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using CellTools = ::Intrepid2::CellTools<ExecutionSpace>;
             using FunctionSpaceTools = ::Intrepid2::FunctionSpaceTools<ExecutionSpace>;
             using SizeType = ::Intrepid2::ordinal_type;
@@ -60,6 +62,12 @@ namespace utopia {
                     case shards::Tetrahedron<>::key: {
                         Tet tet;
                         init_aux(tet);
+                        break;
+                    }
+
+                    case shards::Hexahedron<>::key: {
+                        Hex hex;
+                        init_aux(hex);
                         break;
                     }
 
