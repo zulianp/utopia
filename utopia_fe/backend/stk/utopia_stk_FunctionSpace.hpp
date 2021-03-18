@@ -33,13 +33,8 @@ namespace utopia {
 
             inline const Comm &comm() const { return mesh().comm(); }
 
-            // std::shared_ptr<::stk::FunctionSpace<::stk::Mesh<Scalar, Dim>>> raw_type() const;
-
             SizeType n_dofs() const;
             SizeType n_local_dofs() const;
-
-            // void create_matrix(Matrix &mat) const;
-            // void create_vector(Vector &vec) const;
 
             void create_vector(Vector &v) const;
             void create_local_vector(Vector &v) const;

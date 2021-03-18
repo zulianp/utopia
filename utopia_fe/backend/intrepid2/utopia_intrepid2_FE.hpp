@@ -97,7 +97,7 @@ namespace utopia {
 
                 assert(num_cells > 0);
                 assert(num_qp > 0);
-                assert(num_nodes > 0);
+                // assert(num_nodes > 0);
                 assert(spatial_dimension > 0);
 
                 DynRankView q_weights("q_weights", num_qp);

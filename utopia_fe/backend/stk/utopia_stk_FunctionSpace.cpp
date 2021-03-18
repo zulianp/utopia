@@ -15,10 +15,39 @@
 namespace utopia {
     namespace stk {
 
+        class DirichletBoundaryConditions : public Configurable, public Describable {
+        public:
+            class Condition : public Configurable {
+            public:
+                std::string name;
+                int set_id;
+                double value;
+
+                void read(Input &in) override {
+                    in.get("name", name);
+                    in.get("set_id", set_id);
+                    in.get("value", value);
+                }
+            };
+
+            void read(Input &in) override {
+                in.get_all([this](Input &in) {
+                    conditions.emplace_back();
+                    auto &c = conditions.back();
+                    c.read(in);
+                });
+            }
+
+            void describe(std::ostream &os) const override { os << "DirichletBoundaryConditions"; }
+
+            std::vector<Condition> conditions;
+        };
+
         class FunctionSpace::Impl {
         public:
             std::shared_ptr<Mesh> mesh;
             int n_var{1};
+            DirichletBoundaryConditions bc;
         };
 
         FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {
@@ -40,7 +69,10 @@ namespace utopia {
             mesh->read(in);
             init(mesh);
 
-            if (!Options().add_option("n_var", impl_->n_var, "Number of variables per node.").parse(in)) {
+            if (!Options()
+                     .add_option("n_var", impl_->n_var, "Number of variables per node.")
+                     .add_option("boundary_conditions", impl_->bc, "Boundary conditions.")
+                     .parse(in)) {
                 return;
             }
         }
@@ -123,7 +155,9 @@ namespace utopia {
 
         void FunctionSpace::apply_constraints(Matrix &) {}
 
-        void FunctionSpace::apply_constraints(Vector &) {}
+        void FunctionSpace::apply_constraints(Vector &) {
+            // auto *part = mesh().meta_data().get_part(bc_name);
+        }
 
         void FunctionSpace::apply_constraints(Matrix &, Vector &) {}
 

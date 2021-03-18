@@ -140,7 +140,7 @@ namespace utopia {
 
         const SizeType nn = element_matrices.extent(1);
         IndexArray_t idx(nn);
-        ScalarArray_t val(nn);
+        ScalarArray_t val(nn * nn);
 
         Size_t n_local_nodes = space.mesh().n_local_nodes();
 
