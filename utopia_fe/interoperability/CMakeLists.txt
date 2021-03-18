@@ -15,6 +15,14 @@ if(UTOPIA_ENABLE_MOONOLITH)
     endif()
 endif()
 
+if(UTOPIA_ENABLE_STK)
+    if(UTOPIA_ENABLE_INTREPID2)
+        list(APPEND INTEROP_DEP utopia_intrepid2 utopia_stk)
+        list(APPEND INTEROP_MODULES stk_intrepid2)
+        set(INTEROP_EXISTS TRUE)
+    endif()
+endif()
+
 if(INTEROP_EXISTS)
     utopiafe_add_module(utopia_interop ${CMAKE_CURRENT_SOURCE_DIR}
                         "${INTEROP_MODULES}")
