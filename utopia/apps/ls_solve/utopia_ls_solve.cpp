@@ -103,14 +103,14 @@ namespace utopia {
                 return;
             }
 
+            utopia::read(path_A, A);
+
             if (path_b.empty()) {
                 utopia::err() << "[Warning] b is undefined, using vector of ones!!!\n";
                 b.values(row_layout(A), 1.0);
             } else {
                 utopia::read(path_b, b);
             }
-
-            utopia::read(path_A, A);
 
             if (!path_oracle.empty()) {
                 utopia::read(path_oracle, oracle);
