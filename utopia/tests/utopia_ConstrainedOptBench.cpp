@@ -56,7 +56,7 @@ namespace utopia {
 
         void initialize() override {
             this->register_experiment("TR_Variable_Bound_MPRGP", [this]() {
-                auto subproblem = std::make_shared<utopia::MPGRP<Matrix, Vector> >();
+                auto subproblem = std::make_shared<utopia::MPRGP<Matrix, Vector> >();
                 subproblem->atol(tol);
                 subproblem->stol(tol);
                 subproblem->rtol(tol);

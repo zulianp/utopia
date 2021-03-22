@@ -9,6 +9,10 @@
 #include "utopia_TestProblems.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
+#ifdef UTOPIA_WITH_VC
+#include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
+#endif  // UTOPIA_WITH_VC
+
 #include <cassert>
 #include <string>
 
@@ -43,7 +47,7 @@ namespace utopia {
                     ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                     cg.verbose(verbose);
                     cg.max_it(n * mpi_world_size());
-                    cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+                    cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector>>());
                     run_linear_solver(comm_, n, cg);
                 });
 
@@ -84,7 +88,7 @@ namespace utopia {
                     ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
                     cg.max_it(size(x).get(0));
 
-                    auto backtracking = std::make_shared<utopia::Backtracking<Vector> >();
+                    auto backtracking = std::make_shared<utopia::Backtracking<Vector>>();
 
                     Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
                     newton.set_line_search_strategy(backtracking);
@@ -103,7 +107,7 @@ namespace utopia {
                     Rastrigin<Matrix, Vector> fun;
                     Vector x(vl, 1.0);
 
-                    auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector> >();
+                    auto st_cg = std::make_shared<SteihaugToint<Matrix, Vector>>();
 
                     TrustRegion<Matrix, Vector> trust_region(st_cg);
                     trust_region.verbose(false);
@@ -140,28 +144,28 @@ namespace utopia {
                     run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
                 });
 
-                // this->register_experiment("projected_block_2_gauss_seidel_" + std::to_string(i), [=]() {
-                //     InputParameters params;
-                //     params.set("block_size", 2);
-                //     ProjectedGaussSeidel<Matrix, Vector> pg;
-                //     pg.read(params);
-                //     run_qp_solver(comm_, (base_n / 2) * (i + 1), pg);
-                // });
-
                 if (Traits::Backend == PETSC) {
-                    this->register_experiment("projected_block_4_gauss_seidel_" + std::to_string(i), [=]() {
+#ifdef UTOPIA_WITH_VC
+                    this->register_experiment("vc_projected_block_4_gauss_seidel_" + std::to_string(i), [=]() {
                         InputParameters params;
-
-                        // params.set("block_size", 3);
                         params.set("block_size", 4);
-                        // params.set("verbose", true);
-
+                        params.set("use_simd", true);
                         ProjectedGaussSeidel<Matrix, Vector> pg;
                         pg.read(params);
 
+                        // run_linear_solver(comm_, 4 * (base_n / 2) * (i + 1), pg);
                         run_qp_solver(comm_, 4 * (base_n / 2) * (i + 1), pg);
+                    });
+#endif  // UTOPIA_WITH_VC
+
+                    this->register_experiment("projected_block_4_gauss_seidel_" + std::to_string(i), [=]() {
+                        InputParameters params;
+                        params.set("block_size", 4);
+                        ProjectedGaussSeidel<Matrix, Vector> pg;
+                        pg.read(params);
 
                         // run_linear_solver(comm_, 4 * (base_n / 2) * (i + 1), pg);
+                        run_qp_solver(comm_, 4 * (base_n / 2) * (i + 1), pg);
                     });
                 }
 
@@ -297,7 +301,7 @@ namespace utopia {
             const static bool use_masks = true;
             const SizeType n_levels = 5;
 
-            MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector> > ml_problem(
+            MultiLevelTestProblem1D<Matrix, Vector, Poisson1D<Matrix, Vector>> ml_problem(
                 n / pow(2, n_levels - 1), n_levels, !use_masks);
 
             multigrid.max_it(50);

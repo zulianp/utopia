@@ -20,6 +20,9 @@
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_impl.hpp"
 
+#include "utopia_ILU_impl.hpp"
+#include "utopia_petsc_ILUDecompose.hpp"
+
 // explicit instantiations
 namespace utopia {
 
@@ -28,6 +31,7 @@ namespace utopia {
     template class GaussSeidel<PetscMatrix, PetscVector, PETSC>;
     template class SPBlockConjugateGradient<PetscMatrix, PetscVector>;
     template class BiCGStab<PetscMatrix, PetscVector, HOMEMADE>;
+    template class ILU<PetscMatrix, PetscVector>;
 
     // qp-solvers
     template class ProjectedGaussSeidel<PetscMatrix, PetscVector>;
@@ -107,4 +111,11 @@ namespace utopia {
         block.wrap(M);
         block.update_mirror();
     }
+
+    // void local_view(const PetscVector &vec, PetscVector &lv) {
+    //     assert(false);
+    //     UTOPIA_UNUSED(vec);
+    //     UTOPIA_UNUSED(lv);
+    //     // VecGetLocalVector(Vec v,Vec w)
+    // }
 }  // namespace utopia

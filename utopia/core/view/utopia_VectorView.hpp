@@ -111,6 +111,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void set(const SizeType &i, const Scalar &value) { view_[i] = value; }
 
         UTOPIA_INLINE_FUNCTION void add(const SizeType &i, const Scalar &value) { view_[i] += value; }
+        UTOPIA_INLINE_FUNCTION void divide(const SizeType &i, const Scalar &value) { view_[i] /= value; }
 
         UTOPIA_INLINE_FUNCTION void scale(const Scalar &alpha) { device::scale(alpha, view_); }
 

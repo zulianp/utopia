@@ -6,6 +6,17 @@ cmake_policy(SET "CMP0079" NEW)
 set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
 
+set(CMAKE_C_FLAGS_ASAN
+    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
+    CACHE STRING "Flags used by the C compiler during AddressSanitizer builds."
+          FORCE)
+
+set(CMAKE_CXX_FLAGS_ASAN
+    "-fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1"
+    CACHE STRING
+          "Flags used by the C++ compiler during AddressSanitizer builds."
+          FORCE)
+
 # ##############################################################################
 # ######################## UTOPIA VERSION INFORMATION
 # ##############################################################################
@@ -67,6 +78,8 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
        "Allows to use the moose installation compilers" OFF)
 option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
+option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
+
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
     UTOPIA_ENABLE_PETSC_DM_PLEX
@@ -104,7 +117,7 @@ set(UTOPIA_DEV_FLAGS
     "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
 )
 
-if(APPLE)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     set(UTOPIA_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Werror=nonportable-include-path")
 endif()
 
@@ -195,14 +208,14 @@ endif()
 message(
     STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 
-if(UTOPIA_ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+if(UTOPIA_ENABLE_SANITIZER)
+    # if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
 
-        set(UTOPIA_DEV_FLAGS
-            "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
-        )
+    set(UTOPIA_DEV_FLAGS
+        "${UTOPIA_DEV_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls "
+    )
 
-    endif()
+    # endif()
 endif()
 
 if(UTOPIA_ENABLE_LOCK_CHECKING)

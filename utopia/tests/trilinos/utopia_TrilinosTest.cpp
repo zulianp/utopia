@@ -628,7 +628,6 @@ namespace utopia {
             multigrid.post_smoothing_steps(3);
             multigrid.fix_semidefinite_operators(true);
             multigrid.must_generate_masks(use_masks);
-            ;
             multigrid.verbose(verbose);
 
             multigrid.set_transfer_operators(ml_problem.get_transfer());
@@ -1551,6 +1550,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_mm);
             UTOPIA_RUN_TEST(trilinos_m_tm);
             UTOPIA_RUN_TEST(trilinos_diag);
+
+            // FIXME This tests fails when using adress sanitizer inside trilinos (CMAKE_BUILD_TYPE=ASAN)
             UTOPIA_RUN_TEST(trilinos_read);
 
             UTOPIA_RUN_TEST(trilinos_rect_matrix);
@@ -1566,6 +1567,7 @@ namespace utopia {
 
             UTOPIA_RUN_TEST(trilinos_rmtr);
 
+            // FIXME This tests fails when using adress sanitizer inside trilinos (CMAKE_BUILD_TYPE=ASAN)
             UTOPIA_RUN_TEST(trilinos_transpose);
 
             UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);

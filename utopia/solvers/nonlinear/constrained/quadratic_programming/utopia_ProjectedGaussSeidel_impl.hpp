@@ -10,6 +10,10 @@
 
 #include "utopia_ProjectedBlockGaussSeidelSweep.hpp"
 
+#ifdef UTOPIA_WITH_VC
+#include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
+#endif  // UTOPIA_WITH_VC
+
 namespace utopia {
 
     template <class Matrix, class Vector>
@@ -22,6 +26,7 @@ namespace utopia {
     template <class Matrix, class Vector>
     ProjectedGaussSeidel<Matrix, Vector, PETSC>::ProjectedGaussSeidel(const ProjectedGaussSeidel &other)
         : VariableBoundSolverInterface<Vector>(other),
+          PreconditionedSolverInterface<Vector>(other),
           Super(other),
           use_line_search_(other.use_line_search_),
           use_symmetric_sweep_(other.use_symmetric_sweep_),
@@ -62,7 +67,18 @@ namespace utopia {
         int block_size = 0;
         in.get("block_size", block_size);
 
-        if (block_size == 2) {
+#ifdef UTOPIA_WITH_VC
+        // FIXME
+#ifdef UTOPIA_WITH_PETSC
+        bool use_simd = false;
+        in.get("use_simd", use_simd);
+
+        if (use_simd && block_size == VcProjectedBlockGaussSeidelSweep<Matrix>::BlockSize) {
+            sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
+        } else
+#endif  // UTOPIA_WITH_PETSC
+#endif  // UTOPIA_WITH_VC
+            if (block_size == 2) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 2>>();
         } else if (block_size == 3) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 3>>();
@@ -254,7 +270,6 @@ namespace utopia {
             sweeper_->set_bounds(lb_view.array(), ub_view.array());
             sweeper_->set_correction_view(c_view.array());
             sweeper_->apply(this->n_local_sweeps());
-
         } else {
             auto &&r_view = const_local_view_device(r);
             auto &&lb_view = const_local_view_device(lb);
@@ -485,8 +500,10 @@ namespace utopia {
             local_block_view(A, A_local);
 
             if (reset) {
+                assert(sweeper_);
                 sweeper_->init_from_local_matrix(A_local);
             } else {
+                assert(sweeper_);
                 sweeper_->update_from_local_matrix(A_local);
             }
 

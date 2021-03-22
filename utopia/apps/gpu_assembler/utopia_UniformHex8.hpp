@@ -3,6 +3,7 @@
 
 #include "utopia_DeviceNumber.hpp"
 #include "utopia_Elem.hpp"
+#include "utopia_Literal.hpp"
 #include "utopia_MemType.hpp"
 #include "utopia_Quad4.hpp"
 #include "utopia_Views.hpp"
@@ -15,34 +16,36 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static auto fun(const int i, const Point &p) -> typename Traits<Point>::Scalar {
             using Scalar = typename Traits<Point>::Scalar;
 
-            const Scalar x = p[0];
-            const Scalar y = p[1];
-            const Scalar z = p[2];
+            const auto x = p[0];
+            const auto y = p[1];
+            const auto z = p[2];
+
+            const auto one = One<Scalar>::value();
 
             switch (i) {
                 case 0: {
-                    return (1.0 - x) * (1.0 - y) * (1.0 - z);
+                    return (one - x) * (one - y) * (one - z);
                 }
                 case 1: {
-                    return x * (1.0 - y) * (1.0 - z);
+                    return x * (one - y) * (one - z);
                 }
                 case 2: {
-                    return x * y * (1.0 - z);
+                    return x * y * (one - z);
                 }
                 case 3: {
-                    return (1.0 - x) * y * (1.0 - z);
+                    return (one - x) * y * (one - z);
                 }
                 case 4: {
-                    return (1.0 - x) * (1.0 - y) * z;
+                    return (one - x) * (one - y) * z;
                 }
                 case 5: {
-                    return x * (1.0 - y) * z;
+                    return x * (one - y) * z;
                 }
                 case 6: {
                     return x * y * z;
                 }
                 case 7: {
-                    return (1.0 - x) * y * z;
+                    return (one - x) * y * z;
                 }
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
@@ -60,30 +63,32 @@ namespace utopia {
             const Scalar y = p[1];
             // const Scalar t = p[2];
 
+            const auto one = One<Scalar>::value();
+
             switch (i) {
                 case 0: {
-                    return -(1.0 - x) * (1.0 - y);
+                    return -(one - x) * (one - y);
                 }
                 case 1: {
-                    return -x * (1.0 - y);
+                    return -x * (one - y);
                 }
                 case 2: {
                     return -x * y;
                 }
                 case 3: {
-                    return -(1.0 - x) * y;
+                    return -(one - x) * y;
                 }
                 case 4: {
-                    return (1.0 - x) * (1.0 - y);
+                    return (one - x) * (one - y);
                 }
                 case 5: {
-                    return x * (1.0 - y);
+                    return x * (one - y);
                 }
                 case 6: {
                     return x * y;
                 }
                 case 7: {
-                    return (1.0 - x) * y;
+                    return (one - x) * y;
                 }
                 default: {
                     UTOPIA_DEVICE_ASSERT(false);
@@ -257,6 +262,9 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static void grad(const int i, const Point &p, Grad &g) {
             using Scalar = typename Traits<Point>::Scalar;
 
+            const auto one = One<Scalar>::value();
+            const auto zero = Zero<Scalar>::value();
+
             const Scalar x = p[0];
             const Scalar y = p[1];
             const Scalar z = p[2];
@@ -264,72 +272,72 @@ namespace utopia {
             switch (i) {
                 // f = (1.0 - x) * (1.0 - y) * (1.0 - z);
                 case 0: {
-                    g[0] = -(1.0 - y) * (1.0 - z);
-                    g[1] = -(1.0 - x) * (1.0 - z);
-                    g[2] = -(1.0 - x) * (1.0 - y);
+                    g.set(0, -(one - y) * (one - z));
+                    g.set(1, -(one - x) * (one - z));
+                    g.set(2, -(one - x) * (one - y));
                     return;
                 }
 
-                // f = x * (1.0 - y) * (1.0 - z);
+                // f = x * (one - y) * (one - z);
                 case 1: {
-                    g[0] = (1.0 - y) * (1.0 - z);
-                    g[1] = -x * (1.0 - z);
-                    g[2] = -x * (1.0 - y);
+                    g.set(0, (one - y) * (one - z));
+                    g.set(1, -x * (one - z));
+                    g.set(2, -x * (one - y));
                     return;
                 }
 
-                // f = x * y * (1.0 - z);
+                // f = x * y * (one - z);
                 case 2: {
-                    g[0] = y * (1.0 - z);
-                    g[1] = x * (1.0 - z);
-                    g[2] = -x * y;
+                    g.set(0, y * (one - z));
+                    g.set(1, x * (one - z));
+                    g.set(2, -x * y);
                     return;
                 }
 
-                // f = (1.0 - x) * y * (1.0 - z);
+                // f = (one - x) * y * (one - z);
                 case 3: {
-                    g[0] = -y * (1.0 - z);
-                    g[1] = (1.0 - x) * (1.0 - z);
-                    g[2] = -(1.0 - x) * y;
+                    g.set(0, -y * (one - z));
+                    g.set(1, (one - x) * (one - z));
+                    g.set(2, -(one - x) * y);
                     return;
                 }
 
-                // f = (1.0 - x) * (1.0 - y) * z;
+                // f = (one - x) * (one - y) * z;
                 case 4: {
-                    g[0] = -(1.0 - y) * z;
-                    g[1] = -(1.0 - x) * z;
-                    g[2] = (1.0 - x) * (1.0 - y);
+                    g.set(0, -(one - y) * z);
+                    g.set(1, -(one - x) * z);
+                    g.set(2, (one - x) * (one - y));
                     return;
                 }
 
-                // f = x * (1.0 - y) * z;
+                // f = x * (one - y) * z;
                 case 5: {
-                    g[0] = (1.0 - y) * z;
-                    g[1] = -x * z;
-                    g[2] = x * (1.0 - y);
+                    g.set(0, (one - y) * z);
+                    g.set(1, -x * z);
+                    g.set(2, x * (one - y));
                     return;
                 }
 
                 // f = x * y * z;
                 case 6: {
-                    g[0] = y * z;
-                    g[1] = x * z;
-                    g[2] = x * y;
+                    g.set(0, y * z);
+                    g.set(1, x * z);
+                    g.set(2, x * y);
                     return;
                 }
 
-                // f = (1.0 - x) * y * z;
+                // f = (one - x) * y * z;
                 case 7: {
-                    g[0] = -y * z;
-                    g[1] = (1.0 - x) * z;
-                    g[2] = (1.0 - x) * y;
+                    g.set(0, -y * z);
+                    g.set(1, (one - x) * z);
+                    g.set(2, (one - x) * y);
                     return;
                 }
 
                 default: {
-                    g[0] = 0.0;
-                    g[1] = 0.0;
-                    g[2] = 0.0;
+                    g.set(0, zero);
+                    g.set(1, zero);
+                    g.set(2, zero);
                     return;
                 }
             }
@@ -414,7 +422,9 @@ namespace utopia {
                     return;
                 }
 
-                default: { UTOPIA_DEVICE_ASSERT(false); }
+                default: {
+                    UTOPIA_DEVICE_ASSERT(false);
+                }
             }
         }
 
@@ -530,9 +540,13 @@ namespace utopia {
         template <typename Point, typename Grad>
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const {
             RefHex8::grad(i, p, g);
-            g[0] /= h_[0];
-            g[1] /= h_[1];
-            g[2] /= h_[2];
+            // g[0] /= h_[0];
+            // g[1] /= h_[1];
+            // g[2] /= h_[2];
+
+            g.divide(0, h_[0]);
+            g.divide(1, h_[1]);
+            g.divide(2, h_[2]);
         }
 
         // space-time spatial gradient
@@ -568,9 +582,13 @@ namespace utopia {
 
         template <typename RefPoint, typename PhysicalPoint>
         UTOPIA_INLINE_FUNCTION void point(const RefPoint &in, PhysicalPoint &out) const {
-            out[0] = in[0] * h_[0] + translation_[0];
-            out[1] = in[1] * h_[1] + translation_[1];
-            out[2] = in[2] * h_[2] + translation_[2];
+            // out[0] = in[0] * h_[0] + translation_[0];
+            // out[1] = in[1] * h_[1] + translation_[1];
+            // out[2] = in[2] * h_[2] + translation_[2];
+
+            for (int i = 0; i < 3; ++i) {
+                out.set(i, in[i] * h_[i] + translation_[i]);
+            }
         }
 
         template <typename PhysicalPoint>
@@ -586,11 +604,11 @@ namespace utopia {
             h_[2] = 0.0;
         }
 
-        template <class H>
-        UTOPIA_INLINE_FUNCTION void set(const Point &translation, const H &h) {
-            translation_(0) = translation(0);
-            translation_(1) = translation(1);
-            translation_(2) = translation(2);
+        template <class Tr, class H>
+        UTOPIA_INLINE_FUNCTION void set(const Tr &translation, const H &h) {
+            translation_[0] = translation[0];
+            translation_[1] = translation[1];
+            translation_[2] = translation[2];
 
             h_[0] = h[0];
             h_[1] = h[1];
@@ -602,7 +620,7 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION const Point &translation() const { return translation_; }
 
     private:
-        Scalar h_[3];
+        Point h_;
         Point translation_;
     };
 

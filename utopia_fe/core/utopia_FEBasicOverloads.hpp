@@ -2,6 +2,7 @@
 #define UTOPIA_FE_BASIC_OVERLOADS_HPP
 
 #include <type_traits>
+#include "utopia_DeviceOperations.hpp"
 
 namespace utopia {
 

@@ -46,7 +46,7 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    class AffineSimilarityAW : public NewtonBase<Matrix, Vector> {
+    class AffineSimilarityAW : public NewtonBase<Matrix, Vector>, public VariableBoundSolverInterface<Vector> {
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
 
@@ -99,11 +99,17 @@ namespace utopia {
                     utopia::out() << "mass matrix not set, using Identity matrix ... \n";
                 }
 
-                I_ = local_identity(local_size(H).get(0), local_size(H).get(1));
+                Vector help = diag(H);
+                help.set(1.0);
+
+                I_ = diag(help);
             }
 
             if (empty(D_)) {
-                D_ = local_identity(local_size(H).get(0), local_size(H).get(1));
+                Vector help = diag(H);
+                help.set(1.0);
+
+                D_ = diag(help);
                 D_inv_ = D_;
             }
 
@@ -169,6 +175,8 @@ namespace utopia {
                 it_inner = 0;
 
                 x = x_trial;
+                this->make_iterate_feasible(x);
+
                 g = g_new;
                 fun.hessian(x, H);
                 // }

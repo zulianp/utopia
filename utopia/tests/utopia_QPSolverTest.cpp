@@ -11,6 +11,12 @@
 #include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
+#include "utopia_MonotoneMultigrid.hpp"
+#include "utopia_MultigridQR.hpp"
+
+#include "utopia_MultilevelTestProblem1D.hpp"
+#include "utopia_Poisson1D.hpp"
+
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
@@ -63,7 +69,7 @@ namespace utopia {
         }
 
         void MPRGP_test() const {
-            MPGRP<Matrix, Vector> qp_solver;
+            MPRGP<Matrix, Vector> qp_solver;
             run_qp_solver(qp_solver);
 
             auto &&comm = Comm::get_default();
@@ -128,7 +134,7 @@ namespace utopia {
             qp_solver.solve(A, b, x);
         }
 
-        void ProjectedGS_QR() {
+        void MG_QR_test() {
             Vector rhs, x;
             Vector upper_bound, lower_bound;
             Matrix A, R, Q, Ih_fine, Rot;
@@ -172,10 +178,14 @@ namespace utopia {
             // Vector Qtrhs = Rot *rhs;
             // Vector Qtx   = Rot *x;
 
-            auto smoother_fine = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            auto fine_smoother = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
+            fine_smoother->set_R(R);  // Monotone
+
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
-            MultigridQR<Matrix, Vector> multigrid(smoother_fine, coarse_smoother, direct_solver, num_levels);
+            // MultigridQR<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, num_levels);  // QR
+            MonotoneMultigrid<Matrix, Vector> multigrid(
+                fine_smoother, coarse_smoother, direct_solver, num_levels);  // Monotone
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
@@ -188,11 +198,12 @@ namespace utopia {
             multigrid.max_it(40);
             multigrid.pre_smoothing_steps(3);
             multigrid.post_smoothing_steps(3);
-            multigrid.verbose(false);
+            // multigrid.verbose(true);
+
             // multigrid.mg_type(2);
 
             // This should be somewhere else...
-            multigrid.set_QR(Q, R);
+            // multigrid.set_QR(Q, R);  // QR
             multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
 
             multigrid.solve(QtAQ, Qtrhs, Qtx);
@@ -218,7 +229,7 @@ namespace utopia {
             if (mpi_world_size() > 1) return;
 
             print_backend_info();
-            UTOPIA_RUN_TEST(ProjectedGS_QR);
+            UTOPIA_RUN_TEST(MG_QR_test);
         }
 
         QPSolverTest() : n(20) {}
@@ -253,30 +264,87 @@ namespace utopia {
         }
     };
 
-    // template<class Matrix, class Vector>
-    // class ProjectedGaussSeidelNewTest {
-    // public:
-    //     void run()
-    //     {
-    //         //FIXME
-    //        UTOPIA_RUN_TEST(pg_new_test);
-    //     }
+    template <class Matrix, class Vector>
+    class MonotoneMGTest {
+    public:
+        using Traits = utopia::Traits<Matrix>;
+        using Scalar = typename Traits::Scalar;
+        using SizeType = typename Traits::SizeType;
+        using Comm = typename Traits::Communicator;
 
-    //     template<class QPSolver>
-    //     void run_qp_solver(QPSolver &qp_solver) const {
-    //         QPSolverTestProblem<Matrix, Vector>::run(n, verbose, qp_solver,
-    //         true);
-    //     }
+        static void print_backend_info() {
+            if (Utopia::instance().verbose() && mpi_world_rank() == 0) {
+                utopia::out() << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
 
-    //     void pg_new_test()
-    //     {
-    //         ProjectedGaussSeidelNew<Matrix, Vector> pgs;
-    //         run_qp_solver(pgs);
-    //     }
+        void monotone_mg_test() {
+            const std::string data_path = Utopia::instance().get("data_path");
 
-    //     SizeType n = 20;
-    //     bool verbose = true;
-    // };
+            const static bool verbose = false;
+            const static bool use_masks = false;
+
+            int n_levels = 6;
+            int n_coarse = 50;
+
+            using ProblemType = utopia::Poisson1D<Matrix, Vector>;
+            MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
+            auto funs = ml_problem.get_functions();
+
+            Vector x, g;
+            Matrix H;
+
+            funs.back()->get_eq_constrains_values(x);
+            funs.back()->gradient(x, g);
+            funs.back()->hessian(x, H);
+
+            auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+
+            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            // auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            // auto coarse_smoother = std::make_shared<KSPSolver<Matrix, Vector>>();
+            // coarse_smoother->pc_type("bjacobi");
+            // coarse_smoother->ksp_type("cg");
+
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+
+            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, n_levels);
+
+            std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
+            interpolation_operators.resize(n_levels - 1);
+
+            auto &transfers = ml_problem.get_transfer();
+            for (SizeType i = 0; i < n_levels - 2; ++i) {
+                interpolation_operators[i] = transfers[i];
+            }
+
+            auto t = std::static_pointer_cast<MatrixTransfer<Matrix, Vector>>(transfers[n_levels - 2]);
+            interpolation_operators[n_levels - 2] =
+                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(t->I()));
+
+            Vector lower_bound(layout(g), -0.8), upper_bound(layout(g), 200.);
+
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.max_it(40);
+            multigrid.pre_smoothing_steps(5);
+            multigrid.post_smoothing_steps(5);
+            multigrid.verbose(verbose);
+            multigrid.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
+            multigrid.update(make_ref(H));
+
+            // avoids flip-floping of active nodes (and Galerkin assembly when nothing changes)
+            multigrid.active_set().tol(1e-15);
+            multigrid.apply(g, x);
+
+            // disp(x);
+        }
+
+        void run() {
+            print_backend_info();
+            UTOPIA_RUN_TEST(monotone_mg_test);
+        }
+    };
 
     static void qp_solver() {
 #ifdef UTOPIA_WITH_PETSC
@@ -284,6 +352,7 @@ namespace utopia {
         QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
 
         PQPSolverTest<PetscMatrix, PetscVector>().run();
+        MonotoneMGTest<PetscMatrix, PetscVector>().run();
         // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
 
 #endif  // UTOPIA_WITH_PETSC

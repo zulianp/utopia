@@ -308,9 +308,9 @@ namespace utopia {
 
             eig(A, e, V);
 
-            for (int i = 0; i < 2; ++i) {
-                std::cout << e[i] << std::endl;
-            }
+            // for (int i = 0; i < 2; ++i) {
+            //     std::cout << e[i] << std::endl;
+            // }
 
             // Scalar data[9] = {0.020000000000000,
             //                   0.000001250000000,

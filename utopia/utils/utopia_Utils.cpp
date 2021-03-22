@@ -93,9 +93,9 @@ namespace utopia {
         if (pFile != nullptr && mpi_world_rank() == 0) {
             for (std::vector<double>::size_type i = 0; i < vars.size(); i++) {
                 if (i < vars.size() - 1)
-                    fprintf(pFile, "%g,", vars[i]);
+                    fprintf(pFile, "%.12e,", vars[i]);
                 else
-                    fprintf(pFile, "%g", vars[i]);
+                    fprintf(pFile, "%.12e", vars[i]);
             }
             fprintf(pFile, "\n");
         }
