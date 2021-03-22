@@ -140,11 +140,16 @@ namespace utopia {
 
         Write<PetscMatrix> w(matrix);
 
-        const SizeType nn = element_matrices.extent(1);
+        const int n_var = space.n_var();
+        const SizeType n_dofs = element_matrices.extent(1);
+        const SizeType nn = n_dofs / n_var;
+
         IndexArray_t idx(nn);
         ScalarArray_t val(nn * nn);
 
         Size_t n_local_nodes = space.mesh().n_local_nodes();
+
+        const bool is_block = matrix.is_block();
 
         for (const auto &ib : elem_buckets) {
             const Bucket_t &b = *ib;
@@ -164,12 +169,24 @@ namespace utopia {
                 for (Size_t i = 0; i < nn; ++i) {
                     idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
 
-                    for (Size_t j = 0; j < nn; ++j) {
-                        val[i * nn + j] = element_matrices(elem_idx, i, j);
+                    for (int di = 0; di < n_var; ++di) {
+                        const Size_t idx_i = i * n_var + di;
+
+                        for (Size_t j = 0; j < nn; ++j) {
+                            for (int dj = 0; dj < n_var; ++dj) {
+                                const Size_t idx_j = j * n_var + dj;
+
+                                val[idx_i * n_dofs + idx_j] = element_matrices(elem_idx, idx_i, idx_j);
+                            }
+                        }
                     }
                 }
 
-                matrix.add_matrix(idx, idx, val);
+                if (is_block) {
+                    matrix.add_matrix_blocked(idx, idx, val);
+                } else {
+                    matrix.add_matrix(idx, idx, val);
+                }
             }
         }
     }

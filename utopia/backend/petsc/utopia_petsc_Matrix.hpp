@@ -680,6 +680,19 @@ namespace utopia {
                                      ADD_VALUES));
         }
 
+        template <class Index, class Values>
+        void add_matrix_blocked(const Index &rows, const Index &cols, const Values &values) {
+            // assert(rows.size() * cols.size() == values.size());
+
+            check_error(MatSetValuesBlocked(raw_type(),
+                                            static_cast<PetscInt>(rows.size()),
+                                            &rows[0],
+                                            static_cast<PetscInt>(cols.size()),
+                                            &cols[0],
+                                            &values[0],
+                                            ADD_VALUES));
+        }
+
         void add_matrix(const std::vector<SizeType> &rows,
                         const std::vector<SizeType> &cols,
                         const std::vector<Scalar> &values);

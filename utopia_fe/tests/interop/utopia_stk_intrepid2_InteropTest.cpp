@@ -45,7 +45,7 @@ void poisson_problem() {
     auto fe_ptr = std::make_shared<FE_t>();
     create_fe(space, *fe_ptr, 2);
 
-    LaplaceOperator<Scalar_t> lapl{1.0};
+    LaplaceOperator<Scalar_t> lapl{0.5};
     utopia::intrepid2::Assemble<LaplaceOperator<Scalar_t>> assembler(lapl, fe_ptr);
     assembler.init();
 
@@ -73,9 +73,9 @@ void poisson_problem() {
     // c.stop();
     // std::cout << c << std::endl;
 
-    // std::ofstream os("prova.txt");
-    // assembler.describe(os);
-    // os.close();
+    std::ofstream os("prova.txt");
+    assembler.describe(os);
+    os.close();
 }
 
 void interop_stk_intrepid2() { UTOPIA_RUN_TEST(poisson_problem); }

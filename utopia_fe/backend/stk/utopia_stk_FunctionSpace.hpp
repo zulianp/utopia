@@ -35,6 +35,7 @@ namespace utopia {
 
             SizeType n_dofs() const;
             SizeType n_local_dofs() const;
+            int n_var() const;
 
             void create_vector(Vector &v) const;
             void create_local_vector(Vector &v) const;

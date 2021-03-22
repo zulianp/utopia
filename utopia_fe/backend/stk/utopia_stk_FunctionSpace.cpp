@@ -24,6 +24,7 @@ namespace utopia {
                 std::string name;
                 double value;
                 int set_id{-1};
+                int component{0};
 
                 Condition() = default;
                 Condition(std::string name, double value) : name(std::move(name)), value(value) {}
@@ -32,6 +33,7 @@ namespace utopia {
                     in.get("name", name);
                     in.get("value", value);
                     in.get("set_id", set_id);
+                    in.get("component", component);
                 }
             };
 
@@ -173,6 +175,8 @@ namespace utopia {
             return impl_->mesh->n_local_nodes() * impl_->n_var;
         }
 
+        int FunctionSpace::n_var() const { return impl_->n_var; }
+
         void FunctionSpace::create_vector(Vector &v) const { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
 
         void FunctionSpace::create_local_vector(Vector &v) const {
@@ -270,6 +274,8 @@ namespace utopia {
 
             auto v_view = local_view_device(v);
 
+            int nv = n_var();
+
             for (auto &bc : impl_->dirichlet_boundary.conditions) {
                 auto *part = meta_data.get_part(bc.name);
                 if (part) {
@@ -282,7 +288,7 @@ namespace utopia {
                         for (Bucket_t::size_type k = 0; k < length; ++k) {
                             auto node = b[k];
                             auto idx = utopia::stk::convert_entity_to_index(node);
-                            v_view.set(idx, bc.value);
+                            v_view.set(idx * nv + bc.component, bc.value);
                         }
                     }
                 }

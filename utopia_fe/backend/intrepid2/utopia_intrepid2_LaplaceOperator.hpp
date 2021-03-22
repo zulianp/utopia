@@ -37,6 +37,7 @@ namespace utopia {
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using Op = utopia::LaplaceOperator<DiffusionCoefficient>;
+            using ExecutionSpace = typename FE::ExecutionSpace;
 
             Assemble(Op op, const std::shared_ptr<FE> &fe) : op_(std::move(op)), fe_(fe) {}
 
@@ -52,7 +53,16 @@ namespace utopia {
                 FunctionSpaceTools::template integrate<Scalar>(element_matrices_, fe_->grad, grad_x_measure);
 
                 // Only works if coeff is a scalar
-                // KokkosBlas::scal(element_matrices_, op_.coeff, element_matrices_);
+                {
+                    auto em = element_matrices_;
+                    auto c = op_.coeff;
+
+                    Kokkos::parallel_for(
+                        "scale_with_coeff",
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
+                            {0, 0, 0}, {em.extent(0), em.extent(1), em.extent(2)}),
+                        KOKKOS_LAMBDA(const int &i0, const int &i1, const int &i2) { em(i0, i1, i2) *= c; });
+                }
             }
 
             void describe(std::ostream &os) const override {
