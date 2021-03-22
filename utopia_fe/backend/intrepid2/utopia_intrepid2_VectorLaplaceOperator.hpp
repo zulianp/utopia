@@ -1,28 +1,27 @@
-#ifndef UTOPIA_INTREPID2_LINEAR_ELASTICITY_HPP
-#define UTOPIA_INTREPID2_LINEAR_ELASTICITY_HPP
+#ifndef UTOPIA_INTREPID2_VECTOR_LAPLACE_OPERATOR_HPP
+#define UTOPIA_INTREPID2_VECTOR_LAPLACE_OPERATOR_HPP
 
 #include "utopia_intrepid2_LaplaceOperator.hpp"
 
 #include "utopia_Views.hpp"
 
 namespace utopia {
-    template <int Dim, class FirstLameParameter, class ShearModulus = FirstLameParameter>
-    class LinearElasticity {
+    template <int Dim, class Ceofficient>
+    class VectorLaplaceOperator {
     public:
-        FirstLameParameter lambda{1.0};
-        ShearModulus mu{1.0};
+        Ceofficient coeff{1.0};
     };
 
     namespace intrepid2 {
 
-        template <int Dim, class FirstLameParameter, class ShearModulus, typename Scalar>
-        class Assemble<LinearElasticity<Dim, FirstLameParameter, ShearModulus>, Scalar> : public Describable {
+        template <int Dim, typename Ceofficient, typename Scalar>
+        class Assemble<VectorLaplaceOperator<Dim, Ceofficient>, Scalar> : public Describable {
         public:
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Op = utopia::LinearElasticity<Dim, FirstLameParameter, ShearModulus>;
+            using Op = utopia::VectorLaplaceOperator<Dim, Ceofficient>;
             using ExecutionSpace = typename FE::ExecutionSpace;
 
             Assemble(Op op, const std::shared_ptr<FE> &fe) : op_(std::move(op)), fe_(fe) {}
@@ -38,39 +37,38 @@ namespace utopia {
                 // Only works if coeff is a scalar
                 {
                     auto em = element_matrices_;
-                    auto mu = op_.mu;
-                    auto lambda = op_.lambda;
+                    auto coeff = op_.coeff;
                     auto grad = fe_->grad;
-                    auto mux2 = mu * 2;
                     auto measure = fe_->measure;
 
                     Kokkos::parallel_for(
-                        "Assemble<LinearElasticity>::init",
+                        "Assemble<VectorLaplaceOperator>::init",
                         Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
                             {0, 0, 0}, {static_cast<int>(em.extent(0)), num_fields, num_fields}),
                         KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
-                            StaticMatrix<Scalar, Dim, Dim> strain_i;
-                            StaticMatrix<Scalar, Dim, Dim> strain_j;
+                            StaticMatrix<Scalar, Dim, Dim> grad_i;
+                            StaticMatrix<Scalar, Dim, Dim> grad_j;
 
                             assert((Dim == 1 || &grad(cell, i, j, 1) - &grad(cell, i, j, 0) == 1UL) &&
                                    "spatial dimension must be contiguos");
 
+                            // grad: num_cells, n_fun, num_qp, spatial_dimension
+                            // measure: num_cells, num_qp;
+
+                            // needs loop over quadrature points and spatial_dim
                             for (int qp = 0; qp < n_qp; ++qp) {
-                                auto dX = measure(cell, qp);
+                                auto coeff_x_dX = coeff * measure(cell, qp);
 
                                 for (int di = 0; di < Dim; ++di) {
-                                    make_strain(di, &grad(cell, i, qp, 0), strain_i);
-                                    const Scalar trace_i = trace(strain_i);
+                                    make_tensor_grad(di, &grad(cell, i, qp, 0), grad_i);
                                     auto dof_i = i * Dim + di;
 
                                     for (int dj = 0; dj < Dim; ++dj) {
                                         auto dof_j = j * Dim + dj;
 
-                                        make_strain(dj, &grad(cell, j, qp, 0), strain_j);
+                                        make_tensor_grad(dj, &grad(cell, j, qp, 0), grad_j);
 
-                                        const Scalar val =
-                                            (mux2 * inner(strain_i, strain_j) + lambda * trace_i * trace(strain_j)) *
-                                            dX;
+                                        const Scalar val = inner(grad_i, grad_j) * coeff_x_dX;
 
                                         em(cell, dof_i, dof_j) += val;
                                     }
@@ -80,16 +78,14 @@ namespace utopia {
                 }
             }
 
-            UTOPIA_INLINE_FUNCTION static void make_strain(const int dim,
-                                                           Scalar *grad,
-                                                           StaticMatrix<Scalar, Dim, Dim> &strain) {
-                strain.set(0.0);
+            UTOPIA_INLINE_FUNCTION static void make_tensor_grad(const int dim,
+                                                                Scalar *grad,
+                                                                StaticMatrix<Scalar, Dim, Dim> &tensor_grad) {
+                tensor_grad.set(0.0);
 
                 for (int i = 0; i < Dim; ++i) {
-                    strain(dim, i) = grad[i];
+                    tensor_grad(dim, i) = grad[i];
                 }
-
-                strain.symmetrize();
             }
 
             void describe(std::ostream &os) const override {
@@ -124,4 +120,4 @@ namespace utopia {
     }  // namespace intrepid2
 }  // namespace utopia
 
-#endif  // UTOPIA_INTREPID2_LINEAR_ELASTICITY_HPP
+#endif  // UTOPIA_INTREPID2_VECTOR_LAPLACE_OPERATOR_HPP

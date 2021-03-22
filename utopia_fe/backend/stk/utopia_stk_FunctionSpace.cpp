@@ -248,6 +248,8 @@ namespace utopia {
             IndexSet constrains;
             constrains.reserve(n_local_dofs());
 
+            const int nv = n_var();
+
             for (auto &bc : impl_->dirichlet_boundary.conditions) {
                 auto *part = meta_data.get_part(bc.name);
                 if (part) {
@@ -260,7 +262,7 @@ namespace utopia {
                         for (Bucket_t::size_type k = 0; k < length; ++k) {
                             auto node = b[k];
                             auto idx = utopia::stk::convert_entity_to_index(node);
-                            constrains.push_back(idx);
+                            constrains.push_back(idx * nv + bc.component);
                         }
                     }
                 }
@@ -277,7 +279,7 @@ namespace utopia {
 
             auto v_view = local_view_device(v);
 
-            int nv = n_var();
+            const int nv = n_var();
 
             for (auto &bc : impl_->dirichlet_boundary.conditions) {
                 auto *part = meta_data.get_part(bc.name);

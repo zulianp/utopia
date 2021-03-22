@@ -12,6 +12,7 @@
 
 #include "utopia_intrepid2_LaplaceOperator.hpp"
 #include "utopia_intrepid2_LinearElasticity.hpp"
+#include "utopia_intrepid2_VectorLaplaceOperator.hpp"
 
 using namespace utopia;
 
@@ -23,10 +24,10 @@ public:
     using Vector_t = Traits<FunctionSpace_t>::Vector;
     using FE_t = utopia::intrepid2::FE<Scalar_t>;
 
-    bool save_output{true};
+    bool save_output{false};
     bool export_tensors{false};
-    bool verbose{true};
-    Scalar_t rtol{1e-5};
+    bool verbose{false};
+    Scalar_t rtol{1e-6};
 
     template <class Op>
     void assemble_and_solve(const std::string &name, FunctionSpace_t &space, Op &op) {
@@ -39,6 +40,10 @@ public:
         Matrix_t mat;
         local_to_global(space, assembler.element_matrices(), mat);
 
+        Vector_t row_sum = sum(mat, 1);
+        Scalar_t sum_row_sum = sum(abs(row_sum));
+        utopia_test_assert(approxeq(sum_row_sum, 0.0, 1e-9));
+
         Vector_t rhs, x;
         space.create_vector(rhs);
 
@@ -46,26 +51,41 @@ public:
 
         space.apply_constraints(mat, rhs);
 
-        ConjugateGradient<Matrix_t, Vector_t> solver;
-        auto prec = std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>();
-        solver.set_preconditioner(prec);
+        ////////////////////////////////////////////////////////////
+
+        if (export_tensors) {
+            write(name + ".m", mat);
+            write(name + "_rhs.m", rhs);
+
+            std::ofstream os(name + ".txt");
+            assembler.describe(os);
+            os.close();
+        }
+
+        ////////////////////////////////////////////////////////////
+
+        KSPSolver<Matrix_t, Vector_t> solver;
+        solver.pc_type("hypre");
+        // solver.pc_type(PCILU);
+
+        // if (mat.is_block()) {
+        //     solver.factor_set_pivot_in_blocks(true);
+        // }
+
         solver.rtol(rtol);
         solver.verbose(verbose);
 
         utopia_test_assert(solver.solve(mat, rhs, x));
 
+        ////////////////////////////////////////////////////////////
+
         if (save_output) {
             space.write(name + ".e", x);
+            // space.write(name + ".e", rhs);
         }
 
         if (export_tensors) {
-            write(name + ".m", mat);
-            write(name + "_rhs.m", rhs);
             write(name + "_x.m", x);
-
-            std::ofstream os(name + ".txt");
-            assembler.describe(os);
-            os.close();
         }
     }
 
@@ -83,7 +103,7 @@ public:
         assemble_and_solve("poisson", space, lapl);
     }
 
-    void elasticity_problem() {
+    void vector_poisson_problem() {
         auto params = param_list(
             param("n_var", 3),
             param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
@@ -91,12 +111,32 @@ public:
         FunctionSpace_t space;
         space.read(params);
         space.add_dirichlet_boundary_condition("inlet", 1.0, 0);
-        space.add_dirichlet_boundary_condition("inlet", 0.0, 1);
-        space.add_dirichlet_boundary_condition("inlet", 0.0, 2);
+        space.add_dirichlet_boundary_condition("inlet", 2.0, 1);
+        space.add_dirichlet_boundary_condition("inlet", 3.0, 2);
 
         space.add_dirichlet_boundary_condition("outlet", -1.0, 0);
+        space.add_dirichlet_boundary_condition("outlet", -2.0, 1);
+        space.add_dirichlet_boundary_condition("outlet", -3.0, 2);
+
+        VectorLaplaceOperator<3, Scalar_t> lapl{1.0};
+
+        assemble_and_solve("vector_poisson", space, lapl);
+    }
+
+    void elasticity_problem() {
+        auto params = param_list(
+            param("n_var", 3),
+            param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
+
+        FunctionSpace_t space;
+        space.read(params);
+        space.add_dirichlet_boundary_condition("inlet", -0.005, 0);
+        space.add_dirichlet_boundary_condition("inlet", 0.0, 1);
+        space.add_dirichlet_boundary_condition("inlet", 0.001, 2);
+
+        space.add_dirichlet_boundary_condition("outlet", 0.005, 0);
         space.add_dirichlet_boundary_condition("outlet", 0.0, 1);
-        space.add_dirichlet_boundary_condition("outlet", 0.0, 2);
+        space.add_dirichlet_boundary_condition("outlet", -0.001, 2);
 
         LinearElasticity<3, Scalar_t> linear_elasticity{1.0, 1.0};
 
@@ -105,6 +145,7 @@ public:
 
     void run() {
         UTOPIA_RUN_TEST(poisson_problem);
+        UTOPIA_RUN_TEST(vector_poisson_problem);
         UTOPIA_RUN_TEST(elasticity_problem);
     }
 };
