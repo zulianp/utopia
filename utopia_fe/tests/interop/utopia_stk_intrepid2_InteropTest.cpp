@@ -23,7 +23,7 @@ public:
     using Vector_t = Traits<FunctionSpace_t>::Vector;
     using FE_t = utopia::intrepid2::FE<Scalar_t>;
 
-    bool save_output{false};
+    bool save_output{true};
     bool export_tensors{false};
     bool verbose{true};
     Scalar_t rtol{1e-5};
@@ -78,7 +78,7 @@ public:
         space.add_dirichlet_boundary_condition("inlet", 1.0);
         space.add_dirichlet_boundary_condition("outlet", -1.0);
 
-        LaplaceOperator<Scalar_t> lapl{0.5};
+        LaplaceOperator<Scalar_t> lapl{1.0};
 
         assemble_and_solve("poisson", space, lapl);
     }
@@ -98,14 +98,14 @@ public:
         space.add_dirichlet_boundary_condition("outlet", 0.0, 1);
         space.add_dirichlet_boundary_condition("outlet", 0.0, 2);
 
-        LinearElasticity<3, Scalar_t> linear_elasticity{0.5};
+        LinearElasticity<3, Scalar_t> linear_elasticity{1.0, 1.0};
 
         assemble_and_solve("poisson", space, linear_elasticity);
     }
 
     void run() {
         UTOPIA_RUN_TEST(poisson_problem);
-        // UTOPIA_RUN_TEST(elasticity_problem);
+        UTOPIA_RUN_TEST(elasticity_problem);
     }
 };
 

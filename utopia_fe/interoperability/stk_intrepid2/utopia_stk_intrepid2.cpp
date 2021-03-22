@@ -145,7 +145,7 @@ namespace utopia {
         const SizeType nn = n_dofs / n_var;
 
         IndexArray_t idx(nn);
-        ScalarArray_t val(nn * nn);
+        ScalarArray_t val(n_dofs * n_dofs);
 
         Size_t n_local_nodes = space.mesh().n_local_nodes();
 

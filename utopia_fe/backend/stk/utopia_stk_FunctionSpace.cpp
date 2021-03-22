@@ -84,6 +84,7 @@ namespace utopia {
 
                         Scalar *points = (Scalar *)::stk::mesh::field_data(*field, node);
                         auto n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
+                        assert(n_comp == n_var);
 
                         for (int d = 0; d < n_comp; ++d) {
                             points[d] = v_view.get(idx * n_comp + d);
@@ -113,8 +114,9 @@ namespace utopia {
             ::stk::mesh::Field<Scalar> &field =
                 meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, "output", impl_->n_var);
 
-            const std::vector<Scalar> init(impl_->n_var, 1);
-            ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), impl_->n_var, init.data());
+            // const std::vector<Scalar> init(impl_->n_var, 1);
+            // ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), impl_->n_var, init.data());
+            ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), impl_->n_var, nullptr);
             impl_->vector_to_nodal_field("output", x);
 
             try {
