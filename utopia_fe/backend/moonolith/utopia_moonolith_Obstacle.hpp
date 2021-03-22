@@ -23,8 +23,8 @@ namespace utopia {
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
 
-            bool init_obstacle(const std::shared_ptr<Mesh> &obstacle_mesh);
-            bool assemble(FunctionSpace &space);
+            bool init_obstacle(const Mesh &obstacle_mesh);
+            bool assemble(const FunctionSpace &space);
             void transform(const Matrix &in, Matrix &out);
             void transform(const Vector &in, Vector &out);
             void inverse_transform(const Vector &in, Vector &out);

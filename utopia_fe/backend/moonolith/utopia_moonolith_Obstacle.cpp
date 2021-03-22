@@ -3,6 +3,8 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_moonolith_ConvertTensor.hpp"
+
 #include "par_moonolith_instance.hpp"
 
 #include "moonolith_affine_transform.hpp"
@@ -93,13 +95,13 @@ namespace utopia {
                 Matrix mass_matrix_x, trafo_x;
                 Vector gap_x;
 
-                convert(buffers.mass_matrix, mass_matrix_x);
-                convert(buffers.trafo, trafo_x);
+                convert(buffers.mass_matrix.get(), mass_matrix_x);
+                convert(buffers.trafo.get(), trafo_x);
                 tensorize(trafo_x, dim, out.basis_trafo);
 
-                convert(buffers.gap, gap_x);
-                convert(buffers.normal, out.normals);
-                convert(buffers.is_contact, out.is_contact);
+                convert(buffers.gap.get(), gap_x);
+                convert(buffers.normal.get(), out.normals);
+                convert(buffers.is_contact.get(), out.is_contact);
 
                 Vector mass_vector = sum(mass_matrix_x, 1);
 
@@ -130,7 +132,7 @@ namespace utopia {
             }
 
             virtual bool init(const Mesh &mesh) = 0;
-            virtual bool assemble(FunctionSpace &space, const Params &params, Output &output) = 0;
+            virtual bool assemble(const FunctionSpace &space, const Params &params, Output &output) = 0;
             virtual void normalize(Vector &normal) = 0;
             virtual void build_orthogonal_transformation(const Vector &is_contact,
                                                          const Vector &normal,
@@ -212,7 +214,7 @@ namespace utopia {
                 }
             }
 
-            bool assemble(FunctionSpace &space, const Params &params, Output &output) override {
+            bool assemble(const FunctionSpace &space, const Params &params, Output &output) override {
                 std::shared_ptr<MoonolithSpace_t> space_d;
                 if (space.mesh().manifold_dimension() == Dim - 1) {
                     space_d = space.raw_type<Dim>();
@@ -226,7 +228,7 @@ namespace utopia {
                 obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
                 obstacle->assemble(params.tags, *space_d);
 
-                this->finalize_tensors(output);
+                this->finalize_tensors(Dim, obstacle->buffers(), output);
                 return true;
             }
 
@@ -254,7 +256,7 @@ namespace utopia {
             }
 
             std::unique_ptr<MoonolithObstacle_t> obstacle;
-            std::unique_ptr<MoonolithMesh_t> obstacle_mesh;
+            std::shared_ptr<MoonolithMesh_t> obstacle_mesh;
         };
 
         Obstacle::Obstacle() : params_(utopia::make_unique<Params>()), output_(utopia::make_unique<Output>()) {}
@@ -265,9 +267,17 @@ namespace utopia {
 
         void Obstacle::describe(std::ostream &os) const {}
 
-        bool Obstacle::init_obstacle(const std::shared_ptr<Mesh> &obstacle_mesh) {}
+        bool Obstacle::init_obstacle(const Mesh &obstacle_mesh) {
+            if (obstacle_mesh.spatial_dimension() == 3) {
+                impl_ = utopia::make_unique<ImplD<3>>();
+                impl_->init(obstacle_mesh);
+                return true;
+            } else {
+                return false;
+            }
+        }
 
-        bool Obstacle::assemble(FunctionSpace &space) {}
+        bool Obstacle::assemble(const FunctionSpace &space) { return impl_->assemble(space, *params_, *output_); }
 
         void Obstacle::transform(const Matrix &in, Matrix &out) {
             out = transpose(output().orthogonal_trafo) * in * output().orthogonal_trafo;
