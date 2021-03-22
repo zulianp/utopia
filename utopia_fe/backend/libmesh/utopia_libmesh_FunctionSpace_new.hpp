@@ -55,6 +55,8 @@ namespace utopia {
             inline const Comm &comm() const { return mesh().comm(); }
 
             libMesh::EquationSystems &raw_type();
+            const libMesh::EquationSystems &raw_type() const;
+            const libMesh::DofMap &raw_type_dof_map() const;
 
             // The binary is private, so do not try to use it
             std::shared_ptr<FunctionSpaceWrapper> wrapper();
@@ -74,6 +76,8 @@ namespace utopia {
 
             void create_matrix(Matrix &mat) const;
             void create_vector(Vector &vec) const;
+
+            void apply_constraints(Matrix &mat, Vector &vec) const;
 
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;

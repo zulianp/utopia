@@ -13,6 +13,13 @@ if(UTOPIA_ENABLE_MOONOLITH)
         list(APPEND INTEROP_MODULES moonolith_stk)
         set(INTEROP_EXISTS TRUE)
     endif()
+
+    if(UTOPIA_ENABLE_LIBMESH)
+        list(APPEND INTEROP_DEP utopia_moonolith utopia_fe)
+        list(APPEND INTEROP_MODULES moonolith_libmesh)
+        set(INTEROP_EXISTS TRUE)
+    endif()
+
 endif()
 
 if(UTOPIA_ENABLE_STK)

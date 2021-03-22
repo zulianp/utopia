@@ -16,7 +16,7 @@
 
 namespace utopia {
 
-    class Intersector : public moonolith::OpenCLAdapter {
+    class Intersector : public ::moonolith::OpenCLAdapter {
     public:
         // I do not know why the compiler wants this...
         template <typename T>

@@ -9,6 +9,13 @@ if(ParMoonolith_FOUND)
         TRUE
         PARENT_SCOPE)
 
+    install(
+        TARGETS utopia_moonolith
+        EXPORT UtopiaMoonolithTargets
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+
     target_link_libraries(utopia_moonolith PUBLIC ParMoonolith::par_moonolith
                                                   Utopia::utopia)
 

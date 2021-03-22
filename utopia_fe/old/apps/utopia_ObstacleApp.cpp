@@ -1,4 +1,5 @@
-#include "utopia_ObstacleApp.hpp"
+
+#include "utopia_Main.hpp"
 
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIFunctionSpace.hpp"
@@ -16,7 +17,7 @@
 #include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
 #include "utopia_petsc_DILUAlgorithm.hpp"
 
-#include "utopia_Obstacle.hpp"
+#include "utopia_libmesh_Obstacle.hpp"
 
 #include "libmesh/boundary_mesh.h"
 #include "libmesh/exodusII_io.h"
@@ -25,10 +26,10 @@
 
 namespace utopia {
 
-    inline void write(const Path &path, libMesh::MeshBase &mesh) {
-        std::cout << "Writing mesh at " << path.to_string() << std::endl;
-        libMesh::ExodusII_IO(mesh).write(path.to_string());
-    }
+    // inline void write(const Path &path, libMesh::MeshBase &mesh) {
+    //     std::cout << "Writing mesh at " << path.to_string() << std::endl;
+    //     libMesh::ExodusII_IO(mesh).write(path.to_string());
+    // }
 
     class ObstacleProblem : public Configurable {
     public:
@@ -38,24 +39,26 @@ namespace utopia {
         using ForcingFunctionT = utopia::UIForcingFunction<PFS, UVector>;
 
         void read(Input &in) override {
-            in.get("mesh", mesh);
             in.get("space", space);
 
             in.get("obstacle", obstacle_mesh);
             in.get("obstacle", params);
 
-            auto model = make_unique<MaterialT>(space.space());
-            auto forcing_function = make_unique<ForcingFunctionT>(space.space());
+            // hack_ = std::make_shared<LibMeshFunctionSpace>(space.raw_type(), 0);
+            // auto model = make_unique<MaterialT>(*hack_);
+            // auto forcing_function = make_unique<ForcingFunctionT>(space.space());
+            // in.get("model", *model);
+            // in.get("forcing-functions", *forcing_function);
 
-            in.get("model", *model);
-            in.get("forcing-functions", *forcing_function);
+            // assert(model->good());
 
-            assert(model->good());
+            // model_ =
+            //     std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(std::move(model),
+            //     std::move(forcing_function));
 
-            model_ =
-                std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(std::move(model), std::move(forcing_function));
+            // model_ = std::move(model);
 
-            int block_size = mesh.mesh().spatial_dimension();
+            int block_size = space.mesh().spatial_dimension();
             bool use_amg = true;
             in.get("use_amg", use_amg);
 
@@ -112,22 +115,26 @@ namespace utopia {
         }
 
         void run() {
-            obs.init(obstacle_mesh.mesh());
-            obs.assemble(mesh.mesh(), space.space()[0].dof_map(), params);
+            obs.set_params(params);
+            obs.init_obstacle(obstacle_mesh);
+            if (!obs.assemble(space)) {
+                Utopia::Abort();
+                return;
+            }
 
-            auto &dof_map = space.space()[0].dof_map();
+            // FIXME
+            auto &dof_map = space.raw_type_dof_map();
 
             UVector x, g, c;
             USparseMatrix H;
 
-            UIndexSet ghost_nodes;
-            convert(dof_map.get_send_list(), ghost_nodes);
-            x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), ghost_nodes);
+            space.create_vector(x);
             c = x;
 
             model_->assemble_hessian_and_gradient(x, H, g);
             g *= -1.0;
-            apply_boundary_conditions(dof_map, H, g);
+
+            space.apply_constraints(H, g);
 
             USparseMatrix H_c;
             UVector g_c(layout(x), 0.0), x_c(layout(x), 0.0);
@@ -135,17 +142,16 @@ namespace utopia {
             obs.transform(H, H_c);
             obs.transform(g, g_c);
 
-            auto constr = make_upper_bound_constraints(make_ref(obs.output().gap));
+            auto constr = make_upper_bound_constraints(make_ref(const_cast<UVector &>(obs.gap())));
             constr.fill_empty_bounds(layout(g_c));
             qp_solver_->set_box_constraints(constr);
 
             // Output
             {
-                write("obstacle.e", obstacle_mesh.mesh());
-                UVector gap_zeroed = e_mul(obs.output().is_contact, obs.output().gap);
-                write("obs_gap.e", space.space()[0], gap_zeroed);
-                write("obs_normals.e", space.space()[0], obs.output().normals);
-                write("obs_is_contact.e", space.space()[0], obs.output().is_contact);
+                obstacle_mesh.write("obstacle.e");
+                UVector gap_zeroed = e_mul(obs.is_contact(), obs.gap());
+                space.write("obs_gap.e", gap_zeroed);
+                space.write("obs_is_contact.e", obs.is_contact());
             }
 
             qp_solver_->solve(H_c, g_c, x_c);
@@ -153,28 +159,28 @@ namespace utopia {
             obs.inverse_transform(x_c, x);
 
             // Output
-            { write("obs_sol.e", space.space()[0], x); }
+            { space.write("obs_sol.e", x); }
         }
 
-        ObstacleProblem(libMesh::Parallel::Communicator &comm)
-            : mesh(comm), space(make_ref(mesh)), obstacle_mesh(comm) {}
+        ObstacleProblem() {}
 
     private:
-        UIMesh<libMesh::DistributedMesh> mesh;
-        UIFunctionSpace<FS> space;
+        utopia::libmesh::FunctionSpace space;
+        utopia::libmesh::Mesh obstacle_mesh;
+        utopia::libmesh::Obstacle::Params params;
+        utopia::libmesh::Obstacle obs;
 
-        UIMesh<libMesh::DistributedMesh> obstacle_mesh;
-
-        ObstacleParams params;
-        Obstacle obs;
-
+        // std::shared_ptr<LibMeshFunctionSpace> hack_;
         std::shared_ptr<ElasticMaterial<USparseMatrix, UVector>> model_;
         std::shared_ptr<QPSolver<USparseMatrix, UVector>> qp_solver_;
     };
 
-    void ObstacleApp::run(Input &in) {
-        ObstacleProblem obs(comm());
-        obs.read(in);
-        obs.run();
-    }
 }  // namespace utopia
+
+void obs(utopia::Input &in) {
+    utopia::ObstacleProblem obs;
+    obs.read(in);
+    obs.run();
+}
+
+UTOPIA_REGISTER_APP(obs);

@@ -40,6 +40,9 @@ namespace utopia {
 
             void unit_cube(const SizeType &nx = 10, const SizeType &ny = 10, const SizeType &nz = 10);
 
+            int manifold_dimension() const;
+            int spatial_dimension() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

@@ -251,7 +251,18 @@ namespace utopia {
             return *impl_->systems;
         }
 
+        const libMesh::EquationSystems &FunctionSpace::raw_type() const {
+            assert(impl_->systems);
+            return *impl_->systems;
+        }
+
+        const libMesh::DofMap &FunctionSpace::raw_type_dof_map() const {
+            return impl_->systems->get_system(MAIN_SYSTEM_ID).get_dof_map();
+        }
+
         void FunctionSpace::create_matrix(Matrix &mat) const {
+            UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::create_matrix");
+
             using IndexSet = Traits<Vector>::IndexSet;
 
             auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
@@ -265,9 +276,13 @@ namespace utopia {
             convert(dof_map.get_n_oz(), o_nnz);
 
             mat.sparse(ml, d_nnz, o_nnz);
+
+            UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::create_matrix");
         }
 
         void FunctionSpace::create_vector(Vector &vec) const {
+            UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::create_vector");
+
             using IndexSet = Traits<Vector>::IndexSet;
             auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
             auto &dof_map = sys.get_dof_map();
@@ -277,6 +292,52 @@ namespace utopia {
 
             auto vl = layout(comm(), dof_map.n_local_dofs(), dof_map.n_dofs());
             vec.ghosted(vl, index);
+
+            UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::create_vector");
+        }
+
+        void FunctionSpace::apply_constraints(Matrix &mat, Vector &vec) const {
+            UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::apply_constraints");
+
+            assert(!empty(mat));
+            assert(!empty(vec));
+
+            auto &dof_map = impl_->systems->get_system(MAIN_SYSTEM_ID).get_dof_map();
+
+            const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+            Size ls = local_size(mat);
+            Size s = size(mat);
+
+            Traits<Matrix>::IndexSet index;
+
+            Range rr = range(vec);
+
+            if (has_constaints) {
+                for (SizeType i = rr.begin(); i < rr.end(); ++i) {
+                    if (dof_map.is_constrained_dof(i)) {
+                        index.push_back(i);
+                    }
+                }
+            }
+
+            set_zero_rows(mat, index, 1.);
+
+            Write<Vector> w_v(vec);
+
+            if (has_constaints) {
+                libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+                Range r = range(vec);
+                for (SizeType i = r.begin(); i < r.end(); ++i) {
+                    if (dof_map.is_constrained_dof(i)) {
+                        auto valpos = rhs_values.find(i);
+                        vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+                    }
+                }
+            }
+
+            UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::apply_constraints");
         }
 
         std::shared_ptr<FunctionSpaceWrapper> FunctionSpace::wrapper() { return impl_; }

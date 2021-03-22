@@ -293,7 +293,7 @@ namespace utopia {
 
     template <int Dim>
     void l2_project_normal(const libMesh::FEBase &test_fe,
-                           const moonolith::Vector<double, Dim> &normal,
+                           const ::moonolith::Vector<double, Dim> &normal,
                            libMesh::DenseVector<libMesh::Real> &result) {
         const auto &phi = test_fe.get_phi();
         const auto &dx = test_fe.get_JxW();
@@ -354,7 +354,7 @@ namespace utopia {
     template <int Dim>
     void l2_project_normal_weighted_biorth(const libMesh::FEBase &test_fe,
                                            const libMesh::DenseMatrix<libMesh::Real> &weights,
-                                           const moonolith::Vector<double, Dim> &normal,
+                                           const ::moonolith::Vector<double, Dim> &normal,
 
                                            libMesh::DenseVector<libMesh::Real> &result) {
         const auto &phi = test_fe.get_phi();

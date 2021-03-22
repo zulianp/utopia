@@ -47,6 +47,7 @@ namespace utopia {
             };
 
             void set_params(const Params &params);
+            inline const Params &params() const { return *params_; }
 
         private:
             class Impl;

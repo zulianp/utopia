@@ -27,20 +27,21 @@
 namespace utopia {
 
     template <typename T, int Dim>
-    inline void make(const libMesh::Point &p, moonolith::Vector<T, Dim> &q) {
+    inline void make(const libMesh::Point &p, ::moonolith::Vector<T, Dim> &q) {
         for (int i = 0; i < Dim; ++i) {
             q[i] = p(i);
         }
     }
 
     template <typename T, int Dim>
-    inline void make(const libMesh::Elem &elem, moonolith::Line<T, Dim> &poly) {
+    inline void make(const libMesh::Elem &elem, ::moonolith::Line<T, Dim> &poly) {
         make(elem.node_ref(0), poly.p0);
         make(elem.node_ref(1), poly.p1);
     }
 
     template <typename T, int Dim>
-    inline void make_non_affine(const libMesh::Elem &elem, moonolith::Storage<moonolith::Vector<T, Dim>> &poly_line) {
+    inline void make_non_affine(const libMesh::Elem &elem,
+                                ::moonolith::Storage<::moonolith::Vector<T, Dim>> &poly_line) {
         const int n_nodes = elem.n_nodes();
 
         poly_line.resize(n_nodes);
@@ -66,12 +67,12 @@ namespace utopia {
     }
 
     template <typename T, int Dim>
-    inline void make_non_affine(const libMesh::Elem &elem, moonolith::PolyLine<T, Dim> &poly_line) {
+    inline void make_non_affine(const libMesh::Elem &elem, ::moonolith::PolyLine<T, Dim> &poly_line) {
         make_non_affine(elem, poly_line.points);
     }
 
     template <typename T, int Dim>
-    inline void make(const libMesh::Elem &elem, moonolith::Polygon<T, Dim> &poly) {
+    inline void make(const libMesh::Elem &elem, ::moonolith::Polygon<T, Dim> &poly) {
         assert(is_tri(elem.type()) || is_quad(elem.type()));
         auto n_nodes = is_tri(elem.type()) ? 3 : 4;
 
@@ -85,7 +86,7 @@ namespace utopia {
     }
 
     template <typename T, int Dim>
-    inline void make_non_affine(const libMesh::Elem &elem, moonolith::Polygon<T, Dim> &poly) {
+    inline void make_non_affine(const libMesh::Elem &elem, ::moonolith::Polygon<T, Dim> &poly) {
         assert(is_tri(elem.type()) || is_quad(elem.type()));
         auto n_corner_nodes = is_tri(elem.type()) ? 3 : 4;
         auto n_nodes = elem.n_nodes();
@@ -110,7 +111,7 @@ namespace utopia {
     }
 
     template <typename T>
-    inline void make_tetrahedron(const libMesh::Elem &elem, moonolith::Polyhedron<T> &poly) {
+    inline void make_tetrahedron(const libMesh::Elem &elem, ::moonolith::Polyhedron<T> &poly) {
         static const std::size_t n_nodes = 4;
 
         assert(elem.dim() == 3);
@@ -149,11 +150,11 @@ namespace utopia {
         poly.el_index[10] = 2;
         poly.el_index[11] = 3;
 
-        poly.type = moonolith::Polyhedron<T>::TET;
+        poly.type = ::moonolith::Polyhedron<T>::TET;
     }
 
     template <typename T>
-    void make_pyramid(const libMesh::Elem &elem, moonolith::Polyhedron<T> &poly) {
+    void make_pyramid(const libMesh::Elem &elem, ::moonolith::Polyhedron<T> &poly) {
         static const std::size_t n_nodes = 5;
         assert(elem.dim() == 3);
         assert(is_pyramid(elem.type()));
@@ -202,11 +203,11 @@ namespace utopia {
         poly.el_index[14] = 2;
         poly.el_index[15] = 1;
 
-        poly.type = moonolith::Polyhedron<T>::UNSTRUCTURED;
+        poly.type = ::moonolith::Polyhedron<T>::UNSTRUCTURED;
     }
 
     template <typename T>
-    void make_prism(const libMesh::Elem &elem, moonolith::Polyhedron<T> &poly) {
+    void make_prism(const libMesh::Elem &elem, ::moonolith::Polyhedron<T> &poly) {
         assert(elem.dim() == 3);
         assert(is_prism(elem.type()));
 
@@ -258,11 +259,11 @@ namespace utopia {
         poly.el_index[16] = 4;
         poly.el_index[17] = 3;
 
-        poly.type = moonolith::Polyhedron<T>::UNSTRUCTURED;
+        poly.type = ::moonolith::Polyhedron<T>::UNSTRUCTURED;
     }
 
     template <typename T>
-    void make_hex(const libMesh::Elem &elem, moonolith::Polyhedron<T> &poly) {
+    void make_hex(const libMesh::Elem &elem, ::moonolith::Polyhedron<T> &poly) {
         assert(elem.dim() == 3);
         assert(is_hex(elem.type()));
 
@@ -322,11 +323,11 @@ namespace utopia {
         poly.el_index[22] = 4;
         poly.el_index[23] = 5;
 
-        poly.type = moonolith::Polyhedron<T>::HEX;
+        poly.type = ::moonolith::Polyhedron<T>::HEX;
     }
 
     template <typename T>
-    inline void make(const libMesh::Elem &elem, moonolith::Polyhedron<T> &poly) {
+    inline void make(const libMesh::Elem &elem, ::moonolith::Polyhedron<T> &poly) {
         if (is_tet(elem.type())) {
             make_tetrahedron(elem, poly);
             return;
@@ -351,7 +352,7 @@ namespace utopia {
     }
 
     template <typename T, int Dim>
-    inline void normal(const libMesh::Elem &elem, moonolith::Vector<T, Dim> &nn) {
+    inline void normal(const libMesh::Elem &elem, ::moonolith::Vector<T, Dim> &nn) {
         using namespace libMesh;
         Point o, u, v, n;
 
@@ -380,10 +381,10 @@ namespace utopia {
 
     template <typename T, int Dim>
     inline void convert(const libMesh::QGauss &q_in,
-                        const moonolith::Vector<T, Dim> &point_shift,
+                        const ::moonolith::Vector<T, Dim> &point_shift,
                         const T &point_rescale,
                         const T &weight_rescale,
-                        moonolith::Quadrature<T, Dim> &q_out) {
+                        ::moonolith::Quadrature<T, Dim> &q_out) {
         const auto &p_in = q_in.get_points();
         const auto &w_in = q_in.get_weights();
 
@@ -404,8 +405,8 @@ namespace utopia {
     }
 
     template <typename T, int Dim>
-    inline void convert(const moonolith::Quadrature<T, Dim> &q_in,
-                        const moonolith::Vector<T, Dim> &point_shift,
+    inline void convert(const ::moonolith::Quadrature<T, Dim> &q_in,
+                        const ::moonolith::Vector<T, Dim> &point_shift,
                         const T &point_rescale,
                         const T &weight_rescale,
                         QMortar &q_out) {
@@ -432,19 +433,19 @@ namespace utopia {
     }
 
     template <typename T, int Dim>
-    inline void convert(const moonolith::Quadrature<T, Dim> &q_in, const T &weight_rescale, QMortar &q_out) {
-        static const moonolith::Vector<T, Dim> zero;
+    inline void convert(const ::moonolith::Quadrature<T, Dim> &q_in, const T &weight_rescale, QMortar &q_out) {
+        static const ::moonolith::Vector<T, Dim> zero;
         return convert(q_in, zero, 1., weight_rescale, q_out);
     }
 
     // inline void make_line_transform(
     //     const libMesh::Elem &elem,
-    //     moonolith::AffineTransform<double, 1, 2> &trafo)
+    //     ::moonolith::AffineTransform<double, 1, 2> &trafo)
     // {
     //     const auto &q0 = elem.node_ref(0);
     //     const auto &q1 = elem.node_ref(1);
 
-    //     moonolith::Vector<double, 2> p0, p1;
+    //     ::moonolith::Vector<double, 2> p0, p1;
 
     //     p0.x = q1(0);
     //     p0.y = q0(1);
@@ -457,13 +458,13 @@ namespace utopia {
 
     // inline void make_triangle_transform(
     //     const libMesh::Elem &elem,
-    //     moonolith::AffineTransform<double, 2, 3> &trafo)
+    //     ::moonolith::AffineTransform<double, 2, 3> &trafo)
     // {
     //     const auto &q0 = elem.node_ref(0);
     //     const auto &q1 = elem.node_ref(1);
     //     const auto &q2 = elem.node_ref(2);
 
-    //     moonolith::Vector<double, 3> p0, p1, p2;
+    //     ::moonolith::Vector<double, 3> p0, p1, p2;
 
     //     p0.x = q0(0);
     //     p0.y = q0(1);
@@ -480,15 +481,17 @@ namespace utopia {
     //     make(p0, p1, p2, trafo);
     // }
 
-    inline void make_transform(const libMesh::Elem &elem, std::shared_ptr<moonolith::Transform<double, 2, 3>> &trafo) {
+    inline void make_transform(const libMesh::Elem &elem,
+                               std::shared_ptr<::moonolith::Transform<double, 2, 3>> &trafo) {
         trafo = std::make_shared<Transform2>(elem);
     }
 
-    inline void make_transform(const libMesh::Elem &elem, std::shared_ptr<moonolith::Transform<double, 1, 2>> &trafo) {
+    inline void make_transform(const libMesh::Elem &elem,
+                               std::shared_ptr<::moonolith::Transform<double, 1, 2>> &trafo) {
         trafo = std::make_shared<Transform1>(elem);
     }
 
-    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 2, 2> &trafo) {
+    inline void make_transform(const libMesh::Elem &elem, ::moonolith::AffineTransform<double, 2, 2> &trafo) {
         libMesh::Point p0(0.0, 0.0, 0.0);
         libMesh::Point p1(1.0, 0.0, 0.0);
         libMesh::Point p2(0.0, 1.0, 0.0);
@@ -498,7 +501,7 @@ namespace utopia {
         p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p1);
         p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p2);
 
-        moonolith::Vector<double, 2> q0, q1, q2;
+        ::moonolith::Vector<double, 2> q0, q1, q2;
 
         q0.x = p0(0);
         q0.y = p0(1);
@@ -509,10 +512,10 @@ namespace utopia {
         q2.x = p2(0);
         q2.y = p2(1);
 
-        moonolith::make(q0, q1, q2, trafo);
+        ::moonolith::make(q0, q1, q2, trafo);
     }
 
-    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 3, 3> &trafo) {
+    inline void make_transform(const libMesh::Elem &elem, ::moonolith::AffineTransform<double, 3, 3> &trafo) {
         libMesh::Point p0(0.0, 0.0, 0.0);
         libMesh::Point p1(1.0, 0.0, 0.0);
         libMesh::Point p2(0.0, 1.0, 0.0);
@@ -524,7 +527,7 @@ namespace utopia {
         p2 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, p2);
         p3 = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem, p3);
 
-        moonolith::Vector<double, 3> q0, q1, q2, q3;
+        ::moonolith::Vector<double, 3> q0, q1, q2, q3;
 
         q0.x = p0(0);
         q0.y = p0(1);
@@ -542,10 +545,10 @@ namespace utopia {
         q3.y = p3(1);
         q3.z = p3(2);
 
-        moonolith::make(q0, q1, q2, q3, trafo);
+        ::moonolith::make(q0, q1, q2, q3, trafo);
     }
 
-    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 2, 3> &trafo) {
+    inline void make_transform(const libMesh::Elem &elem, ::moonolith::AffineTransform<double, 2, 3> &trafo) {
         libMesh::Point p0(0.0, 0.0);
         libMesh::Point p1(1.0, 0.0);
         libMesh::Point p2(0.0, 1.0);
@@ -555,7 +558,7 @@ namespace utopia {
         p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p1);
         p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, p2);
 
-        moonolith::Vector<double, 3> q0, q1, q2;
+        ::moonolith::Vector<double, 3> q0, q1, q2;
 
         q0.x = p0(0);
         q0.y = p0(1);
@@ -569,10 +572,10 @@ namespace utopia {
         q2.y = p2(1);
         q2.z = p2(2);
 
-        moonolith::make(q0, q1, q2, trafo);
+        ::moonolith::make(q0, q1, q2, trafo);
     }
 
-    inline void make_transform(const libMesh::Elem &elem, moonolith::AffineTransform<double, 1, 2> &trafo) {
+    inline void make_transform(const libMesh::Elem &elem, ::moonolith::AffineTransform<double, 1, 2> &trafo) {
         libMesh::Point p0(-1.0, 0.0);
         libMesh::Point p1(1.0, 0.0);
 
@@ -580,7 +583,7 @@ namespace utopia {
         p0 = libMesh::FE<1, libMesh::LAGRANGE>::map(&elem, p0);
         p1 = libMesh::FE<1, libMesh::LAGRANGE>::map(&elem, p1);
 
-        moonolith::Vector<double, 2> q0, q1;
+        ::moonolith::Vector<double, 2> q0, q1;
 
         q0.x = p0(0);
         q0.y = p0(1);
@@ -588,7 +591,7 @@ namespace utopia {
         q1.x = p1(0);
         q1.y = p1(1);
 
-        moonolith::make(q0, q1, trafo);
+        ::moonolith::make(q0, q1, trafo);
     }
 
     template <class E>
@@ -639,12 +642,12 @@ namespace utopia {
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Tri3<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Tri3<double, Dim> &out) {
         make_triangle_1(in, out);
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Tri6<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Tri6<double, Dim> &out) {
         make_triangle_2(in, out);
         out.set_affine(in.has_affine_map());
     }
@@ -706,12 +709,12 @@ namespace utopia {
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Quad4<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Quad4<double, Dim> &out) {
         make_quad_1(in, out);
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Quad8<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Quad8<double, Dim> &out) {
         make_quad_2(in, out);
         out.set_affine(in.has_affine_map());
     }
@@ -747,39 +750,39 @@ namespace utopia {
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Edge2<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Edge2<double, Dim> &out) {
         make_seg_1(in, out);
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Edge3<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Edge3<double, Dim> &out) {
         make_seg_2(in, out);
         out.set_affine(in.has_affine_map());
     }
 
     template <class E>
-    using LMS = moonolith::OwnedElemShape<E>;
+    using LMS = ::moonolith::OwnedElemShape<E>;
 
     template <int Dim>
-    std::unique_ptr<moonolith::Shape<double, Dim - 1, Dim>> make_shape(const libMesh::Elem &elem,
-                                                                       const libMesh::FEType &type);
+    std::unique_ptr<::moonolith::Shape<double, Dim - 1, Dim>> make_shape(const libMesh::Elem &elem,
+                                                                         const libMesh::FEType &type);
 
     template <>
-    inline std::unique_ptr<moonolith::Shape<double, 1, 2>> make_shape<2>(const libMesh::Elem &elem,
-                                                                         const libMesh::FEType &type) {
-        using moonolith::Edge2;
-        using moonolith::Edge3;
+    inline std::unique_ptr<::moonolith::Shape<double, 1, 2>> make_shape<2>(const libMesh::Elem &elem,
+                                                                           const libMesh::FEType &type) {
+        using ::moonolith::Edge2;
+        using ::moonolith::Edge3;
 
         if (is_edge(elem.type())) {
             if (type.order == 2) {
-                auto s = moonolith::make_unique<LMS<Edge3<double, 2>>>();
+                auto s = ::moonolith::make_unique<LMS<Edge3<double, 2>>>();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
             }
 
             if (type.order == 1) {
-                auto s = moonolith::make_unique<LMS<Edge2<double, 2>>>();
+                auto s = ::moonolith::make_unique<LMS<Edge2<double, 2>>>();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
@@ -792,24 +795,24 @@ namespace utopia {
     }
 
     template <>
-    inline std::unique_ptr<moonolith::Shape<double, 2, 3>> make_shape<3>(const libMesh::Elem &elem,
-                                                                         const libMesh::FEType &type) {
-        using moonolith::Quad4;
-        using moonolith::Quad8;
-        using moonolith::Quad9;
-        using moonolith::Tri3;
-        using moonolith::Tri6;
+    inline std::unique_ptr<::moonolith::Shape<double, 2, 3>> make_shape<3>(const libMesh::Elem &elem,
+                                                                           const libMesh::FEType &type) {
+        using ::moonolith::Quad4;
+        using ::moonolith::Quad8;
+        using ::moonolith::Quad9;
+        using ::moonolith::Tri3;
+        using ::moonolith::Tri6;
 
         if (is_tri(elem.type())) {
             if (type.order == 2) {
-                auto s = moonolith::make_unique<LMS<Tri6<double, 3>>>();
+                auto s = ::moonolith::make_unique<LMS<Tri6<double, 3>>>();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
             }
 
             if (type.order == 1) {
-                auto s = moonolith::make_unique<LMS<Tri3<double, 3>>>();
+                auto s = ::moonolith::make_unique<LMS<Tri3<double, 3>>>();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
@@ -818,14 +821,14 @@ namespace utopia {
         } else if (is_quad(elem.type())) {
             if (type.order == 2) {
                 if (elem.type() == libMesh::QUAD8) {
-                    auto s = moonolith::make_unique<LMS<Quad8<double, 3>>>();
+                    auto s = ::moonolith::make_unique<LMS<Quad8<double, 3>>>();
                     make_element(elem, s->elem());
                     s->init();
                     return s;
                 } else {
                     assert(false);
                     // assert( elem.type() == libMesh::QUAD8 );
-                    // auto s = moonolith::make_unique< LMS< Quad9<double, 3> > >();
+                    // auto s = ::moonolith::make_unique< LMS< Quad9<double, 3> > >();
                     // make_element(elem, s->elem());
                     // s->init();
                     // return s;
@@ -834,7 +837,7 @@ namespace utopia {
             }
 
             if (type.order == 1) {
-                auto s = moonolith::make_unique<LMS<Quad4<double, 3>>>();
+                auto s = ::moonolith::make_unique<LMS<Quad4<double, 3>>>();
                 make_element(elem, s->elem());
                 s->init();
                 return s;
@@ -851,20 +854,20 @@ namespace utopia {
     template <int CoDim>
     void make(const libMesh::Elem &elem,
               const libMesh::FEType &type,
-              std::shared_ptr<moonolith::Elem<double, 1, CoDim>> &e) {
-        using moonolith::Edge2;
-        using moonolith::Edge3;
+              std::shared_ptr<::moonolith::Elem<double, 1, CoDim>> &e) {
+        using ::moonolith::Edge2;
+        using ::moonolith::Edge3;
 
         if (is_edge(elem.type())) {
             if (type.order == 2) {
-                auto s = moonolith::make_unique<Edge3<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Edge3<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
             }
 
             if (type.order == 1) {
-                auto s = moonolith::make_unique<Edge2<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Edge2<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
@@ -878,22 +881,22 @@ namespace utopia {
     template <int CoDim>
     void make(const libMesh::Elem &elem,
               const libMesh::FEType &type,
-              std::shared_ptr<moonolith::Elem<double, 2, CoDim>> &e) {
-        using moonolith::Quad4;
-        using moonolith::Quad8;
-        using moonolith::Tri3;
-        using moonolith::Tri6;
+              std::shared_ptr<::moonolith::Elem<double, 2, CoDim>> &e) {
+        using ::moonolith::Quad4;
+        using ::moonolith::Quad8;
+        using ::moonolith::Tri3;
+        using ::moonolith::Tri6;
 
         if (is_tri(elem.type())) {
             if (type.order == 2) {
-                auto s = moonolith::make_unique<Tri6<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Tri6<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
             }
 
             if (type.order == 1) {
-                auto s = moonolith::make_unique<Tri3<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Tri3<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
@@ -901,14 +904,14 @@ namespace utopia {
 
         } else if (is_quad(elem.type())) {
             if (type.order == 2) {
-                auto s = moonolith::make_unique<Quad8<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Quad8<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
             }
 
             if (type.order == 1) {
-                auto s = moonolith::make_unique<Quad4<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Quad4<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
@@ -995,34 +998,34 @@ namespace utopia {
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Tet4<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Tet4<double, Dim> &out) {
         make_tet_1(in, out);
     }
 
     template <int Dim>
-    void make_element(const libMesh::Elem &in, moonolith::Tet10<double, Dim> &out) {
+    void make_element(const libMesh::Elem &in, ::moonolith::Tet10<double, Dim> &out) {
         make_tet_2(in, out);
     }
 
     template <int CoDim>
     void make(const libMesh::Elem &elem,
               const libMesh::FEType &type,
-              std::shared_ptr<moonolith::Elem<double, 3, CoDim>> &e) {
-        using moonolith::Hex27;
-        using moonolith::Hex8;
-        using moonolith::Tet10;
-        using moonolith::Tet4;
+              std::shared_ptr<::moonolith::Elem<double, 3, CoDim>> &e) {
+        using ::moonolith::Hex27;
+        using ::moonolith::Hex8;
+        using ::moonolith::Tet10;
+        using ::moonolith::Tet4;
 
         if (is_tet(elem.type())) {
             if (type.order == 2) {
-                auto s = moonolith::make_unique<Tet10<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Tet10<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
             }
 
             if (type.order == 1) {
-                auto s = moonolith::make_unique<Tet4<double, CoDim>>();
+                auto s = ::moonolith::make_unique<Tet4<double, CoDim>>();
                 make_element(elem, *s);
                 e = std::move(s);
                 return;
@@ -1030,14 +1033,14 @@ namespace utopia {
 
         } else if (is_hex(elem.type())) {
             // if(type.order == 2) {
-            //     auto s = moonolith::make_unique<Hexahedron<double, 2, CoDim>>();
+            //     auto s = ::moonolith::make_unique<Hexahedron<double, 2, CoDim>>();
             //     make_element(elem, *s);
             //     e = std::move(s);
             //     return;
             // }
 
             // if(type.order == 1) {
-            //     auto s = moonolith::make_unique<Hexahedron<double, 1, CoDim>>();
+            //     auto s = ::moonolith::make_unique<Hexahedron<double, 1, CoDim>>();
             //     make_element(elem, *s);
             //     e = std::move(s);
             //     return;
@@ -1047,13 +1050,13 @@ namespace utopia {
         assert(false);
     }
 
-    void convert_matrix(const moonolith::SparseMatrix<double> &in, USparseMatrix &out);
+    void convert_matrix(const ::moonolith::SparseMatrix<double> &in, USparseMatrix &out);
 
-    inline void convert_matrix(const moonolith::MatrixInserter<double> &in, USparseMatrix &out) {
+    inline void convert_matrix(const ::moonolith::MatrixInserter<double> &in, USparseMatrix &out) {
         convert_matrix(in.get(), out);
     }
 
-    inline void convert_tensor(const moonolith::SparseMatrix<double> &in, UVector &out) {
+    inline void convert_tensor(const ::moonolith::SparseMatrix<double> &in, UVector &out) {
         auto nnz = in.local_max_entries_x_col();
 
         auto n_local_rows = in.local_rows();
@@ -1072,79 +1075,79 @@ namespace utopia {
         }
     }
 
-    inline void convert_tensor(const moonolith::MatrixInserter<double> &in, UVector &out) {
+    inline void convert_tensor(const ::moonolith::MatrixInserter<double> &in, UVector &out) {
         convert_tensor(in.get(), out);
     }
 
-    inline moonolith::ElemType convert(const libMesh::ElemType &type) {
+    inline ::moonolith::ElemType convert(const libMesh::ElemType &type) {
         switch (type) {
             case libMesh::EDGE2:
-                return moonolith::EDGE2;
+                return ::moonolith::EDGE2;
             case libMesh::EDGE3:
-                return moonolith::EDGE3;
+                return ::moonolith::EDGE3;
             case libMesh::TRI3:
-                return moonolith::TRI3;
+                return ::moonolith::TRI3;
             case libMesh::TRI6:
-                return moonolith::TRI6;
+                return ::moonolith::TRI6;
             case libMesh::QUAD4:
-                return moonolith::QUAD4;
+                return ::moonolith::QUAD4;
             case libMesh::QUAD8:
-                return moonolith::QUAD8;
+                return ::moonolith::QUAD8;
             case libMesh::QUAD9:
-                return moonolith::QUAD9;
+                return ::moonolith::QUAD9;
             case libMesh::TET4:
-                return moonolith::TET4;
+                return ::moonolith::TET4;
             case libMesh::TET10:
-                return moonolith::TET10;
+                return ::moonolith::TET10;
             case libMesh::HEX8:
-                return moonolith::HEX8;
+                return ::moonolith::HEX8;
             case libMesh::HEX27:
-                return moonolith::HEX27;
+                return ::moonolith::HEX27;
             case libMesh::QUADSHELL8:
-                return moonolith::QUAD8;
+                return ::moonolith::QUAD8;
             case libMesh::QUADSHELL4:
-                return moonolith::QUAD4;
+                return ::moonolith::QUAD4;
             default: {
                 assert(false);
-                return moonolith::INVALID;
+                return ::moonolith::INVALID;
             }
         }
     }
 
-    inline moonolith::FEType convert(const libMesh::ElemType &type, const libMesh::FEType &fe_type) {
+    inline ::moonolith::FEType convert(const libMesh::ElemType &type, const libMesh::FEType &fe_type) {
         switch (fe_type.order) {
             case libMesh::CONSTANT: {
                 switch (type) {
                     case libMesh::EDGE2:
-                        return moonolith::EDGE1;
+                        return ::moonolith::EDGE1;
                     case libMesh::EDGE3:
-                        return moonolith::EDGE1;
+                        return ::moonolith::EDGE1;
                     case libMesh::TRI3:
-                        return moonolith::TRI1;
+                        return ::moonolith::TRI1;
                     case libMesh::TRI6:
-                        return moonolith::TRI1;
+                        return ::moonolith::TRI1;
                     case libMesh::QUAD4:
-                        return moonolith::QUAD1;
+                        return ::moonolith::QUAD1;
                     case libMesh::QUAD8:
-                        return moonolith::QUAD1;
+                        return ::moonolith::QUAD1;
                     case libMesh::QUAD9:
-                        return moonolith::QUAD1;
+                        return ::moonolith::QUAD1;
                     case libMesh::TET4:
-                        return moonolith::TET1;
+                        return ::moonolith::TET1;
                     case libMesh::TET10:
-                        return moonolith::TET1;
+                        return ::moonolith::TET1;
                     case libMesh::HEX8:
-                        return moonolith::HEX1;
+                        return ::moonolith::HEX1;
                     case libMesh::HEX27:
-                        return moonolith::HEX1;
+                        return ::moonolith::HEX1;
                     case libMesh::QUADSHELL8:
-                        return moonolith::QUAD1;
+                        return ::moonolith::QUAD1;
                     case libMesh::QUADSHELL4:
-                        return moonolith::QUAD1;
+                        return ::moonolith::QUAD1;
 
                     default: {
                         assert(false);
-                        return moonolith::INVALID;
+                        return ::moonolith::INVALID;
                     }
                 }
             }
@@ -1152,35 +1155,35 @@ namespace utopia {
             case libMesh::FIRST: {
                 switch (type) {
                     case libMesh::EDGE2:
-                        return moonolith::EDGE2;
+                        return ::moonolith::EDGE2;
                     case libMesh::EDGE3:
-                        return moonolith::EDGE2;
+                        return ::moonolith::EDGE2;
                     case libMesh::TRI3:
-                        return moonolith::TRI3;
+                        return ::moonolith::TRI3;
                     case libMesh::TRI6:
-                        return moonolith::TRI3;
+                        return ::moonolith::TRI3;
                     case libMesh::QUAD4:
-                        return moonolith::QUAD4;
+                        return ::moonolith::QUAD4;
                     case libMesh::QUAD8:
-                        return moonolith::QUAD4;
+                        return ::moonolith::QUAD4;
                     case libMesh::QUAD9:
-                        return moonolith::QUAD4;
+                        return ::moonolith::QUAD4;
                     case libMesh::TET4:
-                        return moonolith::TET4;
+                        return ::moonolith::TET4;
                     case libMesh::TET10:
-                        return moonolith::TET4;
+                        return ::moonolith::TET4;
                     case libMesh::HEX8:
-                        return moonolith::HEX8;
+                        return ::moonolith::HEX8;
                     case libMesh::HEX27:
-                        return moonolith::HEX8;
+                        return ::moonolith::HEX8;
                     case libMesh::QUADSHELL8:
-                        return moonolith::QUAD4;
+                        return ::moonolith::QUAD4;
                     case libMesh::QUADSHELL4:
-                        return moonolith::QUAD4;
+                        return ::moonolith::QUAD4;
 
                     default: {
                         assert(false);
-                        return moonolith::INVALID;
+                        return ::moonolith::INVALID;
                     }
                 }
             }
@@ -1188,31 +1191,31 @@ namespace utopia {
             case libMesh::SECOND: {
                 switch (type) {
                     case libMesh::EDGE3:
-                        return moonolith::EDGE3;
+                        return ::moonolith::EDGE3;
                     case libMesh::TRI6:
-                        return moonolith::TRI6;
+                        return ::moonolith::TRI6;
                     case libMesh::QUAD8:
-                        return moonolith::QUAD8;
+                        return ::moonolith::QUAD8;
                     case libMesh::QUAD9:
-                        return moonolith::QUAD9;
+                        return ::moonolith::QUAD9;
                     case libMesh::TET10:
-                        return moonolith::TET10;
+                        return ::moonolith::TET10;
                     case libMesh::HEX27:
-                        return moonolith::HEX27;
+                        return ::moonolith::HEX27;
                     case libMesh::QUADSHELL8:
-                        return moonolith::QUAD8;
-                        // case libMesh::QUADSHELL9: return moonolith::QUAD9;
+                        return ::moonolith::QUAD8;
+                        // case libMesh::QUADSHELL9: return ::moonolith::QUAD9;
 
                     default: {
                         assert(false);
-                        return moonolith::INVALID;
+                        return ::moonolith::INVALID;
                     }
                 }
             }
 
             default: {
                 assert(false);
-                return moonolith::INVALID;
+                return ::moonolith::INVALID;
             }
         }
     }
@@ -1224,48 +1227,48 @@ namespace utopia {
     class ConvertFunctionSpace {};
 
     template <int Dim>
-    class ConvertMesh<libMesh::MeshBase, moonolith::Mesh<double, Dim>> {
+    class ConvertMesh<libMesh::MeshBase, ::moonolith::Mesh<double, Dim>> {
     public:
-        static void apply(const libMesh::MeshBase &in, moonolith::Mesh<double, Dim> &out);
+        static void apply(const libMesh::MeshBase &in, ::moonolith::Mesh<double, Dim> &out);
     };
 
     template <int Dim>
-    class ConvertFunctionSpace<LibMeshFunctionSpace, moonolith::FunctionSpace<moonolith::Mesh<double, Dim>>> {
+    class ConvertFunctionSpace<LibMeshFunctionSpace, ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>>> {
     public:
         static void apply(const LibMeshFunctionSpace &in_space,
-                          moonolith::FunctionSpace<moonolith::Mesh<double, Dim>> &out);
+                          ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>> &out);
 
         static void apply(const libMesh::MeshBase &in,
                           const libMesh::DofMap &dof_map,
                           unsigned int var_num,
-                          moonolith::FunctionSpace<moonolith::Mesh<double, Dim>> &out);
+                          ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>> &out);
     };
 
     template <int Dim>
-    inline void convert(const libMesh::MeshBase &in, moonolith::Mesh<double, Dim> &out) {
-        ConvertMesh<libMesh::MeshBase, moonolith::Mesh<double, Dim>>::apply(in, out);
+    inline void convert(const libMesh::MeshBase &in, ::moonolith::Mesh<double, Dim> &out) {
+        ConvertMesh<libMesh::MeshBase, ::moonolith::Mesh<double, Dim>>::apply(in, out);
     }
 
     template <int Dim>
     inline void convert(const libMesh::MeshBase &in,
                         const libMesh::DofMap &dof_map,
                         unsigned int var_num,
-                        moonolith::FunctionSpace<moonolith::Mesh<double, Dim>> &out,
+                        ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>> &out,
                         unsigned int comp = 0  // I do not think we need anything but 0 at the moment
     ) {
         using Converter =
-            ConvertFunctionSpace<LibMeshFunctionSpace, moonolith::FunctionSpace<moonolith::Mesh<double, Dim>>>;
+            ConvertFunctionSpace<LibMeshFunctionSpace, ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>>>;
         Converter::apply(in, dof_map, var_num, out);
     }
 
     template <int Dim>
     inline void extract_surface(const libMesh::MeshBase &in,
-                                moonolith::Mesh<double, Dim> &out_mesh,
+                                ::moonolith::Mesh<double, Dim> &out_mesh,
                                 const std::vector<int> &tags = std::vector<int>()) {
         const bool select_all = tags.empty();  // FOR them moment tags are ignored
         out_mesh.clear();
 
-        std::unordered_map<libMesh::dof_id_type, moonolith::Integer> mapping;
+        std::unordered_map<libMesh::dof_id_type, ::moonolith::Integer> mapping;
         long n_local_elems = 0;
         long n_nodes = 0;
 
@@ -1341,7 +1344,7 @@ namespace utopia {
     inline void extract_trace_space(const libMesh::MeshBase &in,
                                     const libMesh::DofMap &dof_map,
                                     unsigned int var_num,
-                                    moonolith::FunctionSpace<moonolith::Mesh<double, Dim>> &out,
+                                    ::moonolith::FunctionSpace<::moonolith::Mesh<double, Dim>> &out,
                                     const std::vector<int> &tags = std::vector<int>(),
                                     unsigned int comp = 0  // I do not think we need anything but 0 at the moment
     ) {
@@ -1358,7 +1361,7 @@ namespace utopia {
         out_dof_map.set_n_dofs(dof_map.n_dofs());
         out_dof_map.set_max_nnz(max_nnz_x_row(dof_map));
 
-        std::unordered_map<libMesh::dof_id_type, moonolith::Integer> mapping;
+        std::unordered_map<libMesh::dof_id_type, ::moonolith::Integer> mapping;
         long n_local_elems = 0;
         long n_nodes = 0;
 
@@ -1466,8 +1469,8 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////
 
         long idx = 0;
-        moonolith::Communicator comm(in.comm().get());
-        comm.exscan(&n_local_elems, &idx, 1, moonolith::MPISum());
+        ::moonolith::Communicator comm(in.comm().get());
+        comm.exscan(&n_local_elems, &idx, 1, ::moonolith::MPISum());
 
         assert(idx < in.n_active_elem());
 

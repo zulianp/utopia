@@ -108,6 +108,11 @@ namespace utopia {
             MeshInitializer init(*this);
             init.read(params);
         }
+
+        int Mesh::manifold_dimension() const { return impl_->mesh->mesh_dimension(); }
+
+        int Mesh::spatial_dimension() const { return impl_->mesh->spatial_dimension(); }
+
     }  // namespace libmesh
 
 }  // namespace utopia

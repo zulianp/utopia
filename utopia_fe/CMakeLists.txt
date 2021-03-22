@@ -461,8 +461,9 @@ if(TARGET utopia_stk)
 endif()
 
 if(TARGET utopia_moonolith)
-    target_link_libraries(utopia_fe_test utopia_moonolith)
     target_link_libraries(utopia_fe_exec utopia_moonolith)
+    # target_link_libraries(utopia_fe_test utopia_moonolith)
+    # target_link_libraries(utopia_fe_exec utopia_moonolith)
 endif()
 
 if(TARGET utopia_interop)
