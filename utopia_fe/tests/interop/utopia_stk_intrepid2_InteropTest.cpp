@@ -100,7 +100,7 @@ public:
 
         LinearElasticity<3, Scalar_t> linear_elasticity{1.0, 1.0};
 
-        assemble_and_solve("poisson", space, linear_elasticity);
+        assemble_and_solve("elasticity", space, linear_elasticity);
     }
 
     void run() {

@@ -112,7 +112,7 @@ namespace utopia {
 
             // FIXME declare this somewhere else
             ::stk::mesh::Field<Scalar> &field =
-                meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, "output", impl_->n_var);
+                meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, "output", 1);
 
             // const std::vector<Scalar> init(impl_->n_var, 1);
             // ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), impl_->n_var, init.data());
