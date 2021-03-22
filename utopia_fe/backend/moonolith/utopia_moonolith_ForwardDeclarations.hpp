@@ -16,6 +16,7 @@ namespace utopia {
     namespace moonolith {
         class Mesh;
         class FunctionSpace;
+        class Obstacle;
 
     }  // namespace moonolith
 }  // namespace utopia

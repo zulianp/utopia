@@ -124,8 +124,9 @@ public:
     }
 
     void elasticity_problem() {
+        static const int Dim = 3;
         auto params = param_list(
-            param("n_var", 3),
+            param("n_var", Dim),
             param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
 
         FunctionSpace_t space;
@@ -138,7 +139,7 @@ public:
         space.add_dirichlet_boundary_condition("outlet", 0.0, 1);
         space.add_dirichlet_boundary_condition("outlet", -0.001, 2);
 
-        LinearElasticity<3, Scalar_t> linear_elasticity{1.0, 1.0};
+        LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
 
         assemble_and_solve("elasticity", space, linear_elasticity);
     }

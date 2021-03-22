@@ -26,6 +26,12 @@ namespace utopia {
         static void apply(const ::moonolith::SparseMatrix<UScalar> &in, USparseMatrix &out);
     };
 
+    template <>
+    class ConvertTensor<::moonolith::SparseMatrix<UScalar>, UVector, 1> {
+    public:
+        static void apply(const ::moonolith::SparseMatrix<UScalar> &in, UVector &out);
+    };
+
     template <typename T, class To, int Order>
     inline void convert(const ::moonolith::SparseMatrix<T> &from, Tensor<To, Order> &to) {
         ConvertTensor<::moonolith::SparseMatrix<T>, To, Order>::apply(from, to.derived());
