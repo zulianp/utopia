@@ -24,29 +24,21 @@
 namespace utopia {
     namespace moonolith {
 
-        class Obstacle::Params : public Configurable {
-        public:
-            void read(Input &in) override {
-                in.get("variable_number", variable_number);
-                in.get("gap_negative_bound", gap_negative_bound);
-                in.get("gap_positive_bound", gap_positive_bound);
+        void Obstacle::Params::read(Input &in) {
+            in.get("variable_number", variable_number);
+            in.get("gap_negative_bound", gap_negative_bound);
+            in.get("gap_positive_bound", gap_positive_bound);
 
-                in.get("surfaces", [this](Input &in) {
-                    in.get_all([this](Input &in) {
-                        int tag = -1;
-                        in.get("tag", tag);
-                        if (tag >= 0) {
-                            this->tags.insert(tag);
-                        }
-                    });
+            in.get("surfaces", [this](Input &in) {
+                in.get_all([this](Input &in) {
+                    int tag = -1;
+                    in.get("tag", tag);
+                    if (tag >= 0) {
+                        this->tags.insert(tag);
+                    }
                 });
-            }
-
-            int variable_number{0};
-            Scalar gap_negative_bound{-0.0001};
-            Scalar gap_positive_bound{0.1};
-            std::unordered_set<int> tags;
-        };
+            });
+        }
 
         class Obstacle::Output {
         public:
@@ -273,6 +265,8 @@ namespace utopia {
                 return false;
             }
         }
+
+        void Obstacle::set_params(const Params &params) { *this->params_ = params; }
 
         bool Obstacle::assemble(const FunctionSpace &space) { return impl_->assemble(space, *params_, *output_); }
 

@@ -9,6 +9,7 @@
 #include "utopia_moonolith_FunctionSpace.hpp"
 
 #include <memory>
+#include <unordered_set>
 
 namespace utopia {
     namespace moonolith {
@@ -35,10 +36,21 @@ namespace utopia {
             Obstacle();
             ~Obstacle();
 
+            class Params : public Configurable {
+            public:
+                int variable_number{0};
+                Scalar gap_negative_bound{-0.0001};
+                Scalar gap_positive_bound{0.1};
+                std::unordered_set<int> tags;
+
+                void read(Input &in) override;
+            };
+
+            void set_params(const Params &params);
+
         private:
             class Impl;
             class Output;
-            class Params;
 
             template <int Dim>
             class ImplD;
@@ -48,7 +60,6 @@ namespace utopia {
 
             std::unique_ptr<Params> params_;
             std::unique_ptr<Output> output_;
-
             std::unique_ptr<Impl> impl_;
         };
     }  // namespace moonolith
