@@ -11,74 +11,105 @@
 #include "utopia_FEInteroperability.hpp"
 
 #include "utopia_intrepid2_LaplaceOperator.hpp"
+#include "utopia_intrepid2_LinearElasticity.hpp"
 
 using namespace utopia;
 
-void poisson_problem() {
+class FEProblemTest {
+public:
     using FunctionSpace_t = utopia::stk::FunctionSpace;
     using Scalar_t = Traits<FunctionSpace_t>::Scalar;
     using Matrix_t = Traits<FunctionSpace_t>::Matrix;
     using Vector_t = Traits<FunctionSpace_t>::Vector;
     using FE_t = utopia::intrepid2::FE<Scalar_t>;
 
-    auto params =
-        param_list(param("path",
-                         // "../data/knf/pump/membrane.e"
-                         // "../data//bugs/transfer/cube_10x10x10.e"
-                         "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"
-                         // "../data/knf/rectangle_4_tris.e"
-                         ));
+    bool save_output{false};
+    bool export_tensors{false};
+    bool verbose{true};
+    Scalar_t rtol{1e-5};
 
-    FunctionSpace_t space;
-    space.read(params);
-    // space.add_dirichlet_boundary_condition("surface_1", 1.0);
-    // space.add_dirichlet_boundary_condition("surface_3", -1.0);
+    template <class Op>
+    void assemble_and_solve(const std::string &name, FunctionSpace_t &space, Op &op) {
+        auto fe_ptr = std::make_shared<FE_t>();
+        create_fe(space, *fe_ptr, 2);
 
-    space.add_dirichlet_boundary_condition("inlet", 1.0);
-    space.add_dirichlet_boundary_condition("outlet", -1.0);
+        utopia::intrepid2::Assemble<Op> assembler(op, fe_ptr);
+        assembler.init();
 
-    // space.describe(std::cout);
+        Matrix_t mat;
+        local_to_global(space, assembler.element_matrices(), mat);
 
-    // Chrono c;
-    // c.start();
+        Vector_t rhs, x;
+        space.create_vector(rhs);
 
-    auto fe_ptr = std::make_shared<FE_t>();
-    create_fe(space, *fe_ptr, 2);
+        x.zeros(layout(rhs));
 
-    LaplaceOperator<Scalar_t> lapl{0.5};
-    utopia::intrepid2::Assemble<LaplaceOperator<Scalar_t>> assembler(lapl, fe_ptr);
-    assembler.init();
+        space.apply_constraints(mat, rhs);
 
-    // local to global
-    Matrix_t mat;
-    local_to_global(space, assembler.element_matrices(), mat);
+        ConjugateGradient<Matrix_t, Vector_t> solver;
+        auto prec = std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>();
+        solver.set_preconditioner(prec);
+        solver.rtol(rtol);
+        solver.verbose(verbose);
 
-    Vector_t rhs, x;
-    space.create_vector(rhs);
+        utopia_test_assert(solver.solve(mat, rhs, x));
 
-    x.zeros(layout(rhs));
+        if (save_output) {
+            space.write(name + ".e", x);
+        }
 
-    space.apply_constraints(mat, rhs);
+        if (export_tensors) {
+            write(name + ".m", mat);
+            write(name + "_rhs.m", rhs);
+            write(name + "_x.m", x);
 
-    Factorization<Matrix_t, Vector_t> solver;
+            std::ofstream os(name + ".txt");
+            assembler.describe(os);
+            os.close();
+        }
+    }
 
-    utopia_test_assert(solver.solve(mat, rhs, x));
+    void poisson_problem() {
+        auto params = param_list(
+            param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
 
-    space.write("poisson_problem.e", x);
+        FunctionSpace_t space;
+        space.read(params);
+        space.add_dirichlet_boundary_condition("inlet", 1.0);
+        space.add_dirichlet_boundary_condition("outlet", -1.0);
 
-    write("poisson_problem.m", mat);
-    write("poisson_problem_rhs.m", rhs);
-    write("poisson_problem_x.m", x);
+        LaplaceOperator<Scalar_t> lapl{0.5};
 
-    // c.stop();
-    // std::cout << c << std::endl;
+        assemble_and_solve("poisson", space, lapl);
+    }
 
-    std::ofstream os("prova.txt");
-    assembler.describe(os);
-    os.close();
-}
+    void elasticity_problem() {
+        auto params = param_list(
+            param("n_var", 3),
+            param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
 
-void interop_stk_intrepid2() { UTOPIA_RUN_TEST(poisson_problem); }
+        FunctionSpace_t space;
+        space.read(params);
+        space.add_dirichlet_boundary_condition("inlet", 1.0, 0);
+        space.add_dirichlet_boundary_condition("inlet", 0.0, 1);
+        space.add_dirichlet_boundary_condition("inlet", 0.0, 2);
+
+        space.add_dirichlet_boundary_condition("outlet", -1.0, 0);
+        space.add_dirichlet_boundary_condition("outlet", 0.0, 1);
+        space.add_dirichlet_boundary_condition("outlet", 0.0, 2);
+
+        LinearElasticity<3, Scalar_t> linear_elasticity{0.5};
+
+        assemble_and_solve("poisson", space, linear_elasticity);
+    }
+
+    void run() {
+        UTOPIA_RUN_TEST(poisson_problem);
+        // UTOPIA_RUN_TEST(elasticity_problem);
+    }
+};
+
+void interop_stk_intrepid2() { FEProblemTest().run(); }
 
 UTOPIA_REGISTER_TEST_FUNCTION(interop_stk_intrepid2);
 

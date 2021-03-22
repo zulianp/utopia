@@ -3,12 +3,14 @@
 
 #include "utopia_intrepid2_LaplaceOperator.hpp"
 
+#include "utopia_Views.hpp"
+
 namespace utopia {
-    template <int Dim, class FirstLameParameter, class ShearModulus>
+    template <int Dim, class FirstLameParameter, class ShearModulus = FirstLameParameter>
     class LinearElasticity {
     public:
-        FirstLameParameter lambda;
-        ShearModulus mu;
+        FirstLameParameter lambda{1.0};
+        ShearModulus mu{1.0};
     };
 
     namespace intrepid2 {
@@ -20,25 +22,18 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Op = utopia::LinearElasticity<FirstLameParameter, ShearModulus>;
+            using Op = utopia::LinearElasticity<Dim, FirstLameParameter, ShearModulus>;
             using ExecutionSpace = typename FE::ExecutionSpace;
 
             Assemble(Op op, const std::shared_ptr<FE> &fe) : op_(std::move(op)), fe_(fe) {}
 
             void init() {
                 assert(Dim == fe_->spatial_dimension());
-                int num_fields = fe_->num_fields();
-                int n_dofs = num_fields * fe_->spatial_dimension();
-                int n_qp = fe_->num_qp();
+                const int num_fields = fe_->num_fields();
+                const int n_dofs = num_fields * fe_->spatial_dimension();
+                const int n_qp = fe_->num_qp();
 
                 element_matrices_ = DynRankView("stiffness_matrix", fe_->num_cells(), n_dofs, n_dofs);
-
-                DynRankView grad_x_measure(
-                    "grad_x_measure", fe_->num_cells(), fe_->num_fields(), fe_->num_qp(), fe_->spatial_dimension());
-
-                // Kokkos::deep_copy(grad_x_measure, fe_->grad);
-                // FunctionSpaceTools::template multiplyMeasure<Scalar>(grad_x_measure, fe_->measure, fe_->grad);
-                // FunctionSpaceTools::template integrate<Scalar>(element_matrices_, fe_->grad, grad_x_measure);
 
                 // Only works if coeff is a scalar
                 {
@@ -51,8 +46,8 @@ namespace utopia {
 
                     Kokkos::parallel_for(
                         "scale_with_coeff",
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>({0, 0, 0},
-                                                                               {em.extent(0), num_fields, num_fields}),
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
+                            {0, 0, 0}, {static_cast<int>(em.extent(0)), num_fields, num_fields}),
                         KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
                             StaticMatrix<Scalar, Dim, Dim> strain_i;
                             StaticMatrix<Scalar, Dim, Dim> strain_j;
@@ -65,12 +60,12 @@ namespace utopia {
 
                             // needs loop over quadrature points and spatial_dim
                             for (int qp = 0; qp < n_qp; ++qp) {
-                                auto dX = measure(cellm qp);
+                                auto dX = measure(cell, qp);
 
                                 for (int di = 0; di < Dim; ++di) {
                                     make_strain(di, &grad(cell, i, qp), strain_i);
                                     const Scalar trace_i = trace(strain_i);
-                                    auto dof_i = dof_i = i * Dim + di;
+                                    auto dof_i = i * Dim + di;
 
                                     em(cell, dof_i, dof_i) +=
                                         (mux2 * inner(strain_i, strain_i) + lambda * trace_i * trace_i) * dX;
@@ -131,7 +126,8 @@ namespace utopia {
             Op op_;
             std::shared_ptr<FE> fe_;
             DynRankView element_matrices_;
-        }
+        };
     }  // namespace intrepid2
+}  // namespace utopia
 
 #endif  // UTOPIA_INTREPID2_LINEAR_ELASTICITY_HPP

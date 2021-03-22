@@ -45,7 +45,9 @@ namespace utopia {
             void apply_constraints(Vector &v);
             void apply_constraints(Matrix &m, Vector &v);
 
-            void add_dirichlet_boundary_condition(const std::string &name, const Scalar &value);
+            void add_dirichlet_boundary_condition(const std::string &name,
+                                                  const Scalar &value,
+                                                  const int component = 0);
 
         private:
             class Impl;

@@ -23,17 +23,18 @@ namespace utopia {
             public:
                 std::string name;
                 double value;
-                int set_id{-1};
                 int component{0};
+                int set_id{-1};
 
                 Condition() = default;
-                Condition(std::string name, double value) : name(std::move(name)), value(value) {}
+                Condition(std::string name, double value, const int component)
+                    : name(std::move(name)), value(value), component(component) {}
 
                 void read(Input &in) override {
                     in.get("name", name);
                     in.get("value", value);
-                    in.get("set_id", set_id);
                     in.get("component", component);
+                    in.get("set_id", set_id);
                 }
             };
 
@@ -300,8 +301,10 @@ namespace utopia {
             apply_constraints(v);
         }
 
-        void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name, const Scalar &value) {
-            DirichletBoundary::Condition dirichlet_boundary{name, value};
+        void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name,
+                                                             const Scalar &value,
+                                                             const int component) {
+            DirichletBoundary::Condition dirichlet_boundary{name, value, component};
             impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
         }
 
