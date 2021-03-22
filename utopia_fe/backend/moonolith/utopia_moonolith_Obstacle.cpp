@@ -219,10 +219,8 @@ namespace utopia {
                 if (space.mesh().manifold_dimension() == Dim - 1) {
                     space_d = space.raw_type<Dim>();
                 } else {
-                    // auto mesh_ptr = std::make_shared<MoonolithSpace_t>(raw_mesh->comm());
                     assert(false && "IMPLEMENT ME");
-
-                    // extract_surface<Dim>(*raw_mesh, *obstacle_mesh, {});
+                    return false;
                 }
 
                 obstacle->set_gap_bounds(params.gap_negative_bound, params.gap_positive_bound);
@@ -244,8 +242,7 @@ namespace utopia {
                 } else {
                     auto mesh_ptr = std::make_shared<MoonolithMesh_t>(raw_mesh->comm());
                     assert(false && "IMPLEMENT ME");
-
-                    // extract_surface<Dim>(*raw_mesh, *obstacle_mesh, {});
+                    return false;
                 }
 
                 auto tree = ::moonolith::RayCastingTree<Scalar, Dim>::New();
