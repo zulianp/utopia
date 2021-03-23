@@ -24,6 +24,7 @@ namespace utopia {
             SizeType n_dofs() const;
             SizeType n_local_dofs() const;
             SizeType n_subspaces() const;
+            SizeType subspace_id() const;
 
             // access main function space subspaces (main system)
             FunctionSubspace subspace(const SizeType i, const SizeType n_vars = 1);
@@ -64,6 +65,7 @@ namespace utopia {
             SizeType n_dofs() const;
             SizeType n_local_dofs() const;
             SizeType n_subspaces() const;
+            SizeType system_id() const;
 
             // access main function space subspaces (main system)
             FunctionSubspace subspace(const SizeType i, const SizeType n_vars = 1);
@@ -78,6 +80,8 @@ namespace utopia {
             void create_vector(Vector &vec) const;
 
             void apply_constraints(Matrix &mat, Vector &vec) const;
+
+            bool empty() const;
 
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;

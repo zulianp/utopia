@@ -33,6 +33,7 @@ namespace utopia {
 
             const Vector &gap() const;
             const Vector &is_contact() const;
+            const Vector &normals() const;
 
         private:
             class Impl;

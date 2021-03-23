@@ -113,6 +113,10 @@ namespace utopia {
 
         int Mesh::spatial_dimension() const { return impl_->mesh->spatial_dimension(); }
 
+        Mesh::SizeType Mesh::n_nodes() const { return impl_->mesh->n_nodes(); }
+
+        Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh->n_local_nodes(); }
+
     }  // namespace libmesh
 
 }  // namespace utopia

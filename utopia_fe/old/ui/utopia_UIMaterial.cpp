@@ -20,6 +20,7 @@ namespace utopia {
         Scalar stabilization_mag = 0.0001;
         Scalar rescaling = 1.0;
 
+        is.get("type", material);
         is.get("material", material);
         is.get("stabilization", stabilization);
         is.get("stabilization-mag", stabilization_mag);

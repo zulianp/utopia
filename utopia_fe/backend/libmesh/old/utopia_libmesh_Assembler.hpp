@@ -105,7 +105,9 @@ namespace utopia {
 
                 mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
             } else {
-                mat *= 0.;
+                if (mat.is_assembled()) {
+                    mat *= 0.;
+                }
             }
 
             typename Traits<GlobalVector>::IndexSet ghost_nodes;
@@ -218,7 +220,9 @@ namespace utopia {
 
                 mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
             } else {
-                mat *= 0.;
+                if (mat.is_assembled()) {
+                    mat *= 0.;
+                }
             }
         }
 

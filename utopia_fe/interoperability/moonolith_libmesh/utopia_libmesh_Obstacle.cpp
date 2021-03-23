@@ -32,23 +32,40 @@ namespace utopia {
             using Obstacle_t = utopia::moonolith::Obstacle;
 
             bool assemble(const FunctionSpace &in_space) {
+                // FIXME THIS SHOULD GO IN SOME REUSABLE FUNCTION
+
                 switch (in_space.mesh().spatial_dimension()) {
                     case 2: {
-                        assert(space.raw_type<2>());
+                        using Mesh2_t = ::moonolith::Mesh<Scalar, 2>;
+                        using Space2_t = ::moonolith::FunctionSpace<Mesh2_t>;
+
+                        auto mesh = std::make_shared<Mesh2_t>(in_space.comm().raw_comm());
+                        auto temp_space = std::make_shared<Space2_t>(mesh);
+
                         extract_trace_space(in_space.mesh().raw_type(),
                                             in_space.raw_type_dof_map(),
                                             obstacle.params().variable_number,
-                                            *space.raw_type<2>(),
+                                            *temp_space,
                                             {});
+
+                        space.wrap(temp_space);
+
                         break;
                     }
                     case 3: {
-                        assert(space.raw_type<3>());
+                        using Mesh3_t = ::moonolith::Mesh<Scalar, 3>;
+                        using Space3_t = ::moonolith::FunctionSpace<Mesh3_t>;
+
+                        auto mesh = std::make_shared<Mesh3_t>(in_space.comm().raw_comm());
+                        auto temp_space = std::make_shared<Space3_t>(mesh);
+
                         extract_trace_space(in_space.mesh().raw_type(),
                                             in_space.raw_type_dof_map(),
                                             obstacle.params().variable_number,
-                                            *space.raw_type<3>(),
+                                            *temp_space,
                                             {});
+
+                        space.wrap(temp_space);
                         break;
                     }
                     default: {
@@ -81,17 +98,19 @@ namespace utopia {
                     // }
 
                 } else {
-                    assert(mesh.manifold_dimension() == mesh.spatial_dimension() - 1);
-                    // FIXME THIS SHOULD GO IN SOME FUNCTION
+                    assert(mesh.manifold_dimension() == mesh.spatial_dimension());
+                    // FIXME THIS SHOULD GO IN SOME REUSABLE FUNCTION
                     switch (mesh.spatial_dimension()) {
                         case 2: {
-                            assert(obstacle_mesh.raw_type<2>());
-                            extract_surface<2>(mesh.raw_type(), *obstacle_mesh.raw_type<2>(), {});
+                            auto m_mesh = std::make_shared<::moonolith::Mesh<Scalar, 2>>(mesh.comm().raw_comm());
+                            extract_surface<2>(mesh.raw_type(), *m_mesh, {});
+                            obstacle_mesh.wrap(m_mesh);
                             break;
                         }
                         case 3: {
-                            assert(obstacle_mesh.raw_type<3>());
-                            extract_surface<3>(mesh.raw_type(), *obstacle_mesh.raw_type<3>(), {});
+                            auto m_mesh = std::make_shared<::moonolith::Mesh<Scalar, 3>>(mesh.comm().raw_comm());
+                            extract_surface<3>(mesh.raw_type(), *m_mesh, {});
+                            obstacle_mesh.wrap(m_mesh);
                             break;
                         }
                         default: {
@@ -120,6 +139,7 @@ namespace utopia {
 
         const Obstacle::Vector &Obstacle::gap() const { return impl_->obstacle.gap(); }
         const Obstacle::Vector &Obstacle::is_contact() const { return impl_->obstacle.is_contact(); }
+        const Obstacle::Vector &Obstacle::normals() const { return impl_->obstacle.normals(); }
 
         void Obstacle::set_params(const Params &params) { impl_->obstacle.set_params(params); }
 

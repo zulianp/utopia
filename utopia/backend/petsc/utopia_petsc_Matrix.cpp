@@ -1282,6 +1282,14 @@ namespace utopia {
         *this = std::move(temp);
     }
 
+    bool PetscMatrix::is_assembled() const {
+        if (empty()) return false;
+
+        PetscBool assembled = PETSC_FALSE;
+        check_error(MatAssembled(raw_type(), &assembled));
+        return assembled == PETSC_TRUE;
+    }
+
     // testing MATAIJCUSPARSE,MATSEQAIJCUSPARSE
     bool PetscMatrix::PetscMatrix::is_cuda() const {
         PetscBool match = PETSC_FALSE;

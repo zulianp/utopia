@@ -86,7 +86,7 @@ namespace utopia {
         add_app(MassApp::command(), utopia::make_unique<MassApp>());
         add_app(DifferenceApp::command(), utopia::make_unique<DifferenceApp>());
         add_app(ConvertToDiegoMeshApp::command(), utopia::make_unique<ConvertToDiegoMeshApp>());
-        add_app(DescribeMeshApp::command(), utopia::make_unique<DescribeMeshApp>());
+        // add_app(DescribeMeshApp::command(), utopia::make_unique<DescribeMeshApp>());
         // add_app(ObstacleApp::command(), utopia::make_unique<ObstacleApp>());
     }
 }  // namespace utopia

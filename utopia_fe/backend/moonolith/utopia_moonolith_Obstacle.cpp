@@ -61,6 +61,9 @@ namespace utopia {
                 auto max_nnz = utopia::max_row_nnz(T_x);
                 T.sparse(layout(T_x), max_nnz, max_nnz);
 
+                assert(!empty(T));
+                assert(T.row_range().extent() % n_var == 0);
+
                 Write<Matrix> w(T);
                 each_read(T_x, [&](const SizeType i, const SizeType j, const Scalar value) {
                     for (SizeType k = 0; k < n_var; ++k) {
@@ -72,6 +75,9 @@ namespace utopia {
             inline static void tensorize(const SizeType n_var, Vector &t) {
                 ReadAndWrite<Vector> w(t);
                 auto r = range(t);
+
+                assert(!empty(t));
+                assert(r.extent() % n_var == 0);
 
                 for (auto i = r.begin(); i < r.end(); i += n_var) {
                     const auto value = t.get(i);
@@ -95,7 +101,12 @@ namespace utopia {
                 convert(buffers.normal.get(), out.normals);
                 convert(buffers.is_contact.get(), out.is_contact);
 
+                assert(gap_x.local_size() == out.normals.local_size());
+                assert(gap_x.local_size() == out.is_contact.local_size());
+
                 Vector mass_vector = sum(mass_matrix_x, 1);
+
+                assert(gap_x.local_size() == mass_vector.local_size());
 
                 tensorize(dim, mass_vector);
                 e_pseudo_inv(mass_vector, out.inverse_mass_vector, 1e-15);
@@ -274,13 +285,15 @@ namespace utopia {
             out = transpose(output().orthogonal_trafo) * in * output().orthogonal_trafo;
         }
 
-        void Obstacle::transform(const Vector &in, Vector &out) { out = output().orthogonal_trafo * in; }
+        void Obstacle::transform(const Vector &in, Vector &out) { out = transpose(output().orthogonal_trafo) * in; }
 
         void Obstacle::inverse_transform(const Vector &in, Vector &out) { out = output().orthogonal_trafo * in; }
 
         const Obstacle::Vector &Obstacle::gap() const { return output().gap; }
 
         const Obstacle::Vector &Obstacle::is_contact() const { return output().is_contact; }
+
+        const Obstacle::Vector &Obstacle::normals() const { return output().normals; }
 
         Obstacle::Output &Obstacle::output() { return *output_; }
         const Obstacle::Output &Obstacle::output() const { return *output_; }

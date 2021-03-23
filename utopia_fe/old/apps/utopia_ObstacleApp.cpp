@@ -18,72 +18,70 @@
 #include "utopia_petsc_DILUAlgorithm.hpp"
 
 #include "utopia_libmesh_Obstacle.hpp"
-
-#include "libmesh/boundary_mesh.h"
-#include "libmesh/exodusII_io.h"
-#include "libmesh/mesh_refinement.h"
-#include "libmesh/nemesis_io.h"
+#include "utopia_libmesh_OmniAssembler.hpp"
 
 namespace utopia {
 
+    namespace frontend = utopia::libmesh;
+
     class ObstacleProblem : public Configurable {
     public:
-        using FS = utopia::LibMeshFunctionSpace;
-        using PFS = utopia::ProductFunctionSpace<FS>;
-        using MaterialT = utopia::UIMaterial<PFS, USparseMatrix, UVector>;
-        using ForcingFunctionT = utopia::UIForcingFunction<PFS, UVector>;
+        using Vector_t = Traits<frontend::FunctionSpace>::Vector;
+        using Matrix_t = Traits<frontend::FunctionSpace>::Matrix;
+        using Size_t = Traits<frontend::FunctionSpace>::SizeType;
+        using QPSolver_t = utopia::QPSolver<Matrix_t, Vector_t>;
+        using SemismoothNewton_t = utopia::SemismoothNewton<Matrix_t, Vector_t>;
+        using Factorization_t = utopia::Factorization<Matrix_t, Vector_t>;
+        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
             in.get("space", space);
+
+            if (space.empty()) {
+                valid = false;
+                return;
+            }
+
             in.get("obstacle", obstacle_mesh);
             in.get("obstacle", params);
 
-            // hack_ = std::make_shared<LibMeshFunctionSpace>(space.raw_type(), 0);
-            // auto model = make_unique<MaterialT>(*hack_);
-            // auto forcing_function = make_unique<ForcingFunctionT>(space.space());
-            // in.get("model", *model);
-            // in.get("forcing-functions", *forcing_function);
-
-            // assert(model->good());
-
-            // model_ =
-            //     std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(std::move(model),
-            //     std::move(forcing_function));
-
-            // model_ = std::move(model);
+            assembler = std::make_shared<libmesh::OmniAssembler>(make_ref(space));
+            in.get("assembly", *assembler);
 
             int block_size = space.mesh().spatial_dimension();
             bool use_amg = true;
-            in.get("use_amg", use_amg);
 
             std::string qp_solver_type = "pgs";
-            in.get("qp-solver", [&qp_solver_type](Input &in) { in.get("type", qp_solver_type); });
+            in.get("qp_solver", [&qp_solver_type, &use_amg](Input &in) {
+                in.get("use_amg", use_amg);
+                in.get("type", qp_solver_type);
+            });
 
             if (qp_solver_type == "ssnewton") {
                 if (use_amg) {
-                    std::shared_ptr<IterativeSolver<USparseMatrix, UVector>> smoother;
-                    auto ksp = std::make_shared<KSPSolver<USparseMatrix, UVector>>();
+                    std::shared_ptr<IterativeSolver<Matrix_t, Vector_t>> smoother;
+                    auto ksp = std::make_shared<KSPSolver<Matrix_t, Vector_t>>();
                     ksp->pc_type("ilu");
                     ksp->ksp_type("richardson");
                     smoother = ksp;
 
-                    std::shared_ptr<LinearSolver<USparseMatrix, UVector>> coarse_solver;
-                    coarse_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+                    std::shared_ptr<LinearSolver_t> coarse_solver;
+                    coarse_solver = std::make_shared<Factorization_t>();
 
-                    std::shared_ptr<MatrixAgglomerator<USparseMatrix>> agglomerator;
+                    std::shared_ptr<MatrixAgglomerator<Matrix_t>> agglomerator;
 
                     if (block_size == 2) {
-                        agglomerator = std::make_shared<BlockAgglomerate<USparseMatrix, 2>>();
+                        agglomerator = std::make_shared<BlockAgglomerate<Matrix_t, 2>>();
                     } else if (block_size == 3) {
-                        agglomerator = std::make_shared<BlockAgglomerate<USparseMatrix, 3>>();
+                        agglomerator = std::make_shared<BlockAgglomerate<Matrix_t, 3>>();
                     } else if (block_size == 4) {
-                        agglomerator = std::make_shared<BlockAgglomerate<USparseMatrix, 4>>();
+                        agglomerator = std::make_shared<BlockAgglomerate<Matrix_t, 4>>();
                     } else {
-                        agglomerator = std::make_shared<Agglomerate<USparseMatrix>>();
+                        agglomerator = std::make_shared<Agglomerate<Matrix_t>>();
                     }
 
-                    auto amg = std::make_shared<AlgebraicMultigrid<USparseMatrix, UVector>>(
-                        smoother, coarse_solver, agglomerator);
+                    auto amg =
+                        std::make_shared<AlgebraicMultigrid<Matrix_t, Vector_t>>(smoother, coarse_solver, agglomerator);
 
                     InputParameters inner_params;
                     inner_params.set("block_size", block_size);
@@ -95,17 +93,17 @@ namespace utopia {
 
                     in.get("amg", *amg);
 
-                    qp_solver_ = std::make_shared<SemismoothNewton<USparseMatrix, UVector>>(amg);
+                    qp_solver_ = std::make_shared<SemismoothNewton_t>(amg);
                 } else {
-                    auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
-                    qp_solver_ = std::make_shared<SemismoothNewton<USparseMatrix, UVector>>(linear_solver);
+                    auto linear_solver = std::make_shared<Factorization_t>();
+                    qp_solver_ = std::make_shared<SemismoothNewton_t>(linear_solver);
                 }
 
             } else {
-                qp_solver_ = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector>>();
+                qp_solver_ = std::make_shared<ProjectedGaussSeidel<Matrix_t, Vector_t>>();
             }
 
-            in.get("qp-solver", *qp_solver_);
+            in.get("qp_solver", *qp_solver_);
         }
 
         void run() {
@@ -120,54 +118,76 @@ namespace utopia {
             // FIXME
             auto &dof_map = space.raw_type_dof_map();
 
-            UVector x, g;
-            USparseMatrix H;
+            Vector_t x, g;
+            Matrix_t H;
 
             space.create_matrix(H);
             space.create_vector(x);
             space.create_vector(g);
 
-            model_->assemble_hessian_and_gradient(x, H, g);
+            assembler->assemble(x, H, g);
             g *= -1.0;
 
             space.apply_constraints(H, g);
 
-            USparseMatrix H_c;
-            UVector g_c(layout(x), 0.0), x_c(layout(x), 0.0);
+            Matrix_t H_c;
+            Vector_t g_c(layout(x), 0.0), x_c(layout(x), 0.0);
 
             obs.transform(H, H_c);
             obs.transform(g, g_c);
 
-            auto constr = make_upper_bound_constraints(make_ref(const_cast<UVector &>(obs.gap())));
+            auto constr = make_upper_bound_constraints(make_ref(const_cast<Vector_t &>(obs.gap())));
             constr.fill_empty_bounds(layout(g_c));
             qp_solver_->set_box_constraints(constr);
-
-            // Output
-            {
-                obstacle_mesh.write("obstacle.e");
-                UVector gap_zeroed = e_mul(obs.is_contact(), obs.gap());
-                space.write("obs_gap.e", gap_zeroed);
-                space.write("obs_is_contact.e", obs.is_contact());
-            }
-
             qp_solver_->solve(H_c, g_c, x_c);
-
             obs.inverse_transform(x_c, x);
 
-            // Output
+            // Output solution
             { space.write("obs_sol.e", x); }
+
+            // Output extras
+            {
+                obstacle_mesh.write("obstacle.e");
+                Vector_t gap_zeroed = e_mul(obs.is_contact(), obs.gap());
+                space.write("obs_gap.e", gap_zeroed);
+                space.write("obs_is_contact.e", obs.is_contact());
+                space.write("obs_normals.e", obs.normals());
+                space.write("rhs.e", g);
+
+                Vector_t rays = obs.normals();
+
+                {
+                    auto rays_view = local_view_device(rays);
+                    auto gap_view = const_local_view_device(obs.gap());
+
+                    int dim = space.mesh().spatial_dimension();
+
+                    parallel_for(
+                        local_range_device(rays), UTOPIA_LAMBDA(const Size_t i) {
+                            Size_t block = i / dim;
+                            Size_t g_idx = dim * block;
+
+                            auto ri = rays_view.get(i);
+                            ri *= gap_view.get(g_idx);
+                            rays_view.set(i, ri);
+                        });
+                }
+
+                space.write("rays.e", rays);
+            }
         }
 
         ObstacleProblem() {}
 
-    private:
-        utopia::libmesh::FunctionSpace space;
-        utopia::libmesh::Mesh obstacle_mesh;
-        utopia::libmesh::Obstacle::Params params;
-        utopia::libmesh::Obstacle obs;
+        bool valid{true};
 
-        std::shared_ptr<ElasticMaterial<USparseMatrix, UVector>> model_;
-        std::shared_ptr<QPSolver<USparseMatrix, UVector>> qp_solver_;
+    private:
+        frontend::FunctionSpace space;
+        frontend::Mesh obstacle_mesh;
+        frontend::Obstacle::Params params;
+        frontend::Obstacle obs;
+        std::shared_ptr<frontend::OmniAssembler> assembler;
+        std::shared_ptr<QPSolver_t> qp_solver_;
     };
 
 }  // namespace utopia
@@ -175,7 +195,11 @@ namespace utopia {
 void obs(utopia::Input &in) {
     utopia::ObstacleProblem obs;
     obs.read(in);
-    obs.run();
+    if (obs.valid) {
+        obs.run();
+    } else {
+        utopia::err() << "[Error] invalid set-up\n";
+    }
 }
 
 UTOPIA_REGISTER_APP(obs);

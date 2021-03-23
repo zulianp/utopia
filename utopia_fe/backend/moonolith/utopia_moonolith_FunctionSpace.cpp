@@ -120,6 +120,13 @@ namespace utopia {
             return std::dynamic_pointer_cast<MoonolithFunctionSpace<Dim>>(impl_->space);
         }
 
+        template <int Dim>
+        void FunctionSpace::wrap(
+            const std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, Dim>>> &space) {
+            impl_->mesh->wrap(space->mesh_ptr());
+            impl_->wrap(space);
+        }
+
         FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->n_dofs(); }
         FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return impl_->n_local_dofs(); }
 
@@ -132,6 +139,15 @@ namespace utopia {
 
         template std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 3>>>
         FunctionSpace::raw_type() const;
+
+        template void FunctionSpace::wrap(
+            const std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 1>>> &space);
+
+        template void FunctionSpace::wrap(
+            const std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 2>>> &space);
+
+        template void FunctionSpace::wrap(
+            const std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, 3>>> &space);
 
     }  // namespace moonolith
 }  // namespace utopia

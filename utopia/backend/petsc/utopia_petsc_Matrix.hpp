@@ -896,6 +896,7 @@ namespace utopia {
         bool has_type(MatType type) const;
         bool same_type(const PetscMatrix &other) const;
         bool is_cuda() const;
+        bool is_assembled() const;
 
         static bool is_block(Mat mat);
         bool is_block() const;

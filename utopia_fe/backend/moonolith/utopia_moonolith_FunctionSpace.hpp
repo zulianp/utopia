@@ -35,6 +35,9 @@ namespace utopia {
             template <int Dim>
             std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, Dim>>> raw_type() const;
 
+            template <int Dim>
+            void wrap(const std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<Scalar, Dim>>> &space);
+
             SizeType n_dofs() const;
             SizeType n_local_dofs() const;
 

@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 // All libmesh includes
+#include "libmesh/boundary_info.h"
 #include "libmesh/const_function.h"
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/dof_map.h"
@@ -47,7 +48,7 @@ namespace utopia {
                 if (!Options()
                          .add_option("fe_family", fe_family, "The finite element family from enum libMesh::FEFamily.")
                          .add_option("order", order, "The finite element order from enum libMesh::Order.")
-                         .add_option("var", name, "Name of the variable")
+                         .add_option("name", name, "Name of the variable")
                          .add_option("components", components, "number of vector components")
                          .parse(in)) {
                     return;
@@ -90,11 +91,12 @@ namespace utopia {
         public:
             void read(Input &in) override {
                 if (!Options()
-                         .add_option("bc_name", bc_name, "Name of boundary condition.")
-                         .add_option("bc_type", bc_type, "Type of boundary condition.")
+                         .add_option("name", name, "Name of boundary condition.")
+                         .add_option("type", type, "Type of boundary condition.")
                          .add_option("var", var, "Variable number associated with boundary condition.")
                          .add_option("function_type", function_type, "Type of function: const|parsed.")
                          .add_option("value", value, "Value of function")
+                         .add_option("side", side, "The sideset id")
                          .parse(in)) {
                     return;
                 }
@@ -104,11 +106,21 @@ namespace utopia {
                 std::vector<unsigned int> vars(1);
                 vars[0] = var;
                 std::set<libMesh::boundary_id_type> bt;
-                bt.insert(side_set);
 
                 auto &dof_map = sys.get_dof_map();
 
-                if (bc_type == "dirichlet") {
+                if (side == -1) {
+                    side = sys.get_mesh().get_boundary_info().get_id_by_name(name);
+
+                    if (side == libMesh::BoundaryInfo::invalid_id) {
+                        assert(false);
+                        Utopia::Abort();
+                    }
+                }
+
+                bt.insert(side);
+
+                if (type == "dirichlet") {
                     if (function_type == "const") {
                         dof_map.add_dirichlet_boundary(libMesh::DirichletBoundary(
                             bt, vars, libMesh::ConstFunction<libMesh::Real>(atof(value.c_str()))));
@@ -121,12 +133,12 @@ namespace utopia {
 
             void describe(std::ostream &os) const override { os << "BC"; }
 
-            std::string bc_name{"bc"};
-            std::string bc_type{"dirichlet"};
+            std::string name{"bc"};
+            std::string type{"dirichlet"};
             std::string function_type{"const"};
             std::string value{"0"};
             int var{0};
-            int side_set{0};
+            int side{-1};
         };
 
         class FunctionSpace::Sys : public Configurable, public Describable {
@@ -202,6 +214,8 @@ namespace utopia {
             impl_->systems = std::make_shared<libMesh::EquationSystems>(mesh->raw_type());
         }
 
+        bool FunctionSpace::empty() const { return !static_cast<bool>(impl_->systems); }
+
         FunctionSpace::~FunctionSpace() {}
 
         void FunctionSpace::read(Input &in) {
@@ -232,7 +246,7 @@ namespace utopia {
         void FunctionSpace::write(const Path &path, const Vector &x) {
             assert(impl_->systems);
 
-            auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
+            auto &sys = impl_->systems->get_system(system_id());
             convert(x, *sys.solution);
 
             libMesh::NameBasedIO(impl_->mesh->raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
@@ -257,7 +271,7 @@ namespace utopia {
         }
 
         const libMesh::DofMap &FunctionSpace::raw_type_dof_map() const {
-            return impl_->systems->get_system(MAIN_SYSTEM_ID).get_dof_map();
+            return impl_->systems->get_system(system_id()).get_dof_map();
         }
 
         void FunctionSpace::create_matrix(Matrix &mat) const {
@@ -265,7 +279,7 @@ namespace utopia {
 
             using IndexSet = Traits<Vector>::IndexSet;
 
-            auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
+            auto &sys = impl_->systems->get_system(system_id());
             auto &dof_map = sys.get_dof_map();
 
             auto vl = layout(comm(), dof_map.n_local_dofs(), dof_map.n_local_dofs());
@@ -284,7 +298,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::create_vector");
 
             using IndexSet = Traits<Vector>::IndexSet;
-            auto &sys = impl_->systems->get_system(MAIN_SYSTEM_ID);
+            auto &sys = impl_->systems->get_system(system_id());
             auto &dof_map = sys.get_dof_map();
 
             IndexSet index;
@@ -299,10 +313,10 @@ namespace utopia {
         void FunctionSpace::apply_constraints(Matrix &mat, Vector &vec) const {
             UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::apply_constraints");
 
-            assert(!empty(mat));
-            assert(!empty(vec));
+            assert(!utopia::empty(mat));
+            assert(!utopia::empty(vec));
 
-            auto &dof_map = impl_->systems->get_system(MAIN_SYSTEM_ID).get_dof_map();
+            auto &dof_map = impl_->systems->get_system(system_id()).get_dof_map();
 
             const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
@@ -340,21 +354,23 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::apply_constraints");
         }
 
+        FunctionSpace::SizeType FunctionSpace::system_id() const { return MAIN_SYSTEM_ID; }
+
         std::shared_ptr<FunctionSpaceWrapper> FunctionSpace::wrapper() { return impl_; }
 
         FunctionSpace::SizeType FunctionSpace::n_dofs() const {
             assert(impl_->systems);
-            return impl_->systems->get_system(MAIN_SYSTEM_ID).n_dofs();
+            return impl_->systems->get_system(system_id()).n_dofs();
         }
 
         FunctionSpace::SizeType FunctionSpace::n_local_dofs() const {
             assert(impl_->systems);
-            return impl_->systems->get_system(MAIN_SYSTEM_ID).n_local_dofs();
+            return impl_->systems->get_system(system_id()).n_local_dofs();
         }
 
         FunctionSpace::SizeType FunctionSpace::n_subspaces() const {
             assert(impl_->systems);
-            return impl_->systems->get_system(MAIN_SYSTEM_ID).n_vars();
+            return impl_->systems->get_system(system_id()).n_vars();
         }
 
         FunctionSpace::SizeType FunctionSpace::n_systems() const {
@@ -366,6 +382,7 @@ namespace utopia {
             assert(i < n_subspaces());
             assert(i + n_vars <= n_subspaces());
             FunctionSubspace ret;
+            ret.impl_->system_id = system_id();
             ret.impl_->subspace_id = i;
             ret.impl_->n_vars = n_vars;
             ret.impl_->space = wrapper();
@@ -385,6 +402,8 @@ namespace utopia {
         FunctionSubspace::FunctionSubspace() : impl_(std::make_shared<Impl>()) {}
 
         FunctionSubspace::~FunctionSubspace() {}
+
+        FunctionSubspace::SizeType FunctionSubspace::subspace_id() const { return impl_->subspace_id; }
 
         FunctionSubspace::SizeType FunctionSubspace::n_dofs() const {
             return impl_->space->systems->get_system(impl_->system_id).n_dofs();

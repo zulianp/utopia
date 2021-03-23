@@ -1337,6 +1337,7 @@ namespace utopia {
             }
         }
 
+        out_mesh.set_manifold_dim(Dim - 1);
         out_mesh.finalize();
     }
 
@@ -1464,6 +1465,7 @@ namespace utopia {
             }
         }
 
+        out_mesh.set_manifold_dim(Dim - 1);
         out_mesh.finalize();
 
         ////////////////////////////////////////////////////////////////

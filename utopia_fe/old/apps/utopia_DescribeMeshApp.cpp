@@ -1,4 +1,5 @@
-#include "utopia_DescribeMeshApp.hpp"
+// #include "utopia_DescribeMeshApp.hpp"
+#include "utopia_Main.hpp"
 
 #include "utopia_LibMeshBackend.hpp"
 
@@ -11,17 +12,20 @@
 #include "utopia_libmesh_DiegoMesh.hpp"
 #include "utopia_ui.hpp"
 
+#include "utopia_libmesh_Mesh.hpp"
+
 namespace utopia {
 
-    DescribeMeshApp::DescribeMeshApp() {}
+    void describe_mesh(Input &in) {
+        utopia::libmesh::Mesh mesh_wrapper;
+        in.get("mesh", mesh_wrapper);
 
-    DescribeMeshApp::~DescribeMeshApp() {}
+        if (mesh_wrapper.empty()) {
+            utopia::err() << "[Error] something went wrong reading the mesh\n";
+            return;
+        }
 
-    void DescribeMeshApp::run(Input &in) {
-        UIMesh<libMesh::DistributedMesh> mesh_reader(comm());
-        in.get("mesh", mesh_reader);
-
-        auto &mesh = mesh_reader.mesh();
+        auto &mesh = mesh_wrapper.raw_type();
 
         std::size_t elem_idx = 0;
         for (const auto &elem_ptr : mesh.active_local_element_ptr_range()) {
@@ -48,4 +52,6 @@ namespace utopia {
 
         libMesh::ExodusII_IO(mesh).write("desc.e");
     }
+
+    UTOPIA_REGISTER_APP(describe_mesh);
 }  // namespace utopia

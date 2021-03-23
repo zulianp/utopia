@@ -32,6 +32,7 @@ namespace utopia {
 
             const Vector &gap() const;
             const Vector &is_contact() const;
+            const Vector &normals() const;
 
             Obstacle();
             ~Obstacle();
