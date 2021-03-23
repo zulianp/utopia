@@ -2,6 +2,7 @@ list(
     APPEND
     CORE_MODULES
     .
+    functions
     eval
     expressions
     expressions_parallel

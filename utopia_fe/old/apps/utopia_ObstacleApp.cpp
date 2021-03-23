@@ -26,11 +26,6 @@
 
 namespace utopia {
 
-    // inline void write(const Path &path, libMesh::MeshBase &mesh) {
-    //     std::cout << "Writing mesh at " << path.to_string() << std::endl;
-    //     libMesh::ExodusII_IO(mesh).write(path.to_string());
-    // }
-
     class ObstacleProblem : public Configurable {
     public:
         using FS = utopia::LibMeshFunctionSpace;
@@ -40,7 +35,6 @@ namespace utopia {
 
         void read(Input &in) override {
             in.get("space", space);
-
             in.get("obstacle", obstacle_mesh);
             in.get("obstacle", params);
 
@@ -117,6 +111,7 @@ namespace utopia {
         void run() {
             obs.set_params(params);
             obs.init_obstacle(obstacle_mesh);
+
             if (!obs.assemble(space)) {
                 Utopia::Abort();
                 return;
@@ -125,11 +120,12 @@ namespace utopia {
             // FIXME
             auto &dof_map = space.raw_type_dof_map();
 
-            UVector x, g, c;
+            UVector x, g;
             USparseMatrix H;
 
+            space.create_matrix(H);
             space.create_vector(x);
-            c = x;
+            space.create_vector(g);
 
             model_->assemble_hessian_and_gradient(x, H, g);
             g *= -1.0;
@@ -170,7 +166,6 @@ namespace utopia {
         utopia::libmesh::Obstacle::Params params;
         utopia::libmesh::Obstacle obs;
 
-        // std::shared_ptr<LibMeshFunctionSpace> hack_;
         std::shared_ptr<ElasticMaterial<USparseMatrix, UVector>> model_;
         std::shared_ptr<QPSolver<USparseMatrix, UVector>> qp_solver_;
     };

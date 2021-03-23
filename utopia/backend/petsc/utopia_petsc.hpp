@@ -34,6 +34,8 @@
 #include "utopia_petsc_Eval.hpp"
 #include "utopia_petsc_Layout.hpp"
 
+#include "utopia_petsc_MeasureResidual.hpp"
+
 /// FIXME
 
 // #include "utopia_petsc_Matrix_impl.hpp"

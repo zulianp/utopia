@@ -8,6 +8,8 @@
 #include "utopia_Agglomerate.hpp"
 #include "utopia_ILUDecompose.hpp"
 
+#include "utopia_InputParameters.hpp"
+
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"
@@ -89,6 +91,11 @@ public:
                 b.set(b.size() - 1, 0);
             }
         }
+
+        // auto params = param_list(param(
+        //     "measure_residual",
+        //     param_list(param("type", "MeasureResidualComponents"), param("verbose", true), param("block_size", 2))));
+        // amg.read(params);
 
         amg.verbose(true);
         amg.atol(1e-6);
