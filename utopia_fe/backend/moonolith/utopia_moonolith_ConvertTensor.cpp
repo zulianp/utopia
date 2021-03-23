@@ -48,9 +48,8 @@ namespace utopia {
         const ::moonolith::SparseMatrix<UScalar> &in,
         UVector &out) {
         auto n_local_rows = in.local_rows();
-        auto n_local_cols = in.local_cols();
 
-        assert(n_local_cols == 1);
+        assert(in.local_cols() == 1);
 
         out.zeros(layout(in.comm().get(), n_local_rows, Traits<UVector>::determine()));
 

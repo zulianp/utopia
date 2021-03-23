@@ -1,6 +1,10 @@
 
 #include "utopia_Main.hpp"
 
+#include "utopia_fe_base.hpp"
+
+#ifdef UTOPIA_WITH_LIBMESH
+
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIMaterial.hpp"
@@ -24,15 +28,23 @@ namespace utopia {
 
     namespace frontend = utopia::libmesh;
 
+    // Once stk integration becomes available for this problem
+
+    // namespace frontend = utopia::stk;
+
     class ObstacleProblem : public Configurable {
     public:
+        // Extract front-end associated objects
         using Vector_t = Traits<frontend::FunctionSpace>::Vector;
         using Matrix_t = Traits<frontend::FunctionSpace>::Matrix;
         using Size_t = Traits<frontend::FunctionSpace>::SizeType;
+
+        // Use algorithms from utopia algebra
         using QPSolver_t = utopia::QPSolver<Matrix_t, Vector_t>;
         using SemismoothNewton_t = utopia::SemismoothNewton<Matrix_t, Vector_t>;
         using Factorization_t = utopia::Factorization<Matrix_t, Vector_t>;
         using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
+        using IterativeSolver_t = utopia::IterativeSolver<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
             in.get("space", space);
@@ -45,7 +57,7 @@ namespace utopia {
             in.get("obstacle", obstacle_mesh);
             in.get("obstacle", params);
 
-            assembler = std::make_shared<libmesh::OmniAssembler>(make_ref(space));
+            assembler = std::make_shared<frontend::OmniAssembler>(make_ref(space));
             in.get("assembly", *assembler);
 
             int block_size = space.mesh().spatial_dimension();
@@ -59,7 +71,7 @@ namespace utopia {
 
             if (qp_solver_type == "ssnewton") {
                 if (use_amg) {
-                    std::shared_ptr<IterativeSolver<Matrix_t, Vector_t>> smoother;
+                    std::shared_ptr<IterativeSolver_t> smoother;
                     auto ksp = std::make_shared<KSPSolver<Matrix_t, Vector_t>>();
                     ksp->pc_type("ilu");
                     ksp->ksp_type("richardson");
@@ -203,3 +215,5 @@ void obs(utopia::Input &in) {
 }
 
 UTOPIA_REGISTER_APP(obs);
+
+#endif  // UTOPIA_WITH_LIBMESH

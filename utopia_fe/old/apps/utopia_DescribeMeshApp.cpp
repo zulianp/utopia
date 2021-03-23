@@ -1,4 +1,8 @@
-// #include "utopia_DescribeMeshApp.hpp"
+
+#include "utopia_fe_base.hpp"
+
+#ifdef UTOPIA_WITH_LIBMESH
+
 #include "utopia_Main.hpp"
 
 #include "utopia_LibMeshBackend.hpp"
@@ -55,3 +59,5 @@ namespace utopia {
 
     UTOPIA_REGISTER_APP(describe_mesh);
 }  // namespace utopia
+
+#endif  // UTOPIA_WITH_LIBMESH
