@@ -150,11 +150,24 @@ function(utopiafe_add_module module_name libraryRootDir subDirs)
         target_include_directories(
             ${module_name} BEFORE
             PUBLIC $<BUILD_INTERFACE:${libraryRootDir}/${MODULE}>)
-        target_link_directories(${module_name} PUBLIC
-                                ${libraryRootDir}/${MODULE})
     endforeach(MODULE)
 
-    # target_link_libraries(utopia_fe PUBLIC ${module_name})
+    target_include_directories(
+        ${module_name} BEFORE
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/base>)
+    target_include_directories(
+        ${module_name} BEFORE
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+    target_include_directories(${module_name} BEFORE
+                               PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>)
+
+    install(
+        TARGETS ${module_name}
+        EXPORT UtopiaFETargets
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+
 endfunction()
 
 macro(add_utopiafe_app app_name)
@@ -456,24 +469,27 @@ target_link_libraries(utopia_fe_test utopia_fe)
 target_link_libraries(utopia_fe_exec utopia_fe)
 
 if(TARGET utopia_stk)
-    target_link_libraries(utopia_fe_test utopia_stk)
-    target_link_libraries(utopia_fe_exec utopia_stk)
+    target_link_libraries(utopia_fe PUBLIC utopia_stk)
+    # target_link_libraries(utopia_fe_test utopia_stk)
+    # target_link_libraries(utopia_fe_exec utopia_stk)
 endif()
 
 if(TARGET utopia_moonolith)
-    target_link_libraries(utopia_fe_exec utopia_moonolith)
+    target_link_libraries(utopia_fe PUBLIC utopia_moonolith)
     # target_link_libraries(utopia_fe_test utopia_moonolith)
     # target_link_libraries(utopia_fe_exec utopia_moonolith)
 endif()
 
 if(TARGET utopia_interop)
-    target_link_libraries(utopia_fe_test utopia_interop)
-    target_link_libraries(utopia_fe_exec utopia_interop)
+    target_link_libraries(utopia_fe PUBLIC utopia_interop)
+    # target_link_libraries(utopia_fe_test utopia_interop)
+    # target_link_libraries(utopia_fe_exec utopia_interop)
 endif()
 
 if(TARGET utopia_intrepid2)
-    target_link_libraries(utopia_fe_test utopia_intrepid2)
-    target_link_libraries(utopia_fe_exec utopia_intrepid2)
+    target_link_libraries(utopia_fe PUBLIC utopia_intrepid2)
+    # target_link_libraries(utopia_fe_test utopia_intrepid2)
+    # target_link_libraries(utopia_fe_exec utopia_intrepid2)
 endif()
 
 include(tests/tests.cmake)

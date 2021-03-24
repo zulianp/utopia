@@ -9,24 +9,8 @@ if(ParMoonolith_FOUND)
         TRUE
         PARENT_SCOPE)
 
-    install(
-        TARGETS utopia_moonolith
-        EXPORT UtopiaMoonolithTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
     target_link_libraries(utopia_moonolith PUBLIC ParMoonolith::par_moonolith
                                                   Utopia::utopia)
-
-    target_include_directories(utopia_moonolith BEFORE
-                               PUBLIC ${CMAKE_SOURCE_DIR}/base)
-
-    target_include_directories(utopia_moonolith BEFORE
-                               PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-    target_include_directories(utopia_moonolith BEFORE
-                               PUBLIC ${CMAKE_BINARY_DIR})
 
     set(MOONOLITH_LIBRARIES
         ${MOONOLITH_LIBRARIES}

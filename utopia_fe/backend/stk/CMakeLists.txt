@@ -1,27 +1,16 @@
-
 find_package(Trilinos NO_MODULE NO_CMAKE_ENVIRONMENT_PATH
              NO_SYSTEM_ENVIRONMENT_PATH HINTS $ENV{TRILINOS_DIR})
 
 if(Trilinos_FOUND)
     utopiafe_add_module(utopia_stk ${CMAKE_CURRENT_SOURCE_DIR} ".")
 
-    target_include_directories(utopia_stk BEFORE
-                               PUBLIC ${Trilinos_INCLUDE_DIRS})
-
-    target_include_directories(utopia_stk BEFORE
-                               PUBLIC ${Trilinos_TPL_INCLUDE_DIRS})
+    target_include_directories(utopia_stk PUBLIC ${Trilinos_INCLUDE_DIRS})
+    target_include_directories(utopia_stk PUBLIC ${Trilinos_TPL_INCLUDE_DIRS})
 
     target_link_libraries(utopia_stk PUBLIC Utopia::utopia)
     target_link_libraries(utopia_stk INTERFACE ${Trilinos_TPL_LIBRARIES})
     target_link_libraries(utopia_stk INTERFACE ${Trilinos_LIBRARIES})
-
-    target_include_directories(utopia_stk BEFORE
-                               PUBLIC ${CMAKE_SOURCE_DIR}/base)
-
-    target_include_directories(utopia_stk BEFORE
-                               PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-    target_include_directories(utopia_stk BEFORE PUBLIC ${CMAKE_BINARY_DIR})
+    target_link_directories(utopia_stk INTERFACE ${Trilinos_TPL_LIBRARY_DIRS})
 
     set(Trilinos_LIBRARIES
         ${Trilinos_LIBRARIES}

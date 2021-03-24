@@ -37,14 +37,6 @@ if(INTEROP_EXISTS)
     target_link_libraries(utopia_interop PUBLIC Utopia::utopia)
     target_link_libraries(utopia_interop PUBLIC ${INTEROP_DEP})
 
-    target_include_directories(utopia_interop BEFORE
-                               PUBLIC ${CMAKE_SOURCE_DIR}/base)
-
-    target_include_directories(utopia_interop BEFORE
-                               PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-    target_include_directories(utopia_interop BEFORE PUBLIC ${CMAKE_BINARY_DIR})
-
     set(INTEROP_LIBRARIES
         ${INTEROP_LIBRARIES}
         PARENT_SCOPE)
