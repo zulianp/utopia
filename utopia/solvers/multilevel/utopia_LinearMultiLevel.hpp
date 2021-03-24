@@ -138,7 +138,7 @@ namespace utopia {
         inline bool set_linear_operators(const std::vector<std::shared_ptr<const Matrix>> &A) {
             if (this->n_levels() <= 0) {
                 this->n_levels(A.size());
-            } else if (this->n_levels() != A.size()) {
+            } else if (this->n_levels() != static_cast<SizeType>(A.size())) {
                 utopia_error(
                     "utopia::MultilevelBase:: number of levels and linear operators do "
                     "not match ... \n");

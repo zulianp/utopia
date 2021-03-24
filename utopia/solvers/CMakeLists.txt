@@ -1,4 +1,6 @@
-list(APPEND SOLVERS_MODULES
+list(
+    APPEND
+    SOLVERS_MODULES
     .
     eigensolvers
     linear
@@ -6,6 +8,7 @@ list(APPEND SOLVERS_MODULES
     multilevel/transfer
     multilevel/constraints
     multilevel/fun_evals
+    multilevel/agglomerate
     smoothers
     nonlinear
     nonlinear/pseudo_transient_continuation
@@ -16,6 +19,6 @@ list(APPEND SOLVERS_MODULES
     nonlinear/trust_region/QP_subproblems
     nonlinear/hessian_approximations
     preconditioners
-    saddlepoint
-)
+    saddlepoint)
+
 utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${SOLVERS_MODULES}")

@@ -13,6 +13,8 @@ namespace utopia {
 
     class JSONInput final : public Input {
     public:
+        using Input::get;
+
         JSONInput();
         ~JSONInput() override;
 

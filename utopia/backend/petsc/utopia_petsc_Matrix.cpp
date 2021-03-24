@@ -417,7 +417,7 @@ namespace utopia {
         int size = 0;
         MPI_Comm_size(comm, &size);
 
-        if (size == 1 || !is_mpi()) {
+        if (!is_block() && (size == 1 || !is_mpi())) {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMax(raw_type(), v, nullptr);
@@ -439,7 +439,7 @@ namespace utopia {
         int size = 0;
         MPI_Comm_size(comm, &size);
 
-        if (size == 1 || !is_mpi()) {
+        if (!is_block() && (size == 1 || !is_mpi())) {
             Vec v;
             MatCreateVecs(raw_type(), nullptr, &v);
             MatGetRowMin(raw_type(), v, nullptr);
@@ -1267,6 +1267,24 @@ namespace utopia {
         PetscObjectTypeCompare(reinterpret_cast<PetscObject>(raw_type()), MATSEQAIJCUSPARSE, &match);
         return match == PETSC_TRUE;
     }
+
+    bool PetscMatrix::is_block(Mat mat) {
+        PetscBool match = PETSC_FALSE;
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(mat), MATBAIJ, &match);
+        if (match == PETSC_TRUE) {
+            return true;
+        }
+
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(mat), MATSEQBAIJ, &match);
+        if (match == PETSC_TRUE) {
+            return true;
+        }
+
+        PetscObjectTypeCompare(reinterpret_cast<PetscObject>(mat), MATMPIBAIJ, &match);
+        return match == PETSC_TRUE;
+    }
+
+    bool PetscMatrix::is_block() const { return is_block(raw_type()); }
 
     VecType PetscMatrix::compatible_cuda_vec_type() const {
         PetscBool match = PETSC_FALSE;

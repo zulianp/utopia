@@ -21,7 +21,7 @@ namespace utopia {
             static constexpr int Size = N * Lanes;
             using Ops = utopia::simd_v2::Ops<SIMDType>;
 
-            // enum { StoreAs = UTOPIA_BY_REFERENCE };
+            enum { StoreAs = UTOPIA_BY_REFERENCE };
 
             // static constexpr size_t data_alignment() { return SIMDType::MemoryAlignment; }
             // alignas(data_alignment())
@@ -42,6 +42,7 @@ namespace utopia {
             }
 
             inline CONST_SIMD_RET SIMDType operator[](const int idx) const { return Ops::construct(block(idx)); }
+            inline CONST_SIMD_RET SIMDType operator()(const int idx) const { return Ops::construct(block(idx)); }
 
             inline T &ref(const int component, const int lane) {
                 assert(component < N);
@@ -164,6 +165,36 @@ namespace utopia {
                 for (int i = 0; i < Size; ++i) {
                     data[i] = val;
                 }
+            }
+
+            friend inline DeviceBinary<DeviceNumber<T>, Vector, Multiplies> operator*(const T &left,
+                                                                                      const Vector &right) {
+                return DeviceBinary<DeviceNumber<T>, Vector, Multiplies>(left, right);
+            }
+
+            friend inline DeviceBinary<DeviceNumber<SIMDType>, Vector, Multiplies> operator*(const SIMDType &left,
+                                                                                             const Vector &right) {
+                return DeviceBinary<DeviceNumber<SIMDType>, Vector, Multiplies>(left, right);
+            }
+
+            template <class Expr>
+            inline Vector &operator=(const DeviceExpression<Expr> &expr) {
+                auto &&d = expr.derived();
+                for (int i = 0; i < N; ++i) {
+                    Ops::store(d(i), block(i));
+                }
+
+                return *this;
+            }
+
+            template <class Expr>
+            inline Vector &operator+=(const DeviceExpression<Expr> &expr) {
+                auto &&d = expr.derived();
+                for (int i = 0; i < N; ++i) {
+                    Ops::in_place_add(d(i), block(i));
+                }
+
+                return *this;
             }
         };
     }  // namespace simd_v2

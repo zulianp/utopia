@@ -10,7 +10,7 @@ namespace utopia {
     class Tri3 : public Elem {
     public:
         using Scalar = Scalar_;
-        using MemType = Uniform<>;
+        using MemType = Varying<>;
         static const int Dim = 2;
         static const int NNodes = 3;
         static const int NSides = 3;

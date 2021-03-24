@@ -191,6 +191,7 @@ namespace utopia {
                     InputParameters params;
                     params.set("block_size", FunctionSpace::NComponents);
                     params.set("use_simd", use_simd_);
+                    params.set("on_update_keep_nnz_pattern", true);
                     pgs->read(params);
                 }
 

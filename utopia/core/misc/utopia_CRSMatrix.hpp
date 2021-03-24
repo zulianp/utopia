@@ -85,6 +85,7 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION CRSMatrix() = default;
 
+        UTOPIA_INLINE_FUNCTION SizeType n_blocks() const { return values_.size() / BlockSize2; }
         UTOPIA_INLINE_FUNCTION SizeType nnz() const { return values_.size(); }
         UTOPIA_INLINE_FUNCTION SizeType cols() const { return n_cols_; }
         UTOPIA_INLINE_FUNCTION SizeType rows() const { return row_ptr_.size() - 1; }
@@ -101,6 +102,46 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION Scalar *block(const SizeType i) { return &values_[i * BlockSize2]; }
 
         UTOPIA_INLINE_FUNCTION void set_cols(const SizeType n_cols) { n_cols_ = n_cols; }
+
+        bool is_valid() const {
+            using NonConstSizeType = typename std::remove_const<SizeType>::type;
+
+            const SizeType n = values_.size();
+
+            for (NonConstSizeType i = 0; i < n; ++i) {
+                const Scalar v = values_[i];
+                if (v != v) {
+                    assert(v == v);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        Scalar min() const {
+            if (values_.empty()) return 0.0;
+
+            typename std::remove_const<Scalar>::type ret = values_[0];
+
+            for (auto v : values_) {
+                ret = std::min(ret, v);
+            }
+
+            return ret;
+        }
+
+        Scalar max() const {
+            if (values_.empty()) return 0.0;
+
+            typename std::remove_const<Scalar>::type ret = values_[0];
+
+            for (auto v : values_) {
+                ret = std::max(ret, v);
+            }
+
+            return ret;
+        }
 
     private:
         IndexView row_ptr_;

@@ -13,7 +13,7 @@
 namespace utopia {
 
     template <class Matrix>
-    class ProjectedGaussSeidelSweep : public Clonable {
+    class ProjectedGaussSeidelSweep : public Clonable, public Configurable {
     public:
         using Scalar = typename Traits<Matrix>::Scalar;
         using SizeType = typename Traits<Matrix>::SizeType;
@@ -55,6 +55,8 @@ namespace utopia {
         void l1(const bool l1) { l1_ = l1; }
 
         ProjectedGaussSeidelSweep() = default;
+
+        void read(Input &) override {}
 
     protected:
         VectorView c_;

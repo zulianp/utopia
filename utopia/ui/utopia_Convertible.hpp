@@ -57,6 +57,11 @@ namespace utopia {
         static void apply(const In &in, Out &out) { out = static_cast<Out>(in); }
     };
 
+    template <typename In, typename Out>
+    class Convert<In &, Out> : public Convert<In, Out> {
+    public:
+    };
+
     template <typename InOut>
     class Convert<InOut, InOut> {
     public:
@@ -149,7 +154,7 @@ namespace utopia {
     template <typename T>
     class Convertible final : public IConvertible {
     public:
-        Convertible(T value) : value_(std::move(value)) {}
+        Convertible(T value) : value_(value) {}
 
         inline void get(double &in_out) const override { Convert<T, double>::apply(value_, in_out); }
 

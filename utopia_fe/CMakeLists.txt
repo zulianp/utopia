@@ -352,6 +352,8 @@ append_list_to_string_for_cmake(CONFIG_CONTENT "" "" "${LIBMESH_INCLUDE_DIR}")
 if(MOONOLITH_INCLUDES)
     append_list_to_string_for_cmake(CONFIG_CONTENT "" ")\n\n"
                                     ${MOONOLITH_INCLUDES})
+else()
+    set(CONFIG_CONTENT "${CONFIG_CONTENT})")
 endif()
 
 append_list_to_string_for_makefile_with_postfix(
