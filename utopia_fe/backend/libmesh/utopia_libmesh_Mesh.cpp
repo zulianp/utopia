@@ -7,6 +7,7 @@
 #include "utopia_libmesh_MeshInitializer.hpp"
 
 // All libmesh includes
+#include "libmesh/boundary_info.h"
 #include "libmesh/mesh_base.h"
 #include "libmesh/namebased_io.h"
 #include "libmesh/parallel.h"
@@ -52,7 +53,43 @@ namespace utopia {
 
         bool Mesh::empty() const { return impl_->empty(); }
 
-        void Mesh::describe(std::ostream &os) const { UTOPIA_UNUSED(os); }
+        void Mesh::describe(std::ostream &os) const {
+            if (empty()) {
+                os << "empty\n";
+                return;
+            }
+
+            auto &mesh = this->raw_type();
+            auto &bi = mesh.get_boundary_info();
+
+            os << "------------------\n";
+            os << "Boundary info\n";
+            os << "- Sidesets:\n";
+            for (auto id : bi.get_side_boundary_ids()) {
+                auto name = bi.get_sideset_name(id);
+                os << '\t' << name << ": " << id << '\n';
+            }
+
+            if (!bi.get_edge_boundary_ids().empty()) {
+                os << "- Edgesets:\n";
+
+                for (auto id : bi.get_edge_boundary_ids()) {
+                    auto name = bi.get_edgeset_name(id);
+                    os << '\t' << name << ": " << id << '\n';
+                }
+            }
+
+            if (!bi.get_node_boundary_ids().empty()) {
+                os << "- Nodesets:\n";
+
+                for (auto id : bi.get_node_boundary_ids()) {
+                    auto name = bi.get_nodeset_name(id);
+                    os << '\t' << name << ": " << id << '\n';
+                }
+            }
+
+            os << "------------------\n";
+        }
 
         libMesh::MeshBase &Mesh::raw_type() {
             assert(impl_->mesh);
