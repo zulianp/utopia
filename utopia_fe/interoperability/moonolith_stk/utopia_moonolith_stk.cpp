@@ -42,6 +42,8 @@ namespace utopia {
         static int convert_to_manifold_dim(::moonolith::ElemType type) {
             switch (type) {
                 case ::moonolith::NODE1:
+                    return 0;
+                case ::moonolith::EDGE2:
                     return 1;
                 case ::moonolith::TRI3:
                 case ::moonolith::QUAD4:
@@ -59,6 +61,8 @@ namespace utopia {
             switch (topo) {
                 case ::stk::topology::NODE:
                     return ::moonolith::NODE1;
+                case ::stk::topology::LINE_2:
+                    return ::moonolith::EDGE2;
                 case ::stk::topology::TRI_3_2D:
                 case ::stk::topology::SHELL_TRI_3:
                     return ::moonolith::TRI3;
@@ -156,6 +160,92 @@ namespace utopia {
         }
 
         static void extract_surface(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out) {
+            auto &meta_data = in.meta_data();
+            auto &bulk_data = in.bulk_data();
+
+            ::stk::mesh::Selector s_universal = meta_data.universal_part();
+
+            ::stk::mesh::FieldBase *coords = ::stk::mesh::get_field_by_name("coordinates", meta_data);
+
+            auto topo = ::stk::topology::FACE_RANK;
+
+            if (in.spatial_dimension() == 2) {
+                topo = ::stk::topology::EDGE_RANK;
+            } else {
+                assert(in.spatial_dimension() == 3);
+            }
+
+            const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, s_universal);
+
+            Bucket_t::size_type n_selected_elements = 0;
+            Bucket_t::size_type n_selected_nodes = 0;
+            Bucket_t::size_type n_local_nodes = in.n_local_nodes();
+
+            std::vector<SizeType> node_mapping(n_local_nodes, -1);
+
+            for (const auto &b_ptr : elem_buckets) {
+                auto &b = *b_ptr;
+
+                const Bucket_t::size_type length = b.size();
+
+                n_selected_elements += length;
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    Entity_t elem = b[k];
+
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+                    auto node_ids = bulk_data.begin_nodes(elem);
+
+                    for (Size_t i = 0; i < n_nodes; ++i) {
+                        auto idx = utopia::stk::convert_entity_to_index(node_ids[i]);
+
+                        if (node_mapping[idx] == -1) {
+                            node_mapping[idx] = n_selected_nodes++;
+                        }
+                    }
+                }
+            }
+
+            std::cout << "Num elem: " << n_selected_elements << "\n";
+
+            ////////////////////////////////////////////////////////////////
+            auto m_mesh = std::make_shared<MoonolithMesh_t>(in.comm().raw_comm());
+
+            m_mesh->resize(n_selected_elements, n_selected_nodes);
+            ////////////////////////////////////////////////////////////////
+
+            SizeType selected_elem_idx = 0;
+            for (const auto &ib : elem_buckets) {
+                const Bucket_t &b = *ib;
+
+                auto moonolith_type = convert_elem_type(b.topology());
+
+                const Bucket_t::size_type length = b.size();
+
+                std::cout << "Bucket with " << length << " ";
+                std::cout << b.topology() << " -> ";
+                std::cout << moonolith_type << "\n";
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    Entity_t elem = b[k];
+                    const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                    auto &e = m_mesh->elem(selected_elem_idx++);
+                    e.type = moonolith_type;
+                    e.block = 1;              // elem.subdomain_id();
+                    e.is_affine = true;       /// elem.has_affine_map();
+                    e.global_idx = elem_idx;  // elem.unique_id();
+                    e.nodes.resize(n_nodes);
+
+                    auto node_ids = bulk_data.begin_nodes(elem);
+
+                    for (Size_t i = 0; i < n_nodes; ++i) {
+                        e.nodes[i] = node_mapping[utopia::stk::convert_entity_to_index(node_ids[i])];
+                    }
+                }
+            }
+
             assert(false && "IMPLEMENT ME");
         }
     };

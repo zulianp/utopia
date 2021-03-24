@@ -25,11 +25,23 @@ void stk_moonolith_convert_mesh() {
     utopia_test_assert(mesh_to.write("membrane_1.vtu"));
 }
 
+void stk_moonolith_extract_surface() {
+    using MeshFrom = utopia::stk::Mesh;
+    using MeshTo = utopia::moonolith::Mesh;
+
+    MeshFrom volume;
+    utopia_test_assert(volume.read("../data/knf/rectangle_4_tris.e"));
+
+    MeshTo surface;
+    extract_surface(volume, surface);
+    // utopia_test_assert(surface.write("membrane_1.vtu"));
+}
+
 void stk_moonolith_convert_space() {
     using FunctionSpaceFrom = utopia::stk::FunctionSpace;
     using FunctionSpaceTo = utopia::moonolith::FunctionSpace;
 
-    auto params = param_list(param("path", "../data/knf/rectangle_4_tris.e"));
+    auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
     FunctionSpaceFrom space_from;
     space_from.read(params);
 
@@ -45,7 +57,7 @@ void stk_moonolith_fe_transfer() {
 
     FunctionSpace_t space_from, space_to;
 
-    auto params = param_list(param("path", "../data/knf/rectangle_4_tris.e"));
+    auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
 
     space_from.read(params);
     space_to.read(params);
@@ -58,6 +70,7 @@ void interop_moonolith_stk() {
     UTOPIA_RUN_TEST(stk_moonolith_convert_mesh);
     UTOPIA_RUN_TEST(stk_moonolith_convert_space);
     UTOPIA_RUN_TEST(stk_moonolith_fe_transfer);
+    UTOPIA_RUN_TEST(stk_moonolith_extract_surface);
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(interop_moonolith_stk);
