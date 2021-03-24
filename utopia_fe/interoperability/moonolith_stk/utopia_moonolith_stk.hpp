@@ -3,6 +3,7 @@
 
 #include "utopia_ConvertFunctionSpace.hpp"
 #include "utopia_ConvertMesh.hpp"
+#include "utopia_ExtractSurface.hpp"
 
 #include "utopia_moonolith_ForwardDeclarations.hpp"
 #include "utopia_stk_ForwardDeclarations.hpp"
@@ -19,6 +20,13 @@ namespace utopia {
     public:
         static void apply(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out);
     };
+
+    template <>
+    class ExtractSurface<utopia::stk::Mesh, utopia::moonolith::Mesh> {
+    public:
+        static void apply(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out);
+    };
+
 }  // namespace utopia
 
 #endif  // UTOPIA_MOONOLITH_STK_HPP

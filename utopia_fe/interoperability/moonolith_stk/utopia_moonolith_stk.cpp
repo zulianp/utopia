@@ -154,6 +154,10 @@ namespace utopia {
             m_mesh->finalize();
             out.wrap(m_mesh);
         }
+
+        static void extract_surface(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out) {
+            assert(false && "IMPLEMENT ME");
+        }
     };
 
     void ConvertMesh<utopia::stk::Mesh, utopia::moonolith::Mesh>::apply(const utopia::stk::Mesh &in,
@@ -207,6 +211,33 @@ namespace utopia {
 
             case 3: {
                 ConvertMeshSTK2Moonolith<3>::copy_meta_info(in, out);
+                break;
+            }
+            default: {
+                Utopia::Abort();
+            }
+        }
+    }
+
+    void ExtractSurface<utopia::stk::Mesh, utopia::moonolith::Mesh>::apply(const utopia::stk::Mesh &in,
+                                                                           utopia::moonolith::Mesh &out) {
+        auto &meta_data = in.meta_data();
+
+        const int dim = meta_data.spatial_dimension();
+
+        switch (dim) {
+            case 1: {
+                ConvertMeshSTK2Moonolith<1>::extract_surface(in, out);
+                break;
+            }
+
+            case 2: {
+                ConvertMeshSTK2Moonolith<2>::extract_surface(in, out);
+                break;
+            }
+
+            case 3: {
+                ConvertMeshSTK2Moonolith<3>::extract_surface(in, out);
                 break;
             }
             default: {
