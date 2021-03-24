@@ -12,6 +12,16 @@ namespace utopia {
     void crs_block_matrix(const PetscMatrix &in,
                           CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out);
 
+    template <int BlockSize>
+    void crs_block_matrix_split_diag(const PetscMatrix &in,
+                                     CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out,
+                                     std::vector<PetscReal> &diag);
+
+    template <int BlockSize>
+    void crs_block_matrix_update(const PetscMatrix &in,
+                                 CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> &out,
+                                 std::vector<PetscReal> &diag);
+
     template <>
     class ILUDecompose<PetscMatrix, PETSC> final : public ILUAlgorithm<PetscMatrix, PetscVector> {
     public:
@@ -21,6 +31,7 @@ namespace utopia {
         bool update(const PetscMatrix &mat) override;
         void apply(const PetscVector &b, PetscVector &x) override;
         void read(Input &) override;
+        ILUDecompose *clone() const override { return new ILUDecompose(); }
 
     private:
         PetscMatrix ilu_;
@@ -34,6 +45,7 @@ namespace utopia {
         void apply(const PetscVector &b, PetscVector &x) override;
 
         void read(Input &) override;
+        BlockILUAlgorithm *clone() const override { return new BlockILUAlgorithm(); }
 
     private:
         CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> ilu_;

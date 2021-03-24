@@ -5,7 +5,7 @@ import glob
 # i.e. the working directory should be in such a way that ./*nodes/summary.0.csv is found
 
 allData = []
-for filename in sorted(glob.glob('[0-9]*nodes/summary.0.csv')):
+for filename in sorted(glob.glob('[0-9]*nodes/summary.*.0.csv')):
     numNodes = int(filename[0:4])
     # uncomment if you want all results and not only the one with a cube domain
     if numNodes not in (1, 8, 64, 512):

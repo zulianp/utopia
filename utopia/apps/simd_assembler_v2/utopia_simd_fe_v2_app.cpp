@@ -177,7 +177,8 @@ void simd_fe_hex_v2(Input &in) {
     disp(p_global);
     std::cout << "--------------\n";
 
-    PhysicalGradient<simd_v2::UniformHex8<Scalar>, simd_v2::Quadrature<Scalar, 3>> pg(q);
+    // Using varying version here
+    PhysicalGradient<simd_v2::UniformHex8<Scalar>, simd_v2::Quadrature<Scalar, 3>, Varying<>> pg(q);
     Differential<simd_v2::UniformHex8<Scalar>, simd_v2::Quadrature<Scalar, 3>> dx(q);
 
     auto gp_e = pg.make(hex);
@@ -227,7 +228,8 @@ void simd_fe_quad_v2(Input &in) {
     disp(g);
     disp(p_global);
 
-    PhysicalGradient<simd_v2::UniformQuad4<Scalar>, simd_v2::Quadrature<Scalar, 2>> pg(q);
+    // Using varying version here
+    PhysicalGradient<simd_v2::UniformQuad4<Scalar>, simd_v2::Quadrature<Scalar, 2>, Varying<>> pg(q);
     Differential<simd_v2::UniformQuad4<Scalar>, simd_v2::Quadrature<Scalar, 2>> dx(q);
 
     auto gp_e = pg.make(quad);

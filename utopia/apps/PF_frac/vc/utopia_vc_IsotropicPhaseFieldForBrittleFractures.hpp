@@ -49,18 +49,12 @@ namespace utopia {
         using CElem = typename CSpace::ViewDevice::Elem;
         using MixedElem = typename FunctionSpace::ViewDevice::Elem;
         using Parameters = utopia::PFFracParameters<FunctionSpace>;
-
-        // FIXME
         using Shape = typename FunctionSpace::Shape;
-        // using Quadrature = utopia::Quadrature<Shape, 2*(Shape::Order -1)>;
-        // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
 
         using SIMDType = Vc::Vector<Scalar>;
         using Quadrature = simd_v2::Quadrature<Scalar, Dim>;
-        using CGradValue = typename simd_v2::FETraits<CElem, Scalar>::GradValue;
-        using UGradValue = typename simd_v2::FETraits<UElem, Scalar>::GradValue;
-        // using GradValue = typename simd_v2::FETraits<Elem, SIMDType>::GradValue;
-        // using Quadrature = utopia::Quadrature<Shape, 2 * (Shape::Order)>;
+        using CGradValue = typename simd_v2::FETraits<CElem>::GradValue;
+        using UGradValue = typename simd_v2::FETraits<UElem>::GradValue;
 
         static const int C_NDofs = CSpace::NDofs;
         static const int U_NDofs = USpace::NDofs;
@@ -645,6 +639,8 @@ namespace utopia {
             Strain<USpace, Quadrature> ref_strain_u(U, q);
 
             {
+                UTOPIA_TRACE_REGION_BEGIN("vcIsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
+
                 auto U_view = U.view_device();
                 auto C_view = C.view_device();
                 auto space_view = this->space_.view_device();
@@ -796,6 +792,8 @@ namespace utopia {
 
                     space_view.add_matrix(e, el_mat, H_view);
                 });
+
+                UTOPIA_TRACE_REGION_END("vcIsotropicPhaseFieldForBrittleFractures::hessian_local_assembly");
             }
 
             // check before boundary conditions
