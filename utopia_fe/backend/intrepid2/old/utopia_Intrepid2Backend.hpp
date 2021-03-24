@@ -4,7 +4,7 @@
 #include "utopia_fe_kokkos_fix.hpp"
 
 //#include "utopia_LibMeshLambdaAssembly.hpp"
-#include "utopia_fe_core.hpp"
+#include "utopia_fe_EDSL.hpp"
 
 // Define the Finite Element object.
 /*#include "libmesh/fe.h"

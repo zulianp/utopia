@@ -168,6 +168,8 @@ function(utopiafe_add_module module_name libraryRootDir subDirs)
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
 
+    target_link_libraries(utopia_fe PUBLIC ${module_name})
+
 endfunction()
 
 macro(add_utopiafe_app app_name)
@@ -193,22 +195,7 @@ macro(add_utopiafe_app app_name)
 endmacro(add_utopiafe_app)
 
 if(UTOPIA_ENABLE_LIBMESH)
-    list(
-        APPEND
-        UTOPIA_FE_MODULES
-        old/multiphysics
-        old/fractures
-        old/wear
-        old/ui
-        old/multigrid
-        old/transfer
-        old/visualization
-        backend/libmesh
-        old/intersection
-        old/contact
-        old/materials
-        old/functions
-        old/core)
+    list(APPEND UTOPIA_FE_MODULES backend/libmesh edsl)
 
 endif()
 
@@ -224,7 +211,7 @@ if(UTOPIA_ENABLE_MARS)
     list(APPEND UTOPIA_FE_MODULES backend/mars)
 endif()
 
-list(APPEND UTOPIA_FE_MODULES base tests interoperability)
+list(APPEND UTOPIA_FE_MODULES base interoperability core)
 
 if(UTOPIA_INSTALL_LIBMESH)
     include(InstallLIBMESH)
@@ -468,31 +455,9 @@ add_executable(utopia_fe_test test.cpp)
 target_link_libraries(utopia_fe_test utopia_fe)
 target_link_libraries(utopia_fe_exec utopia_fe)
 
-if(TARGET utopia_stk)
-    target_link_libraries(utopia_fe PUBLIC utopia_stk)
-    # target_link_libraries(utopia_fe_test utopia_stk)
-    # target_link_libraries(utopia_fe_exec utopia_stk)
-endif()
-
-if(TARGET utopia_moonolith)
-    target_link_libraries(utopia_fe PUBLIC utopia_moonolith)
-    # target_link_libraries(utopia_fe_test utopia_moonolith)
-    # target_link_libraries(utopia_fe_exec utopia_moonolith)
-endif()
-
-if(TARGET utopia_interop)
-    target_link_libraries(utopia_fe PUBLIC utopia_interop)
-    # target_link_libraries(utopia_fe_test utopia_interop)
-    # target_link_libraries(utopia_fe_exec utopia_interop)
-endif()
-
-if(TARGET utopia_intrepid2)
-    target_link_libraries(utopia_fe PUBLIC utopia_intrepid2)
-    # target_link_libraries(utopia_fe_test utopia_intrepid2)
-    # target_link_libraries(utopia_fe_exec utopia_intrepid2)
-endif()
-
 include(tests/tests.cmake)
+
+include(apps/apps.cmake)
 
 if(UTOPIA_ENABLE_LIBMESH)
     include(old/apps/apps.cmake)

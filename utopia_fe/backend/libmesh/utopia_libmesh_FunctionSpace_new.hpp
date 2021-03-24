@@ -5,7 +5,10 @@
 
 namespace utopia {
     template <>
-    class Traits<utopia::libmesh::FunctionSpace> : public Traits<utopia::libmesh::Mesh> {};
+    class Traits<utopia::libmesh::FunctionSpace> : public Traits<utopia::libmesh::Mesh> {
+    public:
+        using Mesh = utopia::libmesh::Mesh;
+    };
 
     template <>
     class Traits<utopia::libmesh::FunctionSubspace> : public Traits<utopia::libmesh::FunctionSpace> {};

@@ -15,7 +15,7 @@
 #include "utopia_libmesh_Types.hpp"
 #include "utopia_libmesh_Utils.hpp"
 
-#include "utopia_fe_core.hpp"
+#include "utopia_fe_EDSL.hpp"
 
 #include "libmesh/elem.h"
 #include "libmesh/fe.h"

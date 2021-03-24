@@ -14,13 +14,6 @@ namespace utopia {
         static void apply(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out);
     };
 
-    // Eventually implement this
-    // template <>
-    // class ConvertMesh<utopia::moonolith::Mesh, utopia::stk::Mesh> {
-    // public:
-    //     static void apply(const utopia::moonolith::Mesh &in, utopia::stk::Mesh &out);
-    // };
-
     template <>
     class ConvertFunctionSpace<utopia::stk::FunctionSpace, utopia::moonolith::FunctionSpace> {
     public:

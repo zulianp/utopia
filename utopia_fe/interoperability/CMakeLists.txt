@@ -15,8 +15,18 @@ if(UTOPIA_ENABLE_MOONOLITH)
     endif()
 
     if(UTOPIA_ENABLE_LIBMESH)
-        list(APPEND INTEROP_DEP utopia_moonolith utopia_fe)
-        list(APPEND INTEROP_MODULES moonolith_libmesh)
+        list(APPEND INTEROP_DEP utopia_moonolith utopia_libmesh)
+        list(
+            APPEND
+            INTEROP_MODULES
+            moonolith_libmesh
+            moonolith_libmesh/old
+            moonolith_libmesh/old/transfer
+            moonolith_libmesh/old/transfer/assemblers
+            moonolith_libmesh/old/transfer/quadrature
+            moonolith_libmesh/old/transfer/contact_assemblers
+            moonolith_libmesh/old/transfer/adapters
+            moonolith_libmesh/old/clipper)
         set(INTEROP_EXISTS TRUE)
     endif()
 

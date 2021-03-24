@@ -7,7 +7,7 @@ if(Trilinos_FOUND)
     target_include_directories(utopia_stk PUBLIC ${Trilinos_INCLUDE_DIRS})
     target_include_directories(utopia_stk PUBLIC ${Trilinos_TPL_INCLUDE_DIRS})
 
-    target_link_libraries(utopia_stk PUBLIC Utopia::utopia)
+    target_link_libraries(utopia_stk PUBLIC Utopia::utopia utopia_fe_core)
     target_link_libraries(utopia_stk INTERFACE ${Trilinos_TPL_LIBRARIES})
     target_link_libraries(utopia_stk INTERFACE ${Trilinos_LIBRARIES})
     target_link_directories(utopia_stk INTERFACE ${Trilinos_TPL_LIBRARY_DIRS})

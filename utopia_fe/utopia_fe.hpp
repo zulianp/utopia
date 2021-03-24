@@ -11,7 +11,7 @@
 #include "utopia_assemble_contact.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_assemble_volume_transfer_r.hpp"
-#include "utopia_fe_core.hpp"
+#include "utopia_fe_EDSL.hpp"
 #include "utopia_libmesh.hpp"
 #endif
 

@@ -1,6 +1,7 @@
 #ifndef UTOPIA_OBSTACLE_HPP
 #define UTOPIA_OBSTACLE_HPP
 
+#include "utopia_fe_Core.hpp"
 #include "utopia_ui.hpp"
 
 #include "utopia_libmesh_FunctionSpace_new.hpp"
@@ -29,7 +30,7 @@ namespace utopia {
             void inverse_transform(const Vector &in, Vector &out);
 
             Obstacle();
-            ~Obstacle();
+            virtual ~Obstacle();
 
             const Vector &gap() const;
             const Vector &is_contact() const;
@@ -41,6 +42,9 @@ namespace utopia {
         };
 
     }  // namespace libmesh
+
+    template <>
+    class Obstacle<utopia::libmesh::FunctionSpace> final : public utopia::libmesh::Obstacle {};
 }  // namespace utopia
 
 #endif  // UTOPIA_OBSTACLE_HPP

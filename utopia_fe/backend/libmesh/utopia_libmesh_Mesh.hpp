@@ -4,7 +4,6 @@
 #include "utopia_Communicator.hpp"
 #include "utopia_Describable.hpp"
 #include "utopia_Input.hpp"
-#include "utopia_Mesh.hpp"
 
 #include "utopia_fe_base.hpp"
 

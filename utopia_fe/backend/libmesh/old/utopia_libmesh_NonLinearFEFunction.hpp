@@ -7,7 +7,7 @@
 #include "utopia.hpp"
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_FormEvaluator.hpp"
-#include "utopia_fe_core.hpp"
+#include "utopia_fe_EDSL.hpp"
 
 #include "libmesh/exodusII_io.h"
 #include "libmesh/linear_implicit_system.h"
