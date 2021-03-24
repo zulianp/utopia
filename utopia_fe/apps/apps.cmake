@@ -12,6 +12,10 @@ if(UTOPIA_ENABLE_LIBMESH)
     list(APPEND APPS_MODULES libmesh)
 endif()
 
+if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_INTREPID2)
+    list(APPEND APPS_MODULES stk)
+endif()
+
 find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
                    LOCAL_SOURCES)
 target_sources(

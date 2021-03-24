@@ -5,7 +5,10 @@
 
 namespace utopia {
     template <>
-    class Traits<utopia::stk::FunctionSpace> : public Traits<utopia::stk::Mesh> {};
+    class Traits<utopia::stk::FunctionSpace> : public Traits<utopia::stk::Mesh> {
+    public:
+        using Mesh = utopia::stk::Mesh;
+    };
 
     namespace stk {
 
@@ -48,6 +51,8 @@ namespace utopia {
             void add_dirichlet_boundary_condition(const std::string &name,
                                                   const Scalar &value,
                                                   const int component = 0);
+
+            bool empty() const;
 
         private:
             class Impl;

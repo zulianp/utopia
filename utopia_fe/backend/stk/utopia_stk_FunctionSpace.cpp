@@ -305,6 +305,8 @@ namespace utopia {
             apply_constraints(v);
         }
 
+        bool FunctionSpace::empty() const { return !impl_->mesh || impl_->mesh->empty(); }
+
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name,
                                                              const Scalar &value,
                                                              const int component) {

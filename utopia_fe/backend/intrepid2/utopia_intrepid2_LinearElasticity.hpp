@@ -7,10 +7,17 @@
 
 namespace utopia {
     template <int Dim, class FirstLameParameter, class ShearModulus = FirstLameParameter>
-    class LinearElasticity {
+    class LinearElasticity : public Configurable {
     public:
-        FirstLameParameter lambda{1.0};
-        ShearModulus mu{1.0};
+        void read(Input &in) override {
+            in.get("lambda", lambda);
+            in.get("mu", mu);
+        }
+
+        LinearElasticity(const FirstLameParameter &lambda, const ShearModulus &mu) : lambda(lambda), mu(mu) {}
+
+        FirstLameParameter lambda;
+        ShearModulus mu;
     };
 
     namespace intrepid2 {

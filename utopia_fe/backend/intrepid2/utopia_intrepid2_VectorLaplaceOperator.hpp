@@ -7,9 +7,12 @@
 
 namespace utopia {
     template <int Dim, class Ceofficient>
-    class VectorLaplaceOperator {
+    class VectorLaplaceOperator : public Configurable {
     public:
-        Ceofficient coeff{1.0};
+        void read(Input &in) override { in.get("coeff", coeff); }
+
+        VectorLaplaceOperator(const Ceofficient &coeff) : coeff(coeff) {}
+        Ceofficient coeff;
     };
 
     namespace intrepid2 {

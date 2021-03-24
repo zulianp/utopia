@@ -19,8 +19,11 @@
 namespace utopia {
 
     template <class DiffusionCoefficient>
-    class LaplaceOperator {
+    class LaplaceOperator : public Configurable {
     public:
+        void read(Input &in) override { in.get("coeff", coeff); }
+
+        LaplaceOperator(const DiffusionCoefficient &coeff) : coeff(coeff) {}
         DiffusionCoefficient coeff;
     };
 
