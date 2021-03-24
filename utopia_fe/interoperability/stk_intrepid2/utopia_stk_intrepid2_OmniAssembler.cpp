@@ -5,6 +5,7 @@
 #include "utopia_intrepid2_LinearElasticity.hpp"
 #include "utopia_intrepid2_VectorLaplaceOperator.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
+#include "utopia_stk_intrepid2.hpp"
 
 #include <functional>
 
@@ -16,7 +17,14 @@ namespace utopia {
             using FE = utopia::intrepid2::FE<Scalar>;
 
             template <class MaterialDescription>
-            void init_assembler(const MaterialDescription &desc) {}
+            void init_assembler(const MaterialDescription &desc) {
+                assemble = [this, desc](const Vector &x, Matrix &mat, Vector &rhs) -> bool {
+                    utopia::intrepid2::Assemble<MaterialDescription> assembler(desc, fe);
+                    assembler.init();
+                    local_to_global(*space, assembler.element_matrices(), mat);
+                    return true;
+                };
+            }
 
             std::function<bool(const Vector &x, Matrix &, Vector &)> assemble;
             std::shared_ptr<stk::FunctionSpace> space;
