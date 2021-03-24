@@ -129,7 +129,10 @@ namespace utopia {
         if (matrix.empty()) {
             space.create_matrix(matrix);
         } else {
-            matrix *= 0.0;
+            // Reuse matrix
+            if (matrix.is_assembled()) {
+                matrix *= 0.0;
+            }
         }
 
         auto &meta_data = space.mesh().meta_data();

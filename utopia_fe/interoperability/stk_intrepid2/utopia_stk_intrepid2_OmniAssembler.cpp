@@ -22,6 +22,8 @@ namespace utopia {
                     utopia::intrepid2::Assemble<MaterialDescription> assembler(desc, fe);
                     assembler.init();
                     local_to_global(*space, assembler.element_matrices(), mat);
+
+                    rhs.set(0.0);
                     return true;
                 };
             }
@@ -43,15 +45,21 @@ namespace utopia {
                 return false;
             }
 
-            // IMPLEMENT ME
-            return true;
+            return impl_->assemble(x, jacobian, fun);
         }
 
         void OmniAssembler::read(Input &in) {
+            // FIXME order must be guessed by discretization and material
+            int quadrature_order = 2;
+            in.get("quadrature_order", quadrature_order);
+            impl_->fe = std::make_shared<Impl::FE>();
+            create_fe(*impl_->space, *impl_->fe, quadrature_order);
+
             std::string material_type = "";
 
             in.get("material", [&](Input &in) { in.get("type", material_type); });
 
+            // FIXME create a registry and decentralize material registration
             if (material_type == "LaplaceOperator") {
                 LaplaceOperator<Scalar> material(1.0);
                 in.get("material", material);
@@ -86,6 +94,8 @@ namespace utopia {
                 } else {
                     utopia::err() << "[Error] Unsupported material " << material_type << '\n';
                 }
+
+                return;
             }
         }
 

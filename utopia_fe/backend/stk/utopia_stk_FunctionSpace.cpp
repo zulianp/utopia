@@ -33,7 +33,7 @@ namespace utopia {
                 void read(Input &in) override {
                     in.get("name", name);
                     in.get("value", value);
-                    in.get("component", component);
+                    in.get("var", component);
                     in.get("set_id", set_id);
                 }
             };
@@ -141,7 +141,9 @@ namespace utopia {
 
         void FunctionSpace::read(Input &in) {
             auto mesh = std::make_shared<Mesh>();
-            mesh->read(in);
+
+            // mesh->read(in);
+            in.get("mesh", *mesh);
             init(mesh);
 
             if (!Options()

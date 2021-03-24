@@ -25,6 +25,7 @@ namespace utopia {
             in.get("space", space);
 
             if (space.empty()) {
+                utopia::err() << "[Error] space is undefined\n";
                 return;
             }
 

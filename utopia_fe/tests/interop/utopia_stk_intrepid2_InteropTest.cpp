@@ -90,8 +90,10 @@ public:
     }
 
     void poisson_problem() {
-        auto params = param_list(
-            param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
+        auto params = param_list(param(
+            "mesh",
+            param_list(param(
+                "path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -106,7 +108,10 @@ public:
     void vector_poisson_problem() {
         auto params = param_list(
             param("n_var", 3),
-            param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
+            param("mesh",
+                  param_list(param(
+                      "path",
+                      "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -127,7 +132,10 @@ public:
         static const int Dim = 3;
         auto params = param_list(
             param("n_var", Dim),
-            param("path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"));
+            param("mesh",
+                  param_list(param(
+                      "path",
+                      "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"))));
 
         FunctionSpace_t space;
         space.read(params);
