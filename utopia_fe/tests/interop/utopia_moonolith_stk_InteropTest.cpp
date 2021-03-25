@@ -31,9 +31,14 @@ void stk_moonolith_extract_surface() {
 
     MeshFrom volume;
     utopia_test_assert(volume.read("../data/knf/rectangle_4_tris.e"));
+    // utopia_test_assert(volume.read("../data/knf/cube_vs_cube/body.e"));
 
     MeshTo surface;
     extract_surface(volume, surface);
+
+    if (surface.spatial_dimension() == 3) {
+        surface.write("surf.vtu");
+    }
 
     utopia_test_assert(surface.n_nodes() == 6);
     utopia_test_assert(surface.manifold_dimension() == 1);

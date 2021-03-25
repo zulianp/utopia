@@ -319,6 +319,7 @@ namespace utopia {
             out_dof_map.set_n_local_dofs(n_local_dofs);
             out_dof_map.set_n_dofs(n_dofs);
             // out_dof_map.set_max_nnz(max_nnz_x_row(dof_map));
+            SizeType n_var = in.n_var();
 
             SizeType selected_elem_idx = 0;
             for (const auto &ib : elem_buckets) {
@@ -343,7 +344,7 @@ namespace utopia {
                     auto node_ids = bulk_data.begin_nodes(elem);
 
                     for (Size_t i = 0; i < n_nodes; ++i) {
-                        dof_object.dofs[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                        dof_object.dofs[i] = utopia::stk::convert_entity_to_index(node_ids[i]) * n_var;
                     }
                 }
             }
