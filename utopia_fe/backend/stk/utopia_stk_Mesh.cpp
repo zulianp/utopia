@@ -133,5 +133,7 @@ namespace utopia {
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->n_local_nodes; }
 
+        void Mesh::displace(const Vector &displacement) { assert(false); }
+
     }  // namespace stk
 }  // namespace utopia

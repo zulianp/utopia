@@ -154,6 +154,11 @@ namespace utopia {
             }
         }
 
+        void FunctionSpace::read_with_state(Input &in, Vector &val) {
+            read(in);
+            assert(false && "IMPLEMENT ME");
+        }
+
         void FunctionSpace::describe(std::ostream &os) const {
             // impl_->mesh->describe(os);
             os << "Parts:\n";

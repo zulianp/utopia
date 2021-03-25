@@ -12,6 +12,7 @@
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/equation_systems.h"
+#include "libmesh/exodusII_io.h"
 #include "libmesh/explicit_system.h"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/namebased_io.h"
@@ -131,7 +132,14 @@ namespace utopia {
                 }
             }
 
-            void describe(std::ostream &os) const override { os << "BC"; }
+            void describe(std::ostream &os) const override {
+                os << "name: " << name << ", ";
+                os << "type: " << type << ", ";
+                os << "function_type: " << function_type << ", ";
+                os << "value: " << value << ", ";
+                os << "var: " << var << ", ";
+                os << "side: " << side << '\n';
+            }
 
             std::string name{"bc"};
             std::string type{"dirichlet"};
@@ -196,7 +204,18 @@ namespace utopia {
                 }
             }
 
-            void describe(std::ostream &os) const override { os << "Sys"; }
+            void describe(std::ostream &os) const override {
+                os << "system_name: " << system_name << '\n';
+                os << "system_type: " << system_type << '\n';
+
+                for (auto &v : vars) {
+                    v.describe(os);
+                }
+
+                for (auto &b : bcs) {
+                    b.describe(os);
+                }
+            }
 
             std::string system_name{"main"};
             std::string system_type{"linear_implicit"};
@@ -243,16 +262,121 @@ namespace utopia {
             impl_->systems->init();
         }
 
+        bool FunctionSpace::read_with_state(Input &in, Vector &val) {
+            Sys main_system;
+            main_system.read(in);
+
+            if (!Options().parse(in)) {
+                return false;
+            }
+
+            Path path;
+            in.get("mesh", [&](Input &in) { in.get("path", path); });
+
+            int time_step = 1;
+            in.get("time_step", time_step);
+
+            auto ext = path.extension();
+
+            if (ext != "e") {
+                utopia::err() << "Could not read mesh at " << path.to_string()
+                              << ", only exodus (.e) format supported\n";
+                return false;
+            }
+
+            if (mesh().empty()) {
+                mesh().init_distributed();
+            }
+
+            libMesh::ExodusII_IO io(mesh().raw_type());
+            io.read(path.c_str());
+
+            mesh().set_database(path);
+
+            mesh().raw_type().prepare_for_use();
+
+            if (!impl_->systems) {
+                impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
+            }
+
+            main_system.add_to_space(*impl_);
+            impl_->systems->init();
+
+            auto &system = impl_->systems->get_system(system_id());
+
+            for (auto &v : main_system.vars) {
+                io.copy_nodal_solution(system, v.name, v.name, time_step);
+            }
+
+            convert(*system.solution, val);
+            return !val.empty();
+        }
+
+        bool FunctionSpace::read(const Path &path,
+                                 const std::vector<std::string> &var_names,
+                                 Vector &val,
+                                 const int time_step) {
+            auto ext = path.extension();
+
+            if (ext != "e") {
+                utopia::err() << "Could not read mesh at " << path.to_string()
+                              << ", only exodus (.e) format supported\n";
+                return false;
+            }
+
+            if (mesh().empty()) {
+                mesh().init_distributed();
+            }
+
+            libMesh::ExodusII_IO io(mesh().raw_type());
+            io.read(path.c_str());
+
+            mesh().set_database(path);
+
+            mesh().raw_type().prepare_for_use();
+
+            Sys main_system;
+            for (auto &v_name : var_names) {
+                Var var;
+                var.name = v_name;
+                main_system.vars.push_back(var);
+            }
+
+            if (!impl_->systems) {
+                impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
+            }
+
+            main_system.add_to_space(*impl_);
+            impl_->systems->init();
+
+            auto &system = impl_->systems->get_system(system_id());
+
+            for (auto &v_name : var_names) {
+                io.copy_nodal_solution(system, v_name, v_name, 1);
+            }
+
+            convert(*system.solution, val);
+            return !val.empty();
+        }
+
         void FunctionSpace::write(const Path &path, const Vector &x) {
             assert(impl_->systems);
 
             auto &sys = impl_->systems->get_system(system_id());
             convert(x, *sys.solution);
 
+            // if (path.extension() == "e") {
+            //     libMesh::ExodusII_IO(mesh().raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
+            // } else {
             libMesh::NameBasedIO(impl_->mesh->raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
+            // }
         }
 
-        void FunctionSpace::describe(std::ostream &os) const {}
+        void FunctionSpace::describe(std::ostream &os) const {
+            if (!mesh().empty()) {
+                mesh().describe(os);
+            }
+        }
 
         std::shared_ptr<Mesh> FunctionSpace::mesh_ptr() const { return impl_->mesh; }
 

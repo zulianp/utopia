@@ -86,6 +86,13 @@ namespace utopia {
 
             bool empty() const;
 
+            bool read(const Path &path,
+                      const std::vector<std::string> &var_names,
+                      Vector &val,
+                      const int time_step = 1);
+
+            bool read_with_state(Input &in, Vector &val);
+
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;
             std::shared_ptr<Impl> impl_;

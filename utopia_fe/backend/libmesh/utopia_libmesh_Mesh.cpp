@@ -8,8 +8,10 @@
 
 // All libmesh includes
 #include "libmesh/boundary_info.h"
+#include "libmesh/exodusII_io.h"
 #include "libmesh/mesh_base.h"
 #include "libmesh/namebased_io.h"
+#include "libmesh/node.h"
 #include "libmesh/parallel.h"
 #include "libmesh/parallel_mesh.h"
 #include "libmesh/replicated_mesh.h"
@@ -31,6 +33,7 @@ namespace utopia {
 
             Comm comm;
             std::shared_ptr<libMesh::Parallel::Communicator> comm_do_not_use_;
+            Path database;
         };
 
         Mesh::~Mesh() {}
@@ -58,6 +61,8 @@ namespace utopia {
                 os << "empty\n";
                 return;
             }
+
+            os << "Database: " << database() << '\n';
 
             auto &mesh = this->raw_type();
             auto &bi = mesh.get_boundary_info();
@@ -127,11 +132,16 @@ namespace utopia {
             }
 
             impl_->mesh->read(path.to_string());
+            set_database(path);
             return true;
         }
 
         bool Mesh::write(const Path &path) {
+            // if (path.extension() == "e") {
+            //     libMesh::ExodusII_IO(*impl_->mesh).write(path.to_string());
+            // } else {
             libMesh::NameBasedIO(*impl_->mesh).write(path.to_string());
+            // }
             return true;
         }
 
@@ -153,6 +163,32 @@ namespace utopia {
         Mesh::SizeType Mesh::n_nodes() const { return impl_->mesh->n_nodes(); }
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh->n_local_nodes(); }
+
+        void Mesh::set_database(const Path &path) { impl_->database = path; }
+        const Path &Mesh::database() const { return impl_->database; }
+
+        void Mesh::displace(const Vector &displacement) {
+            assert(displacement.comm().size() == 1);
+
+            // FIXME
+            std::vector<int> vars = {0, 1, 2};
+            int sys_num = 0;
+
+            Read<Vector> r_d(displacement);
+
+            auto &mesh = raw_type();
+            auto m_it = mesh.local_nodes_begin();
+            auto m_end = mesh.local_nodes_end();
+
+            const static int dim = spatial_dimension();
+
+            for (; m_it != m_end; ++m_it) {
+                for (int c = 0; c < dim; ++c) {
+                    const auto dof_id = (*m_it)->dof_number(sys_num, vars[c], 0);
+                    (**m_it)(c) += displacement.get(dof_id);
+                }
+            }
+        }
 
     }  // namespace libmesh
 

@@ -53,6 +53,8 @@ namespace utopia {
             SizeType n_local_elements() const;
             SizeType n_local_nodes() const;
 
+            void displace(const Vector &displacement);
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

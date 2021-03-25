@@ -19,6 +19,7 @@ namespace utopia {
         class Mesh final : public Configurable, public Describable {
         public:
             using SizeType = Traits<Mesh>::SizeType;
+            using Vector = Traits<Mesh>::Vector;
             using Comm = Traits<Mesh>::Communicator;
 
             ~Mesh();
@@ -45,11 +46,18 @@ namespace utopia {
             SizeType n_nodes() const;
             SizeType n_local_nodes() const;
 
+            void set_database(const Path &path);
+            const Path &database() const;
+
+            void displace(const Vector &displacement);
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
 
             friend class MeshInitializer;
+            friend class FunctionSpace;
+
             void init_distributed();
             void init_serial();
             void init_replicated();

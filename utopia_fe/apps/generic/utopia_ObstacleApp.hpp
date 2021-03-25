@@ -43,7 +43,16 @@ namespace utopia {
         using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
-            in.get("space", space);
+            in.get("space", [this](Input &in) {
+                bool read_state = false;
+                in.get("read_state", read_state);
+
+                if (read_state) {
+                    space.read_with_state(in, deformation);
+                } else {
+                    space.read(in);
+                }
+            });
 
             if (space.empty()) {
                 valid = false;
@@ -117,9 +126,17 @@ namespace utopia {
             obs.set_params(params);
             obs.init_obstacle(obstacle_mesh);
 
+            if (!empty(deformation)) {
+                space.mesh().displace(deformation);
+            }
+
             if (!obs.assemble(space)) {
                 Utopia::Abort();
                 return;
+            }
+
+            if (!empty(deformation)) {
+                space.mesh().displace(-deformation);
             }
 
             Vector_t x, g;
@@ -129,8 +146,14 @@ namespace utopia {
             space.create_vector(x);
             space.create_vector(g);
 
+            // Assume linear material
             assembler->assemble(x, H, g);
             g *= -1.0;
+
+            // Add linear residual
+            if (!empty(deformation)) {
+                g -= H * deformation;
+            }
 
             space.apply_constraints(H, g);
 
@@ -187,6 +210,8 @@ namespace utopia {
 
     private:
         FunctionSpace space;
+        Vector_t deformation;
+
         Mesh_t obstacle_mesh;
         typename Obstacle_t::Params params;
         Obstacle_t obs;

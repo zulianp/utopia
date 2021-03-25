@@ -12,7 +12,6 @@ void lm_create_mesh() {
     InputParameters params;
     params.set("type", "cube");
     params.set("elem_type", "TET4");
-    params.set("show", true);
 
     Mesh_t mesh;
     mesh.read(params);
@@ -36,13 +35,30 @@ void lm_create_function_space() {
 
     space.create_vector(v);
     space.create_matrix(m);
+}
 
-    // disp(v);
+void lm_read_function_space_with_data() {
+    using FunctionSpace_t = utopia::libmesh::FunctionSpace;
+
+    FunctionSpace_t space;
+
+    UVector displacement;
+    space.read("squeezed_pump.e", {"disp_x", "disp_y", "disp_z"}, displacement);
+    space.mesh().describe(std::cout);
+
+    double norm_displacement = norm2(displacement);
+    disp(norm_displacement);
+
+    // std::cout << space.n_local_dofs() << " " << space.n_dofs() << std::endl;
+
+    // space.mesh().write("lm_read_function_space_with_data.e");
+    space.write("squeezed_pump_rw.e", displacement);
 }
 
 void lm() {
     UTOPIA_RUN_TEST(lm_create_mesh);
     UTOPIA_RUN_TEST(lm_create_function_space);
+    UTOPIA_RUN_TEST(lm_read_function_space_with_data);
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(lm);
