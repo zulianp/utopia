@@ -87,7 +87,7 @@ namespace utopia {
                 transfer_matrix = nullptr;
             }
 
-            inline bool empty() const { return !static_cast<bool>(coupling_matrix); }
+            inline bool empty() const { return !static_cast<bool>(transfer_matrix); }
         };
 
         class FETransferPrepareData {
