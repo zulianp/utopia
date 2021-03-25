@@ -10,6 +10,7 @@
 #include "libmesh/boundary_info.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/mesh_base.h"
+#include "libmesh/mesh_refinement.h"
 #include "libmesh/namebased_io.h"
 #include "libmesh/node.h"
 #include "libmesh/parallel.h"
@@ -188,6 +189,14 @@ namespace utopia {
                     (**m_it)(c) += displacement.get(dof_id);
                 }
             }
+        }
+
+        void Mesh::uniform_refine(const int n_refinements) {
+            if (n_refinements <= 0) return;
+
+            libMesh::MeshRefinement mesh_refinement(raw_type());
+            mesh_refinement.make_flags_parallel_consistent();
+            mesh_refinement.uniformly_refine(n_refinements);
         }
 
     }  // namespace libmesh

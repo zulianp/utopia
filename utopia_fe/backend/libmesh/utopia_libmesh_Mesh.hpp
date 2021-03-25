@@ -51,6 +51,8 @@ namespace utopia {
 
             void displace(const Vector &displacement);
 
+            void uniform_refine(const int n_refinements);
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

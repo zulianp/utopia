@@ -118,6 +118,7 @@ namespace utopia {
             bool gauss_lobatto_grid = false;
             libMesh::Real radius = 1.0;
             int refinements = 0;
+            int sphere_refinements = 2;
             bool all_tri = false;
             bool all_second_order = false;
             bool full_order = true;
@@ -149,6 +150,8 @@ namespace utopia {
                      .add_option("gauss_lobatto_grid", gauss_lobatto_grid, "Use Gauss-Lobatto grid.")
                      .add_option("radius", radius, "Sphere radius.")
                      .add_option("refinements", refinements, "Number of mesh refinements.")
+                     .add_option(
+                         "sphere_refinements", sphere_refinements, "Number of refinements for libMesh build_sphere!")
                      .add_option("all_tri", all_tri, "Convert to triangle mesh.")
                      .add_option("all_second_order", all_second_order, "Convert to second order mesh when type=file.")
                      .add_option("full_order",
@@ -187,7 +190,7 @@ namespace utopia {
                 libMesh::MeshTools::Generation::build_sphere(
                     u_mesh,
                     radius,
-                    std::max(1, refinements),
+                    std::max(1, sphere_refinements),
                     libMesh::Utility::string_to_enum<libMesh::ElemType>(elem_type)
                     // const unsigned int    n_smooth = 2,
                     // const bool   flat = true
@@ -224,6 +227,8 @@ namespace utopia {
 
             scale.apply(u_mesh);
             shift.apply(u_mesh);
+
+            mesh_.uniform_refine(refinements);
         }
 
     }  // namespace libmesh

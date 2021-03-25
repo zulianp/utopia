@@ -169,6 +169,10 @@ namespace utopia {
             qp_solver_->solve(H_c, g_c, x_c);
             obs.inverse_transform(x_c, x);
 
+            if (!empty(deformation)) {
+                x += deformation;
+            }
+
             // Output solution
             { space.write("obs_sol.e", x); }
 
@@ -176,6 +180,11 @@ namespace utopia {
             {
                 obstacle_mesh.write("obstacle.e");
                 Vector_t gap_zeroed = e_mul(obs.is_contact(), obs.gap());
+
+                if (!empty(deformation)) {
+                    space.mesh().displace(deformation);
+                }
+
                 space.write("obs_gap.e", gap_zeroed);
                 space.write("obs_is_contact.e", obs.is_contact());
                 space.write("obs_normals.e", obs.normals());
