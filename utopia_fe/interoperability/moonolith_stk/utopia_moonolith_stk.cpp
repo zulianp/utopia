@@ -206,12 +206,38 @@ namespace utopia {
                 }
             }
 
-            std::cout << "Num elem: " << n_selected_elements << "\n";
+            // std::cout << "Num elem: " << n_selected_elements << "\n";
 
             ////////////////////////////////////////////////////////////////
             auto m_mesh = std::make_shared<MoonolithMesh_t>(in.comm().raw_comm());
 
             m_mesh->resize(n_selected_elements, n_selected_nodes);
+
+            ////////////////////////////////////////////////////////////////
+            // Nodes
+            ////////////////////////////////////////////////////////////////
+
+            const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
+
+            for (const auto &ib : node_buckets) {
+                const Bucket_t &b = *ib;
+                const Bucket_t::size_type length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    Entity_t node = b[k];
+                    auto moonolith_index = node_mapping[utopia::stk::convert_entity_to_index(node)];
+                    auto &p = m_mesh->node(moonolith_index);
+
+                    const Scalar_t *points = (const Scalar_t *)::stk::mesh::field_data(*coords, node);
+
+                    for (int d = 0; d < Dim; ++d) {
+                        p[d] = points[d];
+                    }
+                }
+            }
+
+            ////////////////////////////////////////////////////////////////
+            // Elements
             ////////////////////////////////////////////////////////////////
 
             SizeType selected_elem_idx = 0;
@@ -222,9 +248,9 @@ namespace utopia {
 
                 const Bucket_t::size_type length = b.size();
 
-                std::cout << "Bucket with " << length << " ";
-                std::cout << b.topology() << " -> ";
-                std::cout << moonolith_type << "\n";
+                // std::cout << "Bucket with " << length << " ";
+                // std::cout << b.topology() << " -> ";
+                // std::cout << moonolith_type << "\n";
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t elem = b[k];
@@ -246,7 +272,70 @@ namespace utopia {
                 }
             }
 
-            assert(false && "IMPLEMENT ME");
+            m_mesh->set_manifold_dim(in.spatial_dimension() - 1);
+            m_mesh->finalize();
+
+            out.wrap(m_mesh);
+        }
+
+        static void extract_trace_space(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out) {
+            auto m_mesh = std::make_shared<utopia::moonolith::Mesh>(in.comm());
+            extract_surface(in.mesh(), *m_mesh);
+            out.init(m_mesh, false);
+
+            auto &out_space = *out.raw_type<Dim>();
+
+            auto topo = ::stk::topology::FACE_RANK;
+
+            if (in.mesh().spatial_dimension() == 2) {
+                topo = ::stk::topology::EDGE_RANK;
+            }
+
+            auto &meta_data = in.mesh().meta_data();
+            auto &bulk_data = in.mesh().bulk_data();
+
+            ::stk::mesh::Selector s_universal = meta_data.universal_part();
+            const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, s_universal);
+
+            Bucket_t::size_type n_selected_elements = 0;
+            Bucket_t::size_type n_selected_nodes = 0;
+            Bucket_t::size_type n_local_nodes = in.mesh().n_local_nodes();
+            Bucket_t::size_type n_local_dofs = in.n_local_dofs();
+            Bucket_t::size_type n_dofs = in.n_dofs();
+
+            auto &out_dof_map = out_space.dof_map();
+            out_dof_map.resize(m_mesh->n_local_elements());
+            out_dof_map.set_n_local_dofs(n_local_dofs);
+            out_dof_map.set_n_dofs(n_dofs);
+            // out_dof_map.set_max_nnz(max_nnz_x_row(dof_map));
+
+            SizeType selected_elem_idx = 0;
+            for (const auto &ib : elem_buckets) {
+                const Bucket_t &b = *ib;
+
+                auto moonolith_type = convert_elem_type(b.topology());
+
+                const Bucket_t::size_type length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    Entity_t elem = b[k];
+                    const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                    auto &dof_object = out_dof_map.dof_object(selected_elem_idx++);
+                    dof_object.type = moonolith_type;
+                    dof_object.block = 1;              // elem.subdomain_id();
+                    dof_object.global_idx = elem_idx;  // elem.unique_id();
+                    dof_object.dofs.resize(n_nodes);
+                    dof_object.element_dof = utopia::stk::convert_entity_to_index(elem);
+
+                    auto node_ids = bulk_data.begin_nodes(elem);
+
+                    for (Size_t i = 0; i < n_nodes; ++i) {
+                        dof_object.dofs[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                    }
+                }
+            }
         }
     };
 
@@ -328,6 +417,34 @@ namespace utopia {
 
             case 3: {
                 ConvertMeshSTK2Moonolith<3>::extract_surface(in, out);
+                break;
+            }
+            default: {
+                Utopia::Abort();
+            }
+        }
+    }
+
+    void ExtractTraceSpace<utopia::stk::FunctionSpace, utopia::moonolith::FunctionSpace>::apply(
+        const utopia::stk::FunctionSpace &in,
+        utopia::moonolith::FunctionSpace &out) {
+        auto &meta_data = in.mesh().meta_data();
+
+        const int dim = meta_data.spatial_dimension();
+
+        switch (dim) {
+            case 1: {
+                ConvertMeshSTK2Moonolith<1>::extract_trace_space(in, out);
+                break;
+            }
+
+            case 2: {
+                ConvertMeshSTK2Moonolith<2>::extract_trace_space(in, out);
+                break;
+            }
+
+            case 3: {
+                ConvertMeshSTK2Moonolith<3>::extract_trace_space(in, out);
                 break;
             }
             default: {

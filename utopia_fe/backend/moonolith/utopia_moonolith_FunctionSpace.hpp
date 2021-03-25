@@ -20,7 +20,7 @@ namespace utopia {
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
             ~FunctionSpace();
 
-            void init(const std::shared_ptr<Mesh> &mesh);
+            void init(const std::shared_ptr<Mesh> &mesh, const bool init_as_iso_paramatric = true);
 
             bool write(const Path &path, const Vector &x);
             void read(Input &in) override;

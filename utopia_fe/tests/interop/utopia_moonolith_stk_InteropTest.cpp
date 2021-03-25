@@ -34,7 +34,10 @@ void stk_moonolith_extract_surface() {
 
     MeshTo surface;
     extract_surface(volume, surface);
-    // utopia_test_assert(surface.write("membrane_1.vtu"));
+
+    utopia_test_assert(surface.n_nodes() == 6);
+    utopia_test_assert(surface.manifold_dimension() == 1);
+    utopia_test_assert(surface.spatial_dimension() == 2);
 }
 
 void stk_moonolith_convert_space() {
@@ -50,6 +53,20 @@ void stk_moonolith_convert_space() {
 
     disp(space_to.n_dofs());
     utopia_test_assert(space_to.mesh().write("membrane_2.vtu"));
+}
+
+void stk_moonolith_extract_trace_space() {
+    using FunctionSpaceFrom = utopia::stk::FunctionSpace;
+    using FunctionSpaceTo = utopia::moonolith::FunctionSpace;
+
+    auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+    FunctionSpaceFrom space_from;
+    space_from.read(params);
+
+    FunctionSpaceTo space_to;
+    extract_trace_space(space_from, space_to);
+
+    disp(space_to.n_dofs());
 }
 
 void stk_moonolith_fe_transfer() {
@@ -71,6 +88,7 @@ void interop_moonolith_stk() {
     UTOPIA_RUN_TEST(stk_moonolith_convert_space);
     UTOPIA_RUN_TEST(stk_moonolith_fe_transfer);
     UTOPIA_RUN_TEST(stk_moonolith_extract_surface);
+    UTOPIA_RUN_TEST(stk_moonolith_extract_trace_space);
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(interop_moonolith_stk);

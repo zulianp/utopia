@@ -55,12 +55,16 @@ namespace utopia {
 
         bool FunctionSpace::write(const Path &path, const Vector &x) { return impl_->write(path, x); }
 
-        void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) {
+        void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh, const bool init_as_iso_paramatric) {
             impl_->mesh = mesh;
             switch (mesh->spatial_dimension()) {
                 case 1: {
                     auto space = std::make_shared<MoonolithFunctionSpace<1>>(mesh->raw_type<1>());
-                    space->make_iso_parametric();
+
+                    if (init_as_iso_paramatric) {
+                        space->make_iso_parametric();
+                    }
+
                     space->dof_map().set_n_local_dofs(mesh->n_local_nodes());
                     space->dof_map().set_n_dofs(mesh->n_nodes());
                     impl_->wrap(space);
@@ -69,7 +73,11 @@ namespace utopia {
 
                 case 2: {
                     auto space = std::make_shared<MoonolithFunctionSpace<2>>(mesh->raw_type<2>());
-                    space->make_iso_parametric();
+
+                    if (init_as_iso_paramatric) {
+                        space->make_iso_parametric();
+                    }
+
                     space->dof_map().set_n_local_dofs(mesh->n_local_nodes());
                     space->dof_map().set_n_dofs(mesh->n_nodes());
                     impl_->wrap(space);
@@ -78,7 +86,11 @@ namespace utopia {
 
                 case 3: {
                     auto space = std::make_shared<MoonolithFunctionSpace<3>>(mesh->raw_type<3>());
-                    space->make_iso_parametric();
+
+                    if (init_as_iso_paramatric) {
+                        space->make_iso_parametric();
+                    }
+
                     space->dof_map().set_n_local_dofs(mesh->n_local_nodes());
                     space->dof_map().set_n_dofs(mesh->n_nodes());
                     impl_->wrap(space);

@@ -85,7 +85,11 @@ namespace utopia {
             }
         }
 
-        void Mesh::describe(std::ostream &os) const {}
+        void Mesh::describe(std::ostream &os) const {
+            if (impl_->mesh) {
+                impl_->mesh->describe(os);
+            }
+        }
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
@@ -126,6 +130,13 @@ namespace utopia {
         Mesh::SizeType Mesh::n_nodes() const { return impl_->n_nodes(); }
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->n_local_nodes(); }
+
+        // Mesh::SizeType Mesh:: n_elements() const
+        // {
+        //     return impl_->n_elements();
+        // }
+
+        Mesh::SizeType Mesh::n_local_elements() const { return impl_->n_elements(); }
 
     }  // namespace moonolith
 }  // namespace utopia
