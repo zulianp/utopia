@@ -52,8 +52,10 @@ namespace utopia {
                 case ::moonolith::HEX27:
                 case ::moonolith::TET4:
                     return 3;
-                default:
+                default: {
+                    assert(false);
                     return -1;
+                }
             }
         }
 
@@ -63,9 +65,11 @@ namespace utopia {
                     return ::moonolith::NODE1;
                 case ::stk::topology::LINE_2:
                     return ::moonolith::EDGE2;
+                case ::stk::topology::TRI_3:
                 case ::stk::topology::TRI_3_2D:
                 case ::stk::topology::SHELL_TRI_3:
                     return ::moonolith::TRI3;
+                case ::stk::topology::QUAD_4:
                 case ::stk::topology::QUAD_4_2D:
                 case ::stk::topology::SHELL_QUAD_4:
                     return ::moonolith::QUAD4;
@@ -75,8 +79,10 @@ namespace utopia {
                     return ::moonolith::HEX27;
                 case ::stk::topology::TET_4:
                     return ::moonolith::TET4;
-                default:
+                default: {
+                    assert(false);
                     return ::moonolith::INVALID;
+                }
             }
         }
 
@@ -226,6 +232,11 @@ namespace utopia {
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t node = b[k];
                     auto moonolith_index = node_mapping[utopia::stk::convert_entity_to_index(node)];
+
+                    if (moonolith_index == -1) continue;
+
+                    assert(moonolith_index < n_selected_nodes);
+
                     auto &p = m_mesh->node(moonolith_index);
 
                     const Scalar_t *points = (const Scalar_t *)::stk::mesh::field_data(*coords, node);
@@ -297,8 +308,8 @@ namespace utopia {
             ::stk::mesh::Selector s_universal = meta_data.universal_part();
             const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, s_universal);
 
-            Bucket_t::size_type n_selected_elements = 0;
-            Bucket_t::size_type n_selected_nodes = 0;
+            // Bucket_t::size_type n_selected_elements = 0;
+            // Bucket_t::size_type n_selected_nodes = 0;
             Bucket_t::size_type n_local_nodes = in.mesh().n_local_nodes();
             Bucket_t::size_type n_local_dofs = in.n_local_dofs();
             Bucket_t::size_type n_dofs = in.n_dofs();
@@ -336,6 +347,8 @@ namespace utopia {
                     }
                 }
             }
+
+            assert(out_space.dof_map().is_valid());
         }
     };
 

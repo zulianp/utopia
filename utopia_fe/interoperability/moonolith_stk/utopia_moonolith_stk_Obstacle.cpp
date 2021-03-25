@@ -5,6 +5,8 @@
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_moonolith_stk.hpp"
+
 #include "moonolith_affine_transform.hpp"
 #include "moonolith_assign_functions.hpp"
 #include "moonolith_contact.hpp"
@@ -26,9 +28,27 @@ namespace utopia {
             using FunctionSpace_t = utopia::moonolith::FunctionSpace;
             using Obstacle_t = utopia::moonolith::Obstacle;
 
-            bool assemble(const FunctionSpace &in_space) {}
+            bool assemble(const FunctionSpace &in_space) {
+                // FIXME handle trace spaces
+                // if (in_space.mesh().spatial_dimension() > in_space.mesh().manifold_dimension()) {
+                //     convert_function_space(in_space, space);
+                // } else {
+                extract_trace_space(in_space, space);
+                // }
 
-            bool init_obstacle(const Mesh &mesh) {}
+                return obstacle.assemble(space);
+            }
+
+            bool init_obstacle(const Mesh &mesh) {
+                // FIXME handle surfaces
+                // if (mesh.spatial_dimension() > mesh.manifold_dimension()) {
+                //     convert_mesh(mesh, obstacle_mesh);
+                // } else {
+                extract_surface(mesh, obstacle_mesh);
+                // }
+
+                return obstacle.init_obstacle(obstacle_mesh);
+            }
 
             void read(Input &in) override { obstacle.read(in); }
 

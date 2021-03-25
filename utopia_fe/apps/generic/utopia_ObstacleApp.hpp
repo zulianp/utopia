@@ -40,6 +40,7 @@ namespace utopia {
         using IterativeSolver_t = utopia::IterativeSolver<Matrix_t, Vector_t>;
         using AlgebraicMultigrid_t = utopia::AlgebraicMultigrid<Matrix_t, Vector_t>;
         using ProjectedGaussSeidel_t = utopia::ProjectedGaussSeidel<Matrix_t, Vector_t>;
+        using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
             in.get("space", space);
@@ -67,13 +68,13 @@ namespace utopia {
             if (qp_solver_type == "ssnewton") {
                 if (use_amg) {
                     std::shared_ptr<IterativeSolver_t> smoother;
-                    auto ksp = std::make_shared<KSPSolver<Matrix_t, Vector_t>>();
+                    auto ksp = std::make_shared<KSPSolver_t>();
                     ksp->pc_type("ilu");
                     ksp->ksp_type("richardson");
                     smoother = ksp;
 
                     std::shared_ptr<LinearSolver_t> coarse_solver;
-                    coarse_solver = std::make_shared<Factorization_t>();
+                    coarse_solver = std::make_shared<KSPSolver_t>();
 
                     std::shared_ptr<MatrixAgglomerator<Matrix_t>> agglomerator;
 
@@ -101,7 +102,7 @@ namespace utopia {
 
                     qp_solver_ = std::make_shared<SemismoothNewton_t>(amg);
                 } else {
-                    auto linear_solver = std::make_shared<Factorization_t>();
+                    auto linear_solver = std::make_shared<KSPSolver_t>();
                     qp_solver_ = std::make_shared<SemismoothNewton_t>(linear_solver);
                 }
 
