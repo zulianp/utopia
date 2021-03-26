@@ -321,5 +321,7 @@ namespace utopia {
             impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
         }
 
+        void FunctionSpace::displace(const Vector &displacement) { assert(false && "IMPLEMENT ME"); }
+
     }  // namespace stk
 }  // namespace utopia

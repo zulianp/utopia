@@ -93,6 +93,8 @@ namespace utopia {
 
             bool read_with_state(Input &in, Vector &val);
 
+            void displace(const Vector &displacement);
+
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;
             std::shared_ptr<Impl> impl_;

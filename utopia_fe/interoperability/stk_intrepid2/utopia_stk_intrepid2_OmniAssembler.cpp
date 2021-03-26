@@ -23,7 +23,8 @@ namespace utopia {
                     assembler.init();
                     local_to_global(*space, assembler.element_matrices(), mat);
 
-                    rhs.set(0.0);
+                    rhs = mat * x;
+                    // rhs.set(0.0);
                     return true;
                 };
             }

@@ -55,6 +55,8 @@ namespace utopia {
 
             bool empty() const;
 
+            void displace(const Vector &displacement);
+
         private:
             class Impl;
             std::shared_ptr<Impl> impl_;
