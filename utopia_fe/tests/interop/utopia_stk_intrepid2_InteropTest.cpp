@@ -148,14 +148,54 @@ public:
         space.add_dirichlet_boundary_condition("outlet", -0.001, 2);
 
         LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
-
         assemble_and_solve("elasticity", space, linear_elasticity);
     }
 
+    void poisson_problem_parallel() {
+        // auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+
+        FunctionSpace_t space;
+        space.read(params);
+        space.add_dirichlet_boundary_condition("body_top", 1.0);
+        space.add_dirichlet_boundary_condition("body_bottom", -1.0);
+
+        LaplaceOperator<Scalar_t> lapl{1.0};
+
+        assemble_and_solve("poisson_problem_parallel", space, lapl);
+    }
+
+    void elasticity_problem_parallel() {
+        static const int Dim = 3;
+        auto params = param_list(param("n_var", Dim),
+                                 param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+
+        FunctionSpace_t space;
+        space.read(params);
+        space.add_dirichlet_boundary_condition("body_top", 0.0, 0);
+        space.add_dirichlet_boundary_condition("body_top", -0.1, 1);
+        space.add_dirichlet_boundary_condition("body_top", 0.0, 2);
+
+        space.add_dirichlet_boundary_condition("body_bottom", 0.0, 0);
+        space.add_dirichlet_boundary_condition("body_bottom", 0.1, 1);
+        space.add_dirichlet_boundary_condition("body_bottom", 0.0, 2);
+
+        LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
+        assemble_and_solve("elasticity_problem_parallel", space, linear_elasticity);
+    }
+
     void run() {
-        UTOPIA_RUN_TEST(poisson_problem);
-        UTOPIA_RUN_TEST(vector_poisson_problem);
-        UTOPIA_RUN_TEST(elasticity_problem);
+        if (mpi_world_size() == 1) {
+            UTOPIA_RUN_TEST(poisson_problem);
+            UTOPIA_RUN_TEST(vector_poisson_problem);
+            UTOPIA_RUN_TEST(elasticity_problem);
+        }
+
+        if (mpi_world_size() <= 2) {
+            save_output = true;
+            UTOPIA_RUN_TEST(poisson_problem_parallel);
+            // UTOPIA_RUN_TEST(elasticity_problem_parallel);
+        }
     }
 };
 

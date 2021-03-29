@@ -232,9 +232,23 @@ namespace utopia {
                 }
             }
 
+            // std::stringstream ss;
+
+            // for (auto &row : node2node) {
+            //     for (auto e : row) {
+            //         ss << e << ' ';
+            //     }
+
+            //     ss << '\n';
+            // }
+
+            // m.comm().synched_print(ss.str());
+
             IndexSet d_nnz(nln, 0), o_nnz(nln, 0);
             for (SizeType i = 0; i < nln; ++i) {
                 d_nnz[i] = node2node[i].size();
+                // FIXME
+                // o_nnz[i] = node2node[i].size();
             }
 
             if (impl_->n_var == 1) {
