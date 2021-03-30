@@ -162,6 +162,13 @@ public:
 
         LaplaceOperator<Scalar_t> lapl{1.0};
 
+        std::stringstream ss;
+        space.describe(ss);
+
+        // if (space.comm().size() == 2) {
+        //     space.comm().synched_print(ss.str());
+        // }
+
         assemble_and_solve("poisson_problem_parallel", space, lapl);
     }
 

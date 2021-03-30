@@ -1,13 +1,26 @@
+
 #ifndef UTOPIA_STK_COMMONS_HPP
 #define UTOPIA_STK_COMMONS_HPP
 
 #include "utopia_stk_ForwardDeclarations.hpp"
 
 #include <stk_mesh/base/Entity.hpp>
+#include <stk_mesh/base/Types.hpp>
 #include <stk_topology/topology.hpp>
 
 namespace utopia {
     namespace stk {
+
+        template <typename Int>
+        inline auto convert_stk_index_to_index(Int idx) -> Int {
+            return idx - 1;
+        }
+
+        template <typename Int>
+        inline auto convert_index_to_stk_index(Int idx) -> Int {
+            return idx + 1;
+        }
+
         inline auto convert_entity_to_index(const ::stk::mesh::Entity &entity) { return entity.local_offset() - 1; }
 
         inline int manifold_dim(::stk::topology::topology_t topo) {
@@ -27,6 +40,25 @@ namespace utopia {
                     return -1;
             }
         }
+
+        size_t count_entities(const ::stk::mesh::BulkData &bulk_data,
+                              const ::stk::topology::rank_t &rank,
+                              const ::stk::mesh::Selector &selector);
+
+        size_t count_local_nodes(const ::stk::mesh::BulkData &bulk_data);
+        size_t count_local_elements(const ::stk::mesh::BulkData &bulk_data);
+
+        size_t count_universal_nodes(const ::stk::mesh::BulkData &bulk_data);
+        size_t count_universal_elements(const ::stk::mesh::BulkData &bulk_data);
+
+        const ::stk::mesh::BucketVector &local_nodes(const ::stk::mesh::BulkData &bulk_data);
+        const ::stk::mesh::BucketVector &local_elements(const ::stk::mesh::BulkData &bulk_data);
+
+        const ::stk::mesh::BucketVector &universal_nodes(const ::stk::mesh::BulkData &bulk_data);
+        const ::stk::mesh::BucketVector &universal_elements(const ::stk::mesh::BulkData &bulk_data);
+
+        const ::stk::mesh::BucketVector &shared_nodes(const ::stk::mesh::BulkData &bulk_data);
+
     }  // namespace stk
 }  // namespace utopia
 

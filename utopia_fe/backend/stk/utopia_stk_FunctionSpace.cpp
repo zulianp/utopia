@@ -3,6 +3,7 @@
 #include "utopia_Options.hpp"
 
 #include "utopia_stk_Commons.hpp"
+#include "utopia_stk_DofMap.hpp"
 
 // All stk includes
 #include <stk_io/StkMeshIoBroker.hpp>
@@ -152,6 +153,8 @@ namespace utopia {
                      .parse(in)) {
                 return;
             }
+
+            DofMap().init(this->mesh().bulk_data());
         }
 
         void FunctionSpace::read_with_state(Input &in, Vector &val) {
@@ -160,11 +163,33 @@ namespace utopia {
         }
 
         void FunctionSpace::describe(std::ostream &os) const {
-            // impl_->mesh->describe(os);
+            using Bucket_t = ::stk::mesh::Bucket;
+            // using BucketVector_t = ::stk::mesh::BucketVector;
+            using Entity_t = ::stk::mesh::Entity;
+
             os << "Parts:\n";
             for (auto ptr : mesh().meta_data().get_parts()) {
                 auto &p = *ptr;
                 os << p.name() << ' ' << p.id() << '\n';
+            }
+
+            auto &meta_data = mesh().meta_data();
+            auto &bulk_data = mesh().bulk_data();
+
+            const ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+            const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, selector);
+
+            for (auto *b_ptr : node_buckets) {
+                const auto &b = *b_ptr;
+                const auto length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    const Entity_t elem = b[k];
+                    const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
+                    os << id << ' ';
+                }
+
+                os << '\n';
             }
         }
 
@@ -222,27 +247,29 @@ namespace utopia {
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                     for (Size_t i = 0; i < n_nodes; ++i) {
-                        const auto node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
+                        const auto node_i = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i]));
 
                         for (Size_t j = 0; j < n_nodes; ++j) {
-                            const auto node_j = utopia::stk::convert_entity_to_index(node_ids[j]);
-                            node2node[node_i].insert(node_j);
+                            node2node[node_i].insert(
+                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[j])));
                         }
                     }
                 }
             }
 
-            // std::stringstream ss;
+            // if (m.comm().size() > 1) {
+            //     std::stringstream ss;
 
-            // for (auto &row : node2node) {
-            //     for (auto e : row) {
-            //         ss << e << ' ';
+            //     for (auto &row : node2node) {
+            //         for (auto e : row) {
+            //             ss << e << ' ';
+            //         }
+
+            //         ss << '\n';
             //     }
 
-            //     ss << '\n';
+            //     m.comm().synched_print(ss.str());
             // }
-
-            // m.comm().synched_print(ss.str());
 
             IndexSet d_nnz(nln, 0), o_nnz(nln, 0);
             for (SizeType i = 0; i < nln; ++i) {
@@ -282,7 +309,7 @@ namespace utopia {
 
                         for (Bucket_t::size_type k = 0; k < length; ++k) {
                             auto node = b[k];
-                            auto idx = utopia::stk::convert_entity_to_index(node);
+                            auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
                             constrains.push_back(idx * nv + bc.component);
                         }
                     }
@@ -313,7 +340,7 @@ namespace utopia {
 
                         for (Bucket_t::size_type k = 0; k < length; ++k) {
                             auto node = b[k];
-                            auto idx = utopia::stk::convert_entity_to_index(node);
+                            auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
                             v_view.set(idx * nv + bc.component, bc.value);
                         }
                     }

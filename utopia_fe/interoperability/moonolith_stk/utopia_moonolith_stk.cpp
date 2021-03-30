@@ -110,7 +110,8 @@ namespace utopia {
             ::stk::mesh::Selector s_universal = meta_data.universal_part();
             const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
 
-            ::stk::mesh::FieldBase *coords = ::stk::mesh::get_field_by_name("coordinates", meta_data);
+            // ::stk::mesh::FieldBase *coords = ::stk::mesh::get_field_by_name("coordinates", meta_data);
+            auto *coords = meta_data.coordinate_field();
 
             for (const auto &ib : node_buckets) {
                 const Bucket_t &b = *ib;
@@ -171,15 +172,18 @@ namespace utopia {
 
             ::stk::mesh::Selector s_universal = meta_data.universal_part();
 
-            ::stk::mesh::FieldBase *coords = ::stk::mesh::get_field_by_name("coordinates", meta_data);
+            // ::stk::mesh::FieldBase *coords = ::stk::mesh::get_field_by_name("coordinates", meta_data);
+            auto *coords = meta_data.coordinate_field();
 
-            auto topo = ::stk::topology::FACE_RANK;
+            // auto topo = ::stk::topology::FACE_RANK;
 
-            if (in.spatial_dimension() == 2) {
-                topo = ::stk::topology::EDGE_RANK;
-            } else {
-                assert(in.spatial_dimension() == 3);
-            }
+            auto topo = meta_data.side_rank();
+
+            // if (in.spatial_dimension() == 2) {
+            //     topo = ::stk::topology::EDGE_RANK;
+            // } else {
+            //     assert(in.spatial_dimension() == 3);
+            // }
 
             const BucketVector_t &elem_buckets = bulk_data.get_buckets(topo, s_universal);
 
@@ -296,11 +300,13 @@ namespace utopia {
 
             auto &out_space = *out.raw_type<Dim>();
 
-            auto topo = ::stk::topology::FACE_RANK;
+            // auto topo = ::stk::topology::FACE_RANK;
 
-            if (in.mesh().spatial_dimension() == 2) {
-                topo = ::stk::topology::EDGE_RANK;
-            }
+            // if (in.mesh().spatial_dimension() == 2) {
+            //     topo = ::stk::topology::EDGE_RANK;
+            // }
+
+            auto topo = in.mesh().meta_data().side_rank();
 
             auto &meta_data = in.mesh().meta_data();
             auto &bulk_data = in.mesh().bulk_data();
