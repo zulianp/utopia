@@ -18,6 +18,8 @@ namespace utopia {
 
             void describe(std::ostream &os) const override;
 
+            bool empty() const;
+
         private:
             class Impl;
             class DofExchange;

@@ -43,6 +43,7 @@ namespace utopia {
 
             IndexArray d_nnz, o_nnz;
             IndexArray local_to_global;
+            SizeType owned_dof_start{-1}, owned_dof_end{-1};
         };
 
         typedef struct IdToDof {
@@ -68,6 +69,9 @@ namespace utopia {
 
                 MPI_CATCH_ERROR(MPI_Type_create_struct(2, lengths, displacements, types, &data_type));
                 MPI_CATCH_ERROR(MPI_Type_commit(&data_type));
+
+                // MPI_CATCH_ERROR(MPI_Type_contiguous(2, MPIType<IdToDof::SizeType>::value(), &data_type));
+                // MPI_CATCH_ERROR(MPI_Type_commit(&data_type));
             }
 
             ~MPIIdToDof() { MPI_CATCH_ERROR(MPI_Type_free(&data_type)); }
@@ -161,38 +165,30 @@ namespace utopia {
                 requests.reserve(rank_incoming.size() + rank_outgoing.size());
 
                 // auto raw_comm = MPI_COMM_WORLD;
+
                 auto raw_comm = comm.raw_comm();
 
                 for (auto ro : rank_outgoing) {
                     requests.push_back(MPI_REQUEST_NULL);
 
-                    assert(!buffers_outgoing[ro.first].empty());
+                    auto &buff = buffers_outgoing[ro.first];
+                    assert(!buff.empty());
 
-                    MPI_CATCH_ERROR(MPI_Isend(&buffers_outgoing[ro.first],
-                                              buffers_outgoing[ro.first].size(),
-                                              data_type_.get(),
-                                              ro.first,
-                                              ro.first,
-                                              raw_comm,
-                                              &requests.back()));
+                    MPI_CATCH_ERROR(MPI_Isend(
+                        &buff[0], buff.size(), data_type_.get(), ro.first, ro.first, raw_comm, &requests.back()));
                 }
 
                 for (auto ri : rank_incoming) {
                     requests.push_back(MPI_REQUEST_NULL);
 
-                    assert(!buffers_incoming[ri.first].empty());
+                    auto &buff = buffers_incoming[ri.first];
+                    assert(!buff.empty());
 
-                    MPI_CATCH_ERROR(MPI_Irecv(&buffers_incoming[ri.first],
-                                              buffers_incoming[ri.first].size(),
-                                              data_type_.get(),
-                                              ri.first,
-                                              comm.rank(),
-                                              raw_comm,
-                                              &requests.back()));
+                    MPI_CATCH_ERROR(MPI_Irecv(
+                        &buff[0], buff.size(), data_type_.get(), ri.first, comm.rank(), raw_comm, &requests.back()));
                 }
 
-                MPI_CATCH_ERROR(
-                    MPI_Waitall(static_cast<int>(requests.size()), &requests[0], MPI_STATUS_IGNORE));  // &status[0]));
+                MPI_CATCH_ERROR(MPI_Waitall(static_cast<int>(requests.size()), &requests[0], MPI_STATUS_IGNORE));
             }
 
             void describe_incoming(std::ostream &os) const {
@@ -215,8 +211,6 @@ namespace utopia {
                 buffers_outgoing.clear();
                 buffers_incoming.clear();
             }
-
-            Impl::SizeType owned_dof_start{-1}, owned_dof_end{-1};
 
         private:
             const Impl::Communicator &comm;
@@ -342,6 +336,8 @@ namespace utopia {
             impl_->d_nnz.resize(n_local_nodes, 0);
             impl_->o_nnz.resize(n_local_nodes, 0);
             impl_->local_to_global.resize(n_universal_nodes, -1);
+            impl_->owned_dof_start = offset;
+            impl_->owned_dof_end = offset + n_local_nodes;
 
             Impl::SizeType index = 0;
             for (Impl::SizeType i = 0; i < n_universal_nodes; ++i) {
@@ -363,12 +359,12 @@ namespace utopia {
                     }
 
                     ++index;
+                } else {
+                    // add o_nnz
                 }
             }
 
             DofExchange dof_exchange(comm);
-            dof_exchange.owned_dof_start = offset;
-            dof_exchange.owned_dof_end = offset + n_local_nodes;
 
             auto &shared_node_buckets = shared_nodes(bulk_data);
 
@@ -422,41 +418,58 @@ namespace utopia {
             dof_exchange.sort_outgoing();
             dof_exchange.exchange();
 
-            // for (auto *b_ptr : shared_node_buckets) {
-            //     const auto &b = *b_ptr;
-            //     const auto length = b.size();
+            for (auto *b_ptr : shared_node_buckets) {
+                const auto &b = *b_ptr;
+                const auto length = b.size();
 
-            //     for (Impl::Bucket::size_type k = 0; k < length; ++k) {
-            //         const Impl::Entity node = b[k];
-            //         int owner_rank = bulk_data.parallel_owner_rank(node);
+                for (Impl::Bucket::size_type k = 0; k < length; ++k) {
+                    const Impl::Entity node = b[k];
+                    int owner_rank = bulk_data.parallel_owner_rank(node);
 
-            //         if (owner_rank != rank) {
-            //             auto dof = dof_exchange.find_dof_from_incoming(
-            //                 owner_rank, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)));
+                    if (owner_rank != rank) {
+                        auto dof = dof_exchange.find_dof_from_incoming(
+                            owner_rank, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)));
 
-            //             // assert(index < SizeType(impl_->local_to_global.size()));
-
-            //             // impl_->local_to_global[index] = dof;
-
-            //             std::cout << dof << std::endl;
-            //         }
-            //     }
-            // }
+                        auto index = utopia::stk::convert_entity_to_index(node);
+                        impl_->local_to_global[index] = dof;
+                    }
+                }
+            }
 
             std::stringstream ss;
             // describe(ss);
-            dof_exchange.describe_incoming(ss);
+            // dof_exchange.describe_incoming(ss);
+
+            for (auto &nodes : node2node) {
+                for (auto &n : nodes) {
+                    ss << n << " ";
+                }
+
+                ss << "\n";
+            }
+
+            describe(ss);
             comm.synched_print(ss.str());
+
+            Utopia::Abort();
         }
+
+        bool DofMap::empty() const { return impl_->local_to_global.empty(); }
 
         void DofMap::describe(std::ostream &os) const {
             auto &d_nnz = impl_->d_nnz;
             auto &o_nnz = impl_->o_nnz;
             auto &local_to_global = impl_->local_to_global;
 
-            int index = 0;
+            Impl::SizeType index = 0;
             for (auto ltog : local_to_global) {
-                os << index << " -> " << ltog << " nnz: " << d_nnz[index] << ", " << o_nnz[index] << '\n';
+                os << index << " -> " << ltog << '\n';
+                index++;
+            }
+
+            index = 0;
+            for (auto d : d_nnz) {
+                os << (impl_->owned_dof_start + index) << " -> nnz: " << d << ", " << o_nnz[index] << '\n';
                 index++;
             }
         }
