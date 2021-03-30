@@ -168,16 +168,6 @@ namespace utopia {
 
                 auto raw_comm = comm.raw_comm();
 
-                for (auto ro : rank_outgoing) {
-                    requests.push_back(MPI_REQUEST_NULL);
-
-                    auto &buff = buffers_outgoing[ro.first];
-                    assert(!buff.empty());
-
-                    MPI_CATCH_ERROR(MPI_Isend(
-                        &buff[0], buff.size(), data_type_.get(), ro.first, ro.first, raw_comm, &requests.back()));
-                }
-
                 for (auto ri : rank_incoming) {
                     requests.push_back(MPI_REQUEST_NULL);
 
@@ -186,6 +176,16 @@ namespace utopia {
 
                     MPI_CATCH_ERROR(MPI_Irecv(
                         &buff[0], buff.size(), data_type_.get(), ri.first, comm.rank(), raw_comm, &requests.back()));
+                }
+
+                for (auto ro : rank_outgoing) {
+                    requests.push_back(MPI_REQUEST_NULL);
+
+                    auto &buff = buffers_outgoing[ro.first];
+                    assert(!buff.empty());
+
+                    MPI_CATCH_ERROR(MPI_Isend(
+                        &buff[0], buff.size(), data_type_.get(), ro.first, ro.first, raw_comm, &requests.back()));
                 }
 
                 MPI_CATCH_ERROR(MPI_Waitall(static_cast<int>(requests.size()), &requests[0], MPI_STATUS_IGNORE));
@@ -435,6 +435,8 @@ namespace utopia {
                     }
                 }
             }
+
+            // TODO Comunicate o_nnz
 
             std::stringstream ss;
             // describe(ss);
