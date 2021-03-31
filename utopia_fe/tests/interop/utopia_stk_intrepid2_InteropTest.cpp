@@ -81,8 +81,8 @@ public:
         ////////////////////////////////////////////////////////////
 
         if (save_output) {
-            space.write(name + ".e", x);
-            // space.write(name + ".e", rhs);
+            // space.write(name + ".e", x);
+            space.write(name + ".e", rhs);
         }
 
         if (export_tensors) {

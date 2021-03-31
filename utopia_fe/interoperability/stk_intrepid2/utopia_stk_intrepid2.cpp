@@ -84,6 +84,7 @@ namespace utopia {
 
         DynRankView cell_points("cell_points", n_local_elements, n_nodes_x_elem, spatial_dim);
 
+        Size_t elem_idx = 0;
         for (const auto &ib : elem_buckets) {
             const Bucket_t &b = *ib;
             const Bucket_t::size_type length = b.size();
@@ -91,7 +92,7 @@ namespace utopia {
             for (Bucket_t::size_type k = 0; k < length; ++k) {
                 // get the current node entity and extract the id to fill it into the field
                 Entity_t elem = b[k];
-                const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+                // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
                 const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                 assert(n_nodes == n_nodes_x_elem);
@@ -105,6 +106,8 @@ namespace utopia {
                         cell_points(elem_idx, i, d) = point[d];
                     }
                 }
+
+                ++elem_idx;
             }
         }
 
@@ -157,6 +160,7 @@ namespace utopia {
 
         auto &local_to_global = space.dof_map().local_to_global();
 
+        Size_t elem_idx = 0;
         for (const auto &ib : elem_buckets) {
             const Bucket_t &b = *ib;
             const Bucket_t::size_type length = b.size();
@@ -164,7 +168,7 @@ namespace utopia {
             for (Bucket_t::size_type k = 0; k < length; ++k) {
                 // get the current node entity and extract the id to fill it into the field
                 Entity_t elem = b[k];
-                const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+                // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
                 const Size_t n_nodes = bulk_data.num_nodes(elem);
                 UTOPIA_UNUSED(n_nodes);
 
@@ -205,6 +209,8 @@ namespace utopia {
                 } else {
                     matrix.add_matrix(idx, idx, val);
                 }
+
+                ++elem_idx;
             }
         }
     }
