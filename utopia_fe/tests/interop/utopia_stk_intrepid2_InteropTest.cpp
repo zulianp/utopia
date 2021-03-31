@@ -205,18 +205,18 @@ public:
     }
 
     void run() {
-        if (mpi_world_size() == 1) {
+        if (mpi_world_size() <= 2) {
             UTOPIA_RUN_TEST(poisson_problem);
             UTOPIA_RUN_TEST(vector_poisson_problem);
-            UTOPIA_RUN_TEST(elasticity_problem);
-        }
-
-        if (mpi_world_size() <= 2) {
-            save_output = true;
-            // export_tensors = true;
             UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
             UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
             UTOPIA_RUN_TEST(elasticity_problem_parallel);
+        }
+
+        if (mpi_world_size() <= 4) {
+            save_output = true;
+            UTOPIA_RUN_TEST(elasticity_problem);
+            save_output = false;
         }
     }
 };

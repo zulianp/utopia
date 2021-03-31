@@ -372,13 +372,6 @@ namespace utopia {
 
             SizeType offset = 0;
             comm.exscan_sum(&n_local_nodes, &offset, 1);
-
-            // {
-            //     std::stringstream ss;
-            //     print_nodes(bulk_data, meta_data.globally_shared_part(), ss);
-            //     comm.synched_print(ss.str());
-            // }
-
             std::vector<std::unordered_set<SizeType>> node2node(n_universal_nodes);
 
             auto &element_buckets = universal_elements(bulk_data);

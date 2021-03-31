@@ -143,8 +143,12 @@ namespace utopia {
         }
 
         // Fix preallocation bug and REMOVE ME
-        MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-        m_utopia_warning_once("using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);");
+        if (space.n_var() > 1 && space.comm().size() > 1) {
+            MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+            m_utopia_warning(
+                "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
+                "PETSC_FALSE);");
+        }
 
         auto &bulk_data = space.mesh().bulk_data();
 
