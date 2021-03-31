@@ -2,6 +2,8 @@
 
 #include "utopia_make_unique.hpp"
 
+#include "utopia_stk_Commons.hpp"
+
 #include <stk_io/StkMeshIoBroker.hpp>
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/Comm.hpp>
@@ -32,11 +34,8 @@ namespace utopia {
                 n_elements = entity_counts[::stk::topology::ELEMENT_RANK];
                 n_nodes = entity_counts[::stk::topology::NODE_RANK];
 
-                // FIXME
-                n_local_elements = n_elements;
-                n_local_nodes = n_nodes;
-
-                // const stk::topology theTopo = part->topology();
+                n_local_elements = utopia::stk::count_local_elements(*bulk_data);
+                n_local_nodes = utopia::stk::count_local_nodes(*bulk_data);
             }
         };
 

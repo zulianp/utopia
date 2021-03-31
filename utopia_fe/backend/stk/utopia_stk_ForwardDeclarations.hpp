@@ -19,6 +19,7 @@ namespace utopia {
 
         class Mesh;
         class FunctionSpace;
+        class DofMap;
 
     }  // namespace stk
 }  // namespace utopia

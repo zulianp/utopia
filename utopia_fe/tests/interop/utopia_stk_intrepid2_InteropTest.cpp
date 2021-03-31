@@ -42,7 +42,6 @@ public:
 
         Vector_t row_sum = sum(mat, 1);
         Scalar_t sum_row_sum = sum(abs(row_sum));
-        utopia_test_assert(approxeq(sum_row_sum, 0.0, 1e-9));
 
         Vector_t rhs, x;
         space.create_vector(rhs);
@@ -63,6 +62,8 @@ public:
         }
 
         ////////////////////////////////////////////////////////////
+
+        utopia_test_assert(approxeq(sum_row_sum, 0.0, 1e-9));
 
         KSPSolver<Matrix_t, Vector_t> solver;
         solver.pc_type("hypre");
@@ -152,8 +153,8 @@ public:
     }
 
     void poisson_problem_parallel() {
-        // auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
-        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+        // auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -200,6 +201,7 @@ public:
 
         if (mpi_world_size() <= 2) {
             save_output = true;
+            export_tensors = true;
             UTOPIA_RUN_TEST(poisson_problem_parallel);
             // UTOPIA_RUN_TEST(elasticity_problem_parallel);
         }

@@ -46,35 +46,35 @@ namespace utopia {
             SizeType owned_dof_start{-1}, owned_dof_end{-1};
         };
 
-        typedef struct IdToDof {
+        typedef struct GhostInfo {
             // public:
             using SizeType = Traits<FunctionSpace>::SizeType;
             SizeType g_id{-1};
             SizeType dof{-1};
 
-            inline bool operator<(const IdToDof &other) const { return g_id < other.g_id; }
-        } IdToDof;
+            inline bool operator<(const GhostInfo &other) const { return g_id < other.g_id; }
+        } GhostInfo;
 
-        class MPIIdToDof {
+        class MPIGhostInfo {
         public:
-            MPIIdToDof() {
+            MPIGhostInfo() {
                 lengths[0] = 1;
                 lengths[1] = 1;
 
-                displacements[0] = static_cast<MPI_Aint>(offsetof(IdToDof, g_id));
-                displacements[1] = static_cast<MPI_Aint>(offsetof(IdToDof, dof));
+                displacements[0] = static_cast<MPI_Aint>(offsetof(GhostInfo, g_id));
+                displacements[1] = static_cast<MPI_Aint>(offsetof(GhostInfo, dof));
 
-                types[0] = MPIType<IdToDof::SizeType>::value();
-                types[1] = MPIType<IdToDof::SizeType>::value();
+                types[0] = MPIType<GhostInfo::SizeType>::value();
+                types[1] = MPIType<GhostInfo::SizeType>::value();
 
                 MPI_CATCH_ERROR(MPI_Type_create_struct(2, lengths, displacements, types, &data_type));
                 MPI_CATCH_ERROR(MPI_Type_commit(&data_type));
 
-                // MPI_CATCH_ERROR(MPI_Type_contiguous(2, MPIType<IdToDof::SizeType>::value(), &data_type));
+                // MPI_CATCH_ERROR(MPI_Type_contiguous(2, MPIType<GhostInfo::SizeType>::value(), &data_type));
                 // MPI_CATCH_ERROR(MPI_Type_commit(&data_type));
             }
 
-            ~MPIIdToDof() { MPI_CATCH_ERROR(MPI_Type_free(&data_type)); }
+            ~MPIGhostInfo() { MPI_CATCH_ERROR(MPI_Type_free(&data_type)); }
 
             inline MPI_Datatype &get() { return data_type; }
 
@@ -97,6 +97,12 @@ namespace utopia {
                 buffers_outgoing[destination].push_back({identifier, dof});
             }
 
+            void add_global_to_o_nnz(const int destination,
+                                     const Impl::SizeType &global_id,
+                                     const Impl::SizeType &o_nnz) {
+                buffers_outgoing[destination].push_back({global_id, o_nnz});
+            }
+
             Impl::SizeType find_dof_from_incoming(const int source, const Impl::SizeType &identifier) {
                 assert(source < int(buffers_incoming.size()));
                 const auto &inc = buffers_incoming[source];
@@ -107,7 +113,7 @@ namespace utopia {
                     return inc[0].dof;
                 }
 
-                IdToDof wrapper;
+                GhostInfo wrapper;
                 wrapper.g_id = identifier;
 
                 const auto it = std::lower_bound(inc.begin(), inc.end(), wrapper);
@@ -206,18 +212,49 @@ namespace utopia {
             }
 
             void clear() {
-                rank_outgoing.clear();
                 rank_incoming.clear();
+                rank_outgoing.clear();
+                clear_buffers();
+            }
+
+            void clear_counters() {
+                for (auto &ri : rank_incoming) {
+                    ri.second = 0;
+                }
+
+                for (auto &ro : rank_outgoing) {
+                    ro.second = 0;
+                }
+            }
+
+            void swap_incoming_outgoing() {
+                std::swap(buffers_outgoing, buffers_incoming);
+                std::swap(rank_incoming, rank_outgoing);
+
+                auto capacity = buffers_outgoing.capacity();
+                buffers_outgoing.resize(0);
+                assert(capacity == buffers_outgoing.capacity());
+            }
+
+            void clear_buffers() {
                 buffers_outgoing.clear();
                 buffers_incoming.clear();
+            }
+
+            void add_to_o_nnz(const SizeType &local_offset, IndexArray &o_nnz) {
+                for (auto &o : buffers_incoming) {
+                    for (auto nnz : o) {
+                        o_nnz[nnz.g_id - local_offset] += nnz.dof;
+                    }
+                }
             }
 
         private:
             const Impl::Communicator &comm;
             std::unordered_map<int, Impl::SizeType> rank_outgoing, rank_incoming;
-            std::vector<std::vector<IdToDof>> buffers_outgoing, buffers_incoming;
+            std::vector<std::vector<GhostInfo>> buffers_outgoing, buffers_incoming;
 
-            MPIIdToDof data_type_;
+            MPIGhostInfo data_type_;
         };
 
         DofMap::DofMap() : impl_(utopia::make_unique<Impl>()) {}
@@ -291,22 +328,29 @@ namespace utopia {
 
         void DofMap::init(::stk::mesh::BulkData &bulk_data) {
             Impl::Communicator comm(bulk_data.parallel());
-            int rank = comm.rank();
 
-            if (comm.size() == 1) return;
+            if (comm.size() == 1) {
+                init_serial(bulk_data);
+            } else {
+                init_parallel(comm, bulk_data);
+            }
+        }
 
-            auto &meta_data = bulk_data.mesh_meta_data();
+        void DofMap::init_parallel(const Communicator &comm, ::stk::mesh::BulkData &bulk_data) {
+            const int rank = comm.rank();
+
+            // auto &meta_data = bulk_data.mesh_meta_data();
             SizeType n_local_nodes = count_local_nodes(bulk_data);
             SizeType n_universal_nodes = count_universal_nodes(bulk_data);
 
             SizeType offset = 0;
             comm.exscan_sum(&n_local_nodes, &offset, 1);
 
-            {
-                std::stringstream ss;
-                print_nodes(bulk_data, meta_data.globally_shared_part(), ss);
-                comm.synched_print(ss.str());
-            }
+            // {
+            //     std::stringstream ss;
+            //     print_nodes(bulk_data, meta_data.globally_shared_part(), ss);
+            //     comm.synched_print(ss.str());
+            // }
 
             std::vector<std::unordered_set<SizeType>> node2node(n_universal_nodes);
 
@@ -359,8 +403,6 @@ namespace utopia {
                     }
 
                     ++index;
-                } else {
-                    // add o_nnz
                 }
             }
 
@@ -436,24 +478,86 @@ namespace utopia {
                 }
             }
 
-            // TODO Comunicate o_nnz
+            dof_exchange.swap_incoming_outgoing();
 
-            std::stringstream ss;
-            // describe(ss);
-            // dof_exchange.describe_incoming(ss);
+            for (Impl::SizeType i = 0; i < n_universal_nodes; ++i) {
+                Impl::Entity e(utopia::stk::convert_index_to_stk_index(i));
+                int owner_rank = bulk_data.parallel_owner_rank(e);
 
-            for (auto &nodes : node2node) {
-                for (auto &n : nodes) {
-                    ss << n << " ";
+                if (owner_rank != rank) {
+                    Impl::SizeType count = 0;
+                    auto &nodes = node2node[i];
+
+                    for (auto n : nodes) {
+                        Impl::Entity node_e(utopia::stk::convert_index_to_stk_index(n));
+                        int node_owner_rank = bulk_data.parallel_owner_rank(node_e);
+
+                        if (node_owner_rank == rank) {
+                            ++count;
+                        }
+                    }
+
+                    dof_exchange.add_global_to_o_nnz(owner_rank, impl_->local_to_global[i], count);
                 }
-
-                ss << "\n";
             }
 
-            describe(ss);
-            comm.synched_print(ss.str());
+            dof_exchange.exchange();
+            dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
 
-            Utopia::Abort();
+            // std::stringstream ss;
+            // for (auto &nodes : node2node) {
+            //     for (auto &n : nodes) {
+            //         ss << n << " ";
+            //     }
+
+            //     ss << "\n";
+            // }
+
+            // describe(ss);
+            // comm.synched_print(ss.str());
+
+            // Utopia::Abort();
+        }
+
+        void DofMap::init_serial(::stk::mesh::BulkData &bulk_data) {
+            using Bucket_t = ::stk::mesh::Bucket;
+            using BucketVector_t = ::stk::mesh::BucketVector;
+            using Entity_t = ::stk::mesh::Entity;
+
+            auto &meta_data = bulk_data.mesh_meta_data();
+
+            const ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+            const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, selector);
+
+            const SizeType nln = count_local_nodes(bulk_data);
+            std::vector<std::unordered_set<SizeType>> node2node(nln);
+
+            for (auto *b_ptr : node_buckets) {
+                const auto &b = *b_ptr;
+                const auto length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    const Entity_t elem = b[k];
+                    const auto node_ids = bulk_data.begin_nodes(elem);
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                    for (Size_t i = 0; i < n_nodes; ++i) {
+                        const auto node_i = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i]));
+
+                        for (Size_t j = 0; j < n_nodes; ++j) {
+                            node2node[node_i].insert(
+                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[j])));
+                        }
+                    }
+                }
+            }
+
+            impl_->d_nnz.resize(nln, 0);
+            impl_->o_nnz.resize(nln, 0);
+
+            for (SizeType i = 0; i < nln; ++i) {
+                impl_->d_nnz[i] = node2node[i].size();
+            }
         }
 
         bool DofMap::empty() const { return impl_->local_to_global.empty(); }
@@ -471,9 +575,14 @@ namespace utopia {
 
             index = 0;
             for (auto d : d_nnz) {
-                os << (impl_->owned_dof_start + index) << " -> nnz: " << d << ", " << o_nnz[index] << '\n';
+                os << (impl_->owned_dof_start + index) << " -> nnz: " << d << ',' << o_nnz[index] << '\n';
                 index++;
             }
         }
+
+        const DofMap::IndexArray &DofMap::local_to_global() const { return impl_->local_to_global; }
+        const DofMap::IndexArray &DofMap::d_nnz() const { return impl_->d_nnz; }
+        const DofMap::IndexArray &DofMap::o_nnz() const { return impl_->o_nnz; }
+
     }  // namespace stk
 }  // namespace utopia

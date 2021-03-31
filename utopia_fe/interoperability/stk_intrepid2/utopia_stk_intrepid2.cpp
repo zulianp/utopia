@@ -7,6 +7,7 @@
 #include "utopia_stk_Commons.hpp"
 
 #include "utopia_intrepid2_FE.hpp"
+#include "utopia_stk_DofMap.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
 // Stk
@@ -66,8 +67,10 @@ namespace utopia {
         auto &meta_data = mesh.meta_data();
         auto &bulk_data = mesh.bulk_data();
 
-        ::stk::mesh::Selector s_universal = meta_data.universal_part();
-        const BucketVector_t &elem_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, s_universal);
+        // ::stk::mesh::Selector s_universal = meta_data.universal_part();
+        // const BucketVector_t &elem_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, s_universal);
+
+        const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
         Size_t n_local_nodes = mesh.n_local_nodes();
         Size_t n_local_elements = mesh.n_local_elements();
@@ -77,7 +80,7 @@ namespace utopia {
         // Dirty hack (FIXME once stk usage is a bit more profficient)
         auto topo = convert_elem_type(first_bucket->topology());
         Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
-        ::stk::mesh::FieldBase *coords = ::stk::mesh::get_field_by_name("coordinates", meta_data);
+        auto *coords = meta_data.coordinate_field();
 
         DynRankView cell_points("cell_points", n_local_elements, n_nodes_x_elem, spatial_dim);
 
@@ -135,13 +138,11 @@ namespace utopia {
             }
         }
 
-        auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        ::stk::mesh::Selector s_universal = meta_data.universal_part();
-        const BucketVector_t &elem_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, s_universal);
+        const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
-        Write<PetscMatrix> w(matrix);
+        Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
         const int n_var = space.n_var();
         const SizeType n_dofs = element_matrices.extent(1);
@@ -153,6 +154,8 @@ namespace utopia {
         Size_t n_local_nodes = space.mesh().n_local_nodes();
 
         const bool is_block = matrix.is_block();
+
+        auto &local_to_global = space.dof_map().local_to_global();
 
         for (const auto &ib : elem_buckets) {
             const Bucket_t &b = *ib;
@@ -169,9 +172,21 @@ namespace utopia {
 
                 auto node_ids = bulk_data.begin_nodes(elem);
 
-                for (Size_t i = 0; i < nn; ++i) {
-                    idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                if (local_to_global.empty()) {
+                    for (Size_t i = 0; i < nn; ++i) {
+                        idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                        assert(idx[i] < space.n_dofs());
+                        assert(idx[i] >= 0);
+                    }
+                } else {
+                    for (Size_t i = 0; i < nn; ++i) {
+                        idx[i] = local_to_global[utopia::stk::convert_entity_to_index(node_ids[i])];
+                        assert(idx[i] < space.n_dofs());
+                        assert(idx[i] >= 0);
+                    }
+                }
 
+                for (Size_t i = 0; i < nn; ++i) {
                     for (int di = 0; di < n_var; ++di) {
                         const Size_t idx_i = i * n_var + di;
 

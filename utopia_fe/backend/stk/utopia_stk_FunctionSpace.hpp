@@ -57,6 +57,8 @@ namespace utopia {
 
             void displace(const Vector &displacement);
 
+            const DofMap &dof_map() const;
+
         private:
             class Impl;
             std::shared_ptr<Impl> impl_;
