@@ -280,7 +280,7 @@ namespace utopia {
                     }
                 }
             } else {
-                auto rr = row_range(m);
+                // auto rr = row_range(m);
 
                 for (auto &bc : impl_->dirichlet_boundary.conditions) {
                     auto *part = meta_data.get_part(bc.name);
@@ -293,7 +293,9 @@ namespace utopia {
 
                             for (Bucket_t::size_type k = 0; k < length; ++k) {
                                 auto node = b[k];
-                                auto idx = local_to_global[utopia::stk::convert_entity_to_index(node)];
+                                auto local_idx = utopia::stk::convert_entity_to_index(node);
+                                assert(local_idx < local_to_global.size());
+                                auto idx = local_to_global[local_idx];
 
                                 // if (rr.inside(idx)) {
                                 constrains.push_back(idx * nv + bc.component);
@@ -340,7 +342,7 @@ namespace utopia {
                     }
                 }
             } else {
-                auto r = range(v);
+                // auto r = range(v);
                 // auto v_view = view_device(v);
 
                 Write<Vector> w(v, utopia::GLOBAL_INSERT);

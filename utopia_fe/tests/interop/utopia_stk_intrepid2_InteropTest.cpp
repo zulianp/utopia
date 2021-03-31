@@ -152,14 +152,11 @@ public:
         assemble_and_solve("elasticity", space, linear_elasticity);
     }
 
-    void poisson_problem_parallel() {
-        // auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+    void poisson_problem_parallel_2D() {
         auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
 
         FunctionSpace_t space;
         space.read(params);
-        // space.add_dirichlet_boundary_condition("body_top", 1.0);
-        // space.add_dirichlet_boundary_condition("body_bottom", -1.0);
 
         space.add_dirichlet_boundary_condition("surface_1", 1.0);
         space.add_dirichlet_boundary_condition("surface_3", -1.0);
@@ -169,11 +166,23 @@ public:
         std::stringstream ss;
         space.describe(ss);
 
-        // if (space.comm().size() == 2) {
-        //     space.comm().synched_print(ss.str());
-        // }
+        assemble_and_solve("poisson_problem_parallel_2D", space, lapl);
+    }
 
-        assemble_and_solve("poisson_problem_parallel", space, lapl);
+    void poisson_problem_parallel_3D() {
+        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+
+        FunctionSpace_t space;
+        space.read(params);
+        space.add_dirichlet_boundary_condition("body_top", 1.0);
+        space.add_dirichlet_boundary_condition("body_bottom", -1.0);
+
+        LaplaceOperator<Scalar_t> lapl{1.0};
+
+        std::stringstream ss;
+        space.describe(ss);
+
+        assemble_and_solve("poisson_problem_parallel_3D", space, lapl);
     }
 
     void elasticity_problem_parallel() {
@@ -205,7 +214,8 @@ public:
         if (mpi_world_size() <= 2) {
             save_output = true;
             export_tensors = true;
-            UTOPIA_RUN_TEST(poisson_problem_parallel);
+            UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
+            UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
             // UTOPIA_RUN_TEST(elasticity_problem_parallel);
         }
     }

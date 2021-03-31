@@ -44,6 +44,24 @@ namespace utopia {
             IndexArray d_nnz, o_nnz;
             IndexArray local_to_global;
             SizeType owned_dof_start{-1}, owned_dof_end{-1};
+
+            void print_map(const ::stk::mesh::BulkData &bulk_data, std::ostream &os) const {
+                auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
+
+                for (auto *b_ptr : node_buckets) {
+                    auto &b = *b_ptr;
+                    const SizeType length = b.size();
+
+                    for (SizeType i = 0; i < length; ++i) {
+                        auto node = b[i];
+
+                        auto local_index = utopia::stk::convert_entity_to_index(node);
+                        auto dof = local_to_global[local_index];
+                        os << local_index << " -> " << dof << ", "
+                           << utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)) << '\n';
+                    }
+                }
+            }
         };
 
         typedef struct GhostInfo {
@@ -118,6 +136,7 @@ namespace utopia {
 
                 const auto it = std::lower_bound(inc.begin(), inc.end(), wrapper);
                 assert(it != inc.end());
+                assert(it->g_id == identifier);
 
                 return it->dof;
             }
@@ -435,7 +454,6 @@ namespace utopia {
 
             dof_exchange.allocate();
 
-            index = 0;
             for (auto *b_ptr : shared_node_buckets) {
                 const auto &b = *b_ptr;
                 const auto length = b.size();
@@ -443,16 +461,17 @@ namespace utopia {
                 for (Impl::Bucket::size_type k = 0; k < length; ++k) {
                     const Impl::Entity node = b[k];
                     int owner_rank = bulk_data.parallel_owner_rank(node);
+                    auto local_index = utopia::stk::convert_entity_to_index(node);
 
                     bulk_data.comm_procs(node, procs);
 
                     if (owner_rank == rank) {
                         for (auto p : procs) {
                             dof_exchange.add_dof_mapping_to_outgoing(
-                                p, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)), offset + index);
+                                p,
+                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)),
+                                impl_->local_to_global[local_index]);
                         }
-
-                        index++;
                     }
                 }
             }
@@ -469,11 +488,14 @@ namespace utopia {
                     int owner_rank = bulk_data.parallel_owner_rank(node);
 
                     if (owner_rank != rank) {
-                        auto dof = dof_exchange.find_dof_from_incoming(
-                            owner_rank, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)));
+                        auto g_id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                        auto dof = dof_exchange.find_dof_from_incoming(owner_rank, g_id);
 
-                        auto index = utopia::stk::convert_entity_to_index(node);
-                        impl_->local_to_global[index] = dof;
+                        auto local_index = utopia::stk::convert_entity_to_index(node);
+
+                        // assert(g_id == dof);
+
+                        impl_->local_to_global[local_index] = dof;
                     }
                 }
             }
@@ -505,18 +527,8 @@ namespace utopia {
             dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
 
             // std::stringstream ss;
-            // for (auto &nodes : node2node) {
-            //     for (auto &n : nodes) {
-            //         ss << n << " ";
-            //     }
-
-            //     ss << "\n";
-            // }
-
-            // describe(ss);
+            // impl_->print_map(bulk_data, ss);
             // comm.synched_print(ss.str());
-
-            // Utopia::Abort();
         }
 
         void DofMap::init_serial(::stk::mesh::BulkData &bulk_data) {
