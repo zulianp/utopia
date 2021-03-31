@@ -36,6 +36,10 @@ namespace utopia {
                     in.get("value", value);
                     in.get("var", component);
                     in.get("set_id", set_id);
+
+                    if (name.empty() && set_id != -1) {
+                        name = "surface_" + std::to_string(set_id);
+                    }
                 }
             };
 

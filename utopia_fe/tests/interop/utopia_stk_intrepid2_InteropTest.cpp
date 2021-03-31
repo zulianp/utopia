@@ -153,13 +153,16 @@ public:
     }
 
     void poisson_problem_parallel() {
-        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
-        // auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+        // auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
 
         FunctionSpace_t space;
         space.read(params);
-        space.add_dirichlet_boundary_condition("body_top", 1.0);
-        space.add_dirichlet_boundary_condition("body_bottom", -1.0);
+        // space.add_dirichlet_boundary_condition("body_top", 1.0);
+        // space.add_dirichlet_boundary_condition("body_bottom", -1.0);
+
+        space.add_dirichlet_boundary_condition("surface_1", 1.0);
+        space.add_dirichlet_boundary_condition("surface_3", -1.0);
 
         LaplaceOperator<Scalar_t> lapl{1.0};
 
