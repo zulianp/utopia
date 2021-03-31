@@ -210,6 +210,7 @@ namespace utopia {
 
                     auto &buff = buffers_outgoing[ro.first];
                     assert(!buff.empty());
+                    assert(ro.second == buff.size());
 
                     MPI_CATCH_ERROR(MPI_Isend(
                         &buff[0], buff.size(), data_type_.get(), ro.first, ro.first, raw_comm, &requests.back()));
@@ -267,6 +268,10 @@ namespace utopia {
             void add_to_o_nnz(const SizeType &local_offset, IndexArray &o_nnz) {
                 for (auto &o : buffers_incoming) {
                     for (auto nnz : o) {
+                        assert(nnz.g_id >= 0);
+                        assert(nnz.g_id - local_offset >= 0);
+                        assert(nnz.g_id - local_offset < SizeType(o_nnz.size()));
+
                         o_nnz[nnz.g_id - local_offset] += nnz.dof;
                     }
                 }
@@ -480,6 +485,13 @@ namespace utopia {
             dof_exchange.sort_outgoing();
             dof_exchange.exchange();
 
+            {
+                std::stringstream ss;
+                dof_exchange.describe(ss);
+
+                comm.synched_print(ss.str());
+            }
+
             for (auto *b_ptr : shared_node_buckets) {
                 const auto &b = *b_ptr;
                 const auto length = b.size();
@@ -520,17 +532,30 @@ namespace utopia {
                         }
                     }
 
+                    assert(impl_->local_to_global[i] >= 0);
+                    assert(impl_->local_to_global[i] < impl_->owned_dof_end);
+
                     dof_exchange.add_global_to_o_nnz(owner_rank, impl_->local_to_global[i], count);
                 }
             }
 
             dof_exchange.exchange();
+
+            {
+                std::stringstream ss;
+                dof_exchange.describe(ss);
+
+                comm.synched_print(ss.str());
+            }
+
             dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
 
-            // std::stringstream ss;
-            // // impl_->print_map(bulk_data, ss);
-            // describe(ss);
-            // comm.synched_print(ss.str());
+            {
+                std::stringstream ss;
+                // impl_->print_map(bulk_data, ss);
+                describe(ss);
+                comm.synched_print(ss.str());
+            }
         }
 
         void DofMap::init_serial(::stk::mesh::BulkData &bulk_data) {
