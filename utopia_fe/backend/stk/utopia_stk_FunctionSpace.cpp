@@ -65,7 +65,6 @@ namespace utopia {
             using IOBroker_t = ::stk::io::StkMeshIoBroker;
 
             std::shared_ptr<Mesh> mesh;
-            int n_var{1};
             DirichletBoundary dirichlet_boundary;
             std::shared_ptr<DofMap> dof_map;
 
@@ -82,7 +81,10 @@ namespace utopia {
 
                 auto v_view = view_device(v);
 
-                auto &local_to_global = dof_map->local_to_global();
+                auto &&local_to_global = dof_map->local_to_global();
+#ifndef NDEBUG
+                const int n_var = dof_map->n_var();
+#endif  // NDEBUG
 
                 for (const auto &ib : node_buckets) {
                     const Bucket_t &b = *ib;
@@ -92,16 +94,18 @@ namespace utopia {
                         Entity_t node = b[k];
                         auto idx = utopia::stk::convert_entity_to_index(node);
 
-                        if (!local_to_global.empty()) {
-                            idx = local_to_global[idx];
-                        }
-
                         Scalar *points = (Scalar *)::stk::mesh::field_data(*field, node);
                         auto n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
                         assert(n_comp == n_var);
 
-                        for (int d = 0; d < n_comp; ++d) {
-                            points[d] = v_view.get(idx * n_comp + d);
+                        if (!local_to_global.empty()) {
+                            for (int d = 0; d < n_comp; ++d) {
+                                points[d] = v_view.get(idx * n_comp + d);
+                            }
+                        } else {
+                            for (int d = 0; d < n_comp; ++d) {
+                                points[d] = v_view.get(local_to_global(idx, d));
+                            }
                         }
                     }
                 }
@@ -119,6 +123,9 @@ namespace utopia {
                 assert(field);
 
                 auto v_view = local_view_device(v);
+#ifndef NDEBUG
+                const int n_var = dof_map->n_var();
+#endif  // NDEBUG
 
                 for (const auto &ib : node_buckets) {
                     const Bucket_t &b = *ib;
@@ -147,6 +154,7 @@ namespace utopia {
 
         FunctionSpace::FunctionSpace(const std::shared_ptr<Mesh> &mesh) : impl_(utopia::make_unique<Impl>()) {
             impl_->mesh = mesh;
+            impl_->dof_map = std::make_shared<DofMap>();
         }
 
         FunctionSpace::~FunctionSpace() = default;
@@ -161,9 +169,9 @@ namespace utopia {
             ::stk::mesh::Field<Scalar> &field =
                 meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, "output", 1);
 
-            // const std::vector<Scalar> init(impl_->n_var, 1);
-            // ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), impl_->n_var, init.data());
-            ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), impl_->n_var, nullptr);
+            // const std::vector<Scalar> init(this->n_var(), 1);
+            // ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), init.data());
+            ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), nullptr);
 
             if (comm().size() == 1) {
                 impl_->vector_to_nodal_field("output", x);
@@ -200,12 +208,16 @@ namespace utopia {
             in.get("mesh", *mesh);
             init(mesh);
 
+            int n_var = 1;
+
             if (!Options()
-                     .add_option("n_var", impl_->n_var, "Number of variables per node.")
+                     .add_option("n_var", n_var, "Number of variables per node.")
                      .add_option("boundary_conditions", impl_->dirichlet_boundary, "Boundary conditions.")
                      .parse(in)) {
                 return;
             }
+
+            dof_map().set_n_var(n_var);
         }
 
         void FunctionSpace::read_with_state(Input &in, Vector &val) {
@@ -256,12 +268,12 @@ namespace utopia {
             return *impl_->mesh;
         }
 
-        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->mesh->n_nodes() * impl_->n_var; }
-        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const {
-            return impl_->mesh->n_local_nodes() * impl_->n_var;
-        }
+        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->mesh->n_nodes() * n_var(); }
+        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return impl_->mesh->n_local_nodes() * n_var(); }
 
-        int FunctionSpace::n_var() const { return impl_->n_var; }
+        int FunctionSpace::n_var() const { return dof_map().n_var(); }
+
+        void FunctionSpace::set_n_var(const int n_var) { dof_map().set_n_var(n_var); }
 
         void FunctionSpace::create_vector(Vector &v) const { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
 
@@ -278,10 +290,10 @@ namespace utopia {
             auto vl = layout(comm(), n_local_dofs(), n_dofs());
             auto ml = square_matrix_layout(vl);
 
-            if (impl_->n_var == 1) {
+            if (this->n_var() == 1) {
                 m.sparse(ml, impl_->dof_map->d_nnz(), impl_->dof_map->o_nnz());
             } else {
-                m.block_sparse(ml, impl_->dof_map->d_nnz(), impl_->dof_map->o_nnz(), impl_->n_var);
+                m.block_sparse(ml, impl_->dof_map->d_nnz(), impl_->dof_map->o_nnz(), this->n_var());
             }
         }
 
@@ -298,7 +310,7 @@ namespace utopia {
 
             const int nv = n_var();
 
-            auto &local_to_global = dof_map().local_to_global();
+            auto &&local_to_global = dof_map().local_to_global();
 
             if (local_to_global.empty()) {
                 for (auto &bc : impl_->dirichlet_boundary.conditions) {
@@ -334,10 +346,9 @@ namespace utopia {
                                 auto node = b[k];
                                 auto local_idx = utopia::stk::convert_entity_to_index(node);
                                 assert(local_idx < local_to_global.size());
-                                auto idx = local_to_global[local_idx];
 
                                 // if (rr.inside(idx)) {
-                                constrains.push_back(idx * nv + bc.component);
+                                constrains.push_back(local_to_global(local_idx, bc.component));
                                 // }
                             }
                         }
@@ -354,7 +365,7 @@ namespace utopia {
             auto &meta_data = mesh().meta_data();
             auto &bulk_data = mesh().bulk_data();
 
-            auto &local_to_global = dof_map().local_to_global();
+            auto &&local_to_global = dof_map().local_to_global();
 
             const int nv = n_var();
 
@@ -399,8 +410,8 @@ namespace utopia {
                                 auto node = b[k];
                                 auto local_idx = utopia::stk::convert_entity_to_index(node);
                                 assert(local_idx < local_to_global.size());
-                                auto idx = local_to_global[local_idx];
-                                v.c_set(idx * nv + bc.component, bc.value);
+
+                                v.c_set(local_to_global(local_idx, bc.component), bc.value);
                             }
                         }
                     }
@@ -425,22 +436,10 @@ namespace utopia {
         void FunctionSpace::displace(const Vector &displacement) { assert(false && "IMPLEMENT ME"); }
 
         const DofMap &FunctionSpace::dof_map() const { return *impl_->dof_map; }
+        DofMap &FunctionSpace::dof_map() { return *impl_->dof_map; }
 
         void FunctionSpace::global_to_local(const Vector &global, Vector &local) const {
-            if (comm().size() == 1) {
-                local = global;
-                return;
-            }
-
-            assert(n_var() == 1);
-
-            const auto &dm = dof_map();
-            assert(!dm.empty());
-
-            const auto &l2g = dof_map().local_to_global();
-
-            local.zeros(layout(Communicator::self(), l2g.size(), l2g.size()));
-            global.select(l2g, local);
+            dof_map().global_to_local(global, local);
         }
 
     }  // namespace stk

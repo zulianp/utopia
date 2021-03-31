@@ -40,6 +40,7 @@ namespace utopia {
             SizeType n_dofs() const;
             SizeType n_local_dofs() const;
             int n_var() const;
+            void set_n_var(const int n_var);
 
             void create_vector(Vector &v) const;
             void create_local_vector(Vector &v) const;
@@ -59,6 +60,7 @@ namespace utopia {
             void global_to_local(const Vector &global, Vector &local) const;
 
             const DofMap &dof_map() const;
+            DofMap &dof_map();
 
         private:
             class Impl;

@@ -730,6 +730,7 @@ namespace utopia {
         bool is_mpi() const;
 
         void select(const PetscIndexSet &index, PetscVector &result) const override;
+        void blocked_select(const PetscIndexSet &index, PetscVector &result, PetscInt block_size = -1) const;
 
         void select(const Range &global_range, PetscVector &result) const;
 

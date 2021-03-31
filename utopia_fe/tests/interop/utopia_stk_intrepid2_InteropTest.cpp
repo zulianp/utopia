@@ -213,10 +213,10 @@ public:
 
         if (mpi_world_size() <= 2) {
             save_output = true;
-            export_tensors = true;
+            // export_tensors = true;
             UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
             UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
-            // UTOPIA_RUN_TEST(elasticity_problem_parallel);
+            UTOPIA_RUN_TEST(elasticity_problem_parallel);
         }
     }
 };

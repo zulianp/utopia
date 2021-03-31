@@ -41,9 +41,11 @@ namespace utopia {
             using BucketVector = ::stk::mesh::BucketVector;
             using Entity = ::stk::mesh::Entity;
 
+            Communicator comm;
             IndexArray d_nnz, o_nnz;
             IndexArray local_to_global;
             SizeType owned_dof_start{-1}, owned_dof_end{-1};
+            int n_var{1};
 
             void print_map(const ::stk::mesh::BulkData &bulk_data, std::ostream &os) const {
                 auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
@@ -249,8 +251,10 @@ namespace utopia {
             void swap_incoming_outgoing() {
                 std::swap(buffers_outgoing, buffers_incoming);
                 std::swap(rank_incoming, rank_outgoing);
-
+#ifndef NDEBUG
                 auto capacity = buffers_outgoing.capacity();
+#endif  // NDEBUG
+
                 buffers_outgoing.resize(0);
                 assert(capacity == buffers_outgoing.capacity());
             }
@@ -345,17 +349,21 @@ namespace utopia {
             }
         }
 
-        void DofMap::init(::stk::mesh::BulkData &bulk_data) {
-            Impl::Communicator comm(bulk_data.parallel());
+        int DofMap::n_var() const { return impl_->n_var; }
+        void DofMap::set_n_var(const int n_var) { impl_->n_var = n_var; }
 
-            if (comm.size() == 1) {
+        void DofMap::init(::stk::mesh::BulkData &bulk_data) {
+            impl_->comm = Impl::Communicator(bulk_data.parallel());
+
+            if (impl_->comm.size() == 1) {
                 init_serial(bulk_data);
             } else {
-                init_parallel(comm, bulk_data);
+                init_parallel(impl_->comm, bulk_data);
             }
         }
 
         void DofMap::init_parallel(const Communicator &comm, ::stk::mesh::BulkData &bulk_data) {
+            UTOPIA_TRACE_REGION_BEGIN("DofMap::init_parallel");
             const int rank = comm.rank();
 
             // auto &meta_data = bulk_data.mesh_meta_data();
@@ -527,7 +535,8 @@ namespace utopia {
             dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
 
             // std::stringstream ss;
-            // impl_->print_map(bulk_data, ss);
+            // // impl_->print_map(bulk_data, ss);
+            // describe(ss);
             // comm.synched_print(ss.str());
         }
 
@@ -570,6 +579,8 @@ namespace utopia {
             for (SizeType i = 0; i < nln; ++i) {
                 impl_->d_nnz[i] = node2node[i].size();
             }
+
+            UTOPIA_TRACE_REGION_END("DofMap::init_parallel");
         }
 
         bool DofMap::empty() const { return impl_->local_to_global.empty(); }
@@ -592,9 +603,26 @@ namespace utopia {
             }
         }
 
-        const DofMap::IndexArray &DofMap::local_to_global() const { return impl_->local_to_global; }
+        DofMap::GlobalIndex DofMap::local_to_global() const { return GlobalIndex(impl_->local_to_global, n_var()); }
         const DofMap::IndexArray &DofMap::d_nnz() const { return impl_->d_nnz; }
         const DofMap::IndexArray &DofMap::o_nnz() const { return impl_->o_nnz; }
 
+        void DofMap::global_to_local(const Vector &global, Vector &local) const {
+            if (impl_->comm.size() == 1) {
+                local = global;
+                return;
+            }
+
+            auto &l2g = impl_->local_to_global;
+
+            if (n_var() == 1) {
+                local.zeros(layout(Communicator::self(), l2g.size(), l2g.size()));
+                global.select(l2g, local);
+            } else {
+                const int nv = this->n_var();
+                local.zeros(layout(Communicator::self(), l2g.size() * nv, l2g.size() * nv));
+                global.blocked_select(l2g, local, nv);
+            }
+        }
     }  // namespace stk
 }  // namespace utopia

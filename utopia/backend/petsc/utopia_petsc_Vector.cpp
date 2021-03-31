@@ -283,6 +283,32 @@ namespace utopia {
         VecScatterDestroy(&scatter_context);
     }
 
+    void PetscVector::blocked_select(const PetscIndexSet &index, PetscVector &result, PetscInt block_size) const {
+        MPI_Comm comm = communicator();
+        IS is_in;
+        VecScatter scatter_context;
+
+        if (block_size == -1) {
+            VecGetBlockSize(this->raw_type(), &block_size);
+        }
+
+        assert(block_size >= 1);
+
+        result.repurpose(comm, this->type(), index.size() * block_size, PETSC_DETERMINE);
+        VecSetBlockSize(result.raw_type(), block_size);
+
+        ISCreateBlock(comm, block_size, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
+        // (comm, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
+
+        UtopiaVecScatterCreate(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
+
+        VecScatterBegin(scatter_context, implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(scatter_context, implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
+
+        ISDestroy(&is_in);
+        VecScatterDestroy(&scatter_context);
+    }
+
     void PetscVector::copy_from(Vec vec) {
         destroy();
 

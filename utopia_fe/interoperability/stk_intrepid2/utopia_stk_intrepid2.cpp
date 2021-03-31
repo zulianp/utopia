@@ -134,12 +134,17 @@ namespace utopia {
 
         if (matrix.empty()) {
             space.create_matrix(matrix);
+
         } else {
             // Reuse matrix
             if (matrix.is_assembled()) {
                 matrix *= 0.0;
             }
         }
+
+        // Fix preallocation bug and REMOVE ME
+        MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+        m_utopia_warning_once("using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);");
 
         auto &bulk_data = space.mesh().bulk_data();
 
@@ -158,7 +163,7 @@ namespace utopia {
 
         const bool is_block = matrix.is_block();
 
-        auto &local_to_global = space.dof_map().local_to_global();
+        auto &&local_to_global = space.dof_map().local_to_global();
 
         Size_t elem_idx = 0;
         for (const auto &ib : elem_buckets) {
@@ -184,7 +189,7 @@ namespace utopia {
                     }
                 } else {
                     for (Size_t i = 0; i < nn; ++i) {
-                        idx[i] = local_to_global[utopia::stk::convert_entity_to_index(node_ids[i])];
+                        idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
                         assert(idx[i] < space.n_dofs());
                         assert(idx[i] >= 0);
                     }
