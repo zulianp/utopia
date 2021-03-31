@@ -56,6 +56,7 @@ namespace utopia {
             bool empty() const;
 
             void displace(const Vector &displacement);
+            void global_to_local(const Vector &global, Vector &local) const;
 
             const DofMap &dof_map() const;
 

@@ -72,7 +72,7 @@ namespace utopia {
 
         const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
-        Size_t n_local_nodes = mesh.n_local_nodes();
+        // Size_t n_local_nodes = mesh.n_local_nodes();
         Size_t n_local_elements = mesh.n_local_elements();
         Size_t spatial_dim = mesh.spatial_dimension();
         auto *first_bucket = *elem_buckets.begin();
@@ -154,7 +154,7 @@ namespace utopia {
         IndexArray_t idx(nn);
         ScalarArray_t val(n_dofs * n_dofs);
 
-        Size_t n_local_nodes = space.mesh().n_local_nodes();
+        // Size_t n_local_nodes = space.mesh().n_local_nodes();
 
         const bool is_block = matrix.is_block();
 
