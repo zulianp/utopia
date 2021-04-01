@@ -23,14 +23,24 @@ namespace utopia {
                         ret = std::move(in);
                         utopia::err() << "relative_path is empty\n";
                     } else {
+                        std::string insert_node;
+                        node.get("node", insert_node);
+
                         auto temp = std::make_unique<InputParameters>();
                         Path absolute_path = script_dir / relative_path;
                         Path sub_script_dir = absolute_path.parent();
 
                         temp->add_root(std::move(in));
 
-                        temp->add_root(
-                            include(sub_script_dir, open_istream(absolute_path), recursion + 1, max_recursions));
+                        auto included_file =
+                            include(sub_script_dir, open_istream(absolute_path), recursion + 1, max_recursions);
+
+                        if (insert_node.empty()) {
+                            temp->add_root(std::move(included_file));
+                        } else {
+                            temp->add_node(insert_node, std::move(included_file));
+                        }
+
                         ret = std::move(temp);
                     }
                 });

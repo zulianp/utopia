@@ -126,6 +126,7 @@ namespace utopia {
               aux_roots_(std::move(other.aux_roots_)) {}
 
         inline void add_root(std::unique_ptr<Input> &&root) { aux_roots_.push_back(std::move(root)); }
+        inline void add_node(const std::string &name, std::shared_ptr<Input> &&node) { nodes_[name] = std::move(node); }
 
     private:
         std::map<std::string, std::unique_ptr<IConvertible>> values_;
