@@ -222,12 +222,12 @@ public:
         if (mpi_world_size() <= 4) {
             UTOPIA_RUN_TEST(poisson_problem);
             UTOPIA_RUN_TEST(vector_poisson_problem);
-            UTOPIA_RUN_TEST(elasticity_problem);
-            UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
             save_output = true;
+            UTOPIA_RUN_TEST(elasticity_problem);
+            save_output = false;
+            UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
             UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
             UTOPIA_RUN_TEST(elasticity_problem_parallel);
-            save_output = false;
         }
     }
 };

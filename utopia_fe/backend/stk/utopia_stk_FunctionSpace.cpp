@@ -20,12 +20,12 @@ namespace utopia {
 
         class DirichletBoundary : public Configurable, public Describable {
         public:
-            class Condition : public Configurable {
+            class Condition : public Configurable, public Describable {
             public:
                 std::string name;
                 double value;
                 int component{0};
-                int set_id{-1};
+                int side{-1};
 
                 Condition() = default;
                 Condition(std::string name, double value, const int component)
@@ -35,11 +35,18 @@ namespace utopia {
                     in.get("name", name);
                     in.get("value", value);
                     in.get("var", component);
-                    in.get("set_id", set_id);
+                    in.get("side", side);
 
-                    if (name.empty() && set_id != -1) {
-                        name = "surface_" + std::to_string(set_id);
+                    if (name.empty() && side != -1) {
+                        name = "surface_" + std::to_string(side);
                     }
+                }
+
+                void describe(std::ostream &os) const override {
+                    os << "name:\t" << name << '\n';
+                    os << "value:\t" << value << '\n';
+                    os << "var:\t" << component << '\n';
+                    os << "side:\t" << side << '\n';
                 }
             };
 
@@ -51,7 +58,12 @@ namespace utopia {
                 });
             }
 
-            void describe(std::ostream &os) const override { os << "DirichletBoundary"; }
+            void describe(std::ostream &os) const override {
+                os << "DirichletBoundary:\n";
+                for (auto &c : conditions) {
+                    c.describe(os);
+                }
+            }
 
             std::vector<Condition> conditions;
         };
@@ -208,16 +220,32 @@ namespace utopia {
             in.get("mesh", *mesh);
             init(mesh);
 
-            int n_var = 1;
+            int n_var = 0;
+            bool verbose = false;
 
             if (!Options()
-                     .add_option("n_var", n_var, "Number of variables per node.")
+                     .add_option("n_var", n_var, "Number of variables per node (instead of specifiying all of them).")
                      .add_option("boundary_conditions", impl_->dirichlet_boundary, "Boundary conditions.")
+                     .add_option("verbose", verbose, "Verbose output.")
                      .parse(in)) {
                 return;
             }
 
+            int counted_vars = 0;
+            in.get("variables", [&counted_vars](Input &in) { in.get_all([&](Input &in) { ++counted_vars; }); });
+
+            assert(n_var == 0 || n_var == counted_vars);
+
+            n_var = counted_vars;
+
             dof_map().set_n_var(n_var);
+
+            if (verbose) {
+                std::stringstream ss;
+                describe(ss);
+
+                comm().synched_print(ss.str());
+            }
         }
 
         void FunctionSpace::read_with_state(Input &in, Vector &val) {
@@ -226,9 +254,13 @@ namespace utopia {
         }
 
         void FunctionSpace::describe(std::ostream &os) const {
-            using Bucket_t = ::stk::mesh::Bucket;
+            // using Bucket_t = ::stk::mesh::Bucket;
             // using BucketVector_t = ::stk::mesh::BucketVector;
-            using Entity_t = ::stk::mesh::Entity;
+            // using Entity_t = ::stk::mesh::Entity;
+
+            os << "n_vars: " << n_var() << '\n';
+            os << "n_local_dofs: " << n_local_dofs() << '\n';
+            impl_->dirichlet_boundary.describe(os);
 
             os << "Parts:\n";
             for (auto ptr : mesh().meta_data().get_parts()) {
@@ -236,24 +268,24 @@ namespace utopia {
                 os << p.name() << ' ' << p.id() << '\n';
             }
 
-            auto &meta_data = mesh().meta_data();
-            auto &bulk_data = mesh().bulk_data();
+            // auto &meta_data = mesh().meta_data();
+            // auto &bulk_data = mesh().bulk_data();
 
-            const ::stk::mesh::Selector selector = meta_data.locally_owned_part();
-            const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, selector);
+            // const ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+            // const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, selector);
 
-            for (auto *b_ptr : node_buckets) {
-                const auto &b = *b_ptr;
-                const auto length = b.size();
+            // for (auto *b_ptr : node_buckets) {
+            //     const auto &b = *b_ptr;
+            //     const auto length = b.size();
 
-                for (Bucket_t::size_type k = 0; k < length; ++k) {
-                    const Entity_t elem = b[k];
-                    const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                    os << id << ' ';
-                }
+            //     for (Bucket_t::size_type k = 0; k < length; ++k) {
+            //         const Entity_t elem = b[k];
+            //         const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
+            //         os << id << ' ';
+            //     }
 
-                os << '\n';
-            }
+            //     os << '\n';
+            // }
         }
 
         std::shared_ptr<Mesh> FunctionSpace::mesh_ptr() const { return impl_->mesh; }
