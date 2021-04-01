@@ -14,41 +14,57 @@ namespace utopia {
                                           int max_recursions = 4) {
         std::unique_ptr<Input> ret;
 
-        if (recursion < max_recursions) {
-            in->get("include", [&](Input &array_node) {
-                array_node.get_all([&](Input &node) {
-                    Path relative_path;
-                    node.get("path", relative_path);
-                    if (relative_path.empty()) {
-                        ret = std::move(in);
-                        utopia::err() << "relative_path is empty\n";
-                    } else {
-                        std::string insert_node;
-                        node.get("node", insert_node);
+        if (!in) {
+            ret = utopia::make_unique<InputParameters>();
+        } else {
+            if (recursion < max_recursions) {
+                std::unique_ptr<InputParameters> collector;
 
-                        auto temp = std::make_unique<InputParameters>();
-                        Path absolute_path = script_dir / relative_path;
-                        Path sub_script_dir = absolute_path.parent();
+                in->get("include", [&](Input &array_node) {
+                    array_node.get_all([&](Input &node) {
+                        Path relative_path;
+                        node.get("path", relative_path);
 
-                        temp->add_root(std::move(in));
-
-                        auto included_file =
-                            include(sub_script_dir, open_istream(absolute_path), recursion + 1, max_recursions);
-
-                        if (insert_node.empty()) {
-                            temp->add_root(std::move(included_file));
+                        if (relative_path.empty()) {
+                            std::cerr << "relative_path is empty\n";
                         } else {
-                            temp->add_node(insert_node, std::move(included_file));
+                            std::string insert_node;
+                            node.get("node", insert_node);
+
+                            Path absolute_path = script_dir / relative_path;
+                            Path sub_script_dir = absolute_path.parent();
+
+                            if (!collector) {
+                                collector = utopia::make_unique<InputParameters>();
+                                collector->add_root(std::move(in));
+                            }
+
+                            auto sub_file_stream = open_istream(absolute_path);
+
+                            if (sub_file_stream) {
+                                auto included_file =
+                                    include(sub_script_dir, std::move(sub_file_stream), recursion + 1, max_recursions);
+
+                                if (insert_node.empty()) {
+                                    collector->add_root(std::move(included_file));
+                                } else {
+                                    collector->add_node(insert_node, std::move(included_file));
+                                }
+                            } else {
+                                std::cerr << "Could not read included file: " << absolute_path << '\n';
+                            }
                         }
-
-                        ret = std::move(temp);
-                    }
+                    });
                 });
-            });
-        }
 
-        if (!ret) {
-            ret = std::move(in);
+                if (collector) {
+                    ret = std::move(collector);
+                }
+            }
+
+            if (!ret) {
+                ret = std::move(in);
+            }
         }
 
         return ret;
