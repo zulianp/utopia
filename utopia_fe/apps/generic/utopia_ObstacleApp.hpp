@@ -85,8 +85,15 @@ namespace utopia {
                 if (use_amg) {
                     std::shared_ptr<IterativeSolver_t> smoother;
                     auto ksp = std::make_shared<KSPSolver_t>();
-                    ksp->pc_type("ilu");
-                    ksp->ksp_type("richardson");
+
+                    if (space.comm().size() == 1) {
+                        ksp->pc_type("ilu");
+                        ksp->ksp_type("richardson");
+                    } else {
+                        ksp->pc_type("sor");
+                        ksp->ksp_type("richardson");
+                    }
+
                     smoother = ksp;
 
                     std::shared_ptr<LinearSolver_t> coarse_solver;
@@ -132,7 +139,7 @@ namespace utopia {
         void run() {
             obs.set_params(params);
             obs.init_obstacle(obstacle_mesh);
-            obstacle_mesh.write("obstacle.e");
+            // obstacle_mesh.write("obstacle.e");
 
             Vector_t x, g, increment;
             Matrix_t H;
@@ -164,7 +171,19 @@ namespace utopia {
                 Matrix_t H_c;
                 Vector_t g_c(layout(x), 0.0), x_c(layout(x), 0.0);
 
-                obs.transform(H, H_c);
+// FIXME move this to algebra and create abstraction
+#ifdef UTOPIA_WITH_PETSC
+                if (std::is_same<PetscMatrix, Matrix_t>::value && H.is_block()) {
+                    Matrix_t temp;
+                    temp.destroy();
+                    MatConvert(H.raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &temp.raw_type());
+                    obs.transform(temp, H_c);
+                } else
+#endif  // UTOPIA_WITH_PETSC
+                {
+                    obs.transform(H, H_c);
+                }
+
                 obs.transform(g, g_c);
 
                 auto constr = make_upper_bound_constraints(make_ref(const_cast<Vector_t &>(obs.gap())));
@@ -182,12 +201,6 @@ namespace utopia {
                 // Output extras
                 {
                     Vector_t gap_zeroed = e_mul(obs.is_contact(), obs.gap());
-
-                    // space.write("obs_gap.e", gap_zeroed);
-                    // space.write("obs_is_contact.e", obs.is_contact());
-                    // space.write("obs_normals.e", obs.normals());
-                    // space.write("rhs.e", g);
-
                     Vector_t rays = obs.normals();
 
                     {
