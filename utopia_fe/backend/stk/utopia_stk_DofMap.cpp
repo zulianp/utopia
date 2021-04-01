@@ -148,7 +148,7 @@ namespace utopia {
             ~DofExchange() {}
 
             void describe(std::ostream &os) const {
-                os << "ougoing:\n";
+                os << "outgoing:\n";
                 for (auto p : rank_outgoing) {
                     os << p.first << " " << p.second << '\n';
                 }
@@ -198,25 +198,41 @@ namespace utopia {
                 for (auto ri : rank_incoming) {
                     requests.push_back(MPI_REQUEST_NULL);
 
+                    assert(ri.first < buffers_incoming.size());
+
                     auto &buff = buffers_incoming[ri.first];
                     assert(!buff.empty());
 
-                    MPI_CATCH_ERROR(MPI_Irecv(
-                        &buff[0], buff.size(), data_type_.get(), ri.first, comm.rank(), raw_comm, &requests.back()));
+                    MPI_CATCH_ERROR(MPI_Irecv(&buff[0],
+                                              buff.size(),
+                                              data_type_.get(),
+                                              ri.first,
+                                              exchange_number_,
+                                              raw_comm,
+                                              &requests.back()));
                 }
 
                 for (auto ro : rank_outgoing) {
                     requests.push_back(MPI_REQUEST_NULL);
 
+                    assert(ro.first < buffers_outgoing.size());
+
                     auto &buff = buffers_outgoing[ro.first];
                     assert(!buff.empty());
                     assert(ro.second == buff.size());
 
-                    MPI_CATCH_ERROR(MPI_Isend(
-                        &buff[0], buff.size(), data_type_.get(), ro.first, ro.first, raw_comm, &requests.back()));
+                    MPI_CATCH_ERROR(MPI_Isend(&buff[0],
+                                              buff.size(),
+                                              data_type_.get(),
+                                              ro.first,
+                                              exchange_number_,
+                                              raw_comm,
+                                              &requests.back()));
                 }
 
                 MPI_CATCH_ERROR(MPI_Waitall(static_cast<int>(requests.size()), &requests[0], MPI_STATUS_IGNORE));
+
+                ++exchange_number_;
             }
 
             void describe_incoming(std::ostream &os) const {
@@ -225,6 +241,24 @@ namespace utopia {
                     auto &buff = buffers_incoming[ri.first];
 
                     os << ri.first << ": ";
+                    for (auto b : buff) {
+                        os << b.g_id << " -> " << b.dof << ", ";
+                    }
+
+                    os << "\n";
+                }
+            }
+
+            void describe_outgoing(std::ostream &os) const {
+                for (auto ro : rank_outgoing) {
+                    if (ro.first >= int(buffers_outgoing.size())) {
+                        os << "Bad value: " << ro.first << " " << ro.second << '\n';
+                        continue;
+                    }
+
+                    auto &buff = buffers_outgoing[ro.first];
+
+                    os << ro.first << ": ";
                     for (auto b : buff) {
                         os << b.g_id << " -> " << b.dof << ", ";
                     }
@@ -252,12 +286,15 @@ namespace utopia {
             void swap_incoming_outgoing() {
                 std::swap(buffers_outgoing, buffers_incoming);
                 std::swap(rank_incoming, rank_outgoing);
+
+                for (auto &bo : buffers_outgoing) {
 #ifndef NDEBUG
-                auto capacity = buffers_outgoing.capacity();
+                    auto capacity = bo.capacity();
 #endif  // NDEBUG
 
-                buffers_outgoing.resize(0);
-                assert(capacity == buffers_outgoing.capacity());
+                    bo.resize(0);
+                    assert(capacity == bo.capacity());
+                }
             }
 
             void clear_buffers() {
@@ -283,6 +320,7 @@ namespace utopia {
             std::vector<std::vector<GhostInfo>> buffers_outgoing, buffers_incoming;
 
             MPIGhostInfo data_type_;
+            int exchange_number_{0};
         };
 
         DofMap::DofMap() : impl_(utopia::make_unique<Impl>()) {}
@@ -482,15 +520,19 @@ namespace utopia {
                 }
             }
 
-            dof_exchange.sort_outgoing();
-            dof_exchange.exchange();
-
             {
                 std::stringstream ss;
                 dof_exchange.describe(ss);
 
                 comm.synched_print(ss.str());
             }
+
+            Utopia::Abort();
+
+            dof_exchange.sort_outgoing();
+            dof_exchange.exchange();
+
+            comm.barrier();
 
             for (auto *b_ptr : shared_node_buckets) {
                 const auto &b = *b_ptr;
@@ -539,15 +581,15 @@ namespace utopia {
                 }
             }
 
+            comm.barrier();
+            // {
+            //     std::stringstream ss;
+            //     // dof_exchange.describe(ss);
+            //     dof_exchange.describe_outgoing(ss);
+            //     comm.synched_print(ss.str());
+            // }
+
             dof_exchange.exchange();
-
-            {
-                std::stringstream ss;
-                dof_exchange.describe(ss);
-
-                comm.synched_print(ss.str());
-            }
-
             dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
 
             {

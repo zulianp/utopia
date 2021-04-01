@@ -29,6 +29,21 @@ public:
     bool verbose{false};
     Scalar_t rtol{1e-6};
 
+    static std::string get_cube_path() {
+        std::string dir = "../data/knf/cube_vs_cube";
+        if (mpi_world_size() > 1) {
+            dir += "/" + std::to_string(mpi_world_size());
+        }
+
+        return dir + "/body.e";
+    }
+
+    static std::string get_more_complex_mesh_path() {
+        return "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e";
+    }
+
+    static std::string get_2D_mesh_path() { return "../data/knf/rectangle_4_tris.e"; }
+
     template <class Op>
     void assemble_and_solve(const std::string &name, FunctionSpace_t &space, Op &op) {
         auto fe_ptr = std::make_shared<FE_t>();
@@ -91,10 +106,7 @@ public:
     }
 
     void poisson_problem() {
-        auto params = param_list(param(
-            "mesh",
-            param_list(param(
-                "path", "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"))));
+        auto params = param_list(param("mesh", param_list(param("path", get_more_complex_mesh_path()))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -107,12 +119,8 @@ public:
     }
 
     void vector_poisson_problem() {
-        auto params = param_list(
-            param("n_var", 3),
-            param("mesh",
-                  param_list(param(
-                      "path",
-                      "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"))));
+        auto params =
+            param_list(param("n_var", 3), param("mesh", param_list(param("path", get_more_complex_mesh_path()))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -131,12 +139,8 @@ public:
 
     void elasticity_problem() {
         static const int Dim = 3;
-        auto params = param_list(
-            param("n_var", Dim),
-            param("mesh",
-                  param_list(param(
-                      "path",
-                      "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e"))));
+        auto params =
+            param_list(param("n_var", Dim), param("mesh", param_list(param("path", get_more_complex_mesh_path()))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -153,7 +157,7 @@ public:
     }
 
     void poisson_problem_parallel_2D() {
-        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+        auto params = param_list(param("mesh", param_list(param("path", get_2D_mesh_path()))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -170,7 +174,7 @@ public:
     }
 
     void poisson_problem_parallel_3D() {
-        auto params = param_list(param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+        auto params = param_list(param("mesh", param_list(param("path", get_cube_path()))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -187,8 +191,7 @@ public:
 
     void elasticity_problem_parallel() {
         static const int Dim = 3;
-        auto params = param_list(param("n_var", Dim),
-                                 param("mesh", param_list(param("path", "../data/knf/cube_vs_cube/body.e"))));
+        auto params = param_list(param("n_var", Dim), param("mesh", param_list(param("path", get_cube_path()))));
 
         FunctionSpace_t space;
         space.read(params);
@@ -205,21 +208,22 @@ public:
     }
 
     void run() {
-        if (mpi_world_size() <= 3) {
+        if (mpi_world_size() == 1) {
+            UTOPIA_RUN_TEST(poisson_problem);
+            UTOPIA_RUN_TEST(vector_poisson_problem);
+            UTOPIA_RUN_TEST(elasticity_problem);
+        }
+
+        if (mpi_world_size() <= 2) {
             UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
         }
 
-        // if (mpi_world_size() <= 4) {
-        // UTOPIA_RUN_TEST(poisson_problem);
-        // UTOPIA_RUN_TEST(vector_poisson_problem);
-
-        // UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
-        // UTOPIA_RUN_TEST(elasticity_problem_parallel);
-
-        // save_output = true;
-        // UTOPIA_RUN_TEST(elasticity_problem);
-        // save_output = false;
-        // }
+        if (mpi_world_size() <= 4) {
+            save_output = true;
+            UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
+            UTOPIA_RUN_TEST(elasticity_problem_parallel);
+            save_output = false;
+        }
     }
 };
 
