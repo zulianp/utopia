@@ -453,13 +453,15 @@ namespace utopia {
                 int owner_rank = bulk_data.parallel_owner_rank(e);
 
                 if (owner_rank == rank) {
+                    impl_->local_to_global[i] = offset + index;
+
                     for (auto n : nodes) {
                         Impl::Entity node_e(utopia::stk::convert_index_to_stk_index(n));
                         int node_owner_rank = bulk_data.parallel_owner_rank(node_e);
 
                         if (node_owner_rank == owner_rank) {
                             impl_->d_nnz[index] += 1;
-                            impl_->local_to_global[index] = offset + index;
+
                         } else {
                             impl_->o_nnz[index] += 1;
                         }
@@ -489,9 +491,7 @@ namespace utopia {
                             dof_exchange.increment_outgoing(p);
                         }
                     } else {
-                        for (auto p : procs) {
-                            dof_exchange.increment_incoming(p);
-                        }
+                        dof_exchange.increment_incoming(owner_rank);
                     }
                 }
             }
@@ -507,27 +507,28 @@ namespace utopia {
                     int owner_rank = bulk_data.parallel_owner_rank(node);
                     auto local_index = utopia::stk::convert_entity_to_index(node);
 
-                    bulk_data.comm_procs(node, procs);
-
                     if (owner_rank == rank) {
+                        auto dof = impl_->local_to_global[local_index];
+                        assert(dof >= 0);
+                        bulk_data.comm_procs(node, procs);
                         for (auto p : procs) {
                             dof_exchange.add_dof_mapping_to_outgoing(
-                                p,
-                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)),
-                                impl_->local_to_global[local_index]);
+                                p, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)), dof);
                         }
                     }
                 }
             }
 
-            {
-                std::stringstream ss;
-                dof_exchange.describe(ss);
+            // {
+            //     std::stringstream ss;
+            //     dof_exchange.describe(ss);
+            //     ss << "outgoing details\n";
+            //     dof_exchange.describe_outgoing(ss);
 
-                comm.synched_print(ss.str());
-            }
+            //     comm.synched_print(ss.str());
+            // }
 
-            Utopia::Abort();
+            // Utopia::Abort();
 
             dof_exchange.sort_outgoing();
             dof_exchange.exchange();
@@ -549,7 +550,7 @@ namespace utopia {
                         auto local_index = utopia::stk::convert_entity_to_index(node);
 
                         // assert(g_id == dof);
-
+                        assert(dof >= 0);
                         impl_->local_to_global[local_index] = dof;
                     }
                 }
@@ -592,12 +593,12 @@ namespace utopia {
             dof_exchange.exchange();
             dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
 
-            {
-                std::stringstream ss;
-                // impl_->print_map(bulk_data, ss);
-                describe(ss);
-                comm.synched_print(ss.str());
-            }
+            // {
+            //     std::stringstream ss;
+            //     // impl_->print_map(bulk_data, ss);
+            //     describe(ss);
+            //     comm.synched_print(ss.str());
+            // }
         }
 
         void DofMap::init_serial(::stk::mesh::BulkData &bulk_data) {

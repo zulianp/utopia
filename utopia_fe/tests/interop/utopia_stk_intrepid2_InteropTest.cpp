@@ -39,10 +39,21 @@ public:
     }
 
     static std::string get_more_complex_mesh_path() {
-        return "/Users/zulianp/Desktop/code/fluyafsi/build_opt/02_Coarser_Thick/res_pitzDaily_coupled.e";
+        std::string dir = "/Users/zulianp/Desktop/code/utopia/utopia_fe/data/knf/pitzdaily/";
+        if (mpi_world_size() > 1) {
+            dir += "/" + std::to_string(mpi_world_size());
+        }
+        return dir + "/pitz_daily.e";
     }
 
-    static std::string get_2D_mesh_path() { return "../data/knf/rectangle_4_tris.e"; }
+    static std::string get_2D_mesh_path() {
+        std::string dir = "../data/knf/";
+        if (mpi_world_size() > 1) {
+            dir += "/" + std::to_string(mpi_world_size());
+        }
+
+        return dir + "/rectangle_4_tris.e";
+    }
 
     template <class Op>
     void assemble_and_solve(const std::string &name, FunctionSpace_t &space, Op &op) {
@@ -208,17 +219,11 @@ public:
     }
 
     void run() {
-        if (mpi_world_size() == 1) {
+        if (mpi_world_size() <= 4) {
             UTOPIA_RUN_TEST(poisson_problem);
             UTOPIA_RUN_TEST(vector_poisson_problem);
             UTOPIA_RUN_TEST(elasticity_problem);
-        }
-
-        if (mpi_world_size() <= 2) {
             UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
-        }
-
-        if (mpi_world_size() <= 4) {
             save_output = true;
             UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
             UTOPIA_RUN_TEST(elasticity_problem_parallel);
