@@ -139,7 +139,13 @@ namespace utopia {
         void run() {
             obs.set_params(params);
             obs.init_obstacle(obstacle_mesh);
-            // obstacle_mesh.write("obstacle.e");
+
+            assert(obstacle_mesh.comm().size() == 1);
+
+            // only on root process
+            if (obstacle_mesh.comm().size() == 1 && space.comm().rank() == 0) {
+                obstacle_mesh.write("obstacle.e");
+            }
 
             Vector_t x, g, increment;
             Matrix_t H;
