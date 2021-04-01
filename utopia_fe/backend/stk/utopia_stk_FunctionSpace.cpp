@@ -258,15 +258,21 @@ namespace utopia {
             // using BucketVector_t = ::stk::mesh::BucketVector;
             // using Entity_t = ::stk::mesh::Entity;
 
+            if (comm().rank() == 0) {
+                os << "Parts:\n";
+                for (auto ptr : mesh().meta_data().get_parts()) {
+                    auto &p = *ptr;
+                    if (p.id() != -1) {
+                        os << p.name() << ' ' << p.id() << '\n';
+                    }
+                }
+
+                impl_->dirichlet_boundary.describe(os);
+            }
+
+            os << '\n';
             os << "n_vars: " << n_var() << '\n';
             os << "n_local_dofs: " << n_local_dofs() << '\n';
-            impl_->dirichlet_boundary.describe(os);
-
-            os << "Parts:\n";
-            for (auto ptr : mesh().meta_data().get_parts()) {
-                auto &p = *ptr;
-                os << p.name() << ' ' << p.id() << '\n';
-            }
 
             // auto &meta_data = mesh().meta_data();
             // auto &bulk_data = mesh().bulk_data();
