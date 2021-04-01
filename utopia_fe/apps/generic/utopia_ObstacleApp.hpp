@@ -27,6 +27,7 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Size_t = typename Traits<FunctionSpace>::SizeType;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
 
         // Use specialized compoenents for function space
@@ -211,7 +212,7 @@ namespace utopia {
             }
         }
 
-        ObstacleProblem() {}
+        ObstacleProblem() : obstacle_mesh(Communicator_t::self()) {}
 
         bool valid{true};
 

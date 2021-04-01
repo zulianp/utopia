@@ -41,8 +41,12 @@ namespace utopia {
             if (node_ptr) {
                 val.read(*node_ptr);
             } else {
-                if (aux_root_) {
-                    aux_root_->get(key, val);
+                // if (aux_root_) {
+                //     aux_root_->get(key, val);
+                // }
+
+                for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                    (*ar)->get(key, val);
                 }
             }
         }
@@ -53,8 +57,12 @@ namespace utopia {
             if (node_ptr) {
                 lambda(*node_ptr);
             } else {
-                if (aux_root_) {
-                    aux_root_->get(key, lambda);
+                // if (aux_root_) {
+                //     aux_root_->get(key, lambda);
+                // }
+
+                for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                    (*ar)->get(key, lambda);
                 }
             }
         }
@@ -64,9 +72,13 @@ namespace utopia {
                 lambda(*n.second);
             }
 
-            if (aux_root_) {
-                aux_root_->get_all(lambda);
+            for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                (*ar)->get_all(lambda);
             }
+
+            // if (aux_root_) {
+            //     aux_root_->get_all(lambda);
+            // }
         }
 
         void get(std::vector<std::shared_ptr<IConvertible>> &values) override {
@@ -111,12 +123,14 @@ namespace utopia {
             : Input(std::move(other)),
               values_(std::move(other.values_)),
               nodes_(std::move(other.nodes_)),
-              aux_root_(std::move(other.aux_root_)) {}
+              aux_roots_(std::move(other.aux_roots_)) {}
+
+        inline void add_root(std::unique_ptr<Input> &&root) { aux_roots_.push_back(std::move(root)); }
 
     private:
         std::map<std::string, std::unique_ptr<IConvertible>> values_;
         std::map<std::string, std::shared_ptr<Input>> nodes_;
-        std::unique_ptr<Input> aux_root_;
+        std::vector<std::unique_ptr<Input>> aux_roots_;
 
         template <typename Out>
         void aux_get(const std::string &key, Out &out) const {
@@ -124,8 +138,12 @@ namespace utopia {
 
             if (it != values_.end()) {
                 it->second->get(out);
-            } else if (aux_root_) {
-                aux_root_->get(key, out);
+            } else
+            // if (aux_root_)
+            {
+                for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                    (*ar)->get(key, out);
+                }
             }
         }
 

@@ -89,8 +89,15 @@ namespace utopia {
 
         void Mesh::read(Input &in) {
             Path path;
+            bool decomposition_in_subdirs = false;
+            in.get("decomposition_in_subdirs", decomposition_in_subdirs);
             in.get("path", path);
-            read(path);
+
+            if (decomposition_in_subdirs && comm().size() > 1) {
+                read(path.parent() / Path(std::to_string(comm().size())) / (path.file_name() + "." + path.extension()));
+            } else {
+                read(path);
+            }
         }
 
         void Mesh::describe(std::ostream &os) const { impl_->bulk_data->dump_all_mesh_info(os); }

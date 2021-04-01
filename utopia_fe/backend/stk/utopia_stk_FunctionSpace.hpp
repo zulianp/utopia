@@ -17,6 +17,7 @@ namespace utopia {
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
             using Scalar = Traits<FunctionSpace>::Scalar;
+            using SizeType = Traits<FunctionSpace>::SizeType;
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
 
@@ -64,6 +65,8 @@ namespace utopia {
 
         private:
             class Impl;
+            class Var;
+
             std::shared_ptr<Impl> impl_;
         };
 

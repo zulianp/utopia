@@ -523,7 +523,14 @@ namespace utopia {
             return ret;
         }
 
-        void FunctionSpace::displace(const Vector &displacement) { mesh().displace(displacement); }
+        void FunctionSpace::displace(const Vector &displacement) {
+            if (comm().size() == 1) {
+                mesh().displace(displacement);
+            } else {
+                assert(false && "IMPLEMENT ME");
+                Utopia::Abort();
+            }
+        }
 
         FunctionSubspace::FunctionSubspace() : impl_(std::make_shared<Impl>()) {}
 
