@@ -10,7 +10,7 @@ if(ParMoonolith_FOUND)
         PARENT_SCOPE)
 
     target_link_libraries(utopia_moonolith PUBLIC ParMoonolith::par_moonolith
-                                                  Utopia::utopia)
+                                                  Utopia::utopia utopia_fe_core)
 
     set(MOONOLITH_LIBRARIES
         ${MOONOLITH_LIBRARIES}

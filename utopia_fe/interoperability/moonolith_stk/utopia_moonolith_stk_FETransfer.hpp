@@ -8,6 +8,8 @@
 #include "utopia_stk_ForwardDeclarations.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
+#include "utopia_fe_Core.hpp"
+
 namespace utopia {
 
     namespace stk {
@@ -27,6 +29,7 @@ namespace utopia {
             void clear();
             bool empty() const;
             bool apply(const Vector &from, Vector &to) const override;
+            bool apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const;
             Size size() const override;
             Size local_size() const override;
 
@@ -45,6 +48,10 @@ namespace utopia {
         };
 
     }  // namespace stk
+
+    template <>
+    class FETransfer<utopia::stk::FunctionSpace> : public utopia::stk::FETransfer {};
+
 }  // namespace utopia
 
 #endif  // UTOPIA_MOONOLITH_STK_FE_TRANSFER_HPP

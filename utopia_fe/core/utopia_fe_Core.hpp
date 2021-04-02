@@ -6,6 +6,9 @@ namespace utopia {
     class Obstacle {};
 
     template <class FunctionSpace>
+    class FETransfer {};
+
+    template <class FunctionSpace>
     class OmniAssembler {};
 }  // namespace utopia
 

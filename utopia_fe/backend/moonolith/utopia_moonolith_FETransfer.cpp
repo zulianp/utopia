@@ -344,6 +344,16 @@ namespace utopia {
             }
         }
 
+        bool FETransfer::apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const {
+            if (!empty()) {
+                matrix_in_from_space =
+                    transpose(*impl_->data.transfer_matrix) * to_matrix * (*impl_->data.transfer_matrix);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         bool FETransfer::apply_transpose(const Vector &from, Vector &to) const {
             if (!empty()) {
                 to = transpose(*impl_->data.transfer_matrix) * from;

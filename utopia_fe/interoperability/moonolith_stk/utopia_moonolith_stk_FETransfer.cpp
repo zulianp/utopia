@@ -39,6 +39,10 @@ namespace utopia {
 
         bool FETransfer::apply(const Vector &from, Vector &to) const { return impl_->transfer.apply(from, to); }
 
+        bool FETransfer::apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const {
+            return impl_->transfer.apply(to_matrix, matrix_in_from_space);
+        }
+
         Size FETransfer::size() const { return impl_->transfer.size(); }
 
         Size FETransfer::local_size() const { return impl_->transfer.local_size(); }
