@@ -32,7 +32,18 @@ namespace utopia {
         using DynRankView = ::Kokkos::DynRankView<Scalar>;
         static void apply(const utopia::stk::FunctionSpace &space,
                           const DynRankView &element_matrices,
+                          AssemblyMode mode,
                           PetscMatrix &matrix);
+    };
+
+    template <typename Scalar>
+    class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector> {
+    public:
+        using DynRankView = ::Kokkos::DynRankView<Scalar>;
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          const DynRankView &element_vectors,
+                          AssemblyMode mode,
+                          PetscVector &vector);
     };
 #endif  // UTOPIA_WITH_PETSC
 

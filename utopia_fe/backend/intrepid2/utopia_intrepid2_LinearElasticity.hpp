@@ -59,7 +59,7 @@ namespace utopia {
                             StaticMatrix<Scalar, Dim, Dim> strain_i;
                             StaticMatrix<Scalar, Dim, Dim> strain_j;
 
-                            assert((Dim == 1 || &grad(cell, i, j, 1) - &grad(cell, i, j, 0) == 1UL) &&
+                            assert((Dim == 1 || &grad(cell, i, 0, 1) - &grad(cell, i, 0, 0) == 1UL) &&
                                    "spatial dimension must be contiguos");
 
                             for (int qp = 0; qp < n_qp; ++qp) {

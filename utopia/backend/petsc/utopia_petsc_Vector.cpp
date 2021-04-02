@@ -283,6 +283,15 @@ namespace utopia {
         VecScatterDestroy(&scatter_context);
     }
 
+    PetscInt PetscVector::block_size() const {
+        PetscInt block_size;
+        check_error(VecGetBlockSize(this->raw_type(), &block_size));
+        return block_size;
+    }
+    void PetscVector::set_block_size(const PetscInt block_size) {
+        check_error(VecSetBlockSize(raw_type(), block_size));
+    }
+
     void PetscVector::blocked_select(const PetscIndexSet &index, PetscVector &result, PetscInt block_size) const {
         MPI_Comm comm = communicator();
         IS is_in;

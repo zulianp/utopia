@@ -25,6 +25,7 @@ namespace utopia {
             output_path_ = "./" + name_ + ".e";
             in.get("output", output_path_);
             in.get("solver", *linear_solver_);
+            in.get("export_tensors", export_tensors_);
         }
 
         FEProblem(const std::shared_ptr<FunctionSpace> &space)
@@ -43,6 +44,11 @@ namespace utopia {
             space_->create_matrix(*jacobian_);
             space_->create_vector(*solution_);
             space_->create_vector(*fun_);
+
+            rename(name() + "_jacobian", *jacobian_);
+            rename(name() + "_solution", *solution_);
+            rename(name() + "_fun", *fun_);
+
             if (!assembler_->assemble(*solution_, *jacobian_, *fun_)) {
                 return false;
             }
@@ -53,6 +59,12 @@ namespace utopia {
 
         bool apply_constraints() {
             space_->apply_constraints(*jacobian_, *fun_);
+
+            if (export_tensors_) {
+                write("load_" + jacobian_->name() + ".m", *jacobian_);
+                write("load_" + fun_->name() + ".m", *fun_);
+            }
+
             return true;
         }
 
@@ -71,6 +83,8 @@ namespace utopia {
         std::shared_ptr<Matrix_t> jacobian_;
         std::shared_ptr<Vector_t> solution_, fun_;
         std::shared_ptr<LinearSolver_t> linear_solver_;
+
+        bool export_tensors_{false};
     };
 
     template <class FunctionSpace>
@@ -201,6 +215,7 @@ namespace utopia {
                     }
 
                     c->set(it_from->second, it_to->second);
+                    couplings.push_back(std::move(c));
                 });
             });
 

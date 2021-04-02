@@ -87,6 +87,7 @@ namespace utopia {
             DynRankView cell_nodes;
             CubaturePtr cubature;
 
+            DynRankView fun;
             DynRankView grad;
             DynRankView jacobian;
             DynRankView jacobian_inv;
@@ -121,6 +122,9 @@ namespace utopia {
                 CellTools::setJacobianDet(jacobian_det, jacobian);
 
                 FunctionSpaceTools::computeCellMeasure<Scalar>(measure, jacobian_det, q_weights);
+
+                fun = DynRankView("fun", n_fun, num_qp);
+                basis.getValues(fun, q_points, ::Intrepid2::OPERATOR_VALUE);
 
                 DynRankView ref_grad("ref_grad", n_fun, num_qp, spatial_dimension);
                 grad = DynRankView("grad", num_cells, n_fun, num_qp, spatial_dimension);

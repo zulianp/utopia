@@ -1,6 +1,7 @@
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
 #include "utopia_intrepid2_FE.hpp"
+#include "utopia_intrepid2_ForcingFunction.hpp"
 #include "utopia_intrepid2_LaplaceOperator.hpp"
 #include "utopia_intrepid2_LinearElasticity.hpp"
 #include "utopia_intrepid2_VectorLaplaceOperator.hpp"
@@ -17,19 +18,36 @@ namespace utopia {
             using FE = utopia::intrepid2::FE<Scalar>;
 
             template <class MaterialDescription>
-            void init_assembler(const MaterialDescription &desc) {
-                assemble = [this, desc](const Vector &x, Matrix &mat, Vector &rhs) -> bool {
+            void init_material_assembler(const MaterialDescription &desc) {
+                assemble_material = [this, desc](const Vector &x, Matrix &mat, Vector &rhs) -> bool {
                     utopia::intrepid2::Assemble<MaterialDescription> assembler(desc, fe);
                     assembler.init();
-                    local_to_global(*space, assembler.element_matrices(), mat);
+                    local_to_global(*space, assembler.element_matrices(), ADD_MODE, mat);
 
                     rhs = mat * x;
-                    // rhs.set(0.0);
                     return true;
                 };
             }
 
-            std::function<bool(const Vector &x, Matrix &, Vector &)> assemble;
+            template <class ForcingFunctionDescription>
+            void init_forcing_function_assembler(const ForcingFunctionDescription &desc) {
+                auto prev_fun = assemble_forcing_function;
+                assemble_forcing_function = [this, prev_fun, desc](const Vector &x, Vector &rhs) -> bool {
+                    if (prev_fun) {
+                        // append
+                        prev_fun(x, rhs);
+                    }
+
+                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(desc, fe);
+                    assembler.init();
+                    local_to_global(*space, assembler.element_vectors(), SUBTRACT_MODE, rhs);
+                    return true;
+                };
+            }
+
+            std::function<bool(const Vector &x, Matrix &, Vector &)> assemble_material;
+            std::function<bool(const Vector &x, Vector &)> assemble_forcing_function;
+
             std::shared_ptr<stk::FunctionSpace> space;
             std::shared_ptr<FE> fe;
         };
@@ -46,7 +64,15 @@ namespace utopia {
                 return false;
             }
 
-            return impl_->assemble(x, jacobian, fun);
+            if (!impl_->assemble_material(x, jacobian, fun)) {
+                return false;
+            }
+
+            if (impl_->assemble_forcing_function) {
+                return impl_->assemble_forcing_function(x, fun);
+            }
+
+            return true;
         }
 
         void OmniAssembler::read(Input &in) {
@@ -64,31 +90,31 @@ namespace utopia {
             if (material_type == "LaplaceOperator") {
                 LaplaceOperator<Scalar> material(1.0);
                 in.get("material", material);
-                impl_->init_assembler(material);
+                impl_->init_material_assembler(material);
             } else if (material_type == "VectorLaplaceOperator1") {
                 VectorLaplaceOperator<1, Scalar> material(1.0);
                 in.get("material", material);
-                impl_->init_assembler(material);
+                impl_->init_material_assembler(material);
             } else if (material_type == "VectorLaplaceOperator2") {
                 VectorLaplaceOperator<2, Scalar> material(1.0);
                 in.get("material", material);
-                impl_->init_assembler(material);
+                impl_->init_material_assembler(material);
             } else if (material_type == "VectorLaplaceOperator3") {
                 VectorLaplaceOperator<3, Scalar> material(1.0);
                 in.get("material", material);
-                impl_->init_assembler(material);
+                impl_->init_material_assembler(material);
             } else if (material_type == "LinearElasticity1") {
                 LinearElasticity<1, Scalar> material(1.0, 1.0);
                 in.get("material", material);
-                impl_->init_assembler(material);
+                impl_->init_material_assembler(material);
             } else if (material_type == "LinearElasticity2") {
                 LinearElasticity<2, Scalar> material(1.0, 1.0);
                 in.get("material", material);
-                impl_->init_assembler(material);
+                impl_->init_material_assembler(material);
             } else if (material_type == "LinearElasticity3") {
                 LinearElasticity<3, Scalar> material(1.0, 1.0);
                 in.get("material", material);
-                impl_->init_assembler(material);
+                impl_->init_material_assembler(material);
             } else {
                 if (material_type.empty()) {
                     utopia::err() << "[Error] Undefined material\n";
@@ -98,6 +124,20 @@ namespace utopia {
 
                 return;
             }
+
+            in.get("forcing_functions", [this](Input &array_node) {
+                array_node.get_all([this](Input &node) {
+                    std::string forcing_function_type = "value";
+                    node.get("type", forcing_function_type);
+
+                    if (forcing_function_type == "value") {
+                        Scalar value = 0.0;
+                        node.get("value", value);
+                        ForcingFunction<Scalar> ff(value);
+                        impl_->init_forcing_function_assembler(ff);
+                    }
+                });
+            });
         }
 
     }  // namespace stk

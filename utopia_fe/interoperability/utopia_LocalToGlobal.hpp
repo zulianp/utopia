@@ -2,12 +2,19 @@
 #define UTOPIA_LOCAL_TO_GLOBAL_HPP
 
 namespace utopia {
-    template <class FunctionSpace, class ElementMatrices, class GlobalMatrix>
+    template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
     class LocalToGlobal {};
 
-    template <class FunctionSpace, class ElementMatrices, class GlobalMatrix>
-    void local_to_global(const FunctionSpace &space, const ElementMatrices &element_matrices, GlobalMatrix &matrix) {
-        LocalToGlobal<FunctionSpace, ElementMatrices, GlobalMatrix>::apply(space, element_matrices, matrix);
+    enum AssemblyMode { ADD_MODE = 0, SUBTRACT_MODE = 1, OVERWRITE_MODE = 2 };
+
+    template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
+    void local_to_global(const FunctionSpace &space,
+                         const ElementTensors &element_matrices,
+                         AssemblyMode mode,
+                         GlobalTensor &tensor,
+                         Args &&... args) {
+        LocalToGlobal<FunctionSpace, ElementTensors, GlobalTensor>::apply(
+            space, element_matrices, mode, tensor, args...);
     }
 }  // namespace utopia
 

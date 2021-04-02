@@ -20,7 +20,7 @@ namespace utopia {
         ~StreamWrapper() = default;
 
         inline std::ostream &stream() override {
-            assert(stream_ptr);
+            assert(stream_ptr_);
             return *stream_ptr_;
         }
 

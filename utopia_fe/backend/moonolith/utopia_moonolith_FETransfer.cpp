@@ -32,6 +32,7 @@ namespace utopia {
                          .add_option("clear_non_essential_matrices",
                                      clear_non_essential_matrices,
                                      "Keeps only the final transfer matrix in memory and deletes the rest.")
+                         .add_option("export_tensors", export_tensors_, "Exports tensors to disk.")
                          .parse(in)) {
                     return;
                 }
@@ -56,6 +57,7 @@ namespace utopia {
             int n_var{1};
             std::vector<std::pair<int, int>> tags;
             bool clear_non_essential_matrices{true};
+            bool export_tensors_{false};
         };
 
         template <class Matrix>
@@ -137,6 +139,12 @@ namespace utopia {
                         assert(false && "IMPLEMENT ME");
                         // tensorize(T_x, opts.n_var, T);
                     }
+                }
+
+                rename("transfer_matrix", *data.transfer_matrix);
+
+                if (opts.export_tensors_) {
+                    write("load_transfer_matrix.m", *data.transfer_matrix);
                 }
 
                 return ok;
@@ -346,6 +354,8 @@ namespace utopia {
 
         bool FETransfer::apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const {
             if (!empty()) {
+                assert(!utopia::empty(*impl_->data.transfer_matrix));
+                assert(!utopia::empty(to_matrix));
                 matrix_in_from_space =
                     transpose(*impl_->data.transfer_matrix) * to_matrix * (*impl_->data.transfer_matrix);
                 return true;

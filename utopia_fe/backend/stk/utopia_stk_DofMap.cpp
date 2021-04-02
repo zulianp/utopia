@@ -624,11 +624,14 @@ namespace utopia {
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                     for (Size_t i = 0; i < n_nodes; ++i) {
-                        const auto node_i = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i]));
+                        // const auto node_i =
+                        // utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i]));
+                        const auto node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
 
                         for (Size_t j = 0; j < n_nodes; ++j) {
                             node2node[node_i].insert(
-                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[j])));
+                                // utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[j])));
+                                utopia::stk::convert_entity_to_index(node_ids[j]));
                         }
                     }
                 }

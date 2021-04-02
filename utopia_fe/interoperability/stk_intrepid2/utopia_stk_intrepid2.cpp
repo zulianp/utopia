@@ -122,6 +122,7 @@ namespace utopia {
     void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix>::apply(
         const utopia::stk::FunctionSpace &space,
         const ::Kokkos::DynRankView<Scalar> &element_matrices,
+        AssemblyMode mode,
         PetscMatrix &matrix) {
         // Type defs
         using IndexArray_t = Traits<PetscMatrix>::IndexArray;
@@ -137,8 +138,10 @@ namespace utopia {
 
         } else {
             // Reuse matrix
-            if (matrix.is_assembled()) {
+            if (matrix.is_assembled() && mode == OVERWRITE_MODE) {
                 matrix *= 0.0;
+            } else if (mode == SUBTRACT_MODE) {
+                matrix *= -1.0;
             }
         }
 
@@ -154,77 +157,181 @@ namespace utopia {
 
         const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
-        Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
+        {
+            Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
-        const int n_var = space.n_var();
-        const SizeType n_dofs = element_matrices.extent(1);
-        const SizeType nn = n_dofs / n_var;
+            const int n_var = space.n_var();
+            const SizeType n_dofs = element_matrices.extent(1);
+            const SizeType nn = n_dofs / n_var;
 
-        IndexArray_t idx(nn);
-        ScalarArray_t val(n_dofs * n_dofs);
+            IndexArray_t idx(nn);
+            ScalarArray_t val(n_dofs * n_dofs);
 
-        // Size_t n_local_nodes = space.mesh().n_local_nodes();
+            // Size_t n_local_nodes = space.mesh().n_local_nodes();
 
-        const bool is_block = matrix.is_block();
+            const bool is_block = matrix.is_block();
 
-        auto &&local_to_global = space.dof_map().local_to_global();
+            auto &&local_to_global = space.dof_map().local_to_global();
 
-        Size_t elem_idx = 0;
-        for (const auto &ib : elem_buckets) {
-            const Bucket_t &b = *ib;
-            const Bucket_t::size_type length = b.size();
+            Size_t elem_idx = 0;
+            for (const auto &ib : elem_buckets) {
+                const Bucket_t &b = *ib;
+                const Bucket_t::size_type length = b.size();
 
-            for (Bucket_t::size_type k = 0; k < length; ++k) {
-                // get the current node entity and extract the id to fill it into the field
-                Entity_t elem = b[k];
-                // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
-                const Size_t n_nodes = bulk_data.num_nodes(elem);
-                UTOPIA_UNUSED(n_nodes);
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    // get the current node entity and extract the id to fill it into the field
+                    Entity_t elem = b[k];
+                    // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+                    UTOPIA_UNUSED(n_nodes);
 
-                assert(nn == n_nodes);
+                    assert(nn == n_nodes);
 
-                auto node_ids = bulk_data.begin_nodes(elem);
+                    auto node_ids = bulk_data.begin_nodes(elem);
 
-                if (local_to_global.empty()) {
-                    for (Size_t i = 0; i < nn; ++i) {
-                        idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
-                        assert(idx[i] < space.n_dofs());
-                        assert(idx[i] >= 0);
+                    if (local_to_global.empty()) {
+                        for (Size_t i = 0; i < nn; ++i) {
+                            idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                            assert(idx[i] < space.n_dofs());
+                            assert(idx[i] >= 0);
+                        }
+                    } else {
+                        for (Size_t i = 0; i < nn; ++i) {
+                            idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
+                            assert(idx[i] < space.n_dofs());
+                            assert(idx[i] >= 0);
+                        }
                     }
-                } else {
+
                     for (Size_t i = 0; i < nn; ++i) {
-                        idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
-                        assert(idx[i] < space.n_dofs());
-                        assert(idx[i] >= 0);
-                    }
-                }
+                        for (int di = 0; di < n_var; ++di) {
+                            const Size_t idx_i = i * n_var + di;
 
-                for (Size_t i = 0; i < nn; ++i) {
-                    for (int di = 0; di < n_var; ++di) {
-                        const Size_t idx_i = i * n_var + di;
+                            for (Size_t j = 0; j < nn; ++j) {
+                                for (int dj = 0; dj < n_var; ++dj) {
+                                    const Size_t idx_j = j * n_var + dj;
 
-                        for (Size_t j = 0; j < nn; ++j) {
-                            for (int dj = 0; dj < n_var; ++dj) {
-                                const Size_t idx_j = j * n_var + dj;
-
-                                val[idx_i * n_dofs + idx_j] = element_matrices(elem_idx, idx_i, idx_j);
+                                    val[idx_i * n_dofs + idx_j] = element_matrices(elem_idx, idx_i, idx_j);
+                                }
                             }
                         }
                     }
-                }
 
-                if (is_block) {
-                    matrix.add_matrix_blocked(idx, idx, val);
-                } else {
-                    matrix.add_matrix(idx, idx, val);
-                }
+                    if (is_block) {
+                        matrix.add_matrix_blocked(idx, idx, val);
+                    } else {
+                        matrix.add_matrix(idx, idx, val);
+                    }
 
-                ++elem_idx;
+                    ++elem_idx;
+                }
             }
+        }
+
+        if (mode == SUBTRACT_MODE) {
+            matrix *= -1.0;
+        }
+    }
+
+    template <typename Scalar>
+    void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::apply(
+        const utopia::stk::FunctionSpace &space,
+        const ::Kokkos::DynRankView<Scalar> &element_vectors,
+        AssemblyMode mode,
+        PetscVector &vector) {
+        // Type defs
+        using IndexArray_t = Traits<PetscMatrix>::IndexArray;
+        using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
+        using Size_t = Traits<PetscMatrix>::SizeType;
+
+        using Bucket_t = ::stk::mesh::Bucket;
+        using BucketVector_t = ::stk::mesh::BucketVector;
+        using Entity_t = ::stk::mesh::Entity;
+
+        if (empty(vector)) {
+            space.create_vector(vector);
+        } else {
+            // Reuse vector
+            if (mode == OVERWRITE_MODE) {
+                vector *= 0.0;
+            } else if (mode == SUBTRACT_MODE) {
+                vector *= -1.0;
+            }
+        }
+
+        auto &bulk_data = space.mesh().bulk_data();
+
+        const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
+
+        {
+            Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
+
+            const int n_var = space.n_var();
+            const SizeType n_dofs = element_vectors.extent(1);
+            const SizeType nn = n_dofs / n_var;
+
+            IndexArray_t idx(nn);
+            ScalarArray_t val(n_dofs);
+
+            const bool is_block = vector.block_size() > 1;
+
+            auto &&local_to_global = space.dof_map().local_to_global();
+
+            Size_t elem_idx = 0;
+            for (const auto &ib : elem_buckets) {
+                const Bucket_t &b = *ib;
+                const Bucket_t::size_type length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    // get the current node entity and extract the id to fill it into the field
+                    Entity_t elem = b[k];
+                    // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+                    UTOPIA_UNUSED(n_nodes);
+
+                    assert(nn == n_nodes);
+
+                    auto node_ids = bulk_data.begin_nodes(elem);
+
+                    if (local_to_global.empty()) {
+                        for (Size_t i = 0; i < nn; ++i) {
+                            idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                            assert(idx[i] < space.n_dofs());
+                            assert(idx[i] >= 0);
+                        }
+                    } else {
+                        for (Size_t i = 0; i < nn; ++i) {
+                            idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
+                            assert(idx[i] < space.n_dofs());
+                            assert(idx[i] >= 0);
+                        }
+                    }
+
+                    for (Size_t i = 0; i < nn; ++i) {
+                        for (int di = 0; di < n_var; ++di) {
+                            const Size_t idx_i = i * n_var + di;
+                            val[idx_i] = element_vectors(elem_idx, idx_i);
+                        }
+                    }
+
+                    if (is_block) {
+                        vector.add_vector_blocked(idx, val);
+                    } else {
+                        vector.add_vector(idx, val);
+                    }
+
+                    ++elem_idx;
+                }
+            }
+        }
+
+        if (mode == SUBTRACT_MODE) {
+            vector *= -1.0;
         }
     }
 
     template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;
+    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscVector>;
 
 #endif
 

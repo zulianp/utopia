@@ -387,11 +387,15 @@ namespace utopia {
 
         void FunctionSpace::set_n_var(const int n_var) { dof_map().set_n_var(n_var); }
 
-        void FunctionSpace::create_vector(Vector &v) const { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
+        void FunctionSpace::create_vector(Vector &v) const {
+            v.zeros(layout(comm(), n_local_dofs(), n_dofs()));
+            v.set_block_size(n_var());
+        }
 
         void FunctionSpace::create_local_vector(Vector &v) const {
             // FIXME
             v.zeros(layout(comm(), n_local_dofs(), n_dofs()));
+            v.set_block_size(n_var());
         }
 
         void FunctionSpace::create_matrix(Matrix &m) const {
@@ -436,7 +440,8 @@ namespace utopia {
 
                             for (Bucket_t::size_type k = 0; k < length; ++k) {
                                 auto node = b[k];
-                                auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                                // auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                                auto idx = utopia::stk::convert_entity_to_index(node);
                                 constrains.push_back(idx * nv + bc.component);
                             }
                         }
@@ -497,7 +502,8 @@ namespace utopia {
 
                             for (Bucket_t::size_type k = 0; k < length; ++k) {
                                 auto node = b[k];
-                                auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                                // auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                                auto idx = utopia::stk::convert_entity_to_index(node);
                                 v_view.set(idx * nv + bc.component, bc.value);
                             }
                         }
