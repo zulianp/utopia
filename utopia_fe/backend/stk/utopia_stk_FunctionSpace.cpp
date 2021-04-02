@@ -206,7 +206,19 @@ namespace utopia {
                     });
                 });
 
-                int counted_vars = variables.size();
+                if (variables.empty()) {
+                    Var v;
+                    // At least one variable
+                    v.components = std::max(1, n_var);
+                    variables.push_back(v);
+                }
+
+                int counted_vars = 0;
+
+                for (auto &v : variables) {
+                    counted_vars += v.components;
+                }
+
                 assert(n_var == 0 || n_var == counted_vars);
 
                 n_var = counted_vars;
@@ -273,6 +285,8 @@ namespace utopia {
             in.get("mesh", *mesh);
             init(mesh);
             impl_->read_meta(in);
+
+            impl_->dof_map->init(this->mesh().bulk_data());
 
             if (impl_->verbose) {
                 std::stringstream ss;

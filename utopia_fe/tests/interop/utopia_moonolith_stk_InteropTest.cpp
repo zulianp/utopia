@@ -13,12 +13,21 @@
 
 using namespace utopia;
 
+static Path get_mesh_path() {
+    Path dir = "../data/knf";
+    if (mpi_world_size() > 1) {
+        dir /= std::to_string(mpi_world_size());
+    }
+
+    return dir / "rectangle_4_tris.e";
+}
+
 void stk_moonolith_convert_mesh() {
     using MeshFrom = utopia::stk::Mesh;
     using MeshTo = utopia::moonolith::Mesh;
 
     MeshFrom mesh_from;
-    utopia_test_assert(mesh_from.read("../data/knf/rectangle_4_tris.e"));
+    utopia_test_assert(mesh_from.read(get_mesh_path()));
 
     MeshTo mesh_to;
     convert_mesh(mesh_from, mesh_to);
@@ -30,26 +39,28 @@ void stk_moonolith_extract_surface() {
     using MeshTo = utopia::moonolith::Mesh;
 
     MeshFrom volume;
-    utopia_test_assert(volume.read("../data/knf/rectangle_4_tris.e"));
+    utopia_test_assert(volume.read(get_mesh_path()));
     // utopia_test_assert(volume.read("../data/knf/cube_vs_cube/body.e"));
 
     MeshTo surface;
     extract_surface(volume, surface);
 
-    if (surface.spatial_dimension() == 3) {
-        surface.write("surf.vtu");
-    }
+    if (volume.comm().size() == 1) {
+        if (surface.spatial_dimension() == 3) {
+            surface.write("surf.vtu");
+        }
 
-    utopia_test_assert(surface.n_nodes() == 6);
-    utopia_test_assert(surface.manifold_dimension() == 1);
-    utopia_test_assert(surface.spatial_dimension() == 2);
+        utopia_test_assert(surface.n_nodes() == 6);
+        utopia_test_assert(surface.manifold_dimension() == 1);
+        utopia_test_assert(surface.spatial_dimension() == 2);
+    }
 }
 
 void stk_moonolith_convert_space() {
     using FunctionSpaceFrom = utopia::stk::FunctionSpace;
     using FunctionSpaceTo = utopia::moonolith::FunctionSpace;
 
-    auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+    auto params = param_list(param("mesh", param_list(param("path", get_mesh_path()))));
     FunctionSpaceFrom space_from;
     space_from.read(params);
 
@@ -64,14 +75,13 @@ void stk_moonolith_extract_trace_space() {
     using FunctionSpaceFrom = utopia::stk::FunctionSpace;
     using FunctionSpaceTo = utopia::moonolith::FunctionSpace;
 
-    auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+    auto params = param_list(param("mesh", param_list(param("path", get_mesh_path()))));
     FunctionSpaceFrom space_from;
     space_from.read(params);
 
     FunctionSpaceTo space_to;
     extract_trace_space(space_from, space_to);
-
-    disp(space_to.n_dofs());
+    utopia_test_assert(6 == space_to.n_dofs());
 }
 
 void stk_moonolith_fe_transfer() {
@@ -79,7 +89,7 @@ void stk_moonolith_fe_transfer() {
 
     FunctionSpace_t space_from, space_to;
 
-    auto params = param_list(param("mesh", param_list(param("path", "../data/knf/rectangle_4_tris.e"))));
+    auto params = param_list(param("mesh", param_list(param("path", get_mesh_path()))));
 
     space_from.read(params);
     space_to.read(params);

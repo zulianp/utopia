@@ -13,6 +13,11 @@ namespace utopia {
         USizeType rows = in.rows();
         USizeType cols = in.cols();
 
+        assert(n_local_rows >= 0);
+        assert(n_local_cols >= 0);
+        assert(rows > 0);
+        assert(cols > 0);
+
         auto &&comm = out.comm();
 
         USizeType begin = 0;
@@ -50,6 +55,8 @@ namespace utopia {
         auto n_local_rows = in.local_rows();
 
         assert(in.local_cols() == 1);
+        assert(n_local_rows >= 0);
+        assert(in.rows() > 0);
 
         out.zeros(layout(in.comm().get(), n_local_rows, Traits<UVector>::determine()));
 

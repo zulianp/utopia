@@ -88,21 +88,60 @@ namespace utopia {
         }
 
         static void copy_meta_info(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out) {
+            auto &&local_to_global = in.dof_map().local_to_global();
+            auto &bulk_data = in.mesh().bulk_data();
+            auto &elem_buckets = utopia::stk::local_elements(bulk_data);
+            const int n_var = in.n_var();
+
             auto m_space = out.raw_type<Dim>();
-            m_space->dof_map().set_n_local_dofs(in.mesh().n_local_nodes());
-            m_space->dof_map().set_n_dofs(in.mesh().n_nodes());
+            auto &out_dof_map = m_space->dof_map();
+            out_dof_map.resize(in.mesh().n_local_elements());
+            out_dof_map.set_n_local_dofs(in.n_local_dofs());
+            out_dof_map.set_n_dofs(in.n_dofs());
+
+            assert(in.n_dofs() > 0);
+
+            SizeType elem_idx = 0;
+            for (const auto &ib : elem_buckets) {
+                const Bucket_t &b = *ib;
+
+                auto moonolith_type = convert_elem_type(b.topology());
+
+                const Bucket_t::size_type length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    Entity_t elem = b[k];
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                    auto &dof_object = out_dof_map.dof_object(elem_idx++);
+                    dof_object.type = moonolith_type;
+                    dof_object.block = 1;  // elem.subdomain_id();
+                    dof_object.global_idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
+                    dof_object.dofs.resize(n_nodes);
+                    dof_object.element_dof = utopia::stk::convert_entity_to_index(elem);
+
+                    auto node_ids = bulk_data.begin_nodes(elem);
+
+                    if (local_to_global.empty()) {
+                        for (Size_t i = 0; i < n_nodes; ++i) {
+                            dof_object.dofs[i] =
+                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i])) * n_var;
+                        }
+                    } else {
+                        for (Size_t i = 0; i < n_nodes; ++i) {
+                            dof_object.dofs[i] = local_to_global(utopia::stk::convert_entity_to_index(node_ids[i]), 0);
+                        }
+                    }
+                }
+            }
         }
 
         static void apply(const utopia::stk::Mesh &in, utopia::moonolith::Mesh &out) {
-            assert(in.comm().size() == 1 && "IMPLEMENT PARALLEL VERSION");
-
             auto &meta_data = in.meta_data();
             auto &bulk_data = in.bulk_data();
 
-            // const Size_t n_elements = in.n_elements();
-            // const Size_t n_nodes = in.n_nodes();
             const Size_t n_local_elements = in.n_local_elements();
-            const Size_t n_local_nodes = in.n_local_nodes();
+            const Size_t n_local_nodes = utopia::stk::count_universal_nodes(bulk_data);
 
             auto m_mesh = std::make_shared<MoonolithMesh_t>(in.comm().raw_comm());
 
@@ -110,8 +149,6 @@ namespace utopia {
 
             ::stk::mesh::Selector s_universal = meta_data.universal_part();
             const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
-
-            // ::stk::mesh::FieldBase *coords = ::stk::mesh::get_field_by_name("coordinates", meta_data);
             auto *coords = meta_data.coordinate_field();
 
             for (const auto &ib : node_buckets) {
@@ -135,6 +172,7 @@ namespace utopia {
 
             int manifold_dim = -1;
 
+            Size_t elem_idx = 0;
             for (const auto &ib : elem_buckets) {
                 const Bucket_t &b = *ib;
                 const Bucket_t::size_type length = b.size();
@@ -144,14 +182,13 @@ namespace utopia {
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     // get the current node entity and extract the id to fill it into the field
                     Entity_t elem = b[k];
-                    const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                     auto &e = m_mesh->elem(elem_idx);
                     e.type = moonolith_type;
-                    e.block = 1;              // elem.subdomain_id();
-                    e.is_affine = true;       /// elem.has_affine_map();
-                    e.global_idx = elem_idx;  // elem.unique_id();
+                    e.block = 1;         // elem.subdomain_id();
+                    e.is_affine = true;  /// elem.has_affine_map();
+                    e.global_idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
                     e.nodes.resize(n_nodes);
 
                     auto node_ids = bulk_data.begin_nodes(elem);
@@ -159,6 +196,8 @@ namespace utopia {
                     for (Size_t i = 0; i < n_nodes; ++i) {
                         e.nodes[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
                     }
+
+                    ++elem_idx;
                 }
             }
 
@@ -376,7 +415,7 @@ namespace utopia {
         auto m_mesh = std::make_shared<utopia::moonolith::Mesh>(in.comm());
         convert_mesh(in.mesh(), *m_mesh);
 
-        out.init(m_mesh);
+        out.init(m_mesh, false);
 
         const int dim = in.mesh().spatial_dimension();
 
