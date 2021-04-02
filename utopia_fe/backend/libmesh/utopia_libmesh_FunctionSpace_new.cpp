@@ -359,17 +359,19 @@ namespace utopia {
             return !val.empty();
         }
 
-        void FunctionSpace::write(const Path &path, const Vector &x) {
+        bool FunctionSpace::write(const Path &path, const Vector &x) {
             assert(impl_->systems);
 
             auto &sys = impl_->systems->get_system(system_id());
             convert(x, *sys.solution);
 
-            // if (path.extension() == "e") {
-            //     libMesh::ExodusII_IO(mesh().raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
-            // } else {
-            libMesh::NameBasedIO(impl_->mesh->raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
-            // }
+            try {
+                libMesh::NameBasedIO(impl_->mesh->raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
+                return true;
+            } catch (const std::exception &ex) {
+                utopia::err() << ex.what() << '\n';
+                return false;
+            }
         }
 
         void FunctionSpace::describe(std::ostream &os) const {

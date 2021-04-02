@@ -49,8 +49,22 @@ namespace utopia {
                 int block = -1;
 
                 std::string type = "volume";
-                is.get("block", block);
+                std::string where = "";
+
+                is.get("where", where);
                 is.get("type", type);
+
+                if (where.empty()) {
+                    is.get("block", block);
+                } else {
+                    is.get("id", block);
+
+                    if (where == "surface") {
+                        type = "surface";
+                    } else {
+                        type = "volume";
+                    }
+                }
 
                 if (block == -1) {
                     std::cerr << "[Error]ForcingFunction block not specified" << std::endl;
@@ -116,6 +130,21 @@ namespace utopia {
                 is.get("block", block);
                 is.get("coord", coord);
                 is.get("type", type);
+
+                std::string where;
+                is.get("where", where);
+
+                if (where.empty()) {
+                    is.get("block", block);
+                } else {
+                    is.get("id", block);
+
+                    if (where == "surface") {
+                        type = "surface";
+                    } else {
+                        type = "volume";
+                    }
+                }
 
 #ifdef UTOPIA_WITH_TINY_EXPR
                 std::string value;

@@ -48,7 +48,7 @@ namespace utopia {
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
             ~FunctionSpace();
 
-            void write(const Path &path, const Vector &x);
+            bool write(const Path &path, const Vector &x);
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
 

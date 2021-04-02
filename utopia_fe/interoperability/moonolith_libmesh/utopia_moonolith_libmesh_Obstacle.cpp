@@ -1,4 +1,4 @@
-#include "utopia_libmesh_Obstacle.hpp"
+#include "utopia_moonolith_libmesh_Obstacle.hpp"
 
 #include "moonolith_obstacle.hpp"
 
@@ -15,8 +15,6 @@
 #include "moonolith_matlab_scripter.hpp"
 #include "moonolith_redistribute.hpp"
 #include "moonolith_sparse_matrix.hpp"
-
-// #include "utopia_ConvertMesh.hpp"
 
 #include "utopia_TransferUtils.hpp"
 #include "utopia_moonolith_libmesh_Convert.hpp"
