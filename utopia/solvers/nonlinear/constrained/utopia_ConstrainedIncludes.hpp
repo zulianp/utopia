@@ -14,4 +14,6 @@
 #include "utopia_QPSolver.hpp"
 #include "utopia_SemismoothNewton.hpp"
 
+#include "utopia_ProjectedChebyshev3level.hpp"
+
 #endif  // UTOPIA_CONSTRAINTED_HPP

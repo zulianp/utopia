@@ -347,23 +347,28 @@ namespace utopia {
     };
 
     static void qp_solver() {
-#ifdef UTOPIA_WITH_PETSC
-        QPSolverTest<PetscMatrix, PetscVector>().run();
-        QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
+        std::cout << "----- a  ----- \n";
 
-        PQPSolverTest<PetscMatrix, PetscVector>().run();
-        MonotoneMGTest<PetscMatrix, PetscVector>().run();
-        // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
+        // #ifdef UTOPIA_WITH_PETSC
+        //         // QPSolverTest<PetscMatrix, PetscVector>().run();
+        //         // QPSolverTest<PetscMatrix, PetscVector>().run_GS_QR();
 
-#endif  // UTOPIA_WITH_PETSC
+        //         // PQPSolverTest<PetscMatrix, PetscVector>().run();
 
-#ifdef UTOPIA_WITH_TRILINOS
-        QPSolverTest<TpetraMatrixd, TpetraVectord>().run();
-#endif  // UTOPIA_WITH_TRILINOS
+        //         MonotoneMGTest<PetscMatrix, PetscVector>().run();
 
-#ifdef UTOPIA_WITH_BLAS
-        QPSolverTest<BlasMatrixd, BlasVectord>().run();  // TODO(zulianp): : because blas is missing min operation ....
-#endif                                                   // UTOPIA_WITH_BLAS
+        //         // ProjectedGaussSeidelNewTest<PetscMatrix, PetscVector>().run();
+
+        // #endif  // UTOPIA_WITH_PETSC
+
+        // #ifdef UTOPIA_WITH_TRILINOS
+        //         QPSolverTest<TpetraMatrixd, TpetraVectord>().run();
+        // #endif  // UTOPIA_WITH_TRILINOS
+
+        // #ifdef UTOPIA_WITH_BLAS
+        //         QPSolverTest<BlasMatrixd, BlasVectord>().run();  // TODO(zulianp): : because blas is missing min
+        //         operation ....
+        // #endif                                                   // UTOPIA_WITH_BLAS
     }
 
     UTOPIA_REGISTER_TEST_FUNCTION(qp_solver);
