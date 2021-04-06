@@ -30,7 +30,8 @@ namespace utopia {
               n_levels_(2),
               log_output_path_("monotone_mg_log_file.csv"),
               output_path_("mnmg_out"),
-              save_output_(true) {
+              save_output_(true),
+              smoother_choice_("pgs_gs") {
             spaces_.resize(2);
             spaces_[0] = make_ref(space_coarse);
         }
@@ -40,6 +41,8 @@ namespace utopia {
             in.get("output_path", output_path_);
             in.get("n_levels", n_levels_);
             in.get("save_output", save_output_);
+
+            in.get("smoother_choice", smoother_choice_);
 
             init_ml_setup();
 
@@ -84,17 +87,32 @@ namespace utopia {
             //////////////////////////////////////////////////////
 
             if (!multigrid_) {
-                // auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-                // auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+                std::shared_ptr<QPSolver<PetscMatrix, PetscVector>> fine_smoother;
+                std::shared_ptr<IterativeSolver<PetscMatrix, PetscVector>> coarse_smoother;
 
-                // auto fine_smoother = std::make_shared<ProjectedChebyshev3level<Matrix, Vector>>();
-                // auto coarse_smoother = std::make_shared<Chebyshev3level<Matrix, Vector>>();
+                if (smoother_choice_ == "pgs_gs") {
+                    fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                    coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+                } else if (smoother_choice_ == "pgs_cheb") {
+                    fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                    coarse_smoother = std::make_shared<Chebyshev3level<Matrix, Vector>>();
 
-                auto fine_smoother = std::make_shared<ProjectedChebyshev3level<Matrix, Vector>>();
-                auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+                } else if (smoother_choice_ == "pcheb_gs") {
+                    fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                    coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
 
-                // auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-                // auto coarse_smoother = std::make_shared<Chebyshev3level<Matrix, Vector>>();
+                } else if (smoother_choice_ == "pcheb_cheb") {
+                    fine_smoother = std::make_shared<ProjectedChebyshev3level<Matrix, Vector>>();
+                    coarse_smoother = std::make_shared<Chebyshev3level<Matrix, Vector>>();
+                } else {
+                    if (mpi_world_rank() == 0) {
+                        utopia::out()
+                            << "Invalid choice of smoother. Using  ProjectedChebyshev3level, Chebyshev3level. \n";
+                    }
+
+                    fine_smoother = std::make_shared<ProjectedChebyshev3level<Matrix, Vector>>();
+                    coarse_smoother = std::make_shared<Chebyshev3level<Matrix, Vector>>();
+                }
 
                 auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
@@ -185,10 +203,11 @@ namespace utopia {
             multigrid_->update(make_ref(H));
 
             multigrid_->active_set().tol(1e-15);
-            multigrid_->max_it(40);
+            multigrid_->max_it(100);
             multigrid_->atol(1e-9);
             multigrid_->apply(g, solution);
 
+            // result of apply is solution, as IG=0
             write_to_file(*spaces_[n_levels_ - 1], solution);
         }
 
@@ -209,6 +228,8 @@ namespace utopia {
         std::shared_ptr<MonotoneMultigrid<Matrix, Vector>> multigrid_;
 
         bool save_output_;
+
+        std::string smoother_choice_;
     };
 
 }  // namespace utopia

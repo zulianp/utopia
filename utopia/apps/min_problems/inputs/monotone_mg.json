@@ -11,6 +11,7 @@
     "n_levels": 5,
     "rhs_type": 2, 
     "lambda": 0.0,
+    "smoother_choice":"pcheb_cheb",
     "solver" : {
         "verbose" : true,
         "max-it" : 200,
