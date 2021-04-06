@@ -29,7 +29,7 @@ namespace utopia {
 
             bool write(const Path &path, const Vector &x);
             void read(Input &in) override;
-            void read_with_state(Input &in, Vector &val);
+            bool read_with_state(Input &in, Vector &val);
             void describe(std::ostream &os) const override;
 
             std::shared_ptr<Mesh> mesh_ptr() const;

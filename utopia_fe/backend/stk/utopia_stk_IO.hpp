@@ -21,6 +21,8 @@ namespace utopia {
             void set_read_path(const Path &path);
             void set_read_specification(const std::string &format);
 
+            void import_all_field_data(const bool value);
+
             IO(Mesh &mesh);
             ~IO();
 

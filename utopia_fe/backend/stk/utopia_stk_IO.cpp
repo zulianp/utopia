@@ -152,5 +152,7 @@ namespace utopia {
 
         IO::~IO() = default;
 
+        void IO::import_all_field_data(const bool value) { impl_->import_all_field_data = value; }
+
     }  // namespace stk
 }  // namespace utopia

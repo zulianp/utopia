@@ -4,6 +4,7 @@
 
 #include "utopia_stk_Commons.hpp"
 #include "utopia_stk_DofMap.hpp"
+#include "utopia_stk_IO.hpp"
 
 // All stk includes
 #include <stk_io/StkMeshIoBroker.hpp>
@@ -107,49 +108,6 @@ namespace utopia {
             std::vector<Var> variables;
             std::shared_ptr<DofMap> dof_map;
             bool verbose{false};
-
-            void vector_to_nodal_field_old(const std::string &name, const Vector &v) {
-                auto &meta_data = mesh->meta_data();
-                auto &bulk_data = mesh->bulk_data();
-
-                // ::stk::mesh::Selector s_universal = meta_data.universal_part();
-                // const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
-
-                auto &node_buckets = utopia::stk::local_nodes(bulk_data);
-                ::stk::mesh::FieldBase *field = ::stk::mesh::get_field_by_name(name, meta_data);
-                assert(field);
-
-                auto v_view = view_device(v);
-
-                auto &&local_to_global = dof_map->local_to_global();
-#ifndef NDEBUG
-                const int n_var = dof_map->n_var();
-#endif  // NDEBUG
-
-                for (const auto &ib : node_buckets) {
-                    const Bucket_t &b = *ib;
-                    const Bucket_t::size_type length = b.size();
-
-                    for (Bucket_t::size_type k = 0; k < length; ++k) {
-                        Entity_t node = b[k];
-                        auto idx = utopia::stk::convert_entity_to_index(node);
-
-                        Scalar *points = (Scalar *)::stk::mesh::field_data(*field, node);
-                        auto n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
-                        assert(n_comp == n_var);
-
-                        if (!local_to_global.empty()) {
-                            for (int d = 0; d < n_comp; ++d) {
-                                points[d] = v_view.get(idx * n_comp + d);
-                            }
-                        } else {
-                            for (int d = 0; d < n_comp; ++d) {
-                                points[d] = v_view.get(local_to_global(idx, d));
-                            }
-                        }
-                    }
-                }
-            }
 
             void vector_to_nodal_field(const std::string &name, const Vector &v) {
                 auto &meta_data = mesh->meta_data();
@@ -295,43 +253,25 @@ namespace utopia {
             }
         }
 
-        void FunctionSpace::read_with_state(Input &in, Vector &val) {
+        bool FunctionSpace::read_with_state(Input &in, Vector &val) {
+            auto mesh = std::make_shared<Mesh>();
+
+            IO io(*mesh);
+            io.import_all_field_data(true);
+            in.get("mesh", io);
+
+            if (!io.load()) {
+                return false;
+            }
+
+            impl_->read_meta(in);
+
             assert(false && "IMPLEMENT ME");
-            // auto comm = impl_->comm.raw_comm();
-            // impl_->read_meta(in);
 
-            // auto mesh = std::make_shared<Mesh>();
-
-            // auto meta_data = std::make_shared<Impl::MetaData>();
-            // auto bulk_data = std::make_shared<Impl::BulkData>(*meta_data, comm, Impl::BulkData::NO_AUTO_AURA);
-
-            // try {
-            //     Impl::IOBroker io_broker(comm);
-            //     io_broker.set_bulk_data(*bulk_data);
-            //     // io_broker.property_add(Ioss::Property("DECOMPOSITION_METHOD", "rcb"));
-            //     io_broker.add_mesh_database(path.to_string(), ::stk::io::READ_MESH);
-            //     io_broker.create_input_mesh();
-            //     io_broker.populate_mesh();
-            //     io_broker.populate_field_data();
-
-            //     mesh->wrap(meta_data, bulk_data);
-
-            //     impl_->compute_mesh_stats();
-
-            //     return true;
-            // } catch (const std::exception &ex) {
-            //     utopia::err() << "FunctionSpace::read_with_state(\"...," << path.to_string()
-            //                   << "\") error: " << ex.what() << '\n';
-            //     assert(false);
-            //     return false;
-            // }
+            return true;
         }
 
         void FunctionSpace::describe(std::ostream &os) const {
-            // using Bucket_t = ::stk::mesh::Bucket;
-            // using BucketVector_t = ::stk::mesh::BucketVector;
-            // using Entity_t = ::stk::mesh::Entity;
-
             mesh().describe(os);
 
             if (comm().rank() == 0) {
@@ -341,25 +281,6 @@ namespace utopia {
             os << '\n';
             os << "n_vars: " << n_var() << '\n';
             os << "n_local_dofs: " << n_local_dofs() << '\n';
-
-            // auto &meta_data = mesh().meta_data();
-            // auto &bulk_data = mesh().bulk_data();
-
-            // const ::stk::mesh::Selector selector = meta_data.locally_owned_part();
-            // const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, selector);
-
-            // for (auto *b_ptr : node_buckets) {
-            //     const auto &b = *b_ptr;
-            //     const auto length = b.size();
-
-            //     for (Bucket_t::size_type k = 0; k < length; ++k) {
-            //         const Entity_t elem = b[k];
-            //         const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-            //         os << id << ' ';
-            //     }
-
-            //     os << '\n';
-            // }
         }
 
         std::shared_ptr<Mesh> FunctionSpace::mesh_ptr() const { return impl_->mesh; }
