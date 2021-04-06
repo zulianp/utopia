@@ -55,9 +55,15 @@ namespace utopia {
 
             void displace(const Vector &displacement);
 
+            void unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz);
+
         private:
             class Impl;
+            class IO;
             std::unique_ptr<Impl> impl_;
+
+            friend class IO;
+            friend class Impl;
         };
 
     }  // namespace stk

@@ -1,5 +1,8 @@
 #include "utopia_Testing.hpp"
 
+#include "utopia_MeshTest.hpp"
+#include "utopia_RunParallelTest.hpp"
+
 #include "utopia_libmesh_FunctionSpace_new.hpp"
 #include "utopia_libmesh_Mesh.hpp"
 #include "utopia_ui.hpp"
@@ -59,6 +62,8 @@ void lm() {
     UTOPIA_RUN_TEST(lm_create_mesh);
     UTOPIA_RUN_TEST(lm_create_function_space);
     UTOPIA_RUN_TEST(lm_read_function_space_with_data);
+
+    utopia::run_parallel_test<MeshTest<utopia::libmesh::Mesh>>();
 }
 
 UTOPIA_REGISTER_TEST_FUNCTION(lm);

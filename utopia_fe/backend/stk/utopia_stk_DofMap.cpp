@@ -32,6 +32,25 @@ std::string mpi_error_2_string(const int error_code) {
 namespace utopia {
     namespace stk {
 
+        // Realm::create_edges()
+        // {
+        //   NaluEnv::self().naluOutputP0() << "Realm::create_edges(): Nalu Realm: " << name_ << " requires edge
+        //   creation: Begin" << std::endl;
+
+        //   static stk::diag::Timer timerCE_("CreateEdges", Simulation::rootTimer());
+        //   stk::diag::TimeBlock tbCreateEdges_(timerCE_);
+
+        //   double start_time = NaluEnv::self().nalu_time();
+        //   stk::mesh::create_edges(*bulkData_, metaData_->universal_part(), edgesPart_);
+        //   double stop_time = NaluEnv::self().nalu_time();
+
+        //   // timer close-out
+        //   const double total_edge_time = stop_time - start_time;
+        //   timerCreateEdges_ += total_edge_time;
+        //   NaluEnv::self().naluOutputP0() << "Realm::create_edges(): Nalu Realm: " << name_ << " requires edge
+        //   creation: End" << std::endl;
+        // }
+
         class DofMap::Impl {
         public:
             using SizeType = Traits<FunctionSpace>::SizeType;
