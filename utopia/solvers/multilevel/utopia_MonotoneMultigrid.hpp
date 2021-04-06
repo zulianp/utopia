@@ -170,6 +170,9 @@ namespace utopia {
             UTOPIA_UNUSED(ok);
             SizeType L = this->n_levels();
 
+            // safeguard as ActiveSet class can not handle single bound
+            this->fill_empty_bounds(layout(rhs));
+
             memory.init(L);
             SizeType l = L - 1;
 
