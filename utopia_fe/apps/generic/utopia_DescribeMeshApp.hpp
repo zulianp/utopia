@@ -13,7 +13,7 @@ namespace utopia {
     public:
         static void run(Input &in) {
             Mesh mesh;
-            in.get("mesh", mesh);
+            mesh.read(in);
             mesh.describe(utopia::out().stream());
         }
     };

@@ -4,6 +4,8 @@
 
 #include "utopia_stk_Commons.hpp"
 
+#include "utopia_stk_IO.hpp"
+
 #include <stk_io/StkMeshIoBroker.hpp>
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/Comm.hpp>
@@ -39,114 +41,6 @@ namespace utopia {
                 n_local_elements = utopia::stk::count_local_elements(*bulk_data);
                 n_local_nodes = utopia::stk::count_local_nodes(*bulk_data);
             }
-
-            friend class Mesh::IO;
-        };
-
-        class Mesh::IO : public Configurable {
-        public:
-            using MetaData = ::stk::mesh::MetaData;
-            using BulkData = ::stk::mesh::BulkData;
-            using IOBroker = ::stk::io::StkMeshIoBroker;
-
-            void read(Input &in) override {
-                /////////////////////////////////////////////
-                bool decomposition_in_subdirs = false;
-                in.get("decomposition_in_subdirs", decomposition_in_subdirs);
-                in.get("decomposition_method", decomposition_method);
-
-                if (!decomposition_method.empty()) {
-                    assert(!decomposition_in_subdirs && "Either one or the other!");
-                }
-
-                /////////////////////////////////////////////
-                Path path;
-                in.get("path", path);
-
-                if (!path.empty()) {
-                    if (decomposition_in_subdirs && comm.size() > 1) {
-                        read_specification = path.parent() / Path(std::to_string(comm.size())) /
-                                             (path.file_name() + "." + path.extension());
-                    } else {
-                        read_specification = path;
-                    }
-                } else {
-                    std::string specification = "generated:10x10x10|sidesetxX";
-                    in.get("specification", specification);
-                    set_read_specification(specification);
-                }
-
-                /////////////////////////////////////////////
-                std::string read_purpose_str;
-                in.get("read_purpose", read_purpose_str);
-                if (read_purpose_str == "READ_RESTART") {
-                    read_purpose = ::stk::io::READ_RESTART;
-                }
-                /////////////////////////////////////////////
-                bool auto_aura = false;
-                in.get("auto_aura", auto_aura);
-                if (auto_aura) {
-                    auto_aura_option = BulkData::AUTO_AURA;
-                }
-                /////////////////////////////////////////////
-            }
-
-            bool load(Mesh &mesh) {
-                auto meta_data = std::make_shared<Impl::MetaData>();
-                auto bulk_data = std::make_shared<Impl::BulkData>(*meta_data, mesh.comm().raw_comm(), auto_aura_option);
-
-                try {
-                    io_broker->set_bulk_data(*bulk_data);
-                    if (!decomposition_method.empty()) {
-                        io_broker->property_add(::Ioss::Property("DECOMPOSITION_METHOD", decomposition_method));
-                    }
-
-                    io_broker->add_mesh_database(read_specification, read_purpose);
-                    io_broker->create_input_mesh();
-                    io_broker->populate_mesh();
-                    io_broker->populate_field_data();
-
-                    mesh.wrap(meta_data, bulk_data);
-
-                    mesh.impl_->compute_mesh_stats();
-
-                    return true;
-                } catch (const std::exception &ex) {
-                    utopia::err() << "Mesh::read(\"" << read_specification << "\") error: " << ex.what() << '\n';
-                    assert(false);
-                    return false;
-                }
-            }
-
-            bool write(const Path &write_path, const Mesh &mesh) {
-                auto &bulk_data = mesh.bulk_data();
-
-                try {
-                    io_broker->set_bulk_data(bulk_data);
-                    auto out_id = io_broker->create_output_mesh(write_path.to_string(), ::stk::io::WRITE_RESTART);
-                    io_broker->write_output_mesh(out_id);
-                    return true;
-
-                } catch (const std::exception &ex) {
-                    utopia::err() << "Mesh::write(\"" << write_path.to_string() << "\") error: " << ex.what() << '\n';
-                    return false;
-                }
-            }
-
-            void set_read_path(const Path &path) { this->read_specification = path.to_string(); }
-
-            void set_read_specification(const std::string &format) { read_specification = format; }
-
-            IO(const Communicator &comm) : comm(comm), io_broker(utopia::make_unique<IOBroker>(comm.raw_comm())) {}
-
-        public:
-            const Communicator &comm;
-            std::unique_ptr<IOBroker> io_broker;
-            std::string read_specification;
-            ::stk::io::DatabasePurpose read_purpose{::stk::io::READ_MESH};           //{READ_RESTART}
-            BulkData::AutomaticAuraOption auto_aura_option{BulkData::NO_AUTO_AURA};  //{AUTO_AURA}
-            std::string decomposition_method;
-            bool create_edges{false};
         };
 
         Mesh::~Mesh() = default;
@@ -171,36 +65,53 @@ namespace utopia {
         // proc_count
 
         bool Mesh::read(const Path &path) {
-            IO io(comm());
+            IO io(*this);
             io.set_read_path(path);
-            return io.load(*this);
+            return io.load();
         }
 
-        bool Mesh::write(const Path &path) const {
-            IO io(comm());
-            return io.write(path, *this);
+        bool Mesh::write(const Path &path) {
+            IO io(*this);
+            return io.write(path);
         }
 
         void Mesh::read(Input &in) {
-            IO io(comm());
+            IO io(*this);
             io.read(in);
-            if (!io.load(*this)) {
+            if (!io.load()) {
                 assert(false);
             }
         }
 
         void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
-            IO io(comm());
+            IO io(*this);
 
             char format[100];
             std::sprintf(format, "generated:%dx%dx%d|sideset:xX", int(nx), int(ny), int(nz));
             io.set_read_specification(format);
-            if (!io.load(*this)) {
+            if (!io.load()) {
                 assert(false);
             }
         }
 
-        void Mesh::describe(std::ostream &os) const { impl_->bulk_data->dump_all_mesh_info(os); }
+        void Mesh::describe(std::ostream &os) const {
+            if (comm().rank() == 0) {
+                os << "Parts:\n";
+                for (auto ptr : meta_data().get_parts()) {
+                    auto &p = *ptr;
+                    if (p.id() != -1) {
+                        os << p.name() << ' ' << p.id() << '\n';
+                    }
+                }
+
+                for (auto &field : impl_->meta_data->get_fields()) {
+                    os << field->name() << ", " << field->entity_rank() << ", num states: " << field->number_of_states()
+                       << '\n';
+                }
+            }
+
+            // impl_->bulk_data->dump_all_mesh_info(os);
+        }
 
         const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
@@ -240,6 +151,8 @@ namespace utopia {
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->n_local_nodes; }
 
         void Mesh::displace(const Vector &displacement) { assert(false); }
+
+        void Mesh::init() { impl_->compute_mesh_stats(); }
 
     }  // namespace stk
 }  // namespace utopia

@@ -31,7 +31,7 @@ namespace utopia {
             Mesh(const Comm &comm = Comm::get_default());
 
             bool read(const Path &path);
-            bool write(const Path &path) const;
+            bool write(const Path &path);
 
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
@@ -59,11 +59,12 @@ namespace utopia {
 
         private:
             class Impl;
-            class IO;
             std::unique_ptr<Impl> impl_;
 
             friend class IO;
             friend class Impl;
+
+            void init();
         };
 
     }  // namespace stk
