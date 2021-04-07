@@ -155,6 +155,7 @@ namespace utopia {
             read_permeability_tensor(in);
             in.get("permeability-function", permeability_);
             in.get("forcing-function", forcing_function_);
+            in.get("forcing_functions", forcing_function_);
 
             lower_dimensional_tags_.clear();
             lower_dimensional_tags_.clear();
@@ -199,6 +200,7 @@ namespace utopia {
         void read_permeability_tensor(Input &in) {
             Scalar constant_permeability = 1.;
             in.get("permeability", constant_permeability);
+            in.get("coeff", constant_permeability);
 
             Scalar permeabilities[3] = {constant_permeability, constant_permeability, constant_permeability};
 

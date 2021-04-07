@@ -34,10 +34,12 @@ namespace utopia {
 
         inline bool is_valid() const { return static_cast<bool>(flow_model_); }
 
+        inline Scalar rescaling() const { return rescale_; }
+
     private:
         FunctionSpace &space_;
         std::unique_ptr<Model<Matrix, Vector>> flow_model_;
-        Scalar rescale_;
+        Scalar rescale_{1.0};
     };
 }  // namespace utopia
 
