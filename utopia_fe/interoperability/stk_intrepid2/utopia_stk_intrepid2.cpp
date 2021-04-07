@@ -27,6 +27,10 @@ namespace utopia {
         switch (topo) {
             case ::stk::topology::NODE:
                 return ::shards::getCellTopologyData<::shards::Node>();
+            case ::stk::topology::LINE_2:
+                return ::shards::getCellTopologyData<::shards::Line<>>();
+            case ::stk::topology::SHELL_LINE_2:
+                return ::shards::getCellTopologyData<::shards::ShellLine<>>();
             case ::stk::topology::TRI_3_2D:
                 return ::shards::getCellTopologyData<::shards::Triangle<>>();
             case ::stk::topology::SHELL_TRI_3:

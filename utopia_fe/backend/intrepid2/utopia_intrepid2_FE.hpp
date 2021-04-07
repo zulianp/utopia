@@ -78,12 +78,16 @@ namespace utopia {
                 }
             }
 
-            SizeType num_cells() { return cell_nodes.extent(0); }
-            SizeType num_fields() { return grad.extent(1); }
-            SizeType num_qp() { return cubature->getNumPoints(); }
-            SizeType spatial_dimension() { return type.getDimension(); }
+            inline SizeType num_cells() const { return cell_nodes.extent(0); }
+            inline SizeType num_fields() const { return grad.extent(1); }
+            inline SizeType num_qp() const { return cubature->getNumPoints(); }
+            inline SizeType spatial_dimension() const { return cell_nodes.extent(2); }
+            inline SizeType manifold_dimension() const { return type.getDimension(); }
+
+            bool is_trace() const { return manifold_dimension() < spatial_dimension(); }
 
             CellTopology type;
+            // n_local_elements x n_nodes_x_elem x spatial_dim;
             DynRankView cell_nodes;
             CubaturePtr cubature;
 
@@ -98,21 +102,22 @@ namespace utopia {
             // NVCC_PRIVATE :
             template <class BasisType>
             void init_aux(const BasisType &basis) {
-                auto spatial_dimension = type.getDimension();
-                // auto num_nodes = type.getNodeCount();
-                auto num_qp = cubature->getNumPoints();
-                auto num_cells = cell_nodes.extent(0);
+                auto spatial_dimension = this->spatial_dimension();
+                auto manifold_dimension = this->manifold_dimension();
+
+                auto num_qp = this->num_qp();
+                auto num_cells = this->num_cells();
                 auto n_fun = basis.getCardinality();
 
                 assert(num_cells > 0);
                 assert(num_qp > 0);
-                // assert(num_nodes > 0);
                 assert(spatial_dimension > 0);
+                assert(manifold_dimension > 0);
 
                 DynRankView q_weights("q_weights", num_qp);
-                q_points = DynRankView("q_points", num_qp, spatial_dimension);
-                jacobian = DynRankView("jacobian", num_cells, num_qp, spatial_dimension, spatial_dimension);
-                jacobian_inv = DynRankView("jacobian_inv", num_cells, num_qp, spatial_dimension, spatial_dimension);
+                q_points = DynRankView("q_points", num_qp, manifold_dimension);
+                jacobian = DynRankView("jacobian", num_cells, num_qp, spatial_dimension, manifold_dimension);
+                jacobian_inv = DynRankView("jacobian_inv", num_cells, num_qp, manifold_dimension, spatial_dimension);
                 measure = DynRankView("measure", num_cells, num_qp);
                 jacobian_det = DynRankView("jacobian_det", num_cells, num_qp);
 
@@ -126,7 +131,7 @@ namespace utopia {
                 fun = DynRankView("fun", n_fun, num_qp);
                 basis.getValues(fun, q_points, ::Intrepid2::OPERATOR_VALUE);
 
-                DynRankView ref_grad("ref_grad", n_fun, num_qp, spatial_dimension);
+                DynRankView ref_grad("ref_grad", n_fun, num_qp, manifold_dimension);
                 grad = DynRankView("grad", num_cells, n_fun, num_qp, spatial_dimension);
 
                 basis.getValues(ref_grad, q_points, ::Intrepid2::OPERATOR_GRAD);
