@@ -1,11 +1,11 @@
 #ifndef UTOPIA_LOCAL_TO_GLOBAL_HPP
 #define UTOPIA_LOCAL_TO_GLOBAL_HPP
 
+#include "utopia_fe_Core.hpp"
+
 namespace utopia {
     template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
     class LocalToGlobal {};
-
-    enum AssemblyMode { ADD_MODE = 0, SUBTRACT_MODE = 1, OVERWRITE_MODE = 2 };
 
     template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
     void local_to_global(const FunctionSpace &space,

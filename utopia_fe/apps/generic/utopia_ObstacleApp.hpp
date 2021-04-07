@@ -51,6 +51,10 @@ namespace utopia {
 
                 if (read_state) {
                     space.read_with_state(in, deformation);
+
+                    const Scalar_t norm_deformation = norm2(deformation);
+                    std::cout << "norm_deformation: " << norm_deformation << std::endl;
+
                 } else {
                     space.read(in);
                 }

@@ -135,6 +135,21 @@ namespace utopia {
                 }
             }
 
+            bool check_variables() {
+                auto &meta_data = mesh->meta_data();
+
+                for (auto &v : variables) {
+                    ::stk::mesh::FieldBase *field = ::stk::mesh::get_field_by_name(v.name, meta_data);
+                    assert(field && "must be defined");
+                    if (!field) {
+                        utopia::err() << "Variable with " << v.name << " does not exist!\n";
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
             void register_variables() {
                 auto &meta_data = mesh->meta_data();
                 auto &&part = meta_data.universal_part();
@@ -151,6 +166,40 @@ namespace utopia {
                             meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, v.name, 1);
                         ::stk::mesh::put_field_on_mesh(field, part, v.n_components, nullptr);
                     }
+                }
+            }
+
+            void nodal_field_to_local_vector(Vector &v) {
+                auto &meta_data = mesh->meta_data();
+                auto &bulk_data = mesh->bulk_data();
+                auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
+                const int n_var = dof_map->n_var();
+
+                auto v_view = local_view_device(v);
+
+                int offset = 0;
+                for (auto &v : variables) {
+                    ::stk::mesh::FieldBase *field = ::stk::mesh::get_field_by_name(v.name, meta_data);
+
+                    for (const auto &ib : node_buckets) {
+                        const Bucket_t &b = *ib;
+                        const Bucket_t::size_type length = b.size();
+
+                        for (Bucket_t::size_type k = 0; k < length; ++k) {
+                            Entity_t node = b[k];
+                            auto idx = utopia::stk::convert_entity_to_index(node);
+
+                            const Scalar *values = (const Scalar *)::stk::mesh::field_data(*field, node);
+                            auto n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
+
+                            for (int d = 0; d < n_comp; ++d) {
+                                assert(offset + d < n_var);
+                                v_view.set(idx * n_var + offset + d, values[d]);
+                            }
+                        }
+                    }
+
+                    offset += v.n_components;
                 }
             }
 
@@ -266,6 +315,8 @@ namespace utopia {
         FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {
             impl_->mesh = std::make_shared<Mesh>(comm);
             impl_->dof_map = std::make_shared<DofMap>();
+
+            // assert(mpi_world_size() == comm.size());
         }
 
         FunctionSpace::FunctionSpace(const std::shared_ptr<Mesh> &mesh) : impl_(utopia::make_unique<Impl>()) {
@@ -276,33 +327,6 @@ namespace utopia {
         FunctionSpace::~FunctionSpace() = default;
 
         bool FunctionSpace::write(const Path &path, const Vector &x) {
-            // auto &meta_data = mesh().meta_data();
-            // auto &bulk_data = mesh().bulk_data();
-
-            // meta_data.enable_late_fields();
-
-            // ::stk::mesh::FieldBase *field_base = nullptr;
-
-            // if (n_var() == 1) {
-            //     auto &field =
-            //         meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, "output", 1);
-            //     ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), nullptr);
-
-            //     field_base = &field;
-            // } else {
-            //     auto &field = meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, "output", 1);
-            //     ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), nullptr);
-            //     field_base = &field;
-            // }
-
-            // if (comm().size() == 1) {
-            //     impl_->vector_to_nodal_field("output", x);
-            // } else {
-            //     Vector x_local;
-            //     global_to_local(x, x_local);
-            //     impl_->vector_to_nodal_field("output", x_local);
-            // }
-
             if (comm().size() == 1) {
                 impl_->local_vector_to_nodal_field(x);
             } else {
@@ -312,31 +336,12 @@ namespace utopia {
             }
 
             return impl_->write_restart(path);
-
-            // try {
-            //     Impl::IOBroker_t io_broker(comm().raw_comm());
-            //     io_broker.set_bulk_data(bulk_data);
-
-            //     auto out_id = io_broker.create_output_mesh(path.to_string(), ::stk::io::WRITE_RESTART);
-            //     io_broker.add_field(out_id, *field_base, "output");
-
-            //     // io_broker.write_output_mesh(out_id);
-            //     io_broker.process_output_request(out_id, 0);
-            //     return true;
-
-            // } catch (const std::exception &ex) {
-            //     utopia::err() << "Mesh::write(\"" << path.to_string() << "\") error: " << ex.what() << '\n';
-            //     assert(false);
-            //     return false;
-            // }
         }
 
         void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) { impl_->mesh = mesh; }
 
         void FunctionSpace::read(Input &in) {
-            auto mesh = std::make_shared<Mesh>();
-            in.get("mesh", *mesh);
-            init(mesh);
+            in.get("mesh", *impl_->mesh);
             impl_->read_meta(in);
 
             impl_->register_variables();
@@ -351,9 +356,7 @@ namespace utopia {
         }
 
         bool FunctionSpace::read_with_state(Input &in, Vector &val) {
-            auto mesh = std::make_shared<Mesh>();
-
-            IO io(*mesh);
+            IO io(*impl_->mesh);
             io.import_all_field_data(true);
             in.get("mesh", io);
 
@@ -362,9 +365,25 @@ namespace utopia {
             }
 
             impl_->read_meta(in);
+            if (!impl_->check_variables()) {
+                return false;
+            }
 
-            assert(false && "IMPLEMENT ME");
+            impl_->dof_map->init(this->mesh().bulk_data());
 
+            if (utopia::empty(val)) {
+                create_local_vector(val);
+            }
+
+            Vector lv;
+            create_local_vector(lv);
+            impl_->nodal_field_to_local_vector(lv);
+
+            create_vector(val);
+
+            // assert(val.comm().size() == mpi_world_size());
+
+            local_to_global(lv, val, OVERWRITE_MODE);
             return true;
         }
 
@@ -405,8 +424,8 @@ namespace utopia {
         }
 
         void FunctionSpace::create_local_vector(Vector &v) const {
-            // FIXME
-            v.zeros(layout(comm(), n_local_dofs(), n_dofs()));
+            SizeType nn = utopia::stk::count_universal_nodes(mesh().bulk_data()) * n_var();
+            v.zeros(layout(Comm::self(), nn, nn));
             v.set_block_size(n_var());
         }
 
@@ -602,6 +621,10 @@ namespace utopia {
 
         void FunctionSpace::global_to_local(const Vector &global, Vector &local) const {
             dof_map().global_to_local(global, local);
+        }
+
+        void FunctionSpace::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {
+            dof_map().local_to_global(local, global, mode);
         }
 
     }  // namespace stk

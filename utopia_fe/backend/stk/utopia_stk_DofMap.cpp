@@ -618,9 +618,12 @@ namespace utopia {
             //     describe(ss);
             //     comm.synched_print(ss.str());
             // }
+
+            UTOPIA_TRACE_REGION_END("DofMap::init_parallel");
         }
 
         void DofMap::init_serial(::stk::mesh::BulkData &bulk_data) {
+            UTOPIA_TRACE_REGION_BEGIN("DofMap::init_serial");
             using Bucket_t = ::stk::mesh::Bucket;
             using BucketVector_t = ::stk::mesh::BucketVector;
             using Entity_t = ::stk::mesh::Entity;
@@ -663,10 +666,10 @@ namespace utopia {
                 impl_->d_nnz[i] = node2node[i].size();
             }
 
-            UTOPIA_TRACE_REGION_END("DofMap::init_parallel");
+            UTOPIA_TRACE_REGION_END("DofMap::init_serial");
         }
 
-        bool DofMap::empty() const { return impl_->local_to_global.empty(); }
+        bool DofMap::empty() const { return impl_->local_to_global.empty() && impl_->d_nnz.empty(); }
 
         void DofMap::describe(std::ostream &os) const {
             auto &d_nnz = impl_->d_nnz;
@@ -705,6 +708,57 @@ namespace utopia {
                 const int nv = this->n_var();
                 local.zeros(layout(Communicator::self(), l2g.size() * nv, l2g.size() * nv));
                 global.blocked_select(l2g, local, nv);
+            }
+        }
+
+        void DofMap::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {
+            assert(!global.empty());
+
+            if (global.comm().size() == 1) {
+                // assert(mpi_world_size() == 1);
+                global = local;
+                return;
+            }
+
+            switch (mode) {
+                case OVERWRITE_MODE: {
+                    auto l2g = this->local_to_global();
+
+                    auto l_view = const_local_view_device(local);
+                    auto g_view = local_view_device(global);
+
+                    // TODO
+                    // parallel_for(local_range_device(local), UTOPIA_LAMBDA(const SizeType){});
+
+                    auto r = range(global);
+                    const SizeType nl = l2g.size();
+                    const int nv = n_var();
+
+                    assert(nv > 0);
+                    assert(nl > 0);
+
+                    assert(nv * nl == local.local_size());
+
+                    for (SizeType i = 0; i < nl; ++i) {
+                        for (int d = 0; d < nv; ++d) {
+                            const SizeType g_id = l2g(i, d);
+
+                            if (r.inside(g_id)) {
+                                const SizeType l_id = i * nv + d;
+                                assert(l_id < nv * nl);
+                                assert(l_id < local.local_size());
+
+                                g_view.set(g_id - r.begin(), l_view.get(l_id));
+                            }
+                        }
+                    }
+
+                    break;
+                }
+                default: {
+                    assert(false && "IMPLEMENT ME");
+                    Utopia::Abort();
+                }
             }
         }
     }  // namespace stk

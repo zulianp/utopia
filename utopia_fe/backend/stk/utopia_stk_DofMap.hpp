@@ -69,6 +69,7 @@ namespace utopia {
             void set_n_var(const int n_var);
 
             void global_to_local(const Vector &global, Vector &local) const;
+            void local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const;
 
         private:
             class Impl;

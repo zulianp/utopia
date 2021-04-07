@@ -1,6 +1,8 @@
 #ifndef UTOPIA_STK_FUNCTION_SPACE_HPP
 #define UTOPIA_STK_FUNCTION_SPACE_HPP
 
+#include "utopia_fe_Core.hpp"
+
 #include "utopia_stk_Mesh.hpp"
 
 namespace utopia {
@@ -59,6 +61,7 @@ namespace utopia {
 
             void displace(const Vector &displacement);
             void global_to_local(const Vector &global, Vector &local) const;
+            void local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const;
 
             const DofMap &dof_map() const;
             DofMap &dof_map();

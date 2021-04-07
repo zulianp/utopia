@@ -37,6 +37,12 @@ namespace utopia {
             Obstacle();
             ~Obstacle();
 
+            // class SurfaceDescriptor {
+            // public:
+            //     std::string name;
+            //     int id{-1};
+            // };
+
             class Params : public Configurable {
             public:
                 int variable_number{0};

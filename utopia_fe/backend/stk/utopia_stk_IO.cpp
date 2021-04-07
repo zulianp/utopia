@@ -23,6 +23,11 @@ namespace utopia {
                 in.get("decomposition_method", decomposition_method);
                 in.get("verbose", verbose);
                 in.get("import_all_field_data", import_all_field_data);
+                in.get("time_step", time_step);
+
+                if (import_all_field_data) {
+                    // read_purpose = ::stk::io::READ_RESTART;
+                }
 
                 // if (decomposition_in_subdirs) {
                 //     decomposition_method = "";
@@ -84,22 +89,13 @@ namespace utopia {
 
                     io_broker->populate_field_data();
 
+                    if (import_all_field_data) {
+                        io_broker->read_defined_input_fields(time_step);
+                    }
+
                     mesh.wrap(meta_data, bulk_data);
 
                     mesh.init();
-
-                    // if (verbose) {
-                    //     std::vector<std::string> names;
-                    //     io_broker->get_global_variable_names(names);
-
-                    //     utopia::out() << "Variables:\n";
-                    //     for (auto &n : names) {
-                    //         utopia::out() << n << '\n';
-                    //     }
-
-                    //     utopia::out() << '\n';
-                    // }
-
                     return true;
                 } catch (const std::exception &ex) {
                     utopia::err() << "Mesh::read(\"" << read_specification << "\") error: " << ex.what() << '\n';
@@ -139,6 +135,7 @@ namespace utopia {
             bool create_edges{false};
             bool verbose{false};
             bool import_all_field_data{false};
+            int time_step{1};
         };
 
         void IO::read(Input &in) { impl_->read(in); }

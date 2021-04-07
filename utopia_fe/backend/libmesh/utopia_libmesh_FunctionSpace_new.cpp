@@ -304,9 +304,19 @@ namespace utopia {
 
             auto &system = impl_->systems->get_system(system_id());
 
-            for (auto &v : main_system.vars) {
-                io.copy_nodal_solution(system, v.name, v.name, time_step);
+            auto &dof_map = system.get_dof_map();
+
+            const int n_vars = dof_map.n_variables();
+
+            for (int i = 0; i < n_vars; ++i) {
+                auto &v = dof_map.variable(i);
+                io.copy_nodal_solution(system, v.name(), v.name(), time_step);
             }
+
+            // for (auto &v : main_system.vars) {
+            //     if(v.n_components > 1) {}
+            //     io.copy_nodal_solution(system, v.name, v.name, time_step);
+            // }
 
             convert(*system.solution, val);
             return !val.empty();

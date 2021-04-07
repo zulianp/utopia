@@ -13,13 +13,22 @@
 
 using namespace utopia;
 
+// static Path get_mesh_path() {
+//     Path dir = "../data/knf";
+//     if (mpi_world_size() > 1) {
+//         dir /= std::to_string(mpi_world_size());
+//     }
+
+//     return dir / "rectangle_4_tris.e";
+// }
+
 static Path get_mesh_path() {
-    Path dir = "../data/knf";
+    Path dir = "../data/knf/cube_vs_cube";
     if (mpi_world_size() > 1) {
         dir /= std::to_string(mpi_world_size());
     }
 
-    return dir / "rectangle_4_tris.e";
+    return dir / "body.e";
 }
 
 void stk_moonolith_convert_mesh() {
@@ -31,7 +40,7 @@ void stk_moonolith_convert_mesh() {
 
     MeshTo mesh_to;
     convert_mesh(mesh_from, mesh_to);
-    utopia_test_assert(mesh_to.write("membrane_1.vtu"));
+    utopia_test_assert(mesh_to.write("dump.vtu"));
 }
 
 void stk_moonolith_extract_surface() {
@@ -40,7 +49,6 @@ void stk_moonolith_extract_surface() {
 
     MeshFrom volume;
     utopia_test_assert(volume.read(get_mesh_path()));
-    // utopia_test_assert(volume.read("../data/knf/cube_vs_cube/body.e"));
 
     MeshTo surface;
     extract_surface(volume, surface);
@@ -48,11 +56,11 @@ void stk_moonolith_extract_surface() {
     if (volume.comm().size() == 1) {
         if (surface.spatial_dimension() == 3) {
             surface.write("surf.vtu");
+        } else {
+            utopia_test_assert(surface.n_nodes() == 6);
+            utopia_test_assert(surface.manifold_dimension() == 1);
+            utopia_test_assert(surface.spatial_dimension() == 2);
         }
-
-        utopia_test_assert(surface.n_nodes() == 6);
-        utopia_test_assert(surface.manifold_dimension() == 1);
-        utopia_test_assert(surface.spatial_dimension() == 2);
     }
 }
 
@@ -68,7 +76,7 @@ void stk_moonolith_convert_space() {
     convert_function_space(space_from, space_to);
 
     disp(space_to.n_dofs());
-    utopia_test_assert(space_to.mesh().write("membrane_2.vtu"));
+    utopia_test_assert(space_to.mesh().write("dump.vtu"));
 }
 
 void stk_moonolith_extract_trace_space() {
@@ -81,7 +89,10 @@ void stk_moonolith_extract_trace_space() {
 
     FunctionSpaceTo space_to;
     extract_trace_space(space_from, space_to);
-    utopia_test_assert(6 == space_to.n_dofs());
+
+    if (space_from.mesh().spatial_dimension() == 2) {
+        utopia_test_assert(6 == space_to.n_dofs());
+    }
 }
 
 void stk_moonolith_fe_transfer() {
