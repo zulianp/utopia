@@ -50,14 +50,14 @@ namespace utopia {
                          .add_option("fe_family", fe_family, "The finite element family from enum libMesh::FEFamily.")
                          .add_option("order", order, "The finite element order from enum libMesh::Order.")
                          .add_option("name", name, "Name of the variable")
-                         .add_option("components", components, "number of vector components")
+                         .add_option("n_components", n_components, "number of vector components")
                          .parse(in)) {
                     return;
                 }
             }
 
             void add_to_system(libMesh::System &sys) {
-                if (components == 1) {
+                if (n_components == 1) {
                     sys.add_variable(name,
                                      libMesh::Utility::string_to_enum<libMesh::Order>(order),
                                      libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_family));
@@ -65,14 +65,14 @@ namespace utopia {
                     static const int N_SUFFIXES = 4;
                     static const char *suffixes[N_SUFFIXES] = {"_x", "_y", "_z", "_t"};
 
-                    const int n = std::min(components, N_SUFFIXES);
+                    const int n = std::min(n_components, N_SUFFIXES);
                     for (int i = 0; i < n; ++i) {
                         sys.add_variable(name + suffixes[i],
                                          libMesh::Utility::string_to_enum<libMesh::Order>(order),
                                          libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_family));
                     }
 
-                    for (int i = N_SUFFIXES; i < components; ++i) {
+                    for (int i = N_SUFFIXES; i < n_components; ++i) {
                         sys.add_variable(name + "_" + std::to_string(i),
                                          libMesh::Utility::string_to_enum<libMesh::Order>(order),
                                          libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_family));
@@ -85,7 +85,7 @@ namespace utopia {
             std::string fe_family{"LAGRANGE"};
             std::string order{"FIRST"};
             std::string name{"var"};
-            int components{1};
+            int n_components{1};
         };
 
         class FunctionSpace::BC : public Configurable, public Describable {

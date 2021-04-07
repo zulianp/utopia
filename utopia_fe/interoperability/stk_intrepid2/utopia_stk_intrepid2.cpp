@@ -285,7 +285,6 @@ namespace utopia {
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     // get the current node entity and extract the id to fill it into the field
                     Entity_t elem = b[k];
-                    // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
                     UTOPIA_UNUSED(n_nodes);
 
