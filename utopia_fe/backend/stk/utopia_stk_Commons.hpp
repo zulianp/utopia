@@ -41,6 +41,8 @@ namespace utopia {
             }
         }
 
+        int extract_sideset_id(const std::string &name);
+
         size_t count_entities(const ::stk::mesh::BulkData &bulk_data,
                               const ::stk::topology::rank_t &rank,
                               const ::stk::mesh::Selector &selector);

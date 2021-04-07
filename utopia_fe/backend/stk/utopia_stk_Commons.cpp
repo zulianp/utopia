@@ -57,5 +57,10 @@ namespace utopia {
             return bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, bulk_data.mesh_meta_data().universal_part());
         }
 
+        int extract_sideset_id(const std::string &name) {
+            assert(name.substr(0, 8) == "surface_");
+            return atoi(name.substr(8, name.size()).c_str());
+        }
+
     }  // namespace stk
 }  // namespace utopia

@@ -294,13 +294,15 @@ namespace utopia {
                 auto moonolith_type = convert_elem_type(b.topology());
                 const Bucket_t::size_type length = b.size();
 
+                int sideset = extract_sideset_from_bucket(b, topo);
+
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t elem = b[k];
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                     auto &e = m_mesh->elem(selected_elem_idx++);
                     e.type = moonolith_type;
-                    e.block = 1;         // elem.subdomain_id();
+                    e.block = sideset;
                     e.is_affine = true;  /// elem.has_affine_map();
                     e.global_idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
                     e.nodes.resize(n_nodes);
@@ -317,6 +319,21 @@ namespace utopia {
             m_mesh->finalize();
 
             out.wrap(m_mesh);
+        }
+
+        static int extract_sideset_from_bucket(const Bucket_t &b, ::stk::topology::rank_t topo) {
+            int sideset = -1;
+            {
+                for (auto &ss : b.supersets()) {
+                    if (ss->id() != -1 && ss->topology().rank() == topo) {
+                        // std::cout << ss->name() << ' ' << ss->id() << '\n';
+                        assert(sideset == -1);
+                        sideset = ss->id();
+                    }
+                }
+            }
+
+            return sideset;
         }
 
         static void extract_trace_space(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out) {
@@ -352,13 +369,15 @@ namespace utopia {
 
                 const Bucket_t::size_type length = b.size();
 
+                int sideset = extract_sideset_from_bucket(b, topo);
+
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t elem = b[k];
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
 
                     auto &dof_object = out_dof_map.dof_object(selected_elem_idx++);
                     dof_object.type = moonolith_type;
-                    dof_object.block = 1;  // elem.subdomain_id();
+                    dof_object.block = sideset;
                     dof_object.global_idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
                     dof_object.dofs.resize(n_nodes);
                     dof_object.element_dof = utopia::stk::convert_entity_to_index(elem);

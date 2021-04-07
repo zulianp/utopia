@@ -47,7 +47,7 @@ namespace utopia {
                         read_specification = path;
                     }
                 } else {
-                    std::string specification = "generated:10x10x10|sidesetxX";
+                    std::string specification = "generated:10x10x10|sideset:xX";
                     in.get("specification", specification);
                     set_read_specification(specification);
                 }
