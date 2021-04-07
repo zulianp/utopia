@@ -89,6 +89,7 @@ namespace scripting {
 
     Layout::~Layout() { delete impl_; }
 
+    // input inside here, vcector of double
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
 
@@ -113,5 +114,10 @@ namespace scripting {
     void Vector::describe() const { impl_->describe(); }
     bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
     Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
+    void Vector::set(const SizeType &i, const Scalar &value) { impl_->set(i, value); }
+    void Vector::convert_into_uvector(Scalar numpy_values) {
+        auto vector_view = local_view_device(*impl_);
+        // vector_view.set(2, numpy_values);
+    }
 
 }  // namespace scripting
