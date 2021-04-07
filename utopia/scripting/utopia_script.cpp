@@ -1,10 +1,12 @@
 #include "utopia_script.hpp"
+#include <iostream>
+#include "../utopia.hpp"
 #include "utopia.hpp"
+#include "utopia_AbstractVector.hpp"
 #include "utopia_Instance.hpp"
 #include "utopia_ObjectFactory.hpp"
 #include "utopia_Version.hpp"
-
-#include <iostream>
+#include "utopia_script.hpp"
 
 namespace utopia {
 
@@ -57,6 +59,36 @@ namespace scripting {
 
     void SparseMatrix::print_info() { utopia::out() << "SparseMatrix::print()" << std::endl; }
 
+    Communicator::Communicator() : impl_(nullptr) {
+        auto comm = Factory::new_communicator();
+
+        if (!comm) {
+            utopia::out() << "[Error] Communicator could not be constructed" << std::endl;
+            return;
+        }
+        impl_ = comm.get();
+        comm.release();
+    }
+
+    Communicator::~Communicator() { delete impl_; }
+
+    Layout::Layout(const Communicator &comm, LocalSizeType local_size, SizeType global_size)
+        :
+
+          impl_(nullptr) {
+        auto layout = std::make_unique<LayoutImpl>(*comm.get_communicator(), local_size, global_size);
+
+        if (!layout) {
+            utopia::out() << "[Error] Vector could not be constructed" << std::endl;
+            return;
+        }
+
+        impl_ = layout.get();
+        layout.release();
+    }
+
+    Layout::~Layout() { delete impl_; }
+
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
 
@@ -72,5 +104,14 @@ namespace scripting {
     Vector::~Vector() { delete impl_; }
 
     void Vector::print_info() { utopia::out() << "Vector::print()" << std::endl; }
+    void Vector::values(const Layout &l, const Scalar &value) {
+        auto ll = *l.get_layout();
+        impl_->values(ll, value);
+    }
+    void Vector::add(const SizeType &i, const Scalar &value) { impl_->add(i, value); }
+    void Vector::axpy(Scalar alpha, Vector *x) { impl_->axpy(alpha, *x->impl_); }
+    void Vector::describe() const { impl_->describe(); }
+    bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
+    Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
 
 }  // namespace scripting
