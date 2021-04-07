@@ -115,9 +115,23 @@ namespace scripting {
     bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
     Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
     void Vector::set(const SizeType &i, const Scalar &value) { impl_->set(i, value); }
-    void Vector::convert_into_uvector(Scalar numpy_values) {
-        auto vector_view = local_view_device(*impl_);
-        // vector_view.set(2, numpy_values);
+    void Vector::convert_into_uvector(Scalar *values, const Layout &l) {
+        if (impl_->empty()) {
+            impl_->values(*l.get_layout(), 0.0);
+        }
+
+        {
+            impl_->write_lock(utopia::LOCAL);
+
+            utopia::Range rr = impl_->range();
+
+            for (auto i = rr.begin(); i < rr.end(); ++i) {
+                impl_->set(i, *values);
+                ++values;
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
     }
 
 }  // namespace scripting
