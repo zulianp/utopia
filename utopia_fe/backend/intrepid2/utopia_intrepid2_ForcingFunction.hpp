@@ -9,13 +9,19 @@ namespace utopia {
     template <typename Fun>
     class ForcingFunction : public Configurable {
     public:
-        void read(Input &in) override { in.get("value", value); }
+        void read(Input &in) override {
+            in.get("value", value);
+            in.get("component", component);
+        }
+
         ForcingFunction(const Fun &value) : value(value) {}
 
         UTOPIA_FUNCTION ForcingFunction() = default;
         UTOPIA_FUNCTION ForcingFunction(const ForcingFunction &) = default;
 
         Fun value;
+        int n_components{1};
+        int component{0};
     };
 
     namespace intrepid2 {
@@ -34,11 +40,14 @@ namespace utopia {
             Assemble(Op op, const std::shared_ptr<FE> &fe) : op_(std::move(op)), fe_(fe) {}
 
             void init() {
+                const int n_components = op_.n_components;
+                const int component = op_.component;
+
                 const int num_fields = fe_->num_fields();
-                const int n_dofs = num_fields;
+                const int n_dofs = num_fields * n_components;
                 const int n_qp = fe_->num_qp();
 
-                element_vectors_ = DynRankView("ForcingFunction", fe_->num_cells(), n_dofs, n_dofs);
+                element_vectors_ = DynRankView("ForcingFunction", fe_->num_cells(), n_dofs);
 
                 {
                     auto ev = element_vectors_;
@@ -51,9 +60,11 @@ namespace utopia {
                         Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>(
                             {0, 0}, {static_cast<int>(ev.extent(0)), num_fields}),
                         KOKKOS_LAMBDA(const int &cell, const int &i) {
+                            auto offset = i * n_components + component;
+
                             for (int qp = 0; qp < n_qp; ++qp) {
                                 auto dX = measure(cell, qp);
-                                ev(cell, i) += fun(i, qp) * value * dX;
+                                ev(cell, offset) += fun(i, qp) * value * dX;
                             }
                         });
                 }

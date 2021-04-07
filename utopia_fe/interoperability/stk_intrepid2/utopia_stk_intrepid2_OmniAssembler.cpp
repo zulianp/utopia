@@ -86,35 +86,71 @@ namespace utopia {
 
             in.get("material", [&](Input &in) { in.get("type", material_type); });
 
+            const int spatial_dimension = impl_->space->mesh().spatial_dimension();
+
             // FIXME create a registry and decentralize material registration
             if (material_type == "LaplaceOperator") {
                 LaplaceOperator<Scalar> material(1.0);
                 in.get("material", material);
                 impl_->init_material_assembler(material);
-            } else if (material_type == "VectorLaplaceOperator1") {
-                VectorLaplaceOperator<1, Scalar> material(1.0);
-                in.get("material", material);
-                impl_->init_material_assembler(material);
-            } else if (material_type == "VectorLaplaceOperator2") {
-                VectorLaplaceOperator<2, Scalar> material(1.0);
-                in.get("material", material);
-                impl_->init_material_assembler(material);
-            } else if (material_type == "VectorLaplaceOperator3") {
-                VectorLaplaceOperator<3, Scalar> material(1.0);
-                in.get("material", material);
-                impl_->init_material_assembler(material);
-            } else if (material_type == "LinearElasticity1") {
-                LinearElasticity<1, Scalar> material(1.0, 1.0);
-                in.get("material", material);
-                impl_->init_material_assembler(material);
-            } else if (material_type == "LinearElasticity2") {
-                LinearElasticity<2, Scalar> material(1.0, 1.0);
-                in.get("material", material);
-                impl_->init_material_assembler(material);
-            } else if (material_type == "LinearElasticity3") {
-                LinearElasticity<3, Scalar> material(1.0, 1.0);
-                in.get("material", material);
-                impl_->init_material_assembler(material);
+
+            } else if (material_type == "VectorLaplaceOperator") {
+                switch (spatial_dimension) {
+                    case 1: {
+                        VectorLaplaceOperator<1, Scalar> material(1.0);
+                        in.get("material", material);
+                        impl_->init_material_assembler(material);
+                        break;
+                    }
+
+                    case 2: {
+                        VectorLaplaceOperator<2, Scalar> material(1.0);
+                        in.get("material", material);
+                        impl_->init_material_assembler(material);
+                        break;
+                    }
+
+                    case 3: {
+                        VectorLaplaceOperator<3, Scalar> material(1.0);
+                        in.get("material", material);
+                        impl_->init_material_assembler(material);
+                        break;
+                    }
+
+                    default: {
+                        assert(false);
+                        break;
+                    }
+                }
+
+            } else if (material_type == "LinearElasticity") {
+                switch (spatial_dimension) {
+                    case 1: {
+                        LinearElasticity<1, Scalar> material(1.0, 1.0);
+                        in.get("material", material);
+                        impl_->init_material_assembler(material);
+                        break;
+                    }
+
+                    case 2: {
+                        LinearElasticity<2, Scalar> material(1.0, 1.0);
+                        in.get("material", material);
+                        impl_->init_material_assembler(material);
+                        break;
+                    }
+
+                    case 3: {
+                        LinearElasticity<3, Scalar> material(1.0, 1.0);
+                        in.get("material", material);
+                        impl_->init_material_assembler(material);
+                        break;
+                    }
+
+                    default: {
+                        assert(false);
+                        break;
+                    }
+                }
             } else {
                 if (material_type.empty()) {
                     utopia::err() << "[Error] Undefined material\n";
@@ -131,9 +167,9 @@ namespace utopia {
                     node.get("type", forcing_function_type);
 
                     if (forcing_function_type == "value") {
-                        Scalar value = 0.0;
-                        node.get("value", value);
-                        ForcingFunction<Scalar> ff(value);
+                        ForcingFunction<Scalar> ff;
+                        ff.read(node);
+                        ff.n_components = impl_->space->n_var();
                         impl_->init_forcing_function_assembler(ff);
                     }
                 });

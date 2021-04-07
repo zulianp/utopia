@@ -76,7 +76,7 @@ namespace utopia {
                          .add_option("fe_family", fe_family, "The finite element family from enum libMesh::FEFamily.")
                          .add_option("order", order, "The finite element order from enum libMesh::Order.")
                          .add_option("name", name, "Name of the variable")
-                         .add_option("components", components, "number of vector components")
+                         .add_option("n_components", n_components, "number of vector n_component")
                          .parse(in)) {
                     return;
                 }
@@ -86,13 +86,13 @@ namespace utopia {
                 os << "fe_family:\t" << fe_family;
                 os << "order:\t" << order;
                 os << "name:\t" << name;
-                os << "components:\t" << components;
+                os << "n_components:\t" << n_components;
             }
 
             std::string fe_family{"LAGRANGE"};
             std::string order{"FIRST"};
             std::string name{"var"};
-            int components{1};
+            int n_components{1};
         };
 
         class FunctionSpace::Impl {
@@ -102,6 +102,7 @@ namespace utopia {
             using Entity_t = ::stk::mesh::Entity;
             using Selector_t = ::stk::mesh::Selector;
             using IOBroker_t = ::stk::io::StkMeshIoBroker;
+            using VectorField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian>;
 
             std::shared_ptr<Mesh> mesh;
             DirichletBoundary dirichlet_boundary;
@@ -167,14 +168,14 @@ namespace utopia {
                 if (variables.empty()) {
                     Var v;
                     // At least one variable
-                    v.components = std::max(1, n_var);
+                    v.n_components = std::max(1, n_var);
                     variables.push_back(v);
                 }
 
                 int counted_vars = 0;
 
                 for (auto &v : variables) {
-                    counted_vars += v.components;
+                    counted_vars += v.n_components;
                 }
 
                 assert(n_var == 0 || n_var == counted_vars);
@@ -202,13 +203,19 @@ namespace utopia {
 
             meta_data.enable_late_fields();
 
-            // FIXME declare this somewhere else
-            ::stk::mesh::Field<Scalar> &field =
-                meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, "output", 1);
+            ::stk::mesh::FieldBase *field_base = nullptr;
 
-            // const std::vector<Scalar> init(this->n_var(), 1);
-            // ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), init.data());
-            ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), nullptr);
+            if (n_var() == 1) {
+                auto &field =
+                    meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, "output", 1);
+                ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), nullptr);
+
+                field_base = &field;
+            } else {
+                auto &field = meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, "output", 1);
+                ::stk::mesh::put_field_on_mesh(field, meta_data.universal_part(), this->n_var(), nullptr);
+                field_base = &field;
+            }
 
             if (comm().size() == 1) {
                 impl_->vector_to_nodal_field("output", x);
@@ -223,7 +230,7 @@ namespace utopia {
                 io_broker.set_bulk_data(bulk_data);
 
                 auto out_id = io_broker.create_output_mesh(path.to_string(), ::stk::io::WRITE_RESTART);
-                io_broker.add_field(out_id, field, "output");
+                io_broker.add_field(out_id, *field_base, "output");
 
                 // io_broker.write_output_mesh(out_id);
                 io_broker.process_output_request(out_id, 0);
