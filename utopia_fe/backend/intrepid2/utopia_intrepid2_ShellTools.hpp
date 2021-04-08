@@ -124,16 +124,16 @@ namespace utopia {
                 View jacobian;
                 View jacobian_inv;
                 SizeType num_cells;
+                SizeType num_qp;
                 SizeType manifold_dim;
                 SizeType spatial_dim;
-                SizeType num_qp;
 
                 UTOPIA_INLINE_FUNCTION ComputeJacobianInverse(const View &jacobian, View &jacobian_inv)
                     : jacobian(jacobian), jacobian_inv(jacobian_inv) {
                     num_cells = jacobian.extent(0);
-                    manifold_dim = jacobian.extent(1);
+                    num_qp = jacobian.extent(1);
                     spatial_dim = jacobian.extent(2);
-                    num_qp = jacobian.extent(3);
+                    manifold_dim = jacobian.extent(3);
                 }
 
                 // Only affine elements
@@ -251,12 +251,12 @@ namespace utopia {
                 }
 
                 UTOPIA_INLINE_FUNCTION void operator()(const SizeType cell,
-                                                       const SizeType qp,
                                                        const SizeType node,
+                                                       const SizeType qp,
                                                        const SizeType d_physical) const {
                     for (SizeType d_ref = 0; d_ref < manifold_dim; ++d_ref) {
-                        grad_physical(cell, qp, node, d_physical) +=
-                            jacobian_inv(cell, qp, d_physical, d_ref) * grad_ref(node, qp, d_ref);
+                        grad_physical(cell, node, qp, d_physical) +=
+                            jacobian_inv(cell, qp, d_ref, d_physical) * grad_ref(node, qp, d_ref);
                     }
                 }
             };
@@ -284,14 +284,14 @@ namespace utopia {
                                                              DynRankView &grad_physical) {
                 const SizeType num_cells = jacobian_inv.extent(0);
                 const SizeType n_qp = jacobian_inv.extent(1);
-                const SizeType num_nodes = grad_physical.extent(0);
+                const SizeType num_nodes = grad_ref.extent(0);
                 const SizeType spatial_dim = jacobian_inv.extent(1);
 
                 TransformGradientToPhysicalSpace<DynRankView> transform(jacobian_inv, grad_ref, grad_physical);
 
                 Kokkos::parallel_for("ShellTools::transform_gradient_to_physical_space",
                                      Kokkos::MDRangePolicy<Kokkos::Rank<4>, ExecutionSpace>(
-                                         {0, 0, 0, 0}, {num_cells, n_qp, num_nodes, spatial_dim}),
+                                         {0, 0, 0, 0}, {num_cells, num_nodes, n_qp, spatial_dim}),
                                      transform);
             }
 

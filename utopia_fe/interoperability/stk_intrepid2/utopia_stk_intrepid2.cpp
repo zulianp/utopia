@@ -42,7 +42,8 @@ namespace utopia {
                 return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Triangle<>>()
                                             : ::shards::getCellTopologyData<::shards::ShellTriangle<>>());
             case ::stk::topology::SHELL_TRI_3:
-                return ::shards::getCellTopologyData<::shards::ShellTriangle<>>();
+                return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Triangle<>>()
+                                            : ::shards::getCellTopologyData<::shards::ShellTriangle<>>());
             case ::stk::topology::QUAD_4_2D:
                 return ::shards::getCellTopologyData<::shards::Quadrilateral<>>();
             case ::stk::topology::SHELL_QUAD_4:
@@ -90,7 +91,7 @@ namespace utopia {
         auto *first_bucket = *elem_buckets.begin();
 
         // Dirty hack (FIXME once stk usage is a bit more profficient)
-        auto topo = convert_elem_type(first_bucket->topology());
+        auto topo = convert_elem_type(first_bucket->topology(), true);
         Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
         auto *coords = meta_data.coordinate_field();
 
@@ -151,6 +152,8 @@ namespace utopia {
 
         ::stk::mesh::Selector s_universal = meta_data.universal_part();
         const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
+
+        assert(side_buckets.begin() != side_buckets.end());
 
         auto *first_bucket = *side_buckets.begin();
 

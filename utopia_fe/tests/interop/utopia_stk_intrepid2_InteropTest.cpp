@@ -32,6 +32,8 @@ public:
     bool verbose{false};
     Scalar_t rtol{1e-6};
 
+    static std::string get_shell_mesh_path() { return "../data/fe_problem_solve/shell.e"; }
+
     static std::string get_cube_path() {
         std::string dir = "../data/knf/cube_vs_cube";
         if (mpi_world_size() > 1) {
@@ -221,6 +223,38 @@ public:
         assemble_and_solve("elasticity_problem_parallel", space, linear_elasticity);
     }
 
+    void shell_laplace_problem() {
+        auto params = param_list(param("mesh", param_list(param("path", get_shell_mesh_path()))));
+
+        FunctionSpace_t space;
+        space.read(params);
+        space.add_dirichlet_boundary_condition("Top", 1.0);
+        space.add_dirichlet_boundary_condition("Side", -1.0);
+
+        LaplaceOperator<Scalar_t> lapl{1.0};
+
+        std::stringstream ss;
+        space.describe(ss);
+
+        assemble_and_solve("shell_laplace_problem", space, lapl);
+    }
+
+    void shell_integral() {
+        auto params = param_list(param("mesh", param_list(param("path", get_shell_mesh_path()))));
+
+        FunctionSpace_t space;
+        space.read(params);
+
+        auto fe_ptr = std::make_shared<FE_t>();
+        create_fe(space, *fe_ptr, 0);
+
+        // TODO integrate whole surface
+
+        // fe_ptr->print_jacobian();
+        // fe_ptr->print_jacobian_inverse();
+        // fe_ptr->print_measure();
+    }
+
     void boundary_integral() {
         auto params = param_list(param("mesh", param_list(param("path", get_2D_mesh_path()))));
 
@@ -230,18 +264,26 @@ public:
         auto fe_ptr = std::make_shared<FE_t>();
         create_fe_on_boundary(space, *fe_ptr, 0);
 
-        fe_ptr->print_jacobians();
-        fe_ptr->print_measure();
+        // TODO integrate whole marked boundary
+
+        // fe_ptr->print_jacobian();
+        // fe_ptr->print_jacobian_inverse();
+        // fe_ptr->print_measure();
     }
 
     void run() {
         if (mpi_world_size() <= 4) {
-            // UTOPIA_RUN_TEST(poisson_problem);
-            // UTOPIA_RUN_TEST(vector_poisson_problem);
-            // UTOPIA_RUN_TEST(elasticity_problem);
-            // UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
-            // UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
-            // UTOPIA_RUN_TEST(elasticity_problem_parallel);
+            UTOPIA_RUN_TEST(poisson_problem);
+            UTOPIA_RUN_TEST(vector_poisson_problem);
+            UTOPIA_RUN_TEST(elasticity_problem);
+            UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
+            UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
+            UTOPIA_RUN_TEST(elasticity_problem_parallel);
+
+            UTOPIA_RUN_TEST(shell_integral);
+            // save_output = export_tensors = true;
+            UTOPIA_RUN_TEST(shell_laplace_problem);
+            // save_output = export_tensors = false;
             UTOPIA_RUN_TEST(boundary_integral);
         }
     }

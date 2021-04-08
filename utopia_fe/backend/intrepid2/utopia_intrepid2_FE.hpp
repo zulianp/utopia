@@ -103,7 +103,7 @@ namespace utopia {
                     });
             }
 
-            void print_jacobians() {
+            void print_jacobian() {
                 int num_cells = this->num_cells();
                 int num_qp = this->num_qp();
 
@@ -111,13 +111,39 @@ namespace utopia {
                 int manifold_dimension = this->manifold_dimension();
 
                 Kokkos::parallel_for(
-                    "FE::print_jacobians", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                    "FE::print_jacobian", num_cells, KOKKOS_LAMBDA(const int &cell) {
                         printf("cell: %d\n", cell);
 
                         for (int qp = 0; qp < num_qp; ++qp) {
                             for (int r = 0; r < spatial_dimension; ++r) {
                                 for (int c = 0; c < manifold_dimension; ++c) {
                                     printf("%g ", jacobian(cell, qp, r, c));
+                                }
+                                printf("\n");
+                            }
+
+                            printf("\n");
+                        }
+
+                        printf("\n");
+                    });
+            }
+
+            void print_jacobian_inverse() {
+                int num_cells = this->num_cells();
+                int num_qp = this->num_qp();
+
+                int spatial_dimension = this->spatial_dimension();
+                int manifold_dimension = this->manifold_dimension();
+
+                Kokkos::parallel_for(
+                    "FE::print_jacobian_inverse", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                        printf("cell: %d\n", cell);
+
+                        for (int qp = 0; qp < num_qp; ++qp) {
+                            for (int r = 0; r < manifold_dimension; ++r) {
+                                for (int c = 0; c < spatial_dimension; ++c) {
+                                    printf("%g ", jacobian_inv(cell, qp, r, c));
                                 }
                                 printf("\n");
                             }
