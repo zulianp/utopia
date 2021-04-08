@@ -71,4 +71,6 @@ more information and tutorials.
 #include "utopia_Vc.hpp"
 #endif  // UTOPIA_WITH_M3ELINSOL
 
+#include "utopia_polymorphic_LinearSolver.hpp"
+
 #endif  // UTOPIA_HPP

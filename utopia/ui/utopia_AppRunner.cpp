@@ -49,7 +49,7 @@ namespace utopia {
         }
 
         InputParameters params;
-        params.init(argc, argv);
+        params.init(argc, argv, AppRegistry::instance().verbose());
 
         std::string app_name = "";
         params.get("app", app_name);

@@ -10,6 +10,8 @@ namespace utopia {
 
     class XMLInput final : public Input {
     public:
+        using Input::get;
+
         XMLInput();
         ~XMLInput() override;
 

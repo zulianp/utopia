@@ -8,9 +8,9 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 # Main contributors of utopia
 
 - Dr. Patrick Zulian (Lead developer, ICS)
-- Alena Kopanicakova (Linear and nonlinear solvers, ICS)
+- Dr. Alena Kopanicakova (Linear and nonlinear solvers, ICS)
 - Dr. Maria Giuseppina Chiara Nestola (MOOSE integrations, ICS)
-- Nur Aiman Fadel (CSCS)
+- Dr. Nur Aiman Fadel (CSCS)
 - Andreas Fink (CSCS)
 
 Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).

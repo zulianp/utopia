@@ -1,0 +1,9 @@
+{
+    "linear_solver" : {
+        "backend" : "petsc",
+        "type" : "ksp",
+        "ksp_type" : "gmres",
+        "pc_type" : "ilu",
+        "verbose" : true
+    }
+}

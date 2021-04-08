@@ -16,6 +16,8 @@ if(SWIG_FOUND)
 
     include(${SWIG_USE_FILE})
 
+    find_package(PythonInterp)
+    message(STATUS "Found python interpreter at: ${PYTHON_EXECUTABLE}")
     find_package(PythonLibs)
 
     if(PythonLibs_FOUND)
@@ -37,7 +39,7 @@ if(SWIG_FOUND)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia.py DESTINATION lib)
 
-        install(TARGETS ${SWIG_MODULE_utopia_REAL_NAME} LIBRARY DESTINATION lib)
+        install(TARGETS ${SWIG_MODULE_utopya_REAL_NAME} LIBRARY DESTINATION lib)
     else()
         message(WARNING "Could not find Python")
     endif()

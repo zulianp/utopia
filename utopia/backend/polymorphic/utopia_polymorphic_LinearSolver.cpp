@@ -8,6 +8,6 @@
 
 namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
-    template class PolymorphicLinearSolver<PetscMatrix, PetscVector>;
+    template class OmniLinearSolver<PetscMatrix, PetscVector>;
 #endif
 }  // namespace utopia

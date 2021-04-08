@@ -182,6 +182,8 @@ namespace utopia {
         void read(Input &is) override;
         void print_usage(std::ostream &os = std::cout) const override;
 
+        void factor_set_pivot_in_blocks(const bool val);
+
     protected:
         std::unique_ptr<Impl> ksp_;
     };
