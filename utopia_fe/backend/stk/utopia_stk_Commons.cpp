@@ -37,6 +37,11 @@ namespace utopia {
                 bulk_data, ::stk::topology::ELEMENT_RANK, bulk_data.mesh_meta_data().universal_part());
         }
 
+        size_t count_universal_sides(const ::stk::mesh::BulkData &bulk_data) {
+            return count_entities(
+                bulk_data, bulk_data.mesh_meta_data().side_rank(), bulk_data.mesh_meta_data().universal_part());
+        }
+
         const ::stk::mesh::BucketVector &shared_nodes(const ::stk::mesh::BulkData &bulk_data) {
             return bulk_data.get_buckets(::stk::topology::NODE_RANK, bulk_data.mesh_meta_data().globally_shared_part());
         }
@@ -55,6 +60,11 @@ namespace utopia {
         }
         const ::stk::mesh::BucketVector &universal_elements(const ::stk::mesh::BulkData &bulk_data) {
             return bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, bulk_data.mesh_meta_data().universal_part());
+        }
+
+        const ::stk::mesh::BucketVector &universal_sides(const ::stk::mesh::BulkData &bulk_data) {
+            return bulk_data.get_buckets(bulk_data.mesh_meta_data().side_rank(),
+                                         bulk_data.mesh_meta_data().universal_part());
         }
 
         int extract_sideset_id(const std::string &name) {

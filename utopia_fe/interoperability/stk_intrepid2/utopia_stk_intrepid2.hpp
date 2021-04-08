@@ -25,6 +25,14 @@ namespace utopia {
                           const int degree = 0);
     };
 
+    template <typename Scalar>
+    class CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>> {
+    public:
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          utopia::intrepid2::FE<Scalar> &fe,
+                          const int degree = 2);
+    };
+
 #ifdef UTOPIA_WITH_PETSC
     template <typename Scalar>
     class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix> {

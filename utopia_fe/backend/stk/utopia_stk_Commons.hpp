@@ -52,6 +52,7 @@ namespace utopia {
 
         size_t count_universal_nodes(const ::stk::mesh::BulkData &bulk_data);
         size_t count_universal_elements(const ::stk::mesh::BulkData &bulk_data);
+        size_t count_universal_sides(const ::stk::mesh::BulkData &bulk_data);
 
         const ::stk::mesh::BucketVector &local_nodes(const ::stk::mesh::BulkData &bulk_data);
         const ::stk::mesh::BucketVector &local_elements(const ::stk::mesh::BulkData &bulk_data);
@@ -60,6 +61,8 @@ namespace utopia {
         const ::stk::mesh::BucketVector &universal_elements(const ::stk::mesh::BulkData &bulk_data);
 
         const ::stk::mesh::BucketVector &shared_nodes(const ::stk::mesh::BulkData &bulk_data);
+
+        const ::stk::mesh::BucketVector &universal_sides(const ::stk::mesh::BulkData &bulk_data);
 
     }  // namespace stk
 }  // namespace utopia

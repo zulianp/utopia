@@ -12,6 +12,8 @@
 
 #include "utopia_intrepid2_LaplaceOperator.hpp"
 #include "utopia_intrepid2_LinearElasticity.hpp"
+// #include "utopia_intrepid2_ShellFE.hpp"
+#include "utopia_intrepid2_ShellTools.hpp"
 #include "utopia_intrepid2_VectorLaplaceOperator.hpp"
 
 using namespace utopia;
@@ -23,6 +25,7 @@ public:
     using Matrix_t = Traits<FunctionSpace_t>::Matrix;
     using Vector_t = Traits<FunctionSpace_t>::Vector;
     using FE_t = utopia::intrepid2::FE<Scalar_t>;
+    // using ShellFE_t = utopia::intrepid2::ShellFE<Scalar_t>;
 
     bool save_output{false};
     bool export_tensors{false};
@@ -218,16 +221,29 @@ public:
         assemble_and_solve("elasticity_problem_parallel", space, linear_elasticity);
     }
 
+    void boundary_integral() {
+        auto params = param_list(param("mesh", param_list(param("path", get_2D_mesh_path()))));
+
+        FunctionSpace_t space;
+        space.read(params);
+
+        // auto fe_ptr = std::make_shared<ShellFE_t>();
+        // create_fe_on_boundary(space, *fe_ptr, 0);
+        // create_fe(space, *fe_ptr, 0);
+
+        // fe_ptr->print_jacobians();
+        // fe_ptr->print_jacobian_determinants();
+    }
+
     void run() {
         if (mpi_world_size() <= 4) {
             UTOPIA_RUN_TEST(poisson_problem);
             UTOPIA_RUN_TEST(vector_poisson_problem);
-            save_output = true;
             UTOPIA_RUN_TEST(elasticity_problem);
-            save_output = false;
             UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
             UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
             UTOPIA_RUN_TEST(elasticity_problem_parallel);
+            // UTOPIA_RUN_TEST(boundary_integral);
         }
     }
 };

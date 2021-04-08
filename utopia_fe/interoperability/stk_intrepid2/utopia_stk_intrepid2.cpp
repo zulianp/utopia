@@ -23,16 +23,24 @@
 
 namespace utopia {
 
-    static ::shards::CellTopology convert_elem_type(::stk::topology::topology_t topo) {
+    static ::shards::CellTopology convert_elem_type(::stk::topology::topology_t topo,
+                                                    bool no_shell_topologies = false) {
         switch (topo) {
             case ::stk::topology::NODE:
                 return ::shards::getCellTopologyData<::shards::Node>();
-            case ::stk::topology::LINE_2:
+            case ::stk::topology::LINE_2_1D:
                 return ::shards::getCellTopologyData<::shards::Line<>>();
+            case ::stk::topology::LINE_2:
+                return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Line<>>()
+                                            : ::shards::getCellTopologyData<::shards::ShellLine<>>());
             case ::stk::topology::SHELL_LINE_2:
-                return ::shards::getCellTopologyData<::shards::ShellLine<>>();
+                return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Line<>>()
+                                            : ::shards::getCellTopologyData<::shards::ShellLine<>>());
             case ::stk::topology::TRI_3_2D:
                 return ::shards::getCellTopologyData<::shards::Triangle<>>();
+            case ::stk::topology::TRI_3:
+                return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Triangle<>>()
+                                            : ::shards::getCellTopologyData<::shards::ShellTriangle<>>());
             case ::stk::topology::SHELL_TRI_3:
                 return ::shards::getCellTopologyData<::shards::ShellTriangle<>>();
             case ::stk::topology::QUAD_4_2D:
@@ -120,6 +128,69 @@ namespace utopia {
 
     // Explicit instantation
     template class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
+
+    template <typename Scalar>
+    void CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>>::apply(
+        const utopia::stk::FunctionSpace &space,
+        utopia::intrepid2::FE<Scalar> &fe,
+        const int degree) {
+        using FE = utopia::intrepid2::FE<Scalar>;
+        using DynRankView = typename FE::DynRankView;
+
+        using Bucket_t = ::stk::mesh::Bucket;
+        using BucketVector_t = ::stk::mesh::BucketVector;
+        using Entity_t = ::stk::mesh::Entity;
+        using Scalar_t = Traits<utopia::stk::Mesh>::Scalar;
+        using Size_t = Traits<utopia::stk::Mesh>::SizeType;
+
+        auto &meta_data = space.mesh().meta_data();
+        auto &bulk_data = space.mesh().bulk_data();
+
+        const auto n_sides = utopia::stk::count_universal_sides(bulk_data);
+        const int spatial_dim = space.mesh().spatial_dimension();
+
+        ::stk::mesh::Selector s_universal = meta_data.universal_part();
+        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
+
+        auto *first_bucket = *side_buckets.begin();
+
+        // Dirty hack (FIXME once stk usage is a bit more profficient)
+        auto topo = convert_elem_type(first_bucket->topology());
+        Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
+        auto *coords = meta_data.coordinate_field();
+
+        DynRankView side_points("side_points", n_sides, n_nodes_x_elem, spatial_dim);
+
+        int elem_idx = 0;
+        for (const auto &ib : side_buckets) {
+            const Bucket_t &b = *ib;
+
+            const Bucket_t::size_type length = b.size();
+
+            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                Entity_t elem = b[k];
+                const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                assert(n_nodes == n_nodes_x_elem);
+
+                auto node_ids = bulk_data.begin_nodes(elem);
+
+                for (Size_t i = 0; i < n_nodes; ++i) {
+                    const Scalar_t *point = (const Scalar_t *)::stk::mesh::field_data(*coords, node_ids[i]);
+
+                    for (int d = 0; d < spatial_dim; ++d) {
+                        side_points(elem_idx, i, d) = point[d];
+                    }
+                }
+
+                ++elem_idx;
+            }
+        }
+
+        fe.init(topo, side_points, degree);
+    }
+
+    template class CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
 
 #ifdef UTOPIA_WITH_PETSC
     template <typename Scalar>

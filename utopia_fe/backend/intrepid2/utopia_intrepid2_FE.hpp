@@ -24,14 +24,15 @@ namespace utopia {
         template <typename Scalar>
         class FE {
         public:
-            using ExecutionSpace = ::Kokkos::Serial;
-            // using ExecutionSpace = ::Kokkos::DefaultExecutionSpace;
+            // using ExecutionSpace = ::Kokkos::Serial;
+            using ExecutionSpace = ::Kokkos::DefaultExecutionSpace;
             using DynRankView = ::Kokkos::DynRankView<Scalar>;
             using Cubature = ::Intrepid2::Cubature<ExecutionSpace, Scalar, Scalar>;
             using CubaturePtr = ::Teuchos::RCP<Cubature>;
             using CellTopology = ::shards::CellTopology;
             using Tet = ::Intrepid2::Basis_HGRAD_TET_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using Tri = ::Intrepid2::Basis_HGRAD_TRI_C1_FEM<ExecutionSpace, Scalar, Scalar>;
+            using Line = ::Intrepid2::Basis_HGRAD_LINE_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using Hex = ::Intrepid2::Basis_HGRAD_HEX_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using CellTools = ::Intrepid2::CellTools<ExecutionSpace>;
             using FunctionSpaceTools = ::Intrepid2::FunctionSpaceTools<ExecutionSpace>;
@@ -49,7 +50,8 @@ namespace utopia {
 
                 switch (type.getKey()) {
                     case shards::Line<>::key: {
-                        assert(false);
+                        Line line;
+                        init_aux(line);
                         break;
                     }
 
@@ -84,7 +86,47 @@ namespace utopia {
             inline SizeType spatial_dimension() const { return cell_nodes.extent(2); }
             inline SizeType manifold_dimension() const { return type.getDimension(); }
 
-            bool is_trace() const { return manifold_dimension() < spatial_dimension(); }
+            inline bool is_trace() const { return manifold_dimension() < spatial_dimension(); }
+
+            void print_jacobian_determinants() {
+                auto num_qp = this->num_qp();
+                auto num_cells = this->num_cells();
+
+                Kokkos::parallel_for(
+                    "FE::print_jacobian_determinants", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                        printf("cell: %d\n", cell);
+
+                        for (int qp = 0; qp < num_qp; ++qp) {
+                            printf("%g ", jacobian_det(cell, qp));
+                        }
+
+                        printf("\n");
+                    });
+            }
+
+            void print_jacobians() {
+                int num_qp = this->num_qp();
+                int num_cells = this->num_cells();
+                int spatial_dimension = this->spatial_dimension();
+
+                Kokkos::parallel_for(
+                    "FE::print_jacobian_determinants", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                        printf("cell: %d\n", cell);
+
+                        for (int qp = 0; qp < num_qp; ++qp) {
+                            for (int r = 0; r < spatial_dimension; ++r) {
+                                for (int c = 0; c < spatial_dimension; ++c) {
+                                    printf("%g ", jacobian(cell, qp, r, c));
+                                }
+                                printf("\n");
+                            }
+
+                            printf("\n");
+                        }
+
+                        printf("\n");
+                    });
+            }
 
             CellTopology type;
             // n_local_elements x n_nodes_x_elem x spatial_dim;
@@ -116,8 +158,8 @@ namespace utopia {
 
                 DynRankView q_weights("q_weights", num_qp);
                 q_points = DynRankView("q_points", num_qp, manifold_dimension);
-                jacobian = DynRankView("jacobian", num_cells, num_qp, spatial_dimension, manifold_dimension);
-                jacobian_inv = DynRankView("jacobian_inv", num_cells, num_qp, manifold_dimension, spatial_dimension);
+                jacobian = DynRankView("jacobian", num_cells, num_qp, spatial_dimension, spatial_dimension);
+                jacobian_inv = DynRankView("jacobian_inv", num_cells, num_qp, spatial_dimension, spatial_dimension);
                 measure = DynRankView("measure", num_cells, num_qp);
                 jacobian_det = DynRankView("jacobian_det", num_cells, num_qp);
 
