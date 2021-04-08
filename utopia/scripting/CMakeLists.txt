@@ -16,31 +16,29 @@ if(SWIG_FOUND)
 
     include(${SWIG_USE_FILE})
 
-    find_package(PythonLibs)
+    find_package(Python COMPONENTS Development)
 
-    if(PythonLibs_FOUND)
-        target_include_directories(utopia PRIVATE ${PYTHON_INCLUDE_PATH})
+    if(Python_FOUND)
         set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
         set_source_files_properties(utopia.i PROPERTIES SWIG_FLAGS
                                                         "-includeall")
 
-        message(STATUS "${PYTHON_INCLUDE_PATH}")
+        message(STATUS "Found python libraries: ${Python_LIBRARIES}")
         swig_add_library(
             utopya
             TYPE SHARED
             LANGUAGE python
             SOURCES utopia.i utopia_script.cpp)
 
-        swig_link_libraries(utopya ${PYTHON_LIBRARIES} utopia)
-        target_include_directories(utopya PRIVATE ${PYTHON_INCLUDE_PATH})
+        swig_link_libraries(utopya Python::Python utopia)
         set_target_properties(utopya PROPERTIES SUFFIX ".so")
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia.py DESTINATION lib)
 
         install(TARGETS ${SWIG_MODULE_utopya_REAL_NAME} LIBRARY DESTINATION lib)
     else()
-        message(WARNING "Could not find Python")
+        message(WARNING "Could not find Python - Disabling scripting support")
     endif()
 else()
-    message(WARNING "Could not find SWIG")
+    message(WARNING "Could not find SWIG - Disabling scripting support")
 endif()
