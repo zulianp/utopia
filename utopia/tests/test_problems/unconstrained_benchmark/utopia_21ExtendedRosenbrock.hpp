@@ -206,7 +206,14 @@ namespace utopia {
 
         void init_perm(const Vector &x) {
             auto vl = layout(x);
-            auto mat_layout = layout(vl.comm(), 2, vl.local_size(), 2 * vl.comm().size(), vl.size());
+
+            const SizeType rows_local = 2; 
+            const SizeType cols_local =  vl.local_size(); 
+            
+            const SizeType rows_global = 2 * vl.comm().size(); 
+            const SizeType cols_global = vl.size(); 
+
+            auto mat_layout = layout(vl.comm(), rows_local, cols_local, rows_global, cols_global);
 
             auto r = range(x);
             // long n = local_size(x).get(0);
