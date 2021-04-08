@@ -112,7 +112,7 @@ RUN cd /utopia/utopia/build && cmake .. -DUTOPIA_SCRIPTING=ON \
     -DBUILD_SHARED_LIBS=ON 
 
 RUN cd /utopia/utopia/build && make -j
+RUN  rm -f script.sh
 
-COPY ./hello_utopia_torch.py  /utopia/utopia/build/scripting/hello_utopia_torch.py
-RUN cd /utopia/utopia/build/scripting && python hello_utopia_torch.py
+RUN cd /utopia/utopia/build/scripting 
 CMD ["/bin/sh"]
