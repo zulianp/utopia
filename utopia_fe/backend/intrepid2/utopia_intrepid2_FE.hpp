@@ -3,10 +3,9 @@
 
 #include "utopia_fe_base.hpp"
 
+#include "utopia_intrepid2_ShellTools.hpp"
+
 #include <Kokkos_DynRankView.hpp>
-
-// #include <KokkosBlas1_scal.hpp>
-
 #include <Shards_CellTopology.hpp>
 
 #include <Intrepid2_CellTools.hpp>
@@ -86,18 +85,18 @@ namespace utopia {
             inline SizeType spatial_dimension() const { return cell_nodes.extent(2); }
             inline SizeType manifold_dimension() const { return type.getDimension(); }
 
-            inline bool is_trace() const { return manifold_dimension() < spatial_dimension(); }
+            inline bool is_shell() const { return manifold_dimension() < spatial_dimension(); }
 
-            void print_jacobian_determinants() {
+            void print_measure() {
                 auto num_qp = this->num_qp();
                 auto num_cells = this->num_cells();
 
                 Kokkos::parallel_for(
-                    "FE::print_jacobian_determinants", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                    "FE::print_measure", num_cells, KOKKOS_LAMBDA(const int &cell) {
                         printf("cell: %d\n", cell);
 
                         for (int qp = 0; qp < num_qp; ++qp) {
-                            printf("%g ", jacobian_det(cell, qp));
+                            printf("%g ", measure(cell, qp));
                         }
 
                         printf("\n");
@@ -105,17 +104,19 @@ namespace utopia {
             }
 
             void print_jacobians() {
-                int num_qp = this->num_qp();
                 int num_cells = this->num_cells();
+                int num_qp = this->num_qp();
+
                 int spatial_dimension = this->spatial_dimension();
+                int manifold_dimension = this->manifold_dimension();
 
                 Kokkos::parallel_for(
-                    "FE::print_jacobian_determinants", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                    "FE::print_jacobians", num_cells, KOKKOS_LAMBDA(const int &cell) {
                         printf("cell: %d\n", cell);
 
                         for (int qp = 0; qp < num_qp; ++qp) {
                             for (int r = 0; r < spatial_dimension; ++r) {
-                                for (int c = 0; c < spatial_dimension; ++c) {
+                                for (int c = 0; c < manifold_dimension; ++c) {
                                     printf("%g ", jacobian(cell, qp, r, c));
                                 }
                                 printf("\n");
@@ -144,6 +145,11 @@ namespace utopia {
             // NVCC_PRIVATE :
             template <class BasisType>
             void init_aux(const BasisType &basis) {
+                if (is_shell()) {
+                    init_aux_shell(basis);
+                    return;
+                }
+
                 auto spatial_dimension = this->spatial_dimension();
                 auto manifold_dimension = this->manifold_dimension();
 
@@ -178,6 +184,39 @@ namespace utopia {
 
                 basis.getValues(ref_grad, q_points, ::Intrepid2::OPERATOR_GRAD);
                 FunctionSpaceTools::HGRADtransformGRAD<Scalar>(grad, jacobian_inv, ref_grad);
+            }
+
+            template <class BasisType>
+            void init_aux_shell(const BasisType &basis) {
+                auto spatial_dimension = this->spatial_dimension();
+                auto manifold_dimension = this->manifold_dimension();
+
+                auto num_qp = this->num_qp();
+                auto num_cells = this->num_cells();
+                auto n_fun = basis.getCardinality();
+
+                assert(num_cells > 0);
+                assert(num_qp > 0);
+                assert(spatial_dimension > 0);
+                assert(manifold_dimension > 0);
+
+                DynRankView q_weights("q_weights", num_qp);
+                q_points = DynRankView("q_points", num_qp, manifold_dimension);
+                cubature->getCubature(q_points, q_weights);
+
+                fun = DynRankView("fun", n_fun, num_qp);
+                basis.getValues(fun, q_points, ::Intrepid2::OPERATOR_VALUE);
+
+                DynRankView ref_grad("ref_grad", n_fun, num_qp, manifold_dimension);
+                grad = DynRankView("grad", num_cells, n_fun, num_qp, spatial_dimension);
+
+                basis.getValues(ref_grad, q_points, ::Intrepid2::OPERATOR_GRAD);
+
+                ShellTools<Scalar>::allocate_jacobian(num_cells, spatial_dimension, num_qp, jacobian);
+                ShellTools<Scalar>::allocate_jacobian_inverse(num_cells, spatial_dimension, num_qp, jacobian_inv);
+                ShellTools<Scalar>::allocate_measure(num_cells, num_qp, measure);
+                ShellTools<Scalar>::cell_geometry(cell_nodes, jacobian, jacobian_inv, measure);
+                ShellTools<Scalar>::transform_gradient_to_physical_space(jacobian_inv, ref_grad, grad);
             }
         };
     }  // namespace intrepid2

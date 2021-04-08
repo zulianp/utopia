@@ -155,7 +155,7 @@ namespace utopia {
         auto *first_bucket = *side_buckets.begin();
 
         // Dirty hack (FIXME once stk usage is a bit more profficient)
-        auto topo = convert_elem_type(first_bucket->topology());
+        auto topo = convert_elem_type(first_bucket->topology(), true);
         Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
         auto *coords = meta_data.coordinate_field();
 

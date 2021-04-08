@@ -227,23 +227,22 @@ public:
         FunctionSpace_t space;
         space.read(params);
 
-        // auto fe_ptr = std::make_shared<ShellFE_t>();
-        // create_fe_on_boundary(space, *fe_ptr, 0);
-        // create_fe(space, *fe_ptr, 0);
+        auto fe_ptr = std::make_shared<FE_t>();
+        create_fe_on_boundary(space, *fe_ptr, 0);
 
-        // fe_ptr->print_jacobians();
-        // fe_ptr->print_jacobian_determinants();
+        fe_ptr->print_jacobians();
+        fe_ptr->print_measure();
     }
 
     void run() {
         if (mpi_world_size() <= 4) {
-            UTOPIA_RUN_TEST(poisson_problem);
-            UTOPIA_RUN_TEST(vector_poisson_problem);
-            UTOPIA_RUN_TEST(elasticity_problem);
-            UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
-            UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
-            UTOPIA_RUN_TEST(elasticity_problem_parallel);
-            // UTOPIA_RUN_TEST(boundary_integral);
+            // UTOPIA_RUN_TEST(poisson_problem);
+            // UTOPIA_RUN_TEST(vector_poisson_problem);
+            // UTOPIA_RUN_TEST(elasticity_problem);
+            // UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
+            // UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
+            // UTOPIA_RUN_TEST(elasticity_problem_parallel);
+            UTOPIA_RUN_TEST(boundary_integral);
         }
     }
 };
