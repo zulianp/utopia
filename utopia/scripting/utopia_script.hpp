@@ -79,7 +79,9 @@ namespace scripting {
         void describe() const;
         bool equals(const Vector *other, const Scalar tol) const;
         void set(const SizeType &i, const Scalar &value);
-        void convert_into_uvector(Scalar *values, const Layout &l);
+        // void convert_into_uvector(std::vector<double> values, const Layout &l);
+        // void convert_into_uvector(float *values, const Layout &l);
+        void convert_into_uvector(double *values);
 
     private:
         VectorImpl *impl_;
