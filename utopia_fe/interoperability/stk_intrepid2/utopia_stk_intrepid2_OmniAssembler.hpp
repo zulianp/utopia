@@ -6,6 +6,8 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_fe_Environment.hpp"
+
 #include "utopia_stk_ForwardDeclarations.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
@@ -23,6 +25,8 @@ namespace utopia {
 
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
             void read(Input &in) override;
+
+            void set_environment(const std::shared_ptr<Environment<stk::FunctionSpace>> &env);
 
         private:
             class Impl;

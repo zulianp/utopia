@@ -104,6 +104,7 @@ namespace utopia {
             using IOBroker_t = ::stk::io::StkMeshIoBroker;
             using VectorField_t = ::stk::mesh::Field<Scalar, ::stk::mesh::Cartesian>;
 
+            std::string name{"main"};
             std::shared_ptr<Mesh> mesh;
             DirichletBoundary dirichlet_boundary;
             std::vector<Var> variables;
@@ -276,6 +277,7 @@ namespace utopia {
                 int n_var = 0;
 
                 if (!Options()
+                         .add_option("name", name, "Unique name of the function space")
                          .add_option(
                              "n_var", n_var, "Number of variables per node (instead of specifiying all of them).")
                          .add_option("boundary_conditions", dirichlet_boundary, "Boundary conditions.")
@@ -355,7 +357,7 @@ namespace utopia {
             }
         }
 
-        bool FunctionSpace::read_with_state(Input &in, Vector &val) {
+        bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &val) {
             IO io(*impl_->mesh);
             io.import_all_field_data(true);
             in.get("mesh", io);
@@ -371,19 +373,23 @@ namespace utopia {
 
             impl_->dof_map->init(this->mesh().bulk_data());
 
-            if (utopia::empty(val)) {
-                create_local_vector(val);
-            }
-
             Vector lv;
             create_local_vector(lv);
             impl_->nodal_field_to_local_vector(lv);
 
-            create_vector(val);
+            auto gv = std::make_shared<Vector>();
+            create_vector(*gv);
+            local_to_global(lv, *gv, OVERWRITE_MODE);
+            val.set_data(gv);
 
-            // assert(val.comm().size() == mpi_world_size());
+            assert(impl_->variables.size() == 1);
 
-            local_to_global(lv, val, OVERWRITE_MODE);
+            if (!impl_->variables.empty()) {
+                val.set_name(impl_->variables[0].name);
+                rename(impl_->variables[0].name, *gv);
+                val.set_tensor_size(impl_->variables[0].n_components);
+            }
+
             return true;
         }
 
@@ -626,6 +632,8 @@ namespace utopia {
         void FunctionSpace::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {
             dof_map().local_to_global(local, global, mode);
         }
+
+        const std::string &FunctionSpace::name() const { return impl_->name; }
 
     }  // namespace stk
 }  // namespace utopia

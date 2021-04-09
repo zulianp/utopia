@@ -3,6 +3,7 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_Field.hpp"
 #include "utopia_stk_Mesh.hpp"
 
 namespace utopia {
@@ -31,7 +32,7 @@ namespace utopia {
 
             bool write(const Path &path, const Vector &x);
             void read(Input &in) override;
-            bool read_with_state(Input &in, Vector &val);
+            bool read_with_state(Input &in, Field<FunctionSpace> &val);
             void describe(std::ostream &os) const override;
 
             std::shared_ptr<Mesh> mesh_ptr() const;
@@ -65,6 +66,8 @@ namespace utopia {
 
             const DofMap &dof_map() const;
             DofMap &dof_map();
+
+            const std::string &name() const;
 
         private:
             class Impl;

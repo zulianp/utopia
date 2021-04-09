@@ -6,6 +6,7 @@
 #include "utopia_Agglomerate.hpp"
 #include "utopia_BlockAgglomerate.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
+#include "utopia_Field.hpp"
 #include "utopia_ILU.hpp"
 #include "utopia_MPITimeStatistics.hpp"
 #include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
@@ -52,7 +53,7 @@ namespace utopia {
                 if (read_state) {
                     space.read_with_state(in, deformation);
 
-                    const Scalar_t norm_deformation = norm2(deformation);
+                    const Scalar_t norm_deformation = norm2(deformation.data());
                     std::cout << "norm_deformation: " << norm_deformation << std::endl;
 
                 } else {
@@ -158,8 +159,8 @@ namespace utopia {
             space.create_vector(x);
             space.create_vector(g);
 
-            if (!empty(deformation)) {
-                x = deformation;
+            if (!deformation.empty()) {
+                x = deformation.data();
                 space.displace(x);
             } else {
                 x.set(0.0);
@@ -241,7 +242,7 @@ namespace utopia {
 
     private:
         FunctionSpace space;
-        Vector_t deformation;
+        Field<FunctionSpace> deformation;
 
         Mesh_t obstacle_mesh;
         typename Obstacle_t::Params params;

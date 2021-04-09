@@ -2,6 +2,8 @@
 
 #include "utopia_libmesh_FunctionSpace.hpp"
 
+#include "utopia_libmesh_Legacy.hpp"
+
 #include "utopia_UFlow.hpp"
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIMaterial.hpp"
@@ -14,6 +16,7 @@ namespace utopia {
             using Scalar = Traits<libmesh::FunctionSpace>::Scalar;
             // New abstraction
             std::shared_ptr<libmesh::FunctionSpace> space;
+            std::shared_ptr<Environment<libmesh::FunctionSpace>> env;
 
             // Legacy abstractions
             using LegacyFunctionSpace = utopia::LibMeshFunctionSpace;
@@ -28,15 +31,12 @@ namespace utopia {
             std::shared_ptr<LegacyForcingFunction> forcing_function;
             Scalar rescale{1.0};
 
-            void update_legacy_mirror() {
-                legacy_space = std::make_shared<LegacyProductFunctionSpace>();
-
-                for (int s = 0; s < space->n_subspaces(); ++s) {
-                    legacy_space->add_subspace(std::make_shared<LegacyFunctionSpace>(
-                        make_ref(space->raw_type()), space->system_id(), (*space)[s].subspace_id()));
-                }
-            }
+            void update_legacy_mirror() { legacy_space = make_legacy(*space); }
         };
+
+        void OmniAssembler::set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env) {
+            impl_->env = env;
+        }
 
         OmniAssembler::OmniAssembler(const std::shared_ptr<libmesh::FunctionSpace> &space)
             : impl_(utopia::make_unique<Impl>()) {

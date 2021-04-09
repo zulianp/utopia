@@ -4,7 +4,9 @@
 #include "utopia_Input.hpp"
 #include "utopia_ui.hpp"
 
+#include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
+#include "utopia_fe_Environment.hpp"
 
 namespace utopia {
 
@@ -16,6 +18,7 @@ namespace utopia {
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
         using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
+        using Environment_t = utopia::Environment<FunctionSpace>;
 
         virtual ~FEProblem() = default;
 
@@ -35,6 +38,8 @@ namespace utopia {
 
         std::shared_ptr<FunctionSpace> space() const { return space_; }
         const std::string &name() const { return name_; }
+
+        void set_environment(const std::shared_ptr<Environment_t> &env) { assembler_->set_environment(env); }
 
         bool init() {
             solution_ = std::make_shared<Vector_t>();
@@ -138,26 +143,30 @@ namespace utopia {
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
         using FEProblem_t = utopia::FEProblem<FunctionSpace>;
+        using Environment_t = utopia::Environment<FunctionSpace>;
 
         void read(Input &in) override {
             in.get("spaces", [this](Input &array_node) {
                 array_node.get_all([this](Input &node) {
                     auto s = std::make_shared<FunctionSpace>(comm_);
-                    s->read(node);
 
-                    std::string name = "";
-                    node.get("name", name);
+                    bool read_state = false;
+                    node.get("read_state", read_state);
+                    if (read_state) {
+                        auto field = std::make_shared<Field<FunctionSpace>>();
+                        s->read_with_state(node, *field);
+                        env->add_field(field);
 
-                    if (name.empty()) {
+                    } else {
+                        s->read(node);
+                    }
+
+                    if (s->name().empty()) {
                         utopia::err() << "name must be defined for space node\n";
                         Utopia::Abort();
                     }
 
-                    auto ret = spaces.insert(std::make_pair(name, s));
-                    if (!ret.second) {
-                        utopia::err() << "Space with name " + name + " already exists, name field must be unique\n";
-                        Utopia::Abort();
-                    }
+                    env->add_space(s);
                 });
             });
 
@@ -171,13 +180,15 @@ namespace utopia {
                         Utopia::Abort();
                     }
 
-                    auto it = spaces.find(space);
-                    if (it == spaces.end()) {
+                    auto s = env->find_space(space);
+
+                    if (!s) {
                         utopia::err() << "No space with name" + space + "\n";
                         Utopia::Abort();
                     }
 
-                    auto p = std::make_shared<FEProblem_t>(it->second);
+                    auto p = std::make_shared<FEProblem_t>(s);
+                    p->set_environment(env);
                     p->read(node);
 
                     auto ret = problems.insert(std::make_pair(p->name(), p));
@@ -315,14 +326,16 @@ namespace utopia {
 
         bool run() { return assemble_all() && solve() && export_results(); }
 
-        Multiphysics(const Communicator_t &comm = Communicator_t()) : comm_(comm) {}
+        Multiphysics(const Communicator_t &comm = Communicator_t())
+            : comm_(comm), env(std::make_shared<Environment_t>()) {}
 
     private:
         Communicator_t comm_;
-        std::map<std::string, std::shared_ptr<FunctionSpace>> spaces;
         std::map<std::string, std::shared_ptr<FEProblem_t>> problems;
         std::vector<std::unique_ptr<Coupling<FunctionSpace>>> couplings;
         std::string master_problem;
+
+        std::shared_ptr<Environment_t> env;
     };
 }  // namespace utopia
 

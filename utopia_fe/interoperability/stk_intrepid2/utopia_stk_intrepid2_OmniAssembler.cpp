@@ -72,7 +72,12 @@ namespace utopia {
 
             std::shared_ptr<stk::FunctionSpace> space;
             std::shared_ptr<FE> fe;
+            std::shared_ptr<Environment<stk::FunctionSpace>> env;
         };
+
+        void OmniAssembler::set_environment(const std::shared_ptr<Environment<stk::FunctionSpace>> &env) {
+            impl_->env = env;
+        }
 
         OmniAssembler::OmniAssembler(const std::shared_ptr<stk::FunctionSpace> &space)
             : impl_(utopia::make_unique<Impl>()) {

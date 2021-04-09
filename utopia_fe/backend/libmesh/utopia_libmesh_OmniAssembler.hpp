@@ -5,6 +5,7 @@
 #include "utopia_Traits.hpp"
 
 #include "utopia_fe_Core.hpp"
+#include "utopia_fe_Environment.hpp"
 
 #include "utopia_libmesh_ForwardDeclarations.hpp"
 #include "utopia_libmesh_FunctionSpace_new.hpp"
@@ -22,6 +23,8 @@ namespace utopia {
 
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
             void read(Input &in) override;
+
+            void set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env);
 
         private:
             class Impl;

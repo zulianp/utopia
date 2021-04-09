@@ -1,6 +1,7 @@
 #ifndef UTOPIA_LIBMESH_FUNCTION_SPACE_NEW_HPP
 #define UTOPIA_LIBMESH_FUNCTION_SPACE_NEW_HPP
 
+#include "utopia_Field.hpp"
 #include "utopia_libmesh_Mesh.hpp"
 
 namespace utopia {
@@ -91,9 +92,11 @@ namespace utopia {
                       Vector &val,
                       const int time_step = 1);
 
-            bool read_with_state(Input &in, Vector &val);
+            bool read_with_state(Input &in, Field<FunctionSpace> &val);
 
             void displace(const Vector &displacement);
+
+            const std::string &name() const;
 
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;

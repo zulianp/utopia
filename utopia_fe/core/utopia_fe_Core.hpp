@@ -9,6 +9,9 @@ namespace utopia {
     class FETransfer {};
 
     template <class FunctionSpace>
+    class FEAssembler {};
+
+    template <class FunctionSpace>
     class OmniAssembler {};
 
     enum AssemblyMode { ADD_MODE = 0, SUBTRACT_MODE = 1, OVERWRITE_MODE = 2 };

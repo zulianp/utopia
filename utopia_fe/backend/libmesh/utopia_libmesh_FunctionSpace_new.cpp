@@ -33,6 +33,7 @@ namespace utopia {
 
             std::shared_ptr<Mesh> mesh;
             std::shared_ptr<libMesh::EquationSystems> systems;
+            std::string name{"main"};
         };
 
         class FunctionSubspace::Impl {
@@ -153,7 +154,7 @@ namespace utopia {
         public:
             void read(Input &in) override {
                 if (!Options()
-                         .add_option("system_name", system_name, "Name of system.")
+                         .add_option("name", name, "Name of system.")
                          .add_option("system_type",
                                      system_type,
                                      "Type of system associated with function space: linear_implicit|explicit.")
@@ -186,13 +187,13 @@ namespace utopia {
             void add_to_space(Impl &impl) {
                 libMesh::System *sys;
                 if ("linear_implicit" == system_type) {
-                    sys = &impl.systems->add_system<libMesh::LinearImplicitSystem>(system_name);
+                    sys = &impl.systems->add_system<libMesh::LinearImplicitSystem>(name);
                 } else if ("nonlinear_implicit" == system_type) {
-                    sys = &impl.systems->add_system<libMesh::NonlinearImplicitSystem>(system_name);
+                    sys = &impl.systems->add_system<libMesh::NonlinearImplicitSystem>(name);
                 } else
                 // if ("explicit" == system_type)
                 {
-                    sys = &impl.systems->add_system<libMesh::ExplicitSystem>(system_name);
+                    sys = &impl.systems->add_system<libMesh::ExplicitSystem>(name);
                 }
 
                 for (auto &v : vars) {
@@ -205,7 +206,7 @@ namespace utopia {
             }
 
             void describe(std::ostream &os) const override {
-                os << "system_name: " << system_name << '\n';
+                os << "name: " << name << '\n';
                 os << "system_type: " << system_type << '\n';
 
                 for (auto &v : vars) {
@@ -217,7 +218,7 @@ namespace utopia {
                 }
             }
 
-            std::string system_name{"main"};
+            std::string name{"main"};
             std::string system_type{"linear_implicit"};
 
             std::vector<Var> vars;
@@ -260,9 +261,10 @@ namespace utopia {
 
             main_system.add_to_space(*impl_);
             impl_->systems->init();
+            impl_->name = main_system.name;
         }
 
-        bool FunctionSpace::read_with_state(Input &in, Vector &val) {
+        bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &field) {
             Sys main_system;
             main_system.read(in);
 
@@ -301,6 +303,7 @@ namespace utopia {
 
             main_system.add_to_space(*impl_);
             impl_->systems->init();
+            impl_->name = main_system.name;
 
             auto &system = impl_->systems->get_system(system_id());
 
@@ -318,8 +321,19 @@ namespace utopia {
             //     io.copy_nodal_solution(system, v.name, v.name, time_step);
             // }
 
-            convert(*system.solution, val);
-            return !val.empty();
+            auto vec = std::make_shared<Vector>();
+
+            convert(*system.solution, *vec);
+
+            field.set_data(vec);
+
+            if (!main_system.vars.empty()) {
+                assert(main_system.vars.size() == std::size_t(1));
+                field.set_name(main_system.vars[0].name);
+                rename(main_system.vars[0].name, *vec);
+            }
+
+            return !vec->empty();
         }
 
         bool FunctionSpace::read(const Path &path,
@@ -489,6 +503,8 @@ namespace utopia {
 
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::apply_constraints");
         }
+
+        const std::string &FunctionSpace::name() const { return impl_->name; }
 
         FunctionSpace::SizeType FunctionSpace::system_id() const { return MAIN_SYSTEM_ID; }
 
