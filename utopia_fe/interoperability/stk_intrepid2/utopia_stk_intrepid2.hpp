@@ -31,6 +31,11 @@ namespace utopia {
         static void apply(const utopia::stk::FunctionSpace &space,
                           utopia::intrepid2::FE<Scalar> &fe,
                           const int degree = 2);
+
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          utopia::intrepid2::FE<Scalar> &fe,
+                          const std::string &part_name,
+                          const int degree = 2);
     };
 
 #ifdef UTOPIA_WITH_PETSC
@@ -52,7 +57,24 @@ namespace utopia {
                           const DynRankView &element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector);
+
+        static void side_apply(const utopia::stk::FunctionSpace &space,
+                               const DynRankView &element_vectors,
+                               AssemblyMode mode,
+                               PetscVector &vector,
+                               const std::string &part_name);
     };
+
+    template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
+    void side_local_to_global(const FunctionSpace &space,
+                              const ElementTensors &element_matrices,
+                              AssemblyMode mode,
+                              GlobalTensor &tensor,
+                              Args &&... args) {
+        LocalToGlobal<FunctionSpace, ElementTensors, GlobalTensor>::side_apply(
+            space, element_matrices, mode, tensor, args...);
+    }
+
 #endif  // UTOPIA_WITH_PETSC
 
 }  // namespace utopia

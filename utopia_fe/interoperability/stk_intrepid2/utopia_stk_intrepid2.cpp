@@ -62,11 +62,8 @@ namespace utopia {
     }
 
     template <typename Scalar>
-    void CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>>::apply(
-        const utopia::stk::FunctionSpace &space,
-        utopia::intrepid2::FE<Scalar> &fe,
-        const int degree) {
-        // using FunctionSpace = utopia::stk::FunctionSpace;
+    class CreateFEFromBuckets {
+    public:
         using FE = utopia::intrepid2::FE<Scalar>;
         using DynRankView = typename FE::DynRankView;
 
@@ -76,55 +73,70 @@ namespace utopia {
         using Scalar_t = Traits<utopia::stk::Mesh>::Scalar;
         using Size_t = Traits<utopia::stk::Mesh>::SizeType;
 
+        static bool apply(const ::stk::mesh::BulkData &bulk_data, const BucketVector_t &buckets, FE &fe, int degree) {
+            assert(buckets.begin() != buckets.end());
+            if (buckets.begin() == buckets.end()) return false;
+
+            auto &meta_data = bulk_data.mesh_meta_data();
+
+            auto *first_bucket = *buckets.begin();
+
+            // Dirty hack (FIXME once stk usage is a bit more profficient)
+            auto topo = convert_elem_type(first_bucket->topology(), true);
+            Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
+            Size_t spatial_dim = meta_data.spatial_dimension();
+            auto *coords = meta_data.coordinate_field();
+
+            Size_t n_cells = 0;
+            for (auto *b_ptr : buckets) {
+                n_cells += b_ptr->size();
+            }
+
+            DynRankView cell_points("cell_points", n_cells, n_nodes_x_elem, spatial_dim);
+
+            int elem_idx = 0;
+            for (const auto &ib : buckets) {
+                const Bucket_t &b = *ib;
+
+                const Bucket_t::size_type length = b.size();
+
+                for (Bucket_t::size_type k = 0; k < length; ++k) {
+                    Entity_t elem = b[k];
+                    const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                    assert(n_nodes == n_nodes_x_elem);
+
+                    auto node_ids = bulk_data.begin_nodes(elem);
+
+                    for (Size_t i = 0; i < n_nodes; ++i) {
+                        const Scalar_t *point = (const Scalar_t *)::stk::mesh::field_data(*coords, node_ids[i]);
+
+                        for (int d = 0; d < spatial_dim; ++d) {
+                            cell_points(elem_idx, i, d) = point[d];
+                        }
+                    }
+
+                    ++elem_idx;
+                }
+            }
+
+            fe.init(topo, cell_points, degree);
+            return true;
+        }
+    };
+
+    template <typename Scalar>
+    void CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>>::apply(
+        const utopia::stk::FunctionSpace &space,
+        utopia::intrepid2::FE<Scalar> &fe,
+        const int degree) {
+        using BucketVector_t = ::stk::mesh::BucketVector;
+
         auto &mesh = space.mesh();
-        auto &meta_data = mesh.meta_data();
         auto &bulk_data = mesh.bulk_data();
-
-        // ::stk::mesh::Selector s_universal = meta_data.universal_part();
-        // const BucketVector_t &elem_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, s_universal);
-
         const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
 
-        // Size_t n_local_nodes = mesh.n_local_nodes();
-        Size_t n_local_elements = mesh.n_local_elements();
-        Size_t spatial_dim = mesh.spatial_dimension();
-        auto *first_bucket = *elem_buckets.begin();
-
-        // Dirty hack (FIXME once stk usage is a bit more profficient)
-        auto topo = convert_elem_type(first_bucket->topology(), true);
-        Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
-        auto *coords = meta_data.coordinate_field();
-
-        DynRankView cell_points("cell_points", n_local_elements, n_nodes_x_elem, spatial_dim);
-
-        Size_t elem_idx = 0;
-        for (const auto &ib : elem_buckets) {
-            const Bucket_t &b = *ib;
-            const Bucket_t::size_type length = b.size();
-
-            for (Bucket_t::size_type k = 0; k < length; ++k) {
-                // get the current node entity and extract the id to fill it into the field
-                Entity_t elem = b[k];
-                // const Size_t elem_idx = utopia::stk::convert_entity_to_index(elem) - n_local_nodes;
-                const Size_t n_nodes = bulk_data.num_nodes(elem);
-
-                assert(n_nodes == n_nodes_x_elem);
-
-                auto node_ids = bulk_data.begin_nodes(elem);
-
-                for (Size_t i = 0; i < n_nodes; ++i) {
-                    const Scalar_t *point = (const Scalar_t *)::stk::mesh::field_data(*coords, node_ids[i]);
-
-                    for (int d = 0; d < spatial_dim; ++d) {
-                        cell_points(elem_idx, i, d) = point[d];
-                    }
-                }
-
-                ++elem_idx;
-            }
-        }
-
-        fe.init(topo, cell_points, degree);
+        CreateFEFromBuckets<Scalar>::apply(bulk_data, elem_buckets, fe, degree);
     }
 
     // Explicit instantation
@@ -135,62 +147,32 @@ namespace utopia {
         const utopia::stk::FunctionSpace &space,
         utopia::intrepid2::FE<Scalar> &fe,
         const int degree) {
-        using FE = utopia::intrepid2::FE<Scalar>;
-        using DynRankView = typename FE::DynRankView;
-
-        using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
-        using Entity_t = ::stk::mesh::Entity;
-        using Scalar_t = Traits<utopia::stk::Mesh>::Scalar;
-        using Size_t = Traits<utopia::stk::Mesh>::SizeType;
 
         auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        const auto n_sides = utopia::stk::count_universal_sides(bulk_data);
-        const int spatial_dim = space.mesh().spatial_dimension();
-
         ::stk::mesh::Selector s_universal = meta_data.universal_part();
         const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
 
-        assert(side_buckets.begin() != side_buckets.end());
+        CreateFEFromBuckets<Scalar>::apply(bulk_data, side_buckets, fe, degree);
+    }
 
-        auto *first_bucket = *side_buckets.begin();
+    template <typename Scalar>
+    void CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>>::apply(
+        const utopia::stk::FunctionSpace &space,
+        utopia::intrepid2::FE<Scalar> &fe,
+        const std::string &part_name,
+        const int degree) {
+        using BucketVector_t = ::stk::mesh::BucketVector;
 
-        // Dirty hack (FIXME once stk usage is a bit more profficient)
-        auto topo = convert_elem_type(first_bucket->topology(), true);
-        Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
-        auto *coords = meta_data.coordinate_field();
+        auto &meta_data = space.mesh().meta_data();
+        auto &bulk_data = space.mesh().bulk_data();
 
-        DynRankView side_points("side_points", n_sides, n_nodes_x_elem, spatial_dim);
+        ::stk::mesh::Selector s_universal = *meta_data.get_part(part_name);
+        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
 
-        int elem_idx = 0;
-        for (const auto &ib : side_buckets) {
-            const Bucket_t &b = *ib;
-
-            const Bucket_t::size_type length = b.size();
-
-            for (Bucket_t::size_type k = 0; k < length; ++k) {
-                Entity_t elem = b[k];
-                const Size_t n_nodes = bulk_data.num_nodes(elem);
-
-                assert(n_nodes == n_nodes_x_elem);
-
-                auto node_ids = bulk_data.begin_nodes(elem);
-
-                for (Size_t i = 0; i < n_nodes; ++i) {
-                    const Scalar_t *point = (const Scalar_t *)::stk::mesh::field_data(*coords, node_ids[i]);
-
-                    for (int d = 0; d < spatial_dim; ++d) {
-                        side_points(elem_idx, i, d) = point[d];
-                    }
-                }
-
-                ++elem_idx;
-            }
-        }
-
-        fe.init(topo, side_points, degree);
+        CreateFEFromBuckets<Scalar>::apply(bulk_data, side_buckets, fe, degree);
     }
 
     template class CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
@@ -244,8 +226,6 @@ namespace utopia {
 
             IndexArray_t idx(nn);
             ScalarArray_t val(n_dofs * n_dofs);
-
-            // Size_t n_local_nodes = space.mesh().n_local_nodes();
 
             const bool is_block = matrix.is_block();
 
@@ -312,99 +292,131 @@ namespace utopia {
     }
 
     template <typename Scalar>
+    class LocalToGlobalFromBuckets {
+    public:
+        using FE = utopia::intrepid2::FE<Scalar>;
+        using DynRankView = typename FE::DynRankView;
+
+        using Bucket_t = ::stk::mesh::Bucket;
+        using BucketVector_t = ::stk::mesh::BucketVector;
+        using Entity_t = ::stk::mesh::Entity;
+        using Scalar_t = Traits<utopia::stk::Mesh>::Scalar;
+        using Size_t = Traits<utopia::stk::Mesh>::SizeType;
+
+        using IndexArray_t = Traits<PetscMatrix>::IndexArray;
+        using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
+
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          const BucketVector_t &buckets,
+                          const ::Kokkos::DynRankView<Scalar> &element_vectors,
+                          AssemblyMode mode,
+                          PetscVector &vector) {
+            //
+
+            if (empty(vector)) {
+                space.create_vector(vector);
+            } else {
+                // Reuse vector
+                if (mode == OVERWRITE_MODE) {
+                    vector *= 0.0;
+                } else if (mode == SUBTRACT_MODE) {
+                    vector *= -1.0;
+                }
+            }
+
+            auto &bulk_data = space.mesh().bulk_data();
+
+            {
+                Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
+
+                const int n_var = space.n_var();
+                const SizeType n_dofs = element_vectors.extent(1);
+                const SizeType nn = n_dofs / n_var;
+
+                IndexArray_t idx(nn);
+                ScalarArray_t val(n_dofs);
+
+                const bool is_block = vector.block_size() > 1;
+
+                auto &&local_to_global = space.dof_map().local_to_global();
+
+                Size_t elem_idx = 0;
+                for (const auto &ib : buckets) {
+                    const Bucket_t &b = *ib;
+                    const Bucket_t::size_type length = b.size();
+
+                    for (Bucket_t::size_type k = 0; k < length; ++k) {
+                        // get the current node entity and extract the id to fill it into the field
+                        Entity_t elem = b[k];
+                        const Size_t n_nodes = bulk_data.num_nodes(elem);
+                        UTOPIA_UNUSED(n_nodes);
+
+                        assert(nn == n_nodes);
+
+                        auto node_ids = bulk_data.begin_nodes(elem);
+
+                        if (local_to_global.empty()) {
+                            for (Size_t i = 0; i < nn; ++i) {
+                                idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
+                                assert(idx[i] < space.n_dofs());
+                                assert(idx[i] >= 0);
+                            }
+                        } else {
+                            for (Size_t i = 0; i < nn; ++i) {
+                                idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
+                                assert(idx[i] < space.n_dofs());
+                                assert(idx[i] >= 0);
+                            }
+                        }
+
+                        for (Size_t i = 0; i < nn; ++i) {
+                            for (int di = 0; di < n_var; ++di) {
+                                const Size_t idx_i = i * n_var + di;
+                                val[idx_i] = element_vectors(elem_idx, idx_i);
+                            }
+                        }
+
+                        if (is_block) {
+                            vector.add_vector_blocked(idx, val);
+                        } else {
+                            vector.add_vector(idx, val);
+                        }
+
+                        ++elem_idx;
+                    }
+                }
+            }
+
+            if (mode == SUBTRACT_MODE) {
+                vector *= -1.0;
+            }
+        }
+    };
+
+    template <typename Scalar>
     void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::apply(
         const utopia::stk::FunctionSpace &space,
         const ::Kokkos::DynRankView<Scalar> &element_vectors,
         AssemblyMode mode,
         PetscVector &vector) {
-        // Type defs
-        using IndexArray_t = Traits<PetscMatrix>::IndexArray;
-        using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
-        using Size_t = Traits<PetscMatrix>::SizeType;
+        LocalToGlobalFromBuckets<Scalar>::apply(
+            space, utopia::stk::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector);
+    }
 
-        using Bucket_t = ::stk::mesh::Bucket;
-        using BucketVector_t = ::stk::mesh::BucketVector;
-        using Entity_t = ::stk::mesh::Entity;
-
-        if (empty(vector)) {
-            space.create_vector(vector);
-        } else {
-            // Reuse vector
-            if (mode == OVERWRITE_MODE) {
-                vector *= 0.0;
-            } else if (mode == SUBTRACT_MODE) {
-                vector *= -1.0;
-            }
-        }
-
+    template <typename Scalar>
+    void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::side_apply(
+        const utopia::stk::FunctionSpace &space,
+        const DynRankView &element_vectors,
+        AssemblyMode mode,
+        PetscVector &vector,
+        const std::string &part_name) {
+        auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        const BucketVector_t &elem_buckets = utopia::stk::local_elements(bulk_data);
+        ::stk::mesh::Selector s_universal = *meta_data.get_part(part_name);
 
-        {
-            Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
-
-            const int n_var = space.n_var();
-            const SizeType n_dofs = element_vectors.extent(1);
-            const SizeType nn = n_dofs / n_var;
-
-            IndexArray_t idx(nn);
-            ScalarArray_t val(n_dofs);
-
-            const bool is_block = vector.block_size() > 1;
-
-            auto &&local_to_global = space.dof_map().local_to_global();
-
-            Size_t elem_idx = 0;
-            for (const auto &ib : elem_buckets) {
-                const Bucket_t &b = *ib;
-                const Bucket_t::size_type length = b.size();
-
-                for (Bucket_t::size_type k = 0; k < length; ++k) {
-                    // get the current node entity and extract the id to fill it into the field
-                    Entity_t elem = b[k];
-                    const Size_t n_nodes = bulk_data.num_nodes(elem);
-                    UTOPIA_UNUSED(n_nodes);
-
-                    assert(nn == n_nodes);
-
-                    auto node_ids = bulk_data.begin_nodes(elem);
-
-                    if (local_to_global.empty()) {
-                        for (Size_t i = 0; i < nn; ++i) {
-                            idx[i] = utopia::stk::convert_entity_to_index(node_ids[i]);
-                            assert(idx[i] < space.n_dofs());
-                            assert(idx[i] >= 0);
-                        }
-                    } else {
-                        for (Size_t i = 0; i < nn; ++i) {
-                            idx[i] = local_to_global.block(utopia::stk::convert_entity_to_index(node_ids[i]));
-                            assert(idx[i] < space.n_dofs());
-                            assert(idx[i] >= 0);
-                        }
-                    }
-
-                    for (Size_t i = 0; i < nn; ++i) {
-                        for (int di = 0; di < n_var; ++di) {
-                            const Size_t idx_i = i * n_var + di;
-                            val[idx_i] = element_vectors(elem_idx, idx_i);
-                        }
-                    }
-
-                    if (is_block) {
-                        vector.add_vector_blocked(idx, val);
-                    } else {
-                        vector.add_vector(idx, val);
-                    }
-
-                    ++elem_idx;
-                }
-            }
-        }
-
-        if (mode == SUBTRACT_MODE) {
-            vector *= -1.0;
-        }
+        LocalToGlobalFromBuckets<Scalar>::apply(
+            space, bulk_data.get_buckets(meta_data.side_rank(), s_universal), element_vectors, mode, vector);
     }
 
     template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;

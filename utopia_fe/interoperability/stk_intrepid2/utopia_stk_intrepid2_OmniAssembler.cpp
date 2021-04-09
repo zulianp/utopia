@@ -45,6 +45,28 @@ namespace utopia {
                 };
             }
 
+            template <class ForcingFunctionDescription>
+            void init_boundary_forcing_function_assembler(const std::string &boundary_name,
+                                                          const ForcingFunctionDescription &desc) {
+                auto prev_fun = assemble_forcing_function;
+                assemble_forcing_function = [this, prev_fun, desc, boundary_name](const Vector &x,
+                                                                                  Vector &rhs) -> bool {
+                    if (prev_fun) {
+                        // append
+                        prev_fun(x, rhs);
+                    }
+
+                    FE boundary_fe;
+                    create_fe_on_boundary(*space, boundary_fe, boundary_name, 2);
+
+                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(desc,
+                                                                                      utopia::make_ref(boundary_fe));
+                    assembler.init();
+                    side_local_to_global(*space, assembler.element_vectors(), SUBTRACT_MODE, rhs, boundary_name);
+                    return true;
+                };
+            }
+
             std::function<bool(const Vector &x, Matrix &, Vector &)> assemble_material;
             std::function<bool(const Vector &x, Vector &)> assemble_forcing_function;
 
@@ -164,13 +186,35 @@ namespace utopia {
             in.get("forcing_functions", [this](Input &array_node) {
                 array_node.get_all([this](Input &node) {
                     std::string forcing_function_type = "value";
-                    node.get("type", forcing_function_type);
+                    std::string where = "domain";
+                    std::string name;
+                    int id = -1;
 
-                    if (forcing_function_type == "value") {
-                        ForcingFunction<Scalar> ff;
-                        ff.read(node);
-                        ff.n_components = impl_->space->n_var();
-                        impl_->init_forcing_function_assembler(ff);
+                    node.get("type", forcing_function_type);
+                    node.get("where", where);
+                    node.get("name", name);
+                    node.get("id", id);
+
+                    if (where == "surface") {
+                        if (name.empty()) {
+                            assert(id != -1);
+                            name = "surface_" + std::to_string(id);
+                        }
+
+                        if (forcing_function_type == "value") {
+                            ForcingFunction<Scalar> ff;
+                            ff.read(node);
+                            ff.n_components = impl_->space->n_var();
+                            impl_->init_boundary_forcing_function_assembler(name, ff);
+                        }
+
+                    } else {
+                        if (forcing_function_type == "value") {
+                            ForcingFunction<Scalar> ff;
+                            ff.read(node);
+                            ff.n_components = impl_->space->n_var();
+                            impl_->init_forcing_function_assembler(ff);
+                        }
                     }
                 });
             });
