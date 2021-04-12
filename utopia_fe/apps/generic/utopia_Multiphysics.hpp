@@ -519,7 +519,7 @@ namespace utopia {
 
                 return true;
             } else {
-                return p->solve();
+                return p->solve() && export_results();
             }
         }
 
