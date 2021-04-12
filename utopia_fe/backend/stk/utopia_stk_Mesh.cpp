@@ -4,7 +4,7 @@
 
 #include "utopia_stk_Commons.hpp"
 
-#include "utopia_stk_IO.hpp"
+#include "utopia_stk_MeshIO.hpp"
 
 #include <stk_io/StkMeshIoBroker.hpp>
 #include <stk_mesh/base/BulkData.hpp>
@@ -65,18 +65,18 @@ namespace utopia {
         // proc_count
 
         bool Mesh::read(const Path &path) {
-            IO io(*this);
+            MeshIO io(*this);
             io.set_read_path(path);
             return io.load();
         }
 
         bool Mesh::write(const Path &path) {
-            IO io(*this);
+            MeshIO io(*this);
             return io.write(path);
         }
 
         void Mesh::read(Input &in) {
-            IO io(*this);
+            MeshIO io(*this);
             io.read(in);
             if (!io.load()) {
                 assert(false);
@@ -84,7 +84,7 @@ namespace utopia {
         }
 
         void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
-            IO io(*this);
+            MeshIO io(*this);
 
             char format[100];
             std::sprintf(format, "generated:%dx%dx%d|sideset:xX", int(nx), int(ny), int(nz));

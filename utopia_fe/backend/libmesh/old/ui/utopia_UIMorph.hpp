@@ -2,7 +2,7 @@
 #define UTOPIA_UI_MORPH_HPP
 
 #include "moonolith_vector.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 #include "utopia_ui.hpp"
 
 #include "libmesh/mesh_modification.h"
@@ -25,11 +25,11 @@ namespace utopia {
         bool apply(libMesh::DistributedMesh &mesh) const {
             if (!is_valid()) return false;
 
-            // std::cout << "morphing " << std::endl;
-      #if LIBMESH_VERSION_LESS_THAN(1, 4, 0)
+                // std::cout << "morphing " << std::endl;
+#if LIBMESH_VERSION_LESS_THAN(1, 4, 0)
             // Old version
-          return false;
-      #else
+            return false;
+#else
             if (block == -1) {
                 auto boundary_node_ids = libMesh::MeshTools::find_boundary_nodes(mesh);
 
@@ -77,7 +77,7 @@ namespace utopia {
                     }
                 }
             }
-           #endif
+#endif
             return true;
         }
 

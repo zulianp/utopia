@@ -1,8 +1,10 @@
-#ifndef UTOPIA_STK_IO_HPP
-#define UTOPIA_STK_IO_HPP
+#ifndef UTOPIA_STK_MESH_IO_HPP
+#define UTOPIA_STK_MESH_IO_HPP
 
 #include "utopia_Input.hpp"
 #include "utopia_Path.hpp"
+
+#include "utopia_fe_Core.hpp"
 
 #include "utopia_stk_ForwardDeclarations.hpp"
 
@@ -12,7 +14,7 @@
 namespace utopia {
     namespace stk {
 
-        class IO final : public Configurable {
+        class MeshIO : public Configurable {
         public:
             void read(Input &in) override;
             bool load();
@@ -23,8 +25,8 @@ namespace utopia {
 
             void import_all_field_data(const bool value);
 
-            IO(Mesh &mesh);
-            ~IO();
+            MeshIO(Mesh &mesh);
+            ~MeshIO();
 
         public:
             class Impl;
@@ -32,6 +34,13 @@ namespace utopia {
         };
 
     }  // namespace stk
+
+    template <>
+    class IO<utopia::stk::Mesh> : public utopia::stk::MeshIO {
+    public:
+        using utopia::stk::MeshIO::MeshIO;
+    };
+
 }  // namespace utopia
 
-#endif  // UTOPIA_STK_IO_HPP
+#endif  // UTOPIA_STK_MESH_IO_HPP

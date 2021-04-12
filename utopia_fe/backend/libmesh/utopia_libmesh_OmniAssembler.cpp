@@ -8,8 +8,42 @@
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIMaterial.hpp"
 
+#include "utopia_libmesh_Transport.hpp"
+
 namespace utopia {
     namespace libmesh {
+
+        class AssemblerRegistry {
+        public:
+            using FEAssembler_t = utopia::FEAssembler<utopia::libmesh::FunctionSpace>;
+            using FEAssemblerPtr_t = std::shared_ptr<FEAssembler_t>;
+
+            FEAssemblerPtr_t find_assembler(const std::string &name) const {
+                auto it = assemblers_.find(name);
+                if (it == assemblers_.end()) {
+                    // utopia::err() << "Unable to find assembler with name " << name << ".\n";
+                    // assert(false);
+                    return nullptr;
+                } else {
+                    return it->second();
+                }
+            }
+
+            template <typename Assembler_t>
+            void register_assembler(const std::string &name) {
+                assemblers_[name] = []() -> FEAssemblerPtr_t { return std::make_shared<Assembler_t>(); };
+            }
+
+            AssemblerRegistry() { register_assemblers(); }
+
+        private:
+            std::map<std::string, std::function<FEAssemblerPtr_t()>> assemblers_;
+
+            void register_assemblers() {
+                register_assembler<Transport>("Transport");
+                register_assembler<Mass>("Mass");
+            }
+        };
 
         class OmniAssembler::Impl {
         public:
@@ -17,6 +51,7 @@ namespace utopia {
             // New abstraction
             std::shared_ptr<libmesh::FunctionSpace> space;
             std::shared_ptr<Environment<libmesh::FunctionSpace>> env;
+            AssemblerRegistry registry;
 
             // Legacy abstractions
             using LegacyFunctionSpace = utopia::LibMeshFunctionSpace;
@@ -68,6 +103,16 @@ namespace utopia {
             return true;
         }
 
+        bool OmniAssembler::assemble(const Vector &x, Matrix &jacobian) {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
+
+        bool OmniAssembler::assemble(const Vector &x, Vector &fun) {
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
+
         static bool is_flow(const std::string &name) {
             return (name.find("Flow") != std::string::npos) || (name.find("LaplaceOperator") != std::string::npos);
         }
@@ -79,7 +124,12 @@ namespace utopia {
             impl_->forcing_function = utopia::make_unique<Impl::LegacyForcingFunction>(*impl_->legacy_space);
             in.get("forcing_functions", *impl_->forcing_function);
 
-            if (is_flow(type)) {
+            auto new_assembler = impl_->registry.find_assembler(type);
+            if (new_assembler) {
+                new_assembler->set_space(impl_->space);
+                in.get("material", *new_assembler);
+                impl_->legacy_model = new_assembler;
+            } else if (is_flow(type)) {
                 // Flow problems
                 auto material = utopia::make_unique<Impl::LegacyFlow>(impl_->legacy_space->subspace(0));
                 in.get("material", *material);

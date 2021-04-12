@@ -1,4 +1,4 @@
-#include "utopia_stk_IO.hpp"
+#include "utopia_stk_MeshIO.hpp"
 
 #include "utopia_stk_Mesh.hpp"
 
@@ -10,7 +10,7 @@
 namespace utopia {
     namespace stk {
 
-        class IO::Impl : public Configurable {
+        class MeshIO::Impl : public Configurable {
         public:
             using MetaData = ::stk::mesh::MetaData;
             using BulkData = ::stk::mesh::BulkData;
@@ -138,18 +138,18 @@ namespace utopia {
             int time_step{1};
         };
 
-        void IO::read(Input &in) { impl_->read(in); }
-        bool IO::load() { return impl_->load(); }
-        bool IO::write(const Path &write_path) { return impl_->write(write_path); }
+        void MeshIO::read(Input &in) { impl_->read(in); }
+        bool MeshIO::load() { return impl_->load(); }
+        bool MeshIO::write(const Path &write_path) { return impl_->write(write_path); }
 
-        void IO::set_read_path(const Path &path) { impl_->set_read_path(path); }
-        void IO::set_read_specification(const std::string &format) { impl_->set_read_specification(format); }
+        void MeshIO::set_read_path(const Path &path) { impl_->set_read_path(path); }
+        void MeshIO::set_read_specification(const std::string &format) { impl_->set_read_specification(format); }
 
-        IO::IO(Mesh &mesh) : impl_(utopia::make_unique<Impl>(mesh)) {}
+        MeshIO::MeshIO(Mesh &mesh) : impl_(utopia::make_unique<Impl>(mesh)) {}
 
-        IO::~IO() = default;
+        MeshIO::~MeshIO() = default;
 
-        void IO::import_all_field_data(const bool value) { impl_->import_all_field_data = value; }
+        void MeshIO::import_all_field_data(const bool value) { impl_->import_all_field_data = value; }
 
     }  // namespace stk
 }  // namespace utopia

@@ -15,7 +15,7 @@
 #include "utopia_Contact.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "libmesh/explicit_system.h"
 #include "libmesh/libmesh_version.h"

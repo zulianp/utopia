@@ -12,7 +12,7 @@
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_assemble_volume_transfer_r.hpp"
 #include "utopia_fe_EDSL.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 #endif
 
 #endif  // UTOPIA_FE_HPP

@@ -14,6 +14,9 @@ namespace utopia {
     template <class FunctionSpace>
     class OmniAssembler {};
 
+    template <class FunctionSpace>
+    class IO {};
+
     enum AssemblyMode { ADD_MODE = 0, SUBTRACT_MODE = 1, OVERWRITE_MODE = 2 };
 }  // namespace utopia
 

@@ -9,7 +9,7 @@
 #include "utopia_SaintVenantKirchoff.hpp"
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_fe_base.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "utopia_GaitCycle.hpp"
 #include "utopia_Wear.hpp"

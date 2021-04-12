@@ -1,7 +1,7 @@
 #ifndef UTOPIA_UI_MESH_HPP
 #define UTOPIA_UI_MESH_HPP
 
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 #include "utopia_ui.hpp"
 
 #include "libmesh/mesh_modification.h"

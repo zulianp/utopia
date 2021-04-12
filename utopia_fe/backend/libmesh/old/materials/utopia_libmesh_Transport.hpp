@@ -23,18 +23,18 @@ namespace utopia {
         virtual ~FEAssembler() = default;
         virtual bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
 
-        bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
+        inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             return this->assemble(x, hessian, gradient);
         }
 
-        void set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env) { env_ = env; }
+        inline void set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env) { env_ = env; }
         const std::shared_ptr<Environment<libmesh::FunctionSpace>> &environment() const { return env_; }
 
-        void set_space(const std::shared_ptr<libmesh::FunctionSpace> &space) { space_ = space; }
+        inline void set_space(const std::shared_ptr<libmesh::FunctionSpace> &space) { space_ = space; }
 
-        std::shared_ptr<libmesh::FunctionSpace> space() { return space_; }
+        inline std::shared_ptr<libmesh::FunctionSpace> space() { return space_; }
 
-        void read(Input &in) override {
+        inline void read(Input &in) override {
             if (env_) {
                 std::string space_name;
                 in.get("space", space_name);
@@ -47,7 +47,7 @@ namespace utopia {
             }
         }
 
-        void clear() override {}
+        inline void clear() override {}
         virtual std::string name() const = 0;
 
     private:
@@ -77,6 +77,33 @@ namespace utopia {
             ~Transport();
 
             void set_pressure_field(const std::shared_ptr<Field> &field);
+
+        private:
+            class Impl;
+            std::unique_ptr<Impl> impl_;
+
+            void init();
+            bool valid() const;
+        };
+
+        class Mass final : public FEAssembler<libmesh::FunctionSpace> {
+        public:
+            using Matrix = Traits<libmesh::FunctionSpace>::Matrix;
+            using Vector = Traits<libmesh::FunctionSpace>::Vector;
+            using Scalar = typename Traits<Vector>::Scalar;
+            using Field = utopia::Field<libmesh::FunctionSpace>;
+            using Super = utopia::FEAssembler<libmesh::FunctionSpace>;
+
+            inline bool is_linear() const override { return true; }
+
+            bool assemble(const Vector &x, Matrix &jacobian, Vector &fun) override;
+            void clear() override;
+            void read(Input &in) override;
+
+            inline std::string name() const override { return "Mass"; }
+
+            Mass();
+            ~Mass();
 
         private:
             class Impl;

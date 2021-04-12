@@ -97,5 +97,71 @@ namespace utopia {
             init();
         }
 
+        /////////////////////////////////////////
+
+        class Mass::Impl {
+        public:
+            inline bool initialized() const { return static_cast<bool>(legacy_space); }
+
+            std::shared_ptr<LegacyProductFunctionSpace> legacy_space;
+            // std::shared_ptr<Field> pressure;
+            UIScalarFunction<Scalar> density_sampler;
+            Scalar density{1.0};
+            bool lumped{true};
+        };
+
+        Mass::Mass() : impl_(utopia::make_unique<Impl>()) {}
+        Mass::~Mass() = default;
+
+        void Mass::init() {
+            auto s = this->space();
+            assert(s);
+
+            if (s) {
+                impl_->legacy_space = make_legacy(*s);
+            }
+        }
+
+        bool Mass::valid() const { return impl_->initialized(); }
+
+        bool Mass::assemble(const Vector &x, Matrix &jacobian, Vector &fun) {
+            if (!impl_->initialized()) {
+                init();
+            }
+
+            assert(valid());
+            if (!valid()) return false;
+
+            auto &space = *impl_->legacy_space;
+            auto &mesh = space[0].mesh();
+            auto &dof_map = space[0].dof_map();
+            const int dim = mesh.spatial_dimension();
+
+            auto b_form = inner(ctx_fun(impl_->density_sampler.sampler()) * trial(space), test(space)) * dX;
+
+            utopia::assemble(b_form, jacobian);
+
+            if (impl_->lumped) {
+                Vector mass_vector = sum(jacobian, 1);
+                jacobian = diag(mass_vector);
+            } else {
+                utopia::assemble(b_form, jacobian);
+            }
+
+            fun = jacobian * x;
+            return true;
+        }
+
+        void Mass::clear() {}
+
+        void Mass::read(Input &in) {
+            Super::read(in);
+            in.get("density_sampler", impl_->density_sampler);
+            in.get("density", impl_->density);
+            in.get("lumped", impl_->lumped);
+
+            init();
+        }
+
     }  // namespace libmesh
 }  // namespace utopia

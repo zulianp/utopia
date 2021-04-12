@@ -62,6 +62,7 @@ namespace utopia {
             libMesh::EquationSystems &raw_type();
             const libMesh::EquationSystems &raw_type() const;
             const libMesh::DofMap &raw_type_dof_map() const;
+            const libMesh::System &raw_type_system() const;
 
             // The binary is private, so do not try to use it
             std::shared_ptr<FunctionSpaceWrapper> wrapper();
@@ -84,6 +85,10 @@ namespace utopia {
             void create_vector(Vector &vec) const;
 
             void apply_constraints(Matrix &mat, Vector &vec) const;
+            void apply_constraints(Vector &vec) const;
+            void apply_constraints(Matrix &mat) const;
+
+            void apply_zero_constraints(Vector &vec) const;
 
             bool empty() const;
 

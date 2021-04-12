@@ -12,7 +12,7 @@
 #include "utopia_ContactSolver.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia_fe_EDSL.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include <cmath>
 #include <vector>

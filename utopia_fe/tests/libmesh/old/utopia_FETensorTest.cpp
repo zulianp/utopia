@@ -14,7 +14,7 @@
 #include "utopia_libmesh_AssembleLocal.hpp"
 
 #include "libmesh/mesh_generation.h"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "libmesh/boundary_mesh.h"
 #include "libmesh/mesh_refinement.h"

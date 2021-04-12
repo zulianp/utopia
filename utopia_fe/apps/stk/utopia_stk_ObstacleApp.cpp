@@ -3,6 +3,8 @@
 
 #include "utopia_ObstacleApp.hpp"
 
+#include "utopia_stk.hpp"
+
 #include "utopia_moonolith_stk_Obstacle.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 

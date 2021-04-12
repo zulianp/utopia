@@ -4,7 +4,7 @@
 
 #include "utopia_stk_Commons.hpp"
 #include "utopia_stk_DofMap.hpp"
-#include "utopia_stk_IO.hpp"
+#include "utopia_stk_MeshIO.hpp"
 
 // All stk includes
 #include <stk_io/StkMeshIoBroker.hpp>
@@ -358,7 +358,7 @@ namespace utopia {
         }
 
         bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &val) {
-            IO io(*impl_->mesh);
+            MeshIO io(*impl_->mesh);
             io.import_all_field_data(true);
             in.get("mesh", io);
 
@@ -573,6 +573,8 @@ namespace utopia {
                 }
             }
         }
+
+        void FunctionSpace::apply_zero_constraints(Vector &vec) const { assert(false && "IMPLEMENT ME"); }
 
         void FunctionSpace::apply_constraints(Matrix &m, Vector &v) {
             apply_constraints(m);

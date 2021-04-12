@@ -3,6 +3,8 @@
 
 #include "utopia_SolveFEProblemApp.hpp"
 
+#include "utopia_stk.hpp"
+
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
 void stk_solve(utopia::Input &in) {

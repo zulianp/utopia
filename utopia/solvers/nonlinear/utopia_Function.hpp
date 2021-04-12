@@ -39,12 +39,22 @@ namespace utopia {
             return false;
         }
 
+        /// If both Hessian and gradient are required at the same time use this method (it can be used to be more
+        /// efficient)
+        virtual bool hessian_and_gradient(const Vector &x, Matrix &H, Vector &g) const {
+            return this->gradient(x, g) && this->hessian(x, H);
+        }
+
+        virtual bool hessian_and_gradient(const Vector &x, Matrix &H, Matrix &preconditioner, Vector &g) const {
+            return this->gradient(x, g) && this->hessian(x, H, preconditioner);
+        }
+
         virtual bool has_preconditioner() const { return false; }
 
         virtual bool initialize_hessian(Matrix & /*H*/, Matrix & /*H_pre*/) const { return false; }
 
         /**
-         * @brief Allows to solvers to reuse allocated vectors and matrices
+         * @brief Allows the solvers to reuse allocated vectors and matrices
          */
         class Data {
         public:

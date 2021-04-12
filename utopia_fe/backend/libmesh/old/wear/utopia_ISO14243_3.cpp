@@ -1,5 +1,5 @@
 #include "utopia_ISO14243_3.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "utopia_AffineTransform.hpp"
 
@@ -26,7 +26,9 @@ namespace utopia {
             case 'Z': {
                 return 2;
             }
-            default: { break; }
+            default: {
+                break;
+            }
         }
 
         assert(false);

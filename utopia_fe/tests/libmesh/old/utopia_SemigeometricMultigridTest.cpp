@@ -4,7 +4,7 @@
 #include "libmesh/parallel_mesh.h"
 #include "moonolith_communicator.hpp"
 #include "utopia.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"

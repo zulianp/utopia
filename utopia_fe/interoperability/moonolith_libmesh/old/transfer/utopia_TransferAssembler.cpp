@@ -9,7 +9,7 @@
 #include "libmesh/mesh_inserter_iterator.h"
 
 #include "utopia_VTree.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "utopia_ElementDofMap.hpp"
 #include "utopia_FESpacesAdapter.hpp"

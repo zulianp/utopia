@@ -3,7 +3,7 @@
 
 #include "utopia_ObstacleApp.hpp"
 
-#include "utopia_libmesh_OmniAssembler.hpp"
+#include "utopia_libmesh.hpp"
 #include "utopia_moonolith_libmesh_Obstacle.hpp"
 
 void libmesh_obs(utopia::Input &in) {

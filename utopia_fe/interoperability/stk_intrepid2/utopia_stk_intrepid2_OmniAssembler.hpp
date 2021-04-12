@@ -24,6 +24,9 @@ namespace utopia {
             virtual ~OmniAssembler();
 
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
+            bool assemble(const Vector &x, Matrix &jacobian);
+            bool assemble(const Vector &x, Vector &fun);
+
             void read(Input &in) override;
 
             void set_environment(const std::shared_ptr<Environment<stk::FunctionSpace>> &env);

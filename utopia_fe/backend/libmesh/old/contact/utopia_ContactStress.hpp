@@ -4,7 +4,7 @@
 #include "utopia_LameeParameters.hpp"
 #include "utopia_LinearElasticity.hpp"
 #include "utopia_QuadratureUtils.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "utopia_TransferUtils.hpp"
 

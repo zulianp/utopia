@@ -1,7 +1,7 @@
 #include "utopia_IntersectTest.hpp"
 #include "utopia_Intersect.hpp"
 #include "utopia_LibMeshShape.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 namespace utopia {
     void intersect_hex_with_polygon_test() {

@@ -2,7 +2,7 @@
 #include "utopia_AssemblyTest.hpp"
 
 #include "libmesh/mesh_generation.h"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 namespace utopia {
     void AssemblyTest::run(Input &in) {

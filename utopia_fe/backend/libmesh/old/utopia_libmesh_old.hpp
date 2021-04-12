@@ -1,5 +1,5 @@
-#ifndef UTOPIA_LIBMESH_HPP
-#define UTOPIA_LIBMESH_HPP
+#ifndef UTOPIA_LIBMESH_OLD_HPP
+#define UTOPIA_LIBMESH_OLD_HPP
 
 #include "utopia_fe_kokkos_fix.hpp"
 
@@ -46,4 +46,4 @@ namespace utopia {
 
 #endif  // UTOPIA_WITH_TINY_EXPR
 
-#endif  // UTOPIA_LIBMESH_HPP
+#endif  // UTOPIA_LIBMESH_OLD_HPP

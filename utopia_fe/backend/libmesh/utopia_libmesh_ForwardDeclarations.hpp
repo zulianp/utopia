@@ -4,6 +4,7 @@
 namespace libMesh {
     class MeshBase;
     class EquationSystems;
+    class System;
     class DofMap;
 
     template <typename T>

@@ -61,7 +61,7 @@ namespace utopia {
             class Impl;
             std::unique_ptr<Impl> impl_;
 
-            friend class IO;
+            friend class MeshIO;
             friend class Impl;
 
             void init();

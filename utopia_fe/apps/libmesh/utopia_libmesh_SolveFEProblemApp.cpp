@@ -3,7 +3,7 @@
 
 #include "utopia_SolveFEProblemApp.hpp"
 
-#include "utopia_libmesh_OmniAssembler.hpp"
+#include "utopia_libmesh.hpp"
 
 void libmesh_solve(utopia::Input &in) {
     utopia::SolveFEProblemApp<utopia::libmesh::FunctionSpace> app;

@@ -1,248 +1,250 @@
-#include "utopia_Base.hpp"
-
-#ifdef UTOPIA_WITH_KOKKOS_SIMD
-
-#include "utopia.hpp"
-#include "utopia_Testing.hpp"
-
-#include "simd.hpp"
-#include "utopia_Algorithms.hpp"
-#include "utopia_Utils.hpp"
-
-#include "utopia_Algorithms.hpp"
-#include "utopia_Trace.hpp"
-#include "utopia_VectorView.hpp"
-#include "utopia_Views.hpp"
-
-#include <type_traits>
-#include <vector>
-
-namespace utopia {
-
-    template <class Vector, int Backend = Traits<Vector>::Backend>
-    class JacobiSweep {};
-
-    template <class Vector>
-    class JacobiSweep<Vector, TRILINOS> {
-    public:
-        using Scalar = typename Traits<Vector>::Scalar;
-        using SizeType = typename Traits<Vector>::SizeType;
-        using LocalSizeType = typename Traits<Vector>::LocalSizeType;
-        using ViewType = Kokkos::View<Scalar *>;
-
-        using SIMDType = simd::native_simd<Scalar>;
-        static const int SIMD_LANES = SIMDType::size();
-
-        using SIMDViewType = Kokkos::View<SIMDType *>;
-
-        void init(const Vector &t_inv_diag) {
-            const auto &inv_diag = t_inv_diag.derived();
-            const SizeType n_rows = inv_diag.local_size();
-            const SizeType n_blocks = n_rows / SIMD_LANES;
-            const SizeType n_clean = n_blocks * SIMD_LANES;
-            const SizeType rmd = n_rows - n_clean;
-            const SizeType n_blocks_with_rmd = n_blocks + (rmd > 0);
+// FIXME see if something can be salvaged and then use Vc
+
+// #include "utopia_Base.hpp"
+
+// #ifdef UTOPIA_WITH_KOKKOS_SIMD
+
+// #include "utopia.hpp"
+// #include "utopia_Testing.hpp"
+
+// #include "simd.hpp"
+// #include "utopia_Algorithms.hpp"
+// #include "utopia_Utils.hpp"
 
-            if (n_blocks_with_rmd != SizeType(d_inv_.size())) {
-                d_inv_ = SIMDViewType("d_inv", n_blocks_with_rmd);
-                c1_ = SIMDViewType("c1", n_blocks_with_rmd);
-                c2_ = SIMDViewType("c2", n_blocks_with_rmd);
-            }
-
-            copy(inv_diag, d_inv_);
-        }
-
-        void apply(const Vector &in, Vector &out) {
-            // Vectorize input
-            copy(in, c1_);
-
-            const SizeType n_rows = d_inv_.size();
+// #include "utopia_Algorithms.hpp"
+// #include "utopia_Trace.hpp"
+// #include "utopia_VectorView.hpp"
+// #include "utopia_Views.hpp"
+
+// #include <type_traits>
+// #include <vector>
 
-            for (SizeType t = 0; t < n_sweeps_; ++t) {
-                if (t % 2 == 0) {
-                    Kokkos::parallel_for(
-                        n_rows, KOKKOS_LAMBDA(const int i) { c2_[i] = d_inv_[i] * c1_[i]; });
-                } else {
-                    Kokkos::parallel_for(
-                        n_rows, KOKKOS_LAMBDA(const int i) { c1_[i] = d_inv_[i] * c2_[i]; });
-                }
-            }
-
-            // Copy back
-            if (n_sweeps_ % 2 == 0) {
-                copy(c1_, out);
-            } else {
-                copy(c2_, out);
-            }
-        }
+// namespace utopia {
+
+//     template <class Vector, int Backend = Traits<Vector>::Backend>
+//     class JacobiSweep {};
+
+//     template <class Vector>
+//     class JacobiSweep<Vector, TRILINOS> {
+//     public:
+//         using Scalar = typename Traits<Vector>::Scalar;
+//         using SizeType = typename Traits<Vector>::SizeType;
+//         using LocalSizeType = typename Traits<Vector>::LocalSizeType;
+//         using ViewType = Kokkos::View<Scalar *>;
+
+//         using SIMDType = simd::native_simd<Scalar>;
+//         static const int SIMD_LANES = SIMDType::size();
+
+//         using SIMDViewType = Kokkos::View<SIMDType *>;
+
+//         void init(const Vector &t_inv_diag) {
+//             const auto &inv_diag = t_inv_diag.derived();
+//             const SizeType n_rows = inv_diag.local_size();
+//             const SizeType n_blocks = n_rows / SIMD_LANES;
+//             const SizeType n_clean = n_blocks * SIMD_LANES;
+//             const SizeType rmd = n_rows - n_clean;
+//             const SizeType n_blocks_with_rmd = n_blocks + (rmd > 0);
 
-        JacobiSweep() = default;
+//             if (n_blocks_with_rmd != SizeType(d_inv_.size())) {
+//                 d_inv_ = SIMDViewType("d_inv", n_blocks_with_rmd);
+//                 c1_ = SIMDViewType("c1", n_blocks_with_rmd);
+//                 c2_ = SIMDViewType("c2", n_blocks_with_rmd);
+//             }
 
-        inline void sweeps(const SizeType n) { n_sweeps_ = n; }
+//             copy(inv_diag, d_inv_);
+//         }
 
-    private:
-        SIMDViewType c1_;
-        SIMDViewType c2_;
-        SIMDViewType d_inv_;
-        // FIXME
-        SizeType n_sweeps_{100};
+//         void apply(const Vector &in, Vector &out) {
+//             // Vectorize input
+//             copy(in, c1_);
 
-        static void copy(const Vector &in, SIMDViewType &out) {
-            const SizeType n = in.local_size();
-            const SizeType n_blocks = n / SIMD_LANES;
-            const SizeType n_clean = n_blocks * SIMD_LANES;
-            const SizeType rmd = n - n_clean;
+//             const SizeType n_rows = d_inv_.size();
 
-            auto view = local_view_device(in);
+//             for (SizeType t = 0; t < n_sweeps_; ++t) {
+//                 if (t % 2 == 0) {
+//                     Kokkos::parallel_for(
+//                         n_rows, KOKKOS_LAMBDA(const int i) { c2_[i] = d_inv_[i] * c1_[i]; });
+//                 } else {
+//                     Kokkos::parallel_for(
+//                         n_rows, KOKKOS_LAMBDA(const int i) { c1_[i] = d_inv_[i] * c2_[i]; });
+//                 }
+//             }
 
-            Kokkos::parallel_for(
-                n_blocks, KOKKOS_LAMBDA(const int i) {
-                    Scalar buff[SIMD_LANES];
+//             // Copy back
+//             if (n_sweeps_ % 2 == 0) {
+//                 copy(c1_, out);
+//             } else {
+//                 copy(c2_, out);
+//             }
+//         }
 
-                    LocalSizeType idx = i * SIMD_LANES;
+//         JacobiSweep() = default;
 
-                    for (int k = 0; k < SIMD_LANES; ++k) {
-                        buff[k] = view.get(idx + k);
-                    }
+//         inline void sweeps(const SizeType n) { n_sweeps_ = n; }
 
-                    out(i).copy_from(buff, simd::element_aligned_tag());
-                });
+//     private:
+//         SIMDViewType c1_;
+//         SIMDViewType c2_;
+//         SIMDViewType d_inv_;
+//         // FIXME
+//         SizeType n_sweeps_{100};
 
-            if (rmd) {
-                Kokkos::parallel_for(
-                    1, KOKKOS_LAMBDA(const int &) {
-                        Scalar buff[SIMD_LANES];
+//         static void copy(const Vector &in, SIMDViewType &out) {
+//             const SizeType n = in.local_size();
+//             const SizeType n_blocks = n / SIMD_LANES;
+//             const SizeType n_clean = n_blocks * SIMD_LANES;
+//             const SizeType rmd = n - n_clean;
 
-                        LocalSizeType idx = n_blocks * SIMD_LANES;
+//             auto view = local_view_device(in);
 
-                        for (int k = 0; k < rmd; ++k) {
-                            buff[k] = view.get(idx + k);
-                        }
+//             Kokkos::parallel_for(
+//                 n_blocks, KOKKOS_LAMBDA(const int i) {
+//                     Scalar buff[SIMD_LANES];
 
-                        for (int k = rmd; k < SIMD_LANES; ++k) {
-                            buff[k] = 0;
-                        }
+//                     LocalSizeType idx = i * SIMD_LANES;
 
-                        out(n_blocks).copy_from(buff, simd::element_aligned_tag());
-                    });
-            }
-        }
+//                     for (int k = 0; k < SIMD_LANES; ++k) {
+//                         buff[k] = view.get(idx + k);
+//                     }
 
-        static void copy(const SIMDViewType &in, Vector &out) {
-            const SizeType n = out.local_size();
-            const SizeType n_blocks = n / SIMD_LANES;
-            const SizeType n_clean = n_blocks * SIMD_LANES;
-            const SizeType rmd = n - n_clean;
+//                     out(i).copy_from(buff, simd::element_aligned_tag());
+//                 });
 
-            auto view = local_view_device(out);
+//             if (rmd) {
+//                 Kokkos::parallel_for(
+//                     1, KOKKOS_LAMBDA(const int &) {
+//                         Scalar buff[SIMD_LANES];
 
-            Kokkos::parallel_for(
-                n_blocks, KOKKOS_LAMBDA(const int i) {
-                    Scalar buff[SIMD_LANES];
+//                         LocalSizeType idx = n_blocks * SIMD_LANES;
 
-                    LocalSizeType idx = i * SIMD_LANES;
+//                         for (int k = 0; k < rmd; ++k) {
+//                             buff[k] = view.get(idx + k);
+//                         }
 
-                    in(i).copy_to(buff, simd::element_aligned_tag());
+//                         for (int k = rmd; k < SIMD_LANES; ++k) {
+//                             buff[k] = 0;
+//                         }
 
-                    for (int k = 0; k < SIMD_LANES; ++k) {
-                        view.set(idx + k, buff[k]);
-                    }
-                });
+//                         out(n_blocks).copy_from(buff, simd::element_aligned_tag());
+//                     });
+//             }
+//         }
 
-            if (rmd) {
-                Kokkos::parallel_for(
-                    1, KOKKOS_LAMBDA(const int &) {
-                        Scalar buff[SIMD_LANES];
+//         static void copy(const SIMDViewType &in, Vector &out) {
+//             const SizeType n = out.local_size();
+//             const SizeType n_blocks = n / SIMD_LANES;
+//             const SizeType n_clean = n_blocks * SIMD_LANES;
+//             const SizeType rmd = n - n_clean;
 
-                        LocalSizeType idx = n_blocks * SIMD_LANES;
+//             auto view = local_view_device(out);
 
-                        in(n_blocks).copy_to(buff, simd::element_aligned_tag());
+//             Kokkos::parallel_for(
+//                 n_blocks, KOKKOS_LAMBDA(const int i) {
+//                     Scalar buff[SIMD_LANES];
 
-                        for (int k = 0; k < rmd; ++k) {
-                            view.set(idx + k, buff[k]);
-                        }
-                    });
-            }
-        }
-    };
+//                     LocalSizeType idx = i * SIMD_LANES;
 
-    template class JacobiSweep<TpetraVector, TRILINOS>;
-}  // namespace utopia
+//                     in(i).copy_to(buff, simd::element_aligned_tag());
 
-using namespace utopia;
+//                     for (int k = 0; k < SIMD_LANES; ++k) {
+//                         view.set(idx + k, buff[k]);
+//                     }
+//                 });
 
-static void kokkos_simd_jacobi() {
-    using Scalar = Traits<TpetraVector>::Scalar;
-    using SizeType = Traits<TpetraVector>::SizeType;
+//             if (rmd) {
+//                 Kokkos::parallel_for(
+//                     1, KOKKOS_LAMBDA(const int &) {
+//                         Scalar buff[SIMD_LANES];
 
-    auto &comm = TrilinosCommunicator::get_default();
-    SizeType n = 10000000;
-    auto vl = layout(comm, n, n * comm.size());
+//                         LocalSizeType idx = n_blocks * SIMD_LANES;
 
-    JacobiSweep<TpetraVector> jac;
-    TpetraVector in, out, inv_diag;
+//                         in(n_blocks).copy_to(buff, simd::element_aligned_tag());
 
-    auto sweeps = 100;
-    jac.sweeps(sweeps);
+//                         for (int k = 0; k < rmd; ++k) {
+//                             view.set(idx + k, buff[k]);
+//                         }
+//                     });
+//             }
+//         }
+//     };
 
-    in.values(vl, std::pow(2.0, sweeps));
-    out.values(vl, 0.0);
-    inv_diag.values(vl, 0.5);
+//     template class JacobiSweep<TpetraVector, TRILINOS>;
+// }  // namespace utopia
 
-    Chrono c;
-    c.start();
-    jac.init(inv_diag);
-    c.stop();
+// using namespace utopia;
 
-    if (comm.rank() == 0) std::cout << c << std::endl;
+// static void kokkos_simd_jacobi() {
+//     using Scalar = Traits<TpetraVector>::Scalar;
+//     using SizeType = Traits<TpetraVector>::SizeType;
 
-    c.start();
-    jac.apply(in, out);
-    c.stop();
+//     auto &comm = TrilinosCommunicator::get_default();
+//     SizeType n = 10000000;
+//     auto vl = layout(comm, n, n * comm.size());
 
-    if (comm.rank() == 0) std::cout << c << std::endl;
-    // disp(out);
+//     JacobiSweep<TpetraVector> jac;
+//     TpetraVector in, out, inv_diag;
 
-    Scalar actual = sum(out);
+//     auto sweeps = 100;
+//     jac.sweeps(sweeps);
 
-    disp(actual);
+//     in.values(vl, std::pow(2.0, sweeps));
+//     out.values(vl, 0.0);
+//     inv_diag.values(vl, 0.5);
 
-    utopia_test_assert(approxeq(actual, static_cast<Scalar>(out.size()), device::epsilon<Scalar>()));
-}
+//     Chrono c;
+//     c.start();
+//     jac.init(inv_diag);
+//     c.stop();
 
-UTOPIA_REGISTER_TEST_FUNCTION(kokkos_simd_jacobi);
+//     if (comm.rank() == 0) std::cout << c << std::endl;
 
-static void kokkos_simd() {
-    static const int N = simd::native_simd<double>::size();
-    using utopia::device::approxeq;
+//     c.start();
+//     jac.apply(in, out);
+//     c.stop();
 
-    double arr_x[N];
-    double arr_y[N];
+//     if (comm.rank() == 0) std::cout << c << std::endl;
+//     // disp(out);
 
-    for (int i = 0; i < N; ++i) {
-        arr_x[i] = 1;
-        arr_y[i] = 2;
-    }
+//     Scalar actual = sum(out);
 
-    simd::native_simd<double> x(arr_x, simd::element_aligned_tag());
-    simd::native_simd<double> y(arr_y, simd::element_aligned_tag());
+//     disp(actual);
 
-    y += 0.1 * x;
+//     utopia_test_assert(approxeq(actual, static_cast<Scalar>(out.size()), device::epsilon<Scalar>()));
+// }
 
-    y.copy_to(arr_y, simd::element_aligned_tag());
+// UTOPIA_REGISTER_TEST_FUNCTION(kokkos_simd_jacobi);
 
-    for (int i = 0; i < N; ++i) {
-        // std::cout << arr_y[i] << std::endl;
-        utopia_test_assert(approxeq(arr_y[i], 2.1, device::epsilon<double>()));
-    }
+// static void kokkos_simd() {
+//     static const int N = simd::native_simd<double>::size();
+//     using utopia::device::approxeq;
 
-    disp("simd::native_simd<double>");
-    disp(simd::native_simd<double>::size());
+//     double arr_x[N];
+//     double arr_y[N];
 
-    disp("simd::native_simd<float>");
-    disp(simd::native_simd<float>::size());
-}
+//     for (int i = 0; i < N; ++i) {
+//         arr_x[i] = 1;
+//         arr_y[i] = 2;
+//     }
 
-UTOPIA_REGISTER_TEST_FUNCTION(kokkos_simd);
+//     simd::native_simd<double> x(arr_x, simd::element_aligned_tag());
+//     simd::native_simd<double> y(arr_y, simd::element_aligned_tag());
 
-#endif  // UTOPIA_WITH_KOKKOS_SIMD
+//     y += 0.1 * x;
+
+//     y.copy_to(arr_y, simd::element_aligned_tag());
+
+//     for (int i = 0; i < N; ++i) {
+//         // std::cout << arr_y[i] << std::endl;
+//         utopia_test_assert(approxeq(arr_y[i], 2.1, device::epsilon<double>()));
+//     }
+
+//     disp("simd::native_simd<double>");
+//     disp(simd::native_simd<double>::size());
+
+//     disp("simd::native_simd<float>");
+//     disp(simd::native_simd<float>::size());
+// }
+
+// UTOPIA_REGISTER_TEST_FUNCTION(kokkos_simd);
+
+// #endif  // UTOPIA_WITH_KOKKOS_SIMD

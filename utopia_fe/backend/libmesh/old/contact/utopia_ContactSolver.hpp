@@ -21,7 +21,7 @@
 
 #include "utopia_SemismoothNewton.hpp"
 
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "libmesh/exodusII_io.h"
 #include "libmesh/nemesis_io.h"

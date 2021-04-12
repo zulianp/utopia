@@ -3,7 +3,7 @@
 #include <memory>
 #include "utopia_fe.hpp"
 
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 int main(int argc, char *argv[]) {
     using namespace libMesh;

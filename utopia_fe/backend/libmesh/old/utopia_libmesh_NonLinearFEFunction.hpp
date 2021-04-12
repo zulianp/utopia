@@ -14,7 +14,7 @@
 #include "libmesh/mesh_generation.h"
 #include "libmesh/nemesis_io.h"
 #include "libmesh/parallel_mesh.h"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "utopia_Equations.hpp"
 #include "utopia_FEConstraints.hpp"

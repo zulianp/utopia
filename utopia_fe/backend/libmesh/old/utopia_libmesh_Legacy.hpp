@@ -16,7 +16,7 @@ namespace utopia {
         using LegacyFunctionSpace = utopia::LibMeshFunctionSpace;
         using LegacyProductFunctionSpace = utopia::ProductFunctionSpace<LegacyFunctionSpace>;
 
-        std::shared_ptr<LegacyProductFunctionSpace> make_legacy(utopia::libmesh::FunctionSpace &space) {
+        inline std::shared_ptr<LegacyProductFunctionSpace> make_legacy(utopia::libmesh::FunctionSpace &space) {
             auto legacy_space = std::make_shared<LegacyProductFunctionSpace>();
 
             for (int s = 0; s < space.n_subspaces(); ++s) {

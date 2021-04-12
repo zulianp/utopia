@@ -2,7 +2,7 @@
 #include "utopia_DescribeMeshApp.hpp"
 #include "utopia_Main.hpp"
 
-#include "utopia_stk_Mesh.hpp"
+#include "utopia_stk.hpp"
 
 void stk_describe_mesh(utopia::Input &in) {
     utopia::DescribeMeshApp<utopia::stk::Mesh> app;

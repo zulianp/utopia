@@ -1,7 +1,7 @@
 #ifndef UTOPIA_NODE_BLACK_LISTER_HPP
 #define UTOPIA_NODE_BLACK_LISTER_HPP
 
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 #include "utopia_ui.hpp"
 
 #include <set>

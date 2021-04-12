@@ -1,7 +1,7 @@
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_BoundingBoxCoarsener.hpp"
 #include "utopia_Socket.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 #include "libmesh/exodusII_io.h"
 

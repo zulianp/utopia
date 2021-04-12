@@ -1,7 +1,7 @@
 #include "utopia_BoundaryMeshTest.hpp"
 #include "libmesh/boundary_mesh.h"
 #include "moonolith_synched_describable.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 namespace utopia {
     class BoundaryMeshTestImpl {

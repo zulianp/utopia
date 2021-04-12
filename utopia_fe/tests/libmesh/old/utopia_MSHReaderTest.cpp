@@ -3,7 +3,7 @@
 #include "libmesh/mesh_generation.h"
 #include "utopia_MSHMeshReader.hpp"
 #include "utopia_UGMeshReader.hpp"
-#include "utopia_libmesh.hpp"
+#include "utopia_libmesh_old.hpp"
 
 namespace utopia {
     void MSHReaderTest::run(Input &in) {

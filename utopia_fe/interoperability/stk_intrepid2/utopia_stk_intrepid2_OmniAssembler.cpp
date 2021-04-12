@@ -19,11 +19,15 @@ namespace utopia {
 
             template <class MaterialDescription>
             void init_material_assembler(const MaterialDescription &desc) {
-                assemble_material = [this, desc](const Vector &x, Matrix &mat, Vector &rhs) -> bool {
+                assemble_jacobian = [this, desc](const Vector &x, Matrix &mat) -> bool {
                     utopia::intrepid2::Assemble<MaterialDescription> assembler(desc, fe);
                     assembler.init();
                     local_to_global(*space, assembler.element_matrices(), ADD_MODE, mat);
+                    return true;
+                };
 
+                assemble_material = [this, desc](const Vector &x, Matrix &mat, Vector &rhs) -> bool {
+                    if (!assemble_jacobian(x, mat)) return false;
                     rhs = mat * x;
                     return true;
                 };
@@ -67,6 +71,7 @@ namespace utopia {
                 };
             }
 
+            std::function<bool(const Vector &x, Matrix &)> assemble_jacobian;
             std::function<bool(const Vector &x, Matrix &, Vector &)> assemble_material;
             std::function<bool(const Vector &x, Vector &)> assemble_forcing_function;
 
@@ -100,6 +105,27 @@ namespace utopia {
             }
 
             return true;
+        }
+
+        bool OmniAssembler::assemble(const Vector &x, Matrix &jacobian) {
+            if (!impl_->fe) {
+                return false;
+            }
+
+            if (!impl_->assemble_jacobian(x, jacobian)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool OmniAssembler::assemble(const Vector &x, Vector &fun) {
+            if (!impl_->fe) {
+                return false;
+            }
+
+            assert(false && "IMPLEMENT ME");
+            return false;
         }
 
         void OmniAssembler::read(Input &in) {
