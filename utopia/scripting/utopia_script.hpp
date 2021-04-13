@@ -81,7 +81,7 @@ namespace scripting {
         void set(const SizeType &i, const Scalar &value);
         // void convert_into_uvector(std::vector<double> values, const Layout &l);
         // void convert_into_uvector(float *values, const Layout &l);
-        void convert_into_uvector(double *values);
+        void convert_into_uvector(double *values, int n);
 
     private:
         VectorImpl *impl_;
