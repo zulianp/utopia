@@ -2,6 +2,9 @@
 #define UTOPIA_SCRIPT_HPP
 
 //#include "utopia_AbstractVector.hpp"
+
+void print_array(double *seq, int n);
+
 namespace utopia {
     // Forward declarations
 
@@ -81,7 +84,7 @@ namespace scripting {
         void set(const SizeType &i, const Scalar &value);
         // void convert_into_uvector(std::vector<double> values, const Layout &l);
         // void convert_into_uvector(float *values, const Layout &l);
-        void convert_into_uvector(double *seq, int n);
+        // void convert_into_uvector(double *seq, int n);
 
     private:
         VectorImpl *impl_;

@@ -1,4 +1,3 @@
-
 /* utopia.i */
  %module utopia
  %{
@@ -15,5 +14,3 @@
 
 %apply (double* IN_ARRAY1, int DIM1) {(double* seq, int n)};
 #include "utopia_script.hpp"
-
-
