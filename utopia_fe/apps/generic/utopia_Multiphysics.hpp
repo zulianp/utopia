@@ -213,6 +213,11 @@ namespace utopia {
             return true;
         }
 
+        std::vector<std::shared_ptr<Matrix_t>> operators() override {
+            std::vector<std::shared_ptr<Matrix_t>> ret{this->jacobian(), mass_matrix_};
+            return ret;
+        }
+
     private:
         std::shared_ptr<OmniAssembler_t> assembler_;
         std::shared_ptr<OmniAssembler_t> mass_matrix_assembler_;
@@ -241,6 +246,7 @@ namespace utopia {
     public:
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
+        using Size_t = typename Traits<FunctionSpace>::SizeType;
         using StationaryLinearFEProblem_t = utopia::StationaryLinearFEProblem<FunctionSpace>;
         using ProblemBase_t = utopia::ProblemBase<FunctionSpace>;
 
@@ -258,12 +264,21 @@ namespace utopia {
         bool init() { return lagrange_multiplier.transfer.init(from->space(), to->space()); }
 
         bool condense() {
-            Matrix_t temp;
-            if (!lagrange_multiplier.transfer.apply(*to->jacobian(), temp)) {
-                return false;
+            auto &&from_ops = from->operators();
+            auto &&to_ops = to->operators();
+
+            const Size_t n = from_ops.size();
+            assert(n == to_ops.size());
+
+            for (Size_t i = 0; i < n; ++i) {
+                Matrix_t temp;
+                if (!lagrange_multiplier.transfer.apply(*to_ops[i], temp)) {
+                    return false;
+                }
+
+                (*from_ops[i]) += temp;
             }
 
-            (*from->jacobian()) += temp;
             return true;
         }
 
@@ -469,6 +484,12 @@ namespace utopia {
             return assemble_couplings() && assemble_problems() && condense_systems() && apply_constraints();
         }
 
+        void increment_time() {
+            for (auto &p : problems) {
+                p.second->increment_time();
+            }
+        }
+
         bool solve() {
             auto it = problems.find(master_problem);
             if (it == problems.end()) {
@@ -478,10 +499,11 @@ namespace utopia {
 
             auto p = it->second;
             if (p->is_time_dependent()) {
-                if (false) {
+                if (true) {
                     // if (problems.size() == 1UL) {
                     do {
-                        if (!(p->integrate() && p->export_result())) {
+                        increment_time();
+                        if (!(p->update() && export_results())) {
                             return false;
                         }
 
@@ -496,19 +518,20 @@ namespace utopia {
                     }
 
                     if (trivial) {
-                        p->increment_time();
+                        increment_time();
 
                         do {
-                            if (!(p->solve() &&              //
-                                  transfer_solutions() &&    //
-                                  reassemble_problems() &&   //
+                            if (!(p->solve() &&             //
+                                  transfer_solutions() &&   //
+                                  reassemble_problems() &&  //
+                                  // apply_constraints() &&     //
                                   transfer_residuals() &&    //
                                   p->apply_constraints() &&  //
-                                  p->export_result())) {
+                                  export_results())) {
                                 return false;
                             }
 
-                            p->increment_time();
+                            increment_time();
 
                         } while (!p->complete());
                     } else {

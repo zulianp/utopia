@@ -25,6 +25,8 @@ namespace utopia {
         virtual bool solve() = 0;
         virtual bool assemble() = 0;
 
+        virtual bool update() { return false; }
+
         virtual bool integrate() {
             assert(false && "IMPLEMENT ME");
             return false;
@@ -56,6 +58,11 @@ namespace utopia {
             rename(name() + "_solution", *this->solution());
             rename(name() + "_fun", *this->fun());
             return true;
+        }
+
+        virtual std::vector<std::shared_ptr<Matrix>> operators() {
+            std::vector<std::shared_ptr<Matrix>> ret{jacobian()};
+            return ret;
         }
 
         std::shared_ptr<Matrix> jacobian() const { return jacobian_; }
@@ -128,12 +135,11 @@ namespace utopia {
 
         TimeDependentProblem(const std::shared_ptr<FunctionSpace>& space) : Super(space) {}
 
-        virtual bool update() = 0;
         void increment_time() override { current_time_.update(delta_time_); }
 
         bool integrate() override {
             increment_time();
-            return update();
+            return this->update();
         }
 
         inline bool complete() const override {
