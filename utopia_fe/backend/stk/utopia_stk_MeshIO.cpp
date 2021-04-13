@@ -24,6 +24,7 @@ namespace utopia {
                 in.get("verbose", verbose);
                 in.get("import_all_field_data", import_all_field_data);
                 in.get("time_step", time_step);
+                in.get("output_path", output_path);
 
                 if (import_all_field_data) {
                     // read_purpose = ::stk::io::READ_RESTART;
@@ -108,9 +109,10 @@ namespace utopia {
                 auto &bulk_data = mesh.bulk_data();
 
                 try {
+                    output_path = write_path;
                     io_broker->set_bulk_data(bulk_data);
-                    auto out_id = io_broker->create_output_mesh(write_path.to_string(), ::stk::io::WRITE_RESTART);
-                    io_broker->write_output_mesh(out_id);
+                    output_id = io_broker->create_output_mesh(write_path.to_string(), ::stk::io::WRITE_RESTART);
+                    io_broker->write_output_mesh(output_id);
                     return true;
 
                 } catch (const std::exception &ex) {
@@ -132,10 +134,11 @@ namespace utopia {
             ::stk::io::DatabasePurpose read_purpose{::stk::io::READ_MESH};           //{READ_RESTART}
             BulkData::AutomaticAuraOption auto_aura_option{BulkData::NO_AUTO_AURA};  //{AUTO_AURA}
             std::string decomposition_method;
-            bool create_edges{false};
             bool verbose{false};
             bool import_all_field_data{false};
             int time_step{1};
+            Path output_path{"./out.e"};
+            int output_id{-1};
         };
 
         void MeshIO::read(Input &in) { impl_->read(in); }
@@ -150,6 +153,55 @@ namespace utopia {
         MeshIO::~MeshIO() = default;
 
         void MeshIO::import_all_field_data(const bool value) { impl_->import_all_field_data = value; }
+
+        void MeshIO::set_output_path(const Path &path) { impl_->output_path = path; }
+
+        const Path &MeshIO::output_path() const { return impl_->output_path; }
+
+        ::stk::io::StkMeshIoBroker &MeshIO::raw_type() {
+            assert(impl_->io_broker);
+            return *impl_->io_broker;
+        }
+
+        void MeshIO::create_output_mesh() {
+            assert(impl_->output_id == -1);
+            impl_->output_id =
+                impl_->io_broker->create_output_mesh(impl_->output_path.to_string(), ::stk::io::WRITE_RESTART);
+        }
+
+        bool MeshIO::ensure_output() {
+            if (impl_->output_id != -1) {
+                return true;
+            }
+
+            create_output_mesh();
+            return true;
+        }
+
+        void MeshIO::register_output_field(const std::string &var_name) {
+            if (ensure_output()) {
+                assert(impl_->output_id != -1);
+                ::stk::mesh::FieldBase *field = ::stk::mesh::get_field_by_name(var_name, impl_->mesh.meta_data());
+                if (field) {
+                    impl_->io_broker->add_field(impl_->output_id, *field, var_name);
+                } else {
+                    utopia::err() << "[Error] mesh does not have a field with name " << var_name << '\n';
+                    assert(false);
+                }
+            }
+        }
+
+        bool MeshIO::write(const int step, const Scalar t) {
+            try {
+                assert(impl_->output_id != -1);
+                impl_->io_broker->process_output_request(step, t);
+                return true;
+            } catch (const std::exception &ex) {
+                utopia::err() << "MeshIO::write: " << impl_->output_path.to_string() << " error: " << ex.what() << '\n';
+                assert(false);
+                return false;
+            }
+        }
 
     }  // namespace stk
 }  // namespace utopia

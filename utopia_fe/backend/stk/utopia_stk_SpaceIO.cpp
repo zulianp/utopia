@@ -9,10 +9,8 @@ namespace utopia {
         public:
             Impl(FunctionSpace &space) : space(space), io(space.mesh()) {}
             FunctionSpace &space;
-
-            // Path read_path;
-            Path output_path{"out.e"};
             MeshIO io;
+            bool is_open{false};
         };
 
         void SpaceIO::read(Input &in) { impl_->space.read(in); }
@@ -21,31 +19,28 @@ namespace utopia {
             return impl_->space.read_with_state(in, field);
         }
 
-        // bool SpaceIO::load() {}
-
-        bool SpaceIO::write(const Vector &v) { return impl_->space.write(impl_->output_path, v); }
+        bool SpaceIO::write(const Vector &v) { return impl_->space.write(impl_->io.output_path(), v); }
 
         bool SpaceIO::write(const Vector &v, const int step, const Scalar t) {
-            assert(false && "IMPLEMENT ME");
-            return false;
+            if (!impl_->is_open) {
+                open_output();
+            }
 
-            // try {
-            //     auto &sol = *impl_->space.raw_type_system().solution;
-            //     utopia::convert(v, sol);
-            //     sol.close();
-            //     impl_->io.write_timestep(impl_->output_path.to_string(), impl_->space.raw_type(), step, t);
-            //     return true;
-            // } catch (const std::exception &ex) {
-            //     utopia::err() << "[Error] SpaceIO::write: " << ex.what() << "\n";
-            //     return false;
-            // }
+            impl_->space.global_vector_to_nodal_field(v);
+            return impl_->io.write(step, t);
         }
 
-        // bool SpaceIO::read(Vector &v, const int step, const Scalar t) {}
+        void SpaceIO::set_output_path(const Path &path) { impl_->io.set_output_path(path); }
 
-        void SpaceIO::set_output_path(const Path &path) { impl_->output_path = path; }
+        bool SpaceIO::open_output() {
+            if (!impl_->io.ensure_output()) {
+                return false;
+            }
 
-        // void SpaceIO::set_read_path(const Path &path) { impl_->read_path = path; }
+            impl_->space.register_output_variables(impl_->io);
+            impl_->is_open = true;
+            return true;
+        }
 
         SpaceIO::SpaceIO(FunctionSpace &space) : impl_(utopia::make_unique<Impl>(space)) {}
         SpaceIO::~SpaceIO() = default;

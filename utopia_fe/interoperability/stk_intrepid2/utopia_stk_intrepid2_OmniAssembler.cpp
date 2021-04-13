@@ -13,6 +13,38 @@
 namespace utopia {
     namespace stk {
 
+        // class AssemblerRegistry {
+        // public:
+        //     // using FEAssembler_t = utopia::FEAssembler<utopia::stk::FunctionSpace>;
+        //     // using FEAssemblerPtr_t = std::shared_ptr<FEAssembler_t>;
+
+        //     FEAssemblerPtr_t find_assembler(const std::string &name) const {
+        //         auto it = assemblers_.find(name);
+        //         if (it == assemblers_.end()) {
+        //             // utopia::err() << "Unable to find assembler with name " << name << ".\n";
+        //             // assert(false);
+        //             return nullptr;
+        //         } else {
+        //             return it->second();
+        //         }
+        //     }
+
+        //     template <typename Assembler_t>
+        //     void register_assembler(const std::string &name) {
+        //         assemblers_[name] = []() -> FEAssemblerPtr_t { return std::make_shared<Assembler_t>(); };
+        //     }
+
+        //     AssemblerRegistry() { register_assemblers(); }
+
+        // private:
+        //     std::map<std::string, std::function<FEAssemblerPtr_t()>> assemblers_;
+
+        //     void register_assemblers() {
+        //         register_assembler<Transport>("Transport");
+        //         register_assembler<Mass>("Mass");
+        //     }
+        // };
+
         class OmniAssembler::Impl {
         public:
             using FE = utopia::intrepid2::FE<Scalar>;

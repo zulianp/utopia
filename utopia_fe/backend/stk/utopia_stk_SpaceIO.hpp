@@ -19,8 +19,11 @@ namespace utopia {
             using Scalar = Traits<FunctionSpace>::Scalar;
             using Vector = Traits<FunctionSpace>::Vector;
 
+            // One shot functions
             void read(Input &in) override;
             bool read_with_state(Input &in, Field<FunctionSpace> &field);
+
+            // Statefull functions
             // bool load();
 
             bool write(const Vector &v);
@@ -28,6 +31,7 @@ namespace utopia {
             // bool read(Vector &v, const int step = 1, const Scalar t = 0);
 
             void set_output_path(const Path &path);
+            bool open_output();
             // void set_read_path(const Path &path);
 
             SpaceIO(FunctionSpace &space);

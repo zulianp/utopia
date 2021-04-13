@@ -635,7 +635,41 @@ namespace utopia {
             dof_map().local_to_global(local, global, mode);
         }
 
+        void FunctionSpace::nodal_field_to_local_vector(Vector &v) { impl_->nodal_field_to_local_vector(v); }
+        void FunctionSpace::local_vector_to_nodal_field(const Vector &v) { impl_->local_vector_to_nodal_field(v); }
+
+        void FunctionSpace::nodal_field_to_global_vector(Vector &v) {
+            Vector local_v;
+            nodal_field_to_local_vector(local_v);
+            local_to_global(local_v, v, OVERWRITE_MODE);
+        }
+        void FunctionSpace::global_vector_to_nodal_field(const Vector &v) {
+            Vector local_v;
+            global_to_local(v, local_v);
+            local_vector_to_nodal_field(local_v);
+        }
+
         const std::string &FunctionSpace::name() const { return impl_->name; }
+
+        FunctionSpace::SizeType FunctionSpace::n_variables() const {
+            return static_cast<SizeType>(impl_->variables.size());
+        }
+
+        const std::string &FunctionSpace::variable_name(const SizeType var_num) const {
+            assert(var_num < n_variables());
+            return impl_->variables[var_num].name;
+        }
+
+        int FunctionSpace::variable_size(const SizeType var_num) const {
+            assert(var_num < n_variables());
+            return impl_->variables[var_num].n_components;
+        }
+
+        void FunctionSpace::register_output_variables(MeshIO &io) {
+            for (auto &v : impl_->variables) {
+                io.register_output_field(v.name);
+            }
+        }
 
     }  // namespace stk
 }  // namespace utopia

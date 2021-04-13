@@ -11,6 +11,10 @@ namespace stk {
         class Bucket;
 
     }  // namespace mesh
+
+    namespace io {
+        class StkMeshIoBroker;
+    }
 }  // namespace stk
 
 namespace utopia {
@@ -20,7 +24,8 @@ namespace utopia {
         class Mesh;
         class FunctionSpace;
         class DofMap;
-        class IO;
+        class MeshIO;
+        class SpaceIO;
 
     }  // namespace stk
 }  // namespace utopia

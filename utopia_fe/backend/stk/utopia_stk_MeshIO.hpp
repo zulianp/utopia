@@ -3,10 +3,12 @@
 
 #include "utopia_Input.hpp"
 #include "utopia_Path.hpp"
+#include "utopia_Traits.hpp"
 
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_stk_ForwardDeclarations.hpp"
+#include "utopia_stk_Mesh.hpp"
 
 #include <memory>
 #include <string>
@@ -16,17 +18,29 @@ namespace utopia {
 
         class MeshIO : public Configurable {
         public:
+            using Scalar = Traits<Mesh>::Scalar;
+
             void read(Input &in) override;
             bool load();
             bool write(const Path &write_path);
+            bool write(const int step, const Scalar t);
 
             void set_read_path(const Path &path);
             void set_read_specification(const std::string &format);
 
             void import_all_field_data(const bool value);
 
+            ::stk::io::StkMeshIoBroker &raw_type();
+
+            void set_output_path(const Path &path);
+            void create_output_mesh();
+            void register_output_field(const std::string &var_name);
+
             MeshIO(Mesh &mesh);
             ~MeshIO();
+
+            const Path &output_path() const;
+            bool ensure_output();
 
         public:
             class Impl;

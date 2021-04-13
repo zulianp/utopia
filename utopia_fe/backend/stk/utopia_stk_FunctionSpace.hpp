@@ -70,11 +70,24 @@ namespace utopia {
 
             const std::string &name() const;
 
+            SizeType n_variables() const;
+            const std::string &variable_name(const SizeType var_num) const;
+            int variable_size(const SizeType var_num) const;
+
+            void nodal_field_to_local_vector(Vector &v);
+            void local_vector_to_nodal_field(const Vector &v);
+
+            void nodal_field_to_global_vector(Vector &v);
+            void global_vector_to_nodal_field(const Vector &v);
+
         private:
             class Impl;
             class Var;
 
             std::shared_ptr<Impl> impl_;
+
+            void register_output_variables(MeshIO &io);
+            friend class SpaceIO;
         };
 
     }  // namespace stk
