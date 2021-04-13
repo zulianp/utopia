@@ -69,6 +69,7 @@ namespace utopia {
         ArrayView(const ArrayView &other) = default;
 
         inline void set_data(T *data) { data_ = data; }
+        UTOPIA_INLINE_FUNCTION bool empty() const { return size_ == 0; }
 
     private:
         T *data_;

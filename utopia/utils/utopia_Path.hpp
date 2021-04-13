@@ -6,6 +6,8 @@
 #include <ostream>
 #include <string>
 
+#include "utopia_Describable.hpp"
+
 // forward declaration of dirent included in cpp
 struct dirent;
 
@@ -35,7 +37,7 @@ namespace utopia {
         Path operator*() const;
     };
 
-    class Path {
+    class Path : public Describable {
     private:
         std::string path_;
         static void resolve_path_separators(std::string &path);
@@ -60,6 +62,8 @@ namespace utopia {
             return os;
         }
 
+        inline void describe(std::ostream &os) const override { os << this->to_string(); }
+
         inline bool empty() const { return path_.empty(); }
         std::string file_name() const;
         std::string extension() const;
@@ -72,6 +76,8 @@ namespace utopia {
 
         bool is_dir() const;
         bool make_dir(const int permissions = 0777);
+
+        inline std::string &raw_type() { return path_; }
     };
 
 }  // namespace utopia

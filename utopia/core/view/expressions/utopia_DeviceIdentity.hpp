@@ -13,6 +13,7 @@ namespace utopia {
     class DeviceIdentity : public DeviceExpression<DeviceIdentity<Scalar_>> {
     public:
         using Scalar = Scalar_;
+        using SizeType = utopia::SizeType;
 
         template <typename SizeType>
         UTOPIA_INLINE_FUNCTION Scalar operator()(const SizeType &i, const SizeType &j) const {
@@ -36,6 +37,7 @@ namespace utopia {
     public:
         static const int Order = 2;
         using Scalar = Scalar_;
+        using SizeType = utopia::SizeType;
     };
 
     template <class Left, typename Scalar>
@@ -74,7 +76,8 @@ namespace utopia {
     class DeviceBinary<DeviceNumber<Left>, DeviceIdentity<Right>, Op>
         : public DeviceExpression<DeviceBinary<DeviceNumber<Left>, DeviceIdentity<Right>, Op>> {
     public:
-        using Scalar = typename Traits<Right>::Scalar;
+        using RightScalar = typename Traits<Right>::Scalar;
+        using Scalar = decltype(Left() * Right());
 
         UTOPIA_INLINE_FUNCTION DeviceBinary(const DeviceNumber<Left> &left, const DeviceIdentity<Right> &right)
             : left_(left), right_(right) {}

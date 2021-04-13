@@ -809,6 +809,16 @@ namespace utopia {
     }
 
     template <typename Matrix, typename Vector>
+    void KSPSolver<Matrix, Vector, PETSC>::factor_set_pivot_in_blocks(const bool val) {
+        PC pc;
+        auto ierr = KSPGetPC(ksp_->implementation(), &pc);
+        assert(ierr == 0);
+        UTOPIA_UNUSED(ierr);
+
+        PCFactorSetPivotInBlocks(pc, val ? PETSC_TRUE : PETSC_FALSE);
+    }
+
+    template <typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::pc_type(const std::string &pc_type) {
         ksp_->pc_type(pc_type);
     }
@@ -875,6 +885,8 @@ namespace utopia {
 
     template <typename Matrix, typename Vector>
     bool KSPSolver<Matrix, Vector, PETSC>::apply(const Vector &b, Vector &x) {
+        UTOPIA_TRACE_REGION_BEGIN("KSPSolver::apply");
+
         ksp_->set_tolerances(this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
 
         bool flg = ksp_->apply(b, x);
@@ -883,12 +895,19 @@ namespace utopia {
 
         // is this proper place to do so???
         // this->set_ksp_options(ksp_->implementation());
+
+        UTOPIA_TRACE_REGION_END("KSPSolver::apply");
         return flg;
     }
 
     template <typename Matrix, typename Vector>
     bool KSPSolver<Matrix, Vector, PETSC>::smooth(const Vector &rhs, Vector &x) {
-        return ksp_->smooth(this->sweeps(), rhs, x);
+        UTOPIA_TRACE_REGION_BEGIN("KSPSolver::smooth");
+
+        bool ok = ksp_->smooth(this->sweeps(), rhs, x);
+
+        UTOPIA_TRACE_REGION_END("KSPSolver::smooth");
+        return ok;
     }
 
     template <typename Matrix, typename Vector>
@@ -992,15 +1011,21 @@ namespace utopia {
     template <typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::update(const std::shared_ptr<const Matrix> &op,
                                                   const std::shared_ptr<const Matrix> &prec) {
+        UTOPIA_TRACE_REGION_BEGIN("KSPSolver::update(op,prec)");
+
         handle_reset(*op);
         set_monitor_options(ksp_->implementation());
 
         PreconditionedSolver::update(op, prec);
         ksp_->update(*op, *prec);
+
+        UTOPIA_TRACE_REGION_END("KSPSolver::update(op,prec)");
     }
 
     template <typename Matrix, typename Vector>
     void KSPSolver<Matrix, Vector, PETSC>::update(const std::shared_ptr<const Matrix> &op) {
+        UTOPIA_TRACE_REGION_BEGIN("KSPSolver::update");
+
         handle_reset(*op);
 
         PreconditionedSolver::update(op);
@@ -1019,6 +1044,8 @@ namespace utopia {
         if (!skip_set_operators) {
             ksp_->update(*op);
         }
+
+        UTOPIA_TRACE_REGION_END("KSPSolver::update");
     }
 
     template <typename Matrix, typename Vector>

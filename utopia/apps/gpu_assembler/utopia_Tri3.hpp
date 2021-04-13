@@ -10,7 +10,7 @@ namespace utopia {
     class Tri3 : public Elem {
     public:
         using Scalar = Scalar_;
-        using MemType = Uniform<>;
+        using MemType = Varying<>;
         static const int Dim = 2;
         static const int NNodes = 3;
         static const int NSides = 3;
@@ -146,7 +146,16 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION void grad(const int i, const Point &p, Grad &g) const {
             Grad g_ref;
             RefTri3::grad(i, p, g_ref);
-            g = jacobian_inverse_ * g_ref;
+
+            const int rows = jacobian_inverse_.rows();
+            const int cols = jacobian_inverse_.cols();
+            // g = jacobian_inverse_ * g_ref;
+            for (int r = 0; r < rows; ++r) {
+                g.set(r, Zero<Scalar>::value());
+                for (int c = 0; c < cols; ++c) {
+                    g.add(r, jacobian_inverse_(r, c) * g_ref[c]);
+                }
+            }
         }
 
         UTOPIA_INLINE_FUNCTION constexpr static bool is_affine() { return true; }

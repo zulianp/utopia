@@ -12,6 +12,7 @@
 
 #ifdef UTOPIA_WITH_VC
 #include "utopia_vc_ProjectedBlockGaussSeidelSweep.hpp"
+#include "utopia_vc_ProjectedBlockGaussSeidelSweepTransposed.hpp"
 #endif  // UTOPIA_WITH_VC
 
 namespace utopia {
@@ -68,12 +69,16 @@ namespace utopia {
         in.get("block_size", block_size);
 
 #ifdef UTOPIA_WITH_VC
+        // FIXME
+#ifdef UTOPIA_WITH_PETSC
         bool use_simd = false;
         in.get("use_simd", use_simd);
 
-        if (use_simd) {
-            sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
+        if (use_simd && block_size == VcProjectedBlockGaussSeidelSweep<Matrix>::BlockSize) {
+            // sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweep<Matrix>>();
+            sweeper_ = utopia::make_unique<VcProjectedBlockGaussSeidelSweepTransposed<Matrix>>();
         } else
+#endif  // UTOPIA_WITH_PETSC
 #endif  // UTOPIA_WITH_VC
             if (block_size == 2) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 2>>();
@@ -81,6 +86,10 @@ namespace utopia {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 3>>();
         } else if (block_size == 4) {
             sweeper_ = utopia::make_unique<ProjectedBlockGaussSeidelSweep<Matrix, 4>>();
+        }
+
+        if (sweeper_) {
+            sweeper_->read(in);
         }
     }
 
@@ -497,8 +506,10 @@ namespace utopia {
             local_block_view(A, A_local);
 
             if (reset) {
+                assert(sweeper_);
                 sweeper_->init_from_local_matrix(A_local);
             } else {
+                assert(sweeper_);
                 sweeper_->update_from_local_matrix(A_local);
             }
 

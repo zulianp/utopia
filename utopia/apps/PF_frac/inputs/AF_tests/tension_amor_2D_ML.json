@@ -1,6 +1,6 @@
 {
     "app" : "petsc_pressure_net_2_rmtr_vol_dev",
-    "output-path" : "amor_test_ML/out",
+    "output-path" : "amor_test_ML_test/out",
     "nx" : 100,
     "ny" : 50,
     "n_levels": 2,
@@ -9,7 +9,7 @@
     "y_min" : 0,
     "y_max" : 0.5,
     "disp" : 1,
-    "num_time_steps" : 100, 
+    "num_time_steps" : 50, 
     "dt" : 1e-4,     
     "use_mprgp" : true,
     "adjust_dt_on_failure": false,

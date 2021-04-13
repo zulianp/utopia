@@ -1,10 +1,7 @@
-
-
 # Hello world
 add_executable(example_hello_world EXCLUDE_FROM_ALL example_hello_world.cpp)
 utopia_link_default_targets(example_hello_world)
 target_link_libraries(example_hello_world PRIVATE utopia)
-
 
 # Assemble and solve a linear system
 add_executable(example_solve_PDE_1D EXCLUDE_FROM_ALL example_solve_PDE_1D.cpp)
@@ -17,7 +14,8 @@ utopia_link_default_targets(example_loops)
 target_link_libraries(example_loops PRIVATE utopia)
 
 # Non-linear
-add_executable(example_nonlinear_solve EXCLUDE_FROM_ALL example_nonlinear_solve.cpp)
+add_executable(example_nonlinear_solve EXCLUDE_FROM_ALL
+               example_nonlinear_solve.cpp)
 utopia_link_default_targets(example_nonlinear_solve)
 target_link_libraries(example_nonlinear_solve PRIVATE utopia)
 
@@ -27,33 +25,39 @@ utopia_link_default_targets(example_communicator)
 target_link_libraries(example_communicator PRIVATE utopia)
 
 # Simple linear system
-add_executable(example_trivial_linear_system EXCLUDE_FROM_ALL example_trivial_linear_system.cpp)
+add_executable(example_trivial_linear_system EXCLUDE_FROM_ALL
+               example_trivial_linear_system.cpp)
 utopia_link_default_targets(example_trivial_linear_system)
 target_link_libraries(example_trivial_linear_system PRIVATE utopia)
 
 # Sum of two vectors
-add_executable(example_sum_of_two_vectors EXCLUDE_FROM_ALL example_sum_of_two_vectors.cpp)
+add_executable(example_sum_of_two_vectors EXCLUDE_FROM_ALL
+               example_sum_of_two_vectors.cpp)
 utopia_link_default_targets(example_sum_of_two_vectors)
 target_link_libraries(example_sum_of_two_vectors PRIVATE utopia)
 
 # Linear solvers comparision
-add_executable(example_comparison_linear_solvers EXCLUDE_FROM_ALL example_comparison_linear_solvers.cpp)
+add_executable(example_comparison_linear_solvers EXCLUDE_FROM_ALL
+               example_comparison_linear_solvers.cpp)
 utopia_link_default_targets(example_comparison_linear_solvers)
 target_link_libraries(example_comparison_linear_solvers PRIVATE utopia)
 
+# Linear solvers comparision
+add_executable(example_app EXCLUDE_FROM_ALL example_app.cpp)
+utopia_link_default_targets(example_app)
+target_link_libraries(example_app PRIVATE utopia)
 
-# Add more examples here and add target to dependecy list below
-# ...
-
+# Add more examples here and add target to dependecy list below ...
 
 add_custom_target(utopia_examples)
-add_dependencies(utopia_examples
-            example_hello_world
-            example_solve_PDE_1D
-            example_loops
-            example_nonlinear_solve
-            example_communicator
-            example_sum_of_two_vectors
-            example_trivial_linear_system
-            example_comparison_linear_solvers
-            )
+add_dependencies(
+    utopia_examples
+    example_hello_world
+    example_solve_PDE_1D
+    example_loops
+    example_nonlinear_solve
+    example_communicator
+    example_sum_of_two_vectors
+    example_trivial_linear_system
+    example_comparison_linear_solvers
+    example_app)

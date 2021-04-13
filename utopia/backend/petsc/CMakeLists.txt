@@ -17,13 +17,19 @@ if(PETSC_FOUND)
         set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
         set(CMAKE_CXX_COMPILER_DEBUG ${MPI_CXX_COMPILER})
     else()
-         execute_process(COMMAND mpicxx -v RESULT_VARIABLE MPICXX_FAILED)
+        execute_process(COMMAND mpicxx -v RESULT_VARIABLE MPICXX_FAILED)
 
         if(MPICXX_FAILED)
-            message(STATUS "Using CMAKE compiler, you can define MPI_CXX_COMPILER=<alias_or_path_to_your_compiler>")
+            message(
+                STATUS
+                    "Using CMAKE compiler, you can define MPI_CXX_COMPILER=<alias_or_path_to_your_compiler>"
+            )
         else()
             message(STATUS "-----------------------------------------------")
-            message(STATUS "\n[MPI] using mpicxx for compiling c++ files.\nIf you want to use your own compiler define MPI_CXX_COMPILER=<alias_or_path_to_your_compiler>")
+            message(
+                STATUS
+                    "\n[MPI] using mpicxx for compiling c++ files.\nIf you want to use your own compiler define MPI_CXX_COMPILER=<alias_or_path_to_your_compiler>"
+            )
             message(STATUS "-----------------------------------------------")
             set(CMAKE_CXX_COMPILER mpicxx)
             set(CMAKE_CXX_COMPILER_DEBUG mpicxx)
@@ -35,8 +41,6 @@ else()
     message(WARNING "[Warning] Petsc not found")
     set(UTOPIA_WITH_PETSC FALSE)
 endif()
-
-
 
 if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
     find_package(SLEPc)
@@ -51,19 +55,27 @@ if(PETSC_FOUND AND UTOPIA_ENABLE_SLEPC)
     endif()
 endif()
 
-
 if(SLEPC_FOUND)
-    set(UTOPIA_WITH_SLEPC ON PARENT_SCOPE)
-    set(UTOPIA_SLEPC TRUE PARENT_SCOPE)
+    set(UTOPIA_WITH_SLEPC
+        ON
+        PARENT_SCOPE)
+    set(UTOPIA_SLEPC
+        TRUE
+        PARENT_SCOPE)
 endif()
-
 
 # set-up module
 if(PETSC_FOUND)
-    set(UTOPIA_PETSC TRUE PARENT_SCOPE)
-    set(UTOPIA_WITH_PETSC ON PARENT_SCOPE)
+    set(UTOPIA_PETSC
+        TRUE
+        PARENT_SCOPE)
+    set(UTOPIA_WITH_PETSC
+        ON
+        PARENT_SCOPE)
 
-    list(APPEND PETSC_MODULES
+    list(
+        APPEND
+        PETSC_MODULES
         .
         eval
         solvers
@@ -75,18 +87,14 @@ if(PETSC_FOUND)
         solvers/nonlinear/constrained/quadratic_programming
         solvers/nonlinear/trust_region
         solvers/nonlinear/line_search
-        )
+        views)
 
     if(UTOPIA_WITH_SLEPC)
-        list(APPEND PETSC_MODULES
-            solvers/eigensolvers
-        )
+        list(APPEND PETSC_MODULES solvers/eigensolvers)
     endif()
 
     if(UTOPIA_ENABLE_PASSO_EXTENSIONS)
-        list(APPEND PETSC_MODULES
-                external
-            )
+        list(APPEND PETSC_MODULES external)
     endif()
 
     utopia_add_library(${CMAKE_CURRENT_SOURCE_DIR} "${PETSC_MODULES}")
@@ -100,9 +108,10 @@ if(PETSC_FOUND)
         target_compile_definitions(utopia PUBLIC ${SLEPC_LIB_SLEPC})
     endif()
 
-    set(UTOPIA_THIRDPARTY_INCLUDES ${UTOPIA_THIRDPARTY_INCLUDES} PARENT_SCOPE)
-    set(UTOPIA_THIRDPARTY_LIBRARIES ${UTOPIA_THIRDPARTY_LIBRARIES} PARENT_SCOPE)
+    set(UTOPIA_THIRDPARTY_INCLUDES
+        ${UTOPIA_THIRDPARTY_INCLUDES}
+        PARENT_SCOPE)
+    set(UTOPIA_THIRDPARTY_LIBRARIES
+        ${UTOPIA_THIRDPARTY_LIBRARIES}
+        PARENT_SCOPE)
 endif()
-
-
-

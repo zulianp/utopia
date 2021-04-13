@@ -1,6 +1,10 @@
 #ifndef UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 #define UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
 
+#include "utopia_Base.hpp"
+
+#ifdef UTOPIA_WITH_PETSC
+
 #include "utopia_Algorithms.hpp"
 #include "utopia_VectorView.hpp"
 #include "utopia_Views.hpp"
@@ -34,6 +38,7 @@ namespace utopia {
 
         using SIMDType = MatrixSIMDType<Matrix>;
         static const int BlockSize = static_cast<int>(SIMDType::Size);
+        static const int BlockSize_2 = BlockSize * BlockSize;
 
         using SmallMatrix = utopia::StaticMatrix<Scalar, BlockSize, BlockSize>;
         using Block = SmallMatrix;  // utopia::StaticVector<SIMDType, BlockSize>;
@@ -42,7 +47,13 @@ namespace utopia {
 
         static_assert(BlockSize == 4, "Must fix this class to work with other types than avx2 with doubles");
 
-        VcProjectedBlockGaussSeidelSweep *clone() const override { return new VcProjectedBlockGaussSeidelSweep(); }
+        VcProjectedBlockGaussSeidelSweep *clone() const override {
+            auto ptr = utopia::make_unique<VcProjectedBlockGaussSeidelSweep>();
+            ptr->on_update_keep_nnz_pattern_ = on_update_keep_nnz_pattern_;
+            return ptr.release();
+        }
+
+        void read(Input &in) override { in.get("on_update_keep_nnz_pattern", on_update_keep_nnz_pattern_); }
 
         class BlockIdx {
         public:
@@ -67,27 +78,26 @@ namespace utopia {
 
         void init_from_local_matrix(const Matrix &mat) override {
             UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
-            crs_block_matrix<BlockSize>(mat, block_crs);
+            if (diag_.empty() || !on_update_keep_nnz_pattern_) {
+                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::init_crs");
+                crs_block_matrix_split_diag<BlockSize>(mat, block_crs, diag_);
+                inv_diag_.resize(block_crs.rows());
+                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_crs");
+            } else {
+                UTOPIA_TRACE_REGION_BEGIN("VcProjectedBlockGaussSeidelSweep::update_crs");
+                crs_block_matrix_update<BlockSize>(mat, block_crs, diag_);
+                UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::update_crs");
+            }
 
             auto n_blocks = block_crs.rows();
-
-            inv_diag_.resize(n_blocks);
-            diag_.resize(n_blocks);
 
             BlockView d;
             d.raw_type().set_size(BlockSize, BlockSize);
 
             for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
-                auto row = block_crs.row(block_i);
-
-                for (SizeType k = 0; k < row.n_blocks(); ++k) {
-                    if (row.colidx(k) == block_i) {
-                        d.raw_type().set_data(row.block(k));
-                        diag_[block_i].copy(d);
-                        inv_diag_[block_i] = inv(diag_[block_i]);
-                        break;
-                    }
-                }
+                d.raw_type().set_data(&diag_[block_i * BlockSize_2]);
+                assert(std::abs(det(d)) > 0);
+                inv_diag_[block_i] = inv(d);
             }
 
             UTOPIA_TRACE_REGION_END("VcProjectedBlockGaussSeidelSweep::init_from_local_matrix");
@@ -137,8 +147,6 @@ namespace utopia {
                 r_simd.load(&this->r_[b_offset], alignment);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    if (colidx[j] == block_i) continue;
-
                     c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
 
                     auto *aij = block_crs.block(j);
@@ -179,7 +187,10 @@ namespace utopia {
             const SizeType n_blocks = row_ptr.size() - 1;
 
             SmallMatrix d_temp, d_inv_temp;
-            SIMDType r_simd, c_simd, LRc_simd, mat_simd;
+            SIMDType r_simd, c_simd, LRc_simd, mat_simd, l_simd, u_simd;
+
+            BlockView d;
+            d.raw_type().set_size(BlockSize, BlockSize);
 
             static const auto alignment = Vc::Unaligned;
             // static const auto alignment = Vc::Aligned;
@@ -191,8 +202,6 @@ namespace utopia {
                 r_simd.load(&this->r_[b_offset], alignment);
 
                 for (SizeType j = row_ptr[block_i]; j < row_end; ++j) {
-                    if (colidx[j] == block_i) continue;
-
                     c_simd.load(&this->c_[colidx[j] * BlockSize], alignment);
 
                     auto *aij = block_crs.block(j);
@@ -208,28 +217,33 @@ namespace utopia {
                 const auto &D_inv = inv_diag_[block_i];
                 for (SizeType d = 0; d < BlockSize; ++d) {
                     mat_simd.load(&(D_inv(d, 0)), alignment);
-                    SizeType i = b_offset + d;
-                    this->c_[i] = (mat_simd * r_simd).sum();
+                    c_simd[d] = (mat_simd * r_simd).sum();
                 }
 
-                d_temp.copy(diag_[block_i]);
+                l_simd.load(&this->lb_[b_offset], alignment);
+                u_simd.load(&this->ub_[b_offset], alignment);
 
-                bool constrained = false;
-                for (SizeType d = 0; d < BlockSize; ++d) {
-                    SizeType i = b_offset + d;
-                    auto c_i = this->c_[i];
-                    if (c_i > this->lb_[i] && c_i < this->ub_[i]) continue;
+                auto mask_l = c_simd <= l_simd;
+                auto mask_u = c_simd >= u_simd;
+                auto mask_r = mask_l | mask_u;
 
-                    constrained = true;
+                if (mask_r.isNotEmpty()) {
+                    l_simd.setZeroInverted(mask_l);
+                    u_simd.setZeroInverted(mask_u);
+                    r_simd.setZero(mask_r);
+                    r_simd += l_simd + u_simd;
 
-                    r_simd[d] = device::max(this->lb_[i], device::min(c_i, this->ub_[i]));
+                    d.raw_type().set_data(&diag_[block_i * BlockSize_2]);
+                    d_temp.copy(d);
 
-                    for (SizeType d_j = 0; d_j < BlockSize; ++d_j) {
-                        d_temp(d, d_j) = d_j == d;
+                    for (SizeType d = 0; d < BlockSize; ++d) {
+                        if (mask_r[d]) {
+                            for (SizeType d_j = 0; d_j < BlockSize; ++d_j) {
+                                d_temp(d, d_j) = d_j == d;
+                            }
+                        }
                     }
-                }
 
-                if (constrained) {
                     d_inv_temp = inv(d_temp);
 
                     for (SizeType d = 0; d < BlockSize; ++d) {
@@ -237,6 +251,8 @@ namespace utopia {
                         mat_simd.load(&(d_inv_temp(d, 0)), alignment);
                         this->c_[i] = (mat_simd * r_simd).sum();
                     }
+                } else {
+                    c_simd.store(&this->c_[b_offset], alignment);
                 }
             };
 
@@ -253,10 +269,15 @@ namespace utopia {
             }
         }
 
-        std::vector<Block> diag_;
+        void on_update_keep_nnz_pattern(const bool val) { on_update_keep_nnz_pattern_ = val; }
+
+    private:
+        std::vector<Scalar> diag_;
         std::vector<Block> inv_diag_;
         CRSMatrix<std::vector<Scalar>, std::vector<SizeType>, BlockSize> block_crs;
+        bool on_update_keep_nnz_pattern_{false};
     };
 }  // namespace utopia
 
+#endif
 #endif  // UTOPIA_VC_PROJECTED_BLOCK_GAUSS_SEIDEL_SWEEP_HPP
