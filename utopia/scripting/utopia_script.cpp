@@ -118,7 +118,7 @@ namespace scripting {
     bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
     Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
     void Vector::set(const SizeType &i, const Scalar &value) { impl_->set(i, value); }
-    void Vector::convert_into_uvector(double *values, int n) {
+    void Vector::convert_into_uvector(double *seq, int n) {
         {
             impl_->write_lock(utopia::LOCAL);
             // utopia::Range rr = impl_->range();
@@ -127,8 +127,8 @@ namespace scripting {
             //     ++values;
             // }
             for (auto i = 0; i < n; ++i) {
-                impl_->set(i, *values);
-                ++values;
+                impl_->set(i, *seq);
+                ++seq;
             }
 
             impl_->write_unlock(utopia::LOCAL);
