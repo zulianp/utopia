@@ -1,7 +1,8 @@
 #ifndef UTOPIA_INTREPID2_VECTOR_LAPLACE_OPERATOR_HPP
 #define UTOPIA_INTREPID2_VECTOR_LAPLACE_OPERATOR_HPP
 
-#include "utopia_intrepid2_LaplaceOperator.hpp"
+#include "utopia_intrepid2_FE.hpp"
+#include "utopia_intrepid2_FEAssembler.hpp"
 
 #include "utopia_Views.hpp"
 
@@ -11,14 +12,14 @@ namespace utopia {
     public:
         void read(Input &in) override { in.get("coeff", coeff); }
 
-        VectorLaplaceOperator(const Ceofficient &coeff) : coeff(coeff) {}
+        VectorLaplaceOperator(const Ceofficient &coeff = Ceofficient(1.0)) : coeff(coeff) {}
         Ceofficient coeff;
     };
 
     namespace intrepid2 {
 
         template <int Dim, typename Ceofficient, typename Scalar>
-        class Assemble<VectorLaplaceOperator<Dim, Ceofficient>, Scalar> : public Describable {
+        class Assemble<VectorLaplaceOperator<Dim, Ceofficient>, Scalar> : public FEAssembler<Scalar> {
         public:
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
@@ -26,28 +27,34 @@ namespace utopia {
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using Op = utopia::VectorLaplaceOperator<Dim, Ceofficient>;
             using ExecutionSpace = typename FE::ExecutionSpace;
+            using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(Op op, const std::shared_ptr<FE> &fe) : op_(std::move(op)), fe_(fe) {}
+            Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {
+                assert(Dim == fe->spatial_dimension());
+            }
 
-            void init() {
-                assert(Dim == fe_->spatial_dimension());
-                const int num_fields = fe_->num_fields();
-                const int n_dofs = num_fields * fe_->spatial_dimension();
-                const int n_qp = fe_->num_qp();
+            inline int n_vars() const override { return Dim; }
+            inline std::string name() const override { return "VectorLaplaceOperator"; }
 
-                element_matrices_ = DynRankView("stiffness_matrix", fe_->num_cells(), n_dofs, n_dofs);
+            bool assemble() override {
+                this->ensure_mat_accumulator();
+
+                auto &fe = this->fe();
+
+                // const int num_fields = fe.num_fields();
+                // const int n_dofs = num_fields * fe.spatial_dimension();
+                const int n_qp = fe.num_qp();
+
+                auto data = this->data();
 
                 // Only works if coeff is a scalar
                 {
-                    auto em = element_matrices_;
                     auto coeff = op_.coeff;
-                    auto grad = fe_->grad;
-                    auto measure = fe_->measure;
+                    auto grad = fe.grad;
+                    auto measure = fe.measure;
 
-                    Kokkos::parallel_for(
+                    this->mat_integrate(
                         "Assemble<VectorLaplaceOperator>::init",
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
-                            {0, 0, 0}, {static_cast<int>(em.extent(0)), num_fields, num_fields}),
                         KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
                             StaticMatrix<Scalar, Dim, Dim> grad_i;
                             StaticMatrix<Scalar, Dim, Dim> grad_j;
@@ -73,12 +80,14 @@ namespace utopia {
 
                                         const Scalar val = inner(grad_i, grad_j) * coeff_x_dX;
 
-                                        em(cell, dof_i, dof_j) += val;
+                                        data(cell, dof_i, dof_j) += val;
                                     }
                                 }
                             }
                         });
                 }
+
+                return true;
             }
 
             UTOPIA_INLINE_FUNCTION static void make_tensor_grad(const int dim,
@@ -91,34 +100,8 @@ namespace utopia {
                 }
             }
 
-            void describe(std::ostream &os) const override {
-                const SizeType num_cells = fe_->num_cells();
-                const int num_fields = fe_->num_fields();
-
-                const int n_dofs = num_fields * fe_->spatial_dimension();
-
-                std::cout << "num_cells: " << num_cells << ", num_fields: " << num_fields << "\n";
-
-                for (SizeType c = 0; c < num_cells; ++c) {
-                    os << c << ")\n";
-                    for (SizeType i = 0; i < n_dofs; ++i) {
-                        for (SizeType j = 0; j < n_dofs; ++j) {
-                            os << element_matrices_(c, i, j) << " ";
-                        }
-
-                        os << '\n';
-                    }
-
-                    os << '\n';
-                }
-            }
-
-            inline const DynRankView &element_matrices() const { return element_matrices_; }
-
             // NVCC_PRIVATE :
             Op op_;
-            std::shared_ptr<FE> fe_;
-            DynRankView element_matrices_;
         };
     }  // namespace intrepid2
 }  // namespace utopia

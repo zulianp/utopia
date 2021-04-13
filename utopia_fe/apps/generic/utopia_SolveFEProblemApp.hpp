@@ -45,7 +45,11 @@ namespace utopia {
             space.create_matrix(H);
             space.create_vector(x);
             space.create_vector(g);
-            assembler->assemble(x, H, g);
+            if (!assembler->assemble(x, H, g)) {
+                utopia::err() << "Failed to assemble!\n";
+                return;
+            }
+
             g *= -1.0;
             space.apply_constraints(H, g);
 

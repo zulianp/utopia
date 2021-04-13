@@ -60,7 +60,7 @@ void intrepid2_laplace_operator() {
     auto fe_ptr = make_ref_tet();
 
     intrepid2::Assemble<LaplaceOperator<double>> assembler(lapl, fe_ptr);
-    assembler.init();
+    assembler.assemble();
     // assembler.describe(std::cout);
 }
 

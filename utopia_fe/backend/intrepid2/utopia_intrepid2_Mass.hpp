@@ -14,9 +14,7 @@ namespace utopia {
             in.get("n_components", n_components);
         }
 
-        Mass(const Fun &density) : density(density) {}
-
-        UTOPIA_FUNCTION Mass() = default;
+        Mass(const Fun &density = Fun(1.0)) : density(density) {}
         UTOPIA_FUNCTION Mass(const Mass &) = default;
 
         Fun density;
@@ -26,7 +24,7 @@ namespace utopia {
     namespace intrepid2 {
 
         template <typename Fun>
-        class Assemble<Mass<Fun>, typename Traits<Fun>::Scalar> : public Describable {
+        class Assemble<Mass<Fun>, typename Traits<Fun>::Scalar> : public FEAssembler<typename Traits<Fun>::Scalar> {
         public:
             using Scalar = typename Traits<Fun>::Scalar;
             using FE = utopia::intrepid2::FE<Scalar>;
@@ -35,78 +33,46 @@ namespace utopia {
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using Op = utopia::Mass<Fun>;
             using ExecutionSpace = typename FE::ExecutionSpace;
+            using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(Op op, const std::shared_ptr<FE> &fe) : op_(std::move(op)), fe_(fe) {}
+            Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {}
 
-            void init() {
+            inline int n_vars() const override { return op_.n_components; }
+            inline std::string name() const override { return "Mass"; }
+
+            bool assemble() override {
+                this->ensure_mat_accumulator();
+                auto &fe = this->fe();
+                auto data = this->data();
+
                 const int n_components = op_.n_components;
-                const int component = op_.component;
-
-                const int num_fields = fe_->num_fields();
-                const int n_dofs = num_fields * n_components;
-                const int n_qp = fe_->num_qp();
-
-                element_matrices_ = DynRankView("Mass", fe_->num_cells(), n_dofs, n_dofs);
+                // const int component = op_.component;
+                const int n_qp = fe.num_qp();
 
                 {
-                    auto em = element_matrices_;
                     auto density = op_.density;
-                    auto fun = fe_->fun;
-                    auto measure = fe_->measure;
+                    auto fun = fe.fun;
+                    auto measure = fe.measure;
 
                     assert(n_components == 1 && "IMPLEMENT ME");
 
-                    Kokkos::parallel_for(
-                        "Assemble<Mass>::init",
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
-                            {0, 0, 0}, {static_cast<int>(em.extent(0)), num_fields, num_fields}),
-                        KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
-                            // FIXME
+                    this->mat_integrate(
+                        "Assemble<Mass>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
                             auto offset_i = i * n_components;
                             auto offset_j = j * n_components;
 
                             for (int qp = 0; qp < n_qp; ++qp) {
                                 auto dX = measure(cell, qp);
-                                em(cell, offset_i, offset_j) += fun(i, qp) * fun(j, qp) * density * dX;
+                                data(cell, offset_i, offset_j) += fun(i, qp) * fun(j, qp) * density * dX;
                             }
-
-                            // for(int sub_i = 0; sub_i < n_components; ++sub_i) {
-                            //     for(int sub_j = 0; sub_j < n_components; ++sub_j) {
-                            //         em(cell, offset_i + sub_i, offset_j + sub_j) = em(cell, offset_i, offset_j)
-                            //     }
-                            // }
                         });
                 }
+
+                return true;
             }
-
-            void describe(std::ostream &os) const override {
-                const SizeType num_cells = fe_->num_cells();
-                const int num_fields = fe_->num_fields();
-
-                const int n_dofs = num_fields;
-
-                std::cout << "num_cells: " << num_cells << ", num_fields: " << num_fields << "\n";
-
-                for (SizeType c = 0; c < num_cells; ++c) {
-                    os << c << ")\n";
-                    for (SizeType i = 0; i < n_dofs; ++i) {
-                        for (SizeType j = 0; j < n_dofs; ++j) {
-                            os << element_matrices_(c, i, j) << " ";
-                        }
-
-                        os << '\n';
-                    }
-
-                    os << '\n';
-                }
-            }
-
-            inline const DynRankView &element_matrices() const { return element_matrices_; }
 
             // NVCC_PRIVATE :
             Op op_;
-            std::shared_ptr<FE> fe_;
-            DynRankView element_matrices_;
         };
     }  // namespace intrepid2
 }  // namespace utopia
