@@ -6,6 +6,14 @@
 
 #include <iostream>
 
+void print_array(double *seq, int n) {
+    printf("array with length %d:\n", n);
+
+    for (int i = 0; i < n; ++i) {
+        printf("%g\n", seq[i]);
+    }
+}
+
 namespace utopia {
 
 #ifdef UTOPIA_WITH_PETSC
