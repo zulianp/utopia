@@ -518,9 +518,6 @@ namespace utopia {
                         }
 
                     } while (!p->complete());
-                } else {
-                    assert(false && "IMPLEMENT ME");
-                    return false;
                 }
 
                 // else {
