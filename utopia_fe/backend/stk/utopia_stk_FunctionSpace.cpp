@@ -429,6 +429,20 @@ namespace utopia {
             v.set_block_size(n_var());
         }
 
+        void FunctionSpace::create_field(Field<FunctionSpace> &field) const {
+            auto gv = std::make_shared<Vector>();
+            create_vector(*gv);
+            val.set_data(gv);
+
+            assert(impl_->variables.size() == 1);
+
+            if (!impl_->variables.empty()) {
+                val.set_name(impl_->variables[0].name);
+                rename(impl_->variables[0].name, *gv);
+                val.set_tensor_size(impl_->variables[0].n_components);
+            }
+        }
+
         void FunctionSpace::create_local_vector(Vector &v) const {
             SizeType nn = utopia::stk::count_universal_nodes(mesh().bulk_data()) * n_var();
             v.zeros(layout(Comm::self(), nn, nn));

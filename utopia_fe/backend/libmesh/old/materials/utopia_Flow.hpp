@@ -23,7 +23,7 @@ namespace utopia {
                 return;
             }
 
-            if (type_ == "grid-function") {
+            if (type_ == "grid-function" || type_ == "ScalarSampler") {
                 auto grid_sampler = std::make_shared<UIScalarSampler<Scalar>>();
                 in.get("function", *grid_sampler);
 
@@ -31,7 +31,7 @@ namespace utopia {
                     sampler_ = grid_sampler;
                 }
 
-            } else if (type_ == "subdomain-function") {
+            } else if (type_ == "subdomain-function" || type_ == "SubdomainFunction") {
                 auto subdomain_fun = utopia::make_unique<UISubdomainFunction<Scalar>>();
 
                 in.get("function", *subdomain_fun);
@@ -154,6 +154,7 @@ namespace utopia {
         inline void read(Input &in) override {
             read_permeability_tensor(in);
             in.get("permeability-function", permeability_);
+            in.get("permeability_function", permeability_);
             in.get("forcing-function", forcing_function_);
             in.get("forcing_functions", forcing_function_);
 

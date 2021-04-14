@@ -161,6 +161,7 @@ namespace utopia {
                 if (assemblers.empty()) return false;
                 assemblers[0]->ensure_accumulator();
                 auto acc = assemblers[0]->accumulator();
+                acc->zero();
 
                 for (auto ass : assemblers) {
                     ass->set_accumulator(acc);

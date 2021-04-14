@@ -2,6 +2,7 @@
 #define UTOPIA_INTREPID2_FEASSEMBLER_HPP
 
 #include "utopia_fe_Core.hpp"
+#include "utopia_intrepid2_Commons.hpp"
 
 #include "utopia_intrepid2_FE.hpp"
 
@@ -74,6 +75,14 @@ namespace utopia {
                 inline void set_mode(AssemblyMode mode) const { mode_ = mode; }
 
                 bool is_compatible(const FE &fe) const { return fe.num_cells() <= data_.extent(0); }
+
+                void prepare() {
+                    if (mode_ == OVERWRITE_MODE) {
+                        zero();
+                    }
+                }
+
+                void zero() { utopia::intrepid2::fill(data_, 0.0); }
 
             private:
                 DynRankView data_;
@@ -168,6 +177,8 @@ namespace utopia {
                 if (!accumulator_) {
                     accumulator_ = std::make_shared<TensorAccumulator>();
                     accumulator_->init_matrix(*fe_, n_vars());
+                } else {
+                    accumulator_->prepare();
                 }
             }
 
@@ -175,6 +186,8 @@ namespace utopia {
                 if (!accumulator_) {
                     accumulator_ = std::make_shared<TensorAccumulator>();
                     accumulator_->init_vector(*fe_, n_vars());
+                } else {
+                    accumulator_->prepare();
                 }
             }
 
@@ -182,6 +195,8 @@ namespace utopia {
                 if (!accumulator_) {
                     accumulator_ = std::make_shared<TensorAccumulator>();
                     accumulator_->init_scalar(*fe_, n_vars());
+                } else {
+                    accumulator_->prepare();
                 }
             }
         };

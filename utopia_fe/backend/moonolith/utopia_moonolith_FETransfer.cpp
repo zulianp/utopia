@@ -279,8 +279,8 @@ namespace utopia {
                               const FunctionSpace &from,
                               const FunctionSpace &to,
                               FETransferData<Matrix_t> &data) {
-                if (from.mesh().manifold_dimension() < Dim) {
-                    if (to.mesh().manifold_dimension() < Dim) {
+                if (to.mesh().manifold_dimension() < Dim) {
+                    if (from.mesh().manifold_dimension() < Dim) {
                         // surf to surf
                         assert(Dim > 1);
                         return FETransferAux<Dim, Dim - 1, Dim - 1>::apply(opts, from, to, data);

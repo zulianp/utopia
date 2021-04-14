@@ -83,6 +83,7 @@ namespace utopia {
 
             void create_matrix(Matrix &mat) const;
             void create_vector(Vector &vec) const;
+            void create_field(Field<FunctionSpace> &field) const;
 
             void apply_constraints(Matrix &mat, Vector &vec) const;
             void apply_constraints(Vector &vec) const;

@@ -460,6 +460,13 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::create_vector");
         }
 
+        void FunctionSpace::create_field(Field<FunctionSpace> &field) const {
+            auto vec = std::make_shared<Vector>();
+            create_vector(*vec);
+            field.set_data(vec);
+            rename(impl_->name, *vec);
+        }
+
         void FunctionSpace::apply_zero_constraints(Vector &vec) const {
             UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::apply_zero_constraints");
 
@@ -472,12 +479,12 @@ namespace utopia {
             Write<Vector> w_v(vec);
 
             if (has_constaints) {
-                libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+                // libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
                 Range r = range(vec);
                 for (SizeType i = r.begin(); i < r.end(); ++i) {
                     if (dof_map.is_constrained_dof(i)) {
-                        auto valpos = rhs_values.find(i);
+                        // auto valpos = rhs_values.find(i);
                         vec.set(i, 0);
                     }
                 }
