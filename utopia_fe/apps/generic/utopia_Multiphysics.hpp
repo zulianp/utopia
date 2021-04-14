@@ -200,8 +200,9 @@ namespace utopia {
                 (*this->solution()) += increment_;
 
                 if (verbose_) {
-                    utopia::out() << "Step: " << this->current_time().step() << " Time: " << this->current_time().get()
-                                  << " Sum increment " << Scalar_t(sum(increment_)) << '\n';
+                    utopia::out() << "Step:\t" << this->current_time().step() << "\tTime:\t"
+                                  << this->current_time().get() << "\tSum increment " << Scalar_t(sum(increment_))
+                                  << '\n';
                 }
 
                 return ok;
@@ -517,37 +518,41 @@ namespace utopia {
                         }
 
                     } while (!p->complete());
-
                 } else {
-                    // Branch is buggy
-
-                    bool trivial = true;
-                    for (auto &p : problems) {
-                        trivial = trivial && p.second->is_trivial();
-                    }
-
-                    if (trivial) {
-                        increment_time();
-
-                        do {
-                            if (!(p->solve() &&             //
-                                  transfer_solutions() &&   //
-                                  reassemble_problems() &&  //
-                                  // apply_constraints() &&     //
-                                  transfer_residuals() &&    //
-                                  p->apply_constraints() &&  //
-                                  export_results())) {
-                                return false;
-                            }
-
-                            increment_time();
-
-                        } while (!p->complete());
-                    } else {
-                        assert(false && "IMPLEMENT ME");
-                        return false;
-                    }
+                    assert(false && "IMPLEMENT ME");
+                    return false;
                 }
+
+                // else {
+                //     // Branch is buggy
+
+                //     bool trivial = true;
+                //     for (auto &p : problems) {
+                //         trivial = trivial && p.second->is_trivial();
+                //     }
+
+                //     if (trivial) {
+                //         increment_time();
+
+                //         do {
+                //             if (!(p->solve() &&             //
+                //                   transfer_solutions() &&   //
+                //                   reassemble_problems() &&  //
+                //                   // apply_constraints() &&     //
+                //                   // transfer_residuals() &&    //
+                //                   p->apply_constraints() &&  //
+                //                   export_results())) {
+                //                 return false;
+                //             }
+
+                //             increment_time();
+
+                //         } while (!p->complete());
+                //     } else {
+                //         assert(false && "IMPLEMENT ME");
+                //         return false;
+                //     }
+                // }
 
                 return true;
             } else {
