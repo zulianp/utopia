@@ -159,7 +159,7 @@ namespace utopia {
 
             bool assemble_jacobian(const Vector &x, Matrix &mat) {
                 if (assemblers.empty()) return false;
-                assemblers[0]->ensure_mat_accumulator();
+                assemblers[0]->ensure_accumulator();
                 auto acc = assemblers[0]->accumulator();
 
                 for (auto ass : assemblers) {

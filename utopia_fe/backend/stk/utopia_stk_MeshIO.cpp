@@ -165,6 +165,8 @@ namespace utopia {
 
         void MeshIO::create_output_mesh() {
             assert(impl_->output_id == -1);
+            impl_->io_broker->set_bulk_data(impl_->mesh.bulk_data());
+
             impl_->output_id =
                 impl_->io_broker->create_output_mesh(impl_->output_path.to_string(), ::stk::io::WRITE_RESTART);
         }
@@ -192,9 +194,11 @@ namespace utopia {
         }
 
         bool MeshIO::write(const int step, const Scalar t) {
+            UTOPIA_UNUSED(step);
+
             try {
                 assert(impl_->output_id != -1);
-                impl_->io_broker->process_output_request(step, t);
+                impl_->io_broker->process_output_request(impl_->output_id, t);
                 return true;
             } catch (const std::exception &ex) {
                 utopia::err() << "MeshIO::write: " << impl_->output_path.to_string() << " error: " << ex.what() << '\n';

@@ -34,6 +34,7 @@ namespace utopia {
             }
 
             inline int n_vars() const override { return Dim; }
+            int rank() const override { return 2; }
             inline std::string name() const override { return "VectorLaplaceOperator"; }
 
             bool assemble() override {

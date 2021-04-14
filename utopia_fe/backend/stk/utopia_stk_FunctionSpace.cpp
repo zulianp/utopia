@@ -574,7 +574,66 @@ namespace utopia {
             }
         }
 
-        void FunctionSpace::apply_zero_constraints(Vector &vec) const { assert(false && "IMPLEMENT ME"); }
+        void FunctionSpace::apply_zero_constraints(Vector &v) const {
+            using Bucket_t = ::stk::mesh::Bucket;
+
+            auto &meta_data = mesh().meta_data();
+            auto &bulk_data = mesh().bulk_data();
+
+            auto &&local_to_global = dof_map().local_to_global();
+
+            const int nv = n_var();
+
+            if (local_to_global.empty()) {
+                assert(comm().size() == 1);
+
+                auto v_view = local_view_device(v);
+
+                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                    auto *part = meta_data.get_part(bc.name);
+                    if (part) {
+                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+
+                        for (auto *b_ptr : buckets) {
+                            auto &b = *b_ptr;
+                            const Bucket_t::size_type length = b.size();
+
+                            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                                auto node = b[k];
+                                // auto idx = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                                auto idx = utopia::stk::convert_entity_to_index(node);
+                                v_view.set(idx * nv + bc.component, 0.0);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // auto r = range(v);
+                // auto v_view = view_device(v);
+
+                Write<Vector> w(v, utopia::GLOBAL_INSERT);
+
+                for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                    auto *part = meta_data.get_part(bc.name);
+                    if (part) {
+                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+
+                        for (auto *b_ptr : buckets) {
+                            auto &b = *b_ptr;
+                            const Bucket_t::size_type length = b.size();
+
+                            for (Bucket_t::size_type k = 0; k < length; ++k) {
+                                auto node = b[k];
+                                auto local_idx = utopia::stk::convert_entity_to_index(node);
+                                assert(local_idx < local_to_global.size());
+
+                                v.c_set(local_to_global(local_idx, bc.component), 0.0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         void FunctionSpace::apply_constraints(Matrix &m, Vector &v) {
             apply_constraints(m);

@@ -23,6 +23,7 @@ namespace utopia {
             virtual bool assemble() = 0;
             virtual int n_vars() const = 0;
             virtual std::string name() const = 0;
+            virtual int rank() const = 0;
 
             FEAssembler(const std::shared_ptr<FE> &fe) : fe_(fe) { assert(fe); }
 
@@ -55,6 +56,8 @@ namespace utopia {
             public:
                 DynRankView &data() { return data_; }
 
+                void init_scalar(const FE &fe, int n_vars) { data_ = DynRankView("scalars", fe.num_cells(), n_vars); }
+
                 void init_matrix(const FE &fe, int n_vars) {
                     const int num_fields = fe.num_fields();
                     const int n_dofs = num_fields * n_vars;
@@ -77,17 +80,24 @@ namespace utopia {
                 AssemblyMode mode_{ADD_MODE};
             };
 
-            void ensure_mat_accumulator() {
-                if (!accumulator_) {
-                    accumulator_ = std::make_shared<TensorAccumulator>();
-                    accumulator_->init_matrix(*fe_, n_vars());
-                }
-            }
-
-            void ensure_vec_accumulator() {
-                if (!accumulator_) {
-                    accumulator_ = std::make_shared<TensorAccumulator>();
-                    accumulator_->init_vector(*fe_, n_vars());
+            void ensure_accumulator() {
+                switch (rank()) {
+                    case 0: {
+                        ensure_scalar_accumulator();
+                        break;
+                    }
+                    case 1: {
+                        ensure_vec_accumulator();
+                        break;
+                    }
+                    case 2: {
+                        ensure_mat_accumulator();
+                        break;
+                    }
+                    default: {
+                        assert(false && "INVALID RANK");
+                        Utopia::Abort();
+                    }
                 }
             }
 
@@ -152,6 +162,28 @@ namespace utopia {
         private:
             std::shared_ptr<FE> fe_;
             std::shared_ptr<TensorAccumulator> accumulator_;
+
+        protected:
+            void ensure_mat_accumulator() {
+                if (!accumulator_) {
+                    accumulator_ = std::make_shared<TensorAccumulator>();
+                    accumulator_->init_matrix(*fe_, n_vars());
+                }
+            }
+
+            void ensure_vec_accumulator() {
+                if (!accumulator_) {
+                    accumulator_ = std::make_shared<TensorAccumulator>();
+                    accumulator_->init_vector(*fe_, n_vars());
+                }
+            }
+
+            void ensure_scalar_accumulator() {
+                if (!accumulator_) {
+                    accumulator_ = std::make_shared<TensorAccumulator>();
+                    accumulator_->init_scalar(*fe_, n_vars());
+                }
+            }
         };
 
     }  // namespace intrepid2

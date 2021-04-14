@@ -38,6 +38,7 @@ namespace utopia {
             Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
+            int rank() const override { return 2; }
             inline std::string name() const override { return "Mass"; }
 
             bool assemble() override {
