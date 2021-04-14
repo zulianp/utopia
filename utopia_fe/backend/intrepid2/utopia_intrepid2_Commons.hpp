@@ -1,6 +1,10 @@
 #ifndef UTOPIA_INTREPID2_COMMONS_HPP
 #define UTOPIA_INTREPID2_COMMONS_HPP
 
+#include "utopia_Base.hpp"
+#include "utopia_Instance.hpp"
+
+#include <Kokkos_Core.hpp>
 #include <Kokkos_View.hpp>
 
 namespace utopia {
@@ -49,7 +53,7 @@ namespace utopia {
                 }
                 default: {
                     assert(false);
-                    Utopia::Abort();
+                    Utopia::Abort("fill: Only up to Rank 5 Views are supported!");
                 }
             }
         }

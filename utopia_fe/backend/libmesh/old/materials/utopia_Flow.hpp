@@ -155,6 +155,7 @@ namespace utopia {
             read_permeability_tensor(in);
             in.get("permeability-function", permeability_);
             in.get("permeability_function", permeability_);
+            in.get("coeff_function", permeability_);
             in.get("forcing-function", forcing_function_);
             in.get("forcing_functions", forcing_function_);
 

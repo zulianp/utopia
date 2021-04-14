@@ -130,6 +130,11 @@ namespace utopia {
 #endif
     }
 
+    void Utopia::Abort(const std::string &message) {
+        utopia::err() << message << '\n';
+        Abort();
+    }
+
     void Utopia::read_input(int argc, char *argv[]) {
         InputParameters params;
         params.init(argc, argv);

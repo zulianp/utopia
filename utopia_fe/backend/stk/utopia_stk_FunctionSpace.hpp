@@ -49,7 +49,7 @@ namespace utopia {
             void create_vector(Vector &v) const;
             void create_local_vector(Vector &v) const;
             void create_matrix(Matrix &m) const;
-            void create_field(Field<FunctionSpace> &field) const;
+            void create_field(Field<FunctionSpace> &field);
 
             void apply_constraints(Matrix &m);
             void apply_constraints(Vector &v);

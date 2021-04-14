@@ -81,12 +81,20 @@ namespace utopia {
             if (env) {
                 std::string pressure_field;
                 in.get("pressure_field", pressure_field);
-                auto p = env->find_field(pressure_field);
+                auto p = env->find_field(*this->space(), pressure_field);
 
                 assert(p);
 
                 if (p) {
                     impl_->pressure = p;
+                }
+            } else {
+                std::string pressure_field;
+                in.get("pressure_field", pressure_field);
+
+                if (!pressure_field.empty()) {
+                    assert(false);
+                    Utopia::Abort("In order to retrive the pressure_field, The env must be defined!");
                 }
             }
 
@@ -105,7 +113,7 @@ namespace utopia {
 
             std::shared_ptr<LegacyProductFunctionSpace> legacy_space;
             // std::shared_ptr<Field> pressure;
-            UIScalarFunction<Scalar> density_sampler;
+            UIScalarFunction<Scalar> density_function;
             Scalar density{1.0};
             bool lumped{true};
         };
@@ -137,7 +145,8 @@ namespace utopia {
             auto &dof_map = space[0].dof_map();
             const int dim = mesh.spatial_dimension();
 
-            auto b_form = inner(ctx_fun(impl_->density_sampler.sampler()) * trial(space), test(space)) * dX;
+            auto b_form =
+                impl_->density * inner(ctx_fun(impl_->density_function.sampler()) * trial(space), test(space)) * dX;
 
             utopia::assemble(b_form, jacobian);
 
@@ -156,7 +165,7 @@ namespace utopia {
 
         void Mass::read(Input &in) {
             Super::read(in);
-            in.get("density_sampler", impl_->density_sampler);
+            in.get("density_function", impl_->density_function);
             in.get("density", impl_->density);
             in.get("lumped", impl_->lumped);
 

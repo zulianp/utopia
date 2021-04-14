@@ -311,26 +311,60 @@ namespace utopia {
 
             const int n_vars = dof_map.n_variables();
 
-            for (int i = 0; i < n_vars; ++i) {
-                auto &v = dof_map.variable(i);
-                io.copy_nodal_solution(system, v.name(), v.name(), time_step);
-            }
+            bool field_defined = false;
 
-            // for (auto &v : main_system.vars) {
-            //     if(v.n_components > 1) {}
-            //     io.copy_nodal_solution(system, v.name, v.name, time_step);
-            // }
+            std::string field_name;
+
+            int var_num = 0;
+            in.get("fields", [&](Input &array_node) {
+                array_node.get_all([&](Input &node) {
+                    assert(var_num < n_vars);
+
+                    if (var_num >= n_vars) {
+                        Utopia::Abort("Number of fields in input is larger than one in file!");
+                    }
+
+                    auto &v = dof_map.variable(var_num);
+                    std::string exodus_name;
+                    node.get("name", exodus_name);
+
+                    if (exodus_name.empty()) {
+                        assert(false);
+                        Utopia::Abort("The name of the field must be defined!");
+                    }
+
+                    io.copy_nodal_solution(system, v.name(), exodus_name, time_step);
+
+                    field_defined = true;
+                    ++var_num;
+
+                    // FIXME this does not go well with multiple fields
+                    field_name = exodus_name;
+                });
+            });
+
+            if (!field_defined) {
+                // If no field is defined we default to the variable names of the space
+                for (int i = 0; i < n_vars; ++i) {
+                    auto &v = dof_map.variable(i);
+                    io.copy_nodal_solution(system, v.name(), v.name(), time_step);
+
+                    // FIXME this does not go well with multiple fields
+                    field_name = v.name();
+                }
+            }
 
             auto vec = std::make_shared<Vector>();
 
             convert(*system.solution, *vec);
 
             field.set_data(vec);
+            field.set_space(make_ref(*this));
 
             if (!main_system.vars.empty()) {
                 assert(main_system.vars.size() == std::size_t(1));
-                field.set_name(main_system.vars[0].name);
-                rename(main_system.vars[0].name, *vec);
+                field.set_name(field_name);
+                rename(field_name, *vec);
             }
 
             return !vec->empty();
@@ -460,7 +494,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::create_vector");
         }
 
-        void FunctionSpace::create_field(Field<FunctionSpace> &field) const {
+        void FunctionSpace::create_field(Field<FunctionSpace> &field) {
             auto vec = std::make_shared<Vector>();
             create_vector(*vec);
             field.set_data(vec);

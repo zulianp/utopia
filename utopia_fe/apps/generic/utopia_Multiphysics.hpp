@@ -92,6 +92,17 @@ namespace utopia {
             in.get("implicit", implicit_);
             in.get("verbose", verbose_);
 
+            bool user_defined_mass = false;
+            in.get("mass", [this, &user_defined_mass](Input &node) {
+                mass_matrix_assembler_->read(node);
+                user_defined_mass = true;
+            });
+
+            if (!user_defined_mass) {
+                auto params = param_list(param("material", param_list(param("type", "Mass"), param("lumped", true))));
+                mass_matrix_assembler_->read(params);
+            }
+
             if (verbose_) {
                 utopia::out() << "Implicit = " << implicit_ << '\n';
             }
@@ -125,9 +136,6 @@ namespace utopia {
             assert(Scalar_t(norm2(*this->solution())) == 0.0);
 
             // material_matrix_ = *this->jacobian();
-
-            auto params = param_list(param("material", param_list(param("type", "Mass"), param("lumped", true))));
-            mass_matrix_assembler_->read(params);
 
             mass_matrix_ = std::make_shared<Matrix_t>();
             this->space()->create_matrix(*mass_matrix_);
@@ -192,7 +200,8 @@ namespace utopia {
                 (*this->solution()) += increment_;
 
                 if (verbose_) {
-                    utopia::out() << "Sum increment " << Scalar_t(sum(increment_)) << '\n';
+                    utopia::out() << "Step: " << this->current_time().step() << " Time: " << this->current_time().get()
+                                  << " Sum increment " << Scalar_t(sum(increment_)) << '\n';
                 }
 
                 return ok;
@@ -542,7 +551,8 @@ namespace utopia {
 
                 return true;
             } else {
-                return p->solve() && export_results();
+                bool ok = p->solve();
+                return export_results() && ok;
             }
         }
 
@@ -583,7 +593,15 @@ namespace utopia {
             return true;
         }
 
-        bool run() { return assemble_all() && solve(); }
+        bool run() {
+            if (assemble_all() && solve()) {
+                utopia::out() << "[Status] run succesfull!\n";
+                return true;
+            } else {
+                utopia::err() << "[Error] run unsuccesfull!\n";
+                return false;
+            }
+        }
 
         Multiphysics(const Communicator_t &comm = Communicator_t())
             : comm_(comm), env(std::make_shared<Environment_t>()) {}

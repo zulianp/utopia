@@ -31,7 +31,8 @@ namespace utopia {
             const Scalar_t norm_field = norm2(field->data());
             utopia::out() << "Environment: read field with norm: " << norm_field << '\n';
 
-            auto ret = fields_.insert(std::make_pair(field->name(), field));
+            auto space = field->space();
+            auto ret = space_to_fields_[space->name()].fields.insert(std::make_pair(field->name(), field));
 
             if (!ret.second) {
                 utopia::err() << "Environment: Field with name " + field->name() +
@@ -42,9 +43,16 @@ namespace utopia {
             return true;
         }
 
-        std::shared_ptr<Field<FunctionSpace>> find_field(const std::string &name) const {
-            auto f = fields_.find(name);
-            if (f == fields_.end()) {
+        std::shared_ptr<Field<FunctionSpace>> find_field(const FunctionSpace &space, const std::string &name) const {
+            auto fields_it = space_to_fields_.find(space.name());
+
+            if (fields_it == space_to_fields_.end()) {
+                utopia::err() << "Environment: No fields for space with name " << space.name() << "!\n";
+                return nullptr;
+            }
+
+            auto f = fields_it->second.fields.find(name);
+            if (f == fields_it->second.fields.end()) {
                 utopia::err() << "Environment: field with name " << name << " does not exists, returning null\n";
                 return nullptr;
             }
@@ -81,7 +89,12 @@ namespace utopia {
         }
 
     private:
-        std::map<std::string, std::shared_ptr<Field<FunctionSpace>>> fields_;
+        class Fields {
+        public:
+            std::map<std::string, std::shared_ptr<Field<FunctionSpace>>> fields;
+        };
+
+        std::map<std::string, Fields> space_to_fields_;
         std::map<std::string, std::shared_ptr<FunctionSpace>> spaces_;
     };
 }  // namespace utopia

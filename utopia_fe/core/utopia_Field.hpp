@@ -48,11 +48,15 @@ namespace utopia {
         inline bool is_blank() const { return name_.empty(); }
         inline bool empty() const { return !data_; }
 
+        void set_space(const std::shared_ptr<FunctionSpace> &space) { space_ = space; }
+        const std::shared_ptr<FunctionSpace> &space() const { return space_; }
+
     private:
         std::string name_;
         std::shared_ptr<Vector> data_;
         int offset_{0};
         int tensor_size_{1};
+        std::shared_ptr<FunctionSpace> space_;
     };
 
 }  // namespace utopia

@@ -357,7 +357,7 @@ namespace utopia {
             }
         }
 
-        bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &val) {
+        bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &field) {
             MeshIO io(*impl_->mesh);
             io.import_all_field_data(true);
             in.get("mesh", io);
@@ -380,14 +380,15 @@ namespace utopia {
             auto gv = std::make_shared<Vector>();
             create_vector(*gv);
             local_to_global(lv, *gv, OVERWRITE_MODE);
-            val.set_data(gv);
+            field.set_data(gv);
+            field.set_space(make_ref(*this));
 
             assert(impl_->variables.size() == 1);
 
             if (!impl_->variables.empty()) {
-                val.set_name(impl_->variables[0].name);
+                field.set_name(impl_->variables[0].name);
                 rename(impl_->variables[0].name, *gv);
-                val.set_tensor_size(impl_->variables[0].n_components);
+                field.set_tensor_size(impl_->variables[0].n_components);
             }
 
             return true;
@@ -429,17 +430,18 @@ namespace utopia {
             v.set_block_size(n_var());
         }
 
-        void FunctionSpace::create_field(Field<FunctionSpace> &field) const {
+        void FunctionSpace::create_field(Field<FunctionSpace> &field) {
             auto gv = std::make_shared<Vector>();
             create_vector(*gv);
-            val.set_data(gv);
+            field.set_data(gv);
+            field.set_space(make_ref(*this));
 
             assert(impl_->variables.size() == 1);
 
             if (!impl_->variables.empty()) {
-                val.set_name(impl_->variables[0].name);
+                field.set_name(impl_->variables[0].name);
                 rename(impl_->variables[0].name, *gv);
-                val.set_tensor_size(impl_->variables[0].n_components);
+                field.set_tensor_size(impl_->variables[0].n_components);
             }
         }
 

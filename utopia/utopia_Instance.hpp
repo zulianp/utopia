@@ -17,6 +17,7 @@ namespace utopia {
         static void Init(int argc, char *argv[]);
         static int Finalize();
         static void Abort();
+        static void Abort(const std::string &message);
 
         void read(Input &is) override;
         void print_usage(std::ostream &os) const override;

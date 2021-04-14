@@ -124,26 +124,37 @@ namespace utopia {
             impl_->forcing_function = utopia::make_unique<Impl::LegacyForcingFunction>(*impl_->legacy_space);
             in.get("forcing_functions", *impl_->forcing_function);
 
-            auto new_assembler = impl_->registry.find_assembler(type);
-            if (new_assembler) {
-                new_assembler->set_space(impl_->space);
-                in.get("material", *new_assembler);
-                impl_->legacy_model = new_assembler;
-            } else if (is_flow(type)) {
-                // Flow problems
-                auto material = utopia::make_unique<Impl::LegacyFlow>(impl_->legacy_space->subspace(0));
-                in.get("material", *material);
-                impl_->rescale = material->rescaling();
+            if (!type.empty()) {
+                auto new_assembler = impl_->registry.find_assembler(type);
+                if (new_assembler) {
+                    new_assembler->set_space(impl_->space);
+                    new_assembler->set_environment(impl_->env);
 
-                impl_->legacy_model = std::move(material);
-            } else {
-                // Elasticity
-                auto material = utopia::make_unique<Impl::LegacyMaterial>(*impl_->legacy_space);
-                in.get("material", *material);
-                assert(material->good());
+                    in.get("material", *new_assembler);
+                    impl_->legacy_model = new_assembler;
+                } else if (is_flow(type)) {
+                    // Flow problems
+                    auto material = utopia::make_unique<Impl::LegacyFlow>(impl_->legacy_space->subspace(0));
+                    in.get("material", *material);
+                    impl_->rescale = material->rescaling();
 
-                impl_->rescale = material->rescaling();
-                impl_->legacy_model = std::move(material);
+                    impl_->legacy_model = std::move(material);
+                } else {
+                    // Elasticity
+                    auto material = utopia::make_unique<Impl::LegacyMaterial>(*impl_->legacy_space);
+                    in.get("material", *material);
+                    assert(material->good());
+
+                    impl_->rescale = material->rescaling();
+                    impl_->legacy_model = std::move(material);
+                }
+            } else if (impl_->legacy_model) {
+                in.get("material", *impl_->legacy_model);
+            }
+
+            assert(impl_->legacy_model);
+            if (!impl_->legacy_model) {
+                Utopia::Abort();
             }
         }
 
