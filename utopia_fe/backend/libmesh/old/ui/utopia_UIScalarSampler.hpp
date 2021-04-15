@@ -18,7 +18,7 @@
 namespace utopia {
 
     template <typename Scalar>
-    class UIFunction {
+    class UIFunction : public Describable {
     public:
         virtual ~UIFunction() {}
         virtual Scalar eval(const std::vector<Scalar> &x) const = 0;
@@ -26,10 +26,12 @@ namespace utopia {
             UTOPIA_UNUSED(subdomain_id);
             return true;
         }
+
+        void describe(std::ostream &) const override {}
     };
 
     template <>
-    class UIFunction<USerialMatrix> {
+    class UIFunction<USerialMatrix> : public Describable {
     public:
         using Scalar = Traits<USerialMatrix>::Scalar;
 
@@ -39,6 +41,8 @@ namespace utopia {
             UTOPIA_UNUSED(subdomain_id);
             return true;
         }
+
+        void describe(std::ostream &) const override {}
     };
 
     template <typename Scalar>
@@ -51,6 +55,8 @@ namespace utopia {
         inline Scalar eval(const std::vector<Scalar> &) const { return val_; }
 
         const Scalar &value() const { return val_; }
+
+        void describe(std::ostream &os) const override { os << "value: " << val_ << '\n'; }
 
     private:
         Scalar val_;
@@ -132,7 +138,7 @@ namespace utopia {
                     }
                 }
 
-                std::cout << "value: " << val << " type " << type << " block " << block_id << std::endl;
+                // std::cout << "value: " << val << " type " << type << " block " << block_id << std::endl;
             });
         }
 
@@ -156,6 +162,17 @@ namespace utopia {
         inline bool has_active_function() const { return static_cast<bool>(active_fun_); }
 
         inline bool good() const { return static_cast<bool>(default_fun_) || !fun_.empty(); }
+
+        void describe(std::ostream &os) const override {
+            for (auto &pair : fun_) {
+                os << "block:" << pair.first << ' ';
+                if (pair.second) {
+                    pair.second->describe(os);
+                } else {
+                    os << "nullptr\n";
+                }
+            }
+        }
 
     private:
         std::shared_ptr<UIFunction<Scalar>> default_fun_;

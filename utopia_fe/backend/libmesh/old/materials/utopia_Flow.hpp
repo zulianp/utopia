@@ -65,6 +65,13 @@ namespace utopia {
 
         inline Scalar eval(const std::vector<Scalar> &x) const override { return sampler_->eval(x); }
 
+        void describe(std::ostream &os) const override {
+            if (sampler_) {
+                os << type_ << '\n';
+                sampler_->describe(os);
+            }
+        }
+
     private:
         std::string type_;
         std::shared_ptr<UIFunction<Scalar>> sampler_;

@@ -18,9 +18,10 @@ namespace utopia {
 
             std::shared_ptr<LegacyProductFunctionSpace> legacy_space;
             std::shared_ptr<Field> pressure;
-            UIScalarFunction<Scalar> diffusion_sampler;
+            UIScalarFunction<Scalar> diffusion_function;
             Scalar coeff{1.0};
             bool stabilize_transport{true};
+            bool verbose{false};
         };
 
         Transport::Transport() : impl_(utopia::make_unique<Impl>()) {}
@@ -57,7 +58,7 @@ namespace utopia {
             auto q = test(C);
             auto ph = interpolate(pressure_w, c);
 
-            auto sampler_fun = ctx_fun(impl_->diffusion_sampler.sampler());
+            auto sampler_fun = ctx_fun(impl_->diffusion_function.sampler());
             auto vel = sampler_fun * impl_->coeff * grad(ph);
             auto b_form = (inner(inner(-grad(c), vel), q) * dX);
 
@@ -98,11 +99,26 @@ namespace utopia {
                 }
             }
 
-            in.get("diffusion_sampler", impl_->diffusion_sampler);
+            in.get("diffusion_function", impl_->diffusion_function);
             in.get("coeff", impl_->coeff);
             in.get("stabilize_transport", impl_->stabilize_transport);
+            in.get("verbose", impl_->verbose);
 
             init();
+
+            if (impl_->verbose) {
+                utopia::out() << "-----------------------------\n";
+                utopia::out() << "Transport\n";
+                if (impl_->pressure) {
+                    utopia::out() << "Pressure field:\t" << impl_->pressure->name() << '\n';
+                }
+
+                utopia::out() << "coeff:\t" << impl_->coeff << '\n';
+                utopia::out() << "stabilize_transport:\t" << impl_->stabilize_transport << '\n';
+                utopia::out() << "diffusion_function: ";
+                impl_->diffusion_function.describe(utopia::out().stream());
+                utopia::out() << "-----------------------------\n";
+            }
         }
 
         /////////////////////////////////////////
@@ -116,6 +132,7 @@ namespace utopia {
             UIScalarFunction<Scalar> density_function;
             Scalar density{1.0};
             bool lumped{true};
+            bool verbose{false};
         };
 
         Mass::Mass() : impl_(utopia::make_unique<Impl>()) {}
@@ -168,8 +185,19 @@ namespace utopia {
             in.get("density_function", impl_->density_function);
             in.get("density", impl_->density);
             in.get("lumped", impl_->lumped);
+            in.get("verbose", impl_->verbose);
 
             init();
+
+            if (impl_->verbose) {
+                utopia::out() << "-----------------------------\n";
+                utopia::out() << "Mass\n";
+                utopia::out() << "lumped:\t" << impl_->lumped << '\n';
+                utopia::out() << "density:\t" << impl_->density << '\n';
+                utopia::out() << "density_function: ";
+                impl_->density_function.describe(utopia::out().stream());
+                utopia::out() << "-----------------------------\n";
+            }
         }
 
     }  // namespace libmesh

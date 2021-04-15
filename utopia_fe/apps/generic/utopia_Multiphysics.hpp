@@ -264,7 +264,10 @@ namespace utopia {
         std::shared_ptr<ProblemBase_t> to;
         LagrangeMultiplier<FunctionSpace> lagrange_multiplier;
 
-        void read(Input &in) override { lagrange_multiplier.read(in); }
+        void read(Input &in) override {
+            in.get("verbose", verbose_);
+            lagrange_multiplier.read(in);
+        }
 
         void set(const std::shared_ptr<ProblemBase_t> &from, const std::shared_ptr<ProblemBase_t> &to) {
             this->from = from;
@@ -279,6 +282,10 @@ namespace utopia {
 
             const Size_t n = from_ops.size();
             assert(n == to_ops.size());
+
+            if (verbose_) {
+                utopia::out() << "Condensing " << n << " pair(s) of systems!\n";
+            }
 
             for (Size_t i = 0; i < n; ++i) {
                 Matrix_t temp;
@@ -303,6 +310,9 @@ namespace utopia {
             (*from->fun()) += temp_residual;
             return true;
         }
+
+    private:
+        bool verbose_{false};
     };
 
     template <class FunctionSpace>
