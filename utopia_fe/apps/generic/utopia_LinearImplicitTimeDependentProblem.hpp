@@ -136,7 +136,6 @@ namespace utopia {
             residual_ = (*this->jacobian()) * (*this->solution());
             residual_ = (*this->fun()) - residual_;
             residual_ *= this->delta_time();
-            residual_ += (*mass_matrix_) * (*this->solution());
         }
 
         void compute_system() {
