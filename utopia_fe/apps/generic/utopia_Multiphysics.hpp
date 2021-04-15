@@ -104,7 +104,7 @@ namespace utopia {
 
         bool init() { return lagrange_multiplier.transfer.init(from->space(), to->space()); }
 
-        bool condense() {
+        bool condense_operators() {
             auto &&from_ops = from->operators();
             auto &&to_ops = to->operators();
 
@@ -124,8 +124,39 @@ namespace utopia {
                 (*from_ops[i]) += temp;
             }
 
-            from->condensed_system_built();
             return true;
+        }
+
+        bool condense_right_hand_sides() {
+            auto &&from_rhs = from->right_hand_sides();
+            auto &&to_rhs = to->right_hand_sides();
+
+            const Size_t n = from_rhs.size();
+            assert(n == to_rhs.size());
+
+            if (verbose_) {
+                utopia::out() << "Condensing " << n << " pair(s) of rhs!\n";
+            }
+
+            for (Size_t i = 0; i < n; ++i) {
+                Vector_t temp;
+                if (!lagrange_multiplier.transfer.apply_transpose(*to_rhs[i], temp)) {
+                    return false;
+                }
+
+                (*from_rhs[i]) += temp;
+            }
+
+            return true;
+        }
+
+        bool condense() {
+            if (condense_operators() && condense_right_hand_sides()) {
+                from->condensed_system_built();
+                return true;
+            } else {
+                return false;
+            }
         }
 
         bool transfer_solution() { return lagrange_multiplier.transfer.apply(*from->solution(), *to->solution()); }
@@ -286,8 +317,7 @@ namespace utopia {
                 bool ok = p.second->assemble();
 
                 if (!ok) {
-                    utopia::err() << "Problem between " << p.second->name() << " initialization failed!\n";
-                    Utopia::Abort();
+                    Utopia::Abort("Problem \"" + p.second->name() + "\": initialization failed!\n");
                 }
             }
 
@@ -299,8 +329,7 @@ namespace utopia {
                 bool ok = p.second->init() && p.second->assemble();
 
                 if (!ok) {
-                    utopia::err() << "Problem between " << p.second->name() << " initialization failed!\n";
-                    Utopia::Abort();
+                    Utopia::Abort("Problem \"" + p.second->name() + "\": initialization failed!\n");
                 }
             }
 
@@ -310,8 +339,7 @@ namespace utopia {
         bool condense_systems() {
             for (auto &c : couplings) {
                 if (!c->condense()) {
-                    utopia::err() << "Condesation of " << c->from->name() << " and " << c->to->name() << " failed!\n";
-                    Utopia::Abort();
+                    Utopia::Abort("Condesation of " + c->from->name() + " and " + c->to->name() + " failed!\n");
                 }
             }
 

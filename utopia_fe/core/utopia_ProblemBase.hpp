@@ -74,6 +74,11 @@ namespace utopia {
             return ret;
         }
 
+        virtual std::vector<std::shared_ptr<Vector>> right_hand_sides() {
+            std::vector<std::shared_ptr<Vector>> ret{fun()};
+            return ret;
+        }
+
         std::shared_ptr<Matrix> jacobian() const { return jacobian_; }
         std::shared_ptr<Vector> fun() const { return fun_; }
         std::shared_ptr<Vector> solution() const { return solution_; }
