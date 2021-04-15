@@ -62,6 +62,10 @@ namespace utopia {
 
     void PetscMatrix::transform(std::function<Scalar(const Scalar &)> op) { transform_values(std::move(op)); }
 
+    void PetscMatrix::transform(std::function<Scalar(const SizeType &, const SizeType &, const Scalar &)> op) {
+        transform_ijv(op);
+    }
+
     MatType PetscMatrix::type_override() const {
         return MATAIJ;
         // return MATDENSE;

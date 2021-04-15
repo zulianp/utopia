@@ -481,6 +481,7 @@ namespace utopia {
         void transform(const Reciprocal<Scalar> &op) override;
 
         void transform(std::function<Scalar(const Scalar &)> op);
+        void transform(std::function<Scalar(const SizeType &, const SizeType &, const Scalar &)> op);
 
         // helper
         template <class F>

@@ -59,8 +59,8 @@ namespace utopia {
             auto ph = interpolate(pressure_w, c);
 
             auto sampler_fun = ctx_fun(impl_->diffusion_function.sampler());
-            auto vel = sampler_fun * impl_->coeff * grad(ph);
-            auto b_form = (inner(inner(-grad(c), vel), q) * dX);
+            auto vel = sampler_fun * (-impl_->coeff) * grad(ph);
+            auto b_form = (inner(inner(grad(c), vel), q) * dX);
 
             utopia::assemble(b_form, jacobian);
 
@@ -76,7 +76,7 @@ namespace utopia {
                 jacobian = std::move(jacobian_out);
             }
 
-            if (impl_->verbose) {
+            if (impl_->verbose && impl_->stabilize_transport) {
                 Scalar norm1_jac = norm1(jacobian);
                 utopia::out() << "norm1 Jacobian (with stab): " << norm1_jac << '\n';
             }
@@ -169,9 +169,6 @@ namespace utopia {
             if (!valid()) return false;
 
             auto &space = *impl_->legacy_space;
-            auto &mesh = space[0].mesh();
-            auto &dof_map = space[0].dof_map();
-            const int dim = mesh.spatial_dimension();
 
             auto b_form =
                 impl_->density * inner(ctx_fun(impl_->density_function.sampler()) * trial(space), test(space)) * dX;
@@ -181,8 +178,6 @@ namespace utopia {
             if (impl_->lumped) {
                 Vector mass_vector = sum(jacobian, 1);
                 jacobian = diag(mass_vector);
-            } else {
-                utopia::assemble(b_form, jacobian);
             }
 
             fun = jacobian * x;

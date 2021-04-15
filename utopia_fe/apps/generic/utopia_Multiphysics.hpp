@@ -8,7 +8,10 @@
 #include "utopia_fe_Core.hpp"
 #include "utopia_fe_Environment.hpp"
 
+#include "utopia_MatrixTransformer.hpp"
 #include "utopia_ProblemBase.hpp"
+
+#include "utopia_LinearImplicitTimeDependentProblem.hpp"
 
 namespace utopia {
 
@@ -69,188 +72,6 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
-    class EulerLinearFEProblem : public TimeDependentProblem<FunctionSpace> {
-    public:
-        using Vector_t = typename Traits<FunctionSpace>::Vector;
-        using Matrix_t = typename Traits<FunctionSpace>::Matrix;
-        using Scalar_t = typename Traits<FunctionSpace>::Scalar;
-        using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
-        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
-        using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
-        using Environment_t = utopia::Environment<FunctionSpace>;
-        using IO_t = utopia::IO<FunctionSpace>;
-        using Super = utopia::TimeDependentProblem<FunctionSpace>;
-
-        void read(Input &in) override {
-            Super::read(in);
-            in.get("assembly", *assembler_);
-            output_path_ = this->output_dir() + ("/" + this->name() + ".e");
-            io_->set_output_path(output_path_);
-
-            in.get("solver", *linear_solver_);
-            in.get("mass_matrix_solver", *mass_matrix_linear_solver_);
-            in.get("implicit", implicit_);
-            in.get("verbose", verbose_);
-
-            bool user_defined_mass = false;
-            in.get("mass", [this, &user_defined_mass](Input &node) {
-                mass_matrix_assembler_->read(node);
-                user_defined_mass = true;
-            });
-
-            if (!user_defined_mass) {
-                auto params = param_list(param("material", param_list(param("type", "Mass"), param("lumped", true))));
-                mass_matrix_assembler_->read(params);
-            }
-
-            if (verbose_) {
-                utopia::out() << "--------------------------------\n";
-                this->describe(utopia::out().stream());
-                utopia::out() << "Implicit = " << implicit_ << '\n';
-                utopia::out() << "--------------------------------\n";
-            }
-        }
-
-        EulerLinearFEProblem(const std::shared_ptr<FunctionSpace> &space)
-            : Super(space),
-              assembler_(std::make_shared<OmniAssembler_t>(space)),
-              mass_matrix_assembler_(std::make_shared<OmniAssembler_t>(space)),
-              linear_solver_(std::make_shared<OmniLinearSolver_t>()),
-              mass_matrix_linear_solver_(std::make_shared<OmniLinearSolver_t>()),
-              io_(std::make_shared<IO_t>(*space)) {}
-
-        void set_environment(const std::shared_ptr<Environment_t> &env) override {
-            assembler_->set_environment(env);
-            mass_matrix_assembler_->set_environment(env);
-        }
-
-        bool is_linear() const override { return true; }
-
-        bool init() override {
-            if (!Super::init()) return false;
-
-            if (!assembler_->assemble(*this->solution(), *this->jacobian(), *this->fun())) {
-                return false;
-            }
-
-            *this->fun() *= -1.0;
-            forcing_function_ = *this->fun();
-
-            assert(Scalar_t(norm2(*this->solution())) == 0.0);
-
-            // material_matrix_ = *this->jacobian();
-
-            mass_matrix_ = std::make_shared<Matrix_t>();
-            this->space()->create_matrix(*mass_matrix_);
-
-            this->space()->create_vector(increment_);
-
-            // FIXME remove increment
-            mass_matrix_assembler_->assemble(*this->solution(), *mass_matrix_, increment_);
-            rename(this->name() + "_mass_matrix", *mass_matrix_);
-            increment_.set(0.0);
-
-            assert(this->delta_time() > 0);
-
-            if (implicit_) {
-                assert(this->delta_time() > 0);
-                (*this->jacobian()) *= this->delta_time();
-                (*this->jacobian()) += *mass_matrix_;
-
-                linear_solver_->update(this->jacobian());
-            } else {
-                (*this->jacobian()) *= -this->delta_time();
-                (*this->jacobian()) += *mass_matrix_;
-
-                this->space()->apply_constraints(*mass_matrix_);
-                mass_matrix_linear_solver_->update(mass_matrix_);
-            }
-
-            // Apply BC so that we can use the increment with zero BC after
-            this->space()->apply_constraints(*this->solution());
-
-            this->export_tensors();
-            return true;
-        }
-
-        bool update() override { return assemble() && apply_constraints() && solve(); }
-
-        /// Being a linear problem the Jacobian is assembled only once in the init function
-        bool assemble() override {
-            if (implicit_) {
-                (*this->fun()) = -((*this->jacobian()) * (*this->solution()));
-                (*this->fun()) += this->delta_time() * forcing_function_;
-                (*this->fun()) += (*mass_matrix_) * (*this->solution());
-            } else {
-                *this->fun() = (*this->jacobian()) * (*this->solution());
-            }
-
-            return true;
-        }
-
-        bool apply_constraints() override {
-            if (implicit_) {
-                // FIXME this is not efficient if it is linear
-                this->space()->apply_constraints(*this->jacobian());
-                this->space()->apply_zero_constraints((*this->fun()));
-            } else {
-                this->space()->apply_constraints(*this->jacobian(), *this->fun());
-            }
-
-            return true;
-        }
-
-        bool solve() override {
-            if (implicit_) {
-                increment_.set(0.0);
-                bool ok = linear_solver_->apply(*this->fun(), increment_);
-                (*this->solution()) += increment_;
-
-                if (verbose_) {
-                    utopia::out() << "Step:\t" << this->current_time().step() << "\tTime:\t"
-                                  << this->current_time().get() << "\tSum increment " << Scalar_t(sum(increment_))
-                                  << '\n';
-                }
-
-                return ok;
-            } else {
-                return mass_matrix_linear_solver_->apply(*this->fun(), *this->solution());
-            }
-        }
-
-        bool export_result() const override {
-            if (this->integrate_all_before_output()) {
-                if (this->complete()) {
-                    return io_->write(*this->solution());
-                }
-            } else {
-                return io_->write(*this->solution(), this->current_time().step(), this->current_time().get());
-            }
-
-            return true;
-        }
-
-        std::vector<std::shared_ptr<Matrix_t>> operators() override {
-            std::vector<std::shared_ptr<Matrix_t>> ret{this->jacobian(), mass_matrix_};
-            return ret;
-        }
-
-    private:
-        std::shared_ptr<OmniAssembler_t> assembler_;
-        std::shared_ptr<OmniAssembler_t> mass_matrix_assembler_;
-        Path output_path_;
-        std::shared_ptr<LinearSolver_t> linear_solver_;
-        std::shared_ptr<LinearSolver_t> mass_matrix_linear_solver_;
-        std::shared_ptr<Matrix_t> mass_matrix_;
-        bool implicit_{false};
-        bool verbose_{false};
-
-        std::shared_ptr<IO_t> io_;
-        Vector_t increment_, forcing_function_;
-        // Matrix_t material_matrix_;
-    };
-
-    template <class FunctionSpace>
     class LagrangeMultiplier final : public Configurable {
     public:
         void read(Input &in) override { transfer.read(in); }
@@ -303,6 +124,7 @@ namespace utopia {
                 (*from_ops[i]) += temp;
             }
 
+            from->condensed_system_built();
             return true;
         }
 
@@ -332,7 +154,7 @@ namespace utopia {
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
         using StationaryLinearFEProblem_t = utopia::StationaryLinearFEProblem<FunctionSpace>;
-        using EulerLinearFEProblem_t = utopia::EulerLinearFEProblem<FunctionSpace>;
+        using LinearImplicitTimeDependentProblem_t = utopia::LinearImplicitTimeDependentProblem<FunctionSpace>;
         using ProblemBase_t = utopia::ProblemBase<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
 
@@ -382,8 +204,8 @@ namespace utopia {
 
                     std::shared_ptr<ProblemBase_t> p;
 
-                    if (type == "EulerLinearFEProblem") {
-                        p = std::make_shared<EulerLinearFEProblem_t>(s);
+                    if (type == "LinearImplicitTimeDependentProblem") {
+                        p = std::make_shared<LinearImplicitTimeDependentProblem_t>(s);
                     } else {
                         // Default stationary/linear problem
                         p = std::make_shared<StationaryLinearFEProblem_t>(s);

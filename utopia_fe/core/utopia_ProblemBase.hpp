@@ -32,6 +32,8 @@ namespace utopia {
             return false;
         }
 
+        virtual void condensed_system_built() {}
+
         // Does nothing here
         virtual void increment_time() {}
 
