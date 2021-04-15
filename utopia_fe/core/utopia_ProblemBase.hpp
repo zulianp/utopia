@@ -9,7 +9,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class ProblemBase : public Configurable {
+    class ProblemBase : public Configurable, public Describable {
     public:
         using Matrix = typename Traits<FunctionSpace>::Matrix;
         using Vector = typename Traits<FunctionSpace>::Vector;
@@ -41,12 +41,19 @@ namespace utopia {
         virtual bool apply_constraints() {
             this->space()->apply_constraints(*this->jacobian(), *this->fun());
 
+            return true;
+        }
+
+        void export_tensors() {
             if (export_tensors_) {
-                write("load_" + jacobian_->name() + ".m", *jacobian_);
+                auto ops = operators();
+
+                for (auto& o : ops) {
+                    write("load_" + o->name() + ".m", *o);
+                }
+
                 write("load_" + fun_->name() + ".m", *fun_);
             }
-
-            return true;
         }
 
         virtual bool init() {
@@ -89,6 +96,16 @@ namespace utopia {
               solution_(std::make_shared<Vector>()) {}
 
         virtual void set_environment(const std::shared_ptr<Environment<FunctionSpace>>& env) = 0;
+
+        void describe(std::ostream& os) const override {
+            os << "name:\t" << name_ << '\n';
+            if (space_) {
+                os << "space:\t" << space_->name() << '\n';
+            }
+
+            os << "output_dir:\t" << output_dir_ << '\n';
+            os << "export_tensors:\t" << export_tensors_ << '\n';
+        }
 
     private:
         std::string name_{"no_name"};
@@ -144,6 +161,14 @@ namespace utopia {
 
         inline bool complete() const override {
             return !(current_time_.step() < end_time_.step() && current_time_.get() < end_time_.get());
+        }
+
+        void describe(std::ostream& os) const override {
+            Super::describe(os);
+            os << "delta_time:\t" << delta_time_ << '\n';
+            os << "current_time:\t" << current_time_.get() << '\n';
+            os << "end_time:\t" << end_time_.get() << '\n';
+            os << "integrate_all_before_output:\t" << integrate_all_before_output_ << '\n';
         }
 
         void read(Input& in) override {

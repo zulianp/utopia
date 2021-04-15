@@ -104,7 +104,10 @@ namespace utopia {
             }
 
             if (verbose_) {
+                utopia::out() << "--------------------------------\n";
+                this->describe(utopia::out().stream());
                 utopia::out() << "Implicit = " << implicit_ << '\n';
+                utopia::out() << "--------------------------------\n";
             }
         }
 
@@ -144,11 +147,13 @@ namespace utopia {
 
             // FIXME remove increment
             mass_matrix_assembler_->assemble(*this->solution(), *mass_matrix_, increment_);
+            rename(this->name() + "_mass_matrix", *mass_matrix_);
             increment_.set(0.0);
 
             assert(this->delta_time() > 0);
 
             if (implicit_) {
+                assert(this->delta_time() > 0);
                 (*this->jacobian()) *= this->delta_time();
                 (*this->jacobian()) += *mass_matrix_;
 
@@ -163,6 +168,8 @@ namespace utopia {
 
             // Apply BC so that we can use the increment with zero BC after
             this->space()->apply_constraints(*this->solution());
+
+            this->export_tensors();
             return true;
         }
 

@@ -14,12 +14,17 @@ namespace utopia {
     template <typename Scalar>
     class UIScalarFunction final : public UIFunction<Scalar>, public Configurable {
     public:
+        void ensure() {
+            if (!sampler_) {
+                sampler_ = std::make_shared<UIConstantFunction<Scalar>>(1.);
+            }
+        }
         void read(Input &in) override {
             type_ = "";
             in.get("type", type_);
 
             if (type_.empty()) {
-                clear();
+                ensure();
                 return;
             }
 
@@ -159,6 +164,13 @@ namespace utopia {
         inline void clear() override {}
 
         inline void read(Input &in) override {
+            in.get("verbose", verbose_);
+
+            if (verbose_) {
+                utopia::out() << "--------------------------------\n";
+                utopia::out() << "Flow\n";
+            }
+
             read_permeability_tensor(in);
             in.get("permeability-function", permeability_);
             in.get("permeability_function", permeability_);
@@ -169,7 +181,9 @@ namespace utopia {
             lower_dimensional_tags_.clear();
             lower_dimensional_tags_.clear();
 
-            std::cout << "lower-dimensional-permeability:\n";
+            if (verbose_) {
+                utopia::out() << "lower-dimensional-permeability:\n";
+            }
 
             in.get("lower-dimensional-permeability", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -179,7 +193,9 @@ namespace utopia {
                     in.get("value", value);
                     in.get("side", tag);
 
-                    std::cout << "side(" << tag << "): " << value << std::endl;
+                    if (verbose_) {
+                        utopia::out() << "side(" << tag << "): " << value << std::endl;
+                    }
 
                     if (tag != -1) {
                         auto fun = std::make_shared<UIConstantFunction<Scalar>>(value);
@@ -191,6 +207,12 @@ namespace utopia {
                     }
                 });
             });
+
+            if (verbose_) {
+                utopia::out() << "rescale:\t" << rescale_ << '\n';
+                permeability_.describe(utopia::out().stream());
+                utopia::out() << "--------------------------------\n";
+            }
         }
 
         inline void rescale(const Scalar rescale) { rescale_ = rescale; }
@@ -205,6 +227,7 @@ namespace utopia {
         std::vector<std::shared_ptr<UIFunction<Scalar>>> lower_dimensional_permeability_;
         std::vector<int> lower_dimensional_tags_;
         Scalar rescale_;
+        bool verbose_{false};
 
         void read_permeability_tensor(Input &in) {
             Scalar constant_permeability = 1.;
@@ -228,13 +251,15 @@ namespace utopia {
                 }
             }
 
-            std::cout << "global permeabilty tensor: ";
+            if (verbose_) {
+                utopia::out() << "global permeabilty tensor: ";
 
-            for (int i = 0; i < dim; ++i) {
-                std::cout << permeabilities[i] << " ";
+                for (int i = 0; i < dim; ++i) {
+                    utopia::out() << permeabilities[i] << " ";
+                }
+
+                utopia::out() << std::endl;
             }
-
-            std::cout << std::endl;
         }
     };
 

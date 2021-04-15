@@ -64,10 +64,21 @@ namespace utopia {
 
             utopia::assemble(b_form, jacobian);
 
+            if (impl_->verbose) {
+                Scalar norm1_jac = norm1(jacobian);
+                utopia::out() << "norm1 Jacobian (no stab): " << norm1_jac << '\n';
+            }
+
             if (impl_->stabilize_transport) {
                 Matrix jacobian_out;
                 transport_stabilization(jacobian, jacobian_out);
+                rename(jacobian.name(), jacobian_out);
                 jacobian = std::move(jacobian_out);
+            }
+
+            if (impl_->verbose) {
+                Scalar norm1_jac = norm1(jacobian);
+                utopia::out() << "norm1 Jacobian (with stab): " << norm1_jac << '\n';
             }
 
             return true;
