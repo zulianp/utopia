@@ -256,9 +256,9 @@ namespace utopia {
             return true;
         }
 
-        bool reassemble_problems() {
+        bool reassemble_operators() {
             for (auto &p : problems) {
-                bool ok = p.second->assemble();
+                bool ok = p.second->assemble_operators();
 
                 if (!ok) {
                     Utopia::Abort("Problem \"" + p.second->name() + "\": initialization failed!\n");
@@ -268,9 +268,9 @@ namespace utopia {
             return true;
         }
 
-        bool assemble_problems() {
+        bool assemble_operators() {
             for (auto &p : problems) {
-                bool ok = p.second->init() && p.second->assemble();
+                bool ok = p.second->init() && p.second->assemble_operators();
 
                 if (!ok) {
                     Utopia::Abort("Problem \"" + p.second->name() + "\": initialization failed!\n");
@@ -280,7 +280,19 @@ namespace utopia {
             return true;
         }
 
-        bool condense_systems() {
+        bool prepare_systems() {
+            for (auto &p : problems) {
+                bool ok = p.second->prepare_system();
+
+                if (!ok) {
+                    Utopia::Abort("System preparation for \"" + p.second->name() + "\" failed!\n");
+                }
+            }
+
+            return true;
+        }
+
+        bool condense_problems() {
             for (auto &c : couplings) {
                 if (!c->condense()) {
                     Utopia::Abort("Condesation of " + c->from->name() + " and " + c->to->name() + " failed!\n");
@@ -302,7 +314,12 @@ namespace utopia {
         }
 
         bool assemble_all() {
-            return assemble_couplings() && assemble_problems() && condense_systems() && apply_constraints();
+            // FIXME add stage where residual and system is created
+            return assemble_couplings() &&  //
+                   assemble_operators() &&  //
+                   condense_problems() &&   //
+                   prepare_systems() &&     //
+                   apply_constraints();     //
         }
 
         void increment_time() {

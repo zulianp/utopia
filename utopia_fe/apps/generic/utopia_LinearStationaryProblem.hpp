@@ -54,7 +54,13 @@ namespace utopia {
         }
 
         /// Being a linear problem it is assembled only once in the init function
-        bool assemble() override { return true; }
+        bool assemble_operators() override { return true; }
+        bool prepare_system() override { return true; }
+
+        bool apply_constraints() override {
+            this->space()->apply_constraints(*this->jacobian(), *this->fun());
+            return true;
+        }
 
         bool solve() override { return linear_solver_->solve(*this->jacobian(), *this->fun(), *this->solution()); }
         bool export_result() const override {

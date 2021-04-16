@@ -110,21 +110,35 @@ namespace utopia {
             return true;
         }
 
-        bool assemble() override {
-            compute_system();
-            compute_residual();
-            return true;
-        }
+        bool assemble_operators() override { return true; }
 
         void compute_residual() {
+            const bool dt_larger_than_one = this->delta_time() > 1.0;
+
             residual_ = (*this->jacobian()) * (*this->solution());
             residual_ = (*this->fun()) - residual_;
-            residual_ *= this->delta_time();
+
+            if (!dt_larger_than_one) {
+                residual_ *= this->delta_time();
+            }
         }
 
         void compute_system() {
-            system_ = this->delta_time() * (*this->jacobian());
-            system_ += (*mass_matrix_);
+            const bool dt_larger_than_one = this->delta_time() > 1.0;
+
+            if (dt_larger_than_one) {
+                system_ = (1. / this->delta_time()) * (*mass_matrix_);
+                system_ += (*this->jacobian());
+            } else {
+                system_ = this->delta_time() * (*this->jacobian());
+                system_ += (*mass_matrix_);
+            }
+        }
+
+        bool prepare_system() override {
+            compute_system();
+            compute_residual();
+            return true;
         }
 
         bool apply_constraints() override {
@@ -133,7 +147,7 @@ namespace utopia {
             return true;
         }
 
-        bool update() override { return assemble() && apply_constraints() && solve(); }
+        bool update() override { return assemble_operators() && apply_constraints() && solve(); }
 
         void apply_transformers() {
             for (auto &trafo : transformers) {

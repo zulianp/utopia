@@ -23,7 +23,8 @@ namespace utopia {
         virtual bool is_trivial() const { return is_linear() && !is_moving_domain(); }
 
         virtual bool solve() = 0;
-        virtual bool assemble() = 0;
+        virtual bool assemble_operators() = 0;
+        virtual bool prepare_system() = 0;
 
         virtual bool update() { return false; }
 
@@ -39,12 +40,7 @@ namespace utopia {
 
         virtual bool export_result() const = 0;
         virtual bool complete() const { return true; }
-
-        virtual bool apply_constraints() {
-            this->space()->apply_constraints(*this->jacobian(), *this->fun());
-
-            return true;
-        }
+        virtual bool apply_constraints() = 0;
 
         inline bool must_export_tensors() const { return export_tensors_; }
 
