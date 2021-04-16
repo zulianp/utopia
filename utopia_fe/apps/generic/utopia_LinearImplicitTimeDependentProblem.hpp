@@ -75,30 +75,6 @@ namespace utopia {
             mass_matrix_assembler_->set_environment(env);
         }
 
-        bool assemble_mass_matrix() {
-            // FIXME remove increment
-            mass_matrix_assembler_->assemble(*this->solution(), *mass_matrix_, increment_);
-            rename(this->name() + "_mass_matrix", *mass_matrix_);
-            increment_.set(0.0);
-
-            assert(this->delta_time() > 0);
-
-            // Apply BC so that we can use the increment with zero BC after
-            this->space()->apply_constraints(*this->solution());
-            this->export_tensors();
-            return true;
-        }
-
-        bool assemble_material() {
-            assert(Scalar_t(norm2(*this->solution())) == 0.0);
-            if (!assembler_->assemble(*this->solution(), *this->jacobian(), *this->fun())) {
-                return false;
-            }
-
-            *this->fun() *= -1.0;
-            return true;
-        }
-
         bool init() override {
             if (!Super::init()) return false;
             assert(this->delta_time() > 0);
@@ -116,21 +92,32 @@ namespace utopia {
             }
         }
 
-        bool update() override { return assemble() && apply_constraints() && solve(); }
+        bool assemble_mass_matrix() {
+            // FIXME remove increment
+            mass_matrix_assembler_->assemble(*this->solution(), *mass_matrix_, increment_);
+            rename(this->name() + "_mass_matrix", *mass_matrix_);
+            increment_.set(0.0);
+
+            assert(this->delta_time() > 0);
+            return true;
+        }
+
+        bool assemble_material() {
+            assert(Scalar_t(norm2(*this->solution())) == 0.0);
+            if (!assembler_->assemble(*this->solution(), *this->jacobian(), *this->fun())) {
+                return false;
+            }
+
+            *this->fun() *= -1.0;
+            return true;
+        }
 
         bool assemble() override {
             compute_system();
             compute_residual();
+            this->export_tensors();
             return true;
         }
-
-        void apply_transformers() {
-            for (auto &trafo : transformers) {
-                trafo->apply(*this->jacobian());
-            }
-        }
-
-        void condensed_system_built() override { apply_transformers(); }
 
         void compute_residual() {
             residual_ = (*this->jacobian()) * (*this->solution());
@@ -148,6 +135,16 @@ namespace utopia {
             this->space()->apply_zero_constraints(residual_);
             return true;
         }
+
+        bool update() override { return assemble() && apply_constraints() && solve(); }
+
+        void apply_transformers() {
+            for (auto &trafo : transformers) {
+                trafo->apply(*this->jacobian());
+            }
+        }
+
+        void condensed_system_built() override { apply_transformers(); }
 
         bool solve() override {
             increment_.set(0.0);

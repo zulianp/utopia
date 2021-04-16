@@ -12,70 +12,14 @@
 #include "utopia_ProblemBase.hpp"
 
 #include "utopia_LinearImplicitTimeDependentProblem.hpp"
+#include "utopia_LinearStationaryProblem.hpp"
 
 namespace utopia {
-
-    // values have to be organized to fit a Newton solver
-    // f(x) + b; -> J(x) * s = -(f(x) + b), x = x + s
-
-    template <class FunctionSpace>
-    class StationaryLinearFEProblem : public ProblemBase<FunctionSpace> {
-    public:
-        using Vector_t = typename Traits<FunctionSpace>::Vector;
-        using Matrix_t = typename Traits<FunctionSpace>::Matrix;
-        using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
-        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
-        using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
-        using Environment_t = utopia::Environment<FunctionSpace>;
-        using Super = utopia::ProblemBase<FunctionSpace>;
-
-        virtual ~StationaryLinearFEProblem() = default;
-
-        void read(Input &in) override {
-            Super::read(in);
-            in.get("assembly", *assembler_);
-            output_path_ = this->output_dir() + ("/" + this->name() + ".e");
-            in.get("solver", *linear_solver_);
-        }
-
-        StationaryLinearFEProblem(const std::shared_ptr<FunctionSpace> &space)
-            : Super(space),
-              assembler_(std::make_shared<OmniAssembler_t>(space)),
-              linear_solver_(std::make_shared<OmniLinearSolver_t>()) {}
-
-        void set_environment(const std::shared_ptr<Environment_t> &env) override { assembler_->set_environment(env); }
-
-        bool is_linear() const override { return true; }
-
-        bool init() override {
-            if (!Super::init()) return false;
-
-            if (!assembler_->assemble(*this->solution(), *this->jacobian(), *this->fun())) {
-                return false;
-            }
-
-            (*this->fun()) *= -1.0;
-            return true;
-        }
-
-        /// Being a linear problem it is assembled only once in the init function
-        bool assemble() override { return true; }
-
-        bool solve() override { return linear_solver_->solve(*this->jacobian(), *this->fun(), *this->solution()); }
-        bool export_result() const override { return this->space()->write(output_path_, *this->solution()); }
-
-    private:
-        std::shared_ptr<OmniAssembler_t> assembler_;
-
-        Path output_path_;
-        std::shared_ptr<LinearSolver_t> linear_solver_;
-    };
 
     template <class FunctionSpace>
     class LagrangeMultiplier final : public Configurable {
     public:
         void read(Input &in) override { transfer.read(in); }
-
         FETransfer<FunctionSpace> transfer;
     };
 
@@ -85,7 +29,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Size_t = typename Traits<FunctionSpace>::SizeType;
-        using StationaryLinearFEProblem_t = utopia::StationaryLinearFEProblem<FunctionSpace>;
+        using LinearStationaryProblem_t = utopia::LinearStationaryProblem<FunctionSpace>;
         using ProblemBase_t = utopia::ProblemBase<FunctionSpace>;
 
         std::shared_ptr<ProblemBase_t> from;
@@ -184,7 +128,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
-        using StationaryLinearFEProblem_t = utopia::StationaryLinearFEProblem<FunctionSpace>;
+        using LinearStationaryProblem_t = utopia::LinearStationaryProblem<FunctionSpace>;
         using LinearImplicitTimeDependentProblem_t = utopia::LinearImplicitTimeDependentProblem<FunctionSpace>;
         using ProblemBase_t = utopia::ProblemBase<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
@@ -239,7 +183,7 @@ namespace utopia {
                         p = std::make_shared<LinearImplicitTimeDependentProblem_t>(s);
                     } else {
                         // Default stationary/linear problem
-                        p = std::make_shared<StationaryLinearFEProblem_t>(s);
+                        p = std::make_shared<LinearStationaryProblem_t>(s);
                     }
 
                     p->set_environment(env);
@@ -376,47 +320,13 @@ namespace utopia {
 
             auto p = it->second;
             if (p->is_time_dependent()) {
-                if (true) {
-                    // if (problems.size() == 1UL) {
-                    do {
-                        increment_time();
-                        if (!(p->update() && export_results())) {
-                            return false;
-                        }
+                do {
+                    increment_time();
+                    if (!(p->update() && export_results())) {
+                        return false;
+                    }
 
-                    } while (!p->complete());
-                }
-
-                // else {
-                //     // Branch is buggy
-
-                //     bool trivial = true;
-                //     for (auto &p : problems) {
-                //         trivial = trivial && p.second->is_trivial();
-                //     }
-
-                //     if (trivial) {
-                //         increment_time();
-
-                //         do {
-                //             if (!(p->solve() &&             //
-                //                   transfer_solutions() &&   //
-                //                   reassemble_problems() &&  //
-                //                   // apply_constraints() &&     //
-                //                   // transfer_residuals() &&    //
-                //                   p->apply_constraints() &&  //
-                //                   export_results())) {
-                //                 return false;
-                //             }
-
-                //             increment_time();
-
-                //         } while (!p->complete());
-                //     } else {
-                //         assert(false && "IMPLEMENT ME");
-                //         return false;
-                //     }
-                // }
+                } while (!p->complete());
 
                 return true;
             } else {

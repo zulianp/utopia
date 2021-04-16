@@ -8,8 +8,11 @@
 
 int main(const int argc, char *argv[]) {
 #ifdef UTOPIA_WITH_LIBMESH
-    utopia::Utopia::instance().add_library(utopia::make_unique<utopia::LibMeshLibrary>());
-    // return MainOld(argc, argv);
+    if (argc > 1 && argv[1] == std::string("--old")) {
+        return MainOld(argc, argv);
+    } else {
+        utopia::Utopia::instance().add_library(utopia::make_unique<utopia::LibMeshLibrary>());
+    }
 #endif  // UTOPIA_WITH_LIBMESH
 
     return UTOPIA_MAIN(argc, argv);
