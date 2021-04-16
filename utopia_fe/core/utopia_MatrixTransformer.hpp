@@ -81,8 +81,9 @@ namespace utopia {
             // Vector diag_elem = -1.0 * sum(mat, 1);
             // mat += diag(diag_elem);
 
-            Matrix mat_in = mat;
-            transport_stabilization(mat_in, mat);
+            Matrix stab;
+            transport_stabilization(mat, stab);
+            mat += stab;
         }
     };
 
