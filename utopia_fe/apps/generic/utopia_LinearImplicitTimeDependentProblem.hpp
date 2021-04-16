@@ -113,23 +113,13 @@ namespace utopia {
         bool assemble_operators() override { return true; }
 
         void compute_residual() {
-            const bool dt_larger_than_one = this->delta_time() > 1.0;
-
             residual_ = (*this->jacobian()) * (*this->solution());
             residual_ = (*this->fun()) - residual_;
-
-            if (!dt_larger_than_one) {
-                residual_ *= this->delta_time();
-            }
+            residual_ *= this->delta_time();
         }
 
         void compute_system() {
-            const bool dt_larger_than_one = this->delta_time() > 1.0;
-
-            if (dt_larger_than_one) {
-                system_ = (1. / this->delta_time()) * (*mass_matrix_);
-                system_ += (*this->jacobian());
-            } else {
+            if (this->is_first_time_step()) {
                 system_ = this->delta_time() * (*this->jacobian());
                 system_ += (*mass_matrix_);
             }
@@ -142,12 +132,15 @@ namespace utopia {
         }
 
         bool apply_constraints() override {
-            this->space()->apply_constraints(system_);
+            if (this->is_first_time_step() || system_modified_flag_) {
+                this->space()->apply_constraints(system_);
+            }
+
             this->space()->apply_zero_constraints(residual_);
             return true;
         }
 
-        bool update() override { return assemble_operators() && apply_constraints() && solve(); }
+        bool update() override { return assemble_operators() && prepare_system() && apply_constraints() && solve(); }
 
         void apply_transformers() {
             for (auto &trafo : transformers) {
@@ -155,12 +148,20 @@ namespace utopia {
             }
         }
 
-        void condensed_system_built() override { apply_transformers(); }
+        void condensed_system_built() override {
+            apply_transformers();
+            system_modified_flag_ = true;
+        }
 
         bool solve() override {
             increment_.set(0.0);
 
-            bool ok = linear_solver_->solve(system_, residual_, increment_);
+            if (this->is_first_time_step() || system_modified_flag_) {
+                linear_solver_->update(make_ref(system_));
+                system_modified_flag_ = false;
+            }
+
+            bool ok = linear_solver_->apply(residual_, increment_);
             assert(ok);
 
             (*this->solution()) += increment_;
@@ -219,6 +220,7 @@ namespace utopia {
 
         Path output_path_;
         bool verbose_{false};
+        bool system_modified_flag_{false};
     };
 
 }  // namespace utopia

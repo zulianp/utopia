@@ -56,6 +56,8 @@ namespace utopia {
     class StabilizeTransport final : public MatrixTransformer<Matrix> {
     public:
         virtual void apply(Matrix &mat) const {
+            UTOPIA_TRACE_REGION_BEGIN("StabilizeTransport::apply");
+
             // using Scalar = typename Traits<Matrix>::Scalar;
             // using SizeType = typename Traits<Matrix>::SizeType;
             // using Vector = typename Traits<Matrix>::Vector;
@@ -84,6 +86,8 @@ namespace utopia {
             Matrix stab;
             transport_stabilization(mat, stab);
             mat += stab;
+
+            UTOPIA_TRACE_REGION_END("StabilizeTransport::apply");
         }
     };
 

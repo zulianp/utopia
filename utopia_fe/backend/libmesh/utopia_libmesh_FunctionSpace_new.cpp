@@ -239,29 +239,31 @@ namespace utopia {
         FunctionSpace::~FunctionSpace() {}
 
         void FunctionSpace::read(Input &in) {
+            UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::read");
+
             Sys main_system;
             main_system.read(in);
 
-            if (!Options().parse(in)) {
-                return;
-            }
-
-            if (impl_->mesh->empty()) {
-                in.get("mesh", *impl_->mesh);
-
-                // Users did not care, so lets give them a cube
+            if (Options().parse(in)) {
                 if (impl_->mesh->empty()) {
-                    impl_->mesh->unit_cube();
+                    in.get("mesh", *impl_->mesh);
+
+                    // Users did not care, so lets give them a cube
+                    if (impl_->mesh->empty()) {
+                        impl_->mesh->unit_cube();
+                    }
                 }
+
+                if (!impl_->systems) {
+                    impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
+                }
+
+                main_system.add_to_space(*impl_);
+                impl_->systems->init();
+                impl_->name = main_system.name;
             }
 
-            if (!impl_->systems) {
-                impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
-            }
-
-            main_system.add_to_space(*impl_);
-            impl_->systems->init();
-            impl_->name = main_system.name;
+            UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::read");
         }
 
         bool FunctionSpace::read_with_state(Input &in, Field<FunctionSpace> &field) {
@@ -325,8 +327,9 @@ namespace utopia {
                     }
 
                     auto &v = dof_map.variable(var_num);
-                    std::string exodus_name;
+                    std::string exodus_name, user_rename;
                     node.get("name", exodus_name);
+                    node.get("rename", user_rename);
 
                     if (exodus_name.empty()) {
                         assert(false);
@@ -339,7 +342,11 @@ namespace utopia {
                     ++var_num;
 
                     // FIXME this does not go well with multiple fields
-                    field_name = exodus_name;
+                    if (user_rename.empty()) {
+                        field_name = exodus_name;
+                    } else {
+                        field_name = user_rename;
+                    }
                 });
             });
 
@@ -374,62 +381,74 @@ namespace utopia {
                                  const std::vector<std::string> &var_names,
                                  Vector &val,
                                  const int time_step) {
+            UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::read");
+
             auto ext = path.extension();
+
+            bool ok = true;
 
             if (ext != "e") {
                 utopia::err() << "Could not read mesh at " << path.to_string()
                               << ", only exodus (.e) format supported\n";
-                return false;
+                ok = false;
+            } else {
+                if (mesh().empty()) {
+                    mesh().init_distributed();
+                }
+
+                libMesh::ExodusII_IO io(mesh().raw_type());
+                io.read(path.c_str());
+
+                mesh().set_database(path);
+
+                mesh().raw_type().prepare_for_use();
+
+                Sys main_system;
+                for (auto &v_name : var_names) {
+                    Var var;
+                    var.name = v_name;
+                    main_system.vars.push_back(var);
+                }
+
+                if (!impl_->systems) {
+                    impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
+                }
+
+                main_system.add_to_space(*impl_);
+                impl_->systems->init();
+
+                auto &system = impl_->systems->get_system(system_id());
+
+                for (auto &v_name : var_names) {
+                    io.copy_nodal_solution(system, v_name, v_name, 1);
+                }
+
+                convert(*system.solution, val);
+                ok = !val.empty();
             }
 
-            if (mesh().empty()) {
-                mesh().init_distributed();
-            }
-
-            libMesh::ExodusII_IO io(mesh().raw_type());
-            io.read(path.c_str());
-
-            mesh().set_database(path);
-
-            mesh().raw_type().prepare_for_use();
-
-            Sys main_system;
-            for (auto &v_name : var_names) {
-                Var var;
-                var.name = v_name;
-                main_system.vars.push_back(var);
-            }
-
-            if (!impl_->systems) {
-                impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
-            }
-
-            main_system.add_to_space(*impl_);
-            impl_->systems->init();
-
-            auto &system = impl_->systems->get_system(system_id());
-
-            for (auto &v_name : var_names) {
-                io.copy_nodal_solution(system, v_name, v_name, 1);
-            }
-
-            convert(*system.solution, val);
-            return !val.empty();
+            UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::read");
+            return ok;
         }
 
         bool FunctionSpace::write(const Path &path, const Vector &x) {
+            UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::write");
+
             assert(impl_->systems);
 
             auto &sys = impl_->systems->get_system(system_id());
             convert(x, *sys.solution);
 
+            bool ok = true;
             try {
                 libMesh::NameBasedIO(impl_->mesh->raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
-                return true;
             } catch (const std::exception &ex) {
                 utopia::err() << ex.what() << '\n';
-                return false;
+                ok = false;
             }
+
+            UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::write");
+            return ok;
         }
 
         void FunctionSpace::describe(std::ostream &os) const {
@@ -495,10 +514,14 @@ namespace utopia {
         }
 
         void FunctionSpace::create_field(Field<FunctionSpace> &field) {
+            UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::create_field");
+
             auto vec = std::make_shared<Vector>();
             create_vector(*vec);
             field.set_data(vec);
             rename(impl_->name, *vec);
+
+            UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::create_field");
         }
 
         void FunctionSpace::apply_zero_constraints(Vector &vec) const {
