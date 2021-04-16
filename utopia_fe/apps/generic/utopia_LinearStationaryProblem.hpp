@@ -48,6 +48,8 @@ namespace utopia {
             }
 
             (*this->fun()) *= -1.0;
+
+            this->export_tensors();
             return true;
         }
 
@@ -55,7 +57,13 @@ namespace utopia {
         bool assemble() override { return true; }
 
         bool solve() override { return linear_solver_->solve(*this->jacobian(), *this->fun(), *this->solution()); }
-        bool export_result() const override { return this->space()->write(output_path_, *this->solution()); }
+        bool export_result() const override {
+            if (this->must_export_tensors()) {
+                write("load_" + this->solution()->name() + ".m", *this->solution());
+            }
+
+            return this->space()->write(output_path_, *this->solution());
+        }
 
     private:
         std::shared_ptr<OmniAssembler_t> assembler_;

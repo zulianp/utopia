@@ -143,7 +143,9 @@ namespace utopia {
         fracture_network->apply_weak_BC(A_f, rhs_f);
 
         if (write_operators_to_disk) {
+            rename("a_m_neu", A_m);
             write("A_m_neu.m", A_m);
+            rename("a_f_neu", A_f);
             write("A_f_neu.m", A_f);
         }
 

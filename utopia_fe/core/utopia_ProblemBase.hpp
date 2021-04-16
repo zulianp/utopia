@@ -46,8 +46,10 @@ namespace utopia {
             return true;
         }
 
+        inline bool must_export_tensors() const { return export_tensors_; }
+
         void export_tensors() {
-            if (export_tensors_) {
+            if (must_export_tensors()) {
                 auto ops = operators();
 
                 for (auto& o : ops) {
@@ -62,11 +64,14 @@ namespace utopia {
             space()->create_matrix(*this->jacobian());
             space()->create_vector(*this->solution());
             space()->create_vector(*this->fun());
+            rename_tensors();
+            return true;
+        }
 
+        void rename_tensors() {
             rename(name() + "_jacobian", *this->jacobian());
             rename(name() + "_solution", *this->solution());
             rename(name() + "_fun", *this->fun());
-            return true;
         }
 
         virtual std::vector<std::shared_ptr<Matrix>> operators() {

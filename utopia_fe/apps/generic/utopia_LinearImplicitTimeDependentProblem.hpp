@@ -97,8 +97,6 @@ namespace utopia {
             mass_matrix_assembler_->assemble(*this->solution(), *mass_matrix_, increment_);
             rename(this->name() + "_mass_matrix", *mass_matrix_);
             increment_.set(0.0);
-
-            assert(this->delta_time() > 0);
             return true;
         }
 
@@ -115,7 +113,6 @@ namespace utopia {
         bool assemble() override {
             compute_system();
             compute_residual();
-            this->export_tensors();
             return true;
         }
 

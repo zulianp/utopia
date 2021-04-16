@@ -109,8 +109,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_f.dof_map(), transport_f_.system_matrix, xkp1_f);
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
 
         utopia::convert(xkp1_m, *V_m.equation_system().solution);
         utopia::convert(xkp1_f, *V_f.equation_system().solution);
@@ -216,8 +216,8 @@ namespace utopia {
         UVector z(row_layout(steady_flow_.B), 0);
         UVector lagr(layout(z), 0);
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -310,8 +310,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();
@@ -400,8 +400,8 @@ namespace utopia {
         USparseMatrix M_m = diag(transport_m_.mass_vector);
         USparseMatrix M_f = diag(transport_f_.mass_vector);
 
-        apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
-        apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
+        // apply_boundary_conditions(V_m.dof_map(), A_m, x_m);
+        // apply_boundary_conditions(V_f.dof_map(), A_f, x_f);
 
         const auto &T = steady_flow_.T;
 
@@ -417,10 +417,21 @@ namespace utopia {
         S_stab += stab;
 
         if (steady_flow_.write_operators_to_disk) {
+            rename("g_m_neu", A_m);
             write("G_m_neu.m", A_m);
+            rename("g_f_neu", A_f);
             write("G_f_neu.m", A_f);
+            rename("s_stab", S_stab);
             write("S_stab.m", S_stab);
-            write("stab.m", stab);
+            rename("stab", stab);
+            write("Stab.m", stab);
+            rename("m_m", transport_m_.mass_matrix);
+            write("M_m.m", transport_m_.mass_matrix);
+            rename("m_f", transport_f_.mass_matrix);
+            write("M_f.m", transport_f_.mass_matrix);
+
+            rename("p_m", transport_m_.pressure_w);
+            write("P_m.m", transport_m_.pressure_w);
         }
 
         USparseMatrix S;
@@ -433,8 +444,8 @@ namespace utopia {
 
         apply_boundary_conditions(V_m.dof_map(), S, rhs);
 
-        libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
-        // libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        // libMesh::Nemesis_IO io_m(V_m.mesh()), io_f(V_f.mesh());
+        libMesh::ExodusII_IO io_m(V_m.mesh()), io_f(V_f.mesh());
         utopia::convert(x_m, *V_m.equation_system().solution);
 
         V_m.equation_system().solution->close();

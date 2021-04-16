@@ -22,6 +22,7 @@ namespace utopia {
             Scalar coeff{1.0};
             bool stabilize_transport{true};
             bool verbose{false};
+            bool print_pressure{false};
         };
 
         Transport::Transport() : impl_(utopia::make_unique<Impl>()) {}
@@ -58,9 +59,17 @@ namespace utopia {
             auto q = test(C);
             auto ph = interpolate(pressure_w, c);
 
+            if (impl_->print_pressure) {
+                write("load_pressure.m", pressure_w);
+            }
+
             auto sampler_fun = ctx_fun(impl_->diffusion_function.sampler());
-            auto vel = sampler_fun * (-impl_->coeff) * grad(ph);
-            auto b_form = (inner(inner(grad(c), vel), q) * dX);
+            auto vel = sampler_fun * impl_->coeff * grad(ph);
+            auto b_form = (inner(inner(-grad(c), vel), q) * dX);
+
+            // auto sampler_fun = ctx_fun(impl_->diffusion_function.sampler());
+            // auto vel = sampler_fun * (-impl_->coeff) * grad(ph);
+            // auto b_form = (inner(inner(grad(c), vel), q) * dX);
 
             utopia::assemble(b_form, jacobian);
 
@@ -114,6 +123,7 @@ namespace utopia {
             in.get("coeff", impl_->coeff);
             in.get("stabilize_transport", impl_->stabilize_transport);
             in.get("verbose", impl_->verbose);
+            in.get("print_pressure", impl_->print_pressure);
 
             init();
 
@@ -128,6 +138,7 @@ namespace utopia {
                 utopia::out() << "stabilize_transport:\t" << impl_->stabilize_transport << '\n';
                 utopia::out() << "diffusion_function: ";
                 impl_->diffusion_function.describe(utopia::out().stream());
+                utopia::out() << "print_pressure:\t" << impl_->print_pressure << '\n';
                 utopia::out() << "-----------------------------\n";
             }
         }
@@ -144,6 +155,8 @@ namespace utopia {
             Scalar density{1.0};
             bool lumped{true};
             bool verbose{false};
+            Scalar expected_volume{-1.0};
+            Scalar expected_volume_tol{1e-6};
         };
 
         Mass::Mass() : impl_(utopia::make_unique<Impl>()) {}
@@ -166,18 +179,32 @@ namespace utopia {
             }
 
             assert(valid());
-            if (!valid()) return false;
+            if (!valid()) {
+                Utopia::Abort("Mass: invalid set-up!");
+            }
 
             auto &space = *impl_->legacy_space;
 
-            auto b_form =
-                impl_->density * inner(ctx_fun(impl_->density_function.sampler()) * trial(space), test(space)) * dX;
+            auto b_form = inner(ctx_fun(impl_->density_function.sampler()) * trial(space), test(space)) * dX;
 
             utopia::assemble(b_form, jacobian);
 
             if (impl_->lumped) {
                 Vector mass_vector = sum(jacobian, 1);
                 jacobian = diag(mass_vector);
+            }
+
+            if (impl_->density != 1.0) {
+                jacobian *= impl_->density;
+            }
+
+            if (impl_->expected_volume > 0.0) {
+                Scalar vol = sum(jacobian);
+                if (!approxeq(vol, impl_->expected_volume, impl_->expected_volume_tol)) {
+                    assert(false);
+                    Utopia::Abort("Mass: expected volume not satisfied: " + std::to_string(impl_->expected_volume) +
+                                  " != " + std::to_string(vol));
+                }
             }
 
             fun = jacobian * x;
@@ -192,6 +219,8 @@ namespace utopia {
             in.get("density", impl_->density);
             in.get("lumped", impl_->lumped);
             in.get("verbose", impl_->verbose);
+            in.get("expected_volume", impl_->expected_volume);
+            in.get("expected_volume_tol", impl_->expected_volume_tol);
 
             init();
 
@@ -200,6 +229,8 @@ namespace utopia {
                 utopia::out() << "Mass\n";
                 utopia::out() << "lumped:\t" << impl_->lumped << '\n';
                 utopia::out() << "density:\t" << impl_->density << '\n';
+                utopia::out() << "expected_volume:\t" << impl_->expected_volume << '\n';
+                utopia::out() << "expected_volume_tol:\t" << impl_->expected_volume_tol << '\n';
                 utopia::out() << "density_function: ";
                 impl_->density_function.describe(utopia::out().stream());
                 utopia::out() << "-----------------------------\n";
