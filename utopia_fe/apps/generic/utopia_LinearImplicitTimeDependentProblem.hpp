@@ -119,11 +119,15 @@ namespace utopia {
         }
 
         void compute_system() {
-            if (this->is_first_time_step()) {
+            if (must_update_system()) {
+                apply_transformers();
+
                 system_ = this->delta_time() * (*this->jacobian());
                 system_ += (*mass_matrix_);
             }
         }
+
+        inline bool must_update_system() const { return this->is_first_time_step() || system_modified_flag_; }
 
         bool prepare_system() override {
             compute_system();
@@ -132,10 +136,12 @@ namespace utopia {
         }
 
         bool apply_constraints() override {
-            if (this->is_first_time_step() || system_modified_flag_) {
+            if (must_update_system()) {
+                assert(!empty(system_));
                 this->space()->apply_constraints(system_);
             }
 
+            assert(!empty(residual_));
             this->space()->apply_zero_constraints(residual_);
             return true;
         }
@@ -148,15 +154,12 @@ namespace utopia {
             }
         }
 
-        void condensed_system_built() override {
-            apply_transformers();
-            system_modified_flag_ = true;
-        }
+        void condensed_system_built() override { system_modified_flag_ = true; }
 
         bool solve() override {
             increment_.set(0.0);
 
-            if (this->is_first_time_step() || system_modified_flag_) {
+            if (must_update_system()) {
                 linear_solver_->update(make_ref(system_));
                 system_modified_flag_ = false;
             }

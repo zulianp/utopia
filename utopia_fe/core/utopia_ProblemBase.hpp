@@ -202,7 +202,7 @@ namespace utopia {
 
         inline Scalar delta_time() const { return delta_time_; }
         inline const Time& current_time() const { return current_time_; }
-        inline bool is_first_time_step() const { return current_time_.step() == 1; }
+        inline bool is_first_time_step() const { return current_time_.step() == 0; }
 
     private:
         Scalar delta_time_;

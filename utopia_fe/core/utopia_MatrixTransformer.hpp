@@ -4,7 +4,7 @@
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
-#include "utopia_StabilizeTransport.hpp"
+// #include "utopia_StabilizeTransport.hpp"
 
 namespace utopia {
     template <class Matrix>
@@ -58,33 +58,36 @@ namespace utopia {
         virtual void apply(Matrix &mat) const {
             UTOPIA_TRACE_REGION_BEGIN("StabilizeTransport::apply");
 
-            // using Scalar = typename Traits<Matrix>::Scalar;
-            // using SizeType = typename Traits<Matrix>::SizeType;
-            // using Vector = typename Traits<Matrix>::Vector;
+            using Scalar = typename Traits<Matrix>::Scalar;
+            using SizeType = typename Traits<Matrix>::SizeType;
+            using Vector = typename Traits<Matrix>::Vector;
 
-            // Matrix mat_t = transpose(mat);
+            Matrix mat_t = transpose(mat);
 
-            // mat.transform([&](const SizeType i, const SizeType j, const Scalar &value) {
-            //     if (i == j) {
-            //         return 0.0;
-            //     } else {
-            //         const Scalar value_t = mat_t.get(i, j);
-            //         Scalar max_val = std::max(value, value_t);
+            /////////////////////////////////////////////////
+            Matrix stab = mat;
+            stab.transform([&](const SizeType i, const SizeType j, const Scalar &value) {
+                if (i == j) {
+                    return 0.0;
+                } else {
+                    const Scalar value_t = mat_t.get(i, j);
+                    Scalar max_val = std::max(value, value_t);
 
-            //         if (max_val > 0.0) {
-            //             max_val *= -1.0;
-            //             return max_val;
-            //         } else {
-            //             return 0.0;
-            //         }
-            //     }
-            // });
+                    if (max_val > 0.0) {
+                        max_val *= -1.0;
+                        return max_val;
+                    } else {
+                        return 0.0;
+                    }
+                }
+            });
 
-            // Vector diag_elem = -1.0 * sum(mat, 1);
-            // mat += diag(diag_elem);
+            Vector diag_elem = -1.0 * sum(stab, 1);
+            stab += diag(diag_elem);
+            /////////////////////////////////////////////////
 
-            Matrix stab;
-            transport_stabilization(mat, stab);
+            // Matrix stab;
+            // transport_stabilization(mat, stab);
             mat += stab;
 
             UTOPIA_TRACE_REGION_END("StabilizeTransport::apply");
