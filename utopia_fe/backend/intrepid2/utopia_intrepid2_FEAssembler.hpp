@@ -11,6 +11,32 @@ namespace utopia {
         template <class Operator, typename Scalar = UScalar>
         class Assemble {};
 
+        template <class View, class Op>
+        class OpAndStoreCellIJ {
+        public:
+            template <typename... Args>
+            UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ(const View &data, Args &&... args)
+                : op(std::forward<Args>(args)...), data(data) {}
+
+            UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &i, const int &j) const {
+                data(cell, i, j) += op(cell, i, j);
+            }
+
+            Op op;
+            View data;
+        };
+
+        template <class Op, class View, typename... Args>
+        UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ<View, Op> build_op_and_store_cell_ij(const View &data,
+                                                                                     Args &&... args) {
+            return OpAndStoreCellIJ<View, Op>(data, std::forward<Args>(args)...);
+        }
+
+        template <class Op, class View>
+        UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ<View, Op> op_and_store_cell_ij(const View &data, Op op) {
+            return OpAndStoreCellIJ<View, Op>(data, op);
+        }
+
         template <typename Scalar>
         class FEAssembler : public Describable, public Configurable {
         public:

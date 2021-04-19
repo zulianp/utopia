@@ -29,7 +29,6 @@ namespace utopia {
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using UserOp = utopia::Transport<Dim, Field>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
@@ -83,43 +82,19 @@ namespace utopia {
                 const int n_qp;
             };
 
-            class OpAndStore {
-            public:
-                UTOPIA_INLINE_FUNCTION OpAndStore(const DynRankView &vector_field,
-                                                  const DynRankView &grad,
-                                                  const DynRankView &fun,
-                                                  const DynRankView &measure,
-                                                  DynRankView &data)
-                    : op(vector_field, grad, fun, measure), data(data) {}
-
-                UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &i, const int &j) const {
-                    data(cell, i, j) += op(cell, i, j);
-                }
-
-                Op op;
-                DynRankView data;
-            };
+            inline Op make_op() {
+                auto &fe = this->fe();
+                return Op(op_.vector_field, fe.grad, fe.fun, fe.measure);
+            }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
-                auto &fe = this->fe();
-
-                this->apply_operator(
-                    "Assemble<Transport>::apply", x, y, Op(op_.vector_field, fe.grad, fe.fun, fe.measure));
-
+                this->apply_operator("Assemble<Transport>::apply", x, y, make_op());
                 return true;
             }
 
             bool assemble() override {
                 this->ensure_mat_accumulator();
-
-                auto &fe = this->fe();
-                auto data = this->data();
-
-                {
-                    this->mat_integrate("Assemble<Transport>::assemble",
-                                        OpAndStore(op_.vector_field, fe.grad, fe.fun, fe.measure, data));
-                }
-
+                this->mat_integrate("Assemble<Transport>::assemble", op_and_store_cell_ij(this->data(), make_op()));
                 return true;
             }
 

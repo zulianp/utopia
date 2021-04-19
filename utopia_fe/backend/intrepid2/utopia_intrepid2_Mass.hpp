@@ -30,7 +30,6 @@ namespace utopia {
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
-            using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using UserOp = utopia::Mass<Fun>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
@@ -73,42 +72,21 @@ namespace utopia {
                 const int n_qp;
             };
 
-            class OpAndStore {
-            public:
-                UTOPIA_INLINE_FUNCTION OpAndStore(const Fun &density,
-                                                  const DynRankView &fun,
-                                                  const DynRankView &measure,
-                                                  const int n_components,
-                                                  DynRankView &data)
-                    : op(density, fun, measure, n_components), data(data) {}
-
-                UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &i, const int &j) const {
-                    data(cell, i, j) += op(cell, i, j);
-                }
-
-                Op op;
-                DynRankView &data;
-            };
+            inline Op make_op() {
+                auto &fe = this->fe();
+                return Op(op_.density, fe.fun, fe.measure, op_.n_components);
+            }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
-                auto &fe = this->fe();
-                auto data = this->data();
-
-                this->apply_operator(
-                    "Assemble<Mass>::apply", x, y, Op(op_.density, fe.fun, fe.measure, op_.n_components));
-
+                this->apply_operator("Assemble<Mass>::apply", x, y, make_op());
                 return true;
             }
 
             bool assemble() override {
-                this->ensure_mat_accumulator();
-                auto &fe = this->fe();
-                auto data = this->data();
-
                 assert(op_.n_components == 1 && "IMPLEMENT ME");
-                this->mat_integrate("Assemble<Mass>::assemble",
-                                    OpAndStore(op_.density, fe.fun, fe.measure, op_.n_components, data));
 
+                this->ensure_mat_accumulator();
+                this->mat_integrate("Assemble<Mass>::assemble", op_and_store_cell_ij(this->data(), make_op()));
                 return true;
             }
 
