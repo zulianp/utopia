@@ -29,10 +29,10 @@ namespace utopia {
 
             class Op {
             public:
-                inline Op(const DynRankView &grad, const DynRankView &coeff)
+                UTOPIA_INLINE_FUNCTION Op(const DynRankView &grad, const DynRankView &coeff)
                     : grad(grad), coeff(coeff), num_fields(grad.extent(1)) {}
 
-                inline Scalar operator()(const int cell, const int qp, const int d) const {
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int d) const {
                     Scalar ret = 0.0;
                     for (int i = 0; i < num_fields; ++i) {
                         ret += coeff(cell, i) * grad(cell, i, qp, d);
@@ -47,10 +47,10 @@ namespace utopia {
 
             class OpAndStore {
             public:
-                inline OpAndStore(const DynRankView &grad, const DynRankView &coeff, DynRankView &field)
+                UTOPIA_INLINE_FUNCTION OpAndStore(const DynRankView &grad, const DynRankView &coeff, DynRankView &field)
                     : op_(grad, coeff), field(field) {}
 
-                inline void operator()(const int cell, const int qp, const int d) const {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int qp, const int d) const {
                     field(cell, qp, d) = op_(cell, qp, d);
                 }
 

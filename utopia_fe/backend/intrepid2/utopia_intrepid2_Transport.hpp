@@ -30,11 +30,11 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Op = utopia::Transport<Dim, Field>;
+            using UserOp = utopia::Transport<Dim, Field>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {
+            Assemble(UserOp op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
 
 #ifndef NDEBUG
@@ -50,47 +50,91 @@ namespace utopia {
 
             int rank() const override { return 2; }
             inline std::string name() const override { return "Transport"; }
+
+            class Op {
+            public:
+                UTOPIA_INLINE_FUNCTION Op(const DynRankView &vector_field,
+                                          const DynRankView &grad,
+                                          const DynRankView &fun,
+                                          const DynRankView &measure)
+                    : vector_field(vector_field), grad(grad), fun(fun), measure(measure), n_qp(measure.extent(1)) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
+                    Scalar integral = 0.0;
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        auto dX = measure(cell, qp);
+
+                        Scalar val = 0.0;
+                        for (int dj = 0; dj < Dim; ++dj) {
+                            val += grad(cell, j, qp, 0, dj) * vector_field(cell, qp, dj) * dX;
+                        }
+
+                        val *= fun(cell, i, qp) * dX;
+                        integral += val;
+                    }
+
+                    return integral;
+                }
+
+                DynRankView vector_field;
+                DynRankView grad;
+                DynRankView fun;
+                DynRankView measure;
+                const int n_qp;
+            };
+
+            class OpAndStore {
+            public:
+                UTOPIA_INLINE_FUNCTION OpAndStore(const DynRankView &vector_field,
+                                                  const DynRankView &grad,
+                                                  const DynRankView &fun,
+                                                  const DynRankView &measure,
+                                                  DynRankView &data)
+                    : op(vector_field, grad, fun, measure), data(data) {}
+
+                UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &i, const int &j) const {
+                    data(cell, i, j) += op(cell, i, j);
+                }
+
+                Op op;
+                DynRankView data;
+            };
+
+            bool apply(const DynRankView &x, DynRankView &y) override {
+                auto &fe = this->fe();
+
+                Op op(op_.vector_field, fe.grad, fe.fun, fe.measure);
+                const int num_fields = fe.num_fields();
+
+                this->vec_integrate(
+                    "Assemble<Transport>::apply", UTOPIA_LAMBDA(const int &cell, const int &i) {
+                        Scalar val = 0.0;
+                        for (int j = 0; j < num_fields; ++j) {
+                            val += op(cell, i, j) * x(cell, j);
+                        }
+
+                        y(cell, i) += val;
+                    });
+
+                return true;
+            }
+
             bool assemble() override {
                 this->ensure_mat_accumulator();
 
                 auto &fe = this->fe();
                 auto data = this->data();
 
-                const int n_qp = fe.num_qp();
-
                 {
-                    auto vector_field = op_.vector_field;
-                    auto grad = fe.grad;
-                    auto fun = fe.fun;
-                    auto measure = fe.measure;
-
-                    this->mat_integrate(
-                        "Assemble<Transport>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
-                            assert((Dim == 1 || &grad(cell, j, 0, 1) - &grad(cell, j, 0, 0) == 1UL) &&
-                                   "spatial dimension must be contiguous");
-
-                            Scalar integral = 0.0;
-                            for (int qp = 0; qp < n_qp; ++qp) {
-                                auto dX = measure(cell, qp);
-
-                                Scalar val = 0.0;
-                                for (int dj = 0; dj < Dim; ++dj) {
-                                    val += grad(cell, j, qp, 0, dj) * vector_field(cell, qp, dj) * dX;
-                                }
-
-                                val *= fun(cell, i, qp) * dX;
-                                integral += val;
-                            }
-
-                            data(cell, i, j) += integral;
-                        });
+                    this->mat_integrate("Assemble<Transport>::assemble",
+                                        OpAndStore(op_.vector_field, fe.grad, fe.fun, fe.measure, data));
                 }
 
                 return true;
             }
 
             // NVCC_PRIVATE :
-            Op op_;
+            UserOp op_;
         };
     }  // namespace intrepid2
 

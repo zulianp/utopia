@@ -22,6 +22,13 @@ namespace utopia {
 
             virtual ~FEAssembler() = default;
             virtual bool assemble() = 0;
+
+            virtual bool apply(const DynRankView &x, DynRankView &y) {
+                assert(false);
+                UTOPIA_UNUSED(x);
+                UTOPIA_UNUSED(y);
+                return false;
+            }
             virtual int n_vars() const = 0;
             virtual std::string name() const = 0;
             virtual int rank() const = 0;
