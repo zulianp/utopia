@@ -18,6 +18,12 @@
 
 namespace utopia {
 
+    template <typename Scalar_>
+    class Traits<::Kokkos::DynRankView<Scalar_>> {
+    public:
+        using Scalar = Scalar_;
+    };
+
     namespace intrepid2 {
 
         template <typename Scalar>

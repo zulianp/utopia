@@ -25,6 +25,14 @@ namespace utopia {
                                       int order = 0) {
         CreateFEOnBoundary<FunctionSpace, FE>::apply(space, fe, boundary_name, order);
     }
+
+    template <class FromField, class ToField>
+    class ConvertField {};
+
+    template <class FromField, class ToField>
+    inline void convert_field(const FromField &from, ToField &to) {
+        ConvertField<FromField, ToField>::apply(from, to);
+    }
 }  // namespace utopia
 
 #endif  // UTOPIA_CREATE_FE_HPP

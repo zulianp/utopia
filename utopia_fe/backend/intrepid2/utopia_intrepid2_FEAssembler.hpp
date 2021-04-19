@@ -12,7 +12,7 @@ namespace utopia {
         class Assemble {};
 
         template <typename Scalar>
-        class FEAssembler : public Describable {
+        class FEAssembler : public Describable, public Configurable {
         public:
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
@@ -25,6 +25,8 @@ namespace utopia {
             virtual int n_vars() const = 0;
             virtual std::string name() const = 0;
             virtual int rank() const = 0;
+
+            void read(Input &) override {}
 
             FEAssembler(const std::shared_ptr<FE> &fe) : fe_(fe) { assert(fe); }
 

@@ -422,6 +422,13 @@ namespace utopia {
     template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;
     template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscVector>;
 
+    template <typename Scalar>
+    void ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>>::apply(
+        const Field<utopia::stk::FunctionSpace> &from,
+        utopia::intrepid2::Field<Scalar> &to) {
+        assert(false);
+    }
+
 #endif
 
 }  // namespace utopia

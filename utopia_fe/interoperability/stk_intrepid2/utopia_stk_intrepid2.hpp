@@ -2,6 +2,7 @@
 #define UTOPIA_STK_INTREPID2_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Field.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_ForwardDeclarations.hpp"
@@ -10,6 +11,7 @@
 #include "utopia_CreateFE.hpp"
 #include "utopia_LocalToGlobal.hpp"
 
+#include "utopia_intrepid2_Field.hpp"
 #include "utopia_intrepid2_ForwardDeclarations.hpp"
 #include "utopia_stk_ForwardDeclarations.hpp"
 
@@ -36,6 +38,12 @@ namespace utopia {
                           utopia::intrepid2::FE<Scalar> &fe,
                           const std::string &part_name,
                           const int degree = 2);
+    };
+
+    template <typename Scalar>
+    class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>> {
+    public:
+        static void apply(const Field<utopia::stk::FunctionSpace> &from, utopia::intrepid2::Field<Scalar> &to);
     };
 
 #ifdef UTOPIA_WITH_PETSC
