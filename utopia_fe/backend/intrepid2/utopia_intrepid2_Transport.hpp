@@ -52,7 +52,7 @@ namespace utopia {
 
             class Op {
             public:
-                UTOPIA_INLINE_FUNCTION Op(const DynRankView &vector_field,
+                UTOPIA_INLINE_FUNCTION Op(const Field &vector_field,
                                           const DynRankView &grad,
                                           const DynRankView &fun,
                                           const DynRankView &measure)
@@ -75,7 +75,7 @@ namespace utopia {
                     return integral;
                 }
 
-                DynRankView vector_field;
+                Field vector_field;
                 DynRankView grad;
                 DynRankView fun;
                 DynRankView measure;
