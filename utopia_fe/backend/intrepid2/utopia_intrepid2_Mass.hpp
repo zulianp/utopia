@@ -31,49 +31,89 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Op = utopia::Mass<Fun>;
+            using UserOp = utopia::Mass<Fun>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {}
+            Assemble(UserOp op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
             int rank() const override { return 2; }
             inline std::string name() const override { return "Mass"; }
+
+            class Op {
+            public:
+                UTOPIA_INLINE_FUNCTION Op(const Fun &density,
+                                          const DynRankView &fun,
+                                          const DynRankView &measure,
+                                          const int n_components)
+                    : density(density),
+                      fun(fun),
+                      measure(measure),
+                      n_components(n_components),
+                      n_qp(measure.extent(1)) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
+                    auto offset_i = i * n_components;
+                    auto offset_j = j * n_components;
+
+                    Scalar ret = 0.0;
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        auto dX = measure(cell, qp);
+                        ret += fun(offset_i, qp) * fun(offset_j, qp) * density * dX;
+                    }
+
+                    return ret;
+                }
+
+                const Fun density;
+                const DynRankView fun;
+                const DynRankView measure;
+                const int n_components;
+                const int n_qp;
+            };
+
+            class OpAndStore {
+            public:
+                UTOPIA_INLINE_FUNCTION OpAndStore(const Fun &density,
+                                                  const DynRankView &fun,
+                                                  const DynRankView &measure,
+                                                  const int n_components,
+                                                  DynRankView &data)
+                    : op(density, fun, measure, n_components), data(data) {}
+
+                UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &i, const int &j) const {
+                    data(cell, i, j) += op(cell, i, j);
+                }
+
+                Op op;
+                DynRankView &data;
+            };
+
+            bool apply(const DynRankView &x, DynRankView &y) override {
+                auto &fe = this->fe();
+                auto data = this->data();
+
+                this->apply_operator(
+                    "Assemble<Mass>::apply", x, y, Op(op_.density, fe.fun, fe.measure, op_.n_components));
+
+                return true;
+            }
 
             bool assemble() override {
                 this->ensure_mat_accumulator();
                 auto &fe = this->fe();
                 auto data = this->data();
 
-                const int n_components = op_.n_components;
-                // const int component = op_.component;
-                const int n_qp = fe.num_qp();
-
-                {
-                    auto density = op_.density;
-                    auto fun = fe.fun;
-                    auto measure = fe.measure;
-
-                    assert(n_components == 1 && "IMPLEMENT ME");
-
-                    this->mat_integrate(
-                        "Assemble<Mass>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
-                            auto offset_i = i * n_components;
-                            auto offset_j = j * n_components;
-
-                            for (int qp = 0; qp < n_qp; ++qp) {
-                                auto dX = measure(cell, qp);
-                                data(cell, offset_i, offset_j) += fun(i, qp) * fun(j, qp) * density * dX;
-                            }
-                        });
-                }
+                assert(op_.n_components == 1 && "IMPLEMENT ME");
+                this->mat_integrate("Assemble<Mass>::assemble",
+                                    OpAndStore(op_.density, fe.fun, fe.measure, op_.n_components, data));
 
                 return true;
             }
 
             // NVCC_PRIVATE :
-            Op op_;
+            UserOp op_;
         };
     }  // namespace intrepid2
 }  // namespace utopia

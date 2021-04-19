@@ -103,18 +103,8 @@ namespace utopia {
             bool apply(const DynRankView &x, DynRankView &y) override {
                 auto &fe = this->fe();
 
-                Op op(op_.vector_field, fe.grad, fe.fun, fe.measure);
-                const int num_fields = fe.num_fields();
-
-                this->vec_integrate(
-                    "Assemble<Transport>::apply", UTOPIA_LAMBDA(const int &cell, const int &i) {
-                        Scalar val = 0.0;
-                        for (int j = 0; j < num_fields; ++j) {
-                            val += op(cell, i, j) * x(cell, j);
-                        }
-
-                        y(cell, i) += val;
-                    });
+                this->apply_operator(
+                    "Assemble<Transport>::apply", x, y, Op(op_.vector_field, fe.grad, fe.fun, fe.measure));
 
                 return true;
             }

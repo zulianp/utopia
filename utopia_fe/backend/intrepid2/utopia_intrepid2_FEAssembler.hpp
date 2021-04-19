@@ -62,6 +62,25 @@ namespace utopia {
                 Kokkos::parallel_for(name, vec_range(), fun);
             }
 
+            template <class CellIJOp>
+            void apply_operator(const std::string &name, const DynRankView &x, DynRankView &y, CellIJOp op) {
+                assert(n_vars() == 1 && "IMPLEMENT ME");
+
+                auto &fe = this->fe();
+
+                const int num_fields = fe.num_fields();
+
+                this->vec_integrate(
+                    name, UTOPIA_LAMBDA(const int &cell, const int &i) {
+                        Scalar val = 0.0;
+                        for (int j = 0; j < num_fields; ++j) {
+                            val += op(cell, i, j) * x(cell, j);
+                        }
+
+                        y(cell, i) += val;
+                    });
+            }
+
             class TensorAccumulator {
             public:
                 DynRankView &data() { return data_; }
