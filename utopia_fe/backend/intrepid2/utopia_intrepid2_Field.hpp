@@ -23,8 +23,8 @@ namespace utopia {
 
             virtual std::string name() const { return name_; }
 
-            inline void set_n_components(const int n_components) { n_components_ = n_components; }
-            inline int n_components() const { return n_components_; }
+            inline void set_tensor_size(const int tensor_size) { tensor_size_ = tensor_size; }
+            inline int tensor_size() const { return tensor_size_; }
             virtual void ensure_field() { assert(false && "IMPLEMENT ME in subclass"); }
 
             inline void set_name(const std::string &name) { name_ = name; }
@@ -40,7 +40,7 @@ namespace utopia {
         private:
             std::shared_ptr<FE> fe_;
             DynRankView data_;
-            int n_components_{1};
+            int tensor_size_{1};
             std::string name_{"UnknownField"};
         };
     }  // namespace intrepid2

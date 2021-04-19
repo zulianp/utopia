@@ -429,7 +429,7 @@ namespace utopia {
         const Field<utopia::stk::FunctionSpace> &from,
         utopia::intrepid2::Field<Scalar> &to) {
         GlobalToLocal<utopia::stk::FunctionSpace, Vector, DynRankView>::apply(
-            from.space(), from.data(), to.data(), to.n_components());
+            from.space(), from.data(), to.data(), from.tensor_size());
     }
 
     template <typename Scalar>

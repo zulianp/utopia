@@ -14,6 +14,7 @@ namespace utopia {
     public:
         void read(Input &in) override {}
 
+        Transport() = default;
         Transport(const Field &vector_field) : vector_field(vector_field) {}
         Field vector_field;
     };
@@ -36,9 +37,13 @@ namespace utopia {
             Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
 
-                assert(op.vector_field.extent(0) == fe->num_cells());
-                assert(op.vector_field.extent(1) == fe->num_qp());
-                assert(op.vector_field.extent(2) == fe->spatial_dimension());
+#ifndef NDEBUG
+                if (op.vector_field.size() > 0) {
+                    assert(op.vector_field.extent(0) == fe->num_cells());
+                    assert(op.vector_field.extent(1) == fe->num_qp());
+                    assert(op.vector_field.extent(2) == fe->spatial_dimension());
+                }
+#endif  // NDEBUG
             }
 
             inline int n_vars() const override { return Dim; }

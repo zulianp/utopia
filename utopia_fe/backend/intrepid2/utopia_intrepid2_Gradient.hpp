@@ -24,7 +24,7 @@ namespace utopia {
 
             Gradient(const std::shared_ptr<FE> &fe, const std::string &name = "Gradient") : Super(fe) {
                 this->set_name(name);
-                this->set_n_components(fe->spatial_dimension());
+                this->set_tensor_size(fe->spatial_dimension());
             }
 
             class Op {
@@ -59,7 +59,7 @@ namespace utopia {
             };
 
             void init(const Field<Scalar> &coeff) {
-                assert(coeff.n_components() == 1);
+                assert(coeff.tensor_size() == 1);
                 ensure_field();
                 init(coeff.data());
             }
