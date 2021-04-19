@@ -7,67 +7,87 @@
 #include "utopia_intrepid2_Commons.hpp"
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
+#include "utopia_intrepid2_Field.hpp"
 
 namespace utopia {
     namespace intrepid2 {
 
         template <typename Scalar>
-        class Gradient {
+        class Gradient : public Field<Scalar> {
         public:
+            using Super = utopia::intrepid2::Field<Scalar>;
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using ExecutionSpace = typename FE::ExecutionSpace;
 
-            Gradient(const std::shared_ptr<FE> &fe) : fe_(fe) {}
+            Gradient(const std::shared_ptr<FE> &fe, const std::string &name = "Gradient") : Super(fe) {
+                this->set_name(name);
+                this->set_n_components(fe->spatial_dimension());
+            }
 
             class Op {
             public:
-                Op(const DynRankView &grad, const DynRankView &coeff, DynRankView &field)
-                    : grad(grad), coeff(coeff), field(field), num_fields(grad.extent(1)) {}
+                inline Op(const DynRankView &grad, const DynRankView &coeff)
+                    : grad(grad), coeff(coeff), num_fields(grad.extent(1)) {}
 
-                void operator()(const int cell, const int qp, const int d) const {
+                inline Scalar operator()(const int cell, const int qp, const int d) const {
+                    Scalar ret = 0.0;
                     for (int i = 0; i < num_fields; ++i) {
-                        field(cell, qp, d) += coeff(cell, i) * grad(cell, i, qp, d);
+                        ret += coeff(cell, i) * grad(cell, i, qp, d);
                     }
+
+                    return ret;
                 }
 
                 const DynRankView grad, coeff;
-                DynRankView field;
                 const int num_fields;
             };
 
-            void init(const DynRankView &coeff) {
+            class OpAndStore {
+            public:
+                inline OpAndStore(const DynRankView &grad, const DynRankView &coeff, DynRankView &field)
+                    : op_(grad, coeff), field(field) {}
+
+                inline void operator()(const int cell, const int qp, const int d) const {
+                    field(cell, qp, d) = op_(cell, qp, d);
+                }
+
+                Op op_;
+                DynRankView field;
+            };
+
+            void init(const Field<Scalar> &coeff) {
+                assert(coeff.n_components() == 1);
                 ensure_field();
-                Kokkos::parallel_for(name(), grad_range(), Op(fe_->grad, coeff, field_));
+                init(coeff.data());
             }
 
-            inline std::string name() const { return "Gradient"; }
+            void init(const DynRankView &coeff) {
+                ensure_field();
+                Kokkos::parallel_for(
+                    this->name() + "::init", grad_range(), OpAndStore(this->fe()->grad, coeff, this->data()));
+            }
 
-            void ensure_field() {
-                if (field_.extent(0) < fe_->num_cells() || field_.extent(1) < fe_->num_qp()) {
-                    field_ = DynRankView("gradient", fe_->num_cells(), fe_->num_qp());
+            void ensure_field() override {
+                if (this->data().extent(0) < this->fe()->num_cells() || this->data().extent(1) < this->fe()->num_qp() ||
+                    this->data().extent(2) < this->fe()->spatial_dimension()) {
+                    this->data() = DynRankView(
+                        this->name(), this->fe()->num_cells(), this->fe()->num_qp(), this->fe()->spatial_dimension());
                 } else {
-                    fill(field_, 0.0);
+                    fill(this->data(), 0.0);
                 }
             }
 
             inline Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace> grad_range() {
-                int num_cells = fe_->num_cells();
-                int num_qp = fe_->num_qp();
-                int spatial_dimension = fe_->spatial_dimension();
+                int num_cells = this->fe()->num_cells();
+                int num_qp = this->fe()->num_qp();
+                int spatial_dimension = this->fe()->spatial_dimension();
 
                 return Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>({0, 0, 0},
                                                                               {num_cells, num_qp, spatial_dimension});
             }
-
-            inline DynRankView &field() { return field_; }
-            inline std::shared_ptr<FE> fe() { return fe_; }
-
-        private:
-            std::shared_ptr<FE> fe_;
-            DynRankView field_;
         };
     }  // namespace intrepid2
 }  // namespace utopia

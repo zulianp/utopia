@@ -35,6 +35,8 @@ namespace utopia {
 
             Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
+
+                assert(op.vector_field.extent(0) == fe->num_cells());
                 assert(op.vector_field.extent(1) == fe->num_qp());
                 assert(op.vector_field.extent(2) == fe->spatial_dimension());
             }
@@ -60,7 +62,7 @@ namespace utopia {
                     this->mat_integrate(
                         "Assemble<Transport>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
                             assert((Dim == 1 || &grad(cell, j, 0, 1) - &grad(cell, j, 0, 0) == 1UL) &&
-                                   "spatial dimension must be contiguos");
+                                   "spatial dimension must be contiguous");
 
                             Scalar integral = 0.0;
                             for (int qp = 0; qp < n_qp; ++qp) {

@@ -422,13 +422,64 @@ namespace utopia {
     template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;
     template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscVector>;
 
+#endif
+
     template <typename Scalar>
     void ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>>::apply(
         const Field<utopia::stk::FunctionSpace> &from,
         utopia::intrepid2::Field<Scalar> &to) {
-        assert(false);
+        GlobalToLocal<utopia::stk::FunctionSpace, Vector, DynRankView>::apply(
+            from.space(), from.data(), to.data(), to.n_components());
     }
 
-#endif
+    template <typename Scalar>
+    void GlobalToLocal<utopia::stk::FunctionSpace,
+                       Traits<utopia::stk::FunctionSpace>::Vector,
+                       ::Kokkos::DynRankView<Scalar>>::apply(const utopia::stk::FunctionSpace &space,
+                                                             const Vector &vector,
+                                                             DynRankView &element_vectors,
+                                                             const int n_comp) {
+        Vector local;
+        space.global_to_local(vector, local);
+
+        auto &bulk_data = space.mesh().bulk_data();
+        const auto &elem_buckets = utopia::stk::local_elements(bulk_data);
+        const SizeType num_elem = utopia::stk::count_local_elements(bulk_data);
+
+        // Dirty hack (FIXME once stk usage is a bit more profficient)
+        auto *first_bucket = *elem_buckets.begin();
+        auto topo = convert_elem_type(first_bucket->topology(), true);
+        Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
+
+        if (element_vectors.extent(0) < num_elem || element_vectors.extent(1) < n_nodes_x_elem) {
+            element_vectors = DynRankView("Coefficients", num_elem, n_nodes_x_elem, n_comp);
+        }
+
+        // FIXME not on device
+        auto local_view = const_local_view_device(local);
+
+        Size_t elem_idx = 0;
+        for (const auto &ib : elem_buckets) {
+            const auto &b = *ib;
+            const SizeType length = b.size();
+
+            for (SizeType k = 0; k < length; ++k) {
+                // get the current node entity and extract the id to fill it into the field
+                auto elem = b[k];
+                const int n_nodes = bulk_data.num_nodes(elem);
+
+                auto node_ids = bulk_data.begin_nodes(elem);
+
+                for (int i = 0; i < n_nodes; ++i) {
+                    SizeType node_idx = utopia::stk::convert_entity_to_index(node_ids[i]);
+                    for (int d = 0; d < n_comp; ++d) {
+                        element_vectors(elem_idx, i, d) = local_view.get(node_idx * n_comp + d);
+                    }
+                }
+
+                ++elem_idx;
+            }
+        }
+    }
 
 }  // namespace utopia

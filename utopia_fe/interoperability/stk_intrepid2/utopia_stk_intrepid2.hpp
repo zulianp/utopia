@@ -15,6 +15,8 @@
 #include "utopia_intrepid2_ForwardDeclarations.hpp"
 #include "utopia_stk_ForwardDeclarations.hpp"
 
+#include "utopia_stk_FunctionSpace.hpp"
+
 #include <Kokkos_DynRankView.hpp>
 
 namespace utopia {
@@ -43,6 +45,10 @@ namespace utopia {
     template <typename Scalar>
     class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>> {
     public:
+        using DynRankView = ::Kokkos::DynRankView<Scalar>;
+        using Vector = utopia::Traits<utopia::stk::FunctionSpace>::Vector;
+        using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
+
         static void apply(const Field<utopia::stk::FunctionSpace> &from, utopia::intrepid2::Field<Scalar> &to);
     };
 
@@ -84,6 +90,21 @@ namespace utopia {
     }
 
 #endif  // UTOPIA_WITH_PETSC
+
+    template <typename Scalar>
+    class GlobalToLocal<utopia::stk::FunctionSpace,
+                        Traits<utopia::stk::FunctionSpace>::Vector,
+                        ::Kokkos::DynRankView<Scalar>> {
+    public:
+        using DynRankView = ::Kokkos::DynRankView<Scalar>;
+        using Vector = utopia::Traits<utopia::stk::FunctionSpace>::Vector;
+        using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
+
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          const Vector &vector,
+                          DynRankView &element_vectors,
+                          const int n_comp = 1);
+    };
 
 }  // namespace utopia
 

@@ -107,23 +107,25 @@ namespace utopia {
             in.get("print_pressure", impl_->print_pressure);
 
             const int spatial_dim = this->space()->mesh().spatial_dimension();
-            intrepid2::Gradient<Scalar> g(this->fe());
+
             intrepid2::Field<Scalar> field(this->fe());
             convert_field(*impl_->pressure, field);
 
-            g.init(field.data());
+            intrepid2::Gradient<Scalar> g(this->fe());
+            g.init(field);
+            g.scale(-impl_->coeff);
 
             switch (spatial_dim) {
                 case 2: {
                     using Assemble2 = utopia::intrepid2::Assemble<Impl::Transport2>;
-                    auto assembler = std::make_shared<Assemble2>(g.field(), this->fe());
+                    auto assembler = std::make_shared<Assemble2>(g.data(), this->fe());
                     this->set_assembler(assembler);
                     break;
                 }
 
                 case 3: {
                     using Assemble3 = utopia::intrepid2::Assemble<Impl::Transport3>;
-                    auto assembler = std::make_shared<Assemble3>(g.field(), this->fe());
+                    auto assembler = std::make_shared<Assemble3>(g.data(), this->fe());
                     this->set_assembler(assembler);
                     break;
                 }
