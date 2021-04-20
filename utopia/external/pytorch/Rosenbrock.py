@@ -60,11 +60,11 @@ if __name__ == '__main__':
 
     # training 
     x = torch.Tensor(initial_guess).requires_grad_(True)
-    optimizer = GD([x], **{'lr': 1e-3, 'num_iter': 10})
+    optimizer = GD([x], **{'lr': 3e-1, 'num_iter': 200})
     # with picture 
-    # optimizer.optimize_history(rosenbrock, x, tensor_size, plot_rosenbrok)
-
-    optimizer.optimize(rosenbrock, x)
+    optimizer.optimize_history(rosenbrock, x, tensor_size, plot_rosenbrok)
+    # no picture
+    # optimizer.optimize(rosenbrock, x)
 
 
 

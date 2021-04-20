@@ -30,6 +30,15 @@ namespace utopia {
         BoxConstraints()
             : min_val_(-std::numeric_limits<Scalar>::max()), max_val_(std::numeric_limits<Scalar>::max()) {}
 
+        BoxConstraints(const Scalar &min_value, const Scalar &max_value, const Layout &lo)
+            : min_val_(min_value), max_val_(max_value), uniform_(true) {
+            lower_bound_ = std::make_shared<Vector>();
+            lower_bound_->values(lo, min_value);
+
+            upper_bound_ = std::make_shared<Vector>();
+            upper_bound_->values(lo, max_value);
+        }
+
         BoxConstraints(const BoxConstraints &other)
             : min_val_(other.min_val_), max_val_(other.max_val_), uniform_(other.uniform_) {
             if (other.lower_bound_) {
@@ -154,6 +163,9 @@ namespace utopia {
 
         inline void uniform(const bool &flg) { uniform_ = flg; }
 
+        inline Scalar min_value() { return min_val_; }
+        inline Scalar max_value() { return max_val_; }
+
     private:
         std::shared_ptr<Vector> lower_bound_;
         std::shared_ptr<Vector> upper_bound_;
@@ -176,6 +188,13 @@ namespace utopia {
     template <class Vector>
     inline BoxConstraints<Vector> make_upper_bound_constraints(const std::shared_ptr<Vector> &upper_bound) {
         return BoxConstraints<Vector>(nullptr, upper_bound);
+    }
+
+    template <class Vector>
+    inline BoxConstraints<Vector> make_uniform_box_constraints(const typename Traits<Vector>::Scalar &min_value,
+                                                               const typename Traits<Vector>::Scalar &max_value,
+                                                               const typename Traits<Vector>::Layout &lo) {
+        return BoxConstraints<Vector>(min_value, max_value, lo);
     }
 
 }  // namespace utopia

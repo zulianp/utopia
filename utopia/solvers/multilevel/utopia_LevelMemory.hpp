@@ -92,15 +92,17 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
 
     public:
-        void init_memory(const std::vector<Layout> &layouts) {
-            const Scalar inf = std::numeric_limits<Scalar>::infinity();
+        void init_memory(const std::vector<Layout> &layouts,
+                         const Scalar &max_val = std::numeric_limits<Scalar>::infinity(),
+                         const Scalar &min_val = -std::numeric_limits<Scalar>::infinity()) {
+            // const Scalar inf = std::numeric_limits<Scalar>::infinity();
             const SizeType n_levels = layouts.size();
             active_lower.resize(n_levels);
             active_upper.resize(n_levels);
 
             for (SizeType l = 0; l < n_levels; l++) {
-                active_lower[l].values(layouts[l], -inf);
-                active_upper[l].values(layouts[l], inf);
+                active_upper[l].values(layouts[l], max_val);
+                active_lower[l].values(layouts[l], min_val);
             }
         }
 
