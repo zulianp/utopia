@@ -104,10 +104,35 @@ namespace utopia {
                 const int n_qp;
             };
 
+            template <class WrappedOp>
+            class LumpedOp {
+            public:
+                UTOPIA_INLINE_FUNCTION LumpedOp(WrappedOp op) : op_(op), num_fields(op.fun.extent(1)) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i) const {
+                    Scalar ret = 0.0;
+                    for (int j = 0; j < num_fields; ++j) {
+                        ret += op_(cell, i, j);
+                    }
+                    return ret;
+                }
+
+                WrappedOp op_;
+                const int num_fields;
+            };
+
             class Lump {
             public:
                 UTOPIA_INLINE_FUNCTION Lump(const DynRankView &element_matrices)
                     : element_matrices(element_matrices), num_fields(element_matrices.extent(2)) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i, const int j) const {
+                    if (i == j) {
+                        return compute(cell, i);
+                    } else {
+                        return 0.0;
+                    }
+                }
 
                 UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i) const {
                     auto d = compute(cell, i);
@@ -138,8 +163,19 @@ namespace utopia {
                 return Op(op_.density, fe.fun, fe.measure, op_.n_components);
             }
 
+            inline LumpedOp<Op> make_lumped_op() { return LumpedOp<Op>(make_op()); }
+
             bool apply(const DynRankView &x, DynRankView &y) override {
-                this->apply_operator("Assemble<Mass>::apply", x, y, make_op());
+                if (op_.lumped) {
+                    this->apply_diagonal_operator("Assemble<Mass>::apply::lumped", x, y, make_lumped_op());
+                } else {
+                    this->apply_operator("Assemble<Mass>::apply", x, y, make_op());
+                }
+
+                if (op_.density_function) {
+                    this->scale_vector(*op_.density_function, y);
+                }
+
                 return true;
             }
 

@@ -64,7 +64,7 @@ namespace utopia {
 
             FEAssembler(const std::shared_ptr<FE> &fe) : fe_(fe) { assert(fe); }
 
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace> cell_test_trial_range() {
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace> cell_test_trial_range() const {
                 int num_cells = fe_->num_cells();
                 int num_fields = fe_->num_fields();
 
@@ -72,31 +72,31 @@ namespace utopia {
                                                                               {num_cells, num_fields, num_fields});
             }
 
-            Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace> cell_test_range() {
+            Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace> cell_test_range() const {
                 int num_cells = fe_->num_cells();
                 int num_fields = fe_->num_fields();
 
                 return Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>({0, 0}, {num_cells, num_fields});
             }
 
-            Kokkos::RangePolicy<ExecutionSpace> cell_range() {
+            Kokkos::RangePolicy<ExecutionSpace> cell_range() const {
                 int num_cells = fe_->num_cells();
 
                 return Kokkos::RangePolicy<ExecutionSpace>(0, num_cells);
             }
 
             template <class CellFun>
-            void loop_cell(const std::string &name, CellFun fun) {
+            void loop_cell(const std::string &name, CellFun fun) const {
                 Kokkos::parallel_for(name, cell_range(), fun);
             }
 
             template <class CellTestTrialFun>
-            void loop_cell_test_trial(const std::string &name, CellTestTrialFun fun) {
+            void loop_cell_test_trial(const std::string &name, CellTestTrialFun fun) const {
                 Kokkos::parallel_for(name, cell_test_trial_range(), fun);
             }
 
             template <class CellTestFun>
-            void loop_cell_test(const std::string &name, CellTestFun fun) {
+            void loop_cell_test(const std::string &name, CellTestFun fun) const {
                 Kokkos::parallel_for(name, cell_test_range(), fun);
             }
 
@@ -117,6 +117,14 @@ namespace utopia {
 
                         y(cell, i) += val;
                     });
+            }
+
+            template <class CellTestOp>
+            void apply_diagonal_operator(const std::string &name, const DynRankView &x, DynRankView &y, CellTestOp op) {
+                assert(n_vars() == 1 && "IMPLEMENT ME");
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int &cell, const int &i) { y(cell, i) += op(cell, i) * x(cell, i); });
             }
 
             bool is_matrix() const {
@@ -151,14 +159,7 @@ namespace utopia {
                             }
                         });
                 } else if (is_vector()) {
-                    loop_cell(
-                        "FEAssembler::scale(vec)", UTOPIA_LAMBDA(int cell) {
-                            auto val = fun.value(element_tags(cell));
-
-                            for (int i = 0; i < num_fields; ++i) {
-                                data(cell, i) *= val;
-                            }
-                        });
+                    scale_vector(fun, data);
                 } else if (is_scalar()) {
                     loop_cell(
                         "FEAssembler::scale(scalar)", UTOPIA_LAMBDA(int cell) {
@@ -172,6 +173,20 @@ namespace utopia {
                     assert(false);
                     Utopia::Abort("Called FEAssembler::scale on invalid accumulator!");
                 }
+            }
+
+            void scale_vector(const intrepid2::SubdomainValue<Scalar> &fun, DynRankView &vector) const {
+                auto element_tags = fe().element_tags;
+                const int num_fields = fe().num_fields();
+
+                loop_cell(
+                    "FEAssembler::scale_vector", UTOPIA_LAMBDA(int cell) {
+                        auto val = fun.value(element_tags(cell));
+
+                        for (int i = 0; i < num_fields; ++i) {
+                            vector(cell, i) *= val;
+                        }
+                    });
             }
 
             class TensorAccumulator {

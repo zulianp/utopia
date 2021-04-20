@@ -70,13 +70,13 @@ void intrepid2_laplace_operator() {
     assembler.assemble();
     // assembler.describe(std::cout);
 
-    if (std::is_same<FE::ExecutionSpace, Kokkos::Cuda>::value) {
-        utopia::out() << "Cuda\n";
-    } else if (std::is_same<FE::ExecutionSpace, Kokkos::OpenMP>::value) {
-        utopia::out() << "OpenMP\n";
-    } else {
-        utopia::out() << "What?\n";
-    }
+    // if (std::is_same<FE::ExecutionSpace, Kokkos::Cuda>::value) {
+    //     utopia::out() << "Cuda\n";
+    // } else if (std::is_same<FE::ExecutionSpace, Kokkos::OpenMP>::value) {
+    //     utopia::out() << "OpenMP\n";
+    // } else {
+    //     utopia::out() << "What?\n";
+    // }
 }
 
 void uintrepid2() {
