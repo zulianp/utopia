@@ -65,7 +65,11 @@ namespace utopia {
     class CreateFEFromBuckets {
     public:
         using FE = utopia::intrepid2::FE<Scalar>;
-        using DynRankView = typename FE::DynRankView;
+        using DynRankView_t = typename FE::DynRankView;
+        using IntView_t = typename FE::IntView;
+
+        using HostDynRankView_t = typename FE::HostDynRankView;
+        using HostIntView_t = typename FE::HostIntView;
 
         using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
@@ -92,7 +96,11 @@ namespace utopia {
                 n_cells += b_ptr->size();
             }
 
-            DynRankView cell_points("cell_points", n_cells, n_nodes_x_elem, spatial_dim);
+            DynRankView_t device_cell_points("cell_points", n_cells, n_nodes_x_elem, spatial_dim);
+            IntView_t device_element_tags("element_tags", n_cells);
+
+            HostDynRankView_t cell_points = Kokkos::create_mirror_view(device_cell_points);
+            HostIntView_t element_tags = Kokkos::create_mirror_view(device_element_tags);
 
             int elem_idx = 0;
             for (const auto &ib : buckets) {
@@ -100,9 +108,13 @@ namespace utopia {
 
                 const Bucket_t::size_type length = b.size();
 
+                const int block = utopia::stk::extract_set_id_from_bucket(b, b.topology().rank());
+
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t elem = b[k];
                     const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                    element_tags(elem_idx) = block;
 
                     assert(n_nodes == n_nodes_x_elem);
 
@@ -120,7 +132,11 @@ namespace utopia {
                 }
             }
 
-            fe.init(topo, cell_points, degree);
+            Kokkos::deep_copy(device_cell_points, cell_points);
+            Kokkos::deep_copy(device_element_tags, element_tags);
+
+            fe.init(topo, device_cell_points, degree);
+            fe.element_tags = device_element_tags;
             return true;
         }
     };
@@ -181,7 +197,7 @@ namespace utopia {
     template <typename Scalar>
     void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix>::apply(
         const utopia::stk::FunctionSpace &space,
-        const ::Kokkos::DynRankView<Scalar> &element_matrices,
+        const ::Kokkos::DynRankView<Scalar> &device_element_matrices,
         AssemblyMode mode,
         PetscMatrix &matrix) {
         // Type defs
@@ -192,6 +208,10 @@ namespace utopia {
         using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
         using Entity_t = ::stk::mesh::Entity;
+        using HostView = typename ::Kokkos::DynRankView<Scalar>::HostMirror;
+
+        HostView element_matrices = ::Kokkos::create_mirror_view(device_element_matrices);
+        ::Kokkos::deep_copy(element_matrices, device_element_matrices);
 
         if (matrix.empty()) {
             space.create_matrix(matrix);
@@ -295,7 +315,8 @@ namespace utopia {
     class LocalToGlobalFromBuckets {
     public:
         using FE = utopia::intrepid2::FE<Scalar>;
-        using DynRankView = typename FE::DynRankView;
+        using DynRankView_t = typename FE::DynRankView;
+        using HostView_t = typename DynRankView_t::HostMirror;
 
         using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
@@ -308,7 +329,7 @@ namespace utopia {
 
         static void apply(const utopia::stk::FunctionSpace &space,
                           const BucketVector_t &buckets,
-                          const ::Kokkos::DynRankView<Scalar> &element_vectors,
+                          const DynRankView_t &device_element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector) {
             //
@@ -323,6 +344,9 @@ namespace utopia {
                     vector *= -1.0;
                 }
             }
+
+            HostView_t element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
+            ::Kokkos::deep_copy(element_vectors, device_element_vectors);
 
             auto &bulk_data = space.mesh().bulk_data();
 
@@ -437,7 +461,7 @@ namespace utopia {
                        Traits<utopia::stk::FunctionSpace>::Vector,
                        ::Kokkos::DynRankView<Scalar>>::apply(const utopia::stk::FunctionSpace &space,
                                                              const Vector &vector,
-                                                             DynRankView &element_vectors,
+                                                             DynRankView &device_element_vectors,
                                                              const int n_comp) {
         Vector local;
         space.global_to_local(vector, local);
@@ -451,9 +475,12 @@ namespace utopia {
         auto topo = convert_elem_type(first_bucket->topology(), true);
         Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
 
-        if (element_vectors.extent(0) < num_elem || element_vectors.extent(1) < n_nodes_x_elem) {
-            element_vectors = DynRankView("Coefficients", num_elem, n_nodes_x_elem, n_comp);
+        if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < n_nodes_x_elem) {
+            device_element_vectors = DynRankView("Coefficients", num_elem, n_nodes_x_elem, n_comp);
         }
+
+        using HostView = typename ::Kokkos::DynRankView<Scalar>::HostMirror;
+        HostView element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
 
         // FIXME not on device
         auto local_view = const_local_view_device(local);
@@ -480,6 +507,8 @@ namespace utopia {
                 ++elem_idx;
             }
         }
+
+        ::Kokkos::deep_copy(device_element_vectors, element_vectors);
     }
 
 }  // namespace utopia

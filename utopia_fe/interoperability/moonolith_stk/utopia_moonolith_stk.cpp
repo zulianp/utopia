@@ -294,7 +294,7 @@ namespace utopia {
                 auto moonolith_type = convert_elem_type(b.topology());
                 const Bucket_t::size_type length = b.size();
 
-                int sideset = extract_sideset_from_bucket(b, topo);
+                int sideset = utopia::stk::extract_set_id_from_bucket(b, topo);
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t elem = b[k];
@@ -321,20 +321,20 @@ namespace utopia {
             out.wrap(m_mesh);
         }
 
-        static int extract_sideset_from_bucket(const Bucket_t &b, ::stk::topology::rank_t topo) {
-            int sideset = -1;
-            {
-                for (auto &ss : b.supersets()) {
-                    if (ss->id() != -1 && ss->topology().rank() == topo) {
-                        // std::cout << ss->name() << ' ' << ss->id() << '\n';
-                        assert(sideset == -1);
-                        sideset = ss->id();
-                    }
-                }
-            }
+        // static int utopia::stk::extract_set_id_from_bucket(const Bucket_t &b, ::stk::topology::rank_t topo) {
+        //     int sideset = -1;
+        //     {
+        //         for (auto &ss : b.supersets()) {
+        //             if (ss->id() != -1 && ss->topology().rank() == topo) {
+        //                 // std::cout << ss->name() << ' ' << ss->id() << '\n';
+        //                 assert(sideset == -1);
+        //                 sideset = ss->id();
+        //             }
+        //         }
+        //     }
 
-            return sideset;
-        }
+        //     return sideset;
+        // }
 
         static void extract_trace_space(const utopia::stk::FunctionSpace &in, utopia::moonolith::FunctionSpace &out) {
             auto m_mesh = std::make_shared<utopia::moonolith::Mesh>(in.comm());
@@ -369,7 +369,7 @@ namespace utopia {
 
                 const Bucket_t::size_type length = b.size();
 
-                int sideset = extract_sideset_from_bucket(b, topo);
+                int sideset = utopia::stk::extract_set_id_from_bucket(b, topo);
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     Entity_t elem = b[k];

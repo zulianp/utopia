@@ -34,11 +34,11 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Op = utopia::ForcingFunction<Fun>;
+            using UserOp = utopia::ForcingFunction<Fun>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {}
+            Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
             int rank() const override { return 1; }
@@ -59,7 +59,7 @@ namespace utopia {
                 auto fun = fe.fun;
                 auto measure = fe.measure;
 
-                this->vec_integrate(
+                this->loop_cell_test(
                     "Assemble<ForcingFunction>::init", KOKKOS_LAMBDA(const int &cell, const int &i) {
                         auto offset = i * n_components + component;
 
@@ -73,7 +73,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            Op op_;
+            UserOp op_;
         };
     }  // namespace intrepid2
 }  // namespace utopia

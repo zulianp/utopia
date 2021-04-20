@@ -2,6 +2,7 @@
 #define UTOPIA_INTREPID2_FIELD_HPP
 
 #include "utopia_intrepid2_FE.hpp"
+#include "utopia_intrepid2_SubdomainFunction.hpp"
 
 #include <memory>
 
@@ -35,6 +36,20 @@ namespace utopia {
                 auto data = data_.data();
                 Kokkos::parallel_for(
                     n_elements, UTOPIA_LAMBDA(int i) { data[i] *= a; });
+            }
+
+            void scale(const SubdomainValue<Scalar> &value) {
+                auto tags = fe_->element_tags;
+                const int tensor_size = tensor_size_;
+
+                ::Kokkos::parallel_for(
+                    fe_->num_cells(), UTOPIA_LAMBDA(int cell) {
+                        const auto v = value.value(tags(cell));
+
+                        for (int i = 0; i < tensor_size; ++i) {
+                            data_(cell, i) *= v;
+                        }
+                    });
             }
 
         private:

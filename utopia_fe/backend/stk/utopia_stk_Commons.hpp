@@ -4,12 +4,28 @@
 
 #include "utopia_stk_ForwardDeclarations.hpp"
 
+#include <stk_mesh/base/Bucket.hpp>
 #include <stk_mesh/base/Entity.hpp>
 #include <stk_mesh/base/Types.hpp>
 #include <stk_topology/topology.hpp>
 
 namespace utopia {
     namespace stk {
+
+        inline int extract_set_id_from_bucket(const ::stk::mesh::Bucket &b, ::stk::topology::rank_t topo) {
+            int sideset = -1;
+            {
+                for (auto &ss : b.supersets()) {
+                    if (ss->id() != -1 && ss->topology().rank() == topo) {
+                        // std::cout << ss->name() << ' ' << ss->id() << '\n';
+                        assert(sideset == -1);
+                        sideset = ss->id();
+                    }
+                }
+            }
+
+            return sideset;
+        }
 
         template <typename Int>
         inline auto convert_stk_index_to_index(Int idx) -> Int {

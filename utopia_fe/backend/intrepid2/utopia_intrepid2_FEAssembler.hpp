@@ -5,6 +5,7 @@
 #include "utopia_intrepid2_Commons.hpp"
 
 #include "utopia_intrepid2_FE.hpp"
+#include "utopia_intrepid2_ForwardDeclarations.hpp"
 
 namespace utopia {
     namespace intrepid2 {
@@ -63,7 +64,7 @@ namespace utopia {
 
             FEAssembler(const std::shared_ptr<FE> &fe) : fe_(fe) { assert(fe); }
 
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace> mat_range() {
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace> cell_test_trial_range() {
                 int num_cells = fe_->num_cells();
                 int num_fields = fe_->num_fields();
 
@@ -71,32 +72,43 @@ namespace utopia {
                                                                               {num_cells, num_fields, num_fields});
             }
 
-            Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace> vec_range() {
+            Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace> cell_test_range() {
                 int num_cells = fe_->num_cells();
                 int num_fields = fe_->num_fields();
 
                 return Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>({0, 0}, {num_cells, num_fields});
             }
 
-            template <class CellIJFun>
-            void mat_integrate(const std::string &name, CellIJFun fun) {
-                Kokkos::parallel_for(name, mat_range(), fun);
+            Kokkos::RangePolicy<ExecutionSpace> cell_range() {
+                int num_cells = fe_->num_cells();
+
+                return Kokkos::RangePolicy<ExecutionSpace>(0, num_cells);
             }
 
-            template <class CellIFun>
-            void vec_integrate(const std::string &name, CellIFun fun) {
-                Kokkos::parallel_for(name, vec_range(), fun);
+            template <class CellFun>
+            void loop_cell(const std::string &name, CellFun fun) {
+                Kokkos::parallel_for(name, cell_range(), fun);
             }
 
-            template <class CellIJOp>
-            void apply_operator(const std::string &name, const DynRankView &x, DynRankView &y, CellIJOp op) {
+            template <class CellTestTrialFun>
+            void loop_cell_test_trial(const std::string &name, CellTestTrialFun fun) {
+                Kokkos::parallel_for(name, cell_test_trial_range(), fun);
+            }
+
+            template <class CellTestFun>
+            void loop_cell_test(const std::string &name, CellTestFun fun) {
+                Kokkos::parallel_for(name, cell_test_range(), fun);
+            }
+
+            template <class CellTestTrialOp>
+            void apply_operator(const std::string &name, const DynRankView &x, DynRankView &y, CellTestTrialOp op) {
                 assert(n_vars() == 1 && "IMPLEMENT ME");
 
                 auto &fe = this->fe();
 
                 const int num_fields = fe.num_fields();
 
-                this->vec_integrate(
+                this->loop_cell_test(
                     name, UTOPIA_LAMBDA(const int &cell, const int &i) {
                         Scalar val = 0.0;
                         for (int j = 0; j < num_fields; ++j) {
@@ -105,6 +117,61 @@ namespace utopia {
 
                         y(cell, i) += val;
                     });
+            }
+
+            bool is_matrix() const {
+                if (!accumulator()) return false;
+                return accumulator()->data().rank() == 4;
+            }
+
+            bool is_vector() const {
+                if (!accumulator()) return false;
+                return accumulator()->data().rank() == 3;
+            }
+
+            bool is_scalar() const {
+                if (!accumulator()) return false;
+                return accumulator()->data().rank() == 2;
+            }
+
+            void scale(const intrepid2::SubdomainValue<Scalar> &fun) {
+                auto element_tags = fe().element_tags;
+                const int num_fields = fe().num_fields();
+                auto data = accumulator()->data();
+
+                if (is_matrix()) {
+                    loop_cell(
+                        "FEAssembler::scale(mat)", UTOPIA_LAMBDA(int cell) {
+                            auto val = fun.value(element_tags(cell));
+
+                            for (int i = 0; i < num_fields; ++i) {
+                                for (int j = 0; j < num_fields; ++j) {
+                                    data(cell, i, j) *= val;
+                                }
+                            }
+                        });
+                } else if (is_vector()) {
+                    loop_cell(
+                        "FEAssembler::scale(vec)", UTOPIA_LAMBDA(int cell) {
+                            auto val = fun.value(element_tags(cell));
+
+                            for (int i = 0; i < num_fields; ++i) {
+                                data(cell, i) *= val;
+                            }
+                        });
+                } else if (is_scalar()) {
+                    loop_cell(
+                        "FEAssembler::scale(scalar)", UTOPIA_LAMBDA(int cell) {
+                            auto val = fun.value(element_tags(cell));
+
+                            for (int i = 0; i < num_fields; ++i) {
+                                data(cell) *= val;
+                            }
+                        });
+                } else {
+                    assert(false);
+                    Utopia::Abort("Called FEAssembler::scale on invalid accumulator!");
+                }
             }
 
             class TensorAccumulator {
@@ -165,6 +232,7 @@ namespace utopia {
             }
 
             inline std::shared_ptr<TensorAccumulator> accumulator() { return accumulator_; }
+            inline std::shared_ptr<TensorAccumulator> accumulator() const { return accumulator_; }
 
             void set_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator) { accumulator_ = accumulator; }
 

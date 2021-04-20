@@ -1,6 +1,8 @@
 
 #include "utopia_stk_intrepid2_Transport.hpp"
 #include "utopia_intrepid2_Field.hpp"
+#include "utopia_intrepid2_Mass.hpp"
+#include "utopia_intrepid2_SubdomainFunction.hpp"
 #include "utopia_intrepid2_Transport.hpp"
 #include "utopia_stk_intrepid2.hpp"
 
@@ -33,6 +35,14 @@ namespace utopia {
             }
         }
 
+        bool StkIntrepid2Assembler::assemble_element_tensors() {
+            if (assembler()) {
+                return assembler()->assemble();
+            } else {
+                return false;
+            }
+        }
+
         void StkIntrepid2Assembler::set_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator) {
             assembler()->set_accumulator(accumulator);
         }
@@ -50,12 +60,24 @@ namespace utopia {
             return impl_->assembler;
         }
 
+        bool StkIntrepid2Assembler::assemble(const Vector &x, Matrix &hessian, Vector &gradient) {
+            if (!assemble_element_tensors()) {
+                return false;
+            }
+
+            local_to_global(*space(), assembler()->accumulator()->data(), assembly_mode(), hessian);
+            gradient = hessian * x;
+            return true;
+        }
+
         class Transport::Impl {
         public:
             using Transport2 = utopia::Transport<2, Intrepid2FE::DynRankView>;
             using Transport3 = utopia::Transport<3, Intrepid2FE::DynRankView>;
+            using DiffusionFunction = utopia::intrepid2::SubdomainValue<Scalar>;
 
             std::shared_ptr<Field> field;
+            std::shared_ptr<DiffusionFunction> diffusion_function;
             Scalar coeff{1.0};
             bool stabilize_transport{false};
             bool verbose{false};
@@ -65,8 +87,6 @@ namespace utopia {
         Transport::Transport() : impl_(utopia::make_unique<Impl>()) {}
 
         Transport::~Transport() = default;
-
-        bool Transport::assemble(const Vector &x, Matrix &hessian, Vector &gradient) { return false; }
 
         void Transport::read(Input &in) {
             Super::read(in);
@@ -103,7 +123,6 @@ namespace utopia {
                 }
             }
 
-            // in.get("diffusion_function", impl_->diffusion_function);
             in.get("coeff", impl_->coeff);
             in.get("stabilize_transport", impl_->stabilize_transport);
             in.get("verbose", impl_->verbose);
@@ -120,6 +139,13 @@ namespace utopia {
                 convert_field(*impl_->field, field);
                 g.init(field);
                 g.scale(-impl_->coeff);
+
+                in.get("diffusion_function", [this, &g](Input &in) {
+                    impl_->diffusion_function = std::make_shared<utopia::intrepid2::SubdomainValue<Scalar>>(1.0);
+                    impl_->diffusion_function->read(in);
+                    g.scale(*impl_->diffusion_function);
+                });
+
             } else {
                 convert_field(*impl_->field, static_cast<intrepid2::Field<Scalar> &>(g));
             }
@@ -127,7 +153,7 @@ namespace utopia {
             switch (spatial_dim) {
                 case 2: {
                     using Assemble2 = utopia::intrepid2::Assemble<Impl::Transport2>;
-                    auto assembler = std::make_shared<Assemble2>(g.data(), this->fe());
+                    auto assembler = std::make_shared<Assemble2>(this->fe(), g.data());
                     assembler->read(in);
                     this->set_assembler(assembler);
                     break;
@@ -135,7 +161,7 @@ namespace utopia {
 
                 case 3: {
                     using Assemble3 = utopia::intrepid2::Assemble<Impl::Transport3>;
-                    auto assembler = std::make_shared<Assemble3>(g.data(), this->fe());
+                    auto assembler = std::make_shared<Assemble3>(this->fe(), g.data());
                     assembler->read(in);
                     this->set_assembler(assembler);
                     break;
@@ -162,6 +188,41 @@ namespace utopia {
                 utopia::out() << "print_field:\t" << impl_->print_field << '\n';
                 utopia::out() << "-----------------------------\n";
             }
+        }
+
+        class Mass::Impl {
+        public:
+            using Mass = utopia::Mass<Scalar>;
+            using Assemble = utopia::intrepid2::Assemble<Mass>;
+
+            std::shared_ptr<Assemble> assembler;
+            Impl() {}
+        };
+
+        Mass::~Mass() = default;
+        Mass::Mass() : impl_(utopia::make_unique<Impl>()) {}
+
+        void Mass::init() {}
+
+        void Mass::ensure_assembler() {
+            if (!impl_->assembler) {
+                impl_->assembler = std::make_shared<Impl::Assemble>(this->fe());
+            }
+        }
+
+        bool Mass::assemble_element_tensors() {
+            if (!Super::assemble_element_tensors()) {
+                return false;
+            }
+
+            // Check results
+            return true;
+        }
+
+        void Mass::read(Input &in) {
+            Super::read(in);
+            impl_->assembler->read(in);
+            init();
         }
 
     }  // namespace stk

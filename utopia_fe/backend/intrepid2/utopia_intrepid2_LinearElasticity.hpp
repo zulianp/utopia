@@ -32,11 +32,11 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Op = utopia::LinearElasticity<Dim, FirstLameParameter, ShearModulus>;
+            using UserOp = utopia::LinearElasticity<Dim, FirstLameParameter, ShearModulus>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {
+            Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
             }
 
@@ -62,7 +62,7 @@ namespace utopia {
                     auto mux2 = mu * 2;
                     auto measure = fe.measure;
 
-                    this->mat_integrate(
+                    this->loop_cell_test_trial(
                         "Assemble<LinearElasticity>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
                             StaticMatrix<Scalar, Dim, Dim> strain_i;
                             StaticMatrix<Scalar, Dim, Dim> strain_j;
@@ -110,7 +110,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            Op op_;
+            UserOp op_;
         };
     }  // namespace intrepid2
 }  // namespace utopia

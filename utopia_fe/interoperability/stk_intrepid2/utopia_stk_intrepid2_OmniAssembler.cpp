@@ -47,7 +47,7 @@ namespace utopia {
                 assemblers_[type] = [](const std::shared_ptr<FE_t> &fe, Input &in) -> FEAssemblerPtr_t {
                     MaterialDescription mat_desc;
                     mat_desc.read(in);
-                    return std::make_shared<intrepid2::Assemble<MaterialDescription>>(mat_desc, fe);
+                    return std::make_shared<intrepid2::Assemble<MaterialDescription>>(fe, mat_desc);
                 };
             }
 
@@ -57,7 +57,7 @@ namespace utopia {
                                                                                Input &in) -> FEAssemblerPtr_t {
                     MaterialDescription mat_desc;
                     mat_desc.read(in);
-                    return std::make_shared<intrepid2::Assemble<MaterialDescription>>(mat_desc, fe);
+                    return std::make_shared<intrepid2::Assemble<MaterialDescription>>(fe, mat_desc);
                 };
 
                 has_ndim_variants.insert(type);
@@ -126,7 +126,7 @@ namespace utopia {
                         prev_fun(x, rhs);
                     }
 
-                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(desc, fe);
+                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(fe, desc);
                     assembler.assemble();
                     local_to_global(*space, assembler.data(), SUBTRACT_MODE, rhs);
                     return true;
@@ -147,8 +147,8 @@ namespace utopia {
                     FE boundary_fe;
                     create_fe_on_boundary(*space, boundary_fe, boundary_name, 2);
 
-                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(desc,
-                                                                                      utopia::make_ref(boundary_fe));
+                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(utopia::make_ref(boundary_fe),
+                                                                                      desc);
                     assembler.assemble();
                     side_local_to_global(*space, assembler.data(), SUBTRACT_MODE, rhs, boundary_name);
                     return true;

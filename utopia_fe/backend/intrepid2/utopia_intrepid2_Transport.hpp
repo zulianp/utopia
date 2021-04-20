@@ -33,7 +33,7 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(UserOp op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {
+            Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
 
 #ifndef NDEBUG
@@ -94,7 +94,8 @@ namespace utopia {
 
             bool assemble() override {
                 this->ensure_mat_accumulator();
-                this->mat_integrate("Assemble<Transport>::assemble", op_and_store_cell_ij(this->data(), make_op()));
+                this->loop_cell_test_trial("Assemble<Transport>::assemble",
+                                           op_and_store_cell_ij(this->data(), make_op()));
                 return true;
             }
 

@@ -30,8 +30,14 @@ namespace utopia {
         class FE {
         public:
             // using ExecutionSpace = ::Kokkos::Serial;
+            using HostExecutionSpace = ::Kokkos::DefaultHostExecutionSpace;
             using ExecutionSpace = ::Kokkos::DefaultExecutionSpace;
             using DynRankView = ::Kokkos::DynRankView<Scalar>;
+            using IntView = ::Kokkos::DynRankView<int>;
+
+            using HostDynRankView = ::Kokkos::DynRankView<Scalar, HostExecutionSpace>;
+            using HostIntView = ::Kokkos::DynRankView<int, HostExecutionSpace>;
+
             using Cubature = ::Intrepid2::Cubature<ExecutionSpace, Scalar, Scalar>;
             using CubaturePtr = ::Teuchos::RCP<Cubature>;
             using CellTopology = ::shards::CellTopology;
@@ -173,6 +179,11 @@ namespace utopia {
             DynRankView jacobian_det;
             DynRankView q_points;
             DynRankView measure;
+
+            // Optional
+            IntView element_tags;
+
+            inline bool has_element_tags() const { return element_tags.size() > 0; }
 
             // NVCC_PRIVATE :
             template <class BasisType>

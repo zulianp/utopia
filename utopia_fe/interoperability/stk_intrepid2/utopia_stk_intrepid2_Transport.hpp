@@ -24,6 +24,8 @@ namespace utopia {
             virtual ~StkIntrepid2Assembler();
             StkIntrepid2Assembler();
 
+            bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override final;
+
             void set_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator);
             inline std::shared_ptr<TensorAccumulator> accumulator();
 
@@ -36,9 +38,14 @@ namespace utopia {
 
             void read(Input &in) override;
 
+            virtual bool assemble_element_tensors();
+            inline AssemblyMode assembly_mode() const { return mode_; }
+            inline void set_assembly_mode(AssemblyMode mode) { mode_ = mode; }
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
+            AssemblyMode mode_{ADD_MODE};
         };
 
         class Transport : public StkIntrepid2Assembler {
@@ -51,11 +58,33 @@ namespace utopia {
             inline std::string name() const override { return "Transport"; }
             void read(Input &in) override;
 
-            bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override;
+            // bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override;
 
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
+        };
+
+        class Mass : public StkIntrepid2Assembler {
+        public:
+            using Super = utopia::stk::StkIntrepid2Assembler;
+
+            ~Mass();
+            Mass();
+
+            inline std::string name() const override { return " Mass"; }
+            void read(Input &in) override;
+
+            // bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override;
+
+            bool assemble_element_tensors() override;
+
+        private:
+            class Impl;
+            std::unique_ptr<Impl> impl_;
+
+            void init();
+            void ensure_assembler();
         };
 
     }  // namespace stk

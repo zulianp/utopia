@@ -65,7 +65,7 @@ public:
         auto fe_ptr = std::make_shared<FE_t>();
         create_fe(space, *fe_ptr, 2);
 
-        utopia::intrepid2::Assemble<Op> assembler(op, fe_ptr);
+        utopia::intrepid2::Assemble<Op> assembler(fe_ptr, op);
         assembler.assemble();
 
         Matrix_t mat;

@@ -26,11 +26,11 @@ namespace utopia {
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using Op = utopia::LaplaceOperator<DiffusionCoefficient>;
+            using UserOp = utopia::LaplaceOperator<DiffusionCoefficient>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
-            Assemble(Op op, const std::shared_ptr<FE> &fe) : Super(fe), op_(std::move(op)) {}
+            Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return 1; }
             int rank() const override { return 2; }
@@ -52,7 +52,7 @@ namespace utopia {
                 // Only works if coeff is a scalar
                 {
                     auto c = op_.coeff;
-                    this->mat_integrate(
+                    this->loop_cell_test_trial(
                         "scale_with_coeff",
                         KOKKOS_LAMBDA(const int &i0, const int &i1, const int &i2) { data(i0, i1, i2) *= c; });
                 }
@@ -61,7 +61,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            Op op_;
+            UserOp op_;
         };
 
     }  // namespace intrepid2
