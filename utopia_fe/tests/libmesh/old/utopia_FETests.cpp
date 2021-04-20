@@ -13,7 +13,7 @@
 #include "utopia_GeometryTest.hpp"
 #include "utopia_IntegratorTest.hpp"
 #include "utopia_IntersectTest.hpp"
-#include "utopia_Intrepid2Test.hpp"
+// #include "utopia_Intrepid2Test.hpp"
 #include "utopia_MSHReaderTest.hpp"
 #include "utopia_MechTest.hpp"
 #include "utopia_NewNeohookeanTest.hpp"

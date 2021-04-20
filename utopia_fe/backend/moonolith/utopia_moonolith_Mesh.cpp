@@ -3,7 +3,7 @@
 #include "utopia_Options.hpp"
 
 // Moonolith includes
-#include "moonolith_Mesh.hpp"
+#include "moonolith_mesh.hpp"
 #include "moonolith_tri_mesh_reader.hpp"
 #include "moonolith_vtu_mesh_writer.hpp"
 #include "par_moonolith.hpp"

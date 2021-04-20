@@ -3,6 +3,9 @@
 
 #include "utopia_Library.hpp"
 
+#include <memory>
+#include <string>
+
 namespace utopia {
 
     class LibMeshLibrary final : public Library {
