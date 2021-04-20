@@ -29,7 +29,9 @@ namespace utopia {
         using Transfer = utopia::Transfer<Matrix, Vector>;
         using SmootherPtr = std::shared_ptr<Smoother>;
         using Scalar = typename Traits<Matrix>::Scalar;
+        using SizeType = typename Traits<Matrix>::SizeType;
 
+        using Super::max_it;
         using Super::verbose;
 
         AlgebraicMultigrid *clone() const override { return new AlgebraicMultigrid(*this); }
@@ -92,7 +94,12 @@ namespace utopia {
 
         void verbose(const bool &val) override {
             Super::verbose(val);
-            algo_.verbose(false);
+            algo_.verbose(val);
+        }
+
+        void max_it(const SizeType &max_it_in) override {
+            Super::max_it(max_it_in);
+            algo_.max_it(max_it_in);
         }
 
         AlgebraicMultigrid(const std::shared_ptr<Smoother> &smoother,

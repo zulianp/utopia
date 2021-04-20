@@ -31,6 +31,7 @@ namespace utopia {
         bool update(const PetscMatrix &mat) override;
         void apply(const PetscVector &b, PetscVector &x) override;
         void read(Input &) override;
+        ILUDecompose *clone() const override { return new ILUDecompose(); }
 
     private:
         PetscMatrix ilu_;
@@ -44,6 +45,7 @@ namespace utopia {
         void apply(const PetscVector &b, PetscVector &x) override;
 
         void read(Input &) override;
+        BlockILUAlgorithm *clone() const override { return new BlockILUAlgorithm(); }
 
     private:
         CRSMatrix<std::vector<PetscScalar>, std::vector<PetscInt>, BlockSize> ilu_;

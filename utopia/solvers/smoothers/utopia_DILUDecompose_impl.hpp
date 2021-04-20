@@ -45,6 +45,11 @@ namespace utopia {
             }
         }
 
+        for (SizeType r = 0; r < n; ++r) {
+            assert(d_[r] != 0.0);
+            d_[r] = 1. / d_[r];
+        }
+
         UTOPIA_TRACE_REGION_END("DILUAlgorithm::update");
         return false;
     }
@@ -74,7 +79,7 @@ namespace utopia {
             }
 
             // If array or x have large values then d_ is better inside?
-            L_inv_b_[i] = val / d_[i];
+            L_inv_b_[i] = d_[i] * val;
         }
 
         // Backward substitution
@@ -87,7 +92,7 @@ namespace utopia {
             }
 
             // If array or x have large values then d_ is better inside?
-            x[i] = L_inv_b_[i] - val / d_[i];
+            x[i] = L_inv_b_[i] - d_[i] * val;
         }
 
         UTOPIA_TRACE_REGION_END("DILUAlgorithm::apply");
@@ -109,7 +114,6 @@ namespace utopia {
 
         auto &&ia = mat_->row_ptr();
         auto &&ja = mat_->colidx();
-        // auto &&array = mat_->values();
 
         d_.resize(n_blocks);
 
@@ -124,19 +128,26 @@ namespace utopia {
         Block d_ii_inv;
 
         for (SizeType i = 0; i < n_blocks; ++i) {
-            d_view.raw_type().set_data(mat_->block(i));
+            d_view.raw_type().set_data(mat_->block(diag_idx_.diag(i)));
             d_[i].copy(d_view);
+
+            assert(det(d_[i]) != 0.0);
         }
 
         for (SizeType block_i = 0; block_i < n_blocks; ++block_i) {
             const SizeType row_end = ia[block_i + 1];
 
             const auto &d_ii = d_[block_i];
+
+            assert(det(d_ii) != 0.0);
+
             d_ii_inv = inv(d_ii);
 
             for (SizeType k_1 = diag_idx_.diag(block_i) + 1; k_1 < row_end; ++k_1) {
                 const SizeType block_j = ja[k_1];
                 a_ij.raw_type().set_data(mat_->block(k_1));
+
+                assert(block_j != block_i);
 
                 auto &d_jj = d_[block_j];
 
@@ -152,6 +163,7 @@ namespace utopia {
         Block temp;
         for (SizeType i = 0; i < n_blocks; ++i) {
             temp.copy(d_[i]);
+            assert(det(temp) != 0.0);
             d_[i] = inv(temp);
         }
 
@@ -159,7 +171,6 @@ namespace utopia {
         return false;
     }
 
-    // Works with laplacian
     template <class Matrix, class Vector, int BlockSize>
     void BlockDILUAlgorithm<Matrix, Vector, BlockSize>::apply(const Vector &b, Vector &x) {
         UTOPIA_TRACE_REGION_BEGIN("BlockDILUAlgorithm::apply");
@@ -168,9 +179,8 @@ namespace utopia {
 
         auto &&ia = mat_->row_ptr();
         auto &&ja = mat_->colidx();
-        // auto &&array = mat_->values();
 
-        L_inv_b_.resize(n_blocks);
+        L_inv_b_.resize(n_blocks * BlockSize);
 
         device::fill(0.0, L_inv_b_);
 

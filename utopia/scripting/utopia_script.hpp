@@ -19,14 +19,21 @@ namespace utopia {
 
     class Communicator;
 
+    template <typename Derived, int Order>
+    class Tensor;
+
+    template <class T, int Order>
+    class DeviceView;
+
 }  // namespace utopia
 
 namespace scripting {
-
     using Scalar = double;
     using SizeType = int;
     using LocalSizeType = int;
     using Factory = utopia::AlgebraFactory<Scalar, SizeType>;
+    using Derived = utopia::AbstractVector<Scalar, SizeType>;
+    //  using T = utopia::AbstractVector<Scalar, SizeType>;
 
     void init();
     void finalize();
@@ -71,6 +78,8 @@ namespace scripting {
         Scalar dot(const Vector *x) const;
         void describe() const;
         bool equals(const Vector *other, const Scalar tol) const;
+        void set(const SizeType &i, const Scalar &value);
+        void convert_into_uvector(Scalar *values, const Layout &l);
 
     private:
         VectorImpl *impl_;

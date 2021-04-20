@@ -82,6 +82,7 @@ namespace utopia {
             in.get("perform_galerkin_assembly", perform_galerkin_assembly_);
             in.get("use_line_search", use_line_search_);
             in.get("block_size", block_size_);
+            in.get("non_symmetric", non_symmetric_);
 
             if (smoother_cloneable_) {
                 in.get("smoother", *smoother_cloneable_);
@@ -299,7 +300,14 @@ namespace utopia {
                 const Scalar err = norm2(r_R);
 #endif
                 if (use_line_search_) {
-                    const Scalar alpha = dot(c_I, r_R) / dot(level(l).A() * c_I, c_I);
+                    Scalar alpha = 1.0;
+
+                    if (non_symmetric_) {
+                        Vector Ac = level(l).A() * c_I;
+                        alpha = dot(Ac, r_R) / dot(Ac, Ac);
+                    } else {
+                        alpha = dot(c_I, r_R) / dot(level(l).A() * c_I, c_I);
+                    }
 
                     if (alpha <= 0.) {
                         std::cerr << l << " alpha: " << alpha << std::endl;
@@ -461,6 +469,7 @@ namespace utopia {
     private:
         bool perform_galerkin_assembly_;
         bool use_line_search_;
+        bool non_symmetric_{false};
         SizeType block_size_;
     };
 

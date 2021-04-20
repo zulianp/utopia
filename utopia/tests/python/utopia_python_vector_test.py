@@ -1,6 +1,13 @@
-import utopia as u 
+import sys
+sys.path.insert(0, "../../bin/scripting/")
+sys.path.insert(0, "../../build/scripting/")
+
+import utopia as u
+
 import torch
 import unittest
+import sys
+
 
 class TestUtopiaVector(unittest.TestCase):
 

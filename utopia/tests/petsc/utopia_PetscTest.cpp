@@ -6,6 +6,8 @@
 #include "utopia_ZeroRowsToIdentity.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
+#include "utopia_petsc_CrsView.hpp"
+
 namespace utopia {
 
     void petsc_reciprocal() {
@@ -212,7 +214,11 @@ namespace utopia {
     void petsc_matrix_accessors() {
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
-        auto ml = layout(comm, 10, PetscTraits::decide(), n, 2);
+
+        const PetscInt m = 10; 
+        const PetscInt mn = 2; 
+
+        auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
         PetscMatrix x;
         x.dense(ml, 1.0);
@@ -242,7 +248,11 @@ namespace utopia {
         //! [Read write matrix]
         auto &&comm = PetscCommunicator::get_default();
         const PetscInt n = 10 * comm.size();
-        auto ml = layout(comm, 10, PetscTraits::decide(), n, 10);
+
+        const PetscInt m = 10; 
+        const PetscInt mn = 10; 
+
+        auto ml = layout(comm, m, PetscTraits::decide(), n, mn);
 
         PetscMatrix x;
         x.sparse(ml, 7, 7);
@@ -1046,10 +1056,40 @@ namespace utopia {
     void petsc_block_mat() {
         auto &&comm = PetscCommunicator::get_default();
 
-        const SizeType n = comm.size() * 2;
+        const SizeType rows = comm.size() * 2;
+        const SizeType cols = comm.size() * 2 * 2;
         PetscMatrix mat;
-        mat.identity(layout(comm, 2, 2, n, n), 1.0);
+        mat.sparse(layout(comm, 2, 2 * 2, rows, cols), 2, 0);
+        {
+            Write<PetscMatrix> w(mat);
+            auto rr = row_range(mat);
+
+            mat.set(rr.begin(), rr.begin(), 2.0);
+            mat.set(rr.begin(), rr.begin() + 1, -1.0);
+            mat.set(rr.begin() + 1, rr.begin() + 1, 2.0);
+            mat.set(rr.begin() + 1, rr.begin(), -1.0);
+
+            mat.set(rr.begin(), rr.begin() + 2, 4.0);
+            mat.set(rr.begin(), rr.begin() + 3, -2.0);
+            mat.set(rr.begin() + 1, rr.begin() + 3, 4.0);
+            mat.set(rr.begin() + 1, rr.begin() + 2, -2.0);
+        }
+
         mat.convert_to_mat_baij(2);
+
+        PetscMatrix local_mat;
+        local_block_view(mat, local_mat);
+        PetscCrsView crs(local_mat.raw_type());
+
+        // crs.describe();
+
+        // for (auto v : crs.values()) {
+        //     std::cout << v << ' ';
+        // }
+
+        // std::cout << '\n';
+
+        // disp(mat);
     }
 
     void petsc_line_search() {

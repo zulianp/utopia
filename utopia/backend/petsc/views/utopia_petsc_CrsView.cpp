@@ -2,6 +2,8 @@
 
 #include "utopia_Reporter.hpp"
 
+#include "utopia_petsc_Matrix.hpp"
+
 namespace utopia {
 
     class PetscCrsView::Impl {
@@ -27,7 +29,16 @@ namespace utopia {
     private:
         void destroy() {
             if (raw_mat) {
-                MatSeqAIJRestoreArray(raw_mat, &array);
+                if (PetscMatrix::is_block(raw_mat)) {
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 13, 4)
+                    MatSeqBAIJRestoreArray(raw_mat, &array);
+#else
+                    utopia::err() << "[Error] MATBAIJ not supported\n";
+#endif
+                } else {
+                    MatSeqAIJRestoreArray(raw_mat, &array);
+                }
+
                 err = MatRestoreRowIJ(raw_mat, 0, PETSC_FALSE, PETSC_FALSE, &rows, &ia, &ja, &done);
                 assert(err == 0);
                 UTOPIA_UNUSED(err);
@@ -53,7 +64,15 @@ namespace utopia {
                 abort();
             }
 
-            MatSeqAIJGetArray(raw_mat, &array);
+            if (PetscMatrix::is_block(raw_mat)) {
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3, 13, 4)
+                MatSeqBAIJGetArray(raw_mat, &array);
+#else
+                utopia::err() << "[Error] MATBAIJ not supported\n";
+#endif
+            } else {
+                MatSeqAIJGetArray(raw_mat, &array);
+            }
         }
     };
 
@@ -65,7 +84,7 @@ namespace utopia {
 
     PetscInt PetscCrsView::nnz() const { return impl_->ia[impl_->rows]; }
 
-    PetscInt PetscCrsView::cols() const { return impl_->rows; }
+    PetscInt PetscCrsView::cols() const { return impl_->cols; }
 
     PetscInt PetscCrsView::rows() const { return impl_->rows; }
 
@@ -78,5 +97,10 @@ namespace utopia {
     }
 
     ArrayView<PetscScalar> PetscCrsView::values() { return ArrayView<PetscScalar>(impl_->array, nnz()); }
+
+    void PetscCrsView::describe(std::ostream &os) const {
+        os << rows() << " " << cols() << '\n';
+        os << "nnz: " << nnz() << '\n';
+    }
 
 }  // namespace utopia

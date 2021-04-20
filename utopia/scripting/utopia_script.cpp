@@ -89,6 +89,7 @@ namespace scripting {
 
     Layout::~Layout() { delete impl_; }
 
+    // input inside here, vcector of double
     Vector::Vector() : impl_(nullptr) {
         auto vec = Factory::new_vector();
 
@@ -113,5 +114,24 @@ namespace scripting {
     void Vector::describe() const { impl_->describe(); }
     bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
     Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
+    void Vector::set(const SizeType &i, const Scalar &value) { impl_->set(i, value); }
+    void Vector::convert_into_uvector(Scalar *values, const Layout &l) {
+        if (impl_->empty()) {
+            impl_->values(*l.get_layout(), 0.0);
+        }
+
+        {
+            impl_->write_lock(utopia::LOCAL);
+
+            utopia::Range rr = impl_->range();
+
+            for (auto i = rr.begin(); i < rr.end(); ++i) {
+                impl_->set(i, *values);
+                ++values;
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
+    }
 
 }  // namespace scripting
