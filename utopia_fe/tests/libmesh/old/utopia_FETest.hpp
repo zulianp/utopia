@@ -5,7 +5,7 @@
 
 #include "libmesh/parallel_mesh.h"
 
-#include "utopia_utils.hpp"
+#include "utopia_Utils.hpp"
 
 namespace utopia {
 

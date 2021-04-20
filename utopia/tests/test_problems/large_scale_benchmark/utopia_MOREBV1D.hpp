@@ -45,34 +45,37 @@ namespace utopia {
                 auto d_t = const_view_device(coords_);
                 auto A_help1_view = view_device(*A_help1_);
 
-                parallel_for(range_device(*A_help1_), UTOPIA_LAMBDA(const SizeType &i) {
-                    Scalar xi = d_x.get(i);
-                    Scalar ti = d_t.get(i);
-                    Scalar element, item;
+                const Scalar h = h_;
 
-                    if (i == 0) {
-                        Scalar xi_p = d_x.get(i + 1);
-                        element = xi + h_ + 1.0;
-                        item = 2. * xi - xi_p + 0.5 * (h_ * h_ * std::pow(element, 3));
-                        A_help1_view.set(i, item * item);
-                        return;
-                    }
+                parallel_for(
+                    range_device(*A_help1_), UTOPIA_LAMBDA(const SizeType &i) {
+                        Scalar xi = d_x.get(i);
+                        Scalar ti = d_t.get(i);
+                        Scalar element, item;
 
-                    if (i == n - 1) {
+                        if (i == 0) {
+                            Scalar xi_p = d_x.get(i + 1);
+                            element = xi + h + 1.0;
+                            item = 2. * xi - xi_p + 0.5 * (h * h * std::pow(element, 3));
+                            A_help1_view.set(i, item * item);
+                            return;
+                        }
+
+                        if (i == n - 1) {
+                            Scalar xi_m = d_x.get(i - 1);
+                            element = xi + ti + 1.0;
+                            item = 2. * xi - xi_m + 0.5 * (h * h * std::pow(element, 3));
+                            A_help1_view.set(i, item * item);
+                            return;
+                        }
+
                         Scalar xi_m = d_x.get(i - 1);
+                        Scalar xi_p = d_x.get(i + 1);
                         element = xi + ti + 1.0;
-                        item = 2. * xi - xi_m + 0.5 * (h_ * h_ * std::pow(element, 3));
+                        item = 2. * xi - xi_m - xi_p + 0.5 * (h * h * std::pow(element, 3));
+
                         A_help1_view.set(i, item * item);
-                        return;
-                    }
-
-                    Scalar xi_m = d_x.get(i - 1);
-                    Scalar xi_p = d_x.get(i + 1);
-                    element = xi + ti + 1.0;
-                    item = 2. * xi - xi_m - xi_p + 0.5 * (h_ * h_ * std::pow(element, 3));
-
-                    A_help1_view.set(i, item * item);
-                });
+                    });
             }
 
             value = sum(*A_help1_);
@@ -305,20 +308,22 @@ namespace utopia {
 
             {
                 auto coords_view = view_device(coords_);
-                parallel_for(range_device(coords_), UTOPIA_LAMBDA(const SizeType i) { coords_view.set(i, (h_ * i)); });
+                parallel_for(
+                    range_device(coords_), UTOPIA_LAMBDA(const SizeType i) { coords_view.set(i, (h_ * i)); });
 
                 // see More, Garbbow, Hillstrom
                 auto x0_view = view_device(x0_);
-                parallel_for(range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
-                    Scalar xi = (h_ * i);
-                    if (i == 0) {
-                        x0_view.set(i, 0.0);
-                    } else if (i == n_ - 1) {
-                        x0_view.set(i, 0.0);
-                    } else {
-                        x0_view.set(i, xi * (xi - 1.0));
-                    }
-                });
+                parallel_for(
+                    range_device(x0_), UTOPIA_LAMBDA(const SizeType i) {
+                        Scalar xi = (h_ * i);
+                        if (i == 0) {
+                            x0_view.set(i, 0.0);
+                        } else if (i == n_ - 1) {
+                            x0_view.set(i, 0.0);
+                        } else {
+                            x0_view.set(i, xi * (xi - 1.0));
+                        }
+                    });
             }
 
             Vector bc_markers(layout(x0_), 0.0);

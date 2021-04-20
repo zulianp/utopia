@@ -15,6 +15,8 @@ namespace utopia {
 
     class InputParameters final : public Input {
     public:
+        using Input::get;
+
         void init(const int argc, char *argv[], const bool verbose = false);
 
         inline bool empty() const { return nodes_.empty() && values_.empty(); }

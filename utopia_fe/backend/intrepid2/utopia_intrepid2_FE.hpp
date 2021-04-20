@@ -103,6 +103,9 @@ namespace utopia {
                 auto num_qp = this->num_qp();
                 auto num_cells = this->num_cells();
 
+                // Avoid capturing (this)
+                auto measure = this->measure;
+
                 Kokkos::parallel_for(
                     "FE::print_measure", num_cells, KOKKOS_LAMBDA(const int &cell) {
                         printf("cell: %d\n", cell);
@@ -121,6 +124,9 @@ namespace utopia {
 
                 int spatial_dimension = this->spatial_dimension();
                 int manifold_dimension = this->manifold_dimension();
+
+                // Avoid capturing (this)
+                auto jacobian = this->jacobian;
 
                 Kokkos::parallel_for(
                     "FE::print_jacobian", num_cells, KOKKOS_LAMBDA(const int &cell) {
@@ -147,6 +153,9 @@ namespace utopia {
 
                 int spatial_dimension = this->spatial_dimension();
                 int manifold_dimension = this->manifold_dimension();
+
+                // Avoid capturing (this)
+                auto jacobian_inv = this->jacobian_inv;
 
                 Kokkos::parallel_for(
                     "FE::print_jacobian_inverse", num_cells, KOKKOS_LAMBDA(const int &cell) {
