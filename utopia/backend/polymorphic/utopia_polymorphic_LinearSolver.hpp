@@ -13,7 +13,8 @@ namespace utopia {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> Super;
+        using Super = utopia::LinearSolver<Matrix, Vector>;
+        using Super::update;
 
         inline void describe(std::ostream &os) const override { os << "OmniLinearSolver"; }
 
