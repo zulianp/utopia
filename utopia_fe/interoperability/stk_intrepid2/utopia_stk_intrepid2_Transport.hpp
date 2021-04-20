@@ -24,7 +24,7 @@ namespace utopia {
             virtual ~StkIntrepid2Assembler();
             StkIntrepid2Assembler();
 
-            bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override final;
+            bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) final;
 
             void set_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator);
             inline std::shared_ptr<TensorAccumulator> accumulator();
