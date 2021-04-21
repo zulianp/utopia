@@ -37,6 +37,7 @@ namespace utopia {
             inline std::string name() const override { return "LaplaceOperator"; }
 
             bool assemble() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble");
                 this->ensure_mat_accumulator();
 
                 auto &fe = this->fe();
@@ -57,6 +58,7 @@ namespace utopia {
                         KOKKOS_LAMBDA(const int &i0, const int &i1, const int &i2) { data(i0, i1, i2) *= c; });
                 }
 
+                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
                 return true;
             }
 

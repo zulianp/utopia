@@ -166,6 +166,8 @@ namespace utopia {
             inline LumpedOp<Op> make_lumped_op() { return LumpedOp<Op>(make_op()); }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<Mass>::apply");
+
                 if (op_.lumped) {
                     this->apply_diagonal_operator("Assemble<Mass>::apply::lumped", x, y, make_lumped_op());
                 } else {
@@ -176,10 +178,13 @@ namespace utopia {
                     this->scale_vector(*op_.density_function, y);
                 }
 
+                UTOPIA_TRACE_REGION_END("Assemble<Mass>::apply");
                 return true;
             }
 
             bool assemble() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<Mass>::assemble");
+
                 assert(op_.n_components == 1 && "IMPLEMENT ME");
 
                 this->ensure_mat_accumulator();
@@ -193,6 +198,7 @@ namespace utopia {
                     this->scale(*op_.density_function);
                 }
 
+                UTOPIA_TRACE_REGION_END("Assemble<Mass>::assemble");
                 return true;
             }
 

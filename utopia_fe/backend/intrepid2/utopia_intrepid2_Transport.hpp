@@ -88,14 +88,22 @@ namespace utopia {
             }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<Transport>::apply");
+
                 this->apply_operator("Assemble<Transport>::apply", x, y, make_op());
+
+                UTOPIA_TRACE_REGION_END("Assemble<Transport>::apply");
                 return true;
             }
 
             bool assemble() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<Transport>::assemble");
+
                 this->ensure_mat_accumulator();
                 this->loop_cell_test_trial("Assemble<Transport>::assemble",
                                            op_and_store_cell_ij(this->data(), make_op()));
+
+                UTOPIA_TRACE_REGION_END("Assemble<Transport>::assemble");
                 return true;
             }
 

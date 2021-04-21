@@ -200,6 +200,8 @@ namespace utopia {
         const ::Kokkos::DynRankView<Scalar> &device_element_matrices,
         AssemblyMode mode,
         PetscMatrix &matrix) {
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2)");
+
         // Type defs
         using IndexArray_t = Traits<PetscMatrix>::IndexArray;
         using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
@@ -309,6 +311,8 @@ namespace utopia {
         if (mode == SUBTRACT_MODE) {
             matrix *= -1.0;
         }
+
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2)");
     }
 
     template <typename Scalar>
@@ -332,7 +336,7 @@ namespace utopia {
                           const DynRankView_t &device_element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector) {
-            //
+            UTOPIA_TRACE_REGION_BEGIN("LocalToGlobalFromBuckets(Stk,Intrepid2)");
 
             if (empty(vector)) {
                 space.create_vector(vector);
@@ -414,6 +418,8 @@ namespace utopia {
             if (mode == SUBTRACT_MODE) {
                 vector *= -1.0;
             }
+
+            UTOPIA_TRACE_REGION_END("LocalToGlobalFromBuckets(Stk,Intrepid2)");
         }
     };
 
@@ -463,6 +469,8 @@ namespace utopia {
                                                              const Vector &vector,
                                                              DynRankView &device_element_vectors,
                                                              const int n_comp) {
+        UTOPIA_TRACE_REGION_BEGIN("GlobalToLocal(Stk,Intrepid2)");
+
         Vector local;
         space.global_to_local(vector, local);
 
@@ -509,6 +517,8 @@ namespace utopia {
         }
 
         ::Kokkos::deep_copy(device_element_vectors, element_vectors);
+
+        UTOPIA_TRACE_REGION_END("GlobalToLocal(Stk,Intrepid2)");
     }
 
 }  // namespace utopia

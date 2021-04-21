@@ -38,6 +38,8 @@ namespace utopia {
             inline std::string name() const override { return "VectorLaplaceOperator"; }
 
             bool assemble() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<VectorLaplaceOperator>::assemble");
+
                 this->ensure_mat_accumulator();
 
                 auto &fe = this->fe();
@@ -88,6 +90,7 @@ namespace utopia {
                         });
                 }
 
+                UTOPIA_TRACE_REGION_END("Assemble<VectorLaplaceOperator>::assemble");
                 return true;
             }
 

@@ -46,6 +46,7 @@ namespace utopia {
             inline std::string name() const override { return "ForcingFunction"; }
 
             bool assemble() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<ForcingFunction>::assemble");
                 this->ensure_vec_accumulator();
 
                 auto &fe = this->fe();
@@ -60,7 +61,7 @@ namespace utopia {
                 auto measure = fe.measure;
 
                 this->loop_cell_test(
-                    "Assemble<ForcingFunction>::init", KOKKOS_LAMBDA(const int &cell, const int &i) {
+                    "Assemble<ForcingFunction>::assemble", KOKKOS_LAMBDA(const int &cell, const int &i) {
                         auto offset = i * n_components + component;
 
                         for (int qp = 0; qp < n_qp; ++qp) {
@@ -69,6 +70,7 @@ namespace utopia {
                         }
                     });
 
+                UTOPIA_TRACE_REGION_END("Assemble<ForcingFunction>::assemble");
                 return true;
             }
 

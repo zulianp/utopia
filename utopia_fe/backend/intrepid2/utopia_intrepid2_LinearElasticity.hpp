@@ -45,6 +45,8 @@ namespace utopia {
             int rank() const override { return 2; }
             inline std::string name() const override { return "LinearElasticity"; }
             bool assemble() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LinearElasticity>::assemble");
+
                 this->ensure_mat_accumulator();
 
                 auto &fe = this->fe();
@@ -94,6 +96,7 @@ namespace utopia {
                         });
                 }
 
+                UTOPIA_TRACE_REGION_END("Assemble<LinearElasticity>::assemble");
                 return true;
             }
 

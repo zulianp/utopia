@@ -8,39 +8,17 @@
 
 #include "utopia_fe_Environment.hpp"
 
+#include "utopia_intrepid2_OmniAssembler.hpp"
 #include "utopia_stk_ForwardDeclarations.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
 namespace utopia {
-    namespace stk {
-
-        class OmniAssembler : public Configurable {
-        public:
-            using Matrix = Traits<stk::FunctionSpace>::Matrix;
-            using Vector = Traits<stk::FunctionSpace>::Vector;
-            using Scalar = Traits<stk::FunctionSpace>::Scalar;
-
-            OmniAssembler(const std::shared_ptr<stk::FunctionSpace> &space);
-            virtual ~OmniAssembler();
-
-            bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
-            bool assemble(const Vector &x, Matrix &jacobian);
-            bool assemble(const Vector &x, Vector &fun);
-
-            void read(Input &in) override;
-
-            void set_environment(const std::shared_ptr<Environment<stk::FunctionSpace>> &env);
-
-        private:
-            class Impl;
-            std::unique_ptr<Impl> impl_;
-        };
-    }  // namespace stk
 
     template <>
-    class OmniAssembler<utopia::stk::FunctionSpace> final : public utopia::stk::OmniAssembler {
+    class OmniAssembler<utopia::stk::FunctionSpace> final
+        : public utopia::intrepid2::OmniAssembler<utopia::stk::FunctionSpace> {
     public:
-        using Super = utopia::stk::OmniAssembler;
+        using Super = utopia::intrepid2::OmniAssembler<utopia::stk::FunctionSpace>;
         using Super::Super;
     };
 
