@@ -23,6 +23,8 @@
 
 namespace utopia {
 
+    using StkScalar_t = utopia::Traits<utopia::stk::FunctionSpace>::Scalar;
+
     static ::shards::CellTopology convert_elem_type(::stk::topology::topology_t topo,
                                                     bool no_shell_topologies = false) {
         switch (topo) {
@@ -68,8 +70,8 @@ namespace utopia {
         using DynRankView_t = typename FE::DynRankView;
         using IntView_t = typename FE::IntView;
 
-        using HostDynRankView_t = typename FE::HostDynRankView;
-        using HostIntView_t = typename FE::HostIntView;
+        using HostDynRankView_t = typename DynRankView_t::HostMirror;
+        using HostIntView_t = typename IntView_t::HostMirror;
 
         using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
@@ -156,7 +158,7 @@ namespace utopia {
     }
 
     // Explicit instantation
-    template class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
+    template class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<StkScalar_t>>;
 
     template <typename Scalar>
     void CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>>::apply(
@@ -191,7 +193,7 @@ namespace utopia {
         CreateFEFromBuckets<Scalar>::apply(bulk_data, side_buckets, fe, degree);
     }
 
-    template class CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<double>>;
+    template class CreateFEOnBoundary<utopia::stk::FunctionSpace, utopia::intrepid2::FE<StkScalar_t>>;
 
 #ifdef UTOPIA_WITH_PETSC
     template <typename Scalar>
@@ -449,8 +451,8 @@ namespace utopia {
             space, bulk_data.get_buckets(meta_data.side_rank(), s_universal), element_vectors, mode, vector);
     }
 
-    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;
-    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<double>, PetscVector>;
+    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<StkScalar_t>, PetscMatrix>;
+    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<StkScalar_t>, PetscVector>;
 
 #endif
 

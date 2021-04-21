@@ -35,8 +35,8 @@ namespace utopia {
             using DynRankView = ::Kokkos::DynRankView<Scalar>;
             using IntView = ::Kokkos::DynRankView<int>;
 
-            using HostDynRankView = ::Kokkos::DynRankView<Scalar, HostExecutionSpace>;
-            using HostIntView = ::Kokkos::DynRankView<int, HostExecutionSpace>;
+            // using HostDynRankView = ::Kokkos::DynRankView<Scalar, HostExecutionSpace>;
+            // using HostIntView = ::Kokkos::DynRankView<int, HostExecutionSpace>;
 
             using Cubature = ::Intrepid2::Cubature<ExecutionSpace, Scalar, Scalar>;
             using CubaturePtr = ::Teuchos::RCP<Cubature>;

@@ -72,6 +72,8 @@ namespace utopia {
             SizeType n_subspaces() const;
             SizeType system_id() const;
 
+            int n_var() const;
+
             // access main function space subspaces (main system)
             FunctionSubspace subspace(const SizeType i, const SizeType n_vars = 1);
             inline FunctionSubspace operator[](const SizeType i) { return subspace(i); }

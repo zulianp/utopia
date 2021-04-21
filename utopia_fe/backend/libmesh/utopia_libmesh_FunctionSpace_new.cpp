@@ -643,6 +643,8 @@ namespace utopia {
             return impl_->systems->n_systems();
         }
 
+        int FunctionSpace::n_var() const { return raw_type_dof_map().n_variables(); }
+
         FunctionSubspace FunctionSpace::subspace(const SizeType i, const SizeType n_vars) {
             assert(i < n_subspaces());
             assert(i + n_vars <= n_subspaces());
