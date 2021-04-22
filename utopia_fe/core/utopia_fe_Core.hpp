@@ -18,6 +18,10 @@ namespace utopia {
     class IO {};
 
     enum AssemblyMode { ADD_MODE = 0, SUBTRACT_MODE = 1, OVERWRITE_MODE = 2 };
+
+    template <class FE, class Op>
+    class AssembleTraits {};
+
 }  // namespace utopia
 
 #endif  // UTOPIA_FE_CORE_HPP

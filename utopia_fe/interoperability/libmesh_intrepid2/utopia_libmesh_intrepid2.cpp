@@ -125,7 +125,7 @@ namespace utopia {
         const ::Kokkos::DynRankView<Scalar> &device_element_matrices,
         AssemblyMode mode,
         PetscMatrix &matrix) {
-        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2)");
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(libMesh,Intrepid2)");
 
         // Type defs
         using IndexArray_t = Traits<PetscMatrix>::IndexArray;
@@ -150,12 +150,12 @@ namespace utopia {
         }
 
         // Fix preallocation bug and REMOVE ME
-        if (space.n_var() > 1 && space.comm().size() > 1) {
-            MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-            m_utopia_warning(
-                "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
-                "PETSC_FALSE);");
-        }
+        // if (space.n_var() > 1 && space.comm().size() > 1) {
+        //     MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+        //     m_utopia_warning(
+        //         "using: MatSetOption(matrix.raw_type(), MAT_NEW_NONZERO_ALLOCATION_ERR,"
+        //         "PETSC_FALSE);");
+        // }
 
         auto &m = space.mesh().raw_type();
         auto &dof_map = space.raw_type_dof_map();
@@ -213,7 +213,7 @@ namespace utopia {
             matrix *= -1.0;
         }
 
-        UTOPIA_TRACE_REGION_END("LocalToGlobal(Stk,Intrepid2)");
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(libMesh,Intrepid2)");
     }
 
     template <typename Scalar>
@@ -228,11 +228,84 @@ namespace utopia {
     template <typename Scalar>
     void LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::side_apply(
         const utopia::libmesh::FunctionSpace &space,
-        const DynRankView &element_vectors,
+        const DynRankView &device_element_vectors,
         AssemblyMode mode,
         PetscVector &vector,
         const std::string &part_name) {
-        assert(false);
+        UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(libMesh,Intrepid2)");
+
+        // Type defs
+        using IndexArray_t = Traits<PetscMatrix>::IndexArray;
+        using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
+        using Size_t = Traits<PetscMatrix>::SizeType;
+        using DynRankView_t = ::Kokkos::DynRankView<Scalar>;
+        using HostView = typename DynRankView_t::HostMirror;
+
+        HostView element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
+        ::Kokkos::deep_copy(element_vectors, device_element_vectors);
+
+        if (vector.empty()) {
+            space.create_vector(vector);
+        } else {
+            // Reuse vector
+            if (mode == OVERWRITE_MODE) {
+                vector *= 0.0;
+            } else if (mode == SUBTRACT_MODE) {
+                vector *= -1.0;
+            }
+        }
+
+        auto &m = space.mesh().raw_type();
+        auto &dof_map = space.raw_type_dof_map();
+
+        {
+            Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
+
+            auto e_begin = m.active_local_elements_begin();
+            auto e_end = m.active_local_elements_end();
+
+            if (e_begin != e_end) {
+                const int n_var = space.n_var();
+                const SizeType n_dofs = element_vectors.extent(1);
+                const SizeType nn = n_dofs / n_var;
+
+                const bool is_block = vector.block_size() > 1;
+                IndexArray_t idx(is_block ? nn : n_dofs);
+                ScalarArray_t val(n_dofs * n_dofs);
+                std::vector<libMesh::dof_id_type> indices;
+
+                int elem_idx = 0;
+                for (auto e_it = e_begin; e_it != e_end; ++e_it, ++elem_idx) {
+                    const auto &e = **e_it;
+
+                    dof_map.dof_indices(&e, indices);
+                    assert(n_dofs == SizeType(indices.size()));
+
+                    for (SizeType i = 0; i < n_dofs; ++i) {
+                        idx[i] = indices[i];
+                    }
+
+                    for (Size_t i = 0; i < nn; ++i) {
+                        for (int di = 0; di < n_var; ++di) {
+                            const Size_t idx_i = i * n_var + di;
+                            val[idx_i] = element_vectors(elem_idx, idx_i);
+                        }
+                    }
+
+                    if (is_block) {
+                        vector.add_vector_blocked(idx, val);
+                    } else {
+                        vector.add_vector(idx, val);
+                    }
+                }
+            }
+        }
+
+        if (mode == SUBTRACT_MODE) {
+            vector *= -1.0;
+        }
+
+        UTOPIA_TRACE_REGION_END("LocalToGlobal(libMesh,Intrepid2)");
     }
 
     template class LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;
@@ -253,57 +326,73 @@ namespace utopia {
                                                              const Vector &vector,
                                                              DynRankView &device_element_vectors,
                                                              const int n_comp) {
-        assert(false);
-        //     UTOPIA_TRACE_REGION_BEGIN("GlobalToLocal(Stk,Intrepid2)");
+        UTOPIA_TRACE_REGION_BEGIN("GlobalToLocal(libMesh,Intrepid2)");
 
-        //     Vector local;
-        //     space.global_to_local(vector, local);
+        using IndexArray_t = Traits<PetscVector>::IndexArray;
+        using ScalarArray_t = Traits<PetscVector>::ScalarArray;
 
-        //     auto &bulk_data = space.mesh().bulk_data();
-        //     const auto &elem_buckets = utopia::libmesh::local_elements(bulk_data);
-        //     const SizeType num_elem = utopia::libmesh::count_local_elements(bulk_data);
+        // Vector local;
+        // space.global_to_local(vector, local);
 
-        //     // Dirty hack (FIXME once libmesh usage is a bit more profficient)
-        //     auto *first_bucket = *elem_buckets.begin();
-        //     auto topo = convert_elem_type(first_bucket->topology(), true);
-        //     Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
+        assert(vector.comm().size() == 1 || vector.has_ghosts());
 
-        //     if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < n_nodes_x_elem) {
-        //         device_element_vectors = DynRankView("Coefficients", num_elem, n_nodes_x_elem, n_comp);
-        //     }
+        // if(vector.is_ghosted()) {
 
-        //     using HostView = typename ::Kokkos::DynRankView<Scalar>::HostMirror;
-        //     HostView element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
+        // }
 
-        //     // FIXME not on device
-        //     auto local_view = const_local_view_device(local);
+        auto &m = space.mesh().raw_type();
+        auto &dof_map = space.raw_type_dof_map();
 
-        //     Size_t elem_idx = 0;
-        //     for (const auto &ib : elem_buckets) {
-        //         const auto &b = *ib;
-        //         const SizeType length = b.size();
+        auto e_begin = m.active_local_elements_begin();
+        auto e_end = m.active_local_elements_end();
 
-        //         for (SizeType k = 0; k < length; ++k) {
-        //             // get the current node entity and extract the id to fill it into the field
-        //             auto elem = b[k];
-        //             const int n_nodes = bulk_data.num_nodes(elem);
+        if (e_begin != e_end) {
+            using HostView = typename ::Kokkos::DynRankView<Scalar>::HostMirror;
+            HostView element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
 
-        //             auto node_ids = bulk_data.begin_nodes(elem);
+            auto num_elem = m.n_active_local_elem();
+            const int n_var = space.n_var();
+            const SizeType n_dofs = element_vectors.extent(1);
+            const SizeType nn = n_dofs / n_var;
 
-        //             for (int i = 0; i < n_nodes; ++i) {
-        //                 SizeType node_idx = utopia::libmesh::convert_entity_to_index(node_ids[i]);
-        //                 for (int d = 0; d < n_comp; ++d) {
-        //                     element_vectors(elem_idx, i, d) = local_view.get(node_idx * n_comp + d);
-        //                 }
-        //             }
+            const bool is_block = vector.block_size() > 1;
+            IndexArray_t idx(is_block ? nn : n_dofs);
+            ScalarArray_t val(n_dofs * n_dofs);
+            std::vector<libMesh::dof_id_type> indices;
 
-        //             ++elem_idx;
-        //         }
-        //     }
+            if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < nn) {
+                device_element_vectors = DynRankView("Coefficients", num_elem, nn, n_comp);
+            }
 
-        //     ::Kokkos::deep_copy(device_element_vectors, element_vectors);
+            // FIXME not on device
+            // auto local_view = const_local_view_device(local);
 
-        //     UTOPIA_TRACE_REGION_END("GlobalToLocal(Stk,Intrepid2)");
+            Read<PetscVector> r(vector);
+
+            int elem_idx = 0;
+            for (auto e_it = e_begin; e_it != e_end; ++e_it, ++elem_idx) {
+                const auto &e = **e_it;
+
+                dof_map.dof_indices(&e, indices);
+                assert(n_dofs == SizeType(indices.size()));
+
+                for (SizeType i = 0; i < n_dofs; ++i) {
+                    idx[i] = indices[i];
+                }
+
+                vector.get(idx, val);
+
+                for (int i = 0; i < nn; ++i) {
+                    for (int d = 0; d < n_comp; ++d) {
+                        element_vectors(elem_idx, i, d) = val[i * n_comp + d];
+                    }
+                }
+            }
+
+            ::Kokkos::deep_copy(device_element_vectors, element_vectors);
+        }
+
+        UTOPIA_TRACE_REGION_END("GlobalToLocal(libMesh,Intrepid2)");
     }
 
 }  // namespace utopia

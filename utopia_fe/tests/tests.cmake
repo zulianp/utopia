@@ -17,7 +17,15 @@ if(UTOPIA_ENABLE_INTREPID2)
 endif()
 
 if(UTOPIA_ENABLE_MOONOLITH AND UTOPIA_ENABLE_STK)
-    list(APPEND TEST_MODULES interop)
+    list(APPEND TEST_MODULES interop/moonolith_stk)
+endif()
+
+if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_STK)
+    list(APPEND TEST_MODULES interop/stk_intrepid2)
+endif()
+
+if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_LIBMESH)
+    list(APPEND TEST_MODULES interop/libmesh_intrepid2)
 endif()
 
 set(LOCAL_HEADERS "")

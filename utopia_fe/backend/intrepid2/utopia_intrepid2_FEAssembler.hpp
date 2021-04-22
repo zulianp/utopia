@@ -339,6 +339,12 @@ namespace utopia {
         };
 
     }  // namespace intrepid2
+
+    template <typename Scalar, class Op>
+    class AssembleTraits<intrepid2::FE<Scalar>, Op> {
+    public:
+        using Type = utopia::intrepid2::Assemble<Op, Scalar>;
+    };
 }  // namespace utopia
 
 #endif  // UTOPIA_INTREPID2_FEASSEMBLER_HPP
