@@ -179,6 +179,10 @@ namespace utopia {
 
             auto &u_mesh = static_cast<libMesh::UnstructuredMesh &>(mesh_.raw_type());
 
+            if (type.empty() && !path.empty()) {
+                type = "file";
+            }
+
             if (type == "file") {
                 if (path.empty()) {
                     err() << "[Error] path for file is undefined\n";

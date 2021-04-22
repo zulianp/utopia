@@ -62,6 +62,7 @@ namespace utopia {
             libMesh::EquationSystems &raw_type();
             const libMesh::EquationSystems &raw_type() const;
             const libMesh::DofMap &raw_type_dof_map() const;
+            libMesh::DofMap &raw_type_dof_map();
             const libMesh::System &raw_type_system() const;
 
             // The binary is private, so do not try to use it
@@ -95,6 +96,8 @@ namespace utopia {
             void add_dirichlet_boundary_condition(const std::string &boundary_name,
                                                   const Scalar &value,
                                                   const int variable = 0);
+
+            void add_dirichlet_boundary_condition(const int boundary_id, const Scalar &value, const int variable = 0);
 
             bool empty() const;
 

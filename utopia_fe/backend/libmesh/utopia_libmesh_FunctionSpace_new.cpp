@@ -477,6 +477,10 @@ namespace utopia {
             return impl_->systems->get_system(system_id()).get_dof_map();
         }
 
+        libMesh::DofMap &FunctionSpace::raw_type_dof_map() {
+            return impl_->systems->get_system(system_id()).get_dof_map();
+        }
+
         void FunctionSpace::create_matrix(Matrix &mat) const {
             UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::create_matrix");
 
@@ -675,10 +679,32 @@ namespace utopia {
             }
         }
 
+        void FunctionSpace::add_dirichlet_boundary_condition(const int boundary_id,
+                                                             const Scalar &value,
+                                                             const int variable) {
+            std::vector<unsigned int> vars(1);
+            vars[0] = variable;
+            std::set<libMesh::boundary_id_type> bt;
+
+            auto &sys = raw_type_system();
+            auto &dof_map = raw_type_dof_map();
+
+            if (boundary_id == libMesh::BoundaryInfo::invalid_id) {
+                assert(false);
+                Utopia::Abort();
+            }
+
+            bt.insert(boundary_id);
+
+            dof_map.add_dirichlet_boundary(
+                libMesh::DirichletBoundary(bt, vars, libMesh::ConstFunction<libMesh::Real>(value)));
+        }
+
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &boundary_name,
                                                              const Scalar &value,
                                                              const int variable) {
-            assert(false);
+            int boundary_id = raw_type_system().get_mesh().get_boundary_info().get_id_by_name(boundary_name);
+            add_dirichlet_boundary_condition(boundary_id, value, variable);
         }
 
         FunctionSubspace::FunctionSubspace() : impl_(std::make_shared<Impl>()) {}

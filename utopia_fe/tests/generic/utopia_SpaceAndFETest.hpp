@@ -111,7 +111,8 @@ namespace utopia {
         }
 
         void poisson_problem() {
-            auto params = param_list(param("mesh", param_list(param("path", get_more_complex_mesh_path()))));
+            auto params = param_list(
+                param("mesh", param_list(param("type", "file"), param("path", get_more_complex_mesh_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -124,8 +125,9 @@ namespace utopia {
         }
 
         void vector_poisson_problem() {
-            auto params =
-                param_list(param("n_var", 3), param("mesh", param_list(param("path", get_more_complex_mesh_path()))));
+            auto params = param_list(
+                param("n_var", 3),
+                param("mesh", param_list(param("type", "file"), param("path", get_more_complex_mesh_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -144,8 +146,9 @@ namespace utopia {
 
         void elasticity_problem() {
             static const int Dim = 3;
-            auto params =
-                param_list(param("n_var", Dim), param("mesh", param_list(param("path", get_more_complex_mesh_path()))));
+            auto params = param_list(
+                param("n_var", Dim),
+                param("mesh", param_list(param("type", "file"), param("path", get_more_complex_mesh_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -162,7 +165,8 @@ namespace utopia {
         }
 
         void poisson_problem_parallel_2D() {
-            auto params = param_list(param("mesh", param_list(param("path", get_2D_mesh_path()))));
+            auto params =
+                param_list(param("mesh", param_list(param("type", "file"), param("path", get_2D_mesh_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -179,7 +183,7 @@ namespace utopia {
         }
 
         void poisson_problem_parallel_3D() {
-            auto params = param_list(param("mesh", param_list(param("path", get_cube_path()))));
+            auto params = param_list(param("mesh", param_list(param("type", "file"), param("path", get_cube_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -196,7 +200,8 @@ namespace utopia {
 
         void elasticity_problem_parallel() {
             static const int Dim = 3;
-            auto params = param_list(param("n_var", Dim), param("mesh", param_list(param("path", get_cube_path()))));
+            auto params = param_list(param("n_var", Dim),
+                                     param("mesh", param_list(param("type", "file"), param("path", get_cube_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -213,7 +218,8 @@ namespace utopia {
         }
 
         void shell_laplace_problem() {
-            auto params = param_list(param("mesh", param_list(param("path", get_shell_mesh_path()))));
+            auto params =
+                param_list(param("mesh", param_list(param("type", "file"), param("path", get_shell_mesh_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -229,7 +235,8 @@ namespace utopia {
         }
 
         void shell_integral() {
-            auto params = param_list(param("mesh", param_list(param("path", get_shell_mesh_path()))));
+            auto params =
+                param_list(param("mesh", param_list(param("type", "file"), param("path", get_shell_mesh_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -245,7 +252,8 @@ namespace utopia {
         }
 
         void boundary_integral() {
-            auto params = param_list(param("mesh", param_list(param("path", get_2D_mesh_path()))));
+            auto params =
+                param_list(param("mesh", param_list(param("type", "file"), param("path", get_2D_mesh_path()))));
 
             FunctionSpace space;
             space.read(params);
@@ -265,6 +273,7 @@ namespace utopia {
                 UTOPIA_RUN_TEST(poisson_problem);
                 UTOPIA_RUN_TEST(vector_poisson_problem);
                 UTOPIA_RUN_TEST(elasticity_problem);
+                // FIXME for libmesh -> sideset nomenclature
                 UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
                 UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
                 UTOPIA_RUN_TEST(elasticity_problem_parallel);
