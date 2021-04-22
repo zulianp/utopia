@@ -92,6 +92,9 @@ namespace utopia {
             void apply_constraints(Matrix &mat) const;
 
             void apply_zero_constraints(Vector &vec) const;
+            void add_dirichlet_boundary_condition(const std::string &boundary_name,
+                                                  const Scalar &value,
+                                                  const int variable = 0);
 
             bool empty() const;
 

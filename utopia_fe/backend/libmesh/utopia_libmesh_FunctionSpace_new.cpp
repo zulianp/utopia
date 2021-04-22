@@ -675,6 +675,12 @@ namespace utopia {
             }
         }
 
+        void FunctionSpace::add_dirichlet_boundary_condition(const std::string &boundary_name,
+                                                             const Scalar &value,
+                                                             const int variable) {
+            assert(false);
+        }
+
         FunctionSubspace::FunctionSubspace() : impl_(std::make_shared<Impl>()) {}
 
         FunctionSubspace::~FunctionSubspace() {}
