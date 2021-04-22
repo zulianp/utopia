@@ -55,6 +55,8 @@ namespace utopia {
 
             in.get("deltaH_lagging", _deltaH_lagging);
             in.get("Hpost_lagging", _Hpost_lagging);
+
+            // in.get("deltag_lagging", _deltag_lagging);
         }
 
         void print_usage(std::ostream &os) const override {
@@ -108,6 +110,12 @@ namespace utopia {
                                     "False");
             this->print_param_usage(
                 os, "Hpost_lagging", "Hpost_lagging", "Use lagging of Hessian for post-smoothing.", "False");
+
+            // this->print_param_usage(os,
+            //                         "deltag_lagging",
+            //                         "deltag_lagging",
+            //                         "Use lagging of gradient for delta g term computation.",
+            //                         "False");
         }
 
         virtual bool deltaH_lagging() const { return _deltaH_lagging; }
@@ -117,6 +125,10 @@ namespace utopia {
         virtual bool Hpost_lagging() const { return _Hpost_lagging; }
 
         virtual void Hpost_lagging(const bool &flg) { _Hpost_lagging = flg; }
+
+        // virtual bool deltag_lagging() const { return _deltag_lagging; }
+
+        // virtual void deltag_lagging(const bool &flg) { _deltag_lagging = flg; }
 
         virtual VerbosityLevel verbosity_level() const { return _verbosity_level; }
 
@@ -213,6 +225,8 @@ namespace utopia {
 
         bool _deltaH_lagging{false};
         bool _Hpost_lagging{false};
+
+        // bool _deltag_lagging{false};
 
         ColorModifier red_;
         ColorModifier def_;
