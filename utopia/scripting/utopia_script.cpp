@@ -13,13 +13,12 @@
 
 #include <iostream>
 
-void print_array(double *seq, int n) {
-    printf("array with length %d:\n", n);
-
-    for (int i = 0; i < n; ++i) {
-        printf("%g\n", seq[i]);
-    }
-}
+// void print_array(double *seq, int n) {
+//     printf("array with length %d :\n", n);
+//     for (int i = 0; i < n; ++i) {
+//         printf("%g\n", seq[i]);
+//     }
+// }
 
 namespace utopia {
 
@@ -128,22 +127,29 @@ namespace scripting {
     bool Vector::equals(const Vector *other, const Scalar tol) const { return impl_->equals(*other->impl_, tol); }
     Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
     void Vector::set(const SizeType &i, const Scalar &value) { impl_->set(i, value); }
-    // void Vector::convert_into_uvector(double *seq, int n) {
-    //     {
-    //         impl_->write_lock(utopia::LOCAL);
-    //         // utopia::Range rr = impl_->range();
-    //         // for (auto i = rr.begin(); i < rr.end(); ++i) {
-    //         //     impl_->set(i, *values);
-    //         //     ++values;
-    //         // }
-    //         for (auto i = 0; i < n; ++i) {
-    //             impl_->set(i, *seq);
-    //             ++seq;
-    //         }
+    void Vector::print_array(double *seq, int n) {
+        printf("array with length %d :\n", n);
+        for (int i = 0; i < n; ++i) {
+            printf("%g\n", seq[i]);
+        }
+    }
+    void Vector::convert_into_uvector(double *seq, int n) {
+        {
+            if (impl_->empty()) {
+                auto l = utopia::serial_layout(n);
+                // auto ll = *l.get_layout();
+                impl_->values(l, 0);
+            }
 
-    //         impl_->write_unlock(utopia::LOCAL);
-    //     }
-    // }
+            impl_->write_lock(utopia::LOCAL);
+            for (auto i = 0; i < n; ++i) {
+                impl_->set(i, *seq);
+                ++seq;
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
+    }
 
     // void Vector::convert_into_uvector(std::vector<double> values, const Layout &l) {
     //     if (impl_->empty()) {

@@ -7,9 +7,11 @@ find_package(SWIG)
 if(SWIG_FOUND)
     include(${SWIG_USE_FILE})
 
-    find_package(Python COMPONENTS Development NumPy)
+   # find_package(Python3 COMPONENTS Development NumPy)
+   find_package(Python3 COMPONENTS Development)
 
-    if(Python_FOUND)
+    if(Python3_FOUND)
+        message("cciao python")
         set_property(SOURCE utopia.i PROPERTY CPLUSPLUS ON)
         set_source_files_properties(utopia.i PROPERTIES SWIG_FLAGS
                                                         "-includeall")
@@ -24,11 +26,15 @@ if(SWIG_FOUND)
             LANGUAGE python
             SOURCES utopia.i utopia_script.hpp utopia_script.cpp)
 
-        swig_link_libraries(utopya PUBLIC Python::Python Python::NumPy utopia)
+        # swig_link_libraries(utopya PUBLIC Python3::Python Python3::NumPy utopia)
+        swig_link_libraries(utopya PUBLIC Python3::Python utopia)
         set_target_properties(utopya PROPERTIES SUFFIX ".so")
+        set_target_properties(utopya PROPERTIES INCLUDE_DIRECTORIES "/opt/conda/envs/utopia_pytorch_cpu/lib/python3.8/site-packages/numpy/core/include/numpy/;/opt/conda/envs/utopia_pytorch_cpu/include/;/usr/include/")
 
         set_property(TARGET utopya PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES
                                             TRUE)
+
+
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/utopia.py DESTINATION lib)
 
