@@ -191,7 +191,7 @@ namespace utopia {
                             auto idx = utopia::stk::convert_entity_to_index(node);
 
                             const Scalar *values = (const Scalar *)::stk::mesh::field_data(*field, node);
-                            auto n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
+                            const int n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
 
                             for (int d = 0; d < n_comp; ++d) {
                                 assert(offset + d < n_var);
