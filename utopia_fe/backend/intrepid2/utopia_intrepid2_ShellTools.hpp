@@ -1,10 +1,13 @@
 #ifndef UTOPIA_INTREPID2_SHELL_TOOLS_HPP
 #define UTOPIA_INTREPID2_SHELL_TOOLS_HPP
 
+#include "utopia_intrepid2_Base.hpp"
+
+#include "utopia_Views.hpp"
+
 #include <Intrepid2_CellTools.hpp>
 #include <Kokkos_DynRankView.hpp>
 
-#include "utopia_Views.hpp"
 
 namespace utopia {
     namespace intrepid2 {
@@ -12,8 +15,11 @@ namespace utopia {
         template <typename Scalar>
         class ShellTools {
         public:
-            using ExecutionSpace = ::Kokkos::DefaultExecutionSpace;
-            using DynRankView = ::Kokkos::DynRankView<Scalar>;
+            using HostExecutionSpace = utopia::intrepid2::HostExecutionSpace;
+            using ExecutionSpace = utopia::intrepid2::ExecutionSpace;
+            using DynRankView = utopia::intrepid2::ViewDevice<Scalar>;
+            using IntView = utopia::intrepid2::IntViewDevice;
+
             using SizeType = ::Intrepid2::ordinal_type;
 
             // Jacobian : R^d-1 -> R^d

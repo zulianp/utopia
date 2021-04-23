@@ -4,6 +4,8 @@
 #include "utopia_Base.hpp"
 #include "utopia_Field.hpp"
 
+#include "utopia_intrepid2_Base.hpp"
+
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #endif
@@ -20,6 +22,16 @@
 #include <Kokkos_DynRankView.hpp>
 
 namespace utopia {
+
+    using StkScalar_t = utopia::Traits<utopia::stk::FunctionSpace>::Scalar;
+
+    template <typename T>
+    using StkViewDevice_t = utopia::intrepid2::ViewDevice<T>;
+    using StkIntViewDevice_t = utopia::intrepid2::ViewDevice<int>;
+
+    template <typename T>
+    using StkViewHost_t = utopia::intrepid2::ViewHost<T>;
+    using StkIntViewHost_t = utopia::intrepid2::ViewHost<int>;
 
     template <typename Scalar>
     class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>> {
@@ -45,7 +57,6 @@ namespace utopia {
     template <typename Scalar>
     class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         using Vector = utopia::Traits<utopia::stk::FunctionSpace>::Vector;
         using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
 
@@ -54,26 +65,24 @@ namespace utopia {
 
 #ifdef UTOPIA_WITH_PETSC
     template <typename Scalar>
-    class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix> {
+    class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscMatrix> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         static void apply(const utopia::stk::FunctionSpace &space,
-                          const DynRankView &element_matrices,
+                          const StkViewDevice_t<Scalar> &element_matrices,
                           AssemblyMode mode,
                           PetscMatrix &matrix);
     };
 
     template <typename Scalar>
-    class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector> {
+    class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscVector> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         static void apply(const utopia::stk::FunctionSpace &space,
-                          const DynRankView &element_vectors,
+                          const StkViewDevice_t<Scalar> &element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector);
 
         static void side_apply(const utopia::stk::FunctionSpace &space,
-                               const DynRankView &element_vectors,
+                               const StkViewDevice_t<Scalar> &element_vectors,
                                AssemblyMode mode,
                                PetscVector &vector,
                                const std::string &part_name);
@@ -94,15 +103,14 @@ namespace utopia {
     template <typename Scalar>
     class GlobalToLocal<utopia::stk::FunctionSpace,
                         Traits<utopia::stk::FunctionSpace>::Vector,
-                        ::Kokkos::DynRankView<Scalar>> {
+                        StkViewDevice_t<Scalar>> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         using Vector = utopia::Traits<utopia::stk::FunctionSpace>::Vector;
         using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
 
         static void apply(const utopia::stk::FunctionSpace &space,
                           const Vector &vector,
-                          DynRankView &element_vectors,
+                          StkViewDevice_t<Scalar> &element_vectors,
                           const int n_comp = 1);
     };
 

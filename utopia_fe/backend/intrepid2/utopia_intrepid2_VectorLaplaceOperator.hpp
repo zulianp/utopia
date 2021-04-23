@@ -59,11 +59,13 @@ namespace utopia {
                     this->loop_cell_test_trial(
                         "Assemble<VectorLaplaceOperator>::init",
                         KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
+                            StaticVector<Scalar, Dim> temp_i, temp_j;
                             StaticMatrix<Scalar, Dim, Dim> grad_i;
                             StaticMatrix<Scalar, Dim, Dim> grad_j;
 
-                            assert((Dim == 1 || &grad(cell, i, 0, 1) - &grad(cell, i, 0, 0) == 1UL) &&
-                                   "spatial dimension must be contiguos");
+                            // assert((Dim == 1 || &grad(cell, i, 0, 1) - &grad(cell, i, 0, 0) == 1UL) &&
+                            //        "spatial dimension must be contiguos");
+
 
                             // grad: num_cells, n_fun, num_qp, spatial_dimension
                             // measure: num_cells, num_qp;
@@ -72,14 +74,20 @@ namespace utopia {
                             for (int qp = 0; qp < n_qp; ++qp) {
                                 auto coeff_x_dX = coeff * measure(cell, qp);
 
+                                for(int d = 0; d < Dim; ++d) {
+                                    temp_i[d] = grad(cell, i, qp, d);
+                                    temp_j[d] = grad(cell, j, qp, d);
+                                }
+
+
                                 for (int di = 0; di < Dim; ++di) {
-                                    make_tensor_grad(di, &grad(cell, i, qp, 0), grad_i);
+                                    make_tensor_grad(di, &temp_i[0], grad_i);
                                     auto dof_i = i * Dim + di;
 
                                     for (int dj = 0; dj < Dim; ++dj) {
                                         auto dof_j = j * Dim + dj;
 
-                                        make_tensor_grad(dj, &grad(cell, j, qp, 0), grad_j);
+                                        make_tensor_grad(dj, &temp_j[0], grad_j);
 
                                         const Scalar val = inner(grad_i, grad_j) * coeff_x_dX;
 

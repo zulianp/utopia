@@ -3,6 +3,8 @@
 
 #include "utopia_fe_base.hpp"
 
+#include "utopia_intrepid2_Base.hpp"
+
 #include "utopia_intrepid2_ShellTools.hpp"
 
 #include <Kokkos_DynRankView.hpp>
@@ -18,22 +20,16 @@
 
 namespace utopia {
 
-    template <typename Scalar_>
-    class Traits<::Kokkos::DynRankView<Scalar_>> {
-    public:
-        using Scalar = Scalar_;
-    };
-
     namespace intrepid2 {
 
         template <typename Scalar>
         class FE {
         public:
             // using ExecutionSpace = ::Kokkos::Serial;
-            using HostExecutionSpace = ::Kokkos::DefaultHostExecutionSpace;
-            using ExecutionSpace = ::Kokkos::DefaultExecutionSpace;
-            using DynRankView = ::Kokkos::DynRankView<Scalar>;
-            using IntView = ::Kokkos::DynRankView<int>;
+            using HostExecutionSpace = utopia::intrepid2::HostExecutionSpace;
+            using ExecutionSpace = utopia::intrepid2::ExecutionSpace;
+            using DynRankView = utopia::intrepid2::ViewDevice<Scalar>;
+            using IntView = utopia::intrepid2::IntViewDevice;
 
             // using HostDynRankView = ::Kokkos::DynRankView<Scalar, HostExecutionSpace>;
             // using HostIntView = ::Kokkos::DynRankView<int, HostExecutionSpace>;

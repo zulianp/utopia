@@ -23,8 +23,6 @@
 
 namespace utopia {
 
-    using StkScalar_t = utopia::Traits<utopia::stk::FunctionSpace>::Scalar;
-
     static ::shards::CellTopology convert_elem_type(::stk::topology::topology_t topo,
                                                     bool no_shell_topologies = false) {
         switch (topo) {
@@ -69,12 +67,6 @@ namespace utopia {
     class CreateFEFromBuckets {
     public:
         using FE = utopia::intrepid2::FE<Scalar>;
-        using DynRankView_t = typename FE::DynRankView;
-        using IntView_t = typename FE::IntView;
-
-        using HostDynRankView_t = typename DynRankView_t::HostMirror;
-        using HostIntView_t = typename IntView_t::HostMirror;
-
         using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
         using Entity_t = ::stk::mesh::Entity;
@@ -100,11 +92,11 @@ namespace utopia {
                 n_cells += b_ptr->size();
             }
 
-            DynRankView_t device_cell_points("cell_points", n_cells, n_nodes_x_elem, spatial_dim);
-            IntView_t device_element_tags("element_tags", n_cells);
+            StkViewDevice_t<Scalar> device_cell_points("cell_points", n_cells, n_nodes_x_elem, spatial_dim);
+            StkIntViewDevice_t device_element_tags("element_tags", n_cells);
 
-            HostDynRankView_t cell_points = Kokkos::create_mirror_view(device_cell_points);
-            HostIntView_t element_tags = Kokkos::create_mirror_view(device_element_tags);
+            StkViewHost_t<Scalar> cell_points = Kokkos::create_mirror_view(device_cell_points);
+            StkIntViewHost_t element_tags = Kokkos::create_mirror_view(device_element_tags);
 
             int elem_idx = 0;
             for (const auto &ib : buckets) {
@@ -199,9 +191,9 @@ namespace utopia {
 
 #ifdef UTOPIA_WITH_PETSC
     template <typename Scalar>
-    void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix>::apply(
+    void LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscMatrix>::apply(
         const utopia::stk::FunctionSpace &space,
-        const ::Kokkos::DynRankView<Scalar> &device_element_matrices,
+        const StkViewDevice_t<Scalar> &device_element_matrices,
         AssemblyMode mode,
         PetscMatrix &matrix) {
         UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(Stk,Intrepid2)");
@@ -214,9 +206,8 @@ namespace utopia {
         using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
         using Entity_t = ::stk::mesh::Entity;
-        using HostView = typename ::Kokkos::DynRankView<Scalar>::HostMirror;
 
-        HostView element_matrices = ::Kokkos::create_mirror_view(device_element_matrices);
+        StkViewHost_t<Scalar> element_matrices = ::Kokkos::create_mirror_view(device_element_matrices);
         ::Kokkos::deep_copy(element_matrices, device_element_matrices);
 
         if (matrix.empty()) {
@@ -323,8 +314,6 @@ namespace utopia {
     class LocalToGlobalFromBuckets {
     public:
         using FE = utopia::intrepid2::FE<Scalar>;
-        using DynRankView_t = typename FE::DynRankView;
-        using HostView_t = typename DynRankView_t::HostMirror;
 
         using Bucket_t = ::stk::mesh::Bucket;
         using BucketVector_t = ::stk::mesh::BucketVector;
@@ -337,7 +326,7 @@ namespace utopia {
 
         static void apply(const utopia::stk::FunctionSpace &space,
                           const BucketVector_t &buckets,
-                          const DynRankView_t &device_element_vectors,
+                          const StkViewDevice_t<Scalar> &device_element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector) {
             UTOPIA_TRACE_REGION_BEGIN("LocalToGlobalFromBuckets(Stk,Intrepid2)");
@@ -353,7 +342,7 @@ namespace utopia {
                 }
             }
 
-            HostView_t element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
+            StkViewHost_t<Scalar> element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
             ::Kokkos::deep_copy(element_vectors, device_element_vectors);
 
             auto &bulk_data = space.mesh().bulk_data();
@@ -428,9 +417,9 @@ namespace utopia {
     };
 
     template <typename Scalar>
-    void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::apply(
+    void LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscVector>::apply(
         const utopia::stk::FunctionSpace &space,
-        const ::Kokkos::DynRankView<Scalar> &element_vectors,
+        const StkViewDevice_t<Scalar> &element_vectors,
         AssemblyMode mode,
         PetscVector &vector) {
         LocalToGlobalFromBuckets<Scalar>::apply(
@@ -438,9 +427,9 @@ namespace utopia {
     }
 
     template <typename Scalar>
-    void LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::side_apply(
+    void LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscVector>::side_apply(
         const utopia::stk::FunctionSpace &space,
-        const DynRankView &element_vectors,
+        const StkViewDevice_t<Scalar> &element_vectors,
         AssemblyMode mode,
         PetscVector &vector,
         const std::string &part_name) {
@@ -453,8 +442,8 @@ namespace utopia {
             space, bulk_data.get_buckets(meta_data.side_rank(), s_universal), element_vectors, mode, vector);
     }
 
-    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<StkScalar_t>, PetscMatrix>;
-    template class LocalToGlobal<utopia::stk::FunctionSpace, ::Kokkos::DynRankView<StkScalar_t>, PetscVector>;
+    template class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<StkScalar_t>, PetscMatrix>;
+    template class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<StkScalar_t>, PetscVector>;
 
 #endif
 
@@ -462,17 +451,17 @@ namespace utopia {
     void ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>>::apply(
         const Field<utopia::stk::FunctionSpace> &from,
         utopia::intrepid2::Field<Scalar> &to) {
-        GlobalToLocal<utopia::stk::FunctionSpace, Vector, DynRankView>::apply(
+        GlobalToLocal<utopia::stk::FunctionSpace, Vector, StkViewDevice_t<Scalar>>::apply(
             from.space(), from.data(), to.data(), from.tensor_size());
     }
 
     template <typename Scalar>
     void GlobalToLocal<utopia::stk::FunctionSpace,
                        Traits<utopia::stk::FunctionSpace>::Vector,
-                       ::Kokkos::DynRankView<Scalar>>::apply(const utopia::stk::FunctionSpace &space,
-                                                             const Vector &vector,
-                                                             DynRankView &device_element_vectors,
-                                                             const int n_comp) {
+                       StkViewDevice_t<Scalar>>::apply(const utopia::stk::FunctionSpace &space,
+                                                       const Vector &vector,
+                                                       StkViewDevice_t<Scalar> &device_element_vectors,
+                                                       const int n_comp) {
         UTOPIA_TRACE_REGION_BEGIN("GlobalToLocal(Stk,Intrepid2)");
 
         Vector local;
@@ -488,11 +477,10 @@ namespace utopia {
         Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
 
         if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < n_nodes_x_elem) {
-            device_element_vectors = DynRankView("Coefficients", num_elem, n_nodes_x_elem, n_comp);
+            device_element_vectors = StkViewDevice_t<Scalar>("Coefficients", num_elem, n_nodes_x_elem, n_comp);
         }
 
-        using HostView = typename ::Kokkos::DynRankView<Scalar>::HostMirror;
-        HostView element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
+        StkViewHost_t<Scalar> element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
 
         // FIXME not on device
         auto local_view = const_local_view_device(local);
