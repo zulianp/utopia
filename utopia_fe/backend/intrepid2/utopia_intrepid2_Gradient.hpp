@@ -71,8 +71,11 @@ namespace utopia {
             }
 
             void ensure_field() override {
-                if (this->data().extent(0) < this->fe()->num_cells() || this->data().extent(1) < this->fe()->num_qp() ||
-                    this->data().extent(2) < this->fe()->spatial_dimension()) {
+                const SizeType e0 = this->data().extent(0);
+                const SizeType e1 = this->data().extent(1);
+                const SizeType e2 = this->data().extent(2);
+
+                if (e0 < this->fe()->num_cells() || e1 < this->fe()->num_qp() || e2 < this->fe()->spatial_dimension()) {
                     this->data() = DynRankView(
                         this->name(), this->fe()->num_cells(), this->fe()->num_qp(), this->fe()->spatial_dimension());
                 } else {
