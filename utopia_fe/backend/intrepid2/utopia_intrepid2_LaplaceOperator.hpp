@@ -51,6 +51,7 @@ namespace utopia {
                 FunctionSpaceTools::template integrate<Scalar>(data, fe.grad, grad_x_measure);
 
                 // Only works if coeff is a scalar
+                if(op_.coeff != 1.0)
                 {
                     auto c = op_.coeff;
                     this->loop_cell_test_trial(
