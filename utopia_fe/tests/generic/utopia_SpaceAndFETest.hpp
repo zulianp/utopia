@@ -33,9 +33,13 @@ namespace utopia {
             return dir + "/body.e";
         }
 
+        InputParameters cube_space_param(const int n_var) const {
+            return param_list(param("n_var", n_var), param("mesh", param_list(param("type", "cube"))));
+        }
+
         InputParameters input_params(const std::string &path, const int n_var = 1) const {
             if (use_cube) {
-                return param_list(param("n_var", n_var), param("mesh", param_list(param("type", "cube"))));
+                return cube_space_param(n_var);
             } else {
                 return param_list(param("n_var", 3),
                                   param("mesh", param_list(param("type", "file"), param("path", path))));
@@ -125,6 +129,15 @@ namespace utopia {
             if (export_tensors) {
                 write(name + "_x.m", x);
             }
+        }
+
+        void create_fe_test() {
+            auto params = cube_space_param(1);
+            FunctionSpace space;
+            space.read(params);
+
+            auto fe_ptr = std::make_shared<FE>();
+            create_fe(space, *fe_ptr, 0);
         }
 
         void poisson_problem() {
@@ -316,6 +329,7 @@ namespace utopia {
 
         void run() {
             if (mpi_world_size() <= 4) {
+                UTOPIA_RUN_TEST(create_fe_test);
                 UTOPIA_RUN_TEST(poisson_problem);
                 UTOPIA_RUN_TEST(vector_poisson_problem);
                 UTOPIA_RUN_TEST(elasticity_problem);
@@ -331,7 +345,7 @@ namespace utopia {
                 UTOPIA_RUN_TEST(boundary_integral);
             }
         }
-    };
+    };  // namespace utopia
 
 }  // namespace utopia
 
