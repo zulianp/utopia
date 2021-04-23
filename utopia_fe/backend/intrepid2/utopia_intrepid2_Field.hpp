@@ -42,12 +42,13 @@ namespace utopia {
                 auto tags = fe_->element_tags;
                 const int tensor_size = tensor_size_;
 
+                auto data = data_;
                 ::Kokkos::parallel_for(
                     fe_->num_cells(), UTOPIA_LAMBDA(int cell) {
                         const auto v = value.value(tags(cell));
 
                         for (int i = 0; i < tensor_size; ++i) {
-                            data_(cell, i) *= v;
+                            data(cell, i) *= v;
                         }
                     });
             }
