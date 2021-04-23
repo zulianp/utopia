@@ -714,9 +714,15 @@ namespace utopia {
         void FunctionSpace::local_vector_to_nodal_field(const Vector &v) { impl_->local_vector_to_nodal_field(v); }
 
         void FunctionSpace::nodal_field_to_global_vector(Vector &v) {
+
+            if(comm().size() > 1) {
             Vector local_v;
+            create_local_vector(local_v);
             nodal_field_to_local_vector(local_v);
             local_to_global(local_v, v, OVERWRITE_MODE);
+        } else {
+            nodal_field_to_local_vector(v);
+        }
         }
         void FunctionSpace::global_vector_to_nodal_field(const Vector &v) {
             Vector local_v;
@@ -745,6 +751,37 @@ namespace utopia {
                 io.register_output_field(v.name);
             }
         }
+
+
+        template<typename FieldType>
+        void FunctionSpace::declare_new_nodal_field(const std::string &name, const int n_comp)
+        {
+            auto &meta_data = mesh().meta_data();
+            auto &&part = meta_data.universal_part();
+
+            Var v;
+            v.name = name;
+            v.n_components = n_comp;
+            impl_->variables.push_back(v);
+
+            dof_map().set_n_var(n_var() + n_comp);
+
+            meta_data.enable_late_fields();
+
+            if (n_comp == 1) {
+                auto &field =
+                    meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, name, 1);
+                ::stk::mesh::put_field_on_mesh(field, part, 1, nullptr);
+            } else {
+                auto &field =
+                    meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, name, 1);
+                ::stk::mesh::put_field_on_mesh(field, part, n_comp, nullptr);
+            }
+        }
+
+        template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::Scalar>(const std::string &, const int);
+        // template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::SizeType>(const std::string &, const int);
+        template void FunctionSpace::declare_new_nodal_field<int>(const std::string &, const int);
 
     }  // namespace stk
 }  // namespace utopia
