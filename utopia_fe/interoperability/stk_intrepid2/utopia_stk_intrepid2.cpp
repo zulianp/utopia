@@ -46,6 +46,8 @@ namespace utopia {
             case ::stk::topology::SHELL_TRI_3:
                 return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Triangle<>>()
                                             : ::shards::getCellTopologyData<::shards::ShellTriangle<>>());
+            case ::stk::topology::QUAD_4:
+                return ::shards::getCellTopologyData<::shards::Quadrilateral<>>();
             case ::stk::topology::QUAD_4_2D:
                 return ::shards::getCellTopologyData<::shards::Quadrilateral<>>();
             case ::stk::topology::SHELL_QUAD_4:

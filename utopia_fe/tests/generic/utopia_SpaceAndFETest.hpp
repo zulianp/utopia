@@ -19,6 +19,7 @@ namespace utopia {
         bool save_output{false};
         bool export_tensors{false};
         bool verbose{false};
+        bool use_cube{true};
         Scalar_t rtol{1e-6};
 
         static std::string get_shell_mesh_path() { return "../data/fe_problem_solve/shell.e"; }
@@ -30,6 +31,22 @@ namespace utopia {
             }
 
             return dir + "/body.e";
+        }
+
+        InputParameters input_params(const std::string &path, const int n_var = 1) const {
+            if (use_cube) {
+                return param_list(param("n_var", n_var), param("mesh", param_list(param("type", "cube"))));
+            } else {
+                return param_list(param("n_var", 3),
+                                  param("mesh", param_list(param("type", "file"), param("path", path))));
+            }
+        }
+
+        inline void add_cube_bc(FunctionSpace &space, const int n_var = 1) const {
+            for (int i = 0; i < n_var; ++i) {
+                space.add_dirichlet_boundary_condition("top", 1.0, i);
+                space.add_dirichlet_boundary_condition("bottom", -1.0, i);
+            }
         }
 
         static std::string get_more_complex_mesh_path() {
@@ -111,13 +128,16 @@ namespace utopia {
         }
 
         void poisson_problem() {
-            auto params = param_list(
-                param("mesh", param_list(param("type", "file"), param("path", get_more_complex_mesh_path()))));
-
+            auto params = input_params(get_more_complex_mesh_path());
             FunctionSpace space;
             space.read(params);
-            space.add_dirichlet_boundary_condition("inlet", 1.0);
-            space.add_dirichlet_boundary_condition("outlet", -1.0);
+
+            if (use_cube) {
+                add_cube_bc(space, 3);
+            } else {
+                space.add_dirichlet_boundary_condition("inlet", 1.0);
+                space.add_dirichlet_boundary_condition("outlet", -1.0);
+            }
 
             LaplaceOperator<Scalar_t> lapl{1.0};
 
@@ -125,19 +145,22 @@ namespace utopia {
         }
 
         void vector_poisson_problem() {
-            auto params = param_list(
-                param("n_var", 3),
-                param("mesh", param_list(param("type", "file"), param("path", get_more_complex_mesh_path()))));
+            auto params = input_params(get_more_complex_mesh_path(), 3);
 
             FunctionSpace space;
             space.read(params);
-            space.add_dirichlet_boundary_condition("inlet", 1.0, 0);
-            space.add_dirichlet_boundary_condition("inlet", 2.0, 1);
-            space.add_dirichlet_boundary_condition("inlet", 3.0, 2);
 
-            space.add_dirichlet_boundary_condition("outlet", -1.0, 0);
-            space.add_dirichlet_boundary_condition("outlet", -2.0, 1);
-            space.add_dirichlet_boundary_condition("outlet", -3.0, 2);
+            if (use_cube) {
+                add_cube_bc(space, 3);
+            } else {
+                space.add_dirichlet_boundary_condition("inlet", 1.0, 0);
+                space.add_dirichlet_boundary_condition("inlet", 2.0, 1);
+                space.add_dirichlet_boundary_condition("inlet", 3.0, 2);
+
+                space.add_dirichlet_boundary_condition("outlet", -1.0, 0);
+                space.add_dirichlet_boundary_condition("outlet", -2.0, 1);
+                space.add_dirichlet_boundary_condition("outlet", -3.0, 2);
+            }
 
             VectorLaplaceOperator<3, Scalar_t> lapl{1.0};
 
@@ -146,33 +169,39 @@ namespace utopia {
 
         void elasticity_problem() {
             static const int Dim = 3;
-            auto params = param_list(
-                param("n_var", Dim),
-                param("mesh", param_list(param("type", "file"), param("path", get_more_complex_mesh_path()))));
+            auto params = input_params(get_more_complex_mesh_path(), Dim);
 
             FunctionSpace space;
             space.read(params);
-            space.add_dirichlet_boundary_condition("inlet", -0.005, 0);
-            space.add_dirichlet_boundary_condition("inlet", 0.0, 1);
-            space.add_dirichlet_boundary_condition("inlet", 0.001, 2);
 
-            space.add_dirichlet_boundary_condition("outlet", 0.005, 0);
-            space.add_dirichlet_boundary_condition("outlet", 0.0, 1);
-            space.add_dirichlet_boundary_condition("outlet", -0.001, 2);
+            if (use_cube) {
+                add_cube_bc(space, 3);
+            } else {
+                space.add_dirichlet_boundary_condition("inlet", -0.005, 0);
+                space.add_dirichlet_boundary_condition("inlet", 0.0, 1);
+                space.add_dirichlet_boundary_condition("inlet", 0.001, 2);
+
+                space.add_dirichlet_boundary_condition("outlet", 0.005, 0);
+                space.add_dirichlet_boundary_condition("outlet", 0.0, 1);
+                space.add_dirichlet_boundary_condition("outlet", -0.001, 2);
+            }
 
             LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
             assemble_and_solve("elasticity", space, linear_elasticity);
         }
 
         void poisson_problem_parallel_2D() {
-            auto params =
-                param_list(param("mesh", param_list(param("type", "file"), param("path", get_2D_mesh_path()))));
+            auto params = input_params(get_2D_mesh_path());
 
             FunctionSpace space;
             space.read(params);
 
-            space.add_dirichlet_boundary_condition("surface_1", 1.0);
-            space.add_dirichlet_boundary_condition("surface_3", -1.0);
+            if (use_cube) {
+                add_cube_bc(space, 1);
+            } else {
+                space.add_dirichlet_boundary_condition("surface_1", 1.0);
+                space.add_dirichlet_boundary_condition("surface_3", -1.0);
+            }
 
             LaplaceOperator<Scalar_t> lapl{1.0};
 
@@ -183,12 +212,17 @@ namespace utopia {
         }
 
         void poisson_problem_parallel_3D() {
-            auto params = param_list(param("mesh", param_list(param("type", "file"), param("path", get_cube_path()))));
+            auto params = input_params(get_cube_path());
 
             FunctionSpace space;
             space.read(params);
-            space.add_dirichlet_boundary_condition("body_top", 1.0);
-            space.add_dirichlet_boundary_condition("body_bottom", -1.0);
+
+            if (use_cube) {
+                add_cube_bc(space, 1);
+            } else {
+                space.add_dirichlet_boundary_condition("body_top", 1.0);
+                space.add_dirichlet_boundary_condition("body_bottom", -1.0);
+            }
 
             LaplaceOperator<Scalar_t> lapl{1.0};
 
@@ -200,31 +234,39 @@ namespace utopia {
 
         void elasticity_problem_parallel() {
             static const int Dim = 3;
-            auto params = param_list(param("n_var", Dim),
-                                     param("mesh", param_list(param("type", "file"), param("path", get_cube_path()))));
+            auto params = input_params(get_cube_path(), Dim);
 
             FunctionSpace space;
             space.read(params);
-            space.add_dirichlet_boundary_condition("body_top", 0.0, 0);
-            space.add_dirichlet_boundary_condition("body_top", -0.1, 1);
-            space.add_dirichlet_boundary_condition("body_top", 0.0, 2);
 
-            space.add_dirichlet_boundary_condition("body_bottom", 0.0, 0);
-            space.add_dirichlet_boundary_condition("body_bottom", 0.1, 1);
-            space.add_dirichlet_boundary_condition("body_bottom", 0.0, 2);
+            if (use_cube) {
+                add_cube_bc(space, 3);
+            } else {
+                space.add_dirichlet_boundary_condition("body_top", 0.0, 0);
+                space.add_dirichlet_boundary_condition("body_top", -0.1, 1);
+                space.add_dirichlet_boundary_condition("body_top", 0.0, 2);
+
+                space.add_dirichlet_boundary_condition("body_bottom", 0.0, 0);
+                space.add_dirichlet_boundary_condition("body_bottom", 0.1, 1);
+                space.add_dirichlet_boundary_condition("body_bottom", 0.0, 2);
+            }
 
             LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
             assemble_and_solve("elasticity_problem_parallel", space, linear_elasticity);
         }
 
         void shell_laplace_problem() {
-            auto params =
-                param_list(param("mesh", param_list(param("type", "file"), param("path", get_shell_mesh_path()))));
+            auto params = input_params(get_shell_mesh_path());
 
             FunctionSpace space;
             space.read(params);
-            space.add_dirichlet_boundary_condition("Top", 1.0);
-            space.add_dirichlet_boundary_condition("Side", -1.0);
+
+            if (use_cube) {
+                add_cube_bc(space, 1);
+            } else {
+                space.add_dirichlet_boundary_condition("Top", 1.0);
+                space.add_dirichlet_boundary_condition("Side", -1.0);
+            }
 
             LaplaceOperator<Scalar_t> lapl{1.0};
 
@@ -235,14 +277,17 @@ namespace utopia {
         }
 
         void shell_integral() {
-            auto params =
-                param_list(param("mesh", param_list(param("type", "file"), param("path", get_shell_mesh_path()))));
+            if (!use_cube) {
+                auto params = input_params(get_shell_mesh_path());
 
-            FunctionSpace space;
-            space.read(params);
+                FunctionSpace space;
+                space.read(params);
 
-            auto fe_ptr = std::make_shared<FE>();
-            create_fe(space, *fe_ptr, 0);
+                auto fe_ptr = std::make_shared<FE>();
+                create_fe(space, *fe_ptr, 0);
+            } else {
+                // FIXME
+            }
 
             // TODO integrate whole surface
 
@@ -252,14 +297,15 @@ namespace utopia {
         }
 
         void boundary_integral() {
-            auto params =
-                param_list(param("mesh", param_list(param("type", "file"), param("path", get_2D_mesh_path()))));
+            if (!use_cube) {
+                auto params = input_params(get_2D_mesh_path());
 
-            FunctionSpace space;
-            space.read(params);
+                FunctionSpace space;
+                space.read(params);
 
-            auto fe_ptr = std::make_shared<FE>();
-            create_fe_on_boundary(space, *fe_ptr, 0);
+                auto fe_ptr = std::make_shared<FE>();
+                create_fe_on_boundary(space, *fe_ptr, 0);
+            }
 
             // TODO integrate whole marked boundary
 
