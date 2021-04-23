@@ -7,11 +7,13 @@
 
 using namespace utopia;
 
+static Path db_path = "../data/testing";
+
 void moonolith_create_mesh() {
     using Mesh_t = utopia::moonolith::Mesh;
 
     Mesh_t mesh;
-    utopia_test_assert(mesh.read("/Users/zulianp/Desktop/code/par_moonolith/examples/data/triangle_105.tri"));
+    utopia_test_assert(mesh.read(db_path / "triangle_105.tri"));
     utopia_test_assert(mesh.write("prova.vtu"));
 }
 
@@ -19,7 +21,7 @@ void moonolith_create_space() {
     using Space_t = utopia::moonolith::FunctionSpace;
 
     Space_t space;
-    auto params = param_list(param("path", "/Users/zulianp/Desktop/code/par_moonolith/examples/data/triangle_105.tri"));
+    auto params = param_list(param("path", db_path / "triangle_105.tri"));
     space.read(params);
 
     utopia_test_assert(space.mesh().write("prova.vtu"));
@@ -27,8 +29,6 @@ void moonolith_create_space() {
 
 void moonolith_fe_transfer() {
     using Space_t = utopia::moonolith::FunctionSpace;
-
-    Path db_path = "/Users/zulianp/Desktop/code/par_moonolith/examples/data";
 
     Space_t space_from;
     auto params_from = param_list(param("path", db_path / "triangle_4.tri"));
@@ -40,9 +40,6 @@ void moonolith_fe_transfer() {
 
     utopia::moonolith::FETransfer transfer;
     utopia_test_assert(transfer.init(make_ref(space_from), make_ref(space_to)));
-
-    // utopia_test_assert(space_from.mesh().write("from.vtu"));
-    // utopia_test_assert(space_to.mesh().write("to.vtu"));
 }
 
 void umoonolith() {

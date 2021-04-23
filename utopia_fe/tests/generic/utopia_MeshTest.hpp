@@ -23,9 +23,12 @@ namespace utopia {
         }
 
         void read_write() {
+            const SizeType n = this->comm().size() * 2;
+
             Mesh mesh;
-            UTOPIA_TEST_TRUE(mesh.read("../data/knf/pump/membrane.e"));
-            UTOPIA_TEST_TRUE(mesh.write("prova.e"));
+            mesh.unit_cube(n, n, n);
+            UTOPIA_TEST_TRUE(mesh.write("./mesh_test_read_write.e"));
+            UTOPIA_TEST_TRUE(mesh.read("./mesh_test_read_write.e"));
         }
 
         void run() override {
