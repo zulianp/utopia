@@ -93,6 +93,11 @@ namespace utopia {
         }
 
         template <typename T>
+        KOKKOS_INLINE_FUNCTION T log(const T &value) {
+            return Kokkos::Details::ArithTraits<T>::log(value);
+        }
+
+        template <typename T>
         UTOPIA_INLINE_FUNCTION constexpr bool signbit(const T &a) {
             return (a < 0) ? true : false;
         }
@@ -170,6 +175,11 @@ namespace utopia {
         template <typename T>
         inline T atan2(const T &a, const T &b) {
             return std::atan2(a, b);
+        }
+
+        template <typename T>
+        inline T log(const T &value) {
+            return std::log(value);
         }
 
         template <typename T>
