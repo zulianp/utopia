@@ -69,8 +69,11 @@ namespace utopia {
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
-            int rank() const override { return 2; }
             inline std::string name() const override { return "Mass"; }
+
+            inline bool is_matrix() const override { return true; }
+            inline bool is_vector() const override { return false; }
+            inline bool is_scalar() const override { return false; }
 
             class Op {
             public:
@@ -187,11 +190,12 @@ namespace utopia {
 
                 assert(op_.n_components == 1 && "IMPLEMENT ME");
 
-                this->ensure_mat_accumulator();
-                this->loop_cell_test_trial("Assemble<Mass>::assemble", op_and_store_cell_ij(this->data(), make_op()));
+                this->ensure_matrix_accumulator();
+                this->loop_cell_test_trial("Assemble<Mass>::assemble",
+                                           op_and_store_cell_ij(this->matrix_data(), make_op()));
 
                 if (op_.lumped) {
-                    this->loop_cell_test("Assemble<Mass>::assemble::lump", Lump(this->data()));
+                    this->loop_cell_test("Assemble<Mass>::assemble::lump", Lump(this->matrix_data()));
                 }
 
                 if (op_.density_function) {

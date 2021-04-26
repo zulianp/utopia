@@ -80,7 +80,7 @@ namespace utopia {
             assembler.assemble();
 
             Matrix_t mat;
-            local_to_global(space, assembler.data(), OVERWRITE_MODE, mat);
+            local_to_global(space, assembler.matrix_data(), OVERWRITE_MODE, mat);
 
             Vector_t row_sum = sum(mat, 1);
             Scalar_t sum_row_sum = sum(abs(row_sum));

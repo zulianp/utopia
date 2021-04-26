@@ -47,8 +47,11 @@ namespace utopia {
 
             inline int n_vars() const override { return Dim; }
 
-            int rank() const override { return 2; }
             inline std::string name() const override { return "Transport"; }
+
+            inline bool is_matrix() const override { return true; }
+            inline bool is_vector() const override { return false; }
+            inline bool is_scalar() const override { return false; }
 
             class Op {
             public:
@@ -99,9 +102,9 @@ namespace utopia {
             bool assemble() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<Transport>::assemble");
 
-                this->ensure_mat_accumulator();
+                this->ensure_matrix_accumulator();
                 this->loop_cell_test_trial("Assemble<Transport>::assemble",
-                                           op_and_store_cell_ij(this->data(), make_op()));
+                                           op_and_store_cell_ij(this->matrix_data(), make_op()));
 
                 UTOPIA_TRACE_REGION_END("Assemble<Transport>::assemble");
                 return true;

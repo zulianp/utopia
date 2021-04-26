@@ -66,7 +66,6 @@ namespace utopia {
             }
             virtual int n_vars() const = 0;
             virtual std::string name() const = 0;
-            virtual int rank() const = 0;
 
             void read(Input &) override {}
 
@@ -118,52 +117,43 @@ namespace utopia {
                     name, UTOPIA_LAMBDA(const int &cell, const int &i) { y(cell, i) += op(cell, i) * x(cell, i); });
             }
 
-            bool is_matrix() const {
-                if (!accumulator()) return false;
-                return accumulator()->data().rank() == 4;
-            }
-
-            bool is_vector() const {
-                if (!accumulator()) return false;
-                return accumulator()->data().rank() == 3;
-            }
-
-            bool is_scalar() const {
-                if (!accumulator()) return false;
-                return accumulator()->data().rank() == 2;
-            }
+            virtual bool is_matrix() const = 0;
+            virtual bool is_vector() const = 0;
+            virtual bool is_scalar() const = 0;
 
             void scale(const intrepid2::SubdomainValue<Scalar> &fun) {
                 auto element_tags = fe().element_tags;
-                const int num_fields = fe().num_fields();
-                auto data = accumulator()->data();
 
                 if (is_matrix()) {
-                    loop_cell(
-                        "FEAssembler::scale(mat)", UTOPIA_LAMBDA(int cell) {
-                            auto val = fun.value(element_tags(cell));
-
-                            for (int i = 0; i < num_fields; ++i) {
-                                for (int j = 0; j < num_fields; ++j) {
-                                    data(cell, i, j) *= val;
-                                }
-                            }
-                        });
-                } else if (is_vector()) {
-                    scale_vector(fun, data);
-                } else if (is_scalar()) {
-                    loop_cell(
-                        "FEAssembler::scale(scalar)", UTOPIA_LAMBDA(int cell) {
-                            auto val = fun.value(element_tags(cell));
-
-                            for (int i = 0; i < num_fields; ++i) {
-                                data(cell) *= val;
-                            }
-                        });
-                } else {
-                    assert(false);
-                    Utopia::Abort("Called FEAssembler::scale on invalid accumulator!");
+                    auto data = matrix_data();
+                    scale_matrix(fun, data);
                 }
+
+                if (is_vector()) {
+                    auto data = vector_data();
+                    scale_vector(fun, data);
+                }
+
+                if (is_scalar()) {
+                    auto data = scalar_data();
+                    scale_scalar(fun, data);
+                }
+            }
+
+            void scale_matrix(const intrepid2::SubdomainValue<Scalar> &fun, DynRankView &matrix) const {
+                auto element_tags = fe().element_tags;
+                const int num_fields = fe().num_fields();
+
+                loop_cell(
+                    "FEAssembler::scale(mat)", UTOPIA_LAMBDA(int cell) {
+                        auto val = fun.value(element_tags(cell));
+
+                        for (int i = 0; i < num_fields; ++i) {
+                            for (int j = 0; j < num_fields; ++j) {
+                                matrix(cell, i, j) *= val;
+                            }
+                        }
+                    });
             }
 
             void scale_vector(const intrepid2::SubdomainValue<Scalar> &fun, DynRankView &vector) const {
@@ -180,7 +170,17 @@ namespace utopia {
                     });
             }
 
-            class TensorAccumulator {
+            void scale_scalar(const intrepid2::SubdomainValue<Scalar> &fun, DynRankView &scalar) const {
+                auto element_tags = fe().element_tags;
+
+                loop_cell(
+                    "FEAssembler::scale_scalar", UTOPIA_LAMBDA(int cell) {
+                        auto val = fun.value(element_tags(cell));
+                        scalar(cell) *= val;
+                    });
+            }
+
+            class TensorAccumulator : public Describable {
             public:
                 DynRankView &data() { return data_; }
 
@@ -211,65 +211,16 @@ namespace utopia {
 
                 void zero() { utopia::intrepid2::fill(data_, 0.0); }
 
-            private:
-                DynRankView data_;
-                AssemblyMode mode_{ADD_MODE};
-            };
+                void describe(std::ostream &os) const override {
+                    const SizeType num_cells = data_.extent(0);
 
-            void ensure_accumulator() {
-                switch (rank()) {
-                    case 0: {
-                        ensure_scalar_accumulator();
-                        break;
-                    }
-                    case 1: {
-                        ensure_vec_accumulator();
-                        break;
-                    }
-                    case 2: {
-                        ensure_mat_accumulator();
-                        break;
-                    }
-                    default: {
-                        assert(false && "INVALID RANK");
-                        Utopia::Abort();
-                    }
-                }
-            }
+                    if (data_.rank() == 3) {
+                        const int n_dofs_i = data_.extent(1);
 
-            inline std::shared_ptr<TensorAccumulator> accumulator() { return accumulator_; }
-            inline std::shared_ptr<TensorAccumulator> accumulator() const { return accumulator_; }
-
-            void set_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator) { accumulator_ = accumulator; }
-
-            std::shared_ptr<FE> fe_ptr() { return fe_; }
-            FE &fe() { return *fe_; }
-            const FE &fe() const { return *fe_; }
-
-            inline DynRankView data() {
-                assert(accumulator_);
-                if (!accumulator_) {
-                    return DynRankView();
-                } else {
-                    return accumulator_->data();
-                }
-            }
-
-            void describe(std::ostream &os) const override {
-                if (accumulator_) {
-                    auto &data = accumulator_->data();
-
-                    const SizeType num_cells = fe_->num_cells();
-                    const int num_fields = fe_->num_fields();
-                    const int n_dofs_i = data.extent(1);
-
-                    os << "num_cells: " << num_cells << ", num_fields: " << num_fields << "\n";
-
-                    if (data.rank() == 3) {
                         for (SizeType c = 0; c < num_cells; ++c) {
                             os << c << ")\n";
                             for (SizeType i = 0; i < n_dofs_i; ++i) {
-                                os << data(c, i) << " ";
+                                os << data_(c, i) << " ";
 
                                 os << '\n';
                             }
@@ -277,14 +228,15 @@ namespace utopia {
                             os << '\n';
                         }
 
-                    } else if (data.rank() == 4) {
-                        const int n_dofs_j = data.extent(2);
+                    } else if (data_.rank() == 4) {
+                        const int n_dofs_i = data_.extent(1);
+                        const int n_dofs_j = data_.extent(2);
 
                         for (SizeType c = 0; c < num_cells; ++c) {
                             os << c << ")\n";
                             for (SizeType i = 0; i < n_dofs_i; ++i) {
                                 for (SizeType j = 0; j < n_dofs_j; ++j) {
-                                    os << data(c, i, j) << " ";
+                                    os << data_(c, i, j) << " ";
                                 }
 
                                 os << '\n';
@@ -294,39 +246,122 @@ namespace utopia {
                         }
                     }
                 }
+
+            private:
+                DynRankView data_;
+                AssemblyMode mode_{ADD_MODE};
+            };
+
+            void ensure_accumulator() {
+                if (is_scalar()) ensure_scalar_accumulator();
+                if (is_vector()) ensure_vector_accumulator();
+                if (is_matrix()) ensure_matrix_accumulator();
             }
 
-        private:
-            std::shared_ptr<FE> fe_;
-            std::shared_ptr<TensorAccumulator> accumulator_;
+            inline std::shared_ptr<TensorAccumulator> matrix_accumulator() { return matrix_accumulator_; }
+            inline std::shared_ptr<TensorAccumulator> matrix_accumulator() const { return matrix_accumulator_; }
 
-        protected:
-            void ensure_mat_accumulator() {
-                if (!accumulator_) {
-                    accumulator_ = std::make_shared<TensorAccumulator>();
-                    accumulator_->init_matrix(*fe_, n_vars());
+            inline std::shared_ptr<TensorAccumulator> vector_accumulator() { return vector_accumulator_; }
+            inline std::shared_ptr<TensorAccumulator> vector_accumulator() const { return vector_accumulator_; }
+
+            inline std::shared_ptr<TensorAccumulator> scalar_accumulator() { return scalar_accumulator_; }
+            inline std::shared_ptr<TensorAccumulator> scalar_accumulator() const { return scalar_accumulator_; }
+
+            void set_matrix_accumulator(const std::shared_ptr<TensorAccumulator> &matrix_accumulator) {
+                matrix_accumulator_ = matrix_accumulator;
+            }
+
+            void set_vector_accumulator(const std::shared_ptr<TensorAccumulator> &vector_accumulator) {
+                vector_accumulator_ = vector_accumulator;
+            }
+
+            void set_scalar_accumulator(const std::shared_ptr<TensorAccumulator> &scalar_accumulator) {
+                scalar_accumulator_ = scalar_accumulator;
+            }
+
+            std::shared_ptr<FE> fe_ptr() { return fe_; }
+            FE &fe() { return *fe_; }
+            const FE &fe() const { return *fe_; }
+
+            inline DynRankView matrix_data() {
+                assert(matrix_accumulator_);
+                if (!matrix_accumulator_) {
+                    return DynRankView();
                 } else {
-                    accumulator_->prepare();
+                    return matrix_accumulator_->data();
                 }
             }
 
-            void ensure_vec_accumulator() {
-                if (!accumulator_) {
-                    accumulator_ = std::make_shared<TensorAccumulator>();
-                    accumulator_->init_vector(*fe_, n_vars());
+            inline DynRankView vector_data() {
+                assert(vector_accumulator_);
+                if (!vector_accumulator_) {
+                    return DynRankView();
                 } else {
-                    accumulator_->prepare();
+                    return vector_accumulator_->data();
+                }
+            }
+
+            inline DynRankView scalar_data() {
+                assert(scalar_accumulator_);
+                if (!scalar_accumulator_) {
+                    return DynRankView();
+                } else {
+                    return scalar_accumulator_->data();
+                }
+            }
+
+            void describe(std::ostream &os) const override {
+                const SizeType num_cells = fe_->num_cells();
+                const int num_fields = fe_->num_fields();
+                os << "num_cells: " << num_cells << ", num_fields: " << num_fields << "\n";
+
+                if (matrix_accumulator_) {
+                    matrix_accumulator_->describe(os);
+                }
+
+                if (vector_accumulator_) {
+                    vector_accumulator_->describe(os);
+                }
+
+                if (scalar_accumulator_) {
+                    scalar_accumulator_->describe(os);
+                }
+            }
+
+            void ensure_matrix_accumulator() {
+                if (!matrix_accumulator_) {
+                    matrix_accumulator_ = std::make_shared<TensorAccumulator>();
+                    matrix_accumulator_->init_matrix(*fe_, n_vars());
+                } else {
+                    matrix_accumulator_->prepare();
+                }
+            }
+
+            void ensure_vector_accumulator() {
+                if (!vector_accumulator_) {
+                    vector_accumulator_ = std::make_shared<TensorAccumulator>();
+                    vector_accumulator_->init_vector(*fe_, n_vars());
+                } else {
+                    vector_accumulator_->prepare();
                 }
             }
 
             void ensure_scalar_accumulator() {
-                if (!accumulator_) {
-                    accumulator_ = std::make_shared<TensorAccumulator>();
-                    accumulator_->init_scalar(*fe_, n_vars());
+                if (!scalar_accumulator_) {
+                    scalar_accumulator_ = std::make_shared<TensorAccumulator>();
+                    scalar_accumulator_->init_scalar(*fe_, n_vars());
                 } else {
-                    accumulator_->prepare();
+                    scalar_accumulator_->prepare();
                 }
             }
+
+        private:
+            std::shared_ptr<FE> fe_;
+            std::shared_ptr<TensorAccumulator> matrix_accumulator_;
+            std::shared_ptr<TensorAccumulator> vector_accumulator_;
+            std::shared_ptr<TensorAccumulator> scalar_accumulator_;
+
+        protected:
         };
 
     }  // namespace intrepid2

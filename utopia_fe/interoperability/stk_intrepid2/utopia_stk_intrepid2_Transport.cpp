@@ -43,12 +43,12 @@ namespace utopia {
             }
         }
 
-        void StkIntrepid2Assembler::set_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator) {
-            assembler()->set_accumulator(accumulator);
+        void StkIntrepid2Assembler::set_matrix_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator) {
+            assembler()->set_matrix_accumulator(accumulator);
         }
 
-        std::shared_ptr<StkIntrepid2Assembler::TensorAccumulator> StkIntrepid2Assembler::accumulator() {
-            return assembler()->accumulator();
+        std::shared_ptr<StkIntrepid2Assembler::TensorAccumulator> StkIntrepid2Assembler::matrix_accumulator() {
+            return assembler()->matrix_accumulator();
         }
 
         void StkIntrepid2Assembler::set_assembler(const std::shared_ptr<Intrepid2Assembler> &assembler) {
@@ -65,7 +65,7 @@ namespace utopia {
                 return false;
             }
 
-            local_to_global(*space(), assembler()->accumulator()->data(), assembly_mode(), hessian);
+            local_to_global(*space(), assembler()->matrix_accumulator()->data(), assembly_mode(), hessian);
             gradient = hessian * x;
             return true;
         }

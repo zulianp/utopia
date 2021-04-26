@@ -34,13 +34,16 @@ namespace utopia {
             }
 
             inline int n_vars() const override { return Dim; }
-            int rank() const override { return 2; }
             inline std::string name() const override { return "VectorLaplaceOperator"; }
+
+            inline bool is_matrix() const override { return true; }
+            inline bool is_vector() const override { return false; }
+            inline bool is_scalar() const override { return false; }
 
             bool assemble() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<VectorLaplaceOperator>::assemble");
 
-                this->ensure_mat_accumulator();
+                this->ensure_matrix_accumulator();
 
                 auto &fe = this->fe();
 
@@ -48,7 +51,7 @@ namespace utopia {
                 // const int n_dofs = num_fields * fe.spatial_dimension();
                 const int n_qp = fe.num_qp();
 
-                auto data = this->data();
+                auto data = this->matrix_data();
 
                 // Only works if coeff is a scalar
                 {
@@ -66,7 +69,6 @@ namespace utopia {
                             // assert((Dim == 1 || &grad(cell, i, 0, 1) - &grad(cell, i, 0, 0) == 1UL) &&
                             //        "spatial dimension must be contiguos");
 
-
                             // grad: num_cells, n_fun, num_qp, spatial_dimension
                             // measure: num_cells, num_qp;
 
@@ -74,11 +76,10 @@ namespace utopia {
                             for (int qp = 0; qp < n_qp; ++qp) {
                                 auto coeff_x_dX = coeff * measure(cell, qp);
 
-                                for(int d = 0; d < Dim; ++d) {
+                                for (int d = 0; d < Dim; ++d) {
                                     temp_i[d] = grad(cell, i, qp, d);
                                     temp_j[d] = grad(cell, j, qp, d);
                                 }
-
 
                                 for (int di = 0; di < Dim; ++di) {
                                     make_tensor_grad(di, &temp_i[0], grad_i);

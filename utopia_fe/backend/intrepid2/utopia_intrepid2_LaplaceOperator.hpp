@@ -33,15 +33,18 @@ namespace utopia {
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return 1; }
-            int rank() const override { return 2; }
             inline std::string name() const override { return "LaplaceOperator"; }
+
+            inline bool is_matrix() const override { return true; }
+            inline bool is_vector() const override { return false; }
+            inline bool is_scalar() const override { return false; }
 
             bool assemble() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble");
-                this->ensure_mat_accumulator();
+                this->ensure_matrix_accumulator();
 
                 auto &fe = this->fe();
-                auto data = this->data();
+                auto data = this->matrix_data();
 
                 DynRankView grad_x_measure(
                     "grad_x_measure", fe.num_cells(), fe.num_fields(), fe.num_qp(), fe.spatial_dimension());
@@ -51,8 +54,7 @@ namespace utopia {
                 FunctionSpaceTools::template integrate<Scalar>(data, fe.grad, grad_x_measure);
 
                 // Only works if coeff is a scalar
-                if(op_.coeff != 1.0)
-                {
+                if (op_.coeff != 1.0) {
                     auto c = op_.coeff;
                     this->loop_cell_test_trial(
                         "scale_with_coeff",

@@ -41,16 +41,19 @@ namespace utopia {
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
-            int rank() const override { return 1; }
+
+            inline bool is_matrix() const override { return false; }
+            inline bool is_vector() const override { return true; }
+            inline bool is_scalar() const override { return false; }
 
             inline std::string name() const override { return "ForcingFunction"; }
 
             bool assemble() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<ForcingFunction>::assemble");
-                this->ensure_vec_accumulator();
+                this->ensure_vector_accumulator();
 
                 auto &fe = this->fe();
-                auto ev = this->data();
+                auto ev = this->vector_data();
 
                 const int n_components = op_.n_components;
                 const int component = op_.component;

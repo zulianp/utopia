@@ -42,10 +42,16 @@ namespace utopia {
 
             inline int n_vars() const override { return Dim; }
 
-            int rank() const override { return 2; }
+            inline bool is_matrix() const override { return true; }
+            inline bool is_vector() const override { return true; }
+            inline bool is_scalar() const override { return false; }
+
             inline std::string name() const override { return "NeoHookean"; }
 
             virtual bool update(const std::shared_ptr<Field<Scalar>> &displacement) {
+                assert(displacement);
+                assert(displacement->is_coefficient());
+
                 if (!deformation_gradient_) {
                     // Initialize gradient
                     deformation_gradient_ = std::make_shared<Gradient<Scalar>>(this->fe());
@@ -54,13 +60,13 @@ namespace utopia {
                 deformation_gradient_->init(*displacement);
             }
 
-            bool assemble() override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<NeoHookean>::assemble");
+            bool assemble_jacobian() {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<NeoHookean>::assemble_jacobian");
 
-                this->ensure_mat_accumulator();
+                this->ensure_matrix_accumulator();
 
                 auto &fe = this->fe();
-                auto data = this->data();
+                auto data = this->matrix_data();
 
                 const int n_qp = fe.num_qp();
 
@@ -72,8 +78,11 @@ namespace utopia {
                     auto mux2 = mu * 2;
                     auto measure = fe.measure;
 
+                    auto F = deformation_gradient_->data();
+
                     this->loop_cell_test_trial(
-                        "Assemble<NeoHookean>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
+                        "Assemble<NeoHookean>::assemble_jacobian",
+                        KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
                             StaticVector<Scalar, Dim> temp_i, temp_j;
                             StaticMatrix<Scalar, Dim, Dim> strain_i;
                             StaticMatrix<Scalar, Dim, Dim> strain_j;
@@ -107,9 +116,10 @@ namespace utopia {
                         });
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<NeoHookean>::assemble");
-                return true;
+                UTOPIA_TRACE_REGION_END("Assemble<NeoHookean>::assemble_jacobian");
             }
+
+            bool assemble() override { return assemble_jacobian(); }
 
             UTOPIA_INLINE_FUNCTION static void make_strain(const int dim,
                                                            Scalar *grad,

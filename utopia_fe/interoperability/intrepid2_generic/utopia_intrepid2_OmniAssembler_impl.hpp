@@ -132,7 +132,7 @@ namespace utopia {
 
                     utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(fe, desc);
                     assembler.assemble();
-                    local_to_global(*space, assembler.data(), SUBTRACT_MODE, rhs);
+                    local_to_global(*space, assembler.vector_data(), SUBTRACT_MODE, rhs);
                     return true;
                 };
             }
@@ -154,7 +154,7 @@ namespace utopia {
                     utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(utopia::make_ref(boundary_fe),
                                                                                       desc);
                     assembler.assemble();
-                    side_local_to_global(*space, assembler.data(), SUBTRACT_MODE, rhs, boundary_name);
+                    side_local_to_global(*space, assembler.vector_data(), SUBTRACT_MODE, rhs, boundary_name);
                     return true;
                 };
             }
@@ -168,12 +168,12 @@ namespace utopia {
 
             bool assemble_jacobian(const Vector &x, Matrix &mat) {
                 if (assemblers.empty()) return false;
-                assemblers[0]->ensure_accumulator();
-                auto acc = assemblers[0]->accumulator();
+                assemblers[0]->ensure_matrix_accumulator();
+                auto acc = assemblers[0]->matrix_accumulator();
                 acc->zero();
 
                 for (auto ass : assemblers) {
-                    ass->set_accumulator(acc);
+                    ass->set_matrix_accumulator(acc);
                     if (!ass->assemble()) {
                         assert(false);
                         return false;

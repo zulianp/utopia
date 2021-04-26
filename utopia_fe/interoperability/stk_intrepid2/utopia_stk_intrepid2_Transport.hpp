@@ -26,8 +26,8 @@ namespace utopia {
 
             bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) final;
 
-            void set_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator);
-            inline std::shared_ptr<TensorAccumulator> accumulator();
+            void set_matrix_accumulator(const std::shared_ptr<TensorAccumulator> &accumulator);
+            inline std::shared_ptr<TensorAccumulator> matrix_accumulator();
 
             void set_assembler(const std::shared_ptr<Intrepid2Assembler> &assembler);
             std::shared_ptr<Intrepid2Assembler> assembler();

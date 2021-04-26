@@ -42,15 +42,18 @@ namespace utopia {
 
             inline int n_vars() const override { return Dim; }
 
-            int rank() const override { return 2; }
+            inline bool is_matrix() const override { return true; }
+            inline bool is_vector() const override { return false; }
+            inline bool is_scalar() const override { return false; }
+
             inline std::string name() const override { return "LinearElasticity"; }
             bool assemble() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<LinearElasticity>::assemble");
 
-                this->ensure_mat_accumulator();
+                this->ensure_matrix_accumulator();
 
                 auto &fe = this->fe();
-                auto data = this->data();
+                auto data = this->matrix_data();
 
                 const int n_qp = fe.num_qp();
 
