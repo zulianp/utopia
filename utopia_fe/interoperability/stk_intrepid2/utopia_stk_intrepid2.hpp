@@ -29,10 +29,6 @@ namespace utopia {
     using StkViewDevice_t = utopia::intrepid2::ViewDevice<T>;
     using StkIntViewDevice_t = utopia::intrepid2::ViewDevice<int>;
 
-    template <typename T>
-    using StkViewHost_t = utopia::intrepid2::ViewHost<T>;
-    using StkIntViewHost_t = utopia::intrepid2::ViewHost<int>;
-
     template <typename Scalar>
     class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>> {
     public:

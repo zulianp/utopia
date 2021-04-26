@@ -17,8 +17,12 @@ namespace utopia {
         template <typename T>
         using ViewHost = ::Kokkos::DynRankView<T, HostExecutionSpace>;
 
+        template <typename T>
+        using ViewHostMirror = typename ViewDevice<T>::HostMirror;
+
         using IntViewDevice = utopia::intrepid2::ViewDevice<int>;
         using IntViewHost = utopia::intrepid2::ViewHost<int>;
+        using IntViewHostMirror = utopia::intrepid2::ViewDevice<int>::HostMirror;
     }  // namespace intrepid2
 
     template <typename Scalar_, typename... Args>
