@@ -82,6 +82,7 @@ namespace utopia {
                     return ::moonolith::TET4;
                 default: {
                     assert(false);
+                    Utopia::Abort("Element type not supported!");
                     return ::moonolith::INVALID;
                 }
             }
