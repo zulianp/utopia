@@ -210,9 +210,9 @@ namespace utopia {
             // we could do also more sophisticated options, but lets not care for the
             // moment ...
             if (rho < this->eta1()) {
-                intermediate_delta = std::max(this->gamma1() * this->memory_.delta[level], 1e-15);
+                intermediate_delta = std::max(this->gamma1() * this->memory_.delta[level], this->delta_min());
             } else if (rho > this->eta2()) {
-                intermediate_delta = std::min(this->gamma2() * this->memory_.delta[level], 1e15);
+                intermediate_delta = std::min(this->gamma2() * this->memory_.delta[level], this->delta_max());
             } else {
                 intermediate_delta = this->memory_.delta[level];
             }

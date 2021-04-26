@@ -365,13 +365,14 @@ namespace utopia {
             UTOPIA_NO_ALLOC_END();
 
             UTOPIA_NO_ALLOC_BEGIN("RMTR::region6");
+
             // predicted reduction based on model
             pred = this->get_pred(level);
 
             // building trial point
             this->memory_.x[level] += this->memory_.s[level];
-
             this->compute_s_global(level, this->memory_.s_working[level]);
+
             UTOPIA_NO_ALLOC_END();
 
             UTOPIA_NO_ALLOC_BEGIN("RMTR::deriv_comp");

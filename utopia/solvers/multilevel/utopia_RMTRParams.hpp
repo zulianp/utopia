@@ -222,11 +222,10 @@ namespace utopia {
 
         VerbosityLevel _verbosity_level{VERBOSITY_LEVEL_NORMAL};
         MultilevelNormSchedule _norm_schedule{ALWAYS};
-
-        bool _deltaH_lagging{false};
-        bool _Hpost_lagging{false};
-
         // bool _deltag_lagging{false};
+
+        bool _Hpost_lagging{false};
+        bool _deltaH_lagging{false};
 
         ColorModifier red_;
         ColorModifier def_;

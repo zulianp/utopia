@@ -400,7 +400,8 @@ namespace utopia {
         }
 
         // public because of nvcc
-        template <MultiLevelCoherence T = CONSISTENCY_LEVEL, enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> _nvcc_needs_a_name = 0>
+        template <MultiLevelCoherence T = CONSISTENCY_LEVEL,
+                  enable_if_t<is_same<T, SECOND_ORDER_DF>::value, int> _nvcc_needs_a_name = 0>
         bool solve_qp_DF(const SizeType &level, const bool &flg) {
             Scalar radius = this->memory_.delta[level];
 
