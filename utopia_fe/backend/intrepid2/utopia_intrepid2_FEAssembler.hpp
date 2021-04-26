@@ -7,6 +7,8 @@
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_ForwardDeclarations.hpp"
 
+#include <memory>
+
 namespace utopia {
     namespace intrepid2 {
         template <class Operator, typename Scalar = UScalar>
@@ -47,8 +49,14 @@ namespace utopia {
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using ExecutionSpace = typename FE::ExecutionSpace;
 
+            using CellTestTrialRange = typename FE::CellTestTrialRange;
+            using CellTestRange = typename FE::CellTestRange;
+            using CellRange = typename FE::CellRange;
+
             virtual ~FEAssembler() = default;
             virtual bool assemble() = 0;
+
+            virtual bool update(const std::shared_ptr<Field<Scalar>> &) { return true; }
 
             virtual bool apply(const DynRankView &x, DynRankView &y) {
                 assert(false);
@@ -64,26 +72,9 @@ namespace utopia {
 
             FEAssembler(const std::shared_ptr<FE> &fe) : fe_(fe) { assert(fe); }
 
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace> cell_test_trial_range() const {
-                int num_cells = fe_->num_cells();
-                int num_fields = fe_->num_fields();
-
-                return Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>({0, 0, 0},
-                                                                              {num_cells, num_fields, num_fields});
-            }
-
-            Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace> cell_test_range() const {
-                int num_cells = fe_->num_cells();
-                int num_fields = fe_->num_fields();
-
-                return Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>({0, 0}, {num_cells, num_fields});
-            }
-
-            Kokkos::RangePolicy<ExecutionSpace> cell_range() const {
-                int num_cells = fe_->num_cells();
-
-                return Kokkos::RangePolicy<ExecutionSpace>(0, num_cells);
-            }
+            inline CellTestTrialRange cell_test_trial_range() const { return fe_->cell_test_trial_range(); }
+            inline CellTestRange cell_test_range() const { return fe_->cell_test_range(); }
+            inline CellRange cell_range() const { return fe_->cell_range(); }
 
             template <class CellFun>
             void loop_cell(const std::string &name, CellFun fun) const {

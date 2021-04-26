@@ -27,7 +27,7 @@ namespace utopia {
             inline SideSet(const std::string &name) : id_(id_from_user_space_name(name)) {}
             inline SideSet(const int id) : id_(id) {}
 
-            inline operator const int() const { return id_; }
+            inline operator int() const { return id_; }
 
             inline static BoundaryIdType id_from_user_space_name(const std::string &str_in) {
                 if (str_in.empty()) {

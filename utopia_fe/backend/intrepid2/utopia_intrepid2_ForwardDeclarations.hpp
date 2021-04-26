@@ -14,6 +14,9 @@ namespace utopia {
         template <typename Scalar>
         class SubdomainValue;
 
+        template <typename Scalar>
+        class Field;
+
     }  // namespace intrepid2
 }  // namespace utopia
 

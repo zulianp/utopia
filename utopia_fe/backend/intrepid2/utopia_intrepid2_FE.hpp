@@ -45,6 +45,11 @@ namespace utopia {
             using FunctionSpaceTools = ::Intrepid2::FunctionSpaceTools<ExecutionSpace>;
             using SizeType = ::Intrepid2::ordinal_type;
 
+            using CellTestTrialRange = Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>;
+            using CellTestRange = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>;
+            using CellRange = Kokkos::RangePolicy<ExecutionSpace>;
+            using CellQPRange = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>;
+
             virtual ~FE() = default;
 
             void init(const CellTopology &type, const DynRankView &cell_nodes, const int degree = 1) {
@@ -92,6 +97,34 @@ namespace utopia {
             inline SizeType num_qp() const { return cubature->getNumPoints(); }
             inline SizeType spatial_dimension() const { return cell_nodes.extent(2); }
             inline SizeType manifold_dimension() const { return type.getDimension(); }
+
+            inline CellQPRange cell_qp_range() const {
+                int num_cells = this->num_cells();
+                int num_qp = this->num_qp();
+                return CellQPRange({0, 0}, {num_cells, num_qp});
+            }
+
+            static inline Kokkos::RangePolicy<ExecutionSpace> range(const int begin, const int end) {
+                return Kokkos::RangePolicy<ExecutionSpace>(begin, end);
+            }
+
+            inline CellRange cell_range() const {
+                int num_cells = this->num_cells();
+                return CellRange(0, num_cells);
+            }
+
+            inline CellTestTrialRange cell_test_trial_range() const {
+                int num_cells = this->num_cells();
+                int num_fields = this->num_fields();
+
+                return CellTestTrialRange({0, 0, 0}, {num_cells, num_fields, num_fields});
+            }
+
+            inline CellTestRange cell_test_range() const {
+                int num_cells = this->num_cells();
+                int num_fields = this->num_fields();
+                return CellTestRange({0, 0}, {num_cells, num_fields});
+            }
 
             inline bool is_shell() const { return manifold_dimension() < spatial_dimension(); }
 
