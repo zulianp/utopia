@@ -79,7 +79,8 @@ namespace utopia {
                 const auto &e = **e_it;
 
                 element_tags(index) = e.subdomain_id();
-                for (int i = 0; i < e.n_nodes(); ++i) {
+                const int n_nodes = e.n_nodes();
+                for (int i = 0; i < n_nodes; ++i) {
                     const auto &node = e.node_ref(i);
                     for (int d = 0; d < spatial_dim; ++d) {
                         cell_points(index, i, d) = node(d);

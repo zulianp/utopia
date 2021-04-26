@@ -84,16 +84,6 @@ namespace utopia {
                                const std::string &part_name);
     };
 
-    template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
-    void side_local_to_global(const FunctionSpace &space,
-                              const ElementTensors &element_matrices,
-                              AssemblyMode mode,
-                              GlobalTensor &tensor,
-                              Args &&... args) {
-        LocalToGlobal<FunctionSpace, ElementTensors, GlobalTensor>::side_apply(
-            space, element_matrices, mode, tensor, args...);
-    }
-
 #endif  // UTOPIA_WITH_PETSC
 
     template <typename Scalar>

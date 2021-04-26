@@ -29,6 +29,16 @@ namespace utopia {
         GlobalToLocal<FunctionSpace, GlobalTensor, ElementTensors>::apply(
             space, tensor, mode, element_matrices, args...);
     }
+
+    template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
+    void side_local_to_global(const FunctionSpace &space,
+                              const ElementTensors &element_matrices,
+                              AssemblyMode mode,
+                              GlobalTensor &tensor,
+                              Args &&... args) {
+        LocalToGlobal<FunctionSpace, ElementTensors, GlobalTensor>::side_apply(
+            space, element_matrices, mode, tensor, args...);
+    }
 }  // namespace utopia
 
 #endif  // UTOPIA_LOCAL_TO_GLOBAL_HPP
