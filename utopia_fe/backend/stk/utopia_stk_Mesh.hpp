@@ -10,12 +10,17 @@
 
 #include "utopia_stk_ForwardDeclarations.hpp"
 
+#include "utopia_stk_SideSet.hpp"
+
 #include <memory>
 
 namespace utopia {
 
     template <>
-    class Traits<utopia::stk::Mesh> : public Traits<UVector> {};
+    class Traits<utopia::stk::Mesh> : public Traits<UVector> {
+    public:
+        using SideSet = utopia::stk::SideSet;
+    };
 
     namespace stk {
 

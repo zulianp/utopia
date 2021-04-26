@@ -9,10 +9,15 @@
 
 #include "utopia_libmesh_ForwardDeclarations.hpp"
 
+#include "utopia_libmesh_SideSet.hpp"
+
 namespace utopia {
 
     template <>
-    class Traits<utopia::libmesh::Mesh> : public Traits<UVector> {};
+    class Traits<utopia::libmesh::Mesh> : public Traits<UVector> {
+    public:
+        using SideSet = utopia::libmesh::SideSet;
+    };
 
     namespace libmesh {
 

@@ -3,6 +3,7 @@
 
 #include "utopia_Field.hpp"
 #include "utopia_libmesh_Mesh.hpp"
+#include "utopia_libmesh_SideSet.hpp"
 
 namespace utopia {
     template <>

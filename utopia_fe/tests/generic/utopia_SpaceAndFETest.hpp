@@ -15,6 +15,7 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
+        using SideSet_t = typename Traits<FunctionSpace>::SideSet;
 
         bool save_output{false};
         bool export_tensors{false};
@@ -48,8 +49,8 @@ namespace utopia {
 
         inline void add_cube_bc(FunctionSpace &space, const int n_var = 1) const {
             for (int i = 0; i < n_var; ++i) {
-                space.add_dirichlet_boundary_condition("top", 1.0, i);
-                space.add_dirichlet_boundary_condition("bottom", -1.0, i);
+                space.add_dirichlet_boundary_condition(SideSet_t::top(), (i == 0), i);
+                space.add_dirichlet_boundary_condition(SideSet_t::bottom(), -(i == 0), i);
             }
         }
 
@@ -146,7 +147,7 @@ namespace utopia {
             space.read(params);
 
             if (use_cube) {
-                add_cube_bc(space, 3);
+                add_cube_bc(space, 1);
             } else {
                 space.add_dirichlet_boundary_condition("inlet", 1.0);
                 space.add_dirichlet_boundary_condition("outlet", -1.0);
