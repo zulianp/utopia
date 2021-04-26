@@ -81,6 +81,13 @@ namespace utopia {
             if (!io.load()) {
                 assert(false);
             }
+
+            Scalar rescale = 1.0;
+            in.get("rescale", rescale);
+
+            if (rescale != 1.0) {
+                scale(rescale);
+            }
         }
 
         void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
@@ -153,6 +160,28 @@ namespace utopia {
         void Mesh::displace(const Vector &displacement) { assert(false); }
 
         void Mesh::init() { impl_->compute_mesh_stats(); }
+
+        void Mesh::scale(const Scalar &scale_factor) {
+            ::stk::mesh::Selector s_universal = meta_data().universal_part();
+            const auto &node_buckets = bulk_data().get_buckets(::stk::topology::NODE_RANK, s_universal);
+            auto *coords = meta_data().coordinate_field();
+
+            const int dim = spatial_dimension();
+
+            for (const auto &ib : node_buckets) {
+                const auto &b = *ib;
+                const SizeType length = b.size();
+
+                for (SizeType k = 0; k < length; ++k) {
+                    auto node = b[k];
+                    Scalar *points = (Scalar *)::stk::mesh::field_data(*coords, node);
+
+                    for (int d = 0; d < dim; ++d) {
+                        points[d] *= scale_factor;
+                    }
+                }
+            }
+        }
 
     }  // namespace stk
 }  // namespace utopia

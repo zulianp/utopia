@@ -77,6 +77,7 @@ namespace utopia {
 
             in.get("transfer", transfer);
             in.get("output_path", output_path);
+            in.get("export_from_function", export_from_function);
         }
 
         void run() {
@@ -88,6 +89,10 @@ namespace utopia {
 
             transfer.apply(field.data(), to);
             to_space.write(output_path, to);
+
+            if (export_from_function) {
+                from_space.write("./from_out.e", field.data());
+            }
         }
 
         FETransferApp() {}
@@ -100,6 +105,7 @@ namespace utopia {
         Field<FunctionSpace> field;
         FETransfer<FunctionSpace> transfer;
         Path output_path{"./out.e"};
+        bool export_from_function{false};
     };
 
 }  // namespace utopia

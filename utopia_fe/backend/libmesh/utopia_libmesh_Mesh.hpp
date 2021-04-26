@@ -58,6 +58,8 @@ namespace utopia {
 
             void uniform_refine(const int n_refinements);
 
+            void scale(const Scalar &scale_factor);
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

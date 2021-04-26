@@ -29,6 +29,9 @@ namespace utopia {
                          .add_option("n_var",
                                      n_var,
                                      "Number of dimensions of vector function. Useful with tensor-product spaces.")
+                         .add_option("use_reference_frame",
+                                     use_reference_frame,
+                                     "Use reference element frame for intersections.")
                          .add_option("clear_non_essential_matrices",
                                      clear_non_essential_matrices,
                                      "Keeps only the final transfer matrix in memory and deletes the rest.")
@@ -58,6 +61,7 @@ namespace utopia {
             std::vector<std::pair<int, int>> tags;
             bool clear_non_essential_matrices{true};
             bool export_tensors_{false};
+            bool use_reference_frame{false};
         };
 
         template <class Matrix>
@@ -176,6 +180,8 @@ namespace utopia {
                                                ::moonolith::StaticMax<DimFrom, 1>::value,
                                                ::moonolith::StaticMax<DimTo, 1>::value>
                         assembler(comm);
+
+                    assembler.use_reference_frame(opts.use_reference_frame);
 
                     if (opts.tags.empty()) {
                         if (!assembler.assemble(m_from, m_to)) {

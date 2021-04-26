@@ -199,6 +199,8 @@ namespace utopia {
             mesh_refinement.uniformly_refine(n_refinements);
         }
 
+        void Mesh::scale(const Scalar &) { assert(false && "IMPLEMENT ME"); }
+
     }  // namespace libmesh
 
 }  // namespace utopia

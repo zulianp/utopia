@@ -27,6 +27,7 @@ namespace utopia {
         class Mesh final : public Configurable, public Describable {
         public:
             using SizeType = Traits<Mesh>::SizeType;
+            using Scalar = Traits<Mesh>::Scalar;
             using Vector = Traits<Mesh>::Vector;
             using Matrix = Traits<Mesh>::Matrix;
 
@@ -59,6 +60,7 @@ namespace utopia {
             SizeType n_local_nodes() const;
 
             void displace(const Vector &displacement);
+            void scale(const Scalar &scale_factor);
 
             void unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz);
 
