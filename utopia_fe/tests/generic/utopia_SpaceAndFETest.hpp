@@ -336,12 +336,14 @@ namespace utopia {
                 // FIXME for libmesh -> sideset nomenclature
                 UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
                 UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
+                save_output = export_tensors = true;
                 UTOPIA_RUN_TEST(elasticity_problem_parallel);
+                save_output = export_tensors = false;
 
                 UTOPIA_RUN_TEST(shell_integral);
-                // save_output = export_tensors = true;
+
                 UTOPIA_RUN_TEST(shell_laplace_problem);
-                // save_output = export_tensors = false;
+
                 UTOPIA_RUN_TEST(boundary_integral);
             }
         }
