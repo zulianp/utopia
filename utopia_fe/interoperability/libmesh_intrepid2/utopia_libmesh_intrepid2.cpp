@@ -55,8 +55,6 @@ namespace utopia {
         utopia::intrepid2::FE<Scalar> &fe,
         const int degree) {
         using FE = utopia::intrepid2::FE<Scalar>;
-        using DynRankView_t = typename FE::DynRankView;
-        using IntView_t = typename FE::IntView;
 
         auto &m = space.mesh().raw_type();
 
@@ -68,11 +66,12 @@ namespace utopia {
             auto topo = convert_elem_type((*m.active_local_elements_begin())->type());
             int spatial_dim = m.spatial_dimension();
 
-            DynRankView_t device_cell_points("cell_points", n_elems, n_nodes_x_elem, spatial_dim);
-            typename DynRankView_t::HostMirror cell_points = ::Kokkos::create_mirror_view(device_cell_points);
+            LibMeshViewDevice_t<Scalar> device_cell_points("cell_points", n_elems, n_nodes_x_elem, spatial_dim);
+            typename LibMeshViewDevice_t<Scalar>::HostMirror cell_points =
+                ::Kokkos::create_mirror_view(device_cell_points);
 
-            IntView_t device_element_tags("element_tags", n_elems);
-            typename IntView_t::HostMirror element_tags = ::Kokkos::create_mirror_view(device_element_tags);
+            LibMeshIntViewDevice_t device_element_tags("element_tags", n_elems);
+            LibMeshIntViewDevice_t::HostMirror element_tags = ::Kokkos::create_mirror_view(device_element_tags);
 
             int index = 0;
 
@@ -120,9 +119,9 @@ namespace utopia {
     template class CreateFEOnBoundary<utopia::libmesh::FunctionSpace, utopia::intrepid2::FE<double>>;
 
     template <typename Scalar>
-    void LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix>::apply(
+    void LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t<Scalar>, PetscMatrix>::apply(
         const utopia::libmesh::FunctionSpace &space,
-        const ::Kokkos::DynRankView<Scalar> &device_element_matrices,
+        const LibMeshViewDevice_t<Scalar> &device_element_matrices,
         AssemblyMode mode,
         PetscMatrix &matrix) {
         UTOPIA_TRACE_REGION_BEGIN("LocalToGlobal(libMesh,Intrepid2)");
@@ -131,8 +130,7 @@ namespace utopia {
         using IndexArray_t = Traits<PetscMatrix>::IndexArray;
         using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
         using Size_t = Traits<PetscMatrix>::SizeType;
-        using DynRankView_t = ::Kokkos::DynRankView<Scalar>;
-        using HostView = typename DynRankView_t::HostMirror;
+        using HostView = typename LibMeshViewDevice_t<Scalar>::HostMirror;
 
         HostView element_matrices = ::Kokkos::create_mirror_view(device_element_matrices);
         ::Kokkos::deep_copy(element_matrices, device_element_matrices);
@@ -217,18 +215,18 @@ namespace utopia {
     }
 
     template <typename Scalar>
-    void LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::apply(
+    void LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t<Scalar>, PetscVector>::apply(
         const utopia::libmesh::FunctionSpace &space,
-        const ::Kokkos::DynRankView<Scalar> &element_vectors,
+        const LibMeshViewDevice_t<Scalar> &element_vectors,
         AssemblyMode mode,
         PetscVector &vector) {
         assert(false);
     }
 
     template <typename Scalar>
-    void LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector>::side_apply(
+    void LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t<Scalar>, PetscVector>::side_apply(
         const utopia::libmesh::FunctionSpace &space,
-        const DynRankView &device_element_vectors,
+        const LibMeshViewDevice_t<Scalar> &device_element_vectors,
         AssemblyMode mode,
         PetscVector &vector,
         const std::string &part_name) {
@@ -238,8 +236,7 @@ namespace utopia {
         using IndexArray_t = Traits<PetscMatrix>::IndexArray;
         using ScalarArray_t = Traits<PetscMatrix>::ScalarArray;
         using Size_t = Traits<PetscMatrix>::SizeType;
-        using DynRankView_t = ::Kokkos::DynRankView<Scalar>;
-        using HostView = typename DynRankView_t::HostMirror;
+        using HostView = typename LibMeshViewDevice_t<Scalar>::HostMirror;
 
         HostView element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
         ::Kokkos::deep_copy(element_vectors, device_element_vectors);
@@ -308,24 +305,24 @@ namespace utopia {
         UTOPIA_TRACE_REGION_END("LocalToGlobal(libMesh,Intrepid2)");
     }
 
-    template class LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<double>, PetscMatrix>;
-    template class LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<double>, PetscVector>;
+    template class LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t<double>, PetscMatrix>;
+    template class LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t<double>, PetscVector>;
 
     template <typename Scalar>
     void ConvertField<Field<utopia::libmesh::FunctionSpace>, utopia::intrepid2::Field<Scalar>>::apply(
         const Field<utopia::libmesh::FunctionSpace> &from,
         utopia::intrepid2::Field<Scalar> &to) {
-        GlobalToLocal<utopia::libmesh::FunctionSpace, Vector, DynRankView>::apply(
+        GlobalToLocal<utopia::libmesh::FunctionSpace, Vector, LibMeshViewDevice_t<Scalar>>::apply(
             from.space(), from.data(), to.data(), from.tensor_size());
     }
 
     template <typename Scalar>
     void GlobalToLocal<utopia::libmesh::FunctionSpace,
                        Traits<utopia::libmesh::FunctionSpace>::Vector,
-                       ::Kokkos::DynRankView<Scalar>>::apply(const utopia::libmesh::FunctionSpace &space,
-                                                             const Vector &vector,
-                                                             DynRankView &device_element_vectors,
-                                                             const int n_comp) {
+                       LibMeshViewDevice_t<Scalar>>::apply(const utopia::libmesh::FunctionSpace &space,
+                                                           const Vector &vector,
+                                                           LibMeshViewDevice_t<Scalar> &device_element_vectors,
+                                                           const int n_comp) {
         UTOPIA_TRACE_REGION_BEGIN("GlobalToLocal(libMesh,Intrepid2)");
 
         using IndexArray_t = Traits<PetscVector>::IndexArray;
@@ -347,7 +344,7 @@ namespace utopia {
         auto e_end = m.active_local_elements_end();
 
         if (e_begin != e_end) {
-            using HostView = typename ::Kokkos::DynRankView<Scalar>::HostMirror;
+            using HostView = typename LibMeshViewDevice_t<Scalar>::HostMirror;
             HostView element_vectors = ::Kokkos::create_mirror_view(device_element_vectors);
 
             auto num_elem = m.n_active_local_elem();
@@ -361,7 +358,7 @@ namespace utopia {
             std::vector<libMesh::dof_id_type> indices;
 
             if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < nn) {
-                device_element_vectors = DynRankView("Coefficients", num_elem, nn, n_comp);
+                device_element_vectors = LibMeshViewDevice_t<Scalar>("Coefficients", num_elem, nn, n_comp);
             }
 
             // FIXME not on device

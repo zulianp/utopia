@@ -16,9 +16,13 @@
 
 #include "utopia_libmesh_FunctionSpace_new.hpp"
 
-#include <Kokkos_DynRankView.hpp>
-
 namespace utopia {
+
+    using LibMeshScalar_t = utopia::Traits<utopia::libmesh::FunctionSpace>::Scalar;
+
+    template <typename T>
+    using LibMeshViewDevice_t = utopia::intrepid2::ViewDevice<T>;
+    using LibMeshIntViewDevice_t = utopia::intrepid2::ViewDevice<int>;
 
     template <typename Scalar>
     class CreateFE<utopia::libmesh::FunctionSpace, utopia::intrepid2::FE<Scalar>> {
@@ -44,7 +48,6 @@ namespace utopia {
     template <typename Scalar>
     class ConvertField<Field<utopia::libmesh::FunctionSpace>, utopia::intrepid2::Field<Scalar>> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         using Vector = utopia::Traits<utopia::libmesh::FunctionSpace>::Vector;
         using SizeType = utopia::Traits<utopia::libmesh::FunctionSpace>::SizeType;
 
@@ -52,26 +55,24 @@ namespace utopia {
     };
 
     template <typename Scalar>
-    class LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscMatrix> {
+    class LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t<Scalar>, PetscMatrix> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         static void apply(const utopia::libmesh::FunctionSpace &space,
-                          const DynRankView &element_matrices,
+                          const LibMeshViewDevice_t<Scalar> &element_matrices,
                           AssemblyMode mode,
                           PetscMatrix &matrix);
     };
 
     template <typename Scalar>
-    class LocalToGlobal<utopia::libmesh::FunctionSpace, ::Kokkos::DynRankView<Scalar>, PetscVector> {
+    class LocalToGlobal<utopia::libmesh::FunctionSpace, LibMeshViewDevice_t<Scalar>, PetscVector> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         static void apply(const utopia::libmesh::FunctionSpace &space,
-                          const DynRankView &element_vectors,
+                          const LibMeshViewDevice_t<Scalar> &element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector);
 
         static void side_apply(const utopia::libmesh::FunctionSpace &space,
-                               const DynRankView &element_vectors,
+                               const LibMeshViewDevice_t<Scalar> &element_vectors,
                                AssemblyMode mode,
                                PetscVector &vector,
                                const std::string &part_name);
@@ -90,15 +91,14 @@ namespace utopia {
     template <typename Scalar>
     class GlobalToLocal<utopia::libmesh::FunctionSpace,
                         Traits<utopia::libmesh::FunctionSpace>::Vector,
-                        ::Kokkos::DynRankView<Scalar>> {
+                        LibMeshViewDevice_t<Scalar>> {
     public:
-        using DynRankView = ::Kokkos::DynRankView<Scalar>;
         using Vector = utopia::Traits<utopia::libmesh::FunctionSpace>::Vector;
         using SizeType = utopia::Traits<utopia::libmesh::FunctionSpace>::SizeType;
 
         static void apply(const utopia::libmesh::FunctionSpace &space,
                           const Vector &vector,
-                          DynRankView &element_vectors,
+                          LibMeshViewDevice_t<Scalar> &element_vectors,
                           const int n_comp = 1);
     };
 
