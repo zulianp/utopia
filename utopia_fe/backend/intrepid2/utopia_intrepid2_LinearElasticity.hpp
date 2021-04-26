@@ -52,8 +52,6 @@ namespace utopia {
                 auto &fe = this->fe();
                 auto data = this->data();
 
-                // const int num_fields = fe_.num_fields();
-                // const int n_dofs = num_fields * fe_.spatial_dimension();
                 const int n_qp = fe.num_qp();
 
                 // Only works if coeff is a scalar
@@ -66,24 +64,27 @@ namespace utopia {
 
                     this->loop_cell_test_trial(
                         "Assemble<LinearElasticity>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
+                            StaticVector<Scalar, Dim> temp_i, temp_j;
                             StaticMatrix<Scalar, Dim, Dim> strain_i;
                             StaticMatrix<Scalar, Dim, Dim> strain_j;
-
-                            assert((Dim == 1 || &grad(cell, i, 0, 1) - &grad(cell, i, 0, 0) == 1UL) &&
-                                   "spatial dimension must be contiguos");
 
                             for (int qp = 0; qp < n_qp; ++qp) {
                                 auto dX = measure(cell, qp);
 
+                                for (int d = 0; d < Dim; ++d) {
+                                    temp_i[d] = grad(cell, i, qp, d);
+                                    temp_j[d] = grad(cell, j, qp, d);
+                                }
+
                                 for (int di = 0; di < Dim; ++di) {
-                                    make_strain(di, &grad(cell, i, qp, 0), strain_i);
+                                    make_strain(di, &temp_i[0], strain_i);
                                     const Scalar trace_i = trace(strain_i);
                                     auto dof_i = i * Dim + di;
 
                                     for (int dj = 0; dj < Dim; ++dj) {
                                         auto dof_j = j * Dim + dj;
 
-                                        make_strain(dj, &grad(cell, j, qp, 0), strain_j);
+                                        make_strain(dj, &temp_j[0], strain_j);
 
                                         const Scalar val =
                                             (mux2 * inner(strain_i, strain_j) + lambda * trace_i * trace(strain_j)) *

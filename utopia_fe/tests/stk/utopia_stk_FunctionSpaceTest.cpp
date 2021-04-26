@@ -1,12 +1,11 @@
 
 #include "utopia_Testing.hpp"
 
-#include "utopia_stk_Mesh.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
+#include "utopia_stk_Mesh.hpp"
 #include "utopia_ui.hpp"
 
 #include "utopia_RunParallelTest.hpp"
-
 
 #include "utopia_Traits.hpp"
 
@@ -35,13 +34,9 @@ namespace utopia {
             v.set(1.0);
             space.global_vector_to_nodal_field(v);
             space.nodal_field_to_global_vector(v2);
-
-            disp(v2);
         }
 
-        void run() override {
-            UTOPIA_RUN_TEST(declare_field);
-        }
+        void run() override { UTOPIA_RUN_TEST(declare_field); }
     };
 
 }  // namespace utopia
