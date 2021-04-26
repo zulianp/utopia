@@ -300,6 +300,7 @@ namespace utopia {
                 ShellTools<Scalar>::transform_gradient_to_physical_space(jacobian_inv, ref_grad, grad);
             }
         };
+
     }  // namespace intrepid2
 
 }  // namespace utopia

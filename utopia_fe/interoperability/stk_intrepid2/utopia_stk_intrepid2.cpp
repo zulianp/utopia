@@ -454,8 +454,10 @@ namespace utopia {
         const Field<utopia::stk::FunctionSpace> &from,
         utopia::intrepid2::Field<Scalar> &to) {
         GlobalToLocal<utopia::stk::FunctionSpace, Vector, StkViewDevice_t<Scalar>>::apply(
-            from.space(), from.data(), to.data(), from.tensor_size());
+            *from.space(), from.data(), to.data(), from.tensor_size());
     }
+
+    template class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<StkScalar_t>>;
 
     template <typename Scalar>
     void GlobalToLocal<utopia::stk::FunctionSpace,
@@ -515,5 +517,9 @@ namespace utopia {
 
         UTOPIA_TRACE_REGION_END("GlobalToLocal(Stk,Intrepid2)");
     }
+
+    template class GlobalToLocal<utopia::stk::FunctionSpace,
+                                 Traits<utopia::stk::FunctionSpace>::Vector,
+                                 StkViewDevice_t<StkScalar_t>>;
 
 }  // namespace utopia

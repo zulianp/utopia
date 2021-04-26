@@ -48,7 +48,17 @@ namespace utopia {
                         read_specification = path;
                     }
                 } else {
-                    std::string specification = "generated:10x10x10|sideset:xyzXYZ";
+                    int nx = 10;
+                    int ny = 10;
+                    int nz = 10;
+
+                    in.get("nx", nx);
+                    in.get("ny", ny);
+                    in.get("nz", nz);
+
+                    std::string specification = "generated:" + std::to_string(nx) + "x" + std::to_string(ny) + "x" +
+                                                std::to_string(nz) + "|sideset:xyzXYZ";
+
                     in.get("specification", specification);
                     set_read_specification(specification);
                 }

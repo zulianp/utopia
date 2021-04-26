@@ -18,6 +18,9 @@
 #include "utopia_intrepid2_ShellTools.hpp"
 #include "utopia_intrepid2_VectorLaplaceOperator.hpp"
 
+// Interop includes
+#include "utopia_stk_intrepid2.hpp"
+
 // FIXME: This is the last include because the operator files are not yet in the correct place
 #include "utopia_SpaceAndFETest.hpp"
 

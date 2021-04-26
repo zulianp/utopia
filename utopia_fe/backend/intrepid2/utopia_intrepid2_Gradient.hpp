@@ -165,7 +165,7 @@ namespace utopia {
                     : rows(rows), cols(cols), field(field) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int r, const int c) const {
-                    return field(cell, qp, r * cols + c) + r == c;
+                    return field(cell, qp, r * cols + c) + (r == c);
                 }
 
                 const int rows, cols;
@@ -174,13 +174,12 @@ namespace utopia {
 
             class AddIdentityAndStore {
             public:
-                AddIdentityAndStore(const int &rows, const int &cols, const DynRankView &field)
-                    : op_(rows, cols, field) {}
+                AddIdentityAndStore(const int &rows, const int &cols, DynRankView &field) : op_(rows, cols, field) {}
 
-                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int qp) {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int qp) const {
                     for (int r = 0; r < op_.rows; ++r) {
                         for (int c = 0; c < op_.cols; ++c) {
-                            field(cell, qp, r * op_.cols + c) = op_(cell, qp, r, c);
+                            op_.field(cell, qp, r * op_.cols + c) = op_(cell, qp, r, c);
                         }
                     }
                 }
@@ -190,6 +189,7 @@ namespace utopia {
 
             void add_identity() {
                 auto data = this->data();
+                assert(rows() == cols());
                 ::Kokkos::parallel_for(this->fe()->cell_qp_range(), AddIdentityAndStore(rows(), cols(), data));
             }
 

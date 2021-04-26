@@ -16,6 +16,7 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using SideSet_t = typename Traits<FunctionSpace>::SideSet;
+        using Field_t = utopia::Field<FunctionSpace>;
 
         bool save_output{false};
         bool export_tensors{false};
@@ -35,7 +36,13 @@ namespace utopia {
         }
 
         InputParameters cube_space_param(const int n_var) const {
-            return param_list(param("n_var", n_var), param("mesh", param_list(param("type", "cube"))));
+            const int nx = 3;
+            const int ny = 3;
+            const int nz = 3;
+
+            return param_list(
+                param("n_var", n_var),
+                param("mesh", param_list(param("type", "cube"), param("nx", nx), param("ny", ny), param("nz", nz))));
         }
 
         InputParameters input_params(const std::string &path, const int n_var = 1) const {
@@ -73,22 +80,40 @@ namespace utopia {
 
         template <class Op>
         void assemble_and_solve(const std::string &name, FunctionSpace &space, Op &op) {
+            using Assembler_t = typename AssembleTraits<FE, Op>::Type;
+            using FEField_t = typename Traits<FE>::Field;
+
             auto fe_ptr = std::make_shared<FE>();
             create_fe(space, *fe_ptr, 2);
 
-            typename AssembleTraits<FE, Op>::Type assembler(fe_ptr, op);
+            Vector_t rhs;
+            space.create_vector(rhs);
+
+            Field_t field_x;
+            space.create_field(field_x);
+
+            auto &x = field_x.data();
+            x.set(0.0);
+
+            FEField_t fe_field(fe_ptr);
+            convert_field(field_x, fe_field);
+
+            Assembler_t assembler(fe_ptr, op);
+            assembler.update(make_ref(fe_field));
             assembler.assemble();
 
             Matrix_t mat;
+
+            assert(assembler.is_matrix());
+
             local_to_global(space, assembler.matrix_data(), OVERWRITE_MODE, mat);
+
+            if (assembler.is_vector()) {
+                local_to_global(space, assembler.vector_data(), OVERWRITE_MODE, rhs);
+            }
 
             Vector_t row_sum = sum(mat, 1);
             Scalar_t sum_row_sum = sum(abs(row_sum));
-
-            Vector_t rhs, x;
-            space.create_vector(rhs);
-
-            x.zeros(layout(rhs));
 
             space.apply_constraints(mat, rhs);
 
@@ -201,7 +226,10 @@ namespace utopia {
             }
 
             LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
-            assemble_and_solve("elasticity", space, linear_elasticity);
+            assemble_and_solve("linear_elasticity", space, linear_elasticity);
+
+            NeoHookean<Dim, Scalar_t> neohookean{1.0, 1.0};
+            assemble_and_solve("neohookean", space, neohookean);
         }
 
         void poisson_problem_parallel_2D() {

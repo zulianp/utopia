@@ -18,6 +18,13 @@ namespace utopia {
         class Field;
 
     }  // namespace intrepid2
+
+    template <typename T>
+    class Traits<intrepid2::FE<T>> {
+    public:
+        using Scalar = T;
+        using Field = intrepid2::Field<T>;
+    };
 }  // namespace utopia
 
 #endif  // UTOPIA_INTREPID2_FORWARD_DECLARATIONS_HPP

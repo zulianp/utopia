@@ -21,6 +21,7 @@ namespace utopia {
             inline DynRankView &data() { return data_; }
             inline const DynRankView &data() const { return data_; }
             inline std::shared_ptr<FE> fe() { return fe_; }
+            inline std::shared_ptr<FE> fe() const { return fe_; }
 
             virtual std::string name() const { return name_; }
 
