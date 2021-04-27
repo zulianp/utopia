@@ -455,6 +455,8 @@ namespace utopia {
         utopia::intrepid2::Field<Scalar> &to) {
         GlobalToLocal<utopia::stk::FunctionSpace, Vector, StkViewDevice_t<Scalar>>::apply(
             *from.space(), from.data(), to.data(), from.tensor_size());
+
+        to.set_tensor_size(from.tensor_size());
     }
 
     template class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<StkScalar_t>>;

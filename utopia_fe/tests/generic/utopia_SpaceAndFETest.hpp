@@ -36,9 +36,9 @@ namespace utopia {
         }
 
         InputParameters cube_space_param(const int n_var) const {
-            const int nx = 6;
-            const int ny = 6;
-            const int nz = 6;
+            const int nx = 10;
+            const int ny = 10;
+            const int nz = 10;
 
             return param_list(
                 param("n_var", n_var),
@@ -228,8 +228,8 @@ namespace utopia {
             LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
             assemble_and_solve("linear_elasticity", space, linear_elasticity);
 
-            // NeoHookean<Dim, Scalar_t> neohookean{1.0, 1.0};
-            // assemble_and_solve("neohookean", space, neohookean);
+            NeoHookean<Dim, Scalar_t> neohookean{1.0, 1.0};
+            assemble_and_solve("neohookean", space, neohookean);
         }
 
         void poisson_problem_parallel_2D() {
@@ -361,18 +361,16 @@ namespace utopia {
                 UTOPIA_RUN_TEST(create_fe_test);
                 UTOPIA_RUN_TEST(poisson_problem);
                 UTOPIA_RUN_TEST(vector_poisson_problem);
+                save_output = export_tensors = true;
                 UTOPIA_RUN_TEST(elasticity_problem);
+                save_output = export_tensors = false;
+
                 // FIXME for libmesh -> sideset nomenclature
                 UTOPIA_RUN_TEST(poisson_problem_parallel_2D);
                 UTOPIA_RUN_TEST(poisson_problem_parallel_3D);
-                save_output = export_tensors = true;
                 UTOPIA_RUN_TEST(elasticity_problem_parallel);
-                save_output = export_tensors = false;
-
                 UTOPIA_RUN_TEST(shell_integral);
-
                 UTOPIA_RUN_TEST(shell_laplace_problem);
-
                 UTOPIA_RUN_TEST(boundary_integral);
             }
         }

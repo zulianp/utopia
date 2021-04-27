@@ -108,22 +108,6 @@ namespace utopia {
                 init(coeff.data());
             }
 
-            void init(const DynRankView &coeff) {
-                ensure_field();
-
-                if (rank() == 1) {
-                    Kokkos::parallel_for(this->name() + "::init_rank1",
-                                         rank1_range(),
-                                         Rank1OpAndStore(this->fe()->grad, coeff, this->data()));
-                } else {
-                    assert(rank() == 2);
-
-                    Kokkos::parallel_for(this->name() + "::init_rank2",
-                                         rank2_range(),
-                                         Rank2OpAndStore(this->fe()->grad, coeff, this->data()));
-                }
-            }
-
             void ensure_field() override {
                 const SizeType e0 = this->data().extent(0);
                 const SizeType e1 = this->data().extent(1);
@@ -213,6 +197,22 @@ namespace utopia {
 
                 return Kokkos::MDRangePolicy<Kokkos::Rank<4>, ExecutionSpace>(
                     {0, 0, 0, 0}, {num_cells, num_qp, var_dim_, spatial_dimension});
+            }
+
+            void init(const DynRankView &coeff) {
+                ensure_field();
+
+                if (rank() == 1) {
+                    Kokkos::parallel_for(this->name() + "::init_rank1",
+                                         rank1_range(),
+                                         Rank1OpAndStore(this->fe()->grad, coeff, this->data()));
+                } else {
+                    assert(rank() == 2);
+
+                    Kokkos::parallel_for(this->name() + "::init_rank2",
+                                         rank2_range(),
+                                         Rank2OpAndStore(this->fe()->grad, coeff, this->data()));
+                }
             }
         };
     }  // namespace intrepid2
