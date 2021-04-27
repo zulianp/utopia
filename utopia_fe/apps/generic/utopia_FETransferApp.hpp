@@ -46,6 +46,12 @@ namespace utopia {
         using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
+            in.get("verbose", verbose);
+
+            if (verbose) {
+                utopia::out() << "Reading from!\n";
+            }
+
             in.get("from", [this](Input &in) {
                 bool read_state = false;
                 in.get("read_state", read_state);
@@ -64,6 +70,10 @@ namespace utopia {
                 return;
             }
 
+            if (verbose) {
+                utopia::out() << "Reading to!\n";
+            }
+
             in.get("to", to_space);
 
             if (to_space.empty()) {
@@ -78,11 +88,19 @@ namespace utopia {
             in.get("transfer", transfer);
             in.get("output_path", output_path);
             in.get("export_from_function", export_from_function);
+
+            if (verbose) {
+                utopia::out() << "Exiting read!\n";
+            }
         }
 
         void run() {
             if (!transfer.init(make_ref(from_space), make_ref(to_space))) {
                 return;
+            }
+
+            if (verbose) {
+                utopia::out() << "Exiting transfer!\n";
             }
 
             Vector_t to;
@@ -106,6 +124,7 @@ namespace utopia {
         FETransfer<FunctionSpace> transfer;
         Path output_path{"./out.e"};
         bool export_from_function{false};
+        bool verbose{true};
     };
 
 }  // namespace utopia

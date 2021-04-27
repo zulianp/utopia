@@ -14,6 +14,7 @@
 // Intrepid2 includes
 #include "utopia_intrepid2_LaplaceOperator.hpp"
 #include "utopia_intrepid2_LinearElasticity.hpp"
+#include "utopia_intrepid2_NeoHookean.hpp"
 #include "utopia_intrepid2_ShellTools.hpp"
 #include "utopia_intrepid2_VectorLaplaceOperator.hpp"
 

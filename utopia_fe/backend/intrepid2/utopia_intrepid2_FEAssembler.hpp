@@ -120,6 +120,7 @@ namespace utopia {
             virtual bool is_matrix() const = 0;
             virtual bool is_vector() const = 0;
             virtual bool is_scalar() const = 0;
+            virtual bool is_linear() const { return true; }
 
             void scale(const intrepid2::SubdomainValue<Scalar> &fun) {
                 auto element_tags = fe().element_tags;

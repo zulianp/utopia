@@ -23,6 +23,7 @@ namespace utopia {
 
         class Mesh final : public Configurable, public Describable {
         public:
+            using Scalar = Traits<Mesh>::Scalar;
             using SizeType = Traits<Mesh>::SizeType;
             using Vector = Traits<Mesh>::Vector;
             using Comm = Traits<Mesh>::Communicator;

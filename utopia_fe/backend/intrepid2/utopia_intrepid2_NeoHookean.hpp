@@ -52,6 +52,7 @@ namespace utopia {
             inline bool is_matrix() const override { return true; }
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
+            inline bool is_linear() const override { return false; }
 
             inline std::string name() const override { return "NeoHookean"; }
 

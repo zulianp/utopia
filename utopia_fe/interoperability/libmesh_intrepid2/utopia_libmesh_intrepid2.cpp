@@ -314,7 +314,9 @@ namespace utopia {
         const Field<utopia::libmesh::FunctionSpace> &from,
         utopia::intrepid2::Field<Scalar> &to) {
         GlobalToLocal<utopia::libmesh::FunctionSpace, Vector, LibMeshViewDevice_t<Scalar>>::apply(
-            from.space(), from.data(), to.data(), from.tensor_size());
+            *from.space(), from.data(), to.data(), from.tensor_size());
+
+        to.set_tensor_size(from.tensor_size());
     }
 
     template <typename Scalar>
@@ -329,14 +331,7 @@ namespace utopia {
         using IndexArray_t = Traits<PetscVector>::IndexArray;
         using ScalarArray_t = Traits<PetscVector>::ScalarArray;
 
-        // Vector local;
-        // space.global_to_local(vector, local);
-
         assert(vector.comm().size() == 1 || vector.has_ghosts());
-
-        // if(vector.is_ghosted()) {
-
-        // }
 
         auto &m = space.mesh().raw_type();
         auto &dof_map = space.raw_type_dof_map();
@@ -392,5 +387,10 @@ namespace utopia {
 
         UTOPIA_TRACE_REGION_END("GlobalToLocal(libMesh,Intrepid2)");
     }
+
+    template class ConvertField<Field<utopia::libmesh::FunctionSpace>, utopia::intrepid2::Field<LibMeshScalar_t>>;
+    template class GlobalToLocal<utopia::libmesh::FunctionSpace,
+                                 Traits<utopia::libmesh::FunctionSpace>::Vector,
+                                 LibMeshViewDevice_t<LibMeshScalar_t>>;
 
 }  // namespace utopia

@@ -12,6 +12,7 @@
 #include "utopia_intrepid2_LinearElasticity.hpp"
 #include "utopia_intrepid2_Mass.hpp"
 #include "utopia_intrepid2_NeoHookean.hpp"
+#include "utopia_intrepid2_Residual.hpp"
 #include "utopia_intrepid2_Transport.hpp"
 #include "utopia_intrepid2_VectorLaplaceOperator.hpp"
 
@@ -107,97 +108,206 @@ namespace utopia {
         template <class FunctionSpace>
         class OmniAssembler<FunctionSpace>::Impl {
         public:
-            using FE = utopia::intrepid2::FE<Scalar>;
+            using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+            using FE = utopia::intrepid2::FE<Scalar_t>;
             using AssemblerRegistry = utopia::intrepid2::AssemblerRegistry<FunctionSpace>;
+            using FEAssembler_t = utopia::intrepid2::FEAssembler<Scalar_t>;
+            using FEAssemblerPtr_t = std::shared_ptr<FEAssembler_t>;
+            using TensorAccumulator_t = typename FEAssembler_t::TensorAccumulator;
 
-            // template <class MaterialDescription>
-            // void init_material_assembler(const MaterialDescription &desc) {
-            //     assemble_jacobian = [this, desc](const Vector &x, Matrix &mat) -> bool {
-            //         utopia::intrepid2::Assemble<MaterialDescription> assembler(desc, fe);
-            //         assembler.assemble();
-            //         local_to_global(*space, assembler.data(), ADD_MODE, mat);
-            //         return true;
-            //     };
+            class PartAssembler {
+            public:
+                virtual ~PartAssembler() {}
 
-            //     assemble_material = [this, desc](const Vector &x, Matrix &mat, Vector &rhs) -> bool {
-            //         if (!assemble_jacobian(x, mat)) return false;
-            //         rhs = mat * x;
-            //         return true;
-            //     };
-            // }
+                std::string name;
+                std::shared_ptr<FE> fe;
+                std::vector<FEAssemblerPtr_t> assemblers;
 
-            template <class ForcingFunctionDescription>
-            void init_forcing_function_assembler(const ForcingFunctionDescription &desc) {
-                auto prev_fun = assemble_forcing_function;
-                assemble_forcing_function = [this, prev_fun, desc](const Vector &x, Vector &rhs) -> bool {
-                    if (prev_fun) {
-                        // append
-                        prev_fun(x, rhs);
+                std::shared_ptr<TensorAccumulator_t> matrix_accumulator;
+                std::shared_ptr<TensorAccumulator_t> vector_accumulator;
+                std::shared_ptr<TensorAccumulator_t> scalar_accumulator;
+
+                void ensure_accumulators() {
+                    for (auto &a_ptr : assemblers) {
+                        if (a_ptr->is_matrix() && !matrix_accumulator) {
+                            a_ptr->ensure_matrix_accumulator();
+                            matrix_accumulator = a_ptr->matrix_accumulator();
+                        } else {
+                            a_ptr->set_matrix_accumulator(matrix_accumulator);
+                        }
+
+                        if (a_ptr->is_vector() && !vector_accumulator) {
+                            a_ptr->ensure_vector_accumulator();
+                            vector_accumulator = a_ptr->vector_accumulator();
+                        } else {
+                            a_ptr->set_vector_accumulator(vector_accumulator);
+                        }
+
+                        if (a_ptr->is_scalar() && !scalar_accumulator) {
+                            a_ptr->ensure_scalar_accumulator();
+                            scalar_accumulator = a_ptr->scalar_accumulator();
+                        } else {
+                            a_ptr->set_scalar_accumulator(scalar_accumulator);
+                        }
+                    }
+                }
+
+                void ensure_vector_accumulator() {
+                    if (!assemblers.empty()) {
+                        assert(false);
+                        return;
                     }
 
-                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(fe, desc);
-                    assembler.assemble();
-                    local_to_global(*space, assembler.vector_data(), SUBTRACT_MODE, rhs);
-                    return true;
-                };
+                    if (!vector_accumulator) {
+                        (*assemblers.begin())->ensure_vector_accumulator();
+                        vector_accumulator = (*assemblers.begin())->vector_accumulator();
+                    }
+                }
+
+                void zero_accumulators() {
+                    if (has_matrix()) {
+                        matrix_accumulator->zero();
+                    }
+
+                    if (has_vector()) {
+                        vector_accumulator->zero();
+                    }
+
+                    if (has_scalar()) {
+                        scalar_accumulator->zero();
+                    }
+                }
+
+                inline bool has_matrix() const { return static_cast<bool>(matrix_accumulator); }
+                inline bool has_vector() const { return static_cast<bool>(vector_accumulator); }
+                inline bool has_scalar() const { return static_cast<bool>(scalar_accumulator); }
+            };
+
+            class DomainAssembler : public PartAssembler {};
+
+            class BoundaryAssembler : public PartAssembler {};
+
+            void ensure_accumulators() {
+                domain.ensure_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.ensure_accumulators();
+                }
+            }
+
+            void zero_accumulators() {
+                domain.zero_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.zero_accumulators();
+                }
             }
 
             template <class ForcingFunctionDescription>
-            void init_boundary_forcing_function_assembler(const std::string &boundary_name,
-                                                          const ForcingFunctionDescription &desc) {
-                auto prev_fun = assemble_forcing_function;
-                assemble_forcing_function = [this, prev_fun, desc, boundary_name](const Vector &x,
-                                                                                  Vector &rhs) -> bool {
-                    if (prev_fun) {
-                        // append
-                        prev_fun(x, rhs);
-                    }
+            void add_forcing_function(const ForcingFunctionDescription &desc) {
+                if (!domain.fe) {
+                    assert(false);
+                }
 
-                    FE boundary_fe;
-                    create_fe_on_boundary(*space, boundary_fe, boundary_name, 2);
+                auto assembler =
+                    std::make_shared<utopia::intrepid2::Assemble<ForcingFunctionDescription>>(domain.fe, desc);
 
-                    utopia::intrepid2::Assemble<ForcingFunctionDescription> assembler(utopia::make_ref(boundary_fe),
-                                                                                      desc);
-                    assembler.assemble();
-                    side_local_to_global(*space, assembler.vector_data(), SUBTRACT_MODE, rhs, boundary_name);
-                    return true;
-                };
+                domain.assemblers.push_back(assembler);
+            }
+
+            template <class ForcingFunctionDescription>
+            void add_forcing_function_on_boundary(const std::string &boundary_name,
+                                                  const ForcingFunctionDescription &desc) {
+                auto &b = boundary[boundary_name];
+                std::shared_ptr<FE> bfe;
+
+                if (!b.fe) {
+                    bfe = std::make_shared<FE>();
+                    create_fe_on_boundary(*space, *bfe, boundary_name, 2);
+                    b.fe = bfe;
+                    b.name = boundary_name;
+                } else {
+                    bfe = b.fe;
+                }
+
+                auto assembler = std::make_shared<utopia::intrepid2::Assemble<ForcingFunctionDescription>>(bfe, desc);
+                b.assemblers.push_back(assembler);
             }
 
             bool assemble_material(const Vector &x, Matrix &mat, Vector &vec) {
-                if (!assemble_jacobian(x, mat)) return false;
+                // if (!assemble_matrix(x, mat)) return false;
+                ensure_field();
+                ensure_accumulators();
+                zero_accumulators();
 
-                vec = mat * x;
-                return true;
-            }
+                utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
+                convert_field(in, *x_field);
 
-            bool assemble_jacobian(const Vector &x, Matrix &mat) {
-                if (assemblers.empty()) return false;
-                assemblers[0]->ensure_matrix_accumulator();
-                auto acc = assemblers[0]->matrix_accumulator();
-                acc->zero();
+                bool has_linear = false;
+                std::vector<FEAssemblerPtr_t> nonlinear;
+                for (auto &a_ptr : domain.assemblers) {
+                    if (a_ptr->is_linear()) {
+                        has_linear = true;
+                        if (!a_ptr->assemble()) {
+                            return false;
+                        }
 
-                for (auto ass : assemblers) {
-                    ass->set_matrix_accumulator(acc);
-                    if (!ass->assemble()) {
-                        assert(false);
+                    } else {
+                        nonlinear.push_back(a_ptr);
+                    }
+                }
+
+                // Compute linear residuals in one go
+                if (has_linear) {
+                    domain.ensure_vector_accumulator();
+
+                    residual(domain.matrix_accumulator->data(),
+                             x_field->data(),
+                             domain.vector_accumulator->data(),
+                             SUBTRACT_MODE);
+                }
+
+                // Compute nonlinear contributions
+                for (auto &a_ptr : nonlinear) {
+                    assert(!a_ptr->is_linear());
+
+                    if (!a_ptr->assemble()) {
                         return false;
                     }
                 }
 
-                local_to_global(*space, acc->data(), ADD_MODE, mat);
+                assert(false && "IMPLEMENT ME");
+
+                // for (auto &p : boundary) {
+                //     auto &b = p.second;
+                //     b.ensure_accumulators();
+                // }
+
+                // vec = mat * x;
                 return true;
             }
 
-            std::function<bool(const Vector &x, Vector &)> assemble_forcing_function;
-
-            std::vector<typename AssemblerRegistry::FEAssemblerPtr_t> assemblers;
+            void ensure_field() {
+                if (!x_field) {
+                    x_field = std::make_shared<intrepid2::Field<Scalar>>(domain.fe);
+                }
+            }
 
             std::shared_ptr<FunctionSpace> space;
-            std::shared_ptr<FE> fe;
-            std::shared_ptr<Environment<FunctionSpace>> env;
 
+            // Volume (only one for now)
+            DomainAssembler domain;
+
+            // Boundary
+            std::map<std::string, BoundaryAssembler> boundary;
+
+            // Env and Utils
+            std::shared_ptr<Environment<FunctionSpace>> env;
             AssemblerRegistry registry;
+
+            std::shared_ptr<intrepid2::Field<Scalar>> x_field;
         };
 
         template <class FunctionSpace>
@@ -215,38 +325,31 @@ namespace utopia {
         OmniAssembler<FunctionSpace>::~OmniAssembler() = default;
 
         template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Matrix &jacobian, Vector &fun) {
-            if (!impl_->fe) {
+        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Matrix &matrix, Vector &fun) {
+            if (!impl_->domain.fe) {
                 return false;
             }
 
-            if (!impl_->assemble_material(x, jacobian, fun)) {
+            if (!impl_->assemble_material(x, matrix, fun)) {
                 return false;
-            }
-
-            if (impl_->assemble_forcing_function) {
-                return impl_->assemble_forcing_function(x, fun);
             }
 
             return true;
         }
 
         template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Matrix &jacobian) {
-            if (!impl_->fe) {
+        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Matrix &matrix) {
+            if (!impl_->domain.fe) {
                 return false;
             }
 
-            if (!impl_->assemble_jacobian(x, jacobian)) {
-                return false;
-            }
-
+            assert(false && "IMPLEMENT ME");
             return true;
         }
 
         template <class FunctionSpace>
         bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Vector &fun) {
-            if (!impl_->fe) {
+            if (!impl_->domain.fe) {
                 return false;
             }
 
@@ -259,14 +362,14 @@ namespace utopia {
             // FIXME order must be guessed by discretization and material
             int quadrature_order = 2;
             in.get("quadrature_order", quadrature_order);
-            impl_->fe = std::make_shared<typename Impl::FE>();
-            create_fe(*impl_->space, *impl_->fe, quadrature_order);
+            impl_->domain.fe = std::make_shared<typename Impl::FE>();
+            create_fe(*impl_->space, *impl_->domain.fe, quadrature_order);
 
             in.get("material", [this](Input &node) {
-                auto assembler = impl_->registry.make_assembler(impl_->fe, node);
+                auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);
 
                 if (assembler) {
-                    impl_->assemblers.push_back(assembler);
+                    impl_->domain.assemblers.push_back(assembler);
                 } else {
                     assert(false && "Should not come here");
                     Utopia::Abort();
@@ -295,7 +398,7 @@ namespace utopia {
                             ForcingFunction<Scalar> ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
-                            impl_->init_boundary_forcing_function_assembler(name, ff);
+                            impl_->add_forcing_function_on_boundary(name, ff);
                         }
 
                     } else {
@@ -303,7 +406,7 @@ namespace utopia {
                             ForcingFunction<Scalar> ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
-                            impl_->init_forcing_function_assembler(ff);
+                            impl_->add_forcing_function(ff);
                         }
                     }
                 });

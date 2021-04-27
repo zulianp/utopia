@@ -153,6 +153,8 @@ namespace utopia {
             const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
             auto *coords = meta_data.coordinate_field();
 
+            assert(coords);
+
             for (const auto &ib : node_buckets) {
                 const Bucket_t &b = *ib;
                 const Bucket_t::size_type length = b.size();

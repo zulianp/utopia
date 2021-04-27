@@ -14,7 +14,10 @@ namespace utopia {
     public:
         using Vector = typename Traits<FunctionSpace>::Vector;
 
-        Field(const std::string &name = "", const std::shared_ptr<Vector> &data = nullptr) : name_(name), data_(data) {}
+        Field(const std::string &name = "",
+              const std::shared_ptr<FunctionSpace> &space = nullptr,
+              const std::shared_ptr<Vector> &data = nullptr)
+            : name_(name), data_(data) {}
 
         void read(Input &in) override {
             in.get("name", name_);

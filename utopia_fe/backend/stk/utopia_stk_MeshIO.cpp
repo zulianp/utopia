@@ -47,6 +47,12 @@ namespace utopia {
                     } else {
                         read_specification = path;
                     }
+
+                    if(verbose) {
+                        utopia::out() << "Reading DB at path: " << path << "\n";
+                    }
+
+
                 } else {
                     int nx = 10;
                     int ny = 10;
@@ -55,6 +61,10 @@ namespace utopia {
                     in.get("nx", nx);
                     in.get("ny", ny);
                     in.get("nz", nz);
+
+                    if(verbose) {
+                        utopia::out() << "Generating cube with " << nx << " x " << ny << " x " << nz << "\n";
+                    }
 
                     std::string specification = "generated:" + std::to_string(nx) + "x" + std::to_string(ny) + "x" +
                                                 std::to_string(nz) + "|sideset:xyzXYZ";

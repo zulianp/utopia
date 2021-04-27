@@ -65,6 +65,8 @@ namespace utopia {
             return true;
         }
 
+        double estimate_condition_number() const override { return 1.0; }
+
     private:
         const libMesh::Elem &elem_;
     };
@@ -128,6 +130,8 @@ namespace utopia {
             return true;
         }
 
+        double estimate_condition_number() const override { return 1.0; }
+
     private:
         const libMesh::Elem &elem_;
     };
@@ -162,6 +166,8 @@ namespace utopia {
             // FIXME
             return true;
         }
+
+        double estimate_condition_number() const override { return 1.0; }
 
     private:
         // const Polyhedron &polyhedron_;
@@ -204,6 +210,8 @@ namespace utopia {
             // FIXME
             return true;
         }
+
+        double estimate_condition_number() const override { return 1.0; }
 
     private:
         libMesh::DenseMatrix<libMesh::Real> A_inv_;
@@ -254,6 +262,8 @@ namespace utopia {
             // FIXME
             return true;
         }
+
+        double estimate_condition_number() const override { return 1.0; }
 
     private:
         libMesh::DenseMatrix<libMesh::Real> A_inv_;
@@ -324,6 +334,8 @@ namespace utopia {
             return true;
         }
 
+        double estimate_condition_number() const override { return 1.0; }
+
     private:
         AffineTransform3 a_trafo_;
 
@@ -392,6 +404,8 @@ namespace utopia {
             // FIXME
             return true;
         }
+
+        double estimate_condition_number() const override { return 1.0; }
 
     private:
         AffineTransform2 a_trafo_;

@@ -13,9 +13,13 @@ namespace utopia {
             std::shared_ptr<moonolith::FunctionSpace> from;
             std::shared_ptr<moonolith::FunctionSpace> to;
             moonolith::FETransfer transfer;
+            bool export_converted_mesh{false};
         };
 
-        void FETransfer::read(Input &in) { impl_->transfer.read(in); }
+        void FETransfer::read(Input &in) {
+            impl_->transfer.read(in);
+            in.get("export_converted_mesh", impl_->export_converted_mesh);
+        }
 
         void FETransfer::describe(std::ostream &os) const { impl_->transfer.describe(os); }
 
@@ -25,6 +29,14 @@ namespace utopia {
 
             convert_function_space(*from, *impl_->from);
             convert_function_space(*to, *impl_->to);
+
+            assert(from->mesh().n_local_elements() == impl_->from->mesh().n_local_elements());
+            assert(to->mesh().n_local_elements() == impl_->to->mesh().n_local_elements());
+
+            if (impl_->export_converted_mesh) {
+                impl_->from->mesh().write("from.vtu");
+                impl_->to->mesh().write("to.vtu");
+            }
 
             return impl_->transfer.init(impl_->from, impl_->to);
         }

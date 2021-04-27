@@ -115,6 +115,9 @@ namespace utopia {
                     os << field->name() << ", " << field->entity_rank() << ", num states: " << field->number_of_states()
                        << '\n';
                 }
+
+                os << "n_local_elements:\t" << n_local_elements() << "\n";
+                os << "n_local_nodes:\t" << n_local_nodes() << "\n";
             }
 
             // impl_->bulk_data->dump_all_mesh_info(os);

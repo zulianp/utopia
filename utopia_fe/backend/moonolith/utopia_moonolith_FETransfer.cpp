@@ -181,7 +181,7 @@ namespace utopia {
                                                ::moonolith::StaticMax<DimTo, 1>::value>
                         assembler(comm);
 
-                    assembler.use_reference_frame(opts.use_reference_frame);
+                    // assembler.use_reference_frame(opts.use_reference_frame);
 
                     if (opts.tags.empty()) {
                         if (!assembler.assemble(m_from, m_to)) {
