@@ -47,6 +47,7 @@ namespace utopia {
             void set_n_var(const int n_var);
 
             void create_vector(Vector &v) const;
+
             void create_local_vector(Vector &v) const;
             void create_matrix(Matrix &m) const;
             void create_field(Field<FunctionSpace> &field);
@@ -81,8 +82,11 @@ namespace utopia {
             void nodal_field_to_global_vector(Vector &v);
             void global_vector_to_nodal_field(const Vector &v);
 
-            template<typename FieldType>
+            template <typename FieldType>
             void declare_new_nodal_field(const std::string &name, const int n_comp);
+
+            void create_vector(const std::string &field_name, Vector &v) const;
+            void global_vector_to_nodal_field(const std::string &field_name, const Vector &v);
 
         private:
             class Impl;

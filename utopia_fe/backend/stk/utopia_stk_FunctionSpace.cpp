@@ -238,12 +238,9 @@ namespace utopia {
                 }
             }
 
-            void vector_to_nodal_field(const std::string &name, const Vector &v) {
+            void local_vector_to_nodal_field(const std::string &name, const Vector &v) {
                 auto &meta_data = mesh->meta_data();
                 auto &bulk_data = mesh->bulk_data();
-
-                // ::stk::mesh::Selector s_universal = meta_data.universal_part();
-                // const BucketVector_t &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
 
                 auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
                 ::stk::mesh::FieldBase *field = ::stk::mesh::get_field_by_name(name, meta_data);
@@ -264,7 +261,7 @@ namespace utopia {
 
                         Scalar *points = (Scalar *)::stk::mesh::field_data(*field, node);
                         int n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
-                        assert(n_comp == n_var);
+                        assert(n_comp <= n_var);
 
                         for (int d = 0; d < n_comp; ++d) {
                             points[d] = v_view.get(idx * n_comp + d);
@@ -778,6 +775,29 @@ namespace utopia {
                 auto &field = meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, name, 1);
                 ::stk::mesh::put_field_on_mesh(field, part, n_comp, nullptr);
             }
+        }
+
+        void FunctionSpace::create_vector(const std::string &field_name, Vector &v) const {
+            int nv = -1;
+            for (auto &v : impl_->variables) {
+                if (v.name == field_name) {
+                    nv = v.n_components;
+                }
+            }
+
+            assert(nv != -1);
+            if (nv == -1) {
+                Utopia::Abort("Field with name: " + field_name + "does not exist!");
+            }
+
+            v.zeros(layout(comm(), mesh().n_local_nodes() * nv, mesh().n_nodes() * nv));
+            v.set_block_size(n_var());
+        }
+
+        void FunctionSpace::global_vector_to_nodal_field(const std::string &field_name, const Vector &v) {
+            Vector local;
+            global_to_local(v, local);
+            impl_->local_vector_to_nodal_field(field_name, local);
         }
 
         template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::Scalar>(const std::string &,

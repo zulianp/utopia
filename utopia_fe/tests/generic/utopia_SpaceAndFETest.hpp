@@ -36,9 +36,9 @@ namespace utopia {
         }
 
         InputParameters cube_space_param(const int n_var) const {
-            const int nx = 3;
-            const int ny = 3;
-            const int nz = 3;
+            const int nx = 6;
+            const int ny = 6;
+            const int nz = 6;
 
             return param_list(
                 param("n_var", n_var),
@@ -228,8 +228,8 @@ namespace utopia {
             LinearElasticity<Dim, Scalar_t> linear_elasticity{1.0, 1.0};
             assemble_and_solve("linear_elasticity", space, linear_elasticity);
 
-            NeoHookean<Dim, Scalar_t> neohookean{1.0, 1.0};
-            assemble_and_solve("neohookean", space, neohookean);
+            // NeoHookean<Dim, Scalar_t> neohookean{1.0, 1.0};
+            // assemble_and_solve("neohookean", space, neohookean);
         }
 
         void poisson_problem_parallel_2D() {

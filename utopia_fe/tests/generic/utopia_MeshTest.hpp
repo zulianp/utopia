@@ -15,7 +15,7 @@ namespace utopia {
         void unit_cube() {
             const SizeType n = this->comm().size() * 2;
 
-            Mesh mesh;
+            Mesh mesh(this->comm());
             mesh.unit_cube(n, n, n);
 
             const SizeType n_nodes = mesh.n_nodes();
@@ -25,7 +25,7 @@ namespace utopia {
         void read_write() {
             const SizeType n = this->comm().size() * 2;
 
-            Mesh mesh;
+            Mesh mesh(this->comm());
             mesh.unit_cube(n, n, n);
             UTOPIA_TEST_TRUE(mesh.write("./mesh_test_read_write.e"));
             UTOPIA_TEST_TRUE(mesh.read("./mesh_test_read_write.e"));

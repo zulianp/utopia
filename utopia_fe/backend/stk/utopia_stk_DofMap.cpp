@@ -701,14 +701,29 @@ namespace utopia {
 
             auto &l2g = impl_->local_to_global;
 
-            if (n_var() == 1) {
+            ////////////////////////////////////////////////////////////
+            SizeType n_owned_nodes = impl_->owned_dof_end - impl_->owned_dof_start;
+            SizeType n_var_vec = global.local_size() / n_owned_nodes;
+
+            assert(n_owned_nodes * n_var_vec == global.local_size());
+
+            if (n_var_vec == 1) {
                 local.zeros(layout(Communicator::self(), l2g.size(), l2g.size()));
                 global.select(l2g, local);
             } else {
-                const int nv = this->n_var();
-                local.zeros(layout(Communicator::self(), l2g.size() * nv, l2g.size() * nv));
-                global.blocked_select(l2g, local, nv);
+                local.zeros(layout(Communicator::self(), l2g.size() * n_var_vec, l2g.size() * n_var_vec));
+                global.blocked_select(l2g, local, n_var_vec);
             }
+            ////////////////////////////////////////////////////////////
+
+            // if (n_var() == 1) {
+            //     local.zeros(layout(Communicator::self(), l2g.size(), l2g.size()));
+            //     global.select(l2g, local);
+            // } else {
+            //     const int nv = this->n_var();
+            //     local.zeros(layout(Communicator::self(), l2g.size() * nv, l2g.size() * nv));
+            //     global.blocked_select(l2g, local, nv);
+            // }
         }
 
         void DofMap::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {
