@@ -14,8 +14,51 @@ namespace utopia {
 
         virtual ~MatrixAgglomerator() = default;
         virtual std::shared_ptr<Transfer> create_transfer(const Matrix &in) = 0;
+        virtual std::shared_ptr<Transfer> create_truncated_transfer(const Matrix &in) { return create_transfer(in); }
         virtual void read(Input &) override {}
         MatrixAgglomerator *clone() const override = 0;
+    };
+
+    template <class Matrix>
+    class AlgebraicMultigridBuilder {
+    public:
+        using Vector = typename Traits<Matrix>::Vector;
+        using Transfer = utopia::Transfer<Matrix, Vector>;
+
+        static void build(const int n_levels,
+                          const std::shared_ptr<const Matrix> &op,
+                          MatrixAgglomerator<Matrix> &agglomerator,
+                          Multigrid<Matrix, Vector> &mg) {
+            UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigridBuilder::build");
+
+            //////////////////////////////////////////////////////////////////
+            std::vector<std::shared_ptr<Transfer>> transfers(n_levels - 1);
+            std::vector<std::shared_ptr<const Matrix>> matrices(n_levels);
+            matrices[n_levels - 1] = op;
+
+            auto last_mat = op;
+
+            for (SizeType l = n_levels - 2; l >= 0; --l) {
+                auto A = std::make_shared<Matrix>();
+
+                auto t = agglomerator.create_transfer(*last_mat);
+
+                auto temp_mat = std::make_shared<Matrix>();
+                t->restrict(*last_mat, *temp_mat);
+
+                transfers[l] = t;
+                matrices[l] = temp_mat;
+                last_mat = temp_mat;
+            }
+
+            //////////////////////////////////////////////////////////////////
+            mg.set_transfer_operators(transfers);
+            mg.set_linear_operators(matrices);
+            mg.set_perform_galerkin_assembly(false);
+            mg.update();
+
+            UTOPIA_TRACE_REGION_END("AlgebraicMultigridBuilder::build");
+        }
     };
 
     template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
@@ -63,32 +106,7 @@ namespace utopia {
 
             Super::update(op);
 
-            //////////////////////////////////////////////////////////////////
-            std::vector<std::shared_ptr<Transfer>> transfers(n_levels_ - 1);
-            std::vector<std::shared_ptr<const Matrix>> matrices(n_levels_);
-            matrices[n_levels_ - 1] = op;
-
-            auto last_mat = op;
-
-            for (SizeType l = n_levels_ - 2; l >= 0; --l) {
-                auto A = std::make_shared<Matrix>();
-
-                auto t = agglomerator_->create_transfer(*last_mat);
-
-                auto temp_mat = std::make_shared<Matrix>();
-                t->restrict(*last_mat, *temp_mat);
-
-                transfers[l] = t;
-                matrices[l] = temp_mat;
-                last_mat = temp_mat;
-            }
-
-            //////////////////////////////////////////////////////////////////
-            algorithm_.set_transfer_operators(transfers);
-            algorithm_.set_linear_operators(matrices);
-            algorithm_.set_perform_galerkin_assembly(false);
-            algorithm_.update();
-
+            AlgebraicMultigridBuilder<Matrix>::build(n_levels_, op, *agglomerator_, algorithm_);
             UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::update");
         }
 

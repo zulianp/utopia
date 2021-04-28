@@ -11,11 +11,14 @@
 #include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
+#include "utopia_MonotoneAlgebraicMultigrid.hpp"
 #include "utopia_MonotoneMultigrid.hpp"
 #include "utopia_MultigridQR.hpp"
 
 #include "utopia_MultilevelTestProblem1D.hpp"
 #include "utopia_Poisson1D.hpp"
+
+#include "utopia_Agglomerate.hpp"
 
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_Matrix_impl.hpp"
@@ -278,6 +281,40 @@ namespace utopia {
             }
         }
 
+        void monotone_amg_test() {
+            // Does not work
+            const static bool verbose = true;
+            const static bool use_masks = false;
+            int n_levels = 6;
+            int n_coarse = 50;
+
+            auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
+            auto agglomerator = std::make_shared<Agglomerate<Matrix>>();
+
+            MonotoneAlgebraicMultigrid<Matrix, Vector> amg(
+                fine_smoother, coarse_smoother, direct_solver, agglomerator, n_levels);
+
+            using ProblemType = utopia::Poisson1D<Matrix, Vector>;
+            MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
+            auto funs = ml_problem.get_functions();
+
+            Vector x, g;
+            Matrix H;
+
+            funs.back()->get_eq_constrains_values(x);
+            funs.back()->gradient(x, g);
+            funs.back()->hessian(x, H);
+
+            Vector lower_bound(layout(g), -0.8), upper_bound(layout(g), 200.);
+
+            amg.verbose(verbose);
+            amg.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
+
+            utopia_test_assert(amg.solve(H, g, x));
+        }
+
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
@@ -320,8 +357,9 @@ namespace utopia {
             }
 
             auto t = std::static_pointer_cast<MatrixTransfer<Matrix, Vector>>(transfers[n_levels - 2]);
-            interpolation_operators[n_levels - 2] =
-                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(t->I()));
+            interpolation_operators[n_levels - 2] = multigrid.new_fine_level_transfer(std::make_shared<Matrix>(t->I()));
+
+            // std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(t->I()));
 
             Vector lower_bound(layout(g), -0.8), upper_bound(layout(g), 200.);
 
@@ -343,6 +381,9 @@ namespace utopia {
         void run() {
             print_backend_info();
             UTOPIA_RUN_TEST(monotone_mg_test);
+
+            // FIXME
+            // UTOPIA_RUN_TEST(monotone_amg_test);
         }
     };
 

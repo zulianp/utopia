@@ -4,6 +4,8 @@
 #include "utopia_AdditiveCorrectionTransfer.hpp"
 #include "utopia_AlgebraicMultigrid.hpp"
 
+#include "utopia_IPRTruncatedTransfer.hpp"
+
 namespace utopia {
 
     template <class Matrix, int Backend = Traits<Matrix>::Backend>
@@ -28,7 +30,25 @@ namespace utopia {
         }
 
         std::shared_ptr<Transfer> create_transfer(const Matrix &in) override {
-            UTOPIA_TRACE_REGION_BEGIN("Agglomerate::create_prolongator");
+            return std::make_shared<IPRTransfer<Matrix, Vector>>(create_transfer_matrix(in));
+        }
+
+        std::shared_ptr<Transfer> create_truncated_transfer(const Matrix &in) override {
+            return std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(create_transfer_matrix(in));
+        }
+
+        inline void verbose(const bool val) { verbose_ = val; }
+        inline void use_additive_correction(const bool val) { use_additive_correction_ = val; }
+
+    private:
+        SizeType bmax_{3};
+        // SizeType bmin_{5};
+        Scalar weight_{1. / 3};
+        bool verbose_{false};
+        bool use_additive_correction_{false};
+
+        std::shared_ptr<Matrix> create_transfer_matrix(const Matrix &in) {
+            UTOPIA_TRACE_REGION_BEGIN("Agglomerate::create_transfer_matrix");
 
             using namespace utopia;
 
@@ -124,56 +144,46 @@ namespace utopia {
                 }
             }
 
-            std::shared_ptr<Transfer> ret;
+            std::shared_ptr<Matrix> ret;
 
-            if (use_additive_correction_) {
-                auto act = std::make_shared<AdditiveCorrectionTransfer<Matrix, Vector>>();
-                act->parent() = std::move(parent);
+            // if (use_additive_correction_) {
+            //     auto act = std::make_shared<AdditiveCorrectionTransfer<Matrix, Vector>>();
+            //     act->parent() = std::move(parent);
 
-                SizeType n_global_coarse_row = in.comm().sum(n_coarse_rows);
-                act->set_size(n_coarse_rows, n_global_coarse_row);
-                ret = act;
-            } else {
-                auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows, in.rows(), Traits::determine());
+            //     SizeType n_global_coarse_row = in.comm().sum(n_coarse_rows);
+            //     act->set_size(n_coarse_rows, n_global_coarse_row);
+            //     ret = act;
+            // } else {
+            auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows, in.rows(), Traits::determine());
 
-                auto prolongator = std::make_shared<Matrix>();
-                prolongator->sparse(pl, 1, 1);
+            auto prolongator = std::make_shared<Matrix>();
+            prolongator->sparse(pl, 1, 1);
 
-                if (verbose_) {
-                    in.comm().synched_print(std::to_string(prolongator->rows()) + " -> " +
-                                            std::to_string(prolongator->cols()) + ", coarsening factor: " +
-                                            std::to_string(prolongator->rows() / float(prolongator->cols())) + '\n');
-                }
-
-                {
-                    Write<Matrix> w(*prolongator);
-
-                    auto n = rr.extent();
-                    auto coarse_offset = prolongator->col_range().begin();
-
-                    for (SizeType i = 0; i < n; ++i) {
-                        if (parent[i] >= 0) {
-                            prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
-                        }
-                    }
-                }
-
-                ret = std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
+            if (verbose_) {
+                in.comm().synched_print(
+                    std::to_string(prolongator->rows()) + " -> " + std::to_string(prolongator->cols()) +
+                    ", coarsening factor: " + std::to_string(prolongator->rows() / float(prolongator->cols())) + '\n');
             }
 
-            UTOPIA_TRACE_REGION_END("Agglomerate::create_prolongator");
+            {
+                Write<Matrix> w(*prolongator);
+
+                auto n = rr.extent();
+                auto coarse_offset = prolongator->col_range().begin();
+
+                for (SizeType i = 0; i < n; ++i) {
+                    if (parent[i] >= 0) {
+                        prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                    }
+                }
+            }
+
+            ret = prolongator;
+            // }
+
+            UTOPIA_TRACE_REGION_END("Agglomerate::create_transfer_matrix");
             return ret;
         }
-
-        inline void verbose(const bool val) { verbose_ = val; }
-        inline void use_additive_correction(const bool val) { use_additive_correction_ = val; }
-
-    private:
-        SizeType bmax_{3};
-        // SizeType bmin_{5};
-        Scalar weight_{1. / 3};
-        bool verbose_{false};
-        bool use_additive_correction_{false};
     };
 
 }  // namespace utopia

@@ -1,33 +1,17 @@
-#ifndef UTOPIA_MONOTONE_MULTIGRID_HPP
-#define UTOPIA_MONOTONE_MULTIGRID_HPP
-#include "utopia_ConvergenceReason.hpp"
-#include "utopia_Core.hpp"
-#include "utopia_IPRTruncatedTransfer.hpp"
-#include "utopia_IterativeSolver.hpp"
-#include "utopia_Level.hpp"
-#include "utopia_LinearMultiLevel.hpp"
-#include "utopia_LinearSolver.hpp"
-#include "utopia_PrintInfo.hpp"
-#include "utopia_Recorder.hpp"
-#include "utopia_Smoother.hpp"
-#include "utopia_Utils.hpp"
+#ifndef UTOPIA_MONOTONE_ALGEBRAIC_MULTIGRID_HPP
+#define UTOPIA_MONOTONE_ALGEBRAIC_MULTIGRID_HPP
 
-#include "utopia_ActiveSet.hpp"
-#include "utopia_ProjectedGaussSeidelNew.hpp"
-#include "utopia_ProjectedGaussSeidelQR.hpp"
-
-#include <cassert>
-#include <ctime>
+#include "utopia_Agglomerate.hpp"
+#include "utopia_AlgebraicMultigrid.hpp"
+#include "utopia_Clonable.hpp"
+#include "utopia_IPRTransfer.hpp"
+#include "utopia_MonotoneMultigrid.hpp"
 
 namespace utopia {
-    /**
-     * @brief      The class for  MonotoneMultigrid solver.
-     *
-     * @tparam     Matrix
-     * @tparam     Vector
-     */
-    template <class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class MonotoneMultigrid : public LinearMultiLevel<Matrix, Vector>, public VariableBoundSolverInterface<Vector> {
+
+    template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
+    class MonotoneAlgebraicMultigrid final : public LinearMultiLevel<Matrix, Vector>,
+                                             public VariableBoundSolverInterface<Vector> {
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
         typedef utopia::IterativeSolver<Matrix, Vector> Smoother;
         using SmootherPtr = std::shared_ptr<Smoother>;
@@ -42,6 +26,8 @@ namespace utopia {
         using Layout = typename Traits<Vector>::Layout;
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
+
+        using Agglomerator = utopia::MatrixAgglomerator<Matrix>;
 
         typedef struct {
             std::vector<Vector> r, x, rhs;
@@ -62,20 +48,24 @@ namespace utopia {
         static const int V_CYCLE = 1;
         static const int W_CYCLE = 2;
 
-        MonotoneMultigrid(const std::shared_ptr<Smoother> &fine_smoother,
-                          const std::shared_ptr<Smoother> &coarse_smoother,
-                          const std::shared_ptr<Solver> &coarse_solver,
-                          const SizeType &num_levels)
+        MonotoneAlgebraicMultigrid(const std::shared_ptr<Smoother> &fine_smoother,
+                                   const std::shared_ptr<Smoother> &coarse_smoother,
+                                   const std::shared_ptr<Solver> &coarse_solver,
+                                   const std::shared_ptr<Agglomerator> &agglomerator,
+                                   const SizeType &num_levels)
             : coarse_solver_(coarse_solver),
               active_set_(std::make_shared<ActiveSet<Vector>>()),
+              agglomerator_(agglomerator),
               use_line_search_(false) {
             this->must_generate_masks(true);
             this->fix_semidefinite_operators(true);
             init(fine_smoother, coarse_smoother, coarse_solver, num_levels);
         }
 
-        MonotoneMultigrid(const SizeType &num_levels)
-            : active_set_(std::make_shared<ActiveSet<Vector>>()), use_line_search_(false) {
+        MonotoneAlgebraicMultigrid(const SizeType &num_levels)
+            : active_set_(std::make_shared<ActiveSet<Vector>>()),
+              agglomerator_(std::make_shared<Agglomerate<Matrix>>()),
+              use_line_search_(false) {
             this->must_generate_masks(true);
             this->fix_semidefinite_operators(true);
             init(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
@@ -83,6 +73,8 @@ namespace utopia {
                  std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
                  num_levels);
         }
+
+        ~MonotoneAlgebraicMultigrid() override = default;
 
         void init(const std::shared_ptr<Smoother> &fine_smoother,
                   const std::shared_ptr<Smoother> &coarse_smoother,
@@ -109,8 +101,6 @@ namespace utopia {
             return std::make_shared<IPRTransfer<Matrix, Vector>>(interpolation);
         }
 
-        ~MonotoneMultigrid() override = default;
-
         void read(Input &in) override {
             Super::read(in);
 
@@ -124,7 +114,7 @@ namespace utopia {
             Super::print_usage(os);
 
             this->print_param_usage(
-                os, "perform_galerkin_assembly", "bool", "Flag turning on/off galerkin assembly.", "true");
+                os, "perform_agglomerate_assembly", "bool", "Flag turning on/off galerkin assembly.", "true");
             this->print_param_usage(os,
                                     "use_line_search",
                                     "bool",
@@ -141,10 +131,50 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override {
             Super::update(op);
             init_memory(row_layout(*op));
+            agglomerate_assembly(op, false);
+        }
 
-            if (perform_galerkin_assembly_) {
-                this->galerkin_assembly(op);
+        void agglomerate_assembly(const std::shared_ptr<const Matrix> &op, const bool preserve_first_level = false) {
+            const int n_levels = this->n_levels();
+
+            std::vector<std::shared_ptr<Transfer>> transfers(n_levels - 1);
+            std::vector<std::shared_ptr<const Matrix>> matrices(n_levels);
+            matrices[n_levels - 1] = op;
+
+            auto last_mat = op;
+
+            for (SizeType l = n_levels - 2; l >= 0; --l) {
+                auto A = std::make_shared<Matrix>();
+
+                std::shared_ptr<Transfer> t;
+
+                if (l == n_levels - 2) {
+                    if (preserve_first_level) {
+                        assert(this->transfers_[n_levels - 2]);
+                        t = this->transfers_[n_levels - 2];
+                    } else {
+                        t = agglomerator_->create_truncated_transfer(*last_mat);
+                    }
+                } else {
+                    t = agglomerator_->create_transfer(*last_mat);
+                }
+
+                auto temp_mat = std::make_shared<Matrix>();
+                t->restrict(*last_mat, *temp_mat);
+
+                if (this->fix_semidefinite_operators()) {
+                    this->fix_semidefinite_operator(*temp_mat);
+                }
+
+                transfers[l] = t;
+                matrices[l] = temp_mat;
+                last_mat = temp_mat;
             }
+
+            this->set_transfer_operators(transfers);
+            this->set_linear_operators(matrices);
+
+            adjust_memory(n_levels - 1);
 
             update();
         }
@@ -254,8 +284,6 @@ namespace utopia {
             coarse_solver_->update(level(0).A_ptr());
         }
 
-        void set_perform_galerkin_assembly(const bool val) { perform_galerkin_assembly_ = val; }
-
         /*=======================================================================================================================================
          =
          =========================================================================================================================================*/
@@ -358,7 +386,7 @@ namespace utopia {
                     if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(fine_smoother)) {
                         trunc_transfer->truncate_interpolation(pgs_QR->get_active_set());
 
-                        this->galerkin_assembly(this->get_operator());
+                        this->agglomerate_assembly(this->get_operator(), true);
 
                         for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
                             smoothers_[l]->update(level(l).A_ptr());
@@ -371,7 +399,7 @@ namespace utopia {
                         if (active_set_->determine(this->get_box_constraints(), x)) {
                             trunc_transfer->truncate_interpolation(active_set_->indicator());
 
-                            this->galerkin_assembly(this->get_operator());
+                            this->agglomerate_assembly(this->get_operator(), true);
 
                             for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
                                 smoothers_[l]->update(level(l).A_ptr());
@@ -402,11 +430,12 @@ namespace utopia {
             return true;
         }
 
-        MonotoneMultigrid *clone() const override {
-            return new MonotoneMultigrid(std::shared_ptr<Smoother>(smoothers_[smoothers_.size() - 1]->clone()),
-                                         std::shared_ptr<Smoother>(smoothers_[1]->clone()),
-                                         std::shared_ptr<Solver>(coarse_solver_->clone()),
-                                         this->n_levels());
+        MonotoneAlgebraicMultigrid *clone() const override {
+            return new MonotoneAlgebraicMultigrid(std::shared_ptr<Smoother>(smoothers_[smoothers_.size() - 1]->clone()),
+                                                  std::shared_ptr<Smoother>(smoothers_[1]->clone()),
+                                                  std::shared_ptr<Solver>(coarse_solver_->clone()),
+                                                  std::shared_ptr<Agglomerator>(agglomerator_->clone()),
+                                                  this->n_levels());
         }
 
     public:
@@ -432,16 +461,26 @@ namespace utopia {
             active_set_ = std::move(active_set);
         }
 
-    protected:
+    private:
         std::vector<SmootherPtr> smoothers_;
         std::shared_ptr<Solver> coarse_solver_;
         std::shared_ptr<ActiveSet<Vector>> active_set_;
-
-    private:
+        std::shared_ptr<Agglomerator> agglomerator_;
         bool use_line_search_{false};
-        bool perform_galerkin_assembly_{true};
+
+        void adjust_memory(int n_adjusted_coarse_levels) {
+            if (memory.valid(this->n_levels())) {
+                assert(int(memory.x.size()) > n_adjusted_coarse_levels);
+                for (int l = 0; l < n_adjusted_coarse_levels; ++l) {
+                    auto lo = row_layout(this->level(l).A());
+                    memory.x[l].zeros(lo);
+                    memory.r[l].zeros(lo);
+                    memory.rhs[l].zeros(lo);
+                }
+            }
+        }
     };
 
 }  // namespace utopia
 
-#endif  // UTOPIA_MONOTONE_MULTIGRID_HPP
+#endif  // UTOPIA_MONOTONE_ALGEBRAIC_MULTIGRID_HPP
