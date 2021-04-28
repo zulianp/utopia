@@ -157,6 +157,7 @@ namespace utopia {
                     F_inv_t_qp = inv(transpose(F_qp));
                     Scalar J = det(F_qp);
                     assert(J != 0.0);
+                    assert(J == J);
 
                     Scalar log_J = device::log(J);
                     Scalar beta = (rescale * (lambda * log_J - mu));
@@ -230,6 +231,9 @@ namespace utopia {
                     Scalar J = det(P);
                     Scalar log_J = device::log(J);
                     Scalar lambda_log_J = (rescale * lambda) * log_J;
+
+                    assert(J == J);
+                    assert(log_J == log_J);
 
                     P -= F_inv_t_qp;
                     P *= rescale * mu;

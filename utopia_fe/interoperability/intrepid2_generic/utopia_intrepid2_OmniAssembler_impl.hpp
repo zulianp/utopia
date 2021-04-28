@@ -153,7 +153,7 @@ namespace utopia {
                 }
 
                 void ensure_vector_accumulator() {
-                    if (!assemblers.empty()) {
+                    if (assemblers.empty()) {
                         assert(false);
                         return;
                     }
@@ -242,7 +242,9 @@ namespace utopia {
                 ensure_accumulators();
                 zero_accumulators();
 
+                assert(space);
                 utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
+                in.set_tensor_size(space->n_var());
                 convert_field(in, *x_field);
 
                 bool has_linear = false;
@@ -259,38 +261,82 @@ namespace utopia {
                     }
                 }
 
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    bool has_linear_on_boundary = false;
+                    for (auto &a_ptr : b.assemblers) {
+                        if (a_ptr->is_linear()) {
+                            if (!a_ptr->assemble()) {
+                                return false;
+                            }
+
+                            has_linear_on_boundary = true;
+                        } else {
+                            assert(false && "IMPLEMENT ME");
+                        }
+
+                        if (has_linear_on_boundary) {
+                            if (b.has_matrix()) {
+                                assert(false && "IMPLEMENT ME");
+                            }
+                        }
+                    }
+                }
+
                 // Compute linear residuals in one go
                 if (has_linear) {
                     domain.ensure_vector_accumulator();
 
-                    residual(domain.matrix_accumulator->data(),
-                             x_field->data(),
-                             domain.vector_accumulator->data(),
-                             SUBTRACT_MODE);
+                    if (domain.has_matrix()) {
+                        residual(domain.matrix_accumulator->data(),
+                                 x_field->data(),
+                                 domain.vector_accumulator->data(),
+                                 mode);
+                    }
                 }
 
                 // Compute nonlinear contributions
                 for (auto &a_ptr : nonlinear) {
                     assert(!a_ptr->is_linear());
 
+                    a_ptr->update(x_field);
                     if (!a_ptr->assemble()) {
                         return false;
                     }
                 }
 
-                assert(false && "IMPLEMENT ME");
+                if (domain.has_matrix()) {
+                    local_to_global(*space, domain.matrix_accumulator->data(), mode, mat);
+                }
 
-                // for (auto &p : boundary) {
-                //     auto &b = p.second;
-                //     b.ensure_accumulators();
-                // }
+                if (domain.has_vector()) {
+                    local_to_global(*space,
+                                    domain.vector_accumulator->data(),
+                                    (mode == SUBTRACT_MODE) ? ADD_MODE : SUBTRACT_MODE,
+                                    vec);
+                }
 
-                // vec = mat * x;
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    if (b.has_vector()) {
+                        if (mode == SUBTRACT_MODE) {
+                            side_local_to_global(*space, b.vector_accumulator->data(), ADD_MODE, vec, b.name);
+                        } else {
+                            side_local_to_global(*space, b.vector_accumulator->data(), SUBTRACT_MODE, vec, b.name);
+                        }
+                    }
+
+                    assert(!b.has_matrix() && "IMPLEMENT ME");
+                }
+
                 return true;
             }
 
             void ensure_field() {
                 if (!x_field) {
+                    assert(domain.fe);
                     x_field = std::make_shared<intrepid2::Field<Scalar>>(domain.fe);
                 }
             }
@@ -308,7 +354,18 @@ namespace utopia {
             AssemblerRegistry registry;
 
             std::shared_ptr<intrepid2::Field<Scalar>> x_field;
+
+            AssemblyMode mode{OVERWRITE_MODE};
         };
+
+        template <class FunctionSpace>
+        AssemblyMode OmniAssembler<FunctionSpace>::mode() const {
+            return impl_->mode;
+        }
+        template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::set_mode(AssemblyMode mode) {
+            impl_->mode = mode;
+        }
 
         template <class FunctionSpace>
         void OmniAssembler<FunctionSpace>::set_environment(const std::shared_ptr<Environment<FunctionSpace>> &env) {

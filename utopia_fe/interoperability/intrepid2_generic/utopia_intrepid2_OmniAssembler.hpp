@@ -29,6 +29,9 @@ namespace utopia {
 
             void set_environment(const std::shared_ptr<Environment<FunctionSpace>> &env);
 
+            AssemblyMode mode() const;
+            void set_mode(AssemblyMode mode);
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

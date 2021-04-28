@@ -17,7 +17,7 @@ namespace utopia {
         Field(const std::string &name = "",
               const std::shared_ptr<FunctionSpace> &space = nullptr,
               const std::shared_ptr<Vector> &data = nullptr)
-            : name_(name), data_(data) {}
+            : name_(name), space_(space), data_(data) {}
 
         void read(Input &in) override {
             in.get("name", name_);
@@ -56,10 +56,10 @@ namespace utopia {
 
     private:
         std::string name_;
+        std::shared_ptr<FunctionSpace> space_;
         std::shared_ptr<Vector> data_;
         int offset_{0};
         int tensor_size_{1};
-        std::shared_ptr<FunctionSpace> space_;
     };
 
 }  // namespace utopia

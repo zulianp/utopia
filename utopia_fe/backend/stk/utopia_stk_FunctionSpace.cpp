@@ -702,8 +702,15 @@ namespace utopia {
             }
         }
 
-        const DofMap &FunctionSpace::dof_map() const { return *impl_->dof_map; }
-        DofMap &FunctionSpace::dof_map() { return *impl_->dof_map; }
+        const DofMap &FunctionSpace::dof_map() const {
+            assert(impl_->dof_map);
+            return *impl_->dof_map;
+        }
+
+        DofMap &FunctionSpace::dof_map() {
+            assert(impl_->dof_map);
+            return *impl_->dof_map;
+        }
 
         void FunctionSpace::global_to_local(const Vector &global, Vector &local) const {
             dof_map().global_to_local(global, local);
