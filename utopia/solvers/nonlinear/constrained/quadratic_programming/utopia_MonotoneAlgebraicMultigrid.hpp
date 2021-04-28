@@ -115,17 +115,22 @@ namespace utopia {
                 this->init_solver("utopia::MonotoneAlgebraicMultigrid", {" it. ", "|| u - u_old ||"});
             }
 
+            Vector x_old = x;
+            Vector diff;
+
             bool converged = false;
             for (int it = 0; it < this->max_it() && !converged; ++it) {
                 apply_once(rhs, x);
 
-                Scalar diff = norm2(correction);
+                diff = x_old - x;
+                Scalar diff_norm = norm2(diff);
+                x_old = x;
 
                 if (this->verbose()) {
-                    PrintInfo::print_iter_status(it, {diff});
+                    PrintInfo::print_iter_status(it, {diff_norm});
                 }
 
-                converged = this->check_convergence(it, 1, 1, diff);
+                converged = this->check_convergence(it, 1, 1, diff_norm);
             }
 
             return converged;
@@ -158,8 +163,8 @@ namespace utopia {
                 auto coarse_mat = std::make_shared<Matrix>();
                 transfer_->restrict(*modified_op_, *coarse_mat);
                 algorithm_.algorithm().fix_semidefinite_operator(*coarse_mat);
-                rename("a_H", *coarse_mat);
-                write("A_H.m", *coarse_mat);
+                // rename("a_H", *coarse_mat);
+                // write("A_H.m", *coarse_mat);
 
                 algorithm_.update(coarse_mat);
 
