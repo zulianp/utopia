@@ -285,16 +285,16 @@ namespace utopia {
             // Does not work
             const static bool verbose = true;
             const static bool use_masks = false;
-            int n_levels = 6;
+            int n_levels = 4;
             int n_coarse = 50;
 
+            auto qp_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
             auto agglomerator = std::make_shared<Agglomerate<Matrix>>();
 
-            MonotoneAlgebraicMultigrid<Matrix, Vector> amg(
-                fine_smoother, coarse_smoother, direct_solver, agglomerator, n_levels);
+            MonotoneAlgebraicMultigrid<Matrix, Vector> amg(qp_smoother, fine_smoother, direct_solver, agglomerator);
+            amg.set_n_levels(n_levels);
 
             using ProblemType = utopia::Poisson1D<Matrix, Vector>;
             MultiLevelTestProblem1D<Matrix, Vector, ProblemType> ml_problem(n_levels, n_coarse, !use_masks);
@@ -313,6 +313,9 @@ namespace utopia {
             amg.set_box_constraints(make_box_constaints(make_ref(lower_bound), make_ref(upper_bound)));
 
             utopia_test_assert(amg.solve(H, g, x));
+
+            rename("x", x);
+            write("X.m", x);
         }
 
         void monotone_mg_test() {
@@ -383,7 +386,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(monotone_mg_test);
 
             // FIXME
-            // UTOPIA_RUN_TEST(monotone_amg_test);
+            UTOPIA_RUN_TEST(monotone_amg_test);
         }
     };
 

@@ -84,6 +84,8 @@ namespace utopia {
               agglomerator_(std::shared_ptr<MatrixAgglomerator<Matrix>>(other.agglomerator_->clone())),
               n_levels_(other.n_levels_) {}
 
+        inline void set_n_levels(const int n_levels) { n_levels_ = n_levels; }
+
         void read(Input &in) override {
             Super::read(in);
             in.get("n_levels", n_levels_);
@@ -101,12 +103,22 @@ namespace utopia {
             return ok;
         }
 
+        bool smooth(const Vector &rhs, Vector &x) override {
+            SizeType temp = this->max_it();
+            this->max_it(this->sweeps());
+            this->apply(rhs, x);
+            this->max_it(temp);
+            return true;
+        }
+
         void update(const std::shared_ptr<const Matrix> &op) override {
             UTOPIA_TRACE_REGION_BEGIN("AlgebraicMultigrid::update");
 
             Super::update(op);
 
             AlgebraicMultigridBuilder<Matrix>::build(n_levels_, op, *agglomerator_, algorithm_);
+
+            algorithm_.adjust_memory();
             UTOPIA_TRACE_REGION_END("AlgebraicMultigrid::update");
         }
 

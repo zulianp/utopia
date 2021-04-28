@@ -12,6 +12,8 @@
 #include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
 #include "utopia_petsc_DILUAlgorithm.hpp"
 
+#include "utopia_MonotoneAlgebraicMultigrid.hpp"
+
 #include "utopia_ui.hpp"
 
 #include "utopia_fe_Core.hpp"
@@ -44,6 +46,7 @@ namespace utopia {
         using AlgebraicMultigrid_t = utopia::AlgebraicMultigrid<Matrix_t, Vector_t>;
         using ProjectedGaussSeidel_t = utopia::ProjectedGaussSeidel<Matrix_t, Vector_t>;
         using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
+        using MonotoneAlgebraicMultigrid_t = utopia::MonotoneAlgebraicMultigrid<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
             in.get("space", [this](Input &in) {
@@ -134,6 +137,8 @@ namespace utopia {
                     qp_solver_ = std::make_shared<SemismoothNewton_t>(linear_solver);
                 }
 
+            } else if (qp_solver_type == "mamg") {
+                qp_solver_ = std::make_shared<MonotoneAlgebraicMultigrid_t>();
             } else {
                 qp_solver_ = std::make_shared<ProjectedGaussSeidel_t>();
             }

@@ -484,6 +484,19 @@ namespace utopia {
             measure_residual_ = measure_residual;
         }
 
+        void adjust_memory() {
+            int n_levels = this->n_levels();
+            if (memory.valid(n_levels)) {
+                for (int l = 0; l < n_levels; ++l) {
+                    // auto lo = row_layout(this->level(l).A());
+                    memory.r[l].clear();
+                    memory.c[l].clear();
+                    memory.c_I[l].clear();
+                    memory.c_I[l].clear();
+                }
+            }
+        }
+
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;
         std::shared_ptr<Solver> coarse_solver_;
