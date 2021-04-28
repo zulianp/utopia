@@ -36,7 +36,22 @@ namespace utopia {
             space.nodal_field_to_global_vector(v2);
         }
 
-        void run() override { UTOPIA_RUN_TEST(declare_field); }
+        void backend_set_nodal_field() {
+            auto params = param_list(param("mesh", param_list(param("type", "cube"))));
+            FunctionSpace space;
+            space.read(params);
+
+            Field<FunctionSpace> field("velocity");
+            space.create_nodal_vector_field(3, field);
+            space.backend_set_nodal_field(field);
+
+            UTOPIA_TEST_EQ(space.mesh().n_nodes() * 3, field.data().size());
+        }
+
+        void run() override {
+            UTOPIA_RUN_TEST(declare_field);
+            UTOPIA_RUN_TEST(backend_set_nodal_field);
+        }
     };
 
 }  // namespace utopia

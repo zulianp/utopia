@@ -51,6 +51,7 @@ namespace utopia {
             void create_local_vector(Vector &v) const;
             void create_matrix(Matrix &m) const;
             void create_field(Field<FunctionSpace> &field);
+            void create_nodal_vector_field(const int vector_size, Field<FunctionSpace> &field);
 
             void apply_constraints(Matrix &m);
             void apply_constraints(Vector &v);
@@ -87,6 +88,8 @@ namespace utopia {
 
             void create_vector(const std::string &field_name, Vector &v) const;
             void global_vector_to_nodal_field(const std::string &field_name, const Vector &v);
+
+            void backend_set_nodal_field(const Field<FunctionSpace> &field);
 
         private:
             class Impl;
