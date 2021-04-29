@@ -205,7 +205,7 @@ namespace utopia {
 
 #ifdef CHECK_NUM_PRECISION_mode
                 if (has_nan_or_inf(x)) {
-                    x = local_zeros(local_size(x));
+                    x.set(0.0);
                     return true;
                 }
 #else
@@ -258,8 +258,11 @@ namespace utopia {
             Vector &c_I = memory.c_I[l];
             Vector &r_R = memory.r_R[l];
 
-            if (empty(c) || size(c) != size(r)) {
-                c.zeros(layout(r));
+            auto lo = layout(r);
+
+            // if (empty(c) || size(c) != size(r)) {
+            if (empty(c) || !lo.same(layout(c))) {
+                c.zeros(lo);
             } else {
                 c.set(0.);
             }

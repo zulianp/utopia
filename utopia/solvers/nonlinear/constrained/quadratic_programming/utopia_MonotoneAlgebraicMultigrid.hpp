@@ -87,6 +87,7 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
             algorithm_.read(in);
+            in.get("active_set", *active_set_);
         }
 
         void update(const std::shared_ptr<const Matrix> &op) override {
