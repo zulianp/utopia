@@ -11,17 +11,15 @@ def pytorch_to_utopia(x):
 	for i in range(0, x_into_numpy.size):
 		u.double_array_setitem(double_array,i,x_into_numpy[i])
 
-	comm = u.Communicator()
-	size = x_into_numpy.size
-	l = u.Layout(comm, size, size)
-
 	u_vector = u.Vector()
+	size = x_into_numpy.size
 
 	u_vector.serial_uconversion(double_array, size)
+	u.delete_double_array(double_array)
 
 	u_vector.describe()
 	return u_vector	
-	# u.delete_double_array(a)
+	
 
 
 # Given a numpy array, return an utopia vector
@@ -30,14 +28,13 @@ def numpy_to_utopia(x):
 	for i in range(0, x.size):
 		u.double_array_setitem(double_array,i,x[i])
 
-	comm = u.Communicator()
-	size = x.size
-	l = u.Layout(comm, size, size)
-
 	u_vector = u.Vector()
+	size = x.size
 
 	u_vector.serial_uconversion(double_array, size)
+	u.delete_double_array(double_array)
 
 	u_vector.describe()
 	return u_vector	
-	# u.delete_double_array(a)
+
+
