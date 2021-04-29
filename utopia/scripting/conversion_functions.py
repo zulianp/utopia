@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 
-# Given a pytorch array, return an utopia vector
+# Given a pytorch mono-dimensional tensor, return an utopia vector
 def pytorch_to_utopia(x):
 	x_into_numpy = x.numpy()
 
@@ -38,3 +38,12 @@ def numpy_to_utopia(x):
 	return u_vector	
 
 
+# Given a utopia vector, return a pytorch mono-dimensional tensor 
+def utopia_to_pytorch(vec, size):
+	values = np.zeros((size,))
+	
+	for i in range(0,size):
+		values[i] = vec.get(i)
+	output = torch.from_numpy(values)
+
+	return output
