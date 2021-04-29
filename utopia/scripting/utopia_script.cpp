@@ -152,7 +152,7 @@ namespace scripting {
         }
     }
 
-    Scalar *Vector::from_utopia_to_carray() {
+    double *Vector::from_utopia_to_carray(int size) {
         double *temp = new double[100];
         {
             impl_->write_lock(utopia::LOCAL);
@@ -162,6 +162,9 @@ namespace scripting {
             }
 
             impl_->write_unlock(utopia::LOCAL);
+        }
+        for (int j = 0; j < size; j++) {
+            printf("%g\n", temp[j]);
         }
         return temp;
     }

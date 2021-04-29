@@ -89,7 +89,7 @@ namespace scripting {
         // void convert_into_uvector(std::vector<double> values, const Layout &l);
         void serial_uconversion(double *seq, int n);
         void parallel_uconversion(float *values, const Layout &l);
-        Scalar *from_utopia_to_carray();
+        double *from_utopia_to_carray(int size);
         Scalar get(const SizeType &i) const;
         // void convert(int *seq, int n);
 
