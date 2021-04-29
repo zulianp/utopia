@@ -32,6 +32,8 @@ namespace utopia {
             AssemblyMode mode() const;
             void set_mode(AssemblyMode mode);
 
+            bool is_linear() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

@@ -158,5 +158,7 @@ namespace utopia {
             }
         }
 
+        bool OmniAssembler::is_linear() const { return true; }
+
     }  // namespace libmesh
 }  // namespace utopia

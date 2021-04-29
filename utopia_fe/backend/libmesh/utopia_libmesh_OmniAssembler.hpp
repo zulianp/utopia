@@ -28,6 +28,8 @@ namespace utopia {
 
             void set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env);
 
+            bool is_linear() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

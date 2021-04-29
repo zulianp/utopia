@@ -74,6 +74,7 @@ namespace utopia {
                 return true;
             }
 
+            // FGF_i = F_inv_t_qp * transpose(Grad_i) * F_inv_t_qp
             UTOPIA_INLINE_FUNCTION static void selective_triple_product(const int di,
                                                                         const M &F_inv_t_qp,
                                                                         const V &grad,
@@ -156,21 +157,25 @@ namespace utopia {
 
                     F_inv_t_qp = inv(transpose(F_qp));
                     Scalar J = det(F_qp);
+                    assert(J > 0.0);
                     assert(J != 0.0);
                     assert(J == J);
 
                     Scalar log_J = device::log(J);
+                    assert(log_J == log_J);
+
                     Scalar beta = (rescale * (lambda * log_J - mu));
 
                     for (int di = 0; di < Dim; ++di) {
                         auto dof_i = i * Dim + di;
 
+                        // FGF_i = F_inv_t_qp * transpose(Grad_i) * F_inv_t_qp
                         selective_triple_product(di, F_inv_t_qp, grad_i, FGF_i);
                         Scalar inner_F_grad_i = selective_inner(di, F_inv_t_qp, grad_i);
 
                         make_grad(di, grad_i, stress_lin_i);
                         stress_lin_i *= rescale * mu;
-                        stress_lin_i += beta * FGF_i + (lambda * inner_F_grad_i) * F_inv_t_qp;
+                        stress_lin_i += (-beta) * FGF_i + (lambda * inner_F_grad_i) * F_inv_t_qp;
 
                         for (int dj = 0; dj < Dim; ++dj) {
                             auto dof_j = j * Dim + dj;
@@ -232,6 +237,7 @@ namespace utopia {
                     Scalar log_J = device::log(J);
                     Scalar lambda_log_J = (rescale * lambda) * log_J;
 
+                    assert(J > 0.0);
                     assert(J == J);
                     assert(log_J == log_J);
 

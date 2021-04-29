@@ -356,6 +356,7 @@ namespace utopia {
             std::shared_ptr<intrepid2::Field<Scalar>> x_field;
 
             AssemblyMode mode{OVERWRITE_MODE};
+            bool is_linear_{true};
         };
 
         template <class FunctionSpace>
@@ -422,10 +423,16 @@ namespace utopia {
             impl_->domain.fe = std::make_shared<typename Impl::FE>();
             create_fe(*impl_->space, *impl_->domain.fe, quadrature_order);
 
+            impl_->is_linear_ = true;
+
             in.get("material", [this](Input &node) {
                 auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);
 
                 if (assembler) {
+                    if (!assembler->is_linear()) {
+                        impl_->is_linear_ = false;
+                    }
+
                     impl_->domain.assemblers.push_back(assembler);
                 } else {
                     assert(false && "Should not come here");
@@ -468,6 +475,11 @@ namespace utopia {
                     }
                 });
             });
+        }
+
+        template <class FunctionSpace>
+        bool OmniAssembler<FunctionSpace>::is_linear() const {
+            return impl_->is_linear_;
         }
 
     }  // namespace intrepid2

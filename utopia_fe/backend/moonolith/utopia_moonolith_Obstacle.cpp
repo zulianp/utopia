@@ -268,18 +268,29 @@ namespace utopia {
         void Obstacle::describe(std::ostream &os) const {}
 
         bool Obstacle::init_obstacle(const Mesh &obstacle_mesh) {
+            UTOPIA_TRACE_REGION_BEGIN("moonolith::Obstacle::init_obstacle");
+
+            bool ok = false;
             if (obstacle_mesh.spatial_dimension() == 3) {
                 impl_ = utopia::make_unique<ImplD<3>>();
                 impl_->init(obstacle_mesh);
-                return true;
-            } else {
-                return false;
+                ok = true;
             }
+
+            UTOPIA_TRACE_REGION_END("moonolith::Obstacle::init_obstacle");
+            return ok;
         }
 
         void Obstacle::set_params(const Params &params) { *this->params_ = params; }
 
-        bool Obstacle::assemble(const FunctionSpace &space) { return impl_->assemble(space, *params_, *output_); }
+        bool Obstacle::assemble(const FunctionSpace &space) {
+            UTOPIA_TRACE_REGION_BEGIN("moonolith::Obstacle::assemble");
+
+            bool ok = impl_->assemble(space, *params_, *output_);
+
+            UTOPIA_TRACE_REGION_END("moonolith::Obstacle::assemble");
+            return ok;
+        }
 
         void Obstacle::transform(const Matrix &in, Matrix &out) {
             out = transpose(output().orthogonal_trafo) * in * output().orthogonal_trafo;
