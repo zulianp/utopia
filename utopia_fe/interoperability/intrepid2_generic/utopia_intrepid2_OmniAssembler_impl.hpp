@@ -245,6 +245,12 @@ namespace utopia {
                 assert(space);
                 utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
                 in.set_tensor_size(space->n_var());
+
+                // REMOVE ME
+                // std::shared_ptr<intrepid2::Field<Scalar>> x_field =
+                //     std::make_shared<intrepid2::Field<Scalar>>(domain.fe);
+                //////////
+
                 convert_field(in, *x_field);
 
                 bool has_linear = false;

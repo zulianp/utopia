@@ -40,6 +40,7 @@ namespace utopia {
                 }
 
                 in.get("compute_deformation_gradient", compute_deformation_gradient_);
+                in.get("quadrature_order", quadrature_order);
             }
 
             bool valid() const { return valid_; }
@@ -50,7 +51,7 @@ namespace utopia {
                 auto fe = std::make_shared<Intrepid2FE_t>();
 
                 // One gradient per element
-                create_fe(space_, *fe, 0);
+                create_fe(space_, *fe, quadrature_order);
 
                 Intrepid2Field_t intrepid_field(fe);
                 Intrepid2Gradient_t intrepid_gradient(fe);
@@ -90,6 +91,7 @@ namespace utopia {
             bool valid_{false};
             bool verbose_{false};
             bool compute_deformation_gradient_{false};
+            int quadrature_order{0};
         };
     }  // namespace intrepid2
 }  // namespace utopia

@@ -89,9 +89,14 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION static Scalar selective_inner(const int di, const M &mat, const V &grad) {
                 Scalar ret = 0.0;
 
-                for (int dj = 0; dj < Dim; ++dj) {
-                    ret += mat(di, dj) * grad[dj];
-                }
+                // for (int dj = 0; dj < Dim; ++dj) {
+                //     ret += mat(di, dj) * grad[dj];
+                // }
+
+                M grad_mat;
+                // TODO Make more efficient by skipping 0 operations
+                make_grad(di, grad, grad_mat);
+                ret = inner(mat, grad_mat);
 
                 return ret;
             }
