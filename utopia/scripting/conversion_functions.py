@@ -39,14 +39,10 @@ def numpy_to_utopia(x):
 
 
 # Given a utopia vector, return a pytorch mono-dimensional tensor 
-def utopia_to_pytorch(vec, size):
-	values = np.zeros((size,))
-	
-	for i in range(size):
-		values[i] = vec.get(i)
-	output = torch.from_numpy(values)
-
-	return output
+def utopia_to_pytorch(x):
+	temp = x.from_utopia_to_carray(9)
+	temp = torch.FloatTensor(temp)
+	return temp
 
 
 
