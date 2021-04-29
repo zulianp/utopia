@@ -177,6 +177,52 @@ namespace utopia {
                 ::Kokkos::parallel_for(this->fe()->cell_qp_range(), AddIdentityAndStore(rows(), cols(), data));
             }
 
+            void describe(std::ostream &os) const override {
+                const int rows = this->rows();
+                const int cols = this->cols();
+
+                auto data = this->data();
+                ::Kokkos::parallel_for(
+                    this->fe()->cell_qp_range(), UTOPIA_LAMBDA(int cell, int qp) {
+                        if (qp == 0) {
+                            printf("\n");
+                        }
+
+                        for (int i = 0; i < rows; ++i) {
+                            for (int j = 0; j < cols; ++j) {
+                                printf("%g ", data(cell, qp, i * cols + j));
+                            }
+
+                            printf("\n");
+                        }
+
+                        printf("\n");
+                    });
+            }
+
+            void det(DynRankView &result) const {
+                if (rows() != cols()) {
+                    assert(false);
+                    Utopia::Abort("Trying to call det on non-square Gradient");
+                }
+
+                SizeType num_cells = this->fe()->num_cells();
+                SizeType num_qp = this->fe()->num_qp();
+                SizeType spatial_dimension = this->tensor_size;
+
+                if (result.extent(0) != num_cells || result.extent(1) != num_qp || result.extent(2) != 1) {
+                    result = DynRankView("det(Gradient)", num_cells, num_qp, 1);
+                }
+
+                const int n = this->rows();
+
+                auto data = this->data();
+                ::Kokkos::parallel_for(this->fe()->cell_qp_range(),
+                                       UTOPIA_LAMBDA(int cell, int qp){
+
+                                       });
+            }
+
         private:
             int var_dim_{1};
 
@@ -215,6 +261,13 @@ namespace utopia {
                 }
             }
         };
+
+        // template <typename Scalar>
+        // inline QPField<Scalar> det(const Gradient<Scalar> &grad) {
+        //     QPField<Scalar> ret;
+        //     grad.det(ret);
+        //     return ret;
+        // }
     }  // namespace intrepid2
 }  // namespace utopia
 

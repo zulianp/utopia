@@ -9,7 +9,7 @@
 namespace utopia {
     namespace intrepid2 {
         template <typename Scalar_>
-        class Field {
+        class Field : public Describable {
         public:
             using Scalar = Scalar_;
             using FE = utopia::intrepid2::FE<Scalar>;
@@ -54,6 +54,20 @@ namespace utopia {
                     });
             }
 
+            void describe(std::ostream &os) const override {
+                const int tensor_size = tensor_size_;
+
+                auto data = data_;
+                ::Kokkos::parallel_for(
+                    fe_->cell_range(), UTOPIA_LAMBDA(int cell) {
+                        for (int i = 0; i < tensor_size; ++i) {
+                            printf("%g ", data(cell, i));
+                        }
+
+                        printf("\n");
+                    });
+            }
+
             virtual bool is_coefficient() const { return true; }
 
         private:
@@ -87,6 +101,24 @@ namespace utopia {
                         for (int i = 0; i < tensor_size; ++i) {
                             data(cell, qp, i) *= v;
                         }
+                    });
+            }
+
+            void describe(std::ostream &os) const override {
+                const int tensor_size = this->tensor_size();
+
+                auto data = this->data();
+                ::Kokkos::parallel_for(
+                    this->fe()->cell_qp_range(), UTOPIA_LAMBDA(int cell, int qp) {
+                        if (qp == 0) {
+                            printf("\n");
+                        }
+
+                        for (int i = 0; i < tensor_size; ++i) {
+                            printf("%g ", data(cell, qp, i));
+                        }
+
+                        printf("\n");
                     });
             }
 

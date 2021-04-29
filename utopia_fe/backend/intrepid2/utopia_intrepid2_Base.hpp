@@ -1,6 +1,8 @@
 #ifndef UTOPIA_INTREPID2_BASE_HPP
 #define UTOPIA_INTREPID2_BASE_HPP
 
+#include "utopia_Traits.hpp"
+
 #include <Kokkos_DynRankView.hpp>
 
 namespace utopia {
