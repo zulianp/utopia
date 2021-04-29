@@ -200,6 +200,104 @@ namespace utopia {
                     });
             }
 
+            class DetOp {
+            public:
+                DetOp(const int n, const DynRankView &data) : n(n), data(data) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(int cell, int qp) const {
+                    Scalar d = 0;
+
+                    switch (n) {
+                        case 1: {
+                            d = data(cell, qp, 0);
+                            break;
+                        }
+
+                        case 2: {
+                            StaticMatrix<Scalar, 2, 2> mat;
+                            mat(0, 0) = data(cell, qp, 0);
+                            mat(0, 1) = data(cell, qp, 1);
+                            mat(1, 0) = data(cell, qp, 2);
+                            mat(1, 1) = data(cell, qp, 3);
+                            d = utopia::det(mat);
+                            break;
+                        }
+
+                        case 3: {
+                            StaticMatrix<Scalar, 3, 3> mat;
+                            mat(0, 0) = data(cell, qp, 0);
+                            mat(0, 1) = data(cell, qp, 1);
+                            mat(0, 2) = data(cell, qp, 2);
+
+                            mat(1, 0) = data(cell, qp, 3);
+                            mat(1, 1) = data(cell, qp, 4);
+                            mat(1, 2) = data(cell, qp, 5);
+
+                            mat(2, 0) = data(cell, qp, 6);
+                            mat(2, 1) = data(cell, qp, 7);
+                            mat(2, 2) = data(cell, qp, 8);
+
+                            d = utopia::det(mat);
+                            break;
+                        }
+
+                        default: {
+                            assert(false);
+                            break;
+                        }
+                    }
+
+                    return d;
+                }
+
+                int n;
+                DynRankView data;
+            };
+
+            class CountNonPositiveDets {
+            public:
+                CountNonPositiveDets(const int n, const DynRankView &matrices)
+                    : op_(n, matrices), n_qp(matrices.extent(1)) {}
+
+                UTOPIA_INLINE_FUNCTION int apply(int cell, int qp) const {
+                    Scalar J = op_(cell, qp);
+                    bool is_non_positive = J <= 0.0;
+                    assert(!is_non_positive);
+                    return is_non_positive;
+                }
+
+                KOKKOS_INLINE_FUNCTION void operator()(const int &cell, int &val) const {
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        val += apply(cell, qp);
+                    }
+                }
+
+                UTOPIA_INLINE_FUNCTION void init(int &val) const { val = 0; }
+                KOKKOS_INLINE_FUNCTION void join(volatile int &val, const volatile int &other) const {
+                    // Kokkos forces us to have the input values being declared volatile. Hence we need to make copies
+                    // for the reduction operations
+                    const int tmp1 = val, tmp2 = other;
+                    val = tmp1 + tmp2;
+                }
+
+                DetOp op_;
+                int n_qp;
+            };
+
+            bool check_dets_are_positive() const {
+                if (rows() != cols()) {
+                    assert(false);
+                    Utopia::Abort("Trying to call det on non-square Gradient");
+                }
+
+                CountNonPositiveDets op(this->rows(), this->data());
+
+                int count = 0;
+                ::Kokkos::parallel_reduce(this->fe()->cell_range(), op, count);
+                assert(count == 0);
+                return count == 0;
+            }
+
             void det(DynRankView &result) const {
                 if (rows() != cols()) {
                     assert(false);
@@ -208,7 +306,6 @@ namespace utopia {
 
                 SizeType num_cells = this->fe()->num_cells();
                 SizeType num_qp = this->fe()->num_qp();
-                SizeType spatial_dimension = this->tensor_size;
 
                 if (result.extent(0) != num_cells || result.extent(1) != num_qp || result.extent(2) != 1) {
                     result = DynRankView("det(Gradient)", num_cells, num_qp, 1);
@@ -217,10 +314,11 @@ namespace utopia {
                 const int n = this->rows();
 
                 auto data = this->data();
-                ::Kokkos::parallel_for(this->fe()->cell_qp_range(),
-                                       UTOPIA_LAMBDA(int cell, int qp){
 
-                                       });
+                DetOp op(n, data);
+                ::Kokkos::parallel_for(
+                    this->fe()->cell_qp_range(),
+                    UTOPIA_LAMBDA(int cell, int qp) { result(cell, qp, 0) = op(cell, qp); });
             }
 
         private:
@@ -262,12 +360,13 @@ namespace utopia {
             }
         };
 
-        // template <typename Scalar>
-        // inline QPField<Scalar> det(const Gradient<Scalar> &grad) {
-        //     QPField<Scalar> ret;
-        //     grad.det(ret);
-        //     return ret;
-        // }
+        template <typename Scalar>
+        inline QPField<Scalar> det(const Gradient<Scalar> &grad) {
+            QPField<Scalar> ret(grad.fe());
+            ret.set_name("Determinant");
+            grad.det(ret.data());
+            return ret;
+        }
     }  // namespace intrepid2
 }  // namespace utopia
 

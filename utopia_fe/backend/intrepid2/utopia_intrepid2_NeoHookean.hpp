@@ -71,6 +71,7 @@ namespace utopia {
 
                 deformation_gradient_->init(*displacement);
                 deformation_gradient_->add_identity();
+                assert(deformation_gradient_->check_dets_are_positive());
                 return true;
             }
 

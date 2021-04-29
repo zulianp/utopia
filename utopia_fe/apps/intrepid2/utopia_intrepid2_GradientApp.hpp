@@ -69,12 +69,17 @@ namespace utopia {
                 if (compute_deformation_gradient_) {
                     intrepid_gradient.add_identity();
 
+                    auto intrepid_det = det(intrepid_gradient);
+
                     if (verbose_) {
                         utopia::out() << "Deformation gradient:\n";
                         utopia::out() << "-------------------------------\n";
                         intrepid_gradient.describe(utopia::out().stream());
                         utopia::out() << "-------------------------------\n";
                     }
+
+                    utopia::out() << "Deformation gradient determinant:\n";
+                    intrepid_det.describe(utopia::out().stream());
                 }
             }
 
