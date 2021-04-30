@@ -41,6 +41,7 @@ namespace utopia {
             Scalar_t stol = 1e-6;
             bool verbose = true;
             bool debug_nonlinear_material = false;
+            bool export_tensors = false;
             OmniLinearSolver_t solver;
             in.get("solver", [&](Input &in) {
                 in.get("max_it", max_it);
@@ -48,6 +49,7 @@ namespace utopia {
                 in.get("verbose", verbose);
                 in.get("debug_nonlinear_material", debug_nonlinear_material);
                 in.get("linear_solver", solver);
+                in.get("export_tensors", export_tensors);
             });
 
             Vector_t x, g, c;
@@ -66,7 +68,17 @@ namespace utopia {
                     return;
                 }
 
-                g *= -1.0;
+                if (export_tensors) {
+                    std::string it_str = std::to_string(it);
+                    rename("x" + it_str, x);
+                    write("load_x" + it_str + ".m", x);
+                    rename("H" + it_str, H);
+                    write("load_H" + it_str + ".m", H);
+                    rename("g" + it_str, g);
+                    write("load_g" + it_str + ".m", g);
+                }
+
+                if (export_tensors) g *= -1.0;
 
                 if (it == 0) {
                     space.apply_constraints(H, g);
@@ -91,7 +103,11 @@ namespace utopia {
                 Scalar_t norm_c = norm2(c);
 
                 if (verbose) {
-                    utopia::out() << "norm_c: " << norm_c << '\n';
+                    Scalar_t norm_g = norm2(g);
+                    std::stringstream ss;
+                    ss << "norm_c: " << norm_c << '\n';
+                    ss << "norm_g: " << norm_g << '\n';
+                    g.comm().root_print(ss.str(), utopia::out().stream());
                 }
 
                 if (norm_c < stol) {

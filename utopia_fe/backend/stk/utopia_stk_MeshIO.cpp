@@ -48,10 +48,9 @@ namespace utopia {
                         read_specification = path;
                     }
 
-                    if(verbose) {
+                    if (verbose) {
                         utopia::out() << "Reading DB at path: " << path << "\n";
                     }
-
 
                 } else {
                     int nx = 10;
@@ -62,12 +61,35 @@ namespace utopia {
                     in.get("ny", ny);
                     in.get("nz", nz);
 
-                    if(verbose) {
+                    Scalar box_min[3] = {0.0, 0.0, 0.0};
+                    Scalar box_max[3] = {1.0, 1.0, 1.0};
+
+                    in.get("min_x", box_min[0]);
+                    in.get("min_y", box_min[1]);
+                    in.get("min_z", box_min[2]);
+
+                    in.get("max_x", box_max[0]);
+                    in.get("max_y", box_max[1]);
+                    in.get("max_z", box_max[2]);
+
+                    if (verbose) {
                         utopia::out() << "Generating cube with " << nx << " x " << ny << " x " << nz << "\n";
                     }
 
+                    // See packages/seacas/libraries/ioss/src/generated/Iogn_GeneratedMesh.C
+
+                    std::string sidesets = "|sideset:xyzXYZ";
+                    // std::string sidesets = "sideset:zyXYxZ";
+                    std::string bbox = "bbox:";
+                    bbox += std::to_string(box_min[0]) + ", ";
+                    bbox += std::to_string(box_min[1]) + ", ";
+                    bbox += std::to_string(box_min[2]) + ", ";
+                    bbox += std::to_string(box_max[0]) + ", ";
+                    bbox += std::to_string(box_max[1]) + ", ";
+                    bbox += std::to_string(box_max[2]);
+
                     std::string specification = "generated:" + std::to_string(nx) + "x" + std::to_string(ny) + "x" +
-                                                std::to_string(nz) + "|sideset:xyzXYZ";
+                                                std::to_string(nz) + "|" + sidesets + "|" + bbox;
 
                     in.get("specification", specification);
                     set_read_specification(specification);

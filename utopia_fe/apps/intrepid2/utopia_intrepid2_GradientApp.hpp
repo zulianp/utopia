@@ -24,7 +24,17 @@ namespace utopia {
             void read(Input &in) override {
                 valid_ = true;
 
-                in.get("verbose", verbose_);
+                if (!Options()
+                         .add_option("verbose", verbose_, "Verbose output.")
+                         .add_option("compute_deformation_gradient",
+                                     compute_deformation_gradient_,
+                                     "Compute and analyse the deformation gradient.")
+                         .add_option("quadrature_order", quadrature_order, "Specify the quadrature order.")
+                         .parse(in)) {
+                    valid_ = false;
+                    return;
+                }
+
                 in.get("space", [this](Input &in) {
                     space_.read_with_state(in, field_);
 
@@ -38,9 +48,6 @@ namespace utopia {
                     valid_ = false;
                     return;
                 }
-
-                in.get("compute_deformation_gradient", compute_deformation_gradient_);
-                in.get("quadrature_order", quadrature_order);
             }
 
             bool valid() const { return valid_; }

@@ -54,7 +54,7 @@ namespace utopia {
         const utopia::libmesh::FunctionSpace &space,
         utopia::intrepid2::FE<Scalar> &fe,
         const int degree) {
-        using FE = utopia::intrepid2::FE<Scalar>;
+        // using FE = utopia::intrepid2::FE<Scalar>;
 
         auto &m = space.mesh().raw_type();
 

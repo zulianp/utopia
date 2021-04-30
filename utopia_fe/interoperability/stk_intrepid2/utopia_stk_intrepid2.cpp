@@ -482,8 +482,8 @@ namespace utopia {
         auto topo = convert_elem_type(first_bucket->topology(), true);
         Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
 
-        if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < n_nodes_x_elem) {
-            device_element_vectors = StkViewDevice_t<Scalar>("Coefficients", num_elem, n_nodes_x_elem, n_comp);
+        if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < n_nodes_x_elem * n_comp) {
+            device_element_vectors = StkViewDevice_t<Scalar>("Coefficients", num_elem, n_nodes_x_elem * n_comp);
         }
 
         typename StkViewDevice_t<Scalar>::HostMirror element_vectors =
@@ -507,7 +507,7 @@ namespace utopia {
                 for (int i = 0; i < n_nodes; ++i) {
                     SizeType node_idx = utopia::stk::convert_entity_to_index(node_ids[i]);
                     for (int d = 0; d < n_comp; ++d) {
-                        element_vectors(elem_idx, i, d) = local_view.get(node_idx * n_comp + d);
+                        element_vectors(elem_idx, i * n_comp + d) = local_view.get(node_idx * n_comp + d);
                     }
                 }
 

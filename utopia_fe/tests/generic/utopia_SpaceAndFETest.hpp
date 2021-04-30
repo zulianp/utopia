@@ -56,8 +56,8 @@ namespace utopia {
 
         inline void add_cube_bc(FunctionSpace &space, const int n_var = 1) const {
             for (int i = 0; i < n_var; ++i) {
-                space.add_dirichlet_boundary_condition(SideSet_t::top(), (i == 0), i);
-                space.add_dirichlet_boundary_condition(SideSet_t::bottom(), -(i == 0), i);
+                space.add_dirichlet_boundary_condition(SideSet_t::Cube::top(), (i == 0), i);
+                space.add_dirichlet_boundary_condition(SideSet_t::Cube::bottom(), -(i == 0), i);
             }
         }
 

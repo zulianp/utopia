@@ -182,7 +182,12 @@ namespace utopia {
                 assembler->assemble(x, H, g);
                 g *= -1.0;
 
-                space.apply_constraints(H, g);
+                if (i == 0) {
+                    space.apply_constraints(H, g);
+                } else {
+                    space.apply_constraints(H);
+                    space.apply_zero_constraints(g);
+                }
 
                 Matrix_t H_c;
                 Vector_t g_c(layout(x), 0.0), x_c(layout(x), 0.0);
@@ -208,6 +213,7 @@ namespace utopia {
                 qp_solver_->solve(H_c, g_c, x_c);
                 obs.inverse_transform(x_c, increment);
                 x += update_factor * increment;
+                space.apply_constraints(x);
 
                 // Output solution
                 { space.write("obs_sol_" + std::to_string(i) + ".e", x); }

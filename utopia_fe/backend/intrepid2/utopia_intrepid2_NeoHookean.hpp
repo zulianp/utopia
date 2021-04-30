@@ -80,24 +80,32 @@ namespace utopia {
                                                                         const M &F_inv_t_qp,
                                                                         const V &grad,
                                                                         M &FGF_i) {
-                M grad_mat;
-                // TODO Make more efficient by skipping 0 operations
-                make_grad(di, grad, grad_mat);
-                FGF_i = F_inv_t_qp * transpose(grad_mat) * F_inv_t_qp;
+                // 2x slower
+                // M grad_mat;
+                // make_grad(di, grad, grad_mat);
+                // FGF_i = F_inv_t_qp * transpose(grad_mat) * F_inv_t_qp;
+
+                M GtF;
+                for (int k1 = 0; k1 < Dim; ++k1) {
+                    for (int k2 = 0; k2 < Dim; ++k2) {
+                        GtF(k1, k2) = grad[k1] * F_inv_t_qp(di, k2);
+                    }
+                }
+
+                FGF_i = F_inv_t_qp * GtF;
             }
 
             UTOPIA_INLINE_FUNCTION static Scalar selective_inner(const int di, const M &mat, const V &grad) {
                 Scalar ret = 0.0;
 
-                // for (int dj = 0; dj < Dim; ++dj) {
-                //     ret += mat(di, dj) * grad[dj];
-                // }
+                for (int dj = 0; dj < Dim; ++dj) {
+                    ret += mat(di, dj) * grad[dj];
+                }
 
-                M grad_mat;
-                // TODO Make more efficient by skipping 0 operations
-                make_grad(di, grad, grad_mat);
-                ret = inner(mat, grad_mat);
-
+                // 2x slower
+                // M grad_mat;
+                // make_grad(di, grad, grad_mat);
+                // ret = inner(mat, grad_mat);
                 return ret;
             }
 
