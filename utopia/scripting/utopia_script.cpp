@@ -135,6 +135,9 @@ namespace scripting {
             printf("%g\n", seq[i]);
         }
     }
+
+    SizeType Vector::local_size() { return impl_->local_size(); }
+
     void Vector::serial_uconversion(double *seq, int n) {
         {
             if (impl_->empty()) {
@@ -152,22 +155,23 @@ namespace scripting {
         }
     }
 
-    double *Vector::from_utopia_to_carray(int size) {
-        double *temp = new double[100];
-        {
-            impl_->write_lock(utopia::LOCAL);
-            utopia::Range rr = impl_->range();
-            for (auto i = rr.begin(); i < rr.end(); ++i) {
-                temp[i] = impl_->get(i);
-            }
+    // double *Vector::from_utopia_to_carray() {
+    //     int size = impl_->size();
+    //     double *temp = new double[size];
+    //     {
+    //         impl_->write_lock(utopia::LOCAL);
+    //         utopia::Range rr = impl_->range();
+    //         for (auto i = rr.begin(); i < rr.end(); ++i) {
+    //             temp[i] = impl_->get(i);
+    //         }
 
-            impl_->write_unlock(utopia::LOCAL);
-        }
-        for (int j = 0; j < size; j++) {
-            printf("%g\n", temp[j]);
-        }
-        return temp;
-    }
+    //         impl_->write_unlock(utopia::LOCAL);
+    //     }
+    //     for (int j = 0; j < size; j++) {
+    //         printf("%g\n", temp[j]);
+    //     }
+    //     return temp;
+    // }
 
     void Vector::parallel_uconversion(float *values, const Layout &l) {
         if (impl_->empty()) {
@@ -180,6 +184,18 @@ namespace scripting {
             for (auto i = rr.begin(); i < rr.end(); ++i) {
                 impl_->set(i, *values);
                 ++values;
+            }
+
+            impl_->write_unlock(utopia::LOCAL);
+        }
+    }
+
+    void Vector::write_into_carray(double *double_array) {
+        {
+            impl_->write_lock(utopia::LOCAL);
+            utopia::Range rr = impl_->range();
+            for (auto i = rr.begin(); i < rr.end(); ++i) {
+                double_array[i] = impl_->get(i);
             }
 
             impl_->write_unlock(utopia::LOCAL);

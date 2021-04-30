@@ -3,6 +3,8 @@ import torch
 import numpy as np
 
 
+
+
 # Given a pytorch mono-dimensional tensor, return an utopia vector
 def pytorch_to_utopia(x):
 	x_into_numpy = x.detach().numpy().flatten()
@@ -40,7 +42,7 @@ def numpy_to_utopia(x):
 
 # Given a utopia vector, return a pytorch mono-dimensional tensor 
 def utopia_to_pytorch(x):
-	temp = x.from_utopia_to_carray(9)
+	temp = x.from_utopia_to_carray()
 	temp = torch.FloatTensor(temp)
 	return temp
 

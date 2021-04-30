@@ -78,6 +78,7 @@ namespace scripting {
         Vector();
         ~Vector();
         void print_info();
+        SizeType local_size();
         void values(const Layout &l, const Scalar &value);
         void add(const SizeType &i, const Scalar &value);
         void axpy(Scalar alpha, Vector *x);
@@ -89,7 +90,8 @@ namespace scripting {
         // void convert_into_uvector(std::vector<double> values, const Layout &l);
         void serial_uconversion(double *seq, int n);
         void parallel_uconversion(float *values, const Layout &l);
-        double *from_utopia_to_carray(int size);
+        // void double *from_utopia_to_carray();
+        void write_into_carray(double *double_array);
         Scalar get(const SizeType &i) const;
         // void convert(int *seq, int n);
 

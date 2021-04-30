@@ -29,7 +29,6 @@ if(SWIG_FOUND)
         # swig_link_libraries(utopya PUBLIC Python3::Python Python3::NumPy utopia)
         swig_link_libraries(utopya PUBLIC Python3::Python utopia)
         set_target_properties(utopya PROPERTIES SUFFIX ".so")
-        set_target_properties(utopya PROPERTIES INCLUDE_DIRECTORIES "/opt/conda/envs/utopia_pytorch_cpu/lib/python3.8/site-packages/numpy/core/include/numpy/;/opt/conda/envs/utopia_pytorch_cpu/include/;/usr/include/")
 
         set_property(TARGET utopya PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES
                                             TRUE)
