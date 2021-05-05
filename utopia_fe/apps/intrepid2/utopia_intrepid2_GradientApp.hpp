@@ -30,6 +30,7 @@ namespace utopia {
                                      compute_deformation_gradient_,
                                      "Compute and analyse the deformation gradient.")
                          .add_option("quadrature_order", quadrature_order, "Specify the quadrature order.")
+                         .add_option("compute_strain", compute_strain_, "Compute and analyse the strain tensor")
                          .parse(in)) {
                     valid_ = false;
                     return;
@@ -89,6 +90,22 @@ namespace utopia {
                     utopia::out() << "Deformation gradient determinant:\n";
                     intrepid_det.describe(utopia::out().stream());
                 }
+
+                if (compute_strain_) {
+                    Strain<Scalar_t> intrepid_strain(fe);
+                    intrepid_strain.init_linearized(intrepid_field);
+
+                    if (verbose_) {
+                        utopia::out() << "Strain:\n";
+                        utopia::out() << "-------------------------------\n";
+                        intrepid_strain.describe(utopia::out().stream());
+                        utopia::out() << "-------------------------------\n";
+                    }
+
+                    auto intrepid_det = det(intrepid_strain);
+                    utopia::out() << "Strain determinant:\n";
+                    intrepid_det.describe(utopia::out().stream());
+                }
             }
 
         private:
@@ -98,6 +115,7 @@ namespace utopia {
             bool valid_{false};
             bool verbose_{false};
             bool compute_deformation_gradient_{false};
+            bool compute_strain_{false};
             int quadrature_order{0};
         };
     }  // namespace intrepid2

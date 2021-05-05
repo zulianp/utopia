@@ -15,6 +15,7 @@
 #include "utopia_intrepid2_NeoHookean.hpp"
 #include "utopia_intrepid2_Residual.hpp"
 #include "utopia_intrepid2_ShellTools.hpp"
+#include "utopia_intrepid2_Strain.hpp"
 #include "utopia_intrepid2_SubdomainFunction.hpp"
 #include "utopia_intrepid2_Transport.hpp"
 #include "utopia_intrepid2_VectorLaplaceOperator.hpp"

@@ -80,7 +80,7 @@ namespace utopia {
 
                     // Scalar expected = inner(strain_i, strain_j);
 
-                    auto ret = LinearizedStrain<Dim>::inner(grad, cell, i, j, qp, sub_i, sub_j);
+                    auto ret = LinearizedStrain<Scalar, Dim>::inner(grad, cell, i, j, qp, sub_i, sub_j);
                     // assert(device::approxeq(ret, expected, 1e-10));
                     return ret;
                 }
@@ -89,7 +89,7 @@ namespace utopia {
                                                            const int i,
                                                            const int qp,
                                                            const int sub_i) const {
-                    return LinearizedStrain<Dim>::trace(grad, cell, i, qp, sub_i);
+                    return LinearizedStrain<Scalar, Dim>::trace(grad, cell, i, qp, sub_i);
                 }
 
                 UTOPIA_INLINE_FUNCTION Scalar
