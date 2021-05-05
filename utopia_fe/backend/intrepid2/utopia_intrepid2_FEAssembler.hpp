@@ -21,8 +21,32 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION OpAndStoreCellIJ(const View &data, Args &&... args)
                 : op(std::forward<Args>(args)...), data(data) {}
 
-            UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &i, const int &j) const {
+            UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
                 data(cell, i, j) += op(cell, i, j);
+            }
+
+            Op op;
+            View data;
+        };
+
+        template <class View, class Op>
+        class BlockOpAndStoreCellIJ {
+        public:
+            template <typename... Args>
+            UTOPIA_INLINE_FUNCTION BlockOpAndStoreCellIJ(const View &data, Args &&... args)
+                : op(std::forward<Args>(args)...), data(data) {}
+
+            UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
+                const int offset_i = i * op.dim();
+                const int offset_j = j * op.dim();
+
+                for (int sub_i = 0; sub_i < op.dim(); ++sub_i) {
+                    const int dof_i = offset_i + sub_i;
+                    for (int sub_j = 0; sub_j < op.dim(); ++sub_j) {
+                        const int dof_j = offset_j + sub_j;
+                        data(cell, dof_i, dof_j) += op(cell, i, j, sub_i, sub_j);
+                    }
+                }
             }
 
             Op op;
@@ -40,6 +64,11 @@ namespace utopia {
             return OpAndStoreCellIJ<View, Op>(data, op);
         }
 
+        template <class Op, class View>
+        UTOPIA_INLINE_FUNCTION BlockOpAndStoreCellIJ<View, Op> block_op_and_store_cell_ij(const View &data, Op op) {
+            return BlockOpAndStoreCellIJ<View, Op>(data, op);
+        }
+
         template <typename Scalar>
         class FEAssembler : public Describable, public Configurable {
         public:
@@ -54,9 +83,11 @@ namespace utopia {
             using CellRange = typename FE::CellRange;
 
             virtual ~FEAssembler() = default;
-            virtual bool assemble() = 0;
 
-            virtual bool update(const std::shared_ptr<Field<Scalar>> &) { return true; }
+            virtual bool update(const std::shared_ptr<Field<Scalar>> &current_solution) {
+                current_solution_ = current_solution;
+                return true;
+            }
 
             virtual bool apply(const DynRankView &x, DynRankView &y) {
                 assert(false);
@@ -64,6 +95,7 @@ namespace utopia {
                 UTOPIA_UNUSED(y);
                 return false;
             }
+
             virtual int n_vars() const = 0;
             virtual std::string name() const = 0;
 
@@ -109,6 +141,33 @@ namespace utopia {
                     });
             }
 
+            template <class CellTestTrialSubIJOp>
+            void apply_vector_operator(const std::string &name,
+                                       const DynRankView &x,
+                                       DynRankView &y,
+                                       CellTestTrialSubIJOp op) {
+                assert(n_vars() == 1 && "IMPLEMENT ME");
+
+                auto &fe = this->fe();
+
+                const int num_fields = fe.num_fields();
+                const int dim = op.dim();
+
+                this->loop_cell_test(
+                    name, UTOPIA_LAMBDA(const int &cell, const int &i) {
+                        for (int j = 0; j < num_fields; ++j) {
+                            for (int sub_i = 0; sub_i < dim; ++sub_i) {
+                                Scalar val = 0.0;
+                                for (int sub_j = 0; sub_j < dim; ++sub_j) {
+                                    val += op(cell, i, j, sub_i, sub_j) * x(cell, j * dim + sub_j);
+                                }
+
+                                y(cell, i * dim + sub_i) += val;
+                            }
+                        }
+                    });
+            }
+
             template <class CellTestOp>
             void apply_diagonal_operator(const std::string &name, const DynRankView &x, DynRankView &y, CellTestOp op) {
                 assert(n_vars() == 1 && "IMPLEMENT ME");
@@ -120,7 +179,55 @@ namespace utopia {
             virtual bool is_matrix() const = 0;
             virtual bool is_vector() const = 0;
             virtual bool is_scalar() const = 0;
+            virtual bool is_operator() const { return false; }
+
             virtual bool is_linear() const { return true; }
+
+            virtual bool assemble_matrix() {
+                assert(!is_matrix() && "IMPLEMENT ME IN SUB CLASS");
+                return false;
+            }
+
+            virtual bool assemble_vector() {
+                if (is_linear() && is_operator()) {
+                    if (!this->current_solution()) {
+                        assert(false);
+                        return false;
+                    }
+
+                    this->ensure_vector_accumulator();
+
+                    auto solution_field = this->current_solution();
+                    assert(solution_field->is_coefficient());
+
+                    auto data = this->vector_data();
+                    return apply(solution_field->data(), data);
+                } else {
+                    assert(!is_vector() && "IMPLEMENT ME IN SUB CLASS");
+                }
+
+                return false;
+            }
+            virtual bool assemble_scalar() {
+                assert(!is_scalar() && "IMPLEMENT ME IN SUB CLASS");
+                return false;
+            }
+
+            virtual bool assemble() {
+                if (is_scalar()) {
+                    if (!assemble_scalar()) return false;
+                }
+
+                if (is_vector()) {
+                    if (!assemble_vector()) return false;
+                }
+
+                if (is_matrix()) {
+                    if (!assemble_matrix()) return false;
+                }
+
+                return true;
+            }
 
             void scale(const intrepid2::SubdomainValue<Scalar> &fun) {
                 auto element_tags = fe().element_tags;
@@ -356,13 +463,14 @@ namespace utopia {
                 }
             }
 
+            inline std::shared_ptr<Field<Scalar>> current_solution() { return current_solution_; }
+
         private:
             std::shared_ptr<FE> fe_;
             std::shared_ptr<TensorAccumulator> matrix_accumulator_;
             std::shared_ptr<TensorAccumulator> vector_accumulator_;
             std::shared_ptr<TensorAccumulator> scalar_accumulator_;
-
-        protected:
+            std::shared_ptr<Field<Scalar>> current_solution_;
         };
 
     }  // namespace intrepid2

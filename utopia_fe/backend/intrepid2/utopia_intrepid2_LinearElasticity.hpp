@@ -45,76 +45,121 @@ namespace utopia {
             inline bool is_matrix() const override { return true; }
             inline bool is_vector() const override { return false; }
             inline bool is_scalar() const override { return false; }
+            bool is_operator() const override { return true; }
 
             inline std::string name() const override { return "LinearElasticity"; }
-            bool assemble() override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<LinearElasticity>::assemble");
 
-                this->ensure_matrix_accumulator();
+            /// This is specialized for tensor-product finite elements
+            class Op {
+            public:
+                UTOPIA_INLINE_FUNCTION Op(const FirstLameParameter &lambda,
+                                          const ShearModulus &mu,
+                                          const DynRankView &grad,
+                                          const DynRankView &measure)
+                    : lambda(lambda), mux2(mu * 2), grad(grad), measure(measure), n_qp(measure.extent(1)) {}
 
-                auto &fe = this->fe();
-                auto data = this->matrix_data();
+                UTOPIA_INLINE_FUNCTION Scalar strain_inner(const int cell,
+                                                           const int i,
+                                                           const int j,
+                                                           const int qp,
+                                                           const int sub_i,
+                                                           const int sub_j) const {
+                    // StaticVector<Scalar, Dim> temp_i, temp_j;
+                    // StaticMatrix<Scalar, Dim, Dim> strain_i;
+                    // StaticMatrix<Scalar, Dim, Dim> strain_j;
 
-                const int n_qp = fe.num_qp();
+                    // for (int d = 0; d < Dim; ++d) {
+                    //     temp_i[d] = grad(cell, i, qp, d);
+                    //     temp_j[d] = grad(cell, j, qp, d);
+                    // }
 
-                // Only works if coeff is a scalar
-                {
-                    auto mu = op_.mu;
-                    auto lambda = op_.lambda;
-                    auto grad = fe.grad;
-                    auto mux2 = mu * 2;
-                    auto measure = fe.measure;
+                    // make_strain(sub_i, &temp_i[0], strain_i);
+                    // make_strain(sub_j, &temp_j[0], strain_j);
 
-                    this->loop_cell_test_trial(
-                        "Assemble<LinearElasticity>::init", KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
-                            StaticVector<Scalar, Dim> temp_i, temp_j;
-                            StaticMatrix<Scalar, Dim, Dim> strain_i;
-                            StaticMatrix<Scalar, Dim, Dim> strain_j;
+                    // Scalar expected = inner(strain_i, strain_j);
 
-                            for (int qp = 0; qp < n_qp; ++qp) {
-                                auto dX = measure(cell, qp);
+                    if (sub_i == sub_j) {
+                        Scalar ret = 0.0;
+                        for (int d = 0; d < dim(); ++d) {
+                            ret += grad(cell, i, qp, d) * grad(cell, j, qp, d);
+                        }
 
-                                for (int d = 0; d < Dim; ++d) {
-                                    temp_i[d] = grad(cell, i, qp, d);
-                                    temp_j[d] = grad(cell, j, qp, d);
-                                }
+                        ret *= 0.5;
+                        ret += 0.5 * grad(cell, i, qp, sub_i) * grad(cell, j, qp, sub_i);
 
-                                for (int di = 0; di < Dim; ++di) {
-                                    make_strain(di, &temp_i[0], strain_i);
-                                    const Scalar trace_i = trace(strain_i);
-                                    auto dof_i = i * Dim + di;
+                        // assert(device::approxeq(ret, expected, 1e-10));
+                        return ret;
 
-                                    for (int dj = 0; dj < Dim; ++dj) {
-                                        auto dof_j = j * Dim + dj;
-
-                                        make_strain(dj, &temp_j[0], strain_j);
-
-                                        const Scalar val =
-                                            (mux2 * inner(strain_i, strain_j) + lambda * trace_i * trace(strain_j)) *
-                                            dX;
-
-                                        data(cell, dof_i, dof_j) += val;
-                                    }
-                                }
-                            }
-                        });
+                    } else {
+                        Scalar ret = 0.5 * grad(cell, i, qp, sub_j) * grad(cell, j, qp, sub_i);
+                        // assert(device::approxeq(ret, expected, 1e-10));
+                        return ret;
+                    }
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<LinearElasticity>::assemble");
+                UTOPIA_INLINE_FUNCTION Scalar strain_trace(const int cell,
+                                                           const int i,
+                                                           const int qp,
+                                                           const int sub_i) const {
+                    return grad(cell, i, qp, sub_i);
+                }
+
+                UTOPIA_INLINE_FUNCTION Scalar
+                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
+                    Scalar ret = 0.0;
+
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        const Scalar val = mux2 * strain_inner(cell, i, j, qp, sub_i, sub_j) +
+                                           lambda * strain_trace(cell, i, qp, sub_i) * strain_trace(cell, j, qp, sub_j);
+
+                        ret += val * measure(cell, qp);
+                    }
+
+                    return ret;
+                }
+
+                UTOPIA_INLINE_FUNCTION static constexpr int dim() { return Dim; }
+
+                const FirstLameParameter lambda;
+                const ShearModulus mux2;
+                const DynRankView grad;
+                const DynRankView measure;
+                const int n_qp;
+            };
+
+            inline Op make_op() const { return Op(op_.lambda, op_.mu, this->fe().grad, this->fe().measure); }
+
+            bool apply(const DynRankView &x, DynRankView &y) override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::apply");
+
+                this->apply_vector_operator("Assemble<LaplaceOperator>::apply", x, y, make_op());
+
+                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::apply");
+                return false;
+            }
+
+            bool assemble_matrix() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LinearElasticity>::assemble_matrix");
+
+                this->ensure_matrix_accumulator();
+                this->loop_cell_test_trial("Assemble<LinearElasticity>::assemble_matrix",
+                                           block_op_and_store_cell_ij(this->matrix_data(), make_op()));
+
+                UTOPIA_TRACE_REGION_END("Assemble<LinearElasticity>::assemble_matrix");
                 return true;
             }
 
-            UTOPIA_INLINE_FUNCTION static void make_strain(const int dim,
-                                                           Scalar *grad,
-                                                           StaticMatrix<Scalar, Dim, Dim> &strain) {
-                strain.set(0.0);
+            // UTOPIA_INLINE_FUNCTION static void make_strain(const int dim,
+            //                                                Scalar *grad,
+            //                                                StaticMatrix<Scalar, Dim, Dim> &strain) {
+            //     strain.set(0.0);
 
-                for (int i = 0; i < Dim; ++i) {
-                    strain(dim, i) = grad[i];
-                }
+            //     for (int i = 0; i < Dim; ++i) {
+            //         strain(dim, i) = grad[i];
+            //     }
 
-                strain.symmetrize();
-            }
+            //     strain.symmetrize();
+            // }
 
             // NVCC_PRIVATE :
             UserOp op_;

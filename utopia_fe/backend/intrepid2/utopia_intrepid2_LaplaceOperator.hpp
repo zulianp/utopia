@@ -5,6 +5,7 @@
 
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
+#include "utopia_intrepid2_Field.hpp"
 
 namespace utopia {
 
@@ -38,9 +39,63 @@ namespace utopia {
             inline bool is_matrix() const override { return true; }
             inline bool is_vector() const override { return false; }
             inline bool is_scalar() const override { return false; }
+            bool is_operator() const override { return true; }
 
-            bool assemble() override {
+            class Op {
+            public:
+                UTOPIA_INLINE_FUNCTION Op(const DiffusionCoefficient &coeff,
+                                          const DynRankView &grad,
+                                          const DynRankView &measure)
+                    : coeff(coeff), grad(grad), measure(measure), n_qp(measure.extent(1)), dim(grad.extent(3)) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
+                    Scalar ret = 0.0;
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        Scalar dot_g = 0.0;
+                        for (int d = 0; d < dim; ++d) {
+                            dot_g += grad(cell, i, qp, d) * grad(cell, j, qp, d);
+                        }
+
+                        ret += dot_g * measure(cell, qp);
+                    }
+
+                    return ret * coeff;
+                }
+
+                const DiffusionCoefficient coeff;
+                const DynRankView grad;
+                const DynRankView measure;
+                const int n_qp;
+                const int dim;
+            };
+
+            inline Op make_op() {
+                auto &fe = this->fe();
+                return Op(op_.coeff, fe.grad, fe.measure);
+            }
+
+            bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble");
+                this->ensure_matrix_accumulator();
+
+                this->loop_cell_test_trial("Assemble<LaplaceOperator>::assemble",
+                                           op_and_store_cell_ij(this->matrix_data(), make_op()));
+
+                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
+                return true;
+            }
+
+            bool apply(const DynRankView &x, DynRankView &y) override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::apply");
+
+                this->apply_operator("Assemble<LaplaceOperator>::apply", x, y, make_op());
+
+                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::apply");
+                return false;
+            }
+
+            bool assemble_matrix_intrepid_tutorial() {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
                 this->ensure_matrix_accumulator();
 
                 auto &fe = this->fe();
@@ -61,7 +116,7 @@ namespace utopia {
                         KOKKOS_LAMBDA(const int &i0, const int &i1, const int &i2) { data(i0, i1, i2) *= c; });
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
+                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
                 return true;
             }
 

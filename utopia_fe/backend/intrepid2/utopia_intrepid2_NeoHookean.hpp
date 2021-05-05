@@ -57,6 +57,10 @@ namespace utopia {
             inline std::string name() const override { return "NeoHookean"; }
 
             virtual bool update(const std::shared_ptr<Field<Scalar>> &displacement) override {
+                if (!Super::update(displacement)) {
+                    return false;
+                }
+
                 assert(displacement);
                 assert(displacement->is_coefficient());
 
@@ -276,7 +280,7 @@ namespace utopia {
                 const int num_qp;
             };
 
-            bool assemble_matrix() {
+            bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<NeoHookean>::assemble_matrix");
 
                 this->ensure_matrix_accumulator();
@@ -296,7 +300,7 @@ namespace utopia {
                 return true;
             }
 
-            bool assemble_vector() {
+            bool assemble_vector() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<NeoHookean>::assemble_vector");
 
                 this->ensure_vector_accumulator();
@@ -314,8 +318,6 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_END("Assemble<NeoHookean>::assemble_vector");
                 return true;
             }
-
-            bool assemble() override { return assemble_matrix() && assemble_vector(); }
 
             // NVCC_PRIVATE :
             UserOp op_;
