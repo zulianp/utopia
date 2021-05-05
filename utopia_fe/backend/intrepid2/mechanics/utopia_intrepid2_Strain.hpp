@@ -97,8 +97,10 @@ namespace utopia {
             }
 
             Strain(const std::shared_ptr<FE> &fe, const std::string &name = "Strain") : Super(fe, name) {}
+            // -----------
+            // NVCC_PRIVATE:
+            // compatibility with nvcc
 
-        private:
             template <int Dim>
             class InterpolateAndStoreLinearized {
             public:

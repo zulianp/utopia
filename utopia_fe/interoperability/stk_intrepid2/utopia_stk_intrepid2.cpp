@@ -475,14 +475,15 @@ namespace utopia {
 
         auto &bulk_data = space.mesh().bulk_data();
         const auto &elem_buckets = utopia::stk::local_elements(bulk_data);
-        const SizeType num_elem = utopia::stk::count_local_elements(bulk_data);
+        const Size_t num_elem = utopia::stk::count_local_elements(bulk_data);
 
         // Dirty hack (FIXME once stk usage is a bit more profficient)
         auto *first_bucket = *elem_buckets.begin();
         auto topo = convert_elem_type(first_bucket->topology(), true);
         Size_t n_nodes_x_elem = bulk_data.num_nodes((*first_bucket)[0]);
 
-        if (device_element_vectors.extent(0) < num_elem || device_element_vectors.extent(1) < n_nodes_x_elem * n_comp) {
+        if (Size_t(device_element_vectors.extent(0)) < num_elem ||
+            Size_t(device_element_vectors.extent(1)) < n_nodes_x_elem * n_comp) {
             device_element_vectors = StkViewDevice_t<Scalar>("Coefficients", num_elem, n_nodes_x_elem * n_comp);
         }
 
