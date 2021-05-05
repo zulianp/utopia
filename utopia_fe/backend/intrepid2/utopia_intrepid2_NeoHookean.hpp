@@ -132,6 +132,97 @@ namespace utopia {
                 }
             }
 
+            UTOPIA_INLINE_FUNCTION static void linearized_stress(const int sub_trial,
+                                                                 const Scalar &lambda,
+                                                                 const Scalar &mu,
+                                                                 const Scalar &rescale,
+                                                                 const V &grad_trial,
+                                                                 const M &F,
+                                                                 const M &F_inv_t,
+                                                                 const Scalar &J,
+                                                                 M &stress_lin) {
+                M FGF;
+                assert(J > 0.0);
+                assert(J != 0.0);
+                assert(J == J);
+
+                Scalar log_J = device::log(J);
+                assert(log_J == log_J);
+
+                Scalar beta = (rescale * (lambda * log_J - mu));
+
+                // FGF = F_inv_t * transpose(Grad_i) * F_inv_t
+                selective_triple_product(sub_trial, F_inv_t, grad_trial, FGF);
+                Scalar inner_F_grad_trial = selective_inner(sub_trial, F_inv_t, grad_trial);
+
+                make_grad(sub_trial, grad_trial, stress_lin);
+                stress_lin *= rescale * mu;
+                stress_lin += (-beta) * FGF + (lambda * inner_F_grad_trial) * F_inv_t;
+            }
+
+            class Op {
+            public:
+                Op(const FirstLameParameter &lambda,
+                   const ShearModulus &mu,
+                   const Scalar &rescale,
+                   const DynRankView &F,
+                   const DynRankView &grad,
+                   const DynRankView &measure)
+                    : lambda(lambda),
+                      mu(mu),
+                      rescale(rescale),
+                      F(F),
+                      grad(grad),
+                      measure(measure),
+                      num_qp(measure.extent(1)) {}
+
+                UTOPIA_INLINE_FUNCTION static constexpr int dim() { return Dim; }
+
+                UTOPIA_INLINE_FUNCTION Scalar
+                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
+                    Scalar ret = 0.0;
+                    for (int qp = 0; qp < num_qp; ++qp) {
+                        ret += (*this)(cell, i, j, qp, sub_i, sub_j);
+                    }
+
+                    return ret;
+                }
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell,
+                                                         const int i,
+                                                         const int j,
+                                                         const int qp,
+                                                         const int sub_i,
+                                                         const int sub_j) const {
+                    V grad_i, grad_j;
+                    M stress_lin;
+                    M F_qp, F_inv_t_qp;
+
+                    Scalar dX = measure(cell, qp);
+
+                    for (int d = 0; d < Dim; ++d) {
+                        grad_i[d] = grad(cell, i, qp, d);
+                        grad_j[d] = grad(cell, j, qp, d);
+                    }
+
+                    copy_def_grad(cell, qp, F, F_qp);
+
+                    F_inv_t_qp = inv(transpose(F_qp));
+                    Scalar J = det(F_qp);
+                    linearized_stress(sub_i, lambda, mu, rescale, grad_i, F_qp, F_inv_t_qp, J, stress_lin);
+                    Scalar val = selective_inner(sub_j, stress_lin, grad_j) * dX;
+                    return val;
+                }
+
+                const FirstLameParameter lambda;
+                const ShearModulus mu;
+                const Scalar rescale;
+                const DynRankView F;
+                const DynRankView grad;
+                const DynRankView measure;
+                const int num_qp;
+            };
+
             class OpAndStoreHessian {
             public:
                 OpAndStoreHessian(const FirstLameParameter &lambda,
@@ -150,16 +241,13 @@ namespace utopia {
                       data(data),
                       num_qp(measure.extent(1)) {}
 
-                UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &i, const int &j) const {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
                     for (int qp = 0; qp < num_qp; ++qp) {
                         (*this)(cell, i, j, qp);
                     }
                 }
 
-                UTOPIA_INLINE_FUNCTION void operator()(const int &cell,
-                                                       const int &i,
-                                                       const int &j,
-                                                       const int qp) const {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j, const int qp) const {
                     V grad_i, grad_j;
                     M FGF_i, stress_lin_i;
                     M F_qp, F_inv_t_qp;
@@ -231,13 +319,13 @@ namespace utopia {
                       data(data),
                       num_qp(measure.extent(1)) {}
 
-                UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &j) const {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int j) const {
                     for (int qp = 0; qp < num_qp; ++qp) {
                         (*this)(cell, j, qp);
                     }
                 }
 
-                UTOPIA_INLINE_FUNCTION void operator()(const int &cell, const int &j, const int qp) const {
+                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int j, const int qp) const {
                     V grad_j;
                     M P;  // P = F_qp
                     M F_inv_t_qp;
@@ -280,6 +368,22 @@ namespace utopia {
                 const int num_qp;
             };
 
+            inline Op make_op() const {
+                assert(deformation_gradient_);
+                auto F = deformation_gradient_->data();
+
+                return Op(op_.lambda, op_.mu, op_.rescale, F, this->fe().grad, this->fe().measure);
+            }
+
+            bool apply(const DynRankView &x, DynRankView &y) override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<NeoHookean>::apply");
+
+                this->apply_vector_operator("Assemble<NeoHookean>::apply", x, y, make_op());
+
+                UTOPIA_TRACE_REGION_END("Assemble<NeoHookean>::apply");
+                return false;
+            }
+
             bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<NeoHookean>::assemble_matrix");
 
@@ -321,7 +425,6 @@ namespace utopia {
 
             // NVCC_PRIVATE :
             UserOp op_;
-            // std::shared_ptr<Field<Scalar>> displacement_;
             std::shared_ptr<Gradient<Scalar>> deformation_gradient_;
         };
     }  // namespace intrepid2
