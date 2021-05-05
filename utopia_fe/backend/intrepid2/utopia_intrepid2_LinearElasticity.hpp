@@ -4,6 +4,8 @@
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
 
+#include "utopia_intrepid2_Strain.hpp"
+
 #include "utopia_Views.hpp"
 
 namespace utopia {
@@ -78,30 +80,16 @@ namespace utopia {
 
                     // Scalar expected = inner(strain_i, strain_j);
 
-                    if (sub_i == sub_j) {
-                        Scalar ret = 0.0;
-                        for (int d = 0; d < dim(); ++d) {
-                            ret += grad(cell, i, qp, d) * grad(cell, j, qp, d);
-                        }
-
-                        ret *= 0.5;
-                        ret += 0.5 * grad(cell, i, qp, sub_i) * grad(cell, j, qp, sub_i);
-
-                        // assert(device::approxeq(ret, expected, 1e-10));
-                        return ret;
-
-                    } else {
-                        Scalar ret = 0.5 * grad(cell, i, qp, sub_j) * grad(cell, j, qp, sub_i);
-                        // assert(device::approxeq(ret, expected, 1e-10));
-                        return ret;
-                    }
+                    auto ret = LinearizedStrain<Dim>::inner(grad, cell, i, j, qp, sub_i, sub_j);
+                    // assert(device::approxeq(ret, expected, 1e-10));
+                    return ret;
                 }
 
                 UTOPIA_INLINE_FUNCTION Scalar strain_trace(const int cell,
                                                            const int i,
                                                            const int qp,
                                                            const int sub_i) const {
-                    return grad(cell, i, qp, sub_i);
+                    return LinearizedStrain<Dim>::trace(grad, cell, i, qp, sub_i);
                 }
 
                 UTOPIA_INLINE_FUNCTION Scalar
@@ -148,18 +136,6 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_END("Assemble<LinearElasticity>::assemble_matrix");
                 return true;
             }
-
-            // UTOPIA_INLINE_FUNCTION static void make_strain(const int dim,
-            //                                                Scalar *grad,
-            //                                                StaticMatrix<Scalar, Dim, Dim> &strain) {
-            //     strain.set(0.0);
-
-            //     for (int i = 0; i < Dim; ++i) {
-            //         strain(dim, i) = grad[i];
-            //     }
-
-            //     strain.symmetrize();
-            // }
 
             // NVCC_PRIVATE :
             UserOp op_;

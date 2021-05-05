@@ -386,7 +386,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(monotone_mg_test);
 
             // FIXME
-            UTOPIA_RUN_TEST(monotone_amg_test);
+            // UTOPIA_RUN_TEST(monotone_amg_test);
         }
     };
 
