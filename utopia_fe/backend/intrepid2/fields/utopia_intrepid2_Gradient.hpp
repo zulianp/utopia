@@ -105,7 +105,8 @@ namespace utopia {
 
             bool is_coefficient() const override { return false; }
 
-            NVCC_PRIVATE : void init(const DynRankView &coeff) {
+            // NVCC_PRIVATE:
+            void init(const DynRankView &coeff) {
                 this->ensure_field();
 
                 if (this->rank() == 1) {

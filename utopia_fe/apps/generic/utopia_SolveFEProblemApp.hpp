@@ -61,6 +61,13 @@ namespace utopia {
 
             c.zeros(layout(x));
 
+            if (verbose) {
+                std::stringstream ss;
+                ss << "n_elements: " << space.mesh().n_elements() << '\n';
+                ss << "n_dofs: " << x.size() << '\n';
+                x.comm().root_print(ss.str());
+            }
+
             // Poor's man Newton solver
             for (int it = 0; it < max_it; ++it) {
                 if (!assembler->assemble(x, H, g)) {

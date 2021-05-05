@@ -84,6 +84,7 @@ namespace utopia {
             using Scalar = Scalar_;
             using FE = utopia::intrepid2::FE<Scalar>;
             using DynRankView = typename FE::DynRankView;
+            using Super::scale;
 
             virtual ~QPField() = default;
 
