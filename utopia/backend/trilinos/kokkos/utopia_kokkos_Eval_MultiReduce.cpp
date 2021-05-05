@@ -112,9 +112,10 @@ namespace utopia {
                                 Tuple<Scalar, 2> &result) {
             using Data = decltype(t1.raw_type()->template getLocalView<ExecutionSpaceT>());
 
-            Tuple<Data, 2> data;
-            data[0] = t1.raw_type()->template getLocalView<ExecutionSpaceT>();
-            data[1] = t2.raw_type()->template getLocalView<ExecutionSpaceT>();
+            Tuple<Data, 2> data {
+                t1.raw_type()->template getLocalView<ExecutionSpaceT>(),
+                t2.raw_type()->template getLocalView<ExecutionSpaceT>()
+            };
 
             KokkosOp<Scalar, Op> kop;
             MultiOpReducer<Scalar, Data, ExecutionSpaceT, KokkosOp<Scalar, Op>, 2> reducer(kop, data, initial_value);
