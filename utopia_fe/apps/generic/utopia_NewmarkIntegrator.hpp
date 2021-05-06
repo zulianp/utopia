@@ -37,11 +37,11 @@ namespace utopia {
             ensure_gradient(g);
 
             assert(false && "IMPLEMENT ME");
-            // if (!this->assembler()->assemble_vector(x, g)) {
-            //     return false;
-            // }
+            if (!this->assembler()->assemble(x, g)) {
+                return false;
+            }
 
-            if (apply_constraints_) {
+            if (must_apply_constraints_) {
                 this->space()->apply_zero_constraints(g);
             }
 
@@ -54,11 +54,11 @@ namespace utopia {
             ensure_hessian(H);
 
             assert(false && "IMPLEMENT ME");
-            // if (!this->assembler()->assemble_matrix(x, H)) {
-            //     return false;
-            // }
+            if (!this->assembler()->assemble(x, H)) {
+                return false;
+            }
 
-            if (apply_constraints_) {
+            if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
             }
 
@@ -73,13 +73,24 @@ namespace utopia {
                 return false;
             }
 
-            if (apply_constraints_) {
+            if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
                 this->space()->apply_zero_constraints(g);
             }
 
             return true;
         }
+
+        inline void create_solution_vector(Vector_t &x) {
+            if (empty(x)) {
+                this->space()->create_vector(x);
+                x.set(0.0);
+            }
+
+            apply_constraints(x);
+        }
+
+        inline void apply_constraints(Vector_t &x) const { this->space()->apply_constraints(x); }
 
         virtual void set_environment(const std::shared_ptr<Environment_t> &env) {
             this->assembler()->set_environment(env);
@@ -112,13 +123,13 @@ namespace utopia {
             }
         }
 
-        inline void set_apply_constraints(const bool val) { apply_constraints_ = val; }
+        inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
 
     private:
         std::shared_ptr<FunctionSpace> space_;
         std::shared_ptr<OmniAssembler_t> assembler_;
         bool verbose_{false};
-        bool apply_constraints_{true};
+        bool must_apply_constraints_{true};
     };
 
     template <class FunctionSpace>
@@ -135,7 +146,7 @@ namespace utopia {
             : Super(space),
               mass_matrix_assembler_(std::make_shared<OmniAssembler_t>(space)),
               mass_matrix_(std::make_shared<Matrix_t>()) {
-            this->set_apply_constraints(false);
+            this->must_apply_constraints_to_assembled(false);
         }
 
         virtual ~TimeDependentFunction() = default;
@@ -241,13 +252,6 @@ namespace utopia {
         }
 
         bool setup_IVP(Vector_t &x) override {
-            if (empty(x)) {
-                this->space()->create_vector(x);
-                x.set(0.0);
-            }
-
-            this->space()->apply_constraints(x);
-
             if (!this->assemble_mass_matrix()) {
                 return false;
             }
