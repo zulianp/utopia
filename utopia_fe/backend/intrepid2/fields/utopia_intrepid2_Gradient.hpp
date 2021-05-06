@@ -28,9 +28,11 @@ namespace utopia {
             class Rank1Op {
             public:
                 UTOPIA_INLINE_FUNCTION Rank1Op(const DynRankView &grad, const DynRankView &coeff)
-                    : grad(grad), coeff(coeff), num_fields(grad.extent(1)) {}
+                    : grad(grad), coeff(coeff), num_fields(grad.extent(1)), n_var(coeff.extent(1) / num_fields) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int d) const {
+                    assert(d < n_var);
+
                     Scalar ret = 0.0;
                     for (int i = 0; i < num_fields; ++i) {
                         ret += coeff(cell, i) * grad(cell, i, qp, d);
@@ -39,8 +41,18 @@ namespace utopia {
                     return ret;
                 }
 
+                UTOPIA_INLINE_FUNCTION Scalar squared_norm(const int cell, const int qp) const {
+                    Scalar ret = 0.0;
+
+                    for (int d = 0; d < n_var; ++d) {
+                        auto x = (*this)(cell, qp, d);
+                        ret += x * x;
+                    }
+                }
+
                 const DynRankView grad, coeff;
                 const int num_fields;
+                const int n_var;
             };
 
             class Rank1OpAndStore {

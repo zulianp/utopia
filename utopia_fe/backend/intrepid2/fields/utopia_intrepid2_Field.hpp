@@ -68,6 +68,47 @@ namespace utopia {
                     });
             }
 
+            class Interpolate {
+            public:
+                UTOPIA_INLINE_FUNCTION Interpolate(const DynRankView &fun, const DynRankView &coefficients)
+                    : fun_(fun),
+                      coefficients_(coefficients),
+                      num_fields_(fun.extent(1)),
+                      tensor_size_(coefficients_.extent(1)) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int var) const {
+                    assert(var < tensor_size_);
+
+                    Scalar ret = 0.0;
+                    for (int i = 0; i < num_fields_; ++i) {
+                        ret += fun_(cell, i, qp) * coefficients_(cell, i * tensor_size_ + var);
+                    }
+
+                    return ret;
+                }
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp) const {
+                    assert(1 == tensor_size_);
+
+                    Scalar ret = 0.0;
+                    for (int i = 0; i < num_fields_; ++i) {
+                        ret += fun_(cell, i, qp) * coefficients_(cell, i);
+                    }
+
+                    return ret;
+                }
+
+                DynRankView fun_;
+                DynRankView coefficients_;
+                const int tensor_size_;
+                const int num_fields_;
+            };
+
+            Interpolate interpolate() const {
+                assert(fe_);
+                return Interpolate(fe_->fun, data_);
+            }
+
             virtual bool is_coefficient() const { return true; }
 
         private:

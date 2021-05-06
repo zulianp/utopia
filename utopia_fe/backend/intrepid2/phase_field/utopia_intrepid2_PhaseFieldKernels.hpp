@@ -10,7 +10,7 @@ namespace utopia {
         class QuadraticDegradation {
         public:
             template <typename C>
-            UTOPIA_INLINE_FUNCTION static C fun(const Parameters &, const C &c) {
+            UTOPIA_INLINE_FUNCTION static C value(const Parameters &, const C &c) {
                 C imc = 1.0 - c;
                 return imc * imc;
             }
@@ -35,7 +35,7 @@ namespace utopia {
                                                                       const PhaseFieldValue &phase_field_value,
                                                                       const StressShape &stress,
                                                                       const Grad &strain_test) {
-                const auto gc = ((1.0 - params.regularization) * DegradationFunction::fun(params, phase_field_value) +
+                const auto gc = ((1.0 - params.regularization) * DegradationFunction::value(params, phase_field_value) +
                                  params.regularization);
 
                 return inner(gc * stress, strain_test);

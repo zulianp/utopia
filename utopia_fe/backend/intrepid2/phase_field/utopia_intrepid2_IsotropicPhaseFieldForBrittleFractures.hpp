@@ -1,12 +1,13 @@
 #ifndef UTOPIA_INTREPID2_ISOTROPIC_PHASE_FIELD_FOR_BRITTLE_FRACTURES_HPP
 #define UTOPIA_INTREPID2_ISOTROPIC_PHASE_FIELD_FOR_BRITTLE_FRACTURES_HPP
 
+#include "utopia_Views.hpp"
+
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
 #include "utopia_intrepid2_Gradient.hpp"
 #include "utopia_intrepid2_PhaseFieldKernels.hpp"
-
-#include "utopia_Views.hpp"
+#include "utopia_intrepid2_Strain.hpp"
 
 namespace utopia {
 
@@ -90,19 +91,25 @@ namespace utopia {
         template <typename Scalar, int Dim>
         class Assemble<IsotropicPhaseFieldForBrittleFractures<Scalar, Dim>, Scalar> : public FEAssembler<Scalar> {
         public:
+            using Super = utopia::intrepid2::FEAssembler<Scalar>;
+
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using UserOp = utopia::IsotropicPhaseFieldForBrittleFractures<Scalar, Dim>;
             using ExecutionSpace = typename FE::ExecutionSpace;
-            using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
+            using UserOp = utopia::IsotropicPhaseFieldForBrittleFractures<Scalar, Dim>;
             using QuadraticDegradation = utopia::intrepid2::QuadraticDegradation<UserOp>;
             using QuadraticPhaseFieldKernels = utopia::intrepid2::PhaseFieldKernels<UserOp, QuadraticDegradation>;
 
             using V = StaticVector<Scalar, Dim>;
             using M = StaticMatrix<Scalar, Dim, Dim>;
+            using SIMDType = Scalar;
+
+            using InterpolateField = typename utopia::intrepid2::Field<Scalar>::Interpolate;
+            using InterpolateStrain = typename utopia::intrepid2::LinearizedStrain<Scalar, Dim>::Interpolate;
+            using InterpolatePhaseFieldGradient = typename utopia::intrepid2::Gradient<Scalar>::Rank1Op;
 
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
@@ -142,7 +149,85 @@ namespace utopia {
                 return true;
             }
 
-            class ScalarOp {};
+            class IrreversibilityPenaltyTerm {
+            public:
+                UTOPIA_INLINE_FUNCTION Scalar value(const int cell, const int qp) const {
+                    Scalar diff = phase_field_(cell, qp) - phase_field_old_(cell, qp);
+                    return penalty_param_ / 2 * diff * diff * (diff < 0.0);
+                }
+
+                IrreversibilityPenaltyTerm(const Scalar &penalty_param,
+                                           const InterpolateField &phase_field_,
+                                           const InterpolateField &phase_field_old_)
+                    : penalty_param_(penalty_param), phase_field_(phase_field_), phase_field_old_(phase_field_old_) {}
+
+                Scalar penalty_param_;
+                InterpolateField phase_field_;
+                InterpolateField phase_field_old_;
+            };
+
+            template <class DegradationFunction>
+            class Energy {
+            public:
+                UTOPIA_INLINE_FUNCTION Scalar value(const int cell, const int qp) const {
+                    const Scalar strain_trace = strain_.trace(cell, qp);
+                    const Scalar phase_field_value = phase_field_(cell, qp);
+
+                    Scalar energy = 0.0;
+                    if (op_.use_pressure) {
+                        energy =
+                            DegradationFunction::value(op_, phase_field_value) * pressure_(cell, qp) * strain_trace;
+                    }
+
+                    energy += elastic_energy(cell, qp, phase_field_value, strain_trace);
+                    energy += fracture_energy(cell, qp, phase_field_value);
+                    return energy;
+                }
+
+                // UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp) const {
+
+                // }
+
+                UTOPIA_INLINE_FUNCTION Scalar elastic_energy(const int cell,
+                                                             const int qp,
+                                                             const Scalar &phase_field_value,
+                                                             const Scalar &strain_trace) const {
+                    return (DegradationFunction::value(op_, phase_field_value) * (1.0 - op_.regularization) +
+                            op_.regularization) *
+                           strain_energy(strain_trace);
+                }
+
+                UTOPIA_INLINE_FUNCTION Scalar strain_energy(const int cell,
+                                                            const int qp,
+                                                            const Scalar &strain_trace) const {
+                    return 0.5 * op_.lambda * strain_trace * strain_trace + op_.mu * strain_.squared_norm(cell, qp);
+                }
+
+                UTOPIA_INLINE_FUNCTION Scalar fracture_energy(const int cell,
+                                                              const int qp,
+                                                              const Scalar &phase_field_value) {
+                    return op_.fracture_toughness *
+                           (1. / (2.0 * op_.length_scale) * phase_field_value * phase_field_value +
+                            op_.length_scale / 2.0 * phase_field_gradient_.squared_norm(cell, qp));
+                }
+
+                Energy(const UserOp &op,
+                       const InterpolateField &phase_field,
+                       const InterpolatePhaseFieldGradient &phase_field_gradient,
+                       const InterpolateField &pressure,
+                       const InterpolateStrain &strain)
+                    : op_(op),
+                      phase_field_(phase_field),
+                      phase_field_gradient_(phase_field_gradient),
+                      pressure_(pressure),
+                      strain_(strain) {}
+
+                UserOp op_;
+                InterpolateField phase_field_;
+                InterpolatePhaseFieldGradient phase_field_gradient_;
+                InterpolateField pressure_;
+                InterpolateStrain strain_;
+            };
 
             class VectorOp {};
 
@@ -498,7 +583,7 @@ namespace utopia {
 
             // // NVCC_PRIVATE :
             UserOp op_;
-            // std::shared_ptr<Gradient<Scalar>> deformation_gradient_;
+            std::shared_ptr<Field<Scalar>> pressure_field_;
         };
     }  // namespace intrepid2
 }  // namespace utopia
