@@ -149,18 +149,40 @@ namespace utopia {
                 return true;
             }
 
-            class IrreversibilityPenaltyTerm {
+            class EnergyIrreversibility {
             public:
-                UTOPIA_INLINE_FUNCTION Scalar value(const int cell, const int qp) const {
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp) const {
                     Scalar diff = phase_field_(cell, qp) - phase_field_old_(cell, qp);
                     return penalty_param_ / 2 * diff * diff * (diff < 0.0);
                 }
 
-                IrreversibilityPenaltyTerm(const Scalar &penalty_param,
-                                           const InterpolateField &phase_field_,
-                                           const InterpolateField &phase_field_old_)
+                EnergyIrreversibility(const Scalar &penalty_param,
+                                      const InterpolateField &phase_field_,
+                                      const InterpolateField &phase_field_old_)
                     : penalty_param_(penalty_param), phase_field_(phase_field_), phase_field_old_(phase_field_old_) {}
 
+                Scalar penalty_param_;
+                InterpolateField phase_field_;
+                InterpolateField phase_field_old_;
+            };
+
+            class GradientIrreversibility {
+            public:
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i, const int qp) const {
+                    const Scalar diff = phase_field_(cell, qp) - phase_field_old_(cell, qp);
+                    return penalty_param_ * diff * (diff < 0.0) * fun_(i, qp);
+                }
+
+                GradientIrreversibility(const DynRankView &fun,
+                                        const Scalar &penalty_param,
+                                        const InterpolateField &phase_field_,
+                                        const InterpolateField &phase_field_old_)
+                    : fun_(fun),
+                      penalty_param_(penalty_param),
+                      phase_field_(phase_field_),
+                      phase_field_old_(phase_field_old_) {}
+
+                DynRankView fun_;
                 Scalar penalty_param_;
                 InterpolateField phase_field_;
                 InterpolateField phase_field_old_;
@@ -169,7 +191,7 @@ namespace utopia {
             template <class DegradationFunction>
             class Energy {
             public:
-                UTOPIA_INLINE_FUNCTION Scalar value(const int cell, const int qp) const {
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp) const {
                     const Scalar strain_trace = strain_.trace(cell, qp);
                     const Scalar phase_field_value = phase_field_(cell, qp);
 
@@ -229,11 +251,42 @@ namespace utopia {
                 InterpolateStrain strain_;
             };
 
+            template <class DegradationFunction>
+            class ScalarOp {
+            public:
+                UTOPIA_INLINE_FUNCTION ScalarOp(const Energy<DegradationFunction> &energy, const DynRankView &measure)
+                    : energy_(energy), measure_(measure) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp) const {
+                    return energy_(cell, qp) * measure_(cell, qp);
+                }
+
+                Energy<DegradationFunction> energy_;
+                DynRankView measure_;
+            };
+
+            template <class DegradationFunction>
+            class ScalarOpWithPenalty {
+            public:
+                UTOPIA_INLINE_FUNCTION ScalarOpWithPenalty(const Energy<DegradationFunction> &energy,
+                                                           const DynRankView &measure,
+                                                           const EnergyIrreversibility &penalty)
+                    : energy_(energy), penalty_(penalty), measure_(measure) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp) const {
+                    return energy_(cell, qp) * penalty_(cell, qp) * measure_(cell, qp);
+                }
+
+                Energy<DegradationFunction> energy_;
+                EnergyIrreversibility penalty_;
+                DynRankView measure_;
+            };
+
             class VectorOp {};
 
             class MatrixOp {};
 
-            bool assemble_scalar() override {}
+            // bool assemble_scalar() override {}
 
             // // FGF_i = F_inv_t_qp * transpose(Grad_i) * F_inv_t_qp
             // UTOPIA_INLINE_FUNCTION static void selective_triple_product(const int di,
