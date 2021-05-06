@@ -29,7 +29,7 @@
 namespace utopia {
     class BoundingBoxCoarsener::Impl {
     public:
-        template <moonolith::Integer Dimension>
+        template <int Dimension>
         static void expand_box(const libMesh::MeshBase &mesh,
                                const libMesh::Elem &e,
                                moonolith::AABB<Dimension, double> &box) {
@@ -44,7 +44,7 @@ namespace utopia {
             }
         }
 
-        template <moonolith::Integer Dimension>
+        template <int Dimension>
         static void synch_box(moonolith::Communicator &comm, moonolith::AABB<Dimension, double> &box) {
             std::array<double, 2 * Dimension> min_max;
 
@@ -282,7 +282,7 @@ namespace utopia {
             coarse_mesh.prepare_for_use(/*skip_renumber =*/false);
         }
 
-        template <moonolith::Integer Dimension>
+        template <int Dimension>
         bool init_aux(const int n_coarsening_levels, const libMesh::MeshBase &mesh) {
             std::map<int, moonolith::AABB<Dimension, double>> boxes;
             std::map<int, long> n_elems;
@@ -292,7 +292,7 @@ namespace utopia {
             for (auto it = elements_begin(mesh); it != elements_end(mesh); ++it) {
                 auto &e = **it;
                 auto &box = boxes[e.subdomain_id()];
-                expand_box(mesh, e, box);
+                this->expand_box(mesh, e, box);
                 ++n_elems[e.subdomain_id()];
             }
 

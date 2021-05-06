@@ -61,6 +61,8 @@ namespace utopia {
 
             void scale(const Scalar &scale_factor);
 
+            SizeType n_elements() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

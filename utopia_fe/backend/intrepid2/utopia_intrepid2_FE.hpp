@@ -15,6 +15,7 @@
 #include <Intrepid2_DefaultCubatureFactory.hpp>
 #include <Intrepid2_FunctionSpaceTools.hpp>
 #include <Intrepid2_HGRAD_HEX_C1_FEM.hpp>
+#include <Intrepid2_HGRAD_QUAD_C1_FEM.hpp>
 #include <Intrepid2_HGRAD_TET_C1_FEM.hpp>
 #include <Intrepid2_HGRAD_TRI_C1_FEM.hpp>
 
@@ -39,6 +40,7 @@ namespace utopia {
             using CellTopology = ::shards::CellTopology;
             using Tet = ::Intrepid2::Basis_HGRAD_TET_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using Tri = ::Intrepid2::Basis_HGRAD_TRI_C1_FEM<ExecutionSpace, Scalar, Scalar>;
+            using Quad = ::Intrepid2::Basis_HGRAD_QUAD_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using Line = ::Intrepid2::Basis_HGRAD_LINE_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using Hex = ::Intrepid2::Basis_HGRAD_HEX_C1_FEM<ExecutionSpace, Scalar, Scalar>;
             using CellTools = ::Intrepid2::CellTools<ExecutionSpace>;
@@ -73,6 +75,12 @@ namespace utopia {
                         break;
                     }
 
+                    case shards::Quadrilateral<>::key: {
+                        Quad quad;
+                        init_aux(quad);
+                        break;
+                    }
+
                     case shards::Tetrahedron<>::key: {
                         Tet tet;
                         init_aux(tet);
@@ -86,7 +94,9 @@ namespace utopia {
                     }
 
                     default: {
+                        utopia::err() << "Unsupported type " << type << '\n';
                         assert(false);
+                        Utopia::Abort("FE init failed!");
                         break;
                     }
                 }

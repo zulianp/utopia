@@ -165,6 +165,8 @@ namespace utopia {
 
         Mesh::SizeType Mesh::n_local_nodes() const { return impl_->mesh->n_local_nodes(); }
 
+        Mesh::SizeType Mesh::n_elements() const { return impl_->mesh->n_active_elem(); }
+
         void Mesh::set_database(const Path &path) { impl_->database = path; }
         const Path &Mesh::database() const { return impl_->database; }
 
