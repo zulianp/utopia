@@ -41,7 +41,7 @@ namespace utopia {
     };
 
     template <class FunctionSpace>
-    class FEModelFunction : public FEFunctionInterface<FunctionSpace> {
+    class FEModelFunction final : public FEFunctionInterface<FunctionSpace> {
     public:
         using Super = utopia::FEFunctionInterface<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;

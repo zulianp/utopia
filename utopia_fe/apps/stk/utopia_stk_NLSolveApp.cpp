@@ -3,6 +3,8 @@
 
 #include "utopia.hpp"
 
+#include "utopia_SimpleNewton.hpp"
+
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
 
@@ -25,7 +27,8 @@ namespace utopia {
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
         using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
-        using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
+        // using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
+        using Newton_t = utopia::SimpleNewton<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
             space_ = std::make_shared<FunctionSpace>();
@@ -41,7 +44,7 @@ namespace utopia {
             linear_solver_ = std::make_shared<OmniLinearSolver_t>();
             solver_ = std::make_shared<Newton_t>(linear_solver_);
             solver_->verbose(true);
-            in.get("solver", *solver_);
+            // in.get("solver", *solver_);
         }
 
         bool valid() const { return !space_->empty(); }
@@ -49,34 +52,8 @@ namespace utopia {
         void run() {
             Vector_t x;
             function_->create_solution_vector(x);
+            // This seems to fail with the standard utopia::Newton for some reason
             solver_->solve(*function_, x);
-
-            // Handwritten Newton
-            // {
-            //     Matrix_t H;
-            //     Vector_t g, inc;
-
-            //     inc.zeros(layout(x));
-
-            //     for (int i = 0; i < 4; ++i) {
-            //         // function_->hessian_and_gradient(x, H, g);
-            //         function_->update(x);
-            //         function_->gradient(x, g);
-            //         function_->hessian(x, H);
-
-            //         Scalar_t norm_g = norm2(g);
-            //         utopia::out() << "norm_g: " << norm_g << '\n';
-
-            //         linear_solver_->solve(H, g, inc);
-            //         x -= inc;
-            //         Scalar_t norm_inc = norm2(inc);
-            //         utopia::out() << "norm_inc: " << norm_inc << '\n';
-
-            //         if (norm_inc < 1e-8) break;
-            //         inc.set(0.0);
-            //     }
-            // }
-
             space_->write("x.e", x);
         }
 
