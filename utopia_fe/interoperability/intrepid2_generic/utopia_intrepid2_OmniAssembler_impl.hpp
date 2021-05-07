@@ -457,7 +457,8 @@ namespace utopia {
                 if (domain.has_vector()) {
                     local_to_global(*space,
                                     domain.vector_accumulator->data(),
-                                    (mode == SUBTRACT_MODE) ? ADD_MODE : SUBTRACT_MODE,
+                                    // (mode == SUBTRACT_MODE) ? ADD_MODE : SUBTRACT_MODE,
+                                    mode,
                                     vec);
                 }
             }

@@ -69,7 +69,7 @@ namespace utopia {
 
                         for (int qp = 0; qp < n_qp; ++qp) {
                             auto dX = measure(cell, qp);
-                            ev(cell, offset) += fun(i, qp) * value * dX;
+                            ev(cell, offset) += -fun(i, qp) * value * dX;
                         }
                     });
 

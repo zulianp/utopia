@@ -11,12 +11,39 @@
 #include "utopia_MatrixTransformer.hpp"
 #include "utopia_ProblemBase.hpp"
 
+#include <limits>
+
 namespace utopia {
 
     template <class FunctionSpace>
-    class FEModelFunction
+    class FEFunctionInterface
         : public Function<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector> {
     public:
+        using Vector_t = typename Traits<FunctionSpace>::Vector;
+        using Matrix_t = typename Traits<FunctionSpace>::Matrix;
+        using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+        using Environment_t = utopia::Environment<FunctionSpace>;
+        using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
+
+        virtual ~FEFunctionInterface() = default;
+
+        virtual void create_solution_vector(Vector_t &x) = 0;
+        virtual void apply_constraints(Vector_t &x) const = 0;
+        virtual void set_environment(const std::shared_ptr<Environment_t> &env) = 0;
+
+        virtual const std::shared_ptr<OmniAssembler_t> &assembler() const = 0;
+        virtual const std::shared_ptr<FunctionSpace> &space() const = 0;
+
+        bool initialize_hessian(Matrix_t &H, Matrix_t &) const override {
+            space()->create_matrix(H);
+            return true;
+        }
+    };
+
+    template <class FunctionSpace>
+    class FEModelFunction : public FEFunctionInterface<FunctionSpace> {
+    public:
+        using Super = utopia::FEFunctionInterface<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
@@ -29,12 +56,21 @@ namespace utopia {
         virtual ~FEModelFunction() = default;
 
         void read(Input &in) override {
-            in.get("verbose", verbose_);
+            Super::read(in);
             in.get("assembly", *assembler_);
+            in.get("verbose", verbose_);
+        }
+
+        bool value(const Vector_t & /*point*/, Scalar_t &value) const override {
+            // assert(false && "IMPLEMENT ME");
+            value = std::numeric_limits<Scalar_t>::signaling_NaN();
+            return false;
         }
 
         bool gradient(const Vector_t &x, Vector_t &g) const override {
             ensure_gradient(g);
+
+            assert(this->assembler());
 
             if (!this->assembler()->assemble(x, g)) {
                 return false;
@@ -51,6 +87,8 @@ namespace utopia {
 
         bool hessian(const Vector_t &x, Matrix_t &H) const override {
             ensure_hessian(H);
+
+            assert(this->assembler());
 
             if (!this->assembler()->assemble(x, H)) {
                 return false;
@@ -79,7 +117,7 @@ namespace utopia {
             return true;
         }
 
-        inline void create_solution_vector(Vector_t &x) {
+        inline void create_solution_vector(Vector_t &x) override {
             if (empty(x)) {
                 this->space()->create_vector(x);
                 x.set(0.0);
@@ -88,19 +126,21 @@ namespace utopia {
             apply_constraints(x);
         }
 
-        inline void apply_constraints(Vector_t &x) const { this->space()->apply_constraints(x); }
+        inline void apply_constraints(Vector_t &x) const override { this->space()->apply_constraints(x); }
 
-        virtual void set_environment(const std::shared_ptr<Environment_t> &env) {
+        virtual void set_environment(const std::shared_ptr<Environment_t> &env) override {
             this->assembler()->set_environment(env);
         }
 
-        inline const std::shared_ptr<OmniAssembler_t> &assembler() const { return assembler_; }
-        inline const std::shared_ptr<FunctionSpace> &space() const { return space_; }
+        inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return assembler_; }
+        inline const std::shared_ptr<FunctionSpace> &space() const override { return space_; }
+
+        inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
 
         inline bool verbose() const { return verbose_; }
         inline void verbose(const bool val) const { verbose_ = val; }
 
-    protected:
+    private:
         void ensure_gradient(Vector_t &g) const {
             if (empty(g)) {
                 this->space()->create_vector(g);
@@ -121,44 +161,99 @@ namespace utopia {
             }
         }
 
-        inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
-
-    private:
         std::shared_ptr<FunctionSpace> space_;
         std::shared_ptr<OmniAssembler_t> assembler_;
-        bool verbose_{false};
         bool must_apply_constraints_{true};
+        bool verbose_{false};
     };
 
     template <class FunctionSpace>
-    class TimeDependentFunction : public FEModelFunction<FunctionSpace> {
+    class TimeDependentFunction : public FEFunctionInterface<FunctionSpace> {
     public:
-        using Super = utopia::FEModelFunction<FunctionSpace>;
+        using Super = utopia::FEFunctionInterface<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
+        using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
+        ;
 
         TimeDependentFunction(const std::shared_ptr<FunctionSpace> &space)
-            : Super(space),
+            : fe_function_(std::make_shared<FEModelFunction_t>(space)),
               mass_matrix_assembler_(std::make_shared<OmniAssembler_t>(space)),
               mass_matrix_(std::make_shared<Matrix_t>()) {
-            this->must_apply_constraints_to_assembled(false);
+            fe_function_->must_apply_constraints_to_assembled(false);
         }
 
         virtual ~TimeDependentFunction() = default;
 
         void set_environment(const std::shared_ptr<Environment_t> &env) override {
-            Super::set_environment(env);
+            fe_function_->set_environment(env);
             this->mass_matrix_assembler()->set_environment(env);
         }
 
         virtual bool update_IVP(const Vector_t &x) = 0;
         virtual bool setup_IVP(Vector_t &x) = 0;
 
+        virtual void integrate_gradient(const Vector_t &x, Vector_t &g) const = 0;
+        virtual void integrate_hessian(const Vector_t &x, Matrix_t &H) const = 0;
+
+        bool value(const Vector_t &x, Scalar_t &v) const override { return fe_function_->value(x, v); }
+
+        bool gradient(const Vector_t &x, Vector_t &g) const override {
+            if (!this->assembler()->assemble(x, g)) {
+                return false;
+            }
+
+            integrate_gradient(x, g);
+
+            if (must_apply_constraints_) {
+                this->space()->apply_zero_constraints(g);
+            }
+
+            return true;
+        }
+
+        inline void create_solution_vector(Vector_t &x) override { fe_function_->create_solution_vector(x); }
+        inline void apply_constraints(Vector_t &x) const override { fe_function_->apply_constraints(x); }
+
+        bool update(const Vector_t &x) override { return fe_function_->update(x); }
+
+        bool hessian(const Vector_t &x, Matrix_t &H) const override {
+            if (!this->assembler()->assemble(x, H)) {
+                return false;
+            }
+
+            integrate_hessian(x, H);
+
+            if (must_apply_constraints_) {
+                this->space()->apply_constraints(H);
+            }
+
+            return true;
+        }
+
+        bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
+            if (!this->assembler()->assemble(x, H, g)) {
+                return false;
+            }
+
+            integrate_gradient(x, g);
+            integrate_hessian(x, H);
+
+            if (must_apply_constraints_) {
+                this->space()->apply_constraints(H);
+                this->space()->apply_zero_constraints(g);
+            }
+
+            return true;
+        }
+
         void read(Input &in) override {
             Super::read(in);
+            fe_function_->read(in);
+
             in.get("delta_time", delta_time_);
 
             bool user_defined_mass = false;
@@ -192,10 +287,18 @@ namespace utopia {
             return true;
         }
 
+        inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler(); }
+        inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
+
+    protected:
+        inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
+
     private:
+        std::shared_ptr<FEModelFunction_t> fe_function_;
         std::shared_ptr<OmniAssembler_t> mass_matrix_assembler_;
         std::shared_ptr<Matrix_t> mass_matrix_;
         Scalar_t delta_time_{0.1};
+        bool must_apply_constraints_{true};
     };
 
 }  // namespace utopia

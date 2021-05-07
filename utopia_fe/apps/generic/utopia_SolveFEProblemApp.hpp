@@ -85,7 +85,9 @@ namespace utopia {
                     write("load_g" + it_str + ".m", g);
                 }
 
-                if (export_tensors) g *= -1.0;
+                // if (export_tensors)
+
+                g *= -1.0;
 
                 if (it == 0) {
                     space.apply_constraints(H, g);

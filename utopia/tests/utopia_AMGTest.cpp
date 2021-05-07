@@ -97,7 +97,7 @@ public:
         //     param_list(param("type", "MeasureResidualComponents"), param("verbose", true), param("block_size", 2))));
         // amg.read(params);
 
-        amg.verbose(true);
+        amg.verbose(false);
         amg.atol(1e-6);
         amg.rtol(1e-7);
         amg.stol(1e-7);

@@ -13,38 +13,6 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
-        bool value(const Vector_t &x, Scalar_t &value) const override { return false; }
-
-        bool gradient(const Vector_t &x, Vector_t &g) const override {
-            if (!Super::gradient(x, g)) {
-                return false;
-            }
-
-            integrate_gradient(x, g);
-            return true;
-        }
-
-        bool update(const Vector_t &x) override { return true; }
-
-        bool hessian(const Vector_t &x, Matrix_t &H) const override {
-            if (!Super::hessian(x, H)) {
-                return false;
-            }
-
-            integrate_hessian(x, H);
-            return true;
-        }
-
-        bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
-            if (!Super::hessian_and_gradient(x, H, g)) {
-                return false;
-            }
-
-            integrate_hessian(x, H);
-            integrate_gradient(x, g);
-            return true;
-        }
-
         void read(Input &in) override {
             Super::read(in);
 
@@ -90,11 +58,7 @@ namespace utopia {
 
         NewmarkIntegrator(const std::shared_ptr<FunctionSpace> &space) : Super(space) {}
 
-    private:
-        Vector_t x_old_, x_older_;
-        Vector_t active_stress_, active_stress_old_, active_stress_older_, external_force_;
-
-        void integrate_gradient(const Vector_t &x, Vector_t &g) const {
+        void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
             g -= active_stress_;
             g *= (dt2 / 4.);
@@ -102,12 +66,16 @@ namespace utopia {
             this->space()->apply_zero_constraints(g);
         }
 
-        void integrate_hessian(const Vector_t &, Matrix_t &H) const {
+        void integrate_hessian(const Vector_t &, Matrix_t &H) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
             H *= (dt2 / 4.);
             H += (*this->mass_matrix());
             this->space()->apply_constraints(H);
         }
+
+    private:
+        Vector_t x_old_, x_older_;
+        Vector_t active_stress_, active_stress_old_, active_stress_older_, external_force_;
     };
 
 }  // namespace utopia

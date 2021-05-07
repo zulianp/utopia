@@ -13,37 +13,7 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
-        bool value(const Vector_t &x, Scalar_t &value) const override { return false; }
-
-        bool gradient(const Vector_t &x, Vector_t &g) const override {
-            if (!Super::gradient(x, g)) {
-                return false;
-            }
-
-            integrate_gradient(x, g);
-            return true;
-        }
-
-        bool update(const Vector_t &x) override { return true; }
-
-        bool hessian(const Vector_t &x, Matrix_t &H) const override {
-            if (!Super::hessian(x, H)) {
-                return false;
-            }
-
-            integrate_hessian(x, H);
-            return true;
-        }
-
-        bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
-            if (!Super::hessian_and_gradient(x, H, g)) {
-                return false;
-            }
-
-            integrate_hessian(x, H);
-            integrate_gradient(x, g);
-            return true;
-        }
+        ImplicitEulerIntegrator(const std::shared_ptr<FunctionSpace> &space) : Super(space) {}
 
         void read(Input &in) override {
             Super::read(in);
@@ -59,20 +29,16 @@ namespace utopia {
 
         bool update_IVP(const Vector_t &) override { return true; }
 
-        ImplicitEulerIntegrator(const std::shared_ptr<FunctionSpace> &space) : Super(space) {}
-
-    private:
-        void integrate_gradient(const Vector_t &x, Vector_t &g) const {
+        void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt = this->delta_time();
             g *= dt;
             this->space()->apply_zero_constraints(g);
         }
 
-        void integrate_hessian(const Vector_t &, Matrix_t &H) const {
+        void integrate_hessian(const Vector_t &, Matrix_t &H) const override {
             const Scalar_t dt = this->delta_time();
-
-            system_ *= dt;
-            system_ += (*this->mass_matrix());
+            H *= dt;
+            H += (*this->mass_matrix());
         }
     };
 
