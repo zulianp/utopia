@@ -413,6 +413,7 @@ namespace utopia {
                 auto data = this->vector_data();
 
                 {
+                    assert(deformation_gradient_);
                     auto F = deformation_gradient_->data();
                     this->loop_cell_test(
                         "Assemble<NeoHookean>::assemble_vector",

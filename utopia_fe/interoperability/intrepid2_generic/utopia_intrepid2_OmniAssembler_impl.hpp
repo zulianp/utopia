@@ -350,6 +350,18 @@ namespace utopia {
                 utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
                 in.set_tensor_size(space->n_var());
                 convert_field(in, *x_field);
+
+                for (auto &a_ptr : domain.assemblers) {
+                    a_ptr->update(x_field);
+                }
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    for (auto &a_ptr : b.assemblers) {
+                        a_ptr->update(x_field);
+                    }
+                }
             }
 
             bool assemble_matrix(Matrix &mat) {
