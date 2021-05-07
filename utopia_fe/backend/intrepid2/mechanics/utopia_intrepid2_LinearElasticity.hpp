@@ -45,7 +45,7 @@ namespace utopia {
             inline int n_vars() const override { return Dim; }
 
             inline bool is_matrix() const override { return true; }
-            inline bool is_vector() const override { return false; }
+            inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
 
@@ -118,12 +118,12 @@ namespace utopia {
             inline Op make_op() const { return Op(op_.lambda, op_.mu, this->fe().grad, this->fe().measure); }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::apply");
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LinearElasticity>::apply");
 
-                this->apply_vector_operator("Assemble<LaplaceOperator>::apply", x, y, make_op());
+                this->apply_vector_operator("Assemble<LinearElasticity>::apply", x, y, make_op());
 
-                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::apply");
-                return false;
+                UTOPIA_TRACE_REGION_END("Assemble<LinearElasticity>::apply");
+                return true;
             }
 
             bool assemble_matrix() override {

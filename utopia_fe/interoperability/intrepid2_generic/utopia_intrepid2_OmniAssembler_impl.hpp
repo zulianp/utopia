@@ -152,6 +152,39 @@ namespace utopia {
                     }
                 }
 
+                void ensure_matrix_accumulators() {
+                    for (auto &a_ptr : assemblers) {
+                        if (a_ptr->is_matrix() && !matrix_accumulator) {
+                            a_ptr->ensure_matrix_accumulator();
+                            matrix_accumulator = a_ptr->matrix_accumulator();
+                        } else {
+                            a_ptr->set_matrix_accumulator(matrix_accumulator);
+                        }
+                    }
+                }
+
+                void ensure_vector_accumulators() {
+                    for (auto &a_ptr : assemblers) {
+                        if (a_ptr->is_vector() && !vector_accumulator) {
+                            a_ptr->ensure_vector_accumulator();
+                            vector_accumulator = a_ptr->vector_accumulator();
+                        } else {
+                            a_ptr->set_vector_accumulator(vector_accumulator);
+                        }
+                    }
+                }
+
+                void ensure_scalar_accumulators() {
+                    for (auto &a_ptr : assemblers) {
+                        if (a_ptr->is_scalar() && !scalar_accumulator) {
+                            a_ptr->ensure_scalar_accumulator();
+                            scalar_accumulator = a_ptr->scalar_accumulator();
+                        } else {
+                            a_ptr->set_scalar_accumulator(scalar_accumulator);
+                        }
+                    }
+                }
+
                 void ensure_vector_accumulator() {
                     if (assemblers.empty()) {
                         assert(false);
@@ -164,18 +197,28 @@ namespace utopia {
                     }
                 }
 
-                void zero_accumulators() {
-                    if (has_matrix()) {
-                        matrix_accumulator->zero();
-                    }
-
-                    if (has_vector()) {
-                        vector_accumulator->zero();
-                    }
-
+                void zero_scalar_accumulators() {
                     if (has_scalar()) {
                         scalar_accumulator->zero();
                     }
+                }
+
+                void zero_matrix_accumulators() {
+                    if (has_matrix()) {
+                        matrix_accumulator->zero();
+                    }
+                }
+
+                void zero_vector_accumulators() {
+                    if (has_vector()) {
+                        vector_accumulator->zero();
+                    }
+                }
+
+                void zero_accumulators() {
+                    zero_scalar_accumulators();
+                    zero_vector_accumulators();
+                    zero_matrix_accumulators();
                 }
 
                 inline bool has_matrix() const { return static_cast<bool>(matrix_accumulator); }
@@ -196,12 +239,66 @@ namespace utopia {
                 }
             }
 
+            void ensure_matrix_accumulators() {
+                domain.ensure_matrix_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.ensure_matrix_accumulators();
+                }
+            }
+
+            void ensure_vector_accumulators() {
+                domain.ensure_vector_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.ensure_vector_accumulators();
+                }
+            }
+
+            void ensure_scalar_accumulators() {
+                domain.ensure_scalar_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.ensure_scalar_accumulators();
+                }
+            }
+
             void zero_accumulators() {
                 domain.zero_accumulators();
 
                 for (auto &p : boundary) {
                     auto &b = p.second;
                     b.zero_accumulators();
+                }
+            }
+
+            void zero_scalar_accumulators() {
+                domain.zero_scalar_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.zero_scalar_accumulators();
+                }
+            }
+
+            void zero_vector_accumulators() {
+                domain.zero_vector_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.zero_vector_accumulators();
+                }
+            }
+
+            void zero_matrix_accumulators() {
+                domain.zero_matrix_accumulators();
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+                    b.zero_matrix_accumulators();
                 }
             }
 
@@ -236,93 +333,124 @@ namespace utopia {
                 b.assemblers.push_back(assembler);
             }
 
-            bool assemble_material(const Vector &x, Matrix &mat, Vector &vec) {
-                // if (!assemble_matrix(x, mat)) return false;
+            void compute_residuals_from_matrices() {
+                // Compute linear residuals in one go, Only works if we exclusively have linear materials
+                domain.ensure_vector_accumulator();
+
+                if (domain.has_matrix()) {
+                    residual(
+                        domain.matrix_accumulator->data(), x_field->data(), domain.vector_accumulator->data(), mode);
+                }
+            }
+
+            void update(const Vector &x) {
                 ensure_field();
-                ensure_accumulators();
-                zero_accumulators();
 
                 assert(space);
                 utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
                 in.set_tensor_size(space->n_var());
-
-                // REMOVE ME
-                // std::shared_ptr<intrepid2::Field<Scalar>> x_field =
-                //     std::make_shared<intrepid2::Field<Scalar>>(domain.fe);
-                //////////
-
                 convert_field(in, *x_field);
+            }
 
-                bool has_linear = false;
-                std::vector<FEAssemblerPtr_t> nonlinear;
+            bool assemble_matrix(Matrix &mat) {
+                ensure_matrix_accumulators();
+                zero_matrix_accumulators();
+
                 for (auto &a_ptr : domain.assemblers) {
-                    if (a_ptr->is_linear()) {
-                        has_linear = true;
-                        if (!a_ptr->assemble()) {
+                    if (a_ptr->is_matrix()) {
+                        if (!a_ptr->assemble_matrix()) {
                             return false;
                         }
-
-                    } else {
-                        nonlinear.push_back(a_ptr);
                     }
                 }
 
                 for (auto &p : boundary) {
                     auto &b = p.second;
 
-                    bool has_linear_on_boundary = false;
                     for (auto &a_ptr : b.assemblers) {
-                        if (a_ptr->is_linear()) {
-                            if (!a_ptr->assemble()) {
+                        if (a_ptr->is_matrix()) {
+                            if (!a_ptr->assemble_matrix()) {
                                 return false;
                             }
-
-                            has_linear_on_boundary = true;
-                        } else {
-                            assert(false && "IMPLEMENT ME");
                         }
+                    }
+                }
 
-                        if (has_linear_on_boundary) {
-                            if (b.has_matrix()) {
-                                assert(false && "IMPLEMENT ME");
+                local_to_global_matrix_domain(mat);
+                return true;
+            }
+
+            bool assemble_vector(Vector &vec) {
+                ensure_vector_accumulators();
+                zero_vector_accumulators();
+
+                for (auto &a_ptr : domain.assemblers) {
+                    if (a_ptr->is_vector()) {
+                        if (!a_ptr->assemble_vector()) {
+                            return false;
+                        }
+                    }
+                }
+
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    for (auto &a_ptr : b.assemblers) {
+                        if (a_ptr->is_vector()) {
+                            if (!a_ptr->assemble_vector()) {
+                                return false;
                             }
                         }
                     }
                 }
 
-                // Compute linear residuals in one go
-                if (has_linear) {
-                    domain.ensure_vector_accumulator();
+                local_to_global_vector_domain(vec);
+                local_to_global_vector_boundary(vec);
+                return true;
+            }
 
-                    if (domain.has_matrix()) {
-                        residual(domain.matrix_accumulator->data(),
-                                 x_field->data(),
-                                 domain.vector_accumulator->data(),
-                                 mode);
-                    }
-                }
+            bool assemble_material(Matrix &mat, Vector &vec) {
+                ensure_accumulators();
+                zero_accumulators();
 
-                // Compute nonlinear contributions
-                for (auto &a_ptr : nonlinear) {
-                    assert(!a_ptr->is_linear());
-
-                    a_ptr->update(x_field);
+                for (auto &a_ptr : domain.assemblers) {
                     if (!a_ptr->assemble()) {
                         return false;
                     }
                 }
 
+                for (auto &p : boundary) {
+                    auto &b = p.second;
+
+                    for (auto &a_ptr : b.assemblers) {
+                        if (!a_ptr->assemble()) {
+                            return false;
+                        }
+                    }
+                }
+
+                local_to_global_matrix_domain(mat);
+                local_to_global_vector_domain(vec);
+                local_to_global_vector_boundary(vec);
+                return true;
+            }
+
+            void local_to_global_matrix_domain(Matrix &mat) {
                 if (domain.has_matrix()) {
                     local_to_global(*space, domain.matrix_accumulator->data(), mode, mat);
                 }
+            }
 
+            void local_to_global_vector_domain(Vector &vec) {
                 if (domain.has_vector()) {
                     local_to_global(*space,
                                     domain.vector_accumulator->data(),
                                     (mode == SUBTRACT_MODE) ? ADD_MODE : SUBTRACT_MODE,
                                     vec);
                 }
+            }
 
+            void local_to_global_vector_boundary(Vector &vec) {
                 for (auto &p : boundary) {
                     auto &b = p.second;
 
@@ -336,8 +464,6 @@ namespace utopia {
 
                     assert(!b.has_matrix() && "IMPLEMENT ME");
                 }
-
-                return true;
             }
 
             void ensure_field() {
@@ -394,7 +520,8 @@ namespace utopia {
                 return false;
             }
 
-            if (!impl_->assemble_material(x, matrix, fun)) {
+            impl_->update(x);
+            if (!impl_->assemble_material(matrix, fun)) {
                 return false;
             }
 
@@ -407,12 +534,40 @@ namespace utopia {
                 return false;
             }
 
-            assert(false && "IMPLEMENT ME");
+            impl_->update(x);
+            if (!impl_->assemble_matrix(matrix)) {
+                return false;
+            }
+
             return true;
         }
 
         template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Vector &fun) {
+        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Vector &vec) {
+            if (!impl_->domain.fe) {
+                return false;
+            }
+
+            impl_->update(x);
+            if (!impl_->assemble_vector(vec)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        template <class FunctionSpace>
+        bool OmniAssembler<FunctionSpace>::assemble(Matrix &jacobian) {
+            if (!impl_->domain.fe) {
+                return false;
+            }
+
+            assert(false && "IMPLEMENT ME");
+            return false;
+        }
+
+        template <class FunctionSpace>
+        bool OmniAssembler<FunctionSpace>::assemble(Vector &fun) {
             if (!impl_->domain.fe) {
                 return false;
             }

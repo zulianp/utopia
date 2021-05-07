@@ -7,25 +7,25 @@
 #include "utopia_Views.hpp"
 
 namespace utopia {
-    template <int Dim, class Ceofficient>
+    template <int Dim, class Coefficient>
     class VectorLaplaceOperator : public Configurable {
     public:
         void read(Input &in) override { in.get("coeff", coeff); }
 
-        VectorLaplaceOperator(const Ceofficient &coeff = Ceofficient(1.0)) : coeff(coeff) {}
-        Ceofficient coeff;
+        VectorLaplaceOperator(const Coefficient &coeff = Coefficient(1.0)) : coeff(coeff) {}
+        Coefficient coeff;
     };
 
     namespace intrepid2 {
 
-        template <int Dim, typename Ceofficient, typename Scalar>
-        class Assemble<VectorLaplaceOperator<Dim, Ceofficient>, Scalar> : public FEAssembler<Scalar> {
+        template <int Dim, typename Coefficient, typename Scalar>
+        class Assemble<VectorLaplaceOperator<Dim, Coefficient>, Scalar> : public FEAssembler<Scalar> {
         public:
             using FE = utopia::intrepid2::FE<Scalar>;
             using SizeType = typename FE::SizeType;
             using DynRankView = typename FE::DynRankView;
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
-            using UserOp = utopia::VectorLaplaceOperator<Dim, Ceofficient>;
+            using UserOp = utopia::VectorLaplaceOperator<Dim, Coefficient>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
@@ -40,77 +40,59 @@ namespace utopia {
             inline bool is_vector() const override { return false; }
             inline bool is_scalar() const override { return false; }
 
-            bool assemble() override {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<VectorLaplaceOperator>::assemble");
+            class Op {
+            public:
+                UTOPIA_INLINE_FUNCTION Scalar
+                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
+                    if (sub_i != sub_j) {
+                        return 0.0;
+                    }
 
-                this->ensure_matrix_accumulator();
+                    Scalar ret = 0.0;
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        Scalar val = 0.0;
 
-                auto &fe = this->fe();
+                        for (int d = 0; d < dim(); ++d) {
+                            val += grad(cell, i, qp, d) * grad(cell, j, qp, d);
+                        }
 
-                // const int num_fields = fe.num_fields();
-                // const int n_dofs = num_fields * fe.spatial_dimension();
-                const int n_qp = fe.num_qp();
+                        ret += coeff * val * measure(cell, qp);
+                    }
 
-                auto data = this->matrix_data();
-
-                // Only works if coeff is a scalar
-                {
-                    auto coeff = op_.coeff;
-                    auto grad = fe.grad;
-                    auto measure = fe.measure;
-
-                    this->loop_cell_test_trial(
-                        "Assemble<VectorLaplaceOperator>::init",
-                        KOKKOS_LAMBDA(const int &cell, const int &i, const int &j) {
-                            StaticVector<Scalar, Dim> temp_i, temp_j;
-                            StaticMatrix<Scalar, Dim, Dim> grad_i;
-                            StaticMatrix<Scalar, Dim, Dim> grad_j;
-
-                            // assert((Dim == 1 || &grad(cell, i, 0, 1) - &grad(cell, i, 0, 0) == 1UL) &&
-                            //        "spatial dimension must be contiguos");
-
-                            // grad: num_cells, n_fun, num_qp, spatial_dimension
-                            // measure: num_cells, num_qp;
-
-                            // needs loop over quadrature points and spatial_dim
-                            for (int qp = 0; qp < n_qp; ++qp) {
-                                auto coeff_x_dX = coeff * measure(cell, qp);
-
-                                for (int d = 0; d < Dim; ++d) {
-                                    temp_i[d] = grad(cell, i, qp, d);
-                                    temp_j[d] = grad(cell, j, qp, d);
-                                }
-
-                                for (int di = 0; di < Dim; ++di) {
-                                    make_tensor_grad(di, &temp_i[0], grad_i);
-                                    auto dof_i = i * Dim + di;
-
-                                    for (int dj = 0; dj < Dim; ++dj) {
-                                        auto dof_j = j * Dim + dj;
-
-                                        make_tensor_grad(dj, &temp_j[0], grad_j);
-
-                                        const Scalar val = inner(grad_i, grad_j) * coeff_x_dX;
-
-                                        data(cell, dof_i, dof_j) += val;
-                                    }
-                                }
-                            }
-                        });
+                    return ret;
                 }
 
-                UTOPIA_TRACE_REGION_END("Assemble<VectorLaplaceOperator>::assemble");
-                return true;
+                UTOPIA_INLINE_FUNCTION static constexpr int dim() { return Dim; }
+
+                UTOPIA_INLINE_FUNCTION Op(const Coefficient &coeff, const DynRankView &grad, const DynRankView &measure)
+                    : coeff(coeff), grad(grad), measure(measure), n_qp(measure.extent(1)) {}
+
+                const Coefficient coeff;
+                const DynRankView grad;
+                const DynRankView measure;
+                const int n_qp;
+            };
+
+            inline Op make_op() const { return Op(op_.coeff, this->fe().grad, this->fe().measure); }
+
+            bool apply(const DynRankView &x, DynRankView &y) override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<VectorLaplaceOperator>::apply");
+
+                this->apply_vector_operator("Assemble<VectorLaplaceOperator>::apply", x, y, make_op());
+
+                UTOPIA_TRACE_REGION_END("Assemble<VectorLaplaceOperator>::apply");
+                return false;
             }
 
-            UTOPIA_INLINE_FUNCTION static void make_tensor_grad(const int dim,
-                                                                Scalar *grad,
-                                                                StaticMatrix<Scalar, Dim, Dim> &tensor_grad) {
-                tensor_grad.set(0.0);
+            bool assemble_matrix() override {
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<VectorLaplaceOperator>::assemble_matrix");
 
-                for (int i = 0; i < Dim; ++i) {
-                    tensor_grad(dim, i) = grad[i];
-                }
+                this->ensure_matrix_accumulator();
+                this->loop_cell_test_trial("Assemble<VectorLaplaceOperator>::assemble_matrix",
+                                           block_op_and_store_cell_ij(this->matrix_data(), make_op()));
+
+                UTOPIA_TRACE_REGION_END("Assemble<VectorLaplaceOperator>::assemble_matrix");
+                return true;
             }
 
             // NVCC_PRIVATE :

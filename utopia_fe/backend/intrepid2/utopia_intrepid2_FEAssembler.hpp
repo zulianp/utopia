@@ -124,7 +124,7 @@ namespace utopia {
 
             template <class CellTestTrialOp>
             void apply_operator(const std::string &name, const DynRankView &x, DynRankView &y, CellTestTrialOp op) {
-                assert(n_vars() == 1 && "IMPLEMENT ME");
+                assert(n_vars() == 1 && "Use apply_vector_operator");
 
                 auto &fe = this->fe();
 
@@ -146,8 +146,6 @@ namespace utopia {
                                        const DynRankView &x,
                                        DynRankView &y,
                                        CellTestTrialSubIJOp op) {
-                assert(n_vars() == 1 && "IMPLEMENT ME");
-
                 auto &fe = this->fe();
 
                 const int num_fields = fe.num_fields();

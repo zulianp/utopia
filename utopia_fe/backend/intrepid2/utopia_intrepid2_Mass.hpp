@@ -72,7 +72,7 @@ namespace utopia {
             inline std::string name() const override { return "Mass"; }
 
             inline bool is_matrix() const override { return true; }
-            inline bool is_vector() const override { return false; }
+            inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
 

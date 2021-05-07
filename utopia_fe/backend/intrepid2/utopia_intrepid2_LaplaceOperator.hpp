@@ -37,7 +37,7 @@ namespace utopia {
             inline std::string name() const override { return "LaplaceOperator"; }
 
             inline bool is_matrix() const override { return true; }
-            inline bool is_vector() const override { return false; }
+            inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
 
@@ -91,7 +91,7 @@ namespace utopia {
                 this->apply_operator("Assemble<LaplaceOperator>::apply", x, y, make_op());
 
                 UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::apply");
-                return false;
+                return true;
             }
 
             bool assemble_matrix_intrepid_tutorial() {
