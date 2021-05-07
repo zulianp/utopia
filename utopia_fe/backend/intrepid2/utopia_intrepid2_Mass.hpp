@@ -89,17 +89,31 @@ namespace utopia {
                       n_qp(measure.extent(1)) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
-                    auto offset_i = i * n_components;
-                    auto offset_j = j * n_components;
-
                     Scalar ret = 0.0;
                     for (int qp = 0; qp < n_qp; ++qp) {
                         auto dX = measure(cell, qp);
-                        ret += fun(offset_i, qp) * fun(offset_j, qp) * density * dX;
+                        ret += fun(i, qp) * fun(j, qp) * density * dX;
                     }
 
                     return ret;
                 }
+
+                UTOPIA_INLINE_FUNCTION Scalar
+                operator()(const int &cell, const int &i, const int &j, const int sub_i, const int sub_j) const {
+                    if (sub_i != sub_j) {
+                        return 0.0;
+                    }
+
+                    Scalar ret = 0.0;
+                    for (int qp = 0; qp < n_qp; ++qp) {
+                        auto dX = measure(cell, qp);
+                        ret += fun(i, qp) * fun(j, qp) * density * dX;
+                    }
+
+                    return ret;
+                }
+
+                inline int dim() const { return n_components; }
 
                 const Fun density;
                 const DynRankView fun;
@@ -121,6 +135,8 @@ namespace utopia {
                     return ret;
                 }
 
+                int dim() const { return op_.dim(); }
+
                 WrappedOp op_;
                 const int num_fields;
             };
@@ -131,6 +147,19 @@ namespace utopia {
                     : element_matrices(element_matrices), num_fields(element_matrices.extent(2)) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i, const int j) const {
+                    if (i == j) {
+                        return compute(cell, i);
+                    } else {
+                        return 0.0;
+                    }
+                }
+
+                UTOPIA_INLINE_FUNCTION Scalar
+                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
+                    if (sub_i != sub_j) {
+                        return 0.0;
+                    }
+
                     if (i == j) {
                         return compute(cell, i);
                     } else {
@@ -173,9 +202,17 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<Mass>::apply");
 
                 if (op_.lumped) {
-                    this->apply_diagonal_operator("Assemble<Mass>::apply::lumped", x, y, make_lumped_op());
+                    if (op_.n_components == 1) {
+                        this->apply_diagonal_operator("Assemble<Mass>::apply::lumped", x, y, make_lumped_op());
+                    } else {
+                        assert(false && "IMPLEMENT ME");
+                    }
                 } else {
-                    this->apply_operator("Assemble<Mass>::apply", x, y, make_op());
+                    if (op_.n_components == 1) {
+                        this->apply_operator("Assemble<Mass>::apply", x, y, make_op());
+                    } else {
+                        this->apply_vector_operator("Assemble<Mass>::apply", x, y, make_op());
+                    }
                 }
 
                 if (op_.density_function) {
@@ -189,11 +226,17 @@ namespace utopia {
             bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<Mass>::assemble");
 
-                assert(op_.n_components == 1 && "IMPLEMENT ME");
-
                 this->ensure_matrix_accumulator();
-                this->loop_cell_test_trial("Assemble<Mass>::assemble",
-                                           op_and_store_cell_ij(this->matrix_data(), make_op()));
+
+                // assert(op_.n_components == 1 && "IMPLEMENT ME");
+
+                if (op_.n_components == 1) {
+                    this->loop_cell_test_trial("Assemble<Mass>::assemble_matrix",
+                                               op_and_store_cell_ij(this->matrix_data(), make_op()));
+                } else {
+                    this->loop_cell_test_trial("Assemble<Mass>::assemble_matrix",
+                                               block_op_and_store_cell_ij(this->matrix_data(), make_op()));
+                }
 
                 if (op_.lumped) {
                     this->loop_cell_test("Assemble<Mass>::assemble::lump", Lump(this->matrix_data()));

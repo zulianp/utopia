@@ -29,24 +29,25 @@ namespace utopia {
 
             bool converged = false;
             for (int i = 0; i < 20; ++i) {
-                // function_->hessian_and_gradient(x, H, g);
                 fun.update(x);
-                fun.hessian_and_gradient(x, H, g);
+                fun.gradient(x, g);
 
                 Scalar norm_g = norm2(g);
 
-                if (verbose_) utopia::out() << "norm_g: " << norm_g << '\n';
+                if (verbose_) utopia::out() << i << ") norm_g: " << norm_g << '\n';
 
                 if (norm_g < 1e-8) {
                     converged = true;
                     break;
                 }
 
+                fun.hessian(x, H);
                 linear_solver_->solve(H, g, inc);
                 x -= inc;
+
                 Scalar norm_inc = norm2(inc);
 
-                if (verbose_) utopia::out() << "norm_inc: " << norm_inc << '\n';
+                if (verbose_) utopia::out() << i << ") norm_inc: " << norm_inc << '\n';
 
                 if (norm_inc < 1e-8) {
                     converged = true;

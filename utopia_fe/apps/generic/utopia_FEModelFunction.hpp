@@ -38,6 +38,8 @@ namespace utopia {
             space()->create_matrix(H);
             return true;
         }
+
+        virtual bool is_time_dependent() const = 0;
     };
 
     template <class FunctionSpace>
@@ -134,6 +136,8 @@ namespace utopia {
 
         inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return assembler_; }
         inline const std::shared_ptr<FunctionSpace> &space() const override { return space_; }
+
+        bool is_time_dependent() const override { return false; }
 
         inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
 
@@ -275,6 +279,8 @@ namespace utopia {
         inline Scalar_t delta_time() const { return delta_time_; }
         inline const std::shared_ptr<Matrix_t> &mass_matrix() const { return mass_matrix_; }
         inline const std::shared_ptr<OmniAssembler_t> &mass_matrix_assembler() const { return mass_matrix_assembler_; }
+
+        bool is_time_dependent() const override { return true; }
 
         bool assemble_mass_matrix() {
             this->space()->create_matrix(*mass_matrix());

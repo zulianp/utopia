@@ -25,13 +25,30 @@ namespace utopia {
             // }
         }
 
-        bool setup_IVP(Vector_t &x) override { return this->assemble_mass_matrix(); }
+        bool setup_IVP(Vector_t &x) override {
+            if (!this->assemble_mass_matrix()) {
+                return false;
+            }
+            mass_times_x_old_.zeros(layout(x));
+            assert(!empty(mass_times_x_old_));
+            return true;
+        }
 
-        bool update_IVP(const Vector_t &) override { return true; }
+        bool update_IVP(const Vector_t &x) override {
+            mass_times_x_old_ = (*this->mass_matrix()) * x;
+            assert(!empty(mass_times_x_old_));
+            return true;
+        }
 
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt = this->delta_time();
+
+            assert(!empty(g));
+            assert(!empty(mass_times_x_old_));
+
             g *= dt;
+            g -= mass_times_x_old_;
+            g += (*this->mass_matrix()) * x;
             this->space()->apply_zero_constraints(g);
         }
 
@@ -40,6 +57,9 @@ namespace utopia {
             H *= dt;
             H += (*this->mass_matrix());
         }
+
+    private:
+        Vector_t mass_times_x_old_;
     };
 
 }  // namespace utopia

@@ -570,23 +570,29 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(Matrix &jacobian) {
+        bool OmniAssembler<FunctionSpace>::assemble(Matrix &matrix) {
             if (!impl_->domain.fe) {
                 return false;
             }
 
-            assert(false && "IMPLEMENT ME");
-            return false;
+            if (!impl_->assemble_matrix(matrix)) {
+                return false;
+            }
+
+            return true;
         }
 
         template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(Vector &fun) {
+        bool OmniAssembler<FunctionSpace>::assemble(Vector &vector) {
             if (!impl_->domain.fe) {
                 return false;
             }
 
-            assert(false && "IMPLEMENT ME");
-            return false;
+            if (!impl_->assemble_vector(vector)) {
+                return false;
+            }
+
+            return true;
         }
 
         template <class FunctionSpace>
