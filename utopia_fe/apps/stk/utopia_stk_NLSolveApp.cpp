@@ -19,10 +19,13 @@ namespace utopia {
     template <class FunctionSpace>
     class NLSolveApp : public Configurable {
     public:
-        // using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
+        using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
+        using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
-        using FEModelFunction_t = utopia::NewmarkIntegrator<FunctionSpace>;
+        using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
+        // using FEModelFunction_t = utopia::NewmarkIntegrator<FunctionSpace>;
+
         // using FEModelFunction_t = ImplicitEulerIntegrator_t;
 
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -43,7 +46,19 @@ namespace utopia {
                 return;
             }
 
-            function_ = utopia::make_unique<FEModelFunction_t>(space_);
+            std::string integrator;
+            in.get("integrator", integrator);
+
+            if (integrator == "Newmark") {
+                time_dependent_function_ = utopia::make_unique<NewmarkIntegrator_t>(space_);
+                function_ = time_dependent_function_;
+            } else if (integrator == "ImplicitEuler") {
+                time_dependent_function_ = utopia::make_unique<ImplicitEulerIntegrator_t>(space_);
+                function_ = time_dependent_function_;
+            } else {
+                function_ = std::make_shared<FEModelFunction_t>(space_);
+            }
+
             in.get("problem", *function_);
 
             linear_solver_ = std::make_shared<OmniLinearSolver_t>();
@@ -67,18 +82,18 @@ namespace utopia {
 
         void run_time_dependent_problem() {
             Vector_t x;
-            function_->create_solution_vector(x);
-            function_->setup_IVP(x);
+            time_dependent_function_->create_solution_vector(x);
+            time_dependent_function_->setup_IVP(x);
 
             IO_t io(*space_);
             io.set_output_path("X_t.e");
 
             for (int t = 0; t < n_time_steps_; ++t) {
-                solver_->solve(*function_, x);
-                function_->update_IVP(x);
+                solver_->solve(*time_dependent_function_, x);
+                time_dependent_function_->update_IVP(x);
 
-                io.write(x, t, t * function_->delta_time());
-                utopia::out() << "time_step: " << t << ", time: " << t * function_->delta_time() << '\n';
+                io.write(x, t, t * time_dependent_function_->delta_time());
+                utopia::out() << "time_step: " << t << ", time: " << t * time_dependent_function_->delta_time() << '\n';
             }
         }
 
@@ -91,7 +106,8 @@ namespace utopia {
         }
 
         std::shared_ptr<FunctionSpace> space_;
-        std::unique_ptr<FEModelFunction_t> function_;
+        std::shared_ptr<TimeDependentFunction_t> time_dependent_function_;
+        std::shared_ptr<FEFunctionInterface_t> function_;
         std::shared_ptr<OmniLinearSolver_t> linear_solver_;
         std::shared_ptr<Newton_t> solver_;
 

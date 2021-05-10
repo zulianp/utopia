@@ -37,8 +37,9 @@ namespace utopia {
             inline std::string name() const override { return "VectorLaplaceOperator"; }
 
             inline bool is_matrix() const override { return true; }
-            inline bool is_vector() const override { return false; }
+            inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
+            bool is_operator() const override { return true; }
 
             class Op {
             public:
@@ -81,7 +82,7 @@ namespace utopia {
                 this->apply_vector_operator("Assemble<VectorLaplaceOperator>::apply", x, y, make_op());
 
                 UTOPIA_TRACE_REGION_END("Assemble<VectorLaplaceOperator>::apply");
-                return false;
+                return true;
             }
 
             bool assemble_matrix() override {

@@ -315,12 +315,25 @@ namespace utopia {
                     }
                 }
 
+                Scalar sum() const {
+                    auto data = data_.data();
+                    auto n_elements = data_.size();
+
+                    Scalar ret = 0.0;
+                    Kokkos::parallel_reduce(
+                        Kokkos::RangePolicy<ExecutionSpace>(0, n_elements),
+                        UTOPIA_LAMBDA(int i, Scalar &val) { val += data[i]; },
+                        ret);
+
+                    return ret;
+                }
+
                 void zero() { utopia::intrepid2::fill(data_, 0.0); }
 
                 void describe(std::ostream &os) const override {
                     const SizeType num_cells = data_.extent(0);
 
-                    if (data_.rank() == 3) {
+                    if (data_.rank() == 2) {
                         const int n_dofs_i = data_.extent(1);
 
                         for (SizeType c = 0; c < num_cells; ++c) {
@@ -334,7 +347,7 @@ namespace utopia {
                             os << '\n';
                         }
 
-                    } else if (data_.rank() == 4) {
+                    } else if (data_.rank() == 3) {
                         const int n_dofs_i = data_.extent(1);
                         const int n_dofs_j = data_.extent(2);
 

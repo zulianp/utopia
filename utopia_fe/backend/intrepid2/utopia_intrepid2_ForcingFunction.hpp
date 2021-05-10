@@ -13,6 +13,7 @@ namespace utopia {
         void read(Input &in) override {
             in.get("value", value);
             in.get("component", component);
+            in.get("verbose", verbose);
         }
 
         ForcingFunction(const Fun &value = Fun(0.0)) : value(value) {}
@@ -21,6 +22,7 @@ namespace utopia {
         Fun value;
         int n_components{1};
         int component{0};
+        bool verbose{false};
     };
 
     namespace intrepid2 {
@@ -72,6 +74,13 @@ namespace utopia {
                             ev(cell, offset) += -fun(i, qp) * value * dX;
                         }
                     });
+
+                if (op_.verbose) {
+                    utopia::out() << "ForcingFunction: " << this->vector_accumulator()->sum() << '\n';
+                    this->describe(utopia::out().stream());
+                    // utopia::out() << "Accumulator:\n";
+                    // this->vector_accumulator()->describe(utopia::out().stream());
+                }
 
                 UTOPIA_TRACE_REGION_END("Assemble<ForcingFunction>::assemble");
                 return true;
