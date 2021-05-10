@@ -486,12 +486,12 @@ namespace utopia {
                 // utopia::out() << "sum_vec: " << sum_vec << '\n';
                 // disp(vec);
 
-                static bool first = true;
+                // static bool first = true;
 
-                if (first) {
-                    space->write("boundary.e", vec);
-                    first = false;
-                }
+                // if (first) {
+                //     space->write("boundary.e", vec);
+                //     first = false;
+                // }
             }
 
             void ensure_output(Matrix &mat) {
