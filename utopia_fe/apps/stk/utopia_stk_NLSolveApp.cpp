@@ -82,8 +82,7 @@ namespace utopia {
                 function_->hessian_and_gradient(x, H, g);
                 g *= -1.0;
 
-                Factorization<Matrix_t, Vector_t> fact;
-                fact.solve(H, g, x);
+                linear_solver_->solve(H, g, x);
 
             } else {
                 solver_->solve(*function_, x);

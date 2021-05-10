@@ -79,6 +79,8 @@ namespace utopia {
 
                             ev(cell, offset) += -f * value * dX;
                         }
+
+                        // ev(cell, offset) += 1.0;
                     });
 
                 if (op_.verbose) {

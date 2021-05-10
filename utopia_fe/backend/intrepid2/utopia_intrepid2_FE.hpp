@@ -306,7 +306,7 @@ namespace utopia {
                 ShellTools<Scalar>::allocate_jacobian(num_cells, spatial_dimension, num_qp, jacobian);
                 ShellTools<Scalar>::allocate_jacobian_inverse(num_cells, spatial_dimension, num_qp, jacobian_inv);
                 ShellTools<Scalar>::allocate_measure(num_cells, num_qp, measure);
-                ShellTools<Scalar>::cell_geometry(cell_nodes, jacobian, jacobian_inv, measure);
+                ShellTools<Scalar>::cell_geometry(cell_nodes, ref_grad, jacobian, jacobian_inv, measure);
                 ShellTools<Scalar>::transform_gradient_to_physical_space(jacobian_inv, ref_grad, grad);
             }
         };

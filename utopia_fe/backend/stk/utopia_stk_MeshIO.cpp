@@ -72,6 +72,9 @@ namespace utopia {
                     in.get("max_y", box_max[1]);
                     in.get("max_z", box_max[2]);
 
+                    std::string elem_type = "HEX8";
+                    in.get("elem_type", elem_type);
+
                     if (verbose) {
                         utopia::out() << "Generating cube with " << nx << " x " << ny << " x " << nz << "\n";
                     }
@@ -91,7 +94,9 @@ namespace utopia {
                     std::string specification = "generated:" + std::to_string(nx) + "x" + std::to_string(ny) + "x" +
                                                 std::to_string(nz) + "|" + sidesets + "|" + bbox;
 
-                    specification += "|tets";
+                    if (elem_type == "TET4") {
+                        specification += "|tets";
+                    }
 
                     in.get("specification", specification);
                     set_read_specification(specification);

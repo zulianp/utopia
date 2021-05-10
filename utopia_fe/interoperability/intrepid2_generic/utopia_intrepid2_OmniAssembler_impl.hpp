@@ -462,12 +462,12 @@ namespace utopia {
                 if (domain.has_vector()) {
                     local_to_global(*space, domain.vector_accumulator->data(), mode, vec);
 
-                    static bool first = true;
+                    // static bool first = true;
 
-                    if (first) {
-                        space->write("boundary.e", vec);
-                        first = false;
-                    }
+                    // if (first) {
+                    //     space->write("boundary.e", vec);
+                    //     first = false;
+                    // }
                 }
             }
 
@@ -485,12 +485,13 @@ namespace utopia {
                 // Scalar sum_vec = sum(vec);
                 // utopia::out() << "sum_vec: " << sum_vec << '\n';
                 // disp(vec);
-                // static bool first = true;
 
-                // if (first) {
-                //     space->write("boundary.e", vec);
-                //     first = false;
-                // }
+                static bool first = true;
+
+                if (first) {
+                    space->write("boundary.e", vec);
+                    first = false;
+                }
             }
 
             void ensure_output(Matrix &mat) {
