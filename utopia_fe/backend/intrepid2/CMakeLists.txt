@@ -13,6 +13,9 @@ target_include_directories(utopia_intrepid2
 
 target_include_directories(utopia_intrepid2 PUBLIC ${Intrepid2_INCLUDE_DIRS})
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_INTREPID2_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" PARENT_SCOPE)
+
 set(UTOPIA_WITH_INTREPID2 TRUE)
 
 set(UTOPIA_WITH_INTREPID2

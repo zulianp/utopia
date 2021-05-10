@@ -40,6 +40,7 @@ namespace utopia {
         }
 
         virtual bool is_time_dependent() const = 0;
+        virtual bool is_linear() const = 0;
     };
 
     template <class FunctionSpace>
@@ -56,6 +57,8 @@ namespace utopia {
             : space_(space), assembler_(std::make_shared<OmniAssembler_t>(space)) {}
 
         virtual ~FEModelFunction() = default;
+
+        bool is_linear() const override { return assembler()->is_linear(); }
 
         void read(Input &in) override {
             Super::read(in);
@@ -297,6 +300,8 @@ namespace utopia {
         inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
 
         inline const std::shared_ptr<FEModelFunction_t> function() const { return fe_function_; }
+
+        bool is_linear() const override { return function()->is_linear(); }
 
     protected:
         inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }

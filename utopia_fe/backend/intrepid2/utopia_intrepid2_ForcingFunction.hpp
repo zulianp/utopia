@@ -71,13 +71,19 @@ namespace utopia {
 
                         for (int qp = 0; qp < n_qp; ++qp) {
                             auto dX = measure(cell, qp);
-                            ev(cell, offset) += -fun(i, qp) * value * dX;
+
+                            const Scalar f = fun(i, qp);
+
+                            assert(f >= 0);
+                            assert(f <= 1.0);
+
+                            ev(cell, offset) += -f * value * dX;
                         }
                     });
 
                 if (op_.verbose) {
                     utopia::out() << "ForcingFunction: " << this->vector_accumulator()->sum() << '\n';
-                    this->describe(utopia::out().stream());
+                    // this->describe(utopia::out().stream());
                     // utopia::out() << "Accumulator:\n";
                     // this->vector_accumulator()->describe(utopia::out().stream());
                 }

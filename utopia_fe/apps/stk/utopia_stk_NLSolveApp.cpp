@@ -75,8 +75,20 @@ namespace utopia {
             Vector_t x;
             function_->create_solution_vector(x);
 
-            // This seems to fail with the standard utopia::Newton for some reason
-            solver_->solve(*function_, x);
+            if (function_->is_linear()) {
+                Matrix_t H;
+                Vector_t g;
+
+                function_->hessian_and_gradient(x, H, g);
+                g *= -1.0;
+
+                Factorization<Matrix_t, Vector_t> fact;
+                fact.solve(H, g, x);
+
+            } else {
+                solver_->solve(*function_, x);
+            }
+
             space_->write("x.e", x);
         }
 
