@@ -5,6 +5,8 @@
 
 namespace utopia {
 
+    // https://en.wikipedia.org/wiki/Newmark-beta_method
+    // Unconditionally Stable gamma = 0.5, beta = 0.25
     template <class FunctionSpace>
     class NewmarkIntegrator final : public TimeDependentFunction<FunctionSpace> {
     public:
@@ -35,9 +37,10 @@ namespace utopia {
 
             x_old_.zeros(vlo);
             x_older_.zeros(vlo);
-            active_stress_old_.zeros(vlo);
-            active_stress_older_.zeros(vlo);
+            internal_stress_old_.zeros(vlo);
+            internal_stress_older_.zeros(vlo);
             external_force_.zeros(vlo);
+            internal_stress_.zeros(vlo);
             return true;
         }
 
@@ -47,11 +50,14 @@ namespace utopia {
             x_older_ = x_old_;
             x_old_ = x;
 
-            active_stress_older_ = active_stress_old_;
-            active_stress_old_ = active_stress_;
+            // this->function()->gradient(x, internal_stress_);
+            this->gradient(x, internal_stress_);
+
+            internal_stress_older_ = internal_stress_old_;
+            internal_stress_old_ = internal_stress_;
 
             active_stress_ = (4. / (dt * dt)) * ((*this->mass_matrix()) * (2. * x_old_ - x_older_)) -
-                             2. * active_stress_old_ - active_stress_older_ + (4. * external_force_);
+                             2. * internal_stress_old_ - internal_stress_older_ + (4. * external_force_);
 
             return true;
         }
@@ -60,6 +66,7 @@ namespace utopia {
 
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
+
             g -= active_stress_;
             g *= (dt2 / 4.);
             g += ((*this->mass_matrix()) * x);
@@ -75,7 +82,9 @@ namespace utopia {
 
     private:
         Vector_t x_old_, x_older_;
-        Vector_t active_stress_, active_stress_old_, active_stress_older_, external_force_;
+        Vector_t active_stress_, internal_stress_, internal_stress_old_, internal_stress_older_, external_force_;
+        // Scalar_t beta_{0.25};
+        // Scalar_t gamma_{0.5};
     };
 
 }  // namespace utopia

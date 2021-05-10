@@ -48,7 +48,7 @@ namespace utopia {
 
             inline std::string name() const override { return "ForcingFunction"; }
 
-            bool assemble() override {
+            bool assemble_vector() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<ForcingFunction>::assemble");
                 this->ensure_vector_accumulator();
 

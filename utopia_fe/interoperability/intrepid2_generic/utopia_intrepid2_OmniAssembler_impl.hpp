@@ -365,6 +365,7 @@ namespace utopia {
             }
 
             bool assemble_matrix(Matrix &mat) {
+                ensure_output(mat);
                 ensure_matrix_accumulators();
                 zero_matrix_accumulators();
 
@@ -393,6 +394,7 @@ namespace utopia {
             }
 
             bool assemble_vector(Vector &vec) {
+                ensure_output(vec);
                 ensure_vector_accumulators();
                 zero_vector_accumulators();
 
@@ -422,6 +424,9 @@ namespace utopia {
             }
 
             bool assemble_material(Matrix &mat, Vector &vec) {
+                ensure_output(mat);
+                ensure_output(vec);
+
                 ensure_accumulators();
                 zero_accumulators();
 
@@ -455,11 +460,7 @@ namespace utopia {
 
             void local_to_global_vector_domain(Vector &vec) {
                 if (domain.has_vector()) {
-                    local_to_global(*space,
-                                    domain.vector_accumulator->data(),
-                                    // (mode == SUBTRACT_MODE) ? ADD_MODE : SUBTRACT_MODE,
-                                    mode,
-                                    vec);
+                    local_to_global(*space, domain.vector_accumulator->data(), mode, vec);
                 }
             }
 
@@ -468,14 +469,22 @@ namespace utopia {
                     auto &b = p.second;
 
                     if (b.has_vector()) {
-                        if (mode == SUBTRACT_MODE) {
-                            side_local_to_global(*space, b.vector_accumulator->data(), ADD_MODE, vec, b.name);
-                        } else {
-                            side_local_to_global(*space, b.vector_accumulator->data(), SUBTRACT_MODE, vec, b.name);
-                        }
+                        side_local_to_global(*space, b.vector_accumulator->data(), mode, vec, b.name);
                     }
 
                     assert(!b.has_matrix() && "IMPLEMENT ME");
+                }
+            }
+
+            void ensure_output(Matrix &mat) {
+                if (!mat.empty() && mat.is_assembled()) {
+                    mat *= 0.0;
+                }
+            }
+
+            void ensure_output(Vector &vec) {
+                if (!vec.empty()) {
+                    vec *= 0.0;
                 }
             }
 
@@ -500,7 +509,7 @@ namespace utopia {
 
             std::shared_ptr<intrepid2::Field<Scalar>> x_field;
 
-            AssemblyMode mode{OVERWRITE_MODE};
+            AssemblyMode mode{ADD_MODE};
             bool is_linear_{true};
         };
 

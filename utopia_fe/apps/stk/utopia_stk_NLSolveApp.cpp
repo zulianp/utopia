@@ -22,8 +22,8 @@ namespace utopia {
         // using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
-        // using FEModelFunction_t = utopia::NewmarkIntegrator<FunctionSpace>;
-        using FEModelFunction_t = ImplicitEulerIntegrator_t;
+        using FEModelFunction_t = utopia::NewmarkIntegrator<FunctionSpace>;
+        // using FEModelFunction_t = ImplicitEulerIntegrator_t;
 
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Vector_t = typename Traits<FunctionSpace>::Vector;

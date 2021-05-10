@@ -296,6 +296,8 @@ namespace utopia {
         inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler(); }
         inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
 
+        inline const std::shared_ptr<FEModelFunction_t> function() const { return fe_function_; }
+
     protected:
         inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
 

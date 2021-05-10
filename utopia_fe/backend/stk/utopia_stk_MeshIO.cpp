@@ -91,6 +91,8 @@ namespace utopia {
                     std::string specification = "generated:" + std::to_string(nx) + "x" + std::to_string(ny) + "x" +
                                                 std::to_string(nz) + "|" + sidesets + "|" + bbox;
 
+                    specification += "|tets";
+
                     in.get("specification", specification);
                     set_read_specification(specification);
                 }
