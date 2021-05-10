@@ -385,6 +385,23 @@ namespace utopia {
                             scal(cell);
                         });
 
+                    // ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, grad, jacobian);
+                    // ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
+                    // ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
+                    // Scal<DynRankView> scal((spatial_dim == 2) ? 0.5 : 1.0 / 6.0, measure);
+
+                    // SizeType num_cells = jacobian.extent(0);
+                    // SizeType n_qp = jacobian.extent(1);
+                    // Kokkos::parallel_for(
+                    //     "ShellTools::cell_geometry",
+                    //     CellQPRange({0, 0}, {num_cells, n_qp}),
+                    //     KOKKOS_LAMBDA(const SizeType cell, const SizeType qp) {
+                    //         compute_J(cell, qp);
+                    //         compute_J_det(cell, qp);  // This depends on compute_J(cell)
+                    //         compute_J_inv(cell, qp);
+                    //         scal(cell, qp);
+                    //     });
+
                 } else {
                     ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, grad, jacobian);
                     ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
