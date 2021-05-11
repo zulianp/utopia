@@ -29,6 +29,7 @@ namespace utopia {
             space_ = std::make_shared<FunctionSpace>();
             input_ = std::make_shared<IO_t>(*space_);
             input_->import_all_field_data(true);
+            input_->enable_interpolation_mode();
 
             in.get("space", [&](Input &node) { valid_ = input_->open_input(node); });
 
@@ -41,7 +42,6 @@ namespace utopia {
             }
 
             output_ = std::make_shared<IO_t>(*space_);
-            output_->enable_interpolation_mode();
 
             in.get("n_time_steps", n_time_steps_);
             in.get("delta_time", delta_time_);
