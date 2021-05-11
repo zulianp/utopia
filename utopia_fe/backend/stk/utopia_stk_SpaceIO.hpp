@@ -22,20 +22,30 @@ namespace utopia {
             // One shot functions
             void read(Input &in) override;
             bool read_with_state(Input &in, Field<FunctionSpace> &field);
+            void import_all_field_data(const bool value);
 
             // Statefull functions
             // bool load();
 
             bool write(const Vector &v);
             bool write(const Vector &v, const int step, const Scalar);
+            bool write(const int step, const Scalar t);
             // bool read(Vector &v, const int step = 1, const Scalar t = 0);
 
             void set_output_path(const Path &path);
             bool open_output();
+
+            void set_input_path(const Path &path);
+            bool open_input();
+            bool open_input(Input &in);
             // void set_read_path(const Path &path);
 
             SpaceIO(FunctionSpace &space);
             ~SpaceIO();
+
+            void enable_interpolation_mode();
+
+            bool load_time_step(const Scalar t);
 
         public:
             class Impl;

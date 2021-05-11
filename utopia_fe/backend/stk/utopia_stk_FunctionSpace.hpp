@@ -98,6 +98,8 @@ namespace utopia {
             std::shared_ptr<Impl> impl_;
 
             void register_output_variables(MeshIO &io);
+            void read_meta(Input &in);
+            void register_variables();
             friend class SpaceIO;
         };
 

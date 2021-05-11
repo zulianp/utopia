@@ -22,6 +22,7 @@ namespace utopia {
 
             void read(Input &in) override;
             bool load();
+            bool load_time_step(const Scalar t);
             bool write(const Path &write_path);
             bool write(const int step, const Scalar t);
 
@@ -41,6 +42,9 @@ namespace utopia {
 
             const Path &output_path() const;
             bool ensure_output();
+            bool ensure_input();
+
+            void enable_interpolation_mode();
 
         public:
             class Impl;

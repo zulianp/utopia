@@ -117,6 +117,17 @@ namespace utopia {
                 /////////////////////////////////////////////
             }
 
+            bool load_time_step(const Scalar t) {
+                try {
+                    io_broker->read_defined_input_fields(t);
+                    return true;
+                } catch (const std::exception &ex) {
+                    utopia::err() << "Mesh::load_time_step(\"" << t << "\") error: " << ex.what() << '\n';
+                    assert(false);
+                    return false;
+                }
+            }
+
             bool load() {
                 auto meta_data = std::make_shared<Impl::MetaData>();
                 auto bulk_data = std::make_shared<Impl::BulkData>(*meta_data, mesh.comm().raw_comm(), auto_aura_option);
@@ -132,7 +143,7 @@ namespace utopia {
                     io_broker->create_input_mesh();
 
                     if (import_all_field_data) {
-                        io_broker->add_all_mesh_fields_as_input_fields();
+                        io_broker->add_all_mesh_fields_as_input_fields(time_match);
                     }
 
                     io_broker->populate_mesh();
@@ -146,6 +157,8 @@ namespace utopia {
                     mesh.wrap(meta_data, bulk_data);
 
                     mesh.init();
+
+                    input_id = io_broker->get_active_mesh();
                     return true;
                 } catch (const std::exception &ex) {
                     utopia::err() << "Mesh::read(\"" << read_specification << "\") error: " << ex.what() << '\n';
@@ -176,6 +189,8 @@ namespace utopia {
 
             Impl(Mesh &mesh) : mesh(mesh), io_broker(utopia::make_unique<IOBroker>(mesh.comm().raw_comm())) {}
 
+            inline bool empty_input() const { return input_id == -1; }
+
         public:
             Mesh &mesh;
             std::unique_ptr<IOBroker> io_broker;
@@ -188,7 +203,11 @@ namespace utopia {
             int time_step{1};
             Path output_path{"./out.e"};
             int output_id{-1};
+            int input_id{-1};
+            ::stk::io::MeshField::TimeMatchOption time_match{::stk::io::MeshField::CLOSEST};
         };
+
+        void MeshIO::enable_interpolation_mode() { impl_->time_match = ::stk::io::MeshField::LINEAR_INTERPOLATION; }
 
         void MeshIO::read(Input &in) { impl_->read(in); }
         bool MeshIO::load() { return impl_->load(); }
@@ -254,6 +273,16 @@ namespace utopia {
                 assert(false);
                 return false;
             }
+        }
+
+        bool MeshIO::load_time_step(const Scalar t) { return impl_->load_time_step(t); }
+
+        bool MeshIO::ensure_input() {
+            if (impl_->empty_input()) {
+                return impl_->load();
+            }
+
+            return true;
         }
 
     }  // namespace stk

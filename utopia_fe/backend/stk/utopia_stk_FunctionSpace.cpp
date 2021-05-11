@@ -313,8 +313,6 @@ namespace utopia {
         FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {
             impl_->mesh = std::make_shared<Mesh>(comm);
             impl_->dof_map = std::make_shared<DofMap>();
-
-            // assert(mpi_world_size() == comm.size());
         }
 
         FunctionSpace::FunctionSpace(const std::shared_ptr<Mesh> &mesh) : impl_(utopia::make_unique<Impl>()) {
@@ -338,9 +336,13 @@ namespace utopia {
 
         void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) { impl_->mesh = mesh; }
 
+        void FunctionSpace::read_meta(Input &in) { impl_->read_meta(in); }
+
+        void FunctionSpace::register_variables() { impl_->register_variables(); }
+
         void FunctionSpace::read(Input &in) {
             in.get("mesh", *impl_->mesh);
-            impl_->read_meta(in);
+            read_meta(in);
 
             impl_->register_variables();
 

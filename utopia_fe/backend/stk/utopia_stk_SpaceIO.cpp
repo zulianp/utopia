@@ -45,5 +45,46 @@ namespace utopia {
         SpaceIO::SpaceIO(FunctionSpace &space) : impl_(utopia::make_unique<Impl>(space)) {}
         SpaceIO::~SpaceIO() = default;
 
+        void SpaceIO::enable_interpolation_mode() {
+            assert(impl_);
+            impl_->io.enable_interpolation_mode();
+        }
+
+        bool SpaceIO::load_time_step(const Scalar t) {
+            assert(impl_);
+            return impl_->io.load_time_step(t);
+        }
+
+        bool SpaceIO::write(const int step, const Scalar t) {
+            assert(impl_);
+            return impl_->io.write(step, t);
+        }
+
+        void SpaceIO::import_all_field_data(const bool value) {
+            assert(impl_);
+            impl_->io.import_all_field_data(value);
+        }
+
+        void SpaceIO::set_input_path(const Path &path) {
+            assert(impl_);
+            impl_->io.set_read_path(path);
+        }
+        bool SpaceIO::open_input() {
+            assert(impl_);
+            return impl_->io.ensure_input();
+        }
+
+        bool SpaceIO::open_input(Input &in) {
+            assert(impl_);
+            in.get("mesh", impl_->io);
+            impl_->space.read_meta(in);
+            // impl_->space.register_variables();
+            if (!open_input()) {
+                return false;
+            }
+
+            return true;
+        }
+
     }  // namespace stk
 }  // namespace utopia
