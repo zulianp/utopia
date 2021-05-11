@@ -181,6 +181,11 @@ namespace utopia {
                 int offset = 0;
                 for (auto &v : variables) {
                     ::stk::mesh::FieldBase *field = ::stk::mesh::get_field_by_name(v.name, meta_data);
+                    assert(field);
+
+                    if(!field) {
+                        Utopia::Abort("utopia::stk::FunctionSpace: is trying to access undefiend field");
+                    }
 
                     for (const auto &ib : node_buckets) {
                         const Bucket_t &b = *ib;
