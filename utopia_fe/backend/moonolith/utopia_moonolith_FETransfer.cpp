@@ -1,4 +1,6 @@
 #include "utopia_moonolith_FETransfer.hpp"
+#include "utopia_ExtractComponent.hpp"
+
 
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_Options.hpp"
@@ -351,7 +353,27 @@ namespace utopia {
 
         bool FETransfer::apply(const Vector &from, Vector &to) const {
             if (!empty()) {
-                to = (*impl_->data.transfer_matrix) * from;
+                auto &op = *impl_->data.transfer_matrix;
+
+                auto n_op = op.cols();
+                auto n_from = from.size();
+
+                auto n_var = n_from/n_op;
+
+                assert(n_op * n_var == n_from);
+
+                if(n_var == 1) {
+                    to = (*impl_->data.transfer_matrix) * from;
+                } else {
+                    Vector scalar_from, scalar_to;
+
+                    for(int c = 0; c < n_var; ++c) {
+                        extract_component(from, n_var, c, scalar_from);
+                        scalar_to = (*impl_->data.transfer_matrix) * scalar_from;
+                        set_component(scalar_to, n_var, c, to);
+                    }
+                }
+
                 return true;
             } else {
                 return false;

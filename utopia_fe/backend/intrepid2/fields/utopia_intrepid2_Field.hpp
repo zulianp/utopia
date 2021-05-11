@@ -41,17 +41,41 @@ namespace utopia {
 
             virtual void scale(const SubdomainValue<Scalar> &value) {
                 auto tags = fe_->element_tags;
-                const int tensor_size = tensor_size_;
+                const int n_values = data_.extent(1);
 
                 auto data = data_;
                 ::Kokkos::parallel_for(
                     fe_->cell_range(), UTOPIA_LAMBDA(int cell) {
                         const auto v = value.value(tags(cell));
 
-                        for (int i = 0; i < tensor_size; ++i) {
+                        for (int i = 0; i < n_values; ++i) {
                             data(cell, i) *= v;
                         }
                     });
+            }
+
+            Scalar dot(const DynRankView &coeff) const {
+                assert(data_.extent(0) == coeff.extent(0));
+                assert(data_.extent(1) == coeff.extent(1));
+                assert(fe_->num_fields() * tensor_size_ == data_.extent(1));
+
+                const int n_values = data_.extent(1);
+                auto data = data_;
+
+                Scalar ret = 0.0;
+                ::Kokkos::parallel_reduce(
+                    fe_->cell_range(),
+                    UTOPIA_LAMBDA(int cell, Scalar &val) {
+                        Scalar temp = 0.0;
+                        for (int d = 0; d < n_values; ++d) {
+                            temp = data(cell, d) * coeff(cell, d);
+                        }
+
+                        val += temp;
+                    },
+                    ret);
+
+                return ret;
             }
 
             void describe(std::ostream &os) const override {
