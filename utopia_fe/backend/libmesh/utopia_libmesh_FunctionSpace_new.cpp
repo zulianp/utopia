@@ -327,6 +327,8 @@ namespace utopia {
                     }
 
                     auto &v = dof_map.variable(var_num);
+                    auto &&type = v.type();
+
                     std::string exodus_name, user_rename;
                     node.get("name", exodus_name);
                     node.get("rename", user_rename);
@@ -336,7 +338,11 @@ namespace utopia {
                         Utopia::Abort("The name of the field must be defined!");
                     }
 
-                    io.copy_nodal_solution(system, v.name(), exodus_name, time_step);
+                    if (type.order == libMesh::CONSTANT) {
+                        io.copy_elemental_solution(system, v.name(), exodus_name, time_step);
+                    } else {
+                        io.copy_nodal_solution(system, v.name(), exodus_name, time_step);
+                    }
 
                     field_defined = true;
                     ++var_num;
@@ -354,7 +360,13 @@ namespace utopia {
                 // If no field is defined we default to the variable names of the space
                 for (int i = 0; i < n_vars; ++i) {
                     auto &v = dof_map.variable(i);
-                    io.copy_nodal_solution(system, v.name(), v.name(), time_step);
+                    auto &&type = v.type();
+
+                    if (type.order == libMesh::CONSTANT) {
+                        io.copy_elemental_solution(system, v.name(), v.name(), time_step);
+                    } else {
+                        io.copy_nodal_solution(system, v.name(), v.name(), time_step);
+                    }
 
                     // FIXME this does not go well with multiple fields
                     field_name = v.name();
@@ -686,7 +698,7 @@ namespace utopia {
             vars[0] = variable;
             std::set<libMesh::boundary_id_type> bt;
 
-            auto &sys = raw_type_system();
+            // auto &sys = raw_type_system();
             auto &dof_map = raw_type_dof_map();
 
             if (boundary_id == libMesh::BoundaryInfo::invalid_id) {

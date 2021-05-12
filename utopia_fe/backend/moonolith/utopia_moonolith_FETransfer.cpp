@@ -37,6 +37,7 @@ namespace utopia {
                                      clear_non_essential_matrices,
                                      "Keeps only the final transfer matrix in memory and deletes the rest.")
                          .add_option("export_tensors", export_tensors_, "Exports tensors to disk.")
+                         .add_option("has_covering", has_covering, "Constructs lagrange multiplier in intersections.")
                          .parse(in)) {
                     return;
                 }

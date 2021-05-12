@@ -25,6 +25,7 @@ namespace utopia {
                 in.get("import_all_field_data", import_all_field_data);
                 in.get("time_step", time_step);
                 in.get("output_path", output_path);
+                in.get("scale", scale);
 
                 if (import_all_field_data) {
                     // read_purpose = ::stk::io::READ_RESTART;
@@ -159,6 +160,11 @@ namespace utopia {
                     mesh.init();
 
                     input_id = io_broker->get_active_mesh();
+
+                    if (scale != 1.0) {
+                        mesh.scale(scale);
+                    }
+
                     return true;
                 } catch (const std::exception &ex) {
                     utopia::err() << "Mesh::read(\"" << read_specification << "\") error: " << ex.what() << '\n';
@@ -205,6 +211,7 @@ namespace utopia {
             int output_id{-1};
             int input_id{-1};
             ::stk::io::MeshField::TimeMatchOption time_match{::stk::io::MeshField::CLOSEST};
+            Scalar scale{1.};
         };
 
         void MeshIO::enable_interpolation_mode() { impl_->time_match = ::stk::io::MeshField::LINEAR_INTERPOLATION; }
