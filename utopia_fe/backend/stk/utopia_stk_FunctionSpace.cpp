@@ -183,7 +183,7 @@ namespace utopia {
                     ::stk::mesh::FieldBase *field = ::stk::mesh::get_field_by_name(v.name, meta_data);
                     assert(field);
 
-                    if(!field) {
+                    if (!field) {
                         Utopia::Abort("utopia::stk::FunctionSpace: is trying to access undefiend field");
                     }
 
@@ -456,9 +456,9 @@ namespace utopia {
             field.set_data(gv);
             field.set_space(make_ref(*this));
 
-            if (!impl_->variables.empty()) {
-                field.set_tensor_size(vector_size);
-            }
+            // if (!impl_->variables.empty()) {
+            field.set_tensor_size(vector_size);
+            // }
         }
 
         void FunctionSpace::create_local_vector(Vector &v) const {

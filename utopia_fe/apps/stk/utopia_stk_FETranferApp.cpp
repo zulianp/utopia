@@ -4,6 +4,7 @@
 
 #include "utopia_moonolith_stk_FETransfer.hpp"
 #include "utopia_stk.hpp"
+#include "utopia_stk_intrepid2.hpp"
 
 void stk_transfer(utopia::Input &in) {
     utopia::FETransferApp<utopia::stk::FunctionSpace> transfer;

@@ -103,10 +103,22 @@ namespace utopia {
                 utopia::out() << "Exiting transfer!\n";
             }
 
-            Vector_t to;
+            Field<FunctionSpace> to_field;
+            to_space.create_field(to_field);
 
-            transfer.apply(field.data(), to);
-            to_space.write(output_path, to);
+            transfer.apply(field.data(), to_field.data());
+            to_space.write(output_path, to_field.data());
+
+            std::vector<Scalar_t> from_norms, to_norms;
+
+            l2_norm(field, from_norms);
+            l2_norm(to_field, to_norms);
+
+            int n_var = from_norms.size();
+
+            for (int i = 0; i < n_var; ++i) {
+                utopia::out() << from_norms[i] << " -> " << to_norms[i] << '\n';
+            }
 
             if (export_from_function) {
                 from_space.write("./from_out.e", field.data());

@@ -50,7 +50,7 @@ namespace utopia {
             UTOPIA_TEST_EQ(n_var, norms.size());
 
             for (int c = 0; c < n_var; ++c) {
-                utopia::out() << norms[c] << '\n';
+                utopia_test_assert(approxeq(1.0, norms[c], 1e-8));
             }
         }
 

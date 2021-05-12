@@ -1,7 +1,6 @@
 #include "utopia_moonolith_FETransfer.hpp"
 #include "utopia_ExtractComponent.hpp"
 
-
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_Options.hpp"
 #include "utopia_make_unique.hpp"
@@ -104,8 +103,25 @@ namespace utopia {
             using Vector_t = Traits<FunctionSpace>::Vector;
             using Scalar_t = Traits<FunctionSpace>::Scalar;
 
+            inline static void tensorize(const Matrix_t &T_x, const SizeType n_var, Matrix_t &T) {
+                auto max_nnz = utopia::max_row_nnz(T_x);
+                T.sparse(layout(T_x), max_nnz, max_nnz);
+
+                assert(!empty(T));
+                assert(T.row_range().extent() % n_var == 0);
+
+                Write<Matrix_t> w(T);
+                each_read(T_x, [&](const SizeType i, const SizeType j, const Scalar_t value) {
+                    for (SizeType k = 0; k < n_var; ++k) {
+                        T.set(i + k, j + k, value);
+                    }
+                });
+            }
+
             template <class TransferAssembler>
             static bool apply(const FETransferOptions &opts, TransferAssembler &t, FETransferData<Matrix_t> &data) {
+                UTOPIA_TRACE_REGION_BEGIN("FETransferPrepareData::apply");
+
                 data.create_matrices();
 
                 auto &B = *data.coupling_matrix;
@@ -142,8 +158,8 @@ namespace utopia {
                         }
 
                     } else {
-                        assert(false && "IMPLEMENT ME");
-                        // tensorize(T_x, opts.n_var, T);
+                        // assert(false && "IMPLEMENT ME");
+                        tensorize(T_x, opts.n_var, T);
                     }
                 }
 
@@ -153,6 +169,7 @@ namespace utopia {
                     write("load_transfer_matrix.m", *data.transfer_matrix);
                 }
 
+                UTOPIA_TRACE_REGION_END("FETransferPrepareData::apply");
                 return ok;
             }
         };
@@ -320,6 +337,8 @@ namespace utopia {
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
             UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
 
+            clear();
+
             bool has_intersection = false;
 
             switch (from->mesh().spatial_dimension()) {
@@ -358,16 +377,21 @@ namespace utopia {
                 auto n_op = op.cols();
                 auto n_from = from.size();
 
-                auto n_var = n_from/n_op;
+                auto n_var = n_from / n_op;
 
                 assert(n_op * n_var == n_from);
 
-                if(n_var == 1) {
+                if (n_var == 1) {
                     to = (*impl_->data.transfer_matrix) * from;
                 } else {
-                    Vector scalar_from, scalar_to;
+                    utopia::out() << "Tensorizing withing FETransfer::apply! n_var = " << n_var << "\n";
 
-                    for(int c = 0; c < n_var; ++c) {
+                    Vector scalar_from, scalar_to;
+                    if (!utopia::empty(to)) {
+                        to.set(0.0);
+                    }
+
+                    for (int c = 0; c < n_var; ++c) {
                         extract_component(from, n_var, c, scalar_from);
                         scalar_to = (*impl_->data.transfer_matrix) * scalar_from;
                         set_component(scalar_to, n_var, c, to);

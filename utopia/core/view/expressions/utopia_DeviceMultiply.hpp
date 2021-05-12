@@ -2,12 +2,12 @@
 #define UTOPIA_DEVICE_MULTIPLY_HPP
 
 #include "utopia_Base.hpp"
+
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_ViewForwardDeclarations.hpp"
-// #include "utopia_InlineEval.hpp"
-// #include "utopia_DeviceOp.hpp"
-// #include "utopia_DeviceExpression.hpp"
+
+#include "utopia_Algorithms.hpp"
 
 namespace utopia {
 
@@ -37,15 +37,15 @@ namespace utopia {
                                                  const SizeType &k,
                                                  const SizeType &l) const {
             // http://www.mate.tue.nl/~peters/4K400/VectTensColMat.pdf
-            assert(extent(left_, 0) == extent(left_, 1));
-            assert(extent(left_, 0) == extent(left_, 2));
-            assert(extent(left_, 0) == extent(left_, 3));
-            assert(extent(left_, 0) == extent(right_, 0));
-            assert(extent(left_, 1) == extent(right_, 1));
-            assert(extent(left_, 2) == extent(right_, 2));
-            assert(extent(left_, 3) == extent(right_, 3));
+            assert(device::extent(left_, 0) == device::extent(left_, 1));
+            assert(device::extent(left_, 0) == device::extent(left_, 2));
+            assert(device::extent(left_, 0) == device::extent(left_, 3));
+            assert(device::extent(left_, 0) == device::extent(right_, 0));
+            assert(device::extent(left_, 1) == device::extent(right_, 1));
+            assert(device::extent(left_, 2) == device::extent(right_, 2));
+            assert(device::extent(left_, 3) == device::extent(right_, 3));
 
-            const SizeType N = extent(left_, 0);
+            const SizeType N = device::extent(left_, 0);
 
             Scalar sum = 0.0;
             for (SizeType m = 0; m < N; ++m) {
