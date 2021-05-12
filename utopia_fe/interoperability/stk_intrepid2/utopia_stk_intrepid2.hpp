@@ -100,6 +100,8 @@ namespace utopia {
                           const int n_comp = 1);
     };
 
+    void l2_norm(const Field<utopia::stk::FunctionSpace> &field, std::vector<StkScalar_t> &norms);
+
 }  // namespace utopia
 
 #endif  // UTOPIA_STK_INTREPID2_HPP

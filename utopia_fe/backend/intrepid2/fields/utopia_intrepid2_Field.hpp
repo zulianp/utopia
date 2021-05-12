@@ -98,15 +98,27 @@ namespace utopia {
                     : fun_(fun),
                       coefficients_(coefficients),
                       num_fields_(fun.extent(1)),
-                      tensor_size_(coefficients_.extent(1)) {}
+                      tensor_size_(coefficients_.extent(1) / num_fields_) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int var) const {
                     assert(var < tensor_size_);
 
+#ifndef NDEBUG
+                    Scalar PU_test = 0.0;
+#endif
+
                     Scalar ret = 0.0;
                     for (int i = 0; i < num_fields_; ++i) {
-                        ret += fun_(cell, i, qp) * coefficients_(cell, i * tensor_size_ + var);
+                        const Scalar c = coefficients_(cell, i * tensor_size_ + var);
+                        // assert(device::approxeq(1.0, c, 1e-8));
+                        ret += fun_(i, qp) * c;
+
+#ifndef NDEBUG
+                        PU_test += fun_(i, qp);
+#endif
                     }
+
+                    assert(device::approxeq(1.0, PU_test, 1e-8));
 
                     return ret;
                 }
@@ -116,7 +128,7 @@ namespace utopia {
 
                     Scalar ret = 0.0;
                     for (int i = 0; i < num_fields_; ++i) {
-                        ret += fun_(cell, i, qp) * coefficients_(cell, i);
+                        ret += fun_(i, qp) * coefficients_(cell, i);
                     }
 
                     return ret;
@@ -124,8 +136,8 @@ namespace utopia {
 
                 DynRankView fun_;
                 DynRankView coefficients_;
-                const int tensor_size_;
                 const int num_fields_;
+                const int tensor_size_;
             };
 
             Interpolate interpolate() const {

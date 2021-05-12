@@ -28,10 +28,8 @@ namespace utopia {
             if (verbose) {
                 utopia::out() << "-----------------------------\n";
                 utopia::out() << "L2ScalarProduct\n";
-                utopia::out() << "lumped:\t" << lumped << '\n';
                 utopia::out() << "density:\t" << density << '\n';
-                utopia::out() << "expected_volume:\t" << expected_volume << '\n';
-                utopia::out() << "expected_volume_tol:\t" << expected_volume_tol << '\n';
+                utopia::out() << "n_components:\t" << n_components << '\n';
                 utopia::out() << "-----------------------------\n";
             }
         }
@@ -41,7 +39,6 @@ namespace utopia {
 
         Fun density;
         int n_components{1};
-        bool lumped{false};
         std::shared_ptr<DensityFunction> density_function;
 
         // Testing an printing
@@ -85,6 +82,7 @@ namespace utopia {
                     assert(sub_i < n_components);
 
                     Scalar ret = 0.0;
+                    // Scalar vol = 0.0;
 
                     for (int qp = 0; qp < n_qp; ++qp) {
                         auto dX = measure(cell, qp);
@@ -92,9 +90,16 @@ namespace utopia {
                         auto x_qp = x(cell, qp, sub_i);
                         auto y_qp = y(cell, qp, sub_i);
 
+                        // assert(device::approxeq(1., x_qp, 1e-8));
+                        // assert(device::approxeq(1., y_qp, 1e-8));
+
                         ret += x_qp * y_qp * density * dX;
+                        // vol += dX;
                     }
 
+                    // assert(device::approxeq(vol, ret, 1e-8));
+
+                    assert(ret == ret);
                     return ret;
                 }
 
@@ -108,9 +113,8 @@ namespace utopia {
                 const int n_qp;
             };
 
-            inline Op make_op(const DynRankView &x, const DynRankView &y) {
-                auto &fe = this->fe();
-                return Op(op_.density, fe.fun, x, y, fe.measure, op_.n_components);
+            inline Op make_op(const DynRankView &x, const DynRankView &y) const {
+                return Op(op_.density, fe_->fun, x, y, fe_->measure, op_.n_components);
             }
 
             inline void ensure_buffer() { products = DynRankView("products", fe_->num_cells(), op_.n_components); }
@@ -127,14 +131,27 @@ namespace utopia {
                     });
             }
 
-            inline LumpedOp<Op> make_lumped_op() { return LumpedOp<Op>(make_op()); }
+            Scalar reduce(const DynRankView &x, const DynRankView &y, const int c) const {
+                auto op = make_op(x, y);
+
+                assert(c < op_.n_components);
+
+                Scalar ret = 0.0;
+                ::Kokkos::parallel_reduce(
+                    "L2ScalarProduct::reduce",
+                    fe_->cell_range(),
+                    UTOPIA_LAMBDA(const int i, Scalar &val) { val += op(i, c); },
+                    ret);
+
+                return ret;
+            }
 
             inline UserOp &user_op() { return op_; }
             inline const UserOp &user_op() const { return op_; }
 
             // NVCC_PRIVATE :
-            UserOp op_;
             std::shared_ptr<FE> fe_;
+            UserOp op_;
             DynRankView products;
         };
     }  // namespace intrepid2

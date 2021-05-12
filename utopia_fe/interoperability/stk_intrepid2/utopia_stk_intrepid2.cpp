@@ -10,6 +10,8 @@
 #include "utopia_stk_DofMap.hpp"
 #include "utopia_stk_FunctionSpace.hpp"
 
+#include "utopia_intrepid2_L2Norm.hpp"
+
 // Stk
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/Comm.hpp>
@@ -525,5 +527,9 @@ namespace utopia {
     template class GlobalToLocal<utopia::stk::FunctionSpace,
                                  Traits<utopia::stk::FunctionSpace>::Vector,
                                  StkViewDevice_t<StkScalar_t>>;
+
+    void l2_norm(const Field<utopia::stk::FunctionSpace> &field, std::vector<StkScalar_t> &norms) {
+        intrepid2::l2_norm(field, norms);
+    }
 
 }  // namespace utopia
