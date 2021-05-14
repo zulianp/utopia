@@ -10,6 +10,8 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_Transfer.hpp"
+
 namespace utopia {
 
     namespace moonolith {
@@ -33,6 +35,8 @@ namespace utopia {
             Size size() const override;
             Size local_size() const override;
 
+            void verbose(const bool val);
+
             Communicator &comm() override;
             const Communicator &comm() const override;
 
@@ -41,6 +45,13 @@ namespace utopia {
 
             FETransfer();
             ~FETransfer();
+
+            template <class TransferType>
+            inline std::shared_ptr<TransferType> build_transfer() const {
+                return std::make_shared<TransferType>(transfer_matrix());
+            }
+
+            std::shared_ptr<Matrix> transfer_matrix() const;
 
         private:
             class Impl;

@@ -74,7 +74,7 @@ namespace utopia {
             init(fine_smoother, coarse_smoother, coarse_solver, num_levels);
         }
 
-        MonotoneMultigrid(const SizeType &num_levels)
+        MonotoneMultigrid(const SizeType &num_levels = 2)
             : active_set_(std::make_shared<ActiveSet<Vector>>()), use_line_search_(false) {
             this->must_generate_masks(true);
             this->fix_semidefinite_operators(true);
@@ -402,6 +402,7 @@ namespace utopia {
             return true;
         }
 
+    public:
         MonotoneMultigrid *clone() const override {
             return new MonotoneMultigrid(std::shared_ptr<Smoother>(smoothers_[smoothers_.size() - 1]->clone()),
                                          std::shared_ptr<Smoother>(smoothers_[1]->clone()),
@@ -409,7 +410,6 @@ namespace utopia {
                                          this->n_levels());
         }
 
-    public:
         /**
          * @brief      Function changes direct solver needed for coarse grid solve.
          *

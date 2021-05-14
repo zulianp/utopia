@@ -286,6 +286,7 @@ namespace utopia {
         bool Obstacle::assemble(const FunctionSpace &space) {
             UTOPIA_TRACE_REGION_BEGIN("moonolith::Obstacle::assemble");
 
+            assert(impl_);
             bool ok = impl_->assemble(space, *params_, *output_);
 
             UTOPIA_TRACE_REGION_END("moonolith::Obstacle::assemble");
@@ -306,8 +307,14 @@ namespace utopia {
 
         const Obstacle::Vector &Obstacle::normals() const { return output().normals; }
 
-        Obstacle::Output &Obstacle::output() { return *output_; }
-        const Obstacle::Output &Obstacle::output() const { return *output_; }
+        Obstacle::Output &Obstacle::output() {
+            assert(output_);
+            return *output_;
+        }
+        const Obstacle::Output &Obstacle::output() const {
+            assert(output_);
+            return *output_;
+        }
 
     }  // namespace moonolith
 }  // namespace utopia

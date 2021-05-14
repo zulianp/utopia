@@ -41,6 +41,8 @@ namespace utopia {
             return impl_->transfer.init(impl_->from, impl_->to);
         }
 
+        void FETransfer::verbose(const bool val) { impl_->transfer.verbose(val); }
+
         void FETransfer::clear() {
             impl_->transfer.clear();
             impl_->from = nullptr;
@@ -72,6 +74,10 @@ namespace utopia {
         FETransfer::FETransfer() : impl_(utopia::make_unique<Impl>()) {}
 
         FETransfer::~FETransfer() = default;
+
+        std::shared_ptr<FETransfer::Matrix> FETransfer::transfer_matrix() const {
+            return impl_->transfer.transfer_matrix();
+        }
 
     }  // namespace stk
 }  // namespace utopia

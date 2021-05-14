@@ -14,6 +14,8 @@
 
 #include "utopia_MonotoneAlgebraicMultigrid.hpp"
 
+#include "utopia_MonotoneSemiGeometricMultigrid.hpp"
+
 #include "utopia_ui.hpp"
 
 #include "utopia_fe_Core.hpp"
@@ -47,6 +49,7 @@ namespace utopia {
         using ProjectedGaussSeidel_t = utopia::ProjectedGaussSeidel<Matrix_t, Vector_t>;
         using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
         using MonotoneAlgebraicMultigrid_t = utopia::MonotoneAlgebraicMultigrid<Matrix_t, Vector_t>;
+        using MonotoneSemiGeometricMultigrid_t = utopia::MonotoneSemiGeometricMultigrid<FunctionSpace>;
 
         void read(Input &in) override {
             in.get("space", [this](Input &in) {
@@ -136,6 +139,11 @@ namespace utopia {
                     auto linear_solver = std::make_shared<KSPSolver_t>();
                     qp_solver_ = std::make_shared<SemismoothNewton_t>(linear_solver);
                 }
+
+            } else if (qp_solver_type == "msgm") {
+                auto msgm = std::make_shared<MonotoneSemiGeometricMultigrid_t>();
+                msgm->set_fine_space(make_ref(space));
+                qp_solver_ = msgm;
 
             } else if (qp_solver_type == "mamg") {
                 qp_solver_ = std::make_shared<MonotoneAlgebraicMultigrid_t>();

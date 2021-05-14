@@ -7,7 +7,9 @@
 
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
+#include "utopia_SemiGeometricMultigridNew.hpp"
 
+#include "utopia_moonolith_stk_FETransfer.hpp"
 #include "utopia_stk.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
@@ -24,6 +26,7 @@ namespace utopia {
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
+        using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
         // using FEModelFunction_t = utopia::NewmarkIntegrator<FunctionSpace>;
 
         // using FEModelFunction_t = ImplicitEulerIntegrator_t;
@@ -32,6 +35,7 @@ namespace utopia {
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
+        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
         using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
         // using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
         using Newton_t = utopia::SimpleNewton<Matrix_t, Vector_t>;
@@ -61,11 +65,20 @@ namespace utopia {
 
             in.get("problem", *function_);
 
-            linear_solver_ = std::make_shared<OmniLinearSolver_t>();
+            bool use_mg = false;
+            in.get("use_mg", use_mg);
+
+            if (use_mg) {
+                auto mg = std::make_shared<SemiGeometricMultigridNew<FunctionSpace>>();
+                mg->set_fine_space(space_);
+                linear_solver_ = mg;
+            } else {
+                linear_solver_ = std::make_shared<OmniLinearSolver_t>();
+            }
+
             solver_ = std::make_shared<Newton_t>(linear_solver_);
             solver_->verbose(true);
-            // in.get("solver", *solver_);
-
+            in.get("solver", *solver_);
             in.get("n_time_steps", n_time_steps_);
         }
 
@@ -119,7 +132,7 @@ namespace utopia {
         std::shared_ptr<FunctionSpace> space_;
         std::shared_ptr<TimeDependentFunction_t> time_dependent_function_;
         std::shared_ptr<FEFunctionInterface_t> function_;
-        std::shared_ptr<OmniLinearSolver_t> linear_solver_;
+        std::shared_ptr<LinearSolver_t> linear_solver_;
         std::shared_ptr<Newton_t> solver_;
 
         int n_time_steps_{2};

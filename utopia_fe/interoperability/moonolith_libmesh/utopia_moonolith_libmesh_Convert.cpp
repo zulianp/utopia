@@ -123,7 +123,7 @@ namespace utopia {
         out_dof_map.set_max_nnz(max_nnz_x_row(dof_map));
 
         unsigned int sys_num = dof_map.sys_number();
-        // std::vector<libMesh::dof_id_type> dof_indices;
+        std::vector<libMesh::dof_id_type> dof_indices;
 
         const long n_elem = in.n_active_local_elem();
         out_dof_map.resize(n_elem);
@@ -168,19 +168,29 @@ namespace utopia {
             dof_object.block = elem_ptr->subdomain_id();
             dof_object.type = convert(elem_ptr->type(), fe_type);
 
-            // dof_map.dof_indices(elem_ptr, dof_indices);
-            // auto n_dofs_x_el = dof_indices.size();
+            if (fe_type.order == libMesh::CONSTANT) {
+                dof_map.dof_indices(elem_ptr, dof_indices, var_num);
+                auto nn = dof_indices.size();
+                assert(nn == 1);
 
-            const std::size_t nn = elem_ptr->n_nodes();
-            dof_object.dofs.resize(nn);
+                dof_object.dofs.resize(nn);
 
-            for (std::size_t i = 0; i < nn; ++i) {
-                const auto &node_ref = elem_ptr->node_ref(i);
-                const auto dof = node_ref.dof_number(sys_num, var_num, 0);
+                for (std::size_t i = 0; i < nn; ++i) {
+                    dof_object.dofs[i] = dof_indices[i];
+                }
 
-                // assert(dof == dof_indices[i]);
+            } else {
+                const std::size_t nn = elem_ptr->n_nodes();
+                dof_object.dofs.resize(nn);
 
-                dof_object.dofs[i] = dof;
+                for (std::size_t i = 0; i < nn; ++i) {
+                    const auto &node_ref = elem_ptr->node_ref(i);
+                    const auto dof = node_ref.dof_number(sys_num, var_num, 0);
+
+                    // assert(dof == dof_indices[i]);
+
+                    dof_object.dofs[i] = dof;
+                }
             }
         }
         // }

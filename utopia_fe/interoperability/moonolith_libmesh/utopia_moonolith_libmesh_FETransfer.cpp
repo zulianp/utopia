@@ -61,5 +61,9 @@ namespace utopia {
 
         FETransfer::~FETransfer() = default;
 
+        std::shared_ptr<FETransfer::Matrix> FETransfer::transfer_matrix() const {
+            return impl_->transfer.transfer_matrix();
+        }
+
     }  // namespace libmesh
 }  // namespace utopia

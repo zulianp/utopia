@@ -38,6 +38,7 @@ namespace utopia {
                                      "Keeps only the final transfer matrix in memory and deletes the rest.")
                          .add_option("export_tensors", export_tensors_, "Exports tensors to disk.")
                          .add_option("has_covering", has_covering, "Constructs lagrange multiplier in intersections.")
+                         .add_option("chop_tol", chop_tol, "Chop numeric entries close below a certain tolerance")
                          .parse(in)) {
                     return;
                 }
@@ -64,6 +65,7 @@ namespace utopia {
             bool clear_non_essential_matrices{true};
             bool export_tensors_{false};
             bool use_reference_frame{false};
+            double chop_tol{0.};
         };
 
         template <class Matrix>
@@ -148,6 +150,10 @@ namespace utopia {
                     Matrix_t T_x = Q * D_tilde_inv * B;
 
                     // handle_constraints_post_process(data, T_x);
+
+                    if (opts.chop_tol != 0.0) {
+                        chop(T_x, opts.chop_tol);
+                    }
 
                     if (opts.n_var == 1) {
                         T = T_x;
@@ -330,6 +336,13 @@ namespace utopia {
             FETransferData<Matrix> data;
         };
 
+        void FETransfer::verbose(const bool val) {
+            assert(impl_);
+            if (impl_) {
+                impl_->opts.verbose = val;
+            }
+        }
+
         FETransfer::FETransfer() : impl_(utopia::make_unique<Impl>()) {}
         FETransfer::~FETransfer() = default;
 
@@ -404,6 +417,8 @@ namespace utopia {
                 return false;
             }
         }
+
+        std::shared_ptr<FETransfer::Matrix> FETransfer::transfer_matrix() const { return impl_->data.transfer_matrix; }
 
         bool FETransfer::apply(const Matrix &to_matrix, Matrix &matrix_in_from_space) const {
             if (!empty()) {

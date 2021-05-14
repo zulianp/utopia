@@ -45,9 +45,16 @@ namespace utopia {
             FETransfer();
             ~FETransfer();
 
+            template <class TransferType>
+            inline std::shared_ptr<TransferType> build_transfer() const {
+                return std::make_shared<TransferType>(this->transfer_matrix());
+            }
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
+
+            std::shared_ptr<Matrix> transfer_matrix() const;
         };
 
     }  // namespace libmesh

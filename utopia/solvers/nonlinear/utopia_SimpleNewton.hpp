@@ -10,7 +10,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class SimpleNewton final {
+    class SimpleNewton final : public Configurable {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using SizeType = typename Traits<Vector>::SizeType;
@@ -21,6 +21,16 @@ namespace utopia {
             const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector>>())
             : linear_solver_(linear_solver) {}
 
+        void read(Input &in) override {
+            if (linear_solver_) {
+                in.get("linear_solver", *linear_solver_);
+            } else {
+                assert(false);
+            }
+
+            in.get("max_it", max_it_);
+        }
+
         bool solve(Function<Matrix, Vector> &fun, Vector &x) {
             Matrix H;
             Vector g, inc;
@@ -28,7 +38,7 @@ namespace utopia {
             inc.zeros(layout(x));
 
             bool converged = false;
-            for (int i = 0; i < 20; ++i) {
+            for (int i = 0; i < max_it_; ++i) {
                 fun.update(x);
                 fun.gradient(x, g);
 
@@ -64,6 +74,7 @@ namespace utopia {
     private:
         std::shared_ptr<LinearSolver> linear_solver_;
         bool verbose_{false};
+        int max_it_{20};
     };
 
 }  // namespace utopia

@@ -443,12 +443,12 @@ namespace utopia {
             return true;
         }
 
+    public:
         Multigrid *clone() const override {
             return new Multigrid(std::shared_ptr<Smoother>(smoother_cloneable_->clone()),
                                  std::shared_ptr<Solver>(coarse_solver_->clone()));
         }
 
-    public:
         /**
          * @brief      Function changes direct solver needed for coarse grid solve.
          *
