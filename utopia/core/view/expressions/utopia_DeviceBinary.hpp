@@ -26,6 +26,10 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static constexpr SizeType rows(const Left &, const Right &r) { return r.rows(); }
 
         UTOPIA_INLINE_FUNCTION static constexpr SizeType cols(const Left &, const Right &r) { return r.cols(); }
+
+        UTOPIA_INLINE_FUNCTION static constexpr SizeType extent(const Left &, const Right &r, const SizeType i) {
+            return device::extent(r, i);
+        }
     };
 
     template <class Left, class Right>
@@ -36,6 +40,10 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION static constexpr SizeType rows(const Left &l, const Right &) { return l.rows(); }
 
         UTOPIA_INLINE_FUNCTION static constexpr SizeType cols(const Left &l, const Right &) { return l.cols(); }
+
+        UTOPIA_INLINE_FUNCTION static constexpr SizeType extent(const Left &l, const Right &, const SizeType i) {
+            return device::extent(l, i);
+        }
     };
 
     template <class Left, class Right, class Op>
@@ -81,6 +89,10 @@ namespace utopia {
 
         UTOPIA_INLINE_FUNCTION constexpr SizeType cols() const { return GetSize<Left, Right>::cols(left_, right_); }
 
+        UTOPIA_INLINE_FUNCTION constexpr SizeType extent(const int i) const {
+            return GetSize<Left, Right>::extent(left_, right_, i);
+        }
+
     private:
         UTOPIA_STORE_CONST(Left) left_;
         UTOPIA_STORE_CONST(Right) right_;
@@ -118,6 +130,8 @@ namespace utopia {
         UTOPIA_INLINE_FUNCTION SizeType rows() const { return right_.rows(); }
 
         UTOPIA_INLINE_FUNCTION SizeType cols() const { return right_.cols(); }
+
+        UTOPIA_INLINE_FUNCTION constexpr SizeType extent(const int i) const { return device::extent(right_, i); }
 
     private:
         const Left left_;

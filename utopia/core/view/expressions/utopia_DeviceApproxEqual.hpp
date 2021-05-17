@@ -60,12 +60,13 @@ namespace utopia {
         using SizeType = typename Traits<Left>::SizeType;
 
         UTOPIA_INLINE_FUNCTION static bool apply(const Left &left, const Right &right, const Scalar &tol) {
-            const SizeType N0 = extent(left, 0);
-            const SizeType N1 = extent(left, 1);
-            const SizeType N2 = extent(left, 2);
-            const SizeType N3 = extent(left, 3);
+            const SizeType N0 = device::extent(left, 0);
+            const SizeType N1 = device::extent(left, 1);
+            const SizeType N2 = device::extent(left, 2);
+            const SizeType N3 = device::extent(left, 3);
 
-            if (N0 != extent(right, 0) || N1 != extent(right, 1) || N2 != extent(right, 2) || N3 != extent(right, 3)) {
+            if (N0 != device::extent(right, 0) || N1 != device::extent(right, 1) || N2 != device::extent(right, 2) ||
+                N3 != device::extent(right, 3)) {
                 return false;
             }
 

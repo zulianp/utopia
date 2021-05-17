@@ -757,8 +757,8 @@ namespace utopia {
         PFFracParameters params_;
         DiffController<Matrix, Vector> diff_ctrl_;
 
-        bool use_dense_hessian_ = {false};
-        bool check_derivatives_ = {false};
+        bool use_dense_hessian_{false};
+        bool check_derivatives_{false};
 
         Vector x_old_;           // stores old solution  - used for treatment of
                                  // irreversibility constraint

@@ -20,6 +20,8 @@ namespace utopia {
 
         using PreconditionedSolverInterface::update;
 
+        virtual ~PreconditionedSolver() = default;
+
         // void update(const std::shared_ptr<Operator<Vector>> &op) override {
         // PreconditionedSolverInterface::update(op); }
 
@@ -72,13 +74,16 @@ namespace utopia {
             }
 
             IterativeSolver::operator=(other);
-            this->copy_preconditioner_from(other);
+            PreconditionedSolverInterface::operator=(other);
+            // This is/should called in the line above
+            // this->copy_preconditioner_from(other);
             return *this;
         }
 
         PreconditionedSolver(const PreconditionedSolver &other)
             : PreconditionedSolverInterface(other), IterativeSolver(other) {
-            this->copy_preconditioner_from(other);
+            // This is called in the constructor of PreconditionedSolverInterface
+            // this->copy_preconditioner_from(other);
         }
 
         PreconditionedSolver() : PreconditionedSolverInterface(), IterativeSolver() {}

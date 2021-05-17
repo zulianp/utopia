@@ -1,6 +1,7 @@
 #ifndef UTOPIA_ACTIVE_SET_HPP
 #define UTOPIA_ACTIVE_SET_HPP
 
+#include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
 #include "utopia_BoxConstraints.hpp"
@@ -8,7 +9,7 @@
 
 namespace utopia {
     template <class Vector>
-    class ActiveSet {
+    class ActiveSet : public Configurable {
     public:
         using Scalar = typename Traits<Vector>::Scalar;
         using Layout = typename Traits<Vector>::Layout;
@@ -48,11 +49,29 @@ namespace utopia {
             return changed > 0;
         }
 
+        void zero_out_active(Vector &x) const {
+            auto d_i = const_local_view_device(indicator_);
+            auto d_x = local_view_device(x);
+
+            parallel_for(
+                local_range_device(indicator_), UTOPIA_LAMBDA(const SizeType i) {
+                    const Scalar is_active = d_i.get(i);
+                    if (is_active == 1.0) {
+                        d_x.set(i, 0.0);
+                    }
+                });
+        }
+
         inline void init(const Layout &l) { indicator_.zeros(l); }
         inline const Vector &indicator() const { return indicator_; }
         inline Vector &indicator() { return indicator_; }
         inline void verbose(const bool verbose) { verbose_ = verbose; }
         inline void tol(const Scalar tol) { tol_ = tol; }
+
+        void read(Input &in) override {
+            in.get("verobse", verbose_);
+            in.get("tol", tol_);
+        }
 
     private:
         Vector indicator_;

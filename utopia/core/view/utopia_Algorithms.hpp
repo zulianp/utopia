@@ -22,7 +22,7 @@
 namespace utopia {
     namespace device {
 
-#ifdef KOKKOS_INLINE_FUNCTION
+#ifdef UTOPIA_WITH_TRILINOS
 
         template <typename T>
         UTOPIA_INLINE_FUNCTION constexpr T isnan(const T &v) {
@@ -90,6 +90,11 @@ namespace utopia {
         template <typename T>
         UTOPIA_INLINE_FUNCTION T atan2(const T &a, const T &b) {
             return ::atan2(a, b);
+        }
+
+        template <typename T>
+        KOKKOS_INLINE_FUNCTION T log(const T &value) {
+            return Kokkos::Details::ArithTraits<T>::log(value);
         }
 
         template <typename T>
@@ -170,6 +175,11 @@ namespace utopia {
         template <typename T>
         inline T atan2(const T &a, const T &b) {
             return std::atan2(a, b);
+        }
+
+        template <typename T>
+        inline T log(const T &value) {
+            return std::log(value);
         }
 
         template <typename T>

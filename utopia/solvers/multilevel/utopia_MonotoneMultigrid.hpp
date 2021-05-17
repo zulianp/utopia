@@ -74,7 +74,7 @@ namespace utopia {
             init(fine_smoother, coarse_smoother, coarse_solver, num_levels);
         }
 
-        MonotoneMultigrid(const SizeType &num_levels)
+        MonotoneMultigrid(const SizeType &num_levels = 2)
             : active_set_(std::make_shared<ActiveSet<Vector>>()), use_line_search_(false) {
             this->must_generate_masks(true);
             this->fix_semidefinite_operators(true);
@@ -97,6 +97,16 @@ namespace utopia {
             for (SizeType l = 1; l < this->num_levels_ - 1; ++l) {
                 smoothers_[l] = std::shared_ptr<Smoother>(coarse_smoother->clone());
             }
+        }
+
+        inline static std::shared_ptr<IPRTruncatedTransfer<Matrix, Vector>> new_fine_level_transfer(
+            const std::shared_ptr<Matrix> &interpolation) {
+            return std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(interpolation);
+        }
+
+        inline static std::shared_ptr<IPRTransfer<Matrix, Vector>> new_coarse_level_transfer(
+            const std::shared_ptr<Matrix> &interpolation) {
+            return std::make_shared<IPRTransfer<Matrix, Vector>>(interpolation);
         }
 
         ~MonotoneMultigrid() override = default;
@@ -130,9 +140,11 @@ namespace utopia {
          */
         void update(const std::shared_ptr<const Matrix> &op) override {
             Super::update(op);
+            init_memory(row_layout(*op));
 
-            active_set_->init(row_layout(*op));
-            this->galerkin_assembly(op);
+            if (perform_galerkin_assembly_) {
+                this->galerkin_assembly(op);
+            }
 
             update();
         }
@@ -153,6 +165,7 @@ namespace utopia {
         void init_memory(const Layout &l) override {
             Super::init_memory(l);
             VariableBoundSolverInterface::init_memory(l);
+            active_set_->init(l);
         }
 
         /**
@@ -196,7 +209,7 @@ namespace utopia {
                     ok = standard_cycle(l);
                     assert(ok);
                 } else {
-                    std::cout << "ERROR::UTOPIA_MG<< unknown MG type... \n";
+                    utopia::err() << "[Error] MonotoneMultigrid: unknown MG type... \n";
                 }
 
 #ifdef CHECK_NUM_PRECISION_mode
@@ -228,10 +241,6 @@ namespace utopia {
 
         inline Level &level(const SizeType &l) { return this->levels_[l]; }
 
-        /*=======================================================================================================================================
-         =
-         =========================================================================================================================================*/
-    private:
         void update() {
             smoothers_.resize(this->n_levels());
             // smoothers_[0] = nullptr;
@@ -245,6 +254,12 @@ namespace utopia {
             coarse_solver_->update(level(0).A_ptr());
         }
 
+        void set_perform_galerkin_assembly(const bool val) { perform_galerkin_assembly_ = val; }
+
+        /*=======================================================================================================================================
+         =
+         =========================================================================================================================================*/
+    private:
         bool standard_cycle(const SizeType &l) {
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
 
@@ -387,6 +402,7 @@ namespace utopia {
             return true;
         }
 
+    public:
         MonotoneMultigrid *clone() const override {
             return new MonotoneMultigrid(std::shared_ptr<Smoother>(smoothers_[smoothers_.size() - 1]->clone()),
                                          std::shared_ptr<Smoother>(smoothers_[1]->clone()),
@@ -394,7 +410,6 @@ namespace utopia {
                                          this->n_levels());
         }
 
-    public:
         /**
          * @brief      Function changes direct solver needed for coarse grid solve.
          *
@@ -424,6 +439,7 @@ namespace utopia {
 
     private:
         bool use_line_search_{false};
+        bool perform_galerkin_assembly_{true};
     };
 
 }  // namespace utopia
