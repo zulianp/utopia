@@ -730,6 +730,14 @@ namespace utopia {
         bool is_mpi() const;
 
         void select(const PetscIndexSet &index, PetscVector &result) const override;
+        void blocked_select(const PetscIndexSet &index, PetscVector &result, PetscInt block_size = -1) const;
+        PetscInt block_size() const;
+        void set_block_size(const PetscInt block_size);
+
+        template <class Values>
+        void add_vector_blocked(const PetscIndexSet &idx, const Values &v) {
+            VecSetValuesBlocked(raw_type(), idx.size(), &idx[0], &v[0], ADD_VALUES);
+        }
 
         void select(const Range &global_range, PetscVector &result) const;
 

@@ -116,6 +116,8 @@ namespace utopia {
             return device::extent(that.view_, dim);
         }
 
+        UTOPIA_INLINE_FUNCTION SizeType extent(const SizeType dim) const { return device::extent(view_, dim); }
+
         UTOPIA_INLINE_FUNCTION SizeType size() const { return view_.size(); }
 
         UTOPIA_INLINE_FUNCTION Scalar &operator()(const SizeType &i,
@@ -244,10 +246,10 @@ namespace utopia {
         }
 
         inline void describe(std::ostream &os = std::cout) const {
-            const SizeType N0 = extent(*this, 0);
-            const SizeType N1 = extent(*this, 1);
-            const SizeType N2 = extent(*this, 2);
-            const SizeType N3 = extent(*this, 3);
+            const SizeType N0 = extent(0);
+            const SizeType N1 = extent(1);
+            const SizeType N2 = extent(2);
+            const SizeType N3 = extent(3);
 
             for (SizeType i = 0; i < N0; ++i) {
                 for (SizeType j = 0; j < N1; ++j) {
@@ -266,10 +268,10 @@ namespace utopia {
             // https://www.sciencedirect.com/topics/engineering/identity-tensor
             set(0.0);
 
-            const SizeType N0 = extent(*this, 0);
-            const SizeType N1 = extent(*this, 1);
-            const SizeType N2 = extent(*this, 2);
-            const SizeType N3 = extent(*this, 3);
+            const SizeType N0 = extent(0);
+            const SizeType N1 = extent(1);
+            const SizeType N2 = extent(2);
+            const SizeType N3 = extent(3);
 
             for (SizeType i = 0; i < N0; ++i) {
                 for (SizeType j = 0; j < N1; ++j) {
@@ -284,10 +286,10 @@ namespace utopia {
 
         inline void identity_sym() {
             set(0.0);
-            for (SizeType i = 0; i < extent(*this, 0); ++i) {
-                for (SizeType j = 0; j < extent(*this, 1); ++j) {
-                    for (SizeType k = 0; k < extent(*this, 2); ++k) {
-                        for (SizeType l = 0; l < extent(*this, 3); ++l) {
+            for (SizeType i = 0; i < extent(0); ++i) {
+                for (SizeType j = 0; j < extent(1); ++j) {
+                    for (SizeType k = 0; k < extent(2); ++k) {
+                        for (SizeType l = 0; l < extent(3); ++l) {
                             const Scalar val = 0.5 * ((i == k) && (j == l)) + 0.5 * ((i == l) && (j == k));
                             set(i, j, k, l, val);
                         }

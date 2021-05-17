@@ -9,6 +9,8 @@
 #include "utopia_petsc_trilinos.hpp"
 #include "utopia_trilinos.hpp"
 
+#include "utopia_petsc_CrsView.hpp"
+
 #include "utopia_Agglomerate.hpp"
 #include "utopia_BlockAgglomerate.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
@@ -17,6 +19,8 @@
 #include "utopia_MPITimeStatistics.hpp"
 
 #include "utopia_petsc_DILUAlgorithm.hpp"
+
+#include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
 
 // std
 #include <cmath>
@@ -75,6 +79,7 @@ namespace utopia {
             bool use_ksp = false;
             bool use_ksp_smoother = true;
             bool convert_to_block_matrix = false;
+            bool amg_as_preconditioner = false;
 
             in.get("A", path_A);
             in.get("b", path_b);
@@ -87,6 +92,7 @@ namespace utopia {
             in.get("use_ksp", use_ksp);
             in.get("use_ksp_smoother", use_ksp_smoother);
             in.get("convert_to_block_matrix", convert_to_block_matrix);
+            in.get("amg_as_preconditioner", amg_as_preconditioner);
 
             if (use_ksp) {
                 use_amg = false;
@@ -97,14 +103,14 @@ namespace utopia {
                 return;
             }
 
+            utopia::read(path_A, A);
+
             if (path_b.empty()) {
                 utopia::err() << "[Warning] b is undefined, using vector of ones!!!\n";
                 b.values(row_layout(A), 1.0);
             } else {
                 utopia::read(path_b, b);
             }
-
-            utopia::read(path_A, A);
 
             if (!path_oracle.empty()) {
                 utopia::read(path_oracle, oracle);
@@ -181,7 +187,15 @@ namespace utopia {
                 coarse_solver->read(inner_params);
                 smoother->read(inner_params);
 
-                solver = amg;
+                if (amg_as_preconditioner) {
+                    amg->max_it(1);
+                    auto krylov_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
+                    krylov_solver->set_preconditioner(amg);
+                    solver = krylov_solver;
+                } else {
+                    solver = amg;
+                }
+
             } else {
                 if (use_ksp) {
                     auto ksp = std::make_shared<KSPSolver<Matrix, Vector>>();

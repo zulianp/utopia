@@ -1,11 +1,13 @@
 #ifndef UTOPIA_MULTIGRID_HPP
 #define UTOPIA_MULTIGRID_HPP
+
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_MeasureResidual.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Smoother.hpp"
 #include "utopia_Utils.hpp"
@@ -72,6 +74,8 @@ namespace utopia {
               use_line_search_(false),
               block_size_(1) {
             this->must_generate_masks(true);
+
+            measure_residual_ = std::make_shared<MeasureResidual<Vector>>();
         }
 
         ~Multigrid() override = default;
@@ -89,6 +93,19 @@ namespace utopia {
             }
             if (coarse_solver_) {
                 in.get("coarse_solver", *coarse_solver_);
+            }
+
+            in.get("measure_residual", [this](Input &in) {
+                std::string type = "";
+                in.get("type", type);
+
+                if (!type.empty()) {
+                    this->measure_residual_ = MeasureResidualFactory<Vector>::make(type);
+                }
+            });
+
+            if (measure_residual_) {
+                in.get("measure_residual", *measure_residual_);
             }
         }
 
@@ -161,7 +178,8 @@ namespace utopia {
 
             // UTOPIA_RECORD_VALUE("rhs - level(l).A() * x", memory.r[l]);
 
-            r_norm = norm2(memory.r[l]);
+            // r_norm = norm2(memory.r[l]);
+            r_norm = measure_residual_->measure(memory.r[l]);
             r0_norm = r_norm;
 
             std::string mg_header_message = "Multigrid: " + std::to_string(L) + " levels";
@@ -187,7 +205,7 @@ namespace utopia {
 
 #ifdef CHECK_NUM_PRECISION_mode
                 if (has_nan_or_inf(x)) {
-                    x = local_zeros(local_size(x));
+                    x.set(0.0);
                     return true;
                 }
 #else
@@ -201,7 +219,8 @@ namespace utopia {
                 // UTOPIA_RECORD_VALUE("x += memory.c[l]", x);
 
                 memory.r[l] = rhs - level(l).A() * x;
-                r_norm = norm2(memory.r[l]);
+                // r_norm = norm2(memory.r[l]);
+                r_norm = measure_residual_->measure(memory.r[l]);
                 rel_norm = r_norm / r0_norm;
 
                 // print iteration status on every iteration
@@ -239,8 +258,11 @@ namespace utopia {
             Vector &c_I = memory.c_I[l];
             Vector &r_R = memory.r_R[l];
 
-            if (empty(c) || size(c) != size(r)) {
-                c.zeros(layout(r));
+            auto lo = layout(r);
+
+            // if (empty(c) || size(c) != size(r)) {
+            if (empty(c) || !lo.same(layout(c))) {
+                c.zeros(lo);
             } else {
                 c.set(0.);
             }
@@ -421,12 +443,12 @@ namespace utopia {
             return true;
         }
 
+    public:
         Multigrid *clone() const override {
             return new Multigrid(std::shared_ptr<Smoother>(smoother_cloneable_->clone()),
                                  std::shared_ptr<Solver>(coarse_solver_->clone()));
         }
 
-    public:
         /**
          * @brief      Function changes direct solver needed for coarse grid solve.
          *
@@ -461,6 +483,23 @@ namespace utopia {
 
         inline SizeType block_size() const { return block_size_; }
 
+        void set_measure_residual(const std::shared_ptr<MeasureResidual<Vector>> &measure_residual) {
+            measure_residual_ = measure_residual;
+        }
+
+        void adjust_memory() {
+            int n_levels = this->n_levels();
+            if (memory.valid(n_levels)) {
+                for (int l = 0; l < n_levels; ++l) {
+                    // auto lo = row_layout(this->level(l).A());
+                    memory.r[l].clear();
+                    memory.c[l].clear();
+                    memory.c_I[l].clear();
+                    memory.c_I[l].clear();
+                }
+            }
+        }
+
     protected:
         std::shared_ptr<Smoother> smoother_cloneable_;
         std::shared_ptr<Solver> coarse_solver_;
@@ -471,6 +510,8 @@ namespace utopia {
         bool use_line_search_;
         bool non_symmetric_{false};
         SizeType block_size_;
+
+        std::shared_ptr<MeasureResidual<Vector>> measure_residual_;
     };
 
 }  // namespace utopia

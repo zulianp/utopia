@@ -50,7 +50,7 @@ namespace utopia {
             this->print_param_usage(os, "precond", "Preconditioner", "Input parameters for preconditioner.", "-");
         }
 
-        virtual PreconditionedSolverInterface &operator=(const PreconditionedSolverInterface &other) {
+        PreconditionedSolverInterface &operator=(const PreconditionedSolverInterface &other) {
             if (this == &other) {
                 return *this;
             }
@@ -60,14 +60,13 @@ namespace utopia {
         }
 
         PreconditionedSolverInterface(const PreconditionedSolverInterface &other) { copy_preconditioner_from(other); }
-
         PreconditionedSolverInterface() {}
 
-        virtual ~PreconditionedSolverInterface() {}
+        virtual ~PreconditionedSolverInterface() = default;
 
-    protected:
         std::shared_ptr<Preconditioner> precond_;
 
+    private:
         virtual void copy_preconditioner_from(const PreconditionedSolverInterface &other) {
             if (other.has_preconditioner()) {
                 this->set_preconditioner(std::shared_ptr<Preconditioner>(other.precond_->clone()));

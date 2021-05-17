@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+# cmake_minimum_required(VERSION 2.8)
 
 if(MOONOLITH_DIR OR DEFINED ENV{MOONOLITH_DIR})
 
@@ -13,13 +13,17 @@ if(MOONOLITH_DIR OR DEFINED ENV{MOONOLITH_DIR})
 
     if(ParMoonolith_FOUND)
         message(STATUS "Found ParMoonolith by config file")
-        get_target_property(MOONOLITH_INCLUDES ParMoonolith::par_moonolith INTERFACE_INCLUDE_DIRECTORIES)
-        get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith IMPORTED_LOCATION)
-        if (NOT MOONOLITH_LIBRARIES)
-            get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith IMPORTED_LOCATION_RELEASE)
+        get_target_property(MOONOLITH_INCLUDES ParMoonolith::par_moonolith
+                            INTERFACE_INCLUDE_DIRECTORIES)
+        get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith
+                            IMPORTED_LOCATION)
+        if(NOT MOONOLITH_LIBRARIES)
+            get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith
+                                IMPORTED_LOCATION_RELEASE)
         endif()
-        if (NOT MOONOLITH_LIBRARIES)
-            get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith IMPORTED_LOCATION_DEBUG)
+        if(NOT MOONOLITH_LIBRARIES)
+            get_target_property(MOONOLITH_LIBRARIES ParMoonolith::par_moonolith
+                                IMPORTED_LOCATION_DEBUG)
         endif()
         return()
     else()

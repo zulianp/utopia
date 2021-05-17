@@ -1,7 +1,10 @@
 #ifndef UTOPIA_AGGLOMERATE_HPP
 #define UTOPIA_AGGLOMERATE_HPP
 
+#include "utopia_AdditiveCorrectionTransfer.hpp"
 #include "utopia_AlgebraicMultigrid.hpp"
+
+#include "utopia_IPRTruncatedTransfer.hpp"
 
 namespace utopia {
 
@@ -23,14 +26,31 @@ namespace utopia {
             in.get("bmax", bmax_);
             in.get("weight", weight_);
             in.get("verbose", verbose_);
+            in.get("use_additive_correction", use_additive_correction_);
         }
 
         std::shared_ptr<Transfer> create_transfer(const Matrix &in) override {
-            UTOPIA_TRACE_REGION_BEGIN("Agglomerate::create_prolongator");
+            return std::make_shared<IPRTransfer<Matrix, Vector>>(create_transfer_matrix(in));
+        }
+
+        std::shared_ptr<Transfer> create_truncated_transfer(const Matrix &in) override {
+            return std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(create_transfer_matrix(in));
+        }
+
+        inline void verbose(const bool val) { verbose_ = val; }
+        inline void use_additive_correction(const bool val) { use_additive_correction_ = val; }
+
+    private:
+        SizeType bmax_{3};
+        // SizeType bmin_{5};
+        Scalar weight_{1. / 3};
+        bool verbose_{false};
+        bool use_additive_correction_{false};
+
+        std::shared_ptr<Matrix> create_transfer_matrix(const Matrix &in) {
+            UTOPIA_TRACE_REGION_BEGIN("Agglomerate::create_transfer_matrix");
 
             using namespace utopia;
-
-            auto prolongator = std::make_shared<Matrix>();
 
             auto rr = row_range(in);
 
@@ -41,6 +61,15 @@ namespace utopia {
             SizeType n_coarse_rows = 0;
 
             ScalarArray a_max(rr.extent(), 0);
+
+            if (!use_additive_correction_) {
+                for (SizeType i = 0; i < rr.extent(); ++i) {
+                    RowView<const Matrix> row_view(in_local, i);
+                    if (row_view.n_values() == 1) {
+                        parent[i] = -2;
+                    }
+                }
+            }
 
             // Global a_max_i
             // in.read([&](const SizeType &i, const SizeType &j, const Scalar &a_ij) {
@@ -60,6 +89,7 @@ namespace utopia {
             {
                 for (SizeType i = 0; i < rr.extent(); ++i) {
                     if (parent[i] != -1) continue;
+
                     parent[i] = n_coarse_rows;
 
                     RowView<const Matrix> row_view(in_local, i);
@@ -107,16 +137,26 @@ namespace utopia {
                     }
                 }
 
-                SizeType n_not_aggr = 0;
                 for (SizeType i = 0; i < rr.extent(); ++i) {
                     if (parent[i] != -1) continue;
 
                     parent[i] = n_coarse_rows++;
-                    ++n_not_aggr;
                 }
             }
 
+            std::shared_ptr<Matrix> ret;
+
+            // if (use_additive_correction_) {
+            //     auto act = std::make_shared<AdditiveCorrectionTransfer<Matrix, Vector>>();
+            //     act->parent() = std::move(parent);
+
+            //     SizeType n_global_coarse_row = in.comm().sum(n_coarse_rows);
+            //     act->set_size(n_coarse_rows, n_global_coarse_row);
+            //     ret = act;
+            // } else {
             auto pl = layout(in.comm(), in.local_rows(), n_coarse_rows, in.rows(), Traits::determine());
+
+            auto prolongator = std::make_shared<Matrix>();
             prolongator->sparse(pl, 1, 1);
 
             if (verbose_) {
@@ -132,22 +172,18 @@ namespace utopia {
                 auto coarse_offset = prolongator->col_range().begin();
 
                 for (SizeType i = 0; i < n; ++i) {
-                    prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                    if (parent[i] >= 0) {
+                        prolongator->set(rr.begin() + i, coarse_offset + parent[i], 1.0);
+                    }
                 }
             }
 
-            UTOPIA_TRACE_REGION_END("Agglomerate::create_prolongator");
+            ret = prolongator;
+            // }
 
-            return std::make_shared<IPRTransfer<Matrix, Vector>>(prolongator);
+            UTOPIA_TRACE_REGION_END("Agglomerate::create_transfer_matrix");
+            return ret;
         }
-
-        inline void verbose(const bool val) { verbose_ = val; }
-
-    private:
-        SizeType bmax_{3};
-        // SizeType bmin_{5};
-        Scalar weight_{1. / 3};
-        bool verbose_{false};
     };
 
 }  // namespace utopia

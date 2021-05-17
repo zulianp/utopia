@@ -9,4 +9,10 @@
 #include "utopia_Instance.hpp"
 #include "utopia_MPI.hpp"
 
+namespace utopia {
+    int Test(const int argc, char *argv[]);
+}  // namespace utopia
+
+#define UTOPIA_TEST(macro_argc__, macro_argv__) utopia::Test(argc, argv)
+
 #endif  // UTOPIA_TESTING_HPP

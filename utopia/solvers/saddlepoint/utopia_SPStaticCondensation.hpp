@@ -42,6 +42,14 @@ namespace utopia {
         }
 
         bool apply(const Vector &rhs_m, const Vector &rhs_s, Vector &sol_m, Vector &sol_s) {
+            assert(!empty(rhs_m));
+            assert(!empty(rhs_s));
+            assert(!empty(sol_m));
+            assert(T);
+            assert(!empty(*T));
+            assert(T->local_rows() == rhs_s.local_size());
+            assert(T->local_cols() == rhs_m.local_size());
+
             rhs = rhs_m + transpose(*T) * rhs_s;
             bool ok = op->apply(rhs, sol_m);
             sol_s = (*T) * sol_m;

@@ -88,6 +88,12 @@ namespace utopia {
 
     PetscInt PetscCrsView::rows() const { return impl_->rows; }
 
+    PetscCrsView::RowView PetscCrsView::row(const PetscInt row) const {
+        PetscInt row_begin = impl_->ia[row];
+        PetscInt n = impl_->ia[row + 1] - row_begin;
+        return RowView(n, &impl_->ja[row_begin], &impl_->array[row_begin]);
+    }
+
     ArrayView<const PetscInt> PetscCrsView::row_ptr() const { return ArrayView<const PetscInt>(impl_->ia, rows() + 1); }
 
     ArrayView<const PetscInt> PetscCrsView::colidx() const { return ArrayView<const PetscInt>(impl_->ja, nnz()); }
@@ -101,6 +107,16 @@ namespace utopia {
     void PetscCrsView::describe(std::ostream &os) const {
         os << rows() << " " << cols() << '\n';
         os << "nnz: " << nnz() << '\n';
+    }
+
+    PetscCrsView crs_view(PetscMatrix &mat) {
+        assert(!mat.is_mpi());
+        return mat.raw_type();
+    }
+
+    PetscCrsView crs_view(const PetscMatrix &mat) {
+        assert(!mat.is_mpi());
+        return mat.raw_type();
     }
 
 }  // namespace utopia

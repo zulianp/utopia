@@ -67,6 +67,9 @@ namespace utopia {
         virtual void get(const std::string &key, std::function<void(Input &)> lambda) = 0;
         virtual bool good() const = 0;
 
+        Input &operator=(Input &&) = default;
+        Input(Input &&) = default;
+
     private:
         Input(const Input &) = default;
         Input &operator=(const Input &) = default;

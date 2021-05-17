@@ -1,7 +1,7 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "utopia.hpp"
+#include "utopia_AlgebraUnitTest.hpp"
 #include "utopia_BlockQPSolver.hpp"
-#include "utopia_ParallelTestRunner.hpp"
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_SemismoothNewton_old.hpp"
 #include "utopia_Testing.hpp"
