@@ -453,7 +453,8 @@ namespace utopia {
 
             bool ok = true;
             try {
-                libMesh::NameBasedIO(impl_->mesh->raw_type()).write_equation_systems(path.to_string(), *impl_->systems);
+                libMesh::NameBasedIO io(impl_->mesh->raw_type());
+                io.write_equation_systems(path.to_string(), *impl_->systems);
             } catch (const std::exception &ex) {
                 utopia::err() << ex.what() << '\n';
                 ok = false;

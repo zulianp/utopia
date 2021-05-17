@@ -75,16 +75,16 @@ namespace utopia {
             }
 
             bool assemble_matrix() override {
-                // UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble");
-                // this->ensure_matrix_accumulator();
+                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble");
+                this->ensure_matrix_accumulator();
 
-                // this->loop_cell_test_trial("Assemble<LaplaceOperator>::assemble",
-                //                            op_and_store_cell_ij(this->matrix_data(), make_op()));
+                this->loop_cell_test_trial("Assemble<LaplaceOperator>::assemble",
+                                           op_and_store_cell_ij(this->matrix_data(), make_op()));
 
-                // UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
-                // return true;
+                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
+                return true;
 
-                return assemble_matrix_intrepid_tutorial();
+                // return assemble_matrix_intrepid_tutorial();
             }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
