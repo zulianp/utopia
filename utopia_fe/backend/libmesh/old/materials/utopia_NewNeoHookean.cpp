@@ -128,6 +128,25 @@ namespace utopia {
     }
 
     template <class FunctionSpace, class Matrix, class Vector>
+    bool NewNeoHookean<FunctionSpace, Matrix, Vector>::assemble_hessian(const Vector &x, Matrix &hessian) {
+        using FE = utopia::FiniteElement<FunctionSpace>;
+
+        LocalNeoHookean<FE, UVector> assembler(params_, x, rescaling_);
+
+        assemble(V_, inner(grad(trial(V_)), grad(trial(V_))) * dX, hessian, [&](FE &element, USerialMatrix &mat) {
+            assembler.init(element);
+            assembler.assemble(element, mat);
+        });
+
+        return true;
+    }
+
+    template <class FunctionSpace, class Matrix, class Vector>
+    bool NewNeoHookean<FunctionSpace, Matrix, Vector>::assemble_gradient(const Vector &x, Vector &gradient) {
+        return stress(x, gradient);
+    }
+
+    template <class FunctionSpace, class Matrix, class Vector>
     bool NewNeoHookean<FunctionSpace, Matrix, Vector>::stress(const Vector &x, Vector &result) {
         using FE = utopia::FiniteElement<FunctionSpace>;
 

@@ -35,6 +35,80 @@ namespace utopia {
             }
         }
 
+        bool assemble_hessian(Matrix &hessian) override {
+            if (!material_->assemble_hessian(hessian_)) {
+                std::cerr << "decorated material failed to assemble" << std::endl;
+                return false;
+            }
+
+            if (empty(stab_)) {
+                auto u = trial(V_);
+                auto v = test(V_);
+
+                switch (type_) {
+                    case L2: {
+                        utopia::assemble(inner(u, v) * dX, stab_);
+                        break;
+                    }
+                    case L2_LUMPED: {
+                        Matrix temp;
+                        utopia::assemble(inner(u, v) * dX, temp);
+                        Vector d = sum(temp, 1);
+                        stab_ = diag(d);
+                        break;
+                    }
+                    default: {
+                        utopia::assemble(inner(grad(u), grad(v)) * dX, stab_);
+                        break;
+                    }
+                }
+
+                stab_ *= stabilization_mag_;
+            }
+
+            hessian = hessian_ + stab_;
+            return true;
+        }
+
+        bool assemble_hessian(const Vector &x, Matrix &hessian) override {
+            if (!material_->assemble_hessian(x, hessian_)) {
+                std::cerr << "decorated material failed to assemble" << std::endl;
+                return false;
+            }
+
+            if (empty(stab_)) {
+                auto u = trial(V_);
+                auto v = test(V_);
+
+                switch (type_) {
+                    case L2: {
+                        utopia::assemble(inner(u, v) * dX, stab_);
+                        break;
+                    }
+                    case L2_LUMPED: {
+                        Matrix temp;
+                        utopia::assemble(inner(u, v) * dX, temp);
+                        Vector d = sum(temp, 1);
+                        stab_ = diag(d);
+                        break;
+                    }
+                    default: {
+                        utopia::assemble(inner(grad(u), grad(v)) * dX, stab_);
+                        break;
+                    }
+                }
+
+                stab_ *= stabilization_mag_;
+            }
+
+            hessian = hessian_ + stab_;
+            return true;
+        }
+
+        bool assemble_gradient(const Vector &x, Vector &gradient) override {
+            return material_->assemble_gradient(x, gradient);
+        }
+
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             if (!material_->assemble_hessian_and_gradient(x, hessian_, gradient)) {
                 std::cerr << "decorated material failed to assemble" << std::endl;

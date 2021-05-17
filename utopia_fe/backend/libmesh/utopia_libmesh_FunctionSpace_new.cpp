@@ -432,7 +432,7 @@ namespace utopia {
                 auto &system = impl_->systems->get_system(system_id());
 
                 for (auto &v_name : var_names) {
-                    io.copy_nodal_solution(system, v_name, v_name, 1);
+                    io.copy_nodal_solution(system, v_name, v_name, time_step);
                 }
 
                 convert(*system.solution, val);

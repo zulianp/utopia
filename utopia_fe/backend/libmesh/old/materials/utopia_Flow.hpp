@@ -91,6 +91,19 @@ namespace utopia {
 
         Flow(FunctionSpace &space) : space_(space), forcing_function_(space), rescale_(1.0) {}
 
+        bool assemble_hessian(const Vector &x, Matrix &hessian) override {
+            assert(false);
+            return false;
+        }
+        bool assemble_hessian(Matrix &hessian) override {
+            assert(false);
+            return false;
+        }
+        bool assemble_gradient(const Vector &x, Vector &gradient) override {
+            assert(false);
+            return false;
+        }
+
         inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             Chrono c;
             c.start();
