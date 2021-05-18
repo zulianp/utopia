@@ -62,9 +62,11 @@ namespace utopia {
                     const Scalar_t norm_field = norm2(field.data());
                     const Size_t size_field = field.data().size();
 
+                    const auto n_elements = from_space.mesh().n_elements();
+                    const auto n_nodes = from_space.mesh().n_nodes();
+
                     if (from_space.comm().rank() == 0) {
-                        utopia::out() << "[Mesh] n elements: " << from_space.mesh().n_elements()
-                                      << ", n nodes: " << from_space.mesh().n_nodes() << '\n';
+                        utopia::out() << "[Mesh] n elements: " << n_elements << ", n nodes: " << n_nodes << '\n';
 
                         utopia::out() << "[Field] size: " << size_field << ", norm: " << norm_field << '\n';
                     }
