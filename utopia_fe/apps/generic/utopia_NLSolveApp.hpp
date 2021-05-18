@@ -91,6 +91,8 @@ namespace utopia {
                 function_->hessian_and_gradient(x, H, g);
                 g *= -1.0;
 
+                H.convert_to_scalar_matrix();
+
                 linear_solver_->solve(H, g, x);
 
             } else {

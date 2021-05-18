@@ -155,7 +155,10 @@ namespace utopia {
             InputParameters params;
             params.set("block_size", fine_space_->n_var());
 
-            auto smoother = std::make_shared<SOR<Matrix, Vector>>();
+            // auto smoother = std::make_shared<SOR<Matrix, Vector>>();
+            // auto smoother = std::make_shared<ILU<Matrix, Vector>>();
+            // auto smoother = std::make_shared<SOR<Matrix, Vector>>();
+            auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<KSPSolver<Matrix, Vector>>();
 
             smoother->read(params);

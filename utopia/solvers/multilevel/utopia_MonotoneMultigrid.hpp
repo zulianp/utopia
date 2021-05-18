@@ -118,6 +118,10 @@ namespace utopia {
             if (coarse_solver_) {
                 in.get("coarse_solver", *coarse_solver_);
             }
+
+            if (active_set_) {
+                in.get("active_set", *active_set_);
+            }
         }
 
         void print_usage(std::ostream &os) const override {

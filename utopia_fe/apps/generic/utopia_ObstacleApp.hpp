@@ -204,8 +204,7 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
                 if (std::is_same<PetscMatrix, Matrix_t>::value && H.is_block()) {
                     Matrix_t temp;
-                    temp.destroy();
-                    MatConvert(H.raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &temp.raw_type());
+                    H.convert_to_scalar_matrix(temp);
                     obs.transform(temp, H_c);
                 } else
 #endif  // UTOPIA_WITH_PETSC
