@@ -25,6 +25,7 @@ namespace utopia {
         using Super = utopia::QPSolver<Matrix, Vector>;
         using IPRTruncatedTransfer = utopia::IPRTruncatedTransfer<Matrix, Vector>;
         using IPRTransfer = utopia::IPRTransfer<Matrix, Vector>;
+        using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using Transfer = utopia::Transfer<Matrix, Vector>;
         using MonotoneMultigrid = utopia::MonotoneMultigrid<Matrix, Vector>;
 
@@ -77,7 +78,10 @@ namespace utopia {
             assert(!space_hierarchy_.empty());
             assert(fine_space_);
 
-            init();
+            if (!is_initialized_) {
+                init();
+                is_initialized_ = true;
+            }
 
             algorithm_->update(op);
         }
@@ -113,7 +117,8 @@ namespace utopia {
                     Utopia::Abort("MonotoneSemiGeometricMultigrid failed to set-up transfer operator!");
                 }
 
-                transfers.push_back(transfer.template build_transfer<IPRTransfer>());
+                // transfers.push_back(transfer.template build_transfer<IPRTransfer>());
+                transfers.push_back(transfer.template build_transfer<IPTransfer>());
             }
 
             if (!transfer.init(space_hierarchy_[n_levels - 1], fine_space_)) {
@@ -128,6 +133,7 @@ namespace utopia {
 
             transfers.push_back(t);
             algorithm_->set_transfer_operators(transfers);
+
             return true;
         }
 
@@ -147,13 +153,15 @@ namespace utopia {
 
         std::shared_ptr<FunctionSpace> fine_space_;
         std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
+        bool is_initialized_{false};
 
         void make_algo() {
             InputParameters params;
             params.set("block_size", fine_space_->n_var());
 
             auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            auto coarse_smoother = std::make_shared<ILU<Matrix, Vector>>();
+            // auto coarse_smoother = std::make_shared<ILU<Matrix, Vector>>();
+            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
             fine_smoother->read(params);

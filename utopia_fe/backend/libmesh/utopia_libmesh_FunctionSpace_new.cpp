@@ -11,6 +11,7 @@
 #include "libmesh/const_function.h"
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/dof_map.h"
+#include "libmesh/elem.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/explicit_system.h"
@@ -687,8 +688,65 @@ namespace utopia {
             if (comm().size() == 1) {
                 mesh().displace(displacement);
             } else {
-                assert(false && "IMPLEMENT ME");
-                Utopia::Abort();
+                // assert(false && "IMPLEMENT ME");
+                // Utopia::Abort("FunctionSpace::displace not implemented for parallel");
+
+                int sys_num = system_id();
+
+                // auto &comm = this->comm();
+
+                auto r = range(displacement);
+                Read<Vector> r_d(displacement);
+
+                auto &mesh = this->mesh().raw_type();
+                auto &dof_map = this->raw_type_dof_map();
+
+                auto m_begin = mesh.active_local_elements_begin();
+                auto m_end = mesh.active_local_elements_end();
+
+                std::vector<SizeType> idx;
+                std::set<SizeType> unique_idx;
+                std::map<::libMesh::dof_id_type, double> idx_to_value;
+                std::vector<::libMesh::dof_id_type> dof_indices;
+
+                for (auto m_it = m_begin; m_it != m_end; ++m_it) {
+                    dof_map.dof_indices(*m_it, dof_indices);
+                    for (auto dof_id : dof_indices) {
+                        if (r.inside(dof_id)) {
+                            idx_to_value[dof_id] = displacement.get(dof_id);
+                        } else {
+                            unique_idx.insert(dof_id);
+                        }
+                    }
+                }
+
+                idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
+                Vector out;
+                displacement.select(idx, out);
+
+                {
+                    Read<Vector> r_out(out);
+                    auto range_out = range(out);
+
+                    for (std::size_t i = 0; i < idx.size(); ++i) {
+                        idx_to_value[idx[i]] = out.get(range_out.begin() + i);
+                    }
+                }
+
+                for (auto m_it = m_begin; m_it != m_end; ++m_it) {
+                    auto &e = **m_it;
+                    for (int i = 0; i < e.n_nodes(); ++i) {
+                        auto &node = e.node_ref(i);
+
+                        for (unsigned int c = 0; c < mesh.mesh_dimension(); ++c) {
+                            const int dof_id = node.dof_number(sys_num, c, 0);
+                            assert(idx_to_value.find(dof_id) != idx_to_value.end());
+                            double &val = idx_to_value[dof_id];
+                            node(c) += val;
+                            val = 0.;
+                        }
+                    }
+                }
             }
         }
 
