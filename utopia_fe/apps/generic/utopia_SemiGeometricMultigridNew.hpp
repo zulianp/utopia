@@ -34,6 +34,7 @@ namespace utopia {
 
             bool export_coarse_meshes = false;
             in.get("export_coarse_meshes", export_coarse_meshes);
+            in.get("clear_spaces_after_init", clear_spaces_after_init_);
 
             in.get("coarse_spaces", [this, export_coarse_meshes](Input &array_node) {
                 array_node.get_all([this, export_coarse_meshes](Input &node) {
@@ -74,19 +75,24 @@ namespace utopia {
         /*! @brief if overriden the subclass has to also call this one first
          */
         void update(const std::shared_ptr<const Matrix> &op) override {
+            UTOPIA_TRACE_REGION_BEGIN("SemiGeometricMultigridNew::update");
+
             assert(algorithm_);
-            assert(!space_hierarchy_.empty());
             assert(fine_space_);
 
             if (!is_initialized_) {
+                assert(!space_hierarchy_.empty());
                 init();
                 is_initialized_ = true;
             }
 
             algorithm_->update(op);
+
+            UTOPIA_TRACE_REGION_END("SemiGeometricMultigridNew::update");
         }
 
         bool init() {
+            UTOPIA_TRACE_REGION_BEGIN("SemiGeometricMultigridNew::init");
             const int n_levels = space_hierarchy_.size();
 
             if (n_levels == 0) {
@@ -132,13 +138,26 @@ namespace utopia {
 
             transfers.push_back(t);
             algorithm_->set_transfer_operators(transfers);
+
+            if (clear_spaces_after_init_) {
+                space_hierarchy_.clear();
+            }
+
+            UTOPIA_TRACE_REGION_END("SemiGeometricMultigridNew::init");
             return true;
         }
 
         bool apply(const Vector &rhs, Vector &x) override {
+            UTOPIA_TRACE_REGION_BEGIN("SemiGeometricMultigridNew::apply");
+
             assert(algorithm_);
-            if (!algorithm_) return false;
-            return algorithm_->apply(rhs, x);
+            bool ok = false;
+            if (algorithm_) {
+                ok = algorithm_->apply(rhs, x);
+            }
+
+            UTOPIA_TRACE_REGION_END("SemiGeometricMultigridNew::apply");
+            return ok;
         }
 
         inline void set_fine_space(const std::shared_ptr<FunctionSpace> &fine_space) { fine_space_ = fine_space; }
@@ -150,6 +169,7 @@ namespace utopia {
         std::shared_ptr<FunctionSpace> fine_space_;
         std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
         bool is_initialized_{false};
+        bool clear_spaces_after_init_{false};
 
         void make_algo() {
             InputParameters params;

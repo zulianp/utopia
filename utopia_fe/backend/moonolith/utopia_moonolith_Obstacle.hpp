@@ -49,6 +49,7 @@ namespace utopia {
                 Scalar gap_negative_bound{-0.0001};
                 Scalar gap_positive_bound{0.1};
                 std::unordered_set<int> tags;
+                bool invert_face_orientation{false};
 
                 void read(Input &in) override;
             };

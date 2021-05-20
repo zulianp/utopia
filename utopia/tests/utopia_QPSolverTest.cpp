@@ -193,9 +193,8 @@ namespace utopia {
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
             interpolation_operators[1] =
-                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(QtIh));
-            interpolation_operators[0] =
-                std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(Ih1));
+                std::make_shared<IPTruncatedTransfer<Matrix, Vector>>(std::make_shared<Matrix>(QtIh));
+            interpolation_operators[0] = std::make_shared<IPTransfer<Matrix, Vector>>(std::make_shared<Matrix>(Ih1));
 
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(40);

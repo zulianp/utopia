@@ -2,7 +2,9 @@
 #define UTOPIA_MONOTONE_MULTIGRID_HPP
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Core.hpp"
+
 #include "utopia_IPRTruncatedTransfer.hpp"
+#include "utopia_IPTruncatedTransfer.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
@@ -99,14 +101,14 @@ namespace utopia {
             }
         }
 
-        inline static std::shared_ptr<IPRTruncatedTransfer<Matrix, Vector>> new_fine_level_transfer(
+        inline static std::shared_ptr<IPTruncatedTransfer<Matrix, Vector>> new_fine_level_transfer(
             const std::shared_ptr<Matrix> &interpolation) {
-            return std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(interpolation);
+            return std::make_shared<IPTruncatedTransfer<Matrix, Vector>>(interpolation);
         }
 
-        inline static std::shared_ptr<IPRTransfer<Matrix, Vector>> new_coarse_level_transfer(
+        inline static std::shared_ptr<IPTransfer<Matrix, Vector>> new_coarse_level_transfer(
             const std::shared_ptr<Matrix> &interpolation) {
-            return std::make_shared<IPRTransfer<Matrix, Vector>>(interpolation);
+            return std::make_shared<IPTransfer<Matrix, Vector>>(interpolation);
         }
 
         ~MonotoneMultigrid() override = default;
@@ -356,7 +358,7 @@ namespace utopia {
 
             if (pre_sm) {
                 if (auto *trunc_transfer =
-                        dynamic_cast<IPRTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
+                        dynamic_cast<IPTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
                     ////////////////////////////////////////////////////////////////
                     // FIXME duplicated code (ProjectedGaussSeidelQR needs changes to avoid this)
                     if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(fine_smoother)) {
@@ -387,7 +389,7 @@ namespace utopia {
                 }
 
                 else {
-                    utopia_error("MonotoneMultigrid: requires IPRTruncatedTransfer for the finest level.");
+                    utopia_error("MonotoneMultigrid: requires IPTruncatedTransfer for the finest level.");
                 }
             }
             return true;

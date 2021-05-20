@@ -214,6 +214,12 @@ namespace utopia {
             ::Kokkos::create_mirror_view(device_element_matrices);
         ::Kokkos::deep_copy(element_matrices, device_element_matrices);
 
+        const int n_var = space.n_var();
+
+        if (!matrix.is_block() && n_var != 1) {
+            matrix.clear();
+        }
+
         if (matrix.empty()) {
             space.create_matrix(matrix);
 
@@ -241,7 +247,6 @@ namespace utopia {
         {
             Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
-            const int n_var = space.n_var();
             const SizeType n_dofs = element_matrices.extent(1);
             const SizeType nn = n_dofs / n_var;
 

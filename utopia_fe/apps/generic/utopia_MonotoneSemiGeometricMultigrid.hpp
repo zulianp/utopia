@@ -49,6 +49,8 @@ namespace utopia {
                 });
             });
 
+            in.get("clear_spaces_after_init", clear_spaces_after_init_);
+
             const int n_levels = space_hierarchy_.size();
 
             if (n_levels > 0) {
@@ -75,10 +77,10 @@ namespace utopia {
          */
         void update(const std::shared_ptr<const Matrix> &op) override {
             assert(algorithm_);
-            assert(!space_hierarchy_.empty());
             assert(fine_space_);
 
             if (!is_initialized_) {
+                assert(!space_hierarchy_.empty());
                 init();
                 is_initialized_ = true;
             }
@@ -134,6 +136,10 @@ namespace utopia {
             transfers.push_back(t);
             algorithm_->set_transfer_operators(transfers);
 
+            if (clear_spaces_after_init_) {
+                space_hierarchy_.clear();
+            }
+
             return true;
         }
 
@@ -154,6 +160,7 @@ namespace utopia {
         std::shared_ptr<FunctionSpace> fine_space_;
         std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
         bool is_initialized_{false};
+        bool clear_spaces_after_init_{false};
 
         void make_algo() {
             InputParameters params;

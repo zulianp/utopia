@@ -455,6 +455,12 @@ namespace utopia {
             void local_to_global_matrix_domain(Matrix &mat) {
                 if (domain.has_matrix()) {
                     local_to_global(*space, domain.matrix_accumulator->data(), mode, mat);
+
+                    if (ensure_scalar_matrix_) {
+                        if (mat.is_block()) {
+                            mat.convert_to_scalar_matrix();
+                        }
+                    }
                 }
             }
 
@@ -529,6 +535,7 @@ namespace utopia {
 
             AssemblyMode mode{ADD_MODE};
             bool is_linear_{true};
+            bool ensure_scalar_matrix_{true};
         };
 
         template <class FunctionSpace>
@@ -631,6 +638,8 @@ namespace utopia {
             create_fe(*impl_->space, *impl_->domain.fe, quadrature_order);
 
             impl_->is_linear_ = true;
+
+            in.get("ensure_scalar_matrix", impl_->ensure_scalar_matrix_);
 
             in.get("material", [this](Input &node) {
                 auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);

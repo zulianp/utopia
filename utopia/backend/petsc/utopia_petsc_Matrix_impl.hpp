@@ -5,6 +5,8 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 
+#include "utopia_Instance.hpp"
+
 // Transform calue mpiaij
 // 1)  MatMPIAIJGetSeqAIJ (not MatMPIAIJGetLocalMat)
 // PETSC_EXTERN PetscErrorCode MatMPIAIJGetSeqAIJ(Mat,Mat*,Mat*,const PetscInt*[]);
@@ -436,6 +438,7 @@ namespace utopia {
         } else {
             std::cerr << ("PetscMatrix::read not implemented for matrix type: ") << type() << std::endl;
             assert(false);
+            Utopia::Abort("PetscMatrix::read called abort!");
         }
     }
 
@@ -446,7 +449,7 @@ namespace utopia {
         } else {
             std::cerr << ("PetscMatrix::read_reverse not implemented for matrix type: ") << type() << std::endl;
             assert(false);
-            abort();
+            Utopia::Abort("PetscMatrix::read_reverse called abort!");
         }
     }
 
