@@ -24,17 +24,22 @@ namespace utopia {
         using Comm = typename Traits<FunctionSpace>::Communicator;
 
         using Super = utopia::IterativeSolver<Matrix, Vector>;
-        using IPRTruncatedTransfer = utopia::IPRTruncatedTransfer<Matrix, Vector>;
-        using IPRTransfer = utopia::IPRTransfer<Matrix, Vector>;
+        // using IPRTruncatedTransfer = utopia::IPRTruncatedTransfer<Matrix, Vector>;
+        using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using Transfer = utopia::Transfer<Matrix, Vector>;
         using Multigrid = utopia::Multigrid<Matrix, Vector>;
 
         void read(Input &in) override {
             Super::read(in);
 
+            if (fine_space_) {
+                block_size_ = fine_space_->n_var();
+            }
+
             bool export_coarse_meshes = false;
             in.get("export_coarse_meshes", export_coarse_meshes);
             in.get("clear_spaces_after_init", clear_spaces_after_init_);
+            in.get("block_size", block_size_);
 
             in.get("coarse_spaces", [this, export_coarse_meshes](Input &array_node) {
                 array_node.get_all([this, export_coarse_meshes](Input &node) {
@@ -123,7 +128,7 @@ namespace utopia {
                     Utopia::Abort("SemiGeometricMultigridNew failed to set-up transfer operator!");
                 }
 
-                transfers.push_back(transfer.template build_transfer<IPRTransfer>());
+                transfers.push_back(transfer.template build_transfer<IPTransfer>());
             }
 
             if (!transfer.init(space_hierarchy_[n_levels - 1], fine_space_)) {
@@ -131,7 +136,8 @@ namespace utopia {
                 Utopia::Abort("SemiGeometricMultigridNew failed to set-up transfer operator!");
             }
 
-            auto t = transfer.template build_transfer<IPRTruncatedTransfer>();
+            auto t = transfer.template build_transfer<IPTransfer>();
+            fine_space_->apply_constraints(*t->I_ptr(), 0.0);
 
             // rename("T", const_cast<Matrix &>(t->I()));
             // write("load_T.m", t->I());
@@ -170,10 +176,11 @@ namespace utopia {
         std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
         bool is_initialized_{false};
         bool clear_spaces_after_init_{false};
+        int block_size_{1};
 
         void make_algo() {
             InputParameters params;
-            params.set("block_size", fine_space_->n_var());
+            params.set("block_size", block_size_);
 
             // auto smoother = std::make_shared<SOR<Matrix, Vector>>();
             // auto smoother = std::make_shared<ILU<Matrix, Vector>>();

@@ -23,16 +23,12 @@ namespace utopia {
 
         IPTruncatedTransfer(const std::shared_ptr<Matrix> &I) {
             assert(I);
-
-            _I = I;
-            I_truncated_ = std::make_shared<Matrix>(*_I);
+            I_ = I;
         }
 
-        IPTruncatedTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P) : _I(I), Pr_(P) {
+        IPTruncatedTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P) : I_(I), Pr_(P) {
             assert(I);
             assert(P);
-
-            I_truncated_ = std::make_shared<Matrix>(*_I);
         }
 
         ~IPTruncatedTransfer() override = default;
@@ -49,14 +45,13 @@ namespace utopia {
          */
         bool I_init(const std::shared_ptr<Matrix> &I_in) {
             assert(I_in);
-            _I = I_in;
+            I_ = I_in;
             return true;
         }
 
         bool scale_transfer(const Matrix &scaling_mat) {
-            assert(_I);
-
-            *_I = scaling_mat * (*_I);
+            assert(I_);
+            *I_ = scaling_mat * (*I_);
             return true;
         }
 
@@ -72,8 +67,14 @@ namespace utopia {
          *
          */
         bool interpolate(const Vector &x, Vector &x_new) const override {
-            assert(I_truncated_);
-            x_new = *I_truncated_ * x;
+            assert(I_);
+
+            if (I_truncated_) {
+                x_new = *I_truncated_ * x;
+            } else {
+                x_new = *I_ * x;
+            }
+
             return true;
         }
 
@@ -85,7 +86,13 @@ namespace utopia {
          *
          */
         bool restrict(const Vector &x, Vector &x_new) const override {
-            x_new = transpose(*I_truncated_) * x;
+            assert(I_);
+
+            if (I_truncated_) {
+                x_new = transpose(*I_truncated_) * x;
+            } else {
+                x_new = transpose(*I_) * x;
+            }
             return true;
         }
 
@@ -98,11 +105,13 @@ namespace utopia {
          *
          */
         bool boolean_restrict_or(const Vector &x, Vector &x_new) override {
+            assert(I_);
+
             if (!I_truncated_) {
-                Matrix R = transpose(*_I);
+                Matrix R = transpose(*I_truncated_);
                 utopia::boolean_restrict_or(R, x, x_new);
             } else {
-                Matrix R = transpose(*I_truncated_);
+                Matrix R = transpose(*I_);
                 utopia::boolean_restrict_or(R, x, x_new);
             }
 
@@ -118,8 +127,14 @@ namespace utopia {
          *
          */
         bool restrict(const Matrix &M, Matrix &M_new) const override {
-            assert(I_truncated_);
-            M_new = utopia::ptap(M, *I_truncated_);
+            assert(I_);
+
+            if (I_truncated_) {
+                M_new = utopia::ptap(M, *I_truncated_);
+            } else {
+                M_new = utopia::ptap(M, *I_);
+            }
+
             return true;
         }
 
@@ -164,8 +179,8 @@ namespace utopia {
         }
 
         const Matrix &I() override {
-            assert(_I);
-            return *_I;
+            assert(I_);
+            return *I_;
         }
 
         const Matrix &P() override {
@@ -179,14 +194,18 @@ namespace utopia {
             return I();
         }
 
-        Scalar interpolation_inf_norm() const override { return norm_infty(*_I); }
+        Scalar interpolation_inf_norm() const override { return norm_infty(*I_); }
 
-        Scalar projection_inf_norm() const override { return norm_infty(transpose(*_I)); }
+        Scalar projection_inf_norm() const override { return norm_infty(transpose(*I_)); }
 
         Scalar restriction_inf_norm() const override { return norm_infty(*Pr_); }
 
         void truncate_interpolation(const Vector &eq_active_flg) {
-            // to speed up, we should check if constraint was changed between iterations
+            // to speed up, we should check if constraint was changed between iterations (outside the method)
+            if (!I_truncated_) {
+                I_truncated_ = std::make_shared<Matrix>();
+            }
+
             std::vector<SizeType> indices_eq_constraints_;
             {
                 Read<Vector> r(eq_active_flg);
@@ -199,13 +218,22 @@ namespace utopia {
                 }
             }
 
-            *I_truncated_ = *_I;
+            *I_truncated_ = *I_;
             set_zero_rows(*I_truncated_, indices_eq_constraints_, 0.0);
         }
 
-    private:
-        std::shared_ptr<Matrix> _I;
+        std::shared_ptr<Matrix> I_ptr() {
+            assert(I_);
+            return I_;
+        }
 
+        std::shared_ptr<Matrix> I_truncated_ptr() {
+            assert(I_truncated_);
+            return I_truncated_;
+        }
+
+    private:
+        std::shared_ptr<Matrix> I_;
         std::shared_ptr<Matrix> Pr_;  // used only for nonlinear mutlilevel solvers
         Matrix P_pos_;                // used only for nonlinear mutlilevel solvers
         Matrix P_neg_;                // used only for nonlinear mutlilevel solvers

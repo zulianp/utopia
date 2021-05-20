@@ -389,7 +389,7 @@ namespace utopia {
                 }
 
                 else {
-                    utopia_error("MonotoneMultigrid: requires IPTruncatedTransfer for the finest level.");
+                    Utopia::Abort("MonotoneMultigrid: requires IPTruncatedTransfer for the finest level.");
                 }
             }
             return true;

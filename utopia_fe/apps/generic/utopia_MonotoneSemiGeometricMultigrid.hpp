@@ -23,7 +23,7 @@ namespace utopia {
         using Comm = typename Traits<FunctionSpace>::Communicator;
 
         using Super = utopia::QPSolver<Matrix, Vector>;
-        using IPRTruncatedTransfer = utopia::IPRTruncatedTransfer<Matrix, Vector>;
+        using IPTruncatedTransfer = utopia::IPTruncatedTransfer<Matrix, Vector>;
         using IPRTransfer = utopia::IPRTransfer<Matrix, Vector>;
         using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using Transfer = utopia::Transfer<Matrix, Vector>;
@@ -32,8 +32,13 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
+            if (fine_space_) {
+                block_size_ = fine_space_->n_var();
+            }
+
             bool export_coarse_meshes = false;
             in.get("export_coarse_meshes", export_coarse_meshes);
+            in.get("block_size", block_size_);
 
             in.get("coarse_spaces", [this, export_coarse_meshes](Input &array_node) {
                 array_node.get_all([this, export_coarse_meshes](Input &node) {
@@ -128,7 +133,8 @@ namespace utopia {
                 Utopia::Abort("MonotoneSemiGeometricMultigrid failed to set-up transfer operator!");
             }
 
-            auto t = transfer.template build_transfer<IPRTruncatedTransfer>();
+            auto t = transfer.template build_transfer<IPTruncatedTransfer>();
+            fine_space_->apply_constraints(*t->I_ptr(), 0.0);
 
             // rename("T", const_cast<Matrix &>(t->I()));
             // write("load_T.m", t->I());
@@ -161,10 +167,11 @@ namespace utopia {
         std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
         bool is_initialized_{false};
         bool clear_spaces_after_init_{false};
+        int block_size_{1};
 
         void make_algo() {
             InputParameters params;
-            params.set("block_size", fine_space_->n_var());
+            params.set("block_size", block_size_);
 
             auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             // auto coarse_smoother = std::make_shared<ILU<Matrix, Vector>>();

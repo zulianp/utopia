@@ -151,6 +151,11 @@ namespace utopia {
 
         Scalar restriction_inf_norm() const override { return norm_infty(*_Pr); }
 
+        std::shared_ptr<Matrix> I_ptr() {
+            assert(_I);
+            return _I;
+        }
+
         const Matrix &I() override {
             assert(_I);
             return *_I;
