@@ -439,7 +439,7 @@ namespace utopia {
          */
         bool coarse_solve(const Vector &rhs, Vector &x) {
             if (!coarse_solver_->apply(rhs, x)) return false;
-            assert(approxeq(level(0).A() * x, rhs, 1e-6));
+            // assert(approxeq(level(0).A() * x, rhs, 1e-6));
             return true;
         }
 

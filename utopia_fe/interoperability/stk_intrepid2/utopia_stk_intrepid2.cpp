@@ -340,9 +340,13 @@ namespace utopia {
                           PetscVector &vector) {
             UTOPIA_TRACE_REGION_BEGIN("LocalToGlobalFromBuckets(Stk,Intrepid2)");
 
+            const int n_var = space.n_var();
+
             if (empty(vector)) {
                 space.create_vector(vector);
             } else {
+                // Ensure the vector has the right block size
+                vector.set_block_size(n_var);
                 // Reuse vector
                 if (mode == OVERWRITE_MODE) {
                     vector *= 0.0;
@@ -360,7 +364,6 @@ namespace utopia {
             {
                 Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
 
-                const int n_var = space.n_var();
                 const SizeType n_dofs = element_vectors.extent(1);
                 const SizeType nn = n_dofs / n_var;
 
@@ -421,6 +424,8 @@ namespace utopia {
             if (mode == SUBTRACT_MODE) {
                 vector *= -1.0;
             }
+
+            // disp(vector);
 
             UTOPIA_TRACE_REGION_END("LocalToGlobalFromBuckets(Stk,Intrepid2)");
         }

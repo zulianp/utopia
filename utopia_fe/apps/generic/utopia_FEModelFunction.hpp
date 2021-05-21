@@ -213,7 +213,16 @@ namespace utopia {
                 return false;
             }
 
+            if (export_tensors_) {
+                rename("g", g);
+                write("load_g.m", g);
+            }
+
             integrate_gradient(x, g);
+
+            if (export_tensors_) {
+                write("load_gt.m", g);
+            }
 
             if (must_apply_constraints_) {
                 this->space()->apply_zero_constraints(g);
@@ -232,7 +241,16 @@ namespace utopia {
                 return false;
             }
 
+            if (export_tensors_) {
+                rename("H", H);
+                write("load_H.m", H);
+            }
+
             integrate_hessian(x, H);
+
+            if (export_tensors_) {
+                write("load_Ht.m", H);
+            }
 
             if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
@@ -246,8 +264,20 @@ namespace utopia {
                 return false;
             }
 
+            if (export_tensors_) {
+                rename("H", H);
+                rename("g", g);
+                write("load_H.m", H);
+                write("load_g.m", g);
+            }
+
             integrate_gradient(x, g);
             integrate_hessian(x, H);
+
+            if (export_tensors_) {
+                write("load_Ht.m", H);
+                write("load_gt.m", g);
+            }
 
             if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
@@ -277,6 +307,8 @@ namespace utopia {
                                                           )));
                 this->mass_matrix_assembler()->read(params);
             }
+
+            in.get("export_tensors", export_tensors_);
         }
 
         inline Scalar_t delta_time() const { return delta_time_; }
@@ -293,6 +325,11 @@ namespace utopia {
             }
 
             rename("mass_matrix", *mass_matrix());
+
+            if (export_tensors_) {
+                write("load_mass_matrix.m", *mass_matrix());
+            }
+
             return true;
         }
 
@@ -305,6 +342,7 @@ namespace utopia {
 
     protected:
         inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
+        inline bool export_tensors() const { return export_tensors_; }
 
     private:
         std::shared_ptr<FEModelFunction_t> fe_function_;
@@ -312,6 +350,7 @@ namespace utopia {
         std::shared_ptr<Matrix_t> mass_matrix_;
         Scalar_t delta_time_{0.1};
         bool must_apply_constraints_{true};
+        bool export_tensors_{false};
     };
 
 }  // namespace utopia
