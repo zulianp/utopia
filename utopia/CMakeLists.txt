@@ -79,6 +79,7 @@ option(UTOPIA_ENABLE_MOOSE_ENV_MODE
 option(UTOPIA_ENABLE_DEPRECATED_API
        "Decprecated functionality that will be removed in the future" ON)
 option(UTOPIA_ENABLE_TINY_EXPR "String expressions support" ON)
+option(UTOPIA_ENABLE_YAML_CPP "Enable YAML support" OFF)
 
 option(UTOPIA_ENABLE_CLANG_TIDY "Use clang tidy static analyzer" OFF)
 option(
@@ -514,6 +515,10 @@ endif()
 
 if(UTOPIA_SCRIPTING)
     add_subdirectory(scripting)
+endif()
+
+if(UTOPIA_ENABLE_YAML_CPP)
+    add_subdirectory(backend/yamlcpp)
 endif()
 
 # weird stuff goes here

@@ -23,9 +23,6 @@ namespace utopia {
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
-        // using FEModelFunction_t = utopia::NewmarkIntegrator<FunctionSpace>;
-
-        // using FEModelFunction_t = ImplicitEulerIntegrator_t;
 
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
@@ -33,8 +30,8 @@ namespace utopia {
 
         using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
         using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
-        // using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
-        using Newton_t = utopia::SimpleNewton<Matrix_t, Vector_t>;
+        using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
+        // using Newton_t = utopia::SimpleNewton<Matrix_t, Vector_t>;
 
         using IO_t = utopia::IO<FunctionSpace>;
 
