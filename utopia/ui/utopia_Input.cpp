@@ -9,7 +9,7 @@
 namespace utopia {
 
     void Input::KeyDeprecated::key_exists() const {
-        f(mpi_world_rank() == 0) {
+        if (mpi_world_rank() == 0) {
             utopia::err() << "Input[Warning]: \"" << deprecated_key_
                           << "\" is deprecated and its usage will be removed in the future. Use \"" << new_key_
                           << "\" instead!\n ";
