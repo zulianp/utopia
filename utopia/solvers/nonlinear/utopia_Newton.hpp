@@ -143,7 +143,8 @@ namespace utopia {
             in.get("dumping", alpha_);
 
             if (ls_strategy_) {
-                in.get("line-search", *ls_strategy_);
+                in.get("linear_search", *ls_strategy_);
+                in.get_deprecated("line-search", "line_search", *ls_strategy_);
             }
         }
 

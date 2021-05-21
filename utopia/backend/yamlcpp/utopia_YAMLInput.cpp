@@ -20,6 +20,15 @@ namespace utopia {
     YAMLInput::YAMLInput() : impl_(utopia::make_unique<Impl>()) {}
     YAMLInput::~YAMLInput() {}
 
+    bool YAMLInput::key_exists(const std::string &key) const {
+        auto &node = impl_->root();
+        if (node[key]) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     bool YAMLInput::open(const Path &path) {
         impl_->root_ = YAML::LoadFile(path.to_string());
         return good();

@@ -37,7 +37,7 @@ namespace utopia {
 
         void read(Input &in) override {
             space_ = std::make_shared<FunctionSpace>();
-            in.get("space", *space_);
+            in.get_required("space", *space_);
 
             if (space_->empty()) {
                 return;
@@ -56,7 +56,7 @@ namespace utopia {
                 function_ = std::make_shared<FEModelFunction_t>(space_);
             }
 
-            in.get("problem", *function_);
+            in.get_required("problem", *function_);
 
             bool use_mg = false;
             in.get("use_mg", use_mg);
