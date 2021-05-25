@@ -73,7 +73,7 @@ namespace utopia {
                 }
             }
 
-            Vector upper_bound(row_layout(m), 100.0);
+            Vector upper_bound(row_layout(m), 30.0);
             Vector solution(row_layout(m), 0.0);
 
             utopia_test_assert(upper_bound.comm().size() == rhs.comm().size());

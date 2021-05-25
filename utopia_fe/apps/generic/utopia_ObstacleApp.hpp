@@ -17,7 +17,14 @@
 #include "utopia_MonotoneSemiGeometricMultigrid.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"
 
+#include "utopia_PatchSmoother.hpp"
+
 #include "utopia_ui.hpp"
+
+#ifdef UTOPIA_WITH_BLAS
+#include "utopia_blas.hpp"
+#include "utopia_blas_Array.hpp"
+#endif  // UTOPIA_WITH_BLAS
 
 #include "utopia_fe_Core.hpp"
 
@@ -152,7 +159,14 @@ namespace utopia {
                     qp_solver_ = std::make_shared<SemismoothNewton_t>(linear_solver);
                 }
 
-            } else if (qp_solver_type == "msgm") {
+            } else
+#ifdef UTOPIA_WITH_BLAS
+                if (qp_solver_type == "patch_smoother") {
+                // qp_solver_ = std::make_shared<PatchSmoother<Matrix_t>>();
+                qp_solver_ = std::make_shared<PatchSmoother<Matrix_t, utopia::BlasMatrixd>>();
+            } else
+#endif  // UTOPIA_WITH_BLAS
+                if (qp_solver_type == "msgm") {
                 auto msgm = std::make_shared<MonotoneSemiGeometricMultigrid_t>();
                 msgm->set_fine_space(make_ref(space));
                 qp_solver_ = msgm;

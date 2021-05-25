@@ -6,29 +6,44 @@
 namespace utopia {
 
     template <class Matrix, class SerialMatrix = Matrix>
-    class PatchSmoother {
+    class PatchSmoother : public QPSolver<Matrix, typename Traits<Matrix>::Vector> {
     public:
         using Vector = typename Traits<Matrix>::Vector;
         using SerialVector = typename Traits<SerialMatrix>::Vector;
         using SizeType = typename Traits<Vector>::SizeType;
         using Scalar = typename Traits<Vector>::Scalar;
+        using Super = utopia::QPSolver<Matrix, Vector>;
 
-        bool apply(const Vector &b, Vector &x) {
+        inline PatchSmoother *clone() const override { return new PatchSmoother(*this); }
+
+        bool apply(const Vector &b, Vector &x) override {
             auto rr = b.range();
 
-            Vector r, c;
+            Vector r, c, u;
             c.zeros(layout(x));
 
             r = *gatherer_.matrix() * x;
             r = b - r;
 
-            Scalar norm_r = norm2(r);
-            utopia::out() << "starting norm resdiual: " << norm_r << '\n';
+            this->fill_empty_bounds(layout(b));
+
+            Vector lb = *this->lower_bound();
+            Vector ub = *this->upper_bound();
+
+            ub -= x;
+            lb -= x;
 
             gatherer_.update_rhs(make_ref(r));
             gatherer_.update_sol(make_ref(c));
+            gatherer_.update_bounds(make_ref(lb), make_ref(ub));
 
-            for (int iter = 0; iter < 1000; ++iter) {
+            bool converged = false;
+
+            if (this->verbose()) {
+                this->init_solver("utopia::PatchSmoother", {" it. ", "|| u - u_old ||"});
+            }
+
+            for (int iter = 0; iter < this->max_it(); ++iter) {
                 for (SizeType i = rr.begin(); i < rr.end(); ++i) {
                     gatherer_.local_to_patch_at_row(i);
 
@@ -44,23 +59,36 @@ namespace utopia {
                 r = *gatherer_.matrix() * x;
                 r = b - r;
 
-                norm_r = norm2(r);
+                ub -= c;
+                lb -= c;
+
+                Scalar diff = norm2(c);
 
                 c.set(0.0);
 
-                utopia::out() << iter << ") norm resdiual: " << norm_r << '\n';
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(iter, {diff});
+                }
+
+                if ((converged = this->check_convergence(iter, 1, 1, diff))) {
+                    // disp(x);
+                    break;
+                }
             }
 
-            return true;
+            return converged;
         }
 
-        void update(const std::shared_ptr<const Matrix> &op) { gatherer_.update(op); }
+        void update(const std::shared_ptr<const Matrix> &op) override {
+            Super::update(op);
+            gatherer_.update(op);
+        }
 
         PatchSmoother() {
-            gatherer_.set_patch_solver(std::make_shared<ConjugateGradient<SerialMatrix, SerialVector>>());
+            gatherer_.set_patch_solver(std::make_shared<ProjectedGaussSeidel<SerialMatrix, SerialVector>>());
         }
 
-        void set_patch_solver(const std::shared_ptr<LinearSolver<SerialMatrix, SerialVector>> &patch_solver) {
+        void set_patch_solver(const std::shared_ptr<QPSolver<SerialMatrix, SerialVector>> &patch_solver) {
             gatherer_.set_patch_solver(patch_solver);
         }
 

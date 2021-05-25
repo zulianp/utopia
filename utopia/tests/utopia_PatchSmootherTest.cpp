@@ -6,7 +6,12 @@
 #include "utopia_assemble_laplacian_1D.hpp"
 
 #include "utopia_PatchSmoother.hpp"
+
+#ifdef UTOPIA_WITH_BLAS
 #include "utopia_blas_Array.hpp"
+#endif  // UTOPIA_WITH_BLAS
+
+#include "test_problems/utopia_QPSolverTestProblem.hpp"
 
 using namespace utopia;
 
@@ -18,35 +23,50 @@ public:
     using SizeType = typename Traits::SizeType;
     using Comm = typename Traits::Communicator;
 
-    // using PatchMatrix = utopia::BlasMatrixd;
-    // using PatchVector = utopia::BlasVectord;
-
+#ifdef UTOPIA_WITH_BLAS
+    using PatchMatrix = utopia::BlasMatrixd;
+    using PatchVector = utopia::BlasVectord;
+#else
     using PatchMatrix = Matrix;
     using PatchVector = Vector;
+#endif  // UTOPIA_WITH_BLAS
 
-    SizeType n_levels{6};
-    SizeType n_dofs = 100;
+    SizeType n_dofs{40};
+    bool verbose{true};
 
-    void run() { UTOPIA_RUN_TEST(test_linear_patch_smoother); }
+    void run() {
+        UTOPIA_RUN_TEST(test_linear_patch_smoother);
+        UTOPIA_RUN_TEST(test_qp_patch_smoother);
+        UTOPIA_RUN_TEST(test_qp_patch_smoother_ssn);
+    }
 
     void test_linear_patch_smoother() {
-        // {
-        //     SOR<Matrix, Vector> gs;
-        //     gs.verbose(true);
-        //     gs.max_it(1000);
+        auto solver = std::make_shared<ProjectedGaussSeidel<PatchMatrix, PatchVector>>();
 
-        //     test_1D("smoother_gs", gs);
-        // }
+        PatchSmoother<Matrix, PatchMatrix> patch_smoother;
+        patch_smoother.set_patch_solver(solver);
 
-        {
-            // auto solver = std::make_shared<Factorization<Matrix, Vector>>();
-            auto solver = std::make_shared<ConjugateGradient<PatchMatrix, PatchVector, HOMEMADE>>();
+        test_1D("patch_smoother", patch_smoother);
+    }
 
-            PatchSmoother<Matrix, PatchMatrix> patch_smoother;
-            patch_smoother.set_patch_solver(solver);
+    void test_qp_patch_smoother() {
+        auto solver = std::make_shared<ProjectedGaussSeidel<PatchMatrix, PatchVector>>();
+        PatchSmoother<Matrix, PatchMatrix> patch_smoother;
+        patch_smoother.set_patch_solver(solver);
 
-            test_1D("patch_smoother", patch_smoother);
-        }
+        QPSolverTestProblem<Matrix, Vector>::run(n_dofs, verbose, patch_smoother);
+    }
+
+    void test_qp_patch_smoother_ssn() {
+        auto solver =
+            std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
+
+        solver->verbose(true);
+
+        PatchSmoother<Matrix> patch_smoother;
+        patch_smoother.set_patch_solver(solver);
+
+        QPSolverTestProblem<Matrix, Vector>::run(n_dofs, verbose, patch_smoother);
     }
 
     template <class PatchSmoother>

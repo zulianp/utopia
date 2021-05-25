@@ -19,6 +19,14 @@ namespace utopia {
         void update_rhs(const std::shared_ptr<const Vector> &rhs) { rhs_ = rhs; }
         void update_sol(const std::shared_ptr<Vector> &x) { x_ = x; }
 
+        void update_bounds(const std::shared_ptr<Vector> &lb, const std::shared_ptr<Vector> &ub) {
+            assert(lb);
+            assert(ub);
+
+            lb_ = lb;
+            ub_ = ub;
+        }
+
         /// @brief Overwrites the values connect to the row
         void patch_to_local_at_row(const SizeType row) {
             RowView<const Matrix> row_view(*matrix_, row);
@@ -76,6 +84,9 @@ namespace utopia {
             patch_rhs_.zeros(local_layout);
             patch_sol_.zeros(local_layout);
 
+            patch_lb_.zeros(local_layout);
+            patch_ub_.zeros(local_layout);
+
             d_nnz.resize(n_patch);
             o_nnz.resize(n_patch);
 
@@ -111,10 +122,11 @@ namespace utopia {
 
             {
                 Read<Vector> read_rhs(*rhs_);
-                Read<Vector> read_x(*x_);
+                Read<Vector> read_x(*x_), read_lb(*lb_), read_ub(*ub_);
+
                 Write<SerialMatrix> write_matrix(patch_matrix_);
                 Write<SerialVector> write_rhs(patch_rhs_);
-                Write<SerialVector> write_x(patch_sol_);
+                Write<SerialVector> write_x(patch_sol_), write_lb(patch_lb_), write_ub(patch_ub_);
 
                 for (SizeType k = 0; k < n_values; ++k) {
                     const SizeType col = col_idx_[k];
@@ -143,12 +155,19 @@ namespace utopia {
 
                         patch_rhs_.set(patch_row, rhs_->get(col));
                         patch_sol_.set(patch_row, x_->get(col));
+                        patch_lb_.set(patch_row, lb_->get(col));
+                        patch_ub_.set(patch_row, ub_->get(col));
                     }
                 }
             }
 
             patch_rhs_ -= patch_matrix_ * patch_sol_;
+            patch_lb_ -= patch_sol_;
+            patch_ub_ -= patch_sol_;
+
             patch_sol_.set(0.0);
+
+            patch_solver_->set_box_constraints(BoxConstraints<SerialVector>(make_ref(patch_lb_), make_ref(patch_ub_)));
 
             // write("patch_" + std::to_string(r) + ".m", patch_matrix_);
 
@@ -157,6 +176,14 @@ namespace utopia {
                     matrix_to_patch[c - rr.begin()] = -1;
                 }
             }
+
+            if (n_patch > max_patch_size_) {
+                std::cout << "n_patch: " << n_patch << std::endl;
+                std::cout << "nnz " << patch_matrix_.nnz() << "/" << (patch_matrix_.rows() * patch_matrix_.cols())
+                          << std::endl;
+            }
+
+            max_patch_size_ = std::max(max_patch_size_, n_patch);
         }
 
         bool solve() {
@@ -168,16 +195,24 @@ namespace utopia {
             return patch_solver_->solve(patch_matrix_, patch_rhs_, patch_sol_);
         }
 
-        void set_patch_solver(const std::shared_ptr<LinearSolver<SerialMatrix, SerialVector>> &patch_solver) {
+        void set_patch_solver(const std::shared_ptr<QPSolver<SerialMatrix, SerialVector>> &patch_solver) {
             patch_solver_ = patch_solver;
         }
 
         inline std::shared_ptr<const Matrix> matrix() { return matrix_; }
 
+        PatchGatherer(const PatchGatherer &other) : patch_solver_(other.patch_solver_->clone()) {}
+        PatchGatherer() {}
+
+        ~PatchGatherer() {}
+
     private:
         std::shared_ptr<const Matrix> matrix_;
         std::shared_ptr<const Vector> rhs_;
         std::shared_ptr<Vector> x_;
+
+        std::shared_ptr<Vector> lb_;
+        std::shared_ptr<Vector> ub_;
 
         IndexArray d_nnz;
         IndexArray o_nnz;
@@ -186,10 +221,14 @@ namespace utopia {
         SerialMatrix patch_matrix_;
         SerialVector patch_rhs_;
         SerialVector patch_sol_;
+        SerialVector patch_lb_;
+        SerialVector patch_ub_;
 
-        std::shared_ptr<LinearSolver<SerialMatrix, SerialVector>> patch_solver_;
+        std::shared_ptr<QPSolver<SerialMatrix, SerialVector>> patch_solver_;
 
         IndexArray col_idx_;
+
+        int max_patch_size_{0};
     };
 }  // namespace utopia
 
