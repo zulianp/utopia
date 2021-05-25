@@ -18,8 +18,11 @@ public:
     using SizeType = typename Traits::SizeType;
     using Comm = typename Traits::Communicator;
 
-    using PatchMatrix = utopia::BlasMatrixd;
-    using PatchVector = utopia::BlasVectord;
+    // using PatchMatrix = utopia::BlasMatrixd;
+    // using PatchVector = utopia::BlasVectord;
+
+    using PatchMatrix = Matrix;
+    using PatchVector = Vector;
 
     SizeType n_levels{6};
     SizeType n_dofs = 100;

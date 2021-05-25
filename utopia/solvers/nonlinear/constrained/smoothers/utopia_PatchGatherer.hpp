@@ -53,9 +53,8 @@ namespace utopia {
 
                 if (matrix_to_patch.empty() || SizeType(matrix_to_patch.size()) < rr.extent()) {
                     matrix_to_patch.resize(rr.extent());
+                    std::fill(matrix_to_patch.begin(), matrix_to_patch.end(), -1);
                 }
-
-                std::fill(matrix_to_patch.begin(), matrix_to_patch.end(), -1);
 
                 for (SizeType k = 0; k < n_values; ++k) {
                     SizeType col = row.col(k);
@@ -153,11 +152,11 @@ namespace utopia {
 
             // write("patch_" + std::to_string(r) + ".m", patch_matrix_);
 
-            // for (auto &c : col_idx_) {
-            //     if (rr.inside(c)) {
-            //         matrix_to_patch[c - rr.begin()] = -1;
-            //     }
-            // }
+            for (auto &c : col_idx_) {
+                if (rr.inside(c)) {
+                    matrix_to_patch[c - rr.begin()] = -1;
+                }
+            }
         }
 
         bool solve() {
