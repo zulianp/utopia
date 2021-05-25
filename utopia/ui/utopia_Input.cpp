@@ -16,7 +16,7 @@ namespace utopia {
         }
     }
 
-    void Input::KeyRequired::key_does_not_exists() const {
+    void Input::KeyRequired::key_does_not_exist() const {
         if (mpi_world_rank() == 0) {
             utopia::err() << "Input[Error]: The input \"" << key_ << "\" is required! aborting program!\n";
         }

@@ -73,7 +73,7 @@ namespace utopia {
             virtual ~Attribute() = default;
 
             virtual void key_exists() const {}
-            virtual void key_does_not_exists() const {}
+            virtual void key_does_not_exist() const {}
         };
 
         class KeyDeprecated final : public Attribute {
@@ -90,7 +90,7 @@ namespace utopia {
         public:
             KeyRequired(std::string key) : key_(std::move(key)) {}
 
-            void key_does_not_exists() const override;
+            void key_does_not_exist() const override;
 
             std::string key_;
         };
@@ -101,7 +101,7 @@ namespace utopia {
                 attribute.key_exists();
                 get(key, val);
             } else {
-                attribute.key_does_not_exists();
+                attribute.key_does_not_exist();
             }
         }
 
