@@ -25,9 +25,10 @@ namespace utopia {
             Scalar norm_r = norm2(r);
             utopia::out() << "starting norm resdiual: " << norm_r << '\n';
 
-            gatherer_.update(make_ref(r));
+            gatherer_.update_rhs(make_ref(r));
+            gatherer_.update_sol(make_ref(c));
 
-            for (int iter = 0; iter < 10000; ++iter) {
+            for (int iter = 0; iter < 1000; ++iter) {
                 for (SizeType i = rr.begin(); i < rr.end(); ++i) {
                     gatherer_.local_to_patch_at_row(i);
 
@@ -36,7 +37,7 @@ namespace utopia {
                         Utopia::Abort("Unable to solve patch!");
                     }
 
-                    gatherer_.patch_to_local_at_row(i, c);
+                    gatherer_.patch_to_local_at_row(i);
                 }
 
                 x += c;
@@ -44,6 +45,8 @@ namespace utopia {
                 r = b - r;
 
                 norm_r = norm2(r);
+
+                c.set(0.0);
 
                 utopia::out() << iter << ") norm resdiual: " << norm_r << '\n';
             }

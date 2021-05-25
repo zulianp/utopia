@@ -218,6 +218,12 @@ namespace utopia {
         }
 
         void sparse(const MatrixLayout &lo, const SizeType &, const SizeType &) override { dense(lo); }
+
+        template <typename... Args>
+        void sparse(const MatrixLayout &lo, Args &&...) {
+            dense(lo);
+        }
+
         void zeros(const MatrixLayout &lo) { dense(lo); }
 
         void dense(const MatrixLayout &lo, const Scalar &val = 0.0) override {

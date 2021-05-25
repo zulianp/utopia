@@ -6,6 +6,7 @@
 #include "utopia_assemble_laplacian_1D.hpp"
 
 #include "utopia_PatchSmoother.hpp"
+#include "utopia_blas_Array.hpp"
 
 using namespace utopia;
 
@@ -17,25 +18,29 @@ public:
     using SizeType = typename Traits::SizeType;
     using Comm = typename Traits::Communicator;
 
+    using PatchMatrix = utopia::BlasMatrixd;
+    using PatchVector = utopia::BlasVectord;
+
     SizeType n_levels{6};
     SizeType n_dofs = 100;
 
     void run() { UTOPIA_RUN_TEST(test_linear_patch_smoother); }
 
     void test_linear_patch_smoother() {
+        // {
+        //     SOR<Matrix, Vector> gs;
+        //     gs.verbose(true);
+        //     gs.max_it(1000);
+
+        //     test_1D("smoother_gs", gs);
+        // }
+
         {
-            SOR<Matrix, Vector> gs;
-            gs.verbose(true);
-            gs.max_it(50000);
+            // auto solver = std::make_shared<Factorization<Matrix, Vector>>();
+            auto solver = std::make_shared<ConjugateGradient<PatchMatrix, PatchVector, HOMEMADE>>();
 
-            test_1D("smoother_gs", gs);
-        }
-
-        {
-            auto factorization = std::make_shared<Factorization<Matrix, Vector>>();
-
-            PatchSmoother<Matrix> patch_smoother;
-            patch_smoother.set_patch_solver(factorization);
+            PatchSmoother<Matrix, PatchMatrix> patch_smoother;
+            patch_smoother.set_patch_solver(solver);
 
             test_1D("patch_smoother", patch_smoother);
         }
