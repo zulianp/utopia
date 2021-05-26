@@ -341,21 +341,19 @@ namespace utopia {
             master_fe_problem_->apply_constraints(x);
         }
 
-        bool update(const Vector_t &x) override {
-            // TODO project x to subproblems
-            assert(is_linear());
-            return true;
-        }
+        bool update(const Vector_t &) override { return true; }
 
-        bool value(const Vector_t &, Scalar_t &) const override {
-            assert(false);
-            Utopia::Abort("IMPLEMENT ME");
+        bool value(const Vector_t &, Scalar_t &v) const override {
+            v = -1;
             return false;
         }
 
         bool gradient(const Vector_t &x, Vector_t &g) const override {
             // TODO project x to subproblems
             assert(is_linear());
+
+            master_fe_problem_->solution() = x;
+            project_solutions();
 
             for (auto &fe_ptr : fe_problems_) {
                 if (!fe_ptr->assemble_gradient()) {
@@ -383,6 +381,9 @@ namespace utopia {
             // TODO project x to subproblems
             assert(is_linear());
 
+            master_fe_problem_->solution() = x;
+            project_solutions();
+
             for (auto &fe_ptr : fe_problems_) {
                 if (!fe_ptr->assemble_hessian()) {
                     return false;
@@ -408,6 +409,9 @@ namespace utopia {
         bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
             // TODO project x to subproblems
             assert(is_linear());
+
+            master_fe_problem_->solution() = x;
+            project_solutions();
 
             for (auto &fe_ptr : fe_problems_) {
                 if (!fe_ptr->assemble_hessian_and_gradient()) {
@@ -595,6 +599,18 @@ namespace utopia {
         bool verbose_{false};
 
         std::vector<std::unique_ptr<MatrixTransformer<Matrix_t>>> transformers_;
+
+        void project_solutions() {
+            for (auto it = couplings_.rbegin(); it != couplings_.rend(); ++it) {
+                auto &c = *it;
+
+                if (!c->transfer_solution()) {
+                    utopia::err() << "Projection from " << c->from()->name() << " to " << c->to()->name()
+                                  << " failed!\n";
+                    Utopia::Abort();
+                }
+            }
+        }
 
         void search_for_master() {
             for (auto &ff : fe_problems_) {

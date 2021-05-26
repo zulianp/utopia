@@ -8,6 +8,9 @@
 namespace utopia {
 
     template <class FunctionSpace>
+    class CoupledFEFunction;
+
+    template <class FunctionSpace>
     class FEFunctionFactory {
     public:
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
