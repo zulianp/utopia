@@ -29,13 +29,39 @@ namespace utopia {
                 mesh = mesh_d;
 
                 describe = [mesh_d]() { mesh_d->print_sfc(); };
+                manifold_dimension = []() -> int { return MeshD::ManifoldDim; };
+                spatial_dimension = []() -> int { return MeshD::Dim; };
+
+                n_local_elements = [mesh_d]() -> SizeType { return mesh_d->get_chunk_size(); };
+
+                n_elements = [mesh_d]() -> SizeType {
+                    assert(false && "IMPLEMENT ME");
+                    return mesh_d->get_chunk_size();
+                };
+
+                n_local_nodes = [mesh_d]() -> SizeType {
+                    assert(false && "IMPLEMENT ME");
+                    return mesh_d->get_chunk_size();
+                };
+
+                n_nodes = [mesh_d]() -> SizeType {
+                    assert(false && "IMPLEMENT ME");
+                    return mesh_d->get_chunk_size();
+                };
+
+                write = [mesh_d](const Path &) -> bool {
+                    assert(false && "IMPLEMENT ME");
+                    return false;
+                };
             }
 
             std::function<int()> spatial_dimension;
             std::function<int()> manifold_dimension;
+            std::function<SizeType()> n_local_elements;
             std::function<SizeType()> n_elements;
             std::function<SizeType()> n_nodes;
             std::function<SizeType()> n_local_nodes;
+
             std::function<bool(const Path &path)> write;
 
             std::function<void()> describe;
@@ -72,19 +98,39 @@ namespace utopia {
             }
         }
 
-        const Mesh::Comm &Mesh::comm() const {}
+        const Mesh::Comm &Mesh::comm() const { return impl_->comm; }
 
         bool Mesh::empty() const { return !static_cast<bool>(impl_->mesh); }
 
-        int Mesh::spatial_dimension() const {}
+        int Mesh::spatial_dimension() const {
+            assert(impl_->spatial_dimension);
+            return impl_->spatial_dimension();
+        }
 
-        Mesh::SizeType Mesh::n_elements() const {}
+        int Mesh::manifold_dimension() const {
+            assert(impl_->manifold_dimension);
+            return impl_->manifold_dimension();
+        }
 
-        Mesh::SizeType Mesh::n_nodes() const {}
+        Mesh::SizeType Mesh::n_elements() const {
+            assert(impl_->n_elements);
+            return impl_->n_elements();
+        }
 
-        Mesh::SizeType Mesh::n_local_elements() const {}
+        Mesh::SizeType Mesh::n_nodes() const {
+            assert(impl_->n_nodes);
+            return impl_->n_nodes();
+        }
 
-        Mesh::SizeType Mesh::n_local_nodes() const {}
+        Mesh::SizeType Mesh::n_local_elements() const {
+            assert(impl_->n_local_elements);
+            return impl_->n_local_elements();
+        }
+
+        Mesh::SizeType Mesh::n_local_nodes() const {
+            assert(impl_->n_local_nodes);
+            return impl_->n_local_nodes();
+        }
 
         void Mesh::unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz) {
             // 2D
@@ -109,6 +155,26 @@ namespace utopia {
         }
 
         void Mesh::init() {}
+
+        ::mars::context &Mesh::raw_type_context() { return impl_->context; }
+
+        template <class RawType>
+        std::shared_ptr<RawType> Mesh::raw_type() const {
+            if (RawType::Dim != this->spatial_dimension()) {
+                assert(false);
+                Utopia::Abort("Trying to read wrong dimension");
+            }
+
+            if (RawType::ManifoldDim != this->manifold_dimension()) {
+                assert(false);
+                Utopia::Abort("Trying to read wrong dimension");
+            }
+
+            return std::dynamic_pointer_cast<RawType>(impl_->mesh);
+        }
+
+        template std::shared_ptr<::mars::DistributedMesh<::mars::ElementType::Hex8>> Mesh::raw_type() const;
+        template std::shared_ptr<::mars::DistributedMesh<::mars::ElementType::Quad4>> Mesh::raw_type() const;
 
     }  // namespace mars
 }  // namespace utopia

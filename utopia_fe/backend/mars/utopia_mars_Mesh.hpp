@@ -7,6 +7,9 @@
 #include "utopia_fe_base.hpp"
 #include "utopia_mars_ForwardDeclarations.hpp"
 
+// FIXME
+#include "mars_context.hpp"
+
 #include <memory>
 
 namespace utopia {
@@ -41,12 +44,19 @@ namespace utopia {
 
             bool empty() const;
             int spatial_dimension() const;
+            int manifold_dimension() const;
 
             SizeType n_elements() const;
             SizeType n_nodes() const;
 
             SizeType n_local_elements() const;
             SizeType n_local_nodes() const;
+
+            /// Users should not try to use this
+            template <class RawType>
+            std::shared_ptr<RawType> raw_type() const;
+
+            ::mars::context &raw_type_context();
 
             // void displace(const Vector &displacement);
             // void scale(const Scalar &scale_factor);
