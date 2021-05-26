@@ -31,6 +31,10 @@ namespace utopia {
         virtual void apply_constraints(Vector_t &x) const = 0;
         virtual void set_environment(const std::shared_ptr<Environment_t> &env) = 0;
 
+        virtual const std::shared_ptr<Matrix_t> &mass_matrix() const = 0;
+        virtual bool assemble_mass_matrix() = 0;
+        virtual bool assemble_mass_matrix(Matrix_t &mass_matrix) = 0;
+
         virtual const std::shared_ptr<OmniAssembler_t> &assembler() const = 0;
         virtual const std::shared_ptr<FunctionSpace> &space() const = 0;
 
@@ -54,7 +58,10 @@ namespace utopia {
         using Environment_t = utopia::Environment<FunctionSpace>;
 
         FEModelFunction(const std::shared_ptr<FunctionSpace> &space)
-            : space_(space), assembler_(std::make_shared<OmniAssembler_t>(space)) {}
+            : space_(space),
+              assembler_(std::make_shared<OmniAssembler_t>(space)),
+              mass_matrix_assembler_(std::make_shared<OmniAssembler_t>(space)),
+              mass_matrix_(std::make_shared<Matrix_t>()) {}
 
         virtual ~FEModelFunction() = default;
 
@@ -64,12 +71,45 @@ namespace utopia {
             Super::read(in);
             in.get("assembly", *assembler_);
             in.get("verbose", verbose_);
+
+            bool user_defined_mass = false;
+            in.get("mass", [this, &user_defined_mass](Input &node) {
+                this->mass_matrix_assembler()->read(node);
+                user_defined_mass = true;
+            });
+
+            if (!user_defined_mass) {
+                auto params = param_list(param("material",
+                                               param_list(param("type", "Mass"),                         //
+                                                          param("lumped", true),                         //
+                                                          param("n_components", this->space()->n_var())  //
+                                                          )));
+
+                this->mass_matrix_assembler()->read(params);
+            }
         }
 
         bool value(const Vector_t & /*point*/, Scalar_t &value) const override {
             // assert(false && "IMPLEMENT ME");
             value = std::numeric_limits<Scalar_t>::signaling_NaN();
             return false;
+        }
+
+        inline const std::shared_ptr<OmniAssembler_t> &mass_matrix_assembler() const { return mass_matrix_assembler_; }
+
+        inline const std::shared_ptr<Matrix_t> &mass_matrix() const override { return mass_matrix_; }
+
+        bool assemble_mass_matrix() override { return assemble_mass_matrix(*mass_matrix()); }
+
+        bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
+            this->space()->create_matrix(mass_matrix);
+
+            if (!this->mass_matrix_assembler()->assemble(mass_matrix)) {
+                return false;
+            }
+
+            rename("mass_matrix", mass_matrix);
+            return true;
         }
 
         bool gradient(const Vector_t &x, Vector_t &g) const override {
@@ -135,6 +175,7 @@ namespace utopia {
 
         virtual void set_environment(const std::shared_ptr<Environment_t> &env) override {
             this->assembler()->set_environment(env);
+            this->mass_matrix_assembler()->set_environment(env);
         }
 
         inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return assembler_; }
@@ -170,6 +211,9 @@ namespace utopia {
 
         std::shared_ptr<FunctionSpace> space_;
         std::shared_ptr<OmniAssembler_t> assembler_;
+        std::shared_ptr<OmniAssembler_t> mass_matrix_assembler_;
+        std::shared_ptr<Matrix_t> mass_matrix_;
+
         bool must_apply_constraints_{true};
         bool verbose_{false};
     };
@@ -184,21 +228,15 @@ namespace utopia {
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
-        ;
 
         TimeDependentFunction(const std::shared_ptr<FunctionSpace> &space)
-            : fe_function_(std::make_shared<FEModelFunction_t>(space)),
-              mass_matrix_assembler_(std::make_shared<OmniAssembler_t>(space)),
-              mass_matrix_(std::make_shared<Matrix_t>()) {
+            : fe_function_(std::make_shared<FEModelFunction_t>(space)) {
             fe_function_->must_apply_constraints_to_assembled(false);
         }
 
         virtual ~TimeDependentFunction() = default;
 
-        void set_environment(const std::shared_ptr<Environment_t> &env) override {
-            fe_function_->set_environment(env);
-            this->mass_matrix_assembler()->set_environment(env);
-        }
+        void set_environment(const std::shared_ptr<Environment_t> &env) override { fe_function_->set_environment(env); }
 
         virtual bool update_IVP(const Vector_t &x) = 0;
         virtual bool setup_IVP(Vector_t &x) = 0;
@@ -287,51 +325,24 @@ namespace utopia {
             return true;
         }
 
+        inline const std::shared_ptr<Matrix_t> &mass_matrix() const override { return fe_function_->mass_matrix(); }
+
+        bool assemble_mass_matrix() override { return fe_function_->assemble_mass_matrix(); }
+
+        bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
+            return fe_function_->assemble_mass_matrix(mass_matrix);
+        }
+
         void read(Input &in) override {
             Super::read(in);
             fe_function_->read(in);
 
             in.get("delta_time", delta_time_);
-
-            bool user_defined_mass = false;
-            in.get("mass", [this, &user_defined_mass](Input &node) {
-                this->mass_matrix_assembler()->read(node);
-                user_defined_mass = true;
-            });
-
-            if (!user_defined_mass) {
-                auto params = param_list(param("material",
-                                               param_list(param("type", "Mass"),                         //
-                                                          param("lumped", true),                         //
-                                                          param("n_components", this->space()->n_var())  //
-                                                          )));
-                this->mass_matrix_assembler()->read(params);
-            }
-
             in.get("export_tensors", export_tensors_);
         }
 
         inline Scalar_t delta_time() const { return delta_time_; }
-        inline const std::shared_ptr<Matrix_t> &mass_matrix() const { return mass_matrix_; }
-        inline const std::shared_ptr<OmniAssembler_t> &mass_matrix_assembler() const { return mass_matrix_assembler_; }
-
         bool is_time_dependent() const override { return true; }
-
-        bool assemble_mass_matrix() {
-            this->space()->create_matrix(*mass_matrix());
-
-            if (!this->mass_matrix_assembler()->assemble(*mass_matrix())) {
-                return false;
-            }
-
-            rename("mass_matrix", *mass_matrix());
-
-            if (export_tensors_) {
-                write("load_mass_matrix.m", *mass_matrix());
-            }
-
-            return true;
-        }
 
         inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler(); }
         inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
@@ -346,8 +357,6 @@ namespace utopia {
 
     private:
         std::shared_ptr<FEModelFunction_t> fe_function_;
-        std::shared_ptr<OmniAssembler_t> mass_matrix_assembler_;
-        std::shared_ptr<Matrix_t> mass_matrix_;
         Scalar_t delta_time_{0.1};
         bool must_apply_constraints_{true};
         bool export_tensors_{false};

@@ -12,6 +12,8 @@
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"
 
+#include "utopia_CoupledFEFunction.hpp"
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -22,6 +24,7 @@ namespace utopia {
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
+        using CoupledFEFunction_t = utopia::CoupledFEFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
 
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -37,7 +40,7 @@ namespace utopia {
 
         void read(Input &in) override {
             space_ = std::make_shared<FunctionSpace>();
-            in.get_required("space", *space_);
+            in.require("space", *space_);
 
             if (space_->empty()) {
                 return;
@@ -56,7 +59,7 @@ namespace utopia {
                 function_ = std::make_shared<FEModelFunction_t>(space_);
             }
 
-            in.get_required("problem", *function_);
+            in.require("problem", *function_);
 
             bool use_mg = false;
             in.get("use_mg", use_mg);

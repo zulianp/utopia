@@ -111,7 +111,7 @@ namespace utopia {
         }
 
         template <typename T>
-        void get_required(const std::string &key, T &val) {
+        void require(const std::string &key, T &val) {
             get(key, val, KeyRequired(key));
         }
 

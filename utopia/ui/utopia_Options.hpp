@@ -80,7 +80,7 @@ namespace utopia {
         template <typename T>
         class Required : public OptBase {
         public:
-            void read(Input &in) override { in.get_required(key, ref); }
+            void read(Input &in) override { in.require(key, ref); }
 
             void describe(std::ostream &os) const override {
                 os << '-' << key << "\t<" << TypeToString<T>::get() << ">\trequired! ";
