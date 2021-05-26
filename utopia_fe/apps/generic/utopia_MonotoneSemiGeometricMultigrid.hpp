@@ -6,6 +6,12 @@
 
 #include "utopia_fe_Core.hpp"
 
+#ifdef UTOPIA_WITH_BLAS
+#include "utopia_PatchSmoother.hpp"
+#include "utopia_blas.hpp"
+#include "utopia_blas_Array.hpp"
+#endif  // UTOPIA_WITH_BLAS
+
 #include <memory>
 #include <vector>
 
@@ -28,6 +34,7 @@ namespace utopia {
         using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using Transfer = utopia::Transfer<Matrix, Vector>;
         using MonotoneMultigrid = utopia::MonotoneMultigrid<Matrix, Vector>;
+        using Smoother = utopia::IterativeSolver<Matrix, Vector>;
 
         void read(Input &in) override {
             Super::read(in);
@@ -39,6 +46,7 @@ namespace utopia {
             bool export_coarse_meshes = false;
             in.get("export_coarse_meshes", export_coarse_meshes);
             in.get("block_size", block_size_);
+            in.get("use_patch_smoother", use_patch_smoother_);
 
             in.get("coarse_spaces", [this, export_coarse_meshes](Input &array_node) {
                 array_node.get_all([this, export_coarse_meshes](Input &node) {
@@ -167,13 +175,24 @@ namespace utopia {
         std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
         bool is_initialized_{false};
         bool clear_spaces_after_init_{false};
+        bool use_patch_smoother_{false};
         int block_size_{1};
 
         void make_algo() {
             InputParameters params;
             params.set("block_size", block_size_);
 
-            auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            std::shared_ptr<Smoother> fine_smoother;
+
+#ifdef UTOPIA_WITH_BLAS
+            if (use_patch_smoother_) {
+                fine_smoother = std::make_shared<PatchSmoother<Matrix, utopia::BlasMatrixd>>();
+            } else
+#endif  // UTOPIA_WITH_BLAS
+            {
+                fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            }
+
             // auto coarse_smoother = std::make_shared<ILU<Matrix, Vector>>();
             auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();

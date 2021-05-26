@@ -107,7 +107,7 @@ namespace utopia {
         bool boolean_restrict_or(const Vector &x, Vector &x_new) override {
             assert(I_);
 
-            if (!I_truncated_) {
+            if (I_truncated_) {
                 Matrix R = transpose(*I_truncated_);
                 utopia::boolean_restrict_or(R, x, x_new);
             } else {
