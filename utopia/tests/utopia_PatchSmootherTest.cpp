@@ -66,7 +66,7 @@ public:
         RASPatchSmoother<Matrix, PatchMatrix> patch_smoother;
         patch_smoother.set_patch_solver(solver);
         InputParameters params;
-        params.set("overlap", 4);
+        params.set("overlap", 2);
         patch_smoother.read(params);
 
         // std::string path = Utopia::instance().get("data_path");

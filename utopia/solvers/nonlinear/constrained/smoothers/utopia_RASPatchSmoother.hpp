@@ -79,6 +79,8 @@ namespace utopia {
                 lb -= c;
 
                 overlapping_r = (*permutation_) * r;
+                overlapping_lb = (*permutation_) * lb;
+                overlapping_ub = (*permutation_) * ub;
 
                 Scalar diff = norm2(c);
 
@@ -89,7 +91,7 @@ namespace utopia {
                 }
 
                 if ((converged = this->check_convergence(iter, 1, 1, diff))) {
-                    // disp(x);
+                    disp(x);
                     break;
                 }
             }
