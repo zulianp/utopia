@@ -6,6 +6,7 @@
 #include "utopia_assemble_laplacian_1D.hpp"
 
 #include "utopia_PatchSmoother.hpp"
+#include "utopia_RASPatchSmoother.hpp"
 
 #ifdef UTOPIA_WITH_BLAS
 #include "utopia_blas_Array.hpp"
@@ -31,13 +32,16 @@ public:
     using PatchVector = Vector;
 #endif  // UTOPIA_WITH_BLAS
 
-    SizeType n_dofs{40};
+    SizeType n_dofs{20};
     bool verbose{true};
 
     void run() {
-        UTOPIA_RUN_TEST(test_linear_patch_smoother);
+        UTOPIA_RUN_TEST(test_qp_patch_smoother_RAS);
+
         UTOPIA_RUN_TEST(test_qp_patch_smoother);
-        UTOPIA_RUN_TEST(test_qp_patch_smoother_ssn);
+        // UTOPIA_RUN_TEST(test_qp_patch_smoother_ssn);
+
+        // UTOPIA_RUN_TEST(test_linear_patch_smoother);
     }
 
     void test_linear_patch_smoother() {
@@ -57,11 +61,31 @@ public:
         QPSolverTestProblem<Matrix, Vector>::run(n_dofs, verbose, patch_smoother);
     }
 
+    void test_qp_patch_smoother_RAS() {
+        auto solver = std::make_shared<ProjectedGaussSeidel<PatchMatrix, PatchVector>>();
+        RASPatchSmoother<Matrix, PatchMatrix> patch_smoother;
+        patch_smoother.set_patch_solver(solver);
+        InputParameters params;
+        params.set("overlap", 4);
+        patch_smoother.read(params);
+
+        // std::string path = Utopia::instance().get("data_path");
+
+        // Matrix K;
+        // read(path + "/RHS_10x10x10_hexa_3D", rhs);
+        // read(path + "/K_hexa_10x10x10_3D", K);
+        // read(path + "/M_hexa_10x10x10_3D", M);
+
+        // patch_smoother.update(make_ref(K));
+
+        QPSolverTestProblem<Matrix, Vector>::run(n_dofs, verbose, patch_smoother);
+    }
+
     void test_qp_patch_smoother_ssn() {
         auto solver =
             std::make_shared<SemismoothNewton<Matrix, Vector>>(std::make_shared<Factorization<Matrix, Vector>>());
 
-        solver->verbose(true);
+        // solver->verbose(true);
 
         PatchSmoother<Matrix> patch_smoother;
         patch_smoother.set_patch_solver(solver);
@@ -75,7 +99,7 @@ public:
 
         auto comm = Comm::get_default();
 
-        auto vl = layout(comm, n_dofs, n_dofs * comm.size());
+        auto vl = layout(comm, 10, 10 * comm.size());
         Matrix A;
         A.sparse(square_matrix_layout(vl), 3, 2);
 
