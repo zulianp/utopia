@@ -93,7 +93,7 @@ namespace utopia {
 
         private:
             class Impl;
-            class Var;
+            // class Var;
 
             std::shared_ptr<Impl> impl_;
 

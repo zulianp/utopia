@@ -2,6 +2,9 @@
 
 #include "utopia_Options.hpp"
 
+#include "utopia_DirichletBoundary.hpp"
+#include "utopia_FEVar.hpp"
+
 #include "utopia_stk_Commons.hpp"
 #include "utopia_stk_DofMap.hpp"
 #include "utopia_stk_MeshIO.hpp"
@@ -19,82 +22,6 @@
 namespace utopia {
     namespace stk {
 
-        class DirichletBoundary : public Configurable, public Describable {
-        public:
-            class Condition : public Configurable, public Describable {
-            public:
-                std::string name;
-                double value;
-                int component{0};
-                int side{-1};
-
-                Condition() = default;
-                Condition(std::string name, double value, const int component)
-                    : name(std::move(name)), value(value), component(component) {}
-
-                void read(Input &in) override {
-                    in.get("name", name);
-                    in.get("value", value);
-                    in.get("var", component);
-                    in.get("side", side);
-
-                    if (name.empty() && side != -1) {
-                        name = "surface_" + std::to_string(side);
-                    }
-                }
-
-                void describe(std::ostream &os) const override {
-                    os << "name:\t" << name << '\n';
-                    os << "value:\t" << value << '\n';
-                    os << "var:\t" << component << '\n';
-                    os << "side:\t" << side << '\n';
-                }
-            };
-
-            void read(Input &in) override {
-                in.get_all([this](Input &in) {
-                    conditions.emplace_back();
-                    auto &c = conditions.back();
-                    c.read(in);
-                });
-            }
-
-            void describe(std::ostream &os) const override {
-                os << "DirichletBoundary:\n";
-                for (auto &c : conditions) {
-                    c.describe(os);
-                }
-            }
-
-            std::vector<Condition> conditions;
-        };
-
-        class FunctionSpace::Var : public Configurable, public Describable {
-        public:
-            void read(Input &in) override {
-                if (!Options()
-                         .add_option("fe_family", fe_family, "The finite element family from enum libMesh::FEFamily.")
-                         .add_option("order", order, "The finite element order from enum libMesh::Order.")
-                         .add_option("name", name, "Name of the variable")
-                         .add_option("n_components", n_components, "number of vector n_component")
-                         .parse(in)) {
-                    return;
-                }
-            }
-
-            void describe(std::ostream &os) const override {
-                os << "fe_family:\t" << fe_family;
-                os << "order:\t" << order;
-                os << "name:\t" << name;
-                os << "n_components:\t" << n_components;
-            }
-
-            std::string fe_family{"LAGRANGE"};
-            std::string order{"FIRST"};
-            std::string name{"var"};
-            int n_components{1};
-        };
-
         class FunctionSpace::Impl {
         public:
             using Bucket_t = ::stk::mesh::Bucket;
@@ -107,7 +34,7 @@ namespace utopia {
             std::string name{"main"};
             std::shared_ptr<Mesh> mesh;
             DirichletBoundary dirichlet_boundary;
-            std::vector<Var> variables;
+            std::vector<FEVar> variables;
             std::shared_ptr<DofMap> dof_map;
             bool verbose{false};
 
@@ -289,14 +216,14 @@ namespace utopia {
 
                 in.get("variables", [this](Input &in) {
                     in.get_all([&](Input &in) {
-                        Var v;
+                        FEVar v;
                         v.read(in);
                         variables.push_back(v);
                     });
                 });
 
                 if (variables.empty()) {
-                    Var v;
+                    FEVar v;
                     // At least one variable
                     v.n_components = std::max(1, n_var);
                     variables.push_back(v);
@@ -785,7 +712,7 @@ namespace utopia {
             auto &meta_data = mesh().meta_data();
             auto &&part = meta_data.universal_part();
 
-            Var v;
+            FEVar v;
             v.name = name;
             v.n_components = n_comp;
             impl_->variables.push_back(v);
