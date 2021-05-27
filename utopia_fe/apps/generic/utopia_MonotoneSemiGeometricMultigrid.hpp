@@ -7,7 +7,7 @@
 #include "utopia_fe_Core.hpp"
 
 #ifdef UTOPIA_WITH_BLAS
-#include "utopia_PatchSmoother.hpp"
+#include "utopia_RASPatchSmoother.hpp"
 #include "utopia_blas.hpp"
 #include "utopia_blas_Array.hpp"
 #endif  // UTOPIA_WITH_BLAS
@@ -183,18 +183,19 @@ namespace utopia {
             params.set("block_size", block_size_);
 
             std::shared_ptr<Smoother> fine_smoother;
+            std::shared_ptr<Smoother> coarse_smoother;
 
 #ifdef UTOPIA_WITH_BLAS
             if (use_patch_smoother_) {
-                fine_smoother = std::make_shared<PatchSmoother<Matrix, utopia::BlasMatrixd>>();
+                fine_smoother = std::make_shared<RASPatchSmoother<Matrix, utopia::BlasMatrixd>>();
+                coarse_smoother = std::make_shared<RASPatchSmoother<Matrix, utopia::BlasMatrixd>>();
             } else
 #endif  // UTOPIA_WITH_BLAS
             {
                 fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+                coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             }
 
-            // auto coarse_smoother = std::make_shared<ILU<Matrix, Vector>>();
-            auto coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
             fine_smoother->read(params);

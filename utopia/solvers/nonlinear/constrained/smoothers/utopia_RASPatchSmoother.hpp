@@ -15,6 +15,7 @@ namespace utopia {
         using SerialVector = typename SerialTraits::Vector;
         using SizeType = typename Traits::SizeType;
         using Scalar = typename Traits::Scalar;
+        using IndexArray = typename Traits::IndexArray;
 
         using Super = utopia::QPSolver<Matrix, Vector>;
 
@@ -39,9 +40,9 @@ namespace utopia {
             ub -= x;
             lb -= x;
 
-            overlapping_r = (*permutation_) * r;
-            overlapping_lb = (*permutation_) * lb;
-            overlapping_ub = (*permutation_) * ub;
+            overlapping_r = (*row_permutation_) * r;
+            overlapping_lb = (*row_permutation_) * lb;
+            overlapping_ub = (*row_permutation_) * ub;
             overlapping_c.zeros(layout(overlapping_r));
 
             gatherer_.update_rhs(make_ref(overlapping_r));
@@ -51,7 +52,7 @@ namespace utopia {
             bool converged = false;
 
             if (this->verbose()) {
-                this->init_solver("utopia::RASPatchSmoother", {" it. ", "|| u - u_old ||"});
+                this->init_solver("RASPatchSmoother", {" it. ", "|| u - u_old ||"});
             }
 
             auto rr = range(overlapping_c);
@@ -68,7 +69,7 @@ namespace utopia {
                     gatherer_.patch_to_local_at_row(i);
                 }
 
-                c = transpose(*permutation_) * overlapping_c;
+                c = transpose(*row_permutation_) * overlapping_c;
                 c = e_mul(c, *weights_);
 
                 x += c;
@@ -78,9 +79,9 @@ namespace utopia {
                 ub -= c;
                 lb -= c;
 
-                overlapping_r = (*permutation_) * r;
-                overlapping_lb = (*permutation_) * lb;
-                overlapping_ub = (*permutation_) * ub;
+                overlapping_r = (*row_permutation_) * r;
+                overlapping_lb = (*row_permutation_) * lb;
+                overlapping_ub = (*row_permutation_) * ub;
 
                 Scalar diff = norm2(c);
 
@@ -99,6 +100,46 @@ namespace utopia {
             return converged;
         }
 
+        static void convert_to_sequential_matrix(const Matrix &parallel_matrix, Matrix &seq_matrix) {
+            auto n_row_local = parallel_matrix.local_rows();
+            auto n_cols = parallel_matrix.cols();
+
+            IndexArray d_nnz(n_row_local, 0);
+            IndexArray o_nnz(n_row_local, 0);
+
+            auto rr = row_range(parallel_matrix);
+
+            parallel_matrix.read(
+                [&](const SizeType &i, const SizeType &, const Scalar &) { d_nnz[i - rr.begin()] += 1; });
+
+            seq_matrix.sparse(serial_layout(n_row_local, n_cols), d_nnz, o_nnz);
+
+            Write<Matrix> w(seq_matrix);
+
+            parallel_matrix.read(
+                [&](const SizeType &i, const SizeType &j, const Scalar &v) { seq_matrix.set(i - rr.begin(), j, v); });
+        }
+
+        static void convert_to_parallel_matrix(const Matrix &seq_matrix, Matrix &parallel_matrix) {
+            auto n_local = seq_matrix.local_rows();
+
+            IndexArray d_nnz(n_local, 0);
+            IndexArray o_nnz(n_local, 0);
+
+            seq_matrix.read([&](const SizeType &i, const SizeType &, const Scalar &) { d_nnz[i] += 1; });
+
+            auto vl = layout(parallel_matrix.comm(), n_local, Traits::determine());
+            parallel_matrix.sparse(square_matrix_layout(vl), d_nnz, o_nnz);
+
+            auto rr = row_range(parallel_matrix);
+
+            Write<Matrix> w(parallel_matrix);
+
+            seq_matrix.read([&](const SizeType &i, const SizeType &j, const Scalar &v) {
+                parallel_matrix.set(i + rr.begin(), j + rr.begin(), v);
+            });
+        }
+
         void update(const std::shared_ptr<const Matrix> &op) override {
             Super::update(op);
 
@@ -112,37 +153,58 @@ namespace utopia {
             PetscInt new_size;
             ISGetLocalSize(rows, &new_size);
 
-            overlapping_matrix_ = std::make_shared<Matrix>();
-            permutation_ = std::make_shared<Matrix>();
+            overlapping_matrix_ = std::make_shared<Matrix>(op->comm());
+            row_permutation_ = std::make_shared<Matrix>();
 
-            permutation_->sparse(layout(op->comm(), new_size, local_rows, Traits::determine(), global_rows), 1, 1);
+            row_permutation_->sparse(layout(op->comm(), new_size, local_rows, Traits::determine(), global_rows), 1, 1);
+
+            auto ml = layout(*row_permutation_);
 
             {
-                Write<Matrix> w(*permutation_);
+                Write<Matrix> w_row(*row_permutation_);
+                // Write<Matrix> w_col(*col_permutation_);
 
                 const PetscInt *index_map{nullptr};
 
                 ISGetIndices(rows, &index_map);
 
-                auto rr = row_range(*permutation_);
+                auto rr = row_range(*row_permutation_);
 
                 for (PetscInt i = 0; i < new_size; ++i) {
-                    permutation_->set(i + rr.begin(), index_map[i], 1.0);
+                    row_permutation_->set(i + rr.begin(), index_map[i], 1.0);
                 }
 
                 ISRestoreIndices(rows, &index_map);
             }
 
-            Vector ones(row_layout(*permutation_), 1.0);
+            Vector ones(row_layout(*row_permutation_), 1.0);
 
             weights_ = std::make_shared<Vector>(row_layout(*op));
-            *weights_ = transpose(*permutation_) * ones;
+            *weights_ = transpose(*row_permutation_) * ones;
             (*weights_) = 1. / (*weights_);
 
-            (*overlapping_matrix_) = (*permutation_) * (*op) * transpose(*permutation_);
+            {
+                Matrix temp = (*row_permutation_) * (*op);  // * (*col_permutation_);
+                Matrix temp_seq;
+                convert_to_sequential_matrix(temp, temp_seq);
 
-            // disp(*overlapping_matrix_);
-            // exit(0);
+                Matrix perm_seq;
+                convert_to_sequential_matrix(*row_permutation_, perm_seq);
+
+                Matrix overlapping_matrix_seq = temp_seq * transpose(perm_seq);
+                convert_to_parallel_matrix(overlapping_matrix_seq, *overlapping_matrix_);
+            }
+
+            op->comm().barrier();
+
+            // rename("op", const_cast<Matrix &>(*op));
+            // write("load_op.m", *op);
+
+            // rename("om", *overlapping_matrix_);
+            // write("load_om.m", *overlapping_matrix_);
+
+            // rename("perm", *row_permutation_);
+            // write("load_perm.m", *row_permutation_);
 
             gatherer_.update(overlapping_matrix_);
         }
@@ -166,7 +228,7 @@ namespace utopia {
 
     private:
         PatchGatherer<Matrix, SerialMatrix> gatherer_;
-        std::shared_ptr<Matrix> permutation_;
+        std::shared_ptr<Matrix> row_permutation_;
         std::shared_ptr<Vector> weights_;
         std::shared_ptr<Matrix> overlapping_matrix_;
         int overlap_{1};

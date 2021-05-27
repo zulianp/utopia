@@ -32,7 +32,7 @@ public:
     using PatchVector = Vector;
 #endif  // UTOPIA_WITH_BLAS
 
-    SizeType n_dofs{20};
+    SizeType n_dofs{40};
     bool verbose{true};
 
     void run() {
@@ -66,7 +66,7 @@ public:
         RASPatchSmoother<Matrix, PatchMatrix> patch_smoother;
         patch_smoother.set_patch_solver(solver);
         InputParameters params;
-        params.set("overlap", 2);
+        params.set("overlap", 4);
         patch_smoother.read(params);
 
         // std::string path = Utopia::instance().get("data_path");

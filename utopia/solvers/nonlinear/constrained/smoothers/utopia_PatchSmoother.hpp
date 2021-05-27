@@ -40,7 +40,7 @@ namespace utopia {
             bool converged = false;
 
             if (this->verbose()) {
-                this->init_solver("utopia::PatchSmoother", {" it. ", "|| u - u_old ||"});
+                this->init_solver("PatchSmoother", {" it. ", "|| u - u_old ||"});
             }
 
             for (int iter = 0; iter < this->max_it(); ++iter) {

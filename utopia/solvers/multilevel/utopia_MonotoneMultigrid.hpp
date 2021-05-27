@@ -71,14 +71,14 @@ namespace utopia {
             : coarse_solver_(coarse_solver),
               active_set_(std::make_shared<ActiveSet<Vector>>()),
               use_line_search_(false) {
-            this->must_generate_masks(true);
+            this->must_generate_masks(false);
             this->fix_semidefinite_operators(true);
             init(fine_smoother, coarse_smoother, coarse_solver, num_levels);
         }
 
         MonotoneMultigrid(const SizeType &num_levels = 2)
             : active_set_(std::make_shared<ActiveSet<Vector>>()), use_line_search_(false) {
-            this->must_generate_masks(true);
+            this->must_generate_masks(false);
             this->fix_semidefinite_operators(true);
             init(std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
                  std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>(),
@@ -363,6 +363,11 @@ namespace utopia {
                     // FIXME duplicated code (ProjectedGaussSeidelQR needs changes to avoid this)
                     if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(fine_smoother)) {
                         trunc_transfer->truncate_interpolation(pgs_QR->get_active_set());
+
+                        if (this->verbose()) {
+                            Scalar n_active = sum(pgs_QR->get_active_set());
+                            x.comm().root_print("n_active: " + std::to_string(SizeType(n_active)));
+                        }
 
                         this->galerkin_assembly(this->get_operator());
 

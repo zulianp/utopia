@@ -18,6 +18,7 @@
 #include "utopia_SemiGeometricMultigridNew.hpp"
 
 #include "utopia_PatchSmoother.hpp"
+#include "utopia_RASPatchSmoother.hpp"
 
 #include "utopia_ui.hpp"
 
@@ -163,7 +164,8 @@ namespace utopia {
 #ifdef UTOPIA_WITH_BLAS
                 if (qp_solver_type == "patch_smoother") {
                 // qp_solver_ = std::make_shared<PatchSmoother<Matrix_t>>();
-                qp_solver_ = std::make_shared<PatchSmoother<Matrix_t, utopia::BlasMatrixd>>();
+                // qp_solver_ = std::make_shared<PatchSmoother<Matrix_t, utopia::BlasMatrixd>>();
+                qp_solver_ = std::make_shared<RASPatchSmoother<Matrix_t, utopia::BlasMatrixd>>();
             } else
 #endif  // UTOPIA_WITH_BLAS
                 if (qp_solver_type == "msgm") {
