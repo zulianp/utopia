@@ -41,6 +41,9 @@ namespace utopia {
             const Mesh &mesh() const;
             Mesh &mesh();
 
+            template <class RawType>
+            std::shared_ptr<RawType> raw_type() const;
+
             inline const Comm &comm() const { return mesh().comm(); }
 
             SizeType n_dofs() const;

@@ -6,14 +6,17 @@
 namespace utopia {
     namespace mars {
 
-        template <class MarsMeshType, typename...>
+        template <class MarsSparsityPattern, typename...>
         class ConcreteFEAssembler : public FEAssembler {
         public:
             virtual ~ConcreteFEAssembler() = default;
 
             inline void set_space(const std::shared_ptr<FunctionSpace> &space) { space_ = space; }
             inline std::shared_ptr<FunctionSpace> space() const { return space_; }
-            inline std::shared_ptr<MarsMeshType> mars_mesh_ptr() { return space_->mesh().raw_type<MarsMeshType>(); }
+            // inline std::shared_ptr<MarsMeshType> mars_mesh_ptr() { return space_->mesh().raw_type<MarsMeshType>(); }
+            inline std::shared_ptr<MarsSparsityPattern> mars_sparsity_pattern_ptr() {
+                return space_->raw_type<MarsSparsityPattern>();
+            }
 
         private:
             std::shared_ptr<FunctionSpace> space_;

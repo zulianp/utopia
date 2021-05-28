@@ -1,4 +1,5 @@
 #include "utopia_mars_FunctionSpace.hpp"
+#include <memory>
 
 #include "utopia_DirichletBoundary.hpp"
 #include "utopia_FEVar.hpp"
@@ -16,6 +17,12 @@
 
 namespace utopia {
     namespace mars {
+
+        template <class DMesh, ::mars::Integer Degree = 1>
+        class FEHandler {
+
+
+        };
 
         class FunctionSpace::Impl {
         public:
@@ -45,27 +52,30 @@ namespace utopia {
                 auto fe_dof_map_impl = std::make_shared<FEDofMap>(build_fe_dof_map(*dof_handler_impl));
                 fe_dof_map = fe_dof_map_impl;
 
-                SPattern sp(*dof_handler_impl);
-                sp.build_pattern(*fe_dof_map_impl);
+                auto sparsity_pattern_impl = std::make_shared<SPattern>(*dof_handler_impl);
+                sparsity_pattern_impl->build_pattern(*fe_dof_map_impl);
+                sparsity_pattern = sparsity_pattern_impl;
 
-                new_crs_matrix = [sp]() -> MarsCrsMatrix { return sp.new_crs_matrix(); };
+                new_crs_matrix = [sparsity_pattern_impl]() -> MarsCrsMatrix {
+                    return sparsity_pattern_impl->new_crs_matrix();
+                };
 
-                describe = [dof_handler_impl, fe_dof_map_impl, sp]() {
+                describe = [dof_handler_impl, fe_dof_map_impl, sparsity_pattern_impl]() {
                     dof_handler_impl->print_dofs();
-                    sp.print_sparsity_pattern();
+                    sparsity_pattern_impl->print_sparsity_pattern();
 
                     // ::mars::print_fe_dof_map(*dof_handler_impl, *fe_dof_map_impl);
                 };
 
-                matrix_apply_constraints = [sp](Matrix &m, const Scalar diag_value) {
+                matrix_apply_constraints = [sparsity_pattern_impl](Matrix &m, const Scalar diag_value) {
                     // BC set constrained rows to zero, except diagonal where you set diag_value
                 };
 
-                vector_apply_constraints = [sp](Vector &v) {
+                vector_apply_constraints = [sparsity_pattern_impl](Vector &v) {
                     // BC set values to constraint value (i.e., boundary value)
                 };
 
-                apply_zero_constraints = [sp](Vector &vec) {
+                apply_zero_constraints = [sparsity_pattern_impl](Vector &vec) {
                     // BC set values to constraint value to zero
                 };
 
@@ -77,7 +87,12 @@ namespace utopia {
                 n_local_dofs = [dof_handler_impl]() { return dof_handler_impl->get_owned_dof_size(); };
                 n_dofs = [dof_handler_impl]() { return dof_handler_impl->get_global_dof_size(); };
 
-                factory = []() -> Factory & { return ConcreteFactory<DMesh>::instance(); };
+                factory = []() -> Factory & { return ConcreteFactory<SPattern>::instance(); };
+            }
+
+            template <class RawType>
+            std::shared_ptr<RawType> raw_type() const {
+                return std::dynamic_pointer_cast<RawType>(sparsity_pattern);
             }
 
             void read_meta(Input &in) {
@@ -131,6 +146,7 @@ namespace utopia {
 
             // std::function<crs_grap()> get_crs_graph;
 
+            std::shared_ptr<::mars::ISparsityPattern> sparsity_pattern;
             std::shared_ptr<::mars::IDofHandler> dof_handler;
             std::shared_ptr<::mars::IFEDofMap> fe_dof_map;
             std::shared_ptr<Mesh> mesh;
@@ -240,6 +256,11 @@ namespace utopia {
         const Factory &FunctionSpace::factory() const {
             assert(impl_->factory);
             return impl_->factory();
+        }
+
+        template <class RawType>
+        std::shared_ptr<RawType> FunctionSpace::raw_type() const {
+            return impl_->raw_type<RawType>();
         }
 
     }  // namespace mars
