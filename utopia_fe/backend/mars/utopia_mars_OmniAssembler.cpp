@@ -76,6 +76,8 @@ namespace utopia {
 
             if (ass) {
                 ass->set_space(impl_->space);
+                ass->read(in);
+
                 impl_->assemblers.push_back(std::move(ass));
             }
 
