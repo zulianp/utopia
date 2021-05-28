@@ -7,8 +7,8 @@
 namespace utopia {
     namespace mars {
 
-        template <class MarsSparsityPattern, typename... Args>
-        class LaplaceOperator : public ConcreteFEAssembler<MarsSparsityPattern, Args...> {
+        template <class DMesh, typename... Args>
+        class LaplaceOperator : public ConcreteFEAssembler<DMesh, Args...> {
         public:
             using Matrix = Traits<mars::FunctionSpace>::Matrix;
             using Vector = Traits<mars::FunctionSpace>::Vector;
@@ -19,8 +19,8 @@ namespace utopia {
                 return false;
             }
             bool assemble(const Vector &x, Matrix &mat) override {
-                auto sparsity_pattern_ptr = this->mars_sparsity_pattern_ptr();
-
+                auto handler = this->handler();
+                assert(handler);
                 assert(false);
                 return false;
             }

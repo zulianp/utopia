@@ -1,6 +1,7 @@
 #ifndef UTOPIA_MARS_FUNCTION_SPACE_HPP
 #define UTOPIA_MARS_FUNCTION_SPACE_HPP
 
+#include <memory>
 #include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
 
@@ -15,6 +16,38 @@ namespace utopia {
     };
 
     namespace mars {
+
+        class IFEHandler {
+        public:
+            using Vector = Traits<FunctionSpace>::Vector;
+            using Matrix = Traits<FunctionSpace>::Matrix;
+            using Scalar = Traits<FunctionSpace>::Scalar;
+            using SizeType = Traits<FunctionSpace>::SizeType;
+            using LocalSizeType = Traits<Matrix>::LocalSizeType;
+            using IndexSet = Traits<FunctionSpace>::IndexSet;
+            using Comm = Traits<FunctionSpace>::Communicator;
+
+            using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
+
+            virtual ~IFEHandler() = default;
+
+            virtual MarsCrsMatrix new_crs_matrix() = 0;
+
+            virtual void describe() const = 0;
+            virtual void matrix_apply_constraints(Matrix &m, const Scalar diag_value) = 0;
+
+            virtual void vector_apply_constraints(Vector &v) = 0;
+
+            virtual void apply_zero_constraints(Vector &vec) = 0;
+
+            virtual void system_apply_constraints(Matrix &m, Vector &v) = 0;
+
+            virtual SizeType n_local_dofs() = 0;
+
+            virtual SizeType n_dofs() = 0;
+
+            virtual Factory &factory() = 0;
+        };
 
         class FunctionSpace : public Configurable, public Describable, public Traits<FunctionSpace> {
         public:
@@ -100,9 +133,8 @@ namespace utopia {
 
         private:
             class Impl;
-            // class Var;
-
-            std::shared_ptr<Impl> impl_;
+            std::unique_ptr<Impl> impl_;
+            std::shared_ptr<IFEHandler> handler() const;
 
             // void register_output_variables(MeshIO &io);
             // void read_meta(Input &in);
