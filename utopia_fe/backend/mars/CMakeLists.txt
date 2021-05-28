@@ -3,7 +3,7 @@ if(UTOPIA_ENABLE_MARS)
 
     message(STATUS "MARS_LIBRARIES=${MARS_LIBRARIES}")
 
-    utopiafe_add_module(utopia_mars ${CMAKE_CURRENT_SOURCE_DIR} ".")
+    utopiafe_add_module(utopia_mars ${CMAKE_CURRENT_SOURCE_DIR} ".;assemblers")
     target_include_directories(utopia_mars PUBLIC ${MARS_INCLUDES})
     target_link_libraries(utopia_mars INTERFACE ${MARS_LIBRARIES})
     target_link_libraries(utopia_mars PUBLIC Utopia::utopia utopia_fe_core)

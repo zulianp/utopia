@@ -24,7 +24,11 @@ void mars_assemble_poisson() {
     Matrix mat;
     space.create_matrix(mat);
 
+    auto params = param_list(param("type", "LaplaceOperator"));
+
     OmniAssembler<FunctionSpace_t> assembler(make_ref(space));
+    assembler.read(params);
+
     utopia_test_assert(assembler.assemble(x, mat, rhs));
 }
 

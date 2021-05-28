@@ -7,6 +7,9 @@
 #include "mars_base.hpp"
 #include "mars_context.hpp"
 #include "mars_distributed_dof_management.hpp"
+
+#include "utopia_mars_Factory_impl.hpp"
+
 // #include "mars_distributed_finite_element.hpp"
 // #include "mars_execution_context.hpp"
 // #include "mars_imesh_kokkos.hpp"
@@ -73,6 +76,8 @@ namespace utopia {
 
                 n_local_dofs = [dof_handler_impl]() { return dof_handler_impl->get_owned_dof_size(); };
                 n_dofs = [dof_handler_impl]() { return dof_handler_impl->get_global_dof_size(); };
+
+                factory = []() -> Factory & { return ConcreteFactory<DMesh>::instance(); };
             }
 
             void read_meta(Input &in) {
@@ -129,6 +134,8 @@ namespace utopia {
             std::shared_ptr<::mars::IDofHandler> dof_handler;
             std::shared_ptr<::mars::IFEDofMap> fe_dof_map;
             std::shared_ptr<Mesh> mesh;
+
+            std::function<Factory &()> factory;
 
             std::string name;
             DirichletBoundary dirichlet_boundary;
@@ -229,6 +236,11 @@ namespace utopia {
         void FunctionSpace::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {}
 
         const std::string &FunctionSpace::name() const { return impl_->name; }
+
+        const Factory &FunctionSpace::factory() const {
+            assert(impl_->factory);
+            return impl_->factory();
+        }
 
     }  // namespace mars
 

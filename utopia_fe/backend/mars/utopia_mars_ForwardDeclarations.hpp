@@ -5,6 +5,10 @@ namespace utopia {
     namespace mars {
         class Mesh;
         class FunctionSpace;
+        class FEAssembler;
+        class OmniAssembler;
+        class Factory;
+
     }  // namespace mars
 }  // namespace utopia
 

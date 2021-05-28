@@ -3,6 +3,8 @@
 
 #include "utopia_Field.hpp"
 #include "utopia_fe_Core.hpp"
+
+#include "utopia_mars_ForwardDeclarations.hpp"
 #include "utopia_mars_Mesh.hpp"
 
 namespace utopia {
@@ -72,6 +74,8 @@ namespace utopia {
             // DofMap &dof_map();
 
             const std::string &name() const;
+
+            const Factory &factory() const;
 
             // SizeType n_variables() const;
             // const std::string &variable_name(const SizeType var_num) const;

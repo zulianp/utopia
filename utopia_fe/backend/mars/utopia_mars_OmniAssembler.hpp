@@ -1,19 +1,12 @@
 #ifndef UTOPIA_MARS_OMNIASSEMBLER_HPP
 #define UTOPIA_MARS_OMNIASSEMBLER_HPP
 
-#include "utopia_Input.hpp"
-#include "utopia_Traits.hpp"
-
-#include "utopia_fe_Core.hpp"
-#include "utopia_fe_Environment.hpp"
-
-#include "utopia_mars_ForwardDeclarations.hpp"
-#include "utopia_mars_FunctionSpace.hpp"
+#include "utopia_mars_FEAssembler.hpp"
 
 namespace utopia {
     namespace mars {
 
-        class OmniAssembler : public Configurable {
+        class OmniAssembler : public FEAssembler {
         public:
             using Matrix = Traits<mars::FunctionSpace>::Matrix;
             using Vector = Traits<mars::FunctionSpace>::Vector;
@@ -21,16 +14,18 @@ namespace utopia {
             OmniAssembler(const std::shared_ptr<mars::FunctionSpace> &space);
             virtual ~OmniAssembler();
 
-            bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
-            bool assemble(const Vector &x, Matrix &jacobian);
-            bool assemble(const Vector &x, Vector &fun);
+            bool assemble(const Vector &x, Matrix &mat, Vector &vec) override;
+            bool assemble(const Vector &x, Matrix &mat) override;
+            bool assemble(const Vector &x, Vector &vec) override;
 
-            bool assemble(Matrix &jacobian);
+            bool assemble(Matrix &mat) override;
             void read(Input &in) override;
 
-            void set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &env);
+            void set_environment(const std::shared_ptr<Environment<mars::FunctionSpace>> &env) override;
 
-            bool is_linear() const;
+            bool is_linear() const override;
+
+            void set_space(const std::shared_ptr<FunctionSpace> &space) override;
 
         private:
             class Impl;
