@@ -55,12 +55,21 @@ namespace utopia {
                 };
 
                 matrix_apply_constraints = [sp](Matrix &m, const Scalar diag_value) {
-
+                    // BC set constrained rows to zero, except diagonal where you set diag_value
                 };
 
-                vector_apply_constraints = [sp](Vector &v) {};
-                system_apply_constraints = [sp](Matrix &m, Vector &v) {};
-                apply_zero_constraints = [sp](Vector &vec) {};
+                vector_apply_constraints = [sp](Vector &v) {
+                    // BC set values to constraint value (i.e., boundary value)
+                };
+
+                apply_zero_constraints = [sp](Vector &vec) {
+                    // BC set values to constraint value to zero
+                };
+
+                system_apply_constraints = [this](Matrix &m, Vector &v) {
+                    vector_apply_constraints(v);
+                    matrix_apply_constraints(m, 1.0);
+                };
 
                 n_local_dofs = [dof_handler_impl]() { return dof_handler_impl->get_owned_dof_size(); };
                 n_dofs = [dof_handler_impl]() { return dof_handler_impl->get_global_dof_size(); };
