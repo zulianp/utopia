@@ -136,8 +136,8 @@ namespace utopia {
             // 2D
             if (nz == 0) {
                 using DMesh = ::mars::DistributedMesh<::mars::ElementType::Quad4>;
-                auto mesh = std::make_shared<DMesh>();
-                ::mars::generate_distributed_cube(impl_->context, *mesh, nx, ny, nz);
+                auto mesh = std::make_shared<DMesh>(impl_->context);
+                ::mars::generate_distributed_cube(*mesh, nx, ny, nz);
 
                 impl_->wrap(mesh);
 
@@ -147,8 +147,8 @@ namespace utopia {
                 assert(ny != 0);
                 assert(nz != 0);
                 using DMesh = ::mars::DistributedMesh<::mars::ElementType::Hex8>;
-                auto mesh = std::make_shared<DMesh>();
-                ::mars::generate_distributed_cube(impl_->context, *mesh, nx, ny, nz);
+                auto mesh = std::make_shared<DMesh>(impl_->context);
+                ::mars::generate_distributed_cube(*mesh, nx, ny, nz);
 
                 impl_->wrap(mesh);
             }
@@ -156,7 +156,7 @@ namespace utopia {
 
         void Mesh::init() {}
 
-        ::mars::context &Mesh::raw_type_context() { return impl_->context; }
+        // ::mars::context &Mesh::raw_type_context() { return impl_->context; }
 
         template <class RawType>
         std::shared_ptr<RawType> Mesh::raw_type() const {

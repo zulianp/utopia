@@ -20,6 +20,7 @@ namespace utopia {
             using Matrix = Traits<FunctionSpace>::Matrix;
             using Scalar = Traits<FunctionSpace>::Scalar;
             using SizeType = Traits<FunctionSpace>::SizeType;
+            using LocalSizeType = Traits<Matrix>::LocalSizeType;
             using IndexSet = Traits<FunctionSpace>::IndexSet;
             using Comm = Traits<FunctionSpace>::Communicator;
 

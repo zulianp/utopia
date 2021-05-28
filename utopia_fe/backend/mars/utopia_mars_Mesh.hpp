@@ -56,7 +56,7 @@ namespace utopia {
             template <class RawType>
             std::shared_ptr<RawType> raw_type() const;
 
-            ::mars::context &raw_type_context();
+            // ::mars::context &raw_type_context();
 
             // void displace(const Vector &displacement);
             // void scale(const Scalar &scale_factor);

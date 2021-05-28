@@ -6,29 +6,35 @@
 #include "mars.hpp"
 #include "mars_base.hpp"
 #include "mars_context.hpp"
-#include "mars_execution_context.hpp"
+#include "mars_distributed_dof_management.hpp"
+// #include "mars_distributed_finite_element.hpp"
+// #include "mars_execution_context.hpp"
+// #include "mars_imesh_kokkos.hpp"
 
 namespace utopia {
     namespace mars {
 
         class FunctionSpace::Impl {
         public:
-            using DeviceType = typename Kokkos::Device<Kokkos::DefaultExecutionSpace, KokkosSpace>;
-            // using Ordinal = unsigned long;
-            using Ordinal = SizeType;
+            // using DeviceType = typename Kokkos::Device<Kokkos::DefaultExecutionSpace, KokkosSpace>;
+            using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
 
-            using MarsCrsMatrix = typename KokkosSparse::CrsMatrix<Scalar, Ordinal, DeviceType, void, Ordinal>;
+            using DeviceType = Matrix::CrsMatrixType::device_type;
+            // using MarsCrsMatrix = typename KokkosSparse::CrsMatrix<Scalar, LocalSizeType, DeviceType, void,
+            // SizeType>;
 
             template <class DMesh>
             void init(DMesh &mesh_impl) {
                 static constexpr ::mars::Integer Degree = 1;
                 using DofHandler = ::mars::DofHandler<DMesh, Degree>;
                 using FEDofMap = ::mars::FEDofMap<DofHandler>;
-                // using DM = ::mars::DM<DofHandler, Scalar, Scalar, Scalar>;
                 using FE = ::mars::FEDofMap<DofHandler>;
-                using SPattern = ::mars::SparsityPattern<Scalar, ::mars::Integer, Ordinal, DofHandler>;
+                using SPattern =
+                    ::mars::SparsityPattern<Scalar, LocalSizeType, SizeType, DofHandler, MarsCrsMatrix::size_type>;
 
-                auto dof_handler_impl = std::make_shared<DofHandler>(&mesh_impl, mesh->raw_type_context());
+                static_assert(std::is_same<SizeType, Matrix::CrsMatrixType::global_ordinal_type>::value, "Weird!");
+
+                auto dof_handler_impl = std::make_shared<DofHandler>(&mesh_impl);  //, mesh->raw_type_context());
                 dof_handler_impl->enumerate_dofs();
 
                 dof_handler = dof_handler_impl;
@@ -156,9 +162,19 @@ namespace utopia {
         void FunctionSpace::create_local_vector(Vector &v) const {}
 
         void FunctionSpace::create_matrix(Matrix &m) const {
-            Matrix::RCPCrsMatrixType mat;
-            // mat.reset(new Matrix::CrsMatrixType());
+            SizeType n_global = this->n_dofs();
+            SizeType n_local = this->n_local_dofs();
 
+            const SizeType index_base = 0;
+            ::Teuchos::RCP<Matrix::MapType> row_map =
+                rcp(new Matrix::MapType(n_global, n_local, index_base, this->comm().get()));
+            // since MARS provides already global indices for the columns we can just use the identity map, replicated
+            // on each process
+            ::Teuchos::RCP<Matrix::MapType> col_map =
+                rcp(new Matrix::MapType(n_global, index_base, this->comm().get(), Tpetra::LocallyReplicated));
+
+            // this constructor gives us a fill-complete matrix, so do not call fillComplete manually again
+            Matrix::RCPCrsMatrixType mat = Teuchos::rcp(new Matrix::CrsMatrixType(impl_->crs_matrix, row_map, col_map));
             m.wrap(mat, true);
         }
 
