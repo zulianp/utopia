@@ -5,7 +5,7 @@
 
 using namespace utopia;
 
-void mars_assemble_poisson() {
+void mars_poisson() {
     using Mesh_t = utopia::mars::Mesh;
     using FunctionSpace_t = utopia::mars::FunctionSpace;
     using Vector = Traits<FunctionSpace_t>::Vector;
@@ -17,9 +17,14 @@ void mars_assemble_poisson() {
     FunctionSpace_t space;
     space.init(make_ref(mesh));
 
+    space.add_dirichlet_boundary_condition("top", -0.1);
+    space.add_dirichlet_boundary_condition("bottom", 0.1);
+
     Vector x, rhs;
     space.create_vector(x);
     space.create_vector(rhs);
+
+    x.set(0.0);
 
     Matrix mat;
     space.create_matrix(mat);
@@ -30,8 +35,13 @@ void mars_assemble_poisson() {
     assembler.read(params);
 
     utopia_test_assert(assembler.assemble(x, mat, rhs));
+
+    ConjugateGradient<Matrix, Vector> cg;
+
+    utopia_test_assert(cg.solve(mat, rhs, x));
+    utopia_test_assert(space.write("result.e", x));
 }
 
-void mars_assembler() { UTOPIA_RUN_TEST(mars_assemble_poisson); }
+void mars_assembler() { UTOPIA_RUN_TEST(mars_poisson); }
 
 UTOPIA_REGISTER_TEST_FUNCTION(mars_assembler);
