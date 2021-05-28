@@ -7,9 +7,6 @@
 #include "utopia_fe_base.hpp"
 #include "utopia_mars_ForwardDeclarations.hpp"
 
-// FIXME
-#include "mars_context.hpp"
-
 #include <memory>
 
 namespace utopia {

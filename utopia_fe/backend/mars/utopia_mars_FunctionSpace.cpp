@@ -18,6 +18,7 @@ namespace utopia {
         public:
             // using DeviceType = typename Kokkos::Device<Kokkos::DefaultExecutionSpace, KokkosSpace>;
             using MarsCrsMatrix = Matrix::CrsMatrixType::local_matrix_type;
+            using MapType = Matrix::MapType;
 
             using DeviceType = Matrix::CrsMatrixType::device_type;
             // using MarsCrsMatrix = typename KokkosSparse::CrsMatrix<Scalar, LocalSizeType, DeviceType, void,
@@ -28,7 +29,6 @@ namespace utopia {
                 static constexpr ::mars::Integer Degree = 1;
                 using DofHandler = ::mars::DofHandler<DMesh, Degree>;
                 using FEDofMap = ::mars::FEDofMap<DofHandler>;
-                using FE = ::mars::FEDofMap<DofHandler>;
                 using SPattern =
                     ::mars::SparsityPattern<Scalar, LocalSizeType, SizeType, DofHandler, MarsCrsMatrix::size_type>;
 
@@ -44,12 +44,26 @@ namespace utopia {
 
                 SPattern sp(*dof_handler_impl);
                 sp.build_pattern(*fe_dof_map_impl);
-                crs_matrix = sp.get_matrix();
 
-                describe = [dof_handler_impl, fe_dof_map_impl]() {
+                new_crs_matrix = [sp]() -> MarsCrsMatrix { return sp.new_crs_matrix(); };
+
+                describe = [dof_handler_impl, fe_dof_map_impl, sp]() {
                     dof_handler_impl->print_dofs();
+                    sp.print_sparsity_pattern();
+
                     // ::mars::print_fe_dof_map(*dof_handler_impl, *fe_dof_map_impl);
                 };
+
+                matrix_apply_constraints = [sp](Matrix &m, const Scalar diag_value) {
+
+                };
+
+                vector_apply_constraints = [sp](Vector &v) {};
+                system_apply_constraints = [sp](Matrix &m, Vector &v) {};
+                apply_zero_constraints = [sp](Vector &vec) {};
+
+                n_local_dofs = [dof_handler_impl]() { return dof_handler_impl->get_owned_dof_size(); };
+                n_dofs = [dof_handler_impl]() { return dof_handler_impl->get_global_dof_size(); };
             }
 
             void read_meta(Input &in) {
@@ -92,6 +106,16 @@ namespace utopia {
             }
 
             std::function<void()> describe;
+            std::function<SizeType()> n_dofs;
+            std::function<SizeType()> n_local_dofs;
+            std::function<MarsCrsMatrix()> new_crs_matrix;
+
+            std::function<void(Matrix &m, const Scalar diag_value)> matrix_apply_constraints;
+            std::function<void(Vector &v)> vector_apply_constraints;
+            std::function<void(Matrix &m, Vector &v)> system_apply_constraints;
+            std::function<void(Vector &vec)> apply_zero_constraints;
+
+            // std::function<crs_grap()> get_crs_graph;
 
             std::shared_ptr<::mars::IDofHandler> dof_handler;
             std::shared_ptr<::mars::IFEDofMap> fe_dof_map;
@@ -101,7 +125,7 @@ namespace utopia {
             DirichletBoundary dirichlet_boundary;
             std::vector<FEVar> variables;
 
-            MarsCrsMatrix crs_matrix;
+            // MarsCrsMatrix crs_matrix;
 
             bool verbose{false};
             int n_var{0};
@@ -149,32 +173,35 @@ namespace utopia {
             }
         }
 
-        std::shared_ptr<FunctionSpace::Mesh> FunctionSpace::mesh_ptr() const {}
-        const FunctionSpace::Mesh &FunctionSpace::mesh() const {}
-        FunctionSpace::Mesh &FunctionSpace::mesh() {}
+        std::shared_ptr<FunctionSpace::Mesh> FunctionSpace::mesh_ptr() const { return impl_->mesh; }
+        const FunctionSpace::Mesh &FunctionSpace::mesh() const { return *impl_->mesh; }
+        FunctionSpace::Mesh &FunctionSpace::mesh() { return *impl_->mesh; }
 
-        FunctionSpace::SizeType FunctionSpace::n_dofs() const {}
-        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const {}
-        int FunctionSpace::n_var() const {}
-        void FunctionSpace::set_n_var(const int n_var) {}
+        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->n_dofs(); }
+        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return impl_->n_local_dofs(); }
+        int FunctionSpace::n_var() const { return 1; }
+        void FunctionSpace::set_n_var(const int n_var) { assert(n_var == 1); }
 
-        void FunctionSpace::create_vector(Vector &v) const {}
-        void FunctionSpace::create_local_vector(Vector &v) const {}
+        void FunctionSpace::create_vector(Vector &v) const { v.zeros(layout(comm(), n_local_dofs(), n_dofs())); }
+        void FunctionSpace::create_local_vector(Vector &) const { Utopia::Abort("IMPLEMENT ME"); }
 
         void FunctionSpace::create_matrix(Matrix &m) const {
+            using MapType = Matrix::MapType;
+
             SizeType n_global = this->n_dofs();
             SizeType n_local = this->n_local_dofs();
 
             const SizeType index_base = 0;
-            ::Teuchos::RCP<Matrix::MapType> row_map =
+            ::Teuchos::RCP<MapType> row_map =
                 rcp(new Matrix::MapType(n_global, n_local, index_base, this->comm().get()));
             // since MARS provides already global indices for the columns we can just use the identity map, replicated
             // on each process
-            ::Teuchos::RCP<Matrix::MapType> col_map =
+            ::Teuchos::RCP<MapType> col_map =
                 rcp(new Matrix::MapType(n_global, index_base, this->comm().get(), Tpetra::LocallyReplicated));
 
             // this constructor gives us a fill-complete matrix, so do not call fillComplete manually again
-            Matrix::RCPCrsMatrixType mat = Teuchos::rcp(new Matrix::CrsMatrixType(impl_->crs_matrix, row_map, col_map));
+            Matrix::RCPCrsMatrixType mat =
+                Teuchos::rcp(new Matrix::CrsMatrixType(impl_->new_crs_matrix(), row_map, col_map));
             m.wrap(mat, true);
         }
 
@@ -187,12 +214,12 @@ namespace utopia {
                                                              const Scalar &value,
                                                              const int component) {}
 
-        bool FunctionSpace::empty() const {}
+        bool FunctionSpace::empty() const { return !static_cast<bool>(impl_->new_crs_matrix); }
 
         void FunctionSpace::global_to_local(const Vector &global, Vector &local) const {}
         void FunctionSpace::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {}
 
-        const std::string &FunctionSpace::name() const {}
+        const std::string &FunctionSpace::name() const { return impl_->name; }
 
     }  // namespace mars
 
