@@ -8,8 +8,8 @@ using namespace utopia;
 void mars_poisson() {
     using Mesh_t = utopia::mars::Mesh;
     using FunctionSpace_t = utopia::mars::FunctionSpace;
-    using Vector = Traits<FunctionSpace_t>::Vector;
-    using Matrix = Traits<FunctionSpace_t>::Matrix;
+    using Vector_t = Traits<FunctionSpace_t>::Vector;
+    using Matrix_t = Traits<FunctionSpace_t>::Matrix;
 
     Mesh_t mesh;
     mesh.unit_cube(2, 2, 2);
@@ -20,13 +20,13 @@ void mars_poisson() {
     space.add_dirichlet_boundary_condition("top", -0.1);
     space.add_dirichlet_boundary_condition("bottom", 0.1);
 
-    Vector x, rhs;
+    Vector_t x, rhs;
     space.create_vector(x);
     space.create_vector(rhs);
 
     x.set(0.0);
 
-    Matrix mat;
+    Matrix_t mat;
     space.create_matrix(mat);
 
     auto params = param_list(param("type", "LaplaceOperator"));
@@ -36,7 +36,7 @@ void mars_poisson() {
 
     utopia_test_assert(assembler.assemble(x, mat, rhs));
 
-    ConjugateGradient<Matrix, Vector> cg;
+    ConjugateGradient<Matrix_t, Vector_t> cg;
 
     utopia_test_assert(cg.solve(mat, rhs, x));
     utopia_test_assert(space.write("result.e", x));
