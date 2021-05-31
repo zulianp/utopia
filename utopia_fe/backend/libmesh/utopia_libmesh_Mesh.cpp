@@ -9,8 +9,10 @@
 // All libmesh includes
 #include "libmesh/boundary_info.h"
 #include "libmesh/exodusII_io.h"
+#include "libmesh/libmesh_version.h"
 #include "libmesh/mesh_base.h"
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/mesh_tools.h"
 #include "libmesh/namebased_io.h"
 #include "libmesh/node.h"
 #include "libmesh/parallel.h"
@@ -157,6 +159,38 @@ namespace utopia {
             init.read(params);
         }
 
+        void Mesh::box(const AABB &box,
+                       const SizeType &nx,
+                       const SizeType &ny,
+                       const SizeType &nz,
+                       const std::string &elem_type) {
+            InputParameters params;
+
+            const int dim = box.min.size();
+
+            if (dim == 2) {
+                params.set("type", "square");
+            } else {
+                params.set("type", "cube");
+            }
+
+            params.set("nx", nx);
+            params.set("ny", ny);
+            params.set("nz", nz);
+
+            const std::string postfix[4] = {"x", "y", "z", "t"};
+
+            for (int d = 0; d < dim; ++d) {
+                params.set("min_" + postfix[d], box.min[d]);
+                params.set("max_" + postfix[d], box.max[d]);
+            }
+
+            params.set("elem_type", elem_type);
+
+            MeshInitializer init(*this);
+            init.read(params);
+        }
+
         int Mesh::manifold_dimension() const { return impl_->mesh->mesh_dimension(); }
 
         int Mesh::spatial_dimension() const { return impl_->mesh->spatial_dimension(); }
@@ -199,6 +233,28 @@ namespace utopia {
             libMesh::MeshRefinement mesh_refinement(raw_type());
             mesh_refinement.make_flags_parallel_consistent();
             mesh_refinement.uniformly_refine(n_refinements);
+        }
+
+        void Mesh::bounding_box(AABB &output) const {
+#if LIBMESH_VERSION_LESS_THAN(1, 6, 0)
+            using LMBoundingBox = libMesh::MeshTools::BoundingBox;
+#else
+            using LMBoundingBox = libMesh::BoundingBox;
+#endif
+
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+            LMBoundingBox bb = libMesh::MeshTools::bounding_box(*impl_->mesh);
+#else
+            LMBoundingBox bb = libMesh::MeshTools::create_bounding_box(*impl_->mesh);
+#endif
+            int spatial_dim = this->spatial_dimension();
+            output.min.resize(spatial_dim);
+            output.max.resize(spatial_dim);
+
+            for (int d = 0; d < spatial_dim; ++d) {
+                output.min[d] = bb.min()(d);
+                output.max[d] = bb.max()(d);
+            }
         }
 
         void Mesh::scale(const Scalar &) { assert(false && "IMPLEMENT ME"); }

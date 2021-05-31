@@ -6,6 +6,8 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_BoundingBoxMultiLevel.hpp"
+
 #ifdef UTOPIA_WITH_BLAS
 #include "utopia_RASPatchSmoother.hpp"
 #include "utopia_blas.hpp"
@@ -37,6 +39,24 @@ namespace utopia {
         using Smoother = utopia::IterativeSolver<Matrix, Vector>;
         using QPSmoother = utopia::QPSolver<Matrix, Vector>;
 
+        using CoarseSpaceGen = utopia::BoundingBoxMultiLevelFunctionSpaceGenerator<FunctionSpace>;
+
+        void generate_coarse_spaces(Input &in, FunctionSpace &finest) {
+            int n_auto_levels = space_hierarchy_.empty() ? 1 : 0;
+            in.get("n_auto_levels", n_auto_levels);
+            if (n_auto_levels == 0) return;
+
+            std::vector<std::shared_ptr<FunctionSpace>> coarse_spaces;
+            CoarseSpaceGen gen;
+            gen.read(in);
+
+            if (gen.generate_spaces(finest, n_auto_levels, coarse_spaces)) {
+                space_hierarchy_.insert(space_hierarchy_.begin(), coarse_spaces.begin(), coarse_spaces.end());
+            } else {
+                Utopia::Abort("Failed to create coarse spaces!");
+            }
+        }
+
         void read(Input &in) override {
             Super::read(in);
 
@@ -49,14 +69,10 @@ namespace utopia {
             in.get("block_size", block_size_);
             in.get("use_patch_smoother", use_patch_smoother_);
 
-            in.get("coarse_spaces", [this, export_coarse_meshes](Input &array_node) {
-                array_node.get_all([this, export_coarse_meshes](Input &node) {
+            in.get("coarse_spaces", [this](Input &array_node) {
+                array_node.get_all([this](Input &node) {
                     auto space = std::make_shared<FunctionSpace>();
                     space->read(node);
-
-                    if (export_coarse_meshes) {
-                        space->mesh().write("mesh_" + std::to_string(space_hierarchy_.size()) + ".e");
-                    }
 
                     assert(!space->empty());
                     space_hierarchy_.push_back(space);
@@ -64,6 +80,19 @@ namespace utopia {
             });
 
             in.get("clear_spaces_after_init", clear_spaces_after_init_);
+
+            if (space_hierarchy_.empty()) {
+                generate_coarse_spaces(in, *fine_space_);
+            } else {
+                generate_coarse_spaces(in, *space_hierarchy_[0]);
+            }
+
+            if (export_coarse_meshes) {
+                int num_space = 0;
+                for (auto &s : space_hierarchy_) {
+                    s->mesh().write("mesh_" + std::to_string(num_space++) + ".e");
+                }
+            }
 
             const int n_levels = space_hierarchy_.size();
 

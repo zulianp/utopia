@@ -252,6 +252,23 @@ namespace utopia {
             impl_->dof_map = std::make_shared<DofMap>();
         }
 
+        void FunctionSpace::copy_meta_info_from(const FunctionSpace &other) {
+            impl_->variables = other.impl_->variables;
+            dof_map().set_n_var(other.n_var());
+        }
+
+        void FunctionSpace::initialize() {
+            impl_->register_variables();
+
+            impl_->dof_map->init(this->mesh().bulk_data());
+
+            if (impl_->verbose) {
+                std::stringstream ss;
+                describe(ss);
+                comm().synched_print(ss.str());
+            }
+        }
+
         FunctionSpace::~FunctionSpace() = default;
 
         bool FunctionSpace::write(const Path &path, const Vector &x) {
