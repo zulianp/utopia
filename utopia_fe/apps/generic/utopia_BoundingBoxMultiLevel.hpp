@@ -52,7 +52,7 @@ namespace utopia {
 
             for (int d = 0; d < spatial_dim; ++d) {
                 double aspect_ratio = r[d] / max_r;
-                n[d] = n_segments * aspect_ratio;
+                n[d] = std::max(SizeType(1), SizeType(n_segments * aspect_ratio));
             }
 
             if (verbose_) {

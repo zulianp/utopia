@@ -50,9 +50,6 @@ namespace utopia {
         using DefaultSmoother = utopia::ProjectedGaussSeidel<Matrix, Vector>;
 
     public:
-        static const int V_CYCLE = 1;
-        static const int W_CYCLE = 2;
-
         MonotoneMultigrid(const std::shared_ptr<QPSmoother> &qp_smoother,
                           const std::shared_ptr<Smoother> &coarse_smoother,
                           const std::shared_ptr<Solver> &coarse_solver)
@@ -234,11 +231,10 @@ namespace utopia {
                 r = (*this->get_operator()) * x;
                 r = rhs - r;
 
-                active_set_->zero_out_active(r);
-
                 truncated_transfer_->restrict(r, r_coarse);
 
                 if (debug_) {
+                    active_set_->zero_out_active(r);
                     Scalar r_norm = norm2(r);
                     Scalar r_coarse_norm = norm2(r_coarse);
 
@@ -257,7 +253,7 @@ namespace utopia {
 
                 truncated_transfer_->interpolate(c_coarse, c);
 
-                active_set_->zero_out_active(c);
+                // active_set_->zero_out_active(c);
 
                 x += c;
 
