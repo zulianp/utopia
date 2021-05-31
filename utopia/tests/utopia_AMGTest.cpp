@@ -25,7 +25,7 @@ public:
     using SizeType = typename Traits::SizeType;
     using Comm = typename Traits::Communicator;
 
-    int n_levels{6};
+    SizeType n_levels{6};
     SizeType n_dofs = 100;
 
     void run() {
