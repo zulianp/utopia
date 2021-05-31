@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 namespace utopia {
@@ -39,6 +40,7 @@ namespace utopia {
                 max_r = std::max(max_r, r[d]);
             }
 
+            SizeType n_elements = fine_mesh.n_elements();
             SizeType n_nodes = fine_mesh.n_nodes();
             SizeType min_segments = 2;
             SizeType computed_segments =
@@ -54,8 +56,11 @@ namespace utopia {
             }
 
             if (verbose_) {
-                utopia::out() << "Generating from mesh with " << n_nodes << " n_nodes\n";
-                utopia::out() << "Generating from mesh with " << n_nodes << " n_nodes\n";
+                std::stringstream ss;
+                ss << "Generating hierarchy from mesh with " << n_nodes << " nodes and " << n_elements
+                   << " elements.\n";
+
+                fine_mesh.comm().root_print(ss.str());
             }
 
             for (int l = 0; l < n_levels; ++l) {
@@ -64,8 +69,11 @@ namespace utopia {
                 meshes.push_back(mesh);
 
                 if (verbose_) {
-                    utopia::out() << "Generated mesh with " << n[0] << " x " << n[1] << " x " << n[2]
-                                  << " intervals -> " << mesh->n_elements() << " elements\n";
+                    std::stringstream ss;
+                    ss << "Generated mesh at level " << l << " with " << n[0] << " x " << n[1] << " x " << n[2]
+                       << " intervals -> " << mesh->n_elements() << " elements\n";
+
+                    fine_mesh.comm().root_print(ss.str());
                 }
 
                 for (int d = 0; d < spatial_dim; ++d) {
@@ -76,6 +84,7 @@ namespace utopia {
             return true;
         }
 
+    private:
         bool verbose_{true};
         std::string elem_type_{"HEX8"};
     };
