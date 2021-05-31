@@ -35,6 +35,7 @@ namespace utopia {
         using Transfer = utopia::Transfer<Matrix, Vector>;
         using MonotoneMultigrid = utopia::MonotoneMultigrid<Matrix, Vector>;
         using Smoother = utopia::IterativeSolver<Matrix, Vector>;
+        using QPSmoother = utopia::QPSolver<Matrix, Vector>;
 
         void read(Input &in) override {
             Super::read(in);
@@ -182,7 +183,7 @@ namespace utopia {
             InputParameters params;
             params.set("block_size", block_size_);
 
-            std::shared_ptr<Smoother> fine_smoother;
+            std::shared_ptr<QPSmoother> fine_smoother;
             std::shared_ptr<Smoother> coarse_smoother;
 
 #ifdef UTOPIA_WITH_BLAS
@@ -200,11 +201,7 @@ namespace utopia {
 
             fine_smoother->read(params);
             coarse_smoother->read(params);
-
-            const int n_levels = space_hierarchy_.size();
-
-            algorithm_ =
-                utopia::make_unique<MonotoneMultigrid>(fine_smoother, coarse_smoother, direct_solver, n_levels + 1);
+            algorithm_ = utopia::make_unique<MonotoneMultigrid>(fine_smoother, coarse_smoother, direct_solver);
         }
     };
 

@@ -84,6 +84,12 @@ namespace utopia {
             if (qp_smoother_) {
                 in.get("qp_smoother", *qp_smoother_);
             }
+
+            in.get("coarse_space_it", coarse_space_it_);
+            in.get("debug", debug_);
+            in.get("use_coarse_space", use_coarse_space_);
+
+            algo_.verbose(false);
         }
 
         void set_transfer_operators(const std::vector<std::shared_ptr<Transfer>> &transfer_operators) {
@@ -97,9 +103,11 @@ namespace utopia {
             }
 
             truncated_transfer_ = tt;
-            transfer_operators.resize(transfer_operators.size() - 1);
 
-            algo_.set_transfer_operators(transfer_operators);
+            auto transfer_operators_copy = transfer_operators;
+            transfer_operators_copy.resize(transfer_operators.size() - 1);
+
+            algo_.set_transfer_operators(transfer_operators_copy);
         }
 
         void set_transfer_operators(const std::vector<std::shared_ptr<Transfer>> &transfer_operators,
@@ -108,7 +116,7 @@ namespace utopia {
             truncated_transfer_ = last_level;
         }
 
-        void init(const std::shared_ptr<QPSmoother> &qp_smoother) { qp_smoother_ = fine_smoother; }
+        void init(const std::shared_ptr<QPSmoother> &qp_smoother) { qp_smoother_ = qp_smoother; }
 
         inline static std::shared_ptr<TruncatedTransfer> new_fine_level_transfer(
             const std::shared_ptr<Matrix> &interpolation) {
@@ -125,17 +133,43 @@ namespace utopia {
         void update(const std::shared_ptr<const Matrix> &op) override {
             Super::update(op);
             init_memory(row_layout(*op));
+            qp_smoother_->update(op);
 
             if (algo_.must_perform_galerkin_assembly()) {
-                std::shared_ptr<Matrix> op_H = std::make_shared<Matrix>();
-                truncated_transfer_->restrict(*op, *op_H);
+                galerkin_assembly(op);
+            }
+        }
 
-                if (algo_.fix_semidefinite_operators()) {
-                    algo_.fix_semidefinite_operator(*op_H);
+        inline SizeType n_levels() const { return algo_.n_levels() + 1; }
+
+        bool apply(const Vector &rhs, Vector &x) override {
+            bool converged = false;
+
+            // algo_.verbose(this->verbose());
+
+            std::string mg_header_message = "MontoneMultigrid: " + std::to_string(n_levels()) + " levels";
+            this->init_solver(mg_header_message, {" it. ", "|| u - u_old ||"});
+
+            Vector x_old = x;
+            for (SizeType it = 0; it < this->max_it() && !converged; ++it) {
+                if (!step(rhs, x)) {
+                    Utopia::Abort("MonotoneMultigrid::step FAILED");
                 }
 
-                algo_.update(op_H);
+                Scalar x_diff = norm2(x - x_old);
+
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(it, {x_diff});
+                }
+
+                converged = this->check_convergence(it, 1, 1, x_diff);
+
+                if (!converged) {
+                    x_old = x;
+                }
             }
+
+            return converged;
         }
 
         void init_memory(const Layout &l) override {
@@ -143,64 +177,115 @@ namespace utopia {
             active_set_->init(l);
         }
 
-        inline bool step(const Vector &rhs, Vector &x, const SizeType &smoothing_steps = 1) {
-            assert(l != this->n_levels() - 2);
+        void galerkin_assembly(const std::shared_ptr<const Matrix> &op) {
+            if (use_coarse_space_) {
+                std::shared_ptr<Matrix> op_H = std::make_shared<Matrix>();
+                truncated_transfer_->restrict(*op, *op_H);
 
-            qp_smoother_->sweeps(smoothing_steps);
+                if (algo_.fix_semidefinite_operators()) {
+                    algo_.fix_semidefinite_operator(*op_H);
+                }
 
-            if (auto *fine_smoother_vi = dynamic_cast<VariableBoundSolverInterface *>(fine_smoother)) {
-                fine_smoother_vi->set_box_constraints(this->get_box_constraints());
-            } else {
-                utopia_error(
-                    "MonotoneMultigrid: requires VariableBoundSolverInterface to be the fine level "
-                    "smoother ");
+                if (n_levels() > 2) {
+                    algo_.update(op_H);
+                } else {
+                    algo_.coarse_solver()->update(op_H);
+                }
             }
+        }
 
-            fine_smoother->smooth(rhs, x);
+        void coarse_space_step(const Vector &r_coarse, Vector &c_coarse) {
+            if (n_levels() > 2) {
+                algo_.max_it(coarse_space_it_);
+                algo_.apply(r_coarse, c_coarse);
+            } else {
+                algo_.coarse_solver()->apply(r_coarse, c_coarse);
+            }
+        }
 
-            if (pre_sm) {
-                if (auto *trunc_transfer =
-                        dynamic_cast<IPTruncatedTransfer<Matrix, Vector> *>(this->transfers_[l - 1].get())) {
+        inline bool step(const Vector &rhs, Vector &x) {
+            qp_smoother_->set_box_constraints(this->get_box_constraints());
+            qp_smoother_->sweeps(algo_.pre_smoothing_steps());
+            qp_smoother_->smooth(rhs, x);
+
+            if (use_coarse_space_) {
+                if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(qp_smoother_.get())) {
+                    truncated_transfer_->truncate_interpolation(pgs_QR->get_active_set());
+
+                    if (this->verbose()) {
+                        Scalar n_active = sum(pgs_QR->get_active_set());
+                        x.comm().root_print("n_active: " + std::to_string(SizeType(n_active)));
+                    }
+
+                    this->galerkin_assembly(this->get_operator());
                     ////////////////////////////////////////////////////////////////
-                    // FIXME duplicated code (ProjectedGaussSeidelQR needs changes to avoid this)
-                    if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(fine_smoother)) {
-                        trunc_transfer->truncate_interpolation(pgs_QR->get_active_set());
+                } else {
+                    active_set_->verbose(this->verbose());
 
-                        if (this->verbose()) {
-                            Scalar n_active = sum(pgs_QR->get_active_set());
-                            x.comm().root_print("n_active: " + std::to_string(SizeType(n_active)));
-                        }
-
+                    if (active_set_->determine(this->get_box_constraints(), x)) {
+                        truncated_transfer_->truncate_interpolation(active_set_->indicator());
                         this->galerkin_assembly(this->get_operator());
-
-                        for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
-                            smoothers_[l]->update(level(l).A_ptr());
-                        }
-
-                        coarse_solver_->update(level(0).A_ptr());
-                        ////////////////////////////////////////////////////////////////
-                    } else {
-                        active_set_->verbose(this->verbose());
-                        if (active_set_->determine(this->get_box_constraints(), x)) {
-                            trunc_transfer->truncate_interpolation(active_set_->indicator());
-
-                            this->galerkin_assembly(this->get_operator());
-
-                            for (std::size_t l = 1; l != smoothers_.size() - 1; ++l) {
-                                smoothers_[l]->update(level(l).A_ptr());
-                            }
-
-                            coarse_solver_->update(level(0).A_ptr());
-                        }
                     }
                 }
 
-                else {
-                    Utopia::Abort("MonotoneMultigrid: requires IPTruncatedTransfer for the finest level.");
+                Vector r, c;
+                Vector r_coarse, c_coarse;
+
+                r = (*this->get_operator()) * x;
+                r = rhs - r;
+
+                active_set_->zero_out_active(r);
+
+                truncated_transfer_->restrict(r, r_coarse);
+
+                if (debug_) {
+                    Scalar r_norm = norm2(r);
+                    Scalar r_coarse_norm = norm2(r_coarse);
+
+                    std::stringstream ss;
+
+                    ss << "residual before correction: " << r_norm << '\n';
+                    ss << "resricted residual: " << r_coarse_norm << '\n';
+
+                    x.comm().root_print(ss.str());
+                }
+
+                c_coarse.zeros(layout(r_coarse));
+
+                // Compute coarse grid correction
+                coarse_space_step(r_coarse, c_coarse);
+
+                truncated_transfer_->interpolate(c_coarse, c);
+
+                active_set_->zero_out_active(c);
+
+                x += c;
+
+                if (debug_) {
+                    r = (*this->get_operator()) * x;
+                    r = rhs - r;
+
+                    Scalar r_norm = norm2(r);
+                    Scalar c_norm = norm2(c);
+                    Scalar c_coarse_norm = norm2(c_coarse);
+
+                    std::stringstream ss;
+
+                    ss << "residual after correction: " << r_norm << '\n';
+                    ss << "norm correction: " << c_norm << '\n';
+                    ss << "norm coarse correction: " << c_coarse_norm << '\n';
+
+                    x.comm().root_print(ss.str());
                 }
             }
+
+            qp_smoother_->sweeps(algo_.post_smoothing_steps());
+            qp_smoother_->smooth(rhs, x);
             return true;
         }
+
+        void pre_smoothing_steps(const SizeType n) { algo_.pre_smoothing_steps(n); }
+        void post_smoothing_steps(const SizeType n) { algo_.post_smoothing_steps(n); }
 
     public:
         MonotoneMultigrid *clone() const override {
@@ -231,7 +316,10 @@ namespace utopia {
         std::shared_ptr<QPSmoother> qp_smoother_;
         std::shared_ptr<TruncatedTransfer> truncated_transfer_;
         std::shared_ptr<ActiveSet<Vector>> active_set_;
-    };
+        SizeType coarse_space_it_{1};
+        bool debug_{false};
+        bool use_coarse_space_{true};
+    };  // namespace utopia
 
 }  // namespace utopia
 

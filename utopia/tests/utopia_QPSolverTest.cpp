@@ -191,8 +191,7 @@ namespace utopia {
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
             // MultigridQR<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, num_levels);  // QR
-            MonotoneMultigrid<Matrix, Vector> multigrid(
-                fine_smoother, coarse_smoother, direct_solver, num_levels);  // Monotone
+            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver);  // Monotone
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(num_levels - 1);
@@ -353,7 +352,7 @@ namespace utopia {
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
             // auto direct_solver = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
 
-            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver, n_levels);
+            MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver);
 
             std::vector<std::shared_ptr<Transfer<Matrix, Vector>>> interpolation_operators;
             interpolation_operators.resize(n_levels - 1);

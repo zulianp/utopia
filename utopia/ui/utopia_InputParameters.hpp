@@ -112,6 +112,8 @@ namespace utopia {
 
         inline void set(const std::string &key, const int &val) { aux_set(key, val); }
 
+        inline void set(const std::string &key, const long &val) { aux_set(key, val); }
+
         inline void set(const std::string &key, const char *val) { aux_set(key, std::string(val)); }
 
         inline void set(const std::string &key, const std::string &val) { aux_set(key, val); }
