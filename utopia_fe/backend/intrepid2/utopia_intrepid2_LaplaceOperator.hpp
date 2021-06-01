@@ -6,16 +6,26 @@
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
 #include "utopia_intrepid2_Field.hpp"
+#include "utopia_intrepid2_SubdomainFunction.hpp"
 
 namespace utopia {
 
     template <class DiffusionCoefficient>
     class LaplaceOperator : public Configurable {
     public:
-        void read(Input &in) override { in.get("coeff", coeff); }
+        void read(Input &in) override {
+            in.get("coeff", coeff);
+            in.get("permeability_function", [this](Input &node) {
+                node.get("function", [this](Input &function_node) { subdomain_function.read(function_node); });
+            });
+        }
 
-        LaplaceOperator(const DiffusionCoefficient &coeff = DiffusionCoefficient(1.0)) : coeff(coeff) {}
+        LaplaceOperator(const DiffusionCoefficient &coeff = DiffusionCoefficient(1.0))
+            : coeff(coeff), subdomain_function(1.0) {}
         DiffusionCoefficient coeff;
+
+        // FIXME
+        intrepid2::SubdomainValue<DiffusionCoefficient> subdomain_function;
     };
 
     namespace intrepid2 {
@@ -81,6 +91,11 @@ namespace utopia {
                 this->loop_cell_test_trial("Assemble<LaplaceOperator>::assemble",
                                            op_and_store_cell_ij(this->matrix_data(), make_op()));
 
+                if (!op_.subdomain_function.empty) {
+                    auto data = this->matrix_data();
+                    this->scale_matrix(op_.subdomain_function, data);
+                }
+
                 UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
                 return true;
 
@@ -92,35 +107,40 @@ namespace utopia {
 
                 this->apply_operator("Assemble<LaplaceOperator>::apply", x, y, make_op());
 
+                if (!op_.subdomain_function.empty) {
+                    auto data = this->vector_data();
+                    this->scale_vector(op_.subdomain_function, data);
+                }
+
                 UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::apply");
                 return true;
             }
 
-            bool assemble_matrix_intrepid_tutorial() {
-                UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
-                this->ensure_matrix_accumulator();
+            // bool assemble_matrix_intrepid_tutorial() {
+            //     UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
+            //     this->ensure_matrix_accumulator();
 
-                auto &fe = this->fe();
-                auto data = this->matrix_data();
+            //     auto &fe = this->fe();
+            //     auto data = this->matrix_data();
 
-                DynRankView grad_x_measure(
-                    "grad_x_measure", fe.num_cells(), fe.num_fields(), fe.num_qp(), fe.spatial_dimension());
+            //     DynRankView grad_x_measure(
+            //         "grad_x_measure", fe.num_cells(), fe.num_fields(), fe.num_qp(), fe.spatial_dimension());
 
-                Kokkos::deep_copy(grad_x_measure, fe.grad);
-                FunctionSpaceTools::template multiplyMeasure<Scalar>(grad_x_measure, fe.measure, fe.grad);
-                FunctionSpaceTools::template integrate<Scalar>(data, fe.grad, grad_x_measure);
+            //     Kokkos::deep_copy(grad_x_measure, fe.grad);
+            //     FunctionSpaceTools::template multiplyMeasure<Scalar>(grad_x_measure, fe.measure, fe.grad);
+            //     FunctionSpaceTools::template integrate<Scalar>(data, fe.grad, grad_x_measure);
 
-                // Only works if coeff is a scalar
-                if (op_.coeff != 1.0) {
-                    auto c = op_.coeff;
-                    this->loop_cell_test_trial(
-                        "scale_with_coeff",
-                        KOKKOS_LAMBDA(const int &i0, const int &i1, const int &i2) { data(i0, i1, i2) *= c; });
-                }
+            //     // Only works if coeff is a scalar
+            //     if (op_.coeff != 1.0) {
+            //         auto c = op_.coeff;
+            //         this->loop_cell_test_trial(
+            //             "scale_with_coeff",
+            //             KOKKOS_LAMBDA(const int &i0, const int &i1, const int &i2) { data(i0, i1, i2) *= c; });
+            //     }
 
-                UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
-                return true;
-            }
+            //     UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
+            //     return true;
+            // }
 
             // NVCC_PRIVATE :
             UserOp op_;

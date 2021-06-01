@@ -28,7 +28,10 @@ namespace utopia {
 
         void init(const std::shared_ptr<FEFunctionInterface_t> &function) { function_ = function; }
 
-        void read(Input &in) override { in.get("solver", *solver_); }
+        void read(Input &in) override {
+            in.get("solver", *solver_);
+            in.get("verbose", verbose_);
+        }
 
         bool solve() {
             Vector_t x;
@@ -37,21 +40,22 @@ namespace utopia {
             if (function_->is_linear() && !function_->is_time_dependent()) {
                 // Tivial problem, lets keep it simple
 
-                Matrix_t A;
-                Vector_t b;
-                function_->hessian_and_gradient(x, A, b);
+                Matrix_t H;  // Hessian/Jacobian
+                Vector_t g;  // Postive gradient / Residual
+                bool ok = function_->hessian_and_gradient(x, H, g);
+                assert(ok);
 
-                Vector_t c(layout(x), 0.0);
-                Vector_t r = A * x;
-                r = b - r;
-                function_->space()->apply_zero_constraints(r);
+                Vector_t c(layout(x), 0.0);  // Correction
 
-                solver_->linear_solver()->solve(A, r, c);
+                // Solve linear problem
+                ok = solver_->linear_solver()->solve(H, g, c);
+                assert(ok);
 
-                x += c;
+                // Correct the solution with respect to the negative gradient
+                x -= c;
 
                 function_->report_solution(x);
-                return true;
+                return ok;
             } else {
                 function_->setup_IVP(x);
 
@@ -71,11 +75,14 @@ namespace utopia {
 
         NLSolve() : env_(std::make_shared<Environment_t>()) { init_defaults(); }
 
+        inline bool verbose() const { return verbose_; }
+
     private:
         Communicator_t comm_;
         std::shared_ptr<Environment_t> env_;
         std::shared_ptr<FEFunctionInterface_t> function_;
         std::shared_ptr<NewtonBase_t> solver_;
+        bool verbose_{true};
 
         void init_defaults() {
             auto linear_solver = std::make_shared<OmniLinearSolver_t>();
@@ -101,13 +108,18 @@ namespace utopia {
             const std::shared_ptr<FunctionSpace> &porous_matrix,
             const std::vector<std::shared_ptr<FunctionSpace>> &fracture_networks) {
             auto problem = std::make_shared<CoupledFEFunction_t>();
+
             std::shared_ptr<FEFunctionInterface_t> matrix_problem;
 
             if (fracture_networks.empty()) {
-                utopia::err() << "FracNetFlow[Warning] fracture_networks is undefined\n";
+                this->comm().root_print("FracNetFlow[Warning] fracture_networks is undefined");
             }
 
             in.get("porous_matrix", [&](Input &node) {
+                if (this->verbose()) {
+                    this->comm().root_print("FracNetFlow[Status] Reading material for: " + porous_matrix->name());
+                }
+
                 auto flow = std::make_shared<FEModelFunction_t>(porous_matrix);
                 node.require(problem_type, *flow);
                 matrix_problem = flow;
