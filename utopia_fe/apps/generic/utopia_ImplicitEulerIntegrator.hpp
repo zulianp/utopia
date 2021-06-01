@@ -38,6 +38,7 @@ namespace utopia {
         }
 
         bool update_IVP(const Vector_t &x) override {
+            Super::update_IVP(x);
             mass_times_x_old_ = (*this->mass_matrix()) * x;
             assert(!empty(mass_times_x_old_));
             return true;

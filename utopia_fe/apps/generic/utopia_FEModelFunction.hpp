@@ -11,6 +11,8 @@
 #include "utopia_MatrixTransformer.hpp"
 #include "utopia_ProblemBase.hpp"
 
+#include "utopia_SimulationTime.hpp"
+
 #include <limits>
 
 namespace utopia {
@@ -47,6 +49,11 @@ namespace utopia {
         virtual bool is_linear() const = 0;
 
         virtual void must_apply_constraints_to_assembled(const bool) {}
+        virtual bool report_solution(const Vector_t &) { return true; }
+
+        virtual bool update_IVP(const Vector_t &) { return false; }
+        virtual bool setup_IVP(Vector_t &) { return false; }
+        virtual bool is_IVP_solved() { return true; }
     };
 
     template <class FunctionSpace>
@@ -89,6 +96,14 @@ namespace utopia {
 
                 this->mass_matrix_assembler()->read(params);
             }
+
+            auto space_name = space()->name();
+
+            if (!space_name.empty()) {
+                output_path_ = space_name + ".e";
+            }
+
+            in.get("output_path", output_path_);
         }
 
         bool value(const Vector_t & /*point*/, Scalar_t &value) const override {
@@ -188,6 +203,8 @@ namespace utopia {
         inline bool verbose() const { return verbose_; }
         inline void verbose(const bool val) const { verbose_ = val; }
 
+        bool report_solution(const Vector_t &x) override { return space_->write(output_path_, x); }
+
     private:
         void ensure_gradient(Vector_t &g) const {
             if (empty(g)) {
@@ -216,6 +233,8 @@ namespace utopia {
 
         bool must_apply_constraints_{true};
         bool verbose_{false};
+
+        utopia::Path output_path_{"output.e"};
     };
 
     template <class FunctionSpace>
@@ -230,6 +249,8 @@ namespace utopia {
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
 
+        using IO_t = utopia::IO<FunctionSpace>;
+
         TimeDependentFunction(const std::shared_ptr<FunctionSpace> &space)
             : fe_function_(std::make_shared<FEModelFunction_t>(space)) {
             fe_function_->must_apply_constraints_to_assembled(false);
@@ -243,8 +264,14 @@ namespace utopia {
 
         void set_environment(const std::shared_ptr<Environment_t> &env) override { fe_function_->set_environment(env); }
 
-        virtual bool update_IVP(const Vector_t &x) = 0;
-        virtual bool setup_IVP(Vector_t &x) = 0;
+        bool update_IVP(const Vector_t &x) override {
+            time_.update();
+            return true;
+        }
+
+        bool setup_IVP(Vector_t &x) override = 0;
+
+        bool is_IVP_solved() override { return time_.finished(); }
 
         virtual void integrate_gradient(const Vector_t &x, Vector_t &g) const = 0;
         virtual void integrate_hessian(const Vector_t &x, Matrix_t &H) const = 0;
@@ -342,11 +369,13 @@ namespace utopia {
             Super::read(in);
             fe_function_->read(in);
 
-            in.get("delta_time", delta_time_);
+            in.get("time", time_);
             in.get("export_tensors", export_tensors_);
         }
 
-        inline Scalar_t delta_time() const { return delta_time_; }
+        inline Scalar_t delta_time() const { return time_.delta(); }
+        inline SimulationTime<Scalar_t> &time() { return time_; }
+        inline const SimulationTime<Scalar_t> &time() const { return time_; }
         bool is_time_dependent() const override { return true; }
 
         // inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler();
@@ -359,12 +388,23 @@ namespace utopia {
 
         inline void must_apply_constraints_to_assembled(const bool val) override { must_apply_constraints_ = val; }
 
+        bool report_solution(const Vector_t &x) override {
+            if (!io_) {
+                io_ = std::make_shared<IO_t>(*this->space());
+            }
+
+            return io_->write(x, this->time().step(), this->time().get());
+        }
+
     protected:
         inline bool export_tensors() const { return export_tensors_; }
 
     private:
         std::shared_ptr<FEFunctionInterface_t> fe_function_;
-        Scalar_t delta_time_{0.1};
+        std::shared_ptr<IO_t> io_;
+
+        SimulationTime<Scalar_t> time_;
+
         bool must_apply_constraints_{true};
         bool export_tensors_{false};
     };

@@ -11,6 +11,7 @@ namespace utopia {
     class CoupledFEFunction : public FEFunctionInterface<FunctionSpace> {
     public:
         using Super = utopia::FEFunctionInterface<FunctionSpace>;
+        using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -23,8 +24,8 @@ namespace utopia {
         class FEProblem : public Configurable {
         public:
             std::string name_{"no_name"};
-            std::shared_ptr<FunctionSpace> space_;
-            std::shared_ptr<FEFunctionInterface<FunctionSpace>> function_;
+            // std::shared_ptr<FunctionSpace> space_;
+            std::shared_ptr<FEFunctionInterface_t> function_;
             std::shared_ptr<Environment<FunctionSpace>> env_;
 
             bool is_master_{false};
@@ -34,6 +35,8 @@ namespace utopia {
             std::shared_ptr<Matrix_t> mass_matrix_;
             std::shared_ptr<Vector_t> gradient_;
             std::shared_ptr<Vector_t> solution_;
+
+            bool report_solution() { return function_->report_solution(*solution()); }
 
             inline bool is_linear() const {
                 if (function_) {
@@ -79,28 +82,28 @@ namespace utopia {
             void ensure_gradient() {
                 if (!gradient_) {
                     gradient_ = std::make_shared<Vector_t>();
-                    space_->create_vector(*gradient_);
+                    space()->create_vector(*gradient_);
                 }
             }
 
             void ensure_hessian() {
                 if (!hessian_) {
                     hessian_ = std::make_shared<Matrix_t>();
-                    space_->create_matrix(*hessian_);
+                    space()->create_matrix(*hessian_);
                 }
             }
 
             void ensure_mass_matrix() {
                 if (!mass_matrix_) {
                     mass_matrix_ = std::make_shared<Matrix_t>();
-                    space_->create_matrix(*mass_matrix_);
+                    space()->create_matrix(*mass_matrix_);
                 }
             }
 
             void ensure_solution() {
                 if (!solution_) {
                     solution_ = std::make_shared<Vector_t>();
-                    space_->create_vector(*solution_);
+                    space()->create_vector(*solution_);
                     solution_->set(0.0);
                 }
             }
@@ -160,7 +163,7 @@ namespace utopia {
                 }
             }
 
-            void set_function(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &function) {
+            void set_function(const std::shared_ptr<FEFunctionInterface_t> &function) {
                 function_ = function;
                 function_->must_apply_constraints_to_assembled(false);
             }
@@ -171,8 +174,8 @@ namespace utopia {
             }
 
             const std::shared_ptr<FunctionSpace> &space() const {
-                assert(space_);
-                return space_;
+                assert(function_->space());
+                return function_->space();
             }
 
             void read(Input &in) override {
@@ -185,18 +188,19 @@ namespace utopia {
                     Utopia::Abort("CoupledFEFunction::FEProblem::read: set_environment has to be called before read");
                 }
 
-                if (!space_) {
-                    std::string space;
-                    in.require("space", space);
-                    space_ = env_->find_space(space);
+                std::shared_ptr<FunctionSpace> space;
+                if (!function_ || !this->space()) {
+                    std::string space_id;
+                    in.require("space", space_id);
+                    space = env_->find_space(space_id);
 
-                    if (!space_) {
+                    if (!space) {
                         Utopia::Abort("CoupledFEFunction::FEProblem::read: space is undefined!");
                     }
                 }
 
                 if (!function_) {
-                    function_ = FEFunctionFactory<FunctionSpace>::make(space_, in);
+                    function_ = FEFunctionFactory<FunctionSpace>::make(space, in);
                     function_->set_environment(env_);
                     function_->must_apply_constraints_to_assembled(false);
                 }
@@ -552,21 +556,23 @@ namespace utopia {
                         assert(!from.empty());
                         assert(!to.empty());
 
-                        auto it_from = fe_problems_.find(from);
-                        if (it_from == fe_problems_.end()) {
-                            utopia::err()
-                                << "No problem with name " + from + " from field must be defined with valid id\n";
-                            Utopia::Abort();
-                        }
+                        this->add_coupling(from, to);
 
-                        auto it_to = fe_problems_.find(to);
-                        if (it_to == fe_problems_.end()) {
-                            utopia::err() << "No problem with name " + to + " to field must be defined with valid id\n";
-                            Utopia::Abort();
-                        }
+                        // auto it_from = fe_problems_.find(from);
+                        // if (it_from == fe_problems_.end()) {
+                        //     utopia::err()
+                        //         << "No problem with name " + from + " from field must be defined with valid id\n";
+                        //     Utopia::Abort();
+                        // }
 
-                        c->set(it_from->second, it_to->second);
-                        couplings_.push_back(std::move(c));
+                        // auto it_to = fe_problems_.find(to);
+                        // if (it_to == fe_problems_.end()) {
+                        //     utopia::err() << "No problem with name " + to + " to field must be defined with valid
+                        //     id\n"; Utopia::Abort();
+                        // }
+
+                        // c->set(it_from->second, it_to->second);
+                        // couplings_.push_back(std::move(c));
                     });
                 });
             }
@@ -609,6 +615,49 @@ namespace utopia {
         }
 
         inline void must_apply_constraints_to_assembled(const bool val) override { must_apply_constraints_ = val; }
+
+        void add_function(const std::string &name, const std::shared_ptr<FEFunctionInterface_t> &function) {
+            auto problem = std::make_shared<FEProblem>();
+            problem->function_ = function;
+            problem->name_ = name;
+
+            if (env_) {
+                problem->set_environment(env_);
+            }
+
+            fe_problems_[name] = problem;
+        }
+
+        void add_coupling(const std::string &from, const std::string &to) {
+            auto c = utopia::make_unique<Coupling>();
+
+            auto it_from = fe_problems_.find(from);
+            if (it_from == fe_problems_.end()) {
+                utopia::err() << "No problem with name " + from + " from field must be defined with valid id\n";
+                Utopia::Abort();
+            }
+
+            auto it_to = fe_problems_.find(to);
+            if (it_to == fe_problems_.end()) {
+                utopia::err() << "No problem with name " + to + " to field must be defined with valid id\n";
+                Utopia::Abort();
+            }
+
+            c->set(it_from->second, it_to->second);
+            couplings_.push_back(std::move(c));
+        }
+
+        bool report_solution(const Vector_t &x) override {
+            *master_fe_problem_->solution() = x;
+            project_solutions();
+
+            bool ok = true;
+            for (auto &ff : fe_problems_) {
+                ok &= ff.second->report_solution();
+            }
+
+            return ok;
+        }
 
     protected:
         void apply_transformers(Matrix_t &mat) const {

@@ -47,6 +47,8 @@ namespace utopia {
         }
 
         bool update_IVP(const Vector_t &x) override {
+            Super::update_IVP(x);
+
             const Scalar_t dt = this->delta_time();
 
             x_older_ = x_old_;
