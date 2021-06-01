@@ -628,6 +628,16 @@ namespace utopia {
             fe_problems_[name] = problem;
         }
 
+        void add_master_function(const std::string &name, const std::shared_ptr<FEFunctionInterface_t> &function) {
+            add_function(name, function);
+
+            auto it = fe_problems_.find(name);
+
+            assert(it != fe_problems_.end());
+
+            master_fe_problem_ = it->second;
+        }
+
         void add_coupling(const std::string &from, const std::string &to) {
             auto c = utopia::make_unique<Coupling>();
 
@@ -657,6 +667,12 @@ namespace utopia {
             }
 
             return ok;
+        }
+
+        void initialize() {
+            for (auto &c : couplings_) {
+                c->update();
+            }
         }
 
     protected:

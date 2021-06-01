@@ -82,11 +82,15 @@ namespace utopia {
             auto problem = std::make_shared<CoupledFEFunction_t>();
             std::shared_ptr<FEFunctionInterface_t> matrix_problem;
 
+            if (fracture_networks.empty()) {
+                utopia::err() << "FracNetFlow[Warning] fracture_networks is undefined\n";
+            }
+
             in.get("porous_matrix", [&](Input &node) {
                 auto flow = std::make_shared<FEModelFunction_t>(porous_matrix);
                 node.require(problem_type, *flow);
                 matrix_problem = flow;
-                problem->add_function(porous_matrix->name(), flow);
+                problem->add_master_function(porous_matrix->name(), flow);
             });
 
             in.get("fracture_networks", [&](Input &array_node) {
@@ -99,6 +103,8 @@ namespace utopia {
                     problem->add_coupling(porous_matrix->name(), space->name());
                 });
             });
+
+            problem->initialize();
 
             if (problem_type == "transport") {
                 return std::make_shared<ImplicitEulerIntegrator_t>(problem);
