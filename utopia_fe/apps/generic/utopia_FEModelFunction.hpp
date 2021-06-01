@@ -265,13 +265,13 @@ namespace utopia {
         void set_environment(const std::shared_ptr<Environment_t> &env) override { fe_function_->set_environment(env); }
 
         bool update_IVP(const Vector_t &x) override {
-            time_.update();
+            time()->update();
             return true;
         }
 
         bool setup_IVP(Vector_t &x) override = 0;
 
-        bool is_IVP_solved() override { return time_.finished(); }
+        bool is_IVP_solved() override { return time()->finished(); }
 
         virtual void integrate_gradient(const Vector_t &x, Vector_t &g) const = 0;
         virtual void integrate_hessian(const Vector_t &x, Matrix_t &H) const = 0;
@@ -403,7 +403,7 @@ namespace utopia {
                 io_ = std::make_shared<IO_t>(*this->space());
             }
 
-            return io_->write(x, this->time().step(), this->time().get());
+            return io_->write(x, this->time()->step(), this->time()->get());
         }
 
     protected:
