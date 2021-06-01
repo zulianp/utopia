@@ -24,7 +24,6 @@ namespace utopia {
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
-        // using CoupledFEFunction_t = utopia::CoupledFEFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
 
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;

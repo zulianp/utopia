@@ -77,9 +77,14 @@ namespace utopia {
                 function_->setup_IVP(x);
 
                 this->status("Solving nonlinear problem");
+
+                int n_time_steps = 0;
+
                 do {
+                    this->status("Timestep: " + std::to_string(n_time_steps++));
+
                     if (!solver_->solve(*function_, x)) {
-                        utopia::err() << "NLSolve[Error] Solver failed to solve!\n";
+                        error("Solver failed to solve");
                         return false;
                     }
 
@@ -99,13 +104,19 @@ namespace utopia {
 
         void status(const std::string &message) const {
             if (verbose_) {
-                this->comm().root_print("[Status] " + name() + ": " + message);
+                this->comm().root_print("[Status] " + name() + ": " + message, utopia::out().stream());
             }
         }
 
         void warning(const std::string &message) const {
             if (verbose_) {
-                this->comm().root_print("[Warning] " + name() + ": " + message);
+                this->comm().root_print("[Warning] " + name() + ": " + message, utopia::err().stream());
+            }
+        }
+
+        void error(const std::string &message) const {
+            if (verbose_) {
+                this->comm().root_print("[Error] " + name() + ": " + message, utopia::err().stream());
             }
         }
 
