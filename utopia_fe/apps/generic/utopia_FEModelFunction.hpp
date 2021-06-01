@@ -35,7 +35,7 @@ namespace utopia {
         virtual bool assemble_mass_matrix() = 0;
         virtual bool assemble_mass_matrix(Matrix_t &mass_matrix) = 0;
 
-        virtual const std::shared_ptr<OmniAssembler_t> &assembler() const = 0;
+        // virtual const std::shared_ptr<OmniAssembler_t> &assembler() const = 0;
         virtual const std::shared_ptr<FunctionSpace> &space() const = 0;
 
         bool initialize_hessian(Matrix_t &H, Matrix_t &) const override {
@@ -45,6 +45,8 @@ namespace utopia {
 
         virtual bool is_time_dependent() const = 0;
         virtual bool is_linear() const = 0;
+
+        virtual void must_apply_constraints_to_assembled(const bool) {}
     };
 
     template <class FunctionSpace>
@@ -178,12 +180,10 @@ namespace utopia {
             this->mass_matrix_assembler()->set_environment(env);
         }
 
-        inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return assembler_; }
+        inline const std::shared_ptr<OmniAssembler_t> &assembler() const /*override*/ { return assembler_; }
         inline const std::shared_ptr<FunctionSpace> &space() const override { return space_; }
 
         bool is_time_dependent() const override { return false; }
-
-        inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
 
         inline bool verbose() const { return verbose_; }
         inline void verbose(const bool val) const { verbose_ = val; }
@@ -228,9 +228,14 @@ namespace utopia {
         using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
         using Environment_t = utopia::Environment<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
+        using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
 
         TimeDependentFunction(const std::shared_ptr<FunctionSpace> &space)
             : fe_function_(std::make_shared<FEModelFunction_t>(space)) {
+            fe_function_->must_apply_constraints_to_assembled(false);
+        }
+
+        TimeDependentFunction(const std::shared_ptr<FEFunctionInterface_t> &fe_function) : fe_function_(fe_function) {
             fe_function_->must_apply_constraints_to_assembled(false);
         }
 
@@ -247,7 +252,7 @@ namespace utopia {
         bool value(const Vector_t &x, Scalar_t &v) const override { return fe_function_->value(x, v); }
 
         bool gradient(const Vector_t &x, Vector_t &g) const override {
-            if (!this->assembler()->assemble(x, g)) {
+            if (!fe_function_->gradient(x, g)) {
                 return false;
             }
 
@@ -275,7 +280,7 @@ namespace utopia {
         bool update(const Vector_t &x) override { return fe_function_->update(x); }
 
         bool hessian(const Vector_t &x, Matrix_t &H) const override {
-            if (!this->assembler()->assemble(x, H)) {
+            if (!fe_function_->hessian(x, H)) {
                 return false;
             }
 
@@ -298,7 +303,7 @@ namespace utopia {
         }
 
         bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
-            if (!this->assembler()->assemble(x, H, g)) {
+            if (!fe_function_->hessian_and_gradient(x, H, g)) {
                 return false;
             }
 
@@ -344,19 +349,21 @@ namespace utopia {
         inline Scalar_t delta_time() const { return delta_time_; }
         bool is_time_dependent() const override { return true; }
 
-        inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler(); }
+        // inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler();
+        // }
         inline const std::shared_ptr<FunctionSpace> &space() const override { return fe_function_->space(); }
 
-        inline const std::shared_ptr<FEModelFunction_t> function() const { return fe_function_; }
+        inline const std::shared_ptr<FEFunctionInterface_t> function() const { return fe_function_; }
 
         bool is_linear() const override { return function()->is_linear(); }
 
+        inline void must_apply_constraints_to_assembled(const bool val) override { must_apply_constraints_ = val; }
+
     protected:
-        inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
         inline bool export_tensors() const { return export_tensors_; }
 
     private:
-        std::shared_ptr<FEModelFunction_t> fe_function_;
+        std::shared_ptr<FEFunctionInterface_t> fe_function_;
         Scalar_t delta_time_{0.1};
         bool must_apply_constraints_{true};
         bool export_tensors_{false};

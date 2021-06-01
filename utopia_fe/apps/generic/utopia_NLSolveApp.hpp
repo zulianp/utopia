@@ -46,17 +46,27 @@ namespace utopia {
                 return;
             }
 
+            std::shared_ptr<FEFunctionInterface<FunctionSpace>> problem;
+            std::string function_type = "";
+            in.get("problem", [&function_type](Input &node) { node.get("type", function_type); });
+
+            if ("CoupledFEFunction" == function_type) {
+                problem = std::make_shared<CoupledFEFunction_t>();
+            } else {
+                problem = std::make_shared<FEModelFunction_t>(space_);
+            }
+
             std::string integrator;
             in.get("integrator", integrator);
 
             if (integrator == "Newmark") {
-                time_dependent_function_ = utopia::make_unique<NewmarkIntegrator_t>(space_);
+                time_dependent_function_ = utopia::make_unique<NewmarkIntegrator_t>(problem);
                 function_ = time_dependent_function_;
             } else if (integrator == "ImplicitEuler") {
-                time_dependent_function_ = utopia::make_unique<ImplicitEulerIntegrator_t>(space_);
+                time_dependent_function_ = utopia::make_unique<ImplicitEulerIntegrator_t>(problem);
                 function_ = time_dependent_function_;
             } else {
-                function_ = std::make_shared<FEModelFunction_t>(space_);
+                function_ = problem;
             }
 
             in.require("problem", *function_);
