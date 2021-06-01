@@ -33,17 +33,38 @@ namespace utopia {
         bool solve() {
             Vector_t x;
             function_->create_solution_vector(x);
-            function_->setup_IVP(x);
 
-            do {
-                if (!solver_->solve(*function_, x)) {
-                    utopia::err() << "NLSolve[Error] Solver failed to solve!\n";
-                    return false;
-                }
+            if (function_->is_linear() && !function_->is_time_dependent()) {
+                // Tivial problem, lets keep it simple
 
-                function_->update_IVP(x);
+                Matrix_t A;
+                Vector_t b;
+                function_->hessian_and_gradient(x, A, b);
+
+                Vector_t c(layout(x), 0.0);
+                Vector_t r = A * x;
+                r = b - r;
+                function_->space()->apply_zero_constraints(r);
+
+                solver_->linear_solver()->solve(A, r, c);
+
+                x += c;
+
                 function_->report_solution(x);
-            } while (!function_->is_IVP_solved());
+                return true;
+            } else {
+                function_->setup_IVP(x);
+
+                do {
+                    if (!solver_->solve(*function_, x)) {
+                        utopia::err() << "NLSolve[Error] Solver failed to solve!\n";
+                        return false;
+                    }
+
+                    function_->update_IVP(x);
+                    function_->report_solution(x);
+                } while (!function_->is_IVP_solved());
+            }
 
             return true;
         }

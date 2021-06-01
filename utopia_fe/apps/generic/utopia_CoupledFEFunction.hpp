@@ -557,22 +557,6 @@ namespace utopia {
                         assert(!to.empty());
 
                         this->add_coupling(from, to);
-
-                        // auto it_from = fe_problems_.find(from);
-                        // if (it_from == fe_problems_.end()) {
-                        //     utopia::err()
-                        //         << "No problem with name " + from + " from field must be defined with valid id\n";
-                        //     Utopia::Abort();
-                        // }
-
-                        // auto it_to = fe_problems_.find(to);
-                        // if (it_to == fe_problems_.end()) {
-                        //     utopia::err() << "No problem with name " + to + " to field must be defined with valid
-                        //     id\n"; Utopia::Abort();
-                        // }
-
-                        // c->set(it_from->second, it_to->second);
-                        // couplings_.push_back(std::move(c));
                     });
                 });
             }
