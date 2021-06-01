@@ -58,7 +58,11 @@ namespace utopia {
                 });
             }
 
+#ifndef NDEBUG
+            bool verbose{true};
+#else
             bool verbose{false};
+#endif
             bool has_covering{true};
             int n_var{1};
             std::vector<std::pair<int, int>> tags;

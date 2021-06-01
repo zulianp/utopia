@@ -14,6 +14,9 @@
 #include "utopia_stk.hpp"
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
+// REMOVE ME
+#include "par_moonolith_instance.hpp"
+
 namespace utopia {
 
     template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
@@ -21,6 +24,9 @@ namespace utopia {
 }  // namespace utopia
 
 void stk_fracflow(utopia::Input &in) {
+    // REMOVE ME
+    moonolith::Moonolith::instance().verbose(true);
+
     utopia::FracNetFlow<utopia::stk::FunctionSpace> fnf;
     fnf.read(in);
     fnf.solve();

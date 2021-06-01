@@ -1,0 +1,127 @@
+#ifndef UTOPIA_NL_SOLVE_HPP
+#define UTOPIA_NL_SOLVE_HPP
+
+// Base and Algebra
+#include "utopia_Input.hpp"
+#include "utopia_Traits.hpp"
+
+#include "utopia.hpp"
+
+// UtopiaFE
+#include "utopia_FEModelFunction.hpp"
+#include "utopia_fe_Environment.hpp"
+
+// #include "utopia_OmniLinearSolver.hpp"
+
+namespace utopia {
+
+    template <class FunctionSpace>
+    class NLSolve : public Configurable {
+    public:
+        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
+        using Environment_t = utopia::Environment<FunctionSpace>;
+        using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
+
+        using Matrix_t = typename Traits<FunctionSpace>::Matrix;
+        using Vector_t = typename Traits<FunctionSpace>::Vector;
+        using Scalar_t = typename Traits<FunctionSpace>::Scalar;
+
+        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
+        using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
+
+        using NewtonBase_t = utopia::NewtonBase<Matrix_t, Vector_t>;
+        using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
+
+        inline std::shared_ptr<Environment_t> &env() { return env_; }
+        inline const Communicator_t &comm() const { return comm_; }
+        inline Communicator_t &comm() { return comm_; }
+
+        void init(const std::shared_ptr<FEFunctionInterface_t> &function) { function_ = function; }
+
+        void read(Input &in) override {
+            in.get("solver", *solver_);
+            in.get("verbose", verbose_);
+        }
+
+        inline void set_solver(const std::shared_ptr<NewtonBase_t> &solver) { solver_ = solver; }
+
+        bool solve() {
+            Vector_t x;
+            function_->create_solution_vector(x);
+
+            if (function_->is_linear() && !function_->is_time_dependent()) {
+                // Tivial problem, lets keep it simple
+
+                this->status("Assemblying linear problem");
+
+                Matrix_t H;  // Hessian/Jacobian
+                Vector_t g;  // Postive gradient / Residual
+                bool ok = function_->hessian_and_gradient(x, H, g);
+                assert(ok);
+
+                Vector_t c(layout(x), 0.0);  // Correction
+
+                this->status("Solving linear problem");
+                // Solve linear problem
+                ok = solver_->linear_solver()->solve(H, g, c);
+                assert(ok);
+
+                // Correct the solution with respect to the negative gradient
+                x -= c;
+
+                this->status("Reporting solution");
+
+                function_->report_solution(x);
+                return ok;
+            } else {
+                function_->setup_IVP(x);
+
+                this->status("Solving nonlinear problem");
+                do {
+                    if (!solver_->solve(*function_, x)) {
+                        utopia::err() << "NLSolve[Error] Solver failed to solve!\n";
+                        return false;
+                    }
+
+                    function_->update_IVP(x);
+                    function_->report_solution(x);
+                } while (!function_->is_IVP_solved());
+            }
+
+            return true;
+        }
+
+        NLSolve() : env_(std::make_shared<Environment_t>()) { init_defaults(); }
+
+        inline bool verbose() const { return verbose_; }
+        inline void verbose(const bool val) { verbose_ = val; }
+        virtual std::string name() const { return "NLSolve"; }
+
+        void status(const std::string &message) const {
+            if (verbose_) {
+                this->comm().root_print("[Status] " + name() + ": " + message);
+            }
+        }
+
+        void warning(const std::string &message) const {
+            if (verbose_) {
+                this->comm().root_print("[Warning] " + name() + ": " + message);
+            }
+        }
+
+    private:
+        Communicator_t comm_;
+        std::shared_ptr<Environment_t> env_;
+        std::shared_ptr<FEFunctionInterface_t> function_;
+        std::shared_ptr<NewtonBase_t> solver_;
+        bool verbose_{true};
+
+        void init_defaults() {
+            auto linear_solver = std::make_shared<OmniLinearSolver_t>();
+            auto newton = std::make_shared<Newton_t>(linear_solver);
+            solver_ = newton;
+        }
+    };
+}  // namespace utopia
+
+#endif

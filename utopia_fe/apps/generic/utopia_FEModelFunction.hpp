@@ -369,13 +369,23 @@ namespace utopia {
             Super::read(in);
             fe_function_->read(in);
 
-            in.get("time", time_);
+            if (!time_) {
+                time_ = std::make_shared<SimulationTime<Scalar_t>>();
+            }
+
+            in.get("time", *time_);
             in.get("export_tensors", export_tensors_);
         }
 
-        inline Scalar_t delta_time() const { return time_.delta(); }
-        inline SimulationTime<Scalar_t> &time() { return time_; }
-        inline const SimulationTime<Scalar_t> &time() const { return time_; }
+        inline Scalar_t delta_time() const { return time()->delta(); }
+        inline std::shared_ptr<SimulationTime<Scalar_t>> &time() {
+            assert(time_);
+            return time_;
+        }
+        inline const std::shared_ptr<SimulationTime<Scalar_t>> &time() const {
+            assert(time_);
+            return time_;
+        }
         bool is_time_dependent() const override { return true; }
 
         // inline const std::shared_ptr<OmniAssembler_t> &assembler() const override { return fe_function_->assembler();
@@ -403,7 +413,7 @@ namespace utopia {
         std::shared_ptr<FEFunctionInterface_t> fe_function_;
         std::shared_ptr<IO_t> io_;
 
-        SimulationTime<Scalar_t> time_;
+        std::shared_ptr<SimulationTime<Scalar_t>> time_;
 
         bool must_apply_constraints_{true};
         bool export_tensors_{false};

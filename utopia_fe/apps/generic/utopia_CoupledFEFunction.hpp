@@ -21,6 +21,8 @@ namespace utopia {
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using Size_t = typename Traits<FunctionSpace>::SizeType;
 
+        inline static constexpr bool default_verbose() { return true; }
+
         class FEProblem : public Configurable {
         public:
             std::string name_{"no_name"};
@@ -217,6 +219,7 @@ namespace utopia {
 
             void read(Input &in) override {
                 if (transfer_) {
+                    transfer_->verbose(verbose_);
                     transfer_->read(in);
                     in.get("verbose", verbose_);
                 }
@@ -310,7 +313,7 @@ namespace utopia {
         private:
             std::unique_ptr<TransferAssembler> transfer_;
             std::shared_ptr<FEProblem> from_, to_;
-            bool verbose_{false};
+            bool verbose_{default_verbose()};
         };
 
         CoupledFEFunction() {}
@@ -392,6 +395,8 @@ namespace utopia {
 
             g = *master_fe_problem_->gradient();
 
+            // master_fe_problem_->function()->gradient(x, g);
+
             if (must_apply_constraints_) {
                 this->space()->apply_zero_constraints(g);
             }
@@ -447,10 +452,10 @@ namespace utopia {
                     Utopia::Abort("Failed to condense hessians!");
                 }
 
-                if (!c->condense_vectors()) {
-                    assert(false);
-                    Utopia::Abort("Failed to condense gradients!");
-                }
+                // if (!c->condense_vectors()) {
+                //     assert(false);
+                //     Utopia::Abort("Failed to condense gradients!");
+                // }
             }
 
             H = *master_fe_problem_->hessian();
@@ -673,7 +678,7 @@ namespace utopia {
         std::vector<std::unique_ptr<Coupling>> couplings_;
         std::shared_ptr<Environment_t> env_;
         bool must_apply_constraints_{true};
-        bool verbose_{false};
+        bool verbose_{default_verbose()};
 
         std::vector<std::unique_ptr<MatrixTransformer<Matrix_t>>> transformers_;
 
