@@ -355,6 +355,12 @@ namespace utopia {
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
             UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
 
+            assert(from->mesh().spatial_dimension() == to->mesh().spatial_dimension());
+
+            if (from->mesh().spatial_dimension() != to->mesh().spatial_dimension()) {
+                Utopia::Abort("Trying to transfer information between meshes with incompatibile embedding");
+            }
+
             clear();
 
             bool has_intersection = false;

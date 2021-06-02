@@ -139,27 +139,29 @@ namespace utopia {
 
                     switch (manifold_dim) {
                         case 1: {
-                            assert(spatial_dim == 2);
-                            StaticMatrix<Scalar, 1, 2> mat;
-
+                            J = 0.0;
                             for (SizeType d = 0; d < spatial_dim; ++d) {
-                                mat(0, d) = jacobian(cell, qp, d, 0);
+                                auto x = jacobian(cell, qp, d, 0);
+                                J += x * x;
                             }
 
-                            J = det(mat);
+                            J = device::sqrt(J);
+                            assert(J != 0);
                             break;
                         }
 
                         case 2: {
                             assert(spatial_dim == 3);
                             StaticMatrix<Scalar, 3, 2> mat;
-                            for (SizeType d1 = 0; d1 < spatial_dim; ++d1) {
-                                for (SizeType d2 = 0; d2 < manifold_dim; ++d2) {
+
+                            for (SizeType d1 = 0; d1 < 3; ++d1) {
+                                for (SizeType d2 = 0; d2 < 2; ++d2) {
                                     mat(d1, d2) = jacobian(cell, qp, d1, d2);
                                 }
                             }
 
                             J = det(mat);
+                            assert(J != 0);
 
                             break;
                         }
@@ -170,7 +172,6 @@ namespace utopia {
                         }
                     }
 
-                    assert(J != 0.0);
                     jacobian_det(cell, qp) = J;
                 }
             };
@@ -206,21 +207,33 @@ namespace utopia {
                     }
                 }
 
+                template <int SpatialDim, int ManifoldDim>
+                UTOPIA_INLINE_FUNCTION void compute_inv(const SizeType cell, const SizeType qp) const {
+                    StaticMatrix<Scalar, SpatialDim, ManifoldDim> mat;
+                    StaticMatrix<Scalar, ManifoldDim, SpatialDim> mat_inv;
+
+                    for (SizeType d1 = 0; d1 < SpatialDim; ++d1) {
+                        for (SizeType d2 = 0; d2 < ManifoldDim; ++d2) {
+                            mat(d1, d2) = jacobian(cell, qp, d1, d2);
+                        }
+                    }
+
+                    mat_inv = inv(mat);
+
+                    for (SizeType d1 = 0; d1 < ManifoldDim; ++d1) {
+                        for (SizeType d2 = 0; d2 < SpatialDim; ++d2) {
+                            jacobian_inv(cell, qp, d1, d2) = mat_inv(d1, d2);
+                        }
+                    }
+                }
+
                 UTOPIA_INLINE_FUNCTION void operator()(const SizeType cell, const SizeType qp) const {
                     switch (manifold_dim) {
                         case 1: {
-                            assert(spatial_dim == 2);
-                            StaticMatrix<Scalar, 2, 1> mat;
-                            StaticMatrix<Scalar, 1, 2> mat_inv;
-
-                            for (SizeType d = 0; d < spatial_dim; ++d) {
-                                mat(d, 0) = jacobian(cell, qp, d, 0);
-                            }
-
-                            mat_inv = inv(mat);
-
-                            for (SizeType d = 0; d < spatial_dim; ++d) {
-                                jacobian_inv(cell, qp, 0, d) = mat_inv(0, d);
+                            if (spatial_dim == 2) {
+                                this->compute_inv<2, 1>(cell, qp);
+                            } else if (spatial_dim == 3) {
+                                this->compute_inv<3, 1>(cell, qp);
                             }
 
                             break;
@@ -228,23 +241,7 @@ namespace utopia {
 
                         case 2: {
                             assert(spatial_dim == 3);
-                            StaticMatrix<Scalar, 3, 2> mat;
-                            StaticMatrix<Scalar, 2, 3> mat_inv;
-
-                            for (SizeType d1 = 0; d1 < spatial_dim; ++d1) {
-                                for (SizeType d2 = 0; d2 < manifold_dim; ++d2) {
-                                    mat(d1, d2) = jacobian(cell, qp, d1, d2);
-                                }
-                            }
-
-                            mat_inv = inv(mat);
-
-                            for (SizeType d1 = 0; d1 < manifold_dim; ++d1) {
-                                for (SizeType d2 = 0; d2 < spatial_dim; ++d2) {
-                                    jacobian_inv(cell, qp, d1, d2) = mat_inv(d1, d2);
-                                }
-                            }
-
+                            this->compute_inv<3, 3>(cell, qp);
                             break;
                         }
 
@@ -328,17 +325,19 @@ namespace utopia {
             };
 
             static void allocate_jacobian(const SizeType n_cells,
+                                          const SizeType manifold_dim,
                                           const SizeType spatial_dim,
                                           const SizeType n_qp,
                                           DynRankView &jacobian) {
-                jacobian = DynRankView("jacobian", n_cells, n_qp, spatial_dim, spatial_dim - 1);
+                jacobian = DynRankView("jacobian", n_cells, n_qp, spatial_dim, manifold_dim);
             }
 
             static void allocate_jacobian_inverse(const SizeType n_cells,
+                                                  const SizeType manifold_dim,
                                                   const SizeType spatial_dim,
                                                   const SizeType n_qp,
                                                   DynRankView &jacobian_inv) {
-                jacobian_inv = DynRankView("jacobian_inv", n_cells, n_qp, spatial_dim - 1, spatial_dim);
+                jacobian_inv = DynRankView("jacobian_inv", n_cells, n_qp, manifold_dim, spatial_dim);
             }
 
             static void allocate_measure(const SizeType n_cells, const SizeType n_qp, DynRankView &measure) {
@@ -362,19 +361,41 @@ namespace utopia {
             }
 
             static void cell_geometry(const DynRankView &cell_nodes,
-                                      DynRankView &grad,
+                                      DynRankView &ref_grad,
                                       DynRankView &jacobian,
                                       DynRankView &jacobian_inv,
                                       DynRankView &measure) {
-                const SizeType spatial_dim = cell_nodes.extent(2);
+                const SizeType manifold_dim = ref_grad.extent(2);
+                // const SizeType spatial_dim = cell_nodes.extent(2);
                 const SizeType n_nodes = cell_nodes.extent(1);
 
-                if (n_nodes == spatial_dim) {
+                if (n_nodes == manifold_dim + 1) {
                     SimplexComputeJacobian<DynRankView> compute_J(cell_nodes, jacobian);
                     ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
                     ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
 
-                    Scal<DynRankView> scal((spatial_dim == 2) ? 0.5 : 1.0 / 6.0, measure);
+                    Scalar ref_volume = 0.0;
+
+                    // TODO more generic if implemented as 1/(d!)
+                    switch (manifold_dim) {
+                        case 1: {
+                            ref_volume = 1.;
+                            break;
+                        }
+                        case 2: {
+                            ref_volume = 0.5;
+                            break;
+                        }
+                        case 3: {
+                            ref_volume = 1. / 6;
+                            break;
+                        }
+                        default: {
+                            assert(false);
+                        }
+                    }
+
+                    Scal<DynRankView> scal(ref_volume, measure);
 
                     SizeType num_cells = jacobian.extent(0);
                     Kokkos::parallel_for(
@@ -385,25 +406,8 @@ namespace utopia {
                             scal(cell);
                         });
 
-                    // ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, grad, jacobian);
-                    // ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
-                    // ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
-                    // Scal<DynRankView> scal((spatial_dim == 2) ? 0.5 : 1.0 / 6.0, measure);
-
-                    // SizeType num_cells = jacobian.extent(0);
-                    // SizeType n_qp = jacobian.extent(1);
-                    // Kokkos::parallel_for(
-                    //     "ShellTools::cell_geometry",
-                    //     CellQPRange({0, 0}, {num_cells, n_qp}),
-                    //     KOKKOS_LAMBDA(const SizeType cell, const SizeType qp) {
-                    //         compute_J(cell, qp);
-                    //         compute_J_det(cell, qp);  // This depends on compute_J(cell)
-                    //         compute_J_inv(cell, qp);
-                    //         scal(cell, qp);
-                    //     });
-
                 } else {
-                    ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, grad, jacobian);
+                    ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, ref_grad, jacobian);
                     ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
                     ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
 
