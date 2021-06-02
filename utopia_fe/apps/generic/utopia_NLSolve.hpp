@@ -59,6 +59,8 @@ namespace utopia {
                 bool ok = function_->hessian_and_gradient(x, H, g);
                 assert(ok);
 
+                function_->space()->write("rhs.e", g);
+
                 Vector_t c(layout(x), 0.0);  // Correction
 
                 this->status("Solving linear problem");

@@ -408,7 +408,7 @@ namespace utopia {
                 if (n_var == 1) {
                     to = (*impl_->data.transfer_matrix) * from;
                 } else {
-                    utopia::out() << "Tensorizing withing FETransfer::apply! n_var = " << n_var << "\n";
+                    utopia::out() << "Tensorizing within FETransfer::apply! n_var = " << n_var << "\n";
 
                     Vector scalar_from, scalar_to;
                     if (!utopia::empty(to)) {

@@ -303,13 +303,13 @@ namespace utopia {
             class TransformGradientToPhysicalSpace {
             public:
                 View jacobian_inv;
-                View grad_ref;
+                View ref_grad;
                 View grad_physical;
 
                 SizeType manifold_dim;
 
-                TransformGradientToPhysicalSpace(const View &jacobian_inv, const View &grad_ref, View &grad_physical)
-                    : jacobian_inv(jacobian_inv), grad_ref(grad_ref), grad_physical(grad_physical) {
+                TransformGradientToPhysicalSpace(const View &jacobian_inv, const View &ref_grad, View &grad_physical)
+                    : jacobian_inv(jacobian_inv), ref_grad(ref_grad), grad_physical(grad_physical) {
                     manifold_dim = jacobian_inv.extent(2);
                 }
 
@@ -319,7 +319,7 @@ namespace utopia {
                                                        const SizeType d_physical) const {
                     for (SizeType d_ref = 0; d_ref < manifold_dim; ++d_ref) {
                         grad_physical(cell, node, qp, d_physical) +=
-                            jacobian_inv(cell, qp, d_ref, d_physical) * grad_ref(node, qp, d_ref);
+                            jacobian_inv(cell, qp, d_ref, d_physical) * ref_grad(node, qp, d_ref);
                     }
                 }
             };
@@ -344,84 +344,135 @@ namespace utopia {
                 measure = DynRankView("measure", n_cells, n_qp);
             }
 
+            static void weights_times_measure(const DynRankView &q_weights,
+                                              const Scalar &normalization_factor,
+                                              DynRankView &measure) {
+                SizeType num_cells = measure.extent(0);
+                SizeType n_qp = measure.extent(1);
+
+                Kokkos::parallel_for(
+                    "ShellTools::weights_times_measure",
+                    CellQPRange({0, 0}, {num_cells, n_qp}),
+                    KOKKOS_LAMBDA(const SizeType cell, const SizeType qp) {
+                        measure(cell, qp) *= normalization_factor * q_weights(qp);
+                    });
+            }
+
+            static void print_ref_grad(const DynRankView &ref_grad) {
+                for (int n = 0; n < ref_grad.extent(0); ++n) {
+                    for (int qp = 0; qp < ref_grad.extent(1); ++qp) {
+                        for (int d_ref = 0; d_ref < ref_grad.extent(2); ++d_ref) {
+                            utopia::out() << ref_grad(n, qp, d_ref) << " ";
+                        }
+                        utopia::out() << "\n";
+                    }
+                }
+            }
+
+            static bool check_quadrature(const DynRankView &q_weights) {
+                Scalar wq = sum_of_weights(q_weights);
+                utopia::out() << "Weight quadrature: " << wq << "\n";
+                return true;
+            }
+
+            static Scalar sum_of_weights(const DynRankView &q_weights) {
+                typename DynRankView::HostMirror q_weights_host = Kokkos::create_mirror_view(q_weights);
+                Scalar wq = 0.0;
+                SizeType num_qp = q_weights_host.extent(0);
+                for (SizeType qp = 0; qp < num_qp; ++qp) {
+                    wq += q_weights_host(qp);
+                }
+
+                return wq;
+            }
+
+            static Scalar ref_measure(const SizeType manifold_dim) {
+                Scalar ret = 1.0;
+
+                // TODO more generic if implemented as 1/(d!)
+                switch (manifold_dim) {
+                    case 1: {
+                        ret = 1.;
+                        break;
+                    }
+                    case 2: {
+                        ret = 0.5;
+                        break;
+                    }
+                    case 3: {
+                        ret = 1. / 6;
+                        break;
+                    }
+                    default: {
+                        assert(false);
+                    }
+                }
+
+                return ret;
+            }
+
+            static Scalar ref_grad_scaling(const SizeType manifold_dim) {
+                Scalar ret = 1.0;
+
+                // TODO more generic if implemented as 1/(d!)
+                switch (manifold_dim) {
+                    case 1: {
+                        ret = 1.;
+                        break;
+                    }
+                    case 2: {
+                        ret = 1.;
+                        break;
+                    }
+                    default: {
+                        ret = 1.0;
+                    }
+                }
+
+                return ret;
+            }
+
+            static void cell_geometry(const DynRankView &cell_nodes,
+                                      const DynRankView &q_weights,
+                                      const DynRankView &ref_grad,
+                                      DynRankView &jacobian,
+                                      DynRankView &jacobian_inv,
+                                      DynRankView &measure) {
+                const SizeType manifold_dim = ref_grad.extent(2);
+                const SizeType num_nodes = cell_nodes.extent(1);
+
+                ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, ref_grad, jacobian);
+                ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
+                ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
+
+                SizeType num_cells = jacobian.extent(0);
+                SizeType n_qp = jacobian.extent(1);
+                Kokkos::parallel_for(
+                    "ShellTools::cell_geometry",
+                    CellQPRange({0, 0}, {num_cells, n_qp}),
+                    KOKKOS_LAMBDA(const SizeType cell, const SizeType qp) {
+                        compute_J(cell, qp);
+                        compute_J_det(cell, qp);  // This depends on compute_J(cell)
+                        compute_J_inv(cell, qp);  // This depends on compute_J_det(cell)
+                    });
+
+                assert(check_quadrature(q_weights));
+            }
+
             static void transform_gradient_to_physical_space(const DynRankView &jacobian_inv,
-                                                             const DynRankView &grad_ref,
+                                                             const DynRankView &ref_grad,
                                                              DynRankView &grad_physical) {
                 const SizeType num_cells = jacobian_inv.extent(0);
                 const SizeType n_qp = jacobian_inv.extent(1);
-                const SizeType num_nodes = grad_ref.extent(0);
+                const SizeType num_nodes = ref_grad.extent(0);
                 const SizeType spatial_dim = jacobian_inv.extent(1);
 
-                TransformGradientToPhysicalSpace<DynRankView> transform(jacobian_inv, grad_ref, grad_physical);
+                TransformGradientToPhysicalSpace<DynRankView> transform(jacobian_inv, ref_grad, grad_physical);
 
                 Kokkos::parallel_for("ShellTools::transform_gradient_to_physical_space",
                                      Kokkos::MDRangePolicy<Kokkos::Rank<4>, ExecutionSpace>(
                                          {0, 0, 0, 0}, {num_cells, num_nodes, n_qp, spatial_dim}),
                                      transform);
-            }
-
-            static void cell_geometry(const DynRankView &cell_nodes,
-                                      DynRankView &ref_grad,
-                                      DynRankView &jacobian,
-                                      DynRankView &jacobian_inv,
-                                      DynRankView &measure) {
-                const SizeType manifold_dim = ref_grad.extent(2);
-                // const SizeType spatial_dim = cell_nodes.extent(2);
-                const SizeType n_nodes = cell_nodes.extent(1);
-
-                if (n_nodes == manifold_dim + 1) {
-                    SimplexComputeJacobian<DynRankView> compute_J(cell_nodes, jacobian);
-                    ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
-                    ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
-
-                    Scalar ref_volume = 0.0;
-
-                    // TODO more generic if implemented as 1/(d!)
-                    switch (manifold_dim) {
-                        case 1: {
-                            ref_volume = 1.;
-                            break;
-                        }
-                        case 2: {
-                            ref_volume = 0.5;
-                            break;
-                        }
-                        case 3: {
-                            ref_volume = 1. / 6;
-                            break;
-                        }
-                        default: {
-                            assert(false);
-                        }
-                    }
-
-                    Scal<DynRankView> scal(ref_volume, measure);
-
-                    SizeType num_cells = jacobian.extent(0);
-                    Kokkos::parallel_for(
-                        "ShellTools::cell_geometry", CellRange(0, num_cells), KOKKOS_LAMBDA(const SizeType &cell) {
-                            compute_J(cell);
-                            compute_J_det(cell);  // This depends on compute_J(cell)
-                            compute_J_inv(cell);
-                            scal(cell);
-                        });
-
-                } else {
-                    ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, ref_grad, jacobian);
-                    ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
-                    ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
-
-                    SizeType num_cells = jacobian.extent(0);
-                    SizeType n_qp = jacobian.extent(1);
-                    Kokkos::parallel_for(
-                        "ShellTools::cell_geometry",
-                        CellQPRange({0, 0}, {num_cells, n_qp}),
-                        KOKKOS_LAMBDA(const SizeType cell, const SizeType qp) {
-                            compute_J(cell, qp);
-                            compute_J_det(cell, qp);  // This depends on compute_J(cell)
-                            compute_J_inv(cell, qp);
-                        });
-                }
             }
         };
     }  // namespace intrepid2

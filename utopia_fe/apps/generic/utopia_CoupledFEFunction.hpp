@@ -219,7 +219,7 @@ namespace utopia {
 
             void read(Input &in) override {
                 if (transfer_) {
-                    transfer_->verbose(verbose_);
+                    // transfer_->verbose(verbose_);
                     transfer_->read(in);
                     in.get("verbose", verbose_);
                 }
@@ -452,10 +452,10 @@ namespace utopia {
                     Utopia::Abort("Failed to condense hessians!");
                 }
 
-                // if (!c->condense_vectors()) {
-                //     assert(false);
-                //     Utopia::Abort("Failed to condense gradients!");
-                // }
+                if (!c->condense_vectors()) {
+                    assert(false);
+                    Utopia::Abort("Failed to condense gradients!");
+                }
             }
 
             H = *master_fe_problem_->hessian();

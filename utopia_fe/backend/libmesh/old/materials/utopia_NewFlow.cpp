@@ -110,7 +110,7 @@ namespace utopia {
         forcing_function_.eval(x, gradient);
 
         // for newton methods
-        // gradient -= hessian * x;
+        gradient += hessian * x;
 
         if (rescale_ != 1.0) {
             //     hessian *= rescale_;
