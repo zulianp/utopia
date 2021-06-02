@@ -41,41 +41,82 @@ namespace utopia {
         void read(Input &in) override {
             in.get("solver", *solver_);
             in.get("verbose", verbose_);
+            in.get("use_pseudo_newton", use_pseudo_newton_);
         }
 
         inline void set_solver(const std::shared_ptr<NewtonBase_t> &solver) { solver_ = solver; }
 
-        bool solve() {
+        bool solve_trivial() {
+            Vector_t x;
+            function_->create_solution_vector(x);
+            // zero out boundary conditions
+            x.set(0.0);
+
+            this->status("Assemblying linear problem");
+
+            Matrix_t A;
+            Vector_t rhs;
+            bool ok = function_->hessian_and_gradient(x, A, rhs);
+            assert(ok);
+
+            rhs *= -1;
+            // function_->space()->write("rhs.e", rhs);
+
+            // apply boundary conditions to rhs
+            function_->space()->apply_constraints(rhs);
+
+            this->status("Solving linear problem");
+            // Solve linear problem
+            ok = solver_->linear_solver()->solve(A, rhs, x);
+            assert(ok);
+
+            this->status("Reporting solution");
+
+            function_->report_solution(x);
+            return ok;
+        }
+
+        bool solve_trivial_pseudo_newton() {
             Vector_t x;
             function_->create_solution_vector(x);
 
+            this->status("Assemblying linear problem");
+
+            Matrix_t H;  // Hessian/Jacobian
+            Vector_t g;  // Postive gradient / Residual
+            bool ok = function_->hessian_and_gradient(x, H, g);
+            assert(ok);
+
+            function_->space()->write("rhs.e", g);
+
+            Vector_t c(layout(x), 0.0);  // Correction
+
+            this->status("Solving linear problem (pseudo-Newton)");
+            // Solve linear problem
+            ok = solver_->linear_solver()->solve(H, g, c);
+            assert(ok);
+
+            // Correct the solution with respect to the negative gradient
+            x -= c;
+
+            this->status("Reporting solution");
+
+            function_->report_solution(x);
+            return ok;
+        }
+
+        bool solve() {
             if (function_->is_linear() && !function_->is_time_dependent()) {
                 // Tivial problem, lets keep it simple
-
-                this->status("Assemblying linear problem");
-
-                Matrix_t H;  // Hessian/Jacobian
-                Vector_t g;  // Postive gradient / Residual
-                bool ok = function_->hessian_and_gradient(x, H, g);
-                assert(ok);
-
-                function_->space()->write("rhs.e", g);
-
-                Vector_t c(layout(x), 0.0);  // Correction
-
-                this->status("Solving linear problem");
-                // Solve linear problem
-                ok = solver_->linear_solver()->solve(H, g, c);
-                assert(ok);
-
-                // Correct the solution with respect to the negative gradient
-                x -= c;
-
-                this->status("Reporting solution");
-
-                function_->report_solution(x);
-                return ok;
+                if (use_pseudo_newton_) {
+                    return solve_trivial_pseudo_newton();
+                } else {
+                    return solve_trivial();
+                }
             } else {
+                Vector_t x;
+                function_->create_solution_vector(x);
+
                 function_->setup_IVP(x);
 
                 this->status("Solving nonlinear problem");
@@ -128,6 +169,7 @@ namespace utopia {
         std::shared_ptr<FEFunctionInterface_t> function_;
         std::shared_ptr<NewtonBase_t> solver_;
         bool verbose_{true};
+        bool use_pseudo_newton_{false};
 
         void init_defaults() {
             auto linear_solver = std::make_shared<OmniLinearSolver_t>();
