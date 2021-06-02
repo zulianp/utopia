@@ -139,14 +139,17 @@ namespace utopia {
             inline bool is_shell() const { return manifold_dimension() < spatial_dimension(); }
 
             void print_measure() {
+                utopia::out() << "Measure:\n";
                 auto num_qp = this->num_qp();
                 auto num_cells = this->num_cells();
 
-                // Avoid capturing (this)
+                // Avoids the capturing of 'this'
                 auto measure = this->measure;
 
                 Kokkos::parallel_for(
                     "FE::print_measure", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                        // if (cell != 0) return;
+
                         printf("cell: %d\n", cell);
 
                         for (int qp = 0; qp < num_qp; ++qp) {
@@ -158,18 +161,19 @@ namespace utopia {
             }
 
             void print_jacobian() {
+                utopia::out() << "Jacobian:\n";
                 int num_cells = this->num_cells();
                 int num_qp = this->num_qp();
 
                 int spatial_dimension = this->spatial_dimension();
                 int manifold_dimension = this->manifold_dimension();
 
-                // Avoid capturing (this)
+                // Avoids the capturing of 'this'
                 auto jacobian = this->jacobian;
 
                 Kokkos::parallel_for(
                     "FE::print_jacobian", num_cells, KOKKOS_LAMBDA(const int &cell) {
-                        if (cell != 40) return;
+                        // if (cell != 0) return;
 
                         printf("cell: %d\n", cell);
 
@@ -189,18 +193,19 @@ namespace utopia {
             }
 
             void print_jacobian_inverse() {
+                utopia::out() << "Jacobian inverse:\n";
                 int num_cells = this->num_cells();
                 int num_qp = this->num_qp();
 
                 int spatial_dimension = this->spatial_dimension();
                 int manifold_dimension = this->manifold_dimension();
 
-                // Avoid capturing (this)
+                // Avoids the capturing of 'this'
                 auto jacobian_inv = this->jacobian_inv;
 
                 Kokkos::parallel_for(
                     "FE::print_jacobian_inverse", num_cells, KOKKOS_LAMBDA(const int &cell) {
-                        if (cell != 40) return;
+                        // if (cell != 0) return;
 
                         printf("cell: %d\n", cell);
 
@@ -219,19 +224,41 @@ namespace utopia {
                     });
             }
 
+            void print_function() {
+                utopia::out() << "Function:\n";
+                int num_qp = this->num_qp();
+                int num_fields = this->num_fields();
+
+                // Avoids the capturing of 'this'
+                auto fun = this->fun;
+
+                Kokkos::parallel_for(
+                    "FE::print_function", 1, KOKKOS_LAMBDA(const int &cell) {
+                        for (int node = 0; node < num_fields; ++node) {
+                            for (int qp = 0; qp < num_qp; ++qp) {
+                                printf("%g ", fun(node, qp));
+                            }
+
+                            printf("\n");
+                        }
+                    });
+            }
+
             void print_gradient() {
+                utopia::out() << "Gradient:\n";
+
                 int num_cells = this->num_cells();
                 int num_qp = this->num_qp();
 
                 int spatial_dimension = this->spatial_dimension();
                 int num_fields = this->num_fields();
 
-                // Avoid capturing (this)
+                // Avoids the capturing of 'this'
                 auto gradient = this->grad;
 
                 Kokkos::parallel_for(
                     "FE::print_gradient", num_cells, KOKKOS_LAMBDA(const int &cell) {
-                        if (cell != 40) return;
+                        // if (cell != 0) return;
 
                         printf("cell: %d\n", cell);
 
@@ -345,7 +372,9 @@ namespace utopia {
                 ShellTools<Scalar>::cell_geometry(cell_nodes, q_weights, ref_grad, jacobian, jacobian_inv, measure);
                 ShellTools<Scalar>::transform_gradient_to_physical_space(jacobian_inv, ref_grad, grad);
 
+                // print_function();
                 // print_gradient();
+                // print_measure();
                 // print_jacobian();
                 // print_jacobian_inverse();
             }

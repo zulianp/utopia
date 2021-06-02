@@ -204,7 +204,8 @@ namespace utopia {
     template <class FunctionSpace, class Matrix, class Vector>
     void NewFlow<FunctionSpace, Matrix, Vector>::read_permeability_tensor(Input &in) {
         Scalar constant_permeability = 1.;
-        in.get("permeability", constant_permeability);
+        in.get_deprecated("permeability", "coeff", constant_permeability);
+        in.get("coeff", constant_permeability);
 
         Scalar permeabilities[3] = {constant_permeability, constant_permeability, constant_permeability};
 

@@ -300,6 +300,26 @@ namespace utopia {
             };
 
             template <class View>
+            class ScalJac {
+            public:
+                const Scalar a;
+                View J;
+
+                const SizeType rows, cols;
+
+                UTOPIA_INLINE_FUNCTION ScalJac(const Scalar &a, View &J)
+                    : a(a), J(J), rows(J.extent(2)), cols(J.extent(3)) {}
+
+                UTOPIA_INLINE_FUNCTION void operator()(const SizeType i, const SizeType qp) const {
+                    for (SizeType r = 0; r < rows; ++r) {
+                        for (SizeType c = 0; c < cols; ++c) {
+                            J(i, qp, r, c) *= a;
+                        }
+                    }
+                }
+            };
+
+            template <class View>
             class CheckGrad {
             public:
                 CheckGrad(const View &grad_physical)
@@ -383,16 +403,21 @@ namespace utopia {
             }
 
             static void weights_times_measure(const DynRankView &q_weights,
-                                              const Scalar &normalization_factor,
+                                              const Scalar &factor,
                                               DynRankView &measure) {
                 SizeType num_cells = measure.extent(0);
                 SizeType n_qp = measure.extent(1);
+
+                assert(n_qp == q_weights.extent(0));
 
                 Kokkos::parallel_for(
                     "ShellTools::weights_times_measure",
                     CellQPRange({0, 0}, {num_cells, n_qp}),
                     KOKKOS_LAMBDA(const SizeType cell, const SizeType qp) {
-                        measure(cell, qp) *= normalization_factor * q_weights(qp);
+                        auto &m = measure(cell, qp);
+                        auto qw = q_weights(qp);
+                        auto w = (factor * qw);
+                        m *= w;
                     });
             }
 
@@ -482,6 +507,9 @@ namespace utopia {
 
                 SizeType num_cells = jacobian.extent(0);
                 SizeType n_qp = jacobian.extent(1);
+
+                // Scalar sw = sum_of_weights(q_weights);
+
                 Kokkos::parallel_for(
                     "ShellTools::cell_geometry",
                     CellQPRange({0, 0}, {num_cells, n_qp}),
@@ -491,7 +519,9 @@ namespace utopia {
                         compute_J_inv(cell, qp);  // This depends on compute_J_det(cell)
                     });
 
-                assert(check_quadrature(q_weights));
+                // assert(check_quadrature(q_weights));
+
+                weights_times_measure(q_weights, 1., measure);
             }
 
             static void transform_gradient_to_physical_space(const DynRankView &jacobian_inv,
