@@ -679,6 +679,7 @@ namespace utopia {
         std::shared_ptr<Environment_t> env_;
         bool must_apply_constraints_{true};
         bool verbose_{default_verbose()};
+        // bool compute_algebraic_residual_{false};
 
         std::vector<std::unique_ptr<MatrixTransformer<Matrix_t>>> transformers_;
 

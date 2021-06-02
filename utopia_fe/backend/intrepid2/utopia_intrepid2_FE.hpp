@@ -169,6 +169,8 @@ namespace utopia {
 
                 Kokkos::parallel_for(
                     "FE::print_jacobian", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                        if (cell != 40) return;
+
                         printf("cell: %d\n", cell);
 
                         for (int qp = 0; qp < num_qp; ++qp) {
@@ -198,6 +200,8 @@ namespace utopia {
 
                 Kokkos::parallel_for(
                     "FE::print_jacobian_inverse", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                        if (cell != 40) return;
+
                         printf("cell: %d\n", cell);
 
                         for (int qp = 0; qp < num_qp; ++qp) {
@@ -212,6 +216,36 @@ namespace utopia {
                         }
 
                         printf("\n");
+                    });
+            }
+
+            void print_gradient() {
+                int num_cells = this->num_cells();
+                int num_qp = this->num_qp();
+
+                int spatial_dimension = this->spatial_dimension();
+                int num_fields = this->num_fields();
+
+                // Avoid capturing (this)
+                auto gradient = this->grad;
+
+                Kokkos::parallel_for(
+                    "FE::print_gradient", num_cells, KOKKOS_LAMBDA(const int &cell) {
+                        if (cell != 40) return;
+
+                        printf("cell: %d\n", cell);
+
+                        for (int node = 0; node < num_fields; ++node) {
+                            for (int qp = 0; qp < num_qp; ++qp) {
+                                for (int d = 0; d < spatial_dimension; ++d) {
+                                    printf("%g ", gradient(cell, node, qp, d));
+                                }
+
+                                printf("\n");
+                            }
+
+                            printf("\n");
+                        }
                     });
             }
 
@@ -311,8 +345,9 @@ namespace utopia {
                 ShellTools<Scalar>::cell_geometry(cell_nodes, q_weights, ref_grad, jacobian, jacobian_inv, measure);
                 ShellTools<Scalar>::transform_gradient_to_physical_space(jacobian_inv, ref_grad, grad);
 
+                // print_gradient();
                 // print_jacobian();
-                print_jacobian_inverse();
+                // print_jacobian_inverse();
             }
         };
 

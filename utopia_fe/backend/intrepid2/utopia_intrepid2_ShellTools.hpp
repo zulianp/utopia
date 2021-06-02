@@ -65,7 +65,7 @@ namespace utopia {
             };
 
             template <class View>
-            class ISOParametricComputeJacobian {
+            class IsoParametricComputeJacobian {
             public:
                 const View cell_nodes;
                 const View ref_grad;
@@ -74,7 +74,7 @@ namespace utopia {
                 const SizeType spatial_dim;
                 const SizeType num_nodes;
 
-                UTOPIA_INLINE_FUNCTION ISOParametricComputeJacobian(const View &cell_nodes,
+                UTOPIA_INLINE_FUNCTION IsoParametricComputeJacobian(const View &cell_nodes,
                                                                     const View &ref_grad,
                                                                     View &jacobian)
                     : cell_nodes(cell_nodes),
@@ -300,6 +300,44 @@ namespace utopia {
             };
 
             template <class View>
+            class CheckGrad {
+            public:
+                CheckGrad(const View &grad_physical)
+                    : grad_physical(grad_physical), spatial_dim(grad_physical.extent(3)) {}
+
+                UTOPIA_INLINE_FUNCTION void operator()(const SizeType cell,
+                                                       const SizeType node,
+                                                       const SizeType qp) const
+
+                {
+                    bool has_nnz = false;
+                    for (SizeType d = 0; d < spatial_dim; ++d) {
+                        if (device::abs(grad_physical(cell, node, qp, d)) > 0) {
+                            has_nnz = true;
+                        }
+                    }
+
+                    assert(has_nnz);
+                }
+
+                View grad_physical;
+                SizeType spatial_dim;
+            };
+
+            static void check_grad(const DynRankView &grad_physical) {
+                CheckGrad<DynRankView> check(grad_physical);
+
+                const SizeType num_cells = grad_physical.extent(0);
+                const SizeType num_nodes = grad_physical.extent(1);
+                const SizeType n_qp = grad_physical.extent(2);
+
+                Kokkos::parallel_for(
+                    "ShellTools::check_grad",
+                    Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>({0, 0, 0}, {num_cells, num_nodes, n_qp}),
+                    check);
+            }
+
+            template <class View>
             class TransformGradientToPhysicalSpace {
             public:
                 View jacobian_inv;
@@ -438,10 +476,7 @@ namespace utopia {
                                       DynRankView &jacobian,
                                       DynRankView &jacobian_inv,
                                       DynRankView &measure) {
-                const SizeType manifold_dim = ref_grad.extent(2);
-                const SizeType num_nodes = cell_nodes.extent(1);
-
-                ISOParametricComputeJacobian<DynRankView> compute_J(cell_nodes, ref_grad, jacobian);
+                IsoParametricComputeJacobian<DynRankView> compute_J(cell_nodes, ref_grad, jacobian);
                 ComputeJacobianInverse<DynRankView> compute_J_inv(jacobian, jacobian_inv);
                 ComputeJacobianDeterminant<DynRankView> compute_J_det(jacobian, measure);
 
@@ -465,17 +500,21 @@ namespace utopia {
                 const SizeType num_cells = jacobian_inv.extent(0);
                 const SizeType n_qp = jacobian_inv.extent(1);
                 const SizeType num_nodes = ref_grad.extent(0);
-                const SizeType spatial_dim = jacobian_inv.extent(1);
+                const SizeType spatial_dim = grad_physical.extent(3);
 
                 TransformGradientToPhysicalSpace<DynRankView> transform(jacobian_inv, ref_grad, grad_physical);
+
+                // print_ref_grad(ref_grad);
 
                 Kokkos::parallel_for("ShellTools::transform_gradient_to_physical_space",
                                      Kokkos::MDRangePolicy<Kokkos::Rank<4>, ExecutionSpace>(
                                          {0, 0, 0, 0}, {num_cells, num_nodes, n_qp, spatial_dim}),
                                      transform);
+
+                // check_grad(grad_physical);
             }
-        };
-    }  // namespace intrepid2
+        };  // namespace intrepid2
+    }       // namespace intrepid2
 }  // namespace utopia
 
 #endif  // UTOPIA_INTREPID2_SHELL_TOOLS_HPP
