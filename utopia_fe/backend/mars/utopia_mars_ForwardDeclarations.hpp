@@ -8,7 +8,10 @@ namespace utopia {
         class FEAssembler;
         class OmniAssembler;
         class Factory;
-
+        template <class DMesh, typename...>
+        class ConcreteFEAssembler;
+        template <class DMesh, int Degree_>
+        class FEHandler;
     }  // namespace mars
 }  // namespace utopia
 

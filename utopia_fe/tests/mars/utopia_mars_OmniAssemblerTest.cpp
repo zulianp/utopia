@@ -39,7 +39,7 @@ void mars_poisson() {
     ConjugateGradient<Matrix_t, Vector_t> cg;
 
     utopia_test_assert(cg.solve(mat, rhs, x));
-    utopia_test_assert(space.write("result.e", x));
+    // utopia_test_assert(space.write("result.e", x));
 }
 
 void mars_assembler() { UTOPIA_RUN_TEST(mars_poisson); }

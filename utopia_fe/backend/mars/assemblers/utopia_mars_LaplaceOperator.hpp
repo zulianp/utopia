@@ -2,12 +2,13 @@
 #define UTOPIA_MARS_LAPLACE_OPERATOR_HPP
 
 #include "utopia_mars_ConcreteFEAssembler.hpp"
+#include "mars_quad4.hpp"
 
 namespace utopia {
     namespace mars {
 
-        template <class MarsMeshType, typename... Args>
-        class LaplaceOperator : public ConcreteFEAssembler<MarsMeshType, Args...> {
+        template <class DMesh, typename... Args>
+        class LaplaceOperator : public ConcreteFEAssembler<DMesh, Args...> {
         public:
             using Matrix = Traits<mars::FunctionSpace>::Matrix;
             using Vector = Traits<mars::FunctionSpace>::Vector;
@@ -18,6 +19,8 @@ namespace utopia {
                 return false;
             }
             bool assemble(const Vector &x, Matrix &mat) override {
+                auto handler = this->handler();
+                assert(handler);
                 assert(false);
                 return false;
             }

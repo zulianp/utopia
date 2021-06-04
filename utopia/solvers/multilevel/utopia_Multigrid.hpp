@@ -475,6 +475,7 @@ namespace utopia {
 
         bool must_perform_galerkin_assembly() const { return perform_galerkin_assembly_; }
         void set_perform_galerkin_assembly(const bool val) { perform_galerkin_assembly_ = val; }
+        // void must_perform_galerkin_assembly() const { return perform_galerkin_assembly_; }
 
         void use_line_search(const bool val) { use_line_search_ = val; }
 
