@@ -5,6 +5,8 @@
 #include "utopia_FEVar.hpp"
 #include "utopia_mars_FEHandler.hpp"
 
+#include "mars_pvtu_writer.hpp"
+
 namespace utopia {
     namespace mars {
         class FunctionSpace::Impl {
@@ -14,14 +16,28 @@ namespace utopia {
             using MapType = Matrix::MapType;
 
             using DeviceType = Matrix::CrsMatrixType::device_type;
+
             // using MarsCrsMatrix = typename KokkosSparse::CrsMatrix<Scalar, LocalSizeType, DeviceType, void,
             // SizeType>;
 
             template <class DMesh>
             void init(DMesh &mesh_impl) {
-                auto handler_impl = utopia::make_unique<FEHandler<DMesh>>();
+                using FEHandler = utopia::mars::FEHandler<DMesh>;
+
+                auto handler_impl = std::make_shared<FEHandler>();
                 handler_impl->init(mesh_impl);
-                handler = std::move(handler_impl);
+                handler = handler_impl;
+
+#ifdef UTOPIA_WITH_VTK
+                write = [handler_impl](const Path &path, const Vector &x) -> bool {
+                    ::mars::PVTUMeshWriter<typename FEHandler::DofHandler, typename FEHandler::FEDofMap> w;
+                    auto x_kokkos = x.raw_type()->getLocalViewHost();
+                    return w.write_vtu(
+                        path.to_string(), handler_impl->get_dof_handler(), handler_impl->get_fe_dof_map(), x_kokkos);
+                };
+#else
+                write = (const Path &, const Vector &)->bool { return false; };
+#endif  // UTOPIA_WITH_VTK
             }
 
             template <class RawType>
@@ -75,6 +91,8 @@ namespace utopia {
             DirichletBoundary dirichlet_boundary;
             std::vector<FEVar> variables;
 
+            std::function<bool(const Path &, const Vector &)> write;
+
             bool verbose{false};
             int n_var{0};
         };
@@ -96,16 +114,22 @@ namespace utopia {
                     using DMesh = ::mars::DistributedMesh<::mars::ElementType::Quad4>;
                     auto mesh_impl = mesh->raw_type<DMesh>();
                     impl_->init(*mesh_impl);
+                    break;
                 }
                 case 3: {
                     using DMesh = ::mars::DistributedMesh<::mars::ElementType::Hex8>;
                     auto mesh_impl = mesh->raw_type<DMesh>();
                     impl_->init(*mesh_impl);
+                    break;
+                }
+                default: {
+                    assert(false);
+                    Utopia::Abort("Trying to create mesh with unsupported dimension!");
                 }
             }
         }
 
-        bool FunctionSpace::write(const Path &path, const Vector &x) {}
+        bool FunctionSpace::write(const Path &path, const Vector &x) { return impl_->write(path, x); }
 
         void FunctionSpace::read(Input &in) {
             if (impl_->mesh) {
@@ -195,9 +219,7 @@ namespace utopia {
 
         const std::string &FunctionSpace::name() const { return impl_->name; }
 
-        const Factory &FunctionSpace::factory() const {
-            return handler()->factory();
-        }
+        const Factory &FunctionSpace::factory() const { return handler()->factory(); }
 
         template <class RawType>
         std::shared_ptr<RawType> FunctionSpace::raw_type() const {

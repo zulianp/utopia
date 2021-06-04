@@ -1,12 +1,12 @@
 #ifndef UTOPIA_MARS_FEHANDLER_HPP
 #define UTOPIA_MARS_FEHANDLER_HPP
 
-#include "utopia_mars_FunctionSpace.hpp"
 #include "mars.hpp"
 #include "mars_base.hpp"
-#include "mars_globals.hpp"
 #include "mars_context.hpp"
 #include "mars_distributed_dof_management.hpp"
+#include "mars_globals.hpp"
+#include "utopia_mars_FunctionSpace.hpp"
 
 #include "utopia_mars_Factory_impl.hpp"
 
@@ -60,10 +60,7 @@ namespace utopia {
                 auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
                 // BC set values to constraint value to zero
                 dof_handler->boundary_dof_iterate(
-                    MARS_LAMBDA(const ::mars::Integer local_dof) {
-                        sp.apply_zero_constraints(local_dof, vec);
-                    },
-                    side);
+                    MARS_LAMBDA(const ::mars::Integer local_dof) { sp.apply_zero_constraints(local_dof, vec); }, side);
             }
 
             /* void system_apply_constraints(Matrix &m, Vector &v) override {
@@ -85,6 +82,14 @@ namespace utopia {
                 sparsity_pattern = std::make_shared<SPattern>(*dof_handler);
                 sparsity_pattern->build_pattern(*fe_dof_map);
             }
+
+            inline SPattern &get_sparsity_pattern() { return *sparsity_pattern; }
+            inline DofHandler &get_dof_handler() { return *dof_handler; }
+            inline FEDofMap &get_fe_dof_map() { return *fe_dof_map; }
+
+            inline const SPattern &get_sparsity_pattern() const { return *sparsity_pattern; }
+            inline const DofHandler &get_dof_handler() const { return *dof_handler; }
+            inline const FEDofMap &get_fe_dof_map() const { return *fe_dof_map; }
 
         private:
             std::shared_ptr<SPattern> sparsity_pattern;
