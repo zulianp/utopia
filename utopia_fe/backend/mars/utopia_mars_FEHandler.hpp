@@ -4,6 +4,7 @@
 #include "utopia_mars_FunctionSpace.hpp"
 #include "mars.hpp"
 #include "mars_base.hpp"
+#include "mars_globals.hpp"
 #include "mars_context.hpp"
 #include "mars_distributed_dof_management.hpp"
 
@@ -32,22 +33,43 @@ namespace utopia {
                 // ::mars::print_fe_dof_map(*dof_handler_impl, *fe_dof_map_impl);
             }
 
-            void matrix_apply_constraints(Matrix &m, const Scalar diag_value) override {
+            void matrix_apply_constraints(Matrix &m, const Scalar diag_value, const std::string side) override {
                 // BC set constrained rows to zero, except diagonal where you set diag_value
+                auto sp = *sparsity_pattern;
+                auto mat = m.raw_type()->getLocalMatrix();
+                dof_handler->boundary_dof_iterate(
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        sp.matrix_apply_constraints(local_dof, mat, diag_value);
+                    },
+                    side);
             }
 
-            void vector_apply_constraints(Vector &v) override {
+            void vector_apply_constraints(Vector &v, const Scalar value, const std::string side) override {
+                auto sp = *sparsity_pattern;
+                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
                 // BC set values to constraint value (i.e., boundary value)
+                dof_handler->boundary_dof_iterate(
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        sp.vector_apply_constraints(local_dof, vec, value);
+                    },
+                    side);
             }
 
-            void apply_zero_constraints(Vector &vec) override {
+            void apply_zero_constraints(Vector &v, const std::string side) override {
+                auto sp = *sparsity_pattern;
+                auto vec = v.raw_type()->getLocalView<::mars::KokkosSpace>();
                 // BC set values to constraint value to zero
+                dof_handler->boundary_dof_iterate(
+                    MARS_LAMBDA(const ::mars::Integer local_dof) {
+                        sp.apply_zero_constraints(local_dof, vec);
+                    },
+                    side);
             }
 
-            void system_apply_constraints(Matrix &m, Vector &v) override {
+            /* void system_apply_constraints(Matrix &m, Vector &v) override {
                 vector_apply_constraints(v);
                 matrix_apply_constraints(m, 1.0);
-            }
+            } */
 
             SizeType n_local_dofs() override { return dof_handler->get_owned_dof_size(); };
             SizeType n_dofs() override { return dof_handler->get_global_dof_size(); };
