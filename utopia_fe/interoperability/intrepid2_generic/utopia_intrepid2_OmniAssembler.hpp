@@ -11,6 +11,16 @@
 namespace utopia {
     namespace intrepid2 {
 
+        // template <class FunctionSpace_, class Material_>
+        // class OverrideAssemblerType {
+        // public:
+        //     using Material = Material_;
+        //     using FunctionSpace = FunctionSpace_;
+
+        //     using Scalar = typename Traits<FunctionSpace>::Scalar;
+        //     using Type = utopia::intrepid2::Assemble<Material_, Scalar>;
+        // };
+
         template <class FunctionSpace>
         class OmniAssembler : public Configurable {
         public:

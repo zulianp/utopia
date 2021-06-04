@@ -74,35 +74,62 @@ namespace utopia {
             in.get("porous_matrix", [this, &porous_matrix](Input &node) {
                 // Read the function-space of the porous-matrix
 
-                auto s = std::make_shared<FunctionSpace>(this->comm());
-                // Use this so everyhting is added to the env automatically when calling read
-                // s->set_environment(this->env());
-                node.require("space", *s);
+                node.get("space", [this, &porous_matrix](Input &space_node) {
+                    auto s = std::make_shared<FunctionSpace>(this->comm());
+                    // Use this so everyhting is added to the env automatically when calling read
+                    // s->set_environment(this->env());
 
-                if (s->name().empty()) {
-                    utopia::err() << "name must be defined for space node\n";
-                    Utopia::Abort();
-                }
+                    bool read_state = false;
+                    space_node.get("read_state", read_state);
+                    if (read_state) {
+                        auto field = std::make_shared<Field<FunctionSpace>>();
+                        s->read_with_state(space_node, *field);
+                        this->env()->add_field(field);
+                    } else {
+                        s->read(space_node);
+                    }
 
-                this->env()->add_space(s);
-                porous_matrix = s;
+                    if (s->name().empty()) {
+                        utopia::err() << "Value for key \"name\" must be defined for space node\n";
+                        Utopia::Abort();
+                    }
+
+                    this->env()->add_space(s);
+                    porous_matrix = s;
+                });
             });
+
+            if (!porous_matrix) {
+                Utopia::Abort("Definition of \"space\" undefined for node porous_matrix!");
+            }
 
             in.get("fracture_networks", [this, &fracture_networks](Input &array_node) {
                 array_node.get_all([this, &fracture_networks](Input &node) {
                     // Read the function-space of the fracture-network
 
-                    auto s = std::make_shared<FunctionSpace>(this->comm());
-                    node.require("space", *s);
-                    fracture_networks.push_back(s);
+                    node.get("space", [this, &fracture_networks](Input &space_node) {
+                        auto s = std::make_shared<FunctionSpace>(this->comm());
+                        // Use this so everyhting is added to the env automatically when calling read
+                        // s->set_environment(this->env());
 
-                    if (s->name().empty()) {
-                        utopia::err() << "name must be defined for space node\n";
-                        Utopia::Abort();
-                    }
+                        bool read_state = false;
+                        space_node.get("read_state", read_state);
+                        if (read_state) {
+                            auto field = std::make_shared<Field<FunctionSpace>>();
+                            s->read_with_state(space_node, *field);
+                            this->env()->add_field(field);
+                        } else {
+                            s->read(space_node);
+                        }
 
-                    this->env()->add_space(s);
-                    fracture_networks.push_back(s);
+                        if (s->name().empty()) {
+                            utopia::err() << "Value for key \"name\" must be defined for space node\n";
+                            Utopia::Abort();
+                        }
+
+                        this->env()->add_space(s);
+                        fracture_networks.push_back(s);
+                    });
                 });
             });
 
@@ -110,6 +137,8 @@ namespace utopia {
             in.get("problem_type", problem_type);
 
             auto problem = create_problem(in, problem_type, porous_matrix, fracture_networks);
+
+            problem->read(in);
 
             this->init(problem);
         }

@@ -3,13 +3,39 @@
 
 #include "utopia_Field.hpp"
 #include "utopia_fe_Environment.hpp"
+
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
+#include "utopia_intrepid2_Mass.hpp"
+#include "utopia_intrepid2_OverrideAssemblerType.hpp"
+#include "utopia_intrepid2_Transport.hpp"
+
 #include "utopia_stk_FEAssembler.hpp"
 
 #include <memory>
 
 namespace utopia {
+
+    namespace intrepid2 {
+
+        template <int Dim, class Field>
+        class OverrideAssemblerType<utopia::stk::FunctionSpace, utopia::Transport<Dim, Field>> {
+        public:
+            using Material = utopia::Transport<Dim, Field>;
+            using FunctionSpace = utopia::stk::FunctionSpace;
+            using Type = utopia::stk::Transport;
+        };
+
+        template <typename Fun>
+        class OverrideAssemblerType<utopia::stk::FunctionSpace, utopia::Mass<Fun>> {
+        public:
+            using Material = utopia::Mass<Fun>;
+            using FunctionSpace = utopia::stk::FunctionSpace;
+            using Type = utopia::stk::Mass;
+        };
+
+    }  // namespace intrepid2
+
     namespace stk {
 
         class StkIntrepid2Assembler : public FEAssembler<utopia::stk::FunctionSpace> {

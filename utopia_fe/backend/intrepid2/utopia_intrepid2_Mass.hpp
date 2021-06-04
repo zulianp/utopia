@@ -243,7 +243,8 @@ namespace utopia {
                 }
 
                 if (op_.density_function) {
-                    this->scale(*op_.density_function);
+                    auto data = this->matrix_data();
+                    this->scale_matrix(*op_.density_function, data);
                 }
 
                 UTOPIA_TRACE_REGION_END("Assemble<Mass>::assemble");

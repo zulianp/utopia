@@ -97,11 +97,19 @@ namespace utopia {
                 }
             }
 
-            void nodal_field_to_local_vector(Vector &v) {
+            void nodal_field_to_local_vector(Vector &v) { nodal_field_to_local_vector(this->variables, v); }
+
+            void nodal_field_to_local_vector(const std::vector<FEVar> &variables, Vector &v) {
                 auto &meta_data = mesh->meta_data();
                 auto &bulk_data = mesh->bulk_data();
                 auto &node_buckets = utopia::stk::universal_nodes(bulk_data);
-                const int n_var = dof_map->n_var();
+                // const int n_var = dof_map->n_var();
+
+                int n_var = 0;
+
+                for (auto &v : variables) {
+                    n_var += v.n_components;
+                }
 
                 auto v_view = local_view_device(v);
 
@@ -314,28 +322,63 @@ namespace utopia {
             }
 
             impl_->read_meta(in);
-            if (!impl_->check_variables()) {
-                return false;
-            }
 
             impl_->dof_map->init(this->mesh().bulk_data());
 
-            Vector lv;
-            create_local_vector(lv);
-            impl_->nodal_field_to_local_vector(lv);
+            std::vector<FEVar> fields;
+            in.get("fields", [&](Input &array_node) {
+                array_node.get_all([&](Input &node) {
+                    FEVar var;
+                    var.read(node);
+                    fields.push_back(var);
+                });
+            });
 
-            auto gv = std::make_shared<Vector>();
-            create_vector(*gv);
-            local_to_global(lv, *gv, OVERWRITE_MODE);
-            field.set_data(gv);
-            field.set_space(make_ref(*this));
+            if (fields.empty()) {
+                if (!impl_->check_variables()) {
+                    return false;
+                }
 
-            assert(impl_->variables.size() == 1);
+                Vector lv;
+                create_local_vector(lv);
+                impl_->nodal_field_to_local_vector(lv);
 
-            if (!impl_->variables.empty()) {
-                field.set_name(impl_->variables[0].name);
-                rename(impl_->variables[0].name, *gv);
-                field.set_tensor_size(impl_->variables[0].n_components);
+                auto gv = std::make_shared<Vector>();
+                create_vector(*gv);
+                local_to_global(lv, *gv, OVERWRITE_MODE);
+                field.set_data(gv);
+                field.set_space(make_ref(*this));
+
+                assert(impl_->variables.size() == 1);
+
+                if (!impl_->variables.empty()) {
+                    field.set_name(impl_->variables[0].name);
+                    rename(impl_->variables[0].name, *gv);
+                    field.set_tensor_size(impl_->variables[0].n_components);
+                }
+
+            } else {
+                int n_var = 0;
+
+                for (auto &v : fields) {
+                    n_var += v.n_components;
+                }
+
+                SizeType n_nodes = utopia::stk::count_universal_nodes(mesh().bulk_data());
+                SizeType nn = n_nodes * n_var;
+                Vector lv(layout(Comm::self(), nn, nn), 0.0);
+                lv.set_block_size(n_var);
+
+                impl_->nodal_field_to_local_vector(fields, lv);
+
+                auto gv = std::make_shared<Vector>();
+
+                gv->zeros(layout(comm(), mesh().n_local_nodes() * n_var, mesh().n_nodes() * n_var));
+                gv->set_block_size(n_var);
+
+                local_to_global(lv, *gv, OVERWRITE_MODE);
+                field.set_data(gv);
+                field.set_space(make_ref(*this));
             }
 
             return true;
