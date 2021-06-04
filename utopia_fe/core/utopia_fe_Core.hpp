@@ -1,15 +1,16 @@
 #ifndef UTOPIA_FE_CORE_HPP
 #define UTOPIA_FE_CORE_HPP
 
+#include "utopia_FECoreForwardDeclarations.hpp"
+
+#include "utopia_FEAssembler.hpp"
+
 namespace utopia {
     template <class FunctionSpace>
     class Obstacle {};
 
     template <class FunctionSpace>
     class FETransfer {};
-
-    template <class FunctionSpace>
-    class FEAssembler {};
 
     template <class FunctionSpace>
     class OmniAssembler {};
