@@ -19,6 +19,7 @@ namespace utopia {
     template <>
     class OmniAssembler<utopia::stk::FunctionSpace> final : public FEAssembler<utopia::stk::FunctionSpace> {
     public:
+        using Super = utopia::FEAssembler<utopia::stk::FunctionSpace>;
         using FunctionSpace = utopia::stk::FunctionSpace;
         using Matrix = typename Traits<FunctionSpace>::Matrix;
         using Vector = typename Traits<FunctionSpace>::Vector;
@@ -51,6 +52,10 @@ namespace utopia {
     private:
         class Impl;
         std::unique_ptr<Impl> impl_;
+
+        using ImplAssembler = utopia::FEAssembler<utopia::stk::FunctionSpace>;
+
+        ImplAssembler &impl_assembler() const;
     };
 
 }  // namespace utopia
