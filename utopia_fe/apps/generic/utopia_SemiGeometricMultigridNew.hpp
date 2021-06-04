@@ -7,6 +7,8 @@
 #include "utopia_Multigrid.hpp"
 #include "utopia_ProjectedGaussSeidelNew.hpp"
 
+#include "utopia_SemiGeometricHierarchy.hpp"
+
 #include "utopia_fe_Core.hpp"
 
 // #ifdef UTOPIA_WITH_BLAS
@@ -22,7 +24,8 @@ namespace utopia {
 
     template <class FunctionSpace>
     class SemiGeometricMultigridNew
-        : public IterativeSolver<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector> {
+        : public IterativeSolver<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector>,
+          public SemiGeometricHierarchy<FunctionSpace> {
     public:
         using Vector = typename Traits<FunctionSpace>::Vector;
         using Matrix = typename Traits<FunctionSpace>::Matrix;
@@ -40,30 +43,9 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
 
-            if (fine_space_) {
-                block_size_ = fine_space_->n_var();
-            }
+            this->read_hierarchy(in);
 
-            bool export_coarse_meshes = false;
-            in.get("export_coarse_meshes", export_coarse_meshes);
-            in.get("clear_spaces_after_init", clear_spaces_after_init_);
-            in.get("block_size", block_size_);
-
-            in.get("coarse_spaces", [this, export_coarse_meshes](Input &array_node) {
-                array_node.get_all([this, export_coarse_meshes](Input &node) {
-                    auto space = std::make_shared<FunctionSpace>();
-                    space->read(node);
-
-                    if (export_coarse_meshes) {
-                        space->mesh().write("mesh_" + std::to_string(space_hierarchy_.size()) + ".e");
-                    }
-
-                    assert(!space->empty());
-                    space_hierarchy_.push_back(space);
-                });
-            });
-
-            const int n_levels = space_hierarchy_.size();
+            const int n_levels = this->n_coarse_spaces();
 
             if (n_levels > 0) {
                 make_algo();
@@ -91,10 +73,8 @@ namespace utopia {
             UTOPIA_TRACE_REGION_BEGIN("SemiGeometricMultigridNew::update");
 
             assert(algorithm_);
-            assert(fine_space_);
 
             if (!is_initialized_) {
-                assert(!space_hierarchy_.empty());
                 init();
                 is_initialized_ = true;
             }
@@ -105,59 +85,13 @@ namespace utopia {
         }
 
         bool init() {
-            UTOPIA_TRACE_REGION_BEGIN("SemiGeometricMultigridNew::init");
-            const int n_levels = space_hierarchy_.size();
-
-            if (n_levels == 0) {
-                assert(false);
-                return false;
-            }
-
-            if (!fine_space_) {
-                assert(false);
-                Utopia::Abort("SemiGeometricMultigridNew fine space must be set!");
-            }
-
             if (empty()) {
                 make_algo();
             }
 
-            InputParameters params;
-            params.set("n_var", fine_space_->n_var());
-            params.set("chop_tol", 1e-8);
-
             std::vector<std::shared_ptr<Transfer>> transfers;
-            FETransfer<FunctionSpace> transfer;
-            transfer.read(params);
-
-            for (int l = 0; l < n_levels - 1; ++l) {
-                if (!transfer.init(space_hierarchy_[l], space_hierarchy_[l + 1])) {
-                    assert(false);
-                    Utopia::Abort("SemiGeometricMultigridNew failed to set-up transfer operator!");
-                }
-
-                transfers.push_back(transfer.template build_transfer<IPTransfer>());
-            }
-
-            if (!transfer.init(space_hierarchy_[n_levels - 1], fine_space_)) {
-                assert(false);
-                Utopia::Abort("SemiGeometricMultigridNew failed to set-up transfer operator!");
-            }
-
-            auto t = transfer.template build_transfer<IPTransfer>();
-            fine_space_->apply_constraints(*t->I_ptr(), 0.0);
-
-            // rename("T", const_cast<Matrix &>(t->I()));
-            // write("load_T.m", t->I());
-
-            transfers.push_back(t);
+            this->template generate_transfer_operators<IPTransfer>(transfers);
             algorithm_->set_transfer_operators(transfers);
-
-            if (clear_spaces_after_init_) {
-                space_hierarchy_.clear();
-            }
-
-            UTOPIA_TRACE_REGION_END("SemiGeometricMultigridNew::init");
             return true;
         }
 
@@ -174,21 +108,15 @@ namespace utopia {
             return ok;
         }
 
-        inline void set_fine_space(const std::shared_ptr<FunctionSpace> &fine_space) { fine_space_ = fine_space; }
         inline bool empty() const { return !algorithm_; }
 
     private:
         std::unique_ptr<Multigrid> algorithm_;
-
-        std::shared_ptr<FunctionSpace> fine_space_;
-        std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
         bool is_initialized_{false};
-        bool clear_spaces_after_init_{false};
-        int block_size_{1};
 
         void make_algo() {
             InputParameters params;
-            params.set("block_size", block_size_);
+            params.set("block_size", this->block_size());
 
             // auto smoother = std::make_shared<SOR<Matrix, Vector>>();
             // auto smoother = std::make_shared<ILU<Matrix, Vector>>();

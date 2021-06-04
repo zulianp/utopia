@@ -6,6 +6,9 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_BoundingBoxMultiLevel.hpp"
+#include "utopia_SemiGeometricHierarchy.hpp"
+
 #ifdef UTOPIA_WITH_BLAS
 #include "utopia_RASPatchSmoother.hpp"
 #include "utopia_blas.hpp"
@@ -19,7 +22,8 @@ namespace utopia {
 
     template <class FunctionSpace>
     class MonotoneSemiGeometricMultigrid
-        : public QPSolver<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector> {
+        : public QPSolver<typename Traits<FunctionSpace>::Matrix, typename Traits<FunctionSpace>::Vector>,
+          public SemiGeometricHierarchy<FunctionSpace> {
     public:
         using Vector = typename Traits<FunctionSpace>::Vector;
         using Matrix = typename Traits<FunctionSpace>::Matrix;
@@ -35,36 +39,16 @@ namespace utopia {
         using Transfer = utopia::Transfer<Matrix, Vector>;
         using MonotoneMultigrid = utopia::MonotoneMultigrid<Matrix, Vector>;
         using Smoother = utopia::IterativeSolver<Matrix, Vector>;
+        using QPSmoother = utopia::QPSolver<Matrix, Vector>;
+
+        using CoarseSpaceGen = utopia::BoundingBoxMultiLevelFunctionSpaceGenerator<FunctionSpace>;
 
         void read(Input &in) override {
             Super::read(in);
 
-            if (fine_space_) {
-                block_size_ = fine_space_->n_var();
-            }
+            this->read_hierarchy(in);
 
-            bool export_coarse_meshes = false;
-            in.get("export_coarse_meshes", export_coarse_meshes);
-            in.get("block_size", block_size_);
-            in.get("use_patch_smoother", use_patch_smoother_);
-
-            in.get("coarse_spaces", [this, export_coarse_meshes](Input &array_node) {
-                array_node.get_all([this, export_coarse_meshes](Input &node) {
-                    auto space = std::make_shared<FunctionSpace>();
-                    space->read(node);
-
-                    if (export_coarse_meshes) {
-                        space->mesh().write("mesh_" + std::to_string(space_hierarchy_.size()) + ".e");
-                    }
-
-                    assert(!space->empty());
-                    space_hierarchy_.push_back(space);
-                });
-            });
-
-            in.get("clear_spaces_after_init", clear_spaces_after_init_);
-
-            const int n_levels = space_hierarchy_.size();
+            const int n_levels = this->n_coarse_spaces();
 
             if (n_levels > 0) {
                 make_algo();
@@ -90,10 +74,8 @@ namespace utopia {
          */
         void update(const std::shared_ptr<const Matrix> &op) override {
             assert(algorithm_);
-            assert(fine_space_);
 
             if (!is_initialized_) {
-                assert(!space_hierarchy_.empty());
                 init();
                 is_initialized_ = true;
             }
@@ -102,58 +84,13 @@ namespace utopia {
         }
 
         bool init() {
-            const int n_levels = space_hierarchy_.size();
-
-            if (n_levels == 0) {
-                assert(false);
-                return false;
-            }
-
-            if (!fine_space_) {
-                assert(false);
-                Utopia::Abort("MonotoneSemiGeometricMultigrid fine space must be set!");
-            }
-
             if (empty()) {
                 make_algo();
             }
 
-            InputParameters params;
-            params.set("n_var", fine_space_->n_var());
-            params.set("chop_tol", 1e-8);
-
             std::vector<std::shared_ptr<Transfer>> transfers;
-            FETransfer<FunctionSpace> transfer;
-            transfer.read(params);
-
-            for (int l = 0; l < n_levels - 1; ++l) {
-                if (!transfer.init(space_hierarchy_[l], space_hierarchy_[l + 1])) {
-                    assert(false);
-                    Utopia::Abort("MonotoneSemiGeometricMultigrid failed to set-up transfer operator!");
-                }
-
-                // transfers.push_back(transfer.template build_transfer<IPRTransfer>());
-                transfers.push_back(transfer.template build_transfer<IPTransfer>());
-            }
-
-            if (!transfer.init(space_hierarchy_[n_levels - 1], fine_space_)) {
-                assert(false);
-                Utopia::Abort("MonotoneSemiGeometricMultigrid failed to set-up transfer operator!");
-            }
-
-            auto t = transfer.template build_transfer<IPTruncatedTransfer>();
-            fine_space_->apply_constraints(*t->I_ptr(), 0.0);
-
-            // rename("T", const_cast<Matrix &>(t->I()));
-            // write("load_T.m", t->I());
-
-            transfers.push_back(t);
+            this->template generate_transfer_operators<IPTruncatedTransfer>(transfers);
             algorithm_->set_transfer_operators(transfers);
-
-            if (clear_spaces_after_init_) {
-                space_hierarchy_.clear();
-            }
-
             return true;
         }
 
@@ -165,24 +102,18 @@ namespace utopia {
             return algorithm_->apply(rhs, x);
         }
 
-        inline void set_fine_space(const std::shared_ptr<FunctionSpace> &fine_space) { fine_space_ = fine_space; }
         inline bool empty() const { return !algorithm_; }
 
     private:
         std::unique_ptr<MonotoneMultigrid> algorithm_;
-
-        std::shared_ptr<FunctionSpace> fine_space_;
-        std::vector<std::shared_ptr<FunctionSpace>> space_hierarchy_;
         bool is_initialized_{false};
-        bool clear_spaces_after_init_{false};
         bool use_patch_smoother_{false};
-        int block_size_{1};
 
         void make_algo() {
             InputParameters params;
-            params.set("block_size", block_size_);
+            params.set("block_size", this->block_size());
 
-            std::shared_ptr<Smoother> fine_smoother;
+            std::shared_ptr<QPSmoother> fine_smoother;
             std::shared_ptr<Smoother> coarse_smoother;
 
 #ifdef UTOPIA_WITH_BLAS
@@ -200,11 +131,7 @@ namespace utopia {
 
             fine_smoother->read(params);
             coarse_smoother->read(params);
-
-            const int n_levels = space_hierarchy_.size();
-
-            algorithm_ =
-                utopia::make_unique<MonotoneMultigrid>(fine_smoother, coarse_smoother, direct_solver, n_levels + 1);
+            algorithm_ = utopia::make_unique<MonotoneMultigrid>(fine_smoother, coarse_smoother, direct_solver);
         }
     };
 

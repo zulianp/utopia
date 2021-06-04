@@ -1,10 +1,10 @@
 #ifndef UTOPIA_STK_MESH_HPP
 #define UTOPIA_STK_MESH_HPP
 
+#include "utopia_AABB.hpp"
 #include "utopia_Communicator.hpp"
 #include "utopia_Describable.hpp"
 #include "utopia_Input.hpp"
-// #include "utopia_Mesh.hpp"
 
 #include "utopia_fe_base.hpp"
 
@@ -19,7 +19,9 @@ namespace utopia {
     template <>
     class Traits<utopia::stk::Mesh> : public Traits<UVector> {
     public:
+        using Super = Traits<UVector>;
         using SideSet = utopia::stk::SideSet;
+        using AABB = utopia::AABB<std::vector<Super::Scalar>>;
     };
 
     namespace stk {
@@ -30,6 +32,7 @@ namespace utopia {
             using Scalar = Traits<Mesh>::Scalar;
             using Vector = Traits<Mesh>::Vector;
             using Matrix = Traits<Mesh>::Matrix;
+            using AABB = Traits<Mesh>::AABB;
 
             using Comm = Traits<Mesh>::Communicator;
 
@@ -63,6 +66,14 @@ namespace utopia {
             void scale(const Scalar &scale_factor);
 
             void unit_cube(const SizeType &nx, const SizeType &ny, const SizeType &nz);
+
+            void box(const AABB &box,
+                     const SizeType &nx,
+                     const SizeType &ny,
+                     const SizeType &nz,
+                     const std::string &elem_type = "HEX8");
+
+            void bounding_box(AABB &output) const;
 
         private:
             class Impl;

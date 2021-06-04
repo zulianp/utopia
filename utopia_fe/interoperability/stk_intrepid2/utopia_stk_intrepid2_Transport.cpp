@@ -15,8 +15,23 @@ namespace utopia {
             std::shared_ptr<Intrepid2FE> fe;
             std::shared_ptr<Intrepid2Assembler> assembler;
 
+            std::shared_ptr<FunctionSpace> space;
+            std::shared_ptr<Environment> environment;
+
             inline bool empty() const { return static_cast<bool>(assembler); }
         };
+
+        void StkIntrepid2Assembler::set_environment(const std::shared_ptr<Environment> &env) {
+            impl_->environment = env;
+        }
+
+        std::shared_ptr<StkIntrepid2Assembler::Environment> StkIntrepid2Assembler::environment() const {
+            return impl_->environment;
+        }
+
+        void StkIntrepid2Assembler::set_space(const std::shared_ptr<FunctionSpace> &space) { impl_->space = space; }
+
+        std::shared_ptr<FunctionSpace> StkIntrepid2Assembler::space() const { return impl_->space; }
 
         StkIntrepid2Assembler::~StkIntrepid2Assembler() = default;
 

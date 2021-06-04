@@ -26,6 +26,9 @@ namespace utopia {
         class DofMap;
         class MeshIO;
         class SpaceIO;
+        class StkIntrepid2Assembler;
+        class Transport;
+        class Mass;
 
     }  // namespace stk
 }  // namespace utopia

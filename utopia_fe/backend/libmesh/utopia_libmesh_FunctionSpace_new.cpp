@@ -390,6 +390,28 @@ namespace utopia {
             return !vec->empty();
         }
 
+        void FunctionSpace::copy_meta_info_from(const FunctionSpace &other) {
+            auto &dof_map = other.raw_type_dof_map();
+            const int n_vars = dof_map.n_variables();
+
+            if (!impl_->systems) {
+                impl_->systems = std::make_shared<libMesh::EquationSystems>(impl_->mesh->raw_type());
+            }
+
+            // FIXME
+            auto &sys = impl_->systems->add_system<libMesh::LinearImplicitSystem>("copy");
+
+            for (int i = 0; i < n_vars; ++i) {
+                auto &v = dof_map.variable(i);
+                auto &&type = v.type();
+                auto &&name = v.name();
+
+                sys.add_variable(name, type.order, type.family);
+            }
+        }
+
+        void FunctionSpace::initialize() { impl_->systems->init(); }
+
         bool FunctionSpace::read(const Path &path,
                                  const std::vector<std::string> &var_names,
                                  Vector &val,
@@ -594,7 +616,7 @@ namespace utopia {
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::apply_constraints(Vector)");
         }
 
-        void FunctionSpace::apply_constraints(Matrix &mat) const {
+        void FunctionSpace::apply_constraints(Matrix &mat, const Scalar diag_value) const {
             UTOPIA_TRACE_REGION_BEGIN("libmesh::FunctionSpace::apply_constraints(Matrix)");
 
             assert(!utopia::empty(mat));
@@ -618,7 +640,7 @@ namespace utopia {
                 }
             }
 
-            set_zero_rows(mat, index, 1.);
+            set_zero_rows(mat, index, diag_value);
             UTOPIA_TRACE_REGION_END("libmesh::FunctionSpace::apply_constraints(Matrix)");
         }
 

@@ -91,6 +91,9 @@ namespace utopia {
 
             void backend_set_nodal_field(const Field<FunctionSpace> &field);
 
+            void copy_meta_info_from(const FunctionSpace &other);
+            void initialize();
+
         private:
             class Impl;
             // class Var;

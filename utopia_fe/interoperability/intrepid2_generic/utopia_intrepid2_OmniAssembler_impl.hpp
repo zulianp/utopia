@@ -528,7 +528,7 @@ namespace utopia {
             std::map<std::string, BoundaryAssembler> boundary;
 
             // Env and Utils
-            std::shared_ptr<Environment<FunctionSpace>> env;
+            std::shared_ptr<Environment> env;
             AssemblerRegistry registry;
 
             std::shared_ptr<intrepid2::Field<Scalar>> x_field;
@@ -548,7 +548,7 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::set_environment(const std::shared_ptr<Environment<FunctionSpace>> &env) {
+        void OmniAssembler<FunctionSpace>::set_environment(const std::shared_ptr<Environment> &env) {
             impl_->env = env;
         }
 
@@ -694,8 +694,28 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
+        std::string OmniAssembler<FunctionSpace>::name() const {
+            return "utopia::intrepid2::OmniAssembler";
+        }
+
+        template <class FunctionSpace>
         bool OmniAssembler<FunctionSpace>::is_linear() const {
             return impl_->is_linear_;
+        }
+
+        template <class FunctionSpace>
+        std::shared_ptr<Environment<FunctionSpace>> OmniAssembler<FunctionSpace>::environment() const {
+            return impl_->env;
+        }
+
+        template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::set_space(const std::shared_ptr<FunctionSpace> &space) {
+            impl_->space = space;
+        }
+
+        template <class FunctionSpace>
+        std::shared_ptr<FunctionSpace> OmniAssembler<FunctionSpace>::space() const {
+            return impl_->space;
         }
 
     }  // namespace intrepid2

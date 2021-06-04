@@ -11,12 +11,16 @@
 
 #include "utopia_libmesh_SideSet.hpp"
 
+#include "utopia_AABB.hpp"
+
 namespace utopia {
 
     template <>
     class Traits<utopia::libmesh::Mesh> : public Traits<UVector> {
     public:
+        using Super = Traits<UVector>;
         using SideSet = utopia::libmesh::SideSet;
+        using AABB = utopia::AABB<std::vector<Super::Scalar>>;
     };
 
     namespace libmesh {
@@ -27,6 +31,7 @@ namespace utopia {
             using SizeType = Traits<Mesh>::SizeType;
             using Vector = Traits<Mesh>::Vector;
             using Comm = Traits<Mesh>::Communicator;
+            using AABB = Traits<Mesh>::AABB;
 
             ~Mesh();
             Mesh(const Comm &comm = Comm::get_default());
@@ -46,6 +51,12 @@ namespace utopia {
 
             void unit_cube(const SizeType &nx = 10, const SizeType &ny = 10, const SizeType &nz = 10);
 
+            void box(const AABB &box,
+                     const SizeType &nx,
+                     const SizeType &ny,
+                     const SizeType &nz,
+                     const std::string &elem_type = "HEX8");
+
             int manifold_dimension() const;
             int spatial_dimension() const;
 
@@ -62,6 +73,8 @@ namespace utopia {
             void scale(const Scalar &scale_factor);
 
             SizeType n_elements() const;
+
+            void bounding_box(AABB &output) const;
 
         private:
             class Impl;

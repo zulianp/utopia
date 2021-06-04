@@ -228,7 +228,7 @@ namespace utopia {
 
         IndexArray col_idx_;
 
-        int max_patch_size_{0};
+        SizeType max_patch_size_{0};
     };
 }  // namespace utopia
 

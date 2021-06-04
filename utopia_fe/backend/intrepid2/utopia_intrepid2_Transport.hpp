@@ -45,7 +45,7 @@ namespace utopia {
 #endif  // NDEBUG
             }
 
-            inline int n_vars() const override { return Dim; }
+            inline int n_vars() const override { return 1; }
 
             inline std::string name() const override { return "Transport"; }
 
@@ -60,7 +60,12 @@ namespace utopia {
                                           const DynRankView &grad,
                                           const DynRankView &fun,
                                           const DynRankView &measure)
-                    : vector_field(vector_field), grad(grad), fun(fun), measure(measure), n_qp(measure.extent(1)) {}
+                    : vector_field(vector_field), grad(grad), fun(fun), measure(measure), n_qp(measure.extent(1)) {
+                    printf("size vector field %ld", vector_field.extent(0));
+                    assert(vector_field.extent(0) == measure.extent(0));
+                    assert(vector_field.extent(1) == measure.extent(1));
+                    assert(vector_field.extent(2) == grad.extent(3));
+                }
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
                     Scalar integral = 0.0;
@@ -69,7 +74,7 @@ namespace utopia {
 
                         Scalar val = 0.0;
                         for (int dj = 0; dj < Dim; ++dj) {
-                            val += grad(cell, j, qp, 0, dj) * vector_field(cell, qp, dj) * dX;
+                            val += grad(cell, j, qp, dj) * vector_field(cell, qp, dj) * dX;
                         }
 
                         val *= fun(cell, i, qp) * dX;

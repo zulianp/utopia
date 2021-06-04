@@ -12,7 +12,7 @@
 #include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"
 
-#include "utopia_CoupledFEFunction.hpp"
+#include "utopia_NLSolve.hpp"
 
 namespace utopia {
 
@@ -24,7 +24,6 @@ namespace utopia {
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
-        using CoupledFEFunction_t = utopia::CoupledFEFunction<FunctionSpace>;
         using Multgrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
 
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -34,32 +33,42 @@ namespace utopia {
         using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
         using OmniLinearSolver_t = utopia::OmniLinearSolver<Matrix_t, Vector_t>;
         using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
-        // using Newton_t = utopia::SimpleNewton<Matrix_t, Vector_t>;
 
         using IO_t = utopia::IO<FunctionSpace>;
 
         void read(Input &in) override {
-            space_ = std::make_shared<FunctionSpace>();
+            std::shared_ptr<TimeDependentFunction_t> time_dependent_function;
+            std::shared_ptr<FEFunctionInterface_t> function;
+            std::shared_ptr<LinearSolver_t> linear_solver;
+            std::shared_ptr<Newton_t> solver;
+
+            auto space_ = std::make_shared<FunctionSpace>();
             in.require("space", *space_);
 
             if (space_->empty()) {
                 return;
             }
 
+            std::shared_ptr<FEFunctionInterface<FunctionSpace>> problem;
+            std::string functiontype = "";
+            in.get("problem", [&functiontype](Input &node) { node.get("type", functiontype); });
+
+            problem = std::make_shared<FEModelFunction_t>(space_);
+
             std::string integrator;
             in.get("integrator", integrator);
 
             if (integrator == "Newmark") {
-                time_dependent_function_ = utopia::make_unique<NewmarkIntegrator_t>(space_);
-                function_ = time_dependent_function_;
+                time_dependent_function = utopia::make_unique<NewmarkIntegrator_t>(problem);
+                function = time_dependent_function;
             } else if (integrator == "ImplicitEuler") {
-                time_dependent_function_ = utopia::make_unique<ImplicitEulerIntegrator_t>(space_);
-                function_ = time_dependent_function_;
+                time_dependent_function = utopia::make_unique<ImplicitEulerIntegrator_t>(problem);
+                function = time_dependent_function;
             } else {
-                function_ = std::make_shared<FEModelFunction_t>(space_);
+                function = problem;
             }
 
-            in.require("problem", *function_);
+            in.require("problem", *function);
 
             bool use_mg = false;
             in.get("use_mg", use_mg);
@@ -67,73 +76,26 @@ namespace utopia {
             if (use_mg) {
                 auto mg = std::make_shared<SemiGeometricMultigridNew<FunctionSpace>>();
                 mg->set_fine_space(space_);
-                linear_solver_ = mg;
+                linear_solver = mg;
             } else {
-                linear_solver_ = std::make_shared<OmniLinearSolver_t>();
+                linear_solver = std::make_shared<OmniLinearSolver_t>();
             }
 
-            solver_ = std::make_shared<Newton_t>(linear_solver_);
-            solver_->verbose(true);
-            in.get("solver", *solver_);
-            in.get("n_time_steps", n_time_steps_);
+            solver = std::make_shared<Newton_t>(linear_solver);
+            solver->verbose(true);
+            in.get("solver", *solver);
+
+            nlsolve_.init(function);
+            nlsolve_.set_solver(solver);
+            valid_ = true;
         }
 
-        bool valid() const { return !space_->empty(); }
+        bool valid() const { return valid_; }
+        void run() { nlsolve_.solve(); }
 
-        void run_static_problem() {
-            Vector_t x;
-            function_->create_solution_vector(x);
-
-            if (function_->is_linear()) {
-                Matrix_t H;
-                Vector_t g;
-
-                function_->hessian_and_gradient(x, H, g);
-                g *= -1.0;
-
-                H.convert_to_scalar_matrix();
-
-                linear_solver_->solve(H, g, x);
-
-            } else {
-                solver_->solve(*function_, x);
-            }
-
-            space_->write("x.e", x);
-        }
-
-        void run_time_dependent_problem() {
-            Vector_t x;
-            time_dependent_function_->create_solution_vector(x);
-            time_dependent_function_->setup_IVP(x);
-
-            IO_t io(*space_);
-            io.set_output_path("X_t.e");
-
-            for (int t = 0; t < n_time_steps_; ++t) {
-                solver_->solve(*time_dependent_function_, x);
-                time_dependent_function_->update_IVP(x);
-
-                io.write(x, t, t * time_dependent_function_->delta_time());
-                utopia::out() << "time_step: " << t << ", time: " << t * time_dependent_function_->delta_time() << '\n';
-            }
-        }
-
-        void run() {
-            if (function_->is_time_dependent()) {
-                run_time_dependent_problem();
-            } else {
-                run_static_problem();
-            }
-        }
-
-        std::shared_ptr<FunctionSpace> space_;
-        std::shared_ptr<TimeDependentFunction_t> time_dependent_function_;
-        std::shared_ptr<FEFunctionInterface_t> function_;
-        std::shared_ptr<LinearSolver_t> linear_solver_;
-        std::shared_ptr<Newton_t> solver_;
-
-        int n_time_steps_{2};
+    private:
+        NLSolve<FunctionSpace> nlsolve_;
+        bool valid_{false};
     };
 
 }  // namespace utopia

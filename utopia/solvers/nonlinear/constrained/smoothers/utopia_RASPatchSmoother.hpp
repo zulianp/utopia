@@ -92,7 +92,7 @@ namespace utopia {
                 }
 
                 if ((converged = this->check_convergence(iter, 1, 1, diff))) {
-                    disp(x);
+                    // disp(x);
                     break;
                 }
             }

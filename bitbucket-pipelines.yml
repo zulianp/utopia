@@ -1,5 +1,5 @@
 pipelines:
-  default:
+  pull-requests:
     - step:
         name: Utopia/Petsc
         image: zulianp/utopia-env:latest

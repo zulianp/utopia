@@ -38,7 +38,7 @@ namespace utopia {
 
         using Super = utopia::LinearMultiLevel<Matrix, Vector>;
 
-        typedef struct {
+        typedef struct LevelMemory {
             std::vector<Vector> r, c, c_I, r_R;
 
             void init(const int n_levels) {
@@ -473,6 +473,7 @@ namespace utopia {
             return true;
         }
 
+        bool must_perform_galerkin_assembly() const { return perform_galerkin_assembly_; }
         void set_perform_galerkin_assembly(const bool val) { perform_galerkin_assembly_ = val; }
         // void must_perform_galerkin_assembly() const { return perform_galerkin_assembly_; }
 
@@ -487,6 +488,8 @@ namespace utopia {
         void set_measure_residual(const std::shared_ptr<MeasureResidual<Vector>> &measure_residual) {
             measure_residual_ = measure_residual;
         }
+
+        inline std::shared_ptr<Solver> coarse_solver() const { return coarse_solver_; }
 
         void adjust_memory() {
             int n_levels = this->n_levels();

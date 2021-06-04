@@ -257,17 +257,33 @@ namespace utopia {
         return Layout<Comm, 1, LocalSizeType, SizeType>(comm, local_size, size);
     }
 
-    template <typename LocalSizeType, typename SizeType, class Comm>
-    inline Layout<Comm, 2, LocalSizeType, SizeType> layout(const Comm &comm,
-                                                           const LocalSizeType &local_rows,
-                                                           const LocalSizeType &local_cols,
-                                                           const SizeType &rows,
-                                                           const SizeType &cols) {
+    template <class Comm, typename LocalRows, typename LocalCols, typename Rows, typename Cols>
+    inline Layout<Comm, 2, decltype(LocalRows() * LocalCols()), decltype(Rows() * Cols())> layout(
+        const Comm &comm,
+        const LocalRows &local_rows,
+        const LocalCols &local_cols,
+        const Rows &rows,
+        const Cols &cols) {
+        using LocalSizeType = decltype(LocalRows() * LocalCols());
+        using SizeType = decltype(Rows() * Cols());
+
         LocalSizeType ls[2] = {local_rows, local_cols};
         SizeType gs[2] = {rows, cols};
 
         return Layout<Comm, 2, LocalSizeType, SizeType>(comm, ls, gs);
     }
+
+    // template <typename LocalSizeType, typename SizeType, class Comm>
+    // inline Layout<Comm, 2, LocalSizeType, SizeType> layout(const Comm &comm,
+    //                                                        const LocalSizeType &local_rows,
+    //                                                        const LocalSizeType &local_cols,
+    //                                                        const SizeType &rows,
+    //                                                        const SizeType &cols) {
+    //     LocalSizeType ls[2] = {local_rows, local_cols};
+    //     SizeType gs[2] = {rows, cols};
+
+    //     return Layout<Comm, 2, LocalSizeType, SizeType>(comm, ls, gs);
+    // }
 
     template <class V>
     Layout<typename Traits<V>::Communicator, 1, typename Traits<V>::LocalSizeType, typename Traits<V>::SizeType> layout(
