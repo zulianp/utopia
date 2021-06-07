@@ -14,7 +14,10 @@ if(UTOPIA_PETSC)
         PF_frac/vc
         min_problems
         fe
-        ls_solve)
+        ls_solve
+        qp_solve)
+
+    message(STATUS "HI: ${APPS_MODULES}")
 
     if(UTOPIA_ENABLE_VC)
         # Requires petsc
