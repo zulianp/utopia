@@ -75,6 +75,10 @@ namespace utopia {
 
             void set_scalar_accumulator(const std::shared_ptr<TensorAccumulator> &scalar_accumulator) override;
 
+            void ensure_matrix_accumulator() override;
+            void ensure_vector_accumulator() override;
+            void ensure_scalar_accumulator() override;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

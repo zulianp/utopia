@@ -19,6 +19,11 @@ namespace utopia {
             g0 = utopia::make_unique<Vector_t>();
         }
 
+        void read(Input &in) override {
+            function_->read(in);
+            in.get("export_tensors", export_tensors_);
+        }
+
         bool value(const Vector_t &x, Scalar_t &v) const override {
             Vector_t g = (*H0) * x;
             v = dot(x, g) + dot(x, (*g0));
@@ -109,6 +114,7 @@ namespace utopia {
         std::unique_ptr<Vector_t> g0;
 
         bool must_apply_constraints_{true};
+        bool export_tensors_{false};
 
         bool initialize() const {
             if (!H0->empty()) {
@@ -123,8 +129,17 @@ namespace utopia {
             g0->set(0.0);
 
             if (!function_->hessian_and_gradient(x, *H0, *g0)) {
+                assert(false);
                 return false;
             }
+
+            rename("H0", *H0);
+            rename("g0", *g0);
+
+            // if (export_tensors_) {
+            write("load_H0.m", *H0);
+            write("load_g0.m", *g0);
+            // }
 
             return true;
         }

@@ -450,7 +450,7 @@ namespace utopia {
                 }
             }
 
-            void ensure_matrix_accumulator() {
+            virtual void ensure_matrix_accumulator() {
                 if (!matrix_accumulator_) {
                     matrix_accumulator_ = std::make_shared<TensorAccumulator>();
                     matrix_accumulator_->init_matrix(*fe_, n_vars());
@@ -459,7 +459,7 @@ namespace utopia {
                 }
             }
 
-            void ensure_vector_accumulator() {
+            virtual void ensure_vector_accumulator() {
                 if (!vector_accumulator_) {
                     vector_accumulator_ = std::make_shared<TensorAccumulator>();
                     vector_accumulator_->init_vector(*fe_, n_vars());
@@ -468,7 +468,7 @@ namespace utopia {
                 }
             }
 
-            void ensure_scalar_accumulator() {
+            virtual void ensure_scalar_accumulator() {
                 if (!scalar_accumulator_) {
                     scalar_accumulator_ = std::make_shared<TensorAccumulator>();
                     scalar_accumulator_->init_scalar(*fe_, n_vars());

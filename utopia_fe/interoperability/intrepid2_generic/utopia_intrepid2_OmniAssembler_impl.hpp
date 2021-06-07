@@ -367,6 +367,7 @@ namespace utopia {
                 for (auto &a_ptr : domain.assemblers) {
                     if (a_ptr->is_matrix()) {
                         if (!a_ptr->assemble_matrix()) {
+                            assert(false);
                             return false;
                         }
                     }
@@ -378,6 +379,7 @@ namespace utopia {
                     for (auto &a_ptr : b.assemblers) {
                         if (a_ptr->is_matrix()) {
                             if (!a_ptr->assemble_matrix()) {
+                                assert(false);
                                 return false;
                             }
                         }
@@ -396,6 +398,7 @@ namespace utopia {
                 for (auto &a_ptr : domain.assemblers) {
                     if (a_ptr->is_vector()) {
                         if (!a_ptr->assemble_vector()) {
+                            assert(false);
                             return false;
                         }
                     }
@@ -407,6 +410,7 @@ namespace utopia {
                     for (auto &a_ptr : b.assemblers) {
                         if (a_ptr->is_vector()) {
                             if (!a_ptr->assemble_vector()) {
+                                assert(false);
                                 return false;
                             }
                         }
@@ -436,6 +440,7 @@ namespace utopia {
 
                     for (auto &a_ptr : b.assemblers) {
                         if (!a_ptr->assemble()) {
+                            assert(false);
                             return false;
                         }
                     }

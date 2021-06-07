@@ -70,18 +70,18 @@ namespace utopia {
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
                     Scalar integral = 0.0;
                     for (int qp = 0; qp < n_qp; ++qp) {
-                        auto dX = measure(cell, qp);
-                        assert(dX == dX);
-
                         Scalar val = 0.0;
                         for (int dj = 0; dj < Dim; ++dj) {
                             assert(vector_field(cell, qp, dj) == vector_field(cell, qp, dj));
                             assert(grad(cell, j, qp, dj) == grad(cell, j, qp, dj));
 
-                            val += grad(cell, j, qp, dj) * vector_field(cell, qp, dj) * dX;
+                            val += grad(cell, j, qp, dj) * vector_field(cell, qp, dj);
                         }
 
                         assert(val == val);
+
+                        auto dX = measure(cell, qp);
+                        assert(dX == dX);
 
                         val *= fun(i, qp) * dX;
                         integral += val;

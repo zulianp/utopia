@@ -70,6 +70,21 @@ namespace utopia {
             impl_->assembler->set_scalar_accumulator(scalar_accumulator);
         }
 
+        void Transport::ensure_matrix_accumulator() {
+            impl_->assembler->ensure_matrix_accumulator();
+            Super::set_matrix_accumulator(impl_->assembler->matrix_accumulator());
+        }
+
+        void Transport::ensure_vector_accumulator() {
+            impl_->assembler->ensure_vector_accumulator();
+            Super::set_vector_accumulator(impl_->assembler->vector_accumulator());
+        }
+
+        void Transport::ensure_scalar_accumulator() {
+            impl_->assembler->ensure_scalar_accumulator();
+            Super::set_scalar_accumulator(impl_->assembler->scalar_accumulator());
+        }
+
         Transport::Transport(const std::shared_ptr<FE> &fe) : Super(fe), impl_(utopia::make_unique<Impl>()) {}
 
         Transport::~Transport() = default;

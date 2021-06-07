@@ -114,6 +114,7 @@ namespace utopia {
                 ensure_hessian_and_gradient();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -125,6 +126,7 @@ namespace utopia {
                 ensure_solution();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -136,6 +138,7 @@ namespace utopia {
                 ensure_solution();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -147,6 +150,7 @@ namespace utopia {
                 ensure_solution();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -162,6 +166,8 @@ namespace utopia {
 
                 if (function_) {
                     function_->set_environment(env);
+                } else {
+                    assert(false);
                 }
             }
 
