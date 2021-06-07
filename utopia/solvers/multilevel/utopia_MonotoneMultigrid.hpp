@@ -129,7 +129,12 @@ namespace utopia {
          */
         void update(const std::shared_ptr<const Matrix> &op) override {
             Super::update(op);
-            init_memory(row_layout(*op));
+
+            if (auto *pgs_QR = dynamic_cast<ProjectedGaussSeidelQR<Matrix, Vector> *>(qp_smoother_.get())) {
+            } else {
+                init_memory(row_layout(*op));
+            }
+
             qp_smoother_->update(op);
 
             if (algo_.must_perform_galerkin_assembly()) {
