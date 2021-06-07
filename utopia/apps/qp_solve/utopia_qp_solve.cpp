@@ -176,6 +176,8 @@ namespace utopia {
             multigrid.post_smoothing_steps(3);
             multigrid.verbose(verbose);
 
+            multigrid.read(in);
+
             multigrid.set_box_constraints(make_box_constaints(make_ref(lb), make_ref(ub)));
 
             multigrid.solve(QtAQ, Qtrhs, Qtx);
