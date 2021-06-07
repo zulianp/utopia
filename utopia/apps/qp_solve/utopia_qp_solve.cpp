@@ -166,6 +166,8 @@ namespace utopia {
             auto fine_smoother = std::make_shared<ProjectedGaussSeidelQR<Matrix, Vector>>();
             fine_smoother->set_R(R);  // Monotone
 
+            stats.stop_collect_and_restart("init");
+
             auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
             MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver);  // Monotone
@@ -183,7 +185,7 @@ namespace utopia {
             multigrid.solve(QtAQ, Qtrhs, Qtx);
             x = Rot * Q * Qtx;
 
-            stats.stop_collect_and_restart("init");
+            stats.stop_collect_and_restart("solve");
 
             stats.stop_and_collect("write");
             stats.describe(utopia::out().stream());
