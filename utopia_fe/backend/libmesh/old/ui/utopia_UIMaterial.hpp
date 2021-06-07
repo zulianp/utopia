@@ -22,6 +22,21 @@ namespace utopia {
             return material_->assemble_hessian_and_gradient(x, hessian, gradient);
         }
 
+        inline bool assemble_gradient(const Vector &x, Vector &gradient) override {
+            assert(material_);
+            return material_->assemble_gradient(x, gradient);
+        }
+
+        inline bool assemble_hessian(const Vector &x, Matrix &hessian) override {
+            assert(material_);
+            return material_->assemble_hessian(x, hessian);
+        }
+
+        inline bool assemble_hessian(Matrix &hessian) override {
+            assert(material_);
+            return material_->assemble_hessian(hessian);
+        }
+
         inline bool stress(const Vector &x, Vector &result) override {
             assert(material_);
             return material_->stress(x, result);

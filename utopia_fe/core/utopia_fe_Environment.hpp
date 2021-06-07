@@ -14,7 +14,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class Environment {
+    class Environment : public Describable {
     public:
         // using Vector_t = typename Traits<FunctionSpace>::Vector;
         // using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -24,6 +24,12 @@ namespace utopia {
         bool add_field(const std::shared_ptr<Field<FunctionSpace>> &field) {
             if (field->empty()) {
                 utopia::err() << "Environment: Cannot add empty field to environment!\n";
+                assert(false);
+                return false;
+            }
+
+            if (field->name().empty()) {
+                utopia::err() << "Environment: Cannot add field without a proper name to environment!\n";
                 assert(false);
                 return false;
             }
@@ -67,6 +73,12 @@ namespace utopia {
                 return false;
             }
 
+            if (space->name().empty()) {
+                utopia::err() << "Environment: Cannot add space without a proper name to environment!\n";
+                assert(false);
+                return false;
+            }
+
             auto ret = spaces_.insert(std::make_pair(space->name(), space));
 
             if (!ret.second) {
@@ -86,6 +98,16 @@ namespace utopia {
             }
 
             return f->second;
+        }
+
+        void describe(std::ostream &os) const override {
+            for (auto &stf : space_to_fields_) {
+                os << "Space: " << stf.first << " fields:\n";
+
+                for (auto &f : stf.second.fields) {
+                    os << "\t- " << f.first << "\n";
+                }
+            }
         }
 
     private:

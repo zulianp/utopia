@@ -106,9 +106,8 @@ public:
       Matrix P = inv_lumped_mass * R * M_fine;
 
       // transfers_[i - 1] = std::make_shared<IPTransferNested<Matrix, Vector>>(
-      transfers_[i - 1] =
-          std::make_shared<IPRTruncatedTransfer<Matrix, Vector>>(
-              std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
+      transfers_[i - 1] = std::make_shared<IPTruncatedTransfer<Matrix, Vector>>(
+          std::make_shared<Matrix>(Iu), std::make_shared<Matrix>(P));
     }
 
     // initial conddition needs to be setup only on the finest level
@@ -231,7 +230,7 @@ public:
     auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
     auto multigrid_ = std::make_shared<MonotoneMultigrid<Matrix, Vector>>(
-        tr_strategy_fine, tr_strategy_fine, direct_solver, n_levels_);
+        tr_strategy_fine, tr_strategy_fine, direct_solver);
 
     multigrid_->set_box_constraints(box);
     multigrid_->set_transfer_operators(transfers_);
@@ -241,16 +240,12 @@ public:
     multigrid_->update(make_ref(H));
     multigrid_->set_box_constraints(box);
     multigrid_->verbose(true);
-
-    // rmtr_->set_coarse_tr_strategy(tr_strategy_coarse);
-    // rmtr_->set_fine_tr_strategy(tr_strategy_fine);
-
-    // rmtr_->set_transfer_operators(transfers_);
+    multigrid_->atol(1e-9);
 
     multigrid_->active_set().tol(1e-15);
     multigrid_->max_it(100);
     multigrid_->atol(1e-9);
-    multigrid_->apply(g, solution);
+    multigrid_->apply(-1.0 * g, solution);
 
     // auto *fine_fun =
     //     dynamic_cast<ConstrainedExtendedTestFunction<Matrix, Vector> *>(

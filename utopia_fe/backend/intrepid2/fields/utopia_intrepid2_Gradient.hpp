@@ -28,7 +28,7 @@ namespace utopia {
             class Rank1Op {
             public:
                 UTOPIA_INLINE_FUNCTION Rank1Op(const DynRankView &grad, const DynRankView &coeff)
-                    : grad(grad), coeff(coeff), num_fields(grad.extent(1)), n_var(coeff.extent(1) / num_fields) {}
+                    : grad(grad), coeff(coeff), num_fields(grad.extent(1)), n_var(grad.extent(3)) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int d) const {
                     assert(d < n_var);

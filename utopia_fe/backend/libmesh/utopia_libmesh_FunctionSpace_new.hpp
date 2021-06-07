@@ -91,7 +91,7 @@ namespace utopia {
 
             void apply_constraints(Matrix &mat, Vector &vec) const;
             void apply_constraints(Vector &vec) const;
-            void apply_constraints(Matrix &mat) const;
+            void apply_constraints(Matrix &mat, const Scalar diag_value = 1) const;
 
             void apply_zero_constraints(Vector &vec) const;
             void add_dirichlet_boundary_condition(const std::string &boundary_name,
@@ -112,6 +112,10 @@ namespace utopia {
             void displace(const Vector &displacement);
 
             const std::string &name() const;
+
+            void copy_meta_info_from(const FunctionSpace &other);
+
+            void initialize();
 
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;

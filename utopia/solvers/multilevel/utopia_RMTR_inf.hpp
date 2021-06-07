@@ -330,7 +330,7 @@ private:
           dynamic_cast<IPRTruncatedTransfer<Matrix, Vector> *>(
               this->transfers_.back().get());
 
-      std::cout << "active_flgs  " << sum(active_flgs) << "  \n";
+      // std::cout << "active_flgs  " << sum(active_flgs) << "  \n";
 
       transfer_trun->truncate_interpolation(active_flgs);
 

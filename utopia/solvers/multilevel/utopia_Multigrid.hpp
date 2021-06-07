@@ -439,7 +439,7 @@ namespace utopia {
          */
         bool coarse_solve(const Vector &rhs, Vector &x) {
             if (!coarse_solver_->apply(rhs, x)) return false;
-            assert(approxeq(level(0).A() * x, rhs, 1e-6));
+            // assert(approxeq(level(0).A() * x, rhs, 1e-6));
             return true;
         }
 
@@ -473,7 +473,9 @@ namespace utopia {
             return true;
         }
 
+        bool must_perform_galerkin_assembly() const { return perform_galerkin_assembly_; }
         void set_perform_galerkin_assembly(const bool val) { perform_galerkin_assembly_ = val; }
+        // void must_perform_galerkin_assembly() const { return perform_galerkin_assembly_; }
 
         void use_line_search(const bool val) { use_line_search_ = val; }
 
@@ -486,6 +488,8 @@ namespace utopia {
         void set_measure_residual(const std::shared_ptr<MeasureResidual<Vector>> &measure_residual) {
             measure_residual_ = measure_residual;
         }
+
+        inline std::shared_ptr<Solver> coarse_solver() const { return coarse_solver_; }
 
         void adjust_memory() {
             int n_levels = this->n_levels();

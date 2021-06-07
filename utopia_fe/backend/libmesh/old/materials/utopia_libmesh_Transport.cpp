@@ -173,6 +173,53 @@ namespace utopia {
 
         bool Mass::valid() const { return impl_->initialized(); }
 
+        bool Mass::assemble(const Vector &x, Vector &gradient) {
+            // FIXME
+            Matrix mat;
+            assemble(mat);
+            gradient = mat * x;
+            return true;
+        }
+
+        bool Mass::assemble(Matrix &jacobian) {
+            if (!impl_->initialized()) {
+                init();
+            }
+
+            assert(valid());
+            if (!valid()) {
+                Utopia::Abort("Mass: invalid set-up!");
+            }
+
+            auto &space = *impl_->legacy_space;
+
+            auto b_form = inner(ctx_fun(impl_->density_function.sampler()) * trial(space), test(space)) * dX;
+
+            utopia::assemble(b_form, jacobian);
+
+            if (impl_->lumped) {
+                Vector mass_vector = sum(jacobian, 1);
+                jacobian = diag(mass_vector);
+            }
+
+            if (impl_->density != 1.0) {
+                jacobian *= impl_->density;
+            }
+
+            if (impl_->expected_volume > 0.0) {
+                Scalar vol = sum(jacobian);
+                if (!approxeq(vol, impl_->expected_volume, impl_->expected_volume_tol)) {
+                    assert(false);
+                    Utopia::Abort("Mass: expected volume not satisfied: " + std::to_string(impl_->expected_volume) +
+                                  " != " + std::to_string(vol));
+                }
+            }
+
+            return true;
+        }
+
+        bool Mass::assemble(const Vector &, Matrix &hessian) { return assemble(hessian); }
+
         bool Mass::assemble(const Vector &x, Matrix &jacobian, Vector &fun) {
             if (!impl_->initialized()) {
                 init();

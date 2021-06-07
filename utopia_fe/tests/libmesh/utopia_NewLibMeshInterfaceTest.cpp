@@ -61,7 +61,7 @@ void lm_read_function_space_with_data() {
 void lm() {
     UTOPIA_RUN_TEST(lm_create_mesh);
     UTOPIA_RUN_TEST(lm_create_function_space);
-    UTOPIA_RUN_TEST(lm_read_function_space_with_data);
+    // UTOPIA_RUN_TEST(lm_read_function_space_with_data);
 
     utopia::run_parallel_test<MeshTest<utopia::libmesh::Mesh>>();
 }

@@ -22,9 +22,20 @@ namespace utopia {
 
         virtual ~FEAssembler() = default;
         virtual bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
+        virtual bool assemble(const Vector &x, Vector &gradient) = 0;
+        virtual bool assemble(const Vector &x, Matrix &hessian) = 0;
+
+        virtual bool assemble(Matrix &) { return false; }
 
         inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             return this->assemble(x, hessian, gradient);
+        }
+
+        inline bool assemble_hessian(const Vector &x, Matrix &hessian) override { return this->assemble(x, hessian); }
+        inline bool assemble_hessian(Matrix &hessian) override { return this->assemble(hessian); }
+
+        inline bool assemble_gradient(const Vector &x, Vector &gradient) override {
+            return this->assemble(x, gradient);
         }
 
         inline void set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env) { env_ = env; }
@@ -68,6 +79,19 @@ namespace utopia {
             bool is_linear() const override { return true; }
 
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun) override;
+            bool assemble(const Vector &x, Vector &gradient) override {
+                assert(false);
+                return false;
+            }
+            bool assemble(const Vector &x, Matrix &hessian) override {
+                assert(false);
+                return false;
+            }
+            bool assemble(Matrix &hessian) override {
+                assert(false);
+                return false;
+            }
+
             void clear() override;
             void read(Input &in) override;
 
@@ -97,6 +121,10 @@ namespace utopia {
             inline bool is_linear() const override { return true; }
 
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun) override;
+
+            bool assemble(const Vector &x, Vector &gradient) override;
+            bool assemble(const Vector &x, Matrix &hessian) override;
+            bool assemble(Matrix &hessian) override;
             void clear() override;
             void read(Input &in) override;
 

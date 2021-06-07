@@ -48,6 +48,8 @@ namespace utopia {
 
         SizeType size() const override;
 
+        bool key_exists(const std::string &key) const override;
+
     private:
         class Impl;
         std::unique_ptr<Impl> impl_;

@@ -29,19 +29,21 @@ namespace utopia {
 
         params.describe(std::cout);
 
-        if (material == "NeoHookean") {
-            std::cout << "Using: NeoHookean" << std::endl;
-            material_ = std::make_shared<NeoHookean<FunctionSpace, Matrix, Vector>>(V_, params);
-        } else if (material == "NewNeoHookean") {
+        if (material == "NeoHookean" || material == "NewNeoHookean") {
+            //     std::cout << "Using: NeoHookean" << std::endl;
+            //     material_ = std::make_shared<NeoHookean<FunctionSpace, Matrix, Vector>>(V_, params);
+            // } else if (material == "NewNeoHookean") {
             std::cout << "Using: NewNeoHookean" << std::endl;
             material_ = std::make_shared<NewNeoHookean<FunctionSpace, Matrix, Vector>>(V_, params);
         } else if (material == "NewLinearElasticity") {
             std::cout << "Using: NewLinearElasticity" << std::endl;
             material_ = std::make_shared<NewLinearElasticity<FunctionSpace, Matrix, Vector>>(V_, params);
-        } else if (material == "SaintVenantKirchoff") {
-            std::cout << "Using: SaintVenantKirchoff" << std::endl;
-            material_ = std::make_shared<SaintVenantKirchoff<FunctionSpace, Matrix, Vector>>(V_, params);
-        } else /*if(material == "LinearElasticity")*/ {
+        }
+        // else if (material == "SaintVenantKirchoff") {
+        //     std::cout << "Using: SaintVenantKirchoff" << std::endl;
+        //     material_ = std::make_shared<SaintVenantKirchoff<FunctionSpace, Matrix, Vector>>(V_, params);
+        // }
+        else /*if(material == "LinearElasticity")*/ {
             std::cout << "Using: LinearElasticity" << std::endl;
             material_ = std::make_shared<LinearElasticity<FunctionSpace, Matrix, Vector>>(V_, params);
         }

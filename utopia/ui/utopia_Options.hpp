@@ -78,8 +78,33 @@ namespace utopia {
         };
 
         template <typename T>
+        class Required : public OptBase {
+        public:
+            void read(Input &in) override { in.require(key, ref); }
+
+            void describe(std::ostream &os) const override {
+                os << '-' << key << "\t<" << TypeToString<T>::get() << ">\trequired! ";
+                os << "\t\t";
+                os << explanation << "\n";
+            }
+
+            std::string key;
+            T &ref;
+            std::string explanation;
+
+            Required(std::string key, T &ref, std::string explanation)
+                : key(std::move(key)), ref(ref), explanation(std::move(explanation)) {}
+        };
+
+        template <typename T>
         Options &add_option(std::string key, T &ref, std::string explanation) {
             args_.push_back(utopia::make_unique<Opt<T>>(key, ref, explanation));
+            return *this;
+        }
+
+        template <typename T>
+        Options &add_required(std::string key, T &ref, std::string explanation) {
+            args_.push_back(utopia::make_unique<Required<T>>(key, ref, explanation));
             return *this;
         }
 

@@ -28,6 +28,7 @@ namespace utopia {
             in.get("variable_number", variable_number);
             in.get("gap_negative_bound", gap_negative_bound);
             in.get("gap_positive_bound", gap_positive_bound);
+            in.get("invert_face_orientation", invert_face_orientation);
 
             in.get("surfaces", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -134,7 +135,7 @@ namespace utopia {
                 }
             }
 
-            virtual bool init(const Mesh &mesh) = 0;
+            virtual bool init(const Params &params, const Mesh &mesh) = 0;
             virtual bool assemble(const FunctionSpace &space, const Params &params, Output &output) = 0;
             virtual void normalize(Vector &normal) = 0;
             virtual void build_orthogonal_transformation(const Vector &is_contact,
@@ -233,7 +234,7 @@ namespace utopia {
                 return true;
             }
 
-            bool init(const Mesh &mesh) override {
+            bool init(const Params &params, const Mesh &mesh) override {
                 assert(mesh.spatial_dimension() == Dim);
 
                 auto raw_mesh = mesh.raw_type<Dim>();
@@ -246,6 +247,10 @@ namespace utopia {
                     auto mesh_ptr = std::make_shared<MoonolithMesh_t>(raw_mesh->comm());
                     assert(false && "IMPLEMENT ME");
                     return false;
+                }
+
+                if (params.invert_face_orientation) {
+                    obstacle_mesh->invert_element_orientation();
                 }
 
                 auto tree = ::moonolith::RayCastingTree<Scalar, Dim>::New();
@@ -273,7 +278,7 @@ namespace utopia {
             bool ok = false;
             if (obstacle_mesh.spatial_dimension() == 3) {
                 impl_ = utopia::make_unique<ImplD<3>>();
-                impl_->init(obstacle_mesh);
+                impl_->init(*params_, obstacle_mesh);
                 ok = true;
             }
 

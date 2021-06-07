@@ -15,6 +15,19 @@ namespace utopia {
         SaintVenantKirchoff(FunctionSpace &V, const LameeParameters &params)
             : V_(V), params_(params), rescaling_(1.0) {}
 
+        bool assemble_hessian(const Vector &x, Matrix &hessian) override {
+            assert(false);
+            return false;
+        }
+        bool assemble_hessian(Matrix &hessian) override {
+            assert(false);
+            return false;
+        }
+        bool assemble_gradient(const Vector &x, Vector &gradient) override {
+            assert(false);
+            return false;
+        }
+
         // bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
             auto mu = params_.var_mu();

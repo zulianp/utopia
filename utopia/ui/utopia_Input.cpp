@@ -2,7 +2,28 @@
 #include <exception>
 #include "utopia_ui.hpp"
 
+#include "utopia_Instance.hpp"
+#include "utopia_MPI.hpp"
+#include "utopia_Reporter.hpp"
+
 namespace utopia {
+
+    void Input::KeyDeprecated::key_exists() const {
+        if (mpi_world_rank() == 0) {
+            utopia::err() << "Input[Warning]: \"" << deprecated_key_
+                          << "\" is deprecated and its usage will be removed in the future. Use \"" << new_key_
+                          << "\" instead!\n ";
+        }
+    }
+
+    void Input::KeyRequired::key_does_not_exist() const {
+        if (mpi_world_rank() == 0) {
+            utopia::err() << "Input[Error]: The input \"" << key_ << "\" is required! aborting program!\n";
+        }
+        assert(false);
+        Utopia::Abort();
+    }
+
     bool Configurable::import(const Path &path) {
         try {
             auto istr = open_istream(path.to_string());

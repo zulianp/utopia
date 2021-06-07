@@ -16,6 +16,11 @@ if(UTOPIA_ENABLE_STK AND UTOPIA_ENABLE_INTREPID2)
     list(APPEND APPS_MODULES stk intrepid2)
 endif()
 
+if(UTOPIA_ENABLE_MARS)
+    list(APPEND APPS_MODULES mars utopia_fe)
+endif()
+
+
 find_project_files(${UTOPIA_APPS_DIR} "${APPS_MODULES}" LOCAL_HEADERS
                    LOCAL_SOURCES)
 target_sources(

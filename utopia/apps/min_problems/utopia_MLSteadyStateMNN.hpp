@@ -136,7 +136,7 @@ public:
       auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
 
       multigrid_ = std::make_shared<MonotoneMultigrid<Matrix, Vector>>(
-          fine_smoother, coarse_smoother, direct_solver, n_levels_);
+          fine_smoother, coarse_smoother, direct_solver);
     }
 
     multigrid_->set_transfer_operators(transfers_);

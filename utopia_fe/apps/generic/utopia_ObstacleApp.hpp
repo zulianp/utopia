@@ -15,8 +15,17 @@
 #include "utopia_MonotoneAlgebraicMultigrid.hpp"
 
 #include "utopia_MonotoneSemiGeometricMultigrid.hpp"
+#include "utopia_SemiGeometricMultigridNew.hpp"
+
+#include "utopia_PatchSmoother.hpp"
+#include "utopia_RASPatchSmoother.hpp"
 
 #include "utopia_ui.hpp"
+
+#ifdef UTOPIA_WITH_BLAS
+#include "utopia_blas.hpp"
+#include "utopia_blas_Array.hpp"
+#endif  // UTOPIA_WITH_BLAS
 
 #include "utopia_fe_Core.hpp"
 
@@ -50,6 +59,7 @@ namespace utopia {
         using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
         using MonotoneAlgebraicMultigrid_t = utopia::MonotoneAlgebraicMultigrid<Matrix_t, Vector_t>;
         using MonotoneSemiGeometricMultigrid_t = utopia::MonotoneSemiGeometricMultigrid<FunctionSpace>;
+        using SemiGeometricMultigrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
 
         void read(Input &in) override {
             in.get("space", [this](Input &in) {
@@ -80,6 +90,7 @@ namespace utopia {
 
             int block_size = space.mesh().spatial_dimension();
             bool use_amg = true;
+            bool use_sgm = false;
 
             in.get("obstacle", [this](Input &in) {
                 in.get("nonlinear_obstacle_iterations", nonlinear_contact_iterations);
@@ -87,10 +98,15 @@ namespace utopia {
             });
 
             std::string qp_solver_type = "pgs";
-            in.get("qp_solver", [&qp_solver_type, &use_amg](Input &in) {
+            in.get("qp_solver", [&qp_solver_type, &use_amg, &use_sgm](Input &in) {
                 in.get("use_amg", use_amg);
+                in.get("use_sgm", use_sgm);
                 in.get("type", qp_solver_type);
             });
+
+            if (use_sgm) {
+                use_amg = false;
+            }
 
             if (qp_solver_type == "ssnewton") {
                 if (use_amg) {
@@ -135,12 +151,24 @@ namespace utopia {
                     in.get("amg", *amg);
 
                     qp_solver_ = std::make_shared<SemismoothNewton_t>(amg);
+                } else if (use_sgm) {
+                    auto sgm = std::make_shared<SemiGeometricMultigrid_t>();
+                    sgm->set_fine_space(make_ref(space));
+                    qp_solver_ = std::make_shared<SemismoothNewton_t>(sgm);
                 } else {
                     auto linear_solver = std::make_shared<KSPSolver_t>();
                     qp_solver_ = std::make_shared<SemismoothNewton_t>(linear_solver);
                 }
 
-            } else if (qp_solver_type == "msgm") {
+            } else
+#ifdef UTOPIA_WITH_BLAS
+                if (qp_solver_type == "patch_smoother") {
+                // qp_solver_ = std::make_shared<PatchSmoother<Matrix_t>>();
+                // qp_solver_ = std::make_shared<PatchSmoother<Matrix_t, utopia::BlasMatrixd>>();
+                qp_solver_ = std::make_shared<RASPatchSmoother<Matrix_t, utopia::BlasMatrixd>>();
+            } else
+#endif  // UTOPIA_WITH_BLAS
+                if (qp_solver_type == "msgm") {
                 auto msgm = std::make_shared<MonotoneSemiGeometricMultigrid_t>();
                 msgm->set_fine_space(make_ref(space));
                 qp_solver_ = msgm;
@@ -204,8 +232,7 @@ namespace utopia {
 #ifdef UTOPIA_WITH_PETSC
                 if (std::is_same<PetscMatrix, Matrix_t>::value && H.is_block()) {
                     Matrix_t temp;
-                    temp.destroy();
-                    MatConvert(H.raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &temp.raw_type());
+                    H.convert_to_scalar_matrix(temp);
                     obs.transform(temp, H_c);
                 } else
 #endif  // UTOPIA_WITH_PETSC

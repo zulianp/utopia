@@ -39,13 +39,13 @@ namespace utopia {
 
                 switch (rows) {
                     case 1: {
-                        return pseudo_inverse<1>(row_full_rank, expr, d, result);
+                        return pseudo_inverse<1>(row_full_rank, expr, result);
                     }
                     case 2: {
-                        return pseudo_inverse<2>(row_full_rank, expr, d, result);
+                        return pseudo_inverse<2>(row_full_rank, expr, result);
                     }
                     case 3: {
-                        return pseudo_inverse<3>(row_full_rank, expr, d, result);
+                        return pseudo_inverse<3>(row_full_rank, expr, result);
                     }
                     default: {
                         return false;
@@ -60,14 +60,13 @@ namespace utopia {
         }
 
         template <int Dim, class Result>
-        UTOPIA_INLINE_FUNCTION static bool pseudo_inverse(bool row_full_rank,
-                                                          const Expr &expr,
-                                                          const Scalar &det,
-                                                          Result &result) {
+        UTOPIA_INLINE_FUNCTION static bool pseudo_inverse(bool row_full_rank, const Expr &expr, Result &result) {
             if (row_full_rank) {
                 auto mat = transpose(expr) * expr;
+
+                Scalar d = det(mat);
                 StaticMatrix<Scalar, Dim, Dim> temp;
-                inverse(mat, det, temp);
+                inverse(mat, d, temp);
                 result = temp * transpose(expr);
                 return true;
             } else {

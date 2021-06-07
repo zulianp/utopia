@@ -14,22 +14,22 @@ namespace utopia {
         // FIXME allow also other models
         std::string type;
         in.get("type", type);
-        if ("FlowWithFractures" == type) {
-            auto flow = utopia::make_unique<FlowWithFractures<FunctionSpace, Matrix, Vector> >(space_);
-            flow->rescale(rescale_);
-            flow->read(in);
-            flow_model_ = std::move(flow);
-        } else if ("NewFlow" == type) {
-            auto flow = utopia::make_unique<NewFlow<FunctionSpace, Matrix, Vector> >(space_);
-            flow->rescale(rescale_);
-            flow->read(in);
-            flow_model_ = std::move(flow);
-        } else {
-            auto flow = utopia::make_unique<Flow<FunctionSpace, Matrix, Vector> >(space_);
-            flow->rescale(rescale_);
-            flow->read(in);
-            flow_model_ = std::move(flow);
-        }
+        // if ("FlowWithFractures" == type) {
+        //     auto flow = utopia::make_unique<FlowWithFractures<FunctionSpace, Matrix, Vector> >(space_);
+        //     flow->rescale(rescale_);
+        //     flow->read(in);
+        //     flow_model_ = std::move(flow);
+        // } else if ("NewFlow" == type) {
+        auto flow = utopia::make_unique<NewFlow<FunctionSpace, Matrix, Vector> >(space_);
+        flow->rescale(rescale_);
+        flow->read(in);
+        flow_model_ = std::move(flow);
+        // } else {
+        //     auto flow = utopia::make_unique<Flow<FunctionSpace, Matrix, Vector> >(space_);
+        //     flow->rescale(rescale_);
+        //     flow->read(in);
+        //     flow_model_ = std::move(flow);
+        // }
     }
 
     template <class FunctionSpace, class Matrix, class Vector>
@@ -38,6 +38,24 @@ namespace utopia {
                                                                              Vector &gradient) {
         assert(is_valid());
         return flow_model_->assemble_hessian_and_gradient(x, hessian, gradient);
+    }
+
+    template <class FunctionSpace, class Matrix, class Vector>
+    bool UFlow<FunctionSpace, Matrix, Vector>::assemble_hessian(Matrix &hessian) {
+        assert(is_valid());
+        return flow_model_->assemble_hessian(hessian);
+    }
+
+    template <class FunctionSpace, class Matrix, class Vector>
+    bool UFlow<FunctionSpace, Matrix, Vector>::assemble_hessian(const Vector &x, Matrix &hessian) {
+        assert(is_valid());
+        return flow_model_->assemble_hessian(x, hessian);
+    }
+
+    template <class FunctionSpace, class Matrix, class Vector>
+    bool UFlow<FunctionSpace, Matrix, Vector>::assemble_gradient(const Vector &x, Vector &gradient) {
+        assert(is_valid());
+        return flow_model_->assemble_gradient(x, gradient);
     }
 
     template class UFlow<LibMeshFunctionSpace, USparseMatrix, UVector>;

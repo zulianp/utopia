@@ -15,6 +15,9 @@ namespace utopia {
         NewNeoHookean(FunctionSpace &V, const LameeParameters &params) : V_(V), params_(params), rescaling_(1.0) {}
 
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override;
+        bool assemble_hessian(const Vector &x, Matrix &hessian) override;
+        bool assemble_gradient(const Vector &x, Vector &gradient) override;
+
         bool stress(const Vector &x, Vector &result) override;
 
         inline Scalar rescaling() const override { return rescaling_; }

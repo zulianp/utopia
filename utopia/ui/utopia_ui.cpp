@@ -1,9 +1,16 @@
 #include "utopia_ui.hpp"
+
+#include "utopia_Base.hpp"
+
 #include "utopia_Convertible.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_JSONInput.hpp"
 #include "utopia_Path.hpp"
 #include "utopia_XMLInput.hpp"
+
+#ifdef UTOPIA_WITH_YAML_CPP
+#include "utopia_YAMLInput.hpp"
+#endif  // UTOPIA_WITH_YAML_CPP
 
 namespace utopia {
     template class Convertible<double>;
@@ -35,6 +42,15 @@ namespace utopia {
             return ret_ptr;
         } else
 #endif  // UTOPIA_WITH_JSON
+#ifdef UTOPIA_WITH_YAML_CPP
+            if (path.extension() == "yaml" || path.extension() == "yml") {
+
+            auto ret = new YAMLInput();
+            auto ret_ptr = std::unique_ptr<Input>(ret);
+            ret->open(path);
+            return ret_ptr;
+        } else
+#endif  // UTOPIA_WITH_YAML_CPP
         {
             std::cerr << "[Error] format not supported" << std::endl;
             return nullptr;

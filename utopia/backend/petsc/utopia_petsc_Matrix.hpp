@@ -389,6 +389,9 @@ namespace utopia {
                                 diag);
         }
 
+        void convert_to_scalar_matrix();
+        void convert_to_scalar_matrix(PetscMatrix &scalar_matrix);
+
         // void identity(const Scalar &diag = 1.0);
 
         // inline void identity(const Size &s, const Scalar &diag = 1.0) override {
