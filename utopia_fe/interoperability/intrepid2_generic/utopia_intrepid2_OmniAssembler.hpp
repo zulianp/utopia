@@ -14,13 +14,16 @@ namespace utopia {
     namespace intrepid2 {
 
         template <class FunctionSpace>
-        class OmniAssembler : public FEAssembler<FunctionSpace> {
+        class OmniAssembler : public utopia::FEAssembler<FunctionSpace> {
         public:
             using Matrix = typename Traits<FunctionSpace>::Matrix;
             using Vector = typename Traits<FunctionSpace>::Vector;
             using Scalar = typename Traits<FunctionSpace>::Scalar;
 
             using Environment = utopia::Environment<FunctionSpace>;
+
+            using Intrepid2FEAssembler = utopia::intrepid2::FEAssembler<Scalar>;
+            using Intrepid2FEAssemblerPtr = std::shared_ptr<Intrepid2FEAssembler>;
 
             OmniAssembler(const std::shared_ptr<FunctionSpace> &space);
             virtual ~OmniAssembler();
@@ -45,6 +48,9 @@ namespace utopia {
             void set_space(const std::shared_ptr<FunctionSpace> &space) override;
             std::shared_ptr<FunctionSpace> space() const override;
             bool is_linear() const override;
+
+            void add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler);
+            void fail_if_unregistered(const bool val);
 
         private:
             class Impl;

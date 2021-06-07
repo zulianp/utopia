@@ -59,7 +59,10 @@ namespace utopia {
             this->status("Initializing coupled problem");
             problem->initialize();
 
-            if (problem_type == "transport") {
+            std::string integrator;
+            in.get("integrator", integrator);
+
+            if (problem_type == "transport" || integrator == "ImplicitEuler") {
                 return std::make_shared<ImplicitEulerIntegrator_t>(problem);
             } else {
                 return problem;

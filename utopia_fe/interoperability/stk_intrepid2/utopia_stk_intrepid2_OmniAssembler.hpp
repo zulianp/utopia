@@ -23,6 +23,7 @@ namespace utopia {
         using FunctionSpace = utopia::stk::FunctionSpace;
         using Matrix = typename Traits<FunctionSpace>::Matrix;
         using Vector = typename Traits<FunctionSpace>::Vector;
+        using Scalar = typename Traits<FunctionSpace>::Scalar;
         using Environment = utopia::Environment<FunctionSpace>;
 
         ~OmniAssembler();
@@ -52,10 +53,6 @@ namespace utopia {
     private:
         class Impl;
         std::unique_ptr<Impl> impl_;
-
-        using ImplAssembler = utopia::FEAssembler<utopia::stk::FunctionSpace>;
-
-        ImplAssembler &impl_assembler() const;
     };
 
 }  // namespace utopia

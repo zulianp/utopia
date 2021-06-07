@@ -252,7 +252,8 @@ namespace utopia {
 
                 loop_cell(
                     "FEAssembler::scale(mat)", UTOPIA_LAMBDA(int cell) {
-                        auto val = fun.value(element_tags(cell));
+                        auto tag = element_tags(cell);
+                        auto val = fun.value(tag);
 
                         for (int i = 0; i < num_fields; ++i) {
                             for (int j = 0; j < num_fields; ++j) {
@@ -386,15 +387,15 @@ namespace utopia {
             inline std::shared_ptr<TensorAccumulator> scalar_accumulator() { return scalar_accumulator_; }
             inline std::shared_ptr<TensorAccumulator> scalar_accumulator() const { return scalar_accumulator_; }
 
-            void set_matrix_accumulator(const std::shared_ptr<TensorAccumulator> &matrix_accumulator) {
+            virtual void set_matrix_accumulator(const std::shared_ptr<TensorAccumulator> &matrix_accumulator) {
                 matrix_accumulator_ = matrix_accumulator;
             }
 
-            void set_vector_accumulator(const std::shared_ptr<TensorAccumulator> &vector_accumulator) {
+            virtual void set_vector_accumulator(const std::shared_ptr<TensorAccumulator> &vector_accumulator) {
                 vector_accumulator_ = vector_accumulator;
             }
 
-            void set_scalar_accumulator(const std::shared_ptr<TensorAccumulator> &scalar_accumulator) {
+            virtual void set_scalar_accumulator(const std::shared_ptr<TensorAccumulator> &scalar_accumulator) {
                 scalar_accumulator_ = scalar_accumulator;
             }
 

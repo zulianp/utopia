@@ -61,7 +61,7 @@ namespace utopia {
                                           const DynRankView &fun,
                                           const DynRankView &measure)
                     : vector_field(vector_field), grad(grad), fun(fun), measure(measure), n_qp(measure.extent(1)) {
-                    printf("size vector field %ld", vector_field.extent(0));
+                    // printf("size vector field %ld\n", vector_field.extent(0));
                     assert(vector_field.extent(0) == measure.extent(0));
                     assert(vector_field.extent(1) == measure.extent(1));
                     assert(vector_field.extent(2) == grad.extent(3));

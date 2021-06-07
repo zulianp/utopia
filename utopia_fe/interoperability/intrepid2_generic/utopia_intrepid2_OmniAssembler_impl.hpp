@@ -39,7 +39,6 @@ namespace utopia {
 
                 auto it = assemblers_.find(type);
                 if (it == assemblers_.end()) {
-                    assert(false);
                     return nullptr;
                 } else {
                     return it->second(fe, in);
@@ -98,10 +97,6 @@ namespace utopia {
                 register_assembler_variant<utopia::NeoHookean<1, Scalar_t>>("NeoHookean", 1);
                 register_assembler_variant<utopia::NeoHookean<2, Scalar_t>>("NeoHookean", 2);
                 register_assembler_variant<utopia::NeoHookean<3, Scalar_t>>("NeoHookean", 3);
-
-                register_assembler_variant<utopia::Transport<1, typename FE_t::DynRankView>>("Transport", 1);
-                register_assembler_variant<utopia::Transport<2, typename FE_t::DynRankView>>("Transport", 2);
-                register_assembler_variant<utopia::Transport<3, typename FE_t::DynRankView>>("Transport", 3);
             }
         };
 
@@ -456,7 +451,7 @@ namespace utopia {
                 if (domain.has_matrix()) {
                     local_to_global(*space, domain.matrix_accumulator->data(), mode, mat);
 
-                    if (ensure_scalar_matrix_) {
+                    if (ensure_scalar_matrix) {
                         if (mat.is_block()) {
                             mat.convert_to_scalar_matrix();
                         }
@@ -535,7 +530,8 @@ namespace utopia {
 
             AssemblyMode mode{ADD_MODE};
             bool is_linear_{true};
-            bool ensure_scalar_matrix_{true};
+            bool ensure_scalar_matrix{true};
+            bool fail_if_unregistered{true};
         };
 
         template <class FunctionSpace>
@@ -630,6 +626,19 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler) {
+            impl_->domain.assemblers.push_back(assembler);
+            if (!assembler->is_linear()) {
+                impl_->is_linear_ = false;
+            }
+        }
+
+        template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::fail_if_unregistered(const bool val) {
+            impl_->fail_if_unregistered = val;
+        }
+
+        template <class FunctionSpace>
         void OmniAssembler<FunctionSpace>::read(Input &in) {
             // FIXME order must be guessed by discretization and material
             int quadrature_order = 2;
@@ -639,18 +648,13 @@ namespace utopia {
 
             impl_->is_linear_ = true;
 
-            in.get("ensure_scalar_matrix", impl_->ensure_scalar_matrix_);
+            in.get("ensure_scalar_matrix", impl_->ensure_scalar_matrix);
 
             in.get("material", [this](Input &node) {
                 auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);
-
                 if (assembler) {
-                    if (!assembler->is_linear()) {
-                        impl_->is_linear_ = false;
-                    }
-
-                    impl_->domain.assemblers.push_back(assembler);
-                } else {
+                    add_domain_assembler(assembler);
+                } else if (impl_->fail_if_unregistered) {
                     assert(false && "Should not come here");
                     Utopia::Abort();
                 }

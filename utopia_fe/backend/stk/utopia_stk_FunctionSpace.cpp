@@ -322,7 +322,7 @@ namespace utopia {
             }
 
             impl_->read_meta(in);
-
+            impl_->register_variables();
             impl_->dof_map->init(this->mesh().bulk_data());
 
             std::vector<FEVar> fields;
