@@ -32,7 +32,10 @@ namespace utopia {
         using NewtonBase_t = utopia::NewtonBase<Matrix_t, Vector_t>;
         using Newton_t = utopia::Newton<Matrix_t, Vector_t>;
 
-        inline std::shared_ptr<Environment_t> &env() { return env_; }
+        inline std::shared_ptr<Environment_t> &environment() {
+            assert(environment_);
+            return environment_;
+        }
         inline const Communicator_t &comm() const { return comm_; }
         inline Communicator_t &comm() { return comm_; }
 
@@ -139,7 +142,7 @@ namespace utopia {
             return true;
         }
 
-        NLSolve() : env_(std::make_shared<Environment_t>()) { init_defaults(); }
+        NLSolve() : environment_(std::make_shared<Environment_t>()) { init_defaults(); }
 
         inline bool verbose() const { return verbose_; }
         inline void verbose(const bool val) { verbose_ = val; }
@@ -165,7 +168,7 @@ namespace utopia {
 
     private:
         Communicator_t comm_;
-        std::shared_ptr<Environment_t> env_;
+        std::shared_ptr<Environment_t> environment_;
         std::shared_ptr<FEFunctionInterface_t> function_;
         std::shared_ptr<NewtonBase_t> solver_;
         bool verbose_{true};

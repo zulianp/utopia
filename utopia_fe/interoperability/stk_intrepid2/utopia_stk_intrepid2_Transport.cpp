@@ -18,6 +18,23 @@ namespace utopia {
             std::shared_ptr<FunctionSpace> space;
             std::shared_ptr<Environment> environment;
 
+            std::shared_ptr<intrepid2::Field<Scalar>> x_field;
+
+            void update(const Vector &x) {
+                utopia::Field<FunctionSpace> in("x", space, make_ref(const_cast<Vector &>(x)));
+                in.set_tensor_size(space->n_var());
+                if (!x_field) {
+                    x_field = std::make_shared<intrepid2::Field<Scalar>>(fe);
+                }
+
+                convert_field(in, *x_field);
+
+                assert(assembler);
+                if (assembler) {
+                    assembler->update(x_field);
+                }
+            }
+
             inline bool empty() const { return static_cast<bool>(assembler); }
         };
 
@@ -26,6 +43,7 @@ namespace utopia {
         }
 
         std::shared_ptr<StkIntrepid2Assembler::Environment> StkIntrepid2Assembler::environment() const {
+            assert(impl_->environment);
             return impl_->environment;
         }
 
@@ -41,10 +59,13 @@ namespace utopia {
 
         void StkIntrepid2Assembler::set_fe(const std::shared_ptr<Intrepid2FE> &fe) { impl_->fe = fe; }
 
-        std::shared_ptr<StkIntrepid2Assembler::Intrepid2FE> StkIntrepid2Assembler::fe() { return impl_->fe; }
+        std::shared_ptr<StkIntrepid2Assembler::Intrepid2FE> StkIntrepid2Assembler::fe() {
+            assert(impl_->fe);
+            return impl_->fe;
+        }
 
         void StkIntrepid2Assembler::ensure_fe(const int quadrature_order) {
-            if (impl_->fe) {
+            if (!impl_->fe) {
                 impl_->fe = std::make_shared<Intrepid2FE>();
                 create_fe(*this->space(), *impl_->fe, quadrature_order);
             }
@@ -70,19 +91,117 @@ namespace utopia {
             impl_->assembler = assembler;
         }
 
-        std::shared_ptr<StkIntrepid2Assembler::Intrepid2Assembler> StkIntrepid2Assembler::assembler() {
+        std::shared_ptr<StkIntrepid2Assembler::Intrepid2Assembler> StkIntrepid2Assembler::assembler() const {
             assert(impl_->assembler);
             return impl_->assembler;
         }
 
         bool StkIntrepid2Assembler::assemble(const Vector &x, Matrix &hessian, Vector &gradient) {
-            if (!assemble_element_tensors()) {
+            if (assembler()) {
+                impl_->update(x);
+
+                if (!assembler()->assemble()) {
+                    assert(false);
+                    return false;
+                }
+
+                if (assembler()->is_matrix()) {
+                    local_to_global(*space(), assembler()->matrix_accumulator()->data(), assembly_mode(), hessian);
+                }
+
+                if (assembler()->is_vector()) {
+                    local_to_global(*space(), assembler()->vector_accumulator()->data(), assembly_mode(), gradient);
+                }
+                return true;
+            } else {
                 return false;
             }
+        }
 
-            local_to_global(*space(), assembler()->matrix_accumulator()->data(), assembly_mode(), hessian);
-            gradient = hessian * x;
-            return true;
+        bool StkIntrepid2Assembler::assemble(const Vector &x, Matrix &hessian) {
+            if (assembler()) {
+                impl_->update(x);
+
+                if (assembler()->is_matrix()) {
+                    if (!assembler()->assemble_matrix()) {
+                        assert(false);
+                        return false;
+                    }
+
+                    local_to_global(*space(), assembler()->matrix_accumulator()->data(), assembly_mode(), hessian);
+                }
+
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        bool StkIntrepid2Assembler::assemble(const Vector &x, Vector &gradient) {
+            if (assembler()) {
+                impl_->update(x);
+
+                if (assembler()->is_vector()) {
+                    if (!assembler()->assemble_vector()) {
+                        assert(false);
+                        return false;
+                    }
+
+                    local_to_global(*space(), assembler()->vector_accumulator()->data(), assembly_mode(), gradient);
+                }
+
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        // For linear only
+        bool StkIntrepid2Assembler::assemble(Matrix &hessian) {
+            if (assembler()) {
+                assert(assembler()->is_linear());
+
+                if (assembler()->is_matrix()) {
+                    if (!assembler()->assemble_matrix()) {
+                        assert(false);
+                        return false;
+                    }
+
+                    local_to_global(*space(), assembler()->matrix_accumulator()->data(), assembly_mode(), hessian);
+                }
+
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        bool StkIntrepid2Assembler::assemble(Vector &gradient) {
+            if (assembler()) {
+                assert(assembler()->is_linear());
+
+                if (!assembler()->assemble_vector()) {
+                    assert(false);
+                    return false;
+                }
+
+                if (assembler()->is_vector()) {
+                    return assembler()->assemble_vector();
+                    local_to_global(*space(), assembler()->vector_accumulator()->data(), assembly_mode(), gradient);
+                }
+
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        bool StkIntrepid2Assembler::is_linear() const {
+            if (assembler()) {
+                return assembler()->is_linear();
+            } else {
+                return false;
+            }
         }
 
         class Transport::Impl {
@@ -110,9 +229,15 @@ namespace utopia {
             auto env = this->environment();
 
             if (env) {
-                std::string field_field;
-                in.get("pressure_field", field_field);
-                auto p = env->find_field(*this->space(), field_field);
+                std::string pressure_field;
+                in.require("pressure_field", pressure_field);
+
+                auto p = env->find_field(*this->space(), pressure_field);
+
+                if (!p) {
+                    utopia::err() << "pressure_field not found in environment:";
+                    env->describe(utopia::err().stream());
+                }
 
                 assert(p);
 
@@ -129,12 +254,12 @@ namespace utopia {
                 }
 
             } else {
-                std::string field_field;
-                in.get("pressure_field", field_field);
+                std::string pressure_field;
+                in.get("pressure_field", pressure_field);
 
-                if (!field_field.empty()) {
+                if (!pressure_field.empty()) {
                     assert(false);
-                    Utopia::Abort("In order to retrive the field_field, The env must be defined!");
+                    Utopia::Abort("In order to retrive the pressure_field, The env must be defined!");
                 }
             }
 

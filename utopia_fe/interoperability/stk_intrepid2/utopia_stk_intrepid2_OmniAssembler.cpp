@@ -17,6 +17,7 @@ namespace utopia {
     public:
         using Intrepid2OmniAssembler = utopia::intrepid2::OmniAssembler<utopia::stk::FunctionSpace>;
 
+        std::shared_ptr<Environment> environment;
         std::shared_ptr<FunctionSpace> space;
         std::unique_ptr<FEAssembler<utopia::stk::FunctionSpace>> assembler;
     };
@@ -53,12 +54,34 @@ namespace utopia {
     }
 
     void OmniAssembler<utopia::stk::FunctionSpace>::read(Input &in) {
-        impl_->assembler = utopia::make_unique<Impl::Intrepid2OmniAssembler>(this->space());
-        impl_assembler().read(in);
+        impl_->assembler = nullptr;
+        in.get("material", [this](Input &node) {
+            std::string type;
+            node.get("type", type);
+
+            if (!type.empty()) {
+                if (type == "Transport") {
+                    impl_->assembler = utopia::make_unique<stk::Transport>();
+                    impl_->assembler->set_space(this->space());
+                    impl_->assembler->set_environment(impl_->environment);
+                    impl_->assembler->read(node);
+                }
+            }
+        });
+
+        if (!impl_->assembler) {
+            impl_->assembler = utopia::make_unique<Impl::Intrepid2OmniAssembler>(this->space());
+            impl_->assembler->set_environment(impl_->environment);
+            impl_assembler().read(in);
+        }
     }
 
     void OmniAssembler<utopia::stk::FunctionSpace>::set_environment(const std::shared_ptr<Environment> &env) {
-        impl_assembler().set_environment(env);
+        impl_->environment = env;
+
+        if (impl_->assembler) {
+            impl_->assembler->set_environment(env);
+        }
     }
 
     std::shared_ptr<OmniAssembler<utopia::stk::FunctionSpace>::Environment>

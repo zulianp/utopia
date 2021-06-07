@@ -34,6 +34,8 @@ namespace utopia {
                 this->status("Reading material for " + porous_matrix->name());
 
                 auto flow = std::make_shared<FEModelFunction_t>(porous_matrix);
+                flow->set_environment(this->environment());
+
                 node.require(problem_type, *flow);
                 matrix_problem = flow;
                 problem->add_master_function(porous_matrix->name(), flow);
@@ -47,6 +49,7 @@ namespace utopia {
                     this->status("Reading material for " + space->name());
 
                     auto flow = std::make_shared<FEModelFunction_t>(space);
+                    flow->set_environment(this->environment());
                     node.require(problem_type, *flow);
                     problem->add_function(space->name(), flow);
                     problem->add_coupling(porous_matrix->name(), space->name());
@@ -77,14 +80,14 @@ namespace utopia {
                 node.get("space", [this, &porous_matrix](Input &space_node) {
                     auto s = std::make_shared<FunctionSpace>(this->comm());
                     // Use this so everyhting is added to the env automatically when calling read
-                    // s->set_environment(this->env());
+                    // s->set_environment(this->environment());
 
                     bool read_state = false;
                     space_node.get("read_state", read_state);
                     if (read_state) {
                         auto field = std::make_shared<Field<FunctionSpace>>();
                         s->read_with_state(space_node, *field);
-                        this->env()->add_field(field);
+                        this->environment()->add_field(field);
                     } else {
                         s->read(space_node);
                     }
@@ -94,7 +97,7 @@ namespace utopia {
                         Utopia::Abort();
                     }
 
-                    this->env()->add_space(s);
+                    this->environment()->add_space(s);
                     porous_matrix = s;
                 });
             });
@@ -110,14 +113,14 @@ namespace utopia {
                     node.get("space", [this, &fracture_networks](Input &space_node) {
                         auto s = std::make_shared<FunctionSpace>(this->comm());
                         // Use this so everyhting is added to the env automatically when calling read
-                        // s->set_environment(this->env());
+                        // s->set_environment(this->environment());
 
                         bool read_state = false;
                         space_node.get("read_state", read_state);
                         if (read_state) {
                             auto field = std::make_shared<Field<FunctionSpace>>();
                             s->read_with_state(space_node, *field);
-                            this->env()->add_field(field);
+                            this->environment()->add_field(field);
                         } else {
                             s->read(space_node);
                         }
@@ -127,7 +130,7 @@ namespace utopia {
                             Utopia::Abort();
                         }
 
-                        this->env()->add_space(s);
+                        this->environment()->add_space(s);
                         fracture_networks.push_back(s);
                     });
                 });

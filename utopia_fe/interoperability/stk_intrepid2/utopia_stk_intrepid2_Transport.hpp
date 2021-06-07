@@ -48,7 +48,7 @@ namespace utopia {
             inline std::shared_ptr<TensorAccumulator> matrix_accumulator();
 
             void set_assembler(const std::shared_ptr<Intrepid2Assembler> &assembler);
-            std::shared_ptr<Intrepid2Assembler> assembler();
+            std::shared_ptr<Intrepid2Assembler> assembler() const;
 
             void set_fe(const std::shared_ptr<Intrepid2FE> &fe);
             std::shared_ptr<Intrepid2FE> fe();

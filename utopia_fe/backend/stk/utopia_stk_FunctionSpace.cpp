@@ -379,6 +379,8 @@ namespace utopia {
                 local_to_global(lv, *gv, OVERWRITE_MODE);
                 field.set_data(gv);
                 field.set_space(make_ref(*this));
+
+                field.set_name(fields[0].name);
             }
 
             return true;

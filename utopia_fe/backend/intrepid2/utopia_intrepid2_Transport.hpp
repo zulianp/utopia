@@ -105,7 +105,7 @@ namespace utopia {
                 return true;
             }
 
-            bool assemble() override {
+            bool assemble_matrix() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<Transport>::assemble");
 
                 this->ensure_matrix_accumulator();
