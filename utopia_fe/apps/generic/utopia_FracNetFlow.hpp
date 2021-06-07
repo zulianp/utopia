@@ -3,6 +3,7 @@
 
 #include "utopia_CoupledFEFunction.hpp"
 #include "utopia_NLSolve.hpp"
+#include "utopia_QuadraticFEFunction.hpp"
 
 namespace utopia {
 
@@ -39,8 +40,15 @@ namespace utopia {
                 flow->set_environment(this->environment());
 
                 node.require(problem_type, *flow);
-                matrix_problem = flow;
-                problem->add_master_function(porous_matrix->name(), flow);
+
+                if (simplify_problem_ && flow->is_linear()) {
+                    auto qf = std::make_shared<QuadraticFEFunction<FunctionSpace>>(flow);
+                    matrix_problem = qf;
+                } else {
+                    matrix_problem = flow;
+                }
+
+                problem->add_master_function(porous_matrix->name(), matrix_problem);
             });
 
             in.get("fracture_networks", [&](Input &array_node) {
@@ -53,7 +61,14 @@ namespace utopia {
                     auto flow = std::make_shared<FEModelFunction_t>(space);
                     flow->set_environment(this->environment());
                     node.require(problem_type, *flow);
-                    problem->add_function(space->name(), flow);
+
+                    if (simplify_problem_ && flow->is_linear()) {
+                        auto qf = std::make_shared<QuadraticFEFunction<FunctionSpace>>(flow);
+                        problem->add_function(space->name(), qf);
+                    } else {
+                        problem->add_function(space->name(), flow);
+                    }
+
                     problem->add_coupling(porous_matrix->name(), space->name());
                 });
             });
@@ -79,6 +94,8 @@ namespace utopia {
 
         void read(Input &in) override {
             Super::read(in);
+
+            in.get("simplify_problem", simplify_problem_);
 
             std::shared_ptr<FunctionSpace> porous_matrix;
             std::vector<std::shared_ptr<FunctionSpace>> fracture_networks;
@@ -154,6 +171,8 @@ namespace utopia {
 
             this->init(problem);
         }
+
+        bool simplify_problem_{false};
     };
 
 }  // namespace utopia

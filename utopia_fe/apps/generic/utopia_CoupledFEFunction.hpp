@@ -612,6 +612,8 @@ namespace utopia {
             problem->function_ = function;
             problem->name_ = name;
 
+            function->must_apply_constraints_to_assembled(false);
+
             if (env_) {
                 problem->set_environment(env_);
             }
@@ -620,6 +622,7 @@ namespace utopia {
         }
 
         void add_master_function(const std::string &name, const std::shared_ptr<FEFunctionInterface_t> &function) {
+            function->must_apply_constraints_to_assembled(false);
             add_function(name, function);
 
             auto it = fe_problems_.find(name);
@@ -685,7 +688,7 @@ namespace utopia {
         std::shared_ptr<Environment_t> env_;
         bool must_apply_constraints_{true};
         bool verbose_{default_verbose()};
-        // bool compute_algebraic_residual_{false};
+        bool override_with_algebraic_residual_{false};
 
         std::vector<std::unique_ptr<MatrixTransformer<Matrix_t>>> transformers_;
 
