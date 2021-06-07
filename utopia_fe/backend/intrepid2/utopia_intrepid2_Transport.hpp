@@ -71,16 +71,23 @@ namespace utopia {
                     Scalar integral = 0.0;
                     for (int qp = 0; qp < n_qp; ++qp) {
                         auto dX = measure(cell, qp);
+                        assert(dX == dX);
 
                         Scalar val = 0.0;
                         for (int dj = 0; dj < Dim; ++dj) {
+                            assert(vector_field(cell, qp, dj) == vector_field(cell, qp, dj));
+                            assert(grad(cell, j, qp, dj) == grad(cell, j, qp, dj));
+
                             val += grad(cell, j, qp, dj) * vector_field(cell, qp, dj) * dX;
                         }
 
-                        val *= fun(cell, i, qp) * dX;
+                        assert(val == val);
+
+                        val *= fun(i, qp) * dX;
                         integral += val;
                     }
 
+                    assert(integral == integral);
                     return integral;
                 }
 

@@ -108,7 +108,8 @@ namespace utopia {
 
         bool value(const Vector_t & /*point*/, Scalar_t &value) const override {
             // assert(false && "IMPLEMENT ME");
-            value = std::numeric_limits<Scalar_t>::signaling_NaN();
+            // value = std::numeric_limits<Scalar_t>::signaling_NaN();
+            value = -12345678;
             return false;
         }
 

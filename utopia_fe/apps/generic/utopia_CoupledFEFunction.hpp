@@ -426,6 +426,8 @@ namespace utopia {
 
             H = *master_fe_problem_->hessian();
 
+            apply_transformers(H);
+
             if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
             }
@@ -662,6 +664,10 @@ namespace utopia {
             for (auto &c : couplings_) {
                 c->update();
             }
+        }
+
+        void add_matrix_transformer(std::unique_ptr<MatrixTransformer<Matrix_t>> &&transformer) {
+            transformers_.push_back(std::move(transformer));
         }
 
     protected:

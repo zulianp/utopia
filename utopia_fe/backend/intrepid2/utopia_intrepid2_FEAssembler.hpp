@@ -103,6 +103,8 @@ namespace utopia {
 
             FEAssembler(const std::shared_ptr<FE> &fe) : fe_(fe) { assert(fe); }
 
+            inline void set_fe(const std::shared_ptr<FE> &fe) { fe_ = fe; }
+
             inline CellTestTrialRange cell_test_trial_range() const { return fe_->cell_test_trial_range(); }
             inline CellTestRange cell_test_range() const { return fe_->cell_test_range(); }
             inline CellRange cell_range() const { return fe_->cell_range(); }

@@ -22,12 +22,6 @@ namespace utopia {
             : public utopia::intrepid2::FEAssembler<typename Traits<stk::FunctionSpace>::Scalar> {
         public:
             using Super = utopia::intrepid2::FEAssembler<typename Traits<stk::FunctionSpace>::Scalar>;
-            //     using Super = utopia::FEAssembler<utopia::stk::FunctionSpace>;
-            //     using Field = utopia::Field<utopia::stk::FunctionSpace>;
-            //     using Scalar = Traits<utopia::stk::FunctionSpace>::Scalar;
-            //     using Vector = Traits<utopia::stk::FunctionSpace>::Vector;
-            //     using Matrix = Traits<utopia::stk::FunctionSpace>::Matrix;
-
             using Environment = utopia::Environment<utopia::stk::FunctionSpace>;
 
             StkIntrepid2Assembler(const std::shared_ptr<FE> &fe);

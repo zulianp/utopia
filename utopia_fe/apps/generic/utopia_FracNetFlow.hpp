@@ -9,6 +9,8 @@ namespace utopia {
     template <class FunctionSpace>
     class FracNetFlow : public NLSolve<FunctionSpace> {
     public:
+        using Matrix_t = typename Traits<FunctionSpace>::Matrix;
+
         using Super = utopia::NLSolve<FunctionSpace>;
         using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
@@ -61,6 +63,10 @@ namespace utopia {
 
             std::string integrator;
             in.get("integrator", integrator);
+
+            if (problem_type == "transport") {
+                problem->add_matrix_transformer(utopia::make_unique<StabilizeTransport<Matrix_t>>());
+            }
 
             if (problem_type == "transport" || integrator == "ImplicitEuler") {
                 return std::make_shared<ImplicitEulerIntegrator_t>(problem);

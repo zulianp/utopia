@@ -639,12 +639,19 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::set_domain_fe(const std::shared_ptr<FE> &fe) {
+            impl_->domain.fe = fe;
+        }
+
+        template <class FunctionSpace>
         void OmniAssembler<FunctionSpace>::read(Input &in) {
-            // FIXME order must be guessed by discretization and material
-            int quadrature_order = 2;
-            in.get("quadrature_order", quadrature_order);
-            impl_->domain.fe = std::make_shared<typename Impl::FE>();
-            create_fe(*impl_->space, *impl_->domain.fe, quadrature_order);
+            if (!impl_->domain.fe) {
+                // FIXME order must be guessed by discretization and material
+                int quadrature_order = 2;
+                in.get("quadrature_order", quadrature_order);
+                impl_->domain.fe = std::make_shared<typename Impl::FE>();
+                create_fe(*impl_->space, *impl_->domain.fe, quadrature_order);
+            }
 
             impl_->is_linear_ = true;
 

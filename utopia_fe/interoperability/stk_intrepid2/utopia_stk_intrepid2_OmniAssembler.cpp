@@ -75,6 +75,7 @@ namespace utopia {
 
         if (!impl_->assembler) {
             impl_->assembler = utopia::make_unique<Impl::Intrepid2OmniAssembler>(this->space());
+            impl_->assembler->set_domain_fe(impl_->fe);
             impl_->assembler->set_environment(impl_->environment);
         }
 

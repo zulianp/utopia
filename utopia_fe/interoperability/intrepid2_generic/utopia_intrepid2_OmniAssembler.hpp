@@ -21,12 +21,15 @@ namespace utopia {
             using Scalar = typename Traits<FunctionSpace>::Scalar;
 
             using Environment = utopia::Environment<FunctionSpace>;
+            using FE = utopia::intrepid2::FE<Scalar>;
 
             using Intrepid2FEAssembler = utopia::intrepid2::FEAssembler<Scalar>;
             using Intrepid2FEAssemblerPtr = std::shared_ptr<Intrepid2FEAssembler>;
 
             OmniAssembler(const std::shared_ptr<FunctionSpace> &space);
             virtual ~OmniAssembler();
+
+            void set_domain_fe(const std::shared_ptr<FE> &fe);
 
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun) override;
             bool assemble(const Vector &x, Matrix &jacobian) override;
