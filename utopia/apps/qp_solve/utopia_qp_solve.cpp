@@ -187,7 +187,7 @@ namespace utopia {
 
             stats.stop_collect_and_restart("solve");
 
-            stats.stop_and_collect("write");
+            // stats.stop_and_collect("write");
             stats.describe(utopia::out().stream());
         }
     };

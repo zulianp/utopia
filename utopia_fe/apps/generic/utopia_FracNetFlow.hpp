@@ -19,6 +19,7 @@ namespace utopia {
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
         using CoupledFEFunction_t = utopia::CoupledFEFunction<FunctionSpace>;
+        using QuadraticFEFunction_t = utopia::QuadraticFEFunction<FunctionSpace>;
 
         std::shared_ptr<FEFunctionInterface_t> create_problem(
             Input &in,
@@ -42,7 +43,7 @@ namespace utopia {
                 node.require(problem_type, *flow);
 
                 if (simplify_problem_ && flow->is_linear()) {
-                    auto qf = std::make_shared<QuadraticFEFunction<FunctionSpace>>(flow);
+                    auto qf = std::make_shared<QuadraticFEFunction_t>(flow);
                     matrix_problem = qf;
                 } else {
                     matrix_problem = flow;
@@ -63,7 +64,7 @@ namespace utopia {
                     node.require(problem_type, *flow);
 
                     if (simplify_problem_ && flow->is_linear()) {
-                        auto qf = std::make_shared<QuadraticFEFunction<FunctionSpace>>(flow);
+                        auto qf = std::make_shared<QuadraticFEFunction_t>(flow);
                         problem->add_function(space->name(), qf);
                     } else {
                         problem->add_function(space->name(), flow);
@@ -84,7 +85,12 @@ namespace utopia {
             }
 
             if (problem_type == "transport" || integrator == "ImplicitEuler") {
-                return std::make_shared<ImplicitEulerIntegrator_t>(problem);
+                if (simplify_problem_ && problem->is_linear()) {
+                    return std::make_shared<ImplicitEulerIntegrator_t>(
+                        std::make_shared<QuadraticFEFunction_t>(problem));
+                } else {
+                    return std::make_shared<ImplicitEulerIntegrator_t>(problem);
+                }
             } else {
                 return problem;
             }
