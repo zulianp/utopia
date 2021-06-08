@@ -128,7 +128,7 @@ namespace utopia {
         template <int Dim>
         std::shared_ptr<::moonolith::FunctionSpace<::moonolith::Mesh<FunctionSpace::Scalar, Dim>>>
         FunctionSpace::raw_type() const {
-            assert(Dim == impl_->manifold_dim());
+            // assert(Dim == impl_->manifold_dim());
             return std::dynamic_pointer_cast<MoonolithFunctionSpace<Dim>>(impl_->space);
         }
 

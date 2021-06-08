@@ -1,22 +1,14 @@
 #include "utopia_mars_FunctionSpace.hpp"
+#include <memory>
 
 #include "utopia_DirichletBoundary.hpp"
 #include "utopia_FEVar.hpp"
+#include "utopia_mars_FEHandler.hpp"
 
-#include "mars.hpp"
-#include "mars_base.hpp"
-#include "mars_context.hpp"
-#include "mars_distributed_dof_management.hpp"
-
-#include "utopia_mars_Factory_impl.hpp"
-
-// #include "mars_distributed_finite_element.hpp"
-// #include "mars_execution_context.hpp"
-// #include "mars_imesh_kokkos.hpp"
+#include "mars_pvtu_writer.hpp"
 
 namespace utopia {
     namespace mars {
-
         class FunctionSpace::Impl {
         public:
             // using DeviceType = typename Kokkos::Device<Kokkos::DefaultExecutionSpace, KokkosSpace>;
@@ -24,60 +16,33 @@ namespace utopia {
             using MapType = Matrix::MapType;
 
             using DeviceType = Matrix::CrsMatrixType::device_type;
+
             // using MarsCrsMatrix = typename KokkosSparse::CrsMatrix<Scalar, LocalSizeType, DeviceType, void,
             // SizeType>;
 
             template <class DMesh>
             void init(DMesh &mesh_impl) {
-                static constexpr ::mars::Integer Degree = 1;
-                using DofHandler = ::mars::DofHandler<DMesh, Degree>;
-                using FEDofMap = ::mars::FEDofMap<DofHandler>;
-                using SPattern =
-                    ::mars::SparsityPattern<Scalar, LocalSizeType, SizeType, DofHandler, MarsCrsMatrix::size_type>;
+                using FEHandler = utopia::mars::FEHandler<DMesh>;
 
-                static_assert(std::is_same<SizeType, Matrix::CrsMatrixType::global_ordinal_type>::value, "Weird!");
+                auto handler_impl = std::make_shared<FEHandler>();
+                handler_impl->init(mesh_impl);
+                handler = handler_impl;
 
-                auto dof_handler_impl = std::make_shared<DofHandler>(&mesh_impl);  //, mesh->raw_type_context());
-                dof_handler_impl->enumerate_dofs();
-
-                dof_handler = dof_handler_impl;
-
-                auto fe_dof_map_impl = std::make_shared<FEDofMap>(build_fe_dof_map(*dof_handler_impl));
-                fe_dof_map = fe_dof_map_impl;
-
-                SPattern sp(*dof_handler_impl);
-                sp.build_pattern(*fe_dof_map_impl);
-
-                new_crs_matrix = [sp]() -> MarsCrsMatrix { return sp.new_crs_matrix(); };
-
-                describe = [dof_handler_impl, fe_dof_map_impl, sp]() {
-                    dof_handler_impl->print_dofs();
-                    sp.print_sparsity_pattern();
-
-                    // ::mars::print_fe_dof_map(*dof_handler_impl, *fe_dof_map_impl);
+#ifdef UTOPIA_WITH_VTK
+                write = [handler_impl](const Path &path, const Vector &x) -> bool {
+                    ::mars::PVTUMeshWriter<typename FEHandler::DofHandler, typename FEHandler::FEDofMap> w;
+                    auto x_kokkos = x.raw_type()->getLocalViewHost();
+                    return w.write_vtu(
+                        path.to_string(), handler_impl->get_dof_handler(), handler_impl->get_fe_dof_map(), x_kokkos);
                 };
+#else
+                write = (const Path &, const Vector &)->bool { return false; };
+#endif  // UTOPIA_WITH_VTK
+            }
 
-                matrix_apply_constraints = [sp](Matrix &m, const Scalar diag_value) {
-                    // BC set constrained rows to zero, except diagonal where you set diag_value
-                };
-
-                vector_apply_constraints = [sp](Vector &v) {
-                    // BC set values to constraint value (i.e., boundary value)
-                };
-
-                apply_zero_constraints = [sp](Vector &vec) {
-                    // BC set values to constraint value to zero
-                };
-
-                system_apply_constraints = [this](Matrix &m, Vector &v) {
-                    vector_apply_constraints(v);
-                    matrix_apply_constraints(m, 1.0);
-                };
-
-                n_local_dofs = [dof_handler_impl]() { return dof_handler_impl->get_owned_dof_size(); };
-                n_dofs = [dof_handler_impl]() { return dof_handler_impl->get_global_dof_size(); };
-
-                factory = []() -> Factory & { return ConcreteFactory<DMesh>::instance(); };
+            template <class RawType>
+            std::shared_ptr<RawType> raw_type() const {
+                return std::dynamic_pointer_cast<RawType>(handler);
             }
 
             void read_meta(Input &in) {
@@ -119,33 +84,20 @@ namespace utopia {
                 n_var = counted_vars;
             }
 
-            std::function<void()> describe;
-            std::function<SizeType()> n_dofs;
-            std::function<SizeType()> n_local_dofs;
-            std::function<MarsCrsMatrix()> new_crs_matrix;
-
-            std::function<void(Matrix &m, const Scalar diag_value)> matrix_apply_constraints;
-            std::function<void(Vector &v)> vector_apply_constraints;
-            std::function<void(Matrix &m, Vector &v)> system_apply_constraints;
-            std::function<void(Vector &vec)> apply_zero_constraints;
-
-            // std::function<crs_grap()> get_crs_graph;
-
-            std::shared_ptr<::mars::IDofHandler> dof_handler;
-            std::shared_ptr<::mars::IFEDofMap> fe_dof_map;
+            std::shared_ptr<IFEHandler> handler;
             std::shared_ptr<Mesh> mesh;
-
-            std::function<Factory &()> factory;
 
             std::string name;
             DirichletBoundary dirichlet_boundary;
             std::vector<FEVar> variables;
 
-            // MarsCrsMatrix crs_matrix;
+            std::function<bool(const Path &, const Vector &)> write;
 
             bool verbose{false};
             int n_var{0};
         };
+
+        std::shared_ptr<IFEHandler> FunctionSpace::handler() const { return impl_->handler; }
 
         FunctionSpace::FunctionSpace(const Comm &comm) : impl_(utopia::make_unique<Impl>()) {}
 
@@ -162,16 +114,22 @@ namespace utopia {
                     using DMesh = ::mars::DistributedMesh<::mars::ElementType::Quad4>;
                     auto mesh_impl = mesh->raw_type<DMesh>();
                     impl_->init(*mesh_impl);
+                    break;
                 }
                 case 3: {
                     using DMesh = ::mars::DistributedMesh<::mars::ElementType::Hex8>;
                     auto mesh_impl = mesh->raw_type<DMesh>();
                     impl_->init(*mesh_impl);
+                    break;
+                }
+                default: {
+                    assert(false);
+                    Utopia::Abort("Trying to create mesh with unsupported dimension!");
                 }
             }
         }
 
-        bool FunctionSpace::write(const Path &path, const Vector &x) {}
+        bool FunctionSpace::write(const Path &path, const Vector &x) { return impl_->write(path, x); }
 
         void FunctionSpace::read(Input &in) {
             if (impl_->mesh) {
@@ -182,8 +140,8 @@ namespace utopia {
             impl_->read_meta(in);
         }
         void FunctionSpace::describe(std::ostream &os) const {
-            if (impl_->describe) {
-                impl_->describe();
+            if (impl_->handler) {
+                handler()->describe();
             } else {
                 os << "FunctionSpace::describe: null\n";
             }
@@ -193,8 +151,8 @@ namespace utopia {
         const FunctionSpace::Mesh &FunctionSpace::mesh() const { return *impl_->mesh; }
         FunctionSpace::Mesh &FunctionSpace::mesh() { return *impl_->mesh; }
 
-        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return impl_->n_dofs(); }
-        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return impl_->n_local_dofs(); }
+        FunctionSpace::SizeType FunctionSpace::n_dofs() const { return handler()->n_dofs(); }
+        FunctionSpace::SizeType FunctionSpace::n_local_dofs() const { return handler()->n_local_dofs(); }
         int FunctionSpace::n_var() const { return 1; }
         void FunctionSpace::set_n_var(const int n_var) { assert(n_var == 1); }
 
@@ -217,29 +175,55 @@ namespace utopia {
 
             // this constructor gives us a fill-complete matrix, so do not call fillComplete manually again
             Matrix::RCPCrsMatrixType mat =
-                Teuchos::rcp(new Matrix::CrsMatrixType(impl_->new_crs_matrix(), row_map, col_map));
+                Teuchos::rcp(new Matrix::CrsMatrixType(handler()->new_crs_matrix(), row_map, col_map));
             m.wrap(mat, true);
         }
 
-        void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) {}
-        void FunctionSpace::apply_constraints(Vector &v) {}
-        void FunctionSpace::apply_constraints(Matrix &m, Vector &v) {}
-        void FunctionSpace::apply_zero_constraints(Vector &vec) const {}
+        void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) {
+            for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                handler()->matrix_apply_constraints(m, diag_value, bc.name);
+            }
+        }
+
+        void FunctionSpace::apply_constraints(Vector &v) {
+            for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                handler()->vector_apply_constraints(v, bc.value, bc.name);
+            }
+        }
+
+        void FunctionSpace::apply_constraints(Matrix &m, Vector &v) {
+            for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                handler()->matrix_apply_constraints(m, 1.0, bc.name);
+                handler()->vector_apply_constraints(v, bc.value, bc.name);
+            }
+        }
+
+        void FunctionSpace::apply_zero_constraints(Vector &vec) const {
+            for (auto &bc : impl_->dirichlet_boundary.conditions) {
+                handler()->vector_apply_constraints(vec, bc.value, bc.name);
+            }
+        }
 
         void FunctionSpace::add_dirichlet_boundary_condition(const std::string &name,
                                                              const Scalar &value,
-                                                             const int component) {}
+                                                             const int component) {
+            assert(component < n_var());
+            DirichletBoundary::Condition dirichlet_boundary{name, value, component};
+            impl_->dirichlet_boundary.conditions.push_back(dirichlet_boundary);
+        }
 
-        bool FunctionSpace::empty() const { return !static_cast<bool>(impl_->new_crs_matrix); }
+        bool FunctionSpace::empty() const { return !static_cast<bool>(impl_->handler); }
 
         void FunctionSpace::global_to_local(const Vector &global, Vector &local) const {}
         void FunctionSpace::local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const {}
 
         const std::string &FunctionSpace::name() const { return impl_->name; }
 
-        const Factory &FunctionSpace::factory() const {
-            assert(impl_->factory);
-            return impl_->factory();
+        const Factory &FunctionSpace::factory() const { return handler()->factory(); }
+
+        template <class RawType>
+        std::shared_ptr<RawType> FunctionSpace::raw_type() const {
+            return impl_->raw_type<RawType>();
         }
 
     }  // namespace mars

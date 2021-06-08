@@ -58,7 +58,11 @@ namespace utopia {
                 });
             }
 
+#ifndef NDEBUG
+            bool verbose{true};
+#else
             bool verbose{false};
+#endif
             bool has_covering{true};
             int n_var{1};
             std::vector<std::pair<int, int>> tags;
@@ -351,6 +355,12 @@ namespace utopia {
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
             UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
 
+            assert(from->mesh().spatial_dimension() == to->mesh().spatial_dimension());
+
+            if (from->mesh().spatial_dimension() != to->mesh().spatial_dimension()) {
+                Utopia::Abort("Trying to transfer information between meshes with incompatibile embedding");
+            }
+
             clear();
 
             bool has_intersection = false;
@@ -398,7 +408,7 @@ namespace utopia {
                 if (n_var == 1) {
                     to = (*impl_->data.transfer_matrix) * from;
                 } else {
-                    utopia::out() << "Tensorizing withing FETransfer::apply! n_var = " << n_var << "\n";
+                    utopia::out() << "Tensorizing within FETransfer::apply! n_var = " << n_var << "\n";
 
                     Vector scalar_from, scalar_to;
                     if (!utopia::empty(to)) {

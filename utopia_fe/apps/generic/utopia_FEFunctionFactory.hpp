@@ -33,7 +33,7 @@ namespace utopia {
             } else if (integrator == "ImplicitEuler") {
                 return utopia::make_unique<ImplicitEulerIntegrator_t>(space);
             } else {
-                return std::make_shared<FEModelFunction_t>(space);
+                return utopia::make_unique<FEModelFunction_t>(space);
             }
         }
 

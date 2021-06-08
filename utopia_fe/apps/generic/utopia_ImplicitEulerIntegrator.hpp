@@ -3,6 +3,8 @@
 
 #include "utopia_FEModelFunction.hpp"
 
+#include <utility>
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -13,7 +15,8 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
-        ImplicitEulerIntegrator(const std::shared_ptr<FunctionSpace> &space) : Super(space) {}
+        template <class... Args>
+        ImplicitEulerIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
 
         void read(Input &in) override {
             Super::read(in);
@@ -35,6 +38,7 @@ namespace utopia {
         }
 
         bool update_IVP(const Vector_t &x) override {
+            Super::update_IVP(x);
             mass_times_x_old_ = (*this->mass_matrix()) * x;
             assert(!empty(mass_times_x_old_));
             return true;

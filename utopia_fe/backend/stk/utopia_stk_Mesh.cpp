@@ -101,6 +101,37 @@ namespace utopia {
             }
         }
 
+        void Mesh::box(const AABB &box,
+                       const SizeType &nx,
+                       const SizeType &ny,
+                       const SizeType &nz,
+                       const std::string &elem_type) {
+            InputParameters params;
+
+            const int dim = box.min.size();
+
+            params.set("nx", nx);
+            params.set("ny", ny);
+            params.set("nz", nz);
+
+            const std::string postfix[4] = {"x", "y", "z", "t"};
+
+            for (int d = 0; d < dim; ++d) {
+                params.set("min_" + postfix[d], box.min[d]);
+                params.set("max_" + postfix[d], box.max[d]);
+            }
+
+            params.set("elem_type", elem_type);
+
+            MeshIO io(*this);
+            io.read(params);
+
+            if (!io.load()) {
+                assert(false);
+                Utopia::Abort("Failed to generate box!");
+            }
+        }
+
         void Mesh::describe(std::ostream &os) const {
             if (comm().rank() == 0) {
                 os << "Parts:\n";
@@ -163,6 +194,41 @@ namespace utopia {
         void Mesh::displace(const Vector &displacement) { assert(false); }
 
         void Mesh::init() { impl_->compute_mesh_stats(); }
+
+        void Mesh::bounding_box(AABB &output) const {
+            ::stk::mesh::Selector s_universal = meta_data().universal_part();
+            const auto &node_buckets = bulk_data().get_buckets(::stk::topology::NODE_RANK, s_universal);
+            auto *coords = meta_data().coordinate_field();
+
+            const int dim = spatial_dimension();
+
+            std::vector<Scalar> minmax(2 * dim);
+
+            for (const auto &ib : node_buckets) {
+                const auto &b = *ib;
+                const SizeType length = b.size();
+
+                for (SizeType k = 0; k < length; ++k) {
+                    auto node = b[k];
+                    Scalar *points = (Scalar *)::stk::mesh::field_data(*coords, node);
+
+                    for (int d = 0; d < dim; ++d) {
+                        minmax[d] = std::min(minmax[d], points[d]);
+                        minmax[dim + d] = std::min(minmax[dim + d], -points[d]);
+                    }
+                }
+            }
+
+            this->comm().min(2 * dim, &minmax[0]);
+
+            output.min.resize(dim);
+            output.max.resize(dim);
+
+            for (int d = 0; d < dim; ++d) {
+                output.min[d] = minmax[d];
+                output.max[d] = -minmax[dim + d];
+            }
+        }
 
         void Mesh::scale(const Scalar &scale_factor) {
             ::stk::mesh::Selector s_universal = meta_data().universal_part();

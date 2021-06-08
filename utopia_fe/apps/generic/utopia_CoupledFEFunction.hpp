@@ -11,6 +11,7 @@ namespace utopia {
     class CoupledFEFunction : public FEFunctionInterface<FunctionSpace> {
     public:
         using Super = utopia::FEFunctionInterface<FunctionSpace>;
+        using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -20,11 +21,13 @@ namespace utopia {
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using Size_t = typename Traits<FunctionSpace>::SizeType;
 
+        inline static constexpr bool default_verbose() { return true; }
+
         class FEProblem : public Configurable {
         public:
             std::string name_{"no_name"};
-            std::shared_ptr<FunctionSpace> space_;
-            std::shared_ptr<FEFunctionInterface<FunctionSpace>> function_;
+            // std::shared_ptr<FunctionSpace> space_;
+            std::shared_ptr<FEFunctionInterface_t> function_;
             std::shared_ptr<Environment<FunctionSpace>> env_;
 
             bool is_master_{false};
@@ -35,6 +38,8 @@ namespace utopia {
             std::shared_ptr<Vector_t> gradient_;
             std::shared_ptr<Vector_t> solution_;
 
+            bool report_solution() { return function_->report_solution(*solution()); }
+
             inline bool is_linear() const {
                 if (function_) {
                     return function_->is_linear();
@@ -43,21 +48,32 @@ namespace utopia {
                 return false;
             }
 
+            inline bool is_time_dependent() const {
+                if (function_) {
+                    return function_->is_time_dependent();
+                }
+
+                return false;
+            }
+
             inline bool is_master() const { return is_master_; }
             inline const std::string &name() const { return name_; }
 
-            inline std::vector<std::shared_ptr<Matrix_t>> mass_matrix() {
+            inline const std::shared_ptr<Matrix_t> &mass_matrix() const {
                 assert(mass_matrix_);
                 return mass_matrix_;
             }
 
             inline std::vector<std::shared_ptr<Matrix_t>> matrices() { return {hessian_}; }
-            inline std::vector<std::shared_ptr<Matrix_t>> vectors() { return {gradient_}; }
+            inline std::vector<std::shared_ptr<Vector_t>> vectors() { return {gradient_}; }
 
             inline std::shared_ptr<Vector_t> solution() {
                 ensure_solution();
                 return solution_;
             }
+
+            inline std::shared_ptr<Vector_t> gradient() { return gradient_; }
+            inline std::shared_ptr<Matrix_t> hessian() { return hessian_; }
 
             void ensure_hessian_and_gradient() {
                 ensure_solution();
@@ -68,28 +84,28 @@ namespace utopia {
             void ensure_gradient() {
                 if (!gradient_) {
                     gradient_ = std::make_shared<Vector_t>();
-                    space_->create_vector(*gradient_);
+                    space()->create_vector(*gradient_);
                 }
             }
 
             void ensure_hessian() {
                 if (!hessian_) {
                     hessian_ = std::make_shared<Matrix_t>();
-                    space_->create_matrix(*hessian_);
+                    space()->create_matrix(*hessian_);
                 }
             }
 
             void ensure_mass_matrix() {
                 if (!mass_matrix_) {
                     mass_matrix_ = std::make_shared<Matrix_t>();
-                    space_->create_matrix(*mass_matrix_);
+                    space()->create_matrix(*mass_matrix_);
                 }
             }
 
             void ensure_solution() {
                 if (!solution_) {
                     solution_ = std::make_shared<Vector_t>();
-                    space_->create_vector(*solution_);
+                    space()->create_vector(*solution_);
                     solution_->set(0.0);
                 }
             }
@@ -98,6 +114,7 @@ namespace utopia {
                 ensure_hessian_and_gradient();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -109,6 +126,7 @@ namespace utopia {
                 ensure_solution();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -120,6 +138,7 @@ namespace utopia {
                 ensure_solution();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -131,6 +150,7 @@ namespace utopia {
                 ensure_solution();
 
                 if (!function_) {
+                    assert(false);
                     return false;
                 }
 
@@ -146,10 +166,12 @@ namespace utopia {
 
                 if (function_) {
                     function_->set_environment(env);
+                } else {
+                    assert(false);
                 }
             }
 
-            void set_function(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &function) {
+            void set_function(const std::shared_ptr<FEFunctionInterface_t> &function) {
                 function_ = function;
                 function_->must_apply_constraints_to_assembled(false);
             }
@@ -160,8 +182,8 @@ namespace utopia {
             }
 
             const std::shared_ptr<FunctionSpace> &space() const {
-                assert(space_);
-                return space_;
+                assert(function_->space());
+                return function_->space();
             }
 
             void read(Input &in) override {
@@ -174,18 +196,19 @@ namespace utopia {
                     Utopia::Abort("CoupledFEFunction::FEProblem::read: set_environment has to be called before read");
                 }
 
-                if (!space_) {
-                    std::string space;
-                    in.require("space", space);
-                    space_ = env_->find_space(space);
+                std::shared_ptr<FunctionSpace> space;
+                if (!function_ || !this->space()) {
+                    std::string space_id;
+                    in.require("space", space_id);
+                    space = env_->find_space(space_id);
 
-                    if (!space_) {
+                    if (!space) {
                         Utopia::Abort("CoupledFEFunction::FEProblem::read: space is undefined!");
                     }
                 }
 
                 if (!function_) {
-                    function_ = FEFunctionFactory<FunctionSpace>::make(space_, in);
+                    function_ = FEFunctionFactory<FunctionSpace>::make(space, in);
                     function_->set_environment(env_);
                     function_->must_apply_constraints_to_assembled(false);
                 }
@@ -202,6 +225,7 @@ namespace utopia {
 
             void read(Input &in) override {
                 if (transfer_) {
+                    // transfer_->verbose(verbose_);
                     transfer_->read(in);
                     in.get("verbose", verbose_);
                 }
@@ -228,6 +252,7 @@ namespace utopia {
                 }
 
                 (*from_mass_matrix) += temp;
+                return true;
             }
 
             bool condense_matrices() {
@@ -249,6 +274,8 @@ namespace utopia {
 
                     (*from_matrices[i]) += temp;
                 }
+
+                return true;
             }
 
             bool condense_vectors() {
@@ -292,7 +319,7 @@ namespace utopia {
         private:
             std::unique_ptr<TransferAssembler> transfer_;
             std::shared_ptr<FEProblem> from_, to_;
-            bool verbose_{false};
+            bool verbose_{default_verbose()};
         };
 
         CoupledFEFunction() {}
@@ -304,14 +331,14 @@ namespace utopia {
         }
 
         bool assemble_mass_matrix() override {
-            for (auto &fe_ptr : fe_problems_) {
-                if (!fe_ptr->assemble_mass_matrix()) {
+            for (auto &fe_pair : fe_problems_) {
+                if (!fe_pair.second->assemble_mass_matrix()) {
                     return false;
                 }
             }
 
             for (auto &c : couplings_) {
-                if (!c.condense_mass_matrix()) {
+                if (!c->condense_mass_matrix()) {
                     assert(false);
                     Utopia::Abort("Failed to condense mass matrices!");
                 }
@@ -321,24 +348,28 @@ namespace utopia {
         }
 
         bool assemble_mass_matrix(Matrix_t &mass_matrix) override {
-            assemble_mass_matrix();
-            mass_matrix = this->mass_matrix();
+            if (assemble_mass_matrix()) {
+                mass_matrix = *this->mass_matrix();
+                return true;
+            } else {
+                return false;
+            }
         }
 
         void set_environment(const std::shared_ptr<Environment_t> &env) override {
-            for (auto &fe_ptr : fe_problems_) {
-                fe_ptr->set_environment(env);
+            for (auto &fe_pair : fe_problems_) {
+                fe_pair.second->set_environment(env);
             }
         }
 
         inline void create_solution_vector(Vector_t &x) override {
             assert(master_fe_problem_);
-            master_fe_problem_->create_solution_vector(x);
+            master_fe_problem_->function()->create_solution_vector(x);
         }
 
         inline void apply_constraints(Vector_t &x) const override {
             assert(master_fe_problem_);
-            master_fe_problem_->apply_constraints(x);
+            master_fe_problem_->function()->apply_constraints(x);
         }
 
         bool update(const Vector_t &) override { return true; }
@@ -352,23 +383,25 @@ namespace utopia {
             // TODO project x to subproblems
             assert(is_linear());
 
-            master_fe_problem_->solution() = x;
+            (*master_fe_problem_->solution()) = x;
             project_solutions();
 
-            for (auto &fe_ptr : fe_problems_) {
-                if (!fe_ptr->assemble_gradient()) {
+            for (auto &fe_pair : fe_problems_) {
+                if (!fe_pair.second->assemble_gradient()) {
                     return false;
                 }
             }
 
             for (auto &c : couplings_) {
-                if (!c.condense_gradients()) {
+                if (!c->condense_vectors()) {
                     assert(false);
                     Utopia::Abort("Failed to condense gradients!");
                 }
             }
 
-            g = master_fe_problem_->gradient();
+            g = *master_fe_problem_->gradient();
+
+            // master_fe_problem_->function()->gradient(x, g);
 
             if (must_apply_constraints_) {
                 this->space()->apply_zero_constraints(g);
@@ -381,23 +414,25 @@ namespace utopia {
             // TODO project x to subproblems
             assert(is_linear());
 
-            master_fe_problem_->solution() = x;
+            (*master_fe_problem_->solution()) = x;
             project_solutions();
 
-            for (auto &fe_ptr : fe_problems_) {
-                if (!fe_ptr->assemble_hessian()) {
+            for (auto &fe_pair : fe_problems_) {
+                if (!fe_pair.second->assemble_hessian()) {
                     return false;
                 }
             }
 
             for (auto &c : couplings_) {
-                if (!c.condense_hessians()) {
+                if (!c->condense_matrices()) {
                     assert(false);
                     Utopia::Abort("Failed to condense hessians!");
                 }
             }
 
-            H = master_fe_problem_->hessian();
+            H = *master_fe_problem_->hessian();
+
+            apply_transformers(H);
 
             if (must_apply_constraints_) {
                 this->space()->apply_constraints(H);
@@ -410,29 +445,29 @@ namespace utopia {
             // TODO project x to subproblems
             assert(is_linear());
 
-            master_fe_problem_->solution() = x;
+            (*master_fe_problem_->solution()) = x;
             project_solutions();
 
-            for (auto &fe_ptr : fe_problems_) {
-                if (!fe_ptr->assemble_hessian_and_gradient()) {
+            for (auto &fe_pair : fe_problems_) {
+                if (!fe_pair.second->assemble_hessian_and_gradient()) {
                     return false;
                 }
             }
 
             for (auto &c : couplings_) {
-                if (!c.condense_hessians()) {
+                if (!c->condense_matrices()) {
                     assert(false);
                     Utopia::Abort("Failed to condense hessians!");
                 }
 
-                if (!c.condense_gradients()) {
+                if (!c->condense_vectors()) {
                     assert(false);
                     Utopia::Abort("Failed to condense gradients!");
                 }
             }
 
-            H = master_fe_problem_->hessian();
-            g = master_fe_problem_->gradient();
+            H = *master_fe_problem_->hessian();
+            g = *master_fe_problem_->gradient();
 
             apply_transformers(H);
 
@@ -534,21 +569,7 @@ namespace utopia {
                         assert(!from.empty());
                         assert(!to.empty());
 
-                        auto it_from = fe_problems_.find(from);
-                        if (it_from == fe_problems_.end()) {
-                            utopia::err()
-                                << "No problem with name " + from + " from field must be defined with valid id\n";
-                            Utopia::Abort();
-                        }
-
-                        auto it_to = fe_problems_.find(to);
-                        if (it_to == fe_problems_.end()) {
-                            utopia::err() << "No problem with name " + to + " to field must be defined with valid id\n";
-                            Utopia::Abort();
-                        }
-
-                        c->set(it_from->second, it_to->second);
-                        couplings_.push_back(std::move(c));
+                        this->add_coupling(from, to);
                     });
                 });
             }
@@ -572,7 +593,7 @@ namespace utopia {
 
         bool is_linear() const override {
             for (auto &ff : fe_problems_) {
-                if (!ff->is_linear()) {
+                if (!ff.second->is_linear()) {
                     return false;
                 }
             }
@@ -580,10 +601,86 @@ namespace utopia {
             return true;
         }
 
-    protected:
-        inline void must_apply_constraints_to_assembled(const bool val) { must_apply_constraints_ = val; }
+        bool is_time_dependent() const override {
+            for (auto &ff : fe_problems_) {
+                if (!ff.second->is_time_dependent()) {
+                    return false;
+                }
+            }
 
-        void apply_transformers(Matrix_t &mat) {
+            return true;
+        }
+
+        inline void must_apply_constraints_to_assembled(const bool val) override { must_apply_constraints_ = val; }
+
+        void add_function(const std::string &name, const std::shared_ptr<FEFunctionInterface_t> &function) {
+            auto problem = std::make_shared<FEProblem>();
+            problem->function_ = function;
+            problem->name_ = name;
+
+            function->must_apply_constraints_to_assembled(false);
+
+            if (env_) {
+                problem->set_environment(env_);
+            }
+
+            fe_problems_[name] = problem;
+        }
+
+        void add_master_function(const std::string &name, const std::shared_ptr<FEFunctionInterface_t> &function) {
+            function->must_apply_constraints_to_assembled(false);
+            add_function(name, function);
+
+            auto it = fe_problems_.find(name);
+
+            assert(it != fe_problems_.end());
+
+            master_fe_problem_ = it->second;
+        }
+
+        void add_coupling(const std::string &from, const std::string &to) {
+            auto c = utopia::make_unique<Coupling>();
+
+            auto it_from = fe_problems_.find(from);
+            if (it_from == fe_problems_.end()) {
+                utopia::err() << "No problem with name " + from + " from field must be defined with valid id\n";
+                Utopia::Abort();
+            }
+
+            auto it_to = fe_problems_.find(to);
+            if (it_to == fe_problems_.end()) {
+                utopia::err() << "No problem with name " + to + " to field must be defined with valid id\n";
+                Utopia::Abort();
+            }
+
+            c->set(it_from->second, it_to->second);
+            couplings_.push_back(std::move(c));
+        }
+
+        bool report_solution(const Vector_t &x) override {
+            *master_fe_problem_->solution() = x;
+            project_solutions();
+
+            bool ok = true;
+            for (auto &ff : fe_problems_) {
+                ok &= ff.second->report_solution();
+            }
+
+            return ok;
+        }
+
+        void initialize() {
+            for (auto &c : couplings_) {
+                c->update();
+            }
+        }
+
+        void add_matrix_transformer(std::unique_ptr<MatrixTransformer<Matrix_t>> &&transformer) {
+            transformers_.push_back(std::move(transformer));
+        }
+
+    protected:
+        void apply_transformers(Matrix_t &mat) const {
             for (auto &trafo : transformers_) {
                 trafo->apply(mat);
             }
@@ -596,11 +693,12 @@ namespace utopia {
         std::vector<std::unique_ptr<Coupling>> couplings_;
         std::shared_ptr<Environment_t> env_;
         bool must_apply_constraints_{true};
-        bool verbose_{false};
+        bool verbose_{default_verbose()};
+        bool override_with_algebraic_residual_{false};
 
         std::vector<std::unique_ptr<MatrixTransformer<Matrix_t>>> transformers_;
 
-        void project_solutions() {
+        void project_solutions() const {
             for (auto it = couplings_.rbegin(); it != couplings_.rend(); ++it) {
                 auto &c = *it;
 
@@ -614,8 +712,8 @@ namespace utopia {
 
         void search_for_master() {
             for (auto &ff : fe_problems_) {
-                if (ff->is_master()) {
-                    master_fe_problem_ = ff;
+                if (ff.second->is_master()) {
+                    master_fe_problem_ = ff.second;
                     return;
                 }
             }
@@ -623,7 +721,7 @@ namespace utopia {
             // If role is not user defined search automatically
             std::set<std::string> names;
             for (auto &ff : fe_problems_) {
-                names.insert(ff->name());
+                names.insert(ff.second->name());
             }
 
             // remove all slave problems
@@ -635,8 +733,8 @@ namespace utopia {
                 auto master_name = *names.begin();
 
                 for (auto &ff : fe_problems_) {
-                    if (ff->name() == master_name) {
-                        master_fe_problem_ = ff;
+                    if (ff.second->name() == master_name) {
+                        master_fe_problem_ = ff.second;
                         return;
                     }
                 }

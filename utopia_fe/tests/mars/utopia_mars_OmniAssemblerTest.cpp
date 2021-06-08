@@ -10,9 +10,11 @@ void mars_poisson() {
     using FunctionSpace_t = utopia::mars::FunctionSpace;
     using Vector_t = Traits<FunctionSpace_t>::Vector;
     using Matrix_t = Traits<FunctionSpace_t>::Matrix;
+    using Scalar_t = Traits<FunctionSpace_t>::Scalar;
 
+    int n = 400;
     Mesh_t mesh;
-    mesh.unit_cube(2, 2, 2);
+    mesh.unit_cube(n, n, 0);
 
     FunctionSpace_t space;
     space.init(make_ref(mesh));
@@ -25,6 +27,7 @@ void mars_poisson() {
     space.create_vector(rhs);
 
     x.set(0.0);
+    rhs.set(0.0);
 
     Matrix_t mat;
     space.create_matrix(mat);
@@ -36,10 +39,25 @@ void mars_poisson() {
 
     utopia_test_assert(assembler.assemble(x, mat, rhs));
 
+    Vector_t ones(layout(x), 1.0);
+    Vector_t sum_rows = mat * ones;
+    Scalar_t sum_mat = sum(abs(sum_rows));
+
+    utopia_test_assert(sum_mat < 1e-8);
+
+    // write("load_mat.mm", mat);
+    // write("load_rhs.mm", rhs);
+
+    space.apply_constraints(mat, rhs);
+    // space.apply_constraints(x);
+
     ConjugateGradient<Matrix_t, Vector_t> cg;
+    cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix_t, Vector_t>>());
+    cg.apply_gradient_descent_step(true);
+    cg.verbose(true);
 
     utopia_test_assert(cg.solve(mat, rhs, x));
-    // utopia_test_assert(space.write("result.e", x));
+    utopia_test_assert(space.write("result.vtu", x));
 }
 
 void mars_assembler() { UTOPIA_RUN_TEST(mars_poisson); }

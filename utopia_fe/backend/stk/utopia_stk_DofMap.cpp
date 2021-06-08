@@ -747,7 +747,8 @@ namespace utopia {
 
                     auto r = range(global);
                     const SizeType nl = l2g.size();
-                    const int nv = n_var();
+                    // const int nv = n_var();
+                    const int nv = local.local_size() / nl;
 
                     assert(nv > 0);
                     assert(nl > 0);

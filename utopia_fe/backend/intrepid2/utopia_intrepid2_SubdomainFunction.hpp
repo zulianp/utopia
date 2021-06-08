@@ -9,14 +9,14 @@
 namespace utopia {
     namespace intrepid2 {
         template <typename Scalar>
-        class SubdomainValue : public Configurable {
+        class SubdomainValue /*: public Configurable*/ {
         public:
             using ExecutionSpace = typename FE<Scalar>::ExecutionSpace;
             using UnorderedMap = ::Kokkos::UnorderedMap<int, Scalar>;
             using HostUnorderedMap = typename UnorderedMap::HostMirror;
             static const int DEFAULT_MAP_CAPACITY = 10;
 
-            void read(Input &in) override {
+            void read(Input &in) /*override*/ {
                 in.get_all([this](Input &sub_is) {
                     int block_id = -1;
                     std::string value;
@@ -25,6 +25,7 @@ namespace utopia {
 
                     if (!value.empty()) {
                         host_map.insert(block_id, std::atof(value.c_str()));
+                        empty = false;
                     }
                 });
 
@@ -47,6 +48,7 @@ namespace utopia {
             Scalar default_value;
             UnorderedMap map;
             HostUnorderedMap host_map;
+            bool empty{true};
         };
     }  // namespace intrepid2
 }  // namespace utopia
