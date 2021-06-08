@@ -18,6 +18,10 @@ namespace utopia {
             in.get("permeability_function", [this](Input &node) {
                 node.get("function", [this](Input &function_node) { subdomain_function.read(function_node); });
             });
+
+            in.get("diffusion_function", [this](Input &node) {
+                node.get("function", [this](Input &function_node) { subdomain_function.read(function_node); });
+            });
         }
 
         LaplaceOperator(const DiffusionCoefficient &coeff = DiffusionCoefficient(1.0))

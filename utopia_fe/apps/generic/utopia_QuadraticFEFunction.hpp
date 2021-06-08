@@ -136,10 +136,10 @@ namespace utopia {
             rename("H0", *H0);
             rename("g0", *g0);
 
-            // if (export_tensors_) {
-            write("load_H0.m", *H0);
-            write("load_g0.m", *g0);
-            // }
+            if (export_tensors_) {
+                write("load_H0.m", *H0);
+                write("load_g0.m", *g0);
+            }
 
             return true;
         }
