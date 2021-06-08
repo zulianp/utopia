@@ -265,6 +265,8 @@ namespace utopia {
                 Scalar actual_volume = this->matrix_accumulator()->sum();
 
                 if (!utopia::approxeq(actual_volume, op_.expected_volume, op_.expected_volume_tol)) {
+                    utopia::err() << "Mass[Warning] expected volume " << op_.expected_volume << " have "
+                                  << actual_volume << "instead!";
                     assert(false);
                     return false;
                 }
