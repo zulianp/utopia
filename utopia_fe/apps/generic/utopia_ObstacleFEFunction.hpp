@@ -18,14 +18,22 @@ namespace utopia {
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
 
-        // Use specialized compoenents for function space
+        // Use specialized components for function space
         using Obstacle_t = utopia::Obstacle<FunctionSpace>;
 
-        bool has_nonlinear_constraints() const override { return true; }
+        bool has_nonlinear_constraints() const override { return !linear_obstacle_; }
 
-        bool update_constraints(const Vector_t &x) override {
+        bool update_constraints(const Vector_t &x) {
+            utopia::out() << "update_constraints\n";
+
             this->space()->displace(x);
             bool ok = obstacle_->assemble(*this->space());
+
+            if (debug_) {
+                static int iter_debug = 0;
+                ouput_debug_data(iter_debug++, x);
+            }
+
             this->space()->displace(-x);
             return ok;
         }
@@ -41,19 +49,20 @@ namespace utopia {
         void transform(const Matrix_t &H, Matrix_t &H_constrained) override { obstacle_->transform(H, H_constrained); }
 
         bool constraints_gradient(const Vector_t &x, BoxConstraints<Vector_t> &box) override {
+            update_constraints(x);
+
             if (!box.upper_bound()) {
                 box.upper_bound() = std::make_shared<Vector_t>();
             }
 
-            *box.upper_bound() = obstacle_->gap();
+            (*box.upper_bound()) = obstacle_->gap();
+            return true;
         }
 
         ObstacleFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
             : Super(unconstrained) {}
 
-        void ouput_debug_data(const Size_t iteration, const Vector_t &x) const {
-            this->space()->displace(x);
-
+        void ouput_debug_data(const Size_t iter_debug, const Vector_t &x) const {
             // Output extras
             {
                 Vector_t gap_zeroed = e_mul(obstacle_->is_contact(), obstacle_->gap());
@@ -76,14 +85,15 @@ namespace utopia {
                         });
                 }
 
-                this->space()->write("rays_" + std::to_string(iteration) + ".e", rays);
+                this->space()->write("rays_" + std::to_string(iter_debug) + ".e", rays);
             }
-
-            this->space()->displace(-x);
         }
 
         void read(Input &in) override {
             Super::read(in);
+
+            in.get("linear_obstacle", linear_obstacle_);
+            in.get("debug", debug_);
 
             if (!obstacle_) {
                 obstacle_ = std::make_shared<Obstacle_t>();
@@ -99,16 +109,31 @@ namespace utopia {
                 in.get("export_obstacle", export_obstacle);
 
                 if (export_obstacle) {
-                    if (this->space().rank() == 0) {
-                        obstacle_->write("obstacle.e");
+                    if (this->space()->comm().rank() == 0) {
+                        obstacle_mesh.write("obstacle.e");
                     }
                 }
             }
         }
 
+        // bool report_solution(const Vector_t &x) override {
+        //     if (!Super::report_solution(x)) {
+        //         return false;
+        //     }
+
+        //     if (debug_) {
+        //         static int iter_debug = 0;
+        //         ouput_debug_data(iter_debug++, x);
+        //     }
+
+        //     return true;
+        // }
+
     private:
         typename Obstacle_t::Params params_;
         std::shared_ptr<Obstacle_t> obstacle_;
+        bool linear_obstacle_{false};
+        bool debug_{false};
     };
 
 }  // namespace utopia

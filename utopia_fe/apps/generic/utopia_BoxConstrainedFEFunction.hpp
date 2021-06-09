@@ -24,12 +24,20 @@ namespace utopia {
         ~BoxConstrainedFEFunction() override = default;
 
         virtual bool has_nonlinear_constraints() const = 0;
-        virtual bool update_constraints(const Vector_t &x) = 0;
         virtual bool constraints_gradient(const Vector_t &x, BoxConstraints<Vector_t> &box) = 0;
         virtual bool has_transformation() const = 0;
         virtual void transform(const Vector_t &x, Vector_t &x_constrained) = 0;
         virtual void inverse_transform(const Vector_t &x_constrained, Vector_t &x) = 0;
         virtual void transform(const Matrix_t &H, Matrix_t &H_constrained) = 0;
+
+        bool value(const Vector_t & /*point*/, Scalar_t & /*value*/) const override { return false; }
+
+        bool gradient(const Vector_t &x, Vector_t &g) const override { return unconstrained_->gradient(x, g); }
+        bool hessian(const Vector_t &x, Matrix_t &H) const override { return unconstrained_->hessian(x, H); }
+
+        bool hessian_and_gradient(const Vector_t &x, Matrix_t &H, Vector_t &g) const override {
+            return unconstrained_->hessian_and_gradient(x, H, g);
+        }
 
         void read(Input &in) override { unconstrained_->read(in); }
 
@@ -75,6 +83,7 @@ namespace utopia {
     template <class FunctionSpace>
     class BoxConstrainedFEFunctionSolver final : public NonLinearSolver<typename Traits<FunctionSpace>::Vector> {
     public:
+        using Super = utopia::NonLinearSolver<typename Traits<FunctionSpace>::Vector>;
         using Function_t = utopia::BoxConstrainedFEFunction<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
@@ -83,6 +92,8 @@ namespace utopia {
         using OmniQPSolver_t = utopia::OmniQPSolver<Matrix_t, Vector_t>;
 
         void read(Input &in) override {
+            Super::read(in);
+
             if (!qp_solver_) {
                 auto omni = std::make_shared<OmniQPSolver_t>();
                 qp_solver_ = omni;
@@ -95,8 +106,6 @@ namespace utopia {
 
         bool solve(Function_t &fun, Vector_t &x) {
             BoxConstraints<Vector_t> box;
-            box.fill_empty_bounds(layout(x));
-            fun.update_constraints(x);
 
             int max_material_iterations = this->max_it();
 
@@ -111,32 +120,37 @@ namespace utopia {
             Matrix_t H_c;
             Vector_t g_c, increment_c;
 
-            this->space()->create_matrix(H);
-            this->space()->create_vector(g);
-            this->space()->create_vector(increment);
+            fun.space()->create_matrix(H);
+            fun.space()->create_vector(g);
+            fun.space()->create_vector(increment);
 
             this->init_solver("BoxConstrainedFEFunctionSolver", {" it. ", "|| u_old - u_new ||"});
 
             bool first = true;
             int total_iter = 0;
+            bool converged = false;
             for (int constraints_iter = 0; constraints_iter < max_constraints_iterations_; ++constraints_iter) {
                 x_old = x;
+                fun.constraints_gradient(x, box);
+
+                bool material_converged = false;
                 for (int material_iter = 0; material_iter < max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
-                    fun.constraints_gradient(x, box);
 
                     // Use negative gradient instead
                     g *= -1;
 
                     if (first) {
-                        this->space()->apply_constraints(H, g);
+                        fun.space()->apply_constraints(H, g);
                         first = false;
                     } else {
-                        this->space()->apply_constraints(H);
-                        this->space()->apply_zero_constraints(g);
+                        fun.space()->apply_constraints(H);
+                        fun.space()->apply_zero_constraints(g);
                     }
 
                     qp_solver_->set_box_constraints(box);
+
+                    bool qp_solver_converged = false;
 
                     if (fun.has_transformation()) {
                         fun.transform(H, H_c);
@@ -148,31 +162,53 @@ namespace utopia {
                             increment_c.set(0.);
                         }
 
-                        if (!qp_solver_->solve(H_c, g_c, increment_c)) {
-                            assert(false);
-                            utopia::err() << "BoxConstrainedFEFunctionSolver[Error] unable to solve QP problem "
-                                             "terminating solution process\n";
-                            return false;
-                        }
+                        qp_solver_converged = qp_solver_->solve(H_c, g_c, increment_c);
 
                         fun.inverse_transform(increment_c, increment);
 
+                        if (box.upper_bound()) {
+                            *box.upper_bound() -= increment_c;
+                        }
+
+                        if (box.lower_bound()) {
+                            *box.lower_bound() -= increment_c;
+                        }
+
                     } else {
                         increment.set(0.0);
-                        qp_solver_->solve(H, g, increment);
+                        qp_solver_converged = qp_solver_->solve(H, g, increment);
+
+                        if (box.upper_bound()) {
+                            *box.upper_bound() -= increment;
+                        }
+
+                        if (box.lower_bound()) {
+                            *box.lower_bound() -= increment;
+                        }
                     }
 
-                    increment *= update_factor_;
                     x += increment;
 
-                    const Scalar_t material_inc_norm = norm2(increment);
-
-                    if (this->verbose()) {
-                        PrintInfo::print_iter_status(total_iter, {material_inc_norm});
+                    if (!qp_solver_converged) {
+                        assert(false);
+                        utopia::err() << "BoxConstrainedFEFunctionSolver[Error] unable to solve QP problem "
+                                         "terminating solution process\n";
+                        return false;
                     }
 
-                    if (material_inc_norm < material_iter_tol_) {
-                        break;
+                    if (fun.is_linear()) {
+                        material_converged = qp_solver_converged;
+                    } else {
+                        const Scalar_t material_inc_norm = norm2(increment);
+
+                        if (this->verbose()) {
+                            PrintInfo::print_iter_status(total_iter, {material_inc_norm});
+                        }
+
+                        if (material_inc_norm < material_iter_tol_) {
+                            material_converged = true;
+                            break;
+                        }
                     }
                 }
 
@@ -182,14 +218,20 @@ namespace utopia {
                     PrintInfo::print_iter_status(total_iter, {x_diff_norm});
                 }
 
-                if (!fun.has_nonlinear_constraints()) {
+                converged = this->check_convergence(total_iter, 1, 1, x_diff_norm);
+
+                if (converged) {
+                    utopia::out() << "Converged!\n";
                     break;
                 }
 
-                // Update constraints
-                fun.update_constraints(x);
-                fun.constraints_gradient(box);
+                if (!fun.has_nonlinear_constraints()) {
+                    converged = material_converged;
+                    break;
+                }
             }
+
+            return converged;
         }
 
         std::shared_ptr<QPSolver_t> qp_solver_;
@@ -197,8 +239,7 @@ namespace utopia {
         BoxConstrainedFEFunctionSolver() { register_fe_solvers(); }
 
     public:
-        int max_constraints_iterations_{4};
-        Scalar_t constraint_step_tol_{1e-4};
+        int max_constraints_iterations_{10};
         Scalar_t update_factor_{1};
         Scalar_t material_iter_tol_{1e-6};
 
