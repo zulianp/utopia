@@ -256,7 +256,7 @@ namespace utopia {
         void poly_qp() {
             QPSolverTest<Matrix, Vector> s;
 
-            PolymorphicQPSolver<Matrix, Vector> solver;
+            OmniQPSolver<Matrix, Vector> solver;
             InputParameters in;
 
             in.set("backend", "any");

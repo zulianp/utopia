@@ -107,7 +107,7 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
-    void PolymorphicQPSolver<Matrix, Vector>::read(Input &in) {
+    void OmniQPSolver<Matrix, Vector>::read(Input &in) {
         Super::read(in);
 
         std::string backend = Traits<Vector>::backend_info().get_name();
@@ -122,7 +122,7 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
-    PolymorphicQPSolver<Matrix, Vector>::PolymorphicQPSolver() {
+    OmniQPSolver<Matrix, Vector>::OmniQPSolver() {
 #ifdef UTOPIA_WITH_PETSC
         auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
         tron->tao_type(TAOTRON);
@@ -135,11 +135,11 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
-    PolymorphicQPSolver<Matrix, Vector>::~PolymorphicQPSolver() = default;
+    OmniQPSolver<Matrix, Vector>::~OmniQPSolver() = default;
 
     template <class Matrix, class Vector>
-    PolymorphicQPSolver<Matrix, Vector> *PolymorphicQPSolver<Matrix, Vector>::clone() const {
-        auto cloned = utopia::make_unique<PolymorphicQPSolver>();
+    OmniQPSolver<Matrix, Vector> *OmniQPSolver<Matrix, Vector>::clone() const {
+        auto cloned = utopia::make_unique<OmniQPSolver>();
 
         if (this->impl_) {
             cloned->impl_ = std::unique_ptr<QPSolver<Matrix, Vector>>(this->impl_->clone());
@@ -149,7 +149,7 @@ namespace utopia {
     }
 
     template <class Matrix, class Vector>
-    bool PolymorphicQPSolver<Matrix, Vector>::apply(const Vector &rhs, Vector &sol) {
+    bool OmniQPSolver<Matrix, Vector>::apply(const Vector &rhs, Vector &sol) {
         assert(static_cast<bool>(impl_));
         if (!impl_) return false;
 

@@ -10,7 +10,7 @@
 namespace utopia {
 
 #ifdef UTOPIA_WITH_PETSC
-    template class PolymorphicQPSolver<PetscMatrix, PetscVector>;
+    template class OmniQPSolver<PetscMatrix, PetscVector>;
 #endif  // UTOPIA_WITH_PETSC
 
 }  // namespace utopia

@@ -9,7 +9,7 @@
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class PolymorphicQPSolver : public QPSolver<Matrix, Vector> {
+    class OmniQPSolver : public QPSolver<Matrix, Vector> {
     public:
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
@@ -18,9 +18,9 @@ namespace utopia {
         using BoxConstraints = utopia::BoxConstraints<Vector>;
 
     public:
-        PolymorphicQPSolver();
-        ~PolymorphicQPSolver() override;
-        PolymorphicQPSolver *clone() const override;
+        OmniQPSolver();
+        ~OmniQPSolver() override;
+        OmniQPSolver *clone() const override;
         bool apply(const Vector &rhs, Vector &sol) override;
         void read(Input &in) override;
 

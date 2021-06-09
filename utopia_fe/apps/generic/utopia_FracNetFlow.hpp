@@ -41,14 +41,7 @@ namespace utopia {
                 flow->set_environment(this->environment());
 
                 node.require(problem_type, *flow);
-
-                // if (simplify_problem_ && flow->is_linear()) {
-                //     auto qf = std::make_shared<QuadraticFEFunction_t>(flow);
-                //     matrix_problem = qf;
-                // } else {
                 matrix_problem = flow;
-                // }
-
                 problem->add_master_function(porous_matrix->name(), matrix_problem);
             });
 
@@ -62,14 +55,7 @@ namespace utopia {
                     auto flow = std::make_shared<FEModelFunction_t>(space);
                     flow->set_environment(this->environment());
                     node.require(problem_type, *flow);
-
-                    // if (simplify_problem_ && flow->is_linear()) {
-                    //     auto qf = std::make_shared<QuadraticFEFunction_t>(flow);
-                    //     problem->add_function(space->name(), qf);
-                    // } else {
                     problem->add_function(space->name(), flow);
-                    // }
-
                     problem->add_coupling(porous_matrix->name(), space->name());
                 });
             });

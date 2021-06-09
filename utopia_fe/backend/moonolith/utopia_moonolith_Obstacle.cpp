@@ -281,6 +281,12 @@ namespace utopia {
                 impl_->init(*params_, obstacle_mesh);
                 ok = true;
             }
+            // Not implemented for 2D yet
+            // else if (obstacle_mesh.spatial_dimension() == 2) {
+            //     impl_ = utopia::make_unique<ImplD<2>>();
+            //     impl_->init(*params_, obstacle_mesh);
+            //     ok = true;
+            // }
 
             UTOPIA_TRACE_REGION_END("moonolith::Obstacle::init_obstacle");
             return ok;

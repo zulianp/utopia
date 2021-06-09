@@ -29,6 +29,8 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_ObstacleFEFunction.hpp"
+
 #include <memory>
 
 namespace utopia {
@@ -60,6 +62,8 @@ namespace utopia {
         using MonotoneAlgebraicMultigrid_t = utopia::MonotoneAlgebraicMultigrid<Matrix_t, Vector_t>;
         using MonotoneSemiGeometricMultigrid_t = utopia::MonotoneSemiGeometricMultigrid<FunctionSpace>;
         using SemiGeometricMultigrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
+        using ObstacleFEFunction_t = utopia::ObstacleFEFunction<FunctionSpace>;
+        using BoxConstrainedFEFunctionSolver_t = utopia::BoxConstrainedFEFunctionSolver<FunctionSpace>;
 
         void read(Input &in) override {
             in.get("space", [this](Input &in) {

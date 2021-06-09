@@ -14,7 +14,6 @@
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
 
 namespace utopia {
-
     template class NewmarkIntegrator<utopia::stk::FunctionSpace>;
     template class ImplicitEulerIntegrator<utopia::stk::FunctionSpace>;
 }  // namespace utopia

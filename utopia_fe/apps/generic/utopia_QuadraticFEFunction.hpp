@@ -43,9 +43,6 @@ namespace utopia {
             return true;
         }
 
-        // inline void create_solution_vector(Vector_t &x) override { function_->create_solution_vector(x); }
-        // inline void apply_constraints(Vector_t &x) const override { function_->apply_constraints(x); }
-
         bool update(const Vector_t &x) override { return function_->update(x); }
 
         bool hessian(const Vector_t &x, Matrix_t &H) const override {

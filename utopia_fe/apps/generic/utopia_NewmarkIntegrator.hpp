@@ -17,15 +17,7 @@ namespace utopia {
         using Matrix_t = typename Traits<FunctionSpace>::Matrix;
         using Scalar_t = typename Traits<FunctionSpace>::Scalar;
 
-        void read(Input &in) override {
-            Super::read(in);
-
-            // if (this->verbose()) {
-            //     utopia::out() << "--------------------------------\n";
-            //     this->describe(utopia::out().stream());
-            //     utopia::out() << "--------------------------------\n";
-            // }
-        }
+        void read(Input &in) override { Super::read(in); }
 
         bool setup_IVP(Vector_t &x) override {
             if (!this->assemble_mass_matrix()) {
@@ -54,7 +46,6 @@ namespace utopia {
             x_older_ = x_old_;
             x_old_ = x;
 
-            // this->function()->gradient(x, internal_stress_);
             this->gradient(x, internal_stress_);
 
             internal_stress_older_ = internal_stress_old_;
@@ -88,8 +79,6 @@ namespace utopia {
     private:
         Vector_t x_old_, x_older_;
         Vector_t active_stress_, internal_stress_, internal_stress_old_, internal_stress_older_, external_force_;
-        // Scalar_t beta_{0.25};
-        // Scalar_t gamma_{0.5};
     };
 
 }  // namespace utopia
