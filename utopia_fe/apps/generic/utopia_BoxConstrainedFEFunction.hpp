@@ -86,6 +86,7 @@ namespace utopia {
 
             in.get("qp_solver", *qp_solver_);
             in.get("update_factor", update_factor_);
+            in.get("material_iter_tol", material_iter_tol_);
         }
 
         bool solve(Function_t &fun, Vector_t &x) {
@@ -100,7 +101,7 @@ namespace utopia {
             }
 
             Matrix_t H;
-            Vector_t g, increment;
+            Vector_t g, increment, x_old;
 
             // In case there is a system transformation to be performed
             Matrix_t H_c;
@@ -110,9 +111,13 @@ namespace utopia {
             this->space()->create_vector(g);
             this->space()->create_vector(increment);
 
+            this->init_solver("BoxConstrainedFEFunctionSolver", {" it. ", "|| u_old - u_new ||"});
+
             bool first = true;
+            int total_iter = 0;
             for (int constraints_iter = 0; constraints_iter < max_constraints_iterations_; ++constraints_iter) {
-                for (int material_iter = 0; material_iter < max_material_iterations; ++material_iter) {
+                x_old = x;
+                for (int material_iter = 0; material_iter < max_material_iterations; ++material_iter, ++total_iter) {
                     fun.hessian_and_gradient(x, H, g);
                     fun.constraints_gradient(x, box);
 
@@ -139,7 +144,13 @@ namespace utopia {
                             increment_c.set(0.);
                         }
 
-                        qp_solver_->solve(H_c, g_c, increment_c);
+                        if (!qp_solver_->solve(H_c, g_c, increment_c)) {
+                            assert(false);
+                            utopia::err() << "BoxConstrainedFEFunctionSolver[Error] unable to solve QP problem "
+                                             "terminating solution process\n";
+                            return false;
+                        }
+
                         fun.inverse_transform(increment_c, increment);
 
                     } else {
@@ -147,7 +158,24 @@ namespace utopia {
                         qp_solver_->solve(H, g, increment);
                     }
 
-                    x += update_factor_ * increment;
+                    increment *= update_factor_;
+                    x += increment;
+
+                    const Scalar_t material_inc_norm = norm2(increment);
+
+                    if (this->verbose()) {
+                        PrintInfo::print_iter_status(total_iter, {material_inc_norm});
+                    }
+
+                    if (material_inc_norm < material_iter_tol_) {
+                        break;
+                    }
+                }
+
+                Scalar_t x_diff_norm = norm2(x_old - x);
+
+                if (this->verbose()) {
+                    PrintInfo::print_iter_status(total_iter, {x_diff_norm});
                 }
 
                 if (!fun.has_nonlinear_constraints()) {
@@ -166,6 +194,7 @@ namespace utopia {
         int max_constraints_iterations_{4};
         Scalar_t constraint_step_tol_{1e-4};
         Scalar_t update_factor_{1};
+        Scalar_t material_iter_tol_{1e-6};
     };
 
 }  // namespace utopia
