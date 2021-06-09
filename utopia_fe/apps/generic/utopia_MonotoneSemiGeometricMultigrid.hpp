@@ -3,6 +3,7 @@
 
 #include "utopia_ILU.hpp"
 #include "utopia_MonotoneMultigrid.hpp"
+#include "utopia_SolverType.hpp"
 
 #include "utopia_fe_Core.hpp"
 
@@ -42,6 +43,9 @@ namespace utopia {
         using QPSmoother = utopia::QPSolver<Matrix, Vector>;
 
         using CoarseSpaceGen = utopia::BoundingBoxMultiLevelFunctionSpaceGenerator<FunctionSpace>;
+
+        inline static constexpr SolverType solver_type() { return "MonotoneSemiGeometricMultigrid"; }
+        inline static constexpr SolverType backend() { return Solver::any_backend(); }
 
         void read(Input &in) override {
             Super::read(in);

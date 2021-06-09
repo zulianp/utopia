@@ -7,6 +7,10 @@
 
 #include "utopia_polymorphic_QPSolver.hpp"
 
+#include "utopia_MonotoneSemiGeometricMultigrid.hpp"
+
+#include "utopia_polymorphic_QPSolver_impl.hpp"
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -190,11 +194,24 @@ namespace utopia {
 
         std::shared_ptr<QPSolver_t> qp_solver_;
 
+        BoxConstrainedFEFunctionSolver() { register_fe_solvers(); }
+
     public:
         int max_constraints_iterations_{4};
         Scalar_t constraint_step_tol_{1e-4};
         Scalar_t update_factor_{1};
         Scalar_t material_iter_tol_{1e-6};
+
+        // FIXME move somewhere else
+        static void register_fe_solvers() {
+            using MonotoneSemiGeometricMultigrid = utopia::MonotoneSemiGeometricMultigrid<FunctionSpace>;
+            static bool registered = false;
+
+            if (!registered) {
+                registered = true;
+                OmniQPSolver_t::registry().template register_solver<MonotoneSemiGeometricMultigrid>();
+            }
+        }
     };
 
 }  // namespace utopia

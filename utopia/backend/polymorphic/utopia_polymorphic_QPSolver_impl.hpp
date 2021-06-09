@@ -64,6 +64,11 @@ namespace utopia {
             solvers[backend][type] = utopia::make_unique<QPSFactoryMethod<SolverT>>();
         }
 
+        template <class SolverT>
+        inline void register_solver() {
+            solvers[SolverT::backend()][SolverT::solver_type()] = utopia::make_unique<QPSFactoryMethod<SolverT>>();
+        }
+
         QPSolverPtr find(const std::string &backend, const std::string &type) const {
             auto b_it = solvers.find(backend);
             if (b_it == solvers.end()) {
