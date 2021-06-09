@@ -3,22 +3,8 @@
 
 #include "utopia_fe_base.hpp"
 
-#include "utopia_Agglomerate.hpp"
-#include "utopia_BlockAgglomerate.hpp"
-#include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_Field.hpp"
-#include "utopia_ILU.hpp"
 #include "utopia_MPITimeStatistics.hpp"
-#include "utopia_petsc_AdditiveCorrectionTransfer.hpp"
-#include "utopia_petsc_DILUAlgorithm.hpp"
-
-#include "utopia_MonotoneAlgebraicMultigrid.hpp"
-
-#include "utopia_MonotoneSemiGeometricMultigrid.hpp"
-#include "utopia_SemiGeometricMultigridNew.hpp"
-
-#include "utopia_PatchSmoother.hpp"
-#include "utopia_RASPatchSmoother.hpp"
 
 #include "utopia_ui.hpp"
 
@@ -29,6 +15,7 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_NewmarkIntegrator.hpp"
 #include "utopia_ObstacleFEFunction.hpp"
 
 #include <memory>
@@ -46,25 +33,11 @@ namespace utopia {
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
 
-        // Use specialized compoenents for function space
-        using Obstacle_t = utopia::Obstacle<FunctionSpace>;
-        using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
-
-        // Use algorithms from utopia algebra
-        using QPSolver_t = utopia::QPSolver<Matrix_t, Vector_t>;
-        using SemismoothNewton_t = utopia::SemismoothNewton<Matrix_t, Vector_t>;
-        using Factorization_t = utopia::Factorization<Matrix_t, Vector_t>;
-        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
-        using IterativeSolver_t = utopia::IterativeSolver<Matrix_t, Vector_t>;
-        using AlgebraicMultigrid_t = utopia::AlgebraicMultigrid<Matrix_t, Vector_t>;
-        using ProjectedGaussSeidel_t = utopia::ProjectedGaussSeidel<Matrix_t, Vector_t>;
-        using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
-        using MonotoneAlgebraicMultigrid_t = utopia::MonotoneAlgebraicMultigrid<Matrix_t, Vector_t>;
-        using MonotoneSemiGeometricMultigrid_t = utopia::MonotoneSemiGeometricMultigrid<FunctionSpace>;
-        using SemiGeometricMultigrid_t = utopia::SemiGeometricMultigridNew<FunctionSpace>;
         using ObstacleFEFunction_t = utopia::ObstacleFEFunction<FunctionSpace>;
         using BoxConstrainedFEFunctionSolver_t = utopia::BoxConstrainedFEFunctionSolver<FunctionSpace>;
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
+        using FEFunctionInterface_t = utopia::FEFunctionInterface<FunctionSpace>;
+        using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
 
         void run(Input &in) {
             FunctionSpace space;
@@ -89,9 +62,16 @@ namespace utopia {
                 return;
             }
 
-            auto fun = std::make_shared<FEModelFunction_t>(make_ref(space));
-            auto obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
+            std::shared_ptr<FEFunctionInterface_t> fun = std::make_shared<FEModelFunction_t>(make_ref(space));
 
+            bool dynamic = false;
+            in.get("dynamic", dynamic);
+
+            if (dynamic) {
+                fun = std::make_shared<NewmarkIntegrator_t>(fun);
+            }
+
+            auto obs_fun = std::make_shared<ObstacleFEFunction_t>(fun);
             obs_fun->read(in);
 
             BoxConstrainedFEFunctionSolver_t solver;
@@ -100,11 +80,17 @@ namespace utopia {
             Vector_t x;
             space.create_vector(x);
 
-            if (!solver.solve(*obs_fun, x)) {
-                space.comm().root_print("ObstacleApp[Warning] solver failed to converge!");
-            }
+            fun->setup_IVP(x);
 
-            obs_fun->report_solution(x);
+            do {
+                if (!solver.solve(*obs_fun, x)) {
+                    space.comm().root_print("ObstacleApp[Warning] solver failed to converge!");
+                }
+
+                fun->update_IVP(x);
+                obs_fun->report_solution(x);
+
+            } while (!fun->is_IVP_solved());
         }
     };
 
