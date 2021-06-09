@@ -9,7 +9,7 @@
 
 void libmesh_obs(utopia::Input &in) {
     utopia::ObstacleApp<utopia::libmesh::FunctionSpace> obs;
-    obs.run(in)
+    obs.run(in);
 }
 
 UTOPIA_REGISTER_APP(libmesh_obs);
