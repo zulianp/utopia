@@ -1,3 +1,4 @@
+#include "utopia_FactoryMethod.hpp"
 #include "utopia_InputParameters.hpp"
 #include "utopia_LinearSolverFactory.hpp"
 #include "utopia_make_unique.hpp"
@@ -15,9 +16,18 @@
 #ifdef UTOPIA_WITH_PETSC
 #include "petsctao.h"
 #include "utopia_petsc_Factorizations.hpp"
+#include "utopia_petsc_LinearSolvers.hpp"
 #include "utopia_petsc_RowView.hpp"
 #include "utopia_petsc_SemismoothNewton.hpp"
 #include "utopia_petsc_TaoQPSolver.hpp"
+
+//
+#ifdef UTOPIA_WITH_BLAS
+#include "utopia_RASPatchSmoother.hpp"
+#include "utopia_blas.hpp"
+#include "utopia_blas_Array.hpp"
+#endif  // UTOPIA_WITH_BLAS
+
 #endif  // UTOPIA_WITH_PETSC
 
 #include <functional>
@@ -25,19 +35,33 @@
 #include <memory>
 #include <string>
 
+#include "utopia_FactoryMethod.hpp"
+
 namespace utopia {
 
-    // FIXME use factorymethod class
     template <class Matrix, class Vector>
     class QPSolverRegistry {
     public:
-        using QPSolverPtr = std::unique_ptr<utopia::QPSolver<Matrix, Vector>>;
+        using Scalar = typename Traits<Vector>::Scalar;
+        using QPSolver = utopia::QPSolver<Matrix, Vector>;
+        using QPSolverPtr = std::unique_ptr<QPSolver>;
         using LinearSolverPtr = std::unique_ptr<utopia::LinearSolver<Matrix, Vector>>;
 
-        std::map<std::string, std::map<std::string, QPSolverPtr>> solvers;
+        using FactoryMethod_t = utopia::IFactoryMethod<QPSolver>;
 
-        inline void register_solver(const std::string &backend, const std::string &type, QPSolverPtr &&solver) {
-            solvers[backend][type] = std::move(solver);
+        template <class Alg>
+        using QPSFactoryMethod = FactoryMethod<QPSolver, Alg>;
+
+        std::map<std::string, std::map<std::string, std::unique_ptr<FactoryMethod_t>>> solvers;
+
+        inline static QPSolverRegistry &instance() {
+            static QPSolverRegistry instance_;
+            return instance_;
+        }
+
+        template <class SolverT>
+        inline void register_solver(const std::string &backend, const std::string &type) {
+            solvers[backend][type] = utopia::make_unique<QPSFactoryMethod<SolverT>>();
         }
 
         QPSolverPtr find(const std::string &backend, const std::string &type) const {
@@ -51,15 +75,10 @@ namespace utopia {
 
             if (s_it == b_it->second.end()) {
                 utopia::err() << "[Error] solver " << type << " not found using default" << std::endl;
-
-                // if(b_it->second.empty()) {
                 return default_solver();
-                // } else {
-                // 	return (*b_it->second.begin())->clone();
-                // }
             }
 
-            return QPSolverPtr(s_it->second->clone());
+            return s_it->second->make();
         }
 
         inline static LinearSolverPtr default_linear_solver() {
@@ -67,41 +86,41 @@ namespace utopia {
             InputParameters in;
             in.set("type", Solver::direct());
             ls->read(in);
-            // return std::move(ls);
             return ls;
-            // #ifdef UTOPIA_WITH_PETSC
-            //             return utopia::make_unique<Factorization<Matrix, Vector>>();
-            // #else
-            //             return utopia::make_unique<BiCGStab<Matrix, Vector>>();
-            // #endif
         }
 
         inline static QPSolverPtr default_solver() {
             return utopia::make_unique<SemismoothNewton<Matrix, Vector>>(default_linear_solver());
         }
 
-        inline static std::unique_ptr<QPSolverRegistry> make() { return utopia::make_unique<QPSolverRegistry>(); }
-
-        // FIXME make feature detection for registrations that always compile
         QPSolverRegistry() {
-            register_solver(
-                "any", "ssnewton", utopia::make_unique<SemismoothNewton<Matrix, Vector>>(default_linear_solver()));
-            register_solver("any", "pg", utopia::make_unique<ProjectedGradient<Matrix, Vector>>());
-            register_solver("any", "pcg", utopia::make_unique<ProjectedConjugateGradient<Matrix, Vector>>());
-            register_solver("any", "pgs", utopia::make_unique<ProjectedGaussSeidel<Matrix, Vector>>());
+            {
+                // Homemade
+                using HomeMadeSemismoothNewton = utopia::SemismoothNewton<Matrix, Vector>;
+                using HomeMadeProjectedGradient = utopia::ProjectedGradient<Matrix, Vector>;
+                using HomeMadeProjectedConjugateGradient = utopia::ProjectedConjugateGradient<Matrix, Vector>;
+                using HomeMadeProjectedGaussSeidel = utopia::ProjectedGaussSeidel<Matrix, Vector>;
+
+                register_solver<HomeMadeSemismoothNewton>("any", "ssnewton");
+                register_solver<HomeMadeProjectedGradient>("any", "pg");
+                register_solver<HomeMadeProjectedConjugateGradient>("any", "pcg");
+                register_solver<HomeMadeProjectedGaussSeidel>("any", "pgs");
+            }
 
 #ifdef UTOPIA_WITH_PETSC
-            register_solver(
-                "petsc",
-                "ssnewton",
-                utopia::make_unique<SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>>(default_linear_solver()));
-            register_solver(
-                "petsc", "taoqp", utopia::make_unique<TaoQPSolver<Matrix, Vector>>(default_linear_solver()));
+            {
+                // Petsc
+                using PetscSemiSmoothNewton = utopia::SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL>;
+                using PetscTaoQPSolver = utopia::TaoQPSolver<Matrix, Vector>;
 
-            auto tron = utopia::make_unique<TaoQPSolver<Matrix, Vector>>();
-            tron->tao_type(TAOTRON);
-            tron->set_linear_solver(std::make_shared<GMRES<Matrix, Vector>>("bjacobi"));
-            register_solver("petsc", TAOTRON, std::move(tron));
+                register_solver<PetscSemiSmoothNewton>("petsc", "ssnewton");
+                register_solver<PetscTaoQPSolver>("petsc", "taoqp");
+
+#ifdef UTOPIA_WITH_BLAS
+                using PetscRASPatchSmoother = utopia::RASPatchSmoother<Matrix, utopia::BlasMatrix<Scalar>>;
+                register_solver<PetscRASPatchSmoother>("petsc", "patch_smoother");
+#endif  // UTOPIA_WITH_BLAS
+            }
 #endif  // UTOPIA_WITH_PETSC
         }
     };
@@ -116,9 +135,13 @@ namespace utopia {
         in.get("backend", backend);
         in.get("type", type);
 
-        auto registry = QPSolverRegistry<Matrix, Vector>::make();
-        impl_ = registry->find(backend, type);
+        impl_ = QPSolverRegistry::instance().find(backend, type);
         impl_->read(in);
+    }
+
+    template <class Matrix, class Vector>
+    QPSolverRegistry<Matrix, Vector> &OmniQPSolver<Matrix, Vector>::registry() {
+        return QPSolverRegistry::instance();
     }
 
     template <class Matrix, class Vector>
@@ -142,7 +165,7 @@ namespace utopia {
         auto cloned = utopia::make_unique<OmniQPSolver>();
 
         if (this->impl_) {
-            cloned->impl_ = std::unique_ptr<QPSolver<Matrix, Vector>>(this->impl_->clone());
+            cloned->impl_ = std::unique_ptr<QPSolver>(this->impl_->clone());
         }
 
         return cloned.release();

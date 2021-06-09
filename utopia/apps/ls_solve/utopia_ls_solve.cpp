@@ -11,8 +11,7 @@
 
 #include "utopia_petsc_CrsView.hpp"
 
-#include "utopia_Agglomerate.hpp"
-#include "utopia_BlockAgglomerate.hpp"
+#include "utopia_AlgebraicMultigrid.hpp"
 #include "utopia_ElementWisePseudoInverse.hpp"
 #include "utopia_ILU.hpp"
 
@@ -166,19 +165,19 @@ namespace utopia {
                     coarse_solver = std::make_shared<Factorization<Matrix, Vector>>();
                 }
 
-                std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
+                // std::shared_ptr<MatrixAgglomerator<Matrix>> agglomerator;
 
-                if (block_size == 2) {
-                    agglomerator = std::make_shared<BlockAgglomerate<Matrix, 2>>();
-                } else if (block_size == 3) {
-                    agglomerator = std::make_shared<BlockAgglomerate<Matrix, 3>>();
-                } else if (block_size == 4) {
-                    agglomerator = std::make_shared<BlockAgglomerate<Matrix, 4>>();
-                } else {
-                    agglomerator = std::make_shared<Agglomerate<Matrix>>();
-                }
+                // if (block_size == 2) {
+                //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 2>>();
+                // } else if (block_size == 3) {
+                //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 3>>();
+                // } else if (block_size == 4) {
+                //     agglomerator = std::make_shared<BlockAgglomerate<Matrix, 4>>();
+                // } else {
+                //     agglomerator = std::make_shared<Agglomerate<Matrix>>();
+                // }
 
-                auto amg = std::make_shared<AlgebraicMultigrid<Matrix, Vector>>(smoother, coarse_solver, agglomerator);
+                auto amg = std::make_shared<AlgebraicMultigrid<Matrix, Vector>>(smoother, coarse_solver);
 
                 InputParameters inner_params;
                 inner_params.set("block_size", block_size);

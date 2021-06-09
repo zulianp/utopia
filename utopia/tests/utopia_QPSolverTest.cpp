@@ -8,7 +8,6 @@
 #include "test_problems/utopia_QPSolverTestProblem.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
-#include "utopia_ProjectedGaussSeidelNew.hpp"
 #include "utopia_polymorphic_QPSolver.hpp"
 
 #include "utopia_MonotoneAlgebraicMultigrid.hpp"
@@ -138,7 +137,7 @@ namespace utopia {
         }
 
         void MG_QR_test() {
-            bool verbose = true;
+            bool verbose = false;
 
             Vector rhs, x;
             Vector upper_bound, lower_bound;
@@ -324,7 +323,7 @@ namespace utopia {
         void monotone_mg_test() {
             const std::string data_path = Utopia::instance().get("data_path");
 
-            const static bool verbose = true;
+            const static bool verbose = false;
             const static bool use_masks = false;
 
             int n_levels = 6;

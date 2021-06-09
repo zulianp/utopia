@@ -6,6 +6,9 @@
 #include "utopia_Multigrid.hpp"
 #include "utopia_make_unique.hpp"
 
+#include "utopia_petsc.hpp"
+#include "utopia_petsc_KSPSolvers.hpp"
+
 #include <memory>
 
 namespace utopia {

@@ -39,6 +39,9 @@ namespace utopia {
     template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class KSPSolver {};
 
+    template <typename Matrix, typename Vector, int Backend>
+    class Traits<KSPSolver<Matrix, Vector, Backend>> : public Traits<Matrix> {};
+
     template <typename Matrix, typename Vector>
     class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector> {
     public:

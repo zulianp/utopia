@@ -5,17 +5,23 @@
 #include "utopia_QPSolver.hpp"
 
 #include <memory>
+#include <string>
 
 namespace utopia {
+    template <class Matrix, class Vector>
+    class QPSolverRegistry;
 
     template <class Matrix, class Vector>
     class OmniQPSolver : public QPSolver<Matrix, Vector> {
     public:
+        using Super = utopia::QPSolver<Matrix, Vector>;
         using Scalar = typename utopia::Traits<Vector>::Scalar;
         using SizeType = typename utopia::Traits<Vector>::SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-        typedef utopia::QPSolver<Matrix, Vector> Super;
+        using LinearSolver = utopia::LinearSolver<Matrix, Vector>;
         using BoxConstraints = utopia::BoxConstraints<Vector>;
+        using QPSolver = utopia::QPSolver<Matrix, Vector>;
+
+        using QPSolverRegistry = utopia::QPSolverRegistry<Matrix, Vector>;
 
     public:
         OmniQPSolver();
@@ -24,8 +30,10 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &sol) override;
         void read(Input &in) override;
 
+        static QPSolverRegistry &registry();
+
     private:
-        std::unique_ptr<QPSolver<Matrix, Vector>> impl_;
+        std::unique_ptr<QPSolver> impl_;
     };
 
 }  // namespace utopia

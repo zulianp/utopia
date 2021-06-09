@@ -4,6 +4,8 @@
 #include "utopia_Core.hpp"
 #include "utopia_QPSolver.hpp"
 
+#include "utopia_polymorphic_LinearSolver.hpp"
+
 #include <memory>
 #include <vector>
 
@@ -22,7 +24,8 @@ namespace utopia {
             linear_solver_ = linear_solver;
         }
 
-        explicit SemismoothNewton(std::shared_ptr<LinearSolver> linear_solver);
+        explicit SemismoothNewton(
+            std::shared_ptr<LinearSolver> linear_solver = std::make_shared<OmniLinearSolver<Matrix, Vector>>());
         ~SemismoothNewton() override;
         SemismoothNewton *clone() const override;
 
