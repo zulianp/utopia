@@ -128,6 +128,7 @@ namespace scripting {
     Scalar Vector::dot(const Vector *x) const { return impl_->dot(*x->impl_); }
     void Vector::set(const SizeType &i, const Scalar &value) { impl_->set(i, value); }
     Scalar Vector::get(const SizeType &i) const { return impl_->get(i); }
+    void Vector::scale(const Scalar &a) { impl_->scale(a); }
 
     void Vector::print_array(double *seq, int n) {
         printf("array with length %d :\n", n);
