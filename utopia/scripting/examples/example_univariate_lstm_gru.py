@@ -5,6 +5,7 @@ import time
 import math, time
 from conversion_functions import *
 import utopia as ut 
+import sys
 
 
 
@@ -98,21 +99,25 @@ def create_GRU(input_dim, hidden_dim,  output_dim, num_layers):
     return GRU(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
 
 
-def command_line_args():
-    return 0     
+def command_line_args(args):
+    if len(args) != 7:
+        print("7 inputs are reuquired")
+        return
+    return int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6])    
 
 
-def train(model, criterion, y_train_lstm, x_train, tol):
+def train(model, criterion, y_train_lstm, x_train, lr, tol):
     hist = np.zeros(1000)
     lstm = []
     j = 0
     y_train_pred = model(x_train)
     loss = criterion(y_train_pred, y_train_lstm)
     while loss > tol:
+        
         y_train_pred = model(x_train)
         loss = criterion(y_train_pred, y_train_lstm)
 
-        if loss < tol: # if loss is already less than the expected tolerance don't do anything
+        if loss < tol: 
             return hist, y_train_pred
 
         print("Epoch ", j, "MSE: ", loss.item())
@@ -136,12 +141,11 @@ def train(model, criterion, y_train_lstm, x_train, tol):
                 p_ut = pytorch_to_utopia(param_flat)
                 grad_ut = pytorch_to_utopia(grad_flat)
             
-                # # gradient step
                 if i == 0:
-                    p_ut.axpy(-0.01, grad_ut)
+                    p_ut.axpy(-lr, grad_ut)
 
                 else:   
-                    p_ut.axpy(-0.01, grad_ut)
+                    p_ut.axpy(-lr, grad_ut)
                     momentum_ut = pytorch_to_utopia(momentum_flat)
                     momentum_ut.scale(0.9)
                     p_ut.axpy(-1, momentum_ut)
@@ -179,21 +183,20 @@ y_test_gru = torch.from_numpy(y_test).type(torch.Tensor)
 #############
 
 
-input_dim = 1
-hidden_dim = 32
-num_layers = 2
-output_dim = 1
-tol = 1e-1
-
-
-
+# python3 univar_lstm_gru_to_script.py 1 32 2 1 0.01 0.1
+# input_dim = 1, hidden_dim = 32, num_layers = 2, output_dim = 1
+# lr = 0.01, tol = 0.01
+args = sys.argv
+input_dim, hidden_dim, num_layers, output_dim, lr, tol = command_line_args(args)
 
 model = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
 criterion = torch.nn.MSELoss(reduction='mean') 
 
 
 start_time = time.time()
-hist, y_train_pred = train(model, criterion, y_train_lstm, x_train, tol)
+
+hist, y_train_pred = train(model, criterion, y_train_lstm, x_train, lr, tol)
+
 training_time = time.time()-start_time
 print("Training time: {}".format(training_time))
 
