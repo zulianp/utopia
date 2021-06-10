@@ -98,6 +98,10 @@ def create_GRU(input_dim, hidden_dim,  output_dim, num_layers):
     return GRU(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
 
 
+def command_line_args():
+    return 0     
+
+
 def train(model, criterion, y_train_lstm, x_train, tol):
     hist = np.zeros(1000)
     lstm = []
@@ -117,7 +121,6 @@ def train(model, criterion, y_train_lstm, x_train, tol):
         loss.backward()
 
         with torch.no_grad():
-            #  make gradient step x_{n + 1} = x_n - lr*gradient
             i = 0
             for param in model.parameters():
           
@@ -148,7 +151,6 @@ def train(model, criterion, y_train_lstm, x_train, tol):
                 i += 1
             j += 1    
             
-        # allow gradient on model parameters
         for param in model.parameters():
             param.requires_grad = True
         
@@ -159,14 +161,14 @@ def train(model, criterion, y_train_lstm, x_train, tol):
 
 ########################## Body ########################## 
 ut.init()
+
+# Prepare data
 filepath = './ibm.csv'
 open, high, low, close, volume = read_stock_data(filepath)
 close_max, close_min, close = normalize_data(close.reshape(-1,1))
 
-
 lookback = 21 
 x_train, y_train, x_test, y_test = split_data(close, lookback)
-
 
 x_train = torch.from_numpy(x_train).type(torch.Tensor)
 x_test = torch.from_numpy(x_test).type(torch.Tensor)
@@ -174,34 +176,27 @@ y_train_lstm = torch.from_numpy(y_train).type(torch.Tensor)
 y_test_lstm = torch.from_numpy(y_test).type(torch.Tensor)
 y_train_gru = torch.from_numpy(y_train).type(torch.Tensor)
 y_test_gru = torch.from_numpy(y_test).type(torch.Tensor)
+#############
+
 
 input_dim = 1
 hidden_dim = 32
 num_layers = 2
 output_dim = 1
-num_epochs = 100
+tol = 1e-1
 
-model = LSTM(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
-criterion = torch.nn.MSELoss(reduction='mean') # TODO: utopia? 
-# optimiser = torch.optim.Adam(model.parameters(), lr=0.01)  TODO: utopia?  
 
-hist = np.zeros(num_epochs)
-start_time = time.time()
-lstm = []
+
 
 model = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
 criterion = torch.nn.MSELoss(reduction='mean') 
 
 
 start_time = time.time()
-lstm = []
-tol = 1e-1
-
 hist, y_train_pred = train(model, criterion, y_train_lstm, x_train, tol)
-
-    
 training_time = time.time()-start_time
 print("Training time: {}".format(training_time))
+
 
 predict = denormalize_data(y_train_pred.detach().numpy(), close_min, close_max)
 original = denormalize_data(y_train_lstm.detach().numpy(), close_min, close_max)
