@@ -18,29 +18,21 @@ namespace utopia {
         template <class... Args>
         ImplicitEulerIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
 
-        void read(Input &in) override {
-            Super::read(in);
-
-            // if (this->verbose()) {
-            //     utopia::out() << "--------------------------------\n";
-            //     this->describe(utopia::out().stream());
-            //     utopia::out() << "--------------------------------\n";
-            // }
-        }
+        void read(Input &in) override { Super::read(in); }
 
         bool setup_IVP(Vector_t &x) override {
             if (!this->assemble_mass_matrix()) {
                 return false;
             }
-            mass_times_x_old_.zeros(layout(x));
-            assert(!empty(mass_times_x_old_));
+            x_old_.zeros(layout(x));
+            assert(!empty(x_old_));
             return true;
         }
 
         bool update_IVP(const Vector_t &x) override {
             Super::update_IVP(x);
-            mass_times_x_old_ = (*this->mass_matrix()) * x;
-            assert(!empty(mass_times_x_old_));
+            x_old_ = x;
+            assert(!empty(x_old_));
             return true;
         }
 
@@ -48,12 +40,17 @@ namespace utopia {
             const Scalar_t dt = this->delta_time();
 
             assert(!empty(g));
-            assert(!empty(mass_times_x_old_));
+            assert(!empty(x_old_));
 
             g *= dt;
-            g -= mass_times_x_old_;
-            g += (*this->mass_matrix()) * x;
+            g += (*this->mass_matrix()) * (x - x_old_);
             this->space()->apply_zero_constraints(g);
+        }
+
+        bool time_derivative(const Vector_t &x, Vector_t &dfdt) const override {
+            dfdt = (x - x_old_);
+            dfdt *= 1. / this->delta_time();
+            return true;
         }
 
         void integrate_hessian(const Vector_t &, Matrix_t &H) const override {
@@ -63,7 +60,7 @@ namespace utopia {
         }
 
     private:
-        Vector_t mass_times_x_old_;
+        Vector_t x_old_;
     };
 
 }  // namespace utopia

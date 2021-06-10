@@ -274,6 +274,12 @@ namespace utopia {
 
         bool is_IVP_solved() override { return time()->finished(); }
 
+        virtual bool time_derivative(const Vector_t &x, Vector_t &dfdt) const {
+            UTOPIA_UNUSED(x);
+            UTOPIA_UNUSED(dfdt);
+            return false;
+        }
+
         virtual void integrate_gradient(const Vector_t &x, Vector_t &g) const = 0;
         virtual void integrate_hessian(const Vector_t &x, Matrix_t &H) const = 0;
 

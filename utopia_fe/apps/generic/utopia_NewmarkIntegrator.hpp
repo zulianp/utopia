@@ -55,9 +55,6 @@ namespace utopia {
             return true;
         }
 
-        void velocity(Vector_t &v) const { assert(false && "IMPLEMENT ME"); }
-        void acceleration(Vector_t &a) const { assert(false && "IMPLEMENT ME"); }
-
         template <class... Args>
         NewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
 
