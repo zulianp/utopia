@@ -197,6 +197,8 @@ macro(add_utopiafe_app app_name)
     # include)
 endmacro(add_utopiafe_app)
 
+list(APPEND UTOPIA_FE_MODULES frontend)
+
 if(UTOPIA_ENABLE_LIBMESH)
     list(APPEND UTOPIA_FE_MODULES backend/libmesh edsl)
 
