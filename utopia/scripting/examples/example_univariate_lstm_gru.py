@@ -73,7 +73,12 @@ def split_data(stock, lookback):
     
     x_test = data[train_set_size:,:-1]
     y_test = data[train_set_size:,-1,:]
-  
+
+    x_train = torch.from_numpy(x_train).type(torch.Tensor)
+    x_test = torch.from_numpy(x_test).type(torch.Tensor)
+    y_train = torch.from_numpy(y_train).type(torch.Tensor)
+    y_test = torch.from_numpy(y_test).type(torch.Tensor)
+
     return [x_train, y_train, x_test, y_test]
 
 
@@ -100,13 +105,30 @@ def create_GRU(input_dim, hidden_dim,  output_dim, num_layers):
 
 
 def command_line_args(args):
-    if len(args) != 7:
-        print("7 inputs are reuquired")
+    if len(args) != 8:
+        print("8 inputs are reuquired")
         return
-    return int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6])    
+    return [str(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7])]  
+
+
+def summary(model, y_train, y_test, y_train_pred, close_min, close_max):
+    y_test_pred = model_lstm(x_test)
+
+    y_train_pred = denormalize_data(y_train_pred.detach().numpy(), close_min, close_max)
+    y_train = denormalize_data(y_train.detach().numpy(), close_min, close_max)
+    y_test_pred = denormalize_data(y_test_pred.detach().numpy(), close_min, close_max)
+    y_test = denormalize_data(y_test.detach().numpy(), close_min, close_max)
+
+
+    train_score = evaluate_predictions(y_train[:,0], y_train_pred[:,0]) 
+    print('LSTM train Score: %.2f' % (train_score))
+    test_score = evaluate_predictions(y_test[:,0], y_test_pred[:,0])
+    print('LSTM test Score: %.2f' % (test_score))
+
 
 
 def train(model, criterion, y_train_lstm, x_train, lr, tol):
+    start_time = time.time()
     hist = np.zeros(1000)
     lstm = []
     j = 0
@@ -117,8 +139,13 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol):
         y_train_pred = model(x_train)
         loss = criterion(y_train_pred, y_train_lstm)
 
-        if loss < tol: 
+        if loss < tol:
+            print("Tolerance reached in", j, "iterations.") 
             return hist, y_train_pred
+        if j > 2 and hist[j-1] == hist[j]:
+            print("Convergence reached in", j, "iterations.") 
+            return hist, y_train_pred
+
 
         print("Epoch ", j, "MSE: ", loss.item())
         hist[j] = loss.item()
@@ -158,64 +185,35 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol):
         for param in model.parameters():
             param.requires_grad = True
         
-        
+    training_time = time.time()-start_time
+    print("Training time: {}".format(training_time))   
     return hist, y_train_pred    
-
 
 
 ########################## Body ########################## 
 ut.init()
 
-# Prepare data
-filepath = './ibm.csv'
+# call the file with 
+# python3 univar_lstm_gru_to_script.py ./ibm.csv 1 32 2 1 0.01 0.1
+
+args = sys.argv
+filepath, input_dim, hidden_dim, num_layers, output_dim, lr, tol = command_line_args(args)
+
 open, high, low, close, volume = read_stock_data(filepath)
 close_max, close_min, close = normalize_data(close.reshape(-1,1))
 
 lookback = 21 
 x_train, y_train, x_test, y_test = split_data(close, lookback)
 
-x_train = torch.from_numpy(x_train).type(torch.Tensor)
-x_test = torch.from_numpy(x_test).type(torch.Tensor)
-y_train_lstm = torch.from_numpy(y_train).type(torch.Tensor)
-y_test_lstm = torch.from_numpy(y_test).type(torch.Tensor)
-y_train_gru = torch.from_numpy(y_train).type(torch.Tensor)
-y_test_gru = torch.from_numpy(y_test).type(torch.Tensor)
-#############
-
-
-# python3 univar_lstm_gru_to_script.py 1 32 2 1 0.01 0.1
-# input_dim = 1, hidden_dim = 32, num_layers = 2, output_dim = 1
-# lr = 0.01, tol = 0.01
-args = sys.argv
-input_dim, hidden_dim, num_layers, output_dim, lr, tol = command_line_args(args)
-
-model = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
+model_lstm = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
 criterion = torch.nn.MSELoss(reduction='mean') 
-
 
 start_time = time.time()
 
-hist, y_train_pred = train(model, criterion, y_train_lstm, x_train, lr, tol)
+hist_lstm, y_train_pred = train(model_lstm, criterion, y_train, x_train, lr, tol)
 
-training_time = time.time()-start_time
-print("Training time: {}".format(training_time))
+summary(model_lstm, y_train, y_test, y_train_pred, close_min, close_max)
 
-
-predict = denormalize_data(y_train_pred.detach().numpy(), close_min, close_max)
-original = denormalize_data(y_train_lstm.detach().numpy(), close_min, close_max)
-
-y_test_pred = model(x_test)
-
-y_train_pred = denormalize_data(y_train_pred.detach().numpy(), close_min, close_max)
-y_train = denormalize_data(y_train_lstm.detach().numpy(), close_min, close_max)
-y_test_pred = denormalize_data(y_test_pred.detach().numpy(), close_min, close_max)
-y_test = denormalize_data(y_test_lstm.detach().numpy(), close_min, close_max)
-
-
-train_score = evaluate_predictions(y_train[:,0], y_train_pred[:,0])
-print('LSTM train Score: %.2f' % (train_score))
-test_score = evaluate_predictions(y_test[:,0], y_test_pred[:,0])
-print('LSTM test Score: %.2f' % (test_score))
 ut.finalize()
 
 
