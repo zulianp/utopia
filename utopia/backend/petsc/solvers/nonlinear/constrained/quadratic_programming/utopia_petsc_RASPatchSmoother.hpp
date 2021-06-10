@@ -1,7 +1,7 @@
 #ifndef UTOPIA_RAS_PATCH_SMOOTHER_HPP
 #define UTOPIA_RAS_PATCH_SMOOTHER_HPP
 
-#include "utopia_PatchGatherer.hpp"
+#include "utopia_petsc_PatchGatherer.hpp"
 
 namespace utopia {
 

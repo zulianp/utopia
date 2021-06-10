@@ -5,8 +5,8 @@
 #include "utopia_InputParameters.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#include "utopia_PatchSmoother.hpp"
-#include "utopia_RASPatchSmoother.hpp"
+#include "utopia_petsc_PatchSmoother.hpp"
+#include "utopia_petsc_RASPatchSmoother.hpp"
 
 #ifdef UTOPIA_WITH_BLAS
 #include "utopia_blas_Array.hpp"

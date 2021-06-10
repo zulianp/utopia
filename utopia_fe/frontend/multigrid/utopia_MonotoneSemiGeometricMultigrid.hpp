@@ -10,12 +10,6 @@
 #include "utopia_BoundingBoxMultiLevel.hpp"
 #include "utopia_SemiGeometricHierarchy.hpp"
 
-#ifdef UTOPIA_WITH_BLAS
-#include "utopia_RASPatchSmoother.hpp"
-#include "utopia_blas.hpp"
-#include "utopia_blas_Array.hpp"
-#endif  // UTOPIA_WITH_BLAS
-
 #include <memory>
 #include <vector>
 
@@ -120,16 +114,8 @@ namespace utopia {
             std::shared_ptr<QPSmoother> fine_smoother;
             std::shared_ptr<Smoother> coarse_smoother;
 
-#ifdef UTOPIA_WITH_BLAS
-            if (use_patch_smoother_) {
-                fine_smoother = std::make_shared<RASPatchSmoother<Matrix, utopia::BlasMatrixd>>();
-                coarse_smoother = std::make_shared<RASPatchSmoother<Matrix, utopia::BlasMatrixd>>();
-            } else
-#endif  // UTOPIA_WITH_BLAS
-            {
-                fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-                coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            }
+            fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            coarse_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
 
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>();
 

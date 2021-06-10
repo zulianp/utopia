@@ -1,21 +1,12 @@
 #ifndef UTOPIA_MONOTONE_SEMI_GEOMETRIC_MULTIGRID_NEW_HPP
 #define UTOPIA_MONOTONE_SEMI_GEOMETRIC_MULTIGRID_NEW_HPP
 
+#include "utopia.hpp"
 #include "utopia_Base.hpp"
-
-#include "utopia_ILU.hpp"
-#include "utopia_Multigrid.hpp"
-#include "utopia_ProjectedGaussSeidelNew.hpp"
-
-#include "utopia_SemiGeometricHierarchy.hpp"
 
 #include "utopia_fe_Core.hpp"
 
-// #ifdef UTOPIA_WITH_BLAS
-// #include "utopia_PatchSmoother.hpp"
-// #include "utopia_blas.hpp"
-// #include "utopia_blas_Array.hpp"
-// #endif  // UTOPIA_WITH_BLAS
+#include "utopia_SemiGeometricHierarchy.hpp"
 
 #include <memory>
 #include <vector>
@@ -35,7 +26,6 @@ namespace utopia {
         using Comm = typename Traits<FunctionSpace>::Communicator;
 
         using Super = utopia::IterativeSolver<Matrix, Vector>;
-        // using IPRTruncatedTransfer = utopia::IPRTruncatedTransfer<Matrix, Vector>;
         using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using Transfer = utopia::Transfer<Matrix, Vector>;
         using Multigrid = utopia::Multigrid<Matrix, Vector>;
@@ -118,15 +108,7 @@ namespace utopia {
             InputParameters params;
             params.set("block_size", this->block_size());
 
-            // auto smoother = std::make_shared<SOR<Matrix, Vector>>();
-            // auto smoother = std::make_shared<ILU<Matrix, Vector>>();
-            // auto smoother = std::make_shared<SOR<Matrix, Vector>>();
-            // #ifdef UTOPIA_WITH_BLAS
-            //             auto smoother = std::make_shared<PatchSmoother<Matrix, utopia::BlasMatrixd>>();
-            // #else
             auto smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
-            // #endif  // UTOPIA_WITH_BLAS
-
             auto direct_solver = std::make_shared<KSPSolver<Matrix, Vector>>();
 
             smoother->read(params);

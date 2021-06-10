@@ -23,9 +23,9 @@
 
 //
 #ifdef UTOPIA_WITH_BLAS
-#include "utopia_RASPatchSmoother.hpp"
 #include "utopia_blas.hpp"
 #include "utopia_blas_Array.hpp"
+#include "utopia_petsc_RASPatchSmoother.hpp"
 #endif  // UTOPIA_WITH_BLAS
 
 #endif  // UTOPIA_WITH_PETSC
