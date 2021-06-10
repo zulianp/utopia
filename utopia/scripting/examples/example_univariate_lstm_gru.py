@@ -56,7 +56,7 @@ def read_stock_data(filepath):
     return open, high, low, close, volume
 
 
-def split_data(stock, lookback):
+def sequence_data(stock, lookback):
     data_raw = stock # convert to numpy array
     data = []
     
@@ -127,7 +127,7 @@ def summary(model, y_train, y_test, y_train_pred, close_min, close_max, name):
 
 
 
-def train(model, criterion, y_train_lstm, x_train, lr, tol):
+def train(model, criterion, y_train_lstm, x_train, lr, tol, name):
     start_time = time.time()
     hist = np.zeros(1000)
     lstm = []
@@ -140,11 +140,11 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol):
         loss = criterion(y_train_pred, y_train_lstm)
 
         if loss < tol:
-            print("Tolerance reached in", j, "iterations.") 
+            print(name, ": tolerance reached in", j, "iterations.") 
             return hist, y_train_pred
         
         if j > 2 and hist[j-1] == hist[j]:
-            print("Convergence reached in", j, "iterations.") 
+            print(name, ": convergence reached in", j, "iterations.") 
             return hist, y_train_pred
 
 
@@ -194,7 +194,7 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol):
 ########################## Body ########################## 
 ut.init()
 
-# call the file with 
+# please call the file with: 
 # python3 univar_lstm_gru_to_script.py ./ibm.csv 1 32 2 1 0.01 0.1
 
 args = sys.argv
@@ -204,20 +204,19 @@ open, high, low, close, volume = read_stock_data(filepath)
 close_max, close_min, close = normalize_data(close.reshape(-1,1))
 
 lookback = 21 
-x_train, y_train, x_test, y_test = split_data(close, lookback)
+x_train, y_train, x_test, y_test = sequence_data(close, lookback)
 
 model_lstm = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
-criterion = torch.nn.MSELoss(reduction='mean') 
+model_gru = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
+criterion = torch.nn.MSELoss(reduction='mean')
 
-start_time = time.time()
+print("Training LSTM")
+hist_lstm, y_train_pred_lstm = train(model_lstm, criterion, y_train, x_train, lr, tol, "LSTM")
+print("Training GRU")
+hist_gru, y_train_pred_gru = train(model_gru, criterion, y_train, x_train, lr, tol, "GRU")
 
-hist_lstm, y_train_pred = train(model_lstm, criterion, y_train, x_train, lr, tol)
-
-summary(model_lstm, y_train, y_test, y_train_pred, close_min, close_max, "LSTM")
+summary(model_lstm, y_train, y_test, y_train_pred_lstm, close_min, close_max, "LSTM")
+summary(model_lstm, y_train, y_test, y_train_pred_gru, close_min, close_max, "GRU")
 
 ut.finalize()
-
-
-
-
 
