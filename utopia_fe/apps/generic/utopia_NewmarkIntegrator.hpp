@@ -32,9 +32,7 @@ namespace utopia {
             x_old_.zeros(vlo);
             x_older_.zeros(vlo);
             internal_stress_old_.zeros(vlo);
-            internal_stress_older_.zeros(vlo);
             external_force_.zeros(vlo);
-            internal_stress_.zeros(vlo);
             return true;
         }
 
@@ -46,16 +44,19 @@ namespace utopia {
             x_older_ = x_old_;
             x_old_ = x;
 
-            this->gradient(x, internal_stress_);
+            active_stress_ = -internal_stress_old_ + (4. * external_force_);
 
-            internal_stress_older_ = internal_stress_old_;
-            internal_stress_old_ = internal_stress_;
+            // In case of contact problems here we also have the contact stress
+            this->gradient(x, internal_stress_old_);
 
-            active_stress_ = (4. / (dt * dt)) * ((*this->mass_matrix()) * (2. * x_old_ - x_older_)) -
-                             2. * internal_stress_old_ - internal_stress_older_ + (4. * external_force_);
+            active_stress_ +=
+                (4. / (dt * dt)) * ((*this->mass_matrix()) * (2. * x_old_ - x_older_)) - 2. * internal_stress_old_;
 
             return true;
         }
+
+        void velocity(Vector_t &v) const { assert(false && "IMPLEMENT ME"); }
+        void acceleration(Vector_t &a) const { assert(false && "IMPLEMENT ME"); }
 
         template <class... Args>
         NewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
@@ -78,7 +79,7 @@ namespace utopia {
 
     private:
         Vector_t x_old_, x_older_;
-        Vector_t active_stress_, internal_stress_, internal_stress_old_, internal_stress_older_, external_force_;
+        Vector_t active_stress_, internal_stress_old_, external_force_;
     };
 
 }  // namespace utopia
