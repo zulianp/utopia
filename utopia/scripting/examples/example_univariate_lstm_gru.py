@@ -90,13 +90,80 @@ def evaluate_predictions(y_true, y_pred):
     assert y_true.shape == y_pred.shape
     return ((y_true - y_pred) ** 2).mean()
 
+def create_LSTM(input_dim, hidden_dim,  output_dim, num_layers):
+    return LSTM(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
+
+
+def create_GRU(input_dim, hidden_dim,  output_dim, num_layers):
+    return GRU(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
+
+
+def train(model, criterion, y_train_lstm, x_train, tol):
+    hist = np.zeros(1000)
+    lstm = []
+    j = 0
+    y_train_pred = model(x_train)
+    loss = criterion(y_train_pred, y_train_lstm)
+    while loss > tol:
+        y_train_pred = model(x_train)
+        loss = criterion(y_train_pred, y_train_lstm)
+
+        if loss < tol: # if loss is already less than the expected tolerance don't do anything
+            return hist, y_train_pred
+
+        print("Epoch ", j, "MSE: ", loss.item())
+        hist[j] = loss.item()
+
+        loss.backward()
+
+        with torch.no_grad():
+            #  make gradient step x_{n + 1} = x_n - lr*gradient
+            i = 0
+            for param in model.parameters():
+          
+                grad = param.grad.data
+                grad_flat = grad.flatten()
+       
+                param_flat = param.data.flatten()
+         
+                if i > 0:
+                    momentum = param_flat
+                    momentum_flat = momentum.flatten()
+
+                p_ut = pytorch_to_utopia(param_flat)
+                grad_ut = pytorch_to_utopia(grad_flat)
+            
+                # # gradient step
+                if i == 0:
+                    p_ut.axpy(-0.01, grad_ut)
+
+                else:   
+                    p_ut.axpy(-0.01, grad_ut)
+                    momentum_ut = pytorch_to_utopia(momentum_flat)
+                    momentum_ut.scale(0.9)
+                    p_ut.axpy(-1, momentum_ut)
+              
+
+                utopia_to_pytorch(p_ut, param_flat)
+                i += 1
+            j += 1    
+            
+        # allow gradient on model parameters
+        for param in model.parameters():
+            param.requires_grad = True
+        
+        
+    return hist, y_train_pred    
+
+
+
 ########################## Body ########################## 
 ut.init()
-filepath = './data/ibm.csv'
+filepath = './ibm.csv'
 open, high, low, close, volume = read_stock_data(filepath)
 close_max, close_min, close = normalize_data(close.reshape(-1,1))
 
-# a financial year has ~ 252 days, so 21 represents the days in one month
+
 lookback = 21 
 x_train, y_train, x_test, y_test = split_data(close, lookback)
 
@@ -122,53 +189,16 @@ hist = np.zeros(num_epochs)
 start_time = time.time()
 lstm = []
 
+model = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
+criterion = torch.nn.MSELoss(reduction='mean') 
 
-for t in range(num_epochs):
-    y_train_pred = model(x_train)
 
-    loss = criterion(y_train_pred, y_train_lstm)
-    print("Epoch ", t, "MSE: ", loss.item())
-    hist[t] = loss.item()
+start_time = time.time()
+lstm = []
+tol = 1e-1
 
-    #optimiser.zero_grad()
-    loss.backward()
-    #optimiser.step()
-    with torch.no_grad():
-        #  make gradient step x_{n + 1} = x_n - lr*gradient
-        i = 0
-        for param in model.parameters():
-          
-            grad = param.grad.data
-            grad_flat = grad.flatten()
-       
-            param_flat = param.data.flatten()
-         
-            if i > 0:
-                momentum = param_flat
-                momentum_flat = momentum.flatten()
-                print(momentum_flat.shape)
+hist, y_train_pred = train(model, criterion, y_train_lstm, x_train, tol)
 
-            p_ut = pytorch_to_utopia(param_flat)
-            grad_ut = pytorch_to_utopia(grad_flat)
-            
-            # # gradient step
-            if i == 0:
-                p_ut.axpy(-0.01, grad_ut)
-
-            else: 
-                p_ut.axpy(-0.01, grad_ut)
-                momentum_ut = pytorch_to_utopia(momentum_flat)
-                momentum_ut.scale(0.9)
-                p_ut.axpy(-1, momentum_ut)
-              
-
-            utopia_to_pytorch(p_ut, param_flat)
-     
-            i += 1
-            
-        # allow gradient on model parameters
-    for param in model.parameters():
-        param.requires_grad = True
     
 training_time = time.time()-start_time
 print("Training time: {}".format(training_time))
