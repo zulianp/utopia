@@ -111,7 +111,7 @@ def command_line_args(args):
     return [str(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7])]  
 
 
-def summary(model, y_train, y_test, y_train_pred, close_min, close_max):
+def summary(model, y_train, y_test, y_train_pred, close_min, close_max, name):
     y_test_pred = model_lstm(x_test)
 
     y_train_pred = denormalize_data(y_train_pred.detach().numpy(), close_min, close_max)
@@ -121,9 +121,9 @@ def summary(model, y_train, y_test, y_train_pred, close_min, close_max):
 
 
     train_score = evaluate_predictions(y_train[:,0], y_train_pred[:,0]) 
-    print('LSTM train Score: %.2f' % (train_score))
+    print(name, 'train Score: %.2f' % (train_score))
     test_score = evaluate_predictions(y_test[:,0], y_test_pred[:,0])
-    print('LSTM test Score: %.2f' % (test_score))
+    print(name, 'test Score: %.2f' % (test_score))
 
 
 
@@ -134,7 +134,7 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol):
     j = 0
     y_train_pred = model(x_train)
     loss = criterion(y_train_pred, y_train_lstm)
-    while loss > tol:
+    while True:
         
         y_train_pred = model(x_train)
         loss = criterion(y_train_pred, y_train_lstm)
@@ -142,6 +142,7 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol):
         if loss < tol:
             print("Tolerance reached in", j, "iterations.") 
             return hist, y_train_pred
+        
         if j > 2 and hist[j-1] == hist[j]:
             print("Convergence reached in", j, "iterations.") 
             return hist, y_train_pred
@@ -212,7 +213,7 @@ start_time = time.time()
 
 hist_lstm, y_train_pred = train(model_lstm, criterion, y_train, x_train, lr, tol)
 
-summary(model_lstm, y_train, y_test, y_train_pred, close_min, close_max)
+summary(model_lstm, y_train, y_test, y_train_pred, close_min, close_max, "LSTM")
 
 ut.finalize()
 
