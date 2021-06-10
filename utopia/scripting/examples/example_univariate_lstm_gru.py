@@ -92,11 +92,11 @@ def evaluate_predictions(y_true, y_pred):
 
 ########################## Body ########################## 
 ut.init()
-filepath = './ibm.csv'
+filepath = './data/ibm.csv'
 open, high, low, close, volume = read_stock_data(filepath)
 close_max, close_min, close = normalize_data(close.reshape(-1,1))
 
-
+# a financial year has ~ 252 days, so 21 represents the days in one month
 lookback = 21 
 x_train, y_train, x_test, y_test = split_data(close, lookback)
 

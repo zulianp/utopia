@@ -3,8 +3,6 @@ import torch
 import numpy as np
 
 
-
-
 # Given a pytorch mono-dimensional tensor, return an utopia vector
 def pytorch_to_utopia(x):
 	x_into_numpy = x.detach().numpy().flatten()
@@ -26,9 +24,11 @@ def pytorch_to_utopia(x):
 
 # Given a numpy array, return an utopia vector
 def numpy_to_utopia(x):
+	x = x.flatten()
+
 	double_array = u.new_double_array(x.size)
 	for i in range(0, x.size):
-		u.double_array_setitem(double_array,i,x[i])
+		u.double_array_setitem(double_array,i,np.double(x[i]))
 
 	u_vector = u.Vector()
 	size = x.size
@@ -36,15 +36,22 @@ def numpy_to_utopia(x):
 	u_vector.serial_uconversion(double_array, size)
 	u.delete_double_array(double_array)
 
-	u_vector.describe()
+	# u_vector.describe()
 	return u_vector	
 
 
 # Given a utopia vector, return a pytorch mono-dimensional tensor 
-def utopia_to_pytorch(x):
-	temp = x.from_utopia_to_carray()
-	temp = torch.FloatTensor(temp)
-	return temp
+def utopia_to_pytorch(x_ut, x_torch):
+
+	# check that has the same size of local_size
+	size = x_ut.local_size()
+	double_array = u.new_double_array(size)
+	x_ut.write_into_carray(double_array)
+	for i in range(0, size):
+		x_torch[i] = u.double_array_getitem(double_array,i)	
+
+
+	
 
 
 
