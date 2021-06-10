@@ -1,4 +1,10 @@
-list(APPEND FRONTEND_MODULES .)
+list(APPEND FRONTEND_MODULES .
+    fracnetflow
+    functions
+    integrators
+    multigrid
+    solve
+)
 
 utopiafe_add_module(utopia_fe_frontend ${CMAKE_CURRENT_SOURCE_DIR}
                     "${FRONTEND_MODULES}")
