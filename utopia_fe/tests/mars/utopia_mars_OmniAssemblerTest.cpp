@@ -42,8 +42,8 @@ void mars_poisson_aux(int nx, int ny, int nz) {
     Vector_t sum_rows = mat * ones;
     Scalar_t sum_mat = sum(abs(sum_rows));
 
-    write("load_mat.mm", mat);
-    write("load_rhs.mm", rhs);
+    // write("load_mat.mm", mat);
+    // write("load_rhs.mm", rhs);
 
     utopia_test_assert(sum_mat < 1e-8);
 
@@ -62,10 +62,10 @@ void mars_poisson_aux(int nx, int ny, int nz) {
 
 void mars_poisson_2D() { mars_poisson_aux(10, 11, 0); }
 
-void mars_poisson_3D() { mars_poisson_aux(2, 3, 4); }
+void mars_poisson_3D() { mars_poisson_aux(8, 9, 10); }
 
 void mars_assembler() {
-    // UTOPIA_RUN_TEST(mars_poisson_2D);
+    UTOPIA_RUN_TEST(mars_poisson_2D);
     UTOPIA_RUN_TEST(mars_poisson_3D);
 }
 

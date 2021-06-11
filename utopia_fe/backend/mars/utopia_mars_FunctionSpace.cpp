@@ -5,7 +5,7 @@
 #include "utopia_FEVar.hpp"
 #include "utopia_mars_FEHandler.hpp"
 
-#include "mars_pvtu_writer.hpp"
+#include "utopia_mars_MeshIO.hpp"
 
 namespace utopia {
     namespace mars {
@@ -28,12 +28,13 @@ namespace utopia {
                 handler_impl->init(mesh_impl);
                 handler = handler_impl;
 
-#ifdef UTOPIA_WITH_VTK
+#ifdef MARS_WITH_WITH_IO
                 write = [handler_impl](const Path &path, const Vector &x) -> bool {
-                    ::mars::PVTUMeshWriter<typename FEHandler::DofHandler, typename FEHandler::FEDofMap> w;
+                    MarsIOImpl<typename FEHandler::DofHandler, typename FEHandler::FEDofMap> w(
+                        handler_impl->get_dof_handler(), handler_impl->get_fe_dof_map());
+
                     auto x_kokkos = x.raw_type()->getLocalViewHost();
-                    return w.write_vtu(
-                        path.to_string(), handler_impl->get_dof_handler(), handler_impl->get_fe_dof_map(), x_kokkos);
+                    return w.write(path.to_string(), x_kokkos);
                 };
 #else
                 write = (const Path &, const Vector &)->bool { return false; };

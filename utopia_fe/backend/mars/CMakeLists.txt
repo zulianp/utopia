@@ -16,7 +16,8 @@ if(UTOPIA_ENABLE_MARS)
 
     find_package(
         VTK
-        COMPONENTS vtkCommonCore vtkCommonDataModel vtkFiltersGeneral vtkIOXML)
+        COMPONENTS vtkCommonCore vtkCommonDataModel vtkFiltersGeneral vtkIOXML vtkIOParallel vtkIOParallelXML
+        REQUIRED)
 
     if(VTK_FOUND)
         target_link_libraries(utopia_mars PUBLIC ${VTK_LIBRARIES})
