@@ -7,6 +7,7 @@
 #include "utopia_mars_FEHandler.hpp"
 
 #include "utopia_mars_FE.hpp"
+#include "utopia_mars_UniformFE.hpp"
 
 namespace utopia {
     namespace mars {
@@ -22,6 +23,7 @@ namespace utopia {
             using SPattern = typename FEHandler::SPattern;
 
             using FE = utopia::mars::FE<Scalar, SPattern, FEDofMap>;
+            // using UniformFE = utopia::mars::UniformFE<DofHandler::ElemType, Scalar>;
 
             virtual ~ConcreteFEAssembler() = default;
 

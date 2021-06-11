@@ -30,7 +30,7 @@ namespace utopia {
                                               const FEM &fe,
                                               ViewVectorType detJ,
                                               ViewMatrixType invJ) {
-                auto sp = data.get_dof_handler();
+                auto dof_handler = data.get_dof_handler();
 
                 fe.iterate(MARS_LAMBDA(const Integer elem_index) {
                     Real J[Dim * Dim];
@@ -40,10 +40,10 @@ namespace utopia {
                     Real p3[Dim];
 
                     Integer local_dof_0 = fe.get_elem_local_dof(elem_index, 0);
-                    sp.template get_dof_coordinates_from_local<Type>(local_dof_0, point_ref);
+                    dof_handler.template get_dof_coordinates_from_local<Type>(local_dof_0, point_ref);
 
                     Integer local_dof_1 = fe.get_elem_local_dof(elem_index, 1);
-                    sp.template get_dof_coordinates_from_local<Type>(local_dof_1, p2);
+                    dof_handler.template get_dof_coordinates_from_local<Type>(local_dof_1, p2);
 
                     // col 0, p1
                     J[0] = p2[0] - point_ref[0];
@@ -51,7 +51,7 @@ namespace utopia {
 
                     // we skip p2 and get p3
                     Integer local_dof_3 = fe.get_elem_local_dof(elem_index, 3);
-                    sp.template get_dof_coordinates_from_local<Type>(local_dof_3, p3);
+                    dof_handler.template get_dof_coordinates_from_local<Type>(local_dof_3, p3);
 
                     // col 1, p3
                     J[1] = p3[0] - point_ref[0];
