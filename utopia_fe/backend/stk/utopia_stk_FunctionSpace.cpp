@@ -222,6 +222,15 @@ namespace utopia {
                     return;
                 }
 
+                in.get("mesh", [this](Input &mesh_node) {
+                    std::string type;
+                    mesh_node.get("type", type);
+
+                    if (type == "cube") {
+                        dirichlet_boundary.convert_user_space_names(SideSet::Cube());
+                    }
+                });
+
                 in.get("variables", [this](Input &in) {
                     in.get_all([&](Input &in) {
                         FEVar v;

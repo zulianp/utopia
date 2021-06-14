@@ -7,6 +7,8 @@
 #include <vector>
 #include "utopia_block_var.hpp"
 
+#include "utopia_StressStrainParameters.hpp"
+
 namespace utopia {
     class LameeParameters : public Configurable {
     public:
@@ -66,41 +68,7 @@ namespace utopia {
             }
         }
 
-        class ShearModulus;
-        class PoissonRatio;
-
-        class FirstLameParameter {
-        public:
-            double value;
-
-            FirstLameParameter() : value(-1) {}
-
-            void init(const ShearModulus &mu, const PoissonRatio &ni) {
-                value = 2.0 * (mu.value * ni.value) / (1 - 2 * ni.value);
-            }
-
-            inline bool valid() const { return value > 0.; }
-        };
-
-        class ShearModulus {
-        public:
-            double value;
-
-            ShearModulus() : value(-1) {}
-
-            inline bool valid() const { return value > 0.; }
-        };
-
-        class PoissonRatio {
-        public:
-            double value;
-
-            PoissonRatio() : value(-1) {}
-
-            inline bool valid() const { return value > 0.; }
-        };
-
-        static bool read_parameters(Input &in, ShearModulus &mu, FirstLameParameter &lambda) {
+        static bool read_parameters(Input &in, ShearModulus<double> &mu, FirstLameParameter<double> &lambda) {
             in.get("mu", mu.value);
             in.get("lambda", lambda.value);
 
@@ -116,8 +84,8 @@ namespace utopia {
         }
 
         inline void read(Input &in) override {
-            ShearModulus mu;
-            FirstLameParameter lambda;
+            ShearModulus<double> mu;
+            FirstLameParameter<double> lambda;
 
             if (read_parameters(in, mu, lambda)) {
                 default_mu = mu.value;

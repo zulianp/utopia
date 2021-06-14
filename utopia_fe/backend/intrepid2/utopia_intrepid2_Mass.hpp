@@ -33,8 +33,12 @@ namespace utopia {
                 utopia::out() << "Mass\n";
                 utopia::out() << "lumped:\t" << lumped << '\n';
                 utopia::out() << "density:\t" << density << '\n';
-                utopia::out() << "expected_volume:\t" << expected_volume << '\n';
-                utopia::out() << "expected_volume_tol:\t" << expected_volume_tol << '\n';
+
+                if (expected_volume > 0) {
+                    utopia::out() << "expected_volume:\t" << expected_volume << '\n';
+                    utopia::out() << "expected_volume_tol:\t" << expected_volume_tol << '\n';
+                }
+
                 utopia::out() << "-----------------------------\n";
             }
         }

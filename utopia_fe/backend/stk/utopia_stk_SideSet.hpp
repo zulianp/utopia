@@ -26,6 +26,10 @@ namespace utopia {
                 inline static SideSet top() { return SideSet(top_id()); }
                 inline static SideSet front() { return SideSet(front_id()); }
 
+                inline static std::string name_from_id(const BoundaryIdType id) {
+                    return "surface_" + std::to_string(id);
+                }
+
                 inline static BoundaryIdType id_from_user_space_name(const std::string &str_in) {
                     if (str_in.empty()) {
                         return invalid_id();

@@ -5,6 +5,7 @@
 #include "utopia_intrepid2_FEAssembler.hpp"
 #include "utopia_intrepid2_Gradient.hpp"
 
+#include "utopia_StressStrainParameters.hpp"
 #include "utopia_Views.hpp"
 
 namespace utopia {
@@ -13,8 +14,11 @@ namespace utopia {
     public:
         using Scalar = typename Traits<FirstLameParameter>::Scalar;
         void read(Input &in) override {
-            in.get("lambda", lambda);
-            in.get("mu", mu);
+            StressStrainParameters<FirstLameParameter, ShearModulus> ssp;
+            ssp.read(in);
+
+            lambda = ssp.first_lame_parameter.get();
+            mu = ssp.shear_modulus.get();
         }
 
         NeoHookean(const FirstLameParameter &lambda = FirstLameParameter(1.0),
