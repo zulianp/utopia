@@ -3,6 +3,8 @@
 
 #include "utopia_FEModelFunction.hpp"
 
+#include "utopia_FETransferOptions.hpp"
+
 namespace utopia {
 
     /**

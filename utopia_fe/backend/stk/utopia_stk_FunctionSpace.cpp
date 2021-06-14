@@ -80,11 +80,33 @@ namespace utopia {
 
             void register_variables() {
                 auto &meta_data = mesh->meta_data();
-                auto &&part = meta_data.universal_part();
+                // auto &&part = meta_data.universal_part();
 
                 meta_data.enable_late_fields();
 
                 for (auto &v : variables) {
+                    // if (v.n_components == 1) {
+                    //     auto &field =
+                    //         meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, v.name,
+                    //         1);
+                    //     ::stk::mesh::put_field_on_mesh(field, part, 1, nullptr);
+                    // } else {
+                    //     auto &field =
+                    //         meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, v.name, 1);
+                    //     ::stk::mesh::put_field_on_mesh(field, part, v.n_components, nullptr);
+                    // }
+
+                    register_variable(v);
+                }
+            }
+
+            void register_variable(const FEVar &v) {
+                auto &meta_data = mesh->meta_data();
+                auto &&part = meta_data.universal_part();
+
+                ::stk::mesh::FieldBase *has_field = ::stk::mesh::get_field_by_name(v.name, meta_data);
+
+                if (!has_field) {
                     if (v.n_components == 1) {
                         auto &field =
                             meta_data.declare_field<::stk::mesh::Field<Scalar>>(::stk::topology::NODE_RANK, v.name, 1);
@@ -94,6 +116,8 @@ namespace utopia {
                             meta_data.declare_field<Impl::VectorField_t>(::stk::topology::NODE_RANK, v.name, 1);
                         ::stk::mesh::put_field_on_mesh(field, part, v.n_components, nullptr);
                     }
+                } else {
+                    // TODO check if definition is correct
                 }
             }
 
@@ -246,16 +270,30 @@ namespace utopia {
                     variables.push_back(v);
                 }
 
+                // int counted_vars = 0;
+
+                // for (auto &v : variables) {
+                //     counted_vars += v.n_components;
+                // }
+
+                // assert(n_var == 0 || n_var == counted_vars);
+
+                // n_var = counted_vars;
+                // dof_map->set_n_var(n_var);
+
+                count_and_set_variables();
+            }
+
+            void count_and_set_variables() { dof_map->set_n_var(count_variables()); }
+
+            int count_variables() {
                 int counted_vars = 0;
 
                 for (auto &v : variables) {
                     counted_vars += v.n_components;
                 }
 
-                assert(n_var == 0 || n_var == counted_vars);
-
-                n_var = counted_vars;
-                dof_map->set_n_var(n_var);
+                return counted_vars;
             }
         };
 
@@ -284,6 +322,14 @@ namespace utopia {
                 describe(ss);
                 comm().synched_print(ss.str());
             }
+        }
+
+        int FunctionSpace::add_variable(const FEVar &var) {
+            int num_var = impl_->variables.size();
+            impl_->variables.push_back(var);
+            impl_->register_variable(var);
+            impl_->count_and_set_variables();
+            return num_var;
         }
 
         FunctionSpace::~FunctionSpace() = default;

@@ -28,12 +28,13 @@ namespace utopia {
 
         static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make(const std::shared_ptr<FunctionSpace> &space,
                                                                         const std::string &integrator) {
+            auto fun = utopia::make_unique<FEModelFunction_t>(space);
             if (integrator == "Newmark") {
-                return utopia::make_unique<NewmarkIntegrator_t>(space);
+                return utopia::make_unique<NewmarkIntegrator_t>(std::move(fun));
             } else if (integrator == "ImplicitEuler") {
-                return utopia::make_unique<ImplicitEulerIntegrator_t>(space);
+                return utopia::make_unique<ImplicitEulerIntegrator_t>(std::move(fun));
             } else {
-                return utopia::make_unique<FEModelFunction_t>(space);
+                return fun;
             }
         }
 

@@ -1,6 +1,7 @@
 #ifndef UTOPIA_STK_FUNCTION_SPACE_HPP
 #define UTOPIA_STK_FUNCTION_SPACE_HPP
 
+#include "utopia_FEVar.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_Field.hpp"
@@ -76,6 +77,8 @@ namespace utopia {
             SizeType n_variables() const;
             const std::string &variable_name(const SizeType var_num) const;
             int variable_size(const SizeType var_num) const;
+
+            int add_variable(const FEVar &var);
 
             void nodal_field_to_local_vector(Vector &v);
             void local_vector_to_nodal_field(const Vector &v);

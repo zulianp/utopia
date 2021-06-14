@@ -6,6 +6,9 @@
 
 #include "utopia_intrepid2_Base.hpp"
 
+#include "utopia_stk_intrepid2_OmniAssembler.hpp"
+#include "utopia_stk_intrepid2_Transport.hpp"
+
 #ifdef UTOPIA_WITH_PETSC
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #endif
