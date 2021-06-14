@@ -49,6 +49,8 @@ namespace utopia {
             impl_->to = nullptr;
         }
 
+        void FETransfer::set_options(const FETransferOptions &options) { impl_->transfer.set_options(options); }
+
         bool FETransfer::empty() const { return impl_->transfer.empty(); }
 
         bool FETransfer::apply(const Vector &from, Vector &to) const { return impl_->transfer.apply(from, to); }

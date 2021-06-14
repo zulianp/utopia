@@ -10,6 +10,7 @@
 
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_FETransferOptions.hpp"
 #include "utopia_Transfer.hpp"
 
 namespace utopia {
@@ -23,6 +24,8 @@ namespace utopia {
             using Scalar = Traits<FunctionSpace>::Scalar;
             using SizeType = Traits<FunctionSpace>::SizeType;
             using Communicator = Traits<FunctionSpace>::Communicator;
+
+            void set_options(const FETransferOptions &options);
 
             void read(Input &in) override;
             void describe(std::ostream &) const override;

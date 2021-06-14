@@ -4,6 +4,8 @@
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
+#include "utopia_Instance.hpp"
+
 #include <memory>
 #include <string>
 
@@ -26,6 +28,19 @@ namespace utopia {
         }
 
         inline const std::shared_ptr<Vector> data_ptr() const { return data_; }
+
+        void zero() {
+            if (!space_) {
+                Utopia::Abort("Cannot generate zero field from nullptr space");
+            }
+
+            if (!data_) {
+                data_ = std::make_shared<Vector>();
+                space_->create_vector(*data_);
+            }
+
+            data_->set(0.0);
+        }
 
         inline Vector &data() {
             assert(data_);

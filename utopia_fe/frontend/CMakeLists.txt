@@ -4,6 +4,7 @@ list(APPEND FRONTEND_MODULES .
     integrators
     multigrid
     solve
+    fsi
 )
 
 utopiafe_add_module(utopia_fe_frontend ${CMAKE_CURRENT_SOURCE_DIR}
