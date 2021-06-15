@@ -27,42 +27,42 @@ namespace utopia {
             // Jacobian^-1 : R^d -> R^d-1
 
             // Only simplexes
-            template <class View>
-            class SimplexComputeJacobian {
-            public:
-                const View cell_nodes;
-                View jacobian;
-                const SizeType num_cells;
-                const SizeType num_qp;
-                const SizeType spatial_dim;
+            // template <class View>
+            // class SimplexComputeJacobian {
+            // public:
+            //     const View cell_nodes;
+            //     View jacobian;
+            //     const SizeType num_cells;
+            //     const SizeType num_qp;
+            //     const SizeType spatial_dim;
 
-                UTOPIA_INLINE_FUNCTION SimplexComputeJacobian(const View &cell_nodes, View &jacobian)
-                    : cell_nodes(cell_nodes),
-                      jacobian(jacobian),
-                      num_cells(cell_nodes.extent(0)),
-                      num_qp(jacobian.extent(1)),
-                      spatial_dim(cell_nodes.extent(2)) {
-                    assert(num_cells == jacobian.extent(0));
-                    assert(spatial_dim == jacobian.extent(2));
-                }
+            //     UTOPIA_INLINE_FUNCTION SimplexComputeJacobian(const View &cell_nodes, View &jacobian)
+            //         : cell_nodes(cell_nodes),
+            //           jacobian(jacobian),
+            //           num_cells(cell_nodes.extent(0)),
+            //           num_qp(jacobian.extent(1)),
+            //           spatial_dim(cell_nodes.extent(2)) {
+            //         assert(num_cells == jacobian.extent(0));
+            //         assert(spatial_dim == jacobian.extent(2));
+            //     }
 
-                UTOPIA_INLINE_FUNCTION void operator()(const SizeType cell) const {
-                    for (SizeType d = 0; d < spatial_dim; ++d) {
-                        for (SizeType n = 0; n < spatial_dim - 1; ++n) {
-                            jacobian(cell, 0, d, n) = cell_nodes(cell, n + 1, d) - cell_nodes(cell, 0, d);
-                        }
-                    }
+            //     UTOPIA_INLINE_FUNCTION void operator()(const SizeType cell) const {
+            //         for (SizeType d = 0; d < spatial_dim; ++d) {
+            //             for (SizeType n = 0; n < spatial_dim - 1; ++n) {
+            //                 jacobian(cell, 0, d, n) = cell_nodes(cell, n + 1, d) - cell_nodes(cell, 0, d);
+            //             }
+            //         }
 
-                    // FIXME, now it copies the first to the other q-points
-                    for (SizeType qp = 1; qp < num_qp; ++qp) {
-                        for (SizeType d = 0; d < spatial_dim; ++d) {
-                            for (SizeType n = 0; n < spatial_dim - 1; ++n) {
-                                jacobian(cell, qp, d, n) = jacobian(cell, 0, d, n);
-                            }
-                        }
-                    }
-                }
-            };
+            //         // FIXME, now it copies the first to the other q-points
+            //         for (SizeType qp = 1; qp < num_qp; ++qp) {
+            //             for (SizeType d = 0; d < spatial_dim; ++d) {
+            //                 for (SizeType n = 0; n < spatial_dim - 1; ++n) {
+            //                     jacobian(cell, qp, d, n) = jacobian(cell, 0, d, n);
+            //                 }
+            //             }
+            //         }
+            //     }
+            // };
 
             template <class View>
             class IsoParametricComputeJacobian {
@@ -449,51 +449,51 @@ namespace utopia {
                 return wq;
             }
 
-            static Scalar ref_measure(const SizeType manifold_dim) {
-                Scalar ret = 1.0;
+            // static Scalar ref_measure(const SizeType manifold_dim) {
+            //     Scalar ret = 1.0;
 
-                // TODO more generic if implemented as 1/(d!)
-                switch (manifold_dim) {
-                    case 1: {
-                        ret = 1.;
-                        break;
-                    }
-                    case 2: {
-                        ret = 0.5;
-                        break;
-                    }
-                    case 3: {
-                        ret = 1. / 6;
-                        break;
-                    }
-                    default: {
-                        assert(false);
-                    }
-                }
+            //     // TODO more generic if implemented as 1/(d!)
+            //     switch (manifold_dim) {
+            //         case 1: {
+            //             ret = 1.;
+            //             break;
+            //         }
+            //         case 2: {
+            //             ret = 0.5;
+            //             break;
+            //         }
+            //         case 3: {
+            //             ret = 1. / 6;
+            //             break;
+            //         }
+            //         default: {
+            //             assert(false);
+            //         }
+            //     }
 
-                return ret;
-            }
+            //     return ret;
+            // }
 
-            static Scalar ref_grad_scaling(const SizeType manifold_dim) {
-                Scalar ret = 1.0;
+            // static Scalar ref_grad_scaling(const SizeType manifold_dim) {
+            //     Scalar ret = 1.0;
 
-                // TODO more generic if implemented as 1/(d!)
-                switch (manifold_dim) {
-                    case 1: {
-                        ret = 1.;
-                        break;
-                    }
-                    case 2: {
-                        ret = 1.;
-                        break;
-                    }
-                    default: {
-                        ret = 1.0;
-                    }
-                }
+            //     // TODO more generic if implemented as 1/(d!)
+            //     switch (manifold_dim) {
+            //         case 1: {
+            //             ret = 1.;
+            //             break;
+            //         }
+            //         case 2: {
+            //             ret = 1.;
+            //             break;
+            //         }
+            //         default: {
+            //             ret = 1.0;
+            //         }
+            //     }
 
-                return ret;
-            }
+            //     return ret;
+            // }
 
             static void cell_geometry(const DynRankView &cell_nodes,
                                       const DynRankView &q_weights,

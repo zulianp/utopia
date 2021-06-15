@@ -1,6 +1,8 @@
 #ifndef UTOPIA_STRESS_STRAIN_PARAMETERS_HPP
 #define UTOPIA_STRESS_STRAIN_PARAMETERS_HPP
 
+#include "utopia_Input.hpp"
+
 namespace utopia {
 
     template <typename T>

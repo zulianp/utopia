@@ -311,13 +311,14 @@ namespace utopia {
 
             template <class ForcingFunctionDescription>
             void add_forcing_function_on_boundary(const std::string &boundary_name,
+                                                  const int quadrature_order,
                                                   const ForcingFunctionDescription &desc) {
                 auto &b = boundary[boundary_name];
                 std::shared_ptr<FE> bfe;
 
                 if (!b.fe) {
                     bfe = std::make_shared<FE>();
-                    create_fe_on_boundary(*space, *bfe, boundary_name, 2);
+                    create_fe_on_boundary(*space, *bfe, boundary_name, quadrature_order);
                     b.fe = bfe;
                     b.name = boundary_name;
                 } else {
@@ -690,11 +691,14 @@ namespace utopia {
                             name = "surface_" + std::to_string(id);
                         }
 
+                        int quadrature_order = 2;
+                        node.get("quadrature_order", quadrature_order);
+
                         if (forcing_function_type == "value") {
                             ForcingFunction<Scalar> ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
-                            impl_->add_forcing_function_on_boundary(name, ff);
+                            impl_->add_forcing_function_on_boundary(name, quadrature_order, ff);
                         }
 
                     } else {

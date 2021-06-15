@@ -23,6 +23,34 @@ namespace utopia {
 
         void FETransfer::describe(std::ostream &os) const { impl_->transfer.describe(os); }
 
+        bool FETransfer::init_from_decomposition(const std::shared_ptr<FunctionSpace> &from_and_to) {
+            impl_->from = std::make_shared<moonolith::FunctionSpace>(from_and_to->comm());
+            impl_->to = impl_->from;
+
+            extract_trace_space(*from_and_to, *impl_->from);
+
+            if (impl_->export_converted_mesh) {
+                impl_->from->mesh().write("from_and_to.vtu");
+            }
+
+            return impl_->transfer.init(impl_->from);
+        }
+
+        bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from_and_to) {
+            impl_->from = std::make_shared<moonolith::FunctionSpace>(from_and_to->comm());
+            impl_->to = impl_->from;
+
+            convert_function_space(*from_and_to, *impl_->from);
+
+            assert(from_and_to->mesh().n_local_elements() == impl_->from->mesh().n_local_elements());
+
+            if (impl_->export_converted_mesh) {
+                impl_->from->mesh().write("from_and_to.vtu");
+            }
+
+            return impl_->transfer.init(impl_->from);
+        }
+
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
             impl_->from = std::make_shared<moonolith::FunctionSpace>(from->comm());
             impl_->to = std::make_shared<moonolith::FunctionSpace>(to->comm());

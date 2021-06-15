@@ -31,6 +31,8 @@ namespace utopia {
             void describe(std::ostream &) const override;
 
             bool init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to);
+            bool init(const std::shared_ptr<FunctionSpace> &from_and_to);
+
             void clear();
             bool empty() const;
             bool apply(const Vector &from, Vector &to) const override;

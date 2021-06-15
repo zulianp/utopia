@@ -31,7 +31,7 @@ if(LIBMESH_FOUND)
 
     target_link_libraries(
         utopia_libmesh
-        PUBLIC Utopia::utopia utopia_fe_core utopia_edsl
+        PUBLIC Utopia::utopia utopia_fe_core utopia_edsl utopia_fe_frontend
                # FIXME remove utopia_interop
                utopia_interop)
 

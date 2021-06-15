@@ -22,6 +22,21 @@ namespace utopia {
             in.get("diffusion_function", [this](Input &node) {
                 node.get("function", [this](Input &function_node) { subdomain_function.read(function_node); });
             });
+
+            bool verbose = false;
+            in.get("verbose", verbose);
+
+            if (verbose) {
+                utopia::out() << "------------------------------\n";
+                utopia::out() << "LaplaceOperator:\n";
+                utopia::out() << "coeff:\t" << coeff << '\n';
+
+                if (!subdomain_function.empty) {
+                    utopia::out() << "function: SubdomainValue\n";
+                }
+
+                utopia::out() << "------------------------------\n";
+            }
         }
 
         LaplaceOperator(const DiffusionCoefficient &coeff = DiffusionCoefficient(1.0))

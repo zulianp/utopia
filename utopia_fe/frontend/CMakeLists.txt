@@ -6,6 +6,7 @@ list(APPEND FRONTEND_MODULES .
     solve
     fsi
     mech
+    domain_decomposition
 )
 
 utopiafe_add_module(utopia_fe_frontend ${CMAKE_CURRENT_SOURCE_DIR}

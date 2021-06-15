@@ -140,6 +140,23 @@ namespace utopia {
             using Scalar_t = Traits<FunctionSpace>::Scalar;
 
             static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from_and_to,
+                              FETransferData<Matrix_t> &data) {
+                auto &m_from_and_to = *from_and_to.raw_type<Dim>();
+                ::moonolith::Communicator comm = m_from_and_to.mesh().comm();
+                comm.barrier();
+
+                ::moonolith::ParL2Transfer<Scalar_t, Dim, DimFrom, DimFrom> assembler(comm);
+                bool ok = assembler.assemble(m_from_and_to, opts.tags, 1e-8);
+
+                if (ok) {
+                    FETransferPrepareData::apply(opts, assembler, data);
+                }
+
+                return ok;
+            }
+
+            static bool apply(const FETransferOptions &opts,
                               const FunctionSpace &from,
                               const FunctionSpace &to,
                               FETransferData<Matrix_t> &data) {
@@ -279,6 +296,23 @@ namespace utopia {
 
                 return true;
             }
+
+            static bool apply(const FETransferOptions &opts,
+                              const FunctionSpace &from_and_to,
+                              FETransferData<Matrix_t> &data) {
+                if (from_and_to.mesh().manifold_dimension() < Dim) {
+                    // surf to surf, avoid 0 for the moment (no point clouds)
+                    static const int ManifoldDim = ::moonolith::StaticMax<Dim - 1, 1>::value;
+
+                    assert(Dim > 1);
+                    return FETransferAux<Dim, ManifoldDim>::apply(opts, from_and_to, data);
+                } else {
+                    // vol 2 vol
+                    FETransferAux<Dim, Dim>::apply(opts, from_and_to, data);
+                }
+
+                return true;
+            }
         };
 
         class FETransfer::Impl {
@@ -305,6 +339,34 @@ namespace utopia {
         FETransfer::~FETransfer() = default;
 
         void FETransfer::read(Input &in) { impl_->opts.read(in); }
+
+        bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from_and_to) {
+            UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");
+
+            bool has_intersection = false;
+
+            switch (from_and_to->mesh().spatial_dimension()) {
+                case 1: {
+                    has_intersection = FETransferDispatch<1>::apply(impl_->opts, *from_and_to, impl_->data);
+                    break;
+                }
+                case 2: {
+                    has_intersection = FETransferDispatch<2>::apply(impl_->opts, *from_and_to, impl_->data);
+                    break;
+                }
+                case 3: {
+                    has_intersection = FETransferDispatch<3>::apply(impl_->opts, *from_and_to, impl_->data);
+                    break;
+                }
+                default: {
+                    assert(false && "Case not handled");
+                    Utopia::Abort();
+                }
+            }
+
+            UTOPIA_TRACE_REGION_END("FETransfer::init");
+            return has_intersection;
+        }
 
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
             UTOPIA_TRACE_REGION_BEGIN("FETransfer::init");

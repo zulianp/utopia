@@ -73,7 +73,7 @@ namespace utopia {
             in.get("lambda", lambda.value);
 
             if (!lambda.valid()) {
-                PoissonRatio ni;
+                PoissonRatio<double> ni;
                 in.get("poisson-ratio", ni.value);
 
                 assert(ni.valid());

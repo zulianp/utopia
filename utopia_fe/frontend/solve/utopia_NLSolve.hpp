@@ -45,6 +45,7 @@ namespace utopia {
             in.get("solver", *solver_);
             in.get("verbose", verbose_);
             in.get("use_pseudo_newton", use_pseudo_newton_);
+            in.get("export_rhs", export_rhs_);
         }
 
         inline void set_solver(const std::shared_ptr<NewtonBase_t> &solver) { solver_ = solver; }
@@ -63,10 +64,13 @@ namespace utopia {
             assert(ok);
 
             rhs *= -1;
-            // function_->space()->write("rhs.e", rhs);
 
             // apply boundary conditions to rhs
             function_->space()->apply_constraints(rhs);
+
+            if (export_rhs_) {
+                function_->space()->write("rhs.e", rhs);
+            }
 
             this->status("Solving linear problem");
             // Solve linear problem
@@ -173,6 +177,7 @@ namespace utopia {
         std::shared_ptr<NewtonBase_t> solver_;
         bool verbose_{true};
         bool use_pseudo_newton_{false};
+        bool export_rhs_{false};
 
         void init_defaults() {
             auto linear_solver = std::make_shared<OmniLinearSolver_t>();
