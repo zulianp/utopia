@@ -17,7 +17,7 @@
 namespace utopia {
 
     template <>
-    class OmniAssembler<utopia::stk::FunctionSpace> final : public FEAssembler<utopia::stk::FunctionSpace> {
+    class OmniAssembler<utopia::stk::FunctionSpace> : public FEAssembler<utopia::stk::FunctionSpace> {
     public:
         using Super = utopia::FEAssembler<utopia::stk::FunctionSpace>;
         using FunctionSpace = utopia::stk::FunctionSpace;
@@ -26,7 +26,7 @@ namespace utopia {
         using Scalar = typename Traits<FunctionSpace>::Scalar;
         using Environment = utopia::Environment<FunctionSpace>;
 
-        ~OmniAssembler();
+        virtual ~OmniAssembler();
         OmniAssembler(const std::shared_ptr<FunctionSpace> &space);
 
         void clear() override;

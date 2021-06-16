@@ -30,11 +30,13 @@ namespace utopia {
         virtual ~FunctionSpaceBase() = default;
 
         virtual void init(const std::shared_ptr<Mesh> &mesh) = 0;
-        virtual bool write(const Path &path, const Vector &x) = 0;
-
         virtual std::shared_ptr<Mesh> mesh_ptr() const = 0;
         virtual const Mesh &mesh() const = 0;
         virtual Mesh &mesh() = 0;
+        virtual int n_var() const = 0;
+
+        // Below could be made into a cross-backend interface (given that the same algebra is used)
+        virtual bool write(const Path &path, const Vector &x) = 0;
 
         virtual const Communicator &comm() const = 0;
 

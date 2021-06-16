@@ -45,7 +45,7 @@ namespace utopia {
 
             SizeType n_dofs() const override;
             SizeType n_local_dofs() const override;
-            int n_var() const;
+            int n_var() const override;
             void set_n_var(const int n_var);
 
             void create_vector(Vector &v) const override;

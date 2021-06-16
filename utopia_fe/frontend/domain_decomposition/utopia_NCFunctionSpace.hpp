@@ -1,6 +1,8 @@
 #ifndef UTOPIA_NC_FUNCTION_SPACE_HPP
 #define UTOPIA_NC_FUNCTION_SPACE_HPP
 
+#include "utopia_fe_base.hpp"
+
 #include "utopia_IPTransfer.hpp"
 #include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
@@ -34,7 +36,7 @@ namespace utopia {
         using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
         using Mesh = typename Traits<FunctionSpace>::Mesh;
 
-        std::shared_ptr<FunctionSpace> space() const { return space_; }
+        std::shared_ptr<FunctionSpace> unconstrained_space() const { return space_; }
 
         NCFunctionSpace(const std::shared_ptr<FunctionSpace> &space) : space_(space) {}
         NCFunctionSpace(const Communicator &comm) : space_(std::make_shared<FunctionSpace>(comm)) {}
@@ -59,6 +61,8 @@ namespace utopia {
                 }
 
                 auto temp = transfer.template build_transfer<IPTransfer>();
+
+                space_->apply_constraints(*temp->I_ptr(), 0.0);
 
                 Vector is_constrained = sum(temp->I(), 1);
                 constrained_indices_.reserve(is_constrained.local_size());
@@ -111,40 +115,78 @@ namespace utopia {
             }
         }
 
-        void init(const std::shared_ptr<Mesh> &mesh) override { space()->init(mesh); }
-        bool write(const Path &path, const Vector &x) override { return space()->write(path, x); }
+        void init(const std::shared_ptr<Mesh> &mesh) override { unconstrained_space()->init(mesh); }
+        bool write(const Path &path, const Vector &x) override { return unconstrained_space()->write(path, x); }
 
-        std::shared_ptr<Mesh> mesh_ptr() const override { return space()->mesh_ptr(); }
-        const Mesh &mesh() const override { return space()->mesh(); }
-        Mesh &mesh() override { return space()->mesh(); }
+        std::shared_ptr<Mesh> mesh_ptr() const override { return unconstrained_space()->mesh_ptr(); }
+        const Mesh &mesh() const override { return unconstrained_space()->mesh(); }
+        Mesh &mesh() override { return unconstrained_space()->mesh(); }
 
-        const Communicator &comm() const override { return space()->comm(); }
+        const Communicator &comm() const override { return unconstrained_space()->comm(); }
 
-        SizeType n_dofs() const override { return space()->n_dofs(); }
-        SizeType n_local_dofs() const override { return space()->n_local_dofs(); }
+        SizeType n_dofs() const override { return unconstrained_space()->n_dofs(); }
+        SizeType n_local_dofs() const override { return unconstrained_space()->n_local_dofs(); }
 
-        void create_vector(Vector &v) const override { space()->create_vector(v); }
-        void create_matrix(Matrix &m) const override { space()->create_matrix(m); }
+        void create_vector(Vector &v) const override { unconstrained_space()->create_vector(v); }
+        void create_matrix(Matrix &m) const override { unconstrained_space()->create_matrix(m); }
 
         void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const override {
-            space()->apply_constraints(m, diag_value);
+            if (projector_) {
+                Matrix m_temp;
+                projector_->restrict(m, m_temp);
+                m += m_temp;
+
+                set_zero_rows(m, constrained_indices_, diag_value);
+            }
+
+            unconstrained_space()->apply_constraints(m, diag_value);
         }
-        void apply_constraints(Vector &v) const override { space()->apply_constraints(v); }
-        void apply_constraints(Matrix &m, Vector &v) const override { space()->apply_constraints(m, v); }
-        void apply_zero_constraints(Vector &vec) const override { space()->apply_zero_constraints(vec); }
+
+        void apply_constraints(Vector &v) const override {
+            if (projector_) {
+                Vector v_temp;
+                projector_->restrict(v, v_temp);
+                v += v_temp;
+
+                set(v, constrained_indices_, 0.);
+            }
+
+            unconstrained_space()->apply_constraints(v);
+        }
+
+        void apply_constraints(Matrix &m, Vector &v) const override {
+            if (projector_) {
+                Matrix m_temp;
+                projector_->restrict(m, m_temp);
+                m += m_temp;
+
+                Vector v_temp;
+                projector_->restrict(v, v_temp);
+                v += v_temp;
+
+                set_zero_rows(m, constrained_indices_, 1.0);
+                set(v, constrained_indices_, 0.);
+            }
+
+            unconstrained_space()->apply_constraints(m, v);
+        }
+
+        void apply_zero_constraints(Vector &vec) const override { unconstrained_space()->apply_zero_constraints(vec); }
 
         void add_dirichlet_boundary_condition(const std::string &name,
                                               const Scalar &value,
                                               const int component = 0) override {
-            space()->add_dirichlet_boundary_condition(name, value, component);
+            unconstrained_space()->add_dirichlet_boundary_condition(name, value, component);
         }
 
-        bool empty() const override { return space()->empty(); }
+        bool empty() const override { return unconstrained_space()->empty(); }
 
-        void displace(const Vector &displacement) override { space()->displace(displacement); }
+        void displace(const Vector &displacement) override { unconstrained_space()->displace(displacement); }
 
-        const std::string &name() const override { return space()->name(); }
-        void initialize() override { space()->initialize(); }
+        const std::string &name() const override { return unconstrained_space()->name(); }
+        void initialize() override { unconstrained_space()->initialize(); }
+
+        int n_var() const override { return unconstrained_space()->n_var(); }
 
     private:
         std::shared_ptr<FunctionSpace> space_;
