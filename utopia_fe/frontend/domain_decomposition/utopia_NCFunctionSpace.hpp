@@ -6,6 +6,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Transfer.hpp"
 
+#include "utopia_FunctionSpaceBase.hpp"
 #include "utopia_fe_Core.hpp"
 
 #ifdef UTOPIA_WITH_MOONOLITH
@@ -13,24 +14,30 @@
 #endif  // UTOPIA_WITH_MOONOLITH
 
 #include <memory>
+#include <string>
 
 namespace utopia {
 
     template <class FunctionSpace>
-    class NCFunctionSpace : public Configurable {
+    class Traits<NCFunctionSpace<FunctionSpace>> : public Traits<FunctionSpace> {};
+
+    template <class FunctionSpace>
+    class NCFunctionSpace : public FunctionSpaceBase<typename Traits<FunctionSpace>::Mesh> {
     public:
-        using Communicator_t = typename Traits<FunctionSpace>::Communicator;
-        using Matrix_t = typename Traits<FunctionSpace>::Matrix;
-        using Vector_t = typename Traits<FunctionSpace>::Vector;
-        using Scalar_t = typename Traits<FunctionSpace>::Scalar;
-        using Size_t = typename Traits<FunctionSpace>::SizeType;
-        using Transfer_t = utopia::Transfer<Matrix_t, Vector_t>;
-        using IPTransfer_t = utopia::IPTransfer<Matrix_t, Vector_t>;
+        using Communicator = typename Traits<FunctionSpace>::Communicator;
+        using Matrix = typename Traits<FunctionSpace>::Matrix;
+        using Vector = typename Traits<FunctionSpace>::Vector;
+        using Scalar = typename Traits<FunctionSpace>::Scalar;
+        using IndexArray = typename Traits<FunctionSpace>::IndexArray;
+        using SizeType = typename Traits<FunctionSpace>::SizeType;
+        using Transfer = utopia::Transfer<Matrix, Vector>;
+        using IPTransfer = utopia::IPTransfer<Matrix, Vector>;
+        using Mesh = typename Traits<FunctionSpace>::Mesh;
 
         std::shared_ptr<FunctionSpace> space() const { return space_; }
 
         NCFunctionSpace(const std::shared_ptr<FunctionSpace> &space) : space_(space) {}
-        NCFunctionSpace(const Communicator_t &comm) : space_(std::make_shared<FunctionSpace>(comm)) {}
+        NCFunctionSpace(const Communicator &comm) : space_(std::make_shared<FunctionSpace>(comm)) {}
 
         void read(Input &in) override {
             if (!space_) {
@@ -48,57 +55,102 @@ namespace utopia {
                 FETransfer<FunctionSpace> transfer;
                 in.get("mortar", transfer);
                 if (!transfer.init_from_decomposition(space_)) {
-                    Utopia::Abort("NCFunctionSpace: failed to initialize mortar");
+                    Utopia::Abort("NCFunctionSpace: failed to initialize mortar operator!");
                 }
 
-                projector_ = transfer.template build_transfer<IPTransfer_t>();
+                auto temp = transfer.template build_transfer<IPTransfer>();
+
+                Vector is_constrained = sum(temp->I(), 1);
+                constrained_indices_.reserve(is_constrained.local_size());
+                is_constrained.read([this](const SizeType &i, const Scalar &v) {
+                    if (v > 0.99) {
+                        constrained_indices_.push_back(i);
+                    }
+                });
+
+                projector_ = temp;
             }
 #endif  // UTOPIA_WITH_MOONOLITH
         }
 
-        void restrict(const Matrix_t &in, Matrix_t &out) const {
+        void restrict(const Matrix &in, Matrix &out) const {
+            if (projector_) {
+                Matrix temp;
+                projector_->restrict(in, temp);
+                out += temp;
+            }
+        }
+
+        void restrict(const Vector &in, Vector &out) const {
             if (projector_) {
                 projector_->restrict(in, out);
             }
         }
 
-        void restrict(const Vector_t &in, Vector_t &out) const {
-            if (projector_) {
-                projector_->restrict(in, out);
-            }
-        }
-
-        // void interpolate(const Matrix_t &in, Matrix_t &out) const {
+        // void interpolate(const Matrix &in, Matrix &out) const {
         //     out = in;
         //     if (projector_) {
-        //         Vector_t temp;
+        //         Vector temp;
         //         projector_->apply(in, temp);
         //         out += temp;
         //     }
         // }
 
-        void interpolate(const Vector_t &in, Vector_t &out) const {
+        void interpolate(const Vector &in, Vector &out) const {
             out = in;
             if (projector_) {
-                Vector_t temp;
+                Vector temp;
                 projector_->interpolate(in, temp);
                 out += temp;
             }
         }
 
-        void project(const Vector_t &in, Vector_t &out) const {
+        void project(const Vector &in, Vector &out) const {
             if (projector_) {
                 projector_->interpolate(in, out);
             }
         }
 
+        void init(const std::shared_ptr<Mesh> &mesh) override { space()->init(mesh); }
+        bool write(const Path &path, const Vector &x) override { return space()->write(path, x); }
+
+        std::shared_ptr<Mesh> mesh_ptr() const override { return space()->mesh_ptr(); }
+        const Mesh &mesh() const override { return space()->mesh(); }
+        Mesh &mesh() override { return space()->mesh(); }
+
+        const Communicator &comm() const override { return space()->comm(); }
+
+        SizeType n_dofs() const override { return space()->n_dofs(); }
+        SizeType n_local_dofs() const override { return space()->n_local_dofs(); }
+
+        void create_vector(Vector &v) const override { space()->create_vector(v); }
+        void create_matrix(Matrix &m) const override { space()->create_matrix(m); }
+
+        void apply_constraints(Matrix &m, const Scalar diag_value = 1.0) const override {
+            space()->apply_constraints(m, diag_value);
+        }
+        void apply_constraints(Vector &v) const override { space()->apply_constraints(v); }
+        void apply_constraints(Matrix &m, Vector &v) const override { space()->apply_constraints(m, v); }
+        void apply_zero_constraints(Vector &vec) const override { space()->apply_zero_constraints(vec); }
+
+        void add_dirichlet_boundary_condition(const std::string &name,
+                                              const Scalar &value,
+                                              const int component = 0) override {
+            space()->add_dirichlet_boundary_condition(name, value, component);
+        }
+
+        bool empty() const override { return space()->empty(); }
+
+        void displace(const Vector &displacement) override { space()->displace(displacement); }
+
+        const std::string &name() const override { return space()->name(); }
+        void initialize() override { space()->initialize(); }
+
     private:
         std::shared_ptr<FunctionSpace> space_;
-        std::shared_ptr<Transfer_t> projector_;
+        std::shared_ptr<Transfer> projector_;
+        IndexArray constrained_indices_;
     };
-
-    template <class FunctionSpace>
-    class Traits<NCFunctionSpace<FunctionSpace>> : public Traits<FunctionSpace> {};
 
 }  // namespace utopia
 

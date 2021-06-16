@@ -526,7 +526,7 @@ namespace utopia {
             }
         }
 
-        void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) {
+        void FunctionSpace::apply_constraints(Matrix &m, const Scalar diag_value) const {
             using Bucket_t = ::stk::mesh::Bucket;
 
             auto &meta_data = mesh().meta_data();
@@ -593,7 +593,7 @@ namespace utopia {
             set_zero_rows(m, constrains, diag_value);
         }
 
-        void FunctionSpace::apply_constraints(Vector &v) {
+        void FunctionSpace::apply_constraints(Vector &v) const {
             using Bucket_t = ::stk::mesh::Bucket;
 
             auto &meta_data = mesh().meta_data();
@@ -715,7 +715,7 @@ namespace utopia {
             }
         }
 
-        void FunctionSpace::apply_constraints(Matrix &m, Vector &v) {
+        void FunctionSpace::apply_constraints(Matrix &m, Vector &v) const {
             apply_constraints(m);
             apply_constraints(v);
         }

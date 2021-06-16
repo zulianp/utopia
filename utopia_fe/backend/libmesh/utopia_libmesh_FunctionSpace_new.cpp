@@ -231,6 +231,10 @@ namespace utopia {
         }
 
         FunctionSpace::FunctionSpace(const std::shared_ptr<Mesh> &mesh) : impl_(utopia::make_unique<Impl>()) {
+            init(mesh);
+        }
+
+        void FunctionSpace::init(const std::shared_ptr<Mesh> &mesh) {
             impl_->mesh = mesh;
             impl_->systems = std::make_shared<libMesh::EquationSystems>(mesh->raw_type());
         }

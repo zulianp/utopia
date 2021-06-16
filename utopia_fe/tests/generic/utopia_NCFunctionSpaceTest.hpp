@@ -25,12 +25,12 @@ namespace utopia {
             ncspace.import("../data/testing/decomposition.yaml");
 
             Vector v, vi;
-            ncspace.space()->create_vector(v);
+            ncspace.create_vector(v);
             v.set(1.);
 
             ncspace.project(v, vi);
 
-            ncspace.space()->write("interp.e", vi);
+            ncspace.write("interp.e", vi);
         }
 #endif
 
