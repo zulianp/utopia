@@ -390,8 +390,9 @@ namespace utopia {
 
                     if (local_to_global.empty()) {
                         for (Size_t i = 0; i < n_nodes; ++i) {
-                            dof_object.dofs[i] =
-                                utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i])) * n_var;
+                            // dof_object.dofs[i] =
+                            //     utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node_ids[i])) * n_var;
+                            dof_object.dofs[i] = utopia::stk::convert_entity_to_index(node_ids[i]) * n_var;
                         }
                     } else {
                         for (Size_t i = 0; i < n_nodes; ++i) {
