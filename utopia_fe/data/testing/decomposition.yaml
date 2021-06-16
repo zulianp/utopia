@@ -1,0 +1,9 @@
+type: mortar
+mortar:
+  verbose: true
+  coupling:
+    - from: 11
+      to: 22
+mesh:
+  type: file
+  path: ../data/testing/decomposition.e
