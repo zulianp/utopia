@@ -28,6 +28,7 @@ namespace utopia {
             void read(Input &in) override;
             void describe(std::ostream &) const override;
 
+            bool init_from_decomposition(const std::shared_ptr<FunctionSpace> &from_and_to);
             bool init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to);
             void clear();
             bool empty() const;

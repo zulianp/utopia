@@ -305,10 +305,10 @@ namespace utopia {
                     static const int ManifoldDim = ::moonolith::StaticMax<Dim - 1, 1>::value;
 
                     assert(Dim > 1);
-                    return FETransferAux<Dim, ManifoldDim>::apply(opts, from_and_to, data);
+                    return FETransferAux<Dim, ManifoldDim, ManifoldDim>::apply(opts, from_and_to, data);
                 } else {
                     // vol 2 vol
-                    FETransferAux<Dim, Dim>::apply(opts, from_and_to, data);
+                    FETransferAux<Dim, Dim, Dim>::apply(opts, from_and_to, data);
                 }
 
                 return true;

@@ -28,7 +28,7 @@ namespace utopia {
             ncspace.space()->create_vector(v);
             v.set(1.);
 
-            ncspace.interpolate(v, vi);
+            ncspace.project(v, vi);
 
             ncspace.space()->write("interp.e", vi);
         }

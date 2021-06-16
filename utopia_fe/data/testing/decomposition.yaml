@@ -1,6 +1,7 @@
 type: mortar
 mortar:
   verbose: true
+  export_converted_mesh: true
   coupling:
     - from: 11
       to: 22

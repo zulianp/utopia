@@ -46,11 +46,7 @@ namespace utopia {
 #ifdef UTOPIA_WITH_MOONOLITH
             if (type == "mortar") {
                 FETransfer<FunctionSpace> transfer;
-                FETransferOptions opts;
-
-                in.get("mortar", opts);
-                transfer.set_options(opts);
-
+                in.get("mortar", transfer);
                 if (!transfer.init_from_decomposition(space_)) {
                     Utopia::Abort("NCFunctionSpace: failed to initialize mortar");
                 }
@@ -87,6 +83,12 @@ namespace utopia {
                 Vector_t temp;
                 projector_->interpolate(in, temp);
                 out += temp;
+            }
+        }
+
+        void project(const Vector_t &in, Vector_t &out) const {
+            if (projector_) {
+                projector_->interpolate(in, out);
             }
         }
 
