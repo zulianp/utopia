@@ -5,6 +5,7 @@
 
 #include "utopia_IPTransfer.hpp"
 #include "utopia_Input.hpp"
+#include "utopia_Temp.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_Transfer.hpp"
 
@@ -116,7 +117,15 @@ namespace utopia {
         }
 
         void init(const std::shared_ptr<Mesh> &mesh) override { unconstrained_space()->init(mesh); }
-        bool write(const Path &path, const Vector &x) override { return unconstrained_space()->write(path, x); }
+        bool write(const Path &path, const Vector &x) override {
+            if (projector_) {
+                Vector out;
+                projector_->interpolate(x, out);
+                out += x;
+                unconstrained_space()->write(path, out);
+            } else
+                return unconstrained_space()->write(path, x);
+        }
 
         std::shared_ptr<Mesh> mesh_ptr() const override { return unconstrained_space()->mesh_ptr(); }
         const Mesh &mesh() const override { return unconstrained_space()->mesh(); }
@@ -136,7 +145,7 @@ namespace utopia {
                 projector_->restrict(m, m_temp);
                 m += m_temp;
 
-                set_zero_rows(m, constrained_indices_, diag_value);
+                utopia::set_zero_rows(m, constrained_indices_, diag_value);
             }
 
             unconstrained_space()->apply_constraints(m, diag_value);
@@ -148,7 +157,7 @@ namespace utopia {
                 projector_->restrict(v, v_temp);
                 v += v_temp;
 
-                set(v, constrained_indices_, 0.);
+                utopia::set(v, constrained_indices_, 0.);
             }
 
             unconstrained_space()->apply_constraints(v);
