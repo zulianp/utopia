@@ -57,10 +57,9 @@ def read_stock_data(filepath):
 
 
 def sequence_data(stock, lookback):
-    data_raw = stock # convert to numpy array
+    data_raw = stock 
     data = []
     
-    # create all possible sequences of length seq_len
     for index in range(len(data_raw) - lookback): 
         data.append(data_raw[index: index + lookback])
     
@@ -111,7 +110,7 @@ def command_line_args(args):
     return [str(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7])]  
 
 
-def summary(model, y_train, y_test, y_train_pred, close_min, close_max, name):
+def finalize_evaluation(model, y_train, y_test, y_train_pred, close_min, close_max, name):
     y_test_pred = model_lstm(x_test)
 
     y_train_pred = denormalize_data(y_train_pred.detach().numpy(), close_min, close_max)
@@ -122,12 +121,8 @@ def summary(model, y_train, y_test, y_train_pred, close_min, close_max, name):
 
     train_score = evaluate_predictions(y_train[:,0], y_train_pred[:,0]) 
     test_score = evaluate_predictions(y_test[:,0], y_test_pred[:,0])
-    # print("---------------------------------------------------------------------------------------------------")
-    print(name, 'train Score: %.2f' % (train_score), "and ", name, 'test Score: %.2f' % (test_score))
-    # test_score = evaluate_predictions(y_test[:,0], y_test_pred[:,0])
-    # print(name, 'test Score: %.2f' % (test_score))
-
-
+    return  train_score, test_score
+ 
 
 def train(model, criterion, y_train_lstm, x_train, lr, tol, name):
     start_time = time.time()
@@ -141,17 +136,12 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol, name):
         y_train_pred = model(x_train)
         loss = criterion(y_train_pred, y_train_lstm)
 
-        if loss < tol:
-            print(name, ": tolerance reached in", j, "iterations.")
-            training_time = time.time()-start_time
-            print("Training time: {}".format(training_time))   
-            return hist, y_train_pred
         
-        if j > 2 and hist[j-1] == hist[j]:
-            print(name, ": convergence reached in", j, "iterations.")
+        if j > 2 and hist[j-1] == hist[j] or loss < tol:
             training_time = time.time()-start_time
-            print("Training time: {}".format(training_time))   
-            return hist, y_train_pred
+            training_time = int(training_time)
+
+            return hist, y_train_pred, j, training_time
 
 
         #print("Epoch ", j, "MSE: ", loss.item())
@@ -199,18 +189,9 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol, name):
 ########################## Body ########################## 
 ut.init()
 
-
-# please call the file with: 
-# python3 univar_lstm_gru_to_script.py ./ibm.csv 1 32 2 1 0.01 0.1
-
 args = sys.argv
 filepath, input_dim, hidden_dim, num_layers, output_dim, lr, tol = command_line_args(args)
 stock_name = filepath[2:-4]
-print("---------------------------------------------------------------------------------------------------")
-print("CHOSEN  PARAMETRS")
-print("Stock prices: ",stock_name, " | input dimension: ", input_dim, " | hidden dimension: ", hidden_dim, " | number of layers: ", num_layers)
-print("learning rate: ", lr, " | tolerance: ", tol)
-# print("---------------------------------------------------------------------------------------------------")
 
 open, high, low, close, volume = read_stock_data(filepath)
 close_max, close_min, close = normalize_data(close.reshape(-1,1))
@@ -222,15 +203,34 @@ model_lstm = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
 model_gru = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
 criterion = torch.nn.MSELoss(reduction='mean')
 
-#print("On", filepath, "training with obtaiin")
-# print("Training LSTM")
-hist_lstm, y_train_pred_lstm = train(model_lstm, criterion, y_train, x_train, lr, tol, "LSTM")
-# print("Training GRU")
-hist_gru, y_train_pred_gru = train(model_gru, criterion, y_train, x_train, lr, tol, "GRU")
+hist_lstm, y_train_pred_lstm, num_iterations_lstm, training_time_lstm = train(model_lstm, criterion, y_train, x_train, lr, tol, "LSTM")
+hist_gru, y_train_pred_gru, num_iterations_gru, training_time_gru = train(model_gru, criterion, y_train, x_train, lr, tol, "GRU")
 
-summary(model_lstm, y_train, y_test, y_train_pred_lstm, close_min, close_max, "LSTM")
-summary(model_lstm, y_train, y_test, y_train_pred_gru, close_min, close_max, "GRU")
+train_score_lstm, test_score_lstm = finalize_evaluation(model_lstm, y_train, y_test, y_train_pred_lstm, close_min, close_max, "LSTM")
+train_score_gru, test_score_gru = finalize_evaluation(model_lstm, y_train, y_test, y_train_pred_gru, close_min, close_max, "GRU")
+
 print("---------------------------------------------------------------------------------------------------")
+print("CHOSEN  PARAMETRS")
+print("Stock prices: ",stock_name, " | input dimension: ", input_dim, " | hidden dimension: ", hidden_dim, " | number of layers: ", num_layers)
+print("learning rate: ", lr, " | tolerance: ", tol)
+print("---------------------------------------------------------------------------------------------------")
+print("Training time for LSTM: ", training_time_lstm, "s in", num_iterations_lstm, "iterations")
+print("Train score for LSTM: ", train_score_lstm, ". Test score: ", test_score_lstm)
+print("---------------------------------------------------------------------------------------------------")
+print("Training time for GRU: ", training_time_gru, "s in", num_iterations_gru, "iterations")
+print("Train score for GRU: ", train_score_gru, ". Test score: ", test_score_gru)
+print("---------------------------------------------------------------------------------------------------")
+
+
+
+# with open('out.txt', 'a') as f:
+#     print("---------------------------------------------------------------------------------------------------", file=f)
+#     print("CHOSEN  PARAMETRS", file=f)
+#     print("Stock prices: ",stock_name, " | input dimension: ", input_dim, " | hidden dimension: ", hidden_dim, " | number of layers: ", num_layers, file=f)
+#     # print("learning rate: ", lr, " | tolerance: ", tol, file=f)
+#     # print("Training time for LSTM: ", training_time_lstm, "s in", num_iterations_lstm, "iterations",  file=f)
+#     # print("Train score for LSTM: ", train_score_lstm, ". Test score: ", test_score_lstm, file=f)
+#     print("---------------------------------------------------------------------------------------------------", file=f)
 
 ut.finalize()
 
