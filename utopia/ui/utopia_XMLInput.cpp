@@ -310,4 +310,7 @@ namespace utopia {
 
         array_finish();
     }
+
+    bool XMLInput::is_collection() const { return size() > 1; }
+
 }  // namespace utopia

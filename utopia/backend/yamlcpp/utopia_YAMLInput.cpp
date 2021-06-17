@@ -126,4 +126,10 @@ namespace utopia {
 
     bool YAMLInput::good() const { return static_cast<bool>(impl_->root()); }
 
+    bool YAMLInput::is_collection() const {
+        auto &node = impl_->root();
+
+        return (node.Type() == YAML::NodeType::Sequence);
+    }
+
 }  // namespace utopia

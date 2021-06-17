@@ -102,11 +102,19 @@ namespace utopia {
         // }
 
         void interpolate(const Vector &in, Vector &out) const {
-            out = in;
             if (projector_) {
-                Vector temp;
-                projector_->interpolate(in, temp);
-                out += temp;
+                if (in.is_alias(out)) {
+                    Vector temp;
+                    projector_->interpolate(in, temp);
+                    out += temp;
+                } else {
+                    projector_->interpolate(in, out);
+                    out += in;
+                }
+            } else {
+                if (!in.is_alias(out)) {
+                    out = in;
+                }
             }
         }
 
@@ -120,9 +128,8 @@ namespace utopia {
         bool write(const Path &path, const Vector &x) override {
             if (projector_) {
                 Vector out;
-                projector_->interpolate(x, out);
-                out += x;
-                unconstrained_space()->write(path, out);
+                interpolate(x, out);
+                return unconstrained_space()->write(path, out);
             } else
                 return unconstrained_space()->write(path, x);
         }

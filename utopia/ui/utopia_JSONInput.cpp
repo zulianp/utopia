@@ -330,6 +330,8 @@ namespace utopia {
         // }
     }
 
+    bool JSONInput::is_collection() const { return (impl_) && impl_->json().is_array(); }
+
     bool JSONInput::good() const { return (impl_) && impl_->good(); }
 
 }  // namespace utopia
