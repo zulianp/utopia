@@ -121,9 +121,11 @@ def summary(model, y_train, y_test, y_train_pred, close_min, close_max, name):
 
 
     train_score = evaluate_predictions(y_train[:,0], y_train_pred[:,0]) 
-    print(name, 'train Score: %.2f' % (train_score))
     test_score = evaluate_predictions(y_test[:,0], y_test_pred[:,0])
-    print(name, 'test Score: %.2f' % (test_score))
+    # print("---------------------------------------------------------------------------------------------------")
+    print(name, 'train Score: %.2f' % (train_score), "and ", name, 'test Score: %.2f' % (test_score))
+    # test_score = evaluate_predictions(y_test[:,0], y_test_pred[:,0])
+    # print(name, 'test Score: %.2f' % (test_score))
 
 
 
@@ -140,15 +142,19 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol, name):
         loss = criterion(y_train_pred, y_train_lstm)
 
         if loss < tol:
-            print(name, ": tolerance reached in", j, "iterations.") 
+            print(name, ": tolerance reached in", j, "iterations.")
+            training_time = time.time()-start_time
+            print("Training time: {}".format(training_time))   
             return hist, y_train_pred
         
         if j > 2 and hist[j-1] == hist[j]:
-            print(name, ": convergence reached in", j, "iterations.") 
+            print(name, ": convergence reached in", j, "iterations.")
+            training_time = time.time()-start_time
+            print("Training time: {}".format(training_time))   
             return hist, y_train_pred
 
 
-        print("Epoch ", j, "MSE: ", loss.item())
+        #print("Epoch ", j, "MSE: ", loss.item())
         hist[j] = loss.item()
 
         loss.backward()
@@ -186,19 +192,25 @@ def train(model, criterion, y_train_lstm, x_train, lr, tol, name):
         for param in model.parameters():
             param.requires_grad = True
         
-    training_time = time.time()-start_time
-    print("Training time: {}".format(training_time))   
+     
     return hist, y_train_pred    
 
 
 ########################## Body ########################## 
 ut.init()
 
+
 # please call the file with: 
 # python3 univar_lstm_gru_to_script.py ./ibm.csv 1 32 2 1 0.01 0.1
 
 args = sys.argv
 filepath, input_dim, hidden_dim, num_layers, output_dim, lr, tol = command_line_args(args)
+stock_name = filepath[2:-4]
+print("---------------------------------------------------------------------------------------------------")
+print("CHOSEN  PARAMETRS")
+print("Stock prices: ",stock_name, " | input dimension: ", input_dim, " | hidden dimension: ", hidden_dim, " | number of layers: ", num_layers)
+print("learning rate: ", lr, " | tolerance: ", tol)
+# print("---------------------------------------------------------------------------------------------------")
 
 open, high, low, close, volume = read_stock_data(filepath)
 close_max, close_min, close = normalize_data(close.reshape(-1,1))
@@ -210,13 +222,15 @@ model_lstm = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
 model_gru = create_LSTM(input_dim, hidden_dim,  output_dim, num_layers)
 criterion = torch.nn.MSELoss(reduction='mean')
 
-print("Training LSTM")
+#print("On", filepath, "training with obtaiin")
+# print("Training LSTM")
 hist_lstm, y_train_pred_lstm = train(model_lstm, criterion, y_train, x_train, lr, tol, "LSTM")
-print("Training GRU")
+# print("Training GRU")
 hist_gru, y_train_pred_gru = train(model_gru, criterion, y_train, x_train, lr, tol, "GRU")
 
 summary(model_lstm, y_train, y_test, y_train_pred_lstm, close_min, close_max, "LSTM")
 summary(model_lstm, y_train, y_test, y_train_pred_gru, close_min, close_max, "GRU")
+print("---------------------------------------------------------------------------------------------------")
 
 ut.finalize()
 
