@@ -2,6 +2,7 @@
 #define UTOPIA_FE_MODEL_FUNCTION_HPP
 
 #include "utopia_Input.hpp"
+#include "utopia_InputParameters.hpp"
 #include "utopia_ui.hpp"
 
 #include "utopia_Field.hpp"

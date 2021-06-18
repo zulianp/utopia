@@ -37,7 +37,7 @@ namespace utopia {
                     return w.write(path.to_string(), x_kokkos);
                 };
 #else
-                write = (const Path &, const Vector &)->bool { return false; };
+                write = [](const Path &, const Vector &) -> bool { return false; };
 #endif  // UTOPIA_WITH_VTK
             }
 
