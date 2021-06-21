@@ -24,6 +24,7 @@ namespace utopia {
         void read(Input &in) override {
             Super::read(in);
             in.get("overlap", overlap_);
+            in.get("dumping", dumping_);
         }
 
         bool apply(const Vector &b, Vector &x) override {
@@ -71,6 +72,7 @@ namespace utopia {
 
                 c = transpose(*row_permutation_) * overlapping_c;
                 c = e_mul(c, *weights_);
+                c *= dumping_;
 
                 x += c;
                 r = *this->get_operator() * x;
@@ -232,6 +234,7 @@ namespace utopia {
         std::shared_ptr<Vector> weights_;
         std::shared_ptr<Matrix> overlapping_matrix_;
         int overlap_{1};
+        Scalar dumping_{2. / 3.};
     };
 }  // namespace utopia
 

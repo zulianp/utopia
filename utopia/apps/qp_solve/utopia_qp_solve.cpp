@@ -10,6 +10,7 @@
 
 #include "utopia_MonotoneMultigrid.hpp"
 #include "utopia_MultigridQR.hpp"
+#include "utopia_polymorphic_QPSolver.hpp"
 
 // std
 #include <cmath>
@@ -223,9 +224,12 @@ namespace utopia {
 
             problem.create_linear_system(QtAQ, Qtrhs, Qtx);
 
-            auto fine_smoother = std::make_shared<ProjectedGaussSeidel<Matrix, Vector>>();
+            auto fine_smoother = std::make_shared<OmniQPSolver<Matrix, Vector>>();
+            fine_smoother->set("any", "pgs");
+            in.get("qp_smoother", *fine_smoother);
 
-            auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            // auto coarse_smoother = std::make_shared<GaussSeidel<Matrix, Vector>>();
+            auto coarse_smoother = fine_smoother;
             auto direct_solver = std::make_shared<Factorization<Matrix, Vector>>("mumps", "lu");
             MonotoneMultigrid<Matrix, Vector> multigrid(fine_smoother, coarse_smoother, direct_solver);
 

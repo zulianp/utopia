@@ -30,6 +30,14 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &sol) override;
         void read(Input &in) override;
 
+        void set(const std::string &backend, const std::string &type);
+
+        void atol(const Scalar &atol_in) override;
+        void rtol(const Scalar &rtol_in) override;
+        void stol(const Scalar &stol_in) override;
+        void max_it(const SizeType &max_it_in) override;
+        void verbose(const bool &verbose_in) override;
+
         static QPSolverRegistry &registry();
 
     private:

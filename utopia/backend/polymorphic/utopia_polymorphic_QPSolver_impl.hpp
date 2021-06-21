@@ -131,6 +131,11 @@ namespace utopia {
     };
 
     template <class Matrix, class Vector>
+    void OmniQPSolver<Matrix, Vector>::set(const std::string &backend, const std::string &type) {
+        impl_ = QPSolverRegistry::instance().find(backend, type);
+    }
+
+    template <class Matrix, class Vector>
     void OmniQPSolver<Matrix, Vector>::read(Input &in) {
         Super::read(in);
 
@@ -142,6 +147,46 @@ namespace utopia {
 
         impl_ = QPSolverRegistry::instance().find(backend, type);
         impl_->read(in);
+    }
+
+    template <class Matrix, class Vector>
+    void OmniQPSolver<Matrix, Vector>::atol(const Scalar &atol_in) {
+        Super::atol(atol_in);
+        if (impl_) {
+            impl_->atol(atol_in);
+        }
+    }
+
+    template <class Matrix, class Vector>
+    void OmniQPSolver<Matrix, Vector>::rtol(const Scalar &rtol_in) {
+        Super::rtol(rtol_in);
+        if (impl_) {
+            impl_->rtol(rtol_in);
+        }
+    }
+
+    template <class Matrix, class Vector>
+    void OmniQPSolver<Matrix, Vector>::stol(const Scalar &stol_in) {
+        Super::stol(stol_in);
+        if (impl_) {
+            impl_->stol(stol_in);
+        }
+    }
+
+    template <class Matrix, class Vector>
+    void OmniQPSolver<Matrix, Vector>::max_it(const SizeType &max_it_in) {
+        Super::max_it(max_it_in);
+        if (impl_) {
+            impl_->max_it(max_it_in);
+        }
+    }
+
+    template <class Matrix, class Vector>
+    void OmniQPSolver<Matrix, Vector>::verbose(const bool &verbose_in) {
+        Super::verbose(verbose_in);
+        if (impl_) {
+            impl_->verbose(verbose_in);
+        }
     }
 
     template <class Matrix, class Vector>
