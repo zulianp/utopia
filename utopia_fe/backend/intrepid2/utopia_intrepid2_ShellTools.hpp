@@ -220,6 +220,8 @@ namespace utopia {
 
                     mat_inv = inv(mat);
 
+                    assert(approxeq(det(mat_inv), 1. / det(mat), 1e-8));
+
                     for (SizeType d1 = 0; d1 < ManifoldDim; ++d1) {
                         for (SizeType d2 = 0; d2 < SpatialDim; ++d2) {
                             jacobian_inv(cell, qp, d1, d2) = mat_inv(d1, d2);
@@ -241,7 +243,7 @@ namespace utopia {
 
                         case 2: {
                             assert(spatial_dim == 3);
-                            this->compute_inv<3, 3>(cell, qp);
+                            this->compute_inv<3, 2>(cell, qp);
                             break;
                         }
 

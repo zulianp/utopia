@@ -115,6 +115,8 @@ namespace utopia {
                     this->scale_matrix(op_.subdomain_function, data);
                 }
 
+                assert(check_op());
+
                 UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble");
                 return true;
 
@@ -132,6 +134,25 @@ namespace utopia {
                 }
 
                 UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::apply");
+                return true;
+            }
+
+            bool check_op() {
+                auto data = this->matrix_data();
+                const int num_fields = this->fe().num_fields();
+
+                // this->matrix_accumulator()->describe(utopia::out().stream());
+
+                this->loop_cell(
+                    "LaplaceOperator::check_op()", UTOPIA_LAMBDA(int cell) {
+                        for (int i = 0; i < num_fields; ++i) {
+                            for (int j = 0; j < num_fields; ++j) {
+                                auto val = data(cell, i, j);
+                                assert(i != j || val > 0.0);
+                            }
+                        }
+                    });
+
                 return true;
             }
 

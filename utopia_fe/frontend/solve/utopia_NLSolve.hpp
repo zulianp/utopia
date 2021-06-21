@@ -46,6 +46,7 @@ namespace utopia {
             in.get("verbose", verbose_);
             in.get("use_pseudo_newton", use_pseudo_newton_);
             in.get("export_rhs", export_rhs_);
+            in.get("export_tensors", export_tensors_);
         }
 
         inline void set_solver(const std::shared_ptr<NewtonBase_t> &solver) { solver_ = solver; }
@@ -67,6 +68,11 @@ namespace utopia {
 
             // apply boundary conditions to rhs
             function_->space()->apply_constraints(rhs);
+
+            if (export_tensors_) {
+                write("load_H.m", A);
+                write("load_rhs.m", rhs);
+            }
 
             if (export_rhs_) {
                 function_->space()->write("rhs.e", rhs);
@@ -94,7 +100,9 @@ namespace utopia {
             bool ok = function_->hessian_and_gradient(x, H, g);
             assert(ok);
 
-            function_->space()->write("rhs.e", g);
+            if (export_rhs_) {
+                function_->space()->write("rhs.e", g);
+            }
 
             Vector_t c(layout(x), 0.0);  // Correction
 
@@ -178,6 +186,7 @@ namespace utopia {
         bool verbose_{true};
         bool use_pseudo_newton_{false};
         bool export_rhs_{false};
+        bool export_tensors_{false};
 
         void init_defaults() {
             auto linear_solver = std::make_shared<OmniLinearSolver_t>();
