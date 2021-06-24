@@ -122,10 +122,6 @@ namespace utopia {
                 d_nnz.resize(n_patch);
                 o_nnz.resize(n_patch);
 
-                // #ifndef NDEBUG
-                // matrix_to_patch[r - rr.begin()] = -1;
-                // #endif  // NDEBUG
-
                 for (SizeType k = 0, patch_idx = 0; k < n_values; ++k) {
                     SizeType col = col_idx[k];
 
@@ -183,31 +179,11 @@ namespace utopia {
                     }
                 }
 
-                // patch_rhs_ -= patch_matrix_ * patch_sol_;
-                // patch_lb_ -= patch_sol_;
-                // patch_ub_ -= patch_sol_;
-
-                // patch_sol_.set(0.0);
-
-                // patch_solver_->set_box_constraints(
-                //     BoxConstraints<SerialVector>(make_ref(patch_lb_), make_ref(patch_ub_)));
-
-                // write("patch_" + std::to_string(r) + ".m", patch_matrix_);
-
                 for (auto &c : col_idx) {
                     if (rr.inside(c)) {
                         matrix_to_patch[c - rr.begin()] = -1;
                     }
                 }
-
-                // if (n_patch > max_patch_size_) {
-                //     std::cout << "n_patch: " << n_patch << std::endl;
-                //     std::cout << "nnz " << patch_matrix_.nnz() << "/" << (patch_matrix_.rows() *
-                //     patch_matrix_.cols())
-                //               << std::endl;
-                // }
-
-                // max_patch_size_ = std::max(max_patch_size_, n_patch);
             }
         };
 

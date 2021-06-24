@@ -29,6 +29,7 @@ namespace utopia {
             in.get("gap_negative_bound", gap_negative_bound);
             in.get("gap_positive_bound", gap_positive_bound);
             in.get("invert_face_orientation", invert_face_orientation);
+            in.get("debug", debug);
 
             in.get("surfaces", [this](Input &in) {
                 in.get_all([this](Input &in) {
@@ -51,6 +52,16 @@ namespace utopia {
             Vector mass_vector;
             Vector inverse_mass_vector;
             Vector is_contact;
+
+            void debug_export() {
+                rename("g", gap);
+                rename("n", normals);
+                rename("O", orthogonal_trafo);
+
+                write("load_g.m", gap);
+                write("load_n.m", normals);
+                write("load_O.m", orthogonal_trafo);
+            }
         };
 
         class Obstacle::Impl {
@@ -282,11 +293,11 @@ namespace utopia {
                 ok = true;
             }
             // Not implemented for 2D yet
-            // else if (obstacle_mesh.spatial_dimension() == 2) {
-            //     impl_ = utopia::make_unique<ImplD<2>>();
-            //     impl_->init(*params_, obstacle_mesh);
-            //     ok = true;
-            // }
+            else if (obstacle_mesh.spatial_dimension() == 2) {
+                impl_ = utopia::make_unique<ImplD<2>>();
+                impl_->init(*params_, obstacle_mesh);
+                ok = true;
+            }
 
             UTOPIA_TRACE_REGION_END("moonolith::Obstacle::init_obstacle");
             return ok;
@@ -299,6 +310,10 @@ namespace utopia {
 
             assert(impl_);
             bool ok = impl_->assemble(space, *params_, *output_);
+
+            if (params_->debug) {
+                output_->debug_export();
+            }
 
             UTOPIA_TRACE_REGION_END("moonolith::Obstacle::assemble");
             return ok;

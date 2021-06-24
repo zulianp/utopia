@@ -25,6 +25,7 @@ namespace utopia {
             Super::read(in);
             in.get("overlap", overlap_);
             in.get("dumping", dumping_);
+            in.get("block_size", block_size_);
         }
 
         bool apply(const Vector &b, Vector &x) override {
@@ -59,7 +60,7 @@ namespace utopia {
             auto rr = range(overlapping_c);
 
             for (int iter = 0; iter < this->max_it(); ++iter) {
-                for (SizeType i = rr.begin(); i < rr.end(); ++i) {
+                for (SizeType i = rr.begin(); i < rr.end(); i += block_size_) {
                     gatherer_.local_to_patch_at_row(i);
 
                     if (!gatherer_.solve()) {
@@ -234,6 +235,7 @@ namespace utopia {
         std::shared_ptr<Vector> weights_;
         std::shared_ptr<Matrix> overlapping_matrix_;
         int overlap_{1};
+        int block_size_{1};
         Scalar dumping_{2. / 3.};
     };
 }  // namespace utopia
