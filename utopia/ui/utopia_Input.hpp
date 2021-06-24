@@ -116,6 +116,10 @@ namespace utopia {
             get(key, val, KeyRequired(key));
         }
 
+        void require(const std::string &key, std::function<void(Input &)> lambda) {
+            get(key, lambda, KeyRequired(key));
+        }
+
         virtual bool good() const = 0;
 
         Input &operator=(Input &&) = default;

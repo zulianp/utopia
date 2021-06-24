@@ -43,7 +43,7 @@ namespace utopia {
             FunctionSpace space;
             Field<FunctionSpace> deformation;
 
-            in.get("space", [&](Input &in) {
+            in.require("space", [&](Input &in) {
                 bool read_state = false;
                 in.get("read_state", read_state);
 
@@ -59,6 +59,7 @@ namespace utopia {
             });
 
             if (space.empty()) {
+                Utopia::Abort("Space is empty!");
                 return;
             }
 
