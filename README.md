@@ -65,6 +65,28 @@ For avoiding problems with cmake define the following env variable `export SYSTE
 If you use Utopia for your research please use the following bibtex entry (or equivalent) to cite us
 
 ```bibtex
+@article{utopia2021,
+    author = {Zulian, Patrick and Kopani{\v{c}}{\'{a}}kov{\'{a}}, Alena and Nestola, Maria G C and Fadel, Nur and Fink, Andreas and VandeVondele, Joost and Krause, Rolf},
+    title = {Large scale simulation of pressure induced phase‐field fracture propagation using {U}topia},
+    journal = {CCF Transactions on High Performance Computing},
+    year = {2021},
+    month = {06},
+    abstract = {Non-linear phase field models are increasingly used for the simulation of fracture propagation problems. 
+	The numerical simulation of fracture networks of realistic size requires the efficient parallel solution of large coupled non-linear systems. 
+	Although in principle efficient iterative multi-level methods for these types of problems are available, they are not widely used in practice due to the complexity of their parallel implementation. 
+	Here, we present Utopia, which is an open-source C++ library for parallel non-linear multilevel solution strategies. 
+	Utopia provides the advantages of high-level programming interfaces while at the same time a framework to access low-level data-structures without breaking code encapsulation. 
+	Complex numerical procedures can be expressed with few lines of code, and evaluated by different implementations, libraries, or computing hardware. 
+	In this paper, we investigate the parallel performance of our implementation of the recursive multilevel trust-region (RMTR) method based on the Utopia library. 
+	RMTR is a globally convergent multilevel solution strategy designed to solve non-convex constrained minimization problems. 
+	In particular, we solve pressure-induced phase-field fracture propagation in large and complex fracture networks. 
+	Solving such problems is deemed challenging even for a few fractures, however, here we are considering networks of realistic size with up to 1000 fractures.},
+    doi = {10.1007/s42514-021-00069-6},
+    url = {https://doi.org/10.1007/s42514-021-00069-6},
+    eprint = {https://doi.org/10.1007/s42514-021-00069-6},
+}
+
+
 @misc{utopiagit,
 	author = {Patrick Zulian and Alena Kopani{\v c}{\'a}kov{\'a} and Maria Chiara Giuseppina Nestola and Andreas Fink and Nur Fadel and Alessandro Rigazzi and Victor Magri and Teseo Schneider and Eric Botter and Jan Mankau and Rolf Krause},
 	title = {{U}topia: A performance portable {C}++ library for parallel linear and nonlinear algebra. {G}it repository},
