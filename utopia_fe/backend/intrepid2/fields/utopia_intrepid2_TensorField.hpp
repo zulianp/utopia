@@ -219,7 +219,8 @@ namespace utopia {
                 SizeType num_cells = this->fe()->num_cells();
                 SizeType num_qp = this->fe()->num_qp();
 
-                if (result.extent(0) != num_cells || result.extent(1) != num_qp || result.extent(2) != 1) {
+                if (SizeType(result.extent(0)) != num_cells || SizeType(result.extent(1)) != num_qp ||
+                    SizeType(result.extent(2)) != 1) {
                     result = DynRankView("det(QPTensorField)", num_cells, num_qp, 1);
                 }
 

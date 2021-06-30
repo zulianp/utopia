@@ -19,6 +19,7 @@
 #include "utopia_intrepid2_Field.hpp"
 #include "utopia_intrepid2_ForwardDeclarations.hpp"
 #include "utopia_stk_ForwardDeclarations.hpp"
+#include "utopia_stk_intrepid2_GradientField.hpp"
 
 #include "utopia_stk_FunctionSpace.hpp"
 
