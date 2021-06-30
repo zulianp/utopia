@@ -233,7 +233,7 @@ namespace utopia {
                 auto fun = this->fun;
 
                 Kokkos::parallel_for(
-                    "FE::print_function", 1, KOKKOS_LAMBDA(const int &cell) {
+                    "FE::print_function", 1, KOKKOS_LAMBDA(const int) {
                         for (int node = 0; node < num_fields; ++node) {
                             for (int qp = 0; qp < num_qp; ++qp) {
                                 printf("%g ", fun(node, qp));

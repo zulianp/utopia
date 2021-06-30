@@ -260,7 +260,7 @@ namespace utopia {
                 auto &&to_matrices = to_->matrices();
 
                 const Size_t n = from_matrices.size();
-                assert(n == to_matrices.size());
+                assert(n == Size_t(to_matrices.size()));
 
                 if (verbose_) {
                     utopia::out() << "Condensing " << n << " pair(s) of systems!\n";
@@ -283,7 +283,7 @@ namespace utopia {
                 auto &&to_vectors = to_->vectors();
 
                 const Size_t n = from_vectors.size();
-                assert(n == to_vectors.size());
+                assert(n == Size_t(to_vectors.size()));
 
                 if (verbose_) {
                     utopia::out() << "Condensing " << n << " pair(s) of rhs!\n";

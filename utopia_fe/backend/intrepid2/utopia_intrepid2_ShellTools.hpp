@@ -83,8 +83,8 @@ namespace utopia {
                       num_cells(cell_nodes.extent(0)),
                       spatial_dim(cell_nodes.extent(2)),
                       num_nodes(cell_nodes.extent(1)) {
-                    assert(num_cells == jacobian.extent(0));
-                    assert(spatial_dim == jacobian.extent(2));
+                    assert(num_cells == SizeType(jacobian.extent(0)));
+                    assert(spatial_dim == SizeType(jacobian.extent(2)));
                 }
 
                 UTOPIA_INLINE_FUNCTION void operator()(const SizeType cell, const SizeType qp) const {
@@ -121,7 +121,7 @@ namespace utopia {
                       num_qp(jacobian.extent(1)),
                       manifold_dim(jacobian.extent(3)),
                       spatial_dim(jacobian.extent(2)) {
-                    assert(num_qp == jacobian_det.extent(1));
+                    assert(num_qp == SizeType(jacobian_det.extent(1)));
                 }
 
                 // Only affine elements
@@ -410,7 +410,7 @@ namespace utopia {
                 SizeType num_cells = measure.extent(0);
                 SizeType n_qp = measure.extent(1);
 
-                assert(n_qp == q_weights.extent(0));
+                assert(n_qp == SizeType(q_weights.extent(0)));
 
                 Kokkos::parallel_for(
                     "ShellTools::weights_times_measure",

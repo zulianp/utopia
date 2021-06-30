@@ -16,6 +16,8 @@ namespace utopia {
     public:
         using Vector = typename Traits<FunctionSpace>::Vector;
 
+        virtual ~Field() = default;
+
         Field(const std::string &name = "",
               const std::shared_ptr<FunctionSpace> &space = nullptr,
               const std::shared_ptr<Vector> &data = nullptr)

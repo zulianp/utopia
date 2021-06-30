@@ -4,6 +4,8 @@
 #include "utopia_BoxConstrainedFEFunction.hpp"
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_ImplicitObstacle_impl.hpp"
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -20,6 +22,7 @@ namespace utopia {
 
         // Use specialized components for function space
         using Obstacle_t = utopia::Obstacle<FunctionSpace>;
+        using ImplicitObstacle_t = utopia::ImplicitObstacle<FunctionSpace>;
 
         bool has_nonlinear_constraints() const override { return !linear_obstacle_; }
 
@@ -62,7 +65,7 @@ namespace utopia {
         ObstacleFEFunction(const std::shared_ptr<FEFunctionInterface<FunctionSpace>> &unconstrained)
             : Super(unconstrained) {}
 
-        void ouput_debug_data(const Size_t iter_debug, const Vector_t &x) const {
+        void ouput_debug_data(const Size_t iter_debug, const Vector_t &) const {
             // Output extras
             {
                 Vector_t gap_zeroed = e_mul(obstacle_->is_contact(), obstacle_->gap());
@@ -96,6 +99,9 @@ namespace utopia {
             in.get("debug", debug_);
 
             if (!obstacle_) {
+                auto implicit_obstacle = std::make_shared<ImplicitObstacle_t>();
+                in.get("implicit_obstacle", *implicit_obstacle);
+
                 obstacle_ = std::make_shared<Obstacle_t>();
                 in.require("obstacle", params_);
                 // Must be created for every process independently and the same

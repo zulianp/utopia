@@ -12,7 +12,7 @@ namespace utopia {
     template <int Dim, class Field>
     class Transport : public Configurable {
     public:
-        void read(Input &in) override {}
+        void read(Input &) override {}
 
         Transport() = default;
         Transport(const Field &vector_field) : vector_field(vector_field) {}

@@ -19,7 +19,7 @@ namespace utopia {
 
         void read(Input &in) override { Super::read(in); }
 
-        bool setup_IVP(Vector_t &x) override {
+        bool setup_IVP(Vector_t &) override {
             if (!this->assemble_mass_matrix()) {
                 return false;
             }

@@ -89,7 +89,7 @@ namespace utopia {
                 ::Kokkos::parallel_for(this->fe()->cell_qp_range(), AddIdentityAndStore(rows(), cols(), data));
             }
 
-            void describe(std::ostream &os) const override {
+            void describe(std::ostream &) const override {
                 const int rows = this->rows();
                 const int cols = this->cols();
 

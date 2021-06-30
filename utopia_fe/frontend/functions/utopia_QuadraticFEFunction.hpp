@@ -45,7 +45,7 @@ namespace utopia {
 
         bool update(const Vector_t &x) override { return function_->update(x); }
 
-        bool hessian(const Vector_t &x, Matrix_t &H) const override {
+        bool hessian(const Vector_t &, Matrix_t &H) const override {
             if (!initialize()) return false;
 
             H = (*H0);

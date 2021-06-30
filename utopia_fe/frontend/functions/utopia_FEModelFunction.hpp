@@ -152,7 +152,7 @@ namespace utopia {
             return true;
         }
 
-        bool update(const Vector_t &x) override { return true; }
+        bool update(const Vector_t &) override { return true; }
 
         bool hessian(const Vector_t &x, Matrix_t &H) const override {
             ensure_hessian(H);
@@ -271,7 +271,7 @@ namespace utopia {
 
         void set_environment(const std::shared_ptr<Environment_t> &env) override { fe_function_->set_environment(env); }
 
-        bool update_IVP(const Vector_t &x) override {
+        bool update_IVP(const Vector_t &) override {
             time()->update();
             return true;
         }

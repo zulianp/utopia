@@ -14,6 +14,7 @@ void stk_fsi(utopia::Input &in) {
 
     std::shared_ptr<FEFunctionInterface_t> fluid, solid;
     utopia::FSIHesch2014<FunctionSpace> fsi(fluid, solid);
+    fsi.read(in);
 }
 
 UTOPIA_REGISTER_APP(stk_fsi);
