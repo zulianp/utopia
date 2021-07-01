@@ -11,29 +11,6 @@
 
 namespace utopia {
     namespace stk {
-        class StkIntrepid2Assembler::Impl {
-        public:
-            std::shared_ptr<FunctionSpace> space;
-            std::shared_ptr<Environment> environment;
-        };
-
-        void StkIntrepid2Assembler::set_environment(const std::shared_ptr<Environment> &env) {
-            impl_->environment = env;
-        }
-
-        std::shared_ptr<StkIntrepid2Assembler::Environment> StkIntrepid2Assembler::environment() const {
-            assert(impl_->environment);
-            return impl_->environment;
-        }
-
-        void StkIntrepid2Assembler::set_space(const std::shared_ptr<FunctionSpace> &space) { impl_->space = space; }
-
-        std::shared_ptr<FunctionSpace> StkIntrepid2Assembler::space() const { return impl_->space; }
-
-        StkIntrepid2Assembler::~StkIntrepid2Assembler() = default;
-
-        StkIntrepid2Assembler::StkIntrepid2Assembler(const std::shared_ptr<FE> &fe)
-            : Super(fe), impl_(utopia::make_unique<Impl>()) {}
 
         class Transport::Impl {
         public:
@@ -48,50 +25,11 @@ namespace utopia {
             bool stabilize_transport{false};
             bool verbose{false};
             bool print_field{false};
-
-            std::shared_ptr<Intrepid2Assembler> assembler;
         };
-
-        void Transport::set_matrix_accumulator(const std::shared_ptr<TensorAccumulator> &matrix_accumulator) {
-            Super::set_matrix_accumulator(matrix_accumulator);
-            assert(impl_->assembler);
-            impl_->assembler->set_matrix_accumulator(matrix_accumulator);
-        }
-
-        void Transport::set_vector_accumulator(const std::shared_ptr<TensorAccumulator> &vector_accumulator) {
-            Super::set_vector_accumulator(vector_accumulator);
-            assert(impl_->assembler);
-            impl_->assembler->set_vector_accumulator(vector_accumulator);
-        }
-
-        void Transport::set_scalar_accumulator(const std::shared_ptr<TensorAccumulator> &scalar_accumulator) {
-            Super::set_scalar_accumulator(scalar_accumulator);
-            assert(impl_->assembler);
-            impl_->assembler->set_scalar_accumulator(scalar_accumulator);
-        }
-
-        void Transport::ensure_matrix_accumulator() {
-            impl_->assembler->ensure_matrix_accumulator();
-            Super::set_matrix_accumulator(impl_->assembler->matrix_accumulator());
-        }
-
-        void Transport::ensure_vector_accumulator() {
-            impl_->assembler->ensure_vector_accumulator();
-            Super::set_vector_accumulator(impl_->assembler->vector_accumulator());
-        }
-
-        void Transport::ensure_scalar_accumulator() {
-            impl_->assembler->ensure_scalar_accumulator();
-            Super::set_scalar_accumulator(impl_->assembler->scalar_accumulator());
-        }
 
         Transport::Transport(const std::shared_ptr<FE> &fe) : Super(fe), impl_(utopia::make_unique<Impl>()) {}
 
         Transport::~Transport() = default;
-
-        bool Transport::apply(const DynRankView &x, DynRankView &y) { return impl_->assembler->apply(x, y); }
-
-        bool Transport::assemble_matrix() { return impl_->assembler->assemble_matrix(); }
 
         void Transport::read(Input &in) {
             Super::read(in);
@@ -172,7 +110,7 @@ namespace utopia {
                     using Assemble2 = utopia::intrepid2::Assemble<Impl::Transport2>;
                     auto assembler = std::make_shared<Assemble2>(this->fe_ptr(), g.data());
                     assembler->read(in);
-                    impl_->assembler = assembler;
+                    this->set_assembler(assembler);
                     break;
                 }
 
@@ -180,7 +118,7 @@ namespace utopia {
                     using Assemble3 = utopia::intrepid2::Assemble<Impl::Transport3>;
                     auto assembler = std::make_shared<Assemble3>(this->fe_ptr(), g.data());
                     assembler->read(in);
-                    impl_->assembler = assembler;
+                    this->set_assembler(assembler);
                     break;
                 }
 

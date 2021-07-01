@@ -1,6 +1,8 @@
 #ifndef UTOPIA_I_OBSTACLE_HPP
 #define UTOPIA_I_OBSTACLE_HPP
 
+#include "utopia_Describable.hpp"
+#include "utopia_Input.hpp"
 #include "utopia_Traits.hpp"
 
 namespace utopia {

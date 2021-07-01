@@ -2,6 +2,7 @@
 #define UTOPIA_OBSTACLEF_EF_UNCTION_HPP
 
 #include "utopia_BoxConstrainedFEFunction.hpp"
+#include "utopia_IObstacle.hpp"
 #include "utopia_fe_Core.hpp"
 
 #include "utopia_ImplicitObstacle_impl.hpp"
@@ -99,25 +100,34 @@ namespace utopia {
             in.get("debug", debug_);
 
             if (!obstacle_) {
-                auto implicit_obstacle = std::make_shared<ImplicitObstacle_t>();
-                in.get("implicit_obstacle", *implicit_obstacle);
+                std::string type;
+                in.get("obstacle", [&type](Input &node) { node.get("type", type); });
 
-                obstacle_ = std::make_shared<Obstacle_t>();
-                in.require("obstacle", params_);
-                // Must be created for every process independently and the same
-                Mesh_t obstacle_mesh(Communicator_t::self());
-                in.require("obstacle", obstacle_mesh);
+                if (type == "implicit") {
+                    obstacle_ = std::make_shared<ImplicitObstacle_t>();
+                    in.get("obstacle", *obstacle_);
 
-                obstacle_->set_params(params_);
-                obstacle_->init_obstacle(obstacle_mesh);
+                } else {
+                    auto obs = std::make_shared<Obstacle_t>();
+                    typename Obstacle_t::Params params;
+                    in.require("obstacle", params);
+                    // Must be created for every process independently and the same
+                    Mesh_t obstacle_mesh(Communicator_t::self());
+                    in.require("obstacle", obstacle_mesh);
 
-                bool export_obstacle = false;
-                in.get("export_obstacle", export_obstacle);
+                    obs->set_params(params);
+                    obs->init_obstacle(obstacle_mesh);
 
-                if (export_obstacle) {
-                    if (this->space()->comm().rank() == 0) {
-                        obstacle_mesh.write("obstacle.e");
+                    bool export_obstacle = false;
+                    in.get("export_obstacle", export_obstacle);
+
+                    if (export_obstacle) {
+                        if (this->space()->comm().rank() == 0) {
+                            obstacle_mesh.write("obstacle.e");
+                        }
                     }
+
+                    obstacle_ = obs;
                 }
             }
         }
@@ -136,8 +146,7 @@ namespace utopia {
         // }
 
     private:
-        typename Obstacle_t::Params params_;
-        std::shared_ptr<Obstacle_t> obstacle_;
+        std::shared_ptr<IObstacle<FunctionSpace>> obstacle_;
         bool linear_obstacle_{false};
         bool debug_{false};
     };

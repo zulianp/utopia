@@ -38,9 +38,9 @@ namespace utopia {
 
 #ifndef NDEBUG
                 if (op.vector_field.size() > 0) {
-                    assert(op.vector_field.extent(0) == fe->num_cells());
-                    assert(op.vector_field.extent(1) == fe->num_qp());
-                    assert(op.vector_field.extent(2) == fe->spatial_dimension());
+                    assert(SizeType(op.vector_field.extent(0)) == fe->num_cells());
+                    assert(SizeType(op.vector_field.extent(1)) == fe->num_qp());
+                    assert(SizeType(op.vector_field.extent(2)) == fe->spatial_dimension());
                 }
 #endif  // NDEBUG
             }

@@ -5,6 +5,7 @@
 #include "utopia_intrepid2_OmniAssembler.hpp"
 
 #include "utopia_stk_intrepid2.hpp"
+#include "utopia_stk_intrepid2_L2Projection.hpp"
 #include "utopia_stk_intrepid2_Transport.hpp"
 
 namespace utopia {
@@ -94,6 +95,16 @@ namespace utopia {
                     // We add it from the outside
                     impl_->get_assembler().fail_if_unregistered(false);
                     impl_->get_assembler().add_domain_assembler(std::move(ass));
+                } else if (type == "L2Projection") {
+                    auto ass = utopia::make_unique<stk::L2Projection>(impl_->fe);
+                    // ass->set_fe(impl_->fe);
+                    ass->set_space(this->space());
+                    ass->set_environment(impl_->environment);
+                    ass->read(node);
+
+                    // We add it from the outside
+                    impl_->get_assembler().fail_if_unregistered(false);
+                    impl_->get_assembler().add_domain_assembler(std::move(ass));
                 }
             }
         });
@@ -124,7 +135,5 @@ namespace utopia {
     std::shared_ptr<utopia::stk::FunctionSpace> OmniAssembler<utopia::stk::FunctionSpace>::space() const {
         return impl_->space;
     }
-
-    // Convenience function for checking not null
 
 }  // namespace utopia

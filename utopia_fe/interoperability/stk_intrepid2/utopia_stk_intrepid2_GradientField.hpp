@@ -21,9 +21,9 @@ namespace utopia {
     public:
         using Vector = typename Traits<stk::FunctionSpace>::Vector;
 
-        bool init(Field<stk::FunctionSpace> &field);
+        bool init_and_normalize(Field<stk::FunctionSpace> &field);
 
-        void normalize();
+        // void normalize();
     };
 
 }  // namespace utopia

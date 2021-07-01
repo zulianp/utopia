@@ -60,7 +60,10 @@ namespace utopia {
         Obstacle::Obstacle() : impl_(utopia::make_unique<Impl>()) {}
         Obstacle::~Obstacle() {}
 
-        bool Obstacle::assemble(const FunctionSpace &space) { return impl_->assemble(space); }
+        void Obstacle::read(Input &in) { impl_->obstacle.read(in); }
+        void Obstacle::describe(std::ostream &os) const { impl_->obstacle.describe(os); }
+
+        bool Obstacle::assemble(FunctionSpace &space) { return impl_->assemble(space); }
 
         bool Obstacle::init_obstacle(const Mesh &obstacle_mesh) { return impl_->init_obstacle(obstacle_mesh); }
 
