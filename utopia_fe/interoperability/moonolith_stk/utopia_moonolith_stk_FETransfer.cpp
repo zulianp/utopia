@@ -14,11 +14,13 @@ namespace utopia {
             std::shared_ptr<moonolith::FunctionSpace> to;
             moonolith::FETransfer transfer;
             bool export_converted_mesh{false};
+            bool remove_constrained_dofs{false};
         };
 
         void FETransfer::read(Input &in) {
             impl_->transfer.read(in);
             in.get("export_converted_mesh", impl_->export_converted_mesh);
+            in.get("remove_constrained_dofs", impl_->remove_constrained_dofs);
         }
 
         void FETransfer::describe(std::ostream &os) const { impl_->transfer.describe(os); }
@@ -48,7 +50,15 @@ namespace utopia {
                 impl_->from->mesh().write("from_and_to.vtu");
             }
 
-            return impl_->transfer.init(impl_->from);
+            if(!impl_->transfer.init(impl_->from)) {
+                return false;
+            }
+
+            if(impl_->remove_constrained_dofs) {
+                from_and_to->apply_constraints(*transfer_matrix(), 0);
+            }
+
+            return true;
         }
 
         bool FETransfer::init(const std::shared_ptr<FunctionSpace> &from, const std::shared_ptr<FunctionSpace> &to) {
@@ -66,7 +76,15 @@ namespace utopia {
                 impl_->to->mesh().write("to.vtu");
             }
 
-            return impl_->transfer.init(impl_->from, impl_->to);
+            if(!impl_->transfer.init(impl_->from, impl_->to)) {
+                return false;
+            }
+
+            if(impl_->remove_constrained_dofs) {
+                to->apply_constraints(*transfer_matrix(), 0);
+            }
+
+            return true;
         }
 
         void FETransfer::verbose(const bool val) { impl_->transfer.verbose(val); }

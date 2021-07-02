@@ -46,6 +46,7 @@ namespace utopia {
             void enable_interpolation_mode();
 
             bool load_time_step(const Scalar t);
+            void register_output_field(const std::string &var_name);
 
         public:
             class Impl;
