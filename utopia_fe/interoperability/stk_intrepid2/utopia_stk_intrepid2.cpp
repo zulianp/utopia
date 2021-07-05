@@ -340,9 +340,17 @@ namespace utopia {
                           const StkViewDevice_t<Scalar> &device_element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector) {
-            UTOPIA_TRACE_REGION_BEGIN("LocalToGlobalFromBuckets(Stk,Intrepid2)");
-
             const int n_var = space.n_var();
+            apply(space, buckets, device_element_vectors, mode, vector, n_var);
+        }
+
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          const BucketVector_t &buckets,
+                          const StkViewDevice_t<Scalar> &device_element_vectors,
+                          AssemblyMode mode,
+                          PetscVector &vector,
+                          const int n_var) {
+            UTOPIA_TRACE_REGION_BEGIN("LocalToGlobalFromBuckets(Stk,Intrepid2)");
 
             if (empty(vector)) {
                 space.create_vector(vector);
@@ -441,6 +449,17 @@ namespace utopia {
         PetscVector &vector) {
         LocalToGlobalFromBuckets<Scalar>::apply(
             space, utopia::stk::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector);
+    }
+
+    template <typename Scalar>
+    void LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscVector>::apply(
+        const utopia::stk::FunctionSpace &space,
+        const StkViewDevice_t<Scalar> &element_vectors,
+        AssemblyMode mode,
+        PetscVector &vector,
+        const int n_var) {
+        LocalToGlobalFromBuckets<Scalar>::apply(
+            space, utopia::stk::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector, n_var);
     }
 
     template <typename Scalar>

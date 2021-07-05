@@ -21,7 +21,8 @@ namespace utopia {
 
         auto dim = field.space()->mesh().spatial_dimension();
         this->set_offset(field.offset());
-        this->set_tensor_size(field.tensor_size() * dim);
+        // this->set_tensor_size(field.tensor_size() * dim);
+        this->set_tensor_size(field.tensor_size());
 
         auto l = layout(field.data());
         auto lg = layout(l.comm(), l.local_size(), l.size());
@@ -36,40 +37,45 @@ namespace utopia {
         Intrepid2Field_t intrepid_field(fe);
         Intrepid2Gradient_t intrepid_gradient(fe);
 
-        convert_field(field, intrepid_field);
+        global_to_local(*field.space(), field.data(), intrepid_field.data(), 1);
         intrepid_gradient.init(intrepid_field);
 
         // Compute mass contributions and projections
         stk::L2Projection assembler(fe);
         assembler.set_field(make_ref(intrepid_gradient));
+        assembler.init();
+        assembler.ensure_vector_accumulator();
         if (!assembler.assemble_vector()) {
             return false;
         }
 
         data->set(0.0);
-        local_to_global(*field.space(), assembler.vector_accumulator()->data(), ADD_MODE, *data);
+        assert(assembler.vector_accumulator());
+        auto el_vec = assembler.vector_data();
+
+        local_to_global(*field.space(), el_vec, ADD_MODE, *data);
 
         auto view = local_view_device(*data);
 
         auto rd_complete = local_range_device(*data);
         RangeDevice<Vector> rd(rd_complete.begin(), rd_complete.begin() + rd_complete.extent() / dim);
 
-        parallel_for(
-            rd, UTOPIA_LAMBDA(const int i) {
-                Scalar_t norm_v = 0.;
-                for (int d = 0; d < dim; ++d) {
-                    auto x = view.get(i * dim + d);
-                    norm_v += x * x;
-                }
+        // parallel_for(
+        //     rd, UTOPIA_LAMBDA(const int i) {
+        //         Scalar_t norm_v = 0.;
+        //         for (int d = 0; d < dim; ++d) {
+        //             auto x = view.get(i * dim + d);
+        //             norm_v += x * x;
+        //         }
 
-                assert(norm_v > 0);
-                norm_v = device::sqrt(norm_v);
+        //         assert(norm_v > 0);
+        //         norm_v = device::sqrt(norm_v);
 
-                for (int d = 0; d < dim; ++d) {
-                    auto x = view.get(i * dim + d);
-                    view.set(i * dim + d, x / norm_v);
-                }
-            });
+        //         for (int d = 0; d < dim; ++d) {
+        //             auto x = view.get(i * dim + d);
+        //             view.set(i * dim + d, x / norm_v);
+        //         }
+        //     });
 
         this->set_data(data);
         return true;

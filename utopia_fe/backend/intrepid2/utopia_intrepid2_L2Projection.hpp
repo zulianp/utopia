@@ -45,6 +45,7 @@ namespace utopia {
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return false; }
+            bool is_linear() const override { return true; }
 
             class Op {
             public:

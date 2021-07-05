@@ -12,7 +12,6 @@
 #include "utopia_MonotoneSemiGeometricMultigrid.hpp"
 #include "utopia_NLSolve.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
-#include "utopia_ObstacleFEFunction.hpp"
 #include "utopia_QuadraticFEFunction.hpp"
 #include "utopia_SemiGeometricHierarchy.hpp"
 #include "utopia_SemiGeometricMultigridNew.hpp"

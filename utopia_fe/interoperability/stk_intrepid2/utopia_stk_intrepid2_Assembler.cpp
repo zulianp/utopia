@@ -48,12 +48,14 @@ namespace utopia {
 
         const std::shared_ptr<StkIntrepid2ProxyAssembler::Intrepid2Assembler> &StkIntrepid2ProxyAssembler::assembler()
             const {
+            assert(impl_);
             return impl_->assembler;
         }
 
         StkIntrepid2ProxyAssembler::~StkIntrepid2ProxyAssembler() = default;
 
-        StkIntrepid2ProxyAssembler::StkIntrepid2ProxyAssembler(const std::shared_ptr<FE> &fe) : Super(fe) {}
+        StkIntrepid2ProxyAssembler::StkIntrepid2ProxyAssembler(const std::shared_ptr<FE> &fe)
+            : Super(fe), impl_(utopia::make_unique<Impl>()) {}
 
         void StkIntrepid2ProxyAssembler::set_matrix_accumulator(
             const std::shared_ptr<TensorAccumulator> &matrix_accumulator) {

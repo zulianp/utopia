@@ -68,6 +68,11 @@ namespace utopia {
             in.get("E", this->get());
             in.get("young_modulus", this->get());
         }
+
+        template <typename FLP, typename SM>
+        void init(const FirstLameParameter<FLP> &lambda, const ShearModulus<SM> &mu) {
+            this->get() = mu.get() * (3 * lambda.get() + 2 * mu.get()) / (lambda.get() + mu.get());
+        }
     };
 
     template <typename T>
@@ -76,6 +81,11 @@ namespace utopia {
         void read(Input &in) override {
             in.get("ni", this->get());
             in.get("poisson_ratio", this->get());
+        }
+
+        template <typename FLP, typename SM>
+        void init(const FirstLameParameter<FLP> &lambda, const ShearModulus<SM> &mu) {
+            this->get() = lambda.get() / (2. * (lambda.get() + mu.get()));
         }
     };
 
@@ -97,6 +107,14 @@ namespace utopia {
 
             if (!first_lame_parameter.valid() && poisson_ratio.valid() && shear_modulus.valid()) {
                 first_lame_parameter.init(shear_modulus, poisson_ratio);
+            }
+
+            if (!young_modulus.valid() && first_lame_parameter.valid() && shear_modulus.valid()) {
+                young_modulus.init(first_lame_parameter, shear_modulus);
+            }
+
+            if (!poisson_ratio.valid() && first_lame_parameter.valid() && shear_modulus.valid()) {
+                poisson_ratio.init(first_lame_parameter, shear_modulus);
             }
 
             assert(first_lame_parameter.valid());

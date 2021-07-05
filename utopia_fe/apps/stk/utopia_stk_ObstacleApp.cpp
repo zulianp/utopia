@@ -4,6 +4,7 @@
 #include "utopia_ObstacleApp.hpp"
 
 #include "utopia_stk.hpp"
+#include "utopia_stk_intrepid2.hpp"
 
 #include "utopia_moonolith_stk_FETransfer.hpp"
 #include "utopia_moonolith_stk_Obstacle.hpp"

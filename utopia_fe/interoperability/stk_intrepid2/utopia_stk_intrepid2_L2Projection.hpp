@@ -36,13 +36,18 @@ namespace utopia {
             inline bool is_matrix() const override { return true; }
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
-            bool is_operator() const override { return true; }
+            bool is_operator() const override { return false; }
+
+            bool assemble_vector() override;
 
             void read(Input &in) override;
+            inline void init() { ensure_assembler(); }
 
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;
+
+            void ensure_assembler();
         };
 
     }  // namespace stk

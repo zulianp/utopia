@@ -61,6 +61,7 @@ namespace utopia {
         using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
 
         static void apply(const Field<utopia::stk::FunctionSpace> &from, utopia::intrepid2::Field<Scalar> &to);
+        static void apply(const Field<utopia::stk::FunctionSpace> &from, utopia::intrepid2::Field<Scalar> &to, int var);
     };
 
 #ifdef UTOPIA_WITH_PETSC
@@ -80,6 +81,12 @@ namespace utopia {
                           const StkViewDevice_t<Scalar> &element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector);
+
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          const StkViewDevice_t<Scalar> &element_vectors,
+                          AssemblyMode mode,
+                          PetscVector &vector,
+                          const int n_var);
 
         static void side_apply(const utopia::stk::FunctionSpace &space,
                                const StkViewDevice_t<Scalar> &element_vectors,

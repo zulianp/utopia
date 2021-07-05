@@ -30,6 +30,14 @@ namespace utopia {
             space, tensor, mode, element_matrices, args...);
     }
 
+    template <class FunctionSpace, class GlobalTensor, class ElementTensors, typename... Args>
+    void global_to_local(const FunctionSpace &space,
+                         const GlobalTensor &tensor,
+                         ElementTensors &element_tensors,
+                         Args &&... args) {
+        GlobalToLocal<FunctionSpace, GlobalTensor, ElementTensors>::apply(space, tensor, element_tensors, args...);
+    }
+
     template <class FunctionSpace, class ElementTensors, class GlobalTensor, typename... Args>
     void side_local_to_global(const FunctionSpace &space,
                               const ElementTensors &element_matrices,
