@@ -1,5 +1,5 @@
-#ifndef UTOPIA_IMPLICIT_OBSTACLE_HPP
-#define UTOPIA_IMPLICIT_OBSTACLE_HPP
+#ifndef UTOPIA_ANALYTIC_OBSTACLE_HPP
+#define UTOPIA_ANALYTIC_OBSTACLE_HPP
 
 #include "utopia_Field.hpp"
 #include "utopia_GradientField.hpp"
@@ -11,7 +11,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class ImplicitObstacle : public IObstacle<FunctionSpace> {
+    class AnalyticObstacle : public IObstacle<FunctionSpace> {
     public:
         using Super = utopia::IObstacle<FunctionSpace>;
         using Vector = typename Traits<FunctionSpace>::Vector;
@@ -37,16 +37,14 @@ namespace utopia {
         const Vector &is_contact() const override;
         const Vector &normals() const override;
 
-        ImplicitObstacle();
-        ~ImplicitObstacle();
+        AnalyticObstacle();
+        ~AnalyticObstacle();
 
     private:
         class Impl;
         std::unique_ptr<Impl> impl_;
-
-        void compute_gradients();
     };
 
 }  // namespace utopia
 
-#endif  // UTOPIA_IMPLICIT_OBSTACLE_HPP
+#endif  // UTOPIA_ANALYTIC_OBSTACLE_HPP

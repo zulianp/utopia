@@ -765,6 +765,55 @@ namespace utopia {
             }
         }
 
+        void FunctionSpace::node_eval(std::function<void(const SizeType idx, const Scalar *)> fun) {
+            using Bucket_t = ::stk::mesh::Bucket;
+
+            auto &meta_data = mesh().meta_data();
+            auto &bulk_data = mesh().bulk_data();
+
+            ::stk::mesh::Selector s_universal = meta_data.universal_part();
+            const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
+            auto *coords = meta_data.coordinate_field();
+            assert(coords);
+
+            const int dim = this->mesh().spatial_dimension();
+
+            auto &&local_to_global = dof_map().local_to_global();
+
+            if (local_to_global.empty()) {
+                for (const auto &ib : node_buckets) {
+                    const Bucket_t &b = *ib;
+                    const Bucket_t::size_type length = b.size();
+
+                    for (Bucket_t::size_type k = 0; k < length; ++k) {
+                        auto node = b[k];
+                        auto moonolith_index = utopia::stk::convert_entity_to_index(node);
+
+                        const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
+
+                        auto idx = utopia::stk::convert_entity_to_index(node);
+                        fun(idx, points);
+                    }
+                }
+
+            } else {
+                for (const auto &ib : node_buckets) {
+                    const Bucket_t &b = *ib;
+                    const Bucket_t::size_type length = b.size();
+
+                    for (Bucket_t::size_type k = 0; k < length; ++k) {
+                        auto node = b[k];
+                        auto moonolith_index = utopia::stk::convert_entity_to_index(node);
+
+                        const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
+
+                        auto idx = utopia::stk::convert_entity_to_index(node);
+                        fun(local_to_global(idx, 0), points);
+                    }
+                }
+            }
+        }
+
         const DofMap &FunctionSpace::dof_map() const {
             assert(impl_->dof_map);
             return *impl_->dof_map;
@@ -906,8 +955,8 @@ namespace utopia {
 
         template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::Scalar>(const std::string &,
                                                                                             const int);
-        // template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::SizeType>(const std::string &,
-        // const int);
+        // template void FunctionSpace::declare_new_nodal_field<Traits<FunctionSpace>::SizeType>(const std::string
+        // &, const int);
         template void FunctionSpace::declare_new_nodal_field<int>(const std::string &, const int);
 
     }  // namespace stk

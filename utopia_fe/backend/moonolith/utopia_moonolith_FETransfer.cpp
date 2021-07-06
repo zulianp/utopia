@@ -215,10 +215,10 @@ namespace utopia {
         public:
             using Matrix_t = Traits<FunctionSpace>::Matrix;
 
-            static bool apply(const FETransferOptions &opts,
-                              const FunctionSpace &from,
-                              const FunctionSpace &to,
-                              FETransferData<Matrix_t> &data) {
+            static bool apply(const FETransferOptions &,
+                              const FunctionSpace &,
+                              const FunctionSpace &,
+                              FETransferData<Matrix_t> &) {
                 assert(false && "invalid dimensions");
                 return false;
             }
@@ -417,24 +417,32 @@ namespace utopia {
                 auto n_op = op.cols();
                 auto n_from = from.size();
 
-                auto n_var = n_from / n_op;
+                auto n_var_from = n_from / n_op;
 
-                assert(n_op * n_var == n_from);
+                assert(n_op * n_var_from == n_from);
 
-                if (n_var == 1) {
+                if (n_var_from == 1) {
                     to = (*impl_->data.transfer_matrix) * from;
                 } else {
-                    utopia::out() << "Tensorizing within FETransfer::apply! n_var = " << n_var << "\n";
+                    utopia::out() << "Tensorizing within FETransfer::apply! n_var_from = " << n_var_from << "\n";
 
                     Vector scalar_from, scalar_to;
                     if (!utopia::empty(to)) {
                         to.set(0.0);
                     }
 
-                    for (int c = 0; c < n_var; ++c) {
-                        extract_component(from, n_var, c, scalar_from);
+                    SizeType n_to = to.size();
+
+                    for (int c = 0; c < n_var_from; ++c) {
+                        extract_component(from, n_var_from, c, scalar_from);
                         scalar_to = (*impl_->data.transfer_matrix) * scalar_from;
-                        set_component(scalar_to, n_var, c, to);
+                        SizeType scalar_n_to = scalar_to.size();
+
+                        if (scalar_n_to == n_to) {
+                            copy_component(scalar_to, n_var_from, 0, c, to);
+                        } else {
+                            set_component(scalar_to, n_var_from, c, to);
+                        }
                     }
                 }
 

@@ -23,7 +23,7 @@ namespace utopia {
 
         bool init_and_normalize(Field<stk::FunctionSpace> &field);
 
-        // void normalize();
+        void normalize();
     };
 
 }  // namespace utopia

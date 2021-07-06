@@ -5,6 +5,7 @@
 #include "utopia_IObstacle.hpp"
 #include "utopia_fe_Core.hpp"
 
+#include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
 
 namespace utopia {
@@ -24,6 +25,7 @@ namespace utopia {
         // Use specialized components for function space
         using Obstacle_t = utopia::Obstacle<FunctionSpace>;
         using ImplicitObstacle_t = utopia::ImplicitObstacle<FunctionSpace>;
+        using AnalyticObstacle_t = utopia::AnalyticObstacle<FunctionSpace>;
 
         bool has_nonlinear_constraints() const override { return !linear_obstacle_; }
 
@@ -106,7 +108,9 @@ namespace utopia {
                 if (type == "implicit") {
                     obstacle_ = std::make_shared<ImplicitObstacle_t>();
                     in.get("obstacle", *obstacle_);
-
+                } else if (type == "analytic") {
+                    obstacle_ = std::make_shared<AnalyticObstacle_t>();
+                    in.get("obstacle", *obstacle_);
                 } else {
                     auto obs = std::make_shared<Obstacle_t>();
                     typename Obstacle_t::Params params;

@@ -21,23 +21,23 @@ namespace utopia {
 
         auto dim = field.space()->mesh().spatial_dimension();
         this->set_offset(field.offset());
-        // this->set_tensor_size(field.tensor_size() * dim);
-        this->set_tensor_size(field.tensor_size());
+        this->set_tensor_size(field.tensor_size() * dim);
 
         auto l = layout(field.data());
-        auto lg = layout(l.comm(), l.local_size(), l.size());
+        auto lg = layout(l.comm(), l.local_size() * dim, l.size() * dim);
         auto data = std::make_shared<Vector>(lg);
 
         auto fe = std::make_shared<Intrepid2FE_t>();
 
-        // One gradient per element
-        int quadrature_order = 2;
+        int quadrature_order = 0;
         create_fe(*this->space(), *fe, quadrature_order);
 
         Intrepid2Field_t intrepid_field(fe);
         Intrepid2Gradient_t intrepid_gradient(fe);
 
-        global_to_local(*field.space(), field.data(), intrepid_field.data(), 1);
+        // global_to_local(*field.space(), field.data(), intrepid_field.data());
+        convert_field(field, intrepid_field);
+
         intrepid_gradient.init(intrepid_field);
 
         // Compute mass contributions and projections
@@ -53,32 +53,42 @@ namespace utopia {
         assert(assembler.vector_accumulator());
         auto el_vec = assembler.vector_data();
 
-        local_to_global(*field.space(), el_vec, ADD_MODE, *data);
-
-        auto view = local_view_device(*data);
-
-        auto rd_complete = local_range_device(*data);
-        RangeDevice<Vector> rd(rd_complete.begin(), rd_complete.begin() + rd_complete.extent() / dim);
-
-        // parallel_for(
-        //     rd, UTOPIA_LAMBDA(const int i) {
-        //         Scalar_t norm_v = 0.;
-        //         for (int d = 0; d < dim; ++d) {
-        //             auto x = view.get(i * dim + d);
-        //             norm_v += x * x;
-        //         }
-
-        //         assert(norm_v > 0);
-        //         norm_v = device::sqrt(norm_v);
-
-        //         for (int d = 0; d < dim; ++d) {
-        //             auto x = view.get(i * dim + d);
-        //             view.set(i * dim + d, x / norm_v);
-        //         }
-        //     });
+        local_to_global(*field.space(), el_vec, ADD_MODE, *data, dim);
 
         this->set_data(data);
+
+        normalize();
         return true;
+    }
+
+    void GradientField<stk::FunctionSpace>::normalize() {
+        using Scalar_t = Traits<stk::FunctionSpace>::Scalar;
+
+        auto view = local_view_device(this->data());
+
+        auto dim = this->tensor_size();
+
+        auto rd_complete = local_range_device(this->data());
+        RangeDevice<Vector> rd(rd_complete.begin(), rd_complete.begin() + rd_complete.extent() / dim);
+
+        parallel_for(
+            rd, UTOPIA_LAMBDA(const int i) {
+                Scalar_t norm_v = 0.;
+                for (int d = 0; d < dim; ++d) {
+                    auto x = view.get(i * dim + d);
+                    norm_v += x * x;
+                }
+
+                // if (norm_v > 0) {
+                assert(norm_v > 0);
+                norm_v = device::sqrt(norm_v);
+
+                for (int d = 0; d < dim; ++d) {
+                    auto x = view.get(i * dim + d);
+                    view.set(i * dim + d, x / norm_v);
+                }
+                // }
+            });
     }
 
 }  // namespace utopia

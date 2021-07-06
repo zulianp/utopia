@@ -98,6 +98,8 @@ namespace utopia {
             void copy_meta_info_from(const FunctionSpace &other);
             void initialize() override;
 
+            void node_eval(std::function<void(const SizeType idx, const Scalar *)> fun);
+
         private:
             class Impl;
             // class Var;

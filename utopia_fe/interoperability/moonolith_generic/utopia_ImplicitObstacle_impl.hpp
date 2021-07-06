@@ -14,9 +14,12 @@ namespace utopia {
     template <class FunctionSpace>
     class ImplicitObstacle<FunctionSpace>::Impl {
     public:
+        // Domain quantities
         std::shared_ptr<FunctionSpace> domain;
-        std::shared_ptr<Transfer> transfer;
         std::shared_ptr<Field> domain_distance;
+        std::shared_ptr<GradientField> domain_gradients;
+
+        std::shared_ptr<Transfer> transfer;
         std::shared_ptr<Field> gap;
         std::shared_ptr<GradientField> normals;
 
@@ -47,6 +50,34 @@ namespace utopia {
         }
 
         in.get("update_transfer", impl_->update_transfer);
+
+        compute_gradients();
+    }
+
+    template <class FunctionSpace>
+    void ImplicitObstacle<FunctionSpace>::compute_gradients() {
+        impl_->domain_gradients = std::make_shared<GradientField>();
+        impl_->domain_gradients->init_and_normalize(*impl_->domain_distance);
+        impl_->domain_gradients->data() *= -1;
+
+        // Comment me out
+        {
+            utopia::out() << "n_var: " << impl_->domain->n_var() << " "
+                          << "n_dofs: " << impl_->domain->n_dofs() << " n_nodes: " << impl_->domain->mesh().n_nodes()
+                          << " tensor_size: " << impl_->domain_gradients->tensor_size() << " "
+                          << " nn: " << impl_->domain_gradients->data().size() << "\n";
+
+            Field normals_out("normals");
+            impl_->domain->create_nodal_vector_field(impl_->domain->mesh().spatial_dimension(), normals_out);
+            normals_out.data() = impl_->domain_gradients->data();
+            normals_out.set_tensor_size(impl_->domain->mesh().spatial_dimension());
+            impl_->domain->backend_set_nodal_field(normals_out);
+
+            IO<FunctionSpace> io(*impl_->domain);
+            io.set_output_path("implicit_obstacle_out.e");
+            io.register_output_field(normals_out.name());
+            io.write(impl_->domain_distance->data(), 0, 0);
+        }
     }
 
     template <class FunctionSpace>
@@ -66,22 +97,30 @@ namespace utopia {
 
     template <class FunctionSpace>
     bool ImplicitObstacle<FunctionSpace>::assemble(FunctionSpace &space) {
-        if (!impl_->transfer || impl_->update_transfer) {
-            FETransfer<FunctionSpace> transfer;
-            transfer.init(impl_->domain, make_ref(space));
-            impl_->transfer = transfer.template build_transfer<IPTransfer<Matrix, Vector>>();
-        }
+        // if (!impl_->transfer || impl_->update_transfer) {
+        FETransfer<FunctionSpace> transfer;
+        transfer.init(impl_->domain, make_ref(space));
+        impl_->transfer = transfer.template build_transfer<IPTransfer<Matrix, Vector>>();
+        // }
 
         auto gap = std::make_shared<Field>();
         auto normals = std::make_shared<GradientField>();
+        int dim = space.mesh().spatial_dimension();
 
         space.create_field(*gap);
+        space.create_nodal_vector_field(dim, *normals);
 
-        impl_->transfer->interpolate(impl_->domain_distance->data(), gap->data());
-        normals->init_and_normalize(*gap);
+        // FIXME
+        transfer.apply(impl_->domain_distance->data(), gap->data());
+        transfer.apply(impl_->domain_gradients->data(), normals->data());
+
+        // normals->set_tensor_size(dim);
+        normals->normalize();
 
         impl_->gap = gap;
         impl_->normals = normals;
+
+        space.apply_constraints(impl_->gap->data());
 
         impl_->is_contact.zeros(layout(normals->data()));
 
@@ -94,21 +133,8 @@ namespace utopia {
         parallel_for(
             rd, UTOPIA_LAMBDA(const SizeType i) { view.set(i * n_var, 1.); });
 
-        // Comment me out
-        {
-            utopia::out() << "n_dofs: " << space.n_dofs() << " n_nodes: " << space.mesh().n_nodes()
-                          << " nn: " << impl_->normals->data().size() << "\n";
-
-            Field normals_out("normals");
-            space.create_nodal_vector_field(space.mesh().spatial_dimension(), normals_out);
-            normals_out.data() = impl_->normals->data();
-            space.backend_set_nodal_field(normals_out);
-
-            IO<FunctionSpace> io(space);
-            io.set_output_path("implicit_obstacle_out.e");
-            io.register_output_field(normals_out.name());
-            io.write(this->gap(), 0, 0);
-        }
+        space.apply_zero_constraints(impl_->is_contact);
+        space.apply_zero_constraints(normals->data());
 
         int spatial_dimension = space.mesh().spatial_dimension();
 
@@ -128,6 +154,8 @@ namespace utopia {
                 return false;
             }
         }
+
+        space.write("is_contact.e", impl_->is_contact);
 
         return true;
     }

@@ -59,7 +59,8 @@ namespace utopia {
                     Scalar ret = 0;
 
                     for (int qp = 0; qp < n_qp; ++qp) {
-                        ret += field(cell, qp, sub_i) * fun(i, qp) * measure(qp);
+                        Scalar val = field(cell, qp, sub_i);
+                        ret += val * fun(i, qp) * measure(qp);
                     }
 
                     return ret;
@@ -71,19 +72,48 @@ namespace utopia {
                 const int n_qp;
             };
 
+            class OpAndStore {
+            public:
+                UTOPIA_INLINE_FUNCTION OpAndStore(const Field &field,
+                                                  const DynRankView &fun,
+                                                  const DynRankView &measure,
+                                                  DynRankView &result)
+                    : op(field, fun, measure), result(result), tensor_size(result.extent(1) / fun.extent(0)) {}
+
+                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i) const {
+                    Scalar ret = 0;
+
+                    for (int d = 0; d < tensor_size; ++d) {
+                        Scalar val = op(cell, i, d);
+                        result(cell, i * tensor_size + d) = val;
+                    }
+
+                    return ret;
+                }
+
+                Op op;
+                DynRankView result;
+                int tensor_size;
+            };
+
             inline Op make_op() {
                 auto &fe = this->fe();
                 return Op(op_.field, fe.fun, fe.measure);
+            }
+
+            inline OpAndStore make_op_and_store(DynRankView &result) {
+                auto &fe = this->fe();
+                return OpAndStore(op_.field, fe.fun, fe.measure, result);
             }
 
             bool assemble_vector() override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<L2Projection>::assemble");
 
                 this->ensure_vector_accumulator();
-                this->loop_cell_test_trial("Assemble<L2Projection>::assemble",
-                                           op_and_store_cell_ij(this->vector_data(), make_op()));
+                auto data = this->vector_data();
+                this->loop_cell_test("Assemble<L2Projection>::assemble_vector", make_op_and_store(data));
 
-                UTOPIA_TRACE_REGION_END("Assemble<L2Projection>::assemble");
+                UTOPIA_TRACE_REGION_END("Assemble<L2Projection>::assemble_vector");
                 return true;
             }
 
