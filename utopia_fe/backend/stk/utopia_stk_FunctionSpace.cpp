@@ -38,6 +38,54 @@ namespace utopia {
             std::shared_ptr<DofMap> dof_map;
             bool verbose{false};
 
+            void node_eval(const BucketVector_t &node_buckets,
+                           std::function<void(const SizeType idx, const Scalar *)> fun) {
+                using Bucket_t = ::stk::mesh::Bucket;
+
+                auto &meta_data = mesh->meta_data();
+                auto &bulk_data = mesh->bulk_data();
+
+                auto *coords = meta_data.coordinate_field();
+                assert(coords);
+
+                const int dim = this->mesh->spatial_dimension();
+
+                auto &&local_to_global = dof_map->local_to_global();
+
+                if (local_to_global.empty()) {
+                    for (const auto &ib : node_buckets) {
+                        const Bucket_t &b = *ib;
+                        const Bucket_t::size_type length = b.size();
+
+                        for (Bucket_t::size_type k = 0; k < length; ++k) {
+                            auto node = b[k];
+                            auto moonolith_index = utopia::stk::convert_entity_to_index(node);
+
+                            const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
+
+                            auto idx = utopia::stk::convert_entity_to_index(node);
+                            fun(idx, points);
+                        }
+                    }
+
+                } else {
+                    for (const auto &ib : node_buckets) {
+                        const Bucket_t &b = *ib;
+                        const Bucket_t::size_type length = b.size();
+
+                        for (Bucket_t::size_type k = 0; k < length; ++k) {
+                            auto node = b[k];
+                            auto moonolith_index = utopia::stk::convert_entity_to_index(node);
+
+                            const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
+
+                            auto idx = utopia::stk::convert_entity_to_index(node);
+                            fun(local_to_global(idx, 0), points);
+                        }
+                    }
+                }
+            }
+
             bool write_restart(const Path &path) {
                 auto &meta_data = mesh->meta_data();
                 auto &bulk_data = mesh->bulk_data();
@@ -773,44 +821,25 @@ namespace utopia {
 
             ::stk::mesh::Selector s_universal = meta_data.universal_part();
             const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
-            auto *coords = meta_data.coordinate_field();
-            assert(coords);
+            impl_->node_eval(node_buckets, fun);
+        }
 
-            const int dim = this->mesh().spatial_dimension();
+        void FunctionSpace::node_eval(const std::string &part_name,
+                                      std::function<void(const SizeType idx, const Scalar *)> fun) {
+            using Bucket_t = ::stk::mesh::Bucket;
 
-            auto &&local_to_global = dof_map().local_to_global();
+            auto &meta_data = mesh().meta_data();
+            auto &bulk_data = mesh().bulk_data();
 
-            if (local_to_global.empty()) {
-                for (const auto &ib : node_buckets) {
-                    const Bucket_t &b = *ib;
-                    const Bucket_t::size_type length = b.size();
+            ::stk::mesh::Selector s_universal = meta_data.universal_part();
 
-                    for (Bucket_t::size_type k = 0; k < length; ++k) {
-                        auto node = b[k];
-                        auto moonolith_index = utopia::stk::convert_entity_to_index(node);
-
-                        const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
-
-                        auto idx = utopia::stk::convert_entity_to_index(node);
-                        fun(idx, points);
-                    }
-                }
-
+            auto *part = meta_data.get_part(part_name);
+            if (part) {
+                auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+                const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
+                impl_->node_eval(node_buckets, fun);
             } else {
-                for (const auto &ib : node_buckets) {
-                    const Bucket_t &b = *ib;
-                    const Bucket_t::size_type length = b.size();
-
-                    for (Bucket_t::size_type k = 0; k < length; ++k) {
-                        auto node = b[k];
-                        auto moonolith_index = utopia::stk::convert_entity_to_index(node);
-
-                        const Scalar *points = (const Scalar *)::stk::mesh::field_data(*coords, node);
-
-                        auto idx = utopia::stk::convert_entity_to_index(node);
-                        fun(local_to_global(idx, 0), points);
-                    }
-                }
+                Utopia::Abort("Part not defined!");
             }
         }
 

@@ -19,31 +19,47 @@ namespace utopia {
         std::shared_ptr<GradientField> normals;
         Matrix orthogonal_trafo;
         Vector is_contact;
+        Scalar infinity{1e10};
+        bool export_tensors{false};
 
         class Fun : public Configurable {
         public:
-            utopia::SymbolicFunction gap;
+            utopia::SymbolicFunction x;
+            utopia::SymbolicFunction y;
+            utopia::SymbolicFunction z;
             utopia::SymbolicFunction normal_x;
             utopia::SymbolicFunction normal_y;
             utopia::SymbolicFunction normal_z;
 
-            Fun() : gap("0.1"), normal_x("0"), normal_y("1"), normal_z("0") {}
+            std::string boundary_name;
+
+            Fun() : x("0"), y("0"), z("0"), normal_x("0"), normal_y("-1"), normal_z("0") {}
 
             void read(Input &in) override {
-                std::string expr_gap = "y-0.1";
+                std::string expr_x = "0";
+                std::string expr_y = "0";
+                std::string expr_z = "0";
+
                 std::string expr_normal_x = "0";
                 std::string expr_normal_y = "-1";
                 std::string expr_normal_z = "0";
 
-                in.get("gap", expr_gap);
+                in.get("x", expr_x);
+                in.get("y", expr_y);
+                in.get("z", expr_z);
                 in.get("normal_x", expr_normal_x);
                 in.get("normal_y", expr_normal_y);
                 in.get("normal_z", expr_normal_z);
 
-                gap = utopia::SymbolicFunction(expr_gap);
+                x = utopia::SymbolicFunction(expr_x);
+                y = utopia::SymbolicFunction(expr_y);
+                z = utopia::SymbolicFunction(expr_z);
+
                 normal_x = utopia::SymbolicFunction(expr_normal_x);
                 normal_y = utopia::SymbolicFunction(expr_normal_y);
                 normal_z = utopia::SymbolicFunction(expr_normal_z);
+
+                in.get("boundary_name", boundary_name);
             }
         };
 
@@ -61,6 +77,7 @@ namespace utopia {
     template <class FunctionSpace>
     void AnalyticObstacle<FunctionSpace>::read(Input &in) {
         in.get("fun", impl_->fun);
+        in.get("export_tensors", impl_->export_tensors);
     }
 
     template <class FunctionSpace>
@@ -89,50 +106,56 @@ namespace utopia {
 
         impl_->gap = gap;
         impl_->normals = normals;
+        impl_->is_contact.zeros(layout(normals->data()));
+
+        impl_->gap->data().set(impl_->infinity);
+
+        int n_var = space.n_var();
 
         {
-            Write<Vector> wg(impl_->gap->data()), wn(impl_->normals->data());
+            // Write<Vector> wg(impl_->gap->data()), wn(impl_->normals->data());
 
-            space.node_eval([this, dim](const SizeType idx, const Scalar *point) {
+            auto g_view = view_device(impl_->gap->data());
+            auto n_view = view_device(impl_->normals->data());
+            auto c_view = local_view_device(impl_->is_contact);
+
+            // FIXME (will never work on GPU)
+            space.node_eval([this, dim, g_view, n_view, c_view, n_var](const SizeType idx, const Scalar *point) {
                 Scalar coords[4] = {0.0, 0.0, 0.0, 0.0};
                 Scalar normal[3] = {0.0, 0.0, 0.0};
+                Scalar p[3] = {0.0, 0.0, 0.0};
 
                 for (int d = 0; d < dim; ++d) {
                     coords[d] = point[d];
                 }
 
-                auto g = impl_->fun.gap.eval(coords[0], coords[1], coords[2], coords[3]);
+                p[0] = impl_->fun.x.eval(coords[0], coords[1], coords[2], coords[3]);
+                p[1] = impl_->fun.y.eval(coords[0], coords[1], coords[2], coords[3]);
+                p[2] = impl_->fun.z.eval(coords[0], coords[1], coords[2], coords[3]);
 
                 normal[0] = impl_->fun.normal_x.eval(coords[0], coords[1], coords[2], coords[3]);
                 normal[1] = impl_->fun.normal_y.eval(coords[0], coords[1], coords[2], coords[3]);
                 normal[2] = impl_->fun.normal_z.eval(coords[0], coords[1], coords[2], coords[3]);
 
-                impl_->gap->data().set(idx * dim, g);
-
-                for (int d = 1; d < dim; ++d) {
-                    impl_->gap->data().set(idx * dim + d, 10000000);
-                }
+                Scalar g = 0.0;
 
                 for (int d = 0; d < dim; ++d) {
-                    impl_->normals->data().set(idx * dim + d, normal[d]);
+                    auto x = (coords[d] - p[d]) * normal[d];
+                    g += x;
+                }
+
+                g_view.set(idx * n_var, g);
+                c_view.set(idx * n_var, 1);
+
+                for (int d = 0; d < dim; ++d) {
+                    // Invert the normal
+                    n_view.set(idx * n_var + d, -normal[d]);
                 }
             });
         }
 
-        space.apply_constraints(impl_->gap->data());
-
-        impl_->is_contact.zeros(layout(normals->data()));
-
-        int n_var = space.n_var();
-
-        auto r = local_range_device(impl_->is_contact);
-        RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
-        auto view = local_view_device(impl_->is_contact);
-
-        parallel_for(
-            rd, UTOPIA_LAMBDA(const SizeType i) { view.set(i * n_var, 1.); });
-
         space.apply_zero_constraints(impl_->is_contact);
+        space.apply_constraints(impl_->gap->data());
         space.apply_zero_constraints(normals->data());
 
         switch (dim) {
@@ -152,7 +175,19 @@ namespace utopia {
             }
         }
 
-        space.write("is_contact.e", impl_->is_contact);
+        // space.write("is_contact.e", impl_->is_contact);
+
+        if (impl_->export_tensors) {
+            rename("n", impl_->normals->data());
+            rename("O", impl_->orthogonal_trafo);
+            rename("ind", impl_->is_contact);
+            rename("g", impl_->gap->data());
+
+            write("load_n.m", this->normals());
+            write("load_O.m", impl_->orthogonal_trafo);
+            write("load_ind.m", this->is_contact());
+            write("load_g.m", this->gap());
+        }
 
         return true;
     }

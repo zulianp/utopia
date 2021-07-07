@@ -99,6 +99,7 @@ namespace utopia {
             void initialize() override;
 
             void node_eval(std::function<void(const SizeType idx, const Scalar *)> fun);
+            void node_eval(const std::string &part_name, std::function<void(const SizeType idx, const Scalar *)> fun);
 
         private:
             class Impl;
