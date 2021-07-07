@@ -11,11 +11,14 @@ export MOONOLITH_DIR=$INSTALL_DIR/par_moonolith
 export UTOPIA_DIR=$INSTALL_DIR/utopia
 export UTOPIA_FE_DIR=$INSTALL_DIR/utopia_fe
 
+# Avoid failure of petsc configure
+unset PETSC_DIR
+
 ##################################################################
 
-git clone https://github.com/trilinos/Trilinos.git && \
+git clone https://github.com/trilinos/Trilinos.git; \
     cd Trilinos && \
-    mkdir build && \
+    mkdir build; \
     cd build && \
     source $USER_DIR/configure_trilinos.sh \
     make -j && make install
@@ -41,10 +44,17 @@ git submodule update --init --recursive
 cd utopia && mkdir build
 cd build &&  \
     cmake .. -DUTOPIA_DEPENDENCIES_DIR=$INSTALL_DIR \
-             -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR &&
-    make petsc \
-    export PETSC_DIR=$INSTALL_DIR/petsc \
-    make -j complete \
+             -DCMAKE_INSTALL_PREFIX=$UTOPIA_DIR &&  \
+    unset PETSC_DIR && \
+    make petsc
+
+
+cd $USER_DIR/utopia/utopia/build
+
+export PETSC_DIR=$INSTALL_DIR/petsc \
+
+cmake .. && \
+    make -j complete && \
     make install \
 
 
@@ -58,5 +68,4 @@ cd build &&  \
              -DUTOPIA_ENABLE_STK=ON && \
              -DIntrepid2_DIR=$INTREPID2_DIR
     make -j complete \
-    make install \
-
+    make install
