@@ -26,7 +26,7 @@ option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
 option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
-option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
+# option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
@@ -222,9 +222,9 @@ endif()
 
 list(APPEND UTOPIA_FE_MODULES base interoperability core)
 
-if(UTOPIA_INSTALL_LIBMESH)
-    include(InstallLIBMESH)
-endif()
+# if(UTOPIA_INSTALL_LIBMESH)
+#     include(InstallLIBMESH)
+# endif()
 
 if(UTOPIA_ENABLE_INTREPID2)
     list(APPEND UTOPIA_FE_MODULES backend/intrepid2)
