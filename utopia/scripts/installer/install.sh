@@ -13,7 +13,7 @@ export UTOPIA_FE_DIR=$INSTALL_DIR/utopia_fe
 
 ##################################################################
 
-git clone https://github.com/trilinos/Trilinos.git \
+git clone https://github.com/trilinos/Trilinos.git && \
     cd Trilinos && \
     mkdir build && \
     cd build && \
