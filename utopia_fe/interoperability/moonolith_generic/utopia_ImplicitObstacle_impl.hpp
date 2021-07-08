@@ -26,7 +26,10 @@ namespace utopia {
         Matrix orthogonal_trafo;
         Vector is_contact;
 
+        Scalar infinity{100000};
+
         bool update_transfer{true};
+        bool export_tensors{false};
     };
 
     template <class FunctionSpace>
@@ -50,6 +53,8 @@ namespace utopia {
         }
 
         in.get("update_transfer", impl_->update_transfer);
+        in.get("export_tensors", impl_->export_tensors);
+        in.get("infinity", impl_->infinity);
 
         compute_gradients();
     }
@@ -120,21 +125,31 @@ namespace utopia {
         impl_->gap = gap;
         impl_->normals = normals;
 
-        space.apply_constraints(impl_->gap->data());
+        // space.apply_constraints(impl_->gap->data());
 
         impl_->is_contact.zeros(layout(normals->data()));
 
         int n_var = space.n_var();
 
-        auto r = local_range_device(impl_->is_contact);
-        RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
-        auto view = local_view_device(impl_->is_contact);
+        {
+            auto r = local_range_device(impl_->is_contact);
+            RangeDevice<Vector> rd(r.begin(), r.begin() + r.extent() / n_var);
+            auto is_contact_view = local_view_device(impl_->is_contact);
+            auto gap_view = local_view_device(gap->data());
 
-        parallel_for(
-            rd, UTOPIA_LAMBDA(const SizeType i) { view.set(i * n_var, 1.); });
+            Scalar infty = impl_->infinity;
+            parallel_for(
+                rd, UTOPIA_LAMBDA(const SizeType i) {
+                    is_contact_view.set(i * n_var, 1.);
+
+                    for (int k = 1; k < n_var; ++k) {
+                        gap_view.set(i * n_var + k, infty);
+                    }
+                });
+        }
 
         space.apply_zero_constraints(impl_->is_contact);
-        space.apply_zero_constraints(normals->data());
+        // space.apply_zero_constraints(normals->data());
 
         int spatial_dimension = space.mesh().spatial_dimension();
 
@@ -155,7 +170,21 @@ namespace utopia {
             }
         }
 
-        space.write("is_contact.e", impl_->is_contact);
+        // space.write("is_contact.e", impl_->is_contact);
+        // space.write("gap.e", this->gap());
+        // space.write("normals.e", this->normals());
+
+        if (impl_->export_tensors) {
+            rename("n", impl_->normals->data());
+            rename("O", impl_->orthogonal_trafo);
+            rename("ind", impl_->is_contact);
+            rename("g", impl_->gap->data());
+
+            write("load_n.m", this->normals());
+            write("load_O.m", impl_->orthogonal_trafo);
+            write("load_ind.m", this->is_contact());
+            write("load_g.m", this->gap());
+        }
 
         return true;
     }
