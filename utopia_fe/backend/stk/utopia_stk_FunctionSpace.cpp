@@ -834,9 +834,14 @@ namespace utopia {
             ::stk::mesh::Selector s_universal = meta_data.universal_part();
 
             auto *part = meta_data.get_part(part_name);
+            if (!part) {
+                // FIXME Handle user space names better
+                auto converted_part_name = SideSet::Cube::convert(part_name);
+                part = meta_data.get_part(converted_part_name);
+            }
+
             if (part) {
-                auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
-                const auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, s_universal);
+                auto &node_buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
                 impl_->node_eval(node_buckets, fun);
             } else {
                 Utopia::Abort("Part not defined!");

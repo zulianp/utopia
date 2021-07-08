@@ -186,8 +186,19 @@ namespace utopia {
         auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        ::stk::mesh::Selector s_universal = *meta_data.get_part(part_name);
-        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
+        auto part_ptr = meta_data.get_part(part_name);
+        if (!part_ptr) {
+            part_ptr = meta_data.get_part(stk::SideSet::Cube::convert(part_name));
+        }
+
+        assert(part_ptr);
+        if (!part_ptr) {
+            Utopia::Abort("Unable to find part!");
+        }
+
+        ::stk::mesh::Selector part = *part_ptr;
+
+        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), part);
 
         CreateFEFromBuckets<Scalar>::apply(bulk_data, side_buckets, fe, degree);
     }
@@ -472,10 +483,20 @@ namespace utopia {
         auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        ::stk::mesh::Selector s_universal = *meta_data.get_part(part_name);
+        auto part_ptr = meta_data.get_part(part_name);
+        if (!part_ptr) {
+            part_ptr = meta_data.get_part(stk::SideSet::Cube::convert(part_name));
+        }
+
+        assert(part_ptr);
+        if (!part_ptr) {
+            Utopia::Abort("Unable to find part!");
+        }
+
+        ::stk::mesh::Selector part = *part_ptr;
 
         LocalToGlobalFromBuckets<Scalar>::apply(
-            space, bulk_data.get_buckets(meta_data.side_rank(), s_universal), element_vectors, mode, vector);
+            space, bulk_data.get_buckets(meta_data.side_rank(), part), element_vectors, mode, vector);
     }
 
     template class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<StkScalar_t>, PetscMatrix>;

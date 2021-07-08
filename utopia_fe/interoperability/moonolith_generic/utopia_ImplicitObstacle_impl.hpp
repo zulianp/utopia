@@ -162,12 +162,12 @@ namespace utopia {
 
     template <class FunctionSpace>
     void ImplicitObstacle<FunctionSpace>::transform(const Matrix &in, Matrix &out) {
-        out = impl_->orthogonal_trafo * in;
+        out = transpose(impl_->orthogonal_trafo) * in * impl_->orthogonal_trafo;
     }
 
     template <class FunctionSpace>
     void ImplicitObstacle<FunctionSpace>::transform(const Vector &in, Vector &out) {
-        out = impl_->orthogonal_trafo * in;
+        out = transpose(impl_->orthogonal_trafo) * in;
     }
 
     template <class FunctionSpace>

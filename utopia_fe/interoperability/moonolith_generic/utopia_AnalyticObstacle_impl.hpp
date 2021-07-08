@@ -24,47 +24,100 @@ namespace utopia {
 
         class Fun : public Configurable {
         public:
-            utopia::SymbolicFunction x;
-            utopia::SymbolicFunction y;
-            utopia::SymbolicFunction z;
+            virtual ~Fun() = default;
+            virtual void eval(const Scalar point[3], Scalar &g, Scalar normal[3]) = 0;
+            void read(Input &in) override { in.get("side", side); }
+
+            std::string side;
+        };
+
+        class Plane : public Fun {
+        public:
+            using Super = Fun;
+
+            static const std::string name() { return "plane"; }
+
+            Scalar d;
+            Scalar normal[3];
+
+            Plane() : d(0) {
+                normal[0] = 0;
+                normal[1] = 1;
+                normal[2] = 0;
+            }
+
+            void eval(const Scalar point[3], Scalar &g, Scalar normal[3]) override {
+                g = 0.0;
+
+                for (int k = 0; k < 3; ++k) {
+                    auto x = point[k] * this->normal[k];
+                    g += x;
+                }
+
+                g -= d;
+
+                normal[0] = -this->normal[0];
+                normal[1] = -this->normal[1];
+                normal[2] = -this->normal[2];
+            }
+
+            void read(Input &in) override {
+                Super::read(in);
+
+                in.get("d", d);
+
+                in.get("normal_x", normal[0]);
+                in.get("normal_y", normal[1]);
+                in.get("normal_z", normal[2]);
+            }
+        };
+
+        class Gap : public Fun {
+        public:
+            using Super = Fun;
+
+            static const std::string name() { return "gap"; }
+
+            utopia::SymbolicFunction gap;
+
             utopia::SymbolicFunction normal_x;
             utopia::SymbolicFunction normal_y;
             utopia::SymbolicFunction normal_z;
 
-            std::string boundary_name;
+            Gap() : gap("0"), normal_x("0"), normal_y("-1"), normal_z("0") {}
 
-            Fun() : x("0"), y("0"), z("0"), normal_x("0"), normal_y("-1"), normal_z("0") {}
+            void eval(const Scalar point[3], Scalar &g, Scalar normal[3]) override {
+                g = -gap.eval(point[0], point[1], point[2]);
+
+                normal[0] = normal_x.eval(point[0], point[1], point[2]);
+                normal[1] = normal_y.eval(point[0], point[1], point[2]);
+                normal[2] = normal_z.eval(point[0], point[1], point[2]);
+            }
 
             void read(Input &in) override {
-                std::string expr_x = "0";
-                std::string expr_y = "0";
-                std::string expr_z = "0";
+                Super::read(in);
+
+                std::string expr_gap = "-y";
 
                 std::string expr_normal_x = "0";
                 std::string expr_normal_y = "-1";
                 std::string expr_normal_z = "0";
 
-                in.get("x", expr_x);
-                in.get("y", expr_y);
-                in.get("z", expr_z);
+                in.get("d", expr_gap);
+
                 in.get("normal_x", expr_normal_x);
                 in.get("normal_y", expr_normal_y);
                 in.get("normal_z", expr_normal_z);
 
-                x = utopia::SymbolicFunction(expr_x);
-                y = utopia::SymbolicFunction(expr_y);
-                z = utopia::SymbolicFunction(expr_z);
+                gap = utopia::SymbolicFunction(expr_gap);
 
                 normal_x = utopia::SymbolicFunction(expr_normal_x);
                 normal_y = utopia::SymbolicFunction(expr_normal_y);
                 normal_z = utopia::SymbolicFunction(expr_normal_z);
-
-                in.get("boundary_name", boundary_name);
             }
         };
 
-        Fun fun;
-
+        std::vector<std::unique_ptr<Fun>> functions;
         bool update_transfer{true};
     };
 
@@ -76,7 +129,24 @@ namespace utopia {
 
     template <class FunctionSpace>
     void AnalyticObstacle<FunctionSpace>::read(Input &in) {
-        in.get("fun", impl_->fun);
+        in.get("fun", [this](Input &array_node) {
+            array_node.get_all([this](Input &node) {
+                std::string type;
+                node.get("type", type);
+                if (type == Impl::Plane::name()) {
+                    auto fun = utopia::make_unique<typename Impl::Plane>();
+                    fun->read(node);
+                    impl_->functions.push_back(std::move(fun));
+                } else if (type == Impl::Gap::name()) {
+                    auto fun = utopia::make_unique<typename Impl::Gap>();
+                    fun->read(node);
+                    impl_->functions.push_back(std::move(fun));
+                } else {
+                    Utopia::Abort("Unsupported obstacle fun type!");
+                }
+            });
+        });
+
         in.get("export_tensors", impl_->export_tensors);
     }
 
@@ -119,43 +189,34 @@ namespace utopia {
             auto n_view = view_device(impl_->normals->data());
             auto c_view = local_view_device(impl_->is_contact);
 
-            // FIXME (will never work on GPU)
-            space.node_eval([this, dim, g_view, n_view, c_view, n_var](const SizeType idx, const Scalar *point) {
-                Scalar coords[4] = {0.0, 0.0, 0.0, 0.0};
-                Scalar normal[3] = {0.0, 0.0, 0.0};
-                Scalar p[3] = {0.0, 0.0, 0.0};
+            for (auto &f : impl_->functions) {
+                auto fun = [this, dim, g_view, n_view, c_view, n_var, &f](const SizeType idx, const Scalar *point) {
+                    Scalar point3[3] = {0.0, 0.0, 0.0};
+                    Scalar normal3[3] = {0.0, 0.0, 0.0};
+                    Scalar g = 0;
 
-                for (int d = 0; d < dim; ++d) {
-                    coords[d] = point[d];
+                    for (int d = 0; d < dim; ++d) {
+                        point3[d] = point[d];
+                    }
+
+                    f->eval(point3, g, normal3);
+                    g_view.set(idx * n_var, g);
+                    c_view.set(idx * n_var, 1);
+
+                    for (int d = 0; d < dim; ++d) {
+                        n_view.set(idx * n_var + d, normal3[d]);
+                    }
+                };
+
+                if (f->side.empty()) {
+                    space.node_eval(fun);
+                } else {
+                    space.node_eval(f->side, fun);
                 }
-
-                p[0] = impl_->fun.x.eval(coords[0], coords[1], coords[2], coords[3]);
-                p[1] = impl_->fun.y.eval(coords[0], coords[1], coords[2], coords[3]);
-                p[2] = impl_->fun.z.eval(coords[0], coords[1], coords[2], coords[3]);
-
-                normal[0] = impl_->fun.normal_x.eval(coords[0], coords[1], coords[2], coords[3]);
-                normal[1] = impl_->fun.normal_y.eval(coords[0], coords[1], coords[2], coords[3]);
-                normal[2] = impl_->fun.normal_z.eval(coords[0], coords[1], coords[2], coords[3]);
-
-                Scalar g = 0.0;
-
-                for (int d = 0; d < dim; ++d) {
-                    auto x = (coords[d] - p[d]) * normal[d];
-                    g += x;
-                }
-
-                g_view.set(idx * n_var, g);
-                c_view.set(idx * n_var, 1);
-
-                for (int d = 0; d < dim; ++d) {
-                    // Invert the normal
-                    n_view.set(idx * n_var + d, -normal[d]);
-                }
-            });
+            }
         }
 
         space.apply_zero_constraints(impl_->is_contact);
-        space.apply_constraints(impl_->gap->data());
         space.apply_zero_constraints(normals->data());
 
         switch (dim) {
@@ -194,7 +255,7 @@ namespace utopia {
 
     template <class FunctionSpace>
     void AnalyticObstacle<FunctionSpace>::transform(const Matrix &in, Matrix &out) {
-        out = impl_->orthogonal_trafo * in;
+        out = transpose(impl_->orthogonal_trafo) * in * impl_->orthogonal_trafo;
     }
 
     template <class FunctionSpace>
