@@ -8,6 +8,8 @@
 #include "utopia_AnalyticObstacle_impl.hpp"
 #include "utopia_ImplicitObstacle_impl.hpp"
 
+#include "utopia_IsNotSupported.hpp"
+
 namespace utopia {
 
     template <class FunctionSpace>
@@ -106,11 +108,28 @@ namespace utopia {
                 in.get("obstacle", [&type](Input &node) { node.get("type", type); });
 
                 if (type == "implicit") {
+#ifdef UTOPIA_WITH_LIBMESH
+                    // FIXME Once we go to c++17
+                    // if constexpr (IsNotSupported<ImplicitObstacle_t>::value) {
+                    Utopia::Abort("ImplicitObstacle not supported for this backend!");
+#else
+                    // } else {
                     obstacle_ = std::make_shared<ImplicitObstacle_t>();
                     in.get("obstacle", *obstacle_);
+#endif
+                    // }
                 } else if (type == "analytic") {
+                    // FIXME Once we go to c++17
+                    // if constexpr (IsNotSupported<AnalyticObstacle_t>::value) {
+#ifdef UTOPIA_WITH_LIBMESH
+                    Utopia::Abort("AnalyticObstacle not supported for this backend!");
+                    // } else {
+#else
                     obstacle_ = std::make_shared<AnalyticObstacle_t>();
                     in.get("obstacle", *obstacle_);
+                    // }
+#endif
+
                 } else {
                     auto obs = std::make_shared<Obstacle_t>();
                     typename Obstacle_t::Params params;

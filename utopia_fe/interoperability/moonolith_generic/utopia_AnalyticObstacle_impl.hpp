@@ -183,8 +183,6 @@ namespace utopia {
         int n_var = space.n_var();
 
         {
-            // Write<Vector> wg(impl_->gap->data()), wn(impl_->normals->data());
-
             auto g_view = view_device(impl_->gap->data());
             auto n_view = view_device(impl_->normals->data());
             auto c_view = local_view_device(impl_->is_contact);
