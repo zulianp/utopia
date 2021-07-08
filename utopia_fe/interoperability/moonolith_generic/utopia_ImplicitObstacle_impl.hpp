@@ -2,9 +2,9 @@
 #define UTOPIA_IMPLICIT_OBSTACLE_IMPL_HPP
 
 #include "utopia.hpp"
-#include "utopia_IPTransfer.hpp"
-
+#include "utopia_FETransferOptions.hpp"
 #include "utopia_Field.hpp"
+#include "utopia_IPTransfer.hpp"
 #include "utopia_ImplicitObstacle.hpp"
 #include "utopia_fe_Core.hpp"
 #include "utopia_moonolith_HouseholderReflection.hpp"
@@ -30,6 +30,7 @@ namespace utopia {
 
         bool update_transfer{true};
         bool export_tensors{false};
+        bool shift_field{false};
     };
 
     template <class FunctionSpace>
@@ -52,9 +53,19 @@ namespace utopia {
             });
         }
 
+        in.get("shift_field", impl_->shift_field);
         in.get("update_transfer", impl_->update_transfer);
         in.get("export_tensors", impl_->export_tensors);
         in.get("infinity", impl_->infinity);
+
+        if (impl_->shift_field) {
+            Scalar min_dd = min(impl_->domain_distance->data());
+
+            utopia::out() << "min_dd: " << min_dd << "\n";
+
+            impl_->domain_distance->data().transform_values(
+                UTOPIA_LAMBDA(const Scalar &val)->Scalar { return val - min_dd; });
+        }
 
         compute_gradients();
     }
@@ -103,7 +114,12 @@ namespace utopia {
     template <class FunctionSpace>
     bool ImplicitObstacle<FunctionSpace>::assemble(FunctionSpace &space) {
         // if (!impl_->transfer || impl_->update_transfer) {
+
+        FETransferOptions opts;
+        opts.has_covering = false;
+
         FETransfer<FunctionSpace> transfer;
+        transfer.set_options(opts);
         transfer.init(impl_->domain, make_ref(space));
         impl_->transfer = transfer.template build_transfer<IPTransfer<Matrix, Vector>>();
         // }
