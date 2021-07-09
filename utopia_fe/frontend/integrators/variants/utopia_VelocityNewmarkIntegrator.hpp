@@ -3,13 +3,15 @@
 
 #include "utopia_FEModelFunction.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
+#include "utopia_VelocityVariant.hpp"
 
 #include <utility>
 
 namespace utopia {
 
     template <class FunctionSpace>
-    class VelocityNewmarkIntegrator final : public NewmarkIntegrator<FunctionSpace> {
+    class VelocityNewmarkIntegrator final : public NewmarkIntegrator<FunctionSpace>,
+                                            public VelocityVariant<FunctionSpace> {
     public:
         using Super = utopia::NewmarkIntegrator<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
@@ -19,9 +21,14 @@ namespace utopia {
         template <class... Args>
         VelocityNewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
 
+        const Vector_t &solution() const override { return this->x_old(); }
+
         void read(Input &in) override { Super::read(in); }
 
-        bool setup_IVP(Vector_t &x) override { return Super::setup_IVP(x); }
+        bool setup_IVP(Vector_t &x) override {
+            velocity_old_.zeros(layout(x));
+            return Super::setup_IVP(x);
+        }
 
         bool update_IVP(const Vector_t &velocity) override {
             Vector_t x = this->x_old();
@@ -30,10 +37,13 @@ namespace utopia {
             return Super::update_IVP(x);
         }
 
-        void integrate_gradient(const Vector_t &velocity, Vector_t &g) const override {
+        bool hessian(const Vector_t &velocity, Matrix_t &H) const override {
             Vector_t x = this->x_old();
             update_x(velocity, x);
+            return Super::hessian(x, H);
+        }
 
+        void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             Super::integrate_gradient(x, g);
             g *= 2. / this->delta_time();
         }
@@ -42,12 +52,7 @@ namespace utopia {
             return Super::time_derivative(x, dfdt);
         }
 
-        void integrate_hessian(const Vector_t &, Matrix_t &H) const override {
-            const Scalar_t dt2 = this->delta_time() * this->delta_time();
-            H *= (dt2 / 4.);
-            H += (*this->mass_matrix());
-            this->space()->apply_constraints(H);
-        }
+        void integrate_hessian(const Vector_t &x, Matrix_t &H) const override { Super::integrate_hessian(x, H); }
 
     private:
         void update_x(const Vector_t &velocity, Vector_t &x) const {

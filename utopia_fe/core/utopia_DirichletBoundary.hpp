@@ -44,7 +44,7 @@ namespace utopia {
         template <class Mapper>
         void convert_user_space_names(const Mapper &mapper) {
             for (auto &c : conditions) {
-                if (!c.name.empty()) {
+                if (!c.name.empty() && c.side == mapper.invalid_id()) {
                     auto id = mapper.id_from_user_space_name(c.name);
                     if (id != mapper.invalid_id()) {
                         c.side = id;

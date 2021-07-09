@@ -423,6 +423,8 @@ namespace utopia {
             return io_->write(x, this->time()->step(), this->time()->get());
         }
 
+        virtual const Vector_t &solution() const = 0;
+
     protected:
         inline bool export_tensors() const { return export_tensors_; }
 

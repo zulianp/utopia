@@ -18,6 +18,8 @@ namespace utopia {
         template <class... Args>
         ImplicitEulerIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
 
+        virtual ~ImplicitEulerIntegrator() = default;
+
         void read(Input &in) override { Super::read(in); }
 
         bool setup_IVP(Vector_t &x) override {
@@ -61,6 +63,8 @@ namespace utopia {
 
         inline Vector_t &x_old() { return x_old_; }
         inline const Vector_t &x_old() const { return x_old_; }
+
+        const Vector_t &solution() const override { return x_old(); }
 
     private:
         Vector_t x_old_;

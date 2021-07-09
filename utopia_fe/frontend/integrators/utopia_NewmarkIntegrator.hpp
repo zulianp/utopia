@@ -58,6 +58,8 @@ namespace utopia {
         template <class... Args>
         NewmarkIntegrator(Args &&... args) : Super(std::forward<Args>(args)...) {}
 
+        virtual ~NewmarkIntegrator() = default;
+
         void integrate_gradient(const Vector_t &x, Vector_t &g) const override {
             const Scalar_t dt2 = this->delta_time() * this->delta_time();
 
@@ -76,6 +78,8 @@ namespace utopia {
 
         inline Vector_t &x_old() { return x_old_; }
         inline const Vector_t &x_old() const { return x_old_; }
+
+        const Vector_t &solution() const override { return x_old(); }
 
     private:
         Vector_t x_old_, x_older_;

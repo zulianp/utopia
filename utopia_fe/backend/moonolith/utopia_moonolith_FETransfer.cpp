@@ -400,6 +400,11 @@ namespace utopia {
                 }
             }
 
+            if (impl_->opts.verbose) {
+                Scalar n_coupled_dofs = sum(*impl_->data.transfer_matrix);
+                utopia::out() << "n_coupled_dofs in to_space: " << SizeType(n_coupled_dofs) << "\n";
+            }
+
             UTOPIA_TRACE_REGION_END("FETransfer::init");
             return has_intersection;
         }
