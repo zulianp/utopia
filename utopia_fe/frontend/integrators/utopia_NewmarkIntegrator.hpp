@@ -10,7 +10,7 @@ namespace utopia {
     // https://en.wikipedia.org/wiki/Newmark-beta_method
     // Unconditionally Stable gamma = 0.5, beta = 0.25
     template <class FunctionSpace>
-    class NewmarkIntegrator final : public TimeDependentFunction<FunctionSpace> {
+    class NewmarkIntegrator : public TimeDependentFunction<FunctionSpace> {
     public:
         using Super = utopia::TimeDependentFunction<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
@@ -73,6 +73,9 @@ namespace utopia {
             H += (*this->mass_matrix());
             this->space()->apply_constraints(H);
         }
+
+        inline Vector_t &x_old() { return x_old_; }
+        inline const Vector_t &x_old() const { return x_old_; }
 
     private:
         Vector_t x_old_, x_older_;

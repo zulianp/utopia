@@ -8,7 +8,7 @@
 namespace utopia {
 
     template <class FunctionSpace>
-    class ImplicitEulerIntegrator final : public TimeDependentFunction<FunctionSpace> {
+    class ImplicitEulerIntegrator : public TimeDependentFunction<FunctionSpace> {
     public:
         using Super = utopia::TimeDependentFunction<FunctionSpace>;
         using Vector_t = typename Traits<FunctionSpace>::Vector;
@@ -58,6 +58,9 @@ namespace utopia {
             H *= dt;
             H += (*this->mass_matrix());
         }
+
+        inline Vector_t &x_old() { return x_old_; }
+        inline const Vector_t &x_old() const { return x_old_; }
 
     private:
         Vector_t x_old_;

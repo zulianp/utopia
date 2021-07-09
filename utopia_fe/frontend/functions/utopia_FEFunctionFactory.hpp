@@ -4,6 +4,8 @@
 #include "utopia_FEModelFunction.hpp"
 #include "utopia_ImplicitEulerIntegrator.hpp"
 #include "utopia_NewmarkIntegrator.hpp"
+#include "utopia_VelocityImplicitEulerIntegrator.hpp"
+#include "utopia_VelocityNewmarkIntegrator.hpp"
 
 namespace utopia {
 
@@ -16,6 +18,10 @@ namespace utopia {
         using FEModelFunction_t = utopia::FEModelFunction<FunctionSpace>;
         using ImplicitEulerIntegrator_t = utopia::ImplicitEulerIntegrator<FunctionSpace>;
         using NewmarkIntegrator_t = utopia::NewmarkIntegrator<FunctionSpace>;
+
+        using VelocityImplicitEulerIntegrator_t = utopia::VelocityImplicitEulerIntegrator<FunctionSpace>;
+        using VelocityNewmarkIntegrator_t = utopia::VelocityNewmarkIntegrator<FunctionSpace>;
+
         using TimeDependentFunction_t = utopia::TimeDependentFunction<FunctionSpace>;
 
         static std::unique_ptr<FEFunctionInterface<FunctionSpace>> make(const std::shared_ptr<FunctionSpace> &space,
@@ -33,6 +39,10 @@ namespace utopia {
                 return utopia::make_unique<NewmarkIntegrator_t>(std::move(fun));
             } else if (integrator == "ImplicitEuler") {
                 return utopia::make_unique<ImplicitEulerIntegrator_t>(std::move(fun));
+            } else if (integrator == "VelocityNewmark") {
+                return utopia::make_unique<VelocityNewmarkIntegrator_t>(std::move(fun));
+            } else if (integrator == "VelocityImplicitEuler") {
+                return utopia::make_unique<VelocityImplicitEulerIntegrator_t>(std::move(fun));
             } else {
                 return fun;
             }

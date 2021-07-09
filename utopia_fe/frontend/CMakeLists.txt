@@ -2,6 +2,7 @@ list(APPEND FRONTEND_MODULES .
     fracnetflow
     functions
     integrators
+    integrators/variants
     multigrid
     solve
     fsi

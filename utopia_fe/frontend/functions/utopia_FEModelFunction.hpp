@@ -212,7 +212,7 @@ namespace utopia {
 
         bool report_solution(const Vector_t &x) override { return space_->write(output_path_, x); }
 
-    private:
+    protected:
         void ensure_gradient(Vector_t &g) const {
             if (empty(g)) {
                 this->space()->create_vector(g);
@@ -233,6 +233,7 @@ namespace utopia {
             }
         }
 
+    private:
         std::shared_ptr<FunctionSpace> space_;
         std::shared_ptr<OmniAssembler_t> assembler_;
         std::shared_ptr<OmniAssembler_t> mass_matrix_assembler_;
