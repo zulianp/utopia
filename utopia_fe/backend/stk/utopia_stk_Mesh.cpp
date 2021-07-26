@@ -271,12 +271,12 @@ namespace utopia {
         bool Mesh::has_aura() const { return bulk_data().is_automatic_aura_on(); }
 
         void Mesh::create_edges() {
-            auto &edges_part = meta_data().declare_part("create_edges_part", ::stk::topology::EDGE_RANK);
+            auto &edges_part = meta_data().declare_part(universal_edge_set_name(), ::stk::topology::EDGE_RANK);
             ::stk::mesh::create_edges(bulk_data(), meta_data().universal_part(), &edges_part);
 
             std::stringstream ss;
-            ss << "n_edges:\t" << utopia::stk::count_entities(bulk_data(), ::stk::topology::EDGE_RANK, edges_part)
-               << "\n";
+            ss << "n_universal_edges:\t"
+               << utopia::stk::count_entities(bulk_data(), ::stk::topology::EDGE_RANK, edges_part) << "\n";
 
             comm().synched_print(ss.str());
         }

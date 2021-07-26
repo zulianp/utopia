@@ -363,11 +363,11 @@ namespace utopia {
         void FunctionSpace::initialize() {
             impl_->register_variables();
 
-            if (this->mesh().has_aura()) {
-                this->mesh().create_edges();
-            }
+            // if (this->mesh().has_aura()) {
+            //     this->mesh().create_edges();
+            // }
 
-            impl_->dof_map->init(this->mesh().bulk_data());
+            impl_->dof_map->init(*this->mesh_ptr());
 
             if (impl_->verbose) {
                 std::stringstream ss;
@@ -413,11 +413,11 @@ namespace utopia {
 
             impl_->register_variables();
 
-            if (this->mesh().has_aura()) {
-                this->mesh().create_edges();
-            }
+            // if (this->mesh().has_aura()) {
+            //     this->mesh().create_edges();
+            // }
 
-            impl_->dof_map->init(this->mesh().bulk_data());
+            impl_->dof_map->init(*this->mesh_ptr());
 
             if (impl_->verbose) {
                 std::stringstream ss;
@@ -437,7 +437,7 @@ namespace utopia {
 
             impl_->read_meta(in);
             impl_->register_variables();
-            impl_->dof_map->init(this->mesh().bulk_data());
+            impl_->dof_map->init(*this->mesh_ptr());
 
             std::vector<FEVar> fields;
             in.get("fields", [&](Input &array_node) {
@@ -572,7 +572,7 @@ namespace utopia {
 
         void FunctionSpace::create_matrix(Matrix &m) const {
             if (impl_->dof_map->empty()) {
-                impl_->dof_map->init(this->mesh().bulk_data());
+                impl_->dof_map->init(*this->mesh_ptr());
             }
 
             auto vl = layout(comm(), n_local_dofs(), n_dofs());

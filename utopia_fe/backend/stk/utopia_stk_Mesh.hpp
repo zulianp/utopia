@@ -79,6 +79,8 @@ namespace utopia {
 
             void create_edges();
 
+            inline static constexpr const char *universal_edge_set_name() { return "universal_edge_set"; }
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

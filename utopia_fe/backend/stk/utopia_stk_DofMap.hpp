@@ -49,11 +49,13 @@ namespace utopia {
         class DofMap final : public Describable {
         public:
             using IndexArray = Traits<FunctionSpace>::IndexArray;
+            using Mesh = Traits<FunctionSpace>::Mesh;
             using Communicator = Traits<FunctionSpace>::Communicator;
             using Vector = Traits<FunctionSpace>::Vector;
             using GlobalIndex = utopia::GlobalIndex<FunctionSpace>;
 
-            void init(::stk::mesh::BulkData &bulk_data);
+            void init(Mesh &mesh);
+
             DofMap();
             ~DofMap();
 
@@ -78,6 +80,8 @@ namespace utopia {
 
             void init_parallel(const Communicator &comm, ::stk::mesh::BulkData &bulk_data);
             void init_serial(::stk::mesh::BulkData &bulk_data);
+
+            void init(::stk::mesh::BulkData &bulk_data);
         };
     }  // namespace stk
 }  // namespace utopia

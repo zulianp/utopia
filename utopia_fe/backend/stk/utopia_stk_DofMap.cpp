@@ -3,6 +3,7 @@
 #include "utopia_stk_Commons.hpp"
 
 #include "utopia_stk_FunctionSpace.hpp"
+#include "utopia_stk_Mesh.hpp"
 
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/MetaData.hpp>
@@ -31,25 +32,6 @@ std::string mpi_error_2_string(const int error_code) {
 
 namespace utopia {
     namespace stk {
-
-        // Realm::create_edges()
-        // {
-        //   NaluEnv::self().naluOutputP0() << "Realm::create_edges(): Nalu Realm: " << name_ << " requires edge
-        //   creation: Begin" << std::endl;
-
-        //   static stk::diag::Timer timerCE_("CreateEdges", Simulation::rootTimer());
-        //   stk::diag::TimeBlock tbCreateEdges_(timerCE_);
-
-        //   double start_time = NaluEnv::self().nalu_time();
-        //   stk::mesh::create_edges(*bulkData_, metaData_->universal_part(), edgesPart_);
-        //   double stop_time = NaluEnv::self().nalu_time();
-
-        //   // timer close-out
-        //   const double total_edge_time = stop_time - start_time;
-        //   timerCreateEdges_ += total_edge_time;
-        //   NaluEnv::self().naluOutputP0() << "Realm::create_edges(): Nalu Realm: " << name_ << " requires edge
-        //   creation: End" << std::endl;
-        // }
 
         class DofMap::Impl {
         public:
@@ -346,9 +328,9 @@ namespace utopia {
 
         DofMap::~DofMap() = default;
 
-        void print_nodes(const ::stk::mesh::BulkData &bulk_data,
-                         const ::stk::mesh::Selector &selector,
-                         std::ostream &os) {
+        static void print_nodes(const ::stk::mesh::BulkData &bulk_data,
+                                const ::stk::mesh::Selector &selector,
+                                std::ostream &os) {
             using Bucket_t = ::stk::mesh::Bucket;
             using Entity_t = ::stk::mesh::Entity;
 
@@ -361,11 +343,12 @@ namespace utopia {
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     const Entity_t &elem = b[k];
+                    const auto local_id = utopia::stk::convert_entity_to_index(elem);
                     const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                    os << id << ' '
-                       << bulk_data.parallel_owner_rank(elem)
-                       // << ' ' << bulk_data.count_valid_connectivity(elem, ::stk::topology::NODE_RANK)
-                       << '\n';
+                    os << local_id << " => " << id << ' ' << " => " << (bulk_data.local_id(elem)) << ' ';
+                    os << bulk_data.parallel_owner_rank(elem);
+                    // << ' ' << bulk_data.count_valid_connectivity(elem, ::stk::topology::NODE_RANK)
+                    os << '\n';
 
                     bulk_data.comm_procs(elem, procs);
 
@@ -399,7 +382,10 @@ namespace utopia {
                     const Entity_t &elem = b[k];
 
                     const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                    os << id << ' ' << bulk_data.parallel_owner_rank(elem) << '\n';
+                    os << id << ' ' << bulk_data.parallel_owner_rank(elem);
+                    // os <<
+
+                    os << '\n';
 
                     for (auto it = bulk_data.begin_nodes(elem); it < bulk_data.end_nodes(elem); ++it) {
                         os << '(' << utopia::stk::convert_stk_index_to_index(bulk_data.identifier(*it)) << ','
@@ -422,6 +408,116 @@ namespace utopia {
             } else {
                 init_parallel(impl_->comm, bulk_data);
             }
+        }
+
+        void DofMap::init(Mesh &mesh) {
+            auto &meta_data = mesh.meta_data();
+            auto &bulk_data = mesh.bulk_data();
+
+            const int rank = mesh.comm().rank();
+
+            impl_->comm = Impl::Communicator(bulk_data.parallel());
+
+            if (mesh.has_aura()) {
+                // if (true) {
+                UTOPIA_TRACE_REGION_BEGIN("DofMap::init_aura");
+
+                using Bucket_t = ::stk::mesh::Bucket;
+                using BucketVector_t = ::stk::mesh::BucketVector;
+                using Entity_t = ::stk::mesh::Entity;
+
+                auto &meta_data = bulk_data.mesh_meta_data();
+
+                const ::stk::mesh::Selector selector = meta_data.universal_part();
+                const BucketVector_t &elem_buckets = bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, selector);
+
+                std::stringstream ss;
+
+                print_nodes(bulk_data, selector, ss);
+
+                SizeType n_local_nodes = count_local_nodes(bulk_data);
+                SizeType n_universal_nodes = count_universal_nodes(bulk_data);
+
+                SizeType offset = 0;
+                mesh.comm().exscan_sum(&n_local_nodes, &offset, 1);
+
+                std::vector<std::unordered_set<SizeType>> node2node(n_universal_nodes);
+
+                for (auto *b_ptr : elem_buckets) {
+                    const auto &b = *b_ptr;
+                    const auto length = b.size();
+
+                    for (Bucket_t::size_type k = 0; k < length; ++k) {
+                        const Entity_t elem = b[k];
+                        const auto node_ids = bulk_data.begin_nodes(elem);
+                        const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                        for (Size_t i = 0; i < n_nodes; ++i) {
+                            const auto node_i = utopia::stk::convert_entity_to_index(node_ids[i]);
+
+                            // ss << node_i << " -> " << bulk_data.identifier(node_ids[i]);
+
+                            // if (node_i >= n_universal_nodes) {
+                            //     ss << " X";
+                            // }
+
+                            // ss << "\n";
+
+                            // assert(node_i < n_universal_nodes);
+
+                            if (node_i < n_universal_nodes) {
+                                for (Size_t j = 0; j < n_nodes; ++j) {
+                                    node2node[node_i].insert(utopia::stk::convert_entity_to_index(node_ids[j]));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // mesh.comm().barrier();
+                mesh.comm().synched_print(ss.str());
+
+                impl_->d_nnz.resize(n_local_nodes, 0);
+                impl_->o_nnz.resize(n_local_nodes, 0);
+                impl_->local_to_global.resize(n_universal_nodes, -1);
+                impl_->owned_dof_start = offset;
+                impl_->owned_dof_end = offset + n_local_nodes;
+
+                // for (SizeType i = 0; i < n_local_nodes; ++i) {
+                //     impl_->d_nnz[i] = node2node[i].size();
+                // }
+
+                Impl::SizeType index = 0;
+                for (Impl::SizeType i = 0; i < n_universal_nodes; ++i) {
+                    auto &nodes = node2node[i];
+                    Impl::Entity e(utopia::stk::convert_index_to_stk_index(i));
+                    int owner_rank = bulk_data.parallel_owner_rank(e);
+
+                    if (owner_rank == rank) {
+                        impl_->local_to_global[i] = offset + index;
+
+                        for (auto n : nodes) {
+                            Impl::Entity node_e(utopia::stk::convert_index_to_stk_index(n));
+                            int node_owner_rank = bulk_data.parallel_owner_rank(node_e);
+
+                            if (node_owner_rank == owner_rank) {
+                                impl_->d_nnz[index] += 1;
+
+                            } else {
+                                impl_->o_nnz[index] += 1;
+                            }
+                        }
+
+                        ++index;
+                    }
+                }
+
+                UTOPIA_TRACE_REGION_END("DofMap::init_aura");
+            } else {
+                init(bulk_data);
+            }
+
+            // describe(utopia::out().stream());
         }
 
         void DofMap::init_parallel(const Communicator &comm, ::stk::mesh::BulkData &bulk_data) {
