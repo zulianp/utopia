@@ -436,7 +436,8 @@ namespace utopia {
             comm.exscan_sum(&n_local_nodes, &offset, 1);
             std::vector<std::unordered_set<SizeType>> node2node(n_universal_nodes);
 
-            auto &element_buckets = universal_elements(bulk_data);
+            // auto &element_buckets = universal_elements(bulk_data);
+            auto &element_buckets = local_elements(bulk_data);
 
             for (auto *b_ptr : element_buckets) {
                 const auto &b = *b_ptr;

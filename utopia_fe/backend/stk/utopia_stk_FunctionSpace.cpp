@@ -363,6 +363,10 @@ namespace utopia {
         void FunctionSpace::initialize() {
             impl_->register_variables();
 
+            if (this->mesh().has_aura()) {
+                this->mesh().create_edges();
+            }
+
             impl_->dof_map->init(this->mesh().bulk_data());
 
             if (impl_->verbose) {
@@ -402,9 +406,16 @@ namespace utopia {
 
         void FunctionSpace::read(Input &in) {
             in.get("mesh", *impl_->mesh);
+
+            if (mesh().empty()) return;
+
             read_meta(in);
 
             impl_->register_variables();
+
+            if (this->mesh().has_aura()) {
+                this->mesh().create_edges();
+            }
 
             impl_->dof_map->init(this->mesh().bulk_data());
 

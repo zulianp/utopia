@@ -42,8 +42,31 @@ namespace utopia {
                 bulk_data, bulk_data.mesh_meta_data().side_rank(), bulk_data.mesh_meta_data().universal_part());
         }
 
+        size_t count_shared_elements(const ::stk::mesh::BulkData &bulk_data) {
+            return count_entities(
+                bulk_data, ::stk::topology::ELEMENT_RANK, bulk_data.mesh_meta_data().globally_shared_part());
+        }
+
+        size_t count_aura_elements(const ::stk::mesh::BulkData &bulk_data) {
+            return count_entities(bulk_data, ::stk::topology::ELEMENT_RANK, bulk_data.mesh_meta_data().aura_part());
+        }
+
+        size_t count_aura_nodes(const ::stk::mesh::BulkData &bulk_data) {
+            return count_entities(bulk_data, ::stk::topology::NODE_RANK, bulk_data.mesh_meta_data().aura_part());
+        }
+
+        size_t count_shared_nodes(const ::stk::mesh::BulkData &bulk_data) {
+            return count_entities(
+                bulk_data, ::stk::topology::NODE_RANK, bulk_data.mesh_meta_data().globally_shared_part());
+        }
+
         const ::stk::mesh::BucketVector &shared_nodes(const ::stk::mesh::BulkData &bulk_data) {
             return bulk_data.get_buckets(::stk::topology::NODE_RANK, bulk_data.mesh_meta_data().globally_shared_part());
+        }
+
+        const ::stk::mesh::BucketVector &shared_elements(const ::stk::mesh::BulkData &bulk_data) {
+            return bulk_data.get_buckets(::stk::topology::ELEMENT_RANK,
+                                         bulk_data.mesh_meta_data().globally_shared_part());
         }
 
         const ::stk::mesh::BucketVector &local_nodes(const ::stk::mesh::BulkData &bulk_data) {
