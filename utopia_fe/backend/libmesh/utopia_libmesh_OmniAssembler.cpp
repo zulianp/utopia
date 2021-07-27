@@ -104,13 +104,41 @@ namespace utopia {
         }
 
         bool OmniAssembler::assemble(const Vector &x, Matrix &jacobian) {
-            assert(false && "IMPLEMENT ME");
-            return false;
+            if (!impl_->legacy_model) {
+                return false;
+            }
+
+            return impl_->legacy_model->assemble_hessian(x, jacobian);
         }
 
         bool OmniAssembler::assemble(const Vector &x, Vector &fun) {
-            assert(false && "IMPLEMENT ME");
-            return false;
+            if (!impl_->legacy_model) {
+                return false;
+            }
+
+            if (!impl_->legacy_model->assemble_gradient(x, fun)) {
+                return false;
+            }
+
+            Vector ff;
+            if (!impl_->forcing_function->eval(x, ff)) {
+                return false;
+            }
+
+            if (impl_->rescale != 1.0) {
+                ff *= impl_->rescale;
+            }
+
+            fun -= ff;
+            return true;
+        }
+
+        bool OmniAssembler::assemble(Matrix &jacobian) {
+            if (!impl_->legacy_model) {
+                return false;
+            }
+
+            return impl_->legacy_model->assemble_hessian(jacobian);
         }
 
         static bool is_flow(const std::string &name) {

@@ -6,6 +6,7 @@
 #include "utopia_Input.hpp"
 #include "utopia_MassMatrix.hpp"
 #include "utopia_Multilevel.hpp"
+
 #include "utopia_RedundantQPSolver.hpp"
 #include "utopia_TestFunctions.hpp"
 #include "utopia_make_unique.hpp"

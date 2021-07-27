@@ -67,7 +67,7 @@ void intrepid2_laplace_operator() {
     auto fe_ptr = make_ref_tet();
 
     intrepid2::Assemble<LaplaceOperator<double>> assembler(fe_ptr, lapl);
-    assembler.assemble();
+    assembler.assemble_matrix();
     // assembler.describe(std::cout);
 
     // if (std::is_same<FE::ExecutionSpace, Kokkos::Cuda>::value) {

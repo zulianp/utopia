@@ -26,7 +26,7 @@ option(UTOPIA_ENABLE_MARS "Tries to use mars backend" OFF)
 option(UTOPIA_ENABLE_INTREPID2 "Tries to use the intrepid2 related features"
        OFF)
 option(UTOPIA_ENABLE_NEW_TRANSFER "Use new transfer features" ON)
-option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
+# option(UTOPIA_INSTALL_LIBMESH "install libmesh" OFF)
 option(UTOPIA_ENABLE_WARNINGS "Compiler warnings" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
@@ -37,12 +37,19 @@ option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
 # ##############################################################################
 # ##############################################################################
 
-if(UTOPIA_ENABLE_WARNINGS)
-    set(UTOPIA_FE_DEV_FLAGS
-        "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder"
-    )
-else()
-    set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
+if(NOT UTOPIA_ENABLE_MARS)
+    if(UTOPIA_ENABLE_WARNINGS)
+
+        set(UTOPIA_FE_DEV_FLAGS
+            "-Wall -Werror=enum-compare -Werror=delete-non-virtual-dtor -Werror=reorder -Werror=return-type" # -Werror=uninitialized
+)
+
+        set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_DEV_FLAGS} -Wextra ")
+
+    else()
+        set(UTOPIA_FE_DEV_FLAGS "-w -Wno-deprecated-declarations")
+    endif()
+
 endif()
 
 # More annoying set(UTOPIA_FE_DEV_FLAGS "${UTOPIA_FE_DEV_FLAGS} -Wextra
@@ -194,6 +201,8 @@ macro(add_utopiafe_app app_name)
     # include)
 endmacro(add_utopiafe_app)
 
+list(APPEND UTOPIA_FE_MODULES frontend)
+
 if(UTOPIA_ENABLE_LIBMESH)
     list(APPEND UTOPIA_FE_MODULES backend/libmesh edsl)
 
@@ -213,9 +222,9 @@ endif()
 
 list(APPEND UTOPIA_FE_MODULES base interoperability core)
 
-if(UTOPIA_INSTALL_LIBMESH)
-    include(InstallLIBMESH)
-endif()
+# if(UTOPIA_INSTALL_LIBMESH)
+#     include(InstallLIBMESH)
+# endif()
 
 if(UTOPIA_ENABLE_INTREPID2)
     list(APPEND UTOPIA_FE_MODULES backend/intrepid2)

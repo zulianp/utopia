@@ -76,6 +76,9 @@ namespace utopia {
         std::shared_ptr<const Matrix> op_;
     };
 
+    template <class Matrix, class Vector>
+    class Traits<LinearSolver<Matrix, Vector>> : public Traits<Matrix> {};
+
 }  // namespace utopia
 
 #endif  // UTOPIA_SOLVER_SOLVER_H

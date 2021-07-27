@@ -5,7 +5,7 @@
 #include "utopia_ILU.hpp"
 #include "utopia_assemble_laplacian_1D.hpp"
 
-#include "utopia_Agglomerate.hpp"
+#include "utopia_AlgebraicMultigrid.hpp"
 #include "utopia_ILUDecompose.hpp"
 
 #include "utopia_InputParameters.hpp"

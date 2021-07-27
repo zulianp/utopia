@@ -8,7 +8,7 @@ if(NOT LIBMESH_FOUND)
     if(UTOPIA_DEPENDENCIES_DIR)
         set(LIBMESH_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/libmesh)
     else()
-        set(LIBMESH_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/libmesh)
+        set(LIBMESH_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../../external/libmesh)
     endif()
 
     set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")
@@ -36,7 +36,7 @@ if(NOT LIBMESH_FOUND)
         CONFIGURE_COMMAND
             <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
             --with-methods=${METHODS} --enable-silent-rules --enable-unique-id
-            --disable-warnings --disable-maintainer-mode
+            --disable-warnings --disable-maintainer-mode  --enable-petsc-required
         BUILD_COMMAND make
         INSTALL_COMMAND make install
         # COMMAND       ${MAKE_COMMAND}

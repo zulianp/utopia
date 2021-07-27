@@ -60,6 +60,8 @@ namespace utopia {
 
     class Adaptivity {
     public:
+        using IndexArray = Traits<UVector>::IndexArray;
+
         void constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S);
 
         void constraint_matrix(const libMesh::MeshBase &mesh,
@@ -88,24 +90,24 @@ namespace utopia {
                                            libMesh::DofMap &dof_map,
                                            unsigned int sys_number,
                                            unsigned int var_number,
-                                           std::vector<int> &index);
+                                           IndexArray &index);
 
         static void compute_boundary_nodes_top_parent(const libMesh::MeshBase &mesh,
                                                       libMesh::DofMap &dof_map,
                                                       unsigned int sys_number,
                                                       unsigned int var_number,
-                                                      std::vector<int> &index);
+                                                      IndexArray &index);
 
         static void compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh,
                                                    libMesh::DofMap &dof_map,
                                                    unsigned int sys_number,
                                                    unsigned int var_number,
-                                                   std::vector<int> &index);
+                                                   IndexArray &index);
 
         static void process_constraints(libMesh::MeshBase &mesh,
                                         libMesh::DofMap &dof_map,
                                         libMesh::DofConstraints &_dof_constraints,
-                                        std::vector<int> &index);
+                                        IndexArray &index);
 
         static void add_constraints_to_send_list(libMesh::DofMap &dof_map,
                                                  libMesh::DofConstraints &_dof_constraints,

@@ -49,11 +49,14 @@ namespace utopia {
         class DofMap final : public Describable {
         public:
             using IndexArray = Traits<FunctionSpace>::IndexArray;
+            using Mesh = Traits<FunctionSpace>::Mesh;
+            using SizeType = Traits<FunctionSpace>::SizeType;
             using Communicator = Traits<FunctionSpace>::Communicator;
             using Vector = Traits<FunctionSpace>::Vector;
             using GlobalIndex = utopia::GlobalIndex<FunctionSpace>;
 
-            void init(::stk::mesh::BulkData &bulk_data);
+            void init(Mesh &mesh);
+
             DofMap();
             ~DofMap();
 
@@ -71,6 +74,8 @@ namespace utopia {
             void global_to_local(const Vector &global, Vector &local) const;
             void local_to_global(const Vector &local, Vector &global, AssemblyMode mode) const;
 
+            SizeType shift_aura_idx(const SizeType idx) const;
+
         private:
             class Impl;
             class DofExchange;
@@ -78,6 +83,12 @@ namespace utopia {
 
             void init_parallel(const Communicator &comm, ::stk::mesh::BulkData &bulk_data);
             void init_serial(::stk::mesh::BulkData &bulk_data);
+
+            void init(::stk::mesh::BulkData &bulk_data);
+
+            void exchange_shared_dofs(const Communicator &comm,
+                                      ::stk::mesh::BulkData &bulk_data,
+                                      bool add_to_nnz_pattern = true);
         };
     }  // namespace stk
 }  // namespace utopia

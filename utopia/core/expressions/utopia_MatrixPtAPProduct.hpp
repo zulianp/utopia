@@ -1,10 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-08-016
- * @Last Modified by:   Alena Kopanicakova
- * @Last Modified time: 2016-08-16
- */
-
 #ifndef UTOPIA_MATRIX_RESTRICTION_HPP
 #define UTOPIA_MATRIX_RESTRICTION_HPP
 

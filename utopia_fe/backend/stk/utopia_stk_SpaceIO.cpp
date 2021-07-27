@@ -86,5 +86,7 @@ namespace utopia {
             return true;
         }
 
+        void SpaceIO::register_output_field(const std::string &var_name) { impl_->io.register_output_field(var_name); }
+
     }  // namespace stk
 }  // namespace utopia

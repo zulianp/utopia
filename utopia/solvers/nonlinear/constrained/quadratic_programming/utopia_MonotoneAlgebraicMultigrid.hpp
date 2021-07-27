@@ -77,6 +77,8 @@ namespace utopia {
         void verbose(const bool &val) override {
             Super::verbose(val);
             algorithm_.verbose(val);
+
+            if (active_set_) active_set_->verbose(val);
         }
 
         void max_it(const SizeType &max_it_in) override {

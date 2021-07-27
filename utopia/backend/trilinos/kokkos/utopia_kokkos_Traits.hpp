@@ -83,6 +83,23 @@ namespace utopia {
         }
     };
 
+    template <typename... Args>
+    class Accessor<Kokkos::View<Args...>> {
+    public:
+        using View = Kokkos::View<Args...>;
+        using SizeType = utopia::TpetraSizeType;
+
+        UTOPIA_INLINE_FUNCTION static auto get(const View &t, const SizeType &i) -> decltype(t(i)) { return t(i); }
+
+        UTOPIA_INLINE_FUNCTION static void set(View &t, const SizeType &i, const decltype(t(i)) &val) { t(i) = val; }
+        UTOPIA_INLINE_FUNCTION static void set(View &t,
+                                               const SizeType &i,
+                                               const SizeType &j,
+                                               const decltype(t(i, j)) &val) {
+            t(i, j) = val;
+        }
+    };
+
     template <class Scalar, typename... Args>
     class Accessor<Kokkos::View<Scalar *, Args...>> {
     public:

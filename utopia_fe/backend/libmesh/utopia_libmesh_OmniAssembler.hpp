@@ -24,6 +24,8 @@ namespace utopia {
             bool assemble(const Vector &x, Matrix &jacobian, Vector &fun);
             bool assemble(const Vector &x, Matrix &jacobian);
             bool assemble(const Vector &x, Vector &fun);
+
+            bool assemble(Matrix &jacobian);
             void read(Input &in) override;
 
             void set_environment(const std::shared_ptr<Environment<libmesh::FunctionSpace>> &env);

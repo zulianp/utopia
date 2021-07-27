@@ -112,6 +112,10 @@ namespace utopia {
 
         inline void set(const std::string &key, const int &val) { aux_set(key, val); }
 
+        inline void set(const std::string &key, const long &val) { aux_set(key, val); }
+
+        inline void set(const std::string &key, const long long &val) { aux_set(key, val); }
+
         inline void set(const std::string &key, const char *val) { aux_set(key, std::string(val)); }
 
         inline void set(const std::string &key, const std::string &val) { aux_set(key, val); }
@@ -129,6 +133,9 @@ namespace utopia {
 
         inline void add_root(std::unique_ptr<Input> &&root) { aux_roots_.push_back(std::move(root)); }
         inline void add_node(const std::string &name, std::shared_ptr<Input> &&node) { nodes_[name] = std::move(node); }
+
+        bool key_exists(const std::string &key) const override;
+        bool is_collection() const override;
 
     private:
         std::map<std::string, std::unique_ptr<IConvertible>> values_;

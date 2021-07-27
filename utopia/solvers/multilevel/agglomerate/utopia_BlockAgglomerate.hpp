@@ -5,7 +5,9 @@
 
 #ifdef UTOPIA_WITH_PETSC
 
-#include "utopia_AlgebraicMultigrid.hpp"
+#include "utopia_MatrixAgglomerator.hpp"
+
+#include "utopia_petsc_Utils.hpp"
 
 #include "utopia_CRSMatrix.hpp"
 #include "utopia_petsc_ILUDecompose.hpp"

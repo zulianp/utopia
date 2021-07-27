@@ -30,8 +30,10 @@ namespace utopia {
         switch (topo) {
             case ::stk::topology::NODE:
                 return ::shards::getCellTopologyData<::shards::Node>();
+
             case ::stk::topology::LINE_2_1D:
                 return ::shards::getCellTopologyData<::shards::Line<>>();
+            case ::stk::topology::BEAM_2:
             case ::stk::topology::LINE_2:
                 return (no_shell_topologies ? ::shards::getCellTopologyData<::shards::Line<>>()
                                             : ::shards::getCellTopologyData<::shards::ShellLine<>>());
@@ -167,8 +169,9 @@ namespace utopia {
         auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        ::stk::mesh::Selector s_universal = meta_data.universal_part();
-        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
+        // ::stk::mesh::Selector s_universal = meta_data.universal_part();
+        ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), selector);
 
         CreateFEFromBuckets<Scalar>::apply(bulk_data, side_buckets, fe, degree);
     }
@@ -184,8 +187,19 @@ namespace utopia {
         auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        ::stk::mesh::Selector s_universal = *meta_data.get_part(part_name);
-        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
+        auto part_ptr = meta_data.get_part(part_name);
+        if (!part_ptr) {
+            part_ptr = meta_data.get_part(stk::SideSet::Cube::convert(part_name));
+        }
+
+        assert(part_ptr);
+        if (!part_ptr) {
+            Utopia::Abort("Unable to find part!");
+        }
+
+        ::stk::mesh::Selector part = *part_ptr;
+
+        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), part);
 
         CreateFEFromBuckets<Scalar>::apply(bulk_data, side_buckets, fe, degree);
     }
@@ -214,6 +228,12 @@ namespace utopia {
             ::Kokkos::create_mirror_view(device_element_matrices);
         ::Kokkos::deep_copy(element_matrices, device_element_matrices);
 
+        const int n_var = space.n_var();
+
+        if (!matrix.is_block() && n_var != 1) {
+            matrix.clear();
+        }
+
         if (matrix.empty()) {
             space.create_matrix(matrix);
 
@@ -241,7 +261,6 @@ namespace utopia {
         {
             Write<PetscMatrix> w(matrix, utopia::GLOBAL_ADD);
 
-            const int n_var = space.n_var();
             const SizeType n_dofs = element_matrices.extent(1);
             const SizeType nn = n_dofs / n_var;
 
@@ -333,11 +352,23 @@ namespace utopia {
                           const StkViewDevice_t<Scalar> &device_element_vectors,
                           AssemblyMode mode,
                           PetscVector &vector) {
+            const int n_var = space.n_var();
+            apply(space, buckets, device_element_vectors, mode, vector, n_var);
+        }
+
+        static void apply(const utopia::stk::FunctionSpace &space,
+                          const BucketVector_t &buckets,
+                          const StkViewDevice_t<Scalar> &device_element_vectors,
+                          AssemblyMode mode,
+                          PetscVector &vector,
+                          const int n_var) {
             UTOPIA_TRACE_REGION_BEGIN("LocalToGlobalFromBuckets(Stk,Intrepid2)");
 
             if (empty(vector)) {
                 space.create_vector(vector);
             } else {
+                // Ensure the vector has the right block size
+                vector.set_block_size(n_var);
                 // Reuse vector
                 if (mode == OVERWRITE_MODE) {
                     vector *= 0.0;
@@ -355,7 +386,6 @@ namespace utopia {
             {
                 Write<PetscVector> w(vector, utopia::GLOBAL_ADD);
 
-                const int n_var = space.n_var();
                 const SizeType n_dofs = element_vectors.extent(1);
                 const SizeType nn = n_dofs / n_var;
 
@@ -417,6 +447,8 @@ namespace utopia {
                 vector *= -1.0;
             }
 
+            // disp(vector);
+
             UTOPIA_TRACE_REGION_END("LocalToGlobalFromBuckets(Stk,Intrepid2)");
         }
     };
@@ -432,6 +464,17 @@ namespace utopia {
     }
 
     template <typename Scalar>
+    void LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscVector>::apply(
+        const utopia::stk::FunctionSpace &space,
+        const StkViewDevice_t<Scalar> &element_vectors,
+        AssemblyMode mode,
+        PetscVector &vector,
+        const int n_var) {
+        LocalToGlobalFromBuckets<Scalar>::apply(
+            space, utopia::stk::local_elements(space.mesh().bulk_data()), element_vectors, mode, vector, n_var);
+    }
+
+    template <typename Scalar>
     void LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<Scalar>, PetscVector>::side_apply(
         const utopia::stk::FunctionSpace &space,
         const StkViewDevice_t<Scalar> &element_vectors,
@@ -441,10 +484,20 @@ namespace utopia {
         auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        ::stk::mesh::Selector s_universal = *meta_data.get_part(part_name);
+        auto part_ptr = meta_data.get_part(part_name);
+        if (!part_ptr) {
+            part_ptr = meta_data.get_part(stk::SideSet::Cube::convert(part_name));
+        }
+
+        assert(part_ptr);
+        if (!part_ptr) {
+            Utopia::Abort("Unable to find part!");
+        }
+
+        ::stk::mesh::Selector part = *part_ptr;
 
         LocalToGlobalFromBuckets<Scalar>::apply(
-            space, bulk_data.get_buckets(meta_data.side_rank(), s_universal), element_vectors, mode, vector);
+            space, bulk_data.get_buckets(meta_data.side_rank(), part), element_vectors, mode, vector);
     }
 
     template class LocalToGlobal<utopia::stk::FunctionSpace, StkViewDevice_t<StkScalar_t>, PetscMatrix>;

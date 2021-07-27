@@ -31,20 +31,6 @@ namespace utopia {
         using Communicator_t = typename Traits<FunctionSpace>::Communicator;
         using Mesh_t = typename Traits<FunctionSpace>::Mesh;
 
-        // Use specialized compoenents for function space
-        using Obstacle_t = utopia::Obstacle<FunctionSpace>;
-        using OmniAssembler_t = utopia::OmniAssembler<FunctionSpace>;
-
-        // Use algorithms from utopia algebra
-        using QPSolver_t = utopia::QPSolver<Matrix_t, Vector_t>;
-        using SemismoothNewton_t = utopia::SemismoothNewton<Matrix_t, Vector_t>;
-        using Factorization_t = utopia::Factorization<Matrix_t, Vector_t>;
-        using LinearSolver_t = utopia::LinearSolver<Matrix_t, Vector_t>;
-        using IterativeSolver_t = utopia::IterativeSolver<Matrix_t, Vector_t>;
-        using AlgebraicMultigrid_t = utopia::AlgebraicMultigrid<Matrix_t, Vector_t>;
-        using ProjectedGaussSeidel_t = utopia::ProjectedGaussSeidel<Matrix_t, Vector_t>;
-        using KSPSolver_t = utopia::KSPSolver<Matrix_t, Vector_t>;
-
         void read(Input &in) override {
             in.get("verbose", verbose);
 
@@ -60,7 +46,17 @@ namespace utopia {
                     from_space.read_with_state(in, field);
 
                     const Scalar_t norm_field = norm2(field.data());
-                    std::cout << "norm_field: " << norm_field << std::endl;
+                    const Size_t size_field = field.data().size();
+
+                    const auto n_elements = from_space.mesh().n_elements();
+                    const auto n_nodes = from_space.mesh().n_nodes();
+
+                    if (from_space.comm().rank() == 0) {
+                        utopia::out() << "[Mesh] n elements: " << n_elements << ", n nodes: " << n_nodes << '\n';
+
+                        utopia::out() << "[Field] size: " << size_field << ", norm: " << norm_field << '\n';
+                    }
+
                 } else {
                     from_space.read(in);
                 }
@@ -71,7 +67,7 @@ namespace utopia {
             }
 
             if (verbose) {
-                utopia::out() << "Reading to!\n";
+                from_space.comm().root_print("Reading to!\n", utopia::out().stream());
             }
 
             in.get("to", to_space);
@@ -90,17 +86,25 @@ namespace utopia {
             in.get("export_from_function", export_from_function);
 
             if (verbose) {
-                utopia::out() << "Exiting read!\n";
+                from_space.comm().root_print("Exiting read!\n", utopia::out().stream());
             }
         }
 
         void run() {
+            if (export_from_function) {
+                from_space.write("./from_out.e", field.data());
+
+                if (verbose) {
+                    from_space.comm().root_print("Exported from function!\n", utopia::out().stream());
+                }
+            }
+
             if (!transfer.init(make_ref(from_space), make_ref(to_space))) {
                 return;
             }
 
             if (verbose) {
-                utopia::out() << "Exiting transfer!\n";
+                from_space.comm().root_print("Exiting transfer!\n", utopia::out().stream());
             }
 
             Field<FunctionSpace> to_field;
@@ -119,10 +123,6 @@ namespace utopia {
             // for (int i = 0; i < n_var; ++i) {
             //     utopia::out() << from_norms[i] << " -> " << to_norms[i] << '\n';
             // }
-
-            if (export_from_function) {
-                from_space.write("./from_out.e", field.data());
-            }
         }
 
         FETransferApp() {}

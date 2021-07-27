@@ -2,9 +2,9 @@
 #define UTOPIA_AGGLOMERATE_HPP
 
 #include "utopia_AdditiveCorrectionTransfer.hpp"
-#include "utopia_AlgebraicMultigrid.hpp"
-
 #include "utopia_IPRTruncatedTransfer.hpp"
+#include "utopia_MatrixAgglomerator.hpp"
+#include "utopia_RowView.hpp"
 
 namespace utopia {
 

@@ -10,10 +10,14 @@ namespace utopia {
     template <int Dim, class Coefficient>
     class VectorLaplaceOperator : public Configurable {
     public:
-        void read(Input &in) override { in.get("coeff", coeff); }
+        void read(Input &in) override {
+            in.get("coeff", coeff);
+            in.get("verbose", verbose);
+        }
 
         VectorLaplaceOperator(const Coefficient &coeff = Coefficient(1.0)) : coeff(coeff) {}
         Coefficient coeff;
+        bool verbose{false};
     };
 
     namespace intrepid2 {
@@ -80,6 +84,13 @@ namespace utopia {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<VectorLaplaceOperator>::apply");
 
                 this->apply_vector_operator("Assemble<VectorLaplaceOperator>::apply", x, y, make_op());
+
+                if (op_.verbose) {
+                    utopia::out() << "ForcingFunction: " << this->vector_accumulator()->sum() << '\n';
+                    // this->describe(utopia::out().stream());
+                    // utopia::out() << "Accumulator:\n";
+                    this->vector_accumulator()->describe(utopia::out().stream());
+                }
 
                 UTOPIA_TRACE_REGION_END("Assemble<VectorLaplaceOperator>::apply");
                 return true;

@@ -24,7 +24,7 @@ namespace utopia {
                                              libMesh::DofConstraints &constraints) {
         using uint = unsigned int;
 
-        std::vector<int> index;
+        IndexArray index;
 
         libMesh::MeshBase &mesh_copy = const_cast<libMesh::MeshBase &>(mesh);
 
@@ -78,9 +78,9 @@ namespace utopia {
             process_constraints(mesh_copy, dof_copy, constraints, index);
         }
 
-        std::cout << "--------------------------------------------------\n";
-        std::cout << "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
-        std::cout << "--------------------------------------------------\n";
+        // std::cout << "--------------------------------------------------\n";
+        // std::cout << "[Adaptivity::compute_all_constraints] n_constraints: " << constraints.size() << std::endl;
+        // std::cout << "--------------------------------------------------\n";
     }
 
     void Adaptivity::assemble_constraint(const libMesh::MeshBase &mesh, const libMesh::DofMap &dof_map) {
@@ -90,7 +90,7 @@ namespace utopia {
 
         dof_constraints_.clear();
 
-        std::vector<int> index;
+        IndexArray index;
 
         libMesh::MeshBase &mesh_copy = const_cast<libMesh::MeshBase &>(mesh);
 
@@ -129,9 +129,9 @@ namespace utopia {
             Adaptivity::process_constraints(mesh_copy, dof_copy, dof_constraints_, index);
         }
 
-        std::cout << "--------------------------------------------------\n";
-        std::cout << "[Adaptivity::assemble_constraint] n_constraints: " << dof_constraints_.size() << std::endl;
-        std::cout << "--------------------------------------------------\n";
+        // std::cout << "--------------------------------------------------\n";
+        // std::cout << "[Adaptivity::assemble_constraint] n_constraints: " << dof_constraints_.size() << std::endl;
+        // std::cout << "--------------------------------------------------\n";
     }
 
     void Adaptivity::constraint_matrix(const LibMeshFunctionSpace &V, USparseMatrix &M, USparseMatrix &S) {
@@ -356,14 +356,14 @@ namespace utopia {
     void Adaptivity::process_constraints(libMesh::MeshBase &mesh,
                                          libMesh::DofMap &dof_map,
                                          libMesh::DofConstraints &_dof_constraints,
-                                         std::vector<int> &index) {
+                                         IndexArray &index) {
         using namespace libMesh;
 
         // dof_map.allgather_recursive_constraints(mesh);
 
         // auto _primal_constraint_values = dof_map.get_primal_constraint_values();
 
-        // std::vector<int> index;
+        // IndexArray index;
 
         typedef std::set<dof_id_type> RCSet;
 
@@ -434,13 +434,13 @@ namespace utopia {
                                             libMesh::DofMap &dof_map,
                                             unsigned int sys_number,
                                             unsigned int var_number,
-                                            std::vector<int> &index) {
+                                            IndexArray &index) {
         // std::cout << "Adaptivity::compute_boundary_nodes::Begin " << std::endl;
 #if LIBMESH_VERSION_LESS_THAN(1, 4, 0)
 #else
         auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
-        std::vector<int> dirichlet_id, index_local;
+        IndexArray dirichlet_id, index_local;
 
         index_local.clear();
 
@@ -582,15 +582,15 @@ namespace utopia {
 
         //   std::cout << "Adaptivity::compute_boundary_nodes::END " << std::endl;
 #endif
-        std::cout << "Adaptivity::compute_boundary_nodes::END " << std::endl;
+        // std::cout << "Adaptivity::compute_boundary_nodes::END " << std::endl;
     }
 
     void Adaptivity::compute_boundary_nodes_to_skip(const libMesh::MeshBase &mesh,
                                                     libMesh::DofMap &dof_map,
                                                     unsigned int sys_number,
                                                     unsigned int var_number,
-                                                    std::vector<int> &index) {
-        std::cout << "Adaptivity::compute_boundary_nodes_to_skip::BEGIN " << std::endl;
+                                                    IndexArray &index) {
+        // std::cout << "Adaptivity::compute_boundary_nodes_to_skip::BEGIN " << std::endl;
 
 #if LIBMESH_VERSION_LESS_THAN(1, 4, 0)
 
@@ -604,7 +604,7 @@ namespace utopia {
         // prima:"<<constraints.size()<<std::endl;
         // libmesh_assert(elem);
 
-        std::vector<int> index_self;
+        IndexArray index_self;
 
         index_self.clear();
 
@@ -694,7 +694,7 @@ namespace utopia {
 
         auto on_boundary = libMesh::MeshTools::find_boundary_nodes(mesh);
 
-        std::vector<int> dirichlet_id, index_local, tmp;
+        IndexArray dirichlet_id, index_local, tmp;
 
         index_local.clear();
 
@@ -795,8 +795,8 @@ namespace utopia {
             }
         }
 
-        std::cout << "Adaptivity::compute_boundary_nodes_to_skip::END " << tmp.size() << " and " << index.size()
-                  << std::endl;
+        // std::cout << "Adaptivity::compute_boundary_nodes_to_skip::END " << tmp.size() << " and " << index.size()
+        //           << std::endl;
 #endif
     }
 }  // namespace utopia

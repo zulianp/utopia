@@ -7,7 +7,7 @@ if(NOT CYGWIN)
         if(UTOPIA_DEPENDENCIES_DIR)
             set(PETSC_INSTALL_DIR ${UTOPIA_DEPENDENCIES_DIR}/petsc)
         else()
-            set(PETSC_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../external/petsc)
+            set(PETSC_INSTALL_DIR ${CMAKE_SOURCE_DIR}/../../external/petsc)
         endif()
 
         set(STAGE_DIR "${CMAKE_BINARY_DIR}/stage")

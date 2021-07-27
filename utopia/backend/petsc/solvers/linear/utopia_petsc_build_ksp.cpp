@@ -2,6 +2,7 @@
 
 #include <utility>
 #include "utopia_Instance.hpp"
+#include "utopia_petsc_Factorization.hpp"
 
 #undef __FUNCT__
 #define __FUNCT__ "KSPSetUp_UTOPIA"

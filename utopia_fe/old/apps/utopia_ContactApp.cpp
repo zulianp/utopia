@@ -79,7 +79,7 @@ namespace utopia {
                                                                                   std::move(forcing_function));
 
                 is.get("qp-solver", [this](Input &in) {
-                    this->qp_solver = std::make_shared<PolymorphicQPSolver<USparseMatrix, UVector>>();
+                    this->qp_solver = std::make_shared<OmniQPSolver<USparseMatrix, UVector>>();
                     this->qp_solver->read(in);
                 });
 

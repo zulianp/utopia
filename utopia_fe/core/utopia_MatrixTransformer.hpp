@@ -2,6 +2,7 @@
 #define UTOPIA_MATRIX_TRANSFORMER_HPP
 
 #include "utopia_Input.hpp"
+#include "utopia_Tracer.hpp"
 #include "utopia_Traits.hpp"
 
 // #include "utopia_StabilizeTransport.hpp"
