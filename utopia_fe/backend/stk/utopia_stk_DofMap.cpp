@@ -422,12 +422,13 @@ namespace utopia {
             auto &bulk_data = mesh.bulk_data();
 
             const int rank = mesh.comm().rank();
+            const int size = mesh.comm().size();
 
             impl_->comm = Impl::Communicator(bulk_data.parallel());
 
             // std::stringstream ss;
 
-            if (mesh.has_aura()) {
+            if (mesh.has_aura() && size > 1) {
                 // if (true) {
                 UTOPIA_TRACE_REGION_BEGIN("DofMap::init_aura");
 
