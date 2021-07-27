@@ -158,6 +158,7 @@ namespace utopia {
     template <class FunctionSpace>
     bool AnalyticObstacle<FunctionSpace>::init(const std::shared_ptr<FunctionSpace> &domain) {
         impl_->domain = domain;
+        return true;
     }
 
     template <class FunctionSpace>

@@ -110,7 +110,9 @@ namespace utopia {
         forcing_function_.eval(x, gradient);
 
         // for newton methods
+#ifndef UTOPIA_LIBMESH_LEGACY_MODE
         gradient += hessian * x;
+#endif  // UTOPIA_LIBMESH_LEGACY_MODE
 
         if (rescale_ != 1.0) {
             //     hessian *= rescale_;
