@@ -1,6 +1,7 @@
 #ifndef UTOPIA_REPORTER_HPP
 #define UTOPIA_REPORTER_HPP
 
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -18,7 +19,10 @@ namespace utopia {
     public:
         ~StreamWrapper() = default;
 
-        inline std::ostream &stream() override { return *stream_ptr_; }
+        inline std::ostream &stream() override {
+            assert(stream_ptr_);
+            return *stream_ptr_;
+        }
 
         inline void wrap_cout() { stream_ptr_ = &std::cout; }
         inline void wrap_cerr() { stream_ptr_ = &std::cerr; }
@@ -28,7 +32,7 @@ namespace utopia {
         StreamWrapper(std::ostream &os) : stream_ptr_(&os) {}
 
     private:
-        std::ostream *stream_ptr_;
+        std::ostream *stream_ptr_{nullptr};
     };
 
     class FileLogger final : public StreamWrapper {
@@ -64,9 +68,20 @@ namespace utopia {
 
         void read(Input &in) override;
 
-        inline OStream &cout() { return *cout_; }
-        inline OStream &cerr() { return *cerr_; }
-        inline OStream &dev() { return *dev_; }
+        inline OStream &cout() {
+            assert(cout_);
+            return *cout_;
+        }
+
+        inline OStream &cerr() {
+            assert(cerr_);
+            return *cerr_;
+        }
+
+        inline OStream &dev() {
+            assert(dev_);
+            return *dev_;
+        }
 
         Reporter()
             : cout_(utopia::make_unique<StreamWrapper>(std::cout)),

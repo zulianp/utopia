@@ -54,6 +54,8 @@ namespace utopia {
         using SizeType = typename Traits<T>::SizeType;
 
         inline Scalar get(const SizeType &idx) const { return tensor_.get(idx); }
+        inline Scalar operator()(const SizeType &idx) const { return tensor_.get(idx); }
+        inline Scalar operator[](const SizeType &idx) const { return tensor_.get(idx); }
 
         DeviceView(const T &tensor) : tensor_(tensor), lock_(std::make_shared<Read<T>>(tensor)) {}
 
@@ -72,6 +74,8 @@ namespace utopia {
         using SizeType = typename Traits<T>::SizeType;
 
         inline Scalar get(const SizeType &idx) const { return tensor_.l_get(idx); }
+        inline Scalar operator()(const SizeType &idx) const { return tensor_.l_get(idx); }
+        inline Scalar operator[](const SizeType &idx) const { return tensor_.l_get(idx); }
 
         inline ArrayView<const Scalar> array() const { return tensor_.array_view_read(); }
 

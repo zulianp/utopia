@@ -3,6 +3,8 @@
 
 // #include "utopia_AbstractVector.hpp"
 
+void print_array(double* seq, int n);
+
 namespace utopia {
     // Forward declarations
     template <typename Scalar, typename SizeType>

@@ -21,9 +21,9 @@ if(NOT TRILINOS_FOUND)
 
     if(MPI_DIR)
         set(TRILINOS_MPI_BASE_DIR ${MPI_DIR})
-        # message(STATUS "TRILINOS_MPI_BASE_DIR=${TRILINOS_MPI_BASE_DIR}")
-        # message(STATUS "MPI_CXX_COMPILER=${MPI_CXX_COMPILER}") message(STATUS
-        # "MPI_C_COMPILER=${MPI_C_COMPILER}")
+        message(STATUS "TRILINOS_MPI_BASE_DIR=${TRILINOS_MPI_BASE_DIR}")
+        message(STATUS "MPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
+        message(STATUS "MPI_C_COMPILER=${MPI_C_COMPILER}")
     endif()
 
     set(TRILINOS_CXX_COMPILER ${CMAKE_CXX_COMPILER})
@@ -101,6 +101,8 @@ if(NOT TRILINOS_FOUND)
         "-DTrilinos_ENABLE_SEACASNemspread:BOOL=ON"
         "-DTrilinos_ENABLE_SEACASNemslice:BOOL=ON"
         "-DTrilinos_ENABLE_SEACASIoss:BOOL=ON")
+
+    list(APPEND TRILINOS_CMAKE_ARGS "-DTrilinos_ENABLE_Intrepid2:BOOL=ON")
 
     # For cuda
     if(UTOPIA_ENABLE_CUDA)

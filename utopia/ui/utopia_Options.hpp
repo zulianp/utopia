@@ -9,6 +9,7 @@
 #include "utopia_TypeToString.hpp"
 
 #include <iostream>
+#include <string>
 #include <type_traits>
 
 namespace utopia {
@@ -20,6 +21,15 @@ namespace utopia {
     class DescribeObject<T, true> {
     public:
         inline static std::ostream &apply(const T &obj, std::ostream &os) {
+            os << obj;
+            return os;
+        }
+    };
+
+    template <>
+    class DescribeObject<std::string, false> {
+    public:
+        inline static std::ostream &apply(const std::string &obj, std::ostream &os) {
             os << obj;
             return os;
         }
@@ -53,7 +63,7 @@ namespace utopia {
             void read(Input &in) override { in.get(key, ref); }
 
             void describe(std::ostream &os) const override {
-                os << '-' << key << " <" << TypeToString<T>::get() << ">\tdefault: ";
+                os << '-' << key << "\t<" << TypeToString<T>::get() << ">\tdefault: ";
                 describe_object(ref, os);
                 os << "\t\t";
                 os << explanation << "\n";

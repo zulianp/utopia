@@ -12,25 +12,25 @@
 namespace utopia {
 
     template <>
-    class ConvertTensor<TpetraVector, PetscVector, 1, TRILINOS, PETSC> {
+    class ConvertTensor<TpetraVector, PetscVector, 1> {
     public:
         static void apply(const TpetraVector &in, PetscVector &out);
     };
 
     template <>
-    class ConvertTensor<PetscVector, TpetraVector, 1, PETSC, TRILINOS> {
+    class ConvertTensor<PetscVector, TpetraVector, 1> {
     public:
         static void apply(const PetscVector &in, TpetraVector &out);
     };
 
     template <>
-    class ConvertTensor<TpetraMatrix, PetscMatrix, 2, TRILINOS, PETSC> {
+    class ConvertTensor<TpetraMatrix, PetscMatrix, 2> {
     public:
         static void apply(const TpetraMatrix &in, PetscMatrix &out);
     };
 
     template <>
-    class ConvertTensor<PetscMatrix, TpetraMatrix, 2, PETSC, TRILINOS> {
+    class ConvertTensor<PetscMatrix, TpetraMatrix, 2> {
     public:
         static void apply(const PetscMatrix &in, TpetraMatrix &out);
     };

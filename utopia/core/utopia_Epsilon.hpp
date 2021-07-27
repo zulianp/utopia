@@ -17,11 +17,11 @@ namespace utopia {
         template <typename T>
         class Epsilon {
         public:
-#ifdef KOKKOS_INLINE_FUNCTION
+#ifdef UTOPIA_WITH_TRILINOS
             static KOKKOS_INLINE_FUNCTION constexpr T value() { return Kokkos::Details::ArithTraits<T>::epsilon(); }
 #else
             static inline T value() { return std::numeric_limits<T>::epsilon(); }
-#endif  // KOKKOS_INLINE_FUNCTION
+#endif  // UTOPIA_WITH_TRILINOS
         };
 
         template <typename T>

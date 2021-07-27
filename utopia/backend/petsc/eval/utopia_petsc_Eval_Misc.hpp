@@ -145,12 +145,12 @@ namespace utopia {
 
             if (result.is_alias(v1) || result.is_alias(v2)) {
                 Result temp;
-                Eval<Tensor<M, 2>, Traits>::apply(expr.right().left().expr()).multiply_add(v2, v1, temp);
+                Eval<Tensor<M, 2>, Traits>::apply(expr.right().left().expr()).transpose_multiply_add(v2, v1, temp);
 
                 result.assign(std::move(temp));
 
             } else {
-                Eval<Tensor<M, 2>, Traits>::apply(expr.right().left().expr()).multiply_add(v2, v1, result);
+                Eval<Tensor<M, 2>, Traits>::apply(expr.right().left().expr()).transpose_multiply_add(v2, v1, result);
             }
 
             UTOPIA_TRACE_END(expr);

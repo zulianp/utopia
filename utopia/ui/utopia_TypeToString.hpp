@@ -24,6 +24,9 @@ namespace utopia {
     UTOPIA_DEFINE_TYPE_TO_STRING(int);
     UTOPIA_DEFINE_TYPE_TO_STRING(bool);
     UTOPIA_DEFINE_TYPE_TO_STRING(long);
+    UTOPIA_DEFINE_TYPE_TO_STRING(unsigned int);
+    UTOPIA_DEFINE_TYPE_TO_STRING(unsigned long);
+    UTOPIA_DEFINE_TYPE_TO_STRING(char);
 
     UTOPIA_DEFINE_SUBS_TYPE_TO_STRING(std::string, "string");
     UTOPIA_DEFINE_SUBS_TYPE_TO_STRING(utopia::Path, "path");

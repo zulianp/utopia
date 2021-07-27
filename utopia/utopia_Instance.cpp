@@ -29,13 +29,13 @@
 namespace utopia {
 
     void Utopia::Init(int argc, char *argv[]) {
-#ifdef UTOPIA_WITH_PETSC
-        instance().add_library(utopia::make_unique<PetscLibrary>());
-#endif
-
 #ifdef UTOPIA_WITH_TRILINOS
-        instance().add_library(utopia::make_unique<TrilinosLibrary>());
+        instance().add_library_with_priority(utopia::make_unique<TrilinosLibrary>());
 #endif  // UTOPIA_WITH_TRILINOS
+
+#ifdef UTOPIA_WITH_PETSC
+        instance().add_library_with_priority(utopia::make_unique<PetscLibrary>());
+#endif
 
 #ifdef UTOPIA_WITH_MPI
         if (instance().libraries_.empty()) {
@@ -128,6 +128,11 @@ namespace utopia {
 #else
         exit(error_code);
 #endif
+    }
+
+    void Utopia::Abort(const std::string &message) {
+        utopia::err() << message << '\n';
+        Abort();
     }
 
     void Utopia::read_input(int argc, char *argv[]) {
