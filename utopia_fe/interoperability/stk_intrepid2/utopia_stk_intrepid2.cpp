@@ -169,8 +169,9 @@ namespace utopia {
         auto &meta_data = space.mesh().meta_data();
         auto &bulk_data = space.mesh().bulk_data();
 
-        ::stk::mesh::Selector s_universal = meta_data.universal_part();
-        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), s_universal);
+        // ::stk::mesh::Selector s_universal = meta_data.universal_part();
+        ::stk::mesh::Selector selector = meta_data.locally_owned_part();
+        const BucketVector_t &side_buckets = bulk_data.get_buckets(meta_data.side_rank(), selector);
 
         CreateFEFromBuckets<Scalar>::apply(bulk_data, side_buckets, fe, degree);
     }

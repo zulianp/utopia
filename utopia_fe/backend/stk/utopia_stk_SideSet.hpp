@@ -16,7 +16,7 @@ namespace utopia {
                 inline static constexpr BoundaryIdType right_id() { return 4; }
                 inline static constexpr BoundaryIdType top_id() { return 5; }
                 inline static constexpr BoundaryIdType front_id() { return 6; }
-                inline static constexpr BoundaryIdType invalid_id() { return 0; }
+                inline static constexpr BoundaryIdType invalid_id() { return -1; }
 
                 inline static SideSet left() { return SideSet(left_id()); }
                 inline static SideSet bottom() { return SideSet(bottom_id()); }

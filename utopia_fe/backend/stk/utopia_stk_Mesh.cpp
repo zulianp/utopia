@@ -31,6 +31,7 @@ namespace utopia {
             SizeType n_local_elements{-1};
             SizeType n_local_nodes{-1};
             bool verbose{false};
+            bool is_generated_cube{false};
 
             void compute_mesh_stats() {
                 std::vector<size_t> entity_counts;
@@ -102,6 +103,8 @@ namespace utopia {
             if (!io.load()) {
                 assert(false);
             }
+
+            set_is_generated_cube(true);
         }
 
         void Mesh::box(const AABB &box,
@@ -281,5 +284,6 @@ namespace utopia {
             comm().synched_print(ss.str());
         }
 
+        void Mesh::set_is_generated_cube(const bool val) { impl_->is_generated_cube = val; }
     }  // namespace stk
 }  // namespace utopia

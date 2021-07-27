@@ -64,6 +64,10 @@ namespace utopia {
             return bulk_data.get_buckets(::stk::topology::NODE_RANK, bulk_data.mesh_meta_data().globally_shared_part());
         }
 
+        const ::stk::mesh::BucketVector &aura_nodes(const ::stk::mesh::BulkData &bulk_data) {
+            return bulk_data.get_buckets(::stk::topology::NODE_RANK, bulk_data.mesh_meta_data().aura_part());
+        }
+
         const ::stk::mesh::BucketVector &shared_elements(const ::stk::mesh::BulkData &bulk_data) {
             return bulk_data.get_buckets(::stk::topology::ELEMENT_RANK,
                                          bulk_data.mesh_meta_data().globally_shared_part());

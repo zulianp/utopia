@@ -202,6 +202,10 @@ namespace utopia {
                             Entity_t node = b[k];
                             auto idx = utopia::stk::convert_entity_to_index(node);
 
+                            if (bulk_data.in_receive_ghost(node)) {
+                                idx = dof_map->shift_aura_idx(idx);
+                            }
+
                             const Scalar *values = (const Scalar *)::stk::mesh::field_data(*field, node);
                             const int n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
 
@@ -235,6 +239,10 @@ namespace utopia {
                         for (Bucket_t::size_type k = 0; k < length; ++k) {
                             Entity_t node = b[k];
                             auto idx = utopia::stk::convert_entity_to_index(node);
+
+                            if (bulk_data.in_receive_ghost(node)) {
+                                idx = dof_map->shift_aura_idx(idx);
+                            }
 
                             Scalar *values = (Scalar *)::stk::mesh::field_data(*field, node);
                             int n_comp = ::stk::mesh::field_scalars_per_entity(*field, node);
@@ -629,7 +637,8 @@ namespace utopia {
                 for (auto &bc : impl_->dirichlet_boundary.conditions) {
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
-                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+                        auto &buckets =
+                            bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & meta_data.locally_owned_part());
 
                         for (auto *b_ptr : buckets) {
                             auto &b = *b_ptr;
@@ -694,7 +703,8 @@ namespace utopia {
                 for (auto &bc : impl_->dirichlet_boundary.conditions) {
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
-                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+                        auto &buckets =
+                            bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & meta_data.locally_owned_part());
 
                         for (auto *b_ptr : buckets) {
                             auto &b = *b_ptr;
@@ -731,7 +741,8 @@ namespace utopia {
                 for (auto &bc : impl_->dirichlet_boundary.conditions) {
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
-                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+                        auto &buckets =
+                            bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & meta_data.locally_owned_part());
 
                         for (auto *b_ptr : buckets) {
                             auto &b = *b_ptr;
@@ -755,7 +766,8 @@ namespace utopia {
                 for (auto &bc : impl_->dirichlet_boundary.conditions) {
                     auto *part = meta_data.get_part(bc.name);
                     if (part) {
-                        auto &buckets = bulk_data.get_buckets(::stk::topology::NODE_RANK, *part);
+                        auto &buckets =
+                            bulk_data.get_buckets(::stk::topology::NODE_RANK, *part & meta_data.locally_owned_part());
 
                         for (auto *b_ptr : buckets) {
                             auto &b = *b_ptr;
@@ -814,6 +826,10 @@ namespace utopia {
                 for (SizeType k = 0; k < length; ++k) {
                     auto node = b[k];
                     auto idx = utopia::stk::convert_entity_to_index(node);
+
+                    if (bulk_data.in_receive_ghost(node)) {
+                        idx = dof_map().shift_aura_idx(idx);
+                    }
 
                     Scalar *points = (Scalar *)::stk::mesh::field_data(*coords, node);
 

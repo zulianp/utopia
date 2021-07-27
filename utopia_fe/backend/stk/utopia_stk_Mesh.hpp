@@ -89,6 +89,7 @@ namespace utopia {
             friend class Impl;
 
             void init();
+            void set_is_generated_cube(const bool val);
         };
 
     }  // namespace stk

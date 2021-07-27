@@ -101,6 +101,8 @@ namespace utopia {
 
                     in.get("specification", specification);
                     set_read_specification(specification);
+
+                    mesh.set_is_generated_cube(true);
                 }
 
                 /////////////////////////////////////////////

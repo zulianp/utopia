@@ -82,6 +82,7 @@ namespace utopia {
         const ::stk::mesh::BucketVector &universal_elements(const ::stk::mesh::BulkData &bulk_data);
 
         const ::stk::mesh::BucketVector &shared_nodes(const ::stk::mesh::BulkData &bulk_data);
+        const ::stk::mesh::BucketVector &aura_nodes(const ::stk::mesh::BulkData &bulk_data);
         const ::stk::mesh::BucketVector &shared_elements(const ::stk::mesh::BulkData &bulk_data);
 
         const ::stk::mesh::BucketVector &universal_sides(const ::stk::mesh::BulkData &bulk_data);
