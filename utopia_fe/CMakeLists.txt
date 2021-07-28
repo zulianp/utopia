@@ -32,6 +32,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 option(UTOPIA_ENABLE_LIBMESH "Enable the libmesh functionalities" ON)
 option(UTOPIA_ENABLE_STK "Enable the stk functionalities" OFF)
 option(UTOPIA_ENABLE_MOONOLITH "Enable the moonolith functionalities" ON)
+option(UTOPIA_ENABLE_ARBORX "Enable the ArborX backend" OFF)
 
 # ##############################################################################
 # ##############################################################################
@@ -219,6 +220,11 @@ endif()
 if(UTOPIA_ENABLE_MARS)
     list(APPEND UTOPIA_FE_MODULES backend/mars)
 endif()
+
+if(UTOPIA_ENABLE_ARBORX)
+    list(APPEND UTOPIA_FE_MODULES backend/arborx)
+endif()
+
 
 list(APPEND UTOPIA_FE_MODULES base interoperability core)
 
