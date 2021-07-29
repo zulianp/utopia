@@ -44,7 +44,8 @@ namespace utopia {
             using PairIndexRank = Kokkos::pair<int, int>;
             using BoxSearches = utopia::arborx::BoxSearches<DeviceType>;
 
-            DetectIntersectionsFromElementArray(MPI_Comm comm) : comm_(comm) {}
+            DetectIntersectionsFromElementArray(MPI_Comm comm)
+                : comm_(comm), offsets("Testing::offsets", 0), values("Testing::values", 0) {}
 
             void create_bounding_boxes(const ElemView &cell_nodes,
                                        ::Kokkos::View<::ArborX::Box *, DeviceType> &bounding_boxes) {
@@ -92,27 +93,28 @@ namespace utopia {
                 box_searches.boxes = bounding_boxes_to;
                 distributed_tree.query(ExecutionSpace{}, box_searches, values, offsets);
 
-                std::stringstream ss;
+                return false;
+            }
 
-                ss << "values.extent(0) = " << values.extent(0) << "\n";
+            void describe(std::ostream &os) const {
+                os << "values.extent(0) = " << values.extent(0) << "\n";
 
                 for (int i = 0; i < values.extent(0); ++i) {
-                    ss << values(i).first << " -> " << values(i).second << "\n";
+                    os << values(i).first << " -> " << values(i).second << "\n";
                 }
 
-                ss << "offsets.extent(0) = " << offsets.extent(0) << "\n";
+                os << "offsets.extent(0) = " << offsets.extent(0) << "\n";
 
                 for (int i = 0; i < offsets.extent(0); ++i) {
-                    ss << offsets(i) << "\n";
+                    os << offsets(i) << "\n";
                 }
-
-                UVector().comm().synched_print(ss.str());
-
-                return false;
             }
 
         private:
             MPI_Comm comm_;
+
+            Kokkos::View<int *, DeviceType> offsets;
+            Kokkos::View<PairIndexRank *, DeviceType> values;
         };
     }  // namespace arborx
 }  // namespace utopia

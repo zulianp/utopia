@@ -3,6 +3,7 @@
 
 #include "mars_quad4.hpp"
 #include "utopia_mars_ConcreteFEAssembler.hpp"
+#include "utopia_mars_FEBuilder.hpp"
 
 namespace utopia {
     namespace mars {
@@ -15,13 +16,13 @@ namespace utopia {
             using Scalar = Traits<mars::FunctionSpace>::Scalar;
             using Super = utopia::mars::ConcreteFEAssembler<DMesh, Args...>;
 
+            using FEHandler = typename Super::FEHandler;
             using DofHandler = typename Super::DofHandler;
             using FEDofMap = typename Super::FEDofMap;
             using SPattern = typename Super::SPattern;
 
             static const ::mars::Integer Type = SPattern::DofHandler::ElemType;
-
-            using UniformFE = typename utopia::mars::FETypeSelect<Scalar, DMesh::Dim>::Type;
+            using UniformFE = utopia::kokkos::UniformFE<Scalar>;
 
             bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override {
                 if (!assemble(hessian)) {
@@ -47,34 +48,37 @@ namespace utopia {
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = sp.get_dof_handler();
 
-                auto measure = fe_->measure;
-                auto grad = fe_->grad;
+                auto measure = fe_->measure();
+                auto grad = fe_->grad();
+
+                const int n_fun = fe_->n_shape_functions();
+                const int n_qp = fe_->n_quad_points();
 
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
-                    for (int i = 0; i < UniformFE::NFun; i++) {
+                    for (int i = 0; i < n_fun; i++) {
                         const auto local_dof_i = fe_dof_map.get_elem_local_dof(elem_index, i);
                         if (!dof_handler.is_owned(local_dof_i)) continue;
 
-                        for (int j = 0; j < UniformFE::NFun; j++) {
+                        for (int j = 0; j < n_fun; j++) {
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j);
                             // for each dof get the local number
 
                             Scalar val = 0.0;
-                            for (int k = 0; k < UniformFE::NQPoints; ++k) {
+                            for (int k = 0; k < n_qp; ++k) {
                                 Scalar dot_grads = 0.0;
 
                                 for (int d = 0; d < DMesh::Dim; ++d) {
-                                    assert(grad(i, k, d) == grad(i, k, d));
-                                    assert(grad(j, k, d) == grad(j, k, d));
+                                    assert(grad(elem_index, i, k, d) == grad(elem_index, i, k, d));
+                                    assert(grad(elem_index, j, k, d) == grad(elem_index, j, k, d));
 
-                                    auto g_i = grad(i, k, d);
-                                    auto g_j = grad(j, k, d);
+                                    auto g_i = grad(elem_index, i, k, d);
+                                    auto g_j = grad(elem_index, j, k, d);
 
                                     dot_grads += g_i * g_j;
                                     assert(dot_grads == dot_grads);
                                 }
 
-                                Scalar dX = measure(k);
+                                Scalar dX = measure(elem_index, k);
                                 assert(dX == dX);
 
                                 val += dot_grads * dX;
@@ -109,35 +113,9 @@ namespace utopia {
 
             void init() {
                 if (!fe_) {
-                    using Coordinates = typename UniformFE::Coordinates;
-
-                    Coordinates coords("coords");
-
-                    auto handler = this->handler();
-                    auto sp = handler->get_sparsity_pattern();
-                    auto fe_dof_map = handler->get_fe_dof_map();
-                    auto dof_handler = sp.get_dof_handler();
-
-                    fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
-                        if (elem_index == 0) {
-                            Scalar p[DMesh::Dim];
-
-                            for (int i = 0; i < coords.extent(0); ++i) {
-                                auto local_dof = fe_dof_map.get_elem_local_dof(elem_index, i);
-                                dof_handler.template get_dof_coordinates_from_local<Type>(local_dof, p);
-
-                                for (int d = 0; d < coords.extent(1); ++d) {
-                                    coords(i, d) = p[d];
-                                }
-                            }
-                        }
-                    });
-
                     fe_ = utopia::make_unique<UniformFE>();
-                    fe_->init(coords);
-                    //     auto handler = this->handler();
-                    //     fe_ = utopia::make_unique<FE>(handler->get_sparsity_pattern(), handler->get_fe_dof_map());
-                    //     fe_->init();
+                    FEBuilder<FEHandler, utopia::kokkos::UniformFE<Scalar>> builder;
+                    builder.build(*this->handler(), *fe_);
                 }
             }
         };
