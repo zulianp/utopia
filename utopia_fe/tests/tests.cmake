@@ -28,6 +28,10 @@ if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_STK)
     list(APPEND TEST_MODULES interop/stk_intrepid2)
 endif()
 
+if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_ARBORX)
+    list(APPEND TEST_MODULES interop/intrepid2_arborx)
+endif()
+
 if(UTOPIA_ENABLE_INTREPID2 AND UTOPIA_ENABLE_LIBMESH)
     list(APPEND TEST_MODULES interop/libmesh_intrepid2)
 endif()
