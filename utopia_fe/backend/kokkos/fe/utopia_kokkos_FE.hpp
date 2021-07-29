@@ -49,6 +49,10 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION JacobianView jacobian() const { return jacobian_; }
             UTOPIA_INLINE_FUNCTION JacobianInverseView jacobian_inverse() const { return jacobian_inverse_; }
 
+            UTOPIA_INLINE_FUNCTION SizeType n_shape_functions() const { return fun_.extent(0); }
+            UTOPIA_INLINE_FUNCTION SizeType n_quad_points() const { return measure_.extent(1); }
+            UTOPIA_INLINE_FUNCTION SizeType spatial_dimension() const { return grad_.extent(3); }
+
             void init(const MeasureView &measure,
                       const FunctionView &fun,
                       const GradientView &grad,

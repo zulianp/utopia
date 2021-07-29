@@ -67,6 +67,7 @@ namespace utopia {
                                                deprecated_fe->grad.extent(2));
                 ::Kokkos::deep_copy(grad, deprecated_fe->grad);
 
+                // TODO
                 typename FE::JacobianView jacobian("jacobian", 0, 0, 0);
                 // ::Kokkos::deep_copy(jacobian, deprecated_fe->jacobian);
                 typename FE::JacobianInverseView jacobian_inverse("jacobian_inverse", 0, 0, 0);
