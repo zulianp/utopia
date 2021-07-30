@@ -16,13 +16,13 @@ namespace utopia {
 
             UTOPIA_FUNCTION ~FEBase() = default;
 
-            virtual UTOPIA_FUNCTION SizeType n_cells() const = 0;
-            virtual UTOPIA_FUNCTION SizeType n_shape_functions() const = 0;
-            virtual UTOPIA_FUNCTION SizeType n_quad_points() const = 0;
-            virtual UTOPIA_FUNCTION SizeType spatial_dimension() const = 0;
-            virtual UTOPIA_FUNCTION SizeType manifold_dimension() const = 0;
+            virtual SizeType n_cells() const = 0;
+            virtual SizeType n_shape_functions() const = 0;
+            virtual SizeType n_quad_points() const = 0;
+            virtual SizeType spatial_dimension() const = 0;
+            virtual SizeType manifold_dimension() const = 0;
 
-            UTOPIA_INLINE_FUNCTION bool is_shell() const { return manifold_dimension() < spatial_dimension(); }
+            virtual bool is_shell() const { return manifold_dimension() < spatial_dimension(); }
 
             inline CellQPRange cell_qp_range() const {
                 SizeType n_cells = this->n_cells();

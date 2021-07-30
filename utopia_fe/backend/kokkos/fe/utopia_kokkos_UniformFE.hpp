@@ -137,11 +137,11 @@ namespace utopia {
                 jacobian_inverse_ = jacobian_inverse;
             }
 
-            UTOPIA_INLINE_FUNCTION SizeType n_cells() const override { return n_cells_; }
-            UTOPIA_INLINE_FUNCTION SizeType n_shape_functions() const override { return fun_.extent(0); }
-            UTOPIA_INLINE_FUNCTION SizeType n_quad_points() const override { return measure_.extent(0); }
-            UTOPIA_INLINE_FUNCTION SizeType spatial_dimension() const override { return grad_.extent(2); }
-            UTOPIA_INLINE_FUNCTION SizeType manifold_dimension() const override { return jacobian_.extent(0); }
+            inline SizeType n_cells() const override { return n_cells_; }
+            inline SizeType n_shape_functions() const override { return fun_.extent(0); }
+            inline SizeType n_quad_points() const override { return measure_.extent(0); }
+            inline SizeType spatial_dimension() const override { return grad_.extent(2); }
+            inline SizeType manifold_dimension() const override { return jacobian_.extent(0); }
 
         private:
             SizeType n_cells_{0};

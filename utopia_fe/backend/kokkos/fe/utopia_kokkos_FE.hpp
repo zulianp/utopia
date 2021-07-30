@@ -57,11 +57,11 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION JacobianView jacobian() const { return jacobian_; }
             UTOPIA_INLINE_FUNCTION JacobianInverseView jacobian_inverse() const { return jacobian_inverse_; }
 
-            UTOPIA_INLINE_FUNCTION SizeType n_cells() const override { return measure_.extent(0); }
-            UTOPIA_INLINE_FUNCTION SizeType n_shape_functions() const override { return fun_.extent(0); }
-            UTOPIA_INLINE_FUNCTION SizeType n_quad_points() const override { return measure_.extent(1); }
-            UTOPIA_INLINE_FUNCTION SizeType spatial_dimension() const override { return grad_.extent(3); }
-            UTOPIA_INLINE_FUNCTION SizeType manifold_dimension() const override { return jacobian_.extent(1); }
+            inline SizeType n_cells() const override { return measure_.extent(0); }
+            inline SizeType n_shape_functions() const override { return fun_.extent(0); }
+            inline SizeType n_quad_points() const override { return measure_.extent(1); }
+            inline SizeType spatial_dimension() const override { return grad_.extent(3); }
+            inline SizeType manifold_dimension() const override { return jacobian_.extent(1); }
 
             UTOPIA_INLINE_FUNCTION IntView &element_tags() { return element_tags_; }
             UTOPIA_INLINE_FUNCTION const IntView &element_tags() const { return element_tags_; }

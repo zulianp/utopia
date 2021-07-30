@@ -114,11 +114,11 @@ namespace utopia {
                 }
             }
 
-            UTOPIA_INLINE_FUNCTION SizeType n_cells() const override { return cell_nodes.extent(0); }
-            // UTOPIA_INLINE_FUNCTION SizeType n_shape_functions() const override { return grad.extent(1); }
-            UTOPIA_INLINE_FUNCTION SizeType n_quad_points() const override { return cubature->getNumPoints(); }
-            UTOPIA_INLINE_FUNCTION SizeType spatial_dimension() const override { return cell_nodes.extent(2); }
-            UTOPIA_INLINE_FUNCTION SizeType manifold_dimension() const override { return type.getDimension(); }
+            inline SizeType n_cells() const override { return cell_nodes.extent(0); }
+            // inline SizeType n_shape_functions() const override { return grad.extent(1); }
+            inline SizeType n_quad_points() const override { return cubature->getNumPoints(); }
+            inline SizeType spatial_dimension() const override { return cell_nodes.extent(2); }
+            inline SizeType manifold_dimension() const override { return type.getDimension(); }
 
             CellTopology type;
             DynRankView cell_nodes;
