@@ -123,6 +123,8 @@ namespace utopia {
                 ensure_buffer();
                 auto op = make_op(x, y);
 
+                auto products = this->products;
+
                 ::Kokkos::parallel_for(
                     "L2ScalarProduct::apply", fe_->cell_range(), UTOPIA_LAMBDA(const int i) {
                         for (int c = 0; c < op.n_components; ++c) {
