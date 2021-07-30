@@ -24,13 +24,15 @@ namespace utopia {
             using FEDofMap = typename FEHandler::FEDofMap;
             using SPattern = typename FEHandler::SPattern;
 
-            using FE = utopia::mars::FE<Scalar, SPattern, FEDofMap>;
             static const ::mars::Integer Type = SPattern::DofHandler::ElemType;
             using UniformFE = utopia::kokkos::UniformFE<Scalar>;
 
+            // using FE = utopia::mars::FE<Scalar, SPattern, FEDofMap>;
+            using FE = UniformFE;
+
             virtual ~ConcreteFEAssembler() = default;
 
-            inline void set_space(const std::shared_ptr<FunctionSpace> &space) { space_ = space; }
+            inline void set_space(const std::shared_ptr<FunctionSpace> &space) override { space_ = space; }
             inline std::shared_ptr<FunctionSpace> space() const { return space_; }
             // inline std::shared_ptr<MarsMeshType> mars_mesh_ptr() { return space_->mesh().raw_type<MarsMeshType>(); }
             inline std::shared_ptr<FEHandler> handler() { return space_->raw_type<FEHandler>(); }

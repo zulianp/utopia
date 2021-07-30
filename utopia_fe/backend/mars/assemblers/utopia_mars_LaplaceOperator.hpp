@@ -15,11 +15,12 @@ namespace utopia {
             using Vector = Traits<mars::FunctionSpace>::Vector;
             using Scalar = Traits<mars::FunctionSpace>::Scalar;
             using Super = utopia::mars::ConcreteFEAssembler<DMesh, Args...>;
-            using UniformFE = utopia::kokkos::UniformFE<Scalar>;
+
+            // Correct fe type is managed in ConcreteFEAssembler
+            using FE = typename Super::FE;
 
             // Same op template used in intrepid2-based backend
-            using Op = utopia::kokkos::kernels::
-                LaplaceOp<Scalar, Scalar, typename UniformFE::Gradient, typename UniformFE::Measure>;
+            using Op = utopia::kokkos::kernels::LaplaceOp<Scalar, Scalar, typename FE::Gradient, typename FE::Measure>;
 
             bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override {
                 if (!assemble(hessian)) {
@@ -36,6 +37,9 @@ namespace utopia {
                 this->ensure_fe();
 
                 auto &fe = this->fe();
+
+                // This is for linear materials since gradient := A x - b
+                // non linear materials will have to implement a separate gradient Op
                 Op op(coeff_, fe.grad(), fe.measure());
                 return Super::scalar_op_apply(op, x, vec);
             }
