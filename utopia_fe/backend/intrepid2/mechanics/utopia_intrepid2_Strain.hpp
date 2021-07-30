@@ -4,101 +4,10 @@
 #include "utopia_Traits.hpp"
 
 #include "utopia_intrepid2_Gradient.hpp"
+#include "utopia_kokkos_StrainOp.hpp"
 
 namespace utopia {
     namespace intrepid2 {
-
-        template <typename Scalar, int Dim>
-        class LinearizedStrain {
-        public:
-            template <class Grad>
-            UTOPIA_INLINE_FUNCTION static constexpr auto inner(const Grad &grad,
-                                                               const int cell,
-                                                               const int i,
-                                                               const int j,
-                                                               const int qp,
-                                                               const int sub_i,
-                                                               const int sub_j) {
-                if (sub_i == sub_j) {
-                    Scalar ret = 0.0;
-                    for (int d = 0; d < Dim; ++d) {
-                        ret += grad(cell, i, qp, d) * grad(cell, j, qp, d);
-                    }
-
-                    ret *= 0.5;
-                    ret += 0.5 * grad(cell, i, qp, sub_i) * grad(cell, j, qp, sub_i);
-                    return ret;
-
-                } else {
-                    Scalar ret = 0.5 * grad(cell, i, qp, sub_j) * grad(cell, j, qp, sub_i);
-                    return ret;
-                }
-            }
-
-            template <class Grad>
-            UTOPIA_INLINE_FUNCTION static constexpr auto trace(const Grad &grad,
-                                                               const int cell,
-                                                               const int i,
-                                                               const int qp,
-                                                               const int sub_i) {
-                return grad(cell, i, qp, sub_i);
-            }
-
-            class Interpolate {
-            public:
-                using GradOp = typename Gradient<Scalar>::Rank2Op;
-                using FE = utopia::intrepid2::FE<Scalar>;
-                using SizeType = typename FE::SizeType;
-                using DynRankView = typename FE::DynRankView;
-
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell,
-                                                         const int qp,
-                                                         const int sub_i,
-                                                         const int sub_j) const {
-                    return 0.5 * (grad_(cell, qp, sub_i, sub_j) + grad_(cell, qp, sub_j, sub_i));
-                }
-
-                UTOPIA_INLINE_FUNCTION Scalar trace(const int cell, const int qp) const {
-                    Scalar ret = (*this)(cell, qp, 0, 0);
-
-                    for (int d = 1; d < Dim; ++d) {
-                        ret += (*this)(cell, qp, d, d);
-                    }
-
-                    return ret;
-                }
-
-                UTOPIA_INLINE_FUNCTION Scalar squared_norm(const int cell, const int qp) const {
-                    Scalar ret = 0.0;
-
-                    for (int d1 = 0; d1 < Dim; ++d1) {
-                        for (int d2 = 0; d2 < Dim; ++d2) {
-                            auto x = (*this)(cell, qp, d1, d2);
-                            ret += x * x;
-                        }
-                    }
-
-                    return ret;
-                }
-
-                UTOPIA_INLINE_FUNCTION Interpolate(const DynRankView &grad, const DynRankView &coeff)
-                    : grad_(grad, coeff) {}
-
-                GradOp grad_;
-            };
-
-            // UTOPIA_INLINE_FUNCTION static void make(const int dim,
-            //                                         Scalar *grad,
-            //                                         StaticMatrix<Scalar, Dim, Dim> &strain) {
-            //     strain.set(0.0);
-
-            //     for (int i = 0; i < Dim; ++i) {
-            //         strain(dim, i) = grad[i];
-            //     }
-
-            //     strain.symmetrize();
-            // }
-        };
 
         template <typename Scalar>
         class Strain : public QPTensorField<Scalar> {
@@ -127,23 +36,25 @@ namespace utopia {
             template <int Dim>
             class InterpolateAndStoreLinearized {
             public:
-                using Op = typename LinearizedStrain<Scalar, 1>::Interpolate;
+                // using Op = typename LinearizedStrain<Scalar, Dim>::Interpolate;
+                using Op = utopia::kokkos::kernels::
+                    InterpolateLinearizedStrainOp<Dim, Scalar, typename FE::Gradient, DynRankView>;
+
+                using StoreOp = utopia::kokkos::kernels::StoreInterpolatedStrain<Op, DynRankView>;
 
                 UTOPIA_INLINE_FUNCTION InterpolateAndStoreLinearized(const DynRankView &grad,
                                                                      const DynRankView &coeff,
                                                                      DynRankView &data)
-                    : op_(grad, coeff), data(data), n(grad.extent(3)) {}
+                    : op(Op(grad, coeff), data) {}
 
                 UTOPIA_INLINE_FUNCTION void operator()(const int cell,
                                                        const int qp,
                                                        const int sub_i,
                                                        const int sub_j) const {
-                    data(cell, qp, sub_i * n + sub_j) = op_(cell, qp, sub_i, sub_j);
+                    op(cell, qp, sub_i, sub_j);
                 }
 
-                Op op_;
-                DynRankView data;
-                const int n;
+                StoreOp op;
             };
 
             void init_linearized(const DynRankView &coeff) {

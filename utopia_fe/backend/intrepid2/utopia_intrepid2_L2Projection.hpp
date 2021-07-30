@@ -98,7 +98,7 @@ namespace utopia {
 
             inline Op make_op() {
                 auto &fe = this->fe();
-                return Op(op_.field, fe.fun, fe.measure);
+                return Op(op_.field, fe.fun(), fe.measure());
             }
 
             inline OpAndStore make_op_and_store(DynRankView &result) {
