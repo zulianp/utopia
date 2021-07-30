@@ -91,6 +91,7 @@ namespace utopia {
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
 
+                // FIXME Missing gobal to local for x!!!
                 auto x_view = local_view_device(x).raw_type();
                 auto y_view = local_view_device(y).raw_type();
 
@@ -102,6 +103,7 @@ namespace utopia {
                         Scalar val = 0;
 
                         for (int j = 0; j < n_fun; j++) {
+                            // FIXME What is the correct index map?
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j);
                             auto x_j = x_view(local_dof_j, 0);
 

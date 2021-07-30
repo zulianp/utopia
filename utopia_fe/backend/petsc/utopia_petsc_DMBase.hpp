@@ -14,7 +14,8 @@
 
 namespace utopia {
     namespace petsc {
-        class DMBase : public Configurable {
+
+        class DMBase : public Configurable, public Describable {
         public:
             ~DMBase() override = default;
 
@@ -151,8 +152,6 @@ namespace utopia {
                 }
                 return io.write(*this);
             }
-
-            virtual void describe() const {}
 
             inline PetscInt dm_dim() const {
                 PetscInt ret;
