@@ -73,7 +73,8 @@ namespace utopia {
                 typename FE::JacobianInverseView jacobian_inverse("jacobian_inverse", 0, 0, 0);
                 // ::Kokkos::deep_copy(jacobian_inverse, deprecated_fe->jacobian_inverse);
 
-                fe.init(measure, fun, grad, jacobian, jacobian_inverse);
+                auto n_elems = dof_handler.get_elem_size();
+                fe.init(n_elems, measure, fun, grad, jacobian, jacobian_inverse);
             }
         };
 

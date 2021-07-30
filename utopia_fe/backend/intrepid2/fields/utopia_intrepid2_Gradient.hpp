@@ -28,13 +28,13 @@ namespace utopia {
             class Rank1Op {
             public:
                 UTOPIA_INLINE_FUNCTION Rank1Op(const DynRankView &grad, const DynRankView &coeff)
-                    : grad(grad), coeff(coeff), num_fields(grad.extent(1)), n_var(grad.extent(3)) {}
+                    : grad(grad), coeff(coeff), n_shape_functions(grad.extent(1)), n_var(grad.extent(3)) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int d) const {
                     assert(d < n_var);
 
                     Scalar ret = 0.0;
-                    for (int i = 0; i < num_fields; ++i) {
+                    for (int i = 0; i < n_shape_functions; ++i) {
                         ret += coeff(cell, i) * grad(cell, i, qp, d);
                     }
 
@@ -51,7 +51,7 @@ namespace utopia {
                 }
 
                 const DynRankView grad, coeff;
-                const int num_fields;
+                const int n_shape_functions;
                 const int n_var;
             };
 
@@ -73,14 +73,17 @@ namespace utopia {
             class Rank2Op {
             public:
                 UTOPIA_INLINE_FUNCTION Rank2Op(const DynRankView &grad, const DynRankView &coeff)
-                    : grad(grad), coeff(coeff), num_fields(grad.extent(1)), n_var(coeff.extent(1) / num_fields) {}
+                    : grad(grad),
+                      coeff(coeff),
+                      n_shape_functions(grad.extent(1)),
+                      n_var(coeff.extent(1) / n_shape_functions) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell,
                                                          const int qp,
                                                          const int var,
                                                          const int d) const {
                     Scalar ret = 0.0;
-                    for (int i = 0; i < num_fields; ++i) {
+                    for (int i = 0; i < n_shape_functions; ++i) {
                         ret += coeff(cell, i * n_var + var) * grad(cell, i, qp, d);
                     }
 
@@ -88,7 +91,7 @@ namespace utopia {
                 }
 
                 const DynRankView grad, coeff;
-                const int num_fields;
+                const int n_shape_functions;
                 const int n_var;
             };
 
@@ -124,13 +127,13 @@ namespace utopia {
                 if (this->rank() == 1) {
                     Kokkos::parallel_for(this->name() + "::init_rank1",
                                          this->rank1_range(),
-                                         Rank1OpAndStore(this->fe()->grad, coeff, this->data()));
+                                         Rank1OpAndStore(this->fe()->grad(), coeff, this->data()));
                 } else {
                     assert(this->rank() == 2);
 
                     Kokkos::parallel_for(this->name() + "::init_rank2",
                                          this->rank2_range(),
-                                         Rank2OpAndStore(this->fe()->grad, coeff, this->data()));
+                                         Rank2OpAndStore(this->fe()->grad(), coeff, this->data()));
                 }
             }
         };

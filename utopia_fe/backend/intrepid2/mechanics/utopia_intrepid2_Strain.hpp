@@ -155,21 +155,21 @@ namespace utopia {
                     case 1: {
                         Kokkos::parallel_for(this->name() + "::init_linearized",
                                              this->rank2_range(),
-                                             InterpolateAndStoreLinearized<1>(this->fe()->grad, coeff, this->data()));
+                                             InterpolateAndStoreLinearized<1>(this->fe()->grad(), coeff, this->data()));
                         break;
                     }
 
                     case 2: {
                         Kokkos::parallel_for(this->name() + "::init_linearized",
                                              this->rank2_range(),
-                                             InterpolateAndStoreLinearized<2>(this->fe()->grad, coeff, this->data()));
+                                             InterpolateAndStoreLinearized<2>(this->fe()->grad(), coeff, this->data()));
                         break;
                     }
 
                     case 3: {
                         Kokkos::parallel_for(this->name() + "::init_linearized",
                                              this->rank2_range(),
-                                             InterpolateAndStoreLinearized<3>(this->fe()->grad, coeff, this->data()));
+                                             InterpolateAndStoreLinearized<3>(this->fe()->grad(), coeff, this->data()));
                         break;
                     }
 

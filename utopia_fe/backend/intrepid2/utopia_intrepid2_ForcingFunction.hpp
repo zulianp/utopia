@@ -60,11 +60,11 @@ namespace utopia {
 
                 const int n_components = op_.n_components;
                 const int component = op_.component;
-                const int n_qp = fe.num_qp();
+                const int n_qp = fe.n_quad_points();
 
                 auto value = op_.value;
-                auto fun = fe.fun;
-                auto measure = fe.measure;
+                auto fun = fe.fun();
+                auto measure = fe.measure();
 
                 this->loop_cell_test(
                     "Assemble<ForcingFunction>::assemble", KOKKOS_LAMBDA(const int &cell, const int &i) {

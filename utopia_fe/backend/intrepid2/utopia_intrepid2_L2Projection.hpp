@@ -103,7 +103,7 @@ namespace utopia {
 
             inline OpAndStore make_op_and_store(DynRankView &result) {
                 auto &fe = this->fe();
-                return OpAndStore(op_.field, fe.fun, fe.measure, result);
+                return OpAndStore(op_.field, fe.fun(), fe.measure(), result);
             }
 
             bool assemble_vector() override {

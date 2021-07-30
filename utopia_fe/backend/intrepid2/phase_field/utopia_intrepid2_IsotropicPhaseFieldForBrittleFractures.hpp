@@ -383,14 +383,14 @@ namespace utopia {
             //           F(F),
             //           grad(grad),
             //           measure(measure),
-            //           num_qp(measure.extent(1)) {}
+            //           n_quad_points(measure.extent(1)) {}
 
             //     UTOPIA_INLINE_FUNCTION static constexpr int dim() { return Dim; }
 
             //     UTOPIA_INLINE_FUNCTION Scalar
             //     operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
             //         Scalar ret = 0.0;
-            //         for (int qp = 0; qp < num_qp; ++qp) {
+            //         for (int qp = 0; qp < n_quad_points; ++qp) {
             //             ret += (*this)(cell, i, j, qp, sub_i, sub_j);
             //         }
 
@@ -429,7 +429,7 @@ namespace utopia {
             //     const DynRankView F;
             //     const DynRankView grad;
             //     const DynRankView measure;
-            //     const int num_qp;
+            //     const int n_quad_points;
             // };
 
             // class OpAndStoreHessian {
@@ -448,10 +448,10 @@ namespace utopia {
             //           grad(grad),
             //           measure(measure),
             //           data(data),
-            //           num_qp(measure.extent(1)) {}
+            //           n_quad_points(measure.extent(1)) {}
 
             //     UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i, const int j) const {
-            //         for (int qp = 0; qp < num_qp; ++qp) {
+            //         for (int qp = 0; qp < n_quad_points; ++qp) {
             //             (*this)(cell, i, j, qp);
             //         }
             //     }
@@ -508,7 +508,7 @@ namespace utopia {
             //     const DynRankView grad;
             //     const DynRankView measure;
             //     DynRankView data;
-            //     const int num_qp;
+            //     const int n_quad_points;
             // };
 
             // class OpAndStoreGradient {
@@ -527,10 +527,10 @@ namespace utopia {
             //           grad(grad),
             //           measure(measure),
             //           data(data),
-            //           num_qp(measure.extent(1)) {}
+            //           n_quad_points(measure.extent(1)) {}
 
             //     UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int j) const {
-            //         for (int qp = 0; qp < num_qp; ++qp) {
+            //         for (int qp = 0; qp < n_quad_points; ++qp) {
             //             (*this)(cell, j, qp);
             //         }
             //     }
@@ -575,7 +575,7 @@ namespace utopia {
             //     const DynRankView grad;
             //     const DynRankView measure;
             //     DynRankView data;
-            //     const int num_qp;
+            //     const int n_quad_points;
             // };
 
             // inline Op make_op() const {

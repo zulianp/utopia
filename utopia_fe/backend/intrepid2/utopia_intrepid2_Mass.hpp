@@ -129,11 +129,11 @@ namespace utopia {
             template <class WrappedOp>
             class LumpedOp {
             public:
-                UTOPIA_INLINE_FUNCTION LumpedOp(WrappedOp op) : op_(op), num_fields(op.fun.extent(1)) {}
+                UTOPIA_INLINE_FUNCTION LumpedOp(WrappedOp op) : op_(op), n_shape_functions(op.fun.extent(1)) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i) const {
                     Scalar ret = 0.0;
-                    for (int j = 0; j < num_fields; ++j) {
+                    for (int j = 0; j < n_shape_functions; ++j) {
                         ret += op_(cell, i, j);
                     }
                     return ret;
@@ -142,13 +142,13 @@ namespace utopia {
                 int dim() const { return op_.dim(); }
 
                 WrappedOp op_;
-                const int num_fields;
+                const int n_shape_functions;
             };
 
             class Lump {
             public:
                 UTOPIA_INLINE_FUNCTION Lump(const DynRankView &element_matrices)
-                    : element_matrices(element_matrices), num_fields(element_matrices.extent(2)) {}
+                    : element_matrices(element_matrices), n_shape_functions(element_matrices.extent(2)) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i, const int j) const {
                     if (i == j) {
@@ -174,7 +174,7 @@ namespace utopia {
                 UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i) const {
                     auto d = compute(cell, i);
 
-                    for (int j = 0; j < num_fields; ++j) {
+                    for (int j = 0; j < n_shape_functions; ++j) {
                         element_matrices(cell, i, j) = 0.0;
                     }
 
@@ -184,7 +184,7 @@ namespace utopia {
                 UTOPIA_INLINE_FUNCTION Scalar compute(const int cell, const int i) const {
                     Scalar ret = 0.0;
 
-                    for (int j = 0; j < num_fields; ++j) {
+                    for (int j = 0; j < n_shape_functions; ++j) {
                         ret += element_matrices(cell, i, j);
                     }
 
@@ -192,12 +192,12 @@ namespace utopia {
                 }
 
                 DynRankView element_matrices;
-                const int num_fields;
+                const int n_shape_functions;
             };
 
             inline Op make_op() {
                 auto &fe = this->fe();
-                return Op(op_.density, fe.fun, fe.measure, op_.n_components);
+                return Op(op_.density, fe.fun(), fe.measure(), op_.n_components);
             }
 
             inline LumpedOp<Op> make_lumped_op() { return LumpedOp<Op>(make_op()); }

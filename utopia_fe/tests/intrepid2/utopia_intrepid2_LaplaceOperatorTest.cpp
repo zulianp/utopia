@@ -54,8 +54,8 @@ static std::shared_ptr<FE> make_ref_tet() {
 void intrepid2_basis_functions() {
     auto fe_ptr = make_ref_tet();
 
-    FE::DynRankView::HostMirror host_measure = ::Kokkos::create_mirror_view(fe_ptr->measure);
-    ::Kokkos::deep_copy(host_measure, fe_ptr->measure);
+    FE::DynRankView::HostMirror host_measure = ::Kokkos::create_mirror_view(fe_ptr->measure());
+    ::Kokkos::deep_copy(host_measure, fe_ptr->measure());
 
     auto actual = host_measure(0, 0);
 

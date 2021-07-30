@@ -100,7 +100,7 @@ namespace utopia {
 
             inline Op make_op() {
                 auto &fe = this->fe();
-                return Op(op_.coeff, fe.grad, fe.measure);
+                return Op(op_.coeff, fe.grad(), fe.measure());
             }
 
             bool assemble_matrix() override {
@@ -139,14 +139,14 @@ namespace utopia {
 
             bool check_op() {
                 auto data = this->matrix_data();
-                const int num_fields = this->fe().num_fields();
+                const int n_shape_functions = this->fe().n_shape_functions();
 
                 // this->matrix_accumulator()->describe(utopia::out().stream());
 
                 this->loop_cell(
                     "LaplaceOperator::check_op()", UTOPIA_LAMBDA(int cell) {
-                        for (int i = 0; i < num_fields; ++i) {
-                            for (int j = 0; j < num_fields; ++j) {
+                        for (int i = 0; i < n_shape_functions; ++i) {
+                            for (int j = 0; j < n_shape_functions; ++j) {
                                 auto val = data(cell, i, j);
                                 assert(i != j || val > 0.0);
                             }
@@ -164,7 +164,8 @@ namespace utopia {
             //     auto data = this->matrix_data();
 
             //     DynRankView grad_x_measure(
-            //         "grad_x_measure", fe.num_cells(), fe.num_fields(), fe.num_qp(), fe.spatial_dimension());
+            //         "grad_x_measure", fe.n_cells(), fe.n_shape_functions(), fe.n_quad_points(),
+            //         fe.spatial_dimension());
 
             //     Kokkos::deep_copy(grad_x_measure, fe.grad);
             //     FunctionSpaceTools::template multiplyMeasure<Scalar>(grad_x_measure, fe.measure, fe.grad);

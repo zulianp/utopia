@@ -2,6 +2,7 @@
 #define UTOPIA_UNIFORM_FE_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_kokkos_FEBase.hpp"
 
 #include <Kokkos_DynRankView.hpp>
 #include <Kokkos_View.hpp>
@@ -18,19 +19,21 @@ namespace utopia {
         template <typename T>
         using View = ::Kokkos::View<T, ::Kokkos::DefaultExecutionSpace>;
 
-        template <typename Scalar, class ExecutionSpace = ::Kokkos::DefaultExecutionSpace>
+        template <typename Scalar, class ExecutionSpace_ = ::Kokkos::DefaultExecutionSpace>
         class UniformFEDefaultTraits {
         public:
+            using ExecutionSpace = ExecutionSpace_;
             using SizeType = int;
             using MeasureView = utopia::kokkos::View<Scalar *>;
             using FunctionView = utopia::kokkos::View<Scalar **>;
             using GradientView = utopia::kokkos::View<Scalar ***>;
             using JacobianView = utopia::kokkos::View<Scalar ***>;
             using JacobianInverseView = utopia::kokkos::View<Scalar ***>;
+            using IntView = utopia::kokkos::View<int *>;
         };
 
         template <typename Scalar, class Traits = UniformFEDefaultTraits<Scalar>>
-        class UniformFE {
+        class UniformFE : public FEBase<typename Traits::ExecutionSpace, typename Traits::SizeType> {
         public:
             using SizeType = typename Traits::SizeType;
             using MeasureView = typename Traits::MeasureView;
@@ -38,6 +41,9 @@ namespace utopia {
             using GradientView = typename Traits::GradientView;
             using JacobianView = typename Traits::JacobianView;
             using JacobianInverseView = typename Traits::JacobianInverseView;
+            using IntView = typename Traits::IntView;
+
+            virtual ~UniformFE() = default;
 
             class Gradient {
             public:
@@ -45,9 +51,9 @@ namespace utopia {
                                                          SizeType fun,
                                                          SizeType qp,
                                                          SizeType d) const {
-                    assert(fun < grad.extent(0));
-                    assert(qp < grad.extent(1));
-                    assert(d < grad.extent(2));
+                    assert(fun < SizeType(grad.extent(0)));
+                    assert(qp < SizeType(grad.extent(1)));
+                    assert(d < SizeType(grad.extent(2)));
 
                     return grad(fun, qp, d);
                 }
@@ -58,8 +64,8 @@ namespace utopia {
             class Function {
             public:
                 UTOPIA_INLINE_FUNCTION Scalar operator()(SizeType i, SizeType qp) const {
-                    assert(i < fun.extent(0));
-                    assert(qp < fun.extent(1));
+                    assert(i < SizeType(fun.extent(0)));
+                    assert(qp < SizeType(fun.extent(1)));
 
                     return fun(i, qp);
                 }
@@ -73,9 +79,9 @@ namespace utopia {
                                                          SizeType row,
                                                          SizeType col,
                                                          SizeType qp) const {
-                    assert(row < jacobian.extent(0));
-                    assert(col < jacobian.extent(1));
-                    assert(qp < jacobian.extent(2));
+                    assert(row < SizeType(jacobian.extent(0)));
+                    assert(col < SizeType(jacobian.extent(1)));
+                    assert(qp < SizeType(jacobian.extent(2)));
                     return jacobian(row, col, qp);
                 }
 
@@ -88,9 +94,9 @@ namespace utopia {
                                                          SizeType row,
                                                          SizeType col,
                                                          SizeType qp) const {
-                    assert(row < jacobian_inverse.extent(0));
-                    assert(col < jacobian_inverse.extent(1));
-                    assert(qp < jacobian_inverse.extent(2));
+                    assert(row < SizeType(jacobian_inverse.extent(0)));
+                    assert(col < SizeType(jacobian_inverse.extent(1)));
+                    assert(qp < SizeType(jacobian_inverse.extent(2)));
 
                     return jacobian_inverse(row, col, qp);
                 }
@@ -101,7 +107,7 @@ namespace utopia {
             class Measure {
             public:
                 UTOPIA_INLINE_FUNCTION Scalar operator()(SizeType /*cell*/, SizeType qp) const {
-                    assert(qp < measure.extent(0));
+                    assert(qp < SizeType(measure.extent(0)));
                     return measure(qp);
                 }
 
@@ -114,11 +120,16 @@ namespace utopia {
             UTOPIA_INLINE_FUNCTION Jacobian jacobian() const { return {jacobian_}; }
             UTOPIA_INLINE_FUNCTION JacobianInverse jacobian_inverse() const { return {jacobian_inverse_}; }
 
-            void init(const MeasureView &measure,
+            UTOPIA_INLINE_FUNCTION IntView &element_tags() { return element_tags_; }
+            UTOPIA_INLINE_FUNCTION const IntView &element_tags() const { return element_tags_; }
+
+            void init(const SizeType n_cells,
+                      const MeasureView &measure,
                       const FunctionView &fun,
                       const GradientView &grad,
                       const JacobianView &jacobian,
                       const JacobianInverseView &jacobian_inverse) {
+                n_cells_ = n_cells;
                 measure_ = measure;
                 fun_ = fun;
                 grad_ = grad;
@@ -126,23 +137,21 @@ namespace utopia {
                 jacobian_inverse_ = jacobian_inverse;
             }
 
-            // inline SizeType num_cells() const { return cell_nodes.extent(0); }
-            UTOPIA_INLINE_FUNCTION SizeType n_shape_functions() const { return fun_.extent(0); }
-            UTOPIA_INLINE_FUNCTION SizeType n_quad_points() const { return measure_.extent(0); }
-            UTOPIA_INLINE_FUNCTION SizeType spatial_dimension() const { return grad_.extent(2); }
-            // inline SizeType manifold_dimension() const { return type.getDimension(); }
+            UTOPIA_INLINE_FUNCTION SizeType n_cells() const override { return n_cells_; }
+            UTOPIA_INLINE_FUNCTION SizeType n_shape_functions() const override { return fun_.extent(0); }
+            UTOPIA_INLINE_FUNCTION SizeType n_quad_points() const override { return measure_.extent(0); }
+            UTOPIA_INLINE_FUNCTION SizeType spatial_dimension() const override { return grad_.extent(2); }
+            UTOPIA_INLINE_FUNCTION SizeType manifold_dimension() const override { return jacobian_.extent(0); }
 
         private:
-            // View<Scalar**> q_points_;
-            // View<Scalar*> q_weights_;
-
+            SizeType n_cells_{0};
             MeasureView measure_;
             FunctionView fun_;
             GradientView grad_;
             JacobianView jacobian_;
             JacobianInverseView jacobian_inverse_;
 
-            // View<int*> element_tags_;
+            IntView element_tags_;
         };
 
     }  // namespace kokkos

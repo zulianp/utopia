@@ -130,12 +130,12 @@ namespace utopia {
 
                 auto &fe = this->fe();
 
-                const int num_fields = fe.num_fields();
+                const int n_shape_functions = fe.n_shape_functions();
 
                 this->loop_cell_test(
                     name, UTOPIA_LAMBDA(const int &cell, const int &i) {
                         Scalar val = 0.0;
-                        for (int j = 0; j < num_fields; ++j) {
+                        for (int j = 0; j < n_shape_functions; ++j) {
                             val += op(cell, i, j) * x(cell, j);
                         }
 
@@ -150,12 +150,12 @@ namespace utopia {
                                        CellTestTrialSubIJOp op) {
                 auto &fe = this->fe();
 
-                const int num_fields = fe.num_fields();
+                const int n_shape_functions = fe.n_shape_functions();
                 const int dim = op.dim();
 
                 this->loop_cell_test(
                     name, UTOPIA_LAMBDA(const int &cell, const int &i) {
-                        for (int j = 0; j < num_fields; ++j) {
+                        for (int j = 0; j < n_shape_functions; ++j) {
                             for (int sub_i = 0; sub_i < dim; ++sub_i) {
                                 Scalar val = 0.0;
                                 for (int sub_j = 0; sub_j < dim; ++sub_j) {
@@ -249,16 +249,16 @@ namespace utopia {
             }
 
             void scale_matrix(const intrepid2::SubdomainValue<Scalar> &fun, DynRankView &matrix) const {
-                auto element_tags = fe().element_tags;
-                const int num_fields = fe().num_fields();
+                auto element_tags = fe().element_tags();
+                const int n_shape_functions = fe().n_shape_functions();
 
                 loop_cell(
                     "FEAssembler::scale(mat)", UTOPIA_LAMBDA(int cell) {
                         auto tag = element_tags(cell);
                         auto val = fun.value(tag);
 
-                        for (int i = 0; i < num_fields; ++i) {
-                            for (int j = 0; j < num_fields; ++j) {
+                        for (int i = 0; i < n_shape_functions; ++i) {
+                            for (int j = 0; j < n_shape_functions; ++j) {
                                 matrix(cell, i, j) *= val;
                             }
                         }
@@ -266,21 +266,21 @@ namespace utopia {
             }
 
             void scale_vector(const intrepid2::SubdomainValue<Scalar> &fun, DynRankView &vector) const {
-                auto element_tags = fe().element_tags;
-                const int num_fields = fe().num_fields();
+                auto element_tags = fe().element_tags();
+                const int n_shape_functions = fe().n_shape_functions();
 
                 loop_cell(
                     "FEAssembler::scale_vector", UTOPIA_LAMBDA(int cell) {
                         auto val = fun.value(element_tags(cell));
 
-                        for (int i = 0; i < num_fields; ++i) {
+                        for (int i = 0; i < n_shape_functions; ++i) {
                             vector(cell, i) *= val;
                         }
                     });
             }
 
             void scale_scalar(const intrepid2::SubdomainValue<Scalar> &fun, DynRankView &scalar) const {
-                auto element_tags = fe().element_tags;
+                auto element_tags = fe().element_tags();
 
                 loop_cell(
                     "FEAssembler::scale_scalar", UTOPIA_LAMBDA(int cell) {
@@ -293,24 +293,24 @@ namespace utopia {
             public:
                 DynRankView &data() { return data_; }
 
-                void init_scalar(const FE &fe, int n_vars) { data_ = DynRankView("scalars", fe.num_cells(), n_vars); }
+                void init_scalar(const FE &fe, int n_vars) { data_ = DynRankView("scalars", fe.n_cells(), n_vars); }
 
                 void init_matrix(const FE &fe, int n_vars) {
-                    const int num_fields = fe.num_fields();
-                    const int n_dofs = num_fields * n_vars;
-                    data_ = DynRankView("matrices", fe.num_cells(), n_dofs, n_dofs);
+                    const int n_shape_functions = fe.n_shape_functions();
+                    const int n_dofs = n_shape_functions * n_vars;
+                    data_ = DynRankView("matrices", fe.n_cells(), n_dofs, n_dofs);
                 }
 
                 void init_vector(FE &fe, int n_vars) {
-                    const int num_fields = fe.num_fields();
-                    const int n_dofs = num_fields * n_vars;
-                    data_ = DynRankView("vectors", fe.num_cells(), n_dofs);
+                    const int n_shape_functions = fe.n_shape_functions();
+                    const int n_dofs = n_shape_functions * n_vars;
+                    data_ = DynRankView("vectors", fe.n_cells(), n_dofs);
                 }
 
                 inline AssemblyMode mode() const { return mode_; }
                 inline void set_mode(AssemblyMode mode) const { mode_ = mode; }
 
-                bool is_compatible(const FE &fe) const { return fe.num_cells() <= data_.extent(0); }
+                bool is_compatible(const FE &fe) const { return fe.n_cells() <= data_.extent(0); }
 
                 void prepare() {
                     if (mode_ == OVERWRITE_MODE) {
@@ -334,12 +334,12 @@ namespace utopia {
                 void zero() { utopia::intrepid2::fill(data_, 0.0); }
 
                 void describe(std::ostream &os) const override {
-                    const SizeType num_cells = data_.extent(0);
+                    const SizeType n_cells = data_.extent(0);
 
                     if (data_.rank() == 2) {
                         const int n_dofs_i = data_.extent(1);
 
-                        for (SizeType c = 0; c < num_cells; ++c) {
+                        for (SizeType c = 0; c < n_cells; ++c) {
                             os << c << ")\n";
                             for (SizeType i = 0; i < n_dofs_i; ++i) {
                                 os << data_(c, i) << " ";
@@ -354,7 +354,7 @@ namespace utopia {
                         const int n_dofs_i = data_.extent(1);
                         const int n_dofs_j = data_.extent(2);
 
-                        for (SizeType c = 0; c < num_cells; ++c) {
+                        for (SizeType c = 0; c < n_cells; ++c) {
                             os << c << ")\n";
                             for (SizeType i = 0; i < n_dofs_i; ++i) {
                                 for (SizeType j = 0; j < n_dofs_j; ++j) {
@@ -433,9 +433,9 @@ namespace utopia {
             }
 
             void describe(std::ostream &os) const override {
-                const SizeType num_cells = fe_->num_cells();
-                const int num_fields = fe_->num_fields();
-                os << "num_cells: " << num_cells << ", num_fields: " << num_fields << "\n";
+                const SizeType n_cells = fe_->n_cells();
+                const int n_shape_functions = fe_->n_shape_functions();
+                os << "n_cells: " << n_cells << ", n_shape_functions: " << n_shape_functions << "\n";
 
                 if (matrix_accumulator_) {
                     matrix_accumulator_->describe(os);

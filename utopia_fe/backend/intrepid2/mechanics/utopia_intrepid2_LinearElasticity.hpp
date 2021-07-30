@@ -119,7 +119,7 @@ namespace utopia {
                 const int n_qp;
             };
 
-            inline Op make_op() const { return Op(op_.lambda, op_.mu, this->fe().grad, this->fe().measure); }
+            inline Op make_op() const { return Op(op_.lambda, op_.mu, this->fe().grad(), this->fe().measure()); }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<LinearElasticity>::apply");

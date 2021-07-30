@@ -158,21 +158,22 @@ namespace utopia {
                     auto &q = space.get_cubature(order);
 
                     int num_elements = space.num_elements;
-                    int num_fields = fe.getCardinality();
+                    int n_shape_functions = fe.getCardinality();
                     int num_quad_points = q.q->getNumPoints();
                     int dim = q.q->getDimension();
 
                     std::cout << "num_elements: " << num_elements << std::endl;
-                    std::cout << "num_fields: " << num_fields << std::endl;
+                    std::cout << "n_shape_functions: " << n_shape_functions << std::endl;
                     std::cout << "num_quad_points: " << num_quad_points << std::endl;
                     std::cout << "dim: " << dim << std::endl;
                     std::cout << std::flush;
 
-                    fun = DeviceRankView("fun", num_fields, num_quad_points);
-                    ref_grad = DeviceRankView("ref_grad", num_fields, num_quad_points, dim);
+                    fun = DeviceRankView("fun", n_shape_functions, num_quad_points);
+                    ref_grad = DeviceRankView("ref_grad", n_shape_functions, num_quad_points, dim);
 
-                    grad = DeviceRankView("grad", num_elements, num_fields, num_quad_points, dim);
-                    test_weighted = DeviceRankView("test_weighted", num_elements, num_fields, num_quad_points, dim);
+                    grad = DeviceRankView("grad", num_elements, n_shape_functions, num_quad_points, dim);
+                    test_weighted =
+                        DeviceRankView("test_weighted", num_elements, n_shape_functions, num_quad_points, dim);
 
                     jacobian = DeviceRankView("jacobian", num_elements, num_quad_points, dim, dim);
                     jacobian_inv = DeviceRankView("jacobian_inv", num_elements, num_quad_points, dim, dim);
@@ -219,8 +220,8 @@ namespace utopia {
         public:
             void init(IntrepidFunctionSpace &space, IntrepidFE &fe) {
                 int num_elements = space.num_elements;
-                int num_fields = fe.fe.getCardinality();
-                mat = DeviceRankView("element_matrix", num_elements, num_fields, num_fields);
+                int n_shape_functions = fe.fe.getCardinality();
+                mat = DeviceRankView("element_matrix", num_elements, n_shape_functions, n_shape_functions);
             }
 
             DeviceRankView mat;
@@ -230,8 +231,8 @@ namespace utopia {
         public:
             void init(IntrepidFunctionSpace &space, IntrepidFE &fe) {
                 int num_elements = space.num_elements;
-                int num_fields = fe.fe.getCardinality();
-                vec = DeviceRankView("element_matrix", num_elements, num_fields);
+                int n_shape_functions = fe.fe.getCardinality();
+                vec = DeviceRankView("element_matrix", num_elements, n_shape_functions);
             }
 
             DeviceRankView vec;
@@ -247,11 +248,12 @@ namespace utopia {
 
             void set(IntrepidFunctionSpace &space, const Scalar value) {
                 int num_quad_points = space.cub_.q->getNumPoints();
-                Kokkos::parallel_for(space.num_elements, KOKKOS_LAMBDA(int k) {
-                    for (int i = 0; i < num_quad_points; ++i) {
-                        data(k, i) = value;
-                    }
-                });
+                Kokkos::parallel_for(
+                    space.num_elements, KOKKOS_LAMBDA(int k) {
+                        for (int i = 0; i < num_quad_points; ++i) {
+                            data(k, i) = value;
+                        }
+                    });
             }
 
             DeviceRankView data;
@@ -358,25 +360,26 @@ namespace utopia {
 
             auto local_mat = raw_type(mat)->getLocalMatrix();
 
-            int num_fields = fe.fe.getCardinality();
+            int n_shape_functions = fe.fe.getCardinality();
 
             auto elem_to_node = i_space.elem_to_node_.template view<Device>();
 
             // i_space.elem_to_node_.print();
             disp(elem_mat.mat);
 
-            Kokkos::parallel_for(i_space.num_elements, KOKKOS_LAMBDA(const int k) {
-                for (int row = 0; row < num_fields; row++) {
-                    for (int col = 0; col < num_fields; col++) {
-                        int row_index = elem_to_node(k, row);
-                        int col_index = elem_to_node(k, col);
+            Kokkos::parallel_for(
+                i_space.num_elements, KOKKOS_LAMBDA(const int k) {
+                    for (int row = 0; row < n_shape_functions; row++) {
+                        for (int col = 0; col < n_shape_functions; col++) {
+                            int row_index = elem_to_node(k, row);
+                            int col_index = elem_to_node(k, col);
 
-                        Scalar val = elem_mat.mat(k, row, col);
+                            Scalar val = elem_mat.mat(k, row, col);
 
-                        local_mat.sumIntoValues(row_index, &col_index, 1, &val, true, true);
+                            local_mat.sumIntoValues(row_index, &col_index, 1, &val, true, true);
+                        }
                     }
-                }
-            });
+                });
 
             // perf
             c.stop();
@@ -427,17 +430,18 @@ namespace utopia {
 
             // assemble gradient
             auto local_vec = raw_type(vec)->getLocalView<Device>();
-            int num_fields = fe.fe.getCardinality();
+            int n_shape_functions = fe.fe.getCardinality();
 
             auto elem_to_node = i_space.elem_to_node_.template view<Device>();
             // i_space.elem_to_node_.print();
 
-            Kokkos::parallel_for(i_space.num_elements, KOKKOS_LAMBDA(const int k) {
-                for (int row = 0; row < num_fields; row++) {
-                    int row_index = elem_to_node(k, row);
-                    Kokkos::atomic_fetch_add(&local_vec(row_index, 0), elem_vec.vec(k, row));
-                }
-            });
+            Kokkos::parallel_for(
+                i_space.num_elements, KOKKOS_LAMBDA(const int k) {
+                    for (int row = 0; row < n_shape_functions; row++) {
+                        int row_index = elem_to_node(k, row);
+                        Kokkos::atomic_fetch_add(&local_vec(row_index, 0), elem_vec.vec(k, row));
+                    }
+                });
 
             // perf
             c.stop();

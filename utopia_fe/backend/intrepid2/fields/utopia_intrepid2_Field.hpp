@@ -40,7 +40,7 @@ namespace utopia {
             }
 
             virtual void scale(const SubdomainValue<Scalar> &value) {
-                auto tags = fe_->element_tags;
+                auto tags = fe_->element_tags();
                 const int n_values = data_.extent(1);
 
                 auto data = data_;
@@ -57,7 +57,7 @@ namespace utopia {
             Scalar dot(const DynRankView &coeff) const {
                 assert(data_.extent(0) == coeff.extent(0));
                 assert(data_.extent(1) == coeff.extent(1));
-                assert(fe_->num_fields() * tensor_size_ == data_.extent(1));
+                assert(fe_->n_shape_functions() * tensor_size_ == data_.extent(1));
 
                 const int n_values = data_.extent(1);
                 auto data = data_;
@@ -97,8 +97,8 @@ namespace utopia {
                 UTOPIA_INLINE_FUNCTION Interpolate(const DynRankView &fun, const DynRankView &coefficients)
                     : fun_(fun),
                       coefficients_(coefficients),
-                      num_fields_(fun.extent(1)),
-                      tensor_size_(coefficients_.extent(1) / num_fields_) {}
+                      n_shape_functions_(fun.extent(1)),
+                      tensor_size_(coefficients_.extent(1) / n_shape_functions_) {}
 
                 UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int qp, const int var) const {
                     assert(var < tensor_size_);
@@ -108,7 +108,7 @@ namespace utopia {
 #endif
 
                     Scalar ret = 0.0;
-                    for (int i = 0; i < num_fields_; ++i) {
+                    for (int i = 0; i < n_shape_functions_; ++i) {
                         const Scalar c = coefficients_(cell, i * tensor_size_ + var);
                         // assert(device::approxeq(1.0, c, 1e-8));
                         ret += fun_(i, qp) * c;
@@ -127,7 +127,7 @@ namespace utopia {
                     assert(1 == tensor_size_);
 
                     Scalar ret = 0.0;
-                    for (int i = 0; i < num_fields_; ++i) {
+                    for (int i = 0; i < n_shape_functions_; ++i) {
                         ret += fun_(i, qp) * coefficients_(cell, i);
                     }
 
@@ -136,7 +136,7 @@ namespace utopia {
 
                 DynRankView fun_;
                 DynRankView coefficients_;
-                const int num_fields_;
+                const int n_shape_functions_;
                 const int tensor_size_;
             };
 
@@ -168,7 +168,7 @@ namespace utopia {
             QPField(const std::shared_ptr<FE> &fe) : Super(fe) {}
 
             void scale(const SubdomainValue<Scalar> &value) override {
-                auto tags = this->fe()->element_tags;
+                auto tags = this->fe()->element_tags();
                 const int tensor_size = this->tensor_size();
 
                 auto data = this->data();

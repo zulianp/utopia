@@ -137,7 +137,7 @@ namespace utopia {
             Kokkos::deep_copy(device_element_tags, element_tags);
 
             fe.init(topo, device_cell_points, degree);
-            fe.element_tags = device_element_tags;
+            fe.element_tags() = device_element_tags;
             return true;
         }
     };

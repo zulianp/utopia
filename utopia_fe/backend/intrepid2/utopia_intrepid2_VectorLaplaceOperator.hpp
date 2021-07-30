@@ -78,7 +78,7 @@ namespace utopia {
                 const int n_qp;
             };
 
-            inline Op make_op() const { return Op(op_.coeff, this->fe().grad, this->fe().measure); }
+            inline Op make_op() const { return Op(op_.coeff, this->fe().grad(), this->fe().measure()); }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<VectorLaplaceOperator>::apply");

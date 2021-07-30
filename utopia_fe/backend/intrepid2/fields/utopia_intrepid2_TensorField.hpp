@@ -40,10 +40,10 @@ namespace utopia {
                 const SizeType e1 = this->data().extent(1);
                 const SizeType e2 = this->data().extent(2);
 
-                if (this->data().rank() != 3 || e0 < this->fe()->num_cells() || e1 < this->fe()->num_qp() ||
+                if (this->data().rank() != 3 || e0 < this->fe()->n_cells() || e1 < this->fe()->n_quad_points() ||
                     e2 < this->tensor_size()) {
-                    this->data() =
-                        DynRankView(this->name(), this->fe()->num_cells(), this->fe()->num_qp(), this->tensor_size());
+                    this->data() = DynRankView(
+                        this->name(), this->fe()->n_cells(), this->fe()->n_quad_points(), this->tensor_size());
                 } else {
                     fill(this->data(), 0.0);
                 }
@@ -216,12 +216,12 @@ namespace utopia {
                     Utopia::Abort("Trying to call det on non-square QPTensorField");
                 }
 
-                SizeType num_cells = this->fe()->num_cells();
-                SizeType num_qp = this->fe()->num_qp();
+                SizeType n_cells = this->fe()->n_cells();
+                SizeType n_quad_points = this->fe()->n_quad_points();
 
-                if (SizeType(result.extent(0)) != num_cells || SizeType(result.extent(1)) != num_qp ||
+                if (SizeType(result.extent(0)) != n_cells || SizeType(result.extent(1)) != n_quad_points ||
                     SizeType(result.extent(2)) != 1) {
-                    result = DynRankView("det(QPTensorField)", num_cells, num_qp, 1);
+                    result = DynRankView("det(QPTensorField)", n_cells, n_quad_points, 1);
                 }
 
                 const int n = this->rows();
@@ -235,17 +235,17 @@ namespace utopia {
             }
 
             inline Rank1Range rank1_range() {
-                int num_cells = this->fe()->num_cells();
-                int num_qp = this->fe()->num_qp();
-                return Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>({0, 0, 0},
-                                                                              {num_cells, num_qp, this->tensor_size()});
+                int n_cells = this->fe()->n_cells();
+                int n_quad_points = this->fe()->n_quad_points();
+                return Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
+                    {0, 0, 0}, {n_cells, n_quad_points, this->tensor_size()});
             }
 
             inline Rank2Range rank2_range() {
-                int num_cells = this->fe()->num_cells();
-                int num_qp = this->fe()->num_qp();
+                int n_cells = this->fe()->n_cells();
+                int n_quad_points = this->fe()->n_quad_points();
                 return Kokkos::MDRangePolicy<Kokkos::Rank<4>, ExecutionSpace>({0, 0, 0, 0},
-                                                                              {num_cells, num_qp, rows(), cols()});
+                                                                              {n_cells, n_quad_points, rows(), cols()});
             }
 
         private:

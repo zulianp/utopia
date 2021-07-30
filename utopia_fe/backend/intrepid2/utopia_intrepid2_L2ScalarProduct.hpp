@@ -114,10 +114,10 @@ namespace utopia {
             };
 
             inline Op make_op(const DynRankView &x, const DynRankView &y) const {
-                return Op(op_.density, fe_->fun, x, y, fe_->measure, op_.n_components);
+                return Op(op_.density, fe_->fun(), x, y, fe_->measure(), op_.n_components);
             }
 
-            inline void ensure_buffer() { products = DynRankView("products", fe_->num_cells(), op_.n_components); }
+            inline void ensure_buffer() { products = DynRankView("products", fe_->n_cells(), op_.n_components); }
 
             void apply(const DynRankView &x, const DynRankView &y) {
                 ensure_buffer();

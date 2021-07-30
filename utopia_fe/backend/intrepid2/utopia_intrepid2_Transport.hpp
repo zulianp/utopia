@@ -38,8 +38,8 @@ namespace utopia {
 
 #ifndef NDEBUG
                 if (op.vector_field.size() > 0) {
-                    assert(SizeType(op.vector_field.extent(0)) == fe->num_cells());
-                    assert(SizeType(op.vector_field.extent(1)) == fe->num_qp());
+                    assert(SizeType(op.vector_field.extent(0)) == fe->n_cells());
+                    assert(SizeType(op.vector_field.extent(1)) == fe->n_quad_points());
                     assert(SizeType(op.vector_field.extent(2)) == fe->spatial_dimension());
                 }
 #endif  // NDEBUG
@@ -100,7 +100,7 @@ namespace utopia {
 
             inline Op make_op() {
                 auto &fe = this->fe();
-                return Op(op_.vector_field, fe.grad, fe.fun, fe.measure);
+                return Op(op_.vector_field, fe.grad(), fe.fun(), fe.measure());
             }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
