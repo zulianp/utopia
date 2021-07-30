@@ -2,6 +2,7 @@
 #define UTOPIA_EVAL_VEC_UNIQUE_SORT_SERIAL_HPP
 
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_Temp.hpp"
 #include "utopia_petsc_Traits.hpp"
 
 #include <cassert>

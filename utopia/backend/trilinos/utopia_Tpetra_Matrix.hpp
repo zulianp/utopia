@@ -89,6 +89,11 @@ namespace utopia {
 
         TpetraMatrix(const RCPCrsMatrixType &mat, const bool owner = false) : mat_(mat), owner_(owner) {}
 
+        void wrap(const RCPCrsMatrixType &mat, const bool owner = false) {
+            mat_ = mat;
+            owner_ = owner;
+        }
+
         /////////////////////////////////////////////////////////////
         // Destructor
         /////////////////////////////////////////////////////////////

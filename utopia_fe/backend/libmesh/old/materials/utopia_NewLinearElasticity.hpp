@@ -20,34 +20,37 @@ namespace utopia {
         NewLinearElasticity(FunctionSpaceT &V, const LameeParameters &params);
         ~NewLinearElasticity();
 
-        bool init(Matrix &hessian) {
-            if (initialized_) return true;
-
-            initialized_ = assemble_hessian(hessian);
-            return initialized_;
-        }
-
         void clear() override { initialized_ = false; }
 
         bool is_linear() const override { return true; }
 
         bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
-            if (!init(hessian)) {
+            if (!init()) {
                 return false;
             }
 
+            hessian = constant_hessian_;
             gradient = hessian * x;
             return true;
         }
 
-        bool stress(const Vector &x, Vector &result) override {
-            Matrix hessian;
-
-            if (!assemble_hessian(hessian)) {
+        bool assemble_gradient(const Vector &x, Vector &gradient) override {
+            if (!init()) {
                 return false;
             }
 
-            result = hessian * x;
+            gradient = constant_hessian_ * x;
+            return true;
+        }
+
+        bool assemble_hessian(Matrix &hessian) override;
+
+        bool assemble_hessian(const Vector &, Matrix &hessian) override { return assemble_hessian(hessian); }
+
+        bool stress(const Vector &x, Vector &result) override {
+            init();
+
+            result = constant_hessian_ * x;
             result *= 1. / rescaling_;
             return true;
         }
@@ -60,13 +63,21 @@ namespace utopia {
 
         inline void rescaling(const Scalar &value) override { rescaling_ = value; }
 
+        inline void initialize() override { init(); }
+
     private:
         FunctionSpaceT &V_;
         LameeParameters params_;
         bool initialized_;
         Scalar rescaling_;
+        Matrix constant_hessian_;
 
-        bool assemble_hessian(Matrix &hessian);
+        bool init() {
+            if (initialized_) return true;
+
+            initialized_ = assemble_hessian(constant_hessian_);
+            return initialized_;
+        }
     };
 }  // namespace utopia
 

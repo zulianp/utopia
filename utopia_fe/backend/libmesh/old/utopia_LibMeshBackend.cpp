@@ -7,6 +7,7 @@ namespace utopia {
 
     void apply_boundary_conditions(LibMeshFunctionSpace &V, USparseMatrix &mat, UVector &vec) {
         using SizeType = Traits<UVector>::SizeType;
+        using IndexArray = Traits<UVector>::IndexArray;
 
         const bool disable_adaptivity = utopia::Utopia::instance().get("disable-adaptivity") == "true";
 
@@ -26,7 +27,7 @@ namespace utopia {
         assert(!empty(mat));
         assert(!empty(vec));
 
-        std::vector<int> index, dirichel_id;
+        IndexArray index, dirichel_id;
         std::vector<SizeType> index_local;
 
         Adaptivity::compute_boundary_nodes(V.mesh(), V.dof_map(), V.equation_system().number(), 0, index);

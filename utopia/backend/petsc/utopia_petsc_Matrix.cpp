@@ -1480,6 +1480,24 @@ namespace utopia {
 
     void PetscMatrix::update_mirror() { comm_.set(communicator()); }
 
+    void PetscMatrix::convert_to_scalar_matrix() {
+        if (this->is_block()) {
+            PetscMatrix temp;
+            temp.destroy();
+            MatConvert(this->raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &temp.raw_type());
+            *this = std::move(temp);
+        }
+    }
+
+    void PetscMatrix::convert_to_scalar_matrix(PetscMatrix &scalar_matrix) {
+        if (this->is_block()) {
+            scalar_matrix.destroy();
+            MatConvert(this->raw_type(), MATAIJ, MAT_INITIAL_MATRIX, &scalar_matrix.raw_type());
+        } else {
+            scalar_matrix = *this;
+        }
+    }
+
 }  // namespace utopia
 
 // TODO(zulianp):

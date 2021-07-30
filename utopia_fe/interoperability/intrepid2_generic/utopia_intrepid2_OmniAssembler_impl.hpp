@@ -39,7 +39,6 @@ namespace utopia {
 
                 auto it = assemblers_.find(type);
                 if (it == assemblers_.end()) {
-                    assert(false);
                     return nullptr;
                 } else {
                     return it->second(fe, in);
@@ -98,10 +97,6 @@ namespace utopia {
                 register_assembler_variant<utopia::NeoHookean<1, Scalar_t>>("NeoHookean", 1);
                 register_assembler_variant<utopia::NeoHookean<2, Scalar_t>>("NeoHookean", 2);
                 register_assembler_variant<utopia::NeoHookean<3, Scalar_t>>("NeoHookean", 3);
-
-                register_assembler_variant<utopia::Transport<1, typename FE_t::DynRankView>>("Transport", 1);
-                register_assembler_variant<utopia::Transport<2, typename FE_t::DynRankView>>("Transport", 2);
-                register_assembler_variant<utopia::Transport<3, typename FE_t::DynRankView>>("Transport", 3);
             }
         };
 
@@ -316,13 +311,14 @@ namespace utopia {
 
             template <class ForcingFunctionDescription>
             void add_forcing_function_on_boundary(const std::string &boundary_name,
+                                                  const int quadrature_order,
                                                   const ForcingFunctionDescription &desc) {
                 auto &b = boundary[boundary_name];
                 std::shared_ptr<FE> bfe;
 
                 if (!b.fe) {
                     bfe = std::make_shared<FE>();
-                    create_fe_on_boundary(*space, *bfe, boundary_name, 2);
+                    create_fe_on_boundary(*space, *bfe, boundary_name, quadrature_order);
                     b.fe = bfe;
                     b.name = boundary_name;
                 } else {
@@ -372,6 +368,7 @@ namespace utopia {
                 for (auto &a_ptr : domain.assemblers) {
                     if (a_ptr->is_matrix()) {
                         if (!a_ptr->assemble_matrix()) {
+                            assert(false);
                             return false;
                         }
                     }
@@ -383,6 +380,7 @@ namespace utopia {
                     for (auto &a_ptr : b.assemblers) {
                         if (a_ptr->is_matrix()) {
                             if (!a_ptr->assemble_matrix()) {
+                                assert(false);
                                 return false;
                             }
                         }
@@ -401,6 +399,7 @@ namespace utopia {
                 for (auto &a_ptr : domain.assemblers) {
                     if (a_ptr->is_vector()) {
                         if (!a_ptr->assemble_vector()) {
+                            assert(false);
                             return false;
                         }
                     }
@@ -412,6 +411,7 @@ namespace utopia {
                     for (auto &a_ptr : b.assemblers) {
                         if (a_ptr->is_vector()) {
                             if (!a_ptr->assemble_vector()) {
+                                assert(false);
                                 return false;
                             }
                         }
@@ -441,6 +441,7 @@ namespace utopia {
 
                     for (auto &a_ptr : b.assemblers) {
                         if (!a_ptr->assemble()) {
+                            assert(false);
                             return false;
                         }
                     }
@@ -455,6 +456,12 @@ namespace utopia {
             void local_to_global_matrix_domain(Matrix &mat) {
                 if (domain.has_matrix()) {
                     local_to_global(*space, domain.matrix_accumulator->data(), mode, mat);
+
+                    if (ensure_scalar_matrix) {
+                        if (mat.is_block()) {
+                            mat.convert_to_scalar_matrix();
+                        }
+                    }
                 }
             }
 
@@ -522,13 +529,15 @@ namespace utopia {
             std::map<std::string, BoundaryAssembler> boundary;
 
             // Env and Utils
-            std::shared_ptr<Environment<FunctionSpace>> env;
+            std::shared_ptr<Environment> env;
             AssemblerRegistry registry;
 
             std::shared_ptr<intrepid2::Field<Scalar>> x_field;
 
             AssemblyMode mode{ADD_MODE};
             bool is_linear_{true};
+            bool ensure_scalar_matrix{true};
+            bool fail_if_unregistered{true};
         };
 
         template <class FunctionSpace>
@@ -541,7 +550,7 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::set_environment(const std::shared_ptr<Environment<FunctionSpace>> &env) {
+        void OmniAssembler<FunctionSpace>::set_environment(const std::shared_ptr<Environment> &env) {
             impl_->env = env;
         }
 
@@ -623,25 +632,42 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler) {
+            impl_->domain.assemblers.push_back(assembler);
+            if (!assembler->is_linear()) {
+                impl_->is_linear_ = false;
+            }
+        }
+
+        template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::fail_if_unregistered(const bool val) {
+            impl_->fail_if_unregistered = val;
+        }
+
+        template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::set_domain_fe(const std::shared_ptr<FE> &fe) {
+            impl_->domain.fe = fe;
+        }
+
+        template <class FunctionSpace>
         void OmniAssembler<FunctionSpace>::read(Input &in) {
-            // FIXME order must be guessed by discretization and material
-            int quadrature_order = 2;
-            in.get("quadrature_order", quadrature_order);
-            impl_->domain.fe = std::make_shared<typename Impl::FE>();
-            create_fe(*impl_->space, *impl_->domain.fe, quadrature_order);
+            if (!impl_->domain.fe) {
+                // FIXME order must be guessed by discretization and material
+                int quadrature_order = 2;
+                in.get("quadrature_order", quadrature_order);
+                impl_->domain.fe = std::make_shared<typename Impl::FE>();
+                create_fe(*impl_->space, *impl_->domain.fe, quadrature_order);
+            }
 
             impl_->is_linear_ = true;
 
+            in.get("ensure_scalar_matrix", impl_->ensure_scalar_matrix);
+
             in.get("material", [this](Input &node) {
                 auto assembler = impl_->registry.make_assembler(impl_->domain.fe, node);
-
                 if (assembler) {
-                    if (!assembler->is_linear()) {
-                        impl_->is_linear_ = false;
-                    }
-
-                    impl_->domain.assemblers.push_back(assembler);
-                } else {
+                    add_domain_assembler(assembler);
+                } else if (impl_->fail_if_unregistered) {
                     assert(false && "Should not come here");
                     Utopia::Abort();
                 }
@@ -665,11 +691,14 @@ namespace utopia {
                             name = "surface_" + std::to_string(id);
                         }
 
+                        int quadrature_order = 2;
+                        node.get("quadrature_order", quadrature_order);
+
                         if (forcing_function_type == "value") {
                             ForcingFunction<Scalar> ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
-                            impl_->add_forcing_function_on_boundary(name, ff);
+                            impl_->add_forcing_function_on_boundary(name, quadrature_order, ff);
                         }
 
                     } else {
@@ -685,8 +714,28 @@ namespace utopia {
         }
 
         template <class FunctionSpace>
+        std::string OmniAssembler<FunctionSpace>::name() const {
+            return "utopia::intrepid2::OmniAssembler";
+        }
+
+        template <class FunctionSpace>
         bool OmniAssembler<FunctionSpace>::is_linear() const {
             return impl_->is_linear_;
+        }
+
+        template <class FunctionSpace>
+        std::shared_ptr<Environment<FunctionSpace>> OmniAssembler<FunctionSpace>::environment() const {
+            return impl_->env;
+        }
+
+        template <class FunctionSpace>
+        void OmniAssembler<FunctionSpace>::set_space(const std::shared_ptr<FunctionSpace> &space) {
+            impl_->space = space;
+        }
+
+        template <class FunctionSpace>
+        std::shared_ptr<FunctionSpace> OmniAssembler<FunctionSpace>::space() const {
+            return impl_->space;
         }
 
     }  // namespace intrepid2

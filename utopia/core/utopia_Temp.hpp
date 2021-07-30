@@ -19,6 +19,19 @@ namespace utopia {
         w.derived().set_zero_rows(index, diag);
     }
 
+    template <class Derived>
+    void set(Tensor<Derived, 1> &v,
+             const typename Traits<Derived>::IndexSet &index,
+             const typename Traits<Derived>::Scalar value) {
+        auto &vec = v.derived();
+
+        Write<Derived> write_lock(vec);
+
+        for (auto &idx : index) {
+            vec.set(idx, value);
+        }
+    }
+
     template <class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class ApplyEqualityConstraintsToSystem {
     public:

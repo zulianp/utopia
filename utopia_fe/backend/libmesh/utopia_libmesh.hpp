@@ -10,4 +10,6 @@
 #include "utopia_libmesh_OmniAssembler.hpp"
 #include "utopia_libmesh_SpaceIO.hpp"
 
+#include "utopia_libmesh_UnsupportedAlgorithms.hpp"
+
 #endif  // UTOPIA_LIBMESH_HPP

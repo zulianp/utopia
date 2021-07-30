@@ -70,6 +70,22 @@ namespace utopia {
         return ret;
     }
 
+    bool InputParameters::key_exists(const std::string &key) const {
+        auto it = values_.find(key);
+
+        if (it != values_.end()) {
+            return true;
+        } else {
+            for (auto ar = aux_roots_.rbegin(); ar != aux_roots_.rend(); ++ar) {
+                if ((*ar)->key_exists(key)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     void InputParameters::init(const int argc, char *argv[], const bool verbose) {
         std::string key;
         std::string value;
@@ -123,6 +139,14 @@ namespace utopia {
         if (verbose && mpi_world_rank() == 0) {
             describe(std::cout);
         }
+    }
+
+    bool InputParameters::is_collection() const {
+        for (auto &r : aux_roots_) {
+            if (r->is_collection()) return true;
+        }
+
+        return false;
     }
 
 }  // namespace utopia

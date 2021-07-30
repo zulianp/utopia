@@ -100,6 +100,14 @@ namespace utopia {
             return true;
         }
 
+        bool assemble_hessian(Matrix &hessian) override { return material_->assemble_hessian(hessian); }
+
+        bool assemble_hessian(const Vector &x, Matrix &hessian) override {
+            return material_->assemble_hessian(x, hessian);
+        }
+
+        bool assemble_gradient(const Vector &x, Vector &gradient) override { return stress(x, gradient); }
+
         bool stress(const Vector &x, Vector &result) override {
             if (!material_->stress(x, result)) {
                 return false;

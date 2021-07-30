@@ -4,6 +4,8 @@
 #include "utopia_petsc_Matrix_impl.hpp"
 #include "utopia_petsc_Vector_impl.hpp"
 
+#include "utopia_petsc.hpp"
+
 namespace utopia {
     template class SNESSolver<PetscMatrix, PetscVector, PETSC>;
     // FIXME

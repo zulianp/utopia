@@ -33,7 +33,7 @@
 #include "utopia_PhaseFieldVolDevSplit.hpp"
 #include "utopia_PoissonFE.hpp"
 #include "utopia_PrincipalStrainsView.hpp"
-#include "utopia_ProjectedGaussSeidelNew.hpp"
+
 #include "utopia_QuasiNewtonBound.hpp"
 #include "utopia_QuasiTrustRegionVariableBound.hpp"
 #include "utopia_SampleView.hpp"

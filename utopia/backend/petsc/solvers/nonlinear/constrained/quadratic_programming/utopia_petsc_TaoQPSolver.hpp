@@ -5,28 +5,32 @@
 #include "utopia_LinearSolverInterfaces.hpp"
 #include "utopia_QPSolver.hpp"
 
+#include "utopia_petsc_Factorization.hpp"
+
 #include <memory>
 
 namespace utopia {
 
     template <class Matrix, class Vector>
-    class TaoQPSolver final : public QPSolver<Matrix, Vector> {
-        using Scalar = typename utopia::Traits<Vector>::Scalar;
-        using SizeType = typename utopia::Traits<Vector>::SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-        typedef utopia::QPSolver<Matrix, Vector> Super;
-        using BoxConstraints = utopia::BoxConstraints<Vector>;
+    class TaoQPSolver {};
+
+    template <>
+    class TaoQPSolver<PetscMatrix, PetscVector> final : public QPSolver<PetscMatrix, PetscVector> {
+        using Scalar = utopia::Traits<PetscVector>::Scalar;
+        using SizeType = utopia::Traits<PetscVector>::SizeType;
+        typedef utopia::LinearSolver<PetscMatrix, PetscVector> LinearSolver;
+        typedef utopia::QPSolver<PetscMatrix, PetscVector> Super;
+        using BoxConstraints = utopia::BoxConstraints<PetscVector>;
 
     public:
-        TaoQPSolver(
-            const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<Factorization<Matrix, Vector>>());
+        TaoQPSolver(const std::shared_ptr<LinearSolver> &linear_solver =
+                        std::make_shared<Factorization<PetscMatrix, PetscVector>>());
+
         ~TaoQPSolver() override;
         TaoQPSolver *clone() const override;
-        bool apply(const Vector &rhs, Vector &sol) override;
+        bool apply(const PetscVector &rhs, PetscVector &sol) override;
         void set_linear_solver(const std::shared_ptr<LinearSolver> &linear_solver);
         void tao_type(const std::string &type);
-        // void set_ksp_types(const std::string &ksp_type, const std::string &pc_type, const std::string
-        // &solver_package);
         void read(Input &in) override;
 
         Scalar atol() const override;

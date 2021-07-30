@@ -4,10 +4,10 @@
 
 namespace utopia {
 
-    template <typename EntryType, typename SizeType_>
+    template <typename EntryType_, typename SizeType_>
     class Array {
     public:
-        using EntryType = EntryType;
+        using EntryType = EntryType_;
         using SizeType = SizeType_;
 
         virtual ~Array() {}

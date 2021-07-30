@@ -3,10 +3,12 @@
 #include "utopia_stk_Commons.hpp"
 
 #include "utopia_stk_FunctionSpace.hpp"
+#include "utopia_stk_Mesh.hpp"
 
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_mesh/base/MetaData.hpp>
 
+#include <cmath>
 #include <cstddef>
 #include <unordered_map>
 #include <unordered_set>
@@ -32,25 +34,6 @@ std::string mpi_error_2_string(const int error_code) {
 namespace utopia {
     namespace stk {
 
-        // Realm::create_edges()
-        // {
-        //   NaluEnv::self().naluOutputP0() << "Realm::create_edges(): Nalu Realm: " << name_ << " requires edge
-        //   creation: Begin" << std::endl;
-
-        //   static stk::diag::Timer timerCE_("CreateEdges", Simulation::rootTimer());
-        //   stk::diag::TimeBlock tbCreateEdges_(timerCE_);
-
-        //   double start_time = NaluEnv::self().nalu_time();
-        //   stk::mesh::create_edges(*bulkData_, metaData_->universal_part(), edgesPart_);
-        //   double stop_time = NaluEnv::self().nalu_time();
-
-        //   // timer close-out
-        //   const double total_edge_time = stop_time - start_time;
-        //   timerCreateEdges_ += total_edge_time;
-        //   NaluEnv::self().naluOutputP0() << "Realm::create_edges(): Nalu Realm: " << name_ << " requires edge
-        //   creation: End" << std::endl;
-        // }
-
         class DofMap::Impl {
         public:
             using SizeType = Traits<FunctionSpace>::SizeType;
@@ -64,6 +47,7 @@ namespace utopia {
             IndexArray d_nnz, o_nnz;
             IndexArray local_to_global;
             SizeType owned_dof_start{-1}, owned_dof_end{-1};
+            SizeType aura_nodes_offset{0};
             int n_var{1};
 
             void print_map(const ::stk::mesh::BulkData &bulk_data, std::ostream &os) const {
@@ -255,11 +239,12 @@ namespace utopia {
             }
 
             void describe_incoming(std::ostream &os) const {
+                os << "in:\n";
                 for (auto ri : rank_incoming) {
                     assert(ri.first < int(buffers_incoming.size()));
                     auto &buff = buffers_incoming[ri.first];
 
-                    os << ri.first << ": ";
+                    os << "rank: " << ri.first << " (size=" << buff.size() << "): ";
                     for (auto b : buff) {
                         os << b.g_id << " -> " << b.dof << ", ";
                     }
@@ -269,6 +254,7 @@ namespace utopia {
             }
 
             void describe_outgoing(std::ostream &os) const {
+                os << "out:\n";
                 for (auto ro : rank_outgoing) {
                     if (ro.first >= int(buffers_outgoing.size())) {
                         os << "Bad value: " << ro.first << " " << ro.second << '\n';
@@ -277,7 +263,7 @@ namespace utopia {
 
                     auto &buff = buffers_outgoing[ro.first];
 
-                    os << ro.first << ": ";
+                    os << "rank: " << ro.first << " (size=" << buff.size() << "): ";
                     for (auto b : buff) {
                         os << b.g_id << " -> " << b.dof << ", ";
                     }
@@ -346,9 +332,9 @@ namespace utopia {
 
         DofMap::~DofMap() = default;
 
-        void print_nodes(const ::stk::mesh::BulkData &bulk_data,
-                         const ::stk::mesh::Selector &selector,
-                         std::ostream &os) {
+        static void print_nodes(const ::stk::mesh::BulkData &bulk_data,
+                                const ::stk::mesh::Selector &selector,
+                                std::ostream &os) {
             using Bucket_t = ::stk::mesh::Bucket;
             using Entity_t = ::stk::mesh::Entity;
 
@@ -361,11 +347,15 @@ namespace utopia {
 
                 for (Bucket_t::size_type k = 0; k < length; ++k) {
                     const Entity_t &elem = b[k];
+                    const auto local_id = utopia::stk::convert_entity_to_index(elem);
                     const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                    os << id << ' '
-                       << bulk_data.parallel_owner_rank(elem)
-                       // << ' ' << bulk_data.count_valid_connectivity(elem, ::stk::topology::NODE_RANK)
-                       << '\n';
+                    os << "lid: " << local_id << ", id: " << id << ' ' << " => " << (bulk_data.local_id(elem))
+                       << ", offset: " << elem.local_offset() << ", in range: " << bulk_data.in_index_range(elem)
+                       << ", is_aura: " << bulk_data.is_aura_ghosted_onto_another_proc(bulk_data.entity_key(elem))
+                       << ", is_shared: " << bulk_data.in_shared(elem) << ", owner: ";
+                    os << bulk_data.parallel_owner_rank(elem);
+                    os << ", recv: " << bulk_data.in_receive_ghost(elem) << ", send: " << bulk_data.in_send_ghost(elem);
+                    os << '\n';
 
                     bulk_data.comm_procs(elem, procs);
 
@@ -399,7 +389,10 @@ namespace utopia {
                     const Entity_t &elem = b[k];
 
                     const auto id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(elem));
-                    os << id << ' ' << bulk_data.parallel_owner_rank(elem) << '\n';
+                    os << "id: " << id << ", owner: " << bulk_data.parallel_owner_rank(elem);
+                    // os <<
+
+                    os << '\n';
 
                     for (auto it = bulk_data.begin_nodes(elem); it < bulk_data.end_nodes(elem); ++it) {
                         os << '(' << utopia::stk::convert_stk_index_to_index(bulk_data.identifier(*it)) << ','
@@ -424,6 +417,400 @@ namespace utopia {
             }
         }
 
+        void DofMap::init(Mesh &mesh) {
+            auto &meta_data = mesh.meta_data();
+            auto &bulk_data = mesh.bulk_data();
+
+            const int rank = mesh.comm().rank();
+            const int size = mesh.comm().size();
+
+            impl_->comm = Impl::Communicator(bulk_data.parallel());
+
+            // std::stringstream ss;
+
+            if (mesh.has_aura() && size > 1) {
+                // if (true) {
+                UTOPIA_TRACE_REGION_BEGIN("DofMap::init_aura");
+
+                using Bucket_t = ::stk::mesh::Bucket;
+                using BucketVector_t = ::stk::mesh::BucketVector;
+                using Entity_t = ::stk::mesh::Entity;
+
+                auto &meta_data = bulk_data.mesh_meta_data();
+
+                const ::stk::mesh::Selector universal_selector = meta_data.universal_part();
+                const ::stk::mesh::Selector local_selector = meta_data.locally_owned_part();
+                const BucketVector_t &elem_buckets =
+                    bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, local_selector);
+
+                // print_nodes(bulk_data, universal_selector, ss);
+                // print_elements(bulk_data, universal_selector, ss);
+
+                SizeType n_local_nodes = count_local_nodes(bulk_data);
+                SizeType n_universal_nodes = count_universal_nodes(bulk_data);
+
+                SizeType offset = 0;
+                mesh.comm().exscan_sum(&n_local_nodes, &offset, 1);
+
+                std::vector<std::unordered_set<SizeType>> node2node(n_universal_nodes);
+
+                for (auto *b_ptr : elem_buckets) {
+                    const auto &b = *b_ptr;
+                    const auto length = b.size();
+
+                    for (Bucket_t::size_type k = 0; k < length; ++k) {
+                        const Entity_t elem = b[k];
+                        const auto node_ids = bulk_data.begin_nodes(elem);
+                        const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                        for (Size_t i = 0; i < n_nodes; ++i) {
+                            const auto node_i = bulk_data.local_id(node_ids[i]);
+                            assert(node_i < n_universal_nodes);
+                            for (Size_t j = 0; j < n_nodes; ++j) {
+                                node2node[node_i].insert(utopia::stk::convert_entity_to_index(node_ids[j]));
+                            }
+                        }
+                    }
+                }
+
+                // mesh.comm().synched_print(ss.str());
+
+                impl_->d_nnz.resize(n_local_nodes, 0);
+                impl_->o_nnz.resize(n_local_nodes, 0);
+                impl_->local_to_global.resize(n_universal_nodes, -1);
+                impl_->owned_dof_start = offset;
+                impl_->owned_dof_end = offset + n_local_nodes;
+                //
+                {
+                    // Handle aura
+                    const ::stk::mesh::Selector aura_selector = meta_data.aura_part();
+
+                    const BucketVector_t &elem_buckets =
+                        bulk_data.get_buckets(::stk::topology::ELEMENT_RANK, aura_selector);
+
+                    for (auto *b_ptr : elem_buckets) {
+                        const auto &b = *b_ptr;
+                        const auto length = b.size();
+
+                        for (Bucket_t::size_type k = 0; k < length; ++k) {
+                            const Entity_t elem = b[k];
+                            const auto node_ids = bulk_data.begin_nodes(elem);
+                            const Size_t n_nodes = bulk_data.num_nodes(elem);
+
+                            for (Size_t i = 0; i < n_nodes; ++i) {
+                                if (!bulk_data.in_receive_ghost(node_ids[i])) {
+                                    const auto node_i = bulk_data.local_id(node_ids[i]);
+
+                                    assert(node_i < n_universal_nodes);
+
+                                    // if (node_i < n_universal_nodes) {
+                                    for (Size_t j = 0; j < n_nodes; ++j) {
+                                        node2node[node_i].insert(utopia::stk::convert_entity_to_index(node_ids[j]));
+
+                                        // if (!bulk_data.in_receive_ghost(node_ids[j])) {
+                                        // }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                {
+                    // Non-zero pattern
+                    const BucketVector_t &node_buckets =
+                        bulk_data.get_buckets(::stk::topology::NODE_RANK, universal_selector);
+
+                    Impl::SizeType max_local_node_id{0};
+                    Impl::SizeType min_aura_node_id = std::numeric_limits<Impl::SizeType>::max();
+
+                    Impl::SizeType index = 0;
+
+                    for (auto *b_ptr : node_buckets) {
+                        const auto &b = *b_ptr;
+                        const auto length = b.size();
+
+                        for (Bucket_t::size_type k = 0; k < length; ++k) {
+                            const Entity_t e = b[k];
+                            if (bulk_data.in_receive_ghost(e)) {
+                                min_aura_node_id =
+                                    std::min(Impl::SizeType(utopia::stk::convert_entity_to_index(e)), min_aura_node_id);
+                                continue;
+                            }
+                            Impl::SizeType i = bulk_data.local_id(e);
+                            max_local_node_id = std::max(i, max_local_node_id);
+
+                            int owner_rank = bulk_data.parallel_owner_rank(e);
+
+                            auto &nodes = node2node[i];
+
+                            if (owner_rank == rank) {
+                                impl_->local_to_global[i] = offset + index;
+
+                                for (auto n : nodes) {
+                                    Impl::Entity node_e(utopia::stk::convert_index_to_stk_index(n));
+                                    int node_owner_rank = bulk_data.parallel_owner_rank(node_e);
+
+                                    if (node_owner_rank == owner_rank) {
+                                        impl_->d_nnz[index] += 1;
+
+                                    } else {
+                                        impl_->o_nnz[index] += 1;
+                                    }
+                                }
+
+                                ++index;
+                            }
+                        }
+                    }
+
+                    // ss << "max_local_node_id: " << max_local_node_id << "\n";
+                    // ss << "min_aura_node_id: " << min_aura_node_id << "\n";
+
+                    impl_->aura_nodes_offset = (min_aura_node_id - (max_local_node_id + 1));
+                    assert(impl_->aura_nodes_offset >= 0);
+
+                    // ss << "aura_nodes_offset: " << impl_->aura_nodes_offset << "\n";
+                }
+
+                exchange_shared_dofs(mesh.comm(), bulk_data, false);
+
+                // mesh.describe(ss);
+                // describe(ss);
+
+                // mesh.comm().synched_print(ss.str());
+
+                UTOPIA_TRACE_REGION_END("DofMap::init_aura");
+            } else {
+                init(bulk_data);
+            }
+
+            // mesh.describe(ss);
+            // describe(ss);
+
+            // mesh.comm().synched_print(ss.str());
+        }
+
+        void DofMap::exchange_shared_dofs(const Communicator &comm,
+                                          ::stk::mesh::BulkData &bulk_data,
+                                          bool add_to_nnz_pattern) {
+            const int rank = comm.rank();
+            const bool has_aura = bulk_data.is_automatic_aura_on();
+
+            // auto &meta_data = bulk_data.mesh_meta_data();
+            SizeType n_local_nodes = count_local_nodes(bulk_data);
+            SizeType n_universal_nodes = count_universal_nodes(bulk_data);
+
+            SizeType offset = 0;
+            comm.exscan_sum(&n_local_nodes, &offset, 1);
+            std::vector<std::unordered_set<SizeType>> node2node(n_universal_nodes);
+
+            DofExchange dof_exchange(comm);
+
+            auto &shared_node_buckets = shared_nodes(bulk_data);
+
+            std::vector<int> procs;
+            for (auto *b_ptr : shared_node_buckets) {
+                const auto &b = *b_ptr;
+                const auto length = b.size();
+
+                for (Impl::Bucket::size_type k = 0; k < length; ++k) {
+                    const Impl::Entity node = b[k];
+                    int owner_rank = bulk_data.parallel_owner_rank(node);
+
+                    bulk_data.comm_procs(node, procs);
+
+                    if (owner_rank == rank) {
+                        for (auto p : procs) {
+                            dof_exchange.increment_outgoing(p);
+                        }
+                    } else {
+                        dof_exchange.increment_incoming(owner_rank);
+                    }
+                }
+            }
+
+            if (has_aura) {
+                for (auto *b_ptr : universal_nodes(bulk_data)) {
+                    const auto &b = *b_ptr;
+                    const auto length = b.size();
+
+                    for (Impl::Bucket::size_type k = 0; k < length; ++k) {
+                        const Impl::Entity node = b[k];
+
+                        int owner_rank = bulk_data.parallel_owner_rank(node);
+
+                        bulk_data.comm_procs(node, procs);
+
+                        if (bulk_data.is_aura_ghosted_onto_another_proc(bulk_data.entity_key(node)))
+                        // if (owner_rank == rank)
+                        {
+                            for (auto p : procs) {
+                                dof_exchange.increment_outgoing(p);
+                            }
+                        } else if (bulk_data.in_receive_ghost(node)) {
+                            dof_exchange.increment_incoming(owner_rank);
+                        }
+                    }
+                }
+            }
+
+            dof_exchange.allocate();
+
+            for (auto *b_ptr : shared_node_buckets) {
+                const auto &b = *b_ptr;
+                const auto length = b.size();
+
+                for (Impl::Bucket::size_type k = 0; k < length; ++k) {
+                    const Impl::Entity node = b[k];
+                    int owner_rank = bulk_data.parallel_owner_rank(node);
+                    auto local_index = utopia::stk::convert_entity_to_index(node);
+
+                    if (owner_rank == rank) {
+                        auto dof = impl_->local_to_global[local_index];
+                        assert(dof >= 0);
+                        bulk_data.comm_procs(node, procs);
+                        for (auto p : procs) {
+                            dof_exchange.add_dof_mapping_to_outgoing(
+                                p, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)), dof);
+                        }
+                    }
+                }
+            }
+
+            if (has_aura) {
+                for (auto *b_ptr : local_nodes(bulk_data)) {
+                    const auto &b = *b_ptr;
+                    const auto length = b.size();
+
+                    for (Impl::Bucket::size_type k = 0; k < length; ++k) {
+                        const Impl::Entity node = b[k];
+                        if (!bulk_data.is_aura_ghosted_onto_another_proc(bulk_data.entity_key(node))) continue;
+
+                        int owner_rank = bulk_data.parallel_owner_rank(node);
+                        auto local_index = utopia::stk::convert_entity_to_index(node);
+
+                        if (owner_rank == rank) {
+                            auto dof = impl_->local_to_global[local_index];
+                            assert(dof >= 0);
+                            bulk_data.comm_procs(node, procs);
+                            for (auto p : procs) {
+                                dof_exchange.add_dof_mapping_to_outgoing(
+                                    p, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)), dof);
+                            }
+                        }
+                    }
+                }
+            }
+
+            dof_exchange.sort_outgoing();
+
+            // std::stringstream ss;
+            // dof_exchange.describe_outgoing(ss);
+
+            dof_exchange.exchange();
+
+            // dof_exchange.describe_incoming(ss);
+
+            // comm.synched_print(ss.str());
+
+            comm.barrier();
+
+            for (auto *b_ptr : shared_node_buckets) {
+                const auto &b = *b_ptr;
+                const auto length = b.size();
+
+                for (Impl::Bucket::size_type k = 0; k < length; ++k) {
+                    const Impl::Entity node = b[k];
+                    int owner_rank = bulk_data.parallel_owner_rank(node);
+
+                    if (owner_rank != rank) {
+                        auto g_id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                        auto dof = dof_exchange.find_dof_from_incoming(owner_rank, g_id);
+
+                        auto local_index = utopia::stk::convert_entity_to_index(node);
+
+                        // assert(g_id == dof);
+                        assert(dof >= 0);
+                        assert(local_index >= 0);
+                        assert(local_index < impl_->local_to_global.size());
+                        impl_->local_to_global[local_index] = dof;
+                    }
+                }
+            }
+
+            if (has_aura) {
+                for (auto *b_ptr : aura_nodes(bulk_data)) {
+                    const auto &b = *b_ptr;
+                    const auto length = b.size();
+
+                    for (Impl::Bucket::size_type k = 0; k < length; ++k) {
+                        const Impl::Entity node = b[k];
+                        int owner_rank = bulk_data.parallel_owner_rank(node);
+
+                        if (owner_rank != rank) {
+                            auto g_id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
+                            auto dof = dof_exchange.find_dof_from_incoming(owner_rank, g_id);
+
+                            auto local_index = utopia::stk::convert_entity_to_index(node) - impl_->aura_nodes_offset;
+
+                            // assert(g_id == dof);
+                            assert(dof >= 0);
+                            assert(local_index >= 0);
+
+                            if (!(local_index < impl_->local_to_global.size())) {
+                                utopia::err() << local_index << "<" << impl_->local_to_global.size() << "\n";
+                                assert(local_index < impl_->local_to_global.size());
+                            }
+
+                            impl_->local_to_global[local_index] = dof;
+                        }
+                    }
+                }
+            }
+
+            if (add_to_nnz_pattern) {
+                dof_exchange.swap_incoming_outgoing();
+
+                for (Impl::SizeType i = 0; i < n_universal_nodes; ++i) {
+                    Impl::Entity e(utopia::stk::convert_index_to_stk_index(i));
+                    if (bulk_data.in_receive_ghost(e)) continue;
+
+                    int owner_rank = bulk_data.parallel_owner_rank(e);
+
+                    if (owner_rank != rank) {
+                        Impl::SizeType count = 0;
+                        auto &nodes = node2node[i];
+
+                        for (auto n : nodes) {
+                            Impl::Entity node_e(utopia::stk::convert_index_to_stk_index(n));
+                            int node_owner_rank = bulk_data.parallel_owner_rank(node_e);
+
+                            if (node_owner_rank == rank) {
+                                ++count;
+                            }
+                        }
+
+                        assert(impl_->local_to_global[i] >= 0);
+                        assert(impl_->local_to_global[i] < impl_->owned_dof_end);
+
+                        dof_exchange.add_global_to_o_nnz(owner_rank, impl_->local_to_global[i], count);
+                    }
+                }
+
+                comm.barrier();
+                // {
+                //     std::stringstream ss;
+                //     // dof_exchange.describe(ss);
+                //     dof_exchange.describe_outgoing(ss);
+                //     comm.synched_print(ss.str());
+                // }
+
+                dof_exchange.exchange();
+                dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
+            }
+        }
+
         void DofMap::init_parallel(const Communicator &comm, ::stk::mesh::BulkData &bulk_data) {
             UTOPIA_TRACE_REGION_BEGIN("DofMap::init_parallel");
             const int rank = comm.rank();
@@ -436,7 +823,8 @@ namespace utopia {
             comm.exscan_sum(&n_local_nodes, &offset, 1);
             std::vector<std::unordered_set<SizeType>> node2node(n_universal_nodes);
 
-            auto &element_buckets = universal_elements(bulk_data);
+            // auto &element_buckets = universal_elements(bulk_data);
+            auto &element_buckets = local_elements(bulk_data);
 
             for (auto *b_ptr : element_buckets) {
                 const auto &b = *b_ptr;
@@ -490,134 +878,7 @@ namespace utopia {
                 }
             }
 
-            DofExchange dof_exchange(comm);
-
-            auto &shared_node_buckets = shared_nodes(bulk_data);
-
-            std::vector<int> procs;
-            for (auto *b_ptr : shared_node_buckets) {
-                const auto &b = *b_ptr;
-                const auto length = b.size();
-
-                for (Impl::Bucket::size_type k = 0; k < length; ++k) {
-                    const Impl::Entity node = b[k];
-                    int owner_rank = bulk_data.parallel_owner_rank(node);
-
-                    bulk_data.comm_procs(node, procs);
-
-                    if (owner_rank == rank) {
-                        for (auto p : procs) {
-                            dof_exchange.increment_outgoing(p);
-                        }
-                    } else {
-                        dof_exchange.increment_incoming(owner_rank);
-                    }
-                }
-            }
-
-            dof_exchange.allocate();
-
-            for (auto *b_ptr : shared_node_buckets) {
-                const auto &b = *b_ptr;
-                const auto length = b.size();
-
-                for (Impl::Bucket::size_type k = 0; k < length; ++k) {
-                    const Impl::Entity node = b[k];
-                    int owner_rank = bulk_data.parallel_owner_rank(node);
-                    auto local_index = utopia::stk::convert_entity_to_index(node);
-
-                    if (owner_rank == rank) {
-                        auto dof = impl_->local_to_global[local_index];
-                        assert(dof >= 0);
-                        bulk_data.comm_procs(node, procs);
-                        for (auto p : procs) {
-                            dof_exchange.add_dof_mapping_to_outgoing(
-                                p, utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node)), dof);
-                        }
-                    }
-                }
-            }
-
-            // {
-            //     std::stringstream ss;
-            //     dof_exchange.describe(ss);
-            //     ss << "outgoing details\n";
-            //     dof_exchange.describe_outgoing(ss);
-
-            //     comm.synched_print(ss.str());
-            // }
-
-            // Utopia::Abort();
-
-            dof_exchange.sort_outgoing();
-            dof_exchange.exchange();
-
-            comm.barrier();
-
-            for (auto *b_ptr : shared_node_buckets) {
-                const auto &b = *b_ptr;
-                const auto length = b.size();
-
-                for (Impl::Bucket::size_type k = 0; k < length; ++k) {
-                    const Impl::Entity node = b[k];
-                    int owner_rank = bulk_data.parallel_owner_rank(node);
-
-                    if (owner_rank != rank) {
-                        auto g_id = utopia::stk::convert_stk_index_to_index(bulk_data.identifier(node));
-                        auto dof = dof_exchange.find_dof_from_incoming(owner_rank, g_id);
-
-                        auto local_index = utopia::stk::convert_entity_to_index(node);
-
-                        // assert(g_id == dof);
-                        assert(dof >= 0);
-                        impl_->local_to_global[local_index] = dof;
-                    }
-                }
-            }
-
-            dof_exchange.swap_incoming_outgoing();
-
-            for (Impl::SizeType i = 0; i < n_universal_nodes; ++i) {
-                Impl::Entity e(utopia::stk::convert_index_to_stk_index(i));
-                int owner_rank = bulk_data.parallel_owner_rank(e);
-
-                if (owner_rank != rank) {
-                    Impl::SizeType count = 0;
-                    auto &nodes = node2node[i];
-
-                    for (auto n : nodes) {
-                        Impl::Entity node_e(utopia::stk::convert_index_to_stk_index(n));
-                        int node_owner_rank = bulk_data.parallel_owner_rank(node_e);
-
-                        if (node_owner_rank == rank) {
-                            ++count;
-                        }
-                    }
-
-                    assert(impl_->local_to_global[i] >= 0);
-                    assert(impl_->local_to_global[i] < impl_->owned_dof_end);
-
-                    dof_exchange.add_global_to_o_nnz(owner_rank, impl_->local_to_global[i], count);
-                }
-            }
-
-            comm.barrier();
-            // {
-            //     std::stringstream ss;
-            //     // dof_exchange.describe(ss);
-            //     dof_exchange.describe_outgoing(ss);
-            //     comm.synched_print(ss.str());
-            // }
-
-            dof_exchange.exchange();
-            dof_exchange.add_to_o_nnz(offset, impl_->o_nnz);
-
-            // {
-            //     std::stringstream ss;
-            //     // impl_->print_map(bulk_data, ss);
-            //     describe(ss);
-            //     comm.synched_print(ss.str());
-            // }
+            exchange_shared_dofs(comm, bulk_data);
 
             UTOPIA_TRACE_REGION_END("DofMap::init_parallel");
         }
@@ -747,7 +1008,8 @@ namespace utopia {
 
                     auto r = range(global);
                     const SizeType nl = l2g.size();
-                    const int nv = n_var();
+                    // const int nv = n_var();
+                    const int nv = local.local_size() / nl;
 
                     assert(nv > 0);
                     assert(nl > 0);
@@ -776,5 +1038,8 @@ namespace utopia {
                 }
             }
         }
+
+        DofMap::SizeType DofMap::shift_aura_idx(const SizeType idx) const { return idx - impl_->aura_nodes_offset; }
+
     }  // namespace stk
 }  // namespace utopia

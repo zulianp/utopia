@@ -38,6 +38,10 @@ namespace utopia {
         void get(const std::string &key, std::function<void(Input &)> lambda) override;
         bool good() const override;
 
+        bool key_exists(const std::string &key) const override;
+
+        bool is_collection() const override;
+
     private:
         class Impl;
         std::unique_ptr<Impl> impl_;

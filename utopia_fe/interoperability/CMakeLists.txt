@@ -32,6 +32,11 @@ endif()
 
 if(UTOPIA_ENABLE_MOONOLITH)
 
+    list(
+        APPEND
+        INTEROP_MODULES
+        moonolith_generic)
+
     if(UTOPIA_ENABLE_STK)
         list(APPEND INTEROP_MODULES moonolith_stk)
         set(INTEROP_EXISTS TRUE)

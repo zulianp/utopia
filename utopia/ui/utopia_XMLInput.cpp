@@ -78,6 +78,18 @@ namespace utopia {
         return impl_->valid();
     }
 
+    bool XMLInput::key_exists(const std::string &key) const {
+        if (impl_->is_invalid_subtree()) return false;
+
+        auto temp = impl_->current_node->first_node(key.c_str());
+
+        if (temp) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     XMLInput::~XMLInput() = default;
 
     XMLInput::XMLInput() = default;
@@ -298,4 +310,7 @@ namespace utopia {
 
         array_finish();
     }
+
+    bool XMLInput::is_collection() const { return size() > 1; }
+
 }  // namespace utopia

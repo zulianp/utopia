@@ -7,22 +7,25 @@
 #include "utopia_petsc.hpp"
 #include "utopia_petsc_impl.hpp"
 
+#include "utopia_petsc_Factorization.hpp"
+
 namespace utopia {
 
-    template <class Matrix, class Vector>
-    class SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> final : public QPSolver<Matrix, Vector> {
-        using Scalar = typename utopia::Traits<Vector>::Scalar;
-        using SizeType = typename utopia::Traits<Vector>::SizeType;
-        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-        typedef utopia::QPSolver<Matrix, Vector> Super;
-        using BoxConstraints = utopia::BoxConstraints<Vector>;
+    template <>
+    class SemismoothNewton<PetscMatrix, PetscVector, PETSC_EXPERIMENTAL> final
+        : public QPSolver<PetscMatrix, PetscVector> {
+        using Scalar = utopia::Traits<PetscVector>::Scalar;
+        using SizeType = utopia::Traits<PetscVector>::SizeType;
+        typedef utopia::LinearSolver<PetscMatrix, PetscVector> LinearSolver;
+        typedef utopia::QPSolver<PetscMatrix, PetscVector> Super;
+        using BoxConstraints = utopia::BoxConstraints<PetscVector>;
 
     public:
-        SemismoothNewton(
-            const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<Factorization<Matrix, Vector>>());
+        SemismoothNewton(const std::shared_ptr<LinearSolver> &linear_solver =
+                             std::make_shared<Factorization<PetscMatrix, PetscVector>>());
         ~SemismoothNewton() override;
         SemismoothNewton *clone() const override;
-        bool apply(const Vector &rhs, Vector &sol) override;
+        bool apply(const PetscVector &rhs, PetscVector &sol) override;
         void read(Input &in) override;
 
     private:

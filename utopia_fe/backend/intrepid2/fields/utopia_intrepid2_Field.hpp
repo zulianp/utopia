@@ -78,7 +78,7 @@ namespace utopia {
                 return ret;
             }
 
-            void describe(std::ostream &os) const override {
+            void describe(std::ostream &) const override {
                 const int tensor_size = tensor_size_;
 
                 auto data = data_;
@@ -182,7 +182,7 @@ namespace utopia {
                     });
             }
 
-            void describe(std::ostream &os) const override {
+            void describe(std::ostream &) const override {
                 const int tensor_size = this->tensor_size();
 
                 auto data = this->data();

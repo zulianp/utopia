@@ -3,6 +3,7 @@
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_MatGetCol.hpp"
 
 namespace utopia {
     template <class Matrix, class Vector>

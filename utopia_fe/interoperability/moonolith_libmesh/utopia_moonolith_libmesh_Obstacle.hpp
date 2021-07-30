@@ -1,6 +1,7 @@
 #ifndef UTOPIA_OBSTACLE_HPP
 #define UTOPIA_OBSTACLE_HPP
 
+#include "utopia_IObstacle.hpp"
 #include "utopia_fe_Core.hpp"
 #include "utopia_ui.hpp"
 
@@ -11,7 +12,7 @@ namespace utopia {
 
     namespace libmesh {
 
-        class Obstacle {
+        class Obstacle : public IObstacle<libmesh::FunctionSpace> {
         public:
             using Params = utopia::moonolith::Obstacle::Params;
             using Mesh = utopia::libmesh::Mesh;
@@ -22,19 +23,22 @@ namespace utopia {
             using SizeType = Traits<FunctionSpace>::SizeType;
 
             void set_params(const Params &params);
-            bool assemble(const FunctionSpace &space);
+
             bool init_obstacle(const Mesh &mesh);
 
-            void transform(const Matrix &in, Matrix &out);
-            void transform(const Vector &in, Vector &out);
-            void inverse_transform(const Vector &in, Vector &out);
+            void read(Input &in) override;
+            void describe(std::ostream &os) const override;
+            bool assemble(FunctionSpace &space) override;
+            void transform(const Matrix &in, Matrix &out) override;
+            void transform(const Vector &in, Vector &out) override;
+            void inverse_transform(const Vector &in, Vector &out) override;
 
             Obstacle();
             virtual ~Obstacle();
 
-            const Vector &gap() const;
-            const Vector &is_contact() const;
-            const Vector &normals() const;
+            const Vector &gap() const override;
+            const Vector &is_contact() const override;
+            const Vector &normals() const override;
 
         private:
             class Impl;

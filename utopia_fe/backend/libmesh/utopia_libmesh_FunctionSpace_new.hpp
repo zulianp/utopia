@@ -2,6 +2,8 @@
 #define UTOPIA_LIBMESH_FUNCTION_SPACE_NEW_HPP
 
 #include "utopia_Field.hpp"
+#include "utopia_FunctionSpaceBase.hpp"
+
 #include "utopia_libmesh_Mesh.hpp"
 #include "utopia_libmesh_SideSet.hpp"
 
@@ -40,25 +42,27 @@ namespace utopia {
             std::shared_ptr<Impl> impl_;
         };
 
-        class FunctionSpace : public Configurable, public Describable, public Traits<FunctionSpace> {
+        class FunctionSpace : public FunctionSpaceBase<libmesh::Mesh> {
         public:
             using Vector = Traits<FunctionSpace>::Vector;
             using Matrix = Traits<FunctionSpace>::Matrix;
+            using SizeType = Traits<FunctionSpace>::SizeType;
             using Comm = Traits<FunctionSpace>::Communicator;
 
             FunctionSpace(const Comm &comm = Comm::get_default());
             FunctionSpace(const std::shared_ptr<Mesh> &mesh);
+            void init(const std::shared_ptr<Mesh> &mesh) override;
             ~FunctionSpace();
 
-            bool write(const Path &path, const Vector &x);
+            bool write(const Path &path, const Vector &x) override;
             void read(Input &in) override;
             void describe(std::ostream &os) const override;
 
-            std::shared_ptr<Mesh> mesh_ptr() const;
-            const Mesh &mesh() const;
-            Mesh &mesh();
+            std::shared_ptr<Mesh> mesh_ptr() const override;
+            const Mesh &mesh() const override;
+            Mesh &mesh() override;
 
-            inline const Comm &comm() const { return mesh().comm(); }
+            inline const Comm &comm() const override { return mesh().comm(); }
 
             libMesh::EquationSystems &raw_type();
             const libMesh::EquationSystems &raw_type() const;
@@ -69,12 +73,12 @@ namespace utopia {
             // The binary is private, so do not try to use it
             std::shared_ptr<FunctionSpaceWrapper> wrapper();
 
-            SizeType n_dofs() const;
-            SizeType n_local_dofs() const;
+            SizeType n_dofs() const override;
+            SizeType n_local_dofs() const override;
             SizeType n_subspaces() const;
             SizeType system_id() const;
 
-            int n_var() const;
+            int n_var() const override;
 
             // access main function space subspaces (main system)
             FunctionSubspace subspace(const SizeType i, const SizeType n_vars = 1);
@@ -85,22 +89,22 @@ namespace utopia {
             // access other spaces (auxiliry systems)
             FunctionSubspace auxiliary_space(const SizeType i);
 
-            void create_matrix(Matrix &mat) const;
-            void create_vector(Vector &vec) const;
+            void create_matrix(Matrix &mat) const override;
+            void create_vector(Vector &vec) const override;
             void create_field(Field<FunctionSpace> &field);
 
-            void apply_constraints(Matrix &mat, Vector &vec) const;
-            void apply_constraints(Vector &vec) const;
-            void apply_constraints(Matrix &mat) const;
+            void apply_constraints(Matrix &mat, Vector &vec) const override;
+            void apply_constraints(Vector &vec) const override;
+            void apply_constraints(Matrix &mat, const Scalar diag_value = 1) const override;
 
-            void apply_zero_constraints(Vector &vec) const;
+            void apply_zero_constraints(Vector &vec) const override;
             void add_dirichlet_boundary_condition(const std::string &boundary_name,
                                                   const Scalar &value,
-                                                  const int variable = 0);
+                                                  const int variable = 0) override;
 
             void add_dirichlet_boundary_condition(const int boundary_id, const Scalar &value, const int variable = 0);
 
-            bool empty() const;
+            bool empty() const override;
 
             bool read(const Path &path,
                       const std::vector<std::string> &var_names,
@@ -109,9 +113,13 @@ namespace utopia {
 
             bool read_with_state(Input &in, Field<FunctionSpace> &val);
 
-            void displace(const Vector &displacement);
+            void displace(const Vector &displacement) override;
 
-            const std::string &name() const;
+            const std::string &name() const override;
+
+            void copy_meta_info_from(const FunctionSpace &other);
+
+            void initialize() override;
 
         private:
             using Impl = utopia::libmesh::FunctionSpaceWrapper;

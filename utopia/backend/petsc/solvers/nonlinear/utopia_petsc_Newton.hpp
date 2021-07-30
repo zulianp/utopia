@@ -6,6 +6,7 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Newton.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_petsc_SNES.hpp"
 
 #include <iomanip>
 #include <limits>

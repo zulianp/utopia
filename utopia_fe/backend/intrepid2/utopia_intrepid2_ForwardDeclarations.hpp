@@ -17,6 +17,9 @@ namespace utopia {
         template <typename Scalar>
         class Field;
 
+        template <typename Scalar>
+        class FEAssembler;
+
     }  // namespace intrepid2
 
     template <typename T>

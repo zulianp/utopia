@@ -5,6 +5,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_NewtonBase.hpp"
 #include "utopia_NonLinearSolver.hpp"
 
 #include <iomanip>
@@ -143,7 +144,8 @@ namespace utopia {
             in.get("dumping", alpha_);
 
             if (ls_strategy_) {
-                in.get("line-search", *ls_strategy_);
+                in.get("linear_search", *ls_strategy_);
+                in.get_deprecated("line-search", "line_search", *ls_strategy_);
             }
         }
 
