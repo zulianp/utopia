@@ -2,6 +2,7 @@
 #define UTOPIA_MARS_LAPLACE_OPERATOR_HPP
 
 #include "mars_quad4.hpp"
+#include "utopia_kokkos_LaplaceOp.hpp"
 #include "utopia_mars_ConcreteFEAssembler.hpp"
 #include "utopia_mars_FEBuilder.hpp"
 
@@ -23,6 +24,10 @@ namespace utopia {
 
             static const ::mars::Integer Type = SPattern::DofHandler::ElemType;
             using UniformFE = utopia::kokkos::UniformFE<Scalar>;
+
+            // Same op template used in intrepid2-based backend
+            using Op = utopia::kokkos::kernels::
+                LaplaceOp<Scalar, Scalar, typename UniformFE::Gradient, typename UniformFE::Measure>;
 
             bool assemble(const Vector &x, Matrix &hessian, Vector &gradient) override {
                 if (!assemble(hessian)) {
@@ -48,11 +53,10 @@ namespace utopia {
                 auto fe_dof_map = handler->get_fe_dof_map();
                 auto dof_handler = sp.get_dof_handler();
 
-                auto measure = fe_->measure();
-                auto grad = fe_->grad();
-
                 const int n_fun = fe_->n_shape_functions();
                 const int n_qp = fe_->n_quad_points();
+
+                Op op(coeff_, fe_->grad(), fe_->measure());
 
                 fe_dof_map.iterate(MARS_LAMBDA(const ::mars::Integer elem_index) {
                     for (int i = 0; i < n_fun; i++) {
@@ -61,28 +65,7 @@ namespace utopia {
 
                         for (int j = 0; j < n_fun; j++) {
                             const auto local_dof_j = fe_dof_map.get_elem_local_dof(elem_index, j);
-                            // for each dof get the local number
-
-                            Scalar val = 0.0;
-                            for (int k = 0; k < n_qp; ++k) {
-                                Scalar dot_grads = 0.0;
-
-                                for (int d = 0; d < DMesh::Dim; ++d) {
-                                    assert(grad(elem_index, i, k, d) == grad(elem_index, i, k, d));
-                                    assert(grad(elem_index, j, k, d) == grad(elem_index, j, k, d));
-
-                                    auto g_i = grad(elem_index, i, k, d);
-                                    auto g_j = grad(elem_index, j, k, d);
-
-                                    dot_grads += g_i * g_j;
-                                    assert(dot_grads == dot_grads);
-                                }
-
-                                Scalar dX = measure(elem_index, k);
-                                assert(dX == dX);
-
-                                val += dot_grads * dX;
-                            }
+                            Scalar val = op(elem_index, i, j);
 
                             assert(val == val);
                             sp.atomic_add_value(local_dof_i, local_dof_j, val);

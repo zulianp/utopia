@@ -3,6 +3,7 @@
 
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
+#include "utopia_kokkos_LaplaceOp.hpp"
 
 #include "utopia_Views.hpp"
 
@@ -33,6 +34,9 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
+            using Op = utopia::kokkos::kernels::
+                VectorLaplaceOp<Dim, Scalar, Coefficient, typename FE::Gradient, typename FE::Measure>;
+
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
             }
@@ -44,39 +48,6 @@ namespace utopia {
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
-
-            class Op {
-            public:
-                UTOPIA_INLINE_FUNCTION Scalar
-                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
-                    if (sub_i != sub_j) {
-                        return 0.0;
-                    }
-
-                    Scalar ret = 0.0;
-                    for (int qp = 0; qp < n_qp; ++qp) {
-                        Scalar val = 0.0;
-
-                        for (int d = 0; d < dim(); ++d) {
-                            val += grad(cell, i, qp, d) * grad(cell, j, qp, d);
-                        }
-
-                        ret += coeff * val * measure(cell, qp);
-                    }
-
-                    return ret;
-                }
-
-                UTOPIA_INLINE_FUNCTION static constexpr int dim() { return Dim; }
-
-                UTOPIA_INLINE_FUNCTION Op(const Coefficient &coeff, const DynRankView &grad, const DynRankView &measure)
-                    : coeff(coeff), grad(grad), measure(measure), n_qp(measure.extent(1)) {}
-
-                const Coefficient coeff;
-                const DynRankView grad;
-                const DynRankView measure;
-                const int n_qp;
-            };
 
             inline Op make_op() const { return Op(op_.coeff, this->fe().grad(), this->fe().measure()); }
 

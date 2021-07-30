@@ -8,6 +8,8 @@
 #include "utopia_intrepid2_Field.hpp"
 #include "utopia_intrepid2_SubdomainFunction.hpp"
 
+#include "utopia_kokkos_LaplaceOp.hpp"
+
 namespace utopia {
 
     template <class DiffusionCoefficient>
@@ -59,6 +61,10 @@ namespace utopia {
             using UserOp = utopia::LaplaceOperator<DiffusionCoefficient>;
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
+            using Gradient = typename FE::Gradient;
+            using Measure = typename FE::Measure;
+
+            using Op = utopia::kokkos::kernels::LaplaceOp<Scalar, DiffusionCoefficient, Gradient, Measure>;
 
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
 
@@ -69,34 +75,6 @@ namespace utopia {
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
-
-            class Op {
-            public:
-                UTOPIA_INLINE_FUNCTION Op(const DiffusionCoefficient &coeff,
-                                          const DynRankView &grad,
-                                          const DynRankView &measure)
-                    : coeff(coeff), grad(grad), measure(measure), n_qp(measure.extent(1)), dim(grad.extent(3)) {}
-
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
-                    Scalar ret = 0.0;
-                    for (int qp = 0; qp < n_qp; ++qp) {
-                        Scalar dot_g = 0.0;
-                        for (int d = 0; d < dim; ++d) {
-                            dot_g += grad(cell, i, qp, d) * grad(cell, j, qp, d);
-                        }
-
-                        ret += dot_g * measure(cell, qp);
-                    }
-
-                    return ret * coeff;
-                }
-
-                const DiffusionCoefficient coeff;
-                const DynRankView grad;
-                const DynRankView measure;
-                const int n_qp;
-                const int dim;
-            };
 
             inline Op make_op() {
                 auto &fe = this->fe();
@@ -155,33 +133,6 @@ namespace utopia {
 
                 return true;
             }
-
-            // bool assemble_matrix_intrepid_tutorial() {
-            //     UTOPIA_TRACE_REGION_BEGIN("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
-            //     this->ensure_matrix_accumulator();
-
-            //     auto &fe = this->fe();
-            //     auto data = this->matrix_data();
-
-            //     DynRankView grad_x_measure(
-            //         "grad_x_measure", fe.n_cells(), fe.n_shape_functions(), fe.n_quad_points(),
-            //         fe.spatial_dimension());
-
-            //     Kokkos::deep_copy(grad_x_measure, fe.grad);
-            //     FunctionSpaceTools::template multiplyMeasure<Scalar>(grad_x_measure, fe.measure, fe.grad);
-            //     FunctionSpaceTools::template integrate<Scalar>(data, fe.grad, grad_x_measure);
-
-            //     // Only works if coeff is a scalar
-            //     if (op_.coeff != 1.0) {
-            //         auto c = op_.coeff;
-            //         this->loop_cell_test_trial(
-            //             "scale_with_coeff",
-            //             KOKKOS_LAMBDA(const int &i0, const int &i1, const int &i2) { data(i0, i1, i2) *= c; });
-            //     }
-
-            //     UTOPIA_TRACE_REGION_END("Assemble<LaplaceOperator>::assemble_matrix_intrepid_tutorial");
-            //     return true;
-            // }
 
             // NVCC_PRIVATE :
             UserOp op_;

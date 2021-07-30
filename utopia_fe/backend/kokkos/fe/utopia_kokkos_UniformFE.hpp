@@ -58,7 +58,16 @@ namespace utopia {
                     return grad(fun, qp, d);
                 }
 
+                UTOPIA_INLINE_FUNCTION SizeType extent(const SizeType i) const {
+                    if (i == 0) {
+                        return n_cells;
+                    } else {
+                        return grad.extent(i - 1);
+                    }
+                }
+
                 GradientView grad;
+                SizeType n_cells;
             };
 
             class Function {
@@ -69,6 +78,8 @@ namespace utopia {
 
                     return fun(i, qp);
                 }
+
+                UTOPIA_INLINE_FUNCTION SizeType extent(const SizeType i) const { return fun.extent(i); }
 
                 FunctionView fun;
             };
@@ -85,7 +96,16 @@ namespace utopia {
                     return jacobian(row, col, qp);
                 }
 
+                UTOPIA_INLINE_FUNCTION SizeType extent(const SizeType i) const {
+                    if (i == 0) {
+                        return n_cells;
+                    } else {
+                        return jacobian.extent(i - 1);
+                    }
+                }
+
                 JacobianView jacobian;
+                SizeType n_cells;
             };
 
             class JacobianInverse {
@@ -101,7 +121,16 @@ namespace utopia {
                     return jacobian_inverse(row, col, qp);
                 }
 
+                UTOPIA_INLINE_FUNCTION SizeType extent(const SizeType i) const {
+                    if (i == 0) {
+                        return n_cells;
+                    } else {
+                        return jacobian_inverse.extent(i - 1);
+                    }
+                }
+
                 JacobianInverseView jacobian_inverse;
+                SizeType n_cells;
             };
 
             class Measure {
@@ -111,14 +140,23 @@ namespace utopia {
                     return measure(qp);
                 }
 
+                UTOPIA_INLINE_FUNCTION SizeType extent(const SizeType i) const {
+                    if (i == 0) {
+                        return n_cells;
+                    } else {
+                        return measure.extent(i - 1);
+                    }
+                }
+
                 MeasureView measure;
+                SizeType n_cells;
             };
 
-            UTOPIA_INLINE_FUNCTION Gradient grad() const { return {grad_}; }
+            UTOPIA_INLINE_FUNCTION Gradient grad() const { return {grad_, n_cells_}; }
             UTOPIA_INLINE_FUNCTION Function fun() const { return {fun_}; }
-            UTOPIA_INLINE_FUNCTION Measure measure() const { return {measure_}; }
-            UTOPIA_INLINE_FUNCTION Jacobian jacobian() const { return {jacobian_}; }
-            UTOPIA_INLINE_FUNCTION JacobianInverse jacobian_inverse() const { return {jacobian_inverse_}; }
+            UTOPIA_INLINE_FUNCTION Measure measure() const { return {measure_, n_cells_}; }
+            UTOPIA_INLINE_FUNCTION Jacobian jacobian() const { return {jacobian_, n_cells_}; }
+            UTOPIA_INLINE_FUNCTION JacobianInverse jacobian_inverse() const { return {jacobian_inverse_, n_cells_}; }
 
             UTOPIA_INLINE_FUNCTION IntView &element_tags() { return element_tags_; }
             UTOPIA_INLINE_FUNCTION const IntView &element_tags() const { return element_tags_; }

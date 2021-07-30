@@ -1,6 +1,8 @@
 #ifndef UTOPIA_INTREPID_2_MASS_HPP
 #define UTOPIA_INTREPID_2_MASS_HPP
 
+#include "utopia_kokkos_MassOp.hpp"
+
 #include "utopia_intrepid2_LaplaceOperator.hpp"
 #include "utopia_intrepid2_SubdomainFunction.hpp"
 
@@ -70,6 +72,10 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
+            using Op = utopia::kokkos::kernels::MassOp<Scalar, Fun, typename FE::Function, typename FE::Measure>;
+            using LumpedOp = utopia::kokkos::kernels::LumpedOp<Op>;
+            using Lump = utopia::kokkos::kernels::Lump<DynRankView>;
+
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
@@ -80,127 +86,12 @@ namespace utopia {
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
 
-            class Op {
-            public:
-                UTOPIA_INLINE_FUNCTION Op(const Fun &density,
-                                          const DynRankView &fun,
-                                          const DynRankView &measure,
-                                          const int n_components)
-                    : density(density),
-                      fun(fun),
-                      measure(measure),
-                      n_components(n_components),
-                      n_qp(measure.extent(1)) {}
-
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
-                    Scalar ret = 0.0;
-                    for (int qp = 0; qp < n_qp; ++qp) {
-                        auto dX = measure(cell, qp);
-                        ret += fun(i, qp) * fun(j, qp) * density * dX;
-                    }
-
-                    return ret;
-                }
-
-                UTOPIA_INLINE_FUNCTION Scalar
-                operator()(const int &cell, const int &i, const int &j, const int sub_i, const int sub_j) const {
-                    if (sub_i != sub_j) {
-                        return 0.0;
-                    }
-
-                    Scalar ret = 0.0;
-                    for (int qp = 0; qp < n_qp; ++qp) {
-                        auto dX = measure(cell, qp);
-                        ret += fun(i, qp) * fun(j, qp) * density * dX;
-                    }
-
-                    return ret;
-                }
-
-                inline int dim() const { return n_components; }
-
-                const Fun density;
-                const DynRankView fun;
-                const DynRankView measure;
-                const int n_components;
-                const int n_qp;
-            };
-
-            template <class WrappedOp>
-            class LumpedOp {
-            public:
-                UTOPIA_INLINE_FUNCTION LumpedOp(WrappedOp op) : op_(op), n_shape_functions(op.fun.extent(1)) {}
-
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i) const {
-                    Scalar ret = 0.0;
-                    for (int j = 0; j < n_shape_functions; ++j) {
-                        ret += op_(cell, i, j);
-                    }
-                    return ret;
-                }
-
-                int dim() const { return op_.dim(); }
-
-                WrappedOp op_;
-                const int n_shape_functions;
-            };
-
-            class Lump {
-            public:
-                UTOPIA_INLINE_FUNCTION Lump(const DynRankView &element_matrices)
-                    : element_matrices(element_matrices), n_shape_functions(element_matrices.extent(2)) {}
-
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int cell, const int i, const int j) const {
-                    if (i == j) {
-                        return compute(cell, i);
-                    } else {
-                        return 0.0;
-                    }
-                }
-
-                UTOPIA_INLINE_FUNCTION Scalar
-                operator()(const int cell, const int i, const int j, const int sub_i, const int sub_j) const {
-                    if (sub_i != sub_j) {
-                        return 0.0;
-                    }
-
-                    if (i == j) {
-                        return compute(cell, i);
-                    } else {
-                        return 0.0;
-                    }
-                }
-
-                UTOPIA_INLINE_FUNCTION void operator()(const int cell, const int i) const {
-                    auto d = compute(cell, i);
-
-                    for (int j = 0; j < n_shape_functions; ++j) {
-                        element_matrices(cell, i, j) = 0.0;
-                    }
-
-                    element_matrices(cell, i, i) = d;
-                }
-
-                UTOPIA_INLINE_FUNCTION Scalar compute(const int cell, const int i) const {
-                    Scalar ret = 0.0;
-
-                    for (int j = 0; j < n_shape_functions; ++j) {
-                        ret += element_matrices(cell, i, j);
-                    }
-
-                    return ret;
-                }
-
-                DynRankView element_matrices;
-                const int n_shape_functions;
-            };
-
             inline Op make_op() {
                 auto &fe = this->fe();
                 return Op(op_.density, fe.fun(), fe.measure(), op_.n_components);
             }
 
-            inline LumpedOp<Op> make_lumped_op() { return LumpedOp<Op>(make_op()); }
+            inline LumpedOp make_lumped_op() { return LumpedOp(make_op()); }
 
             bool apply(const DynRankView &x, DynRankView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<Mass>::apply");

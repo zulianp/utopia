@@ -5,6 +5,8 @@
 #include "utopia_intrepid2_FEAssembler.hpp"
 #include "utopia_intrepid2_Gradient.hpp"
 
+#include "utopia_kokkos_TransportOp.hpp"
+
 #include "utopia_Views.hpp"
 
 namespace utopia {
@@ -33,6 +35,9 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::intrepid2::FEAssembler<Scalar>;
 
+            using Op = utopia::kokkos::kernels::
+                TransportOp<Dim, Scalar, Field, typename FE::Gradient, typename FE::Function, typename FE::Measure>;
+
             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
 
@@ -53,50 +58,6 @@ namespace utopia {
             inline bool is_vector() const override { return true; }
             inline bool is_scalar() const override { return false; }
             bool is_operator() const override { return true; }
-
-            class Op {
-            public:
-                UTOPIA_INLINE_FUNCTION Op(const Field &vector_field,
-                                          const DynRankView &grad,
-                                          const DynRankView &fun,
-                                          const DynRankView &measure)
-                    : vector_field(vector_field), grad(grad), fun(fun), measure(measure), n_qp(measure.extent(1)) {
-                    // printf("size vector field %ld\n", vector_field.extent(0));
-                    assert(vector_field.extent(0) == measure.extent(0));
-                    assert(vector_field.extent(1) == measure.extent(1));
-                    assert(vector_field.extent(2) == grad.extent(3));
-                }
-
-                UTOPIA_INLINE_FUNCTION Scalar operator()(const int &cell, const int &i, const int &j) const {
-                    Scalar integral = 0.0;
-                    for (int qp = 0; qp < n_qp; ++qp) {
-                        Scalar val = 0.0;
-                        for (int dj = 0; dj < Dim; ++dj) {
-                            assert(vector_field(cell, qp, dj) == vector_field(cell, qp, dj));
-                            assert(grad(cell, j, qp, dj) == grad(cell, j, qp, dj));
-
-                            val += grad(cell, j, qp, dj) * vector_field(cell, qp, dj);
-                        }
-
-                        assert(val == val);
-
-                        auto dX = measure(cell, qp);
-                        assert(dX == dX);
-
-                        val *= fun(i, qp) * dX;
-                        integral += val;
-                    }
-
-                    assert(integral == integral);
-                    return integral;
-                }
-
-                Field vector_field;
-                DynRankView grad;
-                DynRankView fun;
-                DynRankView measure;
-                const int n_qp;
-            };
 
             inline Op make_op() {
                 auto &fe = this->fe();

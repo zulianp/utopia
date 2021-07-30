@@ -70,22 +70,7 @@ namespace utopia {
                                                            const int qp,
                                                            const int sub_i,
                                                            const int sub_j) const {
-                    // StaticVector<Scalar, Dim> temp_i, temp_j;
-                    // StaticMatrix<Scalar, Dim, Dim> strain_i;
-                    // StaticMatrix<Scalar, Dim, Dim> strain_j;
-
-                    // for (int d = 0; d < Dim; ++d) {
-                    //     temp_i[d] = grad(cell, i, qp, d);
-                    //     temp_j[d] = grad(cell, j, qp, d);
-                    // }
-
-                    // make_strain(sub_i, &temp_i[0], strain_i);
-                    // make_strain(sub_j, &temp_j[0], strain_j);
-
-                    // Scalar expected = inner(strain_i, strain_j);
-
                     auto ret = LinearizedStrain<Scalar, Dim>::inner(grad, cell, i, j, qp, sub_i, sub_j);
-                    // assert(device::approxeq(ret, expected, 1e-10));
                     return ret;
                 }
 
