@@ -1,10 +1,10 @@
 #ifndef UTOPIA_STK_L2PROJECTION_HPP
 #define UTOPIA_STK_L2PROJECTION_HPP
 
-#include "utopia_intrepid2_L2Projection.hpp"
+#include "utopia_kokkos_L2Projection.hpp"
 #include "utopia_stk_intrepid2_Assembler.hpp"
 
-#include "utopia_intrepid2_Field.hpp"
+#include "utopia_kokkos_Field.hpp"
 
 #include <memory>
 

@@ -1,6 +1,8 @@
 #ifndef UTOPIA_KOKKOS_FIELD_HPP
 #define UTOPIA_KOKKOS_FIELD_HPP
 
+#include "utopia_Algorithms.hpp"
+
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_SubdomainValue.hpp"
 

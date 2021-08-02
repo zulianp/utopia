@@ -1,6 +1,8 @@
 #ifndef UTOPIA_KOKKOS_L2_PROJECTION_HPP
 #define UTOPIA_KOKKOS_L2_PROJECTION_HPP
 
+#include "utopia_Tracer.hpp"
+
 #include "utopia_kokkos_FE.hpp"
 #include "utopia_kokkos_FEAssembler.hpp"
 #include "utopia_kokkos_Gradient.hpp"

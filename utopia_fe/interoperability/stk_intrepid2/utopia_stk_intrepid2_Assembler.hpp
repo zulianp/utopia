@@ -4,10 +4,10 @@
 #include "utopia_Field.hpp"
 #include "utopia_fe_Environment.hpp"
 
-#include "utopia_intrepid2_FE.hpp"
-#include "utopia_intrepid2_FEAssembler.hpp"
+#include "utopia_kokkos_FEAssembler.hpp"
+#include "utopia_kokkos_Transport.hpp"
 
-#include "utopia_intrepid2_Transport.hpp"
+#include "utopia_intrepid2_FE.hpp"
 
 #include "utopia_stk_FEAssembler.hpp"
 #include "utopia_stk_FunctionSpace.hpp"

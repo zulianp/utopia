@@ -4,9 +4,8 @@
 #include "utopia_CreateFE.hpp"
 #include "utopia_LocalToGlobal.hpp"
 
-// utopia_intrepid2 includes
-#include "utopia_intrepid2_FE.hpp"
-#include "utopia_intrepid2_FEAssembler.hpp"
+// utopia/kokkos
+#include "utopia_kokkos_FEAssembler.hpp"
 #include "utopia_kokkos_ForcingFunction.hpp"
 #include "utopia_kokkos_LaplaceOperator.hpp"
 #include "utopia_kokkos_LinearElasticity.hpp"
@@ -15,6 +14,9 @@
 #include "utopia_kokkos_Residual.hpp"
 #include "utopia_kokkos_Transport.hpp"
 #include "utopia_kokkos_VectorLaplaceOperator.hpp"
+
+// utopia/intrepid2 includes
+#include "utopia_intrepid2_FE.hpp"
 
 #include <functional>
 

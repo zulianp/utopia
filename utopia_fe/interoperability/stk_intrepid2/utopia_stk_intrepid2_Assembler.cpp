@@ -1,10 +1,10 @@
 #include "utopia_stk_intrepid2_Assembler.hpp"
 
-#include "utopia_intrepid2_Field.hpp"
-#include "utopia_intrepid2_Gradient.hpp"
-#include "utopia_intrepid2_Mass.hpp"
-#include "utopia_intrepid2_SubdomainFunction.hpp"
-#include "utopia_intrepid2_Transport.hpp"
+#include "utopia_kokkos_Field.hpp"
+#include "utopia_kokkos_Gradient.hpp"
+#include "utopia_kokkos_Mass.hpp"
+#include "utopia_kokkos_SubdomainValue.hpp"
+#include "utopia_kokkos_Transport.hpp"
 #include "utopia_stk_intrepid2.hpp"
 
 #include "utopia_make_unique.hpp"

@@ -5,7 +5,7 @@
 #include "utopia_Traits.hpp"
 
 #include "utopia_FEAssembler.hpp"
-#include "utopia_intrepid2_FEAssembler.hpp"
+#include "utopia_kokkos_FEAssembler.hpp"
 
 #include "utopia_fe_Core.hpp"
 #include "utopia_fe_Environment.hpp"
