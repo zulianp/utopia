@@ -1,6 +1,6 @@
 #include "utopia_Testing.hpp"
 
-#include "utopia_intrepid2_LaplaceOperator.hpp"
+#include "utopia_intrepid2_FE.hpp"
 #include "utopia_ui.hpp"
 
 #include "utopia_intrepid2_arborx_Intersector.hpp"
@@ -54,7 +54,6 @@ static std::shared_ptr<FE> make_ref_tet() {
 }
 
 void intersect_simple() {
-    LaplaceOperator<double> lapl{1.0};
     auto fe_ptr = make_ref_tet();
 
     Intrepid2ArborXIntersector<FE::DynRankView> isect;

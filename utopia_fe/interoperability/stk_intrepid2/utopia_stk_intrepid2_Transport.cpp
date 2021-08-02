@@ -1,10 +1,10 @@
 
 #include "utopia_stk_intrepid2_Transport.hpp"
-#include "utopia_intrepid2_Field.hpp"
-#include "utopia_intrepid2_Gradient.hpp"
-#include "utopia_intrepid2_Mass.hpp"
-#include "utopia_intrepid2_SubdomainFunction.hpp"
-#include "utopia_intrepid2_Transport.hpp"
+#include "utopia_kokkos_Field.hpp"
+#include "utopia_kokkos_Gradient.hpp"
+#include "utopia_kokkos_Mass.hpp"
+#include "utopia_kokkos_SubdomainValue.hpp"
+#include "utopia_kokkos_Transport.hpp"
 #include "utopia_stk_intrepid2.hpp"
 
 #include "utopia_make_unique.hpp"
@@ -14,10 +14,10 @@ namespace utopia {
 
         class Transport::Impl {
         public:
-            using Transport2 = utopia::Transport<2, Intrepid2FE::DynRankView>;
-            using Transport3 = utopia::Transport<3, Intrepid2FE::DynRankView>;
-            using DiffusionFunction = utopia::intrepid2::SubdomainValue<Scalar>;
-            using Intrepid2Assembler = utopia::intrepid2::FEAssembler<Scalar>;
+            using Transport2 = utopia::kokkos::Transport<Intrepid2FE, 2, Intrepid2FE::DynRankView>;
+            using Transport3 = utopia::kokkos::Transport<Intrepid2FE, 3, Intrepid2FE::DynRankView>;
+            using DiffusionFunction = utopia::kokkos::SubdomainValue<Intrepid2FE>;
+            using Intrepid2Assembler = utopia::kokkos::FEAssembler<Intrepid2FE, Intrepid2FE::DynRankView>;
 
             std::shared_ptr<Field> field;
             std::shared_ptr<DiffusionFunction> diffusion_function;
@@ -78,18 +78,18 @@ namespace utopia {
 
             const int spatial_dim = this->space()->mesh().spatial_dimension();
 
-            intrepid2::Gradient<Scalar> g(this->fe_ptr());
+            utopia::kokkos::Gradient<FE> g(this->fe_ptr());
 
             if (impl_->field->tensor_size() == 1) {
                 assert(this->fe_ptr()->spatial_dimension() != 1);
                 // If scalar field differentiate
-                intrepid2::Field<Scalar> field(this->fe_ptr());
+                utopia::kokkos::Field<FE> field(this->fe_ptr());
                 convert_field(*impl_->field, field);
                 g.init(field);
                 g.scale(-impl_->coeff);
 
                 in.get("diffusion_function", [this, &g](Input &node) {
-                    impl_->diffusion_function = std::make_shared<utopia::intrepid2::SubdomainValue<Scalar>>(1.0);
+                    impl_->diffusion_function = std::make_shared<Impl::DiffusionFunction>(1.0);
                     // impl_->diffusion_function->read(node);
                     node.get("function", [this, &g](Input &inner_node) {
                         impl_->diffusion_function->read(inner_node);
@@ -98,7 +98,7 @@ namespace utopia {
                 });
 
             } else {
-                convert_field(*impl_->field, static_cast<intrepid2::Field<Scalar> &>(g));
+                convert_field(*impl_->field, static_cast<utopia::kokkos::Field<FE> &>(g));
             }
 
             if (impl_->print_field) {
@@ -107,7 +107,7 @@ namespace utopia {
 
             switch (spatial_dim) {
                 case 2: {
-                    using Assemble2 = utopia::intrepid2::Assemble<Impl::Transport2>;
+                    using Assemble2 = Impl::Transport2;
                     auto assembler = std::make_shared<Assemble2>(this->fe_ptr(), g.data());
                     assembler->read(in);
                     this->set_assembler(assembler);
@@ -115,7 +115,7 @@ namespace utopia {
                 }
 
                 case 3: {
-                    using Assemble3 = utopia::intrepid2::Assemble<Impl::Transport3>;
+                    using Assemble3 = Impl::Transport3;
                     auto assembler = std::make_shared<Assemble3>(this->fe_ptr(), g.data());
                     assembler->read(in);
                     this->set_assembler(assembler);

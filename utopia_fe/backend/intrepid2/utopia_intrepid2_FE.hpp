@@ -38,9 +38,10 @@ namespace utopia {
             using IntView = utopia::intrepid2::IntViewDevice;
         };
 
-        template <typename Scalar>
-        class FE : public utopia::kokkos::FE<Scalar, Intrepid2FETraits<Scalar>> {
+        template <typename Scalar_>
+        class FE : public utopia::kokkos::FE<Scalar_, Intrepid2FETraits<Scalar_>> {
         public:
+            using Scalar = Scalar_;
             using Super = utopia::kokkos::FE<Scalar, Intrepid2FETraits<Scalar>>;
             using HostExecutionSpace = utopia::intrepid2::HostExecutionSpace;
             using ExecutionSpace = utopia::intrepid2::ExecutionSpace;

@@ -5,6 +5,7 @@
 #include "utopia_Traits.hpp"
 
 #include "utopia_FEAssembler.hpp"
+#include "utopia_intrepid2_FEAssembler.hpp"
 
 #include "utopia_fe_Core.hpp"
 #include "utopia_fe_Environment.hpp"
@@ -23,7 +24,7 @@ namespace utopia {
             using Environment = utopia::Environment<FunctionSpace>;
             using FE = utopia::intrepid2::FE<Scalar>;
 
-            using Intrepid2FEAssembler = utopia::intrepid2::FEAssembler<Scalar>;
+            using Intrepid2FEAssembler = utopia::kokkos::FEAssembler<FE>;
             using Intrepid2FEAssemblerPtr = std::shared_ptr<Intrepid2FEAssembler>;
 
             OmniAssembler(const std::shared_ptr<FunctionSpace> &space);

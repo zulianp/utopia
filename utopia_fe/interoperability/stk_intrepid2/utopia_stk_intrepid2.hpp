@@ -34,6 +34,9 @@ namespace utopia {
     using StkIntViewDevice_t = utopia::intrepid2::ViewDevice<int>;
 
     template <typename Scalar>
+    using Intrepid2Field = utopia::kokkos::Field<utopia::intrepid2::FE<Scalar>>;
+
+    template <typename Scalar>
     class CreateFE<utopia::stk::FunctionSpace, utopia::intrepid2::FE<Scalar>> {
     public:
         static void apply(const utopia::stk::FunctionSpace &space,
@@ -55,13 +58,13 @@ namespace utopia {
     };
 
     template <typename Scalar>
-    class ConvertField<Field<utopia::stk::FunctionSpace>, utopia::intrepid2::Field<Scalar>> {
+    class ConvertField<Field<utopia::stk::FunctionSpace>, Intrepid2Field<Scalar>> {
     public:
         using Vector = utopia::Traits<utopia::stk::FunctionSpace>::Vector;
         using SizeType = utopia::Traits<utopia::stk::FunctionSpace>::SizeType;
 
-        static void apply(const Field<utopia::stk::FunctionSpace> &from, utopia::intrepid2::Field<Scalar> &to);
-        static void apply(const Field<utopia::stk::FunctionSpace> &from, utopia::intrepid2::Field<Scalar> &to, int var);
+        static void apply(const Field<utopia::stk::FunctionSpace> &from, Intrepid2Field<Scalar> &to);
+        static void apply(const Field<utopia::stk::FunctionSpace> &from, Intrepid2Field<Scalar> &to, int var);
     };
 
 #ifdef UTOPIA_WITH_PETSC

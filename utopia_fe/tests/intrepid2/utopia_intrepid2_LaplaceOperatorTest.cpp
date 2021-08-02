@@ -1,6 +1,7 @@
 #include "utopia_Testing.hpp"
 
-#include "utopia_intrepid2_LaplaceOperator.hpp"
+#include "utopia_intrepid2_FE.hpp"
+#include "utopia_kokkos_LaplaceOperator.hpp"
 #include "utopia_ui.hpp"
 
 using namespace utopia;
@@ -63,10 +64,10 @@ void intrepid2_basis_functions() {
 }
 
 void intrepid2_laplace_operator() {
-    LaplaceOperator<double> lapl{1.0};
+    kokkos::LaplaceOperator<FE>::UserOp lapl{1.0};
     auto fe_ptr = make_ref_tet();
 
-    intrepid2::Assemble<LaplaceOperator<double>> assembler(fe_ptr, lapl);
+    kokkos::LaplaceOperator<FE> assembler(fe_ptr, lapl);
     assembler.assemble_matrix();
     // assembler.describe(std::cout);
 

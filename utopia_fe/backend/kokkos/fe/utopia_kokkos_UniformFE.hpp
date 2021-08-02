@@ -13,23 +13,24 @@ namespace utopia {
 
     namespace kokkos {
 
-        template <typename T>
-        using DynView = ::Kokkos::DynRankView<T, ::Kokkos::DefaultExecutionSpace>;
+        // template <typename T>
+        // using DynView = ::Kokkos::DynRankView<T, ::Kokkos::DefaultExecutionSpace>;
 
-        template <typename T>
-        using View = ::Kokkos::View<T, ::Kokkos::DefaultExecutionSpace>;
+        // template <typename T>
+        // using View = ::Kokkos::View<T, ::Kokkos::DefaultExecutionSpace>;
 
         template <typename Scalar, class ExecutionSpace_ = ::Kokkos::DefaultExecutionSpace>
         class UniformFEDefaultTraits {
         public:
             using ExecutionSpace = ExecutionSpace_;
             using SizeType = int;
-            using MeasureView = utopia::kokkos::View<Scalar *>;
-            using FunctionView = utopia::kokkos::View<Scalar **>;
-            using GradientView = utopia::kokkos::View<Scalar ***>;
-            using JacobianView = utopia::kokkos::View<Scalar ***>;
-            using JacobianInverseView = utopia::kokkos::View<Scalar ***>;
-            using IntView = utopia::kokkos::View<int *>;
+            using MeasureView = ::Kokkos::View<Scalar *, ExecutionSpace_>;
+            using FunctionView = ::Kokkos::View<Scalar **, ExecutionSpace_>;
+            using GradientView = ::Kokkos::View<Scalar ***, ExecutionSpace_>;
+            using JacobianView = ::Kokkos::View<Scalar ***, ExecutionSpace_>;
+            using JacobianInverseView = ::Kokkos::View<Scalar ***, ExecutionSpace_>;
+            using IntView = ::Kokkos::View<int *, ExecutionSpace_>;
+            using DynRankView = ::Kokkos::DynRankView<Scalar, ExecutionSpace_>;
         };
 
         template <typename Scalar, class Traits = UniformFEDefaultTraits<Scalar>>
@@ -42,6 +43,7 @@ namespace utopia {
             using JacobianView = typename Traits::JacobianView;
             using JacobianInverseView = typename Traits::JacobianInverseView;
             using IntView = typename Traits::IntView;
+            using DynRankView = typename Traits::DynRankView;
 
             virtual ~UniformFE() = default;
 

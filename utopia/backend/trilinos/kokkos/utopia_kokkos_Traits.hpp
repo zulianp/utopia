@@ -169,6 +169,7 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using SizeType = std::size_t;
+        using ExecutionSpace = typename Kokkos::View<Scalar_ *, Args...>::execution_space;
     };
 
     template <class Scalar_, typename... Args>
@@ -176,6 +177,7 @@ namespace utopia {
     public:
         using Scalar = Scalar_;
         using SizeType = std::size_t;
+        using ExecutionSpace = typename Kokkos::View<Scalar_ **, Args...>::execution_space;
     };
 
     template <typename Scalar>

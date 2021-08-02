@@ -6,9 +6,13 @@
 namespace utopia {
     namespace kokkos {
 
-        template <typename ExecutionSpace, typename SizeType>
+        template <typename T>
+        using DefaultView = ::Kokkos::DynRankView<T, ::Kokkos::DefaultExecutionSpace>;
+
+        template <typename ExecutionSpace_, typename SizeType>
         class FEBase {
         public:
+            using ExecutionSpace = ExecutionSpace_;
             using CellTestTrialRange = Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>;
             using CellTestRange = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>;
             using CellRange = Kokkos::RangePolicy<ExecutionSpace>;

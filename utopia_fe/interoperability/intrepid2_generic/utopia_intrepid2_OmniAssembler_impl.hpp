@@ -7,14 +7,14 @@
 // utopia_intrepid2 includes
 #include "utopia_intrepid2_FE.hpp"
 #include "utopia_intrepid2_FEAssembler.hpp"
-#include "utopia_intrepid2_ForcingFunction.hpp"
-#include "utopia_intrepid2_LaplaceOperator.hpp"
-#include "utopia_intrepid2_LinearElasticity.hpp"
-#include "utopia_intrepid2_Mass.hpp"
-#include "utopia_intrepid2_NeoHookean.hpp"
-#include "utopia_intrepid2_Residual.hpp"
-#include "utopia_intrepid2_Transport.hpp"
-#include "utopia_intrepid2_VectorLaplaceOperator.hpp"
+#include "utopia_kokkos_ForcingFunction.hpp"
+#include "utopia_kokkos_LaplaceOperator.hpp"
+#include "utopia_kokkos_LinearElasticity.hpp"
+#include "utopia_kokkos_Mass.hpp"
+#include "utopia_kokkos_NeoHookean.hpp"
+#include "utopia_kokkos_Residual.hpp"
+#include "utopia_kokkos_Transport.hpp"
+#include "utopia_kokkos_VectorLaplaceOperator.hpp"
 
 #include <functional>
 
@@ -26,7 +26,7 @@ namespace utopia {
         public:
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
             using FE_t = utopia::intrepid2::FE<Scalar_t>;
-            using FEAssembler_t = utopia::intrepid2::FEAssembler<Scalar_t>;
+            using FEAssembler_t = utopia::kokkos::FEAssembler<FE_t>;
             using FEAssemblerPtr_t = std::shared_ptr<FEAssembler_t>;
 
             FEAssemblerPtr_t make_assembler(const std::shared_ptr<FE_t> &fe, Input &in) const {
@@ -48,9 +48,9 @@ namespace utopia {
             template <typename MaterialDescription>
             void register_assembler(const std::string &type) {
                 assemblers_[type] = [](const std::shared_ptr<FE_t> &fe, Input &in) -> FEAssemblerPtr_t {
-                    MaterialDescription mat_desc;
+                    typename MaterialDescription::UserOp mat_desc;
                     mat_desc.read(in);
-                    return std::make_shared<intrepid2::Assemble<MaterialDescription>>(fe, mat_desc);
+                    return std::make_shared<MaterialDescription>(fe, mat_desc);
                 };
             }
 
@@ -58,9 +58,9 @@ namespace utopia {
             void register_assembler_variant(const std::string &type, const int spatial_dimension) {
                 assemblers_[create_variant_name(type, spatial_dimension)] = [](const std::shared_ptr<FE_t> &fe,
                                                                                Input &in) -> FEAssemblerPtr_t {
-                    MaterialDescription mat_desc;
+                    typename MaterialDescription::UserOp mat_desc;
                     mat_desc.read(in);
-                    return std::make_shared<intrepid2::Assemble<MaterialDescription>>(fe, mat_desc);
+                    return std::make_shared<MaterialDescription>(fe, mat_desc);
                 };
 
                 has_ndim_variants.insert(type);
@@ -81,22 +81,25 @@ namespace utopia {
             std::set<std::string> has_ndim_variants;
 
             void register_assemblers() {
-                register_assembler<utopia::Mass<Scalar_t>>("Mass");
-                register_assembler<utopia::LaplaceOperator<Scalar_t>>("LaplaceOperator");
-                register_assembler<utopia::ForcingFunction<Scalar_t>>("ForcingFunction");
-                register_assembler<utopia::ForcingFunction<Scalar_t>>("ForcingFunction");
+                register_assembler<utopia::kokkos::Mass<FE_t>>("Mass");
+                register_assembler<utopia::kokkos::LaplaceOperator<FE_t>>("LaplaceOperator");
+                register_assembler<utopia::kokkos::ForcingFunction<FE_t>>("ForcingFunction");
+                register_assembler<utopia::kokkos::NeoHookean<FE_t>>("NeoHookean");
 
-                register_assembler_variant<utopia::VectorLaplaceOperator<1, Scalar_t>>("VectorLaplaceOperator", 1);
-                register_assembler_variant<utopia::VectorLaplaceOperator<2, Scalar_t>>("VectorLaplaceOperator", 2);
-                register_assembler_variant<utopia::VectorLaplaceOperator<3, Scalar_t>>("VectorLaplaceOperator", 3);
+                register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 1, Scalar_t>>(
+                    "VectorLaplaceOperator", 1);
+                register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 2, Scalar_t>>(
+                    "VectorLaplaceOperator", 2);
+                register_assembler_variant<utopia::kokkos::VectorLaplaceOperator<FE_t, 3, Scalar_t>>(
+                    "VectorLaplaceOperator", 3);
 
-                register_assembler_variant<utopia::LinearElasticity<1, Scalar_t>>("LinearElasticity", 1);
-                register_assembler_variant<utopia::LinearElasticity<2, Scalar_t>>("LinearElasticity", 2);
-                register_assembler_variant<utopia::LinearElasticity<3, Scalar_t>>("LinearElasticity", 3);
+                register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 1, Scalar_t>>("LinearElasticity", 1);
+                register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 2, Scalar_t>>("LinearElasticity", 2);
+                register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 3, Scalar_t>>("LinearElasticity", 3);
 
-                register_assembler_variant<utopia::NeoHookean<1, Scalar_t>>("NeoHookean", 1);
-                register_assembler_variant<utopia::NeoHookean<2, Scalar_t>>("NeoHookean", 2);
-                register_assembler_variant<utopia::NeoHookean<3, Scalar_t>>("NeoHookean", 3);
+                // // register_assembler_variant<utopia::NeoHookean<1, Scalar_t>>("NeoHookean", 1);
+                // register_assembler_variant<utopia::NeoHookean<2, Scalar_t>>("NeoHookean", 2);
+                // register_assembler_variant<utopia::NeoHookean<3, Scalar_t>>("NeoHookean", 3);
             }
         };
 
@@ -105,10 +108,13 @@ namespace utopia {
         public:
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
             using FE = utopia::intrepid2::FE<Scalar_t>;
+            using Field = utopia::kokkos::Field<FE>;
             using AssemblerRegistry = utopia::intrepid2::AssemblerRegistry<FunctionSpace>;
-            using FEAssembler_t = utopia::intrepid2::FEAssembler<Scalar_t>;
+            using FEAssembler_t = utopia::kokkos::FEAssembler<FE>;
             using FEAssemblerPtr_t = std::shared_ptr<FEAssembler_t>;
-            using TensorAccumulator_t = typename FEAssembler_t::TensorAccumulator;
+            using MatrixAccumulator_t = typename FEAssembler_t::MatrixAccumulator;
+            using VectorAccumulator_t = typename FEAssembler_t::VectorAccumulator;
+            using ScalarAccumulator_t = typename FEAssembler_t::ScalarAccumulator;
 
             class PartAssembler {
             public:
@@ -118,9 +124,9 @@ namespace utopia {
                 std::shared_ptr<FE> fe;
                 std::vector<FEAssemblerPtr_t> assemblers;
 
-                std::shared_ptr<TensorAccumulator_t> matrix_accumulator;
-                std::shared_ptr<TensorAccumulator_t> vector_accumulator;
-                std::shared_ptr<TensorAccumulator_t> scalar_accumulator;
+                std::shared_ptr<MatrixAccumulator_t> matrix_accumulator;
+                std::shared_ptr<VectorAccumulator_t> vector_accumulator;
+                std::shared_ptr<ScalarAccumulator_t> scalar_accumulator;
 
                 void ensure_accumulators() {
                     for (auto &a_ptr : assemblers) {
@@ -298,13 +304,12 @@ namespace utopia {
             }
 
             template <class ForcingFunctionDescription>
-            void add_forcing_function(const ForcingFunctionDescription &desc) {
+            void add_forcing_function(const typename ForcingFunctionDescription::UserOp &desc) {
                 if (!domain.fe) {
                     assert(false);
                 }
 
-                auto assembler =
-                    std::make_shared<utopia::intrepid2::Assemble<ForcingFunctionDescription>>(domain.fe, desc);
+                auto assembler = std::make_shared<ForcingFunctionDescription>(domain.fe, desc);
 
                 domain.assemblers.push_back(assembler);
             }
@@ -312,7 +317,7 @@ namespace utopia {
             template <class ForcingFunctionDescription>
             void add_forcing_function_on_boundary(const std::string &boundary_name,
                                                   const int quadrature_order,
-                                                  const ForcingFunctionDescription &desc) {
+                                                  const typename ForcingFunctionDescription::UserOp &desc) {
                 auto &b = boundary[boundary_name];
                 std::shared_ptr<FE> bfe;
 
@@ -325,7 +330,7 @@ namespace utopia {
                     bfe = b.fe;
                 }
 
-                auto assembler = std::make_shared<utopia::intrepid2::Assemble<ForcingFunctionDescription>>(bfe, desc);
+                auto assembler = std::make_shared<ForcingFunctionDescription>(bfe, desc);
                 b.assemblers.push_back(assembler);
             }
 
@@ -334,7 +339,7 @@ namespace utopia {
                 domain.ensure_vector_accumulator();
 
                 if (domain.has_matrix()) {
-                    residual(
+                    utopia::kokkos::residual(
                         domain.matrix_accumulator->data(), x_field->data(), domain.vector_accumulator->data(), mode);
                 }
             }
@@ -516,7 +521,7 @@ namespace utopia {
             void ensure_field() {
                 if (!x_field) {
                     assert(domain.fe);
-                    x_field = std::make_shared<intrepid2::Field<Scalar>>(domain.fe);
+                    x_field = std::make_shared<Field>(domain.fe);
                 }
             }
 
@@ -532,7 +537,7 @@ namespace utopia {
             std::shared_ptr<Environment> env;
             AssemblerRegistry registry;
 
-            std::shared_ptr<intrepid2::Field<Scalar>> x_field;
+            std::shared_ptr<Field> x_field;
 
             AssemblyMode mode{ADD_MODE};
             bool is_linear_{true};
@@ -651,6 +656,8 @@ namespace utopia {
 
         template <class FunctionSpace>
         void OmniAssembler<FunctionSpace>::read(Input &in) {
+            using ForcingFunction_t = utopia::kokkos::ForcingFunction<typename Impl::FE>;
+
             if (!impl_->domain.fe) {
                 // FIXME order must be guessed by discretization and material
                 int quadrature_order = 2;
@@ -695,18 +702,19 @@ namespace utopia {
                         node.get("quadrature_order", quadrature_order);
 
                         if (forcing_function_type == "value") {
-                            ForcingFunction<Scalar> ff;
+                            typename ForcingFunction_t::UserOp ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
-                            impl_->add_forcing_function_on_boundary(name, quadrature_order, ff);
+                            impl_->template add_forcing_function_on_boundary<ForcingFunction_t>(
+                                name, quadrature_order, ff);
                         }
 
                     } else {
                         if (forcing_function_type == "value") {
-                            ForcingFunction<Scalar> ff;
+                            typename ForcingFunction_t::UserOp ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
-                            impl_->add_forcing_function(ff);
+                            impl_->template add_forcing_function<ForcingFunction_t>(ff);
                         }
                     }
                 });

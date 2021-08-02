@@ -21,7 +21,7 @@ namespace utopia {
             using Matrix = Traits<utopia::stk::FunctionSpace>::Matrix;
 
             using Environment = utopia::Environment<utopia::stk::FunctionSpace>;
-            using Intrepid2Field = intrepid2::Field<Scalar>;
+            using Intrepid2Field = utopia::kokkos::Field<intrepid2::FE<Scalar>>;
 
             L2Projection(const std::shared_ptr<FE> &fe);
             ~L2Projection();

@@ -1,10 +1,10 @@
 
 #include "utopia_stk_intrepid2_L2Projection.hpp"
 
-#include "utopia_intrepid2_Gradient.hpp"
-#include "utopia_intrepid2_L2Projection.hpp"
-#include "utopia_intrepid2_Mass.hpp"
-#include "utopia_intrepid2_SubdomainFunction.hpp"
+#include "utopia_kokkos_Gradient.hpp"
+#include "utopia_kokkos_L2Projection.hpp"
+#include "utopia_kokkos_Mass.hpp"
+#include "utopia_kokkos_SubdomainValue.hpp"
 #include "utopia_stk_intrepid2.hpp"
 
 #include "utopia_make_unique.hpp"
@@ -14,8 +14,9 @@ namespace utopia {
 
         class L2Projection::Impl {
         public:
-            using L2Projection2 = utopia::L2Projection<Intrepid2FE::DynRankView>;
-            using Intrepid2Assembler = utopia::intrepid2::FEAssembler<Scalar>;
+            using Intrepi2FE_t = utopia::intrepid2::FE<Scalar>;
+            using L2Projection2 = utopia::kokkos::L2Projection<Intrepi2FE_t, Intrepi2FE_t::DynRankView>;
+            using Intrepid2Assembler = utopia::kokkos::FEAssembler<Intrepi2FE_t>;
 
             std::shared_ptr<Field> field;
             std::shared_ptr<Intrepid2Field> intrepid2_field;
@@ -39,7 +40,7 @@ namespace utopia {
 
         void L2Projection::ensure_assembler() {
             if (!this->assembler()) {
-                using Assembler = utopia::intrepid2::Assemble<Impl::L2Projection2>;
+                using Assembler = Impl::L2Projection2;
                 auto assembler = std::make_shared<Assembler>(this->fe_ptr(), impl_->intrepid2_field->data());
                 this->set_assembler(assembler);
             }

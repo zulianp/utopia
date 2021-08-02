@@ -32,29 +32,31 @@ namespace utopia {
                 param("mesh", param_list(param("type", "cube"), param("nx", nx), param("ny", ny), param("nz", nz))));
         }
 
-        void uniform_function_on_cube() {
-            FunctionSpace space;
+        // void uniform_function_on_cube() {
+        //     FunctionSpace space;
 
-            int n_var = 3;
-            auto params = cube_space_param(n_var);
-            space.read(params);
+        //     int n_var = 3;
+        //     auto params = cube_space_param(n_var);
+        //     space.read(params);
 
-            Field<FunctionSpace> field;
-            space.create_field(field);
+        //     Field<FunctionSpace> field;
+        //     space.create_field(field);
 
-            field.data().set(1.0);
+        //     field.data().set(1.0);
 
-            std::vector<Scalar_t> norms;
-            intrepid2::l2_norm(field, norms);
+        //     std::vector<Scalar_t> norms;
+        //     intrepid2::l2_norm(field, norms);
 
-            UTOPIA_TEST_EQ(n_var, norms.size());
+        //     UTOPIA_TEST_EQ(n_var, norms.size());
 
-            for (int c = 0; c < n_var; ++c) {
-                utopia_test_assert(approxeq(1.0, norms[c], 1e-8));
-            }
+        //     for (int c = 0; c < n_var; ++c) {
+        //         utopia_test_assert(approxeq(1.0, norms[c], 1e-8));
+        //     }
+        // }
+
+        void run() {
+            // UTOPIA_RUN_TEST(uniform_function_on_cube);
         }
-
-        void run() { UTOPIA_RUN_TEST(uniform_function_on_cube); }
     };
 
 }  // namespace utopia

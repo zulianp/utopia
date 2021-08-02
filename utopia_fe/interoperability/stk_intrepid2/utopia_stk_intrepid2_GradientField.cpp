@@ -1,5 +1,8 @@
 #include "utopia_stk_intrepid2_GradientField.hpp"
 
+#include "utopia_kokkos_Commons.hpp"
+#include "utopia_kokkos_Gradient.hpp"
+
 // Utopia/intrepid2 includes
 #include "utopia_intrepid2.hpp"
 
@@ -12,9 +15,10 @@ namespace utopia {
 
     bool GradientField<stk::FunctionSpace>::init_and_normalize(Field<stk::FunctionSpace> &field) {
         using Scalar_t = Traits<stk::FunctionSpace>::Scalar;
-        using Intrepid2Field_t = utopia::intrepid2::Field<Scalar_t>;
-        using Intrepid2Gradient_t = utopia::intrepid2::Gradient<Scalar_t>;
+
         using Intrepid2FE_t = utopia::intrepid2::FE<Scalar_t>;
+        using Intrepid2Gradient_t = utopia::kokkos::Gradient<Intrepid2FE_t>;
+        using Intrepid2Field_t = utopia::kokkos::Field<Intrepid2FE_t>;
 
         this->set_space(field.space());
         this->set_name("grad_" + field.name());
