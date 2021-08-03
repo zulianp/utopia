@@ -6,10 +6,9 @@
 
 #include "utopia_Algorithms.hpp"
 #include "utopia_Traits.hpp"
-// #include "utopia_StructuredGrid.hpp"
 #include "utopia_make_unique.hpp"
 
-// #include "utopia_petsc_FE.hpp"
+#include "utopia_mesh_StructuredGrid.hpp"
 
 #include <cassert>
 
@@ -20,6 +19,8 @@ namespace utopia {
 
     namespace petsc {
 
+        class DMDABase;
+
         class StructuredGrid : public Configurable, public Describable {
         public:
             using Traits = utopia::Traits<StructuredGrid>;
@@ -29,13 +30,14 @@ namespace utopia {
             using NodeIndex = utopia::ArrayView<const SizeType>;
             using IntArray = utopia::ArrayView<SizeType, 3>;
             using Point = utopia::StaticVector<Scalar, 3>;
+            using View = mesh::StructuredGrid<std::vector<Scalar>, std::vector<SizeType>>;
 
             // FIXME make this work also without static-sizes
             // constexpr static typename SideSets::Sides sides() { return SideSets::sides(); }
 
-            void nodes(const SizeType &idx, NodeIndex &nodes) const;
-            void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
-            bool on_boundary(const SizeType &elem_idx) const;
+            // void nodes(const SizeType &idx, NodeIndex &nodes) const;
+            // void nodes_local(const SizeType &idx, NodeIndex &nodes) const;
+            // bool on_boundary(const SizeType &elem_idx) const;
 
             void set_field_name(const SizeType &nf, const std::string &name);
             void set_field_names(const std::vector<std::string> &names);
@@ -55,9 +57,10 @@ namespace utopia {
             Communicator &comm();
             const Communicator &comm() const;
 
+            View view() const;
+
         private:
-            class Impl;
-            std::unique_ptr<Impl> impl_;
+            std::unique_ptr<DMDABase> impl_;
         };
 
     }  // namespace petsc

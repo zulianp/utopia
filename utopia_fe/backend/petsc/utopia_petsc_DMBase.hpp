@@ -27,11 +27,21 @@ namespace utopia {
                 DMRestoreGlobalVector(dm, &v);
             }
 
+            template <class SizeType>
+            void dof_ownership_range(SizeType &begin, SizeType &end) const {
+                Vec v;
+                DMGetGlobalVector(raw_type(), &v);
+                VecGetOwnershipRange(v, &begin, &end);
+                DMRestoreGlobalVector(raw_type(), &v);
+            }
+
             static PetscInt get_dimension(DM dm) {
                 PetscInt ret;
                 DMGetDimension(dm, &ret);
                 return ret;
             }
+
+            PetscInt get_dimension() const { return get_dimension(raw_type()); }
 
             static void refine(const DM &in, const MPI_Comm &comm, DM &out) { DMRefine(in, comm, &out); }
 
@@ -156,6 +166,12 @@ namespace utopia {
             inline PetscInt dm_dim() const {
                 PetscInt ret;
                 DMGetDimension(raw_type(), &ret);
+                return ret;
+            }
+
+            inline PetscInt dm_coord_dim() const {
+                PetscInt ret;
+                DMGetCoordinateDim(raw_type(), &ret);
                 return ret;
             }
 
