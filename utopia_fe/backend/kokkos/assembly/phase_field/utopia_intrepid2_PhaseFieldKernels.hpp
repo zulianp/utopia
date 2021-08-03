@@ -4,7 +4,7 @@
 #include "utopia_Views.hpp"
 
 namespace utopia {
-    namespace intrepid2 {
+    namespace kokkos {
 
         template <class Parameters>
         class QuadraticDegradation {
@@ -114,7 +114,7 @@ namespace utopia {
             }
         };
 
-    }  // namespace intrepid2
+    }  // namespace kokkos
 }  // namespace utopia
 
 #endif  // UTOPIA_INTREPID2_PHASE_FIELD_KERNELS_HPP

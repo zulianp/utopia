@@ -10,50 +10,50 @@ namespace utopia {
         class HexMesh {
         public:
             void init(const int nx, const int ny, const int nz) {
-                nodeCoord = Kokkos::DynRankView<Scalar, ExecutionSpace>("nodeCoord", numNodes, spaceDim);
-                nodeOnBoundary = Kokkos::DynRankView<int, ExecutionSpace>("nodeOnBoundary", numNodes);
+                node_coord = Kokkos::DynRankView<Scalar, ExecutionSpace>("node_coord", numNodes, spaceDim);
+                node_on_boundary = Kokkos::DynRankView<int, ExecutionSpace>("node_on_boundary", numNodes);
 
                 int inode = 0;
                 for (int k = 0; k < nz + 1; k++) {
                     for (int j = 0; j < ny + 1; j++) {
                         for (int i = 0; i < nx + 1; i++) {
-                            nodeCoord(inode, 0) = leftX + (double)i * hx;
-                            nodeCoord(inode, 1) = leftY + (double)j * hy;
-                            nodeCoord(inode, 2) = leftZ + (double)k * hz;
+                            node_coord(inode, 0) = leftX + (double)i * hx;
+                            node_coord(inode, 1) = leftY + (double)j * hy;
+                            node_coord(inode, 2) = leftZ + (double)k * hz;
                             if (k == 0 || j == 0 || i == 0 || k == nz || j == ny || i == nx) {
                                 // FIXME USE correct boundary tag
-                                nodeOnBoundary(inode) = 1;
+                                node_on_boundary(inode) = 1;
                             } else {
-                                nodeOnBoundary(inode) = 0;
+                                node_on_boundary(inode) = 0;
                             }
                             inode++;
                         }
                     }
                 }
 
-                elemToNode = Kokkos::DynRankView<int, DeviceSpaceType>("elemToNode", numElems, numNodesPerElem);
+                elem_to_node = Kokkos::DynRankView<int, DeviceSpaceType>("elem_to_node", numElems, numNodesPerElem);
 
                 int ielem = 0;
                 for (int k = 0; k < nz; k++) {
                     for (int j = 0; j < ny; j++) {
                         for (int i = 0; i < nx; i++) {
-                            elemToNode(ielem, 0) = (ny + 1) * (nx + 1) * k + (nx + 1) * j + i;
-                            elemToNode(ielem, 1) = (ny + 1) * (nx + 1) * k + (nx + 1) * j + i + 1;
-                            elemToNode(ielem, 2) = (ny + 1) * (nx + 1) * k + (nx + 1) * (j + 1) + i + 1;
-                            elemToNode(ielem, 3) = (ny + 1) * (nx + 1) * k + (nx + 1) * (j + 1) + i;
-                            elemToNode(ielem, 4) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * j + i;
-                            elemToNode(ielem, 5) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * j + i + 1;
-                            elemToNode(ielem, 6) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * (j + 1) + i + 1;
-                            elemToNode(ielem, 7) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * (j + 1) + i;
+                            elem_to_node(ielem, 0) = (ny + 1) * (nx + 1) * k + (nx + 1) * j + i;
+                            elem_to_node(ielem, 1) = (ny + 1) * (nx + 1) * k + (nx + 1) * j + i + 1;
+                            elem_to_node(ielem, 2) = (ny + 1) * (nx + 1) * k + (nx + 1) * (j + 1) + i + 1;
+                            elem_to_node(ielem, 3) = (ny + 1) * (nx + 1) * k + (nx + 1) * (j + 1) + i;
+                            elem_to_node(ielem, 4) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * j + i;
+                            elem_to_node(ielem, 5) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * j + i + 1;
+                            elem_to_node(ielem, 6) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * (j + 1) + i + 1;
+                            elem_to_node(ielem, 7) = (ny + 1) * (nx + 1) * (k + 1) + (nx + 1) * (j + 1) + i;
                             ielem++;
                         }
                     }
                 }
             }
 
-            Kokkos::DynRankView<Scalar, ExecutionSpace> nodeCoord;
-            Kokkos::DynRankView<int, ExecutionSpace> elemToNode;
-            Kokkos::DynRankView<int, ExecutionSpace> nodeOnBoundary;
+            Kokkos::DynRankView<Scalar, ExecutionSpace> node_coord;
+            Kokkos::DynRankView<int, ExecutionSpace> elem_to_node;
+            Kokkos::DynRankView<int, ExecutionSpace> node_on_boundary;
         };
 
     }  // namespace kokkos

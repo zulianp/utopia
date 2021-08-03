@@ -6,22 +6,8 @@
 namespace utopia {
 
     namespace intrepid2 {
-
-        // template <class Operator, typename Scalar>
-        // class Assemble;
-
         template <typename Scalar>
         class FE;
-
-        // template <typename Scalar>
-        // class SubdomainValue;
-
-        // template <typename FE>
-        // class Field;
-
-        // template <typename Scalar>
-        // class FEAssembler;
-
     }  // namespace intrepid2
 
     template <typename T>

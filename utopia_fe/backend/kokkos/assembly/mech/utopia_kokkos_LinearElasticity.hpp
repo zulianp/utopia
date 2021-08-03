@@ -28,6 +28,7 @@ namespace utopia {
 
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
+            using VectorView = typename Super::VectorView;
 
             class Params : public Configurable {
             public:
@@ -69,7 +70,7 @@ namespace utopia {
 
             inline Op make_op() const { return Op(op_.lambda, op_.mu, this->fe().grad(), this->fe().measure()); }
 
-            bool apply(const DynRankView &x, DynRankView &y) override {
+            bool apply(const VectorView &x, VectorView &y) override {
                 UTOPIA_TRACE_REGION_BEGIN("Assemble<LinearElasticity>::apply");
 
                 this->apply_vector_operator("Assemble<LinearElasticity>::apply", x, y, make_op());
