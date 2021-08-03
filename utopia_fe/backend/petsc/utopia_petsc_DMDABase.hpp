@@ -1,8 +1,12 @@
 #ifndef UTOPIA_PETSC_DMDABASE_HPP
 #define UTOPIA_PETSC_DMDABASE_HPP
 
-#include <petscdmda.h>
+#include "utopia_InputParameters.hpp"
+#include "utopia_Views.hpp"
+
 #include "utopia_petsc_DMBase.hpp"
+
+#include <petscdmda.h>
 
 namespace utopia {
     namespace petsc {
@@ -16,6 +20,7 @@ namespace utopia {
             using NodeIndex = utopia::ArrayView<const SizeType>;
             using IntArray = utopia::ArrayView<SizeType, 3>;
             using Point = utopia::StaticVector<Scalar, 3>;
+            using ElemToNodeIndex = utopia::ArrayView<const SizeType, DYNAMIC_SIZE, DYNAMIC_SIZE>;
 
             DMDABase() = default;
             DMDABase(const PetscCommunicator &comm) : DMBase(comm) {}
@@ -333,6 +338,14 @@ namespace utopia {
                     return NodeIndex(&local_elem_[local_elem_idx * n_nodes_x_elem_], n_nodes_x_elem_);
                 }
 
+                inline ElemToNodeIndex elem_to_node_index() {
+                    return ElemToNodeIndex(&global_elem_[0], n_local_elem_, n_nodes_x_elem_);
+                }
+
+                inline ElemToNodeIndex elem_to_local_node_index() {
+                    return ElemToNodeIndex(&local_elem_[0], n_local_elem_, n_nodes_x_elem_);
+                }
+
                 inline SizeType first_node_idx(const SizeType &local_elem_idx) const {
                     return local_elem_[local_elem_idx * n_nodes_x_elem_];
                 }
@@ -356,6 +369,16 @@ namespace utopia {
             }
 
             std::unique_ptr<Elements> make_elements() const { return utopia::make_unique<Elements>(this->raw_type()); }
+
+            inline ElemToNodeIndex elem_to_node_index() {
+                init_elements();
+                return elements_->elem_to_node_index();
+            }
+
+            inline ElemToNodeIndex elem_to_local_node_index() {
+                init_elements();
+                return elements_->elem_to_local_node_index();
+            }
 
             std::shared_ptr<Elements> elements_;
             Point box_min_;

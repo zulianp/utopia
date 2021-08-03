@@ -7,8 +7,8 @@
 using namespace utopia;
 
 void petsc_create_matrix() {
-    using Mesh_t = utopia::petsc::StructuredGrid;
     using FunctionSpace_t = utopia::petsc::FunctionSpace;
+    using Mesh_t = Traits<FunctionSpace_t>::Mesh;
     using Communicator = Traits<FunctionSpace_t>::Communicator;
     using Matrix = Traits<FunctionSpace_t>::Matrix;
 
@@ -29,8 +29,8 @@ void petsc_create_matrix() {
 }
 
 void petsc_create_vector() {
-    using Mesh_t = utopia::petsc::StructuredGrid;
     using FunctionSpace_t = utopia::petsc::FunctionSpace;
+    using Mesh_t = Traits<FunctionSpace_t>::Mesh;
     using Communicator = Traits<FunctionSpace_t>::Communicator;
     using Vector = Traits<FunctionSpace_t>::Vector;
     using SizeType = Traits<FunctionSpace_t>::SizeType;
