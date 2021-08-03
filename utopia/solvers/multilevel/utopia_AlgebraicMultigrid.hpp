@@ -85,13 +85,17 @@ namespace utopia {
 
         void ensure_agglomerator() {
             if (!agglomerator_) {
+#ifdef UTOPIA_WITH_PETSC
                 if (block_size_ == 2) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 2>>();
                 } else if (block_size_ == 3) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 3>>();
                 } else if (block_size_ == 4) {
                     agglomerator_ = std::make_shared<BlockAgglomerate<Matrix, 4>>();
-                } else {
+                } else
+#endif  // UTOPIA_WITH_PETSC
+
+                {
                     agglomerator_ = std::make_shared<Agglomerate<Matrix>>();
                 }
             }

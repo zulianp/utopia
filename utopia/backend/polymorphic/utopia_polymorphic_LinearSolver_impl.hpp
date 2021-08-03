@@ -13,13 +13,13 @@ namespace utopia {
         in.get("backend", backend);
         in.get("type", type);
 
-        impl_ = LinearSolverFactory<Matrix, Vector, PETSC>::new_linear_solver(type);
+        impl_ = LinearSolverFactory<Matrix, Vector>::new_linear_solver(type);
         impl_->read(in);
     }
 
     template <class Matrix, class Vector>
     OmniLinearSolver<Matrix, Vector>::OmniLinearSolver()
-        : impl_(LinearSolverFactory<Matrix, Vector, PETSC>::default_linear_solver()) {}
+        : impl_(LinearSolverFactory<Matrix, Vector>::default_linear_solver()) {}
 
     template <class Matrix, class Vector>
     OmniLinearSolver<Matrix, Vector>::~OmniLinearSolver() = default;

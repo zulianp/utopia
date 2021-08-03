@@ -4,7 +4,9 @@
 namespace utopia {
     namespace petsc {
         class StructuredGrid;
-        class DMPlex;
+        class FunctionSpace;
+
+        // class DMPlex;
     }  // namespace petsc
 }  // namespace utopia
 

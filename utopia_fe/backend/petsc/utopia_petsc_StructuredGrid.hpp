@@ -65,6 +65,8 @@ namespace utopia {
 
             SizeType n_nodes() const;
 
+            DMDABase &dm() const;
+
         private:
             std::unique_ptr<DMDABase> impl_;
         };
