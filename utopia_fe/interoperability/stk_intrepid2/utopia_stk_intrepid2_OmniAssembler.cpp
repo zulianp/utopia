@@ -1,5 +1,5 @@
 #include "utopia_stk_intrepid2_OmniAssembler.hpp"
-#include "utopia_intrepid2_OmniAssembler_impl.hpp"
+#include "utopia_kokkos_OmniAssembler_impl.hpp"
 
 // Utopia::Intrepid2
 #include "utopia_intrepid2_OmniAssembler.hpp"
@@ -10,8 +10,9 @@
 
 namespace utopia {
 
-    namespace intrepid2 {
-        template class OmniAssembler<utopia::stk::FunctionSpace>;
+    namespace kokkos {
+        template class OmniAssembler<utopia::stk::FunctionSpace,
+                                     utopia::intrepid2::FE<utopia::stk::FunctionSpace::Scalar>>;
     }
 
     class OmniAssembler<utopia::stk::FunctionSpace>::Impl {

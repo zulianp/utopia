@@ -1,4 +1,4 @@
-#include "utopia_intrepid2_OmniAssembler.hpp"
+#include "utopia_kokkos_OmniAssembler.hpp"
 
 // utopia includes
 #include "utopia_CreateFE.hpp"
@@ -15,19 +15,19 @@
 #include "utopia_kokkos_Transport.hpp"
 #include "utopia_kokkos_VectorLaplaceOperator.hpp"
 
-// utopia/intrepid2 includes
-#include "utopia_intrepid2_FE.hpp"
+// utopia/kokkos includes
+#include "utopia_kokkos_FE.hpp"
 
 #include <functional>
 
 namespace utopia {
-    namespace intrepid2 {
+    namespace kokkos {
 
-        template <class FunctionSpace>
+        template <class FunctionSpace, class FE>
         class AssemblerRegistry {
         public:
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
-            using FE_t = utopia::intrepid2::FE<Scalar_t>;
+            using FE_t = FE;
             using FEAssembler_t = utopia::kokkos::FEAssembler<FE_t>;
             using FEAssemblerPtr_t = std::shared_ptr<FEAssembler_t>;
 
@@ -101,13 +101,13 @@ namespace utopia {
             }
         };
 
-        template <class FunctionSpace>
-        class OmniAssembler<FunctionSpace>::Impl {
+        template <class FunctionSpace, class FE_>
+        class OmniAssembler<FunctionSpace, FE_>::Impl {
         public:
             using Scalar_t = typename Traits<FunctionSpace>::Scalar;
-            using FE = utopia::intrepid2::FE<Scalar_t>;
+            using FE = FE_;
             using Field = utopia::kokkos::Field<FE>;
-            using AssemblerRegistry = utopia::intrepid2::AssemblerRegistry<FunctionSpace>;
+            using AssemblerRegistry = utopia::kokkos::AssemblerRegistry<FunctionSpace, FE>;
             using FEAssembler_t = utopia::kokkos::FEAssembler<FE>;
             using FEAssemblerPtr_t = std::shared_ptr<FEAssembler_t>;
             using MatrixAccumulator_t = typename FEAssembler_t::MatrixAccumulator;
@@ -543,31 +543,31 @@ namespace utopia {
             bool fail_if_unregistered{true};
         };
 
-        template <class FunctionSpace>
-        AssemblyMode OmniAssembler<FunctionSpace>::mode() const {
+        template <class FunctionSpace, class FE>
+        AssemblyMode OmniAssembler<FunctionSpace, FE>::mode() const {
             return impl_->mode;
         }
-        template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::set_mode(AssemblyMode mode) {
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::set_mode(AssemblyMode mode) {
             impl_->mode = mode;
         }
 
-        template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::set_environment(const std::shared_ptr<Environment> &env) {
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::set_environment(const std::shared_ptr<Environment> &env) {
             impl_->env = env;
         }
 
-        template <class FunctionSpace>
-        OmniAssembler<FunctionSpace>::OmniAssembler(const std::shared_ptr<FunctionSpace> &space)
+        template <class FunctionSpace, class FE>
+        OmniAssembler<FunctionSpace, FE>::OmniAssembler(const std::shared_ptr<FunctionSpace> &space)
             : impl_(utopia::make_unique<Impl>()) {
             impl_->space = space;
         }
 
-        template <class FunctionSpace>
-        OmniAssembler<FunctionSpace>::~OmniAssembler() = default;
+        template <class FunctionSpace, class FE>
+        OmniAssembler<FunctionSpace, FE>::~OmniAssembler() = default;
 
-        template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Matrix &matrix, Vector &fun) {
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::assemble(const Vector &x, Matrix &matrix, Vector &fun) {
             if (!impl_->domain.fe) {
                 return false;
             }
@@ -580,8 +580,8 @@ namespace utopia {
             return true;
         }
 
-        template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Matrix &matrix) {
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::assemble(const Vector &x, Matrix &matrix) {
             if (!impl_->domain.fe) {
                 return false;
             }
@@ -594,8 +594,8 @@ namespace utopia {
             return true;
         }
 
-        template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(const Vector &x, Vector &vec) {
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::assemble(const Vector &x, Vector &vec) {
             if (!impl_->domain.fe) {
                 return false;
             }
@@ -608,8 +608,8 @@ namespace utopia {
             return true;
         }
 
-        template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(Matrix &matrix) {
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::assemble(Matrix &matrix) {
             if (!impl_->domain.fe) {
                 return false;
             }
@@ -621,8 +621,8 @@ namespace utopia {
             return true;
         }
 
-        template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::assemble(Vector &vector) {
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::assemble(Vector &vector) {
             if (!impl_->domain.fe) {
                 return false;
             }
@@ -634,26 +634,26 @@ namespace utopia {
             return true;
         }
 
-        template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler) {
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::add_domain_assembler(const Intrepid2FEAssemblerPtr &assembler) {
             impl_->domain.assemblers.push_back(assembler);
             if (!assembler->is_linear()) {
                 impl_->is_linear_ = false;
             }
         }
 
-        template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::fail_if_unregistered(const bool val) {
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::fail_if_unregistered(const bool val) {
             impl_->fail_if_unregistered = val;
         }
 
-        template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::set_domain_fe(const std::shared_ptr<FE> &fe) {
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::set_domain_fe(const std::shared_ptr<FE> &fe) {
             impl_->domain.fe = fe;
         }
 
-        template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::read(Input &in) {
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::read(Input &in) {
             using ForcingFunction_t = utopia::kokkos::ForcingFunction<typename Impl::FE>;
 
             if (!impl_->domain.fe) {
@@ -719,30 +719,30 @@ namespace utopia {
             });
         }
 
-        template <class FunctionSpace>
-        std::string OmniAssembler<FunctionSpace>::name() const {
-            return "utopia::intrepid2::OmniAssembler";
+        template <class FunctionSpace, class FE>
+        std::string OmniAssembler<FunctionSpace, FE>::name() const {
+            return "utopia::kokkos::OmniAssembler";
         }
 
-        template <class FunctionSpace>
-        bool OmniAssembler<FunctionSpace>::is_linear() const {
+        template <class FunctionSpace, class FE>
+        bool OmniAssembler<FunctionSpace, FE>::is_linear() const {
             return impl_->is_linear_;
         }
 
-        template <class FunctionSpace>
-        std::shared_ptr<Environment<FunctionSpace>> OmniAssembler<FunctionSpace>::environment() const {
+        template <class FunctionSpace, class FE>
+        std::shared_ptr<Environment<FunctionSpace>> OmniAssembler<FunctionSpace, FE>::environment() const {
             return impl_->env;
         }
 
-        template <class FunctionSpace>
-        void OmniAssembler<FunctionSpace>::set_space(const std::shared_ptr<FunctionSpace> &space) {
+        template <class FunctionSpace, class FE>
+        void OmniAssembler<FunctionSpace, FE>::set_space(const std::shared_ptr<FunctionSpace> &space) {
             impl_->space = space;
         }
 
-        template <class FunctionSpace>
-        std::shared_ptr<FunctionSpace> OmniAssembler<FunctionSpace>::space() const {
+        template <class FunctionSpace, class FE>
+        std::shared_ptr<FunctionSpace> OmniAssembler<FunctionSpace, FE>::space() const {
             return impl_->space;
         }
 
-    }  // namespace intrepid2
+    }  // namespace kokkos
 }  // namespace utopia
