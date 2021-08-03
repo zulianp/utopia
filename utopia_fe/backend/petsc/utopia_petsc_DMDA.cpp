@@ -145,7 +145,7 @@ namespace utopia {
 
             std::unique_ptr<DMDABase> clone() {
                 std::unique_ptr<DMDABase> cloned = utopia::make_unique<DMDABase>(this->comm());
-                DMCopyDS(raw_type(), cloned->raw_type());
+                DMClone(raw_type(), &cloned->raw_type());
                 cloned->box_min_.copy(box_min_);
                 cloned->box_max_.copy(box_max_);
                 return cloned;
@@ -386,7 +386,7 @@ namespace utopia {
         std::unique_ptr<StructuredGrid> StructuredGrid::clone(const SizeType &n_components) const {
             auto cloned = utopia::make_unique<StructuredGrid>(comm());
             cloned->impl_ = std::move(impl_->clone());
-            cloned->impl_->set_dof(n_components);
+            // cloned->impl_->set_dof(n_components);
             return cloned;
         }
 
@@ -474,9 +474,14 @@ namespace utopia {
         }
 
         StructuredGrid::SizeType StructuredGrid::n_nodes() const {
-            assert(false);
-            // return impl_->n_nodes();
-            return 0;
+            IntArray dims;
+            impl_->get_dims(dims);
+
+            SizeType ret = 1;
+            for (auto d : dims) {
+                if (d > 0) ret *= d;
+            }
+            return ret;
         }
 
     }  // namespace petsc
