@@ -52,6 +52,9 @@ namespace utopia {
 
             void describe(std::ostream &os) const override;
 
+            Communicator &comm();
+            const Communicator &comm() const;
+
         private:
             class Impl;
             std::unique_ptr<Impl> impl_;

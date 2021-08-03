@@ -1,13 +1,22 @@
 #include "utopia_petsc_DMDA.hpp"
 #include "utopia_petsc_DMBase.hpp"
 
+#include "utopia_mesh_StructuredGrid.hpp"
+
 #include <petscdmda.h>
 
 namespace utopia {
 
+    // template <typename T>
+    // class Traits<std::vector<T>> {
+    // public:
+    //     using Scalar = T;
+    // };
+
     namespace petsc {
 
-        class StructuredGrid::Impl : public DMBase {
+        class StructuredGrid::Impl : public DMBase,
+                                     public mesh::StructuredGrid<std::vector<PetscScalar>, std::vector<PetscInt>> {
         public:
             static void get_corners(DM dm, IntArray &start, IntArray &extent) {
                 PetscErrorCode ierr;
@@ -317,12 +326,12 @@ namespace utopia {
                 this->set_elements_x_cell(exc);
             }
 
-            IntArray &dims() { return dims_; }
-            Point &box_min() {}
+            // IntArray &dims() { return dims_; }
+            // Point &box_min() {}
 
-            Point &box_max() {}
+            // Point &box_max() {}
 
-            SizeType n_components() {}
+            // SizeType n_components() {}
 
             // inline void cell_point(const SizeType &idx, Point &p) const {
             //     assert(elements_ && "init_elements() has to be called before any access to element data");
@@ -345,6 +354,8 @@ namespace utopia {
                 wrap(dm, delegate_ownership);
             }
 
+            void read(Input &in) override { assert(false); }
+
             DMDAElementType type_override_;
 
             // initialized in a lazy way
@@ -352,37 +363,42 @@ namespace utopia {
             IntArray dims_;
         };
 
-        std::unique_ptr<StructuredGrid> StructuredGrid::uniform_refine() const {
-            auto fine = utopia::make_unique<StructuredGrid>(comm(), type_override_);
-            DMBase::refine(raw_type(), comm().get(), fine->raw_type());
+        StructuredGrid::Communicator &StructuredGrid::comm() { return impl_->comm(); }
+        const StructuredGrid::Communicator &StructuredGrid::comm() const { return impl_->comm(); }
 
-            device::copy(this->box_min(), fine->box_min());
-            device::copy(this->box_max(), fine->box_max());
+        std::unique_ptr<StructuredGrid> StructuredGrid::uniform_refine() const {
+            auto fine = utopia::make_unique<StructuredGrid>();
+            fine->impl_ = utopia::make_unique<StructuredGrid::Impl>(comm(), impl_->type_override_);
+            DMBase::refine(impl_->raw_type(), comm().get(), fine->impl_->raw_type());
+
+            device::copy(this->impl_->box_min(), fine->impl_->box_min());
+            device::copy(this->impl_->box_max(), fine->impl_->box_max());
 
             // This does not transfer automatically for some reason
             DMDAElementType elem_type;
-            DMDAGetElementType(raw_type(), &elem_type);
-            DMDASetElementType(fine->raw_type(), elem_type);
+            DMDAGetElementType(impl_->raw_type(), &elem_type);
+            DMDASetElementType(fine->impl_->raw_type(), elem_type);
             fine->update_mirror();
 
             return fine;
         }
 
         std::unique_ptr<StructuredGrid> StructuredGrid::clone(const SizeType &n_components) const {
-            auto cloned = utopia::make_unique<StructuredGrid>(comm(), type_override_);
-            cloned->copy(*this);
-            cloned->set_n_components(n_components);
+            auto cloned = utopia::make_unique<StructuredGrid>();
+            cloned->impl_ = utopia::make_unique<StructuredGrid::Impl>(comm(), impl_->type_override_);
+            cloned->impl_->copy(*this->impl_);
+            cloned->impl_->set_n_components(n_components);
             // cloned->type_override_ = type_override_;
-            cloned->init_from_mirror();
+            cloned->impl_->init_from_mirror();
             return cloned;
         }
 
-        std::unique_ptr<StructuredGrid> StructuredGrid::clone() const { return clone(this->n_components()); }
+        std::unique_ptr<StructuredGrid> StructuredGrid::clone() const { return clone(this->impl_->n_components()); }
 
         void StructuredGrid::read(Input &in) {
-            init_default();
+            impl_->init_default();
 
-            const SizeType n = this->dims().size();
+            const SizeType n = this->impl_->dims().size();
             assert(n > 0);  // IMPLEMENT ME for dynamically sized arrays
 
             const char coord_names[3] = {'x', 'y', 'z'};
@@ -398,26 +414,26 @@ namespace utopia {
                 min_str[0] = coord;
                 max_str[0] = coord;
 
-                in.get(n_str, this->dims()[d]);
-                in.get(min_str, this->box_min()[d]);
-                in.get(max_str, this->box_max()[d]);
+                in.get(n_str, this->impl_->dims()[d]);
+                in.get(min_str, this->impl_->box_min()[d]);
+                in.get(max_str, this->impl_->box_max()[d]);
             }
 
-            this->destroy_dm();
-            create_uniform(comm().get(),
-                           this->dims(),
-                           this->box_min(),
-                           this->box_max(),
-                           type_override_,
-                           this->n_components(),
-                           this->raw_type());
+            this->impl_->destroy_dm();
+            impl_->create_uniform(comm().get(),
+                                  this->impl_->dims(),
+                                  this->impl_->box_min(),
+                                  this->impl_->box_max(),
+                                  this->impl_->type_override_,
+                                  this->impl_->n_components(),
+                                  this->impl_->raw_type());
 
             /// re-initialize mirror just to be safe (it is cheap anyway)
             update_mirror();
         }
 
         void StructuredGrid::set_field_name(const SizeType &nf, const std::string &name) {
-            DMDASetFieldName(raw_type(), nf, name.c_str());
+            DMDASetFieldName(impl_->raw_type(), nf, name.c_str());
         }
 
         void StructuredGrid::set_field_names(const std::vector<std::string> &names) {
@@ -430,17 +446,17 @@ namespace utopia {
 
             names_copy[n_names] = nullptr;
 
-            DMDASetFieldNames(raw_type(), &names_copy[0]);
+            DMDASetFieldNames(impl_->raw_type(), &names_copy[0]);
         }
 
         void StructuredGrid::nodes(const SizeType &idx, NodeIndex &nodes) const {
             assert(elements_ && "init_elements() has to be called before any access to element data");
-            nodes = elements_->nodes(idx);
+            nodes = impl_->elements_->nodes(idx);
         }
 
         void StructuredGrid::nodes_local(const SizeType &idx, NodeIndex &nodes) const {
             assert(elements_ && "init_elements() has to be called before any access to element data");
-            nodes = elements_->nodes_local(idx);
+            nodes = impl_->elements_->nodes_local(idx);
         }
 
         bool StructuredGrid::on_boundary(const SizeType &elem_idx) const {
@@ -448,7 +464,7 @@ namespace utopia {
             nodes(elem_idx, idx);
 
             for (auto i : idx) {
-                if (this->is_node_on_boundary(i)) {
+                if (this->impl_->is_node_on_boundary(i)) {
                     return true;
                 }
             }
@@ -456,13 +472,13 @@ namespace utopia {
             return false;
         }
 
-        void StructuredGrid::update_mirror() { init_from_dm(raw_type()); }
+        void StructuredGrid::update_mirror() { impl_->init_from_dm(impl_->raw_type()); }
 
         void StructuredGrid::describe(std::ostream &os) const {
-            os << "n_elements      : " << this->n_elements() << '\n';
-            os << "n_nodes         : " << this->n_nodes() << '\n';
-            os << "dim             : " << this->dim() << '\n';
-            os << "elements_x_cell : " << this->elements_x_cell() << '\n';
+            os << "n_elements      : " << this->impl_->n_elements() << '\n';
+            os << "n_nodes         : " << this->impl_->n_nodes() << '\n';
+            os << "dim             : " << this->impl_->dim() << '\n';
+            os << "elements_x_cell : " << this->impl_->elements_x_cell() << '\n';
 
             // disp("box_min");
             // disp(this->box_min());

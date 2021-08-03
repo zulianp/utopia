@@ -3,7 +3,7 @@
 #include "utopia_Path.hpp"
 #include "utopia_make_unique.hpp"
 #include "utopia_petsc_Communicator.hpp"
-#include "utopia_petsc_DM.hpp"
+#include "utopia_petsc_DMBase.hpp"
 
 #if defined(PETSC_HAVE_EXODUSII)
 #include <petscviewerexodusii.h>
