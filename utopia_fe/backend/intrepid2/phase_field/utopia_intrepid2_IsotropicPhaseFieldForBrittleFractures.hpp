@@ -99,9 +99,9 @@
 //             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
 //             using ExecutionSpace = typename FE::ExecutionSpace;
 
-//             using UserOp = utopia::IsotropicPhaseFieldForBrittleFractures<Scalar, Dim>;
-//             using QuadraticDegradation = utopia::intrepid2::QuadraticDegradation<UserOp>;
-//             using QuadraticPhaseFieldKernels = utopia::intrepid2::PhaseFieldKernels<UserOp, QuadraticDegradation>;
+//             using Params = utopia::IsotropicPhaseFieldForBrittleFractures<Scalar, Dim>;
+//             using QuadraticDegradation = utopia::intrepid2::QuadraticDegradation<Params>;
+//             using QuadraticPhaseFieldKernels = utopia::intrepid2::PhaseFieldKernels<Params, QuadraticDegradation>;
 
 //             using V = StaticVector<Scalar, Dim>;
 //             using M = StaticMatrix<Scalar, Dim, Dim>;
@@ -111,7 +111,7 @@
 //             using InterpolateStrain = typename utopia::intrepid2::LinearizedStrain<Scalar, Dim>::Interpolate;
 //             using InterpolatePhaseFieldGradient = typename utopia::intrepid2::Gradient<Scalar>::Rank1Op;
 
-//             Assemble(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
+//             Assemble(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {
 //                 assert(Dim == fe->spatial_dimension());
 //             }
 
@@ -234,7 +234,7 @@
 //                             op_.length_scale / 2.0 * phase_field_gradient_.squared_norm(cell, qp));
 //                 }
 
-//                 Energy(const UserOp &op,
+//                 Energy(const Params &op,
 //                        const InterpolateField &phase_field,
 //                        const InterpolatePhaseFieldGradient &phase_field_gradient,
 //                        const InterpolateField &pressure,
@@ -245,7 +245,7 @@
 //                       pressure_(pressure),
 //                       strain_(strain) {}
 
-//                 UserOp op_;
+//                 Params op_;
 //                 InterpolateField phase_field_;
 //                 InterpolatePhaseFieldGradient phase_field_gradient_;
 //                 InterpolateField pressure_;
@@ -638,7 +638,7 @@
 //             // }
 
 //             // // NVCC_PRIVATE :
-//             UserOp op_;
+//             Params op_;
 //             std::shared_ptr<Field<Scalar>> pressure_field_;
 //         };
 //     }  // namespace intrepid2

@@ -39,7 +39,7 @@ namespace utopia {
                 using OpAndStoreGradient = typename NeoHookeanKernel::template StoreGradient<DynRankView>;
             };
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 using Scalar = typename Traits<FirstLameParameter>::Scalar;
                 void read(Input &in) override {
@@ -50,7 +50,7 @@ namespace utopia {
                     mu = ssp.shear_modulus.get();
                 }
 
-                UserOp(const FirstLameParameter &lambda = FirstLameParameter(1.0),
+                Params(const FirstLameParameter &lambda = FirstLameParameter(1.0),
                        const ShearModulus &mu = FirstLameParameter(1.0),
                        const Scalar &rescale = 1.0)
                     : lambda(lambda), mu(mu), rescale(rescale) {}
@@ -60,7 +60,7 @@ namespace utopia {
                 Scalar rescale;
             };
 
-            NeoHookean(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
+            NeoHookean(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return this->fe().spatial_dimension(); }
 
@@ -231,7 +231,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
             std::shared_ptr<Gradient<FE>> deformation_gradient_;
         };
     }  // namespace kokkos

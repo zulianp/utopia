@@ -22,7 +22,7 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 void read(Input &in) override {
                     in.get("value", value);
@@ -31,8 +31,8 @@ namespace utopia {
                     in.get("n_components", n_components);
                 }
 
-                UserOp(const Fun &value = Fun(0.0)) : value(value) {}
-                UTOPIA_FUNCTION UserOp(const UserOp &) = default;
+                Params(const Fun &value = Fun(0.0)) : value(value) {}
+                UTOPIA_FUNCTION Params(const Params &) = default;
 
                 Fun value;
                 int n_components{1};
@@ -40,7 +40,7 @@ namespace utopia {
                 bool verbose{false};
             };
 
-            ForcingFunction(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
+            ForcingFunction(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
 
@@ -93,7 +93,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
         };
     }  // namespace kokkos
 }  // namespace utopia

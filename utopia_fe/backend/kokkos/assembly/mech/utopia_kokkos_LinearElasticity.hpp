@@ -29,7 +29,7 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 void read(Input &in) override {
                     StressStrainParameters<FirstLameParameter, ShearModulus> ssp;
@@ -39,7 +39,7 @@ namespace utopia {
                     mu = ssp.shear_modulus.get();
                 }
 
-                UserOp(const FirstLameParameter &lambda = FirstLameParameter(1.0),
+                Params(const FirstLameParameter &lambda = FirstLameParameter(1.0),
                        const ShearModulus &mu = FirstLameParameter(1.0))
                     : lambda(lambda), mu(mu) {}
 
@@ -54,7 +54,7 @@ namespace utopia {
                                                                    typename FE::Gradient,
                                                                    typename FE::Measure>;
 
-            LinearElasticity(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
+            LinearElasticity(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
             }
 
@@ -90,7 +90,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
         };
     }  // namespace kokkos
 }  // namespace utopia

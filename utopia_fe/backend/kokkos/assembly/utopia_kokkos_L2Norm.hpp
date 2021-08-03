@@ -31,7 +31,7 @@ namespace utopia {
 
                 assert(n_components >= 1);
 
-                typename L2ScalarProduct_t::UserOp op;
+                typename L2ScalarProduct_t::Params op;
                 op.n_components = n_components;
                 l2_scalar_product_ = std::make_shared<L2ScalarProduct_t>(fe_, op);
 

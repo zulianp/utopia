@@ -26,7 +26,7 @@ namespace utopia {
             using LumpedOp = utopia::kokkos::kernels::LumpedOp<Op>;
             using Lump = utopia::kokkos::kernels::Lump<DynRankView>;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 using Scalar = typename Traits<Fun>::Scalar;
                 // FIXME this type should be generalized to any backend
@@ -61,8 +61,8 @@ namespace utopia {
                     }
                 }
 
-                UserOp(const Fun &density = Fun(1.0)) : density(density) {}
-                UTOPIA_FUNCTION UserOp(const UserOp &) = default;
+                Params(const Fun &density = Fun(1.0)) : density(density) {}
+                UTOPIA_FUNCTION Params(const Params &) = default;
 
                 Fun density;
                 int n_components{1};
@@ -75,7 +75,7 @@ namespace utopia {
                 Scalar expected_volume_tol{1e-6};
             };
 
-            Mass(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
+            Mass(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return op_.n_components; }
             inline std::string name() const override { return "Mass"; }
@@ -147,8 +147,8 @@ namespace utopia {
                 return true;
             }
 
-            inline UserOp &user_op() { return op_; }
-            inline const UserOp &user_op() const { return op_; }
+            inline Params &user_op() { return op_; }
+            inline const Params &user_op() const { return op_; }
 
             bool check_volume() const {
                 if (op_.expected_volume <= 0) {
@@ -169,7 +169,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
         };
     }  // namespace kokkos
 }  // namespace utopia

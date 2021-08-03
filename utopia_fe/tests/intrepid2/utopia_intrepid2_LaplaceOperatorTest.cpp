@@ -64,7 +64,7 @@ void intrepid2_basis_functions() {
 }
 
 void intrepid2_laplace_operator() {
-    kokkos::LaplaceOperator<FE>::UserOp lapl{1.0};
+    kokkos::LaplaceOperator<FE>::Params lapl{1.0};
     auto fe_ptr = make_ref_tet();
 
     kokkos::LaplaceOperator<FE> assembler(fe_ptr, lapl);

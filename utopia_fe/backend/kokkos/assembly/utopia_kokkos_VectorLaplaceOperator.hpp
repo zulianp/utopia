@@ -20,14 +20,14 @@ namespace utopia {
             using FunctionSpaceTools = typename FE::FunctionSpaceTools;
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 void read(Input &in) override {
                     in.get("coeff", coeff);
                     in.get("verbose", verbose);
                 }
 
-                UserOp(const Coefficient &coeff = Coefficient(1.0)) : coeff(coeff) {}
+                Params(const Coefficient &coeff = Coefficient(1.0)) : coeff(coeff) {}
                 Coefficient coeff;
                 bool verbose{false};
             };
@@ -35,7 +35,7 @@ namespace utopia {
             using Op = utopia::kokkos::kernels::
                 VectorLaplaceOp<Dim, Scalar, Coefficient, typename FE::Gradient, typename FE::Measure>;
 
-            VectorLaplaceOperator(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
+            VectorLaplaceOperator(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
             }
 
@@ -77,7 +77,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
         };
     }  // namespace kokkos
 }  // namespace utopia

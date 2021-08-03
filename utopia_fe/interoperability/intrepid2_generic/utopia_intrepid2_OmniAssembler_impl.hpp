@@ -50,7 +50,7 @@ namespace utopia {
             template <typename MaterialDescription>
             void register_assembler(const std::string &type) {
                 assemblers_[type] = [](const std::shared_ptr<FE_t> &fe, Input &in) -> FEAssemblerPtr_t {
-                    typename MaterialDescription::UserOp mat_desc;
+                    typename MaterialDescription::Params mat_desc;
                     mat_desc.read(in);
                     return std::make_shared<MaterialDescription>(fe, mat_desc);
                 };
@@ -60,7 +60,7 @@ namespace utopia {
             void register_assembler_variant(const std::string &type, const int spatial_dimension) {
                 assemblers_[create_variant_name(type, spatial_dimension)] = [](const std::shared_ptr<FE_t> &fe,
                                                                                Input &in) -> FEAssemblerPtr_t {
-                    typename MaterialDescription::UserOp mat_desc;
+                    typename MaterialDescription::Params mat_desc;
                     mat_desc.read(in);
                     return std::make_shared<MaterialDescription>(fe, mat_desc);
                 };
@@ -98,10 +98,6 @@ namespace utopia {
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 1, Scalar_t>>("LinearElasticity", 1);
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 2, Scalar_t>>("LinearElasticity", 2);
                 register_assembler_variant<utopia::kokkos::LinearElasticity<FE_t, 3, Scalar_t>>("LinearElasticity", 3);
-
-                // // register_assembler_variant<utopia::NeoHookean<1, Scalar_t>>("NeoHookean", 1);
-                // register_assembler_variant<utopia::NeoHookean<2, Scalar_t>>("NeoHookean", 2);
-                // register_assembler_variant<utopia::NeoHookean<3, Scalar_t>>("NeoHookean", 3);
             }
         };
 
@@ -306,7 +302,7 @@ namespace utopia {
             }
 
             template <class ForcingFunctionDescription>
-            void add_forcing_function(const typename ForcingFunctionDescription::UserOp &desc) {
+            void add_forcing_function(const typename ForcingFunctionDescription::Params &desc) {
                 if (!domain.fe) {
                     assert(false);
                 }
@@ -319,7 +315,7 @@ namespace utopia {
             template <class ForcingFunctionDescription>
             void add_forcing_function_on_boundary(const std::string &boundary_name,
                                                   const int quadrature_order,
-                                                  const typename ForcingFunctionDescription::UserOp &desc) {
+                                                  const typename ForcingFunctionDescription::Params &desc) {
                 auto &b = boundary[boundary_name];
                 std::shared_ptr<FE> bfe;
 
@@ -704,7 +700,7 @@ namespace utopia {
                         node.get("quadrature_order", quadrature_order);
 
                         if (forcing_function_type == "value") {
-                            typename ForcingFunction_t::UserOp ff;
+                            typename ForcingFunction_t::Params ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function_on_boundary<ForcingFunction_t>(
@@ -713,7 +709,7 @@ namespace utopia {
 
                     } else {
                         if (forcing_function_type == "value") {
-                            typename ForcingFunction_t::UserOp ff;
+                            typename ForcingFunction_t::Params ff;
                             ff.read(node);
                             ff.n_components = impl_->space->n_var();
                             impl_->template add_forcing_function<ForcingFunction_t>(ff);

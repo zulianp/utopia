@@ -9,7 +9,7 @@
 
 #include "utopia_fe_Core.hpp"
 
-#include "utopia_intrepid2_L2Norm.hpp"
+#include "utopia_kokkos_L2Norm.hpp"
 
 namespace utopia {
 

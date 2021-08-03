@@ -20,7 +20,7 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Interpolate = typename Field<FE>::Interpolate;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 using Scalar = typename Traits<Fun>::Scalar;
                 // FIXME this type should be generalized to any backend
@@ -45,8 +45,8 @@ namespace utopia {
                     }
                 }
 
-                UserOp(const Fun &density = Fun(1.0)) : density(density) {}
-                UTOPIA_FUNCTION UserOp(const UserOp &) = default;
+                Params(const Fun &density = Fun(1.0)) : density(density) {}
+                UTOPIA_FUNCTION Params(const Params &) = default;
 
                 Fun density;
                 int n_components{1};
@@ -56,7 +56,7 @@ namespace utopia {
                 bool verbose{false};
             };
 
-            L2ScalarProduct(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : fe_(fe), op_(std::move(op)) {}
+            L2ScalarProduct(const std::shared_ptr<FE> &fe, Params op = Params()) : fe_(fe), op_(std::move(op)) {}
 
             inline int n_vars() const { return op_.n_components; }
             inline std::string name() const { return "L2ScalarProduct"; }
@@ -146,12 +146,12 @@ namespace utopia {
                 return ret;
             }
 
-            inline UserOp &user_op() { return op_; }
-            inline const UserOp &user_op() const { return op_; }
+            inline Params &user_op() { return op_; }
+            inline const Params &user_op() const { return op_; }
 
             // NVCC_PRIVATE :
             std::shared_ptr<FE> fe_;
-            UserOp op_;
+            Params op_;
             DynRankView products;
         };
     }  // namespace kokkos

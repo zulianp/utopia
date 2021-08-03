@@ -28,7 +28,7 @@ namespace utopia {
             using Gradient = typename FE::Gradient;
             using Measure = typename FE::Measure;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 void read(Input &in) override {
                     in.get("coeff", coeff);
@@ -56,7 +56,7 @@ namespace utopia {
                     }
                 }
 
-                UserOp(const DiffusionCoefficient &coeff = DiffusionCoefficient(1.0))
+                Params(const DiffusionCoefficient &coeff = DiffusionCoefficient(1.0))
                     : coeff(coeff), subdomain_function(1.0) {}
                 DiffusionCoefficient coeff;
 
@@ -66,7 +66,7 @@ namespace utopia {
 
             using Op = utopia::kokkos::kernels::LaplaceOp<Scalar, DiffusionCoefficient, Gradient, Measure>;
 
-            LaplaceOperator(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {}
+            LaplaceOperator(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {}
 
             inline int n_vars() const override { return 1; }
             inline std::string name() const override { return "LaplaceOperator"; }
@@ -135,7 +135,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
         };
 
     }  // namespace kokkos

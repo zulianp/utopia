@@ -28,19 +28,19 @@ namespace utopia {
             using Super = utopia::kokkos::FEAssembler<FE_, DefaultView<typename FE_::Scalar>>;
             using VectorView = typename Super::VectorView;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 void read(Input &) override {}
 
-                UserOp() = default;
-                UserOp(const Field &vector_field) : vector_field(vector_field) {}
+                Params() = default;
+                Params(const Field &vector_field) : vector_field(vector_field) {}
                 Field vector_field;
             };
 
             using Op = utopia::kokkos::kernels::
                 TransportOp<Dim, Scalar, Field, typename FE::Gradient, typename FE::Function, typename FE::Measure>;
 
-            Transport(const std::shared_ptr<FE> &fe, UserOp op = UserOp()) : Super(fe), op_(std::move(op)) {
+            Transport(const std::shared_ptr<FE> &fe, Params op = Params()) : Super(fe), op_(std::move(op)) {
                 assert(Dim == fe->spatial_dimension());
 
 #ifndef NDEBUG
@@ -87,7 +87,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
         };
     }  // namespace kokkos
 

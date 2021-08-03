@@ -26,16 +26,16 @@ namespace utopia {
             using ExecutionSpace = typename FE::ExecutionSpace;
             using Super = utopia::kokkos::FEAssembler<FE>;
 
-            class UserOp : public Configurable {
+            class Params : public Configurable {
             public:
                 void read(Input &) override {}
 
-                UserOp() = default;
-                UserOp(const Field &field) : field(field) {}
+                Params() = default;
+                Params(const Field &field) : field(field) {}
                 Field field;
             };
 
-            L2Projection(const std::shared_ptr<FE> &fe, const UserOp &op) : Super(fe), op_(op) {}
+            L2Projection(const std::shared_ptr<FE> &fe, const Params &op) : Super(fe), op_(op) {}
 
             inline int n_vars() const override { return op_.field.extent(2); }
 
@@ -118,7 +118,7 @@ namespace utopia {
             }
 
             // NVCC_PRIVATE :
-            UserOp op_;
+            Params op_;
         };
     }  // namespace kokkos
 
