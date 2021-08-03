@@ -43,6 +43,7 @@ namespace utopia {
             void set_field_names(const std::vector<std::string> &names);
 
             void read(Input &in) override;
+            void unit_cube(const SizeType nx, const SizeType ny, const SizeType nz);
 
             void update_mirror();
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +59,11 @@ namespace utopia {
             const Communicator &comm() const;
 
             View view() const;
+
+            StructuredGrid(const Communicator &comm);
+            ~StructuredGrid();
+
+            SizeType n_nodes() const;
 
         private:
             std::unique_ptr<DMDABase> impl_;

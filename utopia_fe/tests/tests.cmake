@@ -20,6 +20,10 @@ if(UTOPIA_ENABLE_MARS)
     list(APPEND TEST_MODULES mars)
 endif()
 
+if(UTOPIA_ENABLE_PETSC)
+    list(APPEND TEST_MODULES petsc)
+endif()
+
 if(UTOPIA_ENABLE_MOONOLITH AND UTOPIA_ENABLE_STK)
     list(APPEND TEST_MODULES interop/moonolith_stk)
 endif()

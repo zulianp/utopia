@@ -23,12 +23,27 @@ namespace utopia {
 
             virtual ~DMDABase() {}
 
+            void unit_cube(const SizeType nx, const SizeType ny, const SizeType nz) {
+                InputParameters params;
+                params.set("nx", nx);
+                params.set("ny", ny);
+                params.set("nz", nz);
+
+                read(params);
+            }
+
             void read(Input &in) override {
                 IntArray dims;
 
                 in.get("nx", dims[0]);
                 in.get("ny", dims[1]);
                 in.get("nz", dims[2]);
+
+                int n = box_min_.size();
+                for (int i = 0; i < n; ++i) {
+                    box_min_[i] = 0.0;
+                    box_max_[i] = 1.0;
+                }
 
                 in.get("min_x", box_min_[0]);
                 in.get("min_y", box_min_[1]);
@@ -351,17 +366,25 @@ namespace utopia {
             inline const Point &box_max() const { return box_max_; }
         };
 
+        StructuredGrid::StructuredGrid(const Communicator &comm) : impl_(utopia::make_unique<DMDABase>(comm)) {}
+        StructuredGrid::~StructuredGrid() = default;
+
+        void StructuredGrid::unit_cube(const SizeType nx, const SizeType ny, const SizeType nz) {
+            // Add one to be conforming to the other backends
+            impl_->unit_cube(nx + 1, ny + 1, nz + 1);
+        }
+
         StructuredGrid::Communicator &StructuredGrid::comm() { return impl_->comm(); }
         const StructuredGrid::Communicator &StructuredGrid::comm() const { return impl_->comm(); }
 
         std::unique_ptr<StructuredGrid> StructuredGrid::uniform_refine() const {
-            auto fine = utopia::make_unique<StructuredGrid>();
+            auto fine = utopia::make_unique<StructuredGrid>(comm());
             fine->impl_ = std::move(impl_->uniform_refine());
             return fine;
         }
 
         std::unique_ptr<StructuredGrid> StructuredGrid::clone(const SizeType &n_components) const {
-            auto cloned = utopia::make_unique<StructuredGrid>();
+            auto cloned = utopia::make_unique<StructuredGrid>(comm());
             cloned->impl_ = std::move(impl_->clone());
             cloned->impl_->set_dof(n_components);
             return cloned;
@@ -413,7 +436,7 @@ namespace utopia {
             auto &box_min = impl_->box_min();
             auto &box_max = impl_->box_max();
 
-            std::vector<Scalar> v_box_min, v_box_max;
+            std::vector<Scalar> v_box_min(dim), v_box_max(dim);
             std::vector<SizeType> v_dims(dim), v_corners_begin(dim), v_corners_extent(dim), v_ghost_corners_begin(dim),
                 v_ghost_corners_extent(dim);
 
@@ -448,6 +471,12 @@ namespace utopia {
             os << "n_nodes         : " << v.n_nodes() << '\n';
             os << "dim             : " << v.dim() << '\n';
             os << "elements_x_cell : " << v.elements_x_cell() << '\n';
+        }
+
+        StructuredGrid::SizeType StructuredGrid::n_nodes() const {
+            assert(false);
+            // return impl_->n_nodes();
+            return 0;
         }
 
     }  // namespace petsc
